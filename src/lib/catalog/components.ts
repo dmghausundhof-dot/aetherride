@@ -1,4 +1,5 @@
 import type { ComponentModel, TypedAttribute } from "@/types/garage";
+import { COMPONENT_CATALOG_DACH } from "./componentsDach";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -24,11 +25,11 @@ function attr(
 }
 
 /**
- * Redaktionell kuratierter Komponenten-Katalog (MVP-Seed).
+ * Redaktionell kuratierter Komponenten-Katalog (MVP-Seed + DACH-Enduro).
  * Quellen u. a.: BikeRadar Achsstandards, BIKE Magazin BB-Standards,
  * S.H.I.S. Headset-System, RockShox/Fox Service Docs, ETRTO-Praxis.
  */
-export const COMPONENT_CATALOG: ComponentModel[] = [
+const COMPONENT_CATALOG_CORE: ComponentModel[] = [
   // —— Gabeln ——
   {
     id: "cm-fox-36-factory-170",
@@ -838,6 +839,7 @@ export const COMPONENT_CATALOG: ComponentModel[] = [
     attributes: [
       attr("crank_axle", { enum: "DUB_28.99" }),
       attr("crank_length_mm", { num: 170, unit: "mm" }),
+      attr("chainring_bcd", { enum: "direct_mount" }),
     ],
     adjusters: [],
     torqueSpecs: [],
@@ -856,6 +858,7 @@ export const COMPONENT_CATALOG: ComponentModel[] = [
     attributes: [
       attr("chainring_teeth", { num: 32 }),
       attr("chainline_boost", { enum: "yes" }),
+      attr("chainring_bcd", { enum: "direct_mount" }),
     ],
     adjusters: [],
     torqueSpecs: [],
@@ -1151,6 +1154,11 @@ export const COMPONENT_CATALOG: ComponentModel[] = [
     verifiedBy: "AetherRide Editorial",
     safetyCritical: false,
   },
+];
+
+export const COMPONENT_CATALOG: ComponentModel[] = [
+  ...COMPONENT_CATALOG_CORE,
+  ...COMPONENT_CATALOG_DACH,
 ];
 
 export function getComponentModel(id: string): ComponentModel | undefined {
