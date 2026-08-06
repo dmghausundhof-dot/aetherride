@@ -12,8 +12,8 @@ function assert(cond: boolean, msg: string) {
 
 const stats = catalogStats();
 assert(stats.manufacturers >= 32, `Erwarte ≥32 Hersteller, got ${stats.manufacturers}`);
-assert(stats.bikes >= 36, `Erwarte ≥36 Bikes, got ${stats.bikes}`);
-assert(COMPONENT_CATALOG.length >= 134, `Erwarte ≥134 Komponenten, got ${COMPONENT_CATALOG.length}`);
+assert(stats.bikes >= 38, `Erwarte ≥38 Bikes, got ${stats.bikes}`);
+assert(COMPONENT_CATALOG.length >= 140, `Erwarte ≥140 Komponenten, got ${COMPONENT_CATALOG.length}`);
 assert(COMPATIBILITY_RULES.length >= 30, `Erwarte ≥30 Regeln, got ${COMPATIBILITY_RULES.length}`);
 
 const ids = new Set(COMPONENT_CATALOG.map((c) => c.id));

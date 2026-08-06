@@ -100,3 +100,29 @@ export function webDemoCapabilities(): PlatformCapabilityReport {
     ],
   };
 }
+
+/**
+ * PMTiles-Protokoll-Hook (Native nach G-0) — Shape only.
+ * Web: nicht registrieren; MapView bleibt OSM-Raster.
+ */
+export interface PmtilesProtocolHook {
+  channel: typeof NATIVE_CHANNELS.pmtiles;
+  /** z. B. pmtiles://{regionId}/{z}/{x}/{y} */
+  urlTemplate: string;
+  maxZoom: number;
+  /** Spec NFR-08 Budget-Hinweis */
+  maxPackMbPer10kKm2: 350;
+  enabledWhen: "G0_MOBILE_STACK_CONFIRMED";
+}
+
+export const PMTILES_PROTOCOL_HOOK: PmtilesProtocolHook = {
+  channel: NATIVE_CHANNELS.pmtiles,
+  urlTemplate: "pmtiles://{regionId}/{z}/{x}/{y}",
+  maxZoom: 15,
+  maxPackMbPer10kKm2: 350,
+  enabledWhen: "G0_MOBILE_STACK_CONFIRMED",
+};
+
+export function pmtilesHookSummary(): string {
+  return `PMTiles Hook ${PMTILES_PROTOCOL_HOOK.channel} — Web deaktiviert, Native nach G-0 (${PMTILES_PROTOCOL_HOOK.urlTemplate}).`;
+}

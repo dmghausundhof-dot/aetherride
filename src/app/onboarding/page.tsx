@@ -10,6 +10,10 @@ import {
   SETUP_LIABILITY,
   setA08AcceptedNow,
 } from "@/lib/legal/setupLiability";
+import {
+  AUTH_DEMO_BANNER,
+  isPlausibleEmail,
+} from "@/lib/auth/session";
 import Link from "next/link";
 
 /**
@@ -24,6 +28,8 @@ export default function OnboardingPage() {
   const seedDemoData = useAppStore((s) => s.seedDemoData);
   const [step, setStep] = useState(0);
   const [a08Ok, setA08Ok] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailErr, setEmailErr] = useState<string | null>(null);
   const caps = webDemoCapabilities();
 
   const finish = () => {
@@ -52,6 +58,9 @@ export default function OnboardingPage() {
             Tracking & Garage funktionieren ohne Konto. Sync erfordert Anmeldung
             (F-ACC-002).
           </p>
+          <p className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+            {AUTH_DEMO_BANNER}
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -60,7 +69,7 @@ export default function OnboardingPage() {
             }}
             className="w-full rounded-xl bg-foreground py-2.5 text-sm font-medium text-background"
           >
-            Mit Apple fortfahren (Demo)
+            Mit Apple fortfahren (lokaler Mock)
           </button>
           <button
             type="button"
@@ -70,17 +79,35 @@ export default function OnboardingPage() {
             }}
             className="w-full rounded-xl border border-border py-2.5 text-sm"
           >
-            Mit Google fortfahren (Demo)
+            Mit Google fortfahren (lokaler Mock)
           </button>
+          <label className="block text-sm">
+            E-Mail (Format-Check, kein Versand)
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailErr(null);
+              }}
+              placeholder="name@domain.tld"
+              className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+            />
+          </label>
+          {emailErr && <p className="text-xs text-error">{emailErr}</p>}
           <button
             type="button"
             onClick={() => {
-              signIn("email", "fahrer@example.com");
+              if (!isPlausibleEmail(email)) {
+                setEmailErr("Bitte gültige E-Mail eingeben.");
+                return;
+              }
+              signIn("email", email.trim());
               setStep(1);
             }}
             className="w-full rounded-xl border border-border py-2.5 text-sm"
           >
-            E-Mail (Demo)
+            E-Mail (lokaler Mock)
           </button>
           <button
             type="button"

@@ -26,6 +26,7 @@ function PostRideContent() {
   );
   const dismissRecommendation = useAppStore((s) => s.dismissRecommendation);
   const submitRideFeedback = useAppStore((s) => s.submitRideFeedback);
+  const setRideConditions = useAppStore((s) => s.setRideConditions);
   const rideFeedbacks = useAppStore((s) => s.rideFeedbacks);
   const bikes = useAppStore((s) => s.bikes);
   const privacyZones = useAppStore((s) => s.privacyZones);
@@ -440,6 +441,27 @@ function PostRideContent() {
         <p className="text-center text-xs text-text-secondary">
           Feedback erfasst{existingFeedback?.skipped || false ? " (übersprungen)" : ""}.
         </p>
+      )}
+
+      {ride && (
+        <label className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!ride.conditions?.wet}
+            onChange={(e) =>
+              setRideConditions(ride.id, {
+                wet: e.target.checked,
+                source: "manual",
+              })
+            }
+          />
+          <span>
+            Nass / Matsch{" "}
+            <span className="text-xs text-text-secondary">
+              (manuell → Verschleiß; keine Wetter-API)
+            </span>
+          </span>
+        </label>
       )}
 
       {/* F-AI-003 EvidenceSheet */}

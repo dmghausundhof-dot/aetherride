@@ -205,7 +205,7 @@ export function MapView({
         </div>
       )}
       <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/80">
-        OSM · Offline-PMTiles in Produktion
+        OSM · PMTiles erst nach G-0 Native (Hook dokumentiert)
       </div>
     </div>
   );

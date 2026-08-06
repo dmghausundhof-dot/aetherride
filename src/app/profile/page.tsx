@@ -12,6 +12,12 @@ import {
   renderG2StudyPlanMarkdown,
 } from "@/lib/sensor/g2StudyPlan";
 import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
+import {
+  gatesOpenSummary,
+  listGateStatuses,
+} from "@/lib/platform/gateStatus";
+import { catalogStats } from "@/lib/catalog/bikes";
+import { pmtilesHookSummary } from "@/lib/platform/nativeContracts";
 
 export default function ProfilePage() {
   const profile = useAppStore((s) => s.riderProfile);
@@ -24,6 +30,7 @@ export default function ProfilePage() {
   const rangeCalibration = useAppStore((s) => s.rangeCalibration);
   const appMode = useAppStore((s) => s.appMode);
   const setAppMode = useAppStore((s) => s.setAppMode);
+  const gateRows = listGateStatuses({ bikeCount: catalogStats().bikes });
 
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({
@@ -47,6 +54,32 @@ export default function ProfilePage() {
 
       <G0StatusPanel />
       <SetupLiabilityNotice variant="short" />
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-1 font-semibold">Gates & Legal</h3>
+        <p className="mb-2 text-xs text-warning">{gatesOpenSummary()}</p>
+        <ul className="space-y-2 text-xs">
+          {gateRows.map((g) => (
+            <li
+              key={g.id}
+              className="rounded-lg border border-border bg-surface-elevated px-2 py-1.5"
+            >
+              <div className="flex justify-between gap-2 font-medium">
+                <span>
+                  {g.id} · {g.titleDe}
+                </span>
+                <span className={g.passed ? "text-success" : "text-warning"}>
+                  {g.passed ? "passed" : "offen"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-text-secondary">{g.packHintDe}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[10px] text-text-secondary">
+          {pmtilesHookSummary()}
+        </p>
+      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 font-semibold">G-2 Studienplan (Fahrwerk)</h3>

@@ -93,40 +93,119 @@ export function markSynced(ids: string[]) {
 
 /**
  * Flush: in Produktion POST /sync mit since=<cursor>.
- * Demo: markiert lokal synced wenn syncEnabled + (optional) online.
+ * Demo: versucht optional /api/sync; sonst lokal markieren.
  */
 export async function flushOpsLog(
   syncEnabled: boolean,
-  opts?: { requireOnline?: boolean; online?: boolean }
+  opts?: {
+    requireOnline?: boolean;
+    online?: boolean;
+    /** Wenn true: POST /api/sync Stub (Echo-Ack), sonst rein lokal */
+    useApiStub?: boolean;
+  }
 ): Promise<{
   flushed: number;
   skipped: boolean;
   reason?: string;
   revision?: string;
+  via?: "local_demo" | "api_stub";
+  attempt?: number;
 }> {
   if (!syncEnabled) {
+    recordFlushAttempt(false);
     return {
       flushed: 0,
       skipped: true,
       reason: "Sync erfordert Konto (F-ACC-002)",
+      attempt: getFlushAttemptCount(),
     };
   }
-  const online = opts?.online ?? (typeof navigator === "undefined" ? true : navigator.onLine);
+  const online =
+    opts?.online ??
+    (typeof navigator === "undefined" ? true : navigator.onLine);
   if (opts?.requireOnline !== false && !online) {
+    recordFlushAttempt(false);
     return {
       flushed: 0,
       skipped: true,
       reason: "Offline — Queue bleibt lokal (NFR-15)",
+      attempt: getFlushAttemptCount(),
     };
   }
   const pending = pendingOps();
   if (!pending.length) return { flushed: 0, skipped: false };
-  // Demo: kein Netzwerk — lokal als synchronisiert markieren
+
+  if (opts?.useApiStub !== false && typeof fetch !== "undefined") {
+    try {
+      const body = buildSyncRequestStub(null);
+      const res = await fetch("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          revision?: string;
+          ackedIds?: string[];
+        };
+        const ids = data.ackedIds?.length
+          ? data.ackedIds
+          : pending.map((p) => p.id);
+        markSynced(ids);
+        const revision = data.revision ?? bumpServerRevisionCursor();
+        setLastFlushAt(new Date().toISOString());
+        recordFlushAttempt(true);
+        return {
+          flushed: ids.length,
+          skipped: false,
+          revision,
+          via: "api_stub",
+          attempt: getFlushAttemptCount(),
+        };
+      }
+    } catch {
+      // Fallback lokal
+    }
+  }
+
   await new Promise((r) => setTimeout(r, 200));
   markSynced(pending.map((p) => p.id));
   const revision = bumpServerRevisionCursor();
   setLastFlushAt(new Date().toISOString());
-  return { flushed: pending.length, skipped: false, revision };
+  recordFlushAttempt(true);
+  return {
+    flushed: pending.length,
+    skipped: false,
+    revision,
+    via: "local_demo",
+    attempt: getFlushAttemptCount(),
+  };
+}
+
+const ATTEMPT_KEY = "aetherride.sync.flushAttempts";
+
+function recordFlushAttempt(success: boolean) {
+  if (typeof window === "undefined") {
+    memoryAttempts = success ? 0 : memoryAttempts + 1;
+    return;
+  }
+  if (success) {
+    localStorage.setItem(ATTEMPT_KEY, "0");
+    return;
+  }
+  const n = getFlushAttemptCount() + 1;
+  localStorage.setItem(ATTEMPT_KEY, String(n));
+}
+
+let memoryAttempts = 0;
+
+export function getFlushAttemptCount(): number {
+  if (typeof window === "undefined") return memoryAttempts;
+  try {
+    return Number(localStorage.getItem(ATTEMPT_KEY) || "0") || 0;
+  } catch {
+    return 0;
+  }
 }
 
 export function opsLogStats() {
@@ -135,6 +214,7 @@ export function opsLogStats() {
     total: all.length,
     pending: all.filter((e) => !e.synced).length,
     synced: all.filter((e) => e.synced).length,
+    flushAttempts: getFlushAttemptCount(),
   };
 }
 
@@ -150,5 +230,25 @@ export function buildSyncRequestStub(since: string | null) {
       client_ts: o.clientTs,
       payload: o.payload,
     })),
+  };
+}
+
+export interface SyncAckResponse {
+  revision: string;
+  ackedIds: string[];
+  conflicts: { operation_id: string; reason: string }[];
+  note: string;
+}
+
+/** Server-Echo für /api/sync — kein Multi-Device-Claim */
+export function buildSyncAckFromRequest(body: {
+  ops?: { operation_id: string }[];
+}): SyncAckResponse {
+  const ids = (body.ops ?? []).map((o) => o.operation_id).filter(Boolean);
+  return {
+    revision: `rev_stub_${Date.now().toString(36)}`,
+    ackedIds: ids,
+    conflicts: [],
+    note: "Demo-Ack — kein echtes Multi-Device-Sync (F-ACC-002 Stub).",
   };
 }

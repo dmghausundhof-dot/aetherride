@@ -2,7 +2,7 @@
  * Regressionschecks F-GAR-005 P1 — immer Spanne, nie Punktwert.
  * Ausführen: npx tsx src/lib/maintenance/wearPrediction.test.ts
  */
-import { forecastWear } from "./wearPrediction";
+import { forecastWear, wetRideShare } from "./wearPrediction";
 import type { Bike, Ride } from "@/types";
 
 function assert(cond: boolean, msg: string) {
@@ -92,5 +92,14 @@ for (const f of forecasts) {
   assert(f.sourceLabel.length > 0, "Quelle angegeben");
   assert(f.reasoning.includes("Spanne") || f.reasoning.length > 40, "Begründung");
 }
+
+assert(wetRideShare([]) === 0.15, "default uncertain");
+assert(wetRideShare(rides) === 0.5, "1 of 2 wet via notes");
+assert(
+  wetRideShare([
+    { ...rides[1], conditions: { wet: true, source: "manual" } },
+  ]) === 1,
+  "manual wet tag"
+);
 
 console.log("wearPrediction.test.ts OK", forecasts.map((f) => f.label));
