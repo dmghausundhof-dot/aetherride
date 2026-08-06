@@ -14,7 +14,11 @@ import { suggestRoutes } from "@/lib/routing/suggestions";
 import { estimateRange } from "@/lib/ebike/range";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
 import { getTrailViewNear } from "@/lib/routing/trailView";
-import { buildDemoElevationProfile } from "@/lib/routing/elevationProfile";
+import {
+  buildDemoElevationProfile,
+  buildElevationProfileFromRoute,
+  pointAtDistanceAlongPlanned,
+} from "@/lib/routing/elevationProfile";
 import {
   ROUTING_PROFILES,
   requestRoute,
@@ -28,9 +32,12 @@ import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView } from "@/components/MapView";
 import { AccessRightsPanel } from "@/components/AccessRightsPanel";
 import {
-  OFFLINE_REGIONS_DEMO,
   canDownloadOfflineOnWeb,
+  listOfflineRegionsWithQueue,
+  markOfflineRegionPackDemo,
+  offlinePackWithinBudget,
   offlineRegionsSummary,
+  queueOfflineRegionInterest,
 } from "@/lib/sync/offlineRegions";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,6 +74,13 @@ export default function DiscoverPage() {
   );
   const [jurisdiction, setJurisdiction] = useState<JurisdictionId>("AT-7");
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
+  const [elevMarker, setElevMarker] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [offlineRegions, setOfflineRegions] = useState(() =>
+    listOfflineRegionsWithQueue()
+  );
   const setPlannedRoute = useAppStore((s) => s.setPlannedRoute);
   const router = useRouter();
 
@@ -137,7 +151,16 @@ export default function DiscoverPage() {
     [heatmapConsent]
   );
   const trail = useMemo(() => getTrailViewNear(47.45, 12.15), []);
-  const elev = useMemo(() => buildDemoElevationProfile(), []);
+  const elev = useMemo(() => {
+    if (routeResult) return buildElevationProfileFromRoute(routeResult);
+    return buildDemoElevationProfile();
+  }, [routeResult]);
+
+  const elevPlanned = useMemo(() => {
+    if (!routeResult) return null;
+    return plannedRouteFromRouteResult(routeResult, "Höhenprofil");
+  }, [routeResult]);
+
   const photo = trail.photos[photoIdx];
 
   return (
@@ -301,26 +324,57 @@ export default function DiscoverPage() {
             <p className="mt-1 text-xs text-text-secondary">
               {offlineRegionsSummary()}
             </p>
-            <ul className="mt-2 space-y-1 text-xs text-text-secondary">
-              {OFFLINE_REGIONS_DEMO.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-2">
-                  <span>
-                    {r.label} · ~{r.sizeMbEstimate} MB
-                  </span>
-                  <button
-                    type="button"
-                    disabled={!canDownloadOfflineOnWeb() || !canUseProFeature("offline")}
-                    onClick={() =>
-                      alert(
-                        canUseProFeature("offline")
-                          ? r.note
-                          : "Offline-Regionen sind Pro (Spec 1.4) — Web-Demo ohne PMTiles."
-                      )
-                    }
-                    className="rounded-lg border border-border px-2 py-1 text-[10px] disabled:opacity-50"
-                  >
-                    Download
-                  </button>
+            <ul className="mt-2 space-y-2 text-xs text-text-secondary">
+              {offlineRegions.map((r) => (
+                <li key={r.id} className="rounded-lg border border-border p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      {r.label} · ~{r.sizeMbEstimate} MB · {r.status}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        disabled={!canUseProFeature("offline")}
+                        onClick={() => {
+                          queueOfflineRegionInterest(r.id);
+                          setOfflineRegions(listOfflineRegionsWithQueue());
+                        }}
+                        className="rounded-lg border border-border px-2 py-1 text-[10px] disabled:opacity-50"
+                      >
+                        Vormerken
+                      </button>
+                      <button
+                        type="button"
+                        disabled={
+                          canDownloadOfflineOnWeb()
+                            ? !canUseProFeature("offline")
+                            : !canUseProFeature("offline")
+                        }
+                        onClick={() => {
+                          if (canDownloadOfflineOnWeb()) {
+                            alert(r.note);
+                            return;
+                          }
+                          // Ehrlich: nur Meta-Pack, kein PMTiles
+                          if (
+                            !offlinePackWithinBudget(
+                              r.sizeMbEstimate,
+                              r.areaKm2
+                            )
+                          ) {
+                            alert("Pack überschreitet NFR-08 Budget-Schätzung.");
+                            return;
+                          }
+                          markOfflineRegionPackDemo(r.id);
+                          setOfflineRegions(listOfflineRegionsWithQueue());
+                        }}
+                        className="rounded-lg border border-border px-2 py-1 text-[10px] disabled:opacity-50"
+                      >
+                        Demo-Pack
+                      </button>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-[10px]">{r.note}</p>
                 </li>
               ))}
             </ul>
@@ -537,11 +591,58 @@ export default function DiscoverPage() {
               (F-NAV-007)
             </div>
             <p className="text-xs text-text-secondary">
-              {elev.totalDistKm.toFixed(1)} km · {elev.totalClimbM} hm ·
+              {routeResult
+                ? "Aus aktueller Demo-Route"
+                : "Demo-Profil (keine Route berechnet)"}{" "}
+              · {elev.totalDistKm.toFixed(1)} km · {elev.totalClimbM} hm ·
               Datenlücke {elev.gapKm.toFixed(1)} km (nicht interpoliert)
             </p>
+            <p className="mt-1 text-[10px] text-text-secondary">
+              Tippe auf das Profil → Marker auf der Karte
+            </p>
           </div>
-          <svg viewBox="0 0 400 120" className="w-full rounded-xl bg-surface">
+          <MapView
+            className="aspect-[16/9] w-full overflow-hidden rounded-2xl"
+            center={
+              elevMarker
+                ? [elevMarker.lng, elevMarker.lat]
+                : elevPlanned?.geometryLngLat?.[0]
+                  ? [
+                      elevPlanned.geometryLngLat[0][0],
+                      elevPlanned.geometryLngLat[0][1],
+                    ]
+                  : [12.15, 47.45]
+            }
+            zoom={12}
+            routeLine={
+              elevPlanned
+                ? elevPlanned.geometryLngLat.map(([lng, lat]) => ({
+                    lat,
+                    lng,
+                  }))
+                : []
+            }
+            marker={elevMarker}
+          />
+          <svg
+            viewBox="0 0 400 120"
+            className="w-full cursor-crosshair rounded-xl bg-surface"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const distKm =
+                ((x - 10) / 380) * Math.max(0.1, elev.totalDistKm);
+              if (elevPlanned) {
+                const pt = pointAtDistanceAlongPlanned(elevPlanned, distKm);
+                if (pt) setElevMarker(pt);
+              } else {
+                setElevMarker({
+                  lat: 47.45 + distKm * 0.002,
+                  lng: 12.15 + distKm * 0.003,
+                });
+              }
+            }}
+          >
             {elev.points.map((p, i) => {
               if (p.elevM == null || i === 0) return null;
               const prev = elev.points[i - 1];
@@ -563,7 +664,6 @@ export default function DiscoverPage() {
                 />
               );
             })}
-            {/* Lücken markieren */}
             {elev.points
               .filter((p) => p.elevM == null)
               .map((p) => (

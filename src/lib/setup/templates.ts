@@ -273,6 +273,54 @@ export const SETUP_TEMPLATES: SetupTemplate[] = [
       "tire_rear.pressure_psi": w > 80 ? 42 : 38,
     }),
   },
+  {
+    id: "tpl-road-clincher",
+    label: "Road Clincher / Tubeless Start",
+    conditions: "general",
+    kind: "editorial_preset",
+    disclaimer:
+      "Ausgangspunkt für ~28 mm Road-Reifen — keine Empfehlung. Hersteller-Maxdruck und Felgenbreite prüfen.",
+    sourceLabel: "Silca / Industriepraxis Road",
+    sourceUrl: "https://silca.cc/",
+    categories: ["road"],
+    resolve: (w) => ({
+      "tire_front.pressure_psi": w > 85 ? 78 : w > 70 ? 72 : 65,
+      "tire_rear.pressure_psi": w > 85 ? 82 : w > 70 ? 75 : 68,
+    }),
+  },
+  {
+    id: "tpl-road-wet",
+    label: "Road nass (−8 % Druck)",
+    conditions: "wet",
+    kind: "editorial_preset",
+    disclaimer: "Redaktioneller Nässe-Startpunkt — Haftung ≠ Sicherheit.",
+    sourceLabel: "Redaktion Road",
+    sourceUrl: "https://silca.cc/",
+    categories: ["road"],
+    resolve: (w) => {
+      const dryF = w > 85 ? 78 : w > 70 ? 72 : 65;
+      const dryR = w > 85 ? 82 : w > 70 ? 75 : 68;
+      return {
+        "tire_front.pressure_psi": Math.round(dryF * 0.92),
+        "tire_rear.pressure_psi": Math.round(dryR * 0.92),
+      };
+    },
+  },
+  {
+    id: "tpl-urban-commute",
+    label: "Urban Pendeln",
+    conditions: "general",
+    kind: "editorial_preset",
+    disclaimer:
+      "Stadt/Hybrid 35–42 mm — Ausgangspunkt. Last/Gepäck erhöhen den Heckdruck.",
+    sourceLabel: "Redaktion Urban",
+    sourceUrl: "https://www.schwalbe.com/",
+    categories: ["urban", "etrekking"],
+    resolve: (w) => ({
+      "tire_front.pressure_psi": w > 90 ? 55 : 48,
+      "tire_rear.pressure_psi": w > 90 ? 60 : 52,
+    }),
+  },
 ];
 
 export function templatesForCategory(category: BikeCategory): SetupTemplate[] {

@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { MapView } from "@/components/MapView";
 import { WebSensorSimulator, type FusedMetrics } from "@/lib/sensor/SensorFusion";
-import { createMotorAdapter } from "@/lib/ebike/MotorSystemAdapter";
 import { createStandardBleClient } from "@/lib/ble/standardSensors";
 import { hintsFromMetrics, speakHint } from "@/lib/sensor/liveHints";
 import { estimateRange } from "@/lib/ebike/range";
@@ -30,6 +29,17 @@ import {
   pointAlongGeometry,
 } from "@/lib/routing/rideHandoff";
 import { evaluateRouteFollow } from "@/lib/routing/routeFollow";
+import {
+  buildManeuversFromPlanned,
+  nextTbtAnnouncement,
+  speakTbt,
+} from "@/lib/routing/turnByTurn";
+import {
+  createMotorAdapter,
+  ManualMotorAdapter,
+  type MotorCapabilities,
+} from "@/lib/ebike/MotorSystemAdapter";
+import { G1_BOSCH_ACCESS_CLEARED } from "@/lib/ble/g1BoschOutreach";
 import Link from "next/link";
 
 export default function RidePage() {
@@ -73,6 +83,10 @@ export default function RidePage() {
   const [bleHr, setBleHr] = useState<number | null>(null);
   const [followHint, setFollowHint] = useState<string | null>(null);
   const [progress01, setProgress01] = useState(0);
+  const [tbtText, setTbtText] = useState<string | null>(null);
+  const [trackSource, setTrackSource] = useState<"gps" | "sim" | null>(null);
+  const [motorCaps, setMotorCaps] = useState<MotorCapabilities | null>(null);
+  const [manualSoc, setManualSoc] = useState(80);
 
   const sensorRef = useRef<WebSensorSimulator | null>(null);
   const motorRef = useRef<ReturnType<typeof createMotorAdapter> | null>(null);
@@ -85,6 +99,11 @@ export default function RidePage() {
   const bottomOutRef = useRef(0);
   const elapsedRef = useRef(0);
   const pausedRef = useRef(false);
+  const lastTbtKeyRef = useRef<string | null>(null);
+  const gpsFixRef = useRef<{ lat: number; lng: number; elev?: number } | null>(
+    null
+  );
+  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -113,6 +132,14 @@ export default function RidePage() {
       setPaused(false);
       setFollowHint(null);
       setProgress01(0);
+      setTbtText(null);
+      setTrackSource(null);
+      lastTbtKeyRef.current = null;
+      gpsFixRef.current = null;
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
       return;
     }
 
@@ -160,12 +187,15 @@ export default function RidePage() {
       });
     });
 
+    // G-1 offen → Stufe 0 Manual (kein Fake-LDI-Claim)
+    const useBosch = !!activeBike?.isEbike && G1_BOSCH_ACCESS_CLEARED;
     const motor = createMotorAdapter({
       isEbike: !!activeBike?.isEbike && appMode === "bike",
-      preferBoschLdi: true,
+      preferBoschLdi: useBosch,
     });
     motorRef.current = motor;
     const caps = motor.capabilities();
+    setMotorCaps(caps);
     motor.onTelemetry((t) => {
       if (pausedRef.current) return;
       if (t.speedKmh != null) sensor.setSpeedKmh(t.speedKmh);
@@ -194,9 +224,11 @@ export default function RidePage() {
           speakHint(liveHints[0].text);
         }
       }
-      void caps;
     });
     motor.connect();
+    if (motor instanceof ManualMotorAdapter) {
+      motor.setManualSoc(manualSoc);
+    }
 
     const ble = createStandardBleClient();
     bleRef.current = ble;
@@ -209,12 +241,33 @@ export default function RidePage() {
     });
     ble.connect();
 
+    // GPS wenn verfügbar — sonst Simulations-Fallback
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          gpsFixRef.current = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            elev: pos.coords.altitude ?? undefined,
+          };
+          setTrackSource("gps");
+        },
+        () => {
+          if (!gpsFixRef.current) setTrackSource("sim");
+        },
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
+      );
+    } else {
+      setTrackSource("sim");
+    }
+
     let t = 0;
     const planned = useAppStore.getState().plannedRoute;
     const geom = planned?.geometryLngLat ?? null;
     const durationTargetSec = Math.max(60, (planned?.durationMin ?? 20) * 60);
     const baseLat = geom?.[0]?.[1] ?? 47.45;
     const baseLng = geom?.[0]?.[0] ?? 12.15;
+    const maneuvers = planned ? buildManeuversFromPlanned(planned) : [];
 
     timerRef.current = setInterval(() => {
       if (pausedRef.current) return;
@@ -223,22 +276,37 @@ export default function RidePage() {
       setElapsed(t);
       let lat: number;
       let lng: number;
+      let elev: number | undefined;
       const progress = Math.min(0.98, t / durationTargetSec);
       setProgress01(progress);
-      if (geom && geom.length >= 2) {
+
+      const gps = gpsFixRef.current;
+      if (gps) {
+        lat = gps.lat;
+        lng = gps.lng;
+        elev = gps.elev;
+      } else if (geom && geom.length >= 2) {
         const pt = pointAlongGeometry(geom, progress);
-        // gelegentlich leichter Off-Route-Drift für Demo-Hinweis
         const drift = t % 47 === 0 ? 0.0009 : 0.00005;
         lat = pt.lat + (Math.random() - 0.5) * drift;
         lng = pt.lng + (Math.random() - 0.5) * drift;
+        elev = 800 + (planned?.elevationGainM ?? 400) * Math.min(1, progress);
+        setTrackSource((s) => s ?? "sim");
       } else {
         lat =
           baseLat + Math.sin(t / 40) * 0.008 + (Math.random() - 0.5) * 0.0003;
         lng = baseLng + t * 0.00015 + Math.cos(t / 30) * 0.004;
+        elev = 800 + (planned?.elevationGainM ?? 400) * Math.min(1, progress);
+        setTrackSource((s) => s ?? "sim");
       }
-      const elev =
-        800 + (planned?.elevationGainM ?? 400) * Math.min(1, progress);
-      const point = { lat, lng, elev, time: t };
+      const point = {
+        lat,
+        lng,
+        elev:
+          elev ??
+          800 + (planned?.elevationGainM ?? 400) * Math.min(1, progress),
+        time: t,
+      };
       setTrack((prev) => [...prev.slice(-400), { lat, lng }]);
       appendTrackPoint(point);
 
@@ -249,6 +317,26 @@ export default function RidePage() {
       } else {
         setFollowHint(null);
       }
+
+      // F-NAV-003 Live Turn-by-Turn
+      if (planned && maneuvers.length > 0) {
+        const alongM = planned.distanceM * progress;
+        const speed =
+          useAppStore.getState().boschLive?.speed ??
+          (planned.distanceM / durationTargetSec) * 3.6;
+        const ann = nextTbtAnnouncement({
+          maneuvers,
+          distanceAlongM: alongM,
+          speedKmh: speed,
+          lang: "de",
+          lastKey: lastTbtKeyRef.current,
+        });
+        if (ann) {
+          lastTbtKeyRef.current = ann.key;
+          setTbtText(ann.text);
+          speakTbt(ann.text, "de");
+        }
+      }
     }, 1000);
 
     return () => {
@@ -256,6 +344,10 @@ export default function RidePage() {
       motor.disconnect();
       ble.disconnect();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRiding, updateBoschLive, updateLiveMetrics, appendTrackPoint]);
@@ -361,9 +453,10 @@ export default function RidePage() {
         zoom={13}
         track={track}
         routeLine={routePreview}
+        showUserLocation={trackSource === "gps"}
       />
 
-      {(hint || followHint) && isRiding && (
+      {(tbtText || hint || followHint) && isRiding && (
         <div
           className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
             followHint?.includes("Abseits")
@@ -372,9 +465,74 @@ export default function RidePage() {
           }`}
         >
           <Volume2 className="h-4 w-4 shrink-0" />
-          <span>{followHint ?? hint}</span>
+          <span>{followHint ?? tbtText ?? hint}</span>
         </div>
       )}
+
+      {isRiding && trackSource && (
+        <p className="text-center text-[10px] text-text-secondary">
+          Spur: {trackSource === "gps" ? "GPS" : "Simulation (kein GPS-Fix)"}
+          {motorCaps?.vendor === "manual" && activeBike?.isEbike
+            ? " · Motor Stufe 0 (G-1 offen)"
+            : ""}
+        </p>
+      )}
+
+      {!isRiding &&
+        activeBike?.isEbike &&
+        !G1_BOSCH_ACCESS_CLEARED &&
+        appMode === "bike" && (
+          <label className="rounded-xl border border-border bg-surface p-3 text-sm">
+            <span className="text-xs text-text-secondary">
+              Manueller Akku-SOC (Stufe 0 — G-1 Bosch LDI offen)
+            </span>
+            <div className="mt-1 flex items-center gap-3">
+              <input
+                type="range"
+                min={5}
+                max={100}
+                value={manualSoc}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setManualSoc(v);
+                  updateBoschLive({ soc: v });
+                }}
+                className="flex-1"
+              />
+              <span className="w-10 tabular-nums text-sm font-medium">
+                {manualSoc}%
+              </span>
+            </div>
+          </label>
+        )}
+
+      {isRiding &&
+        motorCaps?.vendor === "manual" &&
+        activeBike?.isEbike &&
+        appMode === "bike" && (
+          <label className="rounded-xl border border-border bg-surface p-3 text-sm">
+            <span className="text-xs text-text-secondary">SOC manuell</span>
+            <div className="mt-1 flex items-center gap-3">
+              <input
+                type="range"
+                min={5}
+                max={100}
+                value={manualSoc}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setManualSoc(v);
+                  const m = motorRef.current;
+                  if (m instanceof ManualMotorAdapter) m.setManualSoc(v);
+                  updateBoschLive({ soc: v });
+                }}
+                className="flex-1"
+              />
+              <span className="w-10 tabular-nums text-sm font-medium">
+                {manualSoc}%
+              </span>
+            </div>
+          </label>
+        )}
 
       {isRiding ? (
         <div aria-live="polite" className="space-y-3">
@@ -482,7 +640,10 @@ export default function RidePage() {
                   Durchschlag {liveMetrics.bottomOutCount ?? 0}×
                 </p>
               )}
-              {boschConnected && boschLive && activeBike?.isEbike && (
+              {boschConnected &&
+                boschLive &&
+                activeBike?.isEbike &&
+                motorCaps?.vendor === "bosch_ldi" && (
                 <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-[11px]">
                   <Zap className="h-3.5 w-3.5 text-accent" />
                   {boschLive.riderPower} W · {boschLive.cadence} rpm
@@ -490,6 +651,15 @@ export default function RidePage() {
                   {bleCadence != null ? ` · Cad ${bleCadence}` : ""}
                 </div>
               )}
+              {activeBike?.isEbike &&
+                motorCaps?.vendor === "manual" &&
+                (bleHr != null || bleCadence != null) && (
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-[11px]">
+                    BLE
+                    {bleHr != null ? ` · HR ${bleHr}` : ""}
+                    {bleCadence != null ? ` · Cad ${bleCadence}` : ""}
+                  </div>
+                )}
             </div>
           )}
         </div>

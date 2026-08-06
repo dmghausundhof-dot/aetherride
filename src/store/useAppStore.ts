@@ -51,6 +51,7 @@ import {
 } from "@/lib/ai/setupRecommendation";
 import {
   createEmptyCalibration,
+  invalidateCalibration,
   isCalibrationValid,
   type BikeCalibration,
 } from "@/lib/sensor/calibration";
@@ -795,10 +796,27 @@ export const useAppStore = create<AppState>()(
             maintenanceIntervals: [...s.maintenanceIntervals, ...neu],
           }));
         }
+        // F-SEN-002: Kalibrierung verfällt bei Fahrwerks-/Halterungswechsel
+        if (slot === "fork" || slot === "rear_shock") {
+          const cal = get().bikeCalibrations[bikeId];
+          if (cal) {
+            set((s) => ({
+              bikeCalibrations: {
+                ...s.bikeCalibrations,
+                [bikeId]: invalidateCalibration(
+                  cal,
+                  `Komponente gewechselt: ${slot}`
+                ),
+              },
+            }));
+          }
+        }
         return comp.id;
       },
 
       removeComponent: (bikeId, componentId) => {
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        const comp = bike?.components.find((c) => c.id === componentId);
         const now = new Date().toISOString();
         set((s) => ({
           bikes: s.bikes.map((b) =>
@@ -813,6 +831,20 @@ export const useAppStore = create<AppState>()(
               : b
           ),
         }));
+        if (comp && (comp.slot === "fork" || comp.slot === "rear_shock")) {
+          const cal = get().bikeCalibrations[bikeId];
+          if (cal) {
+            set((s) => ({
+              bikeCalibrations: {
+                ...s.bikeCalibrations,
+                [bikeId]: invalidateCalibration(
+                  cal,
+                  `Komponente entfernt: ${comp.slot}`
+                ),
+              },
+            }));
+          }
+        }
       },
 
       moveComponent: (componentId, fromBikeId, toBikeId) => {
