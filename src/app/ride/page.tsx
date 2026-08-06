@@ -1,10 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { bikeTypeLabel, formatDuration } from "@/lib/utils";
-import { Play, Square, Activity, Gauge, Zap, Volume2 } from "lucide-react";
+import {
+  Play,
+  Square,
+  Pause,
+  Activity,
+  Gauge,
+  Zap,
+  Volume2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { MapView } from "@/components/MapView";
 import { WebSensorSimulator, type FusedMetrics } from "@/lib/sensor/SensorFusion";
 import { createMotorAdapter } from "@/lib/ebike/MotorSystemAdapter";
@@ -19,13 +29,16 @@ import {
   geometryToPreviewTrack,
   pointAlongGeometry,
 } from "@/lib/routing/rideHandoff";
+import { evaluateRouteFollow } from "@/lib/routing/routeFollow";
 import Link from "next/link";
 
 export default function RidePage() {
   const router = useRouter();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
+  const setActiveBike = useAppStore((s) => s.setActiveBike);
   const isRiding = useAppStore((s) => s.isRiding);
+  const currentRide = useAppStore((s) => s.currentRide);
   const liveMetrics = useAppStore((s) => s.liveMetrics);
   const boschLive = useAppStore((s) => s.boschLive);
   const boschConnected = useAppStore((s) => s.boschConnected);
@@ -54,8 +67,13 @@ export default function RidePage() {
   const [track, setTrack] = useState<{ lat: number; lng: number }[]>([]);
   const [hint, setHint] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [bleCadence, setBleCadence] = useState<number | null>(null);
   const [bleHr, setBleHr] = useState<number | null>(null);
+  const [followHint, setFollowHint] = useState<string | null>(null);
+  const [progress01, setProgress01] = useState(0);
+
   const sensorRef = useRef<WebSensorSimulator | null>(null);
   const motorRef = useRef<ReturnType<typeof createMotorAdapter> | null>(null);
   const bleRef = useRef<ReturnType<typeof createStandardBleClient> | null>(null);
@@ -66,6 +84,11 @@ export default function RidePage() {
   const hardImpactsRef = useRef(0);
   const bottomOutRef = useRef(0);
   const elapsedRef = useRef(0);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   const range =
     activeBike?.isEbike && rangePro && appMode === "bike"
@@ -87,24 +110,26 @@ export default function RidePage() {
       setElapsed(0);
       setHint(null);
       setConfirmEnd(false);
+      setPaused(false);
+      setFollowHint(null);
+      setProgress01(0);
       return;
     }
 
     const sensor = new WebSensorSimulator();
-    sensor
-      .getEngine()
-      .updateConfig({
-        mountMode: bikeCal?.mountMode ?? "UNKNOWN",
-        calibrated: !!bikeCal && susp.available,
-        terrainClass: "s2",
-        sampleRateHz: 200,
-      });
+    sensor.getEngine().updateConfig({
+      mountMode: bikeCal?.mountMode ?? "UNKNOWN",
+      calibrated: !!bikeCal && susp.available,
+      terrainClass: "s2",
+      sampleRateHz: 200,
+    });
     sensorRef.current = sensor;
     let impactTotal = 0;
     hardImpactsRef.current = 0;
     bottomOutRef.current = 0;
 
     sensor.start((m: FusedMetrics) => {
+      if (pausedRef.current) return;
       if (m.impactDetected) {
         impactTotal += 1;
         impactStreakRef.current += 1;
@@ -117,7 +142,6 @@ export default function RidePage() {
       if (m.bottomOut) bottomOutRef.current += 1;
 
       const flow = sensor.getEngine().getFlowScore(elapsedRef.current);
-
       updateLiveMetrics({
         gForcePeak: m.gForcePeak,
         gForceRms: m.gForceRms,
@@ -143,6 +167,7 @@ export default function RidePage() {
     motorRef.current = motor;
     const caps = motor.capabilities();
     motor.onTelemetry((t) => {
+      if (pausedRef.current) return;
       if (t.speedKmh != null) sensor.setSpeedKmh(t.speedKmh);
       updateBoschLive({
         speed: t.speedKmh ?? 0,
@@ -162,7 +187,10 @@ export default function RidePage() {
       });
       if (liveHints[0]) {
         setHint(liveHints[0].text);
-        if (liveHints[0].kind === "safety" || liveHints[0].kind === "bracketing") {
+        if (
+          liveHints[0].kind === "safety" ||
+          liveHints[0].kind === "bracketing"
+        ) {
           speakHint(liveHints[0].text);
         }
       }
@@ -184,37 +212,43 @@ export default function RidePage() {
     let t = 0;
     const planned = useAppStore.getState().plannedRoute;
     const geom = planned?.geometryLngLat ?? null;
-    const durationTargetSec = Math.max(
-      60,
-      (planned?.durationMin ?? 20) * 60
-    );
+    const durationTargetSec = Math.max(60, (planned?.durationMin ?? 20) * 60);
     const baseLat = geom?.[0]?.[1] ?? 47.45;
     const baseLng = geom?.[0]?.[0] ?? 12.15;
+
     timerRef.current = setInterval(() => {
+      if (pausedRef.current) return;
       t += 1;
       elapsedRef.current = t;
       setElapsed(t);
       let lat: number;
       let lng: number;
+      const progress = Math.min(0.98, t / durationTargetSec);
+      setProgress01(progress);
       if (geom && geom.length >= 2) {
-        const progress = Math.min(0.98, t / durationTargetSec);
         const pt = pointAlongGeometry(geom, progress);
-        lat = pt.lat + (Math.random() - 0.5) * 0.00008;
-        lng = pt.lng + (Math.random() - 0.5) * 0.00008;
+        // gelegentlich leichter Off-Route-Drift für Demo-Hinweis
+        const drift = t % 47 === 0 ? 0.0009 : 0.00005;
+        lat = pt.lat + (Math.random() - 0.5) * drift;
+        lng = pt.lng + (Math.random() - 0.5) * drift;
       } else {
         lat =
-          baseLat +
-          Math.sin(t / 40) * 0.008 +
-          (Math.random() - 0.5) * 0.0003;
+          baseLat + Math.sin(t / 40) * 0.008 + (Math.random() - 0.5) * 0.0003;
         lng = baseLng + t * 0.00015 + Math.cos(t / 30) * 0.004;
       }
       const elev =
-        800 +
-        ((planned?.elevationGainM ?? 400) *
-          Math.min(1, t / durationTargetSec));
+        800 + (planned?.elevationGainM ?? 400) * Math.min(1, progress);
       const point = { lat, lng, elev, time: t };
       setTrack((prev) => [...prev.slice(-400), { lat, lng }]);
       appendTrackPoint(point);
+
+      const follow = evaluateRouteFollow(planned, { lat, lng }, progress);
+      if (follow?.hintDe) {
+        setFollowHint(follow.hintDe);
+        if (follow.offRoute) speakHint(follow.hintDe);
+      } else {
+        setFollowHint(null);
+      }
     }, 1000);
 
     return () => {
@@ -247,12 +281,18 @@ export default function RidePage() {
   const routePreview = plannedRoute
     ? geometryToPreviewTrack(plannedRoute.geometryLngLat)
     : [];
-  const mapCenter: [number, number] = plannedRoute?.geometryLngLat?.[0]
-    ? [
-        plannedRoute.geometryLngLat[0][0],
-        plannedRoute.geometryLngLat[0][1],
-      ]
-    : [12.15, 47.45];
+  const mapCenter: [number, number] = track[track.length - 1]
+    ? [track[track.length - 1].lng, track[track.length - 1].lat]
+    : plannedRoute?.geometryLngLat?.[0]
+      ? [plannedRoute.geometryLngLat[0][0], plannedRoute.geometryLngLat[0][1]]
+      : [12.15, 47.45];
+
+  const speedKmh = boschLive?.speed ?? 0;
+  const distanceM = currentRide?.distanceM ?? 0;
+  const elevM = useMemo(() => {
+    if (!plannedRoute) return Math.round(distanceM * 0.04);
+    return Math.round(plannedRoute.elevationGainM * progress01);
+  }, [plannedRoute, distanceM, progress01]);
 
   return (
     <div className="flex flex-col gap-4 p-4 pt-6">
@@ -262,16 +302,35 @@ export default function RidePage() {
         </h1>
         {activeBike && appMode === "bike" && (
           <p className="text-sm text-text-secondary">
-            {activeBike.name} · {bikeTypeLabel(activeBike.type)}
+            {activeBike.name}
             {plannedRoute ? ` · ${plannedRoute.name}` : ""}
           </p>
         )}
-        {appMode === "hiking" && (
-          <p className="text-sm text-text-secondary">
-            Hiking-Modus — Fahrwerk/Bracketing ausgeblendet (Spec 2.8)
-          </p>
-        )}
       </header>
+
+      {!isRiding && bikes.length > 1 && appMode === "bike" && (
+        <section className="rounded-xl border border-border bg-surface p-3">
+          <p className="mb-2 text-xs font-medium text-text-secondary">
+            Bike wählen
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {bikes.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setActiveBike(b.id)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                  b.id === activeBike?.id
+                    ? "bg-accent text-white"
+                    : "bg-surface-elevated text-text-secondary"
+                }`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {plannedRoute && !isRiding && (
         <div className="rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
@@ -290,7 +349,7 @@ export default function RidePage() {
               onClick={() => setPlannedRoute(null)}
               className="text-xs text-text-secondary"
             >
-              Route verwerfen
+              Freier Ride
             </button>
           </div>
         </div>
@@ -304,153 +363,158 @@ export default function RidePage() {
         routeLine={routePreview}
       />
 
-      {hint && isRiding && (
-        <div className="flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
-          <Volume2 className="h-4 w-4 text-accent" />
-          <span>{hint}</span>
-          <span className="ml-auto text-[10px] text-text-secondary">
-            ≤6 Wörter · F-SEN-005
-          </span>
+      {(hint || followHint) && isRiding && (
+        <div
+          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+            followHint?.includes("Abseits")
+              ? "border border-warning/50 bg-warning/15"
+              : "border border-accent/40 bg-accent/10"
+          }`}
+        >
+          <Volume2 className="h-4 w-4 shrink-0" />
+          <span>{followHint ?? hint}</span>
         </div>
       )}
 
-      {range && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
-          Restreichweite ca.{" "}
-          <span className="font-semibold text-accent">
-            {range.kmLow}–{range.kmHigh} km
-          </span>
-          <span className="text-xs text-text-secondary">
-            {" "}
-            · {range.confidence}
-          </span>
-        </div>
-      )}
+      {isRiding ? (
+        <div aria-live="polite" className="space-y-3">
+          <div className="text-center">
+            <div className="text-5xl font-bold tracking-tight tabular-nums">
+              {formatDuration(elapsed)}
+            </div>
+            {paused && (
+              <p className="mt-1 text-xs font-medium text-warning">Pausiert</p>
+            )}
+          </div>
 
-      {isRiding && liveMetrics ? (
-        <div aria-live="polite" aria-atomic="false" aria-label="Live-Metriken">
-          <div className="grid grid-cols-2 gap-3">
-            <MetricCard
-              icon={<Gauge className="h-5 w-5" aria-hidden />}
-              label="G-Force Peak"
-              value={`${liveMetrics.gForcePeak} g`}
-              accent
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <Glance
+              label="km/h"
+              value={speedKmh ? String(Math.round(speedKmh)) : "—"}
             />
-            <MetricCard
-              icon={<Activity className="h-5 w-5" />}
-              label="Lean (v·ω/g)"
+            <Glance
+              label="km"
+              value={(distanceM / 1000).toFixed(distanceM > 1000 ? 1 : 2)}
+            />
+            <Glance label="hm" value={String(elevM)} />
+            <Glance
+              label="Akku"
               value={
-                liveMetrics.leanAngleMax
-                  ? `${liveMetrics.leanAngleMax}°`
+                activeBike?.isEbike && boschLive
+                  ? `${boschLive.soc}%`
                   : "—"
               }
             />
-            <MetricCard
-              icon={<Activity className="h-5 w-5" />}
-              label="Impacts"
-              value={`${liveMetrics.impactCount}`}
-            />
-            <MetricCard
-              icon={<Activity className="h-5 w-5" />}
-              label="Flow Score"
-              value={
-                liveMetrics.flowScore > 0 ? `${liveMetrics.flowScore}` : "…"
-              }
-              accent
-            />
           </div>
 
-          {liveMetrics.flowParts && (
-            <div className="rounded-xl border border-border bg-surface p-3 text-xs">
-              <div className="mb-2 font-medium">Flow-Teilwerte (F-SEN-004)</div>
-              <div className="grid grid-cols-2 gap-2">
-                <span>Konstanz {liveMetrics.flowParts.speedConstancy}</span>
-                <span>Laufruhe {liveMetrics.flowParts.smoothness}</span>
-                <span>Bremsen {liveMetrics.flowParts.brakeEconomy}</span>
-                <span>Linie {liveMetrics.flowParts.lineStability}</span>
-              </div>
-              <p className="mt-2 text-[10px] text-text-secondary">
-                Nur eigene Historie · Terrain {liveMetrics.flowTerrainClass}
-              </p>
+          {plannedRoute && (
+            <div className="rounded-xl bg-surface-elevated px-3 py-2 text-xs text-text-secondary">
+              Route {Math.round(progress01 * 100)} % · Rest ca.{" "}
+              {(
+                (plannedRoute.distanceM * (1 - progress01)) /
+                1000
+              ).toFixed(1)}{" "}
+              km
             </div>
           )}
 
-          {ui.suspensionMetrics ? (
-            susp.available ? (
-              <div className="rounded-xl border border-border bg-surface p-3 text-xs">
-                <div className="mb-1 font-medium">Fahrwerk</div>
-                {liveMetrics.fniGated ? (
-                  <p className="text-warning">
-                    FNI {liveMetrics.fni ?? "—"} (Index) · Gate G-2 offen — keine
-                    mm/%-Angabe, Feature noch nicht live.
-                  </p>
-                ) : (
-                  <p>
-                    FNI {liveMetrics.fni} — {liveMetrics.fniReference}
-                  </p>
-                )}
-                <p className="mt-1 text-text-secondary">
-                  Aktivität RMS {liveMetrics.suspensionActivityRms ?? "—"} ·
-                  Durchschlagsverdacht {liveMetrics.bottomOutCount ?? 0}×
-                </p>
-              </div>
+          {range && (
+            <p className="text-center text-xs text-text-secondary">
+              Restreichweite {range.kmLow}–{range.kmHigh} km
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            className="flex w-full items-center justify-center gap-1 text-xs text-text-secondary"
+          >
+            {showDetails ? (
+              <>
+                Details aus <ChevronUp className="h-3.5 w-3.5" />
+              </>
             ) : (
-              <div className="rounded-xl border border-border bg-surface p-3 text-sm">
-                {susp.message}
+              <>
+                Sensor-Details <ChevronDown className="h-3.5 w-3.5" />
+              </>
+            )}
+          </button>
+
+          {showDetails && liveMetrics && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <MetricCard
+                  icon={<Gauge className="h-4 w-4" />}
+                  label="G-Peak"
+                  value={`${liveMetrics.gForcePeak} g`}
+                />
+                <MetricCard
+                  icon={<Activity className="h-4 w-4" />}
+                  label="Lean"
+                  value={
+                    liveMetrics.leanAngleMax
+                      ? `${liveMetrics.leanAngleMax}°`
+                      : "—"
+                  }
+                />
+                <MetricCard
+                  icon={<Activity className="h-4 w-4" />}
+                  label="Impacts"
+                  value={`${liveMetrics.impactCount}`}
+                />
+                <MetricCard
+                  icon={<Activity className="h-4 w-4" />}
+                  label="Flow"
+                  value={
+                    liveMetrics.flowScore > 0
+                      ? `${liveMetrics.flowScore}`
+                      : "…"
+                  }
+                  accent
+                />
               </div>
-            )
-          ) : null}
+              {ui.suspensionMetrics && (
+                <p className="rounded-lg bg-surface-elevated px-2 py-1.5 text-[11px] text-text-secondary">
+                  {liveMetrics.fniGated
+                    ? `Fahrwerk-Index ${liveMetrics.fni ?? "—"} · Validierung ausstehend`
+                    : `FNI ${liveMetrics.fni}`}
+                  {" · "}
+                  Durchschlag {liveMetrics.bottomOutCount ?? 0}×
+                </p>
+              )}
+              {boschConnected && boschLive && activeBike?.isEbike && (
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-[11px]">
+                  <Zap className="h-3.5 w-3.5 text-accent" />
+                  {boschLive.riderPower} W · {boschLive.cadence} rpm
+                  {bleHr != null ? ` · HR ${bleHr}` : ""}
+                  {bleCadence != null ? ` · Cad ${bleCadence}` : ""}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface p-5 text-center text-sm text-text-secondary">
-          <p className="mb-1 font-medium text-foreground">Sensor-Pipeline bereit</p>
-          <p>
-            Spec: 200 Hz Accel/Gyro in 1-s-Batches · Lean = atan(v·ω/g) ab 8
-            km/h · keine mm-Federweg-Fantasie.
-          </p>
+        <div className="rounded-2xl border border-border bg-surface p-4 text-center text-sm text-text-secondary">
+          {activeBike
+            ? `${activeBike.name} · ${bikeTypeLabel(activeBike.type)} — bereit`
+            : "Bitte Bike in der Garage anlegen"}
         </div>
       )}
 
-      {isRiding && boschConnected && boschLive && appMode === "bike" && (
-        <div className="rounded-2xl border border-primary/30 bg-primary/15 p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-accent">
-            <Zap className="h-4 w-4" /> MotorSystemAdapter (LDI read-only)
-          </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div>
-              <div className="text-xl font-bold tabular-nums">{boschLive.speed}</div>
-              <div className="text-[10px] text-text-secondary">km/h</div>
-            </div>
-            <div>
-              <div className="text-xl font-bold tabular-nums">{boschLive.soc}%</div>
-              <div className="text-[10px] text-text-secondary">SOC</div>
-            </div>
-            <div>
-              <div className="text-xl font-bold tabular-nums">
-                {boschLive.riderPower}
-              </div>
-              <div className="text-[10px] text-text-secondary">W Rider</div>
-            </div>
-            <div>
-              <div className="text-xl font-bold tabular-nums">{boschLive.cadence}</div>
-              <div className="text-[10px] text-text-secondary">rpm</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isRiding && (bleCadence != null || bleHr != null) && (
-        <div className="rounded-xl border border-border bg-surface px-3 py-2 text-xs text-text-secondary">
-          BLE Standard (F-EBK-003): Cadence {bleCadence ?? "—"} rpm · HR{" "}
-          {bleHr ?? "—"} bpm
-        </div>
-      )}
-
-      <div className="flex flex-col items-center gap-4 pt-2">
+      <div className="flex items-center justify-center gap-6 pt-1">
         {isRiding && (
-          <div className="text-5xl font-bold tracking-tight tabular-nums">
-            {formatDuration(elapsed)}
-          </div>
+          <button
+            type="button"
+            onClick={() => setPaused((p) => !p)}
+            aria-label={paused ? "Fortsetzen" : "Pause"}
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface-elevated"
+          >
+            {paused ? (
+              <Play className="ml-0.5 h-6 w-6" />
+            ) : (
+              <Pause className="h-6 w-6" />
+            )}
+          </button>
         )}
         {!isRiding ? (
           <button
@@ -476,14 +540,25 @@ export default function RidePage() {
             <Square className="h-9 w-9 fill-current" aria-hidden />
           </button>
         )}
-        <p className="text-sm text-text-secondary">
-          {isRiding
-            ? confirmEnd
-              ? "Nochmal tippen zum Beenden"
-              : "Beenden erfordert 2 Tipps"
-            : "Tippen zum Starten"}
-        </p>
       </div>
+      <p className="text-center text-sm text-text-secondary">
+        {isRiding
+          ? confirmEnd
+            ? "Nochmal tippen zum Beenden"
+            : paused
+              ? "Pause — Spur gestoppt"
+              : "Pause · Beenden mit 2 Tipps"
+          : "Tippen zum Starten"}
+      </p>
+    </div>
+  );
+}
+
+function Glance({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface px-1 py-2">
+      <div className="text-xl font-bold tabular-nums">{value}</div>
+      <div className="text-[10px] text-text-secondary">{label}</div>
     </div>
   );
 }
@@ -506,7 +581,7 @@ function MetricCard({
         <span className="text-xs">{label}</span>
       </div>
       <div
-        className={`text-2xl font-bold tabular-nums ${accent ? "text-accent" : ""}`}
+        className={`text-xl font-bold tabular-nums ${accent ? "text-accent" : ""}`}
       >
         {value}
       </div>

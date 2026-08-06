@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
-import { Check, X, TrendingUp, Wrench, ArrowLeft, Download } from "lucide-react";
+import { Check, X, TrendingUp, Wrench, ArrowLeft, Download, Share2 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useMemo, useState } from "react";
 import type { RideFeedback } from "@/types";
@@ -12,6 +12,7 @@ import { MapView } from "@/components/MapView";
 import { downloadText } from "@/lib/export/gpx";
 import { rideToGpx } from "@/lib/export/gpx";
 import { downloadFit, rideToFit } from "@/lib/export/fit";
+import { copyRideShareText, renderRideShareText } from "@/lib/export/rideShare";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -169,6 +170,26 @@ function PostRideContent() {
           >
             <Download className="h-3.5 w-3.5" /> FIT
           </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await copyRideShareText(ride, bike?.name);
+              if (!ok) {
+                alert(renderRideShareText(ride, bike?.name));
+              } else {
+                alert("Zusammenfassung kopiert — z. B. WhatsApp einfügen.");
+              }
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Teilen
+          </button>
+          <Link
+            href="/garage"
+            className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-xs text-text-secondary"
+          >
+            Bracketing / Setup
+          </Link>
           <Link
             href="/privacy"
             className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-xs text-text-secondary"

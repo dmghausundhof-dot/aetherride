@@ -464,6 +464,31 @@ export default function PrivacyExportPage() {
           >
             Strava-Activity-Stub (ohne OAuth)
           </button>
+          <button
+            type="button"
+            disabled={rides.length === 0}
+            onClick={() => {
+              const withTrack = rides.filter((r) => r.track && r.track.length >= 2);
+              const list = withTrack.length > 0 ? withTrack : rides.slice(0, 10);
+              const bikeName = (id: string) =>
+                bikes.find((b) => b.id === id)?.name;
+              const bundle = list
+                .map(
+                  (r, i) =>
+                    `===== ${i + 1}. ${r.plannedRouteName ?? r.id.slice(0, 8)} =====\n` +
+                    rideToGpx(r, bikeName(r.bikeId))
+                )
+                .join("\n\n");
+              downloadText(
+                "aetherride-rides-batch.gpx.txt",
+                bundle,
+                "text/plain;charset=utf-8"
+              );
+            }}
+            className="rounded-xl border border-accent/40 bg-accent/10 py-2.5 text-sm font-medium disabled:opacity-40"
+          >
+            Alle Rides als GPX-Batch (kein Paywall)
+          </button>
         </div>
         <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-surface-elevated p-2 text-[10px] text-text-secondary">
           {jsonPreview}
