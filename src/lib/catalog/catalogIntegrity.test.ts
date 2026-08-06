@@ -11,10 +11,10 @@ function assert(cond: boolean, msg: string) {
 }
 
 const stats = catalogStats();
-assert(stats.manufacturers >= 20, `Erwarte ≥20 Hersteller, got ${stats.manufacturers}`);
-assert(stats.bikes >= 22, `Erwarte ≥22 Bikes, got ${stats.bikes}`);
-assert(COMPONENT_CATALOG.length >= 110, `Erwarte ≥110 Komponenten, got ${COMPONENT_CATALOG.length}`);
-assert(COMPATIBILITY_RULES.length >= 27, `Erwarte ≥27 Regeln, got ${COMPATIBILITY_RULES.length}`);
+assert(stats.manufacturers >= 26, `Erwarte ≥26 Hersteller, got ${stats.manufacturers}`);
+assert(stats.bikes >= 28, `Erwarte ≥28 Bikes, got ${stats.bikes}`);
+assert(COMPONENT_CATALOG.length >= 120, `Erwarte ≥120 Komponenten, got ${COMPONENT_CATALOG.length}`);
+assert(COMPATIBILITY_RULES.length >= 30, `Erwarte ≥30 Regeln, got ${COMPATIBILITY_RULES.length}`);
 
 const ids = new Set(COMPONENT_CATALOG.map((c) => c.id));
 assert(ids.size === COMPONENT_CATALOG.length, "Doppelte Komponenten-IDs");
