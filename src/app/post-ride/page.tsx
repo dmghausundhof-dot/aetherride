@@ -3,11 +3,15 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
-import { Check, X, TrendingUp, Wrench, ArrowLeft } from "lucide-react";
+import { Check, X, TrendingUp, Wrench, ArrowLeft, Download } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import type { RideFeedback } from "@/types";
 import { SetupLiabilityNotice } from "@/components/SetupLiabilityNotice";
+import { MapView } from "@/components/MapView";
+import { downloadText } from "@/lib/export/gpx";
+import { rideToGpx } from "@/lib/export/gpx";
+import { downloadFit, rideToFit } from "@/lib/export/fit";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -20,9 +24,21 @@ function PostRideContent() {
   const submitRideFeedback = useAppStore((s) => s.submitRideFeedback);
   const rideFeedbacks = useAppStore((s) => s.rideFeedbacks);
   const bikes = useAppStore((s) => s.bikes);
+  const privacyZones = useAppStore((s) => s.privacyZones);
 
   const ride = rides.find((r) => r.id === rideId) || rides[0];
   const bike = ride ? bikes.find((b) => b.id === ride.bikeId) : null;
+  const trackPreview = useMemo(
+    () =>
+      (ride?.track ?? []).map((p) => ({
+        lat: p.lat,
+        lng: p.lng,
+      })),
+    [ride]
+  );
+  const mapCenter: [number, number] = trackPreview[0]
+    ? [trackPreview[0].lng, trackPreview[0].lat]
+    : [12.15, 47.45];
   const rec = recommendations.find(
     (r) => r.relatedRideId === ride?.id && r.status === "shown"
   );
@@ -77,6 +93,7 @@ function PostRideContent() {
         {bike && (
           <p className="mb-3 text-sm text-text-secondary">
             {bike.name} · {bikeTypeLabel(ride.sportType)}
+            {ride.plannedRouteName ? ` · ${ride.plannedRouteName}` : ""}
           </p>
         )}
         <div className="grid grid-cols-2 gap-4">
@@ -104,6 +121,60 @@ function PostRideContent() {
             </div>
             <div className="text-xs text-text-secondary">Flow Score</div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">Deine Spur</h3>
+        {trackPreview.length >= 2 ? (
+          <>
+            <MapView
+              className="aspect-[4/3] w-full"
+              center={mapCenter}
+              zoom={12}
+              track={trackPreview}
+            />
+            <p className="mt-2 text-[11px] text-text-secondary">
+              {trackPreview.length} GPS-Punkte gespeichert
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-text-secondary">
+            Kein Track gespeichert — nächster Ride mit „Route starten“ oder
+            freiem Start legt eine Spur an.
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const gpx = rideToGpx(ride, bike?.name);
+              downloadText(
+                `aetherride-${ride.id.slice(0, 8)}.gpx`,
+                gpx,
+                "application/gpx+xml"
+              );
+            }}
+            className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-2 text-xs font-medium text-white"
+          >
+            <Download className="h-3.5 w-3.5" /> GPX
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const fit = rideToFit(ride, { privacyZones });
+              downloadFit(`aetherride-${ride.id.slice(0, 8)}.fit`, fit);
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium"
+          >
+            <Download className="h-3.5 w-3.5" /> FIT
+          </button>
+          <Link
+            href="/privacy"
+            className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-xs text-text-secondary"
+          >
+            Mehr Export
+          </Link>
         </div>
       </section>
 

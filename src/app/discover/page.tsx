@@ -33,6 +33,12 @@ import {
   offlineRegionsSummary,
 } from "@/lib/sync/offlineRegions";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  plannedRouteFromRouteResult,
+  plannedRouteFromSuggestion,
+  type PlannedRoute,
+} from "@/lib/routing/rideHandoff";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
 
@@ -55,6 +61,13 @@ export default function DiscoverPage() {
   );
   const [jurisdiction, setJurisdiction] = useState<JurisdictionId>("AT-7");
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
+  const setPlannedRoute = useAppStore((s) => s.setPlannedRoute);
+  const router = useRouter();
+
+  const startPlanned = (route: PlannedRoute) => {
+    setPlannedRoute(route);
+    router.push("/ride");
+  };
 
   useEffect(() => {
     if (appMode === "hiking") setRoutingProfile("HIKING");
@@ -175,17 +188,32 @@ export default function DiscoverPage() {
                 <p className="text-[10px] text-text-secondary">
                   {routeResult.costingNote}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const man = buildManeuvers(routeResult);
-                    const next = man.find((m) => m.type !== "start");
-                    if (next) speakTbt(next.instructionDe, "de");
-                  }}
-                  className="rounded-xl bg-accent px-3 py-2 text-xs font-medium text-white"
-                >
-                  TbT-Ansage testen (F-NAV-003)
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const man = buildManeuvers(routeResult);
+                      const next = man.find((m) => m.type !== "start");
+                      if (next) speakTbt(next.instructionDe, "de");
+                    }}
+                    className="rounded-xl border border-border px-3 py-2 text-xs font-medium"
+                  >
+                    TbT-Ansage testen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const planned = plannedRouteFromRouteResult(
+                        routeResult,
+                        `Route ${ROUTING_PROFILES[routingProfile].label}`
+                      );
+                      if (planned) startPlanned(planned);
+                    }}
+                    className="rounded-xl bg-accent px-3 py-2 text-xs font-medium text-white"
+                  >
+                    Route starten
+                  </button>
+                </div>
               </div>
             )}
           </section>
@@ -325,6 +353,13 @@ export default function DiscoverPage() {
                 {r.rangeNote && (
                   <p className="mt-2 text-xs text-warning">{r.rangeNote}</p>
                 )}
+                <button
+                  type="button"
+                  onClick={() => startPlanned(plannedRouteFromSuggestion(r))}
+                  className="mt-3 w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+                >
+                  Route starten
+                </button>
               </article>
             ))}
           </div>

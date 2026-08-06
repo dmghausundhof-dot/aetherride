@@ -15,6 +15,11 @@ import { suspensionAnalysisAvailable } from "@/lib/sensor/calibration";
 import { createEmptyCalibration } from "@/lib/sensor/calibration";
 import { uiVisibilityForMode } from "@/lib/mode/hiking";
 import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
+import {
+  geometryToPreviewTrack,
+  pointAlongGeometry,
+} from "@/lib/routing/rideHandoff";
+import Link from "next/link";
 
 export default function RidePage() {
   const router = useRouter();
@@ -26,6 +31,9 @@ export default function RidePage() {
   const boschConnected = useAppStore((s) => s.boschConnected);
   const startRide = useAppStore((s) => s.startRide);
   const endRide = useAppStore((s) => s.endRide);
+  const plannedRoute = useAppStore((s) => s.plannedRoute);
+  const setPlannedRoute = useAppStore((s) => s.setPlannedRoute);
+  const appendTrackPoint = useAppStore((s) => s.appendTrackPoint);
   const updateLiveMetrics = useAppStore((s) => s.updateLiveMetrics);
   const updateBoschLive = useAppStore((s) => s.updateBoschLive);
   const profile = useAppStore((s) => s.riderProfile);
@@ -174,19 +182,39 @@ export default function RidePage() {
     ble.connect();
 
     let t = 0;
-    const baseLat = 47.45;
-    const baseLng = 12.15;
+    const planned = useAppStore.getState().plannedRoute;
+    const geom = planned?.geometryLngLat ?? null;
+    const durationTargetSec = Math.max(
+      60,
+      (planned?.durationMin ?? 20) * 60
+    );
+    const baseLat = geom?.[0]?.[1] ?? 47.45;
+    const baseLng = geom?.[0]?.[0] ?? 12.15;
     timerRef.current = setInterval(() => {
       t += 1;
       elapsedRef.current = t;
       setElapsed(t);
-      setTrack((prev) => [
-        ...prev.slice(-200),
-        {
-          lat: baseLat + Math.sin(t / 40) * 0.008 + (Math.random() - 0.5) * 0.0003,
-          lng: baseLng + t * 0.00015 + Math.cos(t / 30) * 0.004,
-        },
-      ]);
+      let lat: number;
+      let lng: number;
+      if (geom && geom.length >= 2) {
+        const progress = Math.min(0.98, t / durationTargetSec);
+        const pt = pointAlongGeometry(geom, progress);
+        lat = pt.lat + (Math.random() - 0.5) * 0.00008;
+        lng = pt.lng + (Math.random() - 0.5) * 0.00008;
+      } else {
+        lat =
+          baseLat +
+          Math.sin(t / 40) * 0.008 +
+          (Math.random() - 0.5) * 0.0003;
+        lng = baseLng + t * 0.00015 + Math.cos(t / 30) * 0.004;
+      }
+      const elev =
+        800 +
+        ((planned?.elevationGainM ?? 400) *
+          Math.min(1, t / durationTargetSec));
+      const point = { lat, lng, elev, time: t };
+      setTrack((prev) => [...prev.slice(-400), { lat, lng }]);
+      appendTrackPoint(point);
     }, 1000);
 
     return () => {
@@ -196,7 +224,7 @@ export default function RidePage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRiding, updateBoschLive, updateLiveMetrics]);
+  }, [isRiding, updateBoschLive, updateLiveMetrics, appendTrackPoint]);
 
   const handleStart = () => {
     if (!activeBike) return;
@@ -216,6 +244,16 @@ export default function RidePage() {
     if (ride) router.push(`/post-ride?id=${ride.id}`);
   };
 
+  const routePreview = plannedRoute
+    ? geometryToPreviewTrack(plannedRoute.geometryLngLat)
+    : [];
+  const mapCenter: [number, number] = plannedRoute?.geometryLngLat?.[0]
+    ? [
+        plannedRoute.geometryLngLat[0][0],
+        plannedRoute.geometryLngLat[0][1],
+      ]
+    : [12.15, 47.45];
+
   return (
     <div className="flex flex-col gap-4 p-4 pt-6">
       <header>
@@ -224,7 +262,8 @@ export default function RidePage() {
         </h1>
         {activeBike && appMode === "bike" && (
           <p className="text-sm text-text-secondary">
-            {activeBike.name} · {bikeTypeLabel(activeBike.type)} · 200 Hz Batches
+            {activeBike.name} · {bikeTypeLabel(activeBike.type)}
+            {plannedRoute ? ` · ${plannedRoute.name}` : ""}
           </p>
         )}
         {appMode === "hiking" && (
@@ -234,11 +273,35 @@ export default function RidePage() {
         )}
       </header>
 
+      {plannedRoute && !isRiding && (
+        <div className="rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+          <p className="font-medium">{plannedRoute.name}</p>
+          <p className="text-xs text-text-secondary">
+            {(plannedRoute.distanceM / 1000).toFixed(1)} km ·{" "}
+            {plannedRoute.elevationGainM} hm · ~{plannedRoute.durationMin} min
+            {plannedRoute.mtbScale ? ` · ${plannedRoute.mtbScale}` : ""}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Link href="/discover" className="text-xs text-accent">
+              Andere Route
+            </Link>
+            <button
+              type="button"
+              onClick={() => setPlannedRoute(null)}
+              className="text-xs text-text-secondary"
+            >
+              Route verwerfen
+            </button>
+          </div>
+        </div>
+      )}
+
       <MapView
         className="aspect-[4/3] w-full"
-        center={[12.15, 47.45]}
+        center={mapCenter}
         zoom={13}
         track={track}
+        routeLine={routePreview}
       />
 
       {hint && isRiding && (

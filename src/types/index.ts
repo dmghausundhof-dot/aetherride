@@ -80,6 +80,9 @@ export interface Ride {
   elevationGainM: number;
   durationSec: number;
   track?: { lat: number; lng: number; elev?: number; time: number }[];
+  /** Discover→Ride Handoff */
+  plannedRouteId?: string;
+  plannedRouteName?: string;
   summaryMetrics: SensorMetrics;
   motorData?: {
     avgSoc: number;
