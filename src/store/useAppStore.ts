@@ -233,7 +233,11 @@ interface AppState {
   setBikeCalibration: (bikeId: string, cal: BikeCalibration) => void;
   getBikeCalibration: (bikeId: string) => BikeCalibration | null;
   signIn: (provider: AuthProvider, email?: string) => void;
+  /** Server-Session (E-Mail-Login) in den Store übernehmen */
+  applyServerSession: (session: AuthSession) => void;
   signOutUser: () => void;
+  /** Async: Server-Cookie löschen + lokal abmelden */
+  signOutUserAsync: () => Promise<void>;
   continueLocal: () => void;
   requestDeleteAccount: () => AccountDeletionRequest | null;
   confirmDeleteAccountLocal: () => AccountDeletionRequest | null;
@@ -458,17 +462,44 @@ export const useAppStore = create<AppState>()(
       getBikeCalibration: (bikeId) => get().bikeCalibrations[bikeId] ?? null,
 
       signIn: (provider, email) => {
+        // Apple/Google bleiben lokal bis OAuth-Keys; E-Mail → /login
         const session = signInLocal({ provider, email });
         set({ authSession: session });
         appendOp({
           entity: "profile",
           entityId: session.user?.id ?? "anon",
           op: "create",
-          payload: { provider },
+          payload: { provider, localMock: provider !== "email" },
         });
       },
 
+      applyServerSession: (session) => {
+        set({ authSession: session });
+        if (session.user) {
+          appendOp({
+            entity: "profile",
+            entityId: session.user.id,
+            op: "update",
+            payload: {
+              provider: session.user.provider,
+              email: session.user.email,
+              serverSession: true,
+            },
+          });
+        }
+      },
+
       signOutUser: () => set({ authSession: signOut() }),
+
+      signOutUserAsync: async () => {
+        try {
+          const { logoutFromServer } = await import("@/lib/auth/clientAuth");
+          await logoutFromServer();
+        } catch {
+          /* ignore */
+        }
+        set({ authSession: signOut() });
+      },
 
       continueLocal: () => set({ authSession: continueWithoutAccount() }),
 

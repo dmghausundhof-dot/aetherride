@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
 import { webDemoCapabilities } from "@/lib/platform/nativeContracts";
 import { G0StatusPanel } from "@/components/G0StatusPanel";
@@ -10,26 +11,21 @@ import {
   SETUP_LIABILITY,
   setA08AcceptedNow,
 } from "@/lib/legal/setupLiability";
-import {
-  AUTH_DEMO_BANNER,
-  isPlausibleEmail,
-} from "@/lib/auth/session";
-import Link from "next/link";
+import { AUTH_DEMO_BANNER } from "@/lib/auth/session";
+import { PROFESSIONAL_ROADMAP_STEPS } from "@/lib/platform/professionalRoadmap";
 
 /**
  * Flow A — Onboarding bis erster Ride (Ziel &lt; 4 Minuten)
  */
 export default function OnboardingPage() {
   const router = useRouter();
-  const signIn = useAppStore((s) => s.signIn);
   const continueLocal = useAppStore((s) => s.continueLocal);
+  const authSession = useAppStore((s) => s.authSession);
   const setOnboardingCompleted = useAppStore((s) => s.setOnboardingCompleted);
   const setAppMode = useAppStore((s) => s.setAppMode);
   const seedDemoData = useAppStore((s) => s.seedDemoData);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(authSession.user ? 1 : 0);
   const [a08Ok, setA08Ok] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailErr, setEmailErr] = useState<string | null>(null);
   const caps = webDemoCapabilities();
 
   const finish = () => {
@@ -55,59 +51,27 @@ export default function OnboardingPage() {
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-4">
           <h2 className="font-semibold">Konto oder lokal?</h2>
           <p className="text-sm text-text-secondary">
-            Tracking & Garage funktionieren ohne Konto. Sync erfordert Anmeldung
-            (F-ACC-002).
+            Tracking & Garage funktionieren ohne Konto. Sync erfordert
+            Server-Anmeldung (F-ACC-002).
           </p>
-          <p className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <p className="rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs">
             {AUTH_DEMO_BANNER}
           </p>
+          <Link
+            href="/login?mode=register&next=/onboarding"
+            className="block w-full rounded-xl bg-accent py-2.5 text-center text-sm font-semibold text-white"
+          >
+            Konto erstellen / Anmelden
+          </Link>
+          <p className="text-center text-[11px] text-text-secondary">
+            E-Mail + Passwort · HTTP-only Session
+          </p>
           <button
             type="button"
-            onClick={() => {
-              signIn("apple");
-              setStep(1);
-            }}
-            className="w-full rounded-xl bg-foreground py-2.5 text-sm font-medium text-background"
+            disabled
+            className="w-full rounded-xl bg-foreground/70 py-2.5 text-sm text-background opacity-50"
           >
-            Mit Apple fortfahren (lokaler Mock)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              signIn("google");
-              setStep(1);
-            }}
-            className="w-full rounded-xl border border-border py-2.5 text-sm"
-          >
-            Mit Google fortfahren (lokaler Mock)
-          </button>
-          <label className="block text-sm">
-            E-Mail (Format-Check, kein Versand)
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailErr(null);
-              }}
-              placeholder="name@domain.tld"
-              className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
-            />
-          </label>
-          {emailErr && <p className="text-xs text-error">{emailErr}</p>}
-          <button
-            type="button"
-            onClick={() => {
-              if (!isPlausibleEmail(email)) {
-                setEmailErr("Bitte gültige E-Mail eingeben.");
-                return;
-              }
-              signIn("email", email.trim());
-              setStep(1);
-            }}
-            className="w-full rounded-xl border border-border py-2.5 text-sm"
-          >
-            E-Mail (lokaler Mock)
+            Apple / Google — OAuth folgt (Schritt 3)
           </button>
           <button
             type="button"
@@ -119,12 +83,22 @@ export default function OnboardingPage() {
           >
             Ohne Konto lokal starten
           </button>
+          <p className="text-[10px] text-text-secondary">
+            Roadmap: {PROFESSIONAL_ROADMAP_STEPS[0].titleDe} →{" "}
+            {PROFESSIONAL_ROADMAP_STEPS[1].titleDe}
+          </p>
         </section>
       )}
 
       {step === 1 && (
         <section className="space-y-3 rounded-2xl border border-border bg-surface p-4">
           <h2 className="font-semibold">Modus</h2>
+          {authSession.user && (
+            <p className="text-xs text-text-secondary">
+              Angemeldet als {authSession.user.displayName}
+              {authSession.user.email ? ` (${authSession.user.email})` : ""}
+            </p>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -155,51 +129,34 @@ export default function OnboardingPage() {
           <label className="flex items-start gap-2 text-sm">
             <input
               type="checkbox"
-              className="mt-1"
               checked={a08Ok}
               onChange={(e) => setA08Ok(e.target.checked)}
+              className="mt-1"
             />
-            <span>{SETUP_LIABILITY.acceptancePromptDe}</span>
+            <span>
+              Ich habe die Hinweise gelesen ({SETUP_LIABILITY.version}). Legal
+              Sign-off (A-08) bleibt offen.
+            </span>
           </label>
           <button
             type="button"
             disabled={!a08Ok}
-            onClick={() => setStep(3)}
+            onClick={finish}
             className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white disabled:opacity-40"
           >
-            Weiter
+            Los geht&apos;s
           </button>
         </section>
       )}
 
-      {step === 3 && (
-        <section className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-          <h2 className="font-semibold">Garage vorbereiten</h2>
-          <p className="text-sm text-text-secondary">
-            Demo legt Katalog-Bikes an. Kalibrierung (45 s) ist überspringbar und
-            später in der Garage möglich.
-          </p>
-          <G0StatusPanel compact />
-          <ul className="list-inside list-disc text-xs text-text-secondary">
-            {caps.notes.slice(0, 4).map((n) => (
-              <li key={n}>{n}</li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            onClick={finish}
-            className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
-          >
-            Demo starten & zum Ride
-          </button>
-          <Link href="/garage" className="block text-center text-sm text-accent">
-            Zur Garage
-          </Link>
-          <Link href="/profile" className="block text-center text-xs text-text-secondary">
-            G-0 Details im Profil
-          </Link>
-        </section>
-      )}
+      <G0StatusPanel compact />
+      <p className="text-[10px] text-text-secondary">
+        Web-Demo Caps: Flutter={String(caps.flutter)} · G0 closed=
+        {String(caps.g0Closed)}
+      </p>
+      <Link href="/login" className="text-center text-xs text-accent">
+        Zum Login
+      </Link>
     </div>
   );
 }
