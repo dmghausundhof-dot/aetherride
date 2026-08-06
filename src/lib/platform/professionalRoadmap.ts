@@ -1,21 +1,22 @@
 /**
  * Professionelle Roadmap (F-ACC → Marktreife)
- * Schrittweise — Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
+ * Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
  *
- * 1. ✅ Auth: E-Mail/Passwort + HTTP-only Session
- * 2. ✅ Sync: LWW-Merge + User-scoped File-Store + Delta since=
- * 3. OAuth Apple/Google (Env-Keys nötig) ← next
- * 4. Postgres statt File-User-Store
- * 5. Stripe Checkout (Demand + Keys)
- * 6. G-4 Katalog-Skalierung
- * 7. Native Offline (nach G-0)
- * 8. Legal/Gate Sign-offs (Mensch)
+ * 1. ✅ Auth E-Mail/Passwort (jetzt: Supabase, Fallback File)
+ * 2. ✅ Sync LWW + User-Ops-Store
+ * 3. ✅ Supabase-Anbindung E-Mail (dieser Slice) · OAuth vorbereitet
+ * 4. Postgres / Timescale (Sync+Users)
+ * 5. Stripe Checkout
+ * 6. G-4 Katalog
+ * 7. Native Offline nach G-0
+ * 8. Legal/Gate Sign-offs
+ * 9. OAuth Google/Apple (zum Schluss — Code vorbereitet)
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
   {
     id: 1,
-    titleDe: "Benutzer-Login (E-Mail/Passwort + Session-Cookie)",
+    titleDe: "Benutzer-Login (E-Mail/Passwort + Session)",
     status: "done" as const,
   },
   {
@@ -25,13 +26,13 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 3,
-    titleDe: "OAuth Apple/Google",
-    status: "in_progress" as const,
+    titleDe: "Supabase E-Mail/Passwort (OAuth vorbereitet, später)",
+    status: "done" as const,
   },
   {
     id: 4,
     titleDe: "Persistenz Postgres / Timescale",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
   {
     id: 5,
@@ -51,6 +52,11 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   {
     id: 8,
     titleDe: "Legal/Gate Sign-offs",
+    status: "planned" as const,
+  },
+  {
+    id: 9,
+    titleDe: "OAuth Google/Apple (zum Schluss)",
     status: "planned" as const,
   },
 ] as const;

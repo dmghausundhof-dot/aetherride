@@ -470,7 +470,8 @@ export const useAppStore = create<AppState>()(
       getBikeCalibration: (bikeId) => get().bikeCalibrations[bikeId] ?? null,
 
       signIn: (provider, email) => {
-        // Apple/Google bleiben lokal bis OAuth-Keys; E-Mail → /login
+        // Apple/Google: OAuth vorbereitet (/api/auth/oauth/start), Aktivierung zum Schluss
+        // E-Mail → /login (Supabase wenn Env gesetzt)
         const session = signInLocal({ provider, email });
         set({ authSession: session });
         appendOp({

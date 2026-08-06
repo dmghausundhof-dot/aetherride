@@ -7,6 +7,11 @@ import {
   isAuthSecretHardened,
   setSessionCookie,
 } from "@/lib/auth/serverSession";
+import {
+  authBackendLabelDe,
+  getAuthBackend,
+} from "@/lib/supabase/config";
+import { authUserFromSupabase } from "@/lib/auth/supabaseUser";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +32,59 @@ export async function POST(req: NextRequest) {
     if (policy) {
       return NextResponse.json({ error: policy }, { status: 400 });
     }
+
+    if (getAuthBackend() === "supabase") {
+      const { createSupabaseServerClient } = await import(
+        "@/lib/supabase/server"
+      );
+      const supabase = await createSupabaseServerClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name:
+              body.displayName?.trim() || email.split("@")[0] || "Fahrer",
+          },
+        },
+      });
+      if (error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes("already") || msg.includes("registered")) {
+          return NextResponse.json(
+            { error: "E-Mail bereits registriert." },
+            { status: 409 }
+          );
+        }
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (!data.user) {
+        return NextResponse.json(
+          { error: "Registrierung fehlgeschlagen." },
+          { status: 500 }
+        );
+      }
+      // E-Mail-Confirm ggf. ohne Session
+      if (!data.session) {
+        return NextResponse.json({
+          user: authUserFromSupabase(data.user),
+          syncEnabled: false,
+          pendingEmailConfirmation: true,
+          authBackend: "supabase",
+          authSecretHardened: isAuthSecretHardened(),
+          note: "Bitte E-Mail bestätigen (falls in Supabase aktiviert), dann anmelden.",
+        });
+      }
+      return NextResponse.json({
+        user: authUserFromSupabase(data.user),
+        syncEnabled: true,
+        pendingEmailConfirmation: false,
+        authBackend: "supabase",
+        authSecretHardened: isAuthSecretHardened(),
+      });
+    }
+
+    // Fallback: lokaler File-Store
     const user = await createEmailUser({
       email,
       password,
@@ -42,7 +100,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       user: publicUser(user),
       syncEnabled: true,
+      authBackend: "local_file",
       authSecretHardened: isAuthSecretHardened(),
+      note: authBackendLabelDe("local_file"),
     });
   } catch (e) {
     if (e instanceof Error && e.message === "EMAIL_TAKEN") {
@@ -52,6 +112,9 @@ export async function POST(req: NextRequest) {
       );
     }
     console.error("[auth/register]", e);
-    return NextResponse.json({ error: "Registrierung fehlgeschlagen." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Registrierung fehlgeschlagen." },
+      { status: 500 }
+    );
   }
 }
