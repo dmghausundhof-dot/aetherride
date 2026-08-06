@@ -72,6 +72,8 @@ export interface Ride {
     avgCadence: number;
     totalOdometer: number;
   };
+  /** F-EBK-005 Assist-Log (Schätzung/manuell/OEM) */
+  assistSummary?: import("@/lib/ebike/assistLog").AssistRideSummary;
   notes?: string;
 }
 

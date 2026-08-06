@@ -101,6 +101,21 @@ export default function HomePage() {
         Ride starten
       </Link>
 
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href="/chat"
+          className="rounded-xl border border-border bg-surface px-3 py-3 text-center text-sm font-medium"
+        >
+          KI-Chat
+        </Link>
+        <Link
+          href="/privacy"
+          className="rounded-xl border border-border bg-surface px-3 py-3 text-center text-sm font-medium"
+        >
+          Export & Privacy
+        </Link>
+      </div>
+
       {lastRide && (
         <section className="rounded-2xl bg-surface border border-border p-4">
           <div className="flex items-center justify-between mb-3">

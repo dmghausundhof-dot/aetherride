@@ -49,10 +49,19 @@ Version 1.0 · Spec-konform · Offline-First · Outdoor Design System
 - **F-SHP-001/003** Affiliate-Shop mit Kompat-Urteil; Checkout = Partner-Weiterleitung
 - **Spec 1.4** Free/Pro-Paywall (1 Bike Free; Multi-Bike, Bracketing, Reichweite = Pro)
 
+### 7. Phase 2 / P2 + Rest (Heatmap, Trail, Chat, Assist, Export)
+- **F-NAV-005** Heatmap mit k≥5, OSM-Snap-Demo, Privacy-Trim, Kaltstart-Hinweis (Strava-Lehre)
+- **F-NAV-006** Trail View Mapillary CC BY-SA Attribution + Nutzerfotos mit Heading
+- **F-NAV-007** Höhenprofil mit Oberflächen-/Scale-Bändern; Lücken nicht interpoliert
+- **F-EBK-005** Assist-Modus-Log (Schätzung gekennzeichnet, keine Steuerung)
+- **F-SHP-002** Anlassbezogene Produktempfehlungen mit Datenpunkt-Zitat
+- **F-AI-001/004** KI-Chat mit Tool-Zugriff + Numeric-Guard
+- **F-ACC-003/005/006/007** GPX/JSON-Export, Privacy-Zonen, Einwilligungen, Familien-Garage
+- **F-SHP-003 P3** Marketplace-Demo mit EU-Pflichtangaben (kein echtes Stripe; Affiliate bleibt Default)
+
 ### Weitere Kernfeatures
 - Live-Ride mit Sensor + Bosch + Karte
 - Post-Ride-Analyse + KI-Setup-Empfehlungen
-- Discover mit Match-Score
 - Dark Mode Outdoor Design System
 
 ## Starten
