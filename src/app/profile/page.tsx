@@ -6,6 +6,12 @@ import Link from "next/link";
 import type { RiderProfile } from "@/types";
 import { G0StatusPanel } from "@/components/G0StatusPanel";
 import { SetupLiabilityNotice } from "@/components/SetupLiabilityNotice";
+import { downloadText } from "@/lib/export/gpx";
+import {
+  g2StudyStatusSummary,
+  renderG2StudyPlanMarkdown,
+} from "@/lib/sensor/g2StudyPlan";
+import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
 
 export default function ProfilePage() {
   const profile = useAppStore((s) => s.riderProfile);
@@ -41,6 +47,26 @@ export default function ProfilePage() {
 
       <G0StatusPanel />
       <SetupLiabilityNotice variant="short" />
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">G-2 Studienplan (Fahrwerk)</h3>
+        <p className="mb-2 text-xs text-text-secondary">
+          {g2StudyStatusSummary()} · Gate = {String(G2_SUSPENSION_GATE_PASSED)}
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g2-studienplan.md",
+              renderG2StudyPlanMarkdown(),
+              "text/markdown;charset=utf-8"
+            )
+          }
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+        >
+          Studienplan herunterladen
+        </button>
+      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 font-semibold">App-Modus</h3>

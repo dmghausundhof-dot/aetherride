@@ -40,6 +40,24 @@ import {
   renderG5CounselCoverLetter,
   renderG5CounselDispatchChecklistMarkdown,
 } from "@/lib/routing/g5CounselDispatch";
+import {
+  A08_SIGNOFF,
+  renderA08AttorneyBriefMarkdown,
+  renderA08CoverLetter,
+} from "@/lib/legal/a08CounselBrief";
+import { A08_LEGAL_REVIEW_PASSED, a08StatusBadge } from "@/lib/legal/setupLiability";
+import {
+  A06_LEGAL_REVIEW_PASSED,
+  A06_SIGNOFF,
+  a06StatusBadge,
+  renderA06AttorneyBriefMarkdown,
+  renderA06CoverLetter,
+} from "@/lib/legal/a06OdblBrief";
+import {
+  g2StudyStatusSummary,
+  renderG2StudyPlanMarkdown,
+} from "@/lib/sensor/g2StudyPlan";
+import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
 
 export default function PrivacyExportPage() {
   const rides = useAppStore((s) => s.rides);
@@ -185,6 +203,108 @@ export default function PrivacyExportPage() {
             </button>
           )}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">A-08 an Legal (Setup-Haftung)</h3>
+        <p className="mb-2 text-xs text-text-secondary">
+          {a08StatusBadge()} · Gate A08 = {String(A08_LEGAL_REVIEW_PASSED)} ·
+          mayClaim = {String(A08_SIGNOFF.mayClaimLegallyReviewed)}
+        </p>
+        <p className="mb-3 text-[11px] text-text-secondary">
+          Mandat getrennt von G-5/A-06. Kein Auto-Versand.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-a08-anwalt-briefing.md",
+                renderA08AttorneyBriefMarkdown(),
+                "text/markdown;charset=utf-8"
+              )
+            }
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+          >
+            Briefing (.md)
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-a08-anschreiben.txt",
+                renderA08CoverLetter(),
+                "text/plain;charset=utf-8"
+              )
+            }
+            className="rounded-lg border border-border px-3 py-1.5 text-xs"
+          >
+            Anschreiben
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">A-06 an Legal (ODbL / OSM)</h3>
+        <p className="mb-2 text-xs text-text-secondary">
+          {a06StatusBadge()} · Gate A06 = {String(A06_LEGAL_REVIEW_PASSED)} ·
+          mayClaim = {String(A06_SIGNOFF.mayClaimOdblCleared)}
+        </p>
+        <p className="mb-3 text-[11px] text-text-secondary">
+          Heatmaps & Ableitungen — Mandat getrennt von G-5/A-08.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-a06-anwalt-briefing.md",
+                renderA06AttorneyBriefMarkdown(),
+                "text/markdown;charset=utf-8"
+              )
+            }
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+          >
+            Briefing (.md)
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-a06-anschreiben.txt",
+                renderA06CoverLetter(),
+                "text/plain;charset=utf-8"
+              )
+            }
+            className="rounded-lg border border-border px-3 py-1.5 text-xs"
+          >
+            Anschreiben
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">G-2 Validierungsstudienplan</h3>
+        <p className="mb-2 text-xs text-text-secondary">
+          {g2StudyStatusSummary()} · Gate G2 ={" "}
+          {String(G2_SUSPENSION_GATE_PASSED)}
+        </p>
+        <p className="mb-3 text-[11px] text-text-secondary">
+          Spec §7.5 — sieben Bestehenskriterien. Kein Fake-Pass.
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g2-studienplan.md",
+              renderG2StudyPlanMarkdown(),
+              "text/markdown;charset=utf-8"
+            )
+          }
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+        >
+          Studienplan (.md)
+        </button>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
