@@ -29,6 +29,10 @@ function PostRideContent() {
     ? rideFeedbacks.find((f) => f.rideId === ride.id)
     : undefined;
 
+  const regenerateSetupRecommendation = useAppStore(
+    (s) => s.regenerateSetupRecommendation
+  );
+
   const [overall, setOverall] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [frontFeel, setFrontFeel] =
     useState<RideFeedback["frontFeel"]>(undefined);
@@ -231,20 +235,25 @@ function PostRideContent() {
               </button>
             ))}
           </div>
-          <div className="mb-2 text-xs text-text-secondary">Front</div>
-          <div className="mb-3 flex gap-2">
+          <div className="mb-2 text-xs text-text-secondary">
+            Front (foren-nah)
+          </div>
+          <div className="mb-3 grid grid-cols-3 gap-2">
             {(
               [
-                ["too_soft", "zu weich"],
+                ["packt_nicht", "packt nicht"],
+                ["taucht", "taucht"],
                 ["ok", "passt"],
-                ["too_firm", "zu hart"],
+                ["rupft", "rupft"],
+                ["toppt_aus", "toppt aus"],
+                ["zu_straff", "zu straff"],
               ] as const
             ).map(([id, label]) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => setFrontFeel(id)}
-                className={`flex-1 rounded-lg py-2 text-xs ${
+                className={`rounded-lg py-2 text-xs ${
                   frontFeel === id ? "bg-primary text-white" : "bg-surface-elevated"
                 }`}
               >
@@ -256,9 +265,9 @@ function PostRideContent() {
           <div className="mb-3 flex gap-2">
             {(
               [
-                ["dives", "taucht ab"],
+                ["taucht", "taucht"],
                 ["neutral", "neutral"],
-                ["harsh", "hart"],
+                ["steht", "steht"],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -274,19 +283,20 @@ function PostRideContent() {
             ))}
           </div>
           <div className="mb-2 text-xs text-text-secondary">Kleine Schläge</div>
-          <div className="mb-3 flex gap-2">
+          <div className="mb-3 grid grid-cols-2 gap-2">
             {(
               [
-                ["harsh", "rau"],
+                ["rupft", "rupft"],
                 ["ok", "passt"],
-                ["vague", "vage"],
+                ["schmiert", "schmiert"],
+                ["tot", "tot"],
               ] as const
             ).map(([id, label]) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => setSmallBump(id)}
-                className={`flex-1 rounded-lg py-2 text-xs ${
+                className={`rounded-lg py-2 text-xs ${
                   smallBump === id ? "bg-primary text-white" : "bg-surface-elevated"
                 }`}
               >
@@ -307,6 +317,7 @@ function PostRideContent() {
                   skipped: false,
                 });
                 setFeedbackDone(true);
+                regenerateSetupRecommendation(ride.id);
               }}
               className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
             >
@@ -353,6 +364,18 @@ function PostRideContent() {
             <p className="mb-1 text-xs">
               <span className="text-text-secondary">Erwartete Wirkung: </span>
               {rec.expectedEffect}
+            </p>
+          )}
+          {rec.workshopLine && (
+            <p className="mb-1 text-xs">
+              <span className="font-medium">Werkstatt: </span>
+              {rec.workshopLine}
+            </p>
+          )}
+          {rec.coachLine && (
+            <p className="mb-2 text-xs">
+              <span className="font-medium">Coach: </span>
+              {rec.coachLine}
             </p>
           )}
           {rec.limits && (

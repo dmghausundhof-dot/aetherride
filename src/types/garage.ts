@@ -349,9 +349,21 @@ export interface BracketingSeries {
 export interface RideFeedback {
   rideId: string;
   overallFeel: 1 | 2 | 3 | 4 | 5;
-  frontFeel?: "too_soft" | "ok" | "too_firm";
-  brakeDive?: "dives" | "neutral" | "harsh";
-  smallBump?: "harsh" | "ok" | "vague";
+  /**
+   * Foren-nah DACH Enduro (eMTB-News / BIKE-Sprache).
+   * Legacy too_soft|too_firm bleiben für Migration lesbar.
+   */
+  frontFeel?:
+    | "packt_nicht"
+    | "taucht"
+    | "ok"
+    | "rupft"
+    | "toppt_aus"
+    | "zu_straff"
+    | "too_soft"
+    | "too_firm";
+  brakeDive?: "taucht" | "neutral" | "steht" | "dives" | "harsh";
+  smallBump?: "rupft" | "ok" | "schmiert" | "tot" | "harsh" | "vague";
   skipped: boolean;
   createdAt: string;
 }

@@ -153,6 +153,8 @@ export interface Recommendation {
   ruleId?: string;
   observationOnly?: boolean;
   setupApply?: Record<string, number>;
+  workshopLine?: string;
+  coachLine?: string;
 }
 
 export type TabId = "home" | "garage" | "ride" | "discover" | "shop";
