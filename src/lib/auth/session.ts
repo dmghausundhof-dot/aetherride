@@ -117,3 +117,53 @@ export function getPendingDeletion(): AccountDeletionRequest | null {
     return null;
   }
 }
+
+function saveDeletion(req: AccountDeletionRequest | null) {
+  if (typeof window === "undefined") return;
+  if (!req) {
+    localStorage.removeItem("aetherride.accountDeletion");
+    return;
+  }
+  localStorage.setItem("aetherride.accountDeletion", JSON.stringify(req));
+}
+
+/** Lokaler Statuswechsel — kein Server, E-Mails nur als Flag */
+export function updateDeletionStatus(
+  status: AccountDeletionRequest["status"]
+): AccountDeletionRequest | null {
+  const cur = getPendingDeletion();
+  if (!cur) return null;
+  const next: AccountDeletionRequest = {
+    ...cur,
+    status,
+    confirmationEmailSent:
+      status === "confirmed" ? cur.confirmationEmailSent : cur.confirmationEmailSent,
+  };
+  saveDeletion(next);
+  return next;
+}
+
+export function cancelAccountDeletion(): AccountDeletionRequest | null {
+  return updateDeletionStatus("cancelled");
+}
+
+export function confirmAccountDeletionLocally(): AccountDeletionRequest | null {
+  const cur = getPendingDeletion();
+  if (!cur) return null;
+  const next: AccountDeletionRequest = {
+    ...cur,
+    status: "confirmed",
+    confirmationEmailSent: cur.confirmationEmailSent,
+  };
+  saveDeletion(next);
+  return next;
+}
+
+/** E-Mail-Format-Check für Demo-Login (kein IdP) */
+export function isPlausibleEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+export const AUTH_DEMO_BANNER =
+  "Web-Demo: kein echter IdP (Apple/Google/E-Mail). Session nur lokal — Produktion: OAuth + Backend.";
+

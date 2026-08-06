@@ -94,6 +94,11 @@ export interface Ride {
   };
   /** F-EBK-005 Assist-Log (Schätzung/manuell/OEM) */
   assistSummary?: import("@/lib/ebike/assistLog").AssistRideSummary;
+  /** Bedingungen für Verschleiß (manuell / Stub — keine Fake-Wetter-API) */
+  conditions?: {
+    wet?: boolean;
+    source?: "manual" | "api_stub";
+  };
   notes?: string;
 }
 

@@ -64,12 +64,13 @@ function sumHardImpacts(rides: Ride[]): number {
   return rides.reduce((s, r) => s + (r.summaryMetrics.impactCount || 0), 0);
 }
 
-/** Nässe-Indikator: Wetter-API-Platzhalter über Ride-Notes (Spec: Wetter zum Ride-Zeitpunkt) */
-function wetRideShare(rides: Ride[]): number {
+/** Nässe-Anteil 0–1 — manuelles Tag / Notes; kein Live-Wetter-Claim */
+export function wetRideShare(rides: Ride[]): number {
   if (rides.length === 0) return 0.15; // Unsicherheit ohne Daten
-  const wet = rides.filter((r) =>
-    /nass|regen|wet|mud|matsch|schlamm/i.test(r.notes ?? "")
-  ).length;
+  const wet = rides.filter((r) => {
+    if (r.conditions?.wet === true) return true;
+    return /nass|regen|wet|mud|matsch|schlamm/i.test(r.notes ?? "");
+  }).length;
   return wet / rides.length;
 }
 

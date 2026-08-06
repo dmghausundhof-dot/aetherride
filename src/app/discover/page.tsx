@@ -324,6 +324,13 @@ export default function DiscoverPage() {
             <p className="mt-1 text-xs text-text-secondary">
               {offlineRegionsSummary()}
             </p>
+            <p className="mt-1 text-[10px] text-text-secondary">
+              Queue-Budget:{" "}
+              {offlineRegions
+                .filter((r) => r.status === "queued" || r.status === "downloaded")
+                .reduce((s, r) => s + r.sizeMbEstimate, 0)}{" "}
+              MB vorgemerkt · Spec ≤350 MB / 10.000 km²
+            </p>
             <ul className="mt-2 space-y-2 text-xs text-text-secondary">
               {offlineRegions.map((r) => (
                 <li key={r.id} className="rounded-lg border border-border p-2">

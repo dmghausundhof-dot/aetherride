@@ -61,6 +61,8 @@ import {
   type TrackPoint,
 } from "@/lib/routing/rideHandoff";
 import {
+  cancelAccountDeletion,
+  confirmAccountDeletionLocally,
   continueWithoutAccount,
   loadSession,
   requestAccountDeletion,
@@ -234,6 +236,13 @@ interface AppState {
   signOutUser: () => void;
   continueLocal: () => void;
   requestDeleteAccount: () => AccountDeletionRequest | null;
+  confirmDeleteAccountLocal: () => AccountDeletionRequest | null;
+  cancelDeleteAccount: () => AccountDeletionRequest | null;
+  /** Post-Ride: Nässe-Tag für Verschleiß (manuell) */
+  setRideConditions: (
+    rideId: string,
+    conditions: NonNullable<Ride["conditions"]>
+  ) => void;
   syncNow: () => Promise<{ flushed: number; skipped: boolean; reason?: string }>;
 
   startRide: (bikeId: string, sportType: BikeType) => void;
@@ -477,8 +486,57 @@ export const useAppStore = create<AppState>()(
         return req;
       },
 
+      confirmDeleteAccountLocal: () => {
+        const req = confirmAccountDeletionLocally();
+        if (req) {
+          set({ accountDeletion: req });
+          appendOp({
+            entity: "profile",
+            entityId: get().authSession.user?.id ?? "unknown",
+            op: "update",
+            payload: { deletion: req },
+          });
+        }
+        return req;
+      },
+
+      cancelDeleteAccount: () => {
+        const req = cancelAccountDeletion();
+        if (req) {
+          set({ accountDeletion: req });
+          appendOp({
+            entity: "profile",
+            entityId: get().authSession.user?.id ?? "unknown",
+            op: "update",
+            payload: { deletion: req },
+          });
+        }
+        return req;
+      },
+
+      setRideConditions: (rideId, conditions) => {
+        set((s) => ({
+          rides: s.rides.map((r) => {
+            if (r.id !== rideId) return r;
+            const notes =
+              conditions.wet && !/nass|wet|matsch/i.test(r.notes ?? "")
+                ? [r.notes, "nass"].filter(Boolean).join(" · ")
+                : r.notes;
+            return { ...r, conditions, notes };
+          }),
+        }));
+        appendOp({
+          entity: "ride",
+          entityId: rideId,
+          op: "update",
+          payload: { conditions },
+        });
+      },
+
       syncNow: async () => {
-        const result = await flushOpsLog(get().authSession.syncEnabled);
+        const result = await flushOpsLog(get().authSession.syncEnabled, {
+          useApiStub: true,
+        });
         return result;
       },
 
@@ -506,7 +564,7 @@ export const useAppStore = create<AppState>()(
         return false;
       },
 
-      setConsent: (purpose, granted) =>
+      setConsent: (purpose, granted) => {
         set((s) => ({
           consents: s.consents.map((c) =>
             c.purpose === purpose
@@ -517,7 +575,14 @@ export const useAppStore = create<AppState>()(
                 }
               : c
           ),
-        })),
+        }));
+        appendOp({
+          entity: "consent",
+          entityId: purpose,
+          op: "update",
+          payload: { purpose, granted },
+        });
+      },
 
       addPrivacyZone: (zone) =>
         set((s) => ({

@@ -2,6 +2,7 @@
 
 import { ArrowLeft, ExternalLink, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
 import { VerdictPill } from "@/components/garage/VerdictPill";
@@ -10,6 +11,11 @@ import {
   checkCandidateOnBike,
 } from "@/lib/compatibility/engine";
 import { useAppStore } from "@/store/useAppStore";
+import {
+  buildMarketplaceDraft,
+  MARKETPLACE_LEGAL,
+} from "@/lib/shop/marketplace";
+import { planStripeCheckout } from "@/lib/shop/stripeCheckout";
 
 export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
@@ -20,7 +26,28 @@ export default function CheckoutPage() {
   const recordAffiliateRedirect = useCartStore((s) => s.recordAffiliateRedirect);
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
+  const commerceMode = useAppStore((s) => s.commerceMode);
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
+  const [legalOk, setLegalOk] = useState(false);
+
+  const draft = useMemo(
+    () =>
+      buildMarketplaceDraft(
+        items.map((i) => ({
+          name: i.name,
+          priceEur: i.price,
+          qty: i.quantity,
+        }))
+      ),
+    [items]
+  );
+  const stripePlan = useMemo(
+    () =>
+      planStripeCheckout(draft, {
+        demandDocumented: false,
+      }),
+    [draft]
+  );
 
   const openPartnerFromCart = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
@@ -71,8 +98,40 @@ export default function CheckoutPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-secondary">
         Kauf und Versand laufen beim Partnerhändler. AetherRide prüft nur
-        Kompatibilität und leitet weiter (Spec 0.4.4).
+        Kompatibilität und leitet weiter (Spec 0.4.4). Modus:{" "}
+        <strong>{commerceMode}</strong>.
       </section>
+
+      {commerceMode === "marketplace" && (
+        <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">
+          <h2 className="font-semibold text-foreground">Marketplace-Draft</h2>
+          <p className="mt-1 text-xs text-warning">{stripePlan.messageDe}</p>
+          <p className="mt-2 text-xs tabular-nums">
+            Waren {getTotal().toFixed(2)} € + Versand {draft.shippingEur.toFixed(2)}{" "}
+            € = <strong>{draft.totalEur.toFixed(2)} €</strong>
+          </p>
+          <ul className="mt-2 list-inside list-disc text-[11px] text-text-secondary">
+            <li>{MARKETPLACE_LEGAL.withdrawal}</li>
+            <li>{MARKETPLACE_LEGAL.shipping}</li>
+            <li>{MARKETPLACE_LEGAL.gpsr}</li>
+          </ul>
+          <label className="mt-2 flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={legalOk}
+              onChange={(e) => setLegalOk(e.target.checked)}
+            />
+            EU-Pflichtangaben gelesen (Demo)
+          </label>
+          <button
+            type="button"
+            disabled
+            className="mt-2 w-full rounded-xl bg-muted py-2 text-xs font-semibold opacity-60"
+          >
+            Stripe Checkout — nicht verfügbar ({stripePlan.status})
+          </button>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-2 font-semibold">Merkliste / Warenkorb</h2>

@@ -78,6 +78,10 @@ export default function PrivacyExportPage() {
   const signOutUser = useAppStore((s) => s.signOutUser);
   const continueLocal = useAppStore((s) => s.continueLocal);
   const requestDeleteAccount = useAppStore((s) => s.requestDeleteAccount);
+  const confirmDeleteAccountLocal = useAppStore(
+    (s) => s.confirmDeleteAccountLocal
+  );
+  const cancelDeleteAccount = useAppStore((s) => s.cancelDeleteAccount);
   const accountDeletion = useAppStore((s) => s.accountDeletion);
   const syncNow = useAppStore((s) => s.syncNow);
 
@@ -391,13 +395,36 @@ export default function PrivacyExportPage() {
           )}
         </div>
         {accountDeletion && (
-          <p className="mt-2 text-[11px] text-warning">
-            Löschung {accountDeletion.status} · wirksam bis{" "}
-            {new Date(accountDeletion.effectiveBy).toLocaleDateString("de-DE")}
-            {accountDeletion.confirmationEmailSent
-              ? " · E-Mail-Bestätigung (Demo)"
-              : ""}
-          </p>
+          <div className="mt-2 space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+            <p>
+              Löschung {accountDeletion.status} · wirksam bis{" "}
+              {new Date(accountDeletion.effectiveBy).toLocaleDateString("de-DE")}
+              {accountDeletion.confirmationEmailSent
+                ? " · E-Mail-Flag (kein Versand)"
+                : ""}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {accountDeletion.status === "pending" && (
+                <button
+                  type="button"
+                  onClick={() => confirmDeleteAccountLocal()}
+                  className="rounded border border-warning px-2 py-1 text-[10px]"
+                >
+                  Lokal bestätigen
+                </button>
+              )}
+              {accountDeletion.status !== "cancelled" &&
+                accountDeletion.status !== "completed" && (
+                  <button
+                    type="button"
+                    onClick={() => cancelDeleteAccount()}
+                    className="rounded border border-border px-2 py-1 text-[10px] text-text-secondary"
+                  >
+                    Abbrechen
+                  </button>
+                )}
+            </div>
+          </div>
         )}
       </section>
 
