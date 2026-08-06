@@ -25,6 +25,11 @@ import {
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView } from "@/components/MapView";
 import Link from "next/link";
+import {
+  profileForBikeCategory,
+  requestRoute,
+  type ClientRouteResult,
+} from "@/lib/routing/profiles";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
 
@@ -49,6 +54,11 @@ export default function DiscoverPage() {
   const [elev, setElev] = useState<ElevationProfile>(() =>
     buildDemoElevationProfile()
   );
+  const [engineRoute, setEngineRoute] = useState<ClientRouteResult | null>(
+    null
+  );
+  const [routingBusy, setRoutingBusy] = useState(false);
+  const [routingMsg, setRoutingMsg] = useState<string | null>(null);
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -133,6 +143,33 @@ export default function DiscoverPage() {
 
   const photo = trail.photos[photoIdx];
 
+  const runRouting = async () => {
+    setRoutingBusy(true);
+    setRoutingMsg(null);
+    try {
+      const profileId = profileForBikeCategory(
+        activeBike?.category || "mtb_enduro"
+      );
+      const result = await requestRoute(
+        profileId,
+        [12.14, 47.448],
+        [12.18, 47.462]
+      );
+      if (!result) {
+        setRoutingMsg("Routing fehlgeschlagen");
+        return;
+      }
+      setEngineRoute(result);
+      setRoutingMsg(
+        `${result.engine}: ${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min${
+          result.warnings?.[0] ? ` — ${result.warnings[0]}` : ""
+        }`
+      );
+    } finally {
+      setRoutingBusy(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
       <header>
@@ -189,6 +226,28 @@ export default function DiscoverPage() {
               className="mt-1 w-full"
             />
           </label>
+
+          <div className="rounded-xl border border-border bg-surface p-3">
+            <button
+              type="button"
+              disabled={routingBusy}
+              onClick={() => void runRouting()}
+              className="w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+            >
+              {routingBusy
+                ? "Route wird berechnet…"
+                : "Route berechnen (Valhalla/OSRM/Demo)"}
+            </button>
+            {routingMsg && (
+              <p className="mt-2 text-xs text-text-secondary">{routingMsg}</p>
+            )}
+            <MapView
+              className="mt-3 aspect-[4/3] w-full"
+              center={[12.15, 47.45]}
+              zoom={12}
+              route={engineRoute?.geometry ?? null}
+            />
+          </div>
 
           {activeBike?.isEbike && !rangePro && (
             <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
