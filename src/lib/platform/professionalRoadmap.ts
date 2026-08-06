@@ -2,9 +2,9 @@
  * Professionelle Roadmap (F-ACC → Marktreife)
  * Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
  *
- * 1–3 ✅ Auth + Sync LWW + Supabase E-Mail
- * 4 ✅ Postgres-Adapter (Supabase) + SQL-Migration — Env/Migration nötig
- * 5 Stripe · 6 G-4 · 7 Native Offline · 8 Legal · 9 OAuth zum Schluss
+ * 1–4 ✅ Auth, Sync, Supabase, Postgres-Adapter
+ * 5 ✅ Stripe Checkout (Demand-Gate + Keys; kein Fake-Payment)
+ * 6 G-4 · 7 Native Offline · 8 Legal · 9 OAuth zum Schluss
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
@@ -30,13 +30,13 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 5,
-    titleDe: "Stripe Marketplace (bei Nachfrage)",
-    status: "in_progress" as const,
+    titleDe: "Stripe Checkout (Demand-Gate + Session/Webhook)",
+    status: "done" as const,
   },
   {
     id: 6,
     titleDe: "G-4 Katalog ≥ Spec",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
   {
     id: 7,

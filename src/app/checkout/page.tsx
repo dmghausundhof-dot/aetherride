@@ -2,7 +2,8 @@
 
 import { ArrowLeft, ExternalLink, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useCartStore } from "@/store/useCartStore";
 import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
 import { VerdictPill } from "@/components/garage/VerdictPill";
@@ -17,18 +18,75 @@ import {
 } from "@/lib/shop/marketplace";
 import { planStripeCheckout } from "@/lib/shop/stripeCheckout";
 
-export default function CheckoutPage() {
+function CheckoutInner() {
+  const params = useSearchParams();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const getTotal = useCartStore((s) => s.getTotal);
   const redirects = useCartStore((s) => s.redirects);
   const recordAffiliateRedirect = useCartStore((s) => s.recordAffiliateRedirect);
+  const clearCart = useCartStore((s) => s.clearCart);
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const commerceMode = useAppStore((s) => s.commerceMode);
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const [legalOk, setLegalOk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [demandDocumented, setDemandDocumented] = useState(false);
+  const [secretConfigured, setSecretConfigured] = useState(false);
+  const [stripeReturn, setStripeReturn] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/stripe/checkout", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { demandDocumented?: boolean; secretConfigured?: boolean }) => {
+        setDemandDocumented(!!d.demandDocumented);
+        setSecretConfigured(!!d.secretConfigured);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const flag = params.get("stripe");
+    const sessionId = params.get("session_id");
+    if (flag === "cancel") {
+      setStripeReturn("Checkout abgebrochen — kein Payment.");
+      return;
+    }
+    if (flag === "success" && sessionId) {
+      void fetch(`/api/stripe/session?session_id=${encodeURIComponent(sessionId)}`)
+        .then((r) => r.json())
+        .then(
+          (d: {
+            payment_status?: string;
+            error?: string;
+          }) => {
+            if (d.payment_status === "paid") {
+              setStripeReturn("Zahlung bestätigt (Stripe).");
+              clearCart();
+            } else if (d.payment_status) {
+              setStripeReturn(
+                `Stripe-Status: ${d.payment_status} — Webhook ggf. noch ausstehend.`
+              );
+            } else {
+              setStripeReturn(
+                d.error ||
+                  "Zurück von Stripe — Status konnte nicht verifiziert werden."
+              );
+            }
+          }
+        )
+        .catch(() =>
+          setStripeReturn("Zurück von Stripe — Netzwerkfehler bei Status-Abruf.")
+        );
+    } else if (flag === "success") {
+      setStripeReturn(
+        "Zurück von Stripe — session_id fehlt (kein Fake-Success)."
+      );
+    }
+  }, [params, clearCart]);
 
   const draft = useMemo(
     () =>
@@ -44,10 +102,47 @@ export default function CheckoutPage() {
   const stripePlan = useMemo(
     () =>
       planStripeCheckout(draft, {
-        demandDocumented: false,
+        demandDocumented,
       }),
-    [draft]
+    [draft, demandDocumented]
   );
+
+  const canStartStripe =
+    commerceMode === "marketplace" &&
+    legalOk &&
+    items.length > 0 &&
+    stripePlan.status === "session_ready" &&
+    secretConfigured;
+
+  const startStripe = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          legalAccepted: legalOk,
+          items: items.map((i) => ({
+            name: i.name,
+            priceEur: i.price,
+            qty: i.quantity,
+          })),
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        setError(data.error || `Checkout HTTP ${res.status}`);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Netzwerkfehler beim Stripe-Checkout.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const openPartnerFromCart = (itemId: string) => {
     const item = items.find((i) => i.id === itemId);
@@ -89,22 +184,29 @@ export default function CheckoutPage() {
           <ArrowLeft className="h-6 w-6" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold">Partner-Checkout</h1>
+          <h1 className="text-xl font-bold">Checkout</h1>
           <p className="text-xs text-text-secondary">
-            F-SHP-003 Affiliate — kein Zahlungsverkehr in der App
+            Affiliate default · Stripe Marketplace bei Nachfrage + Keys
           </p>
         </div>
       </header>
 
+      {stripeReturn && (
+        <section className="rounded-2xl border border-accent/40 bg-accent/10 p-4 text-sm">
+          {stripeReturn}
+        </section>
+      )}
+
       <section className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-secondary">
-        Kauf und Versand laufen beim Partnerhändler. AetherRide prüft nur
-        Kompatibilität und leitet weiter (Spec 0.4.4). Modus:{" "}
-        <strong>{commerceMode}</strong>.
+        Modus: <strong>{commerceMode}</strong>. Affiliate: Kauf beim Partner.
+        Marketplace: Stripe Checkout nur mit{" "}
+        <code className="text-[10px]">STRIPE_DEMAND_DOCUMENTED</code> +{" "}
+        <code className="text-[10px]">STRIPE_SECRET_KEY</code>.
       </section>
 
       {commerceMode === "marketplace" && (
         <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm">
-          <h2 className="font-semibold text-foreground">Marketplace-Draft</h2>
+          <h2 className="font-semibold text-foreground">Stripe Marketplace</h2>
           <p className="mt-1 text-xs text-warning">{stripePlan.messageDe}</p>
           <p className="mt-2 text-xs tabular-nums">
             Waren {getTotal().toFixed(2)} € + Versand {draft.shippingEur.toFixed(2)}{" "}
@@ -121,14 +223,20 @@ export default function CheckoutPage() {
               checked={legalOk}
               onChange={(e) => setLegalOk(e.target.checked)}
             />
-            EU-Pflichtangaben gelesen (Demo)
+            EU-Pflichtangaben gelesen
           </label>
+          {error && <p className="mt-2 text-xs text-error">{error}</p>}
           <button
             type="button"
-            disabled
-            className="mt-2 w-full rounded-xl bg-muted py-2 text-xs font-semibold opacity-60"
+            disabled={!canStartStripe || busy}
+            onClick={() => void startStripe()}
+            className="mt-2 w-full rounded-xl bg-accent py-2 text-xs font-semibold text-white disabled:bg-muted disabled:opacity-60"
           >
-            Stripe Checkout — nicht verfügbar ({stripePlan.status})
+            {busy
+              ? "…"
+              : canStartStripe
+                ? "Mit Stripe bezahlen"
+                : `Stripe nicht verfügbar (${stripePlan.status})`}
           </button>
         </section>
       )}
@@ -137,7 +245,7 @@ export default function CheckoutPage() {
         <h2 className="mb-2 font-semibold">Merkliste / Warenkorb</h2>
         {items.length === 0 ? (
           <p className="text-sm text-text-secondary">
-            Leer — im Shop „Merken“, dann hier zum Partner weiterleiten.
+            Leer — im Shop „Merken“, dann hier zum Partner oder Stripe.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -202,7 +310,7 @@ export default function CheckoutPage() {
               </div>
             ))}
             <p className="text-right text-sm font-medium tabular-nums">
-              Summe (Partner): {getTotal().toFixed(0)} €
+              Summe: {getTotal().toFixed(0)} €
             </p>
           </div>
         )}
@@ -264,5 +372,13 @@ export default function CheckoutPage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Lade…</div>}>
+      <CheckoutInner />
+    </Suspense>
   );
 }

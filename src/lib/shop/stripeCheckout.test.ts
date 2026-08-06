@@ -2,7 +2,11 @@
  * Stripe checkout plan — no fake payment
  */
 import { buildMarketplaceDraft } from "./marketplace";
-import { planStripeCheckout } from "./stripeCheckout";
+import {
+  isStripeDemandDocumented,
+  planStripeCheckout,
+  stripeEnvPresent,
+} from "./stripeCheckout";
 
 function assert(c: boolean, m: string) {
   if (!c) throw new Error(m);
@@ -11,18 +15,29 @@ function assert(c: boolean, m: string) {
 const draft = buildMarketplaceDraft([
   { name: "Pads", priceEur: 40, qty: 1 },
 ]);
+
 const blocked = planStripeCheckout(draft, { demandDocumented: false });
 assert(blocked.status === "blocked_no_demand", "demand gate");
 assert(blocked.sessionCreateShape == null, "no session");
+assert(blocked.demandDocumented === false, "demand flag");
 
-const noKey = planStripeCheckout(draft, { demandDocumented: true });
-assert(
-  noKey.status === "not_configured" || noKey.status === "session_ready_shape",
-  "configured or not"
-);
-if (!noKey.hasSecretKey) {
-  assert(noKey.status === "not_configured", "no key");
-  assert(noKey.sessionCreateShape == null, "no fake session");
+const withDemand = planStripeCheckout(draft, { demandDocumented: true });
+if (!stripeEnvPresent().secret) {
+  assert(withDemand.status === "not_configured", "no key");
+  assert(withDemand.sessionCreateShape == null, "no fake session");
+} else {
+  assert(withDemand.status === "session_ready", "ready with key");
+  assert(!!withDemand.sessionCreateShape, "shape present");
 }
 
-console.log("stripeCheckout.test OK", { blocked: blocked.status });
+// Env default ohne Flag
+assert(
+  typeof isStripeDemandDocumented() === "boolean",
+  "demand helper"
+);
+
+console.log("stripeCheckout.test OK", {
+  blocked: blocked.status,
+  withDemand: withDemand.status,
+  demandEnv: isStripeDemandDocumented(),
+});

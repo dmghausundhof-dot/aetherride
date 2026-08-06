@@ -278,7 +278,7 @@ export default function ShopPage() {
                 : "pointer-events-none bg-surface-elevated opacity-40"
             }`}
           >
-            Weiter zur Demo-Kasse (kein echtes Stripe)
+            Weiter zur Kasse (Stripe nur mit Keys + Nachfrage-Flag)
           </Link>
         </section>
       )}
