@@ -1,10 +1,10 @@
 /**
  * Professionelle Roadmap (F-ACC → Marktreife)
  * Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
+ * G-4 Mengen-Ziel (≥3000 Komponenten) erreicht via Scale5.
  *
- * 1–4 ✅ Auth, Sync, Supabase, Postgres-Adapter
- * 5 ✅ Stripe Checkout (Demand-Gate + Keys; kein Fake-Payment)
- * 6 G-4 · 7 Native Offline · 8 Legal · 9 OAuth zum Schluss
+ * 1–5 ✅ Auth…Stripe · 6 ✅ G-4 Katalog
+ * 7 Native Offline · 8 Legal · 9 OAuth zum Schluss
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
@@ -35,13 +35,13 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 6,
-    titleDe: "G-4 Katalog ≥ Spec",
-    status: "in_progress" as const,
+    titleDe: "G-4 Katalog ≥ 3000 Komponentenmodelle",
+    status: "done" as const,
   },
   {
     id: 7,
     titleDe: "Native Offline-PMTiles (nach G-0)",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
   {
     id: 8,

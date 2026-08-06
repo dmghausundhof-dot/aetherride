@@ -17,6 +17,7 @@ import {
   listGateStatuses,
 } from "@/lib/platform/gateStatus";
 import { catalogStats } from "@/lib/catalog/bikes";
+import { COMPONENT_CATALOG } from "@/lib/catalog/components";
 import { pmtilesHookSummary } from "@/lib/platform/nativeContracts";
 
 export default function ProfilePage() {
@@ -30,7 +31,10 @@ export default function ProfilePage() {
   const rangeCalibration = useAppStore((s) => s.rangeCalibration);
   const appMode = useAppStore((s) => s.appMode);
   const setAppMode = useAppStore((s) => s.setAppMode);
-  const gateRows = listGateStatuses({ bikeCount: catalogStats().bikes });
+  const gateRows = listGateStatuses({
+    bikeCount: catalogStats().bikes,
+    componentCount: COMPONENT_CATALOG.length,
+  });
 
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({

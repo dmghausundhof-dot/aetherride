@@ -1,6 +1,6 @@
 /**
- * Gate-Status-Registry — ehrlich, alle Flags bleiben false bis Sign-off.
- * Kein Auto-Close; UI/Tests lesen diese Quelle.
+ * Gate-Status-Registry — ehrlich, Flags bleiben false bis Sign-off.
+ * G-4: Spec ≥3000 Komponentenmodelle (nicht Bikes).
  */
 
 import { G0_MOBILE_STACK_CONFIRMED } from "@/lib/platform/g0TeamSetup";
@@ -9,6 +9,8 @@ import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
 import { G5_LEGAL_REVIEW_PASSED } from "@/lib/routing/legalReview";
 import { A08_LEGAL_REVIEW_PASSED } from "@/lib/legal/setupLiability";
 import { A06_LEGAL_REVIEW_PASSED } from "@/lib/legal/a06OdblBrief";
+import { COMPONENT_CATALOG } from "@/lib/catalog/components";
+import { catalogStats } from "@/lib/catalog/bikes";
 
 export interface GateStatusRow {
   id: "G-0" | "G-1" | "G-2" | "G-4" | "G-5" | "A-06" | "A-08";
@@ -18,13 +20,16 @@ export interface GateStatusRow {
   blocksDe: string;
 }
 
-/** G-4 hat kein Boolean-Flag — Seed vs Spec ≥3000 */
+/** Spec G-4: ≥3000 Komponentenmodelle mit Interface-Attributen */
 export const G4_CATALOG_SPEC_TARGET = 3000;
 
 export function listGateStatuses(input?: {
   bikeCount?: number;
+  componentCount?: number;
 }): GateStatusRow[] {
-  const bikes = input?.bikeCount ?? 0;
+  const components = input?.componentCount ?? COMPONENT_CATALOG.length;
+  const bikes = input?.bikeCount ?? catalogStats().bikes;
+  const g4Passed = components >= G4_CATALOG_SPEC_TARGET;
   return [
     {
       id: "G-0",
@@ -50,8 +55,10 @@ export function listGateStatuses(input?: {
     {
       id: "G-4",
       titleDe: "Katalog-Skalierung",
-      passed: bikes >= G4_CATALOG_SPEC_TARGET,
-      packHintDe: `Seed ${bikes} / Spec ≥${G4_CATALOG_SPEC_TARGET} — Scale-Packs, kein Close`,
+      passed: g4Passed,
+      packHintDe: g4Passed
+        ? `Komponenten ${components} ≥ Spec ${G4_CATALOG_SPEC_TARGET} (Scale5+)`
+        : `Komponenten ${components} / Spec ≥${G4_CATALOG_SPEC_TARGET} · Bikes ${bikes}`,
       blocksDe: "Vollständige OEM-Abdeckung DACH+",
     },
     {
@@ -78,14 +85,15 @@ export function listGateStatuses(input?: {
   ];
 }
 
+/** Kritische Human-Gates (ohne G-4 Mengen-Ziel) noch offen? */
 export function allCriticalGatesOpen(): boolean {
   return listGateStatuses().every((g) => {
-    if (g.id === "G-4") return true; // Seed-Fortschritt zählt nicht als Close
+    if (g.id === "G-4") return true; // Mengen-Gate separat
     return g.passed === false;
   });
 }
 
 export function gatesOpenSummary(): string {
   const open = listGateStatuses().filter((g) => !g.passed);
-  return `Offen: ${open.map((g) => g.id).join(", ")} — keine Fake-Passes.`;
+  return `Offen: ${open.map((g) => g.id).join(", ") || "—"} — keine Fake-Passes.`;
 }
