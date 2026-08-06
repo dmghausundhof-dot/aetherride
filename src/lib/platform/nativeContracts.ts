@@ -70,7 +70,7 @@ export function webDemoCapabilities(): PlatformCapabilityReport {
       "Sensorik: WebSensorSimulator 200 Hz Batches (nicht CoreMotion).",
       "Routing: Demo-Kostenfunktion; Valhalla FFI ausstehend.",
       "FNI/Durchschlag/Setup-Rec: Engine vorhanden, Gate G-2 steuert Live.",
-      "Wegerecht: Demo-Regeln, Gate G-5 Legal ausstehend.",
+      "Wegerecht: Demo-Regeln Tirol/Bayern, redaktionell gesichtet — Gate G-5 Legal ausstehend (keine Launch-Freigabe).",
     ],
   };
 }

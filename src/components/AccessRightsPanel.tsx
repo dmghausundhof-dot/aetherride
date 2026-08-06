@@ -6,6 +6,12 @@ import {
   type AccessFinding,
   type JurisdictionId,
 } from "@/lib/routing/accessRights";
+import {
+  g5StatusBadge,
+  g5StatusShort,
+  getLegalReview,
+  isG5ClosedFor,
+} from "@/lib/routing/legalReview";
 
 export function AccessRightsPanel({
   jurisdiction,
@@ -22,6 +28,8 @@ export function AccessRightsPanel({
 }) {
   const [more, setMore] = useState(false);
   const profile = JURISDICTIONS[jurisdiction];
+  const review = getLegalReview(jurisdiction);
+  const g5Closed = isG5ClosedFor(jurisdiction);
   const relevant = findings.filter(
     (f) => f.severity === "block" || f.severity === "warn" || (more && f.severity === "info")
   );
@@ -32,7 +40,7 @@ export function AccessRightsPanel({
         <div>
           <h3 className="font-semibold">Wegerecht</h3>
           <p className="text-[11px] text-text-secondary">
-            F-NAV-001.1 · zurückhaltend · Gate G-5 offen
+            F-NAV-001.1 · zurückhaltend · {g5StatusBadge(jurisdiction)}
           </p>
         </div>
         <button
@@ -66,6 +74,16 @@ export function AccessRightsPanel({
 
       <p className="mb-2 text-sm text-text-secondary">
         {prefaceShort ?? profile.prefaceShort}
+      </p>
+
+      <p
+        className={`mb-2 rounded-lg px-2 py-1.5 text-[11px] ${
+          g5Closed
+            ? "border border-success/30 bg-success/10"
+            : "border border-warning/30 bg-warning/10"
+        }`}
+      >
+        {g5StatusShort(jurisdiction)}
       </p>
 
       {blocked && (
@@ -135,18 +153,71 @@ export function AccessRightsPanel({
       )}
 
       {more && (
-        <div className="mt-3 rounded-lg bg-surface-elevated p-2 text-[11px] text-text-secondary">
-          <p className="mb-1 font-medium text-foreground">Mehr Kontext</p>
-          <p>{profile.prefaceMore}</p>
-          <p className="mt-2">
-            Fassung {profile.version}
-            {profile.legalReviewedAt
-              ? ` · geprüft ${profile.legalReviewedAt}`
-              : " · Legal-Review ausstehend"}
-            {" · "}
-            nächste Prüfung geplant {profile.nextReviewDue}.
-          </p>
-          <p className="mt-1">Keine Rechtsberatung. Beschilderung vor Ort hat Vorrang.</p>
+        <div className="mt-3 space-y-2 rounded-lg bg-surface-elevated p-2 text-[11px] text-text-secondary">
+          <div>
+            <p className="mb-1 font-medium text-foreground">Mehr Kontext</p>
+            <p>{profile.prefaceMore}</p>
+            <p className="mt-2">
+              Fassung {profile.version}
+              {profile.legalReviewedAt
+                ? ` · geprüft ${profile.legalReviewedAt}`
+                : " · Legal-Review ausstehend"}
+              {" · "}
+              nächste Prüfung geplant {profile.nextReviewDue}.
+            </p>
+            <p className="mt-1">
+              Keine Rechtsberatung. Beschilderung vor Ort hat Vorrang.
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-1 font-medium text-foreground">
+              G-5 Review-Checkliste ({review.status})
+            </p>
+            <p>
+              Entwurf: {review.draftAuthor} · {review.draftVersion}
+              {review.legalReviewer
+                ? ` · Legal: ${review.legalReviewer}`
+                : " · Legal-Sign-off fehlt"}
+            </p>
+            {review.sources.length > 0 && (
+              <ul className="mt-1 list-inside list-disc">
+                {review.sources.map((s) => (
+                  <li key={s.id}>
+                    {s.url ? (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent underline"
+                      >
+                        {s.label}
+                      </a>
+                    ) : (
+                      s.label
+                    )}
+                    {s.editorialCheckedAt
+                      ? ` · redaktionell ${s.editorialCheckedAt}`
+                      : " · Quelle offen"}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {review.openQuestions.length > 0 && (
+              <div className="mt-2">
+                <p className="font-medium text-foreground">Offene Legal-Fragen</p>
+                <ul className="mt-1 list-inside list-disc">
+                  {review.openQuestions.map((q) => (
+                    <li key={q}>{q}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="mt-2">
+              Launch-fähig: {review.launchEligible || g5Closed ? "ja" : "nein"}{" "}
+              (A-07 / Launch-Kriterium #8).
+            </p>
+          </div>
         </div>
       )}
     </section>

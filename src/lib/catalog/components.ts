@@ -1,5 +1,6 @@
 import type { ComponentModel, TypedAttribute } from "@/types/garage";
 import { COMPONENT_CATALOG_DACH } from "./componentsDach";
+import { COMPONENT_CATALOG_DACH_DEPTH } from "./componentsDachDepth";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -1159,6 +1160,7 @@ const COMPONENT_CATALOG_CORE: ComponentModel[] = [
 export const COMPONENT_CATALOG: ComponentModel[] = [
   ...COMPONENT_CATALOG_CORE,
   ...COMPONENT_CATALOG_DACH,
+  ...COMPONENT_CATALOG_DACH_DEPTH,
 ];
 
 export function getComponentModel(id: string): ComponentModel | undefined {
