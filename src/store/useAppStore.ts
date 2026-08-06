@@ -26,6 +26,20 @@ import {
   defaultCalibration,
   type RangeCalibration,
 } from "@/lib/ebike/range";
+import { buildEstimatedAssistLog } from "@/lib/ebike/assistLog";
+import { allProductRecommendations } from "@/lib/shop/recommendations";
+import {
+  DEFAULT_CONSENTS,
+  DEFAULT_PRIVACY_ZONES,
+  type ConsentPurpose,
+  type ConsentState,
+  type PrivacyZone,
+} from "@/lib/privacy/consents";
+import {
+  createFamilyRider,
+  type FamilyRider,
+} from "@/lib/garage/family";
+import type { CommerceMode } from "@/lib/shop/marketplace";
 import type {
   Bike,
   BikeCategory,
@@ -74,6 +88,11 @@ interface AppState {
   subscriptionTier: SubscriptionTier;
   rangeCalibration: RangeCalibration | null;
   profileExplanations: Record<string, string>;
+  consents: ConsentState[];
+  privacyZones: PrivacyZone[];
+  familyRiders: FamilyRider[];
+  activeFamilyRiderId: string | null;
+  commerceMode: CommerceMode;
 
   setActiveBike: (id: string) => void;
   addBikeFromCatalog: (input: {
@@ -152,6 +171,13 @@ interface AppState {
   setSubscriptionTier: (tier: SubscriptionTier) => void;
   applySetupTemplate: (bikeId: string, templateId: string) => string;
   canUseProFeature: (feature: "multi_bike" | "bracketing" | "range" | "offline") => boolean;
+  setConsent: (purpose: ConsentPurpose, granted: boolean) => void;
+  addPrivacyZone: (zone: Omit<PrivacyZone, "id">) => void;
+  removePrivacyZone: (id: string) => void;
+  addFamilyRider: (name: string, weightKg: number) => string;
+  setActiveFamilyRider: (id: string | null) => void;
+  assignSetupToRider: (riderId: string, setupId: string) => void;
+  setCommerceMode: (mode: CommerceMode) => void;
 
   startRide: (bikeId: string, sportType: BikeType) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
@@ -194,7 +220,7 @@ interface AppState {
   ) => string;
 }
 
-const STORAGE_VERSION = 4;
+const STORAGE_VERSION = 5;
 
 const PROFILE_EXPLANATIONS: Record<string, string> = {
   style:
@@ -334,6 +360,11 @@ export const useAppStore = create<AppState>()(
       subscriptionTier: "free",
       rangeCalibration: null,
       profileExplanations: PROFILE_EXPLANATIONS,
+      consents: DEFAULT_CONSENTS,
+      privacyZones: DEFAULT_PRIVACY_ZONES,
+      familyRiders: [],
+      activeFamilyRiderId: null,
+      commerceMode: "affiliate",
 
       setActiveBike: (id) =>
         set((s) => ({
@@ -362,9 +393,61 @@ export const useAppStore = create<AppState>()(
       canUseProFeature: (feature) => {
         const tier = get().subscriptionTier;
         if (tier === "pro") return true;
-        // Spec 1.4 Free: 1 Bike, Basis; Pro: Multi-Bike, Bracketing, Offline, Reichweite
         return false;
       },
+
+      setConsent: (purpose, granted) =>
+        set((s) => ({
+          consents: s.consents.map((c) =>
+            c.purpose === purpose
+              ? {
+                  ...c,
+                  granted,
+                  updatedAt: new Date().toISOString(),
+                }
+              : c
+          ),
+        })),
+
+      addPrivacyZone: (zone) =>
+        set((s) => ({
+          privacyZones: [
+            ...s.privacyZones,
+            { ...zone, id: uuidv4() },
+          ],
+        })),
+
+      removePrivacyZone: (id) =>
+        set((s) => ({
+          privacyZones: s.privacyZones.filter((z) => z.id !== id),
+        })),
+
+      addFamilyRider: (name, weightKg) => {
+        const rider = createFamilyRider(name, weightKg);
+        set((s) => ({
+          familyRiders: [...s.familyRiders, rider],
+          activeFamilyRiderId: s.activeFamilyRiderId ?? rider.id,
+        }));
+        return rider.id;
+      },
+
+      setActiveFamilyRider: (id) => set({ activeFamilyRiderId: id }),
+
+      assignSetupToRider: (riderId, setupId) =>
+        set((s) => ({
+          familyRiders: s.familyRiders.map((r) =>
+            r.id === riderId
+              ? {
+                  ...r,
+                  setupIds: r.setupIds.includes(setupId)
+                    ? r.setupIds
+                    : [...r.setupIds, setupId],
+                }
+              : r
+          ),
+        })),
+
+      setCommerceMode: (mode) => set({ commerceMode: mode }),
 
       applySetupTemplate: (bikeId, templateId) => {
         const bike = get().bikes.find((b) => b.id === bikeId);
@@ -986,8 +1069,20 @@ export const useAppStore = create<AppState>()(
             : undefined,
         };
 
-        // P1: Reichweiten-Selbstkalibrierung aus SOC-Delta
         const bikeBefore = get().bikes.find((b) => b.id === ride.bikeId);
+        if (bikeBefore?.isEbike) {
+          ride.assistSummary = buildEstimatedAssistLog({
+            durationSec: ride.durationSec,
+            distanceM: ride.distanceM,
+            elevationGainM: ride.elevationGainM,
+            avgRiderPower: boschLive?.riderPower,
+            avgSpeedKmh: boschLive?.speed,
+            preferredMode:
+              get().riderProfile.preferences.eBikeAssistPreference,
+          });
+        }
+
+        // P1: Reichweiten-Selbstkalibrierung aus SOC-Delta
         if (bikeBefore?.isEbike && boschLive) {
           const prevCal =
             get().rangeCalibration ??
@@ -1017,6 +1112,29 @@ export const useAppStore = create<AppState>()(
           ),
         }));
 
+        // F-SHP-002: anlassbezogene Produktempfehlungen (nur mit Consent)
+        const productConsent = get().consents.find(
+          (c) => c.purpose === "product_recommendations"
+        )?.granted;
+        if (productConsent && bikeBefore) {
+          const setup = bikeBefore.setups.find((s) => s.isCurrent);
+          const precs = allProductRecommendations({
+            bike: bikeBefore,
+            rides: [ride, ...get().rides],
+            setup,
+          });
+          for (const pr of precs.slice(0, 2)) {
+            get().addRecommendation({
+              type: "product",
+              title: pr.title,
+              content: `${pr.product.name} · ${pr.product.priceEur} € · ${pr.product.merchantName}`,
+              reasoning: `Auslöser: ${pr.triggeringDataPoint}. ${pr.reason}`,
+              score: pr.confidence === "high" ? 0.85 : 0.65,
+              relatedBikeId: bikeBefore.id,
+              relatedRideId: ride.id,
+            });
+          }
+        }
         // Wartungshinweise als Recommendations
         const bike = get().bikes.find((b) => b.id === ride.bikeId);
         if (bike) {
@@ -1194,6 +1312,13 @@ export const useAppStore = create<AppState>()(
           subscriptionTier: base.subscriptionTier ?? "free",
           rangeCalibration: base.rangeCalibration ?? null,
           profileExplanations: PROFILE_EXPLANATIONS,
+          consents: base.consents?.length ? base.consents : DEFAULT_CONSENTS,
+          privacyZones: base.privacyZones?.length
+            ? base.privacyZones
+            : DEFAULT_PRIVACY_ZONES,
+          familyRiders: base.familyRiders ?? [],
+          activeFamilyRiderId: base.activeFamilyRiderId ?? null,
+          commerceMode: base.commerceMode ?? "affiliate",
           storageVersion: STORAGE_VERSION,
         } as AppState;
       },
@@ -1211,6 +1336,11 @@ export const useAppStore = create<AppState>()(
         storageVersion: s.storageVersion,
         subscriptionTier: s.subscriptionTier,
         rangeCalibration: s.rangeCalibration,
+        consents: s.consents,
+        privacyZones: s.privacyZones,
+        familyRiders: s.familyRiders,
+        activeFamilyRiderId: s.activeFamilyRiderId,
+        commerceMode: s.commerceMode,
       }),
     }
   )

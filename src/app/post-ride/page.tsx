@@ -154,6 +154,43 @@ function PostRideContent() {
         </section>
       )}
 
+      {ride.assistSummary && (
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-2 font-semibold">Assist-Modus-Log (F-EBK-005)</h3>
+          <p className="mb-2 text-xs text-warning">{ride.assistSummary.disclaimer}</p>
+          <p className="mb-2 text-sm">
+            Dominant:{" "}
+            <span className="font-semibold uppercase">
+              {ride.assistSummary.dominantMode}
+            </span>{" "}
+            · ≈ {ride.assistSummary.estimatedTotalWh} Wh
+          </p>
+          <div className="mb-2 flex flex-wrap gap-2 text-[11px]">
+            {Object.entries(ride.assistSummary.modeSharePct).map(([m, pct]) =>
+              pct > 0 ? (
+                <span
+                  key={m}
+                  className="rounded-md bg-surface-elevated px-2 py-0.5 uppercase"
+                >
+                  {m} {pct}%
+                </span>
+              ) : null
+            )}
+          </div>
+          <ul className="space-y-1 text-xs text-text-secondary">
+            {ride.assistSummary.segments.map((s) => (
+              <li key={s.id}>
+                {s.label} · {(s.distanceM / 1000).toFixed(1)} km · Quelle{" "}
+                {s.source}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] text-text-secondary">
+            {ride.assistSummary.sourceLabel}
+          </p>
+        </section>
+      )}
+
       {/* F-SET-004 Subjektives Feedback ≤3 Taps */}
       {!feedbackDone && (
         <section className="rounded-2xl border border-border bg-surface p-4">

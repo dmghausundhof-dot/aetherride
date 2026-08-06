@@ -282,6 +282,12 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      <Link href="/privacy" className="text-center text-sm text-accent">
+        Datenexport · Privatsphäre · Familie →
+      </Link>
+      <Link href="/chat" className="text-center text-sm text-accent">
+        KI-Chat (Engines + Numeric-Guard) →
+      </Link>
       <Link href="/" className="text-center text-sm text-accent">
         ← Zurück
       </Link>
