@@ -1,7 +1,5 @@
 /**
- * F-SHP-003 Phase 3 Marketplace — Stub mit EU-Pflichtangaben
- * Spec: nur bei belegter Nachfrage; physische Waren NICHT über Apple IAP.
- * Stufe 1 Affiliate bleibt Default.
+ * F-SHP-003 Marketplace — EU-Pflichtangaben aus Env (keine erfundenen Firmendaten).
  */
 
 export type CommerceMode = "affiliate" | "marketplace";
@@ -14,23 +12,50 @@ export interface MarketplaceLegal {
   gpsr: string;
   dispute: string;
   batteryNote: string;
+  /** false wenn Pflichtfelder (Impressum) nicht konfiguriert */
+  configured: boolean;
 }
 
-export const MARKETPLACE_LEGAL: MarketplaceLegal = {
-  imprint:
-    "AetherRide Demo GmbH (Muster) · Musterstraße 1 · 80331 München · info@aetherride.demo",
-  withdrawal:
-    "Widerrufsbelehrung: 14 Tage Widerrufsrecht ab Warenerhalt (Verbraucher, EU).",
-  shipping:
-    "Versandkosten und Lieferzeit werden vor Kaufabschluss angezeigt (hier: 5,90 € / 2–4 Werktage Demo).",
-  warranty: "Gewährleistung nach EU-Recht. Händler bleibt Vertragspartner.",
-  gpsr:
-    "GPSR: Herstellerangaben je Produkt erforderlich. Demo-Produkte: siehe Partnerkatalog.",
-  dispute:
-    "Online-Streitbeilegung: https://ec.europa.eu/consumers/odr — Demo-Hinweis.",
-  batteryNote:
-    "Lithium-Akkus: in Stufe 1 nicht vermittelt; Stufe 2 nur über Händler mit Gefahrgutzulassung (Spec 8.5).",
-};
+function env(name: string): string {
+  if (typeof process === "undefined") return "";
+  return (process.env[name] || "").trim();
+}
+
+export function getMarketplaceLegal(): MarketplaceLegal {
+  const imprint = env("NEXT_PUBLIC_LEGAL_IMPRINT");
+  const withdrawal =
+    env("NEXT_PUBLIC_LEGAL_WITHDRAWAL") ||
+    "Widerrufsbelehrung: 14 Tage Widerrufsrecht ab Warenerhalt für Verbraucher in der EU. Details: /legal/widerruf";
+  const shipping =
+    env("NEXT_PUBLIC_LEGAL_SHIPPING") ||
+    "Versandkosten und Lieferzeit werden vor Kaufabschluss angezeigt.";
+  const warranty =
+    env("NEXT_PUBLIC_LEGAL_WARRANTY") ||
+    "Gewährleistung nach EU-Recht. Vertragspartner ist der jeweilige Händler bzw. AetherRide laut Impressum.";
+  const gpsr =
+    env("NEXT_PUBLIC_LEGAL_GPSR") ||
+    "GPSR: Herstellerangaben je Produkt im Katalog bzw. vor Checkout.";
+  const dispute =
+    env("NEXT_PUBLIC_LEGAL_DISPUTE") ||
+    "Online-Streitbeilegung: https://ec.europa.eu/consumers/odr";
+  const batteryNote =
+    env("NEXT_PUBLIC_LEGAL_BATTERY") ||
+    "Lithium-Akkus: in Affiliate-Stufe nicht vermittelt; Marketplace nur über Händler mit Gefahrgutzulassung (Spec 8.5).";
+
+  return {
+    imprint: imprint || "",
+    withdrawal,
+    shipping,
+    warranty,
+    gpsr,
+    dispute,
+    batteryNote,
+    configured: Boolean(imprint),
+  };
+}
+
+/** @deprecated use getMarketplaceLegal() */
+export const MARKETPLACE_LEGAL: MarketplaceLegal = getMarketplaceLegal();
 
 export interface MarketplaceCheckoutDraft {
   mode: CommerceMode;
@@ -53,6 +78,6 @@ export function buildMarketplaceDraft(
     totalEur: Math.round((sub + shipping) * 100) / 100,
     legalAccepted: false,
     stripeNote:
-      "Produktion: Stripe Checkout Session. Kein Apple IAP für physische Waren (Store-Regel).",
+      "Stripe Checkout Session. Kein Apple IAP für physische Waren (Store-Regel).",
   };
 }

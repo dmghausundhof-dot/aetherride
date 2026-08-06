@@ -1,0 +1,115 @@
+{
+  "importedAt": "2026-08-06T21:01:25.137Z",
+  "source": "data/catalog/extra-seed.json",
+  "manufacturers": [
+    {
+      "id": "mfr-yeti",
+      "name": "Yeti",
+      "bikes": [
+        {
+          "id": "cat-yeti-sb165-2024",
+          "name": "SB165",
+          "year": 2024,
+          "frameSizeOptions": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ],
+          "category": "mtb_enduro",
+          "travelFrontMm": 170,
+          "travelRearMm": 165,
+          "wheelSizeFront": "29",
+          "wheelSizeRear": "29",
+          "isEbike": false,
+          "weightKgApprox": 15.2,
+          "oemComponents": {
+            "frame": "cm-yeti-sb165-frame",
+            "fork": "cm-fox-36-factory-170",
+            "rear_shock": "cm-fox-float-x2-20565",
+            "headset": "cm-cane-creek-zs44-zs56",
+            "stem": "cm-renthal-apex-35",
+            "handlebar": "cm-renthal-fatbar-35",
+            "tire_front": "cm-maxxis-assegai-29-25",
+            "tire_rear": "cm-maxxis-dhr2-29-24",
+            "cassette": "cm-sram-x0-cassette-xd",
+            "brake_front": "cm-sram-code-rsc-front",
+            "brake_rear": "cm-sram-code-rsc-rear"
+          },
+          "frameAttributes": [],
+          "sourceUrl": "https://yeticycles.com/"
+        }
+      ]
+    },
+    {
+      "id": "mfr-orbea",
+      "name": "Orbea",
+      "bikes": [
+        {
+          "id": "cat-orbea-terra-2024",
+          "name": "Terra M20",
+          "year": 2024,
+          "frameSizeOptions": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ],
+          "category": "gravel",
+          "travelFrontMm": 0,
+          "travelRearMm": 0,
+          "wheelSizeFront": "700c",
+          "wheelSizeRear": "700c",
+          "isEbike": false,
+          "weightKgApprox": 9.5,
+          "oemComponents": {
+            "frame": "cm-orbea-terra-frame",
+            "tire_front": "cm-pathfinder-pro-700-42",
+            "tire_rear": "cm-pathfinder-pro-700-42"
+          },
+          "frameAttributes": [],
+          "sourceUrl": "https://www.orbea.com/"
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "cm-yeti-sb165-frame",
+      "slot": "frame",
+      "manufacturer": "Yeti",
+      "model": "SB165",
+      "variant": "2024",
+      "modelYear": 2024,
+      "attributes": [
+        {
+          "key": "wheel_size",
+          "valueEnum": "29",
+          "source": "manufacturer_doc"
+        },
+        {
+          "key": "travel_rear_mm",
+          "valueNum": 165,
+          "unit": "mm",
+          "source": "manufacturer_doc"
+        }
+      ]
+    },
+    {
+      "id": "cm-orbea-terra-frame",
+      "slot": "frame",
+      "manufacturer": "Orbea",
+      "model": "Terra",
+      "variant": "M20 2024",
+      "modelYear": 2024,
+      "attributes": [
+        {
+          "key": "wheel_size",
+          "valueEnum": "700c",
+          "source": "manufacturer_doc"
+        }
+      ]
+    }
+  ]
+}

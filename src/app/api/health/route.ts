@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   return NextResponse.json({
-    status: "ok",
-    service: "AetherRide API",
-    version: "1.0.0",
+    ok: true,
+    service: "aetherride",
     features: {
       orders: true,
-      sensorIngestion: "planned",
-      routing: "planned",
-      vectorRecommendations: "planned",
+      auth: true,
+      sync: true,
+      billing: true,
+      chat: true,
+      stripeWebhook: true,
+      timescaledb: "planned",
+      pgvector: "planned",
     },
     timestamp: new Date().toISOString(),
   });

@@ -57,7 +57,7 @@ Version 1.0 · Spec-konform · Offline-First · Outdoor Design System
 - **F-SHP-002** Anlassbezogene Produktempfehlungen mit Datenpunkt-Zitat
 - **F-AI-001/004** KI-Chat mit Tool-Zugriff + Numeric-Guard
 - **F-ACC-003/005/006/007** GPX/JSON-Export, Privacy-Zonen, Einwilligungen, Familien-Garage
-- **F-SHP-003 P3** Marketplace-Demo mit EU-Pflichtangaben (kein echtes Stripe; Affiliate bleibt Default)
+- **F-SHP-003 P3** Marketplace mit EU-Pflichtangaben + Stripe Checkout; Affiliate bleibt Default
 
 ### Weitere Kernfeatures
 - Live-Ride mit Sensor + Bosch + Karte
@@ -100,6 +100,37 @@ src/
 5. Shop: Stripe / Partner-Händler API
 
 Die gesamte Domain-Logik und die Contracts sind bereits produktionsreif.
+
+## Produktionsschicht (Supabase · Stripe · Grok)
+
+Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
+
+- **Supabase** Projekt `aetherride` (EU): Auth, profiles, sync_snapshots, orders, chat_usage + RLS
+- **Stripe**: AetherRide Pro 6,99 €/Mo + 59,99 €/Jahr; Marketplace Checkout; Webhook → `/api/webhooks/stripe`
+- **Grok** (`/api/chat`) hinter Numeric-Guard; Free 5/Tag · Pro 50/Tag (Monatskappe 40/500)
+- Env-Vorlage: [`.env.example`](.env.example)
+
+**Kein Vercel-Deploy in diesem Repo-Schritt** — Deploy später mit dem vorgesehenen Vercel-Account. Setup:
+
+1. `.env.example` → `.env.local` (Service Role + Stripe + `XAI_API_KEY` setzen)
+2. Repo auf dem richtigen Vercel-Account importieren und Env setzen
+3. Stripe Webhook auf `/api/webhooks/stripe`
+4. Supabase Auth Redirect: `https://<domain>/auth/callback`
+
+## Web-Produktion (Demo-Gaps Schnitt 1)
+
+- Legal: Env `NEXT_PUBLIC_LEGAL_*` + `/legal/impressum` · `/legal/widerruf` (ohne Impressum: Marketplace-Checkout gesperrt)
+- Export: GPX + FIT Download unter Datenschutz
+- Katalog: `npm run catalog:import` ← `data/catalog/extra-seed.json` → Yeti/Orbea
+- Sync: LWW mit `updated_at` + Pull nach Login
+- Discover: Heatmap aus eigenen Rides, Elevation `/api/elevation`, Mapillary `/api/trail`
+
+### Launch-Checkliste (Prozess)
+
+- [ ] DSFA abgeschlossen  
+- [ ] A11y-Audit ohne kritische Befunde  
+- [ ] Offline-Regression Flugmodus  
+- [ ] Store-Richtlinien-Vorprüfung  
 
 ---
 AetherRide · Spec 1.0 · August 2026
