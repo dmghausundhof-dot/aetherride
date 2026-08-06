@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * Einfache Orders-API.
+ * Produktion: PostgreSQL + TimescaleDB für Ride/Sensor-Time-Series,
+ * Vector-DB (pgvector) für Recommendations, Object-Storage für Tracks.
+ *
+ * Hier: In-Memory für die Prototype (persistiert über Client-Zustand).
+ */
+
 const orders: unknown[] = [];
 
 export async function POST(req: NextRequest) {
