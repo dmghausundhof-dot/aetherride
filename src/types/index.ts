@@ -84,6 +84,20 @@ export interface RiderProfile {
     preferFlow: boolean;
     eBikeAssistPreference: "eco" | "tour" | "sport" | "turbo";
   };
+  /** F-AI-002: erklärbare Terrainverteilung (Summe ≈ 100) */
+  terrainShare?: {
+    s0s1: number;
+    s2: number;
+    s3plus: number;
+    gravelRoad: number;
+  };
+  /** Fahrstil-Indikatoren — korrigierbar, nicht Blackbox-Embedding */
+  styleIndicators?: {
+    brakeIntensityBeforeCorners: number; // 0–100
+    timeOver04gLateralPct: number;
+    impactsPerHour: number;
+    jumpsPerRide: number;
+  };
   fitnessIndicators: {
     avgRideDurationMin: number;
     weeklyDistanceKm: number;

@@ -26,6 +26,8 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
   const addBikeFromCatalog = useAppStore((s) => s.addBikeFromCatalog);
   const addBikeBasic = useAppStore((s) => s.addBikeBasic);
   const addBikeFromImport = useAppStore((s) => s.addBikeFromImport);
+  const bikes = useAppStore((s) => s.bikes);
+  const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const manufacturers = useMemo(() => listCatalogManufacturers(), []);
 
   const [mode, setMode] = useState<Mode>("catalog");
@@ -35,6 +37,7 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
   const catBike = mfr?.bikes.find((b) => b.id === bikeId);
   const [size, setSize] = useState(catBike?.frameSizeOptions[0] ?? "L");
   const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const [basicCategory, setBasicCategory] = useState<BikeCategory>("mtb_am");
   const [travelF, setTravelF] = useState(150);
@@ -42,30 +45,41 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
   const [wheel, setWheel] = useState<WheelSize>("29");
   const [importNote, setImportNote] = useState("");
 
+  const freeBlocked = subscriptionTier === "free" && bikes.length >= 1;
+
   const submit = () => {
-    if (mode === "catalog" && bikeId) {
-      addBikeFromCatalog({
-        catalogBikeId: bikeId,
-        frameSize: size,
-        name: name || undefined,
-      });
-    } else if (mode === "basic") {
-      addBikeBasic({
-        name: name || "Mein Bike",
-        category: basicCategory,
-        travelFrontMm: travelF,
-        travelRearMm: travelR,
-        wheelSizeFront: wheel,
-        wheelSizeRear: wheel,
-        frameSize: size,
-      });
-    } else {
-      addBikeFromImport({
-        name: name || "Import-Bike",
-        note: importNote || "GPX/FIT-Platzhalter ohne Komponenten",
-      });
+    setError(null);
+    if (freeBlocked) {
+      setError("Free-Tier: nur 1 Bike. Pro unter Profil freischalten.");
+      return;
     }
-    onClose();
+    try {
+      if (mode === "catalog" && bikeId) {
+        addBikeFromCatalog({
+          catalogBikeId: bikeId,
+          frameSize: size,
+          name: name || undefined,
+        });
+      } else if (mode === "basic") {
+        addBikeBasic({
+          name: name || "Mein Bike",
+          category: basicCategory,
+          travelFrontMm: travelF,
+          travelRearMm: travelR,
+          wheelSizeFront: wheel,
+          wheelSizeRear: wheel,
+          frameSize: size,
+        });
+      } else {
+        addBikeFromImport({
+          name: name || "Import-Bike",
+          note: importNote || "GPX/FIT-Platzhalter ohne Komponenten",
+        });
+      }
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Anlegen fehlgeschlagen");
+    }
   };
 
   return (
@@ -77,6 +91,18 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {freeBlocked && (
+          <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+            Free: bereits 1 Bike. Multi-Bike ist Pro (Spec 1.4) — unter Profil
+            umschalten.
+          </div>
+        )}
+        {error && (
+          <div className="mb-3 rounded-xl border border-error/40 bg-error/10 px-3 py-2 text-xs text-error">
+            {error}
+          </div>
+        )}
 
         <div className="mb-4 grid grid-cols-3 gap-2">
           {(

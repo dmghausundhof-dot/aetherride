@@ -20,6 +20,12 @@ import {
   createImmutableSetup,
   recommendedSagPct,
 } from "@/lib/setup/ranges";
+import { templatesForCategory } from "@/lib/setup/templates";
+import {
+  calibrateFromRide,
+  defaultCalibration,
+  type RangeCalibration,
+} from "@/lib/ebike/range";
 import type {
   Bike,
   BikeCategory,
@@ -40,6 +46,8 @@ import type {
   SetupCondition,
   WheelSize,
 } from "@/types";
+
+export type SubscriptionTier = "free" | "pro";
 
 interface AppState {
   bikes: Bike[];
@@ -63,6 +71,9 @@ interface AppState {
   bracketingSeries: BracketingSeries[];
   rideFeedbacks: RideFeedback[];
   storageVersion: number;
+  subscriptionTier: SubscriptionTier;
+  rangeCalibration: RangeCalibration | null;
+  profileExplanations: Record<string, string>;
 
   setActiveBike: (id: string) => void;
   addBikeFromCatalog: (input: {
@@ -137,6 +148,10 @@ interface AppState {
   evaluateBracketing: (seriesId: string) => void;
 
   submitRideFeedback: (feedback: Omit<RideFeedback, "createdAt">) => void;
+  updateRiderProfile: (patch: Partial<RiderProfile>) => void;
+  setSubscriptionTier: (tier: SubscriptionTier) => void;
+  applySetupTemplate: (bikeId: string, templateId: string) => string;
+  canUseProFeature: (feature: "multi_bike" | "bracketing" | "range" | "offline") => boolean;
 
   startRide: (bikeId: string, sportType: BikeType) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
@@ -179,7 +194,29 @@ interface AppState {
   ) => string;
 }
 
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 4;
+
+const PROFILE_EXPLANATIONS: Record<string, string> = {
+  style:
+    "Abgeleitet aus Impact-Häufigkeit und Flow-Scores deiner Rides — jederzeit korrigierbar.",
+  skillLevel:
+    "Selbsteinschätzung 1–5; beeinflusst Routenvorschläge und Reichweiten-P_fahrer.",
+  preferTechnical:
+    "Gewichtet Routen mit höherem mtb:scale und rootigem Untergrund stärker.",
+  preferFlow:
+    "Bevorzugt flowige Trails und kompakte Oberflächen in Discover.",
+  preferSteep: "Hebt Routen mit mehr Höhenmetern und steileren Rampen an.",
+  eBikeAssistPreference:
+    "Nur Logging/Prognose-Kontext — keine Motorsteuerung (F-EBK-000).",
+  riderWeightKg:
+    "Für SAG-Vorlagen und Reichweitenphysik (Art. 9 DSGVO: lokal, korrigierbar).",
+  avgRideDurationMin: "Aus abgeschlossenen Rides gemittelt — manuell überschreibbar.",
+  weeklyDistanceKm: "Rollierende Wochenkilometer — manuell überschreibbar.",
+  terrainShare:
+    "Verteilung über mtb:scale / Oberfläche aus Historie — korrigierbar (F-AI-002).",
+  styleIndicators:
+    "Bremsintensität, Querbeschleunigung, Impacts, Sprünge — erklärbar, kein Embedding.",
+};
 
 const defaultProfile: RiderProfile = {
   style: "flow",
@@ -189,6 +226,18 @@ const defaultProfile: RiderProfile = {
     preferTechnical: true,
     preferFlow: true,
     eBikeAssistPreference: "sport",
+  },
+  terrainShare: {
+    s0s1: 35,
+    s2: 40,
+    s3plus: 15,
+    gravelRoad: 10,
+  },
+  styleIndicators: {
+    brakeIntensityBeforeCorners: 45,
+    timeOver04gLateralPct: 12,
+    impactsPerHour: 8,
+    jumpsPerRide: 2,
   },
   fitnessIndicators: {
     avgRideDurationMin: 90,
@@ -282,6 +331,9 @@ export const useAppStore = create<AppState>()(
       bracketingSeries: [],
       rideFeedbacks: [],
       storageVersion: STORAGE_VERSION,
+      subscriptionTier: "free",
+      rangeCalibration: null,
+      profileExplanations: PROFILE_EXPLANATIONS,
 
       setActiveBike: (id) =>
         set((s) => ({
@@ -289,7 +341,58 @@ export const useAppStore = create<AppState>()(
           bikes: ensureSingleActive(s.bikes, id),
         })),
 
+      updateRiderProfile: (patch) =>
+        set((s) => ({
+          riderProfile: {
+            ...s.riderProfile,
+            ...patch,
+            preferences: {
+              ...s.riderProfile.preferences,
+              ...(patch.preferences ?? {}),
+            },
+            fitnessIndicators: {
+              ...s.riderProfile.fitnessIndicators,
+              ...(patch.fitnessIndicators ?? {}),
+            },
+          },
+        })),
+
+      setSubscriptionTier: (tier) => set({ subscriptionTier: tier }),
+
+      canUseProFeature: (feature) => {
+        const tier = get().subscriptionTier;
+        if (tier === "pro") return true;
+        // Spec 1.4 Free: 1 Bike, Basis; Pro: Multi-Bike, Bracketing, Offline, Reichweite
+        return false;
+      },
+
+      applySetupTemplate: (bikeId, templateId) => {
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        if (!bike) return "";
+        const tpl = templatesForCategory(bike.category).find(
+          (t) => t.id === templateId
+        );
+        if (!tpl) return "";
+        const weight = get().riderProfile.riderWeightKg ?? 78;
+        const overrides = tpl.resolve(weight, bike.category);
+        return get().createSetupVersion({
+          bikeId,
+          label: `${tpl.label} (Vorlage)`,
+          conditions: tpl.conditions,
+          description: `${tpl.disclaimer} Quelle: ${tpl.sourceLabel}`,
+          valueOverrides: overrides,
+        });
+      },
+
       addBikeFromCatalog: ({ catalogBikeId, frameSize, name }) => {
+        if (
+          get().subscriptionTier === "free" &&
+          get().bikes.length >= 1
+        ) {
+          throw new Error(
+            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten (Spec 1.4)."
+          );
+        }
         const found = findCatalogBike(catalogBikeId);
         if (!found) throw new Error("Katalog-Bike nicht gefunden");
         const { bike: cat, manufacturer } = found;
@@ -375,6 +478,14 @@ export const useAppStore = create<AppState>()(
       },
 
       addBikeBasic: (input) => {
+        if (
+          get().subscriptionTier === "free" &&
+          get().bikes.length >= 1
+        ) {
+          throw new Error(
+            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten (Spec 1.4)."
+          );
+        }
         const id = uuidv4();
         const type = categoryToBikeType(input.category);
         const bike = emptyBikeBase({
@@ -875,6 +986,19 @@ export const useAppStore = create<AppState>()(
             : undefined,
         };
 
+        // P1: Reichweiten-Selbstkalibrierung aus SOC-Delta
+        const bikeBefore = get().bikes.find((b) => b.id === ride.bikeId);
+        if (bikeBefore?.isEbike && boschLive) {
+          const prevCal =
+            get().rangeCalibration ??
+            defaultCalibration(bikeBefore, get().riderProfile);
+          const whCap = 800;
+          const usedWh = Math.max(5, whCap * 0.12);
+          set({
+            rangeCalibration: calibrateFromRide(prevCal, ride, usedWh),
+          });
+        }
+
         set((s) => ({
           rides: [ride, ...s.rides],
           isRiding: false,
@@ -997,7 +1121,8 @@ export const useAppStore = create<AppState>()(
       seedDemoData: () => {
         const existing = get().bikes;
         if (existing.length > 0) return;
-        // Force re-seed if old schema without category
+        // Demo: Pro, damit Multi-Bike-Seed Spec 1.4 nicht blockiert
+        set({ subscriptionTier: "pro" });
         get().addBikeFromCatalog({
           catalogBikeId: "cat-transition-spire-2024",
           frameSize: "L",
@@ -1041,21 +1166,36 @@ export const useAppStore = create<AppState>()(
     {
       name: "aetherride-storage",
       version: STORAGE_VERSION,
-      migrate: () => {
-        // Alte Demo-Daten verwerfen → frischer Spec-Garage-Seed
+      migrate: (persisted, fromVersion) => {
+        const base = (persisted as Partial<AppState>) ?? {};
+        const profile = {
+          ...defaultProfile,
+          ...base.riderProfile,
+          preferences: {
+            ...defaultProfile.preferences,
+            ...base.riderProfile?.preferences,
+          },
+          terrainShare: {
+            ...defaultProfile.terrainShare!,
+            ...base.riderProfile?.terrainShare,
+          },
+          styleIndicators: {
+            ...defaultProfile.styleIndicators!,
+            ...base.riderProfile?.styleIndicators,
+          },
+          fitnessIndicators: {
+            ...defaultProfile.fitnessIndicators,
+            ...base.riderProfile?.fitnessIndicators,
+          },
+        };
         return {
-          bikes: [],
-          rides: [],
-          riderProfile: defaultProfile,
-          recommendations: [],
-          activeBikeId: null,
-          boschConnected: false,
-          maintenanceLogs: [],
-          maintenanceIntervals: [],
-          bracketingSeries: [],
-          rideFeedbacks: [],
+          ...base,
+          riderProfile: profile,
+          subscriptionTier: base.subscriptionTier ?? "free",
+          rangeCalibration: base.rangeCalibration ?? null,
+          profileExplanations: PROFILE_EXPLANATIONS,
           storageVersion: STORAGE_VERSION,
-        } as Partial<AppState>;
+        } as AppState;
       },
       partialize: (s) => ({
         bikes: s.bikes,
@@ -1069,6 +1209,8 @@ export const useAppStore = create<AppState>()(
         bracketingSeries: s.bracketingSeries,
         rideFeedbacks: s.rideFeedbacks,
         storageVersion: s.storageVersion,
+        subscriptionTier: s.subscriptionTier,
+        rangeCalibration: s.rangeCalibration,
       }),
     }
   )

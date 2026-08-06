@@ -22,6 +22,8 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
   const startBracketing = useAppStore((s) => s.startBracketing);
   const addBracketingRun = useAppStore((s) => s.addBracketingRun);
   const evaluateBracketing = useAppStore((s) => s.evaluateBracketing);
+  const canUseProFeature = useAppStore((s) => s.canUseProFeature);
+  const pro = canUseProFeature("bracketing");
 
   const [parameter, setParameter] = useState<BracketingParameter>("fork.rebound");
   const [from, setFrom] = useState(6);
@@ -32,6 +34,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
   const active = seriesList[0];
 
   const create = () => {
+    if (!pro) return;
     startBracketing({
       bikeId: bike.id,
       parameter,
@@ -64,16 +67,23 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
         Nur ein Parameter pro Serie. Effekt gilt erst bei |Δ| &gt; 1,5× gepoolter
         SD und n≥2 (F-SET-003).
       </p>
+      {!pro && (
+        <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+          Bracketing ist Pro (Spec 1.4). Unter Profil freischalten — Demo-Daten
+          starten mit Pro.
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <label className="col-span-2">
           Parameter
           <select
             value={parameter}
+            disabled={!pro}
             onChange={(e) =>
               setParameter(e.target.value as BracketingParameter)
             }
-            className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 disabled:opacity-50"
           >
             {PARAMS.map((p) => (
               <option key={p.id} value={p.id}>

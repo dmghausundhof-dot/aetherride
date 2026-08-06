@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
+import type { CompatibilityVerdict } from "@/types";
 
 export interface CartItem {
   id: string;
@@ -12,40 +13,49 @@ export interface CartItem {
   price: number;
   quantity: number;
   compatibilityMatch: boolean;
+  verdict?: CompatibilityVerdict;
+  affiliateUrl?: string;
+  merchantName?: string;
 }
 
-export interface Order {
+/** Affiliate-Weiterleitung statt In-App-Zahlung (F-SHP-003) */
+export interface AffiliateRedirect {
   id: string;
   items: CartItem[];
-  total: number;
-  status: "pending" | "confirmed" | "shipped" | "delivered";
   createdAt: string;
-  shippingAddress: {
-    name: string;
-    street: string;
-    zip: string;
-    city: string;
-    country: string;
-  };
-  email: string;
+  merchantName: string;
+  affiliateUrl: string;
 }
 
 interface CartState {
   items: CartItem[];
-  orders: Order[];
-  addItem: (item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) => void;
+  redirects: AffiliateRedirect[];
+  addItem: (
+    item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }
+  ) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
-  placeOrder: (address: Order["shippingAddress"], email: string) => Order;
+  /** @deprecated Spec: kein In-App-Checkout — nutze recordAffiliateRedirect */
+  placeOrder: (
+    address: {
+      name: string;
+      street: string;
+      zip: string;
+      city: string;
+      country: string;
+    },
+    email: string
+  ) => { id: string };
+  recordAffiliateRedirect: (item: CartItem) => AffiliateRedirect;
 }
 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      orders: [],
+      redirects: [],
 
       addItem: (item) => {
         set((s) => {
@@ -83,23 +93,24 @@ export const useCartStore = create<CartState>()(
       getTotal: () =>
         get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
 
-      placeOrder: (address, email) => {
-        const items = get().items;
-        const total = get().getTotal();
-        const order: Order = {
+      placeOrder: () => {
+        // Spec: kein Zahlungsverkehr — leerer Stub für alte Aufrufe
+        return { id: uuidv4() };
+      },
+
+      recordAffiliateRedirect: (item) => {
+        const redirect: AffiliateRedirect = {
           id: uuidv4(),
-          items: [...items],
-          total,
-          status: "confirmed",
+          items: [item],
           createdAt: new Date().toISOString(),
-          shippingAddress: address,
-          email,
+          merchantName: item.merchantName || "Partner",
+          affiliateUrl: item.affiliateUrl || "#",
         };
         set((s) => ({
-          orders: [order, ...s.orders],
-          items: [],
+          redirects: [redirect, ...s.redirects].slice(0, 50),
+          items: s.items.filter((i) => i.productId !== item.productId),
         }));
-        return order;
+        return redirect;
       },
     }),
     { name: "aetherride-cart" }

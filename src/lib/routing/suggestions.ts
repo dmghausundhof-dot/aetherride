@@ -1,0 +1,264 @@
+/**
+ * F-NAV-004 Routenvorschläge
+ * Jeder Vorschlag nennt genau drei Begründungsfaktoren.
+ * Eingang: aktives Bike, Rider-Profil, verfügbare Zeit.
+ */
+
+import type { Bike, BikeCategory, RiderProfile } from "@/types";
+
+export interface RouteSuggestion {
+  id: string;
+  name: string;
+  category: BikeCategory;
+  distanceKm: number;
+  elevationM: number;
+  durationMin: number;
+  mtbScale: string;
+  surface: string;
+  loop: boolean;
+  uncertainKmPct: number;
+  matchScore: number;
+  /** Genau drei Faktoren (Spec MUSS) */
+  reasons: [string, string, string];
+  rangeOk?: boolean;
+  rangeNote?: string;
+}
+
+interface RouteSeed {
+  id: string;
+  name: string;
+  categories: BikeCategory[];
+  distanceKm: number;
+  elevationM: number;
+  durationMin: number;
+  mtbScale: string;
+  surface: string;
+  loop: boolean;
+  uncertainKmPct: number;
+  technical: boolean;
+  steep: boolean;
+  flowy: boolean;
+  ebikeFriendly: boolean;
+}
+
+const SEEDS: RouteSeed[] = [
+  {
+    id: "r-alpbach-enduro",
+    name: "Enduro Alpbachtal",
+    categories: ["mtb_enduro", "mtb_am", "emtb"],
+    distanceKm: 28.4,
+    elevationM: 1240,
+    durationMin: 150,
+    mtbScale: "S2–S3",
+    surface: "trail/root",
+    loop: true,
+    uncertainKmPct: 12,
+    technical: true,
+    steep: true,
+    flowy: false,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-soell-flow",
+    name: "Flow Trail Söll",
+    categories: ["mtb_trail", "mtb_am", "emtb"],
+    distanceKm: 18.7,
+    elevationM: 720,
+    durationMin: 95,
+    mtbScale: "S1–S2",
+    surface: "flow/compact",
+    loop: true,
+    uncertainKmPct: 8,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-kitz-gravel",
+    name: "Gravel Loop Kitzbühel",
+    categories: ["gravel", "etrekking", "road"],
+    distanceKm: 62.1,
+    elevationM: 890,
+    durationMin: 180,
+    mtbScale: "—",
+    surface: "gravel/asphalt",
+    loop: true,
+    uncertainKmPct: 5,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-hochkoenig-emtb",
+    name: "E-MTB Hochkönig",
+    categories: ["emtb", "mtb_enduro"],
+    distanceKm: 41.2,
+    elevationM: 1580,
+    durationMin: 165,
+    mtbScale: "S2–S3",
+    surface: "trail/alpine",
+    loop: false,
+    uncertainKmPct: 18,
+    technical: true,
+    steep: true,
+    flowy: false,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-wilder-kaiser-hike",
+    name: "Wilder Kaiser Höhenweg",
+    categories: ["hiking"],
+    distanceKm: 14.2,
+    elevationM: 980,
+    durationMin: 300,
+    mtbScale: "T2",
+    surface: "path",
+    loop: false,
+    uncertainKmPct: 10,
+    technical: true,
+    steep: true,
+    flowy: false,
+    ebikeFriendly: false,
+  },
+  {
+    id: "r-inn-flat",
+    name: "Inn-Radweg Entspannt",
+    categories: ["road", "gravel", "etrekking", "urban"],
+    distanceKm: 34,
+    elevationM: 120,
+    durationMin: 90,
+    mtbScale: "—",
+    surface: "asphalt",
+    loop: false,
+    uncertainKmPct: 2,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+];
+
+export function suggestRoutes(input: {
+  bike: Bike;
+  profile: RiderProfile;
+  availableMinutes?: number;
+  rangeKmHigh?: number;
+}): RouteSuggestion[] {
+  const minutes = input.availableMinutes ?? 150;
+  const scored = SEEDS.filter((s) => s.categories.includes(input.bike.category))
+    .map((s) => {
+      const reasons: string[] = [];
+      let score = 50;
+
+      // Bike category / travel
+      if (s.categories.includes(input.bike.category)) {
+        score += 15;
+        reasons.push(
+          `Passt zu ${input.bike.name} (${input.bike.category}${
+            input.bike.travelFrontMm
+              ? `, ${input.bike.travelFrontMm} mm Federweg`
+              : ""
+          })`
+        );
+      }
+
+      // Style prefs + Terrain-Share (F-AI-002)
+      const terrain = input.profile.terrainShare;
+      if (input.profile.preferences.preferTechnical && s.technical) {
+        score += 12;
+        reasons.push(`Technisch (mtb:scale ${s.mtbScale}) wie von dir bevorzugt`);
+      } else if (input.profile.preferences.preferFlow && s.flowy) {
+        score += 12;
+        reasons.push(`Flow-Charakter (${s.surface}) matched dein Profil`);
+      } else if (input.profile.preferences.preferSteep && s.steep) {
+        score += 10;
+        reasons.push(`Steile Abschnitte (~${s.elevationM} hm)`);
+      } else if (terrain && s.mtbScale.includes("S3") && terrain.s3plus >= 30) {
+        score += 10;
+        reasons.push(`S3+-Anteil ${terrain.s3plus}% in deinem Terrainprofil`);
+      } else {
+        reasons.push(`Oberfläche ${s.surface}, Unsicherheit ${s.uncertainKmPct}% OSM-Tags`);
+      }
+
+      // Time fit
+      const timeDelta = Math.abs(s.durationMin - minutes);
+      if (timeDelta <= 30) {
+        score += 12;
+        reasons.push(`Dauer ~${s.durationMin} min passt zu deinen ${minutes} min`);
+      } else if (s.durationMin <= minutes + 45) {
+        score += 6;
+        reasons.push(`Machbar in ~${s.durationMin} min (Ziel ${minutes} min)`);
+      } else {
+        score -= 8;
+        reasons.push(`Länger als geplant (${s.durationMin} vs ${minutes} min)`);
+      }
+
+      // E-bike range
+      let rangeOk: boolean | undefined;
+      let rangeNote: string | undefined;
+      if (input.bike.isEbike && input.rangeKmHigh !== undefined) {
+        rangeOk = s.distanceKm <= input.rangeKmHigh * 0.85;
+        if (rangeOk) {
+          score += 8;
+          if (reasons.length < 3)
+            reasons.push(
+              `Distanz ${s.distanceKm} km innerhalb Reichweitenband`
+            );
+        } else {
+          score -= 15;
+          rangeNote = `Route ${s.distanceKm} km > prognostizierte Reichweite ~${input.rangeKmHigh} km`;
+        }
+      }
+
+      // ensure exactly 3 reasons
+      while (reasons.length < 3) {
+        reasons.push(
+          s.loop
+            ? `Rundkurs · ${s.distanceKm} km · ${s.elevationM} hm`
+            : `Point-to-point · ${s.distanceKm} km · ${s.elevationM} hm`
+        );
+      }
+
+      return {
+        id: s.id,
+        name: s.name,
+        category: input.bike.category,
+        distanceKm: s.distanceKm,
+        elevationM: s.elevationM,
+        durationMin: s.durationMin,
+        mtbScale: s.mtbScale,
+        surface: s.surface,
+        loop: s.loop,
+        uncertainKmPct: s.uncertainKmPct,
+        matchScore: Math.max(0, Math.min(99, Math.round(score))),
+        reasons: reasons.slice(0, 3) as [string, string, string],
+        rangeOk,
+        rangeNote,
+      } satisfies RouteSuggestion;
+    })
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, 5);
+
+  return scored.length
+    ? scored
+    : SEEDS.slice(0, 3).map((s, i) => ({
+        id: s.id,
+        name: s.name,
+        category: input.bike.category,
+        distanceKm: s.distanceKm,
+        elevationM: s.elevationM,
+        durationMin: s.durationMin,
+        mtbScale: s.mtbScale,
+        surface: s.surface,
+        loop: s.loop,
+        uncertainKmPct: s.uncertainKmPct,
+        matchScore: 60 - i * 5,
+        reasons: [
+          "Wenige exakte Kategorie-Treffer — allgemeine Vorschläge",
+          `${s.distanceKm} km · ${s.elevationM} hm`,
+          `Unsichere OSM-Kilometer: ${s.uncertainKmPct}%`,
+        ] as [string, string, string],
+      }));
+}
