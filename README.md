@@ -89,17 +89,29 @@ src/
 └── types/               # Spec-konforme Datenmodelle
 ```
 
+## Gate-Status (ehrlich)
+
+| Gate | Demo-Stand |
+|------|------------|
+| G-0 | offen — Checkliste/Modul-Matrix in `src/lib/platform/g0TeamSetup.ts`, kein Fake-Flutter |
+| G-2 | offen — FNI/Setup Live gated |
+| G-4 | Seed (~20 Hersteller) — Ziel ≥3000 Modelle |
+| G-5 | redaktionell gesichtet, Legal-Sign-off ausstehend |
+| A-08 | Setup-Disclaimer Entwurf in Onboarding/Post-Ride |
+
 ## Nächster Schritt (echte Mobile-App)
+
+**Erst nach G-0 GO** (Team-Setup / Stack bestätigt):
 
 1. Flutter-Projekt mit denselben TypeScript-Models als Shared Spec
 2. Native Module:
-   - Sensor: CoreMotion / SensorManager → Platform Channel → SensorFusionEngine
-   - BLE: flutter_blue_plus + Bosch LDI Characteristic Mapping
+   - Sensor: CoreMotion / SensorManager → 1-s Batches (kein Sample/Channel)
+   - BLE: flutter_blue_plus + Bosch LDI
 3. MapLibre Flutter + PMTiles Offline-Packs
-4. Backend: PostgreSQL + TimescaleDB + Vector-DB (Empfehlungen)
+4. Backend: PostgreSQL + TimescaleDB (Sprache: Kotlin **oder** Go — an G-0)
 5. Shop: Stripe / Partner-Händler API
 
-Die gesamte Domain-Logik und die Contracts sind bereits produktionsreif.
+Die Domain-Logik und Contracts sind spezifiziert; die Web-Demo ersetzt keine native App.
 
 ---
 AetherRide · Spec 1.0 · August 2026

@@ -21,6 +21,11 @@ import {
   type ConsentPurpose,
 } from "@/lib/privacy/consents";
 import Link from "next/link";
+import {
+  describePendingOps,
+  getSyncClientState,
+} from "@/lib/sync/syncStatus";
+import { opsLogStats } from "@/lib/sync/opsLog";
 
 export default function PrivacyExportPage() {
   const rides = useAppStore((s) => s.rides);
@@ -48,6 +53,9 @@ export default function PrivacyExportPage() {
   const [riderWeight, setRiderWeight] = useState(70);
   const lastRide = rides[0];
   const activeBike = bikes.find((b) => b.isActive) || bikes[0];
+  const syncState = getSyncClientState(authSession.syncEnabled);
+  const opsStats = opsLogStats();
+  const pendingPreview = describePendingOps(3);
 
   const jsonPreview = useMemo(
     () =>
@@ -131,6 +139,25 @@ export default function PrivacyExportPage() {
           >
             Konto löschen
           </button>
+        </div>
+        <div className="mt-3 rounded-lg bg-surface-elevated p-2 text-[11px] text-text-secondary">
+          <p className="font-medium text-foreground">Sync-Status (5.6 Stub)</p>
+          <p>
+            {syncState.note} · pending {opsStats.pending}/{opsStats.total}
+            {syncState.lastFlushAt
+              ? ` · letzter Flush ${new Date(syncState.lastFlushAt).toLocaleString("de-DE")}`
+              : ""}
+            {syncState.serverRevisionCursor
+              ? ` · cursor ${syncState.serverRevisionCursor}`
+              : ""}
+          </p>
+          {pendingPreview.length > 0 && (
+            <ul className="mt-1 list-inside list-disc">
+              {pendingPreview.map((p) => (
+                <li key={p}>{p}</li>
+              ))}
+            </ul>
+          )}
         </div>
         {accountDeletion && (
           <p className="mt-2 text-[11px] text-warning">

@@ -27,6 +27,11 @@ import { HIKING_GEAR_DEFAULT } from "@/lib/mode/hiking";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView } from "@/components/MapView";
 import { AccessRightsPanel } from "@/components/AccessRightsPanel";
+import {
+  OFFLINE_REGIONS_DEMO,
+  canDownloadOfflineOnWeb,
+  offlineRegionsSummary,
+} from "@/lib/sync/offlineRegions";
 import Link from "next/link";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
@@ -242,6 +247,36 @@ export default function DiscoverPage() {
               </p>
             </div>
           )}
+
+          <section className="rounded-xl border border-border bg-surface-elevated p-3 text-sm">
+            <h3 className="font-medium">Offline mitnehmen (F-NAV-002 Demo)</h3>
+            <p className="mt-1 text-xs text-text-secondary">
+              {offlineRegionsSummary()}
+            </p>
+            <ul className="mt-2 space-y-1 text-xs text-text-secondary">
+              {OFFLINE_REGIONS_DEMO.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-2">
+                  <span>
+                    {r.label} · ~{r.sizeMbEstimate} MB
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!canDownloadOfflineOnWeb() || !canUseProFeature("offline")}
+                    onClick={() =>
+                      alert(
+                        canUseProFeature("offline")
+                          ? r.note
+                          : "Offline-Regionen sind Pro (Spec 1.4) — Web-Demo ohne PMTiles."
+                      )
+                    }
+                    className="rounded-lg border border-border px-2 py-1 text-[10px] disabled:opacity-50"
+                  >
+                    Download
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
 
           {range && (
             <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm">

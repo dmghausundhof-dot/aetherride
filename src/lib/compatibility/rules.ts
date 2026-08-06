@@ -576,4 +576,47 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
     reviewedBy: "AetherRide Editorial",
     reviewedAt: "2026-08-06",
   },
+  {
+    code: "RL-WHL-010R",
+    title: "Hinterreifen-Laufradgröße vs. Rahmen",
+    severity: "functional",
+    slotA: "tire_rear",
+    slotB: "frame",
+    requiresA: ["wheel_size"],
+    requiresB: ["wheel_size_rear"],
+    predicate: "equals",
+    onPass: "COMPATIBLE",
+    onFail: "INCOMPATIBLE",
+    explainFailDe:
+      "Hinterreifen {a.wheel_size} passt nicht zur Rahmenfreigabe {b.wheel_size_rear}.",
+    howToObtain: {
+      wheel_size: "ETRTO",
+      wheel_size_rear: "Rahmen-Geometrie",
+    },
+    sourceUrl: "https://www.transitionbikes.com/",
+    reviewedBy: "AetherRide Editorial",
+    reviewedAt: "2026-08-06",
+  },
+  {
+    code: "RL-BRK-011",
+    title: "Vordere Scheibenaufnahme vs. Bremse (Hinweis)",
+    severity: "functional",
+    slotA: "rotor_front",
+    slotB: "brake_front",
+    requiresA: ["rotor_mount"],
+    requiresB: ["rotor_mount"],
+    predicate: "equals",
+    onPass: "COMPATIBLE",
+    onFail: "CONDITIONAL",
+    conditionText:
+      "Center Lock und 6-Bolt sind oft über Adapter möglich — Fachwerkstatt.",
+    explainFailDe:
+      "Scheibe {a.rotor_mount} vs. Bremssattel-Hinweis {b.rotor_mount} — Adapter prüfen.",
+    howToObtain: {
+      rotor_mount: "Center Lock / 6-Bolt auf Scheibe und Nabe maßgeblich",
+    },
+    sourceUrl: "https://www.hopetech.com/",
+    reviewedBy: "AetherRide Editorial",
+    reviewedAt: "2026-08-06",
+  },
 ];

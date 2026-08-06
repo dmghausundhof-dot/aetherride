@@ -31,7 +31,10 @@ export function BottomTabBar() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+      aria-label="Hauptnavigation"
+    >
       <div className="mx-auto flex max-w-lg items-end justify-around px-2 pt-2 pb-2">
         {tabs.map((tab) => {
           const isActive =
@@ -45,6 +48,8 @@ export function BottomTabBar() {
               <Link
                 key={tab.id}
                 href={tab.href}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={tab.label}
                 className={cn(
                   "relative -mt-5 flex h-16 w-16 flex-col items-center justify-center rounded-full shadow-lg transition-all",
                   isActive
@@ -52,7 +57,7 @@ export function BottomTabBar() {
                     : "bg-primary text-white hover:bg-primary/90"
                 )}
               >
-                <Icon className="h-7 w-7" strokeWidth={2.2} />
+                <Icon className="h-7 w-7" strokeWidth={2.2} aria-hidden />
                 <span className="mt-0.5 text-[10px] font-semibold">{tab.label}</span>
               </Link>
             );
@@ -62,12 +67,17 @@ export function BottomTabBar() {
             <Link
               key={tab.id}
               href={tab.href}
+              aria-current={isActive ? "page" : undefined}
+              aria-label={tab.label}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 py-1 touch-target transition-colors",
                 isActive ? "text-accent" : "text-text-secondary hover:text-foreground"
               )}
             >
-              <Icon className={cn("h-6 w-6", isActive && "stroke-[2.5]")} />
+              <Icon
+                className={cn("h-6 w-6", isActive && "stroke-[2.5]")}
+                aria-hidden
+              />
               <span className="text-[11px] font-medium">{tab.label}</span>
             </Link>
           );
