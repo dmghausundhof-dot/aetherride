@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { MessageSquare, ShieldAlert, Wrench } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { detectTool, runChatTool, type ChatToolName } from "@/lib/ai/chat";
+import { type ChatToolName } from "@/lib/ai/chat";
 import Link from "next/link";
 
 type Msg = {
@@ -13,6 +13,16 @@ type Msg = {
   tool?: ChatToolName;
   guarded?: boolean;
   rejected?: string[];
+  usedGrok?: boolean;
+};
+
+type QuotaInfo = {
+  tier: string;
+  dayUsed: number;
+  dayLimit: number;
+  remaining: number;
+  resetAt?: string;
+  reason?: string;
 };
 
 export default function ChatPage() {
@@ -22,15 +32,18 @@ export default function ChatPage() {
   const profile = useAppStore((s) => s.riderProfile);
   const calibration = useAppStore((s) => s.rangeCalibration);
   const isRiding = useAppStore((s) => s.isRiding);
+  const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const bike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
 
   const [input, setInput] = useState("");
   const [tool, setTool] = useState<ChatToolName | "auto">("auto");
+  const [busy, setBusy] = useState(false);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: "sys",
       role: "assistant",
-      text: "Fragen zu Garage, Kompatibilität, Setup, Rides, Routen oder Produkten. Zahlen kommen nur aus Engines (Numeric-Guard, F-AI-001/004).",
+      text: "Fragen zu Garage, Kompatibilität, Setup, Rides, Routen oder Produkten. Zahlen kommen nur aus Engines (Numeric-Guard, F-AI-001/004). Grok nur nach Login (Free/Pro-Limits).",
     },
   ]);
 
@@ -45,24 +58,59 @@ export default function ChatPage() {
     [bike, bikes, rides, profile, calibration]
   );
 
-  const send = () => {
-    if (!input.trim() || isRiding) return;
+  const send = async () => {
+    if (!input.trim() || isRiding || busy) return;
     const q = input.trim();
-    const chosen = tool === "auto" ? detectTool(q) : tool;
-    const result = runChatTool(chosen, q, ctx);
-    setMessages((m) => [
-      ...m,
-      { id: `u-${Date.now()}`, role: "user", text: q },
-      {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        text: result.text,
-        tool: chosen,
-        guarded: result.usedFallback,
-        rejected: result.rejectedNumbers,
-      },
-    ]);
+    setBusy(true);
+    setMessages((m) => [...m, { id: `u-${Date.now()}`, role: "user", text: q }]);
     setInput("");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: q,
+          tool,
+          ...ctx,
+        }),
+      });
+      const data = await res.json();
+      if (data.quota) setQuota(data.quota);
+
+      let text = data.text || data.error || "Keine Antwort.";
+      if (res.status === 429) {
+        text = `${text}\n\nLimit erreicht (${data.quota?.tier || "free"}). ${
+          data.quota?.tier === "free"
+            ? "Upgrade auf Pro für mehr KI-Antworten."
+            : "Morgen wieder verfügbar."
+        }`;
+      }
+
+      setMessages((m) => [
+        ...m,
+        {
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          text,
+          tool: data.tool,
+          guarded: data.usedFallback,
+          rejected: data.rejectedNumbers,
+          usedGrok: data.usedGrok,
+        },
+      ]);
+    } catch (e) {
+      setMessages((m) => [
+        ...m,
+        {
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          text: e instanceof Error ? e.message : "Netzwerkfehler",
+        },
+      ]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -72,13 +120,36 @@ export default function ChatPage() {
           <MessageSquare className="h-6 w-6 text-accent" /> KI-Chat
         </h1>
         <p className="text-sm text-text-secondary">
-          F-AI-004 · Werkzeuge · Numeric-Guard · keine Fahrt-Bedienung
+          F-AI-004 · Grok · Numeric-Guard · Free/Pro-Limits
         </p>
+        {quota && (
+          <p className="mt-1 text-xs text-text-secondary">
+            Kontingent ({quota.tier}): {quota.dayUsed}/{quota.dayLimit} heute
+            {quota.remaining != null ? ` · ${quota.remaining} übrig` : ""}
+            {quota.reason === "login_required_for_grok"
+              ? " · Login für Grok nötig"
+              : ""}
+          </p>
+        )}
+        {!quota && (
+          <p className="mt-1 text-xs text-text-secondary">
+            Lokal: {subscriptionTier} — Limits gelten server-seitig nach Login
+          </p>
+        )}
       </header>
 
       {isRiding && (
         <div className="rounded-xl border border-error/40 bg-error/10 px-3 py-2 text-sm text-error">
           Chat während der Fahrt gesperrt (Spec F-AI-004).
+        </div>
+      )}
+
+      {quota && quota.remaining === 0 && quota.tier === "free" && (
+        <div className="rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+          Free-Limit ausgeschöpft.{" "}
+          <Link href="/profile" className="font-semibold text-accent">
+            Pro upgraden
+          </Link>
         </div>
       )}
 
@@ -118,10 +189,11 @@ export default function ChatPage() {
                 : "mr-4 bg-surface-elevated"
             }`}
           >
-            <p>{m.text}</p>
+            <p className="whitespace-pre-wrap">{m.text}</p>
             {m.tool && (
-              <p className="mt-1 flex items-center gap-1 text-[10px] text-text-secondary">
+              <p className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-text-secondary">
                 <Wrench className="h-3 w-3" /> {m.tool}
+                {m.usedGrok ? " · Grok" : " · Fallback"}
                 {m.guarded && (
                   <span className="inline-flex items-center gap-0.5 text-warning">
                     <ShieldAlert className="h-3 w-3" /> Guard → Fallback
@@ -139,28 +211,28 @@ export default function ChatPage() {
       <div className="flex gap-2">
         <input
           value={input}
-          disabled={isRiding}
+          disabled={isRiding || busy}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
+          onKeyDown={(e) => e.key === "Enter" && void send()}
           placeholder="z. B. Passt die Kassette? / Reichweite?"
           className="flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
         />
         <button
           type="button"
-          disabled={isRiding}
-          onClick={send}
+          disabled={isRiding || busy}
+          onClick={() => void send()}
           className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
-          Senden
+          {busy ? "…" : "Senden"}
         </button>
       </div>
 
       <p className="text-center text-xs text-text-secondary">
         <Link href="/profile" className="text-accent">
-          Profil / Einwilligungen
+          Profil / Abo
         </Link>
         {" · "}
-        Tipp: „erfinde 999 km“ testet den Numeric-Guard
+        Free 5/Tag · Pro 50/Tag
       </p>
     </div>
   );

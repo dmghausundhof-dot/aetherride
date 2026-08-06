@@ -95,8 +95,8 @@ export function numericGuard(
   };
 }
 
-/** Deterministische „Formulierung“ — Demo ohne echtes LLM */
-function formulate(set: RecommendationSet): string {
+/** Deterministische Formulierung — Fallback ohne LLM */
+export function formulateDeterministic(set: RecommendationSet): string {
   return set.rawAnswer;
 }
 
@@ -109,17 +109,20 @@ export type ChatToolName =
   | "product_search"
   | "range";
 
-export function runChatTool(
+export type ChatContext = {
+  bike?: Bike;
+  bikes: Bike[];
+  rides: Ride[];
+  profile: RiderProfile;
+  calibration?: RangeCalibration | null;
+};
+
+/** Engine-Ergebnisse ohne LLM — für Numeric-Guard Whitelist */
+export function buildChatRecommendation(
   tool: ChatToolName,
   query: string,
-  ctx: {
-    bike?: Bike;
-    bikes: Bike[];
-    rides: Ride[];
-    profile: RiderProfile;
-    calibration?: RangeCalibration | null;
-  }
-): GuardResult {
+  ctx: ChatContext
+): RecommendationSet {
   const q = query.toLowerCase();
   let set: RecommendationSet;
 
@@ -188,7 +191,8 @@ export function runChatTool(
       set = {
         toolName: tool,
         facts: setups.map(
-          (s) => `v${s.version} ${s.label} (${s.conditions})${s.isCurrent ? " AKTUELL" : ""}`
+          (s) =>
+            `v${s.version} ${s.label} (${s.conditions})${s.isCurrent ? " AKTUELL" : ""}`
         ),
         numbers: setups.map((s) => ({
           value: s.version,
@@ -211,7 +215,11 @@ export function runChatTool(
       const hm = rides.reduce((s, r) => s + r.elevationGainM, 0);
       set = {
         toolName: tool,
-        facts: [`${rides.length} Rides`, `${km.toFixed(1)} km`, `${hm.toFixed(0)} hm`],
+        facts: [
+          `${rides.length} Rides`,
+          `${km.toFixed(1)} km`,
+          `${hm.toFixed(0)} hm`,
+        ],
         numbers: [
           { value: rides.length, unit: "", source: "rides.count" },
           { value: Math.round(km * 10) / 10, unit: "km", source: "rides.km" },
@@ -239,7 +247,9 @@ export function runChatTool(
       const top = routes[0];
       set = {
         toolName: tool,
-        facts: routes.slice(0, 3).map((r) => `${r.name}: ${r.reasons.join(" · ")}`),
+        facts: routes
+          .slice(0, 3)
+          .map((r) => `${r.name}: ${r.reasons.join(" · ")}`),
         numbers: top
           ? [
               { value: top.distanceKm, unit: "km", source: "route.distance" },
@@ -271,7 +281,9 @@ export function runChatTool(
         setup: current,
       });
       const catalogHits = SHOP_PRODUCTS.filter((p) =>
-        q.split(/\s+/).some((w) => w.length > 2 && p.name.toLowerCase().includes(w))
+        q
+          .split(/\s+/)
+          .some((w) => w.length > 2 && p.name.toLowerCase().includes(w))
       ).slice(0, 3);
       if (recs[0]) {
         const r = recs[0];
@@ -342,12 +354,19 @@ export function runChatTool(
       };
   }
 
-  // Simulate LLM that sometimes invents a number — Guard catches it
-  let drafted = formulate(set);
+  return set;
+}
+
+export function runChatTool(
+  tool: ChatToolName,
+  query: string,
+  ctx: ChatContext
+): GuardResult {
+  const set = buildChatRecommendation(tool, query, ctx);
+  let drafted = formulateDeterministic(set);
   if (/erfinde|halluzin/i.test(query)) {
     drafted += " Zusätzlich empfehle ich 999 km Reichweite.";
   }
-
   return numericGuard(drafted, set);
 }
 
@@ -361,3 +380,4 @@ export function detectTool(query: string): ChatToolName {
   if (/ride|fahrt|statistik|km|hm/.test(q)) return "ride_stats";
   return "garage";
 }
+
