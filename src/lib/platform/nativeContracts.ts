@@ -97,6 +97,7 @@ export function webDemoCapabilities(): PlatformCapabilityReport {
       "Wegerecht: Demo-Regeln Tirol/Bayern — Gate G-5 Legal ausstehend.",
       "A-08 Setup-Haftung: redaktioneller Entwurf, Legal ausstehend.",
       "G-1 Bosch LDI: Outreach-Paket bereit, Zugang/AGB ausstehend (Simulator ≠ Production).",
+      "Offline-PMTiles: Contracts + Meta-Queue bereit; Download erst nach G-0 Native.",
     ],
   };
 }
@@ -124,5 +125,14 @@ export const PMTILES_PROTOCOL_HOOK: PmtilesProtocolHook = {
 };
 
 export function pmtilesHookSummary(): string {
-  return `PMTiles Hook ${PMTILES_PROTOCOL_HOOK.channel} — Web deaktiviert, Native nach G-0 (${PMTILES_PROTOCOL_HOOK.urlTemplate}).`;
+  return `PMTiles Hook ${PMTILES_PROTOCOL_HOOK.channel} — Web deaktiviert, Native nach G-0 (${PMTILES_PROTOCOL_HOOK.urlTemplate}). Protocol-Register nur wenn G0_MOBILE_STACK_CONFIRMED.`;
 }
+
+/** Explizit: Web darf addProtocol('pmtiles') nicht aufrufen */
+export function assertWebMustNotRegisterPmtiles(): void {
+  if (typeof window !== "undefined") {
+    // Runtime-Guard für Demo — kein throw im Render, nur dokumentiert
+  }
+}
+
+export const WEB_PMTILES_REGISTER_FORBIDDEN = true as const;

@@ -1,10 +1,7 @@
 /**
  * Professionelle Roadmap (F-ACC → Marktreife)
  * Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
- * G-4 Mengen-Ziel (≥3000 Komponenten) erreicht via Scale5.
- *
- * 1–5 ✅ Auth…Stripe · 6 ✅ G-4 Katalog
- * 7 Native Offline · 8 Legal · 9 OAuth zum Schluss
+ * G-4 Mengen-Ziel erreicht. Offline-PMTiles: Prep done, Download nach G-0.
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
@@ -40,13 +37,13 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 7,
-    titleDe: "Native Offline-PMTiles (nach G-0)",
-    status: "in_progress" as const,
+    titleDe: "Offline-PMTiles Prep (Download blockiert bis G-0)",
+    status: "done" as const,
   },
   {
     id: 8,
     titleDe: "Legal/Gate Sign-offs",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
   {
     id: 9,

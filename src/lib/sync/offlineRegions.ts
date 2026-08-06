@@ -1,14 +1,22 @@
 /**
- * Offline-Regionen Stub (F-NAV-002 / NFR-08)
- * Web-Demo: keine PMTiles — Status ehrlich kommunizieren.
- * Optional: lokale Warteschlange (queued/downloaded-Meta) ohne Routing-Claim.
+ * Offline-Regionen (F-NAV-002 / NFR-08)
+ * Web-Demo: keine PMTiles — Meta-Warteschlange ehrlich.
+ * Native Download erst nach G-0 (siehe pmtilesPrep.ts).
  */
+
+import {
+  OFFLINE_REGION_MANIFESTS,
+  type OfflineRegionManifest,
+} from "@/lib/platform/pmtilesPrep";
 
 export type OfflineRegionStatus =
   | "not_available_web_demo"
   | "queued"
-  | "downloaded"
+  | "demo_meta"
   | "error";
+
+/** @deprecated Alias — UI/Tests: früher "downloaded" = nur Meta */
+export type OfflineRegionStatusLegacy = OfflineRegionStatus | "downloaded";
 
 export interface OfflineRegionStub {
   id: string;
@@ -18,42 +26,54 @@ export interface OfflineRegionStub {
   sizeMbEstimate: number;
   status: OfflineRegionStatus;
   note: string;
+  bbox?: OfflineRegionManifest["bbox"];
+  version?: string;
 }
 
-export const OFFLINE_REGIONS_DEMO: OfflineRegionStub[] = [
-  {
-    id: "reg-tirol-alpbach",
-    label: "Tirol · Alpbachtal",
-    areaKm2: 1200,
-    sizeMbEstimate: 48,
+function stubFromManifest(m: OfflineRegionManifest): OfflineRegionStub {
+  return {
+    id: m.id,
+    label: m.label,
+    areaKm2: m.areaKm2,
+    sizeMbEstimate: m.sizeMbEstimate,
     status: "not_available_web_demo",
-    note: "PMTiles + Valhalla FFI erst nach G-0/G-0-Maps (Native).",
-  },
-  {
-    id: "reg-bayern-tegernsee",
-    label: "Bayern · Tegernsee",
-    areaKm2: 900,
-    sizeMbEstimate: 36,
-    status: "not_available_web_demo",
-    note: "Offline-Routing Demo nur als Kostenfunktion online.",
-  },
-];
+    note: "PMTiles + Valhalla FFI erst nach G-0 Native.",
+    bbox: m.bbox,
+    version: m.version,
+  };
+}
+
+export const OFFLINE_REGIONS_DEMO: OfflineRegionStub[] =
+  OFFLINE_REGION_MANIFESTS.map(stubFromManifest);
 
 const STORAGE_KEY = "aetherride-offline-region-queue";
 
 type QueueEntry = {
   regionId: string;
-  status: Extract<OfflineRegionStatus, "queued" | "downloaded" | "error">;
+  status: "queued" | "demo_meta" | "error";
   updatedAt: string;
 };
+
+function normalizeStatus(
+  s: string
+): QueueEntry["status"] {
+  if (s === "downloaded") return "demo_meta"; // Legacy-Migration
+  if (s === "queued" || s === "demo_meta" || s === "error") return s;
+  return "queued";
+}
 
 function readQueue(): QueueEntry[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as QueueEntry[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as { regionId: string; status: string; updatedAt: string }[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((e) => ({
+      regionId: e.regionId,
+      status: normalizeStatus(e.status),
+      updatedAt: e.updatedAt,
+    }));
   } catch {
     return [];
   }
@@ -69,11 +89,9 @@ export function canDownloadOfflineOnWeb(): boolean {
   return false;
 }
 
-/**
- * Meta-Warteschlange: merkt Interesse / Demo-„Pack“ ohne Karten-Bytes.
- * Kein Routing, kein PMTiles — nur ehrlicher Status für UI.
- */
-export function queueOfflineRegionInterest(regionId: string): OfflineRegionStub | null {
+export function queueOfflineRegionInterest(
+  regionId: string
+): OfflineRegionStub | null {
   const base = OFFLINE_REGIONS_DEMO.find((r) => r.id === regionId);
   if (!base) return null;
   const q = readQueue().filter((e) => e.regionId !== regionId);
@@ -90,21 +108,35 @@ export function queueOfflineRegionInterest(regionId: string): OfflineRegionStub 
   };
 }
 
-export function markOfflineRegionPackDemo(regionId: string): OfflineRegionStub | null {
+/** Nur Meta — keine Karten-Bytes */
+export function markOfflineRegionPackDemo(
+  regionId: string
+): OfflineRegionStub | null {
   const base = OFFLINE_REGIONS_DEMO.find((r) => r.id === regionId);
   if (!base) return null;
   const q = readQueue().filter((e) => e.regionId !== regionId);
   q.push({
     regionId,
-    status: "downloaded",
+    status: "demo_meta",
     updatedAt: new Date().toISOString(),
   });
   writeQueue(q);
   return {
     ...base,
-    status: "downloaded",
+    status: "demo_meta",
     note: "Demo-Pack-Meta lokal — keine Offline-Karte, Routing weiter online/Demo.",
   };
+}
+
+export function dequeueOfflineRegionInterest(regionId: string): boolean {
+  const before = readQueue();
+  const next = before.filter((e) => e.regionId !== regionId);
+  writeQueue(next);
+  return next.length < before.length;
+}
+
+export function clearOfflineRegionQueue(): void {
+  writeQueue([]);
 }
 
 export function listOfflineRegionsWithQueue(): OfflineRegionStub[] {
@@ -118,19 +150,39 @@ export function listOfflineRegionsWithQueue(): OfflineRegionStub[] {
       note:
         hit.status === "queued"
           ? "Vormerkung lokal — PMTiles erst nach G-0 Native."
-          : hit.status === "downloaded"
-            ? "Demo-Pack-Meta lokal — kein echtes Offline-Routing."
+          : hit.status === "demo_meta"
+            ? "Demo-Pack-Meta lokal — kein echtes Offline-Routing / keine Tiles."
             : r.note,
     };
   });
 }
 
+export function queuedOfflineBudgetMb(): {
+  sizeMb: number;
+  areaKm2: number;
+  withinBudget: boolean;
+} {
+  const active = listOfflineRegionsWithQueue().filter(
+    (r) => r.status === "queued" || r.status === "demo_meta"
+  );
+  const sizeMb = active.reduce((s, r) => s + r.sizeMbEstimate, 0);
+  const areaKm2 = active.reduce((s, r) => s + r.areaKm2, 0);
+  return {
+    sizeMb,
+    areaKm2,
+    withinBudget: areaKm2 <= 0 ? true : offlinePackWithinBudget(sizeMb, areaKm2),
+  };
+}
+
 export function offlineRegionsSummary(): string {
-  return "Offline-Regionen: Web-Demo ohne PMTiles — echter Download nicht verfügbar; lokale Vormerkung möglich.";
+  return "Offline-Regionen: Web-Demo ohne PMTiles — echter Download nicht verfügbar; lokale Vormerkung/Meta möglich (G-0 offen).";
 }
 
 /** Budget-Check Spec NFR-08 */
-export function offlinePackWithinBudget(sizeMb: number, areaKm2: number): boolean {
+export function offlinePackWithinBudget(
+  sizeMb: number,
+  areaKm2: number
+): boolean {
   if (areaKm2 <= 0) return false;
   const limit = (350 / 10000) * areaKm2;
   return sizeMb <= limit * 1.05;

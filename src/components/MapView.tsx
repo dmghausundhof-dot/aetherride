@@ -204,8 +204,11 @@ export function MapView({
           Karte wird geladen…
         </div>
       )}
-      <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/80">
-        OSM · PMTiles erst nach G-0 Native (Hook dokumentiert)
+      <div
+        className="absolute bottom-2 left-2 max-w-[90%] rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/80"
+        title="PMTiles Protocol erst nach G-0 — Web registriert kein pmtiles://"
+      >
+        OSM-Raster · Offline-PMTiles gesperrt (G-0 offen)
       </div>
     </div>
   );

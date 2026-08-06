@@ -33,12 +33,15 @@ import { MapView } from "@/components/MapView";
 import { AccessRightsPanel } from "@/components/AccessRightsPanel";
 import {
   canDownloadOfflineOnWeb,
+  clearOfflineRegionQueue,
   listOfflineRegionsWithQueue,
   markOfflineRegionPackDemo,
   offlinePackWithinBudget,
   offlineRegionsSummary,
   queueOfflineRegionInterest,
+  queuedOfflineBudgetMb,
 } from "@/lib/sync/offlineRegions";
+import { nativePmtilesPrepSummaryDe } from "@/lib/platform/pmtilesPrep";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -320,17 +323,24 @@ export default function DiscoverPage() {
           )}
 
           <section className="rounded-xl border border-border bg-surface-elevated p-3 text-sm">
-            <h3 className="font-medium">Offline mitnehmen (F-NAV-002 Demo)</h3>
+            <h3 className="font-medium">Offline mitnehmen (F-NAV-002 Prep)</h3>
             <p className="mt-1 text-xs text-text-secondary">
               {offlineRegionsSummary()}
             </p>
             <p className="mt-1 text-[10px] text-text-secondary">
-              Queue-Budget:{" "}
-              {offlineRegions
-                .filter((r) => r.status === "queued" || r.status === "downloaded")
-                .reduce((s, r) => s + r.sizeMbEstimate, 0)}{" "}
-              MB vorgemerkt · Spec ≤350 MB / 10.000 km²
+              {nativePmtilesPrepSummaryDe()}
             </p>
+            <p className="mt-1 text-[10px] text-text-secondary">
+              Queue-Budget: {queuedOfflineBudgetMb().sizeMb} MB /{" "}
+              {queuedOfflineBudgetMb().areaKm2} km² · Spec ≤350 MB / 10.000 km²
+              {!queuedOfflineBudgetMb().withinBudget ? " · über Budget" : ""}
+            </p>
+            {!canDownloadOfflineOnWeb() && (
+              <p className="mt-1 rounded-lg border border-warning/30 bg-warning/10 px-2 py-1 text-[10px] text-warning">
+                Kein PMTiles-Download auf Web — nur Vormerkung / Demo-Meta (G-0
+                offen).
+              </p>
+            )}
             <ul className="mt-2 space-y-2 text-xs text-text-secondary">
               {offlineRegions.map((r) => (
                 <li key={r.id} className="rounded-lg border border-border p-2">
@@ -352,17 +362,12 @@ export default function DiscoverPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={
-                          canDownloadOfflineOnWeb()
-                            ? !canUseProFeature("offline")
-                            : !canUseProFeature("offline")
-                        }
+                        disabled={!canUseProFeature("offline")}
                         onClick={() => {
                           if (canDownloadOfflineOnWeb()) {
                             alert(r.note);
                             return;
                           }
-                          // Ehrlich: nur Meta-Pack, kein PMTiles
                           if (
                             !offlinePackWithinBudget(
                               r.sizeMbEstimate,
@@ -377,7 +382,7 @@ export default function DiscoverPage() {
                         }}
                         className="rounded-lg border border-border px-2 py-1 text-[10px] disabled:opacity-50"
                       >
-                        Demo-Pack
+                        Demo-Meta
                       </button>
                     </div>
                   </div>
@@ -385,6 +390,16 @@ export default function DiscoverPage() {
                 </li>
               ))}
             </ul>
+            <button
+              type="button"
+              onClick={() => {
+                clearOfflineRegionQueue();
+                setOfflineRegions(listOfflineRegionsWithQueue());
+              }}
+              className="mt-2 text-[10px] text-text-secondary underline"
+            >
+              Queue leeren
+            </button>
           </section>
 
           {range && (

@@ -95,9 +95,20 @@ src/
 |------|------------|
 | G-0 | offen — Checkliste/Modul-Matrix in `src/lib/platform/g0TeamSetup.ts`, kein Fake-Flutter |
 | G-2 | offen — FNI/Setup Live gated |
-| G-4 | Seed (~20 Hersteller) — Ziel ≥3000 Modelle |
+| G-4 | ≥3000 Komponentenmodelle (Scale5) — Mengen-Ziel erreicht |
 | G-5 | redaktionell gesichtet, Legal-Sign-off ausstehend |
 | A-08 | Setup-Disclaimer Entwurf in Onboarding/Post-Ride |
+
+## Offline-PMTiles Prep (G-0 blockiert Download)
+
+Vorhanden **ohne** G-0-Close:
+
+- Contracts: `src/lib/platform/pmtilesPrep.ts` + `PMTILES_PROTOCOL_HOOK`
+- Meta-Queue: `src/lib/sync/offlineRegions.ts` (Vormerken / Demo-Meta, keine Tiles)
+- MapView: OSM-Raster + Badge „PMTiles gesperrt“
+- Tests erzwingen: `canDownloadOfflineOnWeb() === false`, Protocol nicht registrierbar
+
+**Erst nach G-0 GO:** Planetiler → CDN-Packs → MapLibre Native `pmtiles://` + Valhalla FFI.
 
 ## Nächster Schritt (echte Mobile-App)
 
@@ -107,7 +118,7 @@ src/
 2. Native Module:
    - Sensor: CoreMotion / SensorManager → 1-s Batches (kein Sample/Channel)
    - BLE: flutter_blue_plus + Bosch LDI
-3. MapLibre Flutter + PMTiles Offline-Packs
+3. MapLibre Flutter + PMTiles Offline-Packs (Contracts bereits vorbereitet)
 4. Backend: PostgreSQL + TimescaleDB (Sprache: Kotlin **oder** Go — an G-0)
 5. Shop: Stripe / Partner-Händler API
 

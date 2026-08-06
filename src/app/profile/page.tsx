@@ -19,6 +19,7 @@ import {
 import { catalogStats } from "@/lib/catalog/bikes";
 import { COMPONENT_CATALOG } from "@/lib/catalog/components";
 import { pmtilesHookSummary } from "@/lib/platform/nativeContracts";
+import { nativePmtilesPrepSummaryDe } from "@/lib/platform/pmtilesPrep";
 
 export default function ProfilePage() {
   const profile = useAppStore((s) => s.riderProfile);
@@ -85,6 +86,9 @@ export default function ProfilePage() {
         </ul>
         <p className="mt-2 text-[10px] text-text-secondary">
           {pmtilesHookSummary()}
+        </p>
+        <p className="mt-1 text-[10px] text-text-secondary">
+          {nativePmtilesPrepSummaryDe()}
         </p>
       </section>
 
