@@ -1,10 +1,10 @@
 /**
- * Sportartspezifische Routing-Profile
+ * Sportartspezifische Routing-Profile (Spec F-NAV-001 — 7 Profile)
  *
  * Produktion:
  * - Self-hosted OSRM oder Valhalla (VALHALLA_URL / OSRM_URL / ROUTING_ENGINE)
  * - OSM Tags: highway, surface, mtb:scale, trail_visibility, sac_scale, …
- * - Offline: PMTiles (NEXT_PUBLIC_PMTILES_URL) + Graph-Service
+ * - Offline: PMTiles (NEXT_PUBLIC_PMTILES_URL) + Graph-Service / Valhalla FFI
  */
 
 export type RoutingProfile =
@@ -13,6 +13,7 @@ export type RoutingProfile =
   | "gravel"
   | "road"
   | "ebike"
+  | "emtb"
   | "hiking";
 
 export interface ProfileConfig {
@@ -29,7 +30,7 @@ export interface ProfileConfig {
 export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   mtb_allmountain: {
     id: "mtb_allmountain",
-    label: "MTB All-Mountain",
+    label: "MTB Trail / All-Mountain",
     prefer: ["path", "track", "cycleway", "mtb:scale=0-3"],
     avoid: ["motorway", "trunk", "steps"],
     maxSurfaceRoughness: 0.75,
@@ -38,8 +39,8 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
   mtb_enduro: {
     id: "mtb_enduro",
-    label: "Enduro",
-    prefer: ["path", "track", "mtb:scale=2-5"],
+    label: "Enduro / DH-leaning",
+    prefer: ["path", "track", "mtb:scale=2-5", "mtb:scale:imba"],
     avoid: ["motorway", "trunk", "primary", "steps"],
     maxSurfaceRoughness: 0.95,
     preferMtbScaleMax: 5,
@@ -75,12 +76,22 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
   ebike: {
     id: "ebike",
-    label: "E-Bike",
+    label: "E-Bike Tour",
     prefer: ["cycleway", "track", "path", "tertiary"],
-    avoid: ["motorway", "steps"],
-    maxSurfaceRoughness: 0.7,
+    avoid: ["motorway", "steps", "mtb:scale>=4"],
+    maxSurfaceRoughness: 0.65,
     preferElevation: true,
     eBikeAssistFactor: 1.4,
+  },
+  emtb: {
+    id: "emtb",
+    label: "E-MTB",
+    prefer: ["path", "track", "mtb:scale=0-4", "cycleway"],
+    avoid: ["motorway", "trunk", "steps"],
+    maxSurfaceRoughness: 0.85,
+    preferMtbScaleMax: 4,
+    preferElevation: true,
+    eBikeAssistFactor: 1.6,
   },
   hiking: {
     id: "hiking",
@@ -121,18 +132,20 @@ export async function requestRoute(
 }
 
 /** Map bike category → routing profile */
-export function profileForBikeCategory(
-  category: string
-): RoutingProfile {
+export function profileForBikeCategory(category: string): RoutingProfile {
   switch (category) {
     case "mtb_enduro":
+    case "dh":
       return "mtb_enduro";
     case "gravel":
       return "gravel";
     case "road":
       return "road";
     case "emtb":
+      return "emtb";
+    case "etrekking":
     case "ebike":
+    case "urban":
       return "ebike";
     case "hiking":
       return "hiking";

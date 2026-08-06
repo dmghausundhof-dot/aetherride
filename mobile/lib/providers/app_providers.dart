@@ -1,13 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/config.dart';
+import '../data/local/app_database.dart';
 import '../data/local/garage_repository.dart';
 import '../data/sync/sync_engine.dart';
 import '../domain/bike.dart';
 import '../native/ble_core_channel.dart';
 import '../native/sensor_core_channel.dart';
 
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  final db = AppDatabase();
+  ref.onDispose(db.close);
+  return db;
+});
+
 final garageRepositoryProvider = Provider<GarageRepository>((ref) {
-  return GarageRepository();
+  return GarageRepository(ref.watch(appDatabaseProvider));
 });
 
 final bikesProvider = FutureProvider<List<Bike>>((ref) {
@@ -15,9 +24,24 @@ final bikesProvider = FutureProvider<List<Bike>>((ref) {
 });
 
 final syncEngineProvider = Provider<SyncEngine>((ref) {
-  final engine = SyncEngine();
+  final engine = SyncEngine(
+    db: ref.watch(appDatabaseProvider),
+    garage: ref.watch(garageRepositoryProvider),
+  );
   ref.onDispose(engine.stop);
   return engine;
+});
+
+final supabaseReadyProvider = Provider<bool>((ref) {
+  return AppConfig.isSupabaseConfigured;
+});
+
+final authSessionProvider = StreamProvider<Session?>((ref) {
+  if (!AppConfig.isSupabaseConfigured) {
+    return Stream.value(null);
+  }
+  final client = Supabase.instance.client;
+  return client.auth.onAuthStateChange.map((e) => e.session);
 });
 
 final sensorCoreProvider = Provider<SensorCoreChannel>((ref) {

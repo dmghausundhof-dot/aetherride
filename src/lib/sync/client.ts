@@ -16,6 +16,8 @@ export type SyncPayload = {
   commerceMode?: unknown;
   activeBikeId?: string | null;
   updatedAt?: string;
+  /** Schema version for Flutter/Web payload mapping */
+  payloadVersion?: number;
 };
 
 export type PullResult = {

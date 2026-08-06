@@ -12,5 +12,6 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    SensorCorePlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "SensorCorePlugin")!)
   }
 }
