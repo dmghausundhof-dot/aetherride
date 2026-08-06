@@ -38,11 +38,21 @@ Version 1.0 · Spec-konform · Offline-First · Outdoor Design System
 - Immutable Setup-Versionen + Bracketing-Auswertung (1,5× gepoolte SD)
 - Post-Ride-Feedback ≤3 Taps (F-SET-004)
 
+### 6. Marktreife P1 (Spec Free/Pro + Shop + Prognosen)
+- **F-GAR-004** SVG-Bike-Silhouetten mit Hotspots (gepflegt / Wartung / fehlt)
+- **F-GAR-005 P1** Verschleißprognose als Spanne (Velopit, BIKE Magazin, Bavarian Bike, Linexo)
+- **F-SET-002** Setup-Vorlagen: Fox/RockShox OEM-Gewichtstabellen + Editorial-Presets (als Ausgangspunkt gekennzeichnet)
+- **F-SEN-005** Live-Hinweise ≤6 Wörter + SpeechSynthesis; Details nur im Stand
+- **F-NAV-004** Routenvorschläge mit genau 3 Begründungsfaktoren
+- **F-EBK-004 P1** Physik-Reichweite + Kalman-artige Selbstkalibrierung (Spanne, nie Punktwert)
+- **F-AI-002** Rider-Profil erklärbar & korrigierbar (Terrainanteil, Fahrstil-Indikatoren)
+- **F-SHP-001/003** Affiliate-Shop mit Kompat-Urteil; Checkout = Partner-Weiterleitung
+- **Spec 1.4** Free/Pro-Paywall (1 Bike Free; Multi-Bike, Bracketing, Reichweite = Pro)
+
 ### Weitere Kernfeatures
 - Live-Ride mit Sensor + Bosch + Karte
 - Post-Ride-Analyse + KI-Setup-Empfehlungen
 - Discover mit Match-Score
-- Rider-Profil
 - Dark Mode Outdoor Design System
 
 ## Starten

@@ -11,6 +11,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { AddBikeWizard } from "@/components/garage/AddBikeWizard";
+import { BikeSilhouette } from "@/components/garage/BikeSilhouette";
 import { BracketingPanel } from "@/components/garage/BracketingPanel";
 import { InstallComponentSheet } from "@/components/garage/InstallComponentSheet";
 import { VerdictPill } from "@/components/garage/VerdictPill";
@@ -22,7 +23,9 @@ import {
   checkBikeCompatibility,
 } from "@/lib/compatibility/engine";
 import { evaluateIntervalDue } from "@/lib/maintenance/intervals";
+import { forecastWear } from "@/lib/maintenance/wearPrediction";
 import { recommendedSagPct } from "@/lib/setup/ranges";
+import { templatesForCategory } from "@/lib/setup/templates";
 import {
   bikeCompletenessPct,
   getActiveComponents,
@@ -44,6 +47,7 @@ export default function GaragePage() {
   const maintenanceLogs = useAppStore((s) => s.maintenanceLogs);
   const maintenanceIntervals = useAppStore((s) => s.maintenanceIntervals);
   const markIntervalDone = useAppStore((s) => s.markIntervalDone);
+  const applySetupTemplate = useAppStore((s) => s.applySetupTemplate);
   const rides = useAppStore((s) => s.rides);
 
   const [selectedId, setSelectedId] = useState<string | null>(activeBikeId);
@@ -156,6 +160,24 @@ export default function GaragePage() {
 
           {tab === "overview" && (
             <div className="flex flex-col gap-4">
+              <BikeSilhouette
+                bike={selected}
+                maintenanceSlots={intervals
+                  .filter((i) => {
+                    const d = evaluateIntervalDue(
+                      i,
+                      selected.totalOdometerKm,
+                      selected.totalHours
+                    );
+                    return d.status !== "ok";
+                  })
+                  .map((i) => i.slot)}
+                onSelectSlot={(slot) => {
+                  setTab("components");
+                  setInstallSlot(slot);
+                }}
+              />
+
               <section className="rounded-2xl border border-border bg-surface p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/30 text-accent">
@@ -421,6 +443,40 @@ export default function GaragePage() {
           {tab === "setups" && (
             <div className="flex flex-col gap-4">
               <section className="rounded-2xl border border-border bg-surface p-4">
+                <h3 className="mb-2 font-semibold">Setup-Vorlagen (F-SET-002)</h3>
+                <p className="mb-2 text-xs text-text-secondary">
+                  Ausgangspunkte — keine Empfehlung. Fox/RockShox-Gewichtstabellen
+                  & Editorial-Presets.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {templatesForCategory(selected.category).map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() =>
+                        applySetupTemplate(selected.id, tpl.id)
+                      }
+                      className="rounded-xl border border-border bg-surface-elevated p-3 text-left text-sm"
+                    >
+                      <div className="font-medium">{tpl.label}</div>
+                      <div className="mt-1 text-[11px] text-warning">
+                        {tpl.disclaimer}
+                      </div>
+                      <a
+                        href={tpl.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-block text-[11px] text-accent"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {tpl.sourceLabel}
+                      </a>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-border bg-surface p-4">
                 <h3 className="mb-2 flex items-center gap-2 font-semibold">
                   <Settings2 className="h-4 w-4 text-accent" />
                   Neues Setup (immutable)
@@ -522,6 +578,40 @@ export default function GaragePage() {
 
           {tab === "maintenance" && (
             <div className="flex flex-col gap-4">
+              <section>
+                <h3 className="mb-2 font-semibold">
+                  Verschleißprognose (Spanne)
+                </h3>
+                <p className="mb-2 text-xs text-text-secondary">
+                  Belastungsgewichtet · nie Punktwert (F-GAR-005 P1)
+                </p>
+                <div className="flex flex-col gap-2">
+                  {forecastWear(selected, rides).map((f) => (
+                    <div
+                      key={f.kind}
+                      className={`rounded-xl border p-3 text-sm ${
+                        f.dueSoon
+                          ? "border-warning/50 bg-warning/10"
+                          : "border-border bg-surface"
+                      }`}
+                    >
+                      <div className="font-medium">{f.label}</div>
+                      <p className="mt-1 text-xs text-text-secondary">
+                        {f.reasoning}
+                      </p>
+                      <p className="mt-1 text-[10px] text-text-secondary">
+                        {f.sourceLabel}
+                      </p>
+                    </div>
+                  ))}
+                  {forecastWear(selected, rides).length === 0 && (
+                    <p className="text-sm text-text-secondary">
+                      Keine Verschleißteile mit Historie.
+                    </p>
+                  )}
+                </div>
+              </section>
+
               <section>
                 <h3 className="mb-2 font-semibold">Fälligkeiten</h3>
                 <div className="flex flex-col gap-2">
