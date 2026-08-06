@@ -1,7 +1,7 @@
 /**
  * Professionelle Roadmap (F-ACC → Marktreife)
- * Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
- * G-4 Mengen-Ziel erreicht. Offline-PMTiles: Prep done, Download nach G-0.
+ * Human-Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
+ * Legal-Prep (Checkliste/Bundle) bereit — Sign-offs sind menschlich.
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
@@ -42,12 +42,12 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 8,
-    titleDe: "Legal/Gate Sign-offs",
-    status: "in_progress" as const,
+    titleDe: "Legal/Gate Sign-off Prep (Human must sign)",
+    status: "done" as const,
   },
   {
     id: 9,
     titleDe: "OAuth Google/Apple (zum Schluss)",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
 ] as const;

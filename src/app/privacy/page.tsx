@@ -58,6 +58,14 @@ import {
   renderG2StudyPlanMarkdown,
 } from "@/lib/sensor/g2StudyPlan";
 import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
+import {
+  HUMAN_SIGN_GATES,
+  legalSignoffPrepSummaryDe,
+  listHumanGateAcks,
+  recordHumanGateAck,
+  renderLegalGateExportBundleMarkdown,
+  renderUnifiedGateSignoffChecklistMarkdown,
+} from "@/lib/legal/gateSignoffPrep";
 
 export default function PrivacyExportPage() {
   const rides = useAppStore((s) => s.rides);
@@ -87,6 +95,7 @@ export default function PrivacyExportPage() {
   const [riderName, setRiderName] = useState("");
   const [riderWeight, setRiderWeight] = useState(70);
   const [dispatchTick, setDispatchTick] = useState(0);
+  const [ackTick, setAckTick] = useState(0);
   const lastRide = rides[0];
   const activeBike = bikes.find((b) => b.isActive) || bikes[0];
   const syncState = getSyncClientState(authSession.syncEnabled);
@@ -94,6 +103,7 @@ export default function PrivacyExportPage() {
   const pendingPreview = describePendingOps(3);
   const attorney = attorneyPackageStatus();
   const dispatch = useMemo(() => getCounselDispatchMeta(), [dispatchTick]);
+  const humanAcks = useMemo(() => listHumanGateAcks(), [ackTick]);
 
   const jsonPreview = useMemo(
     () =>
@@ -113,6 +123,88 @@ export default function PrivacyExportPage() {
           F-ACC-003/005/006/007 · Export · Zonen · Familie
         </p>
       </header>
+
+      <section className="rounded-2xl border border-warning/40 bg-warning/10 p-4">
+        <h3 className="mb-1 flex items-center gap-2 font-semibold">
+          <Shield className="h-4 w-4" /> Legal / Gate Sign-offs (Prep)
+        </h3>
+        <p className="mb-2 text-xs text-text-secondary">
+          {legalSignoffPrepSummaryDe()}
+        </p>
+        <p className="mb-3 text-[11px] text-warning">
+          Human must sign — Checkliste/Bundle schließen keine Gates. Flags bleiben
+          false.
+        </p>
+        <ul className="mb-3 space-y-1 text-[11px] text-text-secondary">
+          {HUMAN_SIGN_GATES.map((g) => {
+            const ack = humanAcks
+              .filter((a) => a.gateId === g.id)
+              .sort((a, b) => a.at.localeCompare(b.at))
+              .at(-1);
+            return (
+              <li key={g.id} className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-foreground">{g.id}</span>
+                <span>· {g.flagName}=false</span>
+                <span>· {g.ownerRoleDe}</span>
+                {ack && (
+                  <span className="text-accent">
+                    · Ack {ack.kind}{" "}
+                    {new Date(ack.at).toLocaleDateString("de-DE")}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    recordHumanGateAck(g.id, "pack_reviewed");
+                    setAckTick((n) => n + 1);
+                  }}
+                  className="rounded border border-border px-1.5 py-0.5 text-[10px]"
+                >
+                  Pack gelesen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    recordHumanGateAck(g.id, "sent_to_owner");
+                    setAckTick((n) => n + 1);
+                  }}
+                  className="rounded border border-border px-1.5 py-0.5 text-[10px]"
+                >
+                  An Owner gesendet
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-gate-signoff-checklist.md",
+                renderUnifiedGateSignoffChecklistMarkdown(),
+                "text/markdown;charset=utf-8"
+              )
+            }
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+          >
+            Unified Checklist (.md)
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-legal-gate-bundle.md",
+                renderLegalGateExportBundleMarkdown(),
+                "text/markdown;charset=utf-8"
+              )
+            }
+            className="rounded-lg border border-border px-3 py-1.5 text-xs"
+          >
+            Volles Bundle (.md)
+          </button>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 font-semibold">G-5 an echte Kanzlei</h3>
