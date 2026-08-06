@@ -140,6 +140,9 @@ export default function ProfilePage() {
         <Link href="/privacy" className="mt-2 inline-block text-xs text-accent">
           Konto · Export · Privatsphäre
         </Link>
+        <Link href="/gates" className="mt-1 block text-xs text-accent">
+          Human Gates · Closure-Arbeitsraum
+        </Link>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">

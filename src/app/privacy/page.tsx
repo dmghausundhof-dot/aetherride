@@ -133,7 +133,10 @@ export default function PrivacyExportPage() {
         </p>
         <p className="mb-3 text-[11px] text-warning">
           Human must sign — Checkliste/Bundle schließen keine Gates. Flags bleiben
-          false.
+          false.{" "}
+          <Link href="/gates" className="font-medium text-accent underline">
+            → Human-Gates-Arbeitsraum
+          </Link>
         </p>
         <ul className="mb-3 space-y-1 text-[11px] text-text-secondary">
           {HUMAN_SIGN_GATES.map((g) => {
