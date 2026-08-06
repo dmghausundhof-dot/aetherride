@@ -21,10 +21,12 @@ import {
   type RoutingProfile,
   type RouteResult,
 } from "@/lib/routing/profiles";
+import type { JurisdictionId } from "@/lib/routing/accessRights";
 import { buildManeuvers, speakTbt } from "@/lib/routing/turnByTurn";
 import { HIKING_GEAR_DEFAULT } from "@/lib/mode/hiking";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView } from "@/components/MapView";
+import { AccessRightsPanel } from "@/components/AccessRightsPanel";
 import Link from "next/link";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
@@ -46,6 +48,7 @@ export default function DiscoverPage() {
   const [routingProfile, setRoutingProfile] = useState<RoutingProfile>(
     appMode === "hiking" ? "HIKING" : "MTB_TRAIL"
   );
+  const [jurisdiction, setJurisdiction] = useState<JurisdictionId>("AT-7");
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
 
   useEffect(() => {
@@ -54,13 +57,18 @@ export default function DiscoverPage() {
 
   useEffect(() => {
     let cancelled = false;
-    requestRoute(routingProfile, [47.45, 12.15], [47.48, 12.22]).then((r) => {
+    requestRoute(
+      routingProfile,
+      [47.45, 12.15],
+      [47.48, 12.22],
+      jurisdiction
+    ).then((r) => {
       if (!cancelled) setRouteResult(r);
     });
     return () => {
       cancelled = true;
     };
-  }, [routingProfile]);
+  }, [routingProfile, jurisdiction]);
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -159,13 +167,6 @@ export default function DiscoverPage() {
                   {Math.round(routeResult.uncertainShare * 100)} %) — nicht
                   optimistisch bewertet
                 </p>
-                {routeResult.accessWarnings.length > 0 && (
-                  <ul className="list-inside list-disc text-xs text-warning">
-                    {routeResult.accessWarnings.map((w) => (
-                      <li key={w}>{w}</li>
-                    ))}
-                  </ul>
-                )}
                 <p className="text-[10px] text-text-secondary">
                   {routeResult.costingNote}
                 </p>
@@ -183,6 +184,15 @@ export default function DiscoverPage() {
               </div>
             )}
           </section>
+
+          {routeResult && (
+            <AccessRightsPanel
+              jurisdiction={jurisdiction}
+              onJurisdictionChange={setJurisdiction}
+              findings={routeResult.accessFindings ?? []}
+              blocked={routeResult.blocked || (routeResult.accessFindings ?? []).some((f) => f.severity === "block")}
+            />
+          )}
 
           {appMode === "hiking" && (
             <section className="rounded-2xl border border-border bg-surface p-4">
