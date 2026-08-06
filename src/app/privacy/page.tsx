@@ -26,6 +26,11 @@ import {
   getSyncClientState,
 } from "@/lib/sync/syncStatus";
 import { opsLogStats } from "@/lib/sync/opsLog";
+import {
+  attorneyPackageStatus,
+  renderG5AttorneyBriefMarkdown,
+} from "@/lib/routing/g5AttorneyBrief";
+import { G5_LEGAL_REVIEW_PASSED } from "@/lib/routing/legalReview";
 
 export default function PrivacyExportPage() {
   const rides = useAppStore((s) => s.rides);
@@ -56,6 +61,7 @@ export default function PrivacyExportPage() {
   const syncState = getSyncClientState(authSession.syncEnabled);
   const opsStats = opsLogStats();
   const pendingPreview = describePendingOps(3);
+  const attorney = attorneyPackageStatus();
 
   const jsonPreview = useMemo(
     () =>
@@ -75,6 +81,28 @@ export default function PrivacyExportPage() {
           F-ACC-003/005/006/007 · Export · Zonen · Familie
         </p>
       </header>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">G-5 Anwalt-Paket (Wegerecht)</h3>
+        <p className="mb-2 text-xs text-text-secondary">{attorney.summaryDe}</p>
+        <p className="mb-3 text-[11px] text-text-secondary">
+          Master-Gate G5_LEGAL_REVIEW_PASSED = {String(G5_LEGAL_REVIEW_PASSED)}.
+          Sign-off offen: {attorney.pendingSignOff.join(", ")}. Kein Fake-Gutachten.
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g5-anwalt-briefing.md",
+              renderG5AttorneyBriefMarkdown(),
+              "text/markdown;charset=utf-8"
+            )
+          }
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+        >
+          Briefing für Kanzlei herunterladen
+        </button>
+      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">

@@ -12,6 +12,13 @@ import {
   getLegalReview,
   isG5ClosedFor,
 } from "@/lib/routing/legalReview";
+import {
+  attorneyPackageStatus,
+  G5_ATTORNEY_MANDATE,
+  G5_RULE_INVENTORY,
+  renderG5AttorneyBriefMarkdown,
+} from "@/lib/routing/g5AttorneyBrief";
+import { downloadText } from "@/lib/export/gpx";
 
 export function AccessRightsPanel({
   jurisdiction,
@@ -30,6 +37,7 @@ export function AccessRightsPanel({
   const profile = JURISDICTIONS[jurisdiction];
   const review = getLegalReview(jurisdiction);
   const g5Closed = isG5ClosedFor(jurisdiction);
+  const attorney = attorneyPackageStatus();
   const relevant = findings.filter(
     (f) => f.severity === "block" || f.severity === "warn" || (more && f.severity === "info")
   );
@@ -217,6 +225,34 @@ export function AccessRightsPanel({
               Launch-fähig: {review.launchEligible || g5Closed ? "ja" : "nein"}{" "}
               (A-07 / Launch-Kriterium #8).
             </p>
+          </div>
+
+          <div>
+            <p className="mb-1 font-medium text-foreground">
+              Anwalt-Paket G-5
+            </p>
+            <p>{attorney.summaryDe}</p>
+            <p className="mt-1">
+              Mandat: {G5_ATTORNEY_MANDATE.title}. Sign-off offen:{" "}
+              {attorney.pendingSignOff.join(", ") || "—"}.
+            </p>
+            <p className="mt-1">
+              Regelinventar: {G5_RULE_INVENTORY.length} Regeln zur Counsel-Prüfung
+              · A-06/A-08 separat.
+            </p>
+            <button
+              type="button"
+              className="mt-2 rounded-lg border border-border px-2 py-1 text-[10px] font-medium text-foreground"
+              onClick={() =>
+                downloadText(
+                  "aetherride-g5-anwalt-briefing.md",
+                  renderG5AttorneyBriefMarkdown(),
+                  "text/markdown;charset=utf-8"
+                )
+              }
+            >
+              Briefing als Markdown herunterladen
+            </button>
           </div>
         </div>
       )}
