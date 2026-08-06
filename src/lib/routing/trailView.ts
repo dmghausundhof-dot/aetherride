@@ -2,42 +2,38 @@
  * F-NAV-006 Trail View (P2)
  *
  * Mapillary (CC BY-SA) + nutzergenerierte Fotos mit Geo + Blickrichtung.
- * DARF NICHT proprietäre Bilddienste einbetten, die das untersagen.
- * Attribution Pflicht (Spec 8.4 / Mapillary CC-BY-SA).
+ * Token: MAPILLARY_ACCESS_TOKEN / NEXT_PUBLIC_MAPILLARY_ACCESS_TOKEN
  */
 
 export interface TrailPhoto {
   id: string;
   source: "mapillary" | "user";
-  /** Demo: Platzhalter-URL / SVG data */
   imageUrl: string;
   lat: number;
   lng: number;
-  /** Blickrichtung Grad 0–360 */
   headingDeg: number;
-  capturedAt?: string; // nur User; Mapillary-Anzeige ohne Tracking-Zweck
+  capturedAt?: string;
   username: string;
   title: string;
   license: string;
   attributionHtml: string;
   mapillaryKey?: string;
+  demo?: boolean;
 }
 
 export interface TrailViewResult {
   photos: TrailPhoto[];
   attribution: string;
   disclaimer: string;
+  usingDemo: boolean;
 }
 
-/** Demo-Bilder entlang Alpbachtal — keine echten Mapillary-Blobs, Attribution-Demo */
-export function getTrailViewNear(
-  lat = 47.45,
-  lng = 12.15
-): TrailViewResult {
-  const photos: TrailPhoto[] = [
+function demoPhotos(lat: number, lng: number): TrailPhoto[] {
+  return [
     {
       id: "tv-mapillary-1",
       source: "mapillary",
+      demo: true,
       imageUrl:
         "data:image/svg+xml," +
         encodeURIComponent(
@@ -46,70 +42,119 @@ export function getTrailViewNear(
               <stop offset="0%" stop-color="#4a7c59"/><stop offset="100%" stop-color="#2d4a35"/>
             </linearGradient></defs>
             <rect width="640" height="360" fill="url(#g)"/>
-            <text x="40" y="180" fill="#e8f0e9" font-size="28" font-family="sans-serif">Trail S2 · Wurzelteppich</text>
-            <text x="40" y="220" fill="#b8d4bc" font-size="16" font-family="sans-serif">Mapillary Demo · CC BY-SA</text>
+            <text x="40" y="180" fill="#e8f0e9" font-size="28" font-family="sans-serif">Trail S2 · Demo</text>
+            <text x="40" y="220" fill="#b8d4bc" font-size="16" font-family="sans-serif">Mapillary Token fehlt</text>
           </svg>`
         ),
       lat: lat + 0.002,
       lng: lng + 0.003,
       headingDeg: 125,
-      username: "alpenmapper",
-      title: "Flow Trail Söll – Wurzelpassage",
+      username: "demo",
+      title: "Demo — Token konfigurieren",
       license: "CC BY-SA 4.0",
-      attributionHtml:
-        "Flow Trail Soell by alpenmapper, licensed under CC BY-SA · via Mapillary",
-      mapillaryKey: "demo-key-001",
-    },
-    {
-      id: "tv-mapillary-2",
-      source: "mapillary",
-      imageUrl:
-        "data:image/svg+xml," +
-        encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">
-            <rect width="640" height="360" fill="#3d5a80"/>
-            <text x="40" y="170" fill="#e0fbfc" font-size="26" font-family="sans-serif">Bergfahrt · Schotter</text>
-            <text x="40" y="210" fill="#98c1d9" font-size="16" font-family="sans-serif">Mapillary Demo · CC BY-SA</text>
-          </svg>`
-        ),
-      lat: lat - 0.001,
-      lng: lng + 0.005,
-      headingDeg: 40,
-      username: "tirol_tracks",
-      title: "Anstieg Alpbachtal",
-      license: "CC BY-SA 4.0",
-      attributionHtml:
-        "Anstieg Alpbachtal by tirol_tracks, licensed under CC BY-SA · via Mapillary",
-      mapillaryKey: "demo-key-002",
-    },
-    {
-      id: "tv-user-1",
-      source: "user",
-      imageUrl:
-        "data:image/svg+xml," +
-        encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">
-            <rect width="640" height="360" fill="#1a1a2e"/>
-            <text x="40" y="170" fill="#eee" font-size="26" font-family="sans-serif">Nutzerfoto · Blick 210°</text>
-            <text x="40" y="210" fill="#aaa" font-size="16" font-family="sans-serif">Eigenes Foto mit Geobezug</text>
-          </svg>`
-        ),
-      lat: lat + 0.004,
-      lng: lng - 0.002,
-      headingDeg: 210,
-      capturedAt: "2026-07-12T14:22:00.000Z",
-      username: "du",
-      title: "Selbst aufgenommen – Kurvenausgang",
-      license: "Nutzerinhalte · AetherRide",
-      attributionHtml: "Nutzerfoto mit Geobezug und Blickrichtung 210°",
+      attributionHtml: "Demo-Platzhalter · Mapillary CC BY-SA",
+      mapillaryKey: "demo",
     },
   ];
+}
 
+export function getTrailViewNear(
+  lat = 47.45,
+  lng = 12.15
+): TrailViewResult {
   return {
-    photos,
+    photos: demoPhotos(lat, lng),
     attribution:
-      "Mapillary imagery © contributors, CC BY-SA 4.0 · Logo/Link zu mapillary.com erforderlich",
+      "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
     disclaimer:
-      "Keine proprietären Street-View-Dienste. Attribution sichtbar (Spec F-NAV-006 / Mapillary Terms).",
+      "Demo-Fallback — setze MAPILLARY_ACCESS_TOKEN für Live-Bilder (F-NAV-006).",
+    usingDemo: true,
   };
+}
+
+/** Server/client fetch Mapillary Graph API when token present */
+export async function fetchTrailViewNear(
+  lat = 47.45,
+  lng = 12.15,
+  token?: string
+): Promise<TrailViewResult> {
+  const t =
+    token ||
+    process.env.MAPILLARY_ACCESS_TOKEN ||
+    process.env.NEXT_PUBLIC_MAPILLARY_ACCESS_TOKEN;
+
+  if (!t) {
+    return getTrailViewNear(lat, lng);
+  }
+
+  try {
+    const url = new URL("https://graph.mapillary.com/images");
+    url.searchParams.set("access_token", t);
+    url.searchParams.set(
+      "fields",
+      "id,thumb_1024_url,computed_geometry,compass_angle,captured_at,creator"
+    );
+    // bbox around point ~0.01 deg
+    const d = 0.01;
+    url.searchParams.set(
+      "bbox",
+      `${lng - d},${lat - d},${lng + d},${lat + d}`
+    );
+    url.searchParams.set("limit", "8");
+
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+      const fallback = getTrailViewNear(lat, lng);
+      return {
+        ...fallback,
+        disclaimer: `Mapillary API ${res.status} — Demo-Fallback.`,
+      };
+    }
+    const data = await res.json();
+    const photos: TrailPhoto[] = (data.data || []).map(
+      (img: {
+        id: string;
+        thumb_1024_url?: string;
+        computed_geometry?: { coordinates?: number[] };
+        compass_angle?: number;
+        captured_at?: string;
+        creator?: { username?: string };
+      }) => {
+        const coords = img.computed_geometry?.coordinates;
+        return {
+          id: img.id,
+          source: "mapillary" as const,
+          imageUrl: img.thumb_1024_url || "",
+          lat: coords?.[1] ?? lat,
+          lng: coords?.[0] ?? lng,
+          headingDeg: img.compass_angle ?? 0,
+          capturedAt: img.captured_at,
+          username: img.creator?.username || "mapillary",
+          title: `Mapillary ${img.id}`,
+          license: "CC BY-SA 4.0",
+          attributionHtml: `Image by ${img.creator?.username || "contributor"} via Mapillary, CC BY-SA`,
+          mapillaryKey: img.id,
+          demo: false,
+        };
+      }
+    );
+
+    if (photos.length === 0) {
+      return {
+        ...getTrailViewNear(lat, lng),
+        disclaimer: "Keine Mapillary-Bilder in der Nähe — Demo-Fallback.",
+      };
+    }
+
+    return {
+      photos,
+      attribution:
+        "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
+      disclaimer:
+        "Live Mapillary (CC BY-SA). Attribution Pflicht (Spec F-NAV-006).",
+      usingDemo: false,
+    };
+  } catch {
+    return getTrailViewNear(lat, lng);
+  }
 }

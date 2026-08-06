@@ -15,6 +15,7 @@ import {
   rideToGpx,
   rideToStravaActivityStub,
 } from "@/lib/export/gpx";
+import { downloadBytes, rideToFit } from "@/lib/export/fit";
 import {
   CONSENT_LABELS,
   type ConsentPurpose,
@@ -100,16 +101,32 @@ export default function PrivacyExportPage() {
             disabled={!lastRide}
             onClick={() => {
               if (!lastRide) return;
+              const fit = rideToFit(lastRide);
+              downloadBytes(
+                `aetherride-${lastRide.id.slice(0, 8)}.fit`,
+                fit,
+                "application/octet-stream"
+              );
+            }}
+            className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
+          >
+            Letzten Ride als FIT
+          </button>
+          <button
+            type="button"
+            disabled={!lastRide}
+            onClick={() => {
+              if (!lastRide) return;
               const stub = rideToStravaActivityStub(lastRide);
               downloadText(
-                "strava-activity-stub.json",
+                "strava-activity-payload.json",
                 JSON.stringify(stub, null, 2),
                 "application/json"
               );
             }}
             className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
           >
-            Strava-Activity-Stub (ohne OAuth)
+            Strava-Payload (ohne OAuth — spätere Anbindung)
           </button>
         </div>
         <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-surface-elevated p-2 text-[10px] text-text-secondary">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Compass,
   Mountain,
@@ -13,8 +13,15 @@ import { useAppStore } from "@/store/useAppStore";
 import { suggestRoutes } from "@/lib/routing/suggestions";
 import { estimateRange } from "@/lib/ebike/range";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
-import { getTrailViewNear } from "@/lib/routing/trailView";
-import { buildDemoElevationProfile } from "@/lib/routing/elevationProfile";
+import {
+  getTrailViewNear,
+  type TrailViewResult,
+} from "@/lib/routing/trailView";
+import {
+  buildDemoElevationProfile,
+  buildElevationFromTrack,
+  type ElevationProfile,
+} from "@/lib/routing/elevationProfile";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView } from "@/components/MapView";
 import Link from "next/link";
@@ -24,6 +31,8 @@ type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
 export default function DiscoverPage() {
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const bikes = useAppStore((s) => s.bikes);
+  const rides = useAppStore((s) => s.rides);
+  const privacyZones = useAppStore((s) => s.privacyZones);
   const profile = useAppStore((s) => s.riderProfile);
   const calibration = useAppStore((s) => s.rangeCalibration);
   const boschLive = useAppStore((s) => s.boschLive);
@@ -34,6 +43,12 @@ export default function DiscoverPage() {
   const [minutes, setMinutes] = useState(150);
   const [tab, setTab] = useState<DiscoverTab>("routes");
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [trail, setTrail] = useState<TrailViewResult>(() =>
+    getTrailViewNear(47.45, 12.15)
+  );
+  const [elev, setElev] = useState<ElevationProfile>(() =>
+    buildDemoElevationProfile()
+  );
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -60,11 +75,62 @@ export default function DiscoverPage() {
   }, [activeBike, profile, minutes, range]);
 
   const heatmap = useMemo(
-    () => buildHeatmap({ consentHeatmap: heatmapConsent }),
-    [heatmapConsent]
+    () =>
+      buildHeatmap({
+        consentHeatmap: heatmapConsent,
+        rides,
+        privacyZones: privacyZones.map((z) => ({
+          lat: z.lat,
+          lng: z.lng,
+          radiusM: z.radiusM,
+        })),
+        includeSeedFallback: true,
+      }),
+    [heatmapConsent, rides, privacyZones]
   );
-  const trail = useMemo(() => getTrailViewNear(47.45, 12.15), []);
-  const elev = useMemo(() => buildDemoElevationProfile(), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/trail?lat=47.45&lng=12.15")
+      .then((r) => r.json())
+      .then((data: TrailViewResult) => {
+        if (!cancelled && data?.photos) setTrail(data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const last = rides.find((r) => r.track && r.track.length > 2);
+    if (!last?.track) {
+      setElev(buildDemoElevationProfile());
+      return;
+    }
+    let cancelled = false;
+    const local = buildElevationFromTrack(last.track, "track");
+    if (local.points.some((p) => p.elevM != null)) {
+      setElev(local);
+      return;
+    }
+    void fetch("/api/elevation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ track: last.track }),
+    })
+      .then((r) => r.json())
+      .then((data: ElevationProfile) => {
+        if (!cancelled && data?.points) setElev(data);
+      })
+      .catch(() => {
+        if (!cancelled) setElev(buildDemoElevationProfile());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rides]);
+
   const photo = trail.photos[photoIdx];
 
   return (
@@ -249,6 +315,11 @@ export default function DiscoverPage() {
               <Camera className="h-4 w-4 text-accent" /> Trail View (F-NAV-006)
             </div>
             <p className="text-xs text-text-secondary">{trail.disclaimer}</p>
+            {trail.usingDemo && (
+              <p className="mt-1 text-[11px] text-warning">
+                Demo-Modus — MAPILLARY_ACCESS_TOKEN setzen für Live-Bilder
+              </p>
+            )}
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -303,12 +374,13 @@ export default function DiscoverPage() {
             </div>
             <p className="text-xs text-text-secondary">
               {elev.totalDistKm.toFixed(1)} km · {elev.totalClimbM} hm ·
-              Datenlücke {elev.gapKm.toFixed(1)} km (nicht interpoliert)
+              Datenlücke {elev.gapKm.toFixed(1)} km · Quelle {elev.source}
+              {elev.source === "demo" ? " (Fallback)" : ""} (nicht interpoliert)
             </p>
           </div>
           <svg viewBox="0 0 400 120" className="w-full rounded-xl bg-surface">
             {elev.points.map((p, i) => {
-              if (p.elevM == null || i === 0) return null;
+              if (p.elevM == null || i === 0 || elev.totalDistKm <= 0) return null;
               const prev = elev.points[i - 1];
               if (prev.elevM == null) return null;
               const x1 = (prev.distKm / elev.totalDistKm) * 380 + 10;

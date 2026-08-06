@@ -1,34 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-
-/**
- * Einfache Orders-API.
- * Produktion: PostgreSQL + TimescaleDB für Ride/Sensor-Time-Series,
- * Vector-DB (pgvector) für Recommendations, Object-Storage für Tracks.
- *
- * Hier: In-Memory für die Prototype (persistiert über Client-Zustand).
- */
-
-const orders: unknown[] = [];
-
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const order = {
-      ...body,
-      receivedAt: new Date().toISOString(),
-      backendStatus: "accepted",
-    };
-    orders.push(order);
-    console.log("[AetherRide API] Order received:", order.id || "unknown");
-    return NextResponse.json({ success: true, orderId: order.id }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-  }
-}
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  return NextResponse.json({
-    count: orders.length,
-    orders: orders.slice(0, 20),
-  });
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ count: data?.length ?? 0, orders: data ?? [] });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "orders failed" },
+      { status: 500 }
+    );
+  }
 }

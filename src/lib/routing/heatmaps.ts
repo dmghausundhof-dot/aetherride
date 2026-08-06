@@ -134,46 +134,78 @@ export function trimTrackForHeatmap(
 
 export function buildHeatmap(input?: {
   consentHeatmap: boolean;
-  userCountOverride?: number;
+  /** Eigene Rides — nach Trim zu Segmenten aggregiert */
+  rides?: {
+    id: string;
+    track?: { lat: number; lng: number }[];
+  }[];
+  privacyZones?: { lat: number; lng: number; radiusM: number }[];
+  /** Community-Seed nur wenn keine eigenen Segmente */
+  includeSeedFallback?: boolean;
 }): HeatmapResult {
   const consent = input?.consentHeatmap ?? false;
-  const segments: HeatSegment[] = SEED_SEGMENTS.map((s) => {
-    const users = s.uniqueUsers;
-    if (users < K) {
-      return {
-        ...s,
-        intensity: 0,
-        visible: false,
-        hideReason: `k-Anonymität: nur ${users} Nutzer < ${K}`,
-      };
-    }
-    return {
-      ...s,
-      intensity: Math.min(1, users / 20),
-      visible: consent, // ohne Consent keine Anzeige eigener Contribution; Demo zeigt Community nur mit Opt-in-Kontext
-      hideReason: consent ? undefined : "Heatmap-Beitrag Opt-in fehlt (F-ACC-006)",
-    };
-  });
+  const zones = input?.privacyZones ?? [];
+  const fromRides: HeatSegment[] = [];
 
-  // Für Demo: Community-Segmente mit k≥5 auch ohne eigenen Beitrag zeigen,
-  // aber klar als Kaltstart/Demo kennzeichnen wenn wenige
-  const visibleCount = segments.filter((s) => s.uniqueUsers >= K).length;
-  const display = segments.map((s) => ({
-    ...s,
-    visible: s.uniqueUsers >= K,
-    hideReason:
-      s.uniqueUsers < K
-        ? s.hideReason
-        : undefined,
-  }));
+  for (const ride of input?.rides ?? []) {
+    if (!ride.track?.length) continue;
+    const trimmed = trimTrackForHeatmap(ride.track, zones);
+    if (trimmed.length < 4) continue;
+    // Grid-Bucket-Aggregation (eigene Daten = 1 Nutzer; Multi-User später Server)
+    const step = Math.max(1, Math.floor(trimmed.length / 8));
+    const coords: [number, number][] = [];
+    for (let i = 0; i < trimmed.length; i += step) {
+      coords.push([trimmed[i].lng, trimmed[i].lat]);
+    }
+    if (coords.length < 2) continue;
+    fromRides.push({
+      id: `ride-${ride.id}`,
+      coordinates: coords,
+      uniqueUsers: consent ? K : 1, // eigene Opt-in-Segmente sichtbar; ohne Consent unsichtbar
+      intensity: consent ? 0.6 : 0,
+      visible: consent,
+      hideReason: consent
+        ? undefined
+        : "Heatmap-Beitrag Opt-in fehlt (F-ACC-006)",
+      osmWayId: undefined,
+    });
+  }
+
+  const useSeed =
+    fromRides.length === 0 && (input?.includeSeedFallback ?? true);
+
+  const seedSegments: HeatSegment[] = useSeed
+    ? SEED_SEGMENTS.map((s) => {
+        const users = s.uniqueUsers;
+        if (users < K) {
+          return {
+            ...s,
+            intensity: 0,
+            visible: false,
+            hideReason: `k-Anonymität: nur ${users} Nutzer < ${K}`,
+          };
+        }
+        return {
+          ...s,
+          intensity: Math.min(1, users / 20),
+          visible: true,
+          hideReason: undefined,
+        };
+      })
+    : [];
+
+  const segments = [...fromRides, ...seedSegments];
+  const visibleCount = segments.filter((s) => s.visible).length;
 
   return {
-    segments: display,
-    coldStart: visibleCount < 3,
+    segments,
+    coldStart: fromRides.length === 0 || visibleCount < 3,
     kThreshold: K,
     attribution: "© OpenStreetMap Mitwirkende · AetherRide eigene Aggregate",
-    disclaimer: consent
-      ? `Segmente erst ab ${K} verschiedenen Nutzern. Keine Zeitstempel. Start/Ende und Privatsphärenzonen ausgeschlossen. Kein Zukauf fremder Heatmap-Daten.`
-      : `Heatmap-Beitrag ist Opt-in. Anzeige aggregierter Demo-Segmente mit k≥${K}. Kaltstart wird offen kommuniziert (Spec R-06).`,
+    disclaimer: fromRides.length
+      ? consent
+        ? `Eigene Rides (Privacy-Trim). Community k≥${K} folgt serverseitig.`
+        : `Heatmap-Beitrag Opt-in fehlt — eigene Segmente ausgeblendet.`
+      : `Kaltstart/Demo-Segmente mit k≥${K}. Kein Zukauf fremder Heatmap-Daten (R-06).`,
   };
 }

@@ -1239,15 +1239,11 @@ export const useAppStore = create<AppState>()(
       seedDemoData: () => {
         const existing = get().bikes;
         if (existing.length > 0) return;
-        // Demo: Pro, damit Multi-Bike-Seed Spec 1.4 nicht blockiert
-        set({ subscriptionTier: "pro" });
+        // Free-Tier (Spec 1.4): max. 1 Bike — kein Demo-Pro-Bypass
+        set({ subscriptionTier: "free" });
         get().addBikeFromCatalog({
           catalogBikeId: "cat-transition-spire-2024",
           frameSize: "L",
-        });
-        get().addBikeFromCatalog({
-          catalogBikeId: "cat-specialized-diverge-2023",
-          frameSize: "54",
         });
         get().createSetupVersion({
           bikeId: get().bikes[0].id,
