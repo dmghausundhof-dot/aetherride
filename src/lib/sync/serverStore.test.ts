@@ -11,6 +11,7 @@ function assert(c: boolean, m: string) {
 }
 
 async function main() {
+  process.env.FORCE_FILE_SYNC = "true";
   // Isoliere data/sync über cwd-Wechsel in temp
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "aether-sync-"));
   const prev = process.cwd();

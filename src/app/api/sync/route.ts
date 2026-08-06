@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         duplicates: result.duplicates,
         appliedCount: result.appliedCount,
         pulledOps: result.pulledOps,
+        persistence: result.persistence,
         userId: session.id,
         note: result.note,
       },

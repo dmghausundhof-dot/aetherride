@@ -6,12 +6,15 @@ import {
 } from "@/lib/auth/serverSession";
 import {
   authBackendLabelDe,
+  dataBackendLabelDe,
   getAuthBackend,
+  getDataBackend,
 } from "@/lib/supabase/config";
 import { oauthPrepSummaryDe } from "@/lib/auth/oauthPrep";
 
 export async function GET() {
   const backend = getAuthBackend();
+  const dataBackend = getDataBackend();
   const sessionUser = await getSessionFromCookies();
 
   if (!sessionUser) {
@@ -20,6 +23,8 @@ export async function GET() {
       syncEnabled: false,
       authBackend: backend,
       authBackendLabel: authBackendLabelDe(backend),
+      dataBackend,
+      dataBackendLabel: dataBackendLabelDe(dataBackend),
       authSecretHardened: isAuthSecretHardened(),
       oauthPrep: oauthPrepSummaryDe(),
     });
@@ -31,6 +36,8 @@ export async function GET() {
       syncEnabled: true,
       authBackend: backend,
       authBackendLabel: authBackendLabelDe(backend),
+      dataBackend,
+      dataBackendLabel: dataBackendLabelDe(dataBackend),
       authSecretHardened: isAuthSecretHardened(),
       oauthPrep: oauthPrepSummaryDe(),
     });
@@ -43,6 +50,8 @@ export async function GET() {
       syncEnabled: false,
       authBackend: backend,
       authBackendLabel: authBackendLabelDe(backend),
+      dataBackend,
+      dataBackendLabel: dataBackendLabelDe(dataBackend),
       authSecretHardened: isAuthSecretHardened(),
       oauthPrep: oauthPrepSummaryDe(),
     });
@@ -52,6 +61,8 @@ export async function GET() {
     syncEnabled: true,
     authBackend: backend,
     authBackendLabel: authBackendLabelDe(backend),
+    dataBackend,
+    dataBackendLabel: dataBackendLabelDe(dataBackend),
     authSecretHardened: isAuthSecretHardened(),
     oauthPrep: oauthPrepSummaryDe(),
   });

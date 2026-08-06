@@ -1,6 +1,6 @@
 /**
- * Serverseitige Sync-Persistenz (File → später Postgres)
- * User-scoped append-only Ops + Entity-Snapshots + Revision.
+ * Serverseitige Sync-Persistenz
+ * Primär: Supabase Postgres · Fallback: File data/sync/
  */
 
 import { promises as fs } from "fs";
@@ -10,37 +10,22 @@ import {
   mergeIncomingOps,
   type EntityServerState,
   type IncomingSyncOp,
-  type SyncConflict,
 } from "./conflictMerge";
+import {
+  getSyncPersistenceBackend,
+  syncPersistenceLabelDe,
+} from "./persistenceBackend";
+import {
+  loadUserSyncStorePostgres,
+  saveUserSyncStorePostgres,
+} from "./postgresStore";
+import type {
+  PersistedOp,
+  SyncPushResult,
+  UserSyncStore,
+} from "./serverStoreTypes";
 
-export interface PersistedOp extends IncomingSyncOp {
-  server_ts: string;
-  revision: string;
-}
-
-export interface UserSyncStore {
-  version: 2;
-  userId: string;
-  revision: string;
-  revisionSeq: number;
-  /** Alle jemals gesehenen Op-IDs (Idempotenz) */
-  seenOpIds: string[];
-  /** Append-only Log (kappt auf maxOps) */
-  ops: PersistedOp[];
-  /** Aktueller Entity-Stand */
-  entities: Record<string, EntityServerState>;
-  updatedAt: string;
-}
-
-export interface SyncPushResult {
-  revision: string;
-  ackedIds: string[];
-  conflicts: SyncConflict[];
-  duplicates: string[];
-  appliedCount: number;
-  pulledOps: PersistedOp[];
-  note: string;
-}
+export type { PersistedOp, SyncPushResult, UserSyncStore } from "./serverStoreTypes";
 
 const ROOT = path.join(process.cwd(), "data", "sync");
 const MAX_OPS = 5000;
@@ -64,13 +49,14 @@ function storePath(userId: string): string {
   return path.join(ROOT, `${safe}.json`);
 }
 
-export async function loadUserSyncStore(userId: string): Promise<UserSyncStore> {
+export async function loadUserSyncStoreFile(
+  userId: string
+): Promise<UserSyncStore> {
   await fs.mkdir(ROOT, { recursive: true });
   try {
     const raw = await fs.readFile(storePath(userId), "utf8");
     const parsed = JSON.parse(raw) as UserSyncStore;
     if (!parsed.version || parsed.version < 2) {
-      // migrate v1 revision log → empty v2
       return emptyStore(userId);
     }
     return parsed;
@@ -79,7 +65,7 @@ export async function loadUserSyncStore(userId: string): Promise<UserSyncStore> 
   }
 }
 
-async function saveUserSyncStore(store: UserSyncStore): Promise<void> {
+async function saveUserSyncStoreFile(store: UserSyncStore): Promise<void> {
   await fs.mkdir(ROOT, { recursive: true });
   store.updatedAt = new Date().toISOString();
   await fs.writeFile(
@@ -107,7 +93,6 @@ function mapToEntities(
   return Object.fromEntries(map.entries());
 }
 
-/** Ops mit revision > since (lexikographisch unsicher — nutze Seq aus rev_N_) */
 export function opsSince(
   store: UserSyncStore,
   since: string | null | undefined
@@ -115,10 +100,31 @@ export function opsSince(
   if (!since || since === "rev_0") return [...store.ops];
   const idx = store.ops.findIndex((o) => o.revision === since);
   if (idx < 0) {
-    // unknown cursor → full replay of recent ops
     return store.ops.slice(-200);
   }
   return store.ops.slice(idx + 1);
+}
+
+export async function loadUserSyncStore(
+  userId: string
+): Promise<UserSyncStore> {
+  const backend = getSyncPersistenceBackend(userId);
+  if (backend === "postgres") {
+    try {
+      const { createSupabaseServerClient } = await import(
+        "@/lib/supabase/server"
+      );
+      const supabase = await createSupabaseServerClient();
+      return await loadUserSyncStorePostgres(supabase, userId);
+    } catch (e) {
+      console.warn(
+        "[sync] Postgres load fehlgeschlagen → File-Fallback",
+        e instanceof Error ? e.message : e
+      );
+      return loadUserSyncStoreFile(userId);
+    }
+  }
+  return loadUserSyncStoreFile(userId);
 }
 
 /**
@@ -129,26 +135,72 @@ export async function pushUserOps(
   incoming: IncomingSyncOp[],
   since?: string | null
 ): Promise<SyncPushResult> {
-  const store = await loadUserSyncStore(userId);
+  let backend = getSyncPersistenceBackend(userId);
+  let store: UserSyncStore;
+  let usedPostgres = false;
+
+  if (backend === "postgres") {
+    try {
+      const { createSupabaseServerClient } = await import(
+        "@/lib/supabase/server"
+      );
+      const supabase = await createSupabaseServerClient();
+      store = await loadUserSyncStorePostgres(supabase, userId);
+      usedPostgres = true;
+    } catch (e) {
+      console.warn(
+        "[sync] Postgres push-load fehlgeschlagen → File",
+        e instanceof Error ? e.message : e
+      );
+      backend = "file";
+      store = await loadUserSyncStoreFile(userId);
+    }
+  } else {
+    store = await loadUserSyncStoreFile(userId);
+  }
+
   const seen = new Set(store.seenOpIds);
   const existing = entitiesToMap(store.entities);
   const merged = mergeIncomingOps(incoming, existing, seen);
 
   const revision = bumpRevision(store);
   const serverTs = new Date().toISOString();
+  const newlyApplied: PersistedOp[] = [];
 
   for (const op of merged.applied) {
-    store.ops.push({
+    const persisted: PersistedOp = {
       ...op,
       server_ts: serverTs,
       revision,
-    });
+    };
+    store.ops.push(persisted);
+    newlyApplied.push(persisted);
   }
 
   store.entities = mapToEntities(merged.nextStates);
   store.seenOpIds = Array.from(seen).slice(-MAX_SEEN);
   store.ops = store.ops.slice(-MAX_OPS);
-  await saveUserSyncStore(store);
+  store.updatedAt = serverTs;
+
+  if (usedPostgres) {
+    try {
+      const { createSupabaseServerClient } = await import(
+        "@/lib/supabase/server"
+      );
+      const supabase = await createSupabaseServerClient();
+      await saveUserSyncStorePostgres(supabase, store, newlyApplied);
+    } catch (e) {
+      console.warn(
+        "[sync] Postgres save fehlgeschlagen → File",
+        e instanceof Error ? e.message : e
+      );
+      await saveUserSyncStoreFile(store);
+      usedPostgres = false;
+      backend = "file";
+    }
+  } else {
+    await saveUserSyncStoreFile(store);
+  }
 
   const pulledOps = opsSince(store, since).filter(
     (o) => !merged.ackedIds.includes(o.operation_id)
@@ -161,8 +213,8 @@ export async function pushUserOps(
     duplicates: merged.duplicates,
     appliedCount: merged.applied.length,
     pulledOps,
-    note:
-      "User-scoped File-Store v2 + LWW Conflict-Merge — Postgres-Adapter folgt (Roadmap 4).",
+    persistence: usedPostgres ? "postgres" : "file",
+    note: `${syncPersistenceLabelDe(usedPostgres ? "postgres" : "file")} · LWW Conflict-Merge.`,
   };
 }
 
@@ -171,17 +223,19 @@ export async function getUserSyncStatus(userId: string): Promise<{
   opCount: number;
   entityCount: number;
   updatedAt: string;
+  persistence: "postgres" | "file";
 }> {
   const store = await loadUserSyncStore(userId);
+  const backend = getSyncPersistenceBackend(userId);
   return {
     revision: store.revision,
     opCount: store.ops.length,
     entityCount: Object.keys(store.entities).length,
     updatedAt: store.updatedAt,
+    persistence: backend,
   };
 }
 
-/** Für Tests / Debug */
 export function peekEntity(
   store: UserSyncStore,
   entity: string,

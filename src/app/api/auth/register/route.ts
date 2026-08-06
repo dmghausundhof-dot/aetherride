@@ -65,9 +65,20 @@ export async function POST(req: NextRequest) {
         );
       }
       // E-Mail-Confirm ggf. ohne Session
+      const mapped = authUserFromSupabase(data.user);
+      if (data.session) {
+        const { upsertProfileFromAuth } = await import(
+          "@/lib/auth/profileStore"
+        );
+        await upsertProfileFromAuth({
+          id: mapped.id,
+          email: mapped.email,
+          displayName: mapped.displayName,
+        });
+      }
       if (!data.session) {
         return NextResponse.json({
-          user: authUserFromSupabase(data.user),
+          user: mapped,
           syncEnabled: false,
           pendingEmailConfirmation: true,
           authBackend: "supabase",
@@ -76,7 +87,7 @@ export async function POST(req: NextRequest) {
         });
       }
       return NextResponse.json({
-        user: authUserFromSupabase(data.user),
+        user: mapped,
         syncEnabled: true,
         pendingEmailConfirmation: false,
         authBackend: "supabase",

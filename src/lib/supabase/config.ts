@@ -26,13 +26,26 @@ export function isSupabaseConfigured(): boolean {
 }
 
 export type AuthBackend = "supabase" | "local_file";
+export type DataBackend = "postgres" | "file";
 
 export function getAuthBackend(): AuthBackend {
   return isSupabaseConfigured() ? "supabase" : "local_file";
+}
+
+/** Sync/Profiles: Postgres wenn Supabase konfiguriert (Migration vorausgesetzt) */
+export function getDataBackend(): DataBackend {
+  if (process.env.FORCE_FILE_SYNC === "true") return "file";
+  return isSupabaseConfigured() ? "postgres" : "file";
 }
 
 export function authBackendLabelDe(backend: AuthBackend = getAuthBackend()): string {
   return backend === "supabase"
     ? "Supabase Auth (E-Mail/Passwort)"
     : "Lokaler File-Store (Fallback — Supabase-Env fehlt)";
+}
+
+export function dataBackendLabelDe(backend: DataBackend = getDataBackend()): string {
+  return backend === "postgres"
+    ? "Supabase Postgres (profiles + sync)"
+    : "File-Store data/ (Fallback)";
 }

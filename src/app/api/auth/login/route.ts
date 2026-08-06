@@ -42,8 +42,17 @@ export async function POST(req: NextRequest) {
           { status: 401 }
         );
       }
+      const mapped = authUserFromSupabase(data.user);
+      const { upsertProfileFromAuth } = await import(
+        "@/lib/auth/profileStore"
+      );
+      await upsertProfileFromAuth({
+        id: mapped.id,
+        email: mapped.email,
+        displayName: mapped.displayName,
+      });
       return NextResponse.json({
-        user: authUserFromSupabase(data.user),
+        user: mapped,
         syncEnabled: true,
         authBackend: "supabase",
         authSecretHardened: isAuthSecretHardened(),

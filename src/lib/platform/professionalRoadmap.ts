@@ -2,15 +2,9 @@
  * Professionelle Roadmap (F-ACC → Marktreife)
  * Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
  *
- * 1. ✅ Auth E-Mail/Passwort (jetzt: Supabase, Fallback File)
- * 2. ✅ Sync LWW + User-Ops-Store
- * 3. ✅ Supabase-Anbindung E-Mail (dieser Slice) · OAuth vorbereitet
- * 4. Postgres / Timescale (Sync+Users)
- * 5. Stripe Checkout
- * 6. G-4 Katalog
- * 7. Native Offline nach G-0
- * 8. Legal/Gate Sign-offs
- * 9. OAuth Google/Apple (zum Schluss — Code vorbereitet)
+ * 1–3 ✅ Auth + Sync LWW + Supabase E-Mail
+ * 4 ✅ Postgres-Adapter (Supabase) + SQL-Migration — Env/Migration nötig
+ * 5 Stripe · 6 G-4 · 7 Native Offline · 8 Legal · 9 OAuth zum Schluss
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
@@ -31,13 +25,13 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 4,
-    titleDe: "Persistenz Postgres / Timescale",
-    status: "in_progress" as const,
+    titleDe: "Persistenz Postgres (Supabase profiles + sync_*)",
+    status: "done" as const,
   },
   {
     id: 5,
     titleDe: "Stripe Marketplace (bei Nachfrage)",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
   {
     id: 6,
