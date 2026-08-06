@@ -1,9 +1,23 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { User, Sparkles, Crown } from "lucide-react";
+import { User, Sparkles, Crown, LogIn, LogOut, Cloud } from "lucide-react";
 import Link from "next/link";
 import type { RiderProfile } from "@/types";
+import {
+  isSupabaseConfigured,
+} from "@/lib/supabase/client";
+import { pullSync, pushSync } from "@/lib/sync/client";
+
+type AuthUser = {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  subscriptionTier: "free" | "pro";
+  subscriptionStatus: string;
+  hasStripeCustomer: boolean;
+};
 
 export default function ProfilePage() {
   const profile = useAppStore((s) => s.riderProfile);
@@ -14,11 +28,177 @@ export default function ProfilePage() {
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
   const rangeCalibration = useAppStore((s) => s.rangeCalibration);
+  const store = useAppStore();
+
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMsg, setAuthMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const configured = isSupabaseConfigured();
+
+  const refreshMe = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      const data = await res.json();
+      if (data.user) {
+        setAuthUser(data.user);
+        if (data.user.subscriptionTier === "pro") {
+          setSubscriptionTier("pro");
+        } else if (data.user.subscriptionStatus !== "active") {
+          // Keep local free unless Stripe says pro
+          setSubscriptionTier(
+            data.user.subscriptionTier === "pro" ? "pro" : "free"
+          );
+        }
+      } else {
+        setAuthUser(null);
+      }
+    } catch {
+      setAuthUser(null);
+    }
+  }, [setSubscriptionTier]);
+
+  useEffect(() => {
+    if (configured) void refreshMe();
+  }, [configured, refreshMe]);
 
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({
       preferences: { ...profile.preferences, [key]: value },
     });
+  };
+
+  const login = async () => {
+    setBusy(true);
+    setAuthMsg(null);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login fehlgeschlagen");
+      await refreshMe();
+      setAuthMsg("Angemeldet.");
+    } catch (e) {
+      setAuthMsg(e instanceof Error ? e.message : "Fehler");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const register = async () => {
+    setBusy(true);
+    setAuthMsg(null);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Registrierung fehlgeschlagen");
+      if (data.needsConfirmation) {
+        setAuthMsg("Bitte E-Mail bestätigen (Supabase), dann anmelden.");
+      } else {
+        await refreshMe();
+        setAuthMsg("Konto erstellt und angemeldet.");
+      }
+    } catch (e) {
+      setAuthMsg(e instanceof Error ? e.message : "Fehler");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const logout = async () => {
+    setBusy(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    setAuthUser(null);
+    setBusy(false);
+  };
+
+  const oauth = async (provider: "google" | "apple") => {
+    setBusy(true);
+    setAuthMsg(null);
+    try {
+      const res = await fetch("/api/auth/oauth/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "OAuth nicht verfügbar");
+      if (data.url) window.location.href = data.url;
+    } catch (e) {
+      setAuthMsg(
+        e instanceof Error
+          ? e.message
+          : "OAuth: Provider in Supabase aktivieren"
+      );
+      setBusy(false);
+    }
+  };
+
+  const syncNow = async () => {
+    setBusy(true);
+    setAuthMsg(null);
+    try {
+      const payload = {
+        bikes: store.bikes,
+        rides: store.rides,
+        consents: store.consents,
+        privacyZones: store.privacyZones,
+        familyRiders: store.familyRiders,
+        riderProfile: store.riderProfile,
+        subscriptionTier: store.subscriptionTier,
+        commerceMode: store.commerceMode,
+        activeBikeId: store.activeBikeId,
+      };
+      await pushSync(payload);
+      const remote = await pullSync();
+      if (remote?.subscriptionTier === "pro") {
+        setSubscriptionTier("pro");
+      }
+      setAuthMsg("Sync OK.");
+    } catch (e) {
+      setAuthMsg(e instanceof Error ? e.message : "Sync fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startBilling = async (interval: "month" | "year") => {
+    setBusy(true);
+    setAuthMsg(null);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interval }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout fehlgeschlagen");
+      if (data.url) window.location.href = data.url;
+    } catch (e) {
+      setAuthMsg(e instanceof Error ? e.message : "Billing-Fehler");
+      setBusy(false);
+    }
+  };
+
+  const openPortal = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Portal fehlgeschlagen");
+      if (data.url) window.location.href = data.url;
+    } catch (e) {
+      setAuthMsg(e instanceof Error ? e.message : "Portal-Fehler");
+      setBusy(false);
+    }
   };
 
   return (
@@ -37,36 +217,141 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
+          <LogIn className="h-4 w-4 text-accent" /> Konto
+        </h3>
+        {!configured ? (
+          <p className="text-xs text-text-secondary">
+            Supabase Env fehlt — lokale Nutzung ohne Sync.
+          </p>
+        ) : authUser ? (
+          <div className="space-y-2 text-sm">
+            <p>
+              {authUser.email} · Status {authUser.subscriptionStatus}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void syncNow()}
+                className="inline-flex items-center gap-1 rounded-xl bg-surface-elevated px-3 py-2 text-xs font-medium"
+              >
+                <Cloud className="h-3.5 w-3.5" /> Sync
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void logout()}
+                className="inline-flex items-center gap-1 rounded-xl bg-surface-elevated px-3 py-2 text-xs font-medium"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Abmelden
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <input
+              type="email"
+              placeholder="E-Mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+            />
+            <input
+              type="password"
+              placeholder="Passwort (min. 8)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void login()}
+                className="rounded-xl bg-accent py-2 text-sm font-medium text-white"
+              >
+                Anmelden
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void register()}
+                className="rounded-xl bg-surface-elevated py-2 text-sm font-medium"
+              >
+                Registrieren
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void oauth("google")}
+                className="rounded-xl border border-border py-2 text-xs"
+              >
+                Google
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void oauth("apple")}
+                className="rounded-xl border border-border py-2 text-xs"
+              >
+                Apple
+              </button>
+            </div>
+          </div>
+        )}
+        {authMsg && (
+          <p className="mt-2 text-xs text-text-secondary">{authMsg}</p>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 flex items-center gap-2 font-semibold">
           <Crown className="h-4 w-4 text-accent" /> Abo
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
-          Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Offline, Reichweite
-          (Spec 1.4 — Demo-Toggle).
+          Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Offline, Reichweite,
+          KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr (Spec 1.4).
         </p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setSubscriptionTier("free")}
-            className={`rounded-xl py-2 text-sm font-medium ${
-              subscriptionTier === "free"
-                ? "bg-accent text-white"
-                : "bg-surface-elevated"
-            }`}
-          >
-            Free
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubscriptionTier("pro")}
-            className={`rounded-xl py-2 text-sm font-medium ${
-              subscriptionTier === "pro"
-                ? "bg-accent text-white"
-                : "bg-surface-elevated"
-            }`}
-          >
-            Pro 6,99 €/Mo
-          </button>
-        </div>
+        <p className="mb-3 text-sm font-medium">
+          Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}
+          {authUser ? ` (${authUser.subscriptionStatus})` : " (lokal)"}
+        </p>
+        {authUser ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={busy || subscriptionTier === "pro"}
+              onClick={() => void startBilling("month")}
+              className="rounded-xl bg-accent py-2 text-sm font-medium text-white disabled:opacity-40"
+            >
+              Pro 6,99 €/Mo
+            </button>
+            <button
+              type="button"
+              disabled={busy || subscriptionTier === "pro"}
+              onClick={() => void startBilling("year")}
+              className="rounded-xl bg-accent py-2 text-sm font-medium text-white disabled:opacity-40"
+            >
+              Pro 59,99 €/Jahr
+            </button>
+            {authUser.hasStripeCustomer && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void openPortal()}
+                className="col-span-2 rounded-xl bg-surface-elevated py-2 text-sm"
+              >
+                Abo verwalten (Stripe Portal)
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-text-secondary">
+            Zum Upgrade bitte anmelden. Ohne Konto bleibt Free lokal nutzbar.
+          </p>
+        )}
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
@@ -287,9 +572,6 @@ export default function ProfilePage() {
       </Link>
       <Link href="/chat" className="text-center text-sm text-accent">
         KI-Chat (Engines + Numeric-Guard) →
-      </Link>
-      <Link href="/" className="text-center text-sm text-accent">
-        ← Zurück
       </Link>
     </div>
   );

@@ -270,16 +270,35 @@ export default function ShopPage() {
             />
             Pflichtangaben gelesen (Widerruf, Versand, GPSR)
           </label>
-          <Link
-            href="/checkout"
-            className={`mt-3 block rounded-xl py-2.5 text-center text-sm font-semibold text-white ${
+          <button
+            type="button"
+            disabled={!legalOk}
+            onClick={async () => {
+              if (!legalOk) return;
+              const res = await fetch("/api/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  items: draft.items,
+                  shippingEur: draft.shippingEur,
+                  legalAccepted: legalOk,
+                }),
+              });
+              const data = await res.json();
+              if (data.url) {
+                window.location.href = data.url;
+                return;
+              }
+              alert(data.error || "Checkout fehlgeschlagen (Login + Stripe Env?)");
+            }}
+            className={`mt-3 block w-full rounded-xl py-2.5 text-center text-sm font-semibold text-white ${
               legalOk
                 ? "bg-accent"
                 : "pointer-events-none bg-surface-elevated opacity-40"
             }`}
           >
-            Weiter zur Demo-Kasse (kein echtes Stripe)
-          </Link>
+            Stripe-Checkout (Marketplace)
+          </button>
         </section>
       )}
 

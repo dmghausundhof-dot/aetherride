@@ -101,5 +101,21 @@ src/
 
 Die gesamte Domain-Logik und die Contracts sind bereits produktionsreif.
 
+## Produktionsschicht (Supabase · Stripe · Grok)
+
+Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
+
+- **Supabase** Projekt `aetherride` (EU): Auth, profiles, sync_snapshots, orders, chat_usage + RLS
+- **Stripe**: AetherRide Pro 6,99 €/Mo + 59,99 €/Jahr; Marketplace Checkout; Webhook → `/api/webhooks/stripe`
+- **Grok** (`/api/chat`) hinter Numeric-Guard; Free 5/Tag · Pro 50/Tag (Monatskappe 40/500)
+- Env-Vorlage: [`.env.example`](.env.example)
+
+**Kein Vercel-Deploy in diesem Repo-Schritt** — Deploy später mit dem vorgesehenen Vercel-Account. Setup:
+
+1. `.env.example` → `.env.local` (Service Role + Stripe + `XAI_API_KEY` setzen)
+2. Repo auf dem richtigen Vercel-Account importieren und Env setzen
+3. Stripe Webhook auf `/api/webhooks/stripe`
+4. Supabase Auth Redirect: `https://<domain>/auth/callback`
+
 ---
 AetherRide · Spec 1.0 · August 2026
