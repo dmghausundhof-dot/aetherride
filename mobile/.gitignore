@@ -16,3 +16,4 @@ build/
 # Misc
 *.log
 .DS_Store
+mobile/packages/*/native/target/
