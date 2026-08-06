@@ -57,7 +57,7 @@ Version 1.0 · Spec-konform · Offline-First · Outdoor Design System
 - **F-SHP-002** Anlassbezogene Produktempfehlungen mit Datenpunkt-Zitat
 - **F-AI-001/004** KI-Chat mit Tool-Zugriff + Numeric-Guard
 - **F-ACC-003/005/006/007** GPX/JSON-Export, Privacy-Zonen, Einwilligungen, Familien-Garage
-- **F-SHP-003 P3** Marketplace-Demo mit EU-Pflichtangaben (kein echtes Stripe; Affiliate bleibt Default)
+- **F-SHP-003 P3** Marketplace mit EU-Pflichtangaben + Stripe Checkout; Affiliate bleibt Default
 
 ### Weitere Kernfeatures
 - Live-Ride mit Sensor + Bosch + Karte

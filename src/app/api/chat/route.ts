@@ -15,6 +15,10 @@ import {
   utcMonthPrefix,
   type ChatTier,
 } from "@/lib/ai/chatLimits";
+import {
+  clientIpFromRequest,
+  consumeAnonIpQuota,
+} from "@/lib/ai/anonIpQuota";
 import type { Bike, Ride, RiderProfile } from "@/types";
 import type { RangeCalibration } from "@/lib/ebike/range";
 
@@ -112,18 +116,41 @@ export async function POST(req: Request) {
       calibration,
     });
 
-    // Anonymous: never call Grok
+    // Anonymous: never call Grok; IP soft-cap on deterministic fallback
     if (tier === "anonymous" || limits.maxTokensOut === 0) {
+      const ip = clientIpFromRequest(req);
+      const ipQuota = consumeAnonIpQuota(ip, limits.day);
+      if (!ipQuota.ok) {
+        const guarded = numericGuard(formulateDeterministic(set), set);
+        return NextResponse.json(
+          {
+            ...guarded,
+            tool,
+            usedGrok: false,
+            code: "chat_limit",
+            quota: {
+              tier: "anonymous",
+              dayUsed: ipQuota.used,
+              dayLimit: ipQuota.limit,
+              remaining: 0,
+              resetAt: dayResetAt(),
+              reason: "anon_ip_limit",
+            },
+          },
+          { status: 429 }
+        );
+      }
+
       const guarded = numericGuard(formulateDeterministic(set), set);
       return NextResponse.json({
         ...guarded,
         tool,
         usedGrok: false,
         quota: {
-          tier,
-          dayUsed: 0,
-          dayLimit: limits.day,
-          remaining: 0,
+          tier: "anonymous",
+          dayUsed: ipQuota.used,
+          dayLimit: ipQuota.limit,
+          remaining: Math.max(0, ipQuota.limit - ipQuota.used),
           resetAt: dayResetAt(),
           reason: "login_required_for_grok",
         },
