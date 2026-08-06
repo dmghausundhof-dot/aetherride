@@ -1,5 +1,11 @@
 import type { ComponentModel, TypedAttribute } from "@/types/garage";
 import imported from "./imported.json";
+import { COMPONENT_CATALOG_DACH } from "./componentsDach";
+import { COMPONENT_CATALOG_DACH_DEPTH } from "./componentsDachDepth";
+import { COMPONENT_CATALOG_DACH_SCALE } from "./componentsDachScale";
+import { COMPONENT_CATALOG_DACH_SCALE2 } from "./componentsDachScale2";
+import { COMPONENT_CATALOG_DACH_SCALE3 } from "./componentsDachScale3";
+import { COMPONENT_CATALOG_DACH_SCALE4 } from "./componentsDachScale4";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -25,9 +31,10 @@ function attr(
 }
 
 /**
- * Redaktionell kuratierter Komponenten-Katalog (MVP-Seed).
+ * Redaktionell kuratierter Komponenten-Katalog (CORE + DACH-OEM).
  * Quellen u. a.: BikeRadar Achsstandards, BIKE Magazin BB-Standards,
- * S.H.I.S. Headset-System, RockShox/Fox Service Docs, ETRTO-Praxis.
+ * S.H.I.S. Headset-System, RockShox/Fox/Magura/Shimano OEM-Docs, ETRTO-Praxis.
+ * Kein Scale5-/synthetic_seed-Padding — nur echte Modellnamen.
  */
 const BASE_COMPONENT_CATALOG: ComponentModel[] = [
   // —— Gabeln ——
@@ -771,6 +778,62 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     verifiedBy: "AetherRide Editorial",
     safetyCritical: true,
   },
+  {
+    id: "cm-continental-gp5000-700-28",
+    slot: "tire_front",
+    manufacturer: "Continental",
+    model: "Grand Prix 5000",
+    variant: "700×28",
+    attributes: [
+      attr("tire_width_mm", { num: 28, unit: "mm" }),
+      attr("etrto", { text: "28-622" }),
+      attr("wheel_size", { enum: "700c" }),
+    ],
+    adjusters: [
+      {
+        key: "pressure_psi",
+        label: "Druck",
+        unit: "psi",
+        min: 55,
+        max: 110,
+        step: 1,
+      },
+    ],
+    torqueSpecs: [],
+    source: "manufacturer_doc",
+    sourceUrl: "https://www.continental-tires.com/",
+    verifiedAt: VERIFIED,
+    verifiedBy: "AetherRide Editorial",
+    safetyCritical: true,
+  },
+  {
+    id: "cm-schwalbe-marathon-700-40",
+    slot: "tire_front",
+    manufacturer: "Schwalbe",
+    model: "Marathon",
+    variant: "700×40",
+    attributes: [
+      attr("tire_width_mm", { num: 40, unit: "mm" }),
+      attr("etrto", { text: "40-622" }),
+      attr("wheel_size", { enum: "700c" }),
+    ],
+    adjusters: [
+      {
+        key: "pressure_psi",
+        label: "Druck",
+        unit: "psi",
+        min: 35,
+        max: 70,
+        step: 1,
+      },
+    ],
+    torqueSpecs: [],
+    source: "manufacturer_doc",
+    sourceUrl: "https://www.schwalbe.com/",
+    verifiedAt: VERIFIED,
+    verifiedBy: "AetherRide Editorial",
+    safetyCritical: true,
+  },
 
   // —— Antrieb ——
   {
@@ -1197,10 +1260,27 @@ function mapImportedComponents(): ComponentModel[] {
   }));
 }
 
-export const COMPONENT_CATALOG: ComponentModel[] = [
+function dedupeById(models: ComponentModel[]): ComponentModel[] {
+  const seen = new Set<string>();
+  const out: ComponentModel[] = [];
+  for (const m of models) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    out.push(m);
+  }
+  return out;
+}
+
+export const COMPONENT_CATALOG: ComponentModel[] = dedupeById([
   ...BASE_COMPONENT_CATALOG,
+  ...COMPONENT_CATALOG_DACH,
+  ...COMPONENT_CATALOG_DACH_DEPTH,
+  ...COMPONENT_CATALOG_DACH_SCALE,
+  ...COMPONENT_CATALOG_DACH_SCALE2,
+  ...COMPONENT_CATALOG_DACH_SCALE3,
+  ...COMPONENT_CATALOG_DACH_SCALE4,
   ...mapImportedComponents(),
-];
+]);
 
 export function getComponentModel(id: string): ComponentModel | undefined {
   return COMPONENT_CATALOG.find((c) => c.id === id);
