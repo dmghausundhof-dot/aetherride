@@ -39,6 +39,12 @@ import {
   plannedRouteFromSuggestion,
   type PlannedRoute,
 } from "@/lib/routing/rideHandoff";
+import {
+  TRAIL_CONDITION_LABELS,
+  latestConditionFor,
+  upsertTrailCondition,
+  type TrailConditionKind,
+} from "@/lib/routing/trailConditions";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
 
@@ -67,6 +73,20 @@ export default function DiscoverPage() {
   const startPlanned = (route: PlannedRoute) => {
     setPlannedRoute(route);
     router.push("/ride");
+  };
+  const [, setCondTick] = useState(0);
+
+  const reportCondition = (
+    routeId: string,
+    name: string,
+    c: TrailConditionKind
+  ) => {
+    upsertTrailCondition({
+      routeOrTrailId: routeId,
+      labelDe: name,
+      condition: c,
+    });
+    setCondTick((n) => n + 1);
   };
 
   useEffect(() => {
@@ -353,6 +373,41 @@ export default function DiscoverPage() {
                 {r.rangeNote && (
                   <p className="mt-2 text-xs text-warning">{r.rangeNote}</p>
                 )}
+                {(() => {
+                  const cond = latestConditionFor(r.id);
+                  return (
+                    <div className="mt-2 text-[11px] text-text-secondary">
+                      Zustand:{" "}
+                      <span className="font-medium text-foreground">
+                        {cond
+                          ? TRAIL_CONDITION_LABELS[cond.condition]
+                          : "noch nicht gemeldet"}
+                      </span>
+                      {cond
+                        ? ` · ${new Date(cond.reportedAt).toLocaleDateString("de-DE")}`
+                        : ""}
+                    </div>
+                  );
+                })()}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {(
+                    [
+                      ["dry", "Trocken"],
+                      ["wet", "Nass"],
+                      ["muddy", "Matsch"],
+                      ["closed", "Gesperrt"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => reportCondition(r.id, r.name, id)}
+                      className="rounded-md border border-border px-2 py-0.5 text-[10px]"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   type="button"
                   onClick={() => startPlanned(plannedRouteFromSuggestion(r))}
