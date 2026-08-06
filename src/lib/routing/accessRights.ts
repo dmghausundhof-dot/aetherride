@@ -13,6 +13,10 @@
  */
 
 import type { RouteEdgeDemo } from "./profiles";
+import {
+  g5StatusShort,
+  isG5ClosedFor,
+} from "./legalReview";
 
 export type JurisdictionId = "AT-7" | "DE-BY" | "OTHER_PENDING";
 
@@ -262,10 +266,8 @@ export function evaluateAccessForEdges(
     blocked: blockedEdgeIds.size > 0,
     blockedEdgeIds,
     warningsShort,
-    legalGateOpen: profile.legalReviewedAt != null,
-    legalNoteShort: profile.legalReviewedAt
-      ? "Wegerecht juristisch geprüft (G-5)."
-      : "Hinweisstand öffentlich · Legal-Review (G-5) ausstehend — keine Rechtsberatung.",
+    legalGateOpen: !isG5ClosedFor(profile.id),
+    legalNoteShort: g5StatusShort(profile.id),
     legalNoteMore: profile.prefaceMore,
   };
 }

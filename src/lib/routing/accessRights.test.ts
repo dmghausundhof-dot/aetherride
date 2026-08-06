@@ -53,6 +53,14 @@ assert(
 );
 assert(tirol.findings.every((f) => f.short && f.more), "short+more");
 assert(JURISDICTIONS["AT-7"].legalReviewedAt == null, "G-5 open");
+assert(JURISDICTIONS["DE-BY"].legalReviewedAt == null, "G-5 BY open");
+assert(tirol.legalGateOpen === true, "legalGateOpen = pending");
+assert(
+  tirol.legalNoteShort.includes("Legal-Review") ||
+    tirol.legalNoteShort.includes("G-5"),
+  "legal note mentions G-5"
+);
+assert(!tirol.legalNoteShort.includes("juristisch geprüft"), "no false claim");
 
 const edgesBy: RouteEdgeDemo[] = [
   {
