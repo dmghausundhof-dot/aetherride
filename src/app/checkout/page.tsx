@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/store/useCartStore";
 import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
@@ -12,11 +12,22 @@ import {
 import { useAppStore } from "@/store/useAppStore";
 
 export default function CheckoutPage() {
+  const items = useCartStore((s) => s.items);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const getTotal = useCartStore((s) => s.getTotal);
   const redirects = useCartStore((s) => s.redirects);
   const recordAffiliateRedirect = useCartStore((s) => s.recordAffiliateRedirect);
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
+
+  const openPartnerFromCart = (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item?.affiliateUrl) return;
+    recordAffiliateRedirect(item);
+    window.open(item.affiliateUrl, "_blank", "noopener,noreferrer");
+  };
 
   const openPartner = (productId: string) => {
     const p = SHOP_PRODUCTS.find((x) => x.id === productId);
@@ -61,6 +72,81 @@ export default function CheckoutPage() {
       <section className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-secondary">
         Kauf und Versand laufen beim Partnerhändler. AetherRide prüft nur
         Kompatibilität und leitet weiter (Spec 0.4.4).
+      </section>
+
+      <section>
+        <h2 className="mb-2 font-semibold">Merkliste / Warenkorb</h2>
+        {items.length === 0 ? (
+          <p className="text-sm text-text-secondary">
+            Leer — im Shop „Merken“, dann hier zum Partner weiterleiten.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-border bg-surface p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium">{item.name}</div>
+                    <div className="text-xs text-text-secondary">
+                      {item.manufacturer} · {item.price.toFixed(0)} €
+                      {item.merchantName ? ` · ${item.merchantName}` : ""}
+                    </div>
+                    {item.verdict && (
+                      <div className="mt-1">
+                        <VerdictPill verdict={item.verdict} />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="p-1 text-text-secondary"
+                    aria-label="Entfernen"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateQuantity(item.id, item.quantity - 1)
+                      }
+                      className="rounded bg-surface-elevated p-1"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="tabular-nums text-sm">{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateQuantity(item.id, item.quantity + 1)
+                      }
+                      className="rounded bg-surface-elevated p-1"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!item.affiliateUrl}
+                    onClick={() => openPartnerFromCart(item.id)}
+                    className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+                  >
+                    Zum Partner <ExternalLink className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <p className="text-right text-sm font-medium tabular-nums">
+              Summe (Partner): {getTotal().toFixed(0)} €
+            </p>
+          </div>
+        )}
       </section>
 
       <section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { getComponentModel } from "@/lib/catalog/components";
 import { slotLabel } from "@/lib/catalog/slots";
 import { isOutOfSpec } from "@/lib/setup/ranges";
@@ -8,6 +9,7 @@ import type { Bike } from "@/types";
 /**
  * Editierbare Setup-Adjuster (slot.key → Zahl).
  * Speichern läuft über createSetupVersion(valueOverrides).
+ * psi↔bar Toggle; Klicks mit Referenz „von geschlossen/offen“.
  */
 export function SetupAdjusterEditor({
   bike,
@@ -18,6 +20,8 @@ export function SetupAdjusterEditor({
   values: Record<string, number>;
   onChange: (next: Record<string, number>) => void;
 }) {
+  const [pressureUnit, setPressureUnit] = useState<"psi" | "bar">("psi");
+
   const rows = bike.components
     .filter((c) => !c.removedAt)
     .flatMap((comp) => {
@@ -37,6 +41,8 @@ export function SetupAdjusterEditor({
               : adj.min ?? 0;
         const value = values[key] ?? fallback;
         const oos = isOutOfSpec(comp.componentModelId, adj.key, value);
+        const isPsi = adj.unit === "psi";
+        const isClicks = adj.unit === "clicks";
         return {
           key,
           label: `${slotLabel(comp.slot)} · ${adj.label}`,
@@ -46,6 +52,10 @@ export function SetupAdjusterEditor({
           step: adj.step ?? 1,
           value,
           oos,
+          isPsi,
+          isClicks,
+          totalClicks: adj.totalClicks,
+          reference: adj.reference,
         };
       });
     });
@@ -58,19 +68,61 @@ export function SetupAdjusterEditor({
     );
   }
 
+  const displayValue = (r: (typeof rows)[0]) => {
+    if (r.isPsi && pressureUnit === "bar") {
+      return (r.value / 14.5038).toFixed(2);
+    }
+    return String(r.value);
+  };
+
+  const displayUnit = (r: (typeof rows)[0]) => {
+    if (r.isPsi) return pressureUnit;
+    if (r.isClicks) return "clicks";
+    return r.unit;
+  };
+
   return (
-    <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+    <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-text-secondary">Luftdruck-Einheit</span>
+        <div className="flex gap-1">
+          {(["psi", "bar"] as const).map((u) => (
+            <button
+              key={u}
+              type="button"
+              onClick={() => setPressureUnit(u)}
+              className={`rounded px-2 py-0.5 ${
+                pressureUnit === u
+                  ? "bg-accent text-white"
+                  : "bg-surface-elevated text-text-secondary"
+              }`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      </div>
       {rows.map((r) => (
         <label key={r.key} className="text-xs">
           <span className="flex justify-between gap-2">
-            <span>{r.label}</span>
+            <span>
+              {r.label}
+              {r.isClicks && r.totalClicks != null && (
+                <span className="ml-1 text-text-secondary">
+                  ({r.value}/{r.totalClicks}
+                  {r.reference === "from_open"
+                    ? " von offen"
+                    : " von geschlossen"}
+                  )
+                </span>
+              )}
+            </span>
             <span
               className={`tabular-nums font-medium ${
                 r.oos ? "text-warning" : "text-foreground"
               }`}
             >
-              {r.value}
-              {r.unit ? ` ${r.unit}` : ""}
+              {displayValue(r)} {displayUnit(r)}
               {r.oos ? " · außerhalb Spec" : ""}
             </span>
           </span>

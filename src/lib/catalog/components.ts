@@ -775,6 +775,62 @@ const COMPONENT_CATALOG_CORE: ComponentModel[] = [
     verifiedBy: "AetherRide Editorial",
     safetyCritical: true,
   },
+  {
+    id: "cm-continental-gp5000-700-28",
+    slot: "tire_front",
+    manufacturer: "Continental",
+    model: "Grand Prix 5000",
+    variant: "700×28",
+    attributes: [
+      attr("tire_width_mm", { num: 28, unit: "mm" }),
+      attr("etrto", { text: "28-622" }),
+      attr("wheel_size", { enum: "700c" }),
+    ],
+    adjusters: [
+      {
+        key: "pressure_psi",
+        label: "Druck",
+        unit: "psi",
+        min: 55,
+        max: 110,
+        step: 1,
+      },
+    ],
+    torqueSpecs: [],
+    source: "manufacturer_doc",
+    sourceUrl: "https://www.continental-tires.com/",
+    verifiedAt: VERIFIED,
+    verifiedBy: "AetherRide Editorial",
+    safetyCritical: true,
+  },
+  {
+    id: "cm-schwalbe-marathon-700-40",
+    slot: "tire_front",
+    manufacturer: "Schwalbe",
+    model: "Marathon",
+    variant: "700×40",
+    attributes: [
+      attr("tire_width_mm", { num: 40, unit: "mm" }),
+      attr("etrto", { text: "40-622" }),
+      attr("wheel_size", { enum: "700c" }),
+    ],
+    adjusters: [
+      {
+        key: "pressure_psi",
+        label: "Druck",
+        unit: "psi",
+        min: 35,
+        max: 70,
+        step: 1,
+      },
+    ],
+    torqueSpecs: [],
+    source: "manufacturer_doc",
+    sourceUrl: "https://www.schwalbe.com/",
+    verifiedAt: VERIFIED,
+    verifiedBy: "AetherRide Editorial",
+    safetyCritical: true,
+  },
 
   // —— Antrieb ——
   {

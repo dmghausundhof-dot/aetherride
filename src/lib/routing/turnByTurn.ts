@@ -7,6 +7,7 @@
  */
 
 import type { RouteResult } from "./profiles";
+import { haversineM, type PlannedRoute } from "./rideHandoff";
 
 export type ManeuverType =
   | "start"
@@ -177,4 +178,132 @@ export function speakTbt(text: string, lang: "de" | "en" = "de") {
   // Audio-Ducking: Browser-TTS ducking ist plattformabhängig — nativ Pflicht
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(u);
+}
+
+/**
+ * Manöver aus geplantem Ride-Handoff (ohne volle RouteResult-Edges).
+ * Web-Demo: synthetische Abbiegungen entlang der Polyline.
+ */
+export function buildManeuversFromPlanned(planned: PlannedRoute): Maneuver[] {
+  const geom = planned.geometryLngLat;
+  if (geom.length < 2) {
+    return [
+      {
+        type: "start",
+        distanceAlongM: 0,
+        instructionDe: "Navigation gestartet",
+        instructionEn: "Navigation started",
+      },
+      {
+        type: "arrive",
+        distanceAlongM: planned.distanceM,
+        instructionDe: "Ziel erreicht",
+        instructionEn: "You have arrived",
+      },
+    ];
+  }
+
+  const man: Maneuver[] = [
+    {
+      type: "start",
+      distanceAlongM: 0,
+      instructionDe: `Navigation: ${planned.name}`,
+      instructionEn: `Navigation: ${planned.name}`,
+    },
+  ];
+
+  let along = 0;
+  const turnCycle: ManeuverType[] = [
+    "turn_left",
+    "continue",
+    "turn_right",
+    "slight_left",
+    "continue",
+    "slight_right",
+  ];
+  let turnIdx = 0;
+  // alle ~800–1200 m ein Manöver (oder an Knicks)
+  let sinceLast = 0;
+  for (let i = 1; i < geom.length; i++) {
+    const a = { lat: geom[i - 1][1], lng: geom[i - 1][0] };
+    const b = { lat: geom[i][1], lng: geom[i][0] };
+    const seg = haversineM(a, b);
+    along += seg;
+    sinceLast += seg;
+    const bearingChange = i + 1 < geom.length ? bearingDelta(geom[i - 1], geom[i], geom[i + 1]) : 0;
+    const sharp = Math.abs(bearingChange) > 35;
+    if (sinceLast >= 900 || sharp) {
+      const turn = sharp
+        ? bearingChange > 0
+          ? "turn_right"
+          : "turn_left"
+        : turnCycle[turnIdx++ % turnCycle.length];
+      man.push({
+        type: turn,
+        distanceAlongM: Math.round(along),
+        streetName: planned.mtbScale,
+        instructionDe: instructionDe(turn, planned.mtbScale),
+        instructionEn: instructionEn(turn, planned.mtbScale),
+      });
+      sinceLast = 0;
+    }
+  }
+
+  man.push({
+    type: "arrive",
+    distanceAlongM: Math.max(along, planned.distanceM),
+    instructionDe: "Ziel erreicht",
+    instructionEn: "You have arrived",
+  });
+  return man;
+}
+
+function bearingDelta(
+  a: [number, number],
+  b: [number, number],
+  c: [number, number]
+): number {
+  const b1 = bearingDeg(a, b);
+  const b2 = bearingDeg(b, c);
+  let d = b2 - b1;
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+  return d;
+}
+
+function bearingDeg(a: [number, number], b: [number, number]): number {
+  const toR = (d: number) => (d * Math.PI) / 180;
+  const φ1 = toR(a[1]);
+  const φ2 = toR(b[1]);
+  const Δλ = toR(b[0] - a[0]);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+/** Nächste Ansage + Dedup-Key für Ride-Loop */
+export function nextTbtAnnouncement(input: {
+  maneuvers: Maneuver[];
+  distanceAlongM: number;
+  speedKmh: number;
+  lang?: "de" | "en";
+  lastKey?: string | null;
+}): { text: string; key: string; remainM: number } | null {
+  const lang = input.lang ?? "de";
+  const cues = cuesForProgress({
+    maneuvers: input.maneuvers,
+    distanceAlongM: input.distanceAlongM,
+    speedKmh: input.speedKmh,
+    lang,
+  });
+  const cue = cues[0];
+  if (!cue) return null;
+  const key = `${cue.maneuver.type}@${Math.round(cue.maneuver.distanceAlongM)}:${cue.mode}:${Math.round(cue.announceAtM)}`;
+  if (input.lastKey === key) return null;
+  return {
+    text: cue.text,
+    key,
+    remainM: Math.max(0, cue.maneuver.distanceAlongM - input.distanceAlongM),
+  };
 }

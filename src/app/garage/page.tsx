@@ -39,7 +39,7 @@ import {
 } from "@/store/useAppStore";
 import { CalibrationWizard } from "@/components/CalibrationWizard";
 import { uiVisibilityForMode } from "@/lib/mode/hiking";
-import type { ComponentSlot, SetupCondition } from "@/types";
+import type { ComponentSlot, MaintenancePerformer, SetupCondition } from "@/types";
 
 type Tab = "overview" | "components" | "setups" | "maintenance";
 
@@ -53,6 +53,7 @@ export default function GaragePage() {
   const moveComponent = useAppStore((s) => s.moveComponent);
   const maintenanceLogs = useAppStore((s) => s.maintenanceLogs);
   const maintenanceIntervals = useAppStore((s) => s.maintenanceIntervals);
+  const addMaintenanceLog = useAppStore((s) => s.addMaintenanceLog);
   const markIntervalDone = useAppStore((s) => s.markIntervalDone);
   const applySetupTemplate = useAppStore((s) => s.applySetupTemplate);
   const rides = useAppStore((s) => s.rides);
@@ -70,6 +71,15 @@ export default function GaragePage() {
   const [setupCondition, setSetupCondition] =
     useState<SetupCondition>("general");
   const [setupValues, setSetupValues] = useState<Record<string, number>>({});
+  const [logActivity, setLogActivity] = useState("");
+  const [logDate, setLogDate] = useState(
+    () => new Date().toISOString().slice(0, 10)
+  );
+  const [logCost, setLogCost] = useState("");
+  const [logPerformer, setLogPerformer] =
+    useState<MaintenancePerformer>("self");
+  const [logNotes, setLogNotes] = useState("");
+  const [logPhotoName, setLogPhotoName] = useState<string | null>(null);
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
@@ -762,6 +772,96 @@ export default function GaragePage() {
                   <History className="h-4 w-4 text-accent" />
                   Wartungslog
                 </h3>
+                <form
+                  className="mb-3 flex flex-col gap-2 rounded-xl border border-border bg-surface p-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!selected || !logActivity.trim()) return;
+                    addMaintenanceLog({
+                      bikeId: selected.id,
+                      date: logDate,
+                      activity: logActivity.trim(),
+                      costEur: logCost ? Number(logCost) : undefined,
+                      performer: logPerformer,
+                      notes: [
+                        logNotes.trim() || undefined,
+                        logPhotoName
+                          ? `Foto: ${logPhotoName} (lokal vermerkt, kein Upload)`
+                          : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || undefined,
+                      odometerKm: selected.totalOdometerKm,
+                      hours: selected.totalHours,
+                    });
+                    setLogActivity("");
+                    setLogCost("");
+                    setLogNotes("");
+                    setLogPhotoName(null);
+                  }}
+                >
+                  <p className="text-[11px] text-text-secondary">
+                    Eintrag anlegen (F-GAR-005) — Foto nur als Dateiname, kein
+                    Cloud-Upload in der Web-Demo.
+                  </p>
+                  <input
+                    value={logActivity}
+                    onChange={(e) => setLogActivity(e.target.value)}
+                    placeholder="Tätigkeit z. B. Lower-Leg-Service"
+                    className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+                    required
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={logDate}
+                      onChange={(e) => setLogDate(e.target.value)}
+                      className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={logCost}
+                      onChange={(e) => setLogCost(e.target.value)}
+                      placeholder="Kosten €"
+                      className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <select
+                    value={logPerformer}
+                    onChange={(e) =>
+                      setLogPerformer(e.target.value as MaintenancePerformer)
+                    }
+                    className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+                  >
+                    <option value="self">Eigen</option>
+                    <option value="workshop">Werkstatt</option>
+                  </select>
+                  <textarea
+                    value={logNotes}
+                    onChange={(e) => setLogNotes(e.target.value)}
+                    placeholder="Notizen"
+                    rows={2}
+                    className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
+                  />
+                  <label className="text-xs text-text-secondary">
+                    Foto (optional)
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="mt-1 block w-full text-xs"
+                      onChange={(e) =>
+                        setLogPhotoName(e.target.files?.[0]?.name ?? null)
+                      }
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-accent py-2 text-sm font-semibold text-white"
+                  >
+                    Log speichern
+                  </button>
+                </form>
                 <div className="flex flex-col gap-2">
                   {logs.map((log) => (
                     <div

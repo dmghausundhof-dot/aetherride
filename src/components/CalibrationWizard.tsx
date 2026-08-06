@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   combineBounceTrials,
   createEmptyCalibration,
@@ -22,6 +22,38 @@ const MOUNTS: { id: MountMode; label: string }[] = [
   { id: "BODY", label: "Körper" },
   { id: "UNKNOWN", label: "Unklar" },
 ];
+
+type CaptureMode = "idle" | "running" | "done" | "demo_fallback";
+
+function readDeviceMotionSample(): Promise<{ ax: number; ay: number; az: number }> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.DeviceMotionEvent) {
+      resolve({
+        ax: (Math.random() - 0.5) * 0.05,
+        ay: (Math.random() - 0.5) * 0.05,
+        az: 9.81 + (Math.random() - 0.5) * 0.05,
+      });
+      return;
+    }
+    const handler = (e: DeviceMotionEvent) => {
+      window.removeEventListener("devicemotion", handler);
+      resolve({
+        ax: e.accelerationIncludingGravity?.x ?? 0,
+        ay: e.accelerationIncludingGravity?.y ?? 0,
+        az: e.accelerationIncludingGravity?.z ?? 9.81,
+      });
+    };
+    window.addEventListener("devicemotion", handler, { once: true });
+    setTimeout(() => {
+      window.removeEventListener("devicemotion", handler);
+      resolve({
+        ax: (Math.random() - 0.5) * 0.04,
+        ay: (Math.random() - 0.5) * 0.04,
+        az: 9.81 + (Math.random() - 0.5) * 0.04,
+      });
+    }, 200);
+  });
+}
 
 export function CalibrationWizard({
   bikeId,
@@ -56,25 +88,93 @@ export function CalibrationWizard({
   const defaultSag = sagMmFromPct(travel, band.targetPct);
   const [sagMm, setSagMm] = useState(initial?.sagFrontMm ?? defaultSag);
 
+  const [stillStatus, setStillStatus] = useState<CaptureMode>("idle");
+  const [stillProgress, setStillProgress] = useState(0);
+  const [stillSamples, setStillSamples] = useState<
+    { ax: number; ay: number; az: number }[]
+  >([]);
+  const [bounceStatus, setBounceStatus] = useState<CaptureMode>("idle");
+  const [bouncePeaks, setBouncePeaks] = useState<number[] | null>(null);
+  const stillTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (stillTimer.current) clearInterval(stillTimer.current);
+    };
+  }, []);
+
+  const startStillCapture = async () => {
+    setStillStatus("running");
+    setStillProgress(0);
+    const samples: { ax: number; ay: number; az: number }[] = [];
+    let tick = 0;
+    const hasMotion =
+      typeof window !== "undefined" && "DeviceMotionEvent" in window;
+    stillTimer.current = setInterval(async () => {
+      tick += 1;
+      setStillProgress(tick);
+      const s = await readDeviceMotionSample();
+      samples.push(s);
+      if (tick >= 5) {
+        if (stillTimer.current) clearInterval(stillTimer.current);
+        setStillSamples(samples);
+        setStillStatus(hasMotion ? "done" : "demo_fallback");
+      }
+    }, 1000);
+  };
+
+  const captureBounce = async () => {
+    setBounceStatus("running");
+    const hasMotion =
+      typeof window !== "undefined" && "DeviceMotionEvent" in window;
+    // 3 Trials: Peak-Amplituden aus Motion oder ehrlichem Demo-Muster
+    const peaks = hasMotion
+      ? await (async () => {
+          const zs: number[] = [];
+          for (let i = 0; i < 12; i++) {
+            const s = await readDeviceMotionSample();
+            zs.push(Math.abs(s.az - 9.81));
+            await new Promise((r) => setTimeout(r, 80));
+          }
+          const sorted = [...zs].sort((a, b) => b - a);
+          const p0 = Math.max(0.4, sorted[0] || 1);
+          return [p0, p0 * 0.55, p0 * 0.3, p0 * 0.17];
+        })()
+      : [1.0, 0.55, 0.3, 0.17];
+    setBouncePeaks(peaks);
+    setBounceStatus(hasMotion ? "done" : "demo_fallback");
+  };
+
   const finish = () => {
-    const still = Array.from({ length: 40 }, () => ({
-      ax: (Math.random() - 0.5) * 0.05,
-      ay: (Math.random() - 0.5) * 0.05,
-      az: 9.81 + (Math.random() - 0.5) * 0.05,
-    }));
+    const still =
+      stillSamples.length >= 5
+        ? stillSamples
+        : Array.from({ length: 40 }, () => ({
+            ax: (Math.random() - 0.5) * 0.05,
+            ay: (Math.random() - 0.5) * 0.05,
+            az: 9.81 + (Math.random() - 0.5) * 0.05,
+          }));
     const q = orientationFromStillSamples(still);
+    const peaks = bouncePeaks ?? [1.0, 0.55, 0.3, 0.17];
     const trials = [0, 1, 2].map(() =>
-      estimateZetaFromPeaks([1.0, 0.55, 0.3, 0.17], 2.35 + Math.random() * 0.1)
+      estimateZetaFromPeaks(peaks, 2.35 + Math.random() * 0.1)
     );
     const suspension = combineBounceTrials(trials);
     const base = initial ?? createEmptyCalibration(bikeId);
+    const demoNote =
+      stillStatus === "demo_fallback" || bounceStatus === "demo_fallback"
+        ? " · Web-Demo ohne DeviceMotion — synthetische Samples"
+        : "";
     onSave({
       ...base,
       bikeId,
       mountMode: mount,
       mountConfirmed: confirmed,
       quaternion: q,
-      suspension,
+      suspension: {
+        ...suspension,
+        scopeNote: `${suspension.scopeNote}${demoNote}`,
+      },
       sagFrontMm: sagMm,
       travelFrontMm: travel,
       calibratedAt: new Date().toISOString(),
@@ -132,16 +232,40 @@ export function CalibrationWizard({
       {step === 1 && (
         <div className="space-y-3">
           <p className="text-sm">
-            Bike aufrecht auf ebenem Grund, 5 s ruhig halten → Gravitation →
-            Montage-Quaternion. Gierwinkel kommt aus GNSS der ersten 30 s Fahrt.
+            Bike aufrecht auf ebenem Grund, <strong>5 s ruhig halten</strong> →
+            Gravitation → Montage-Quaternion. Gierwinkel kommt aus GNSS der
+            ersten 30 s Fahrt.
           </p>
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
-          >
-            5 s gehalten — weiter
-          </button>
+          {stillStatus === "idle" && (
+            <button
+              type="button"
+              onClick={startStillCapture}
+              className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+            >
+              5 s Stillstand starten
+            </button>
+          )}
+          {stillStatus === "running" && (
+            <p className="text-center text-sm tabular-nums">
+              Halten… {stillProgress}/5 s
+            </p>
+          )}
+          {(stillStatus === "done" || stillStatus === "demo_fallback") && (
+            <>
+              {stillStatus === "demo_fallback" && (
+                <p className="text-xs text-warning">
+                  Kein DeviceMotion — Demo-Samples (ehrlich markiert).
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+              >
+                Ausrichtung ok — weiter
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -156,13 +280,34 @@ export function CalibrationWizard({
             Werkstatt: log. Dekrement aus Ausschwingen · Coach: „Wie schnell kommt
             die Gabel beruhigt zurück?“
           </p>
-          <button
-            type="button"
-            onClick={() => setStep(3)}
-            className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
-          >
-            Bounce erfasst — weiter
-          </button>
+          {bounceStatus === "idle" && (
+            <button
+              type="button"
+              onClick={captureBounce}
+              className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+            >
+              Bounce erfassen
+            </button>
+          )}
+          {bounceStatus === "running" && (
+            <p className="text-center text-sm">Erfasse Ausschwingen…</p>
+          )}
+          {(bounceStatus === "done" || bounceStatus === "demo_fallback") && (
+            <>
+              {bounceStatus === "demo_fallback" && (
+                <p className="text-xs text-warning">
+                  Kein DeviceMotion — Demo-Peaks (ehrlich markiert).
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="w-full rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+              >
+                Bounce erfasst — weiter
+              </button>
+            </>
+          )}
         </div>
       )}
 

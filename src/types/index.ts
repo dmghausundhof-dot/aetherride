@@ -16,6 +16,7 @@ export type {
   ComponentSlot,
   MaintenanceInterval,
   MaintenanceLogEntry,
+  MaintenancePerformer,
   RideFeedback,
   Setup,
   SetupCondition,

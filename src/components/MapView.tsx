@@ -11,6 +11,8 @@ interface MapViewProps {
   track?: { lat: number; lng: number }[];
   /** Geplante Route (Discover-Handoff) — gestrichelt */
   routeLine?: { lat: number; lng: number }[];
+  /** Einzelner Marker (z. B. Höhenprofil-Tap) */
+  marker?: { lat: number; lng: number } | null;
   showUserLocation?: boolean;
   onMapReady?: (map: maplibregl.Map) => void;
 }
@@ -28,11 +30,13 @@ export function MapView({
   zoom = 12,
   track = [],
   routeLine = [],
+  marker = null,
   showUserLocation = false,
   onMapReady,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -174,6 +178,23 @@ export function MapView({
       });
     }
   }, [routeLine, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (!marker) {
+      markerRef.current?.remove();
+      markerRef.current = null;
+      return;
+    }
+    if (!markerRef.current) {
+      markerRef.current = new maplibregl.Marker({ color: "#E85D04" })
+        .setLngLat([marker.lng, marker.lat])
+        .addTo(map);
+    } else {
+      markerRef.current.setLngLat([marker.lng, marker.lat]);
+    }
+  }, [marker, ready]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>
