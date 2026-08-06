@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
   const rangeCalibration = useAppStore((s) => s.rangeCalibration);
+  const appMode = useAppStore((s) => s.appMode);
+  const setAppMode = useAppStore((s) => s.setAppMode);
 
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({
@@ -34,6 +36,36 @@ export default function ProfilePage() {
           </p>
         </div>
       </header>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 font-semibold">App-Modus</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setAppMode("bike")}
+            className={`rounded-xl py-2 text-sm ${
+              appMode === "bike" ? "bg-accent text-white" : "bg-surface-elevated"
+            }`}
+          >
+            Bike
+          </button>
+          <button
+            type="button"
+            onClick={() => setAppMode("hiking")}
+            className={`rounded-xl py-2 text-sm ${
+              appMode === "hiking" ? "bg-accent text-white" : "bg-surface-elevated"
+            }`}
+          >
+            Wandern
+          </button>
+        </div>
+        <p className="mt-2 text-[11px] text-text-secondary">
+          Wandern blendet Fahrwerk, Bracketing, Shop-Teile aus (Spec 2.8).
+        </p>
+        <Link href="/privacy" className="mt-2 inline-block text-xs text-accent">
+          Konto · Export · Privatsphäre
+        </Link>
+      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">

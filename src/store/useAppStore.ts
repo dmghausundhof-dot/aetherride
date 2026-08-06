@@ -40,6 +40,27 @@ import {
   type FamilyRider,
 } from "@/lib/garage/family";
 import type { CommerceMode } from "@/lib/shop/marketplace";
+import {
+  buildPostRideAnalysis,
+  recommendationToSetupOverrides,
+} from "@/lib/ai/setupRecommendation";
+import {
+  createEmptyCalibration,
+  isCalibrationValid,
+  type BikeCalibration,
+} from "@/lib/sensor/calibration";
+import {
+  continueWithoutAccount,
+  loadSession,
+  requestAccountDeletion,
+  signInLocal,
+  signOut,
+  type AccountDeletionRequest,
+  type AuthProvider,
+  type AuthSession,
+} from "@/lib/auth/session";
+import { appendOp, flushOpsLog } from "@/lib/sync/opsLog";
+import type { AppMode } from "@/lib/mode/hiking";
 import type {
   Bike,
   BikeCategory,
@@ -93,6 +114,13 @@ interface AppState {
   familyRiders: FamilyRider[];
   activeFamilyRiderId: string | null;
   commerceMode: CommerceMode;
+  /** F-SEN-002 Kalibrierung je Bike */
+  bikeCalibrations: Record<string, BikeCalibration>;
+  /** Spec 2.8 */
+  appMode: AppMode;
+  onboardingCompleted: boolean;
+  authSession: AuthSession;
+  accountDeletion: AccountDeletionRequest | null;
 
   setActiveBike: (id: string) => void;
   addBikeFromCatalog: (input: {
@@ -178,6 +206,15 @@ interface AppState {
   setActiveFamilyRider: (id: string | null) => void;
   assignSetupToRider: (riderId: string, setupId: string) => void;
   setCommerceMode: (mode: CommerceMode) => void;
+  setAppMode: (mode: AppMode) => void;
+  setOnboardingCompleted: (done: boolean) => void;
+  setBikeCalibration: (bikeId: string, cal: BikeCalibration) => void;
+  getBikeCalibration: (bikeId: string) => BikeCalibration | null;
+  signIn: (provider: AuthProvider, email?: string) => void;
+  signOutUser: () => void;
+  continueLocal: () => void;
+  requestDeleteAccount: () => AccountDeletionRequest | null;
+  syncNow: () => Promise<{ flushed: number; skipped: boolean; reason?: string }>;
 
   startRide: (bikeId: string, sportType: BikeType) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
@@ -186,6 +223,7 @@ interface AppState {
   addRecommendation: (rec: Omit<Recommendation, "id" | "status">) => void;
   dismissRecommendation: (id: string) => void;
   acceptRecommendation: (id: string) => void;
+  regenerateSetupRecommendation: (rideId: string) => void;
   seedDemoData: () => void;
 
   /** @deprecated use createSetupVersion */
@@ -220,7 +258,7 @@ interface AppState {
   ) => string;
 }
 
-const STORAGE_VERSION = 5;
+const STORAGE_VERSION = 6;
 
 const PROFILE_EXPLANATIONS: Record<string, string> = {
   style:
@@ -365,12 +403,61 @@ export const useAppStore = create<AppState>()(
       familyRiders: [],
       activeFamilyRiderId: null,
       commerceMode: "affiliate",
+      bikeCalibrations: {},
+      appMode: "bike",
+      onboardingCompleted: false,
+      authSession: { user: null, syncEnabled: false },
+      accountDeletion: null,
 
       setActiveBike: (id) =>
         set((s) => ({
           activeBikeId: id,
           bikes: ensureSingleActive(s.bikes, id),
         })),
+
+      setAppMode: (mode) => set({ appMode: mode }),
+      setOnboardingCompleted: (done) => set({ onboardingCompleted: done }),
+
+      setBikeCalibration: (bikeId, cal) =>
+        set((s) => ({
+          bikeCalibrations: { ...s.bikeCalibrations, [bikeId]: cal },
+        })),
+
+      getBikeCalibration: (bikeId) => get().bikeCalibrations[bikeId] ?? null,
+
+      signIn: (provider, email) => {
+        const session = signInLocal({ provider, email });
+        set({ authSession: session });
+        appendOp({
+          entity: "profile",
+          entityId: session.user?.id ?? "anon",
+          op: "create",
+          payload: { provider },
+        });
+      },
+
+      signOutUser: () => set({ authSession: signOut() }),
+
+      continueLocal: () => set({ authSession: continueWithoutAccount() }),
+
+      requestDeleteAccount: () => {
+        const user = get().authSession.user;
+        if (!user || user.provider === "local_anonymous") return null;
+        const req = requestAccountDeletion(user);
+        set({ accountDeletion: req });
+        appendOp({
+          entity: "profile",
+          entityId: user.id,
+          op: "delete",
+          payload: req,
+        });
+        return req;
+      },
+
+      syncNow: async () => {
+        const result = await flushOpsLog(get().authSession.syncEnabled);
+        return result;
+      },
 
       updateRiderProfile: (patch) =>
         set((s) => ({
@@ -1158,7 +1245,81 @@ export const useAppStore = create<AppState>()(
               });
             }
           }
+
+          // F-AI-003: genau eine Setup-Empfehlung (deterministisch)
+          if (get().appMode !== "hiking") {
+            const feedback = get().rideFeedbacks.find(
+              (f) => f.rideId === ride.id
+            );
+            const cal =
+              get().bikeCalibrations[bike.id] ??
+              createEmptyCalibration(bike.id);
+            // Demo-Kalibrierung mit ζ falls leer — damit Engine testbar bleibt
+            const calWithDemo =
+              cal.suspension?.zeta != null
+                ? cal
+                : {
+                    ...cal,
+                    mountMode: "HANDLEBAR" as const,
+                    mountConfirmed: true,
+                    suspension: {
+                      zeta: 0.21,
+                      fdHz: 2.4,
+                      fnHz: 2.5,
+                      cv: 0.08,
+                      accepted: true,
+                      scopeNote: "Demo-ζ für Post-Ride-Engine",
+                    },
+                    sagFrontMm: cal.sagFrontMm ?? 40,
+                    travelFrontMm: bike.travelFrontMm ?? 160,
+                    calibratedAt: new Date().toISOString(),
+                    quaternion: cal.quaternion ?? {
+                      gDev: [0, 0, 1],
+                      gBike: [0, 0, -1],
+                      yawFromGnssPending: true as const,
+                    },
+                  };
+            const analysis = buildPostRideAnalysis({
+              bike,
+              ride,
+              feedback,
+              calibration: calWithDemo,
+            });
+            if (analysis.recommendation) {
+              const card = analysis.recommendation;
+              get().addRecommendation({
+                type: "setup",
+                title: card.title,
+                content: `${card.why}\n\nErwartete Wirkung: ${card.expectedEffect}`,
+                reasoning: `${card.limits} · Konfidenz: ${card.confidence}${
+                  card.observationOnly ? " · nur Beobachtung" : ""
+                }\nBelege: ${(card.evidence ?? []).join("; ")}`,
+                score:
+                  card.confidence === "high"
+                    ? 0.9
+                    : card.confidence === "medium"
+                      ? 0.7
+                      : 0.4,
+                relatedBikeId: bike.id,
+                relatedRideId: ride.id,
+                evidence: card.evidence,
+                expectedEffect: card.expectedEffect,
+                limits: card.limits,
+                confidence: card.confidence,
+                ruleId: card.ruleId,
+                observationOnly: card.observationOnly,
+                setupApply: card.apply,
+              });
+            }
+          }
         }
+
+        appendOp({
+          entity: "ride",
+          entityId: ride.id,
+          op: "create",
+          payload: { distanceM: ride.distanceM, durationSec: ride.durationSec },
+        });
 
         return ride;
       },
@@ -1178,12 +1339,95 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      acceptRecommendation: (id) =>
+      acceptRecommendation: (id) => {
+        const rec = get().recommendations.find((r) => r.id === id);
         set((s) => ({
           recommendations: s.recommendations.map((r) =>
             r.id === id ? { ...r, status: "accepted" } : r
           ),
-        })),
+        }));
+        // F-AI-003: Übernehmen erzeugt immutable Setup-Version
+        if (
+          rec?.type === "setup" &&
+          rec.relatedBikeId &&
+          rec.setupApply &&
+          Object.keys(rec.setupApply).length > 0 &&
+          !rec.observationOnly
+        ) {
+          get().createSetupVersion({
+            bikeId: rec.relatedBikeId,
+            label: `Empfehlung ${rec.ruleId ?? ""}`.trim(),
+            conditions: "general",
+            description: rec.title,
+            valueOverrides: recommendationToSetupOverrides({
+              ruleId: rec.ruleId ?? "SR",
+              title: rec.title,
+              why: rec.reasoning,
+              expectedEffect: rec.expectedEffect ?? "",
+              limits: rec.limits ?? "",
+              confidence: rec.confidence ?? "medium",
+              apply: rec.setupApply,
+              evidence: rec.evidence ?? [],
+              observationOnly: false,
+            }),
+          });
+          appendOp({
+            entity: "setup",
+            entityId: rec.relatedBikeId,
+            op: "create",
+            payload: rec.setupApply,
+          });
+        }
+      },
+
+      regenerateSetupRecommendation: (rideId) => {
+        const ride = get().rides.find((r) => r.id === rideId);
+        const bike = ride
+          ? get().bikes.find((b) => b.id === ride.bikeId)
+          : null;
+        if (!ride || !bike) return;
+        const feedback = get().rideFeedbacks.find((f) => f.rideId === ride.id);
+        const cal =
+          get().bikeCalibrations[bike.id] ?? createEmptyCalibration(bike.id);
+        const analysis = buildPostRideAnalysis({
+          bike,
+          ride,
+          feedback,
+          calibration: cal,
+        });
+        // alte Setup-Empfehlung für diesen Ride entfernen/ersetzen
+        set((s) => ({
+          recommendations: s.recommendations.filter(
+            (r) => !(r.relatedRideId === rideId && r.type === "setup")
+          ),
+        }));
+        if (analysis.recommendation) {
+          const card = analysis.recommendation;
+          get().addRecommendation({
+            type: "setup",
+            title: card.title,
+            content: `${card.why}\n\nErwartete Wirkung: ${card.expectedEffect}`,
+            reasoning: `${card.limits} · Konfidenz: ${card.confidence}${
+              card.observationOnly ? " · nur Beobachtung" : ""
+            }`,
+            score:
+              card.confidence === "high"
+                ? 0.9
+                : card.confidence === "medium"
+                  ? 0.7
+                  : 0.4,
+            relatedBikeId: bike.id,
+            relatedRideId: ride.id,
+            evidence: card.evidence,
+            expectedEffect: card.expectedEffect,
+            limits: card.limits,
+            confidence: card.confidence,
+            ruleId: card.ruleId,
+            observationOnly: card.observationOnly,
+            setupApply: card.apply,
+          });
+        }
+      },
 
       // Legacy wrappers
       addBike: (bikeData) => {
@@ -1319,6 +1563,11 @@ export const useAppStore = create<AppState>()(
           familyRiders: base.familyRiders ?? [],
           activeFamilyRiderId: base.activeFamilyRiderId ?? null,
           commerceMode: base.commerceMode ?? "affiliate",
+          bikeCalibrations: base.bikeCalibrations ?? {},
+          appMode: base.appMode ?? "bike",
+          onboardingCompleted: base.onboardingCompleted ?? false,
+          authSession: base.authSession ?? loadSession(),
+          accountDeletion: base.accountDeletion ?? null,
           storageVersion: STORAGE_VERSION,
         } as AppState;
       },
@@ -1341,10 +1590,39 @@ export const useAppStore = create<AppState>()(
         familyRiders: s.familyRiders,
         activeFamilyRiderId: s.activeFamilyRiderId,
         commerceMode: s.commerceMode,
+        bikeCalibrations: s.bikeCalibrations,
+        appMode: s.appMode,
+        onboardingCompleted: s.onboardingCompleted,
+        authSession: s.authSession,
+        accountDeletion: s.accountDeletion,
       }),
     }
   )
 );
+
+/** Garage-Fortschritt: nächste fehlende P0-Aufgabe */
+export function nextGarageTask(
+  bike: Bike,
+  calibration?: BikeCalibration | null
+): string | null {
+  const missing = getMissingSlots(bike);
+  if (missing.length) {
+    return `Komponente ergänzen: ${missing[0]}`;
+  }
+  if (!bike.setups.some((s) => s.isCurrent) && bike.setups.length === 0) {
+    return "Erstes Setup anlegen";
+  }
+  if (
+    !calibration?.mountConfirmed ||
+    (calibration.mountMode !== "HANDLEBAR" && calibration.mountMode !== "STEM")
+  ) {
+    return "Halterung bestätigen + 45 s kalibrieren (F-SEN-002)";
+  }
+  if (!isCalibrationValid(calibration)) {
+    return "Kalibrierung abschließen (Ausrichtung, Bounce, SAG)";
+  }
+  return null;
+}
 
 export function getActiveComponents(bike: Bike): BikeComponent[] {
   return bike.components.filter((c) => !c.removedAt);

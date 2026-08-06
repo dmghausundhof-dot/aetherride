@@ -113,7 +113,7 @@ function PostRideContent() {
             </div>
           </div>
           <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-text-secondary text-xs">Max Lean</div>
+            <div className="text-text-secondary text-xs">Max Lean (v·ω/g)</div>
             <div className="tabular-nums text-lg font-semibold">
               {ride.summaryMetrics.leanAngleMax}°
             </div>
@@ -122,6 +122,9 @@ function PostRideContent() {
             <div className="text-text-secondary text-xs">Impacts</div>
             <div className="tabular-nums text-lg font-semibold">
               {ride.summaryMetrics.impactCount}
+              {ride.summaryMetrics.hardImpactCount != null
+                ? ` · ${ride.summaryMetrics.hardImpactCount} hart`
+                : ""}
             </div>
           </div>
           <div className="rounded-lg bg-surface-elevated p-2">
@@ -131,6 +134,21 @@ function PostRideContent() {
             </div>
           </div>
         </div>
+        {ride.summaryMetrics.flowParts && (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div>Geschw.-Konstanz {ride.summaryMetrics.flowParts.speedConstancy}</div>
+            <div>Laufruhe {ride.summaryMetrics.flowParts.smoothness}</div>
+            <div>Bremsökonomie {ride.summaryMetrics.flowParts.brakeEconomy}</div>
+            <div>Linienruhe {ride.summaryMetrics.flowParts.lineStability}</div>
+          </div>
+        )}
+        {ride.summaryMetrics.fni != null && (
+          <p className="mt-3 text-xs text-text-secondary">
+            FNI {ride.summaryMetrics.fni} — {ride.summaryMetrics.fniReference}{" "}
+            {ride.summaryMetrics.fniGated ? "(G-2 Gate — nicht live)" : ""} · nie
+            mm/% Federweg
+          </p>
+        )}
       </section>
 
       {/* Motor Data */}
@@ -317,21 +335,44 @@ function PostRideContent() {
         </p>
       )}
 
-      {/* Recommendation */}
+      {/* F-AI-003 EvidenceSheet */}
       {rec && (
         <section className="rounded-2xl bg-surface border border-accent/40 p-4">
           <div className="mb-2 flex items-center gap-2">
             <Wrench className="h-5 w-5 text-accent" />
             <h3 className="font-semibold">{rec.title}</h3>
           </div>
-          <p className="text-sm mb-2">{rec.content}</p>
+          {rec.ruleId && (
+            <p className="mb-1 text-[10px] uppercase text-text-secondary">
+              {rec.ruleId} · Konfidenz {rec.confidence}
+              {rec.observationOnly ? " · nur Beobachtung" : ""}
+            </p>
+          )}
+          <p className="text-sm mb-2 whitespace-pre-wrap">{rec.content}</p>
+          {rec.expectedEffect && (
+            <p className="mb-1 text-xs">
+              <span className="text-text-secondary">Erwartete Wirkung: </span>
+              {rec.expectedEffect}
+            </p>
+          )}
+          {rec.limits && (
+            <p className="mb-2 text-xs text-text-secondary">Grenzen: {rec.limits}</p>
+          )}
+          {rec.evidence && rec.evidence.length > 0 && (
+            <ul className="mb-4 list-inside list-disc text-xs text-text-secondary">
+              {rec.evidence.map((e) => (
+                <li key={e}>{e}</li>
+              ))}
+            </ul>
+          )}
           <p className="text-xs text-text-secondary mb-4">{rec.reasoning}</p>
           <div className="flex gap-2">
             <button
               onClick={() => {
                 acceptRecommendation(rec.id);
               }}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+              disabled={!!rec.observationOnly || !rec.setupApply || Object.keys(rec.setupApply).length === 0}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white disabled:opacity-40"
             >
               <Check className="h-4 w-4" /> Übernehmen
             </button>

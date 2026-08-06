@@ -30,8 +30,11 @@ import {
   bikeCompletenessPct,
   getActiveComponents,
   getMissingSlots,
+  nextGarageTask,
   useAppStore,
 } from "@/store/useAppStore";
+import { CalibrationWizard } from "@/components/CalibrationWizard";
+import { uiVisibilityForMode } from "@/lib/mode/hiking";
 import type { ComponentSlot, SetupCondition } from "@/types";
 
 type Tab = "overview" | "components" | "setups" | "maintenance";
@@ -49,10 +52,15 @@ export default function GaragePage() {
   const markIntervalDone = useAppStore((s) => s.markIntervalDone);
   const applySetupTemplate = useAppStore((s) => s.applySetupTemplate);
   const rides = useAppStore((s) => s.rides);
+  const bikeCalibrations = useAppStore((s) => s.bikeCalibrations);
+  const setBikeCalibration = useAppStore((s) => s.setBikeCalibration);
+  const appMode = useAppStore((s) => s.appMode);
+  const ui = uiVisibilityForMode(appMode);
 
   const [selectedId, setSelectedId] = useState<string | null>(activeBikeId);
   const [tab, setTab] = useState<Tab>("overview");
   const [showWizard, setShowWizard] = useState(false);
+  const [showCal, setShowCal] = useState(false);
   const [installSlot, setInstallSlot] = useState<ComponentSlot | null>(null);
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
@@ -72,6 +80,12 @@ export default function GaragePage() {
   const activeComponents = selected ? getActiveComponents(selected) : [];
   const missing = selected ? getMissingSlots(selected) : [];
   const completeness = selected ? bikeCompletenessPct(selected) : 0;
+  const selectedCal = selected
+    ? bikeCalibrations[selected.id] ?? null
+    : null;
+  const nextTask = selected
+    ? nextGarageTask(selected, selectedCal)
+    : null;
 
   const intervals = selected
     ? maintenanceIntervals.filter((i) => i.bikeId === selected.id)
@@ -160,6 +174,46 @@ export default function GaragePage() {
 
           {tab === "overview" && (
             <div className="flex flex-col gap-4">
+              {!ui.garageBikeFeatures && (
+                <p className="rounded-xl border border-border bg-surface p-3 text-sm">
+                  Wandermodus aktiv — Bike-Komponenten, Bracketing und
+                  Kompatibilität sind ausgeblendet (Spec 2.8).
+                </p>
+              )}
+              {nextTask && ui.garageBikeFeatures && (
+                <div className="rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+                  <span className="text-text-secondary">Nächste Aufgabe: </span>
+                  {nextTask}
+                </div>
+              )}
+              {ui.garageBikeFeatures && (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCal((v) => !v)}
+                    className="w-full rounded-xl border border-border py-2 text-sm"
+                  >
+                    {showCal ? "Kalibrierung schließen" : "Kalibrierung (F-SEN-002)"}
+                  </button>
+                  {showCal && (
+                    <CalibrationWizard
+                      bikeId={selected.id}
+                      travelFrontMm={selected.travelFrontMm}
+                      initial={selectedCal}
+                      onSave={(cal) => {
+                        setBikeCalibration(selected.id, cal);
+                        setShowCal(false);
+                      }}
+                    />
+                  )}
+                  {selectedCal?.suspension?.accepted && (
+                    <p className="text-xs text-text-secondary">
+                      ζ ≈ {selectedCal.suspension.zeta} · Montage{" "}
+                      {selectedCal.mountMode} · SAG {selectedCal.sagFrontMm} mm
+                    </p>
+                  )}
+                </div>
+              )}
               <BikeSilhouette
                 bike={selected}
                 maintenanceSlots={intervals
