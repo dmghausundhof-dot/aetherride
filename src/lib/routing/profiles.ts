@@ -2,12 +2,9 @@
  * Sportartspezifische Routing-Profile
  *
  * Produktion:
- * - Self-hosted OSRM oder Valhalla
- * - Custom Lua/Lua-ähnliche Profiles oder Valhalla costing models
- * - OSM Tags: highway, surface, mtb:scale, mtb:scale:imba, trail_visibility,
- *   sac_scale, smoothness, tracktype
- *
- * Offline: vorberechnete PMTiles + graph tiles oder on-device GraphHopper Lite
+ * - Self-hosted OSRM oder Valhalla (VALHALLA_URL / OSRM_URL / ROUTING_ENGINE)
+ * - OSM Tags: highway, surface, mtb:scale, trail_visibility, sac_scale, …
+ * - Offline: PMTiles (NEXT_PUBLIC_PMTILES_URL) + Graph-Service
  */
 
 export type RoutingProfile =
@@ -23,7 +20,7 @@ export interface ProfileConfig {
   label: string;
   prefer: string[];
   avoid: string[];
-  maxSurfaceRoughness: number; // 0–1
+  maxSurfaceRoughness: number;
   preferMtbScaleMax?: number;
   preferElevation: boolean;
   eBikeAssistFactor?: number;
@@ -51,7 +48,13 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   gravel: {
     id: "gravel",
     label: "Gravel",
-    prefer: ["track", "path", "unclassified", "tertiary", "surface=gravel|compacted|fine_gravel"],
+    prefer: [
+      "track",
+      "path",
+      "unclassified",
+      "tertiary",
+      "surface=gravel|compacted|fine_gravel",
+    ],
     avoid: ["motorway", "trunk", "steps", "mtb:scale>=4"],
     maxSurfaceRoughness: 0.55,
     preferElevation: false,
@@ -59,7 +62,13 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   road: {
     id: "road",
     label: "Rennrad",
-    prefer: ["cycleway", "primary", "secondary", "tertiary", "surface=asphalt|paved"],
+    prefer: [
+      "cycleway",
+      "primary",
+      "secondary",
+      "tertiary",
+      "surface=asphalt|paved",
+    ],
     avoid: ["path", "track", "footway", "steps", "surface=gravel|dirt|mud"],
     maxSurfaceRoughness: 0.2,
     preferElevation: false,
@@ -71,7 +80,7 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
     avoid: ["motorway", "steps"],
     maxSurfaceRoughness: 0.7,
     preferElevation: true,
-    eBikeAssistFactor: 1.4, // steilere Anstiege akzeptabel
+    eBikeAssistFactor: 1.4,
   },
   hiking: {
     id: "hiking",
@@ -83,17 +92,51 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
 };
 
-/**
- * Beispiel-Call an einen Routing-Service (Produktion).
- * Hier nur Interface – echte Calls gehen an /api/route oder self-hosted OSRM.
- */
+export type ClientRouteResult = {
+  distanceM: number;
+  durationS: number;
+  geometry: GeoJSON.LineString;
+  engine: string;
+  profile: RoutingProfile;
+  warnings?: string[];
+};
+
+/** Client-Call an /api/route */
 export async function requestRoute(
   profile: RoutingProfile,
   from: [number, number],
   to: [number, number]
-): Promise<{ distanceM: number; durationS: number; geometry: GeoJSON.LineString } | null> {
-  // Placeholder – in Produktion:
-  // const res = await fetch(`/api/route?profile=${profile}&from=...&to=...`);
-  console.log(`[Routing] ${profile}: ${from} → ${to}`);
-  return null;
+): Promise<ClientRouteResult | null> {
+  const qs = new URLSearchParams({
+    profile,
+    from: `${from[0]},${from[1]}`,
+    to: `${to[0]},${to[1]}`,
+  });
+  const res = await fetch(`/api/route?${qs}`);
+  if (!res.ok) {
+    console.error("[Routing]", res.status, await res.text());
+    return null;
+  }
+  return res.json();
+}
+
+/** Map bike category → routing profile */
+export function profileForBikeCategory(
+  category: string
+): RoutingProfile {
+  switch (category) {
+    case "mtb_enduro":
+      return "mtb_enduro";
+    case "gravel":
+      return "gravel";
+    case "road":
+      return "road";
+    case "emtb":
+    case "ebike":
+      return "ebike";
+    case "hiking":
+      return "hiking";
+    default:
+      return "mtb_allmountain";
+  }
 }

@@ -125,6 +125,12 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - Sync: LWW mit `updated_at` + Pull nach Login
 - Discover: Heatmap aus eigenen Rides, Elevation `/api/elevation`, Mapillary `/api/trail`
 
+## Routing-Infra (Schnitt 2)
+
+- `/api/route` → Valhalla (`VALHALLA_URL`) oder OSRM (`OSRM_URL`); ohne Env Demo-Geometrie
+- MapLibre: `NEXT_PUBLIC_PMTILES_URL` (pmtiles://) oder OSM-Raster-Fallback
+- Discover → „Route berechnen“ zeichnet Engine-Polyline
+
 ### Launch-Checkliste (Prozess)
 
 - [ ] DSFA abgeschlossen  
