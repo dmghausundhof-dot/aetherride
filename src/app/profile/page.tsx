@@ -8,7 +8,7 @@ import type { RiderProfile } from "@/types";
 import {
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
-import { pullSync, pushSync } from "@/lib/sync/client";
+import { syncBidirectional } from "@/lib/sync/client";
 
 type AuthUser = {
   id: string;
@@ -45,8 +45,7 @@ export default function ProfilePage() {
         setAuthUser(data.user);
         if (data.user.subscriptionTier === "pro") {
           setSubscriptionTier("pro");
-        } else if (data.user.subscriptionStatus !== "active") {
-          // Keep local free unless Stripe says pro
+        } else {
           setSubscriptionTier(
             data.user.subscriptionTier === "pro" ? "pro" : "free"
           );
@@ -59,10 +58,79 @@ export default function ProfilePage() {
     }
   }, [setSubscriptionTier]);
 
-  useEffect(() => {
-    if (configured) void refreshMe();
-  }, [configured, refreshMe]);
+  const applyRemotePayload = useCallback(
+    (remote: {
+      bikes?: unknown;
+      rides?: unknown;
+      consents?: unknown;
+      privacyZones?: unknown;
+      familyRiders?: unknown;
+      riderProfile?: unknown;
+      subscriptionTier?: "free" | "pro";
+      commerceMode?: unknown;
+      activeBikeId?: string | null;
+    }) => {
+      if (remote.subscriptionTier === "pro" || remote.subscriptionTier === "free") {
+        setSubscriptionTier(remote.subscriptionTier);
+      }
+      // Full hydrate goes through persist merge on next seed; store patch for key fields
+      useAppStore.setState((s) => ({
+        ...s,
+        ...(Array.isArray(remote.bikes) && remote.bikes.length
+          ? { bikes: remote.bikes as typeof s.bikes }
+          : {}),
+        ...(Array.isArray(remote.rides)
+          ? { rides: remote.rides as typeof s.rides }
+          : {}),
+        ...(Array.isArray(remote.consents) && remote.consents.length
+          ? { consents: remote.consents as typeof s.consents }
+          : {}),
+        ...(Array.isArray(remote.privacyZones)
+          ? { privacyZones: remote.privacyZones as typeof s.privacyZones }
+          : {}),
+        ...(Array.isArray(remote.familyRiders)
+          ? { familyRiders: remote.familyRiders as typeof s.familyRiders }
+          : {}),
+        ...(remote.riderProfile
+          ? { riderProfile: remote.riderProfile as typeof s.riderProfile }
+          : {}),
+        ...(remote.activeBikeId !== undefined
+          ? { activeBikeId: remote.activeBikeId }
+          : {}),
+      }));
+    },
+    [setSubscriptionTier]
+  );
 
+  useEffect(() => {
+    if (!configured) return;
+    void (async () => {
+      await refreshMe();
+      try {
+        const local = {
+          bikes: useAppStore.getState().bikes,
+          rides: useAppStore.getState().rides,
+          consents: useAppStore.getState().consents,
+          privacyZones: useAppStore.getState().privacyZones,
+          familyRiders: useAppStore.getState().familyRiders,
+          riderProfile: useAppStore.getState().riderProfile,
+          subscriptionTier: useAppStore.getState().subscriptionTier,
+          commerceMode: useAppStore.getState().commerceMode,
+          activeBikeId: useAppStore.getState().activeBikeId,
+          updatedAt: new Date().toISOString(),
+        };
+        const me = await fetch("/api/auth/me").then((r) => r.json());
+        if (!me.user) return;
+        const { merged, direction } = await syncBidirectional(local);
+        if (direction === "pulled") applyRemotePayload(merged);
+        if (direction === "pushed" && merged.subscriptionTier === "pro") {
+          setSubscriptionTier("pro");
+        }
+      } catch {
+        /* offline / no session */
+      }
+    })();
+  }, [configured, refreshMe, applyRemotePayload, setSubscriptionTier]);
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({
       preferences: { ...profile.preferences, [key]: value },
@@ -156,13 +224,17 @@ export default function ProfilePage() {
         subscriptionTier: store.subscriptionTier,
         commerceMode: store.commerceMode,
         activeBikeId: store.activeBikeId,
+        updatedAt: new Date().toISOString(),
       };
-      await pushSync(payload);
-      const remote = await pullSync();
-      if (remote?.subscriptionTier === "pro") {
-        setSubscriptionTier("pro");
-      }
-      setAuthMsg("Sync OK.");
+      const { merged, direction } = await syncBidirectional(payload);
+      if (direction === "pulled") applyRemotePayload(merged);
+      setAuthMsg(
+        direction === "pulled"
+          ? "Sync: Remote übernommen (LWW)."
+          : direction === "pushed"
+            ? "Sync: Lokal hochgeladen."
+            : "Sync: bereits aktuell."
+      );
     } catch (e) {
       setAuthMsg(e instanceof Error ? e.message : "Sync fehlgeschlagen");
     } finally {
