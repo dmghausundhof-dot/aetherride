@@ -96,6 +96,7 @@ export function webDemoCapabilities(): PlatformCapabilityReport {
       "FNI/Durchschlag/Setup-Rec: Engine vorhanden, Gate G-2 steuert Live.",
       "Wegerecht: Demo-Regeln Tirol/Bayern — Gate G-5 Legal ausstehend.",
       "A-08 Setup-Haftung: redaktioneller Entwurf, Legal ausstehend.",
+      "G-1 Bosch LDI: Outreach-Paket bereit, Zugang/AGB ausstehend (Simulator ≠ Production).",
     ],
   };
 }

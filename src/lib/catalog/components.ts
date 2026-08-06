@@ -3,6 +3,7 @@ import { COMPONENT_CATALOG_DACH } from "./componentsDach";
 import { COMPONENT_CATALOG_DACH_DEPTH } from "./componentsDachDepth";
 import { COMPONENT_CATALOG_DACH_SCALE } from "./componentsDachScale";
 import { COMPONENT_CATALOG_DACH_SCALE2 } from "./componentsDachScale2";
+import { COMPONENT_CATALOG_DACH_SCALE3 } from "./componentsDachScale3";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -1165,6 +1166,7 @@ export const COMPONENT_CATALOG: ComponentModel[] = [
   ...COMPONENT_CATALOG_DACH_DEPTH,
   ...COMPONENT_CATALOG_DACH_SCALE,
   ...COMPONENT_CATALOG_DACH_SCALE2,
+  ...COMPONENT_CATALOG_DACH_SCALE3,
 ];
 
 export function getComponentModel(id: string): ComponentModel | undefined {

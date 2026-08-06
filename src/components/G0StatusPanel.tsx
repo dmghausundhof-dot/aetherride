@@ -16,12 +16,30 @@ import {
   renderG0WorkshopPackMarkdown,
   setG0WorkshopLocalNote,
 } from "@/lib/platform/g0Workshop";
+import {
+  renderG0FacilitatorRunbookMarkdown,
+  renderG0WorkshopIcsStub,
+  renderG0WorkshopInviteText,
+} from "@/lib/platform/g0WorkshopOps";
 import { downloadText } from "@/lib/export/gpx";
+import {
+  g1StatusBadge,
+  getG1OutreachMeta,
+  markG1OutreachSentNow,
+  clearG1OutreachMarkedSent,
+  renderG1BoschCoverLetter,
+  renderG1BoschOutreachMarkdown,
+  G1_BOSCH_ACCESS_CLEARED,
+} from "@/lib/ble/g1BoschOutreach";
+import { useState } from "react";
 
 export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
   const closed = isG0Closed();
   const go = evaluateG0GoNoGo();
   const totalMin = G0_WORKSHOP_AGENDA.reduce((n, a) => n + a.minutes, 0);
+  const [g1Tick, setG1Tick] = useState(0);
+  const g1 = getG1OutreachMeta();
+  void g1Tick;
 
   if (compact) {
     return (
@@ -91,6 +109,45 @@ export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
         <button
           type="button"
           onClick={() =>
+            downloadText(
+              "aetherride-g0-einladung.txt",
+              renderG0WorkshopInviteText(),
+              "text/plain;charset=utf-8"
+            )
+          }
+          className="rounded-lg border border-border px-2 py-1 text-[10px]"
+        >
+          Einladung
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g0-facilitator.md",
+              renderG0FacilitatorRunbookMarkdown(),
+              "text/markdown;charset=utf-8"
+            )
+          }
+          className="rounded-lg border border-border px-2 py-1 text-[10px]"
+        >
+          Facilitator
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g0-workshop.ics",
+              renderG0WorkshopIcsStub(),
+              "text/calendar;charset=utf-8"
+            )
+          }
+          className="rounded-lg border border-border px-2 py-1 text-[10px]"
+        >
+          ICS-Stub
+        </button>
+        <button
+          type="button"
+          onClick={() =>
             setG0WorkshopLocalNote(
               `termin_vorgemerkt:${new Date().toISOString()}`
             )
@@ -99,6 +156,64 @@ export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
         >
           Termin lokal vormerken
         </button>
+      </div>
+
+      <h4 className="mt-3 text-xs font-semibold">G-1 parallel · Bosch LDI</h4>
+      <p className="mt-1 text-[11px] text-text-secondary">
+        {g1StatusBadge()} · Gate G1 = {String(G1_BOSCH_ACCESS_CLEARED)}
+        {g1.markedSentAt
+          ? ` · markiert ${new Date(g1.markedSentAt).toLocaleString("de-DE")}`
+          : ""}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g1-bosch-outreach.md",
+              renderG1BoschOutreachMarkdown(),
+              "text/markdown;charset=utf-8"
+            )
+          }
+          className="rounded-lg bg-accent px-2 py-1 text-[10px] font-medium text-white"
+        >
+          Outreach (.md)
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g1-bosch-anschreiben.txt",
+              renderG1BoschCoverLetter(),
+              "text/plain;charset=utf-8"
+            )
+          }
+          className="rounded-lg border border-border px-2 py-1 text-[10px]"
+        >
+          Anschreiben
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            markG1OutreachSentNow();
+            setG1Tick((n) => n + 1);
+          }}
+          className="rounded-lg border border-warning/40 bg-warning/10 px-2 py-1 text-[10px]"
+        >
+          Als versendet markieren
+        </button>
+        {g1.markedSentAt && (
+          <button
+            type="button"
+            onClick={() => {
+              clearG1OutreachMarkedSent();
+              setG1Tick((n) => n + 1);
+            }}
+            className="rounded-lg border border-border px-2 py-1 text-[10px] text-text-secondary"
+          >
+            Markierung löschen
+          </button>
+        )}
       </div>
 
       <h4 className="mt-3 text-xs font-semibold">Checkliste</h4>
