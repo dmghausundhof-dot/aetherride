@@ -195,6 +195,11 @@ export interface RouteEdgeDemo {
   mtbScale?: number;
   sacScale?: string;
   bicycleAccess?: "yes" | "no" | "dismount" | "unknown";
+  /** Demo/OSM: offizielle MTB-Freigabe (z. B. Tirol-Modell) */
+  mtbOfficial?: boolean;
+  widthM?: number;
+  /** Querfeldein — immer block */
+  offTrail?: boolean;
   inclinePct?: number;
   latlng: [number, number][];
 }
@@ -209,6 +214,9 @@ export interface RouteResult {
   uncertainShare: number;
   accessWarnings: string[];
   blocked: boolean;
+  /** Volle Findings für Mehr-Modus */
+  accessFindings?: import("./accessRights").AccessFinding[];
+  jurisdiction?: import("./accessRights").JurisdictionId;
   edges: RouteEdgeDemo[];
   costingNote: string;
 }
@@ -220,10 +228,11 @@ export interface RouteResult {
 export async function requestRoute(
   profile: RoutingProfile | LegacyRoutingProfile,
   from: [number, number],
-  to: [number, number]
+  to: [number, number],
+  jurisdiction: import("./accessRights").JurisdictionId = "AT-7"
 ): Promise<RouteResult | null> {
   const id = legacyToSpec(profile);
   const cfg = ROUTING_PROFILES[id];
   const { scoreDemoRoute } = await import("./engine");
-  return scoreDemoRoute(cfg, from, to);
+  return scoreDemoRoute(cfg, from, to, jurisdiction);
 }

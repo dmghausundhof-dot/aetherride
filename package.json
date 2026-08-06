@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:p0": "npx tsx src/lib/sensor/leanAngle.test.ts && npx tsx src/lib/ai/setupRecommendation.test.ts && npx tsx src/lib/compatibility/engine.test.ts && npx tsx src/lib/maintenance/wearPrediction.test.ts && npx tsx src/lib/ai/chat.test.ts && npx tsx src/lib/routing/suggestions.test.ts"
+    "test:p0": "npx tsx src/lib/sensor/leanAngle.test.ts && npx tsx src/lib/ai/setupRecommendation.test.ts && npx tsx src/lib/routing/accessRights.test.ts && npx tsx src/lib/compatibility/engine.test.ts && npx tsx src/lib/maintenance/wearPrediction.test.ts && npx tsx src/lib/ai/chat.test.ts && npx tsx src/lib/routing/suggestions.test.ts"
   },
   "dependencies": {
     "@garmin/fitsdk": "^21.212.0",

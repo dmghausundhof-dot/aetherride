@@ -1,10 +1,18 @@
 /**
- * F-NAV-001 Demo-Kostenfunktion + Unsicherheitsanteil
- * Produktion: Valhalla dynamic costing (mtb:scale, surface, turn_penalty).
+ * F-NAV-001 Demo-Kostenfunktion + Unsicherheitsanteil + Wegerecht
  */
 
-import type { ProfileConfig, RouteEdgeDemo, RouteResult, RoutingProfile } from "./profiles";
-import { evaluateAccessForEdges } from "./accessRights";
+import type {
+  ProfileConfig,
+  RouteEdgeDemo,
+  RouteResult,
+  RoutingProfile,
+} from "./profiles";
+import {
+  accessWarningsFromEval,
+  evaluateAccessForEdges,
+  type JurisdictionId,
+} from "./accessRights";
 
 function haversineM(a: [number, number], b: [number, number]): number {
   const R = 6371000;
@@ -19,11 +27,11 @@ function haversineM(a: [number, number], b: [number, number]): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** Synthetische Kette von OSM-ähnlichen Kanten zwischen from/to */
 function buildDemoEdges(
   from: [number, number],
   to: [number, number],
-  profile: RoutingProfile
+  profile: RoutingProfile,
+  jurisdiction: JurisdictionId
 ): RouteEdgeDemo[] {
   const steps = 6;
   const edges: RouteEdgeDemo[] = [];
@@ -58,26 +66,42 @@ function buildDemoEdges(
         highway: kind === 0 ? "cycleway" : "tertiary",
         surface: "asphalt",
         bicycleAccess: "yes",
+        widthM: 3,
         inclinePct: 2 + kind,
         latlng: [a, b],
       });
+    } else if (jurisdiction === "DE-BY") {
+      edges.push({
+        id: `e${i}`,
+        distanceM: dist,
+        highway: kind === 0 ? "path" : kind === 1 ? "track" : "cycleway",
+        surface: kind === 1 ? "gravel" : kind === 0 ? "ground" : "asphalt",
+        mtbScale: kind === 0 ? 2 : 1,
+        bicycleAccess: kind === 1 ? "yes" : kind === 0 ? "unknown" : "yes",
+        widthM: kind === 0 ? 1.2 : kind === 1 ? 2.5 : 3,
+        inclinePct: 5 + kind * 4,
+        latlng: [a, b],
+      });
     } else {
+      // Tirol-Demo: track ohne Freigabe = Grauzone; eine offizielle Kante
       edges.push({
         id: `e${i}`,
         distanceM: dist,
         highway: kind === 0 ? "path" : kind === 1 ? "track" : "cycleway",
         surface: kind === 2 ? undefined : kind === 0 ? "dirt" : "gravel",
         mtbScale: kind === 0 ? 2 : kind === 1 ? 1 : undefined,
-        bicycleAccess: kind === 1 ? "unknown" : "yes",
+        bicycleAccess:
+          kind === 2 ? "yes" : kind === 1 ? "unknown" : "unknown",
+        mtbOfficial: kind === 2,
         inclinePct: 6 + kind * 5,
         latlng: [a, b],
       });
     }
   }
-  // Demo: eine potenziell problematische Kante für Wegerecht
+
   if (profile !== "HIKING" && profile !== "ROAD") {
     edges.push({
-      id: "e_access",
+      id: "e_access_blocked",
       distanceM: 180,
       highway: "path",
       surface: "ground",
@@ -86,6 +110,21 @@ function buildDemoEdges(
       inclinePct: 4,
       latlng: [to, [to[0] + 0.001, to[1] + 0.001]],
     });
+    if (jurisdiction === "DE-BY") {
+      edges.push({
+        id: "e_offtrail",
+        distanceM: 40,
+        highway: "path",
+        surface: "ground",
+        offTrail: true,
+        bicycleAccess: "unknown",
+        inclinePct: 10,
+        latlng: [
+          [to[0] + 0.001, to[1] + 0.001],
+          [to[0] + 0.0015, to[1] + 0.0012],
+        ],
+      });
+    }
   }
   return edges;
 }
@@ -98,7 +137,6 @@ function edgeCost(edge: RouteEdgeDemo, cfg: ProfileConfig): number {
   if (w.highwayPrefer.includes(edge.highway)) cost *= 0.75;
 
   if (!edge.surface) {
-    // Unsicher — nicht optimistisch, leichte Penalty + Markierung extern
     cost *= 1.15;
   } else if (w.surfaceAvoid.includes(edge.surface)) {
     cost *= 1 + w.avoidBadSurfaces * 3;
@@ -128,10 +166,10 @@ function edgeCost(edge: RouteEdgeDemo, cfg: ProfileConfig): number {
 export function scoreDemoRoute(
   cfg: ProfileConfig,
   from: [number, number],
-  to: [number, number]
+  to: [number, number],
+  jurisdiction: JurisdictionId = "AT-7"
 ): RouteResult {
-  const edges = buildDemoEdges(from, to, cfg.id);
-  // sortiere/wähle: hier linear; Kosten nur zur Transparenz
+  const edges = buildDemoEdges(from, to, cfg.id, jurisdiction);
   let totalCost = 0;
   let distanceM = 0;
   let uncertainM = 0;
@@ -140,29 +178,26 @@ export function scoreDemoRoute(
   for (const e of edges) {
     totalCost += edgeCost(e, cfg);
     distanceM += e.distanceM;
-    if (
-      !e.surface ||
-      (e.mtbScale == null && cfg.id.startsWith("MTB"))
-    ) {
+    if (!e.surface || (e.mtbScale == null && cfg.id.startsWith("MTB"))) {
       uncertainM += e.distanceM;
     }
     if (cfg.id === "HIKING" && !e.sacScale) uncertainM += e.distanceM;
     elev += Math.max(0, (e.inclinePct ?? 0) * (e.distanceM / 100));
   }
 
-  const access = evaluateAccessForEdges(edges, "AT-7");
-  const usable = access.blocked
-    ? edges.filter((e) => !access.blockedEdgeIds.has(e.id))
-    : edges;
+  const access = evaluateAccessForEdges(edges, jurisdiction);
+  // Spec: gesperrte Kanten nicht routen
+  const usable = edges.filter((e) => !access.blockedEdgeIds.has(e.id));
+  const usableDist = usable.reduce((s, e) => s + e.distanceM, 0);
 
   const coords = usable.flatMap((e) => e.latlng);
   const durationS = Math.round(
-    (distanceM / 1000 / (cfg.id === "HIKING" ? 4 : 14)) * 3600
+    (usableDist / 1000 / (cfg.id === "HIKING" ? 4 : 14)) * 3600
   );
 
   return {
     profile: cfg.id,
-    distanceM: Math.round(distanceM),
+    distanceM: Math.round(usableDist),
     durationS,
     elevationGainM: Math.round(elev),
     geometry: {
@@ -171,9 +206,11 @@ export function scoreDemoRoute(
     },
     uncertainKm: Math.round((uncertainM / 1000) * 100) / 100,
     uncertainShare: distanceM ? uncertainM / distanceM : 0,
-    accessWarnings: access.warnings,
-    blocked: access.blocked && usable.length === 0,
+    accessWarnings: accessWarningsFromEval(access),
+    accessFindings: access.findings,
+    jurisdiction: access.jurisdiction,
+    blocked: usable.length === 0,
     edges: usable,
-    costingNote: `Demo-Kosten ${Math.round(totalCost)} · Valhalla in Produktion (G-0). Unsichere km ausgewiesen, nicht optimistisch bewertet.`,
+    costingNote: `Demo-Kosten ${Math.round(totalCost)} · ${access.blockedEdgeIds.size} Kante(n) wegen Wegerecht entfernt · Valhalla in Produktion.`,
   };
 }
