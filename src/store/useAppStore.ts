@@ -3,21 +3,45 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
+import { findCatalogBike } from "@/lib/catalog/bikes";
+import { getComponentModel } from "@/lib/catalog/components";
+import {
+  bikeTypeToCategory,
+  categoryToBikeType,
+  requiredSlotsForCategory,
+} from "@/lib/catalog/slots";
+import {
+  buildDefaultIntervals,
+  evaluateIntervalDue,
+} from "@/lib/maintenance/intervals";
+import { evaluateBracketingSeries } from "@/lib/setup/bracketing";
+import {
+  buildSetupValuesFromBike,
+  createImmutableSetup,
+  recommendedSagPct,
+} from "@/lib/setup/ranges";
 import type {
   Bike,
-  Component,
-  Setup,
-  Ride,
-  RiderProfile,
-  Product,
-  Recommendation,
+  BikeCategory,
+  BikeComponent,
   BikeType,
-  ComponentCategory,
+  BracketingParameter,
+  BracketingRun,
+  BracketingSeries,
+  ComponentSlot,
+  MaintenanceInterval,
+  MaintenanceLogEntry,
+  Recommendation,
+  Ride,
+  RideFeedback,
+  RiderProfile,
   SensorMetrics,
+  Setup,
+  SetupCondition,
+  WheelSize,
 } from "@/types";
 
 interface AppState {
-  // Data
   bikes: Bike[];
   rides: Ride[];
   riderProfile: RiderProfile;
@@ -34,15 +58,86 @@ interface AppState {
     cadence: number;
     odometer: number;
   } | null;
+  maintenanceLogs: MaintenanceLogEntry[];
+  maintenanceIntervals: MaintenanceInterval[];
+  bracketingSeries: BracketingSeries[];
+  rideFeedbacks: RideFeedback[];
+  storageVersion: number;
 
-  // Actions
   setActiveBike: (id: string) => void;
-  addBike: (bike: Omit<Bike, "id" | "createdAt" | "updatedAt" | "components" | "setups">) => string;
+  addBikeFromCatalog: (input: {
+    catalogBikeId: string;
+    frameSize: string;
+    name?: string;
+  }) => string;
+  addBikeBasic: (input: {
+    name: string;
+    category: BikeCategory;
+    travelFrontMm?: number;
+    travelRearMm?: number;
+    wheelSizeFront?: WheelSize;
+    wheelSizeRear?: WheelSize;
+    frameSize?: string;
+    year?: number;
+  }) => string;
+  addBikeFromImport: (input: { name: string; note?: string }) => string;
   updateBike: (id: string, data: Partial<Bike>) => void;
-  addComponent: (bikeId: string, component: Omit<Component, "id" | "bikeId">) => void;
-  updateComponent: (bikeId: string, componentId: string, data: Partial<Component>) => void;
-  addSetup: (bikeId: string, setup: Omit<Setup, "id" | "bikeId" | "createdAt">) => void;
-  setActiveSetup: (bikeId: string, setupId: string) => void;
+
+  installComponent: (input: {
+    bikeId: string;
+    slot: ComponentSlot;
+    componentModelId?: string;
+    freeText?: string;
+    manufacturer?: string;
+    model?: string;
+  }) => string;
+  removeComponent: (bikeId: string, componentId: string) => void;
+  moveComponent: (componentId: string, fromBikeId: string, toBikeId: string) => void;
+  updateComponentSettings: (
+    bikeId: string,
+    componentId: string,
+    settings: Record<string, number | string>
+  ) => void;
+
+  createSetupVersion: (input: {
+    bikeId: string;
+    label: string;
+    conditions: SetupCondition;
+    description?: string;
+    valueOverrides?: Record<string, number>;
+  }) => string;
+  setCurrentSetup: (bikeId: string, setupId: string) => void;
+
+  addMaintenanceLog: (
+    entry: Omit<MaintenanceLogEntry, "id">
+  ) => void;
+  markIntervalDone: (intervalId: string) => void;
+  overrideInterval: (
+    intervalId: string,
+    patch: Partial<
+      Pick<
+        MaintenanceInterval,
+        "intervalKm" | "intervalHours" | "intervalDays" | "label"
+      >
+    >
+  ) => void;
+
+  startBracketing: (input: {
+    bikeId: string;
+    parameter: BracketingParameter;
+    rangeFrom: number;
+    rangeTo: number;
+    step: number;
+    referenceSegmentLabel: string;
+  }) => string;
+  addBracketingRun: (
+    seriesId: string,
+    run: Omit<BracketingRun, "id" | "createdAt">
+  ) => void;
+  evaluateBracketing: (seriesId: string) => void;
+
+  submitRideFeedback: (feedback: Omit<RideFeedback, "createdAt">) => void;
+
   startRide: (bikeId: string, sportType: BikeType) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
   updateBoschLive: (data: Partial<AppState["boschLive"]>) => void;
@@ -51,7 +146,40 @@ interface AppState {
   dismissRecommendation: (id: string) => void;
   acceptRecommendation: (id: string) => void;
   seedDemoData: () => void;
+
+  /** @deprecated use createSetupVersion */
+  addSetup: (
+    bikeId: string,
+    setup: {
+      name: string;
+      description?: string;
+      settingsSnapshot: Record<string, string | number>;
+      isActive: boolean;
+    }
+  ) => void;
+  /** @deprecated use setCurrentSetup */
+  setActiveSetup: (bikeId: string, setupId: string) => void;
+  /** @deprecated use installComponent */
+  addComponent: (
+    bikeId: string,
+    component: {
+      category: string;
+      manufacturer: string;
+      model: string;
+      specs: Record<string, string | number | boolean>;
+      currentSettings: Record<string, string | number>;
+    }
+  ) => void;
+  /** @deprecated use addBikeBasic */
+  addBike: (
+    bike: Omit<Bike, "id" | "createdAt" | "updatedAt" | "components" | "setups" | "category" | "isActive" | "isEbike" | "totalOdometerKm" | "totalHours"> & {
+      type: BikeType;
+      isDefault?: boolean;
+    }
+  ) => string;
 }
+
+const STORAGE_VERSION = 2;
 
 const defaultProfile: RiderProfile = {
   style: "flow",
@@ -66,7 +194,75 @@ const defaultProfile: RiderProfile = {
     avgRideDurationMin: 90,
     weeklyDistanceKm: 45,
   },
+  riderWeightKg: 78,
 };
+
+function emptyBikeBase(
+  partial: Omit<
+    Bike,
+    "id" | "createdAt" | "updatedAt" | "components" | "setups" | "isActive"
+  > & { id?: string }
+): Bike {
+  const id = partial.id ?? uuidv4();
+  const now = new Date().toISOString();
+  return {
+    ...partial,
+    id,
+    isActive: false,
+    createdAt: now,
+    updatedAt: now,
+    components: [],
+    setups: [],
+  };
+}
+
+function installFromModel(
+  bikeId: string,
+  slot: ComponentSlot,
+  modelId: string,
+  odo: number,
+  hours: number
+): BikeComponent {
+  const model = getComponentModel(modelId)!;
+  const settings: Record<string, number | string> = {};
+  for (const adj of model.adjusters) {
+    if (adj.key === "sag_pct") continue;
+    if (adj.min !== undefined && adj.max !== undefined) {
+      settings[adj.key] = Math.round((adj.min + adj.max) / 2);
+    } else if (adj.totalClicks) {
+      settings[adj.key] = Math.round(adj.totalClicks / 2);
+    }
+  }
+  return {
+    id: uuidv4(),
+    bikeId,
+    slot,
+    componentModelId: modelId,
+    manufacturer: model.manufacturer,
+    model: [model.model, model.variant].filter(Boolean).join(" "),
+    installedAt: new Date().toISOString(),
+    odometerKmAtInstall: odo,
+    hoursAtInstall: hours,
+    attributes: [],
+    currentSettings: settings,
+  };
+}
+
+function ensureSingleActive(bikes: Bike[], activeId: string): Bike[] {
+  return bikes.map((b) => ({ ...b, isActive: b.id === activeId }));
+}
+
+function componentUsageKm(bike: Bike, comp: BikeComponent, rides: Ride[]): number {
+  const start = new Date(comp.installedAt).getTime();
+  const end = comp.removedAt ? new Date(comp.removedAt).getTime() : Date.now();
+  return rides
+    .filter((r) => r.bikeId === bike.id)
+    .filter((r) => {
+      const t = new Date(r.startTime).getTime();
+      return t >= start && t <= end;
+    })
+    .reduce((s, r) => s + r.distanceM / 1000, 0);
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -81,57 +277,305 @@ export const useAppStore = create<AppState>()(
       liveMetrics: null,
       boschConnected: false,
       boschLive: null,
+      maintenanceLogs: [],
+      maintenanceIntervals: [],
+      bracketingSeries: [],
+      rideFeedbacks: [],
+      storageVersion: STORAGE_VERSION,
 
-      setActiveBike: (id) => set({ activeBikeId: id }),
-
-      addBike: (bikeData) => {
-        const id = uuidv4();
-        const now = new Date().toISOString();
-        const bike: Bike = {
-          ...bikeData,
-          id,
-          createdAt: now,
-          updatedAt: now,
-          components: [],
-          setups: [],
-        };
+      setActiveBike: (id) =>
         set((s) => ({
-          bikes: [...s.bikes, bike],
-          activeBikeId: s.activeBikeId ?? id,
+          activeBikeId: id,
+          bikes: ensureSingleActive(s.bikes, id),
+        })),
+
+      addBikeFromCatalog: ({ catalogBikeId, frameSize, name }) => {
+        const found = findCatalogBike(catalogBikeId);
+        if (!found) throw new Error("Katalog-Bike nicht gefunden");
+        const { bike: cat, manufacturer } = found;
+        const id = uuidv4();
+        const type = categoryToBikeType(cat.category);
+        let bike = emptyBikeBase({
+          id,
+          name: name || `${manufacturer.name} ${cat.name}`,
+          category: cat.category,
+          type,
+          catalogBikeId: cat.id,
+          year: cat.year,
+          frameSize,
+          travelFrontMm: cat.travelFrontMm,
+          travelRearMm: cat.travelRearMm,
+          wheelSizeFront: cat.wheelSizeFront,
+          wheelSizeRear: cat.wheelSizeRear,
+          weightKg: cat.weightKgApprox,
+          isEbike: cat.isEbike,
+          totalOdometerKm: 0,
+          totalHours: 0,
+        });
+
+        const components: BikeComponent[] = [];
+        for (const [slot, modelId] of Object.entries(cat.oemComponents)) {
+          if (!modelId) continue;
+          const c = installFromModel(
+            id,
+            slot as ComponentSlot,
+            modelId,
+            0,
+            0
+          );
+          // SAG-Defaults nach Kategorie
+          if (slot === "fork") {
+            c.currentSettings.sag_pct = recommendedSagPct(
+              cat.category,
+              "fork"
+            ).target;
+            c.currentSettings.air_pressure_psi = 75;
+            c.currentSettings.rebound = 8;
+            c.currentSettings.lsc = 6;
+            c.currentSettings.hsc = 4;
+          }
+          if (slot === "rear_shock") {
+            c.currentSettings.sag_pct = recommendedSagPct(
+              cat.category,
+              "shock"
+            ).target;
+            c.currentSettings.air_pressure_psi = 180;
+            c.currentSettings.rebound = 10;
+            c.currentSettings.lsc = 5;
+            c.currentSettings.hsc = 3;
+          }
+          if (slot === "tire_front") c.currentSettings.pressure_psi = 22;
+          if (slot === "tire_rear") c.currentSettings.pressure_psi = 24;
+          components.push(c);
+        }
+        bike = { ...bike, components };
+
+        const setup = createImmutableSetup({
+          id: uuidv4(),
+          bike,
+          label: "OEM Basis-Setup",
+          conditions: "general",
+          description: "Aus Katalog-Vorbefüllung",
+          riderWeightKg: get().riderProfile.riderWeightKg,
+          createdBy: "catalog",
+        });
+        bike = { ...bike, setups: [setup] };
+
+        const intervals = buildDefaultIntervals(bike, () => uuidv4());
+
+        set((s) => {
+          const bikes = ensureSingleActive([...s.bikes, bike], id);
+          return {
+            bikes,
+            activeBikeId: id,
+            maintenanceIntervals: [...s.maintenanceIntervals, ...intervals],
+          };
+        });
+        return id;
+      },
+
+      addBikeBasic: (input) => {
+        const id = uuidv4();
+        const type = categoryToBikeType(input.category);
+        const bike = emptyBikeBase({
+          id,
+          name: input.name,
+          category: input.category,
+          type,
+          year: input.year,
+          frameSize: input.frameSize,
+          travelFrontMm: input.travelFrontMm,
+          travelRearMm: input.travelRearMm,
+          wheelSizeFront: input.wheelSizeFront,
+          wheelSizeRear: input.wheelSizeRear,
+          isEbike: input.category === "emtb" || input.category === "etrekking",
+          totalOdometerKm: 0,
+          totalHours: 0,
+        });
+        set((s) => ({
+          bikes: ensureSingleActive([...s.bikes, bike], id),
+          activeBikeId: id,
         }));
+        return id;
+      },
+
+      addBikeFromImport: ({ name, note }) => {
+        const id = get().addBikeBasic({
+          name: name || "Import-Bike",
+          category: "mtb_am",
+        });
+        if (note) {
+          get().updateBike(id, {
+            // store note in color field fallback? use update with description via name suffix
+          });
+          get().addMaintenanceLog({
+            bikeId: id,
+            date: new Date().toISOString().slice(0, 10),
+            activity: "GPX/FIT-Import: Platzhalter-Bike angelegt",
+            performer: "self",
+            notes: note,
+          });
+        }
         return id;
       },
 
       updateBike: (id, data) =>
         set((s) => ({
           bikes: s.bikes.map((b) =>
-            b.id === id ? { ...b, ...data, updatedAt: new Date().toISOString() } : b
+            b.id === id
+              ? { ...b, ...data, updatedAt: new Date().toISOString() }
+              : b
           ),
         })),
 
-      addComponent: (bikeId, component) => {
-        const id = uuidv4();
+      installComponent: ({
+        bikeId,
+        slot,
+        componentModelId,
+        freeText,
+        manufacturer,
+        model,
+      }) => {
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        if (!bike) return "";
+        const now = new Date().toISOString();
+        // Historie: bestehende aktive Komponente im Slot beenden
+        const closed = bike.components.map((c) =>
+          c.slot === slot && !c.removedAt ? { ...c, removedAt: now } : c
+        );
+        const modelObj = componentModelId
+          ? getComponentModel(componentModelId)
+          : undefined;
+        const comp: BikeComponent = {
+          id: uuidv4(),
+          bikeId,
+          slot,
+          componentModelId,
+          freeText: componentModelId ? undefined : freeText,
+          manufacturer: manufacturer ?? modelObj?.manufacturer,
+          model:
+            model ??
+            (modelObj
+              ? [modelObj.model, modelObj.variant].filter(Boolean).join(" ")
+              : freeText),
+          installedAt: now,
+          odometerKmAtInstall: bike.totalOdometerKm,
+          hoursAtInstall: bike.totalHours,
+          attributes: [],
+          currentSettings: {},
+        };
+        if (modelObj) {
+          for (const adj of modelObj.adjusters) {
+            if (adj.min !== undefined && adj.max !== undefined) {
+              comp.currentSettings[adj.key] = Math.round((adj.min + adj.max) / 2);
+            }
+          }
+        }
+        const components = [...closed, comp];
         set((s) => ({
           bikes: s.bikes.map((b) =>
             b.id === bikeId
-              ? {
-                  ...b,
-                  components: [...b.components, { ...component, id, bikeId }],
-                  updatedAt: new Date().toISOString(),
-                }
+              ? { ...b, components, updatedAt: now }
               : b
           ),
         }));
+        // Intervalle für Slot ergänzen falls nötig
+        const updated = get().bikes.find((b) => b.id === bikeId)!;
+        const existing = get().maintenanceIntervals.filter(
+          (i) => i.bikeId === bikeId && i.slot === slot
+        );
+        if (existing.length === 0) {
+          const neu = buildDefaultIntervals(updated, () => uuidv4()).filter(
+            (i) => i.slot === slot
+          );
+          set((s) => ({
+            maintenanceIntervals: [...s.maintenanceIntervals, ...neu],
+          }));
+        }
+        return comp.id;
       },
 
-      updateComponent: (bikeId, componentId, data) =>
+      removeComponent: (bikeId, componentId) => {
+        const now = new Date().toISOString();
         set((s) => ({
           bikes: s.bikes.map((b) =>
             b.id === bikeId
               ? {
                   ...b,
                   components: b.components.map((c) =>
-                    c.id === componentId ? { ...c, ...data } : c
+                    c.id === componentId ? { ...c, removedAt: now } : c
+                  ),
+                  updatedAt: now,
+                }
+              : b
+          ),
+        }));
+      },
+
+      moveComponent: (componentId, fromBikeId, toBikeId) => {
+        const from = get().bikes.find((b) => b.id === fromBikeId);
+        const to = get().bikes.find((b) => b.id === toBikeId);
+        if (!from || !to) return;
+        const comp = from.components.find((c) => c.id === componentId);
+        if (!comp || comp.removedAt) return;
+        const now = new Date().toISOString();
+        const usageKm = componentUsageKm(from, comp, get().rides);
+        const moved: BikeComponent = {
+          ...comp,
+          id: uuidv4(),
+          bikeId: toBikeId,
+          installedAt: now,
+          removedAt: undefined,
+          odometerKmAtInstall: to.totalOdometerKm,
+          hoursAtInstall: to.totalHours,
+          notes: [
+            comp.notes,
+            `Verschoben von ${from.name} (Laufleistung bis Transfer ≈ ${usageKm.toFixed(0)} km)`,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        };
+        set((s) => ({
+          bikes: s.bikes.map((b) => {
+            if (b.id === fromBikeId) {
+              return {
+                ...b,
+                components: b.components.map((c) =>
+                  c.id === componentId ? { ...c, removedAt: now } : c
+                ),
+                updatedAt: now,
+              };
+            }
+            if (b.id === toBikeId) {
+              const closed = b.components.map((c) =>
+                c.slot === comp.slot && !c.removedAt
+                  ? { ...c, removedAt: now }
+                  : c
+              );
+              return {
+                ...b,
+                components: [...closed, moved],
+                updatedAt: now,
+              };
+            }
+            return b;
+          }),
+        }));
+      },
+
+      updateComponentSettings: (bikeId, componentId, settings) =>
+        set((s) => ({
+          bikes: s.bikes.map((b) =>
+            b.id === bikeId
+              ? {
+                  ...b,
+                  components: b.components.map((c) =>
+                    c.id === componentId
+                      ? {
+                          ...c,
+                          currentSettings: { ...c.currentSettings, ...settings },
+                        }
+                      : c
                   ),
                   updatedAt: new Date().toISOString(),
                 }
@@ -139,47 +583,219 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      addSetup: (bikeId, setup) => {
+      createSetupVersion: ({
+        bikeId,
+        label,
+        conditions,
+        description,
+        valueOverrides,
+      }) => {
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        if (!bike) return "";
+        const values = buildSetupValuesFromBike(bike, valueOverrides);
+        const setup = createImmutableSetup({
+          id: uuidv4(),
+          bike,
+          label,
+          conditions,
+          description,
+          riderWeightKg: get().riderProfile.riderWeightKg,
+          values,
+          createdBy: "user",
+        });
+        // Sync currentSettings from new setup values (mutable live state on components)
+        const settingsByComp = new Map<string, Record<string, number>>();
+        for (const v of values) {
+          const cur = settingsByComp.get(v.bikeComponentId) ?? {};
+          cur[v.adjusterKey] = v.valueNum;
+          settingsByComp.set(v.bikeComponentId, cur);
+        }
+        set((s) => ({
+          bikes: s.bikes.map((b) => {
+            if (b.id !== bikeId) return b;
+            return {
+              ...b,
+              components: b.components.map((c) => {
+                const patch = settingsByComp.get(c.id);
+                return patch
+                  ? { ...c, currentSettings: { ...c.currentSettings, ...patch } }
+                  : c;
+              }),
+              setups: [
+                ...b.setups.map((su) => ({ ...su, isCurrent: false })),
+                setup,
+              ],
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+        return setup.id;
+      },
+
+      setCurrentSetup: (bikeId, setupId) =>
+        set((s) => ({
+          bikes: s.bikes.map((b) => {
+            if (b.id !== bikeId) return b;
+            const setup = b.setups.find((su) => su.id === setupId);
+            if (!setup) return b;
+            // Apply immutable snapshot values to live component settings
+            const byComp = new Map<string, Record<string, number>>();
+            for (const v of setup.values) {
+              const cur = byComp.get(v.bikeComponentId) ?? {};
+              cur[v.adjusterKey] = v.valueNum;
+              byComp.set(v.bikeComponentId, cur);
+            }
+            return {
+              ...b,
+              setups: b.setups.map((su) => ({
+                ...su,
+                isCurrent: su.id === setupId,
+              })),
+              components: b.components.map((c) => {
+                const patch = byComp.get(c.id);
+                return patch
+                  ? { ...c, currentSettings: { ...c.currentSettings, ...patch } }
+                  : c;
+              }),
+            };
+          }),
+        })),
+
+      addMaintenanceLog: (entry) => {
         const id = uuidv4();
         set((s) => ({
-          bikes: s.bikes.map((b) =>
-            b.id === bikeId
+          maintenanceLogs: [{ ...entry, id }, ...s.maintenanceLogs],
+        }));
+      },
+
+      markIntervalDone: (intervalId) => {
+        const bikeId = get().maintenanceIntervals.find(
+          (i) => i.id === intervalId
+        )?.bikeId;
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        if (!bike) return;
+        const now = new Date().toISOString();
+        set((s) => ({
+          maintenanceIntervals: s.maintenanceIntervals.map((i) =>
+            i.id === intervalId
               ? {
-                  ...b,
-                  setups: [
-                    ...b.setups.map((su) => ({ ...su, isActive: false })),
-                    {
-                      ...setup,
-                      id,
-                      bikeId,
-                      createdAt: new Date().toISOString(),
-                    },
-                  ],
-                  updatedAt: new Date().toISOString(),
+                  ...i,
+                  lastDoneAt: now,
+                  lastDoneOdometerKm: bike.totalOdometerKm,
+                  lastDoneHours: bike.totalHours,
                 }
-              : b
+              : i
+          ),
+        }));
+        const interval = get().maintenanceIntervals.find(
+          (i) => i.id === intervalId
+        );
+        if (interval) {
+          get().addMaintenanceLog({
+            bikeId: bike.id,
+            bikeComponentId: interval.bikeComponentId,
+            slot: interval.slot,
+            date: now.slice(0, 10),
+            activity: interval.label,
+            performer: "self",
+            odometerKm: bike.totalOdometerKm,
+            hours: bike.totalHours,
+          });
+        }
+      },
+
+      overrideInterval: (intervalId, patch) =>
+        set((s) => ({
+          maintenanceIntervals: s.maintenanceIntervals.map((i) =>
+            i.id === intervalId
+              ? { ...i, ...patch, overriddenByUser: true }
+              : i
+          ),
+        })),
+
+      startBracketing: ({
+        bikeId,
+        parameter,
+        rangeFrom,
+        rangeTo,
+        step,
+        referenceSegmentLabel,
+      }) => {
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        const setup = bike?.setups.find((s) => s.isCurrent);
+        if (!bike || !setup) return "";
+        // Nur ein Parameter – Validierung
+        if (rangeFrom === rangeTo) return "";
+        const id = uuidv4();
+        const unit = parameter.includes("psi")
+          ? "psi"
+          : parameter.includes("sag")
+            ? "%"
+            : "clicks";
+        const series: BracketingSeries = {
+          id,
+          bikeId,
+          setupId: setup.id,
+          parameter,
+          unit,
+          rangeFrom,
+          rangeTo,
+          step,
+          referenceSegmentLabel,
+          status: "open",
+          runs: [],
+          createdAt: new Date().toISOString(),
+        };
+        set((s) => ({
+          bracketingSeries: [series, ...s.bracketingSeries],
+        }));
+        return id;
+      },
+
+      addBracketingRun: (seriesId, run) => {
+        set((s) => ({
+          bracketingSeries: s.bracketingSeries.map((series) => {
+            if (series.id !== seriesId) return series;
+            const full: BracketingRun = {
+              ...run,
+              id: uuidv4(),
+              createdAt: new Date().toISOString(),
+            };
+            return { ...series, runs: [...series.runs, full] };
+          }),
+        }));
+      },
+
+      evaluateBracketing: (seriesId) => {
+        const series = get().bracketingSeries.find((s) => s.id === seriesId);
+        if (!series) return;
+        const result = evaluateBracketingSeries(series);
+        set((s) => ({
+          bracketingSeries: s.bracketingSeries.map((ser) =>
+            ser.id === seriesId
+              ? {
+                  ...ser,
+                  status: result.ready ? "evaluated" : "ready_to_evaluate",
+                  resultSummary: result.summary,
+                  provenBestValue: result.provenBestValue,
+                  noProvenDifference: result.noProvenDifference,
+                }
+              : ser
           ),
         }));
       },
 
-      setActiveSetup: (bikeId, setupId) =>
+      submitRideFeedback: (feedback) =>
         set((s) => ({
-          bikes: s.bikes.map((b) =>
-            b.id === bikeId
-              ? {
-                  ...b,
-                  setups: b.setups.map((su) => ({
-                    ...su,
-                    isActive: su.id === setupId,
-                  })),
-                }
-              : b
-          ),
+          rideFeedbacks: [
+            { ...feedback, createdAt: new Date().toISOString() },
+            ...s.rideFeedbacks,
+          ],
         })),
 
       startRide: (bikeId, sportType) => {
         const bike = get().bikes.find((b) => b.id === bikeId);
-        const activeSetup = bike?.setups.find((s) => s.isActive);
+        const activeSetup = bike?.setups.find((s) => s.isCurrent);
         set({
           isRiding: true,
           currentRide: {
@@ -243,8 +859,9 @@ export const useAppStore = create<AppState>()(
           sportType: currentRide.sportType!,
           startTime: currentRide.startTime!,
           endTime,
-          distanceM: currentRide.distanceM || Math.round(durationSec * 4.2), // mock ~15km/h
-          elevationGainM: currentRide.elevationGainM || Math.round(durationSec * 0.8),
+          distanceM: currentRide.distanceM || Math.round(durationSec * 4.2),
+          elevationGainM:
+            currentRide.elevationGainM || Math.round(durationSec * 0.8),
           durationSec,
           summaryMetrics: liveMetrics || currentRide.summaryMetrics!,
           motorData: boschLive
@@ -263,32 +880,43 @@ export const useAppStore = create<AppState>()(
           isRiding: false,
           currentRide: null,
           liveMetrics: null,
+          bikes: s.bikes.map((b) =>
+            b.id === ride.bikeId
+              ? {
+                  ...b,
+                  totalOdometerKm:
+                    b.totalOdometerKm + ride.distanceM / 1000,
+                  totalHours: b.totalHours + ride.durationSec / 3600,
+                  updatedAt: endTime,
+                }
+              : b
+          ),
         }));
 
-        // Generate recommendation
-        const flow = ride.summaryMetrics.flowScore;
-        const impacts = ride.summaryMetrics.impactCount;
-        let title = "Setup-Empfehlung";
-        let content = "Dein aktuelles Setup passt gut.";
-        let reasoning = "Basierend auf Flow-Score und Impact-Count.";
-
-        if (impacts > 12 && flow < 65) {
-          content = "Rebound +2 Clicks empfohlen. Impacts wirken zu hart.";
-          reasoning = `Impact-Count ${impacts} bei Flow-Score ${flow}. Historie zeigt bessere Werte bei höherem Rebound.`;
-        } else if (flow > 85) {
-          content = "Super Flow! Aktuelles Setup beibehalten.";
-          reasoning = `Flow-Score ${flow} – einer deiner besten Werte.`;
+        // Wartungshinweise als Recommendations
+        const bike = get().bikes.find((b) => b.id === ride.bikeId);
+        if (bike) {
+          for (const interval of get().maintenanceIntervals.filter(
+            (i) => i.bikeId === bike.id
+          )) {
+            const due = evaluateIntervalDue(
+              interval,
+              bike.totalOdometerKm,
+              bike.totalHours
+            );
+            if (due.status === "overdue" || due.status === "due_soon") {
+              get().addRecommendation({
+                type: "maintenance",
+                title: due.status === "overdue" ? "Wartung überfällig" : "Wartung bald fällig",
+                content: interval.label,
+                reasoning: `Fortschritt ${due.progressPct}% · verbleibend ${due.remainingLabel}. Quelle: ${interval.sourceLabel}`,
+                score: due.status === "overdue" ? 0.95 : 0.7,
+                relatedBikeId: bike.id,
+                relatedRideId: ride.id,
+              });
+            }
+          }
         }
-
-        get().addRecommendation({
-          type: "setup",
-          title,
-          content,
-          reasoning,
-          score: 0.85,
-          relatedBikeId: ride.bikeId,
-          relatedRideId: ride.id,
-        });
 
         return ride;
       },
@@ -315,120 +943,120 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
+      // Legacy wrappers
+      addBike: (bikeData) => {
+        return get().addBikeBasic({
+          name: bikeData.name,
+          category: bikeTypeToCategory(bikeData.type),
+          year: bikeData.year,
+          frameSize: bikeData.frameSize,
+          travelFrontMm: undefined,
+          wheelSizeFront: "29",
+          wheelSizeRear: "29",
+        });
+      },
+
+      addComponent: (bikeId, component) => {
+        const slotMap: Record<string, ComponentSlot> = {
+          fork: "fork",
+          shock: "rear_shock",
+          tire_front: "tire_front",
+          tire_rear: "tire_rear",
+          motor: "motor",
+          battery: "battery",
+          display: "display",
+          saddle: "saddle",
+        };
+        const slot = slotMap[component.category] ?? "frame";
+        get().installComponent({
+          bikeId,
+          slot,
+          freeText: `${component.manufacturer} ${component.model}`,
+          manufacturer: component.manufacturer,
+          model: component.model,
+        });
+      },
+
+      addSetup: (bikeId, setup) => {
+        get().createSetupVersion({
+          bikeId,
+          label: setup.name,
+          conditions: "general",
+          description: setup.description,
+          valueOverrides: Object.fromEntries(
+            Object.entries(setup.settingsSnapshot).map(([k, v]) => [
+              k.includes(".") ? k : `fork.${k}`,
+              Number(v),
+            ])
+          ),
+        });
+      },
+
+      setActiveSetup: (bikeId, setupId) => get().setCurrentSetup(bikeId, setupId),
+
       seedDemoData: () => {
         const existing = get().bikes;
         if (existing.length > 0) return;
-
-        const bikeId = get().addBike({
-          name: "Transition Spire",
-          type: "enduro",
-          year: 2024,
+        // Force re-seed if old schema without category
+        get().addBikeFromCatalog({
+          catalogBikeId: "cat-transition-spire-2024",
           frameSize: "L",
-          weightKg: 15.8,
-          color: "Sage Green",
-          isDefault: true,
         });
-
-        get().addComponent(bikeId, {
-          category: "fork",
-          manufacturer: "Fox",
-          model: "36 Factory Grip2 170mm",
-          specs: { travelMm: 170, stanchion: 36, offset: 44 },
-          currentSettings: { sagPct: 28, rebound: 8, compressionHsc: 4, compressionLsc: 6 },
-        });
-
-        get().addComponent(bikeId, {
-          category: "shock",
-          manufacturer: "Fox",
-          model: "Float X2 Factory 205x65",
-          specs: { travelMm: 65, eyeToEye: 205 },
-          currentSettings: { sagPct: 30, rebound: 10, compressionHsc: 3, compressionLsc: 5 },
-        });
-
-        get().addComponent(bikeId, {
-          category: "tire_front",
-          manufacturer: "Maxxis",
-          model: "Assegai 29x2.5 WT",
-          specs: { width: 2.5, compound: "MaxxGrip", casing: "DD" },
-          currentSettings: { pressurePsi: 22 },
-        });
-
-        get().addComponent(bikeId, {
-          category: "tire_rear",
-          manufacturer: "Maxxis",
-          model: "Minion DHR II 29x2.4 WT",
-          specs: { width: 2.4, compound: "MaxxTerra", casing: "DD" },
-          currentSettings: { pressurePsi: 24 },
-        });
-
-        get().addComponent(bikeId, {
-          category: "motor",
-          manufacturer: "Bosch",
-          model: "Performance Line CX Gen5",
-          specs: { maxTorqueNm: 85, system: "Smart System" },
-          currentSettings: { assistMode: "eMTB" },
-        });
-
-        get().addComponent(bikeId, {
-          category: "battery",
-          manufacturer: "Bosch",
-          model: "PowerTube 800",
-          specs: { capacityWh: 800 },
-          currentSettings: {},
-        });
-
-        get().addSetup(bikeId, {
-          name: "Enduro Dry Trails",
-          description: "Für trockene, rootige Trails",
-          settingsSnapshot: {
-            forkSag: 28,
-            forkRebound: 8,
-            shockSag: 30,
-            shockRebound: 10,
-            frontPsi: 22,
-            rearPsi: 24,
-          },
-          isActive: true,
-        });
-
-        get().addSetup(bikeId, {
-          name: "Wet Roots",
-          description: "Nasse, rutschige Bedingungen",
-          settingsSnapshot: {
-            forkSag: 30,
-            forkRebound: 10,
-            shockSag: 32,
-            shockRebound: 12,
-            frontPsi: 20,
-            rearPsi: 22,
-          },
-          isActive: false,
-        });
-
-        // Second bike
-        const gravelId = get().addBike({
-          name: "Specialized Diverge",
-          type: "gravel",
-          year: 2023,
+        get().addBikeFromCatalog({
+          catalogBikeId: "cat-specialized-diverge-2023",
           frameSize: "54",
-          weightKg: 9.2,
-          color: "Carbon",
-          isDefault: false,
         });
-
-        get().addComponent(gravelId, {
-          category: "tire_front",
-          manufacturer: "Pathfinder",
-          model: "Pro 700x42",
-          specs: { width: 42 },
-          currentSettings: { pressurePsi: 38 },
+        get().createSetupVersion({
+          bikeId: get().bikes[0].id,
+          label: "Wet Roots",
+          conditions: "wet",
+          description: "Nasse, rutschige Bedingungen",
+          valueOverrides: {
+            "fork.sag_pct": 30,
+            "fork.rebound": 10,
+            "rear_shock.sag_pct": 32,
+            "rear_shock.rebound": 12,
+            "tire_front.pressure_psi": 20,
+            "tire_rear.pressure_psi": 22,
+          },
         });
+        // restore dry as current
+        const dry = get().bikes[0]?.setups.find((s) =>
+          s.label.includes("OEM")
+        );
+        if (dry) get().setCurrentSetup(get().bikes[0].id, dry.id);
 
-        set({ boschConnected: true, boschLive: { speed: 0, soc: 87, riderPower: 0, cadence: 0, odometer: 1247 } });
+        set({
+          boschConnected: true,
+          boschLive: {
+            speed: 0,
+            soc: 87,
+            riderPower: 0,
+            cadence: 0,
+            odometer: 1247,
+          },
+        });
       },
     }),
     {
       name: "aetherride-storage",
+      version: STORAGE_VERSION,
+      migrate: () => {
+        // Alte Demo-Daten verwerfen → frischer Spec-Garage-Seed
+        return {
+          bikes: [],
+          rides: [],
+          riderProfile: defaultProfile,
+          recommendations: [],
+          activeBikeId: null,
+          boschConnected: false,
+          maintenanceLogs: [],
+          maintenanceIntervals: [],
+          bracketingSeries: [],
+          rideFeedbacks: [],
+          storageVersion: STORAGE_VERSION,
+        } as Partial<AppState>;
+      },
       partialize: (s) => ({
         bikes: s.bikes,
         rides: s.rides,
@@ -436,7 +1064,29 @@ export const useAppStore = create<AppState>()(
         recommendations: s.recommendations,
         activeBikeId: s.activeBikeId,
         boschConnected: s.boschConnected,
+        maintenanceLogs: s.maintenanceLogs,
+        maintenanceIntervals: s.maintenanceIntervals,
+        bracketingSeries: s.bracketingSeries,
+        rideFeedbacks: s.rideFeedbacks,
+        storageVersion: s.storageVersion,
       }),
     }
   )
 );
+
+export function getActiveComponents(bike: Bike): BikeComponent[] {
+  return bike.components.filter((c) => !c.removedAt);
+}
+
+export function getMissingSlots(bike: Bike): ComponentSlot[] {
+  const required = requiredSlotsForCategory(bike.category);
+  const filled = new Set(getActiveComponents(bike).map((c) => c.slot));
+  return required.filter((s) => !filled.has(s));
+}
+
+export function bikeCompletenessPct(bike: Bike): number {
+  const required = requiredSlotsForCategory(bike.category);
+  if (required.length === 0) return 100;
+  const filled = required.length - getMissingSlots(bike).length;
+  return Math.round((filled / required.length) * 100);
+}

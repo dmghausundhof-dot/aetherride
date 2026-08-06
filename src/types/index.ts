@@ -1,14 +1,32 @@
-// AetherRide Core Data Models
+// AetherRide Core Data Models – re-export Garage-Domain + Ride/Shop
 
-export type BikeType =
-  | "all_mountain"
-  | "enduro"
-  | "gravel"
-  | "road"
-  | "e_mtb"
-  | "e_gravel"
-  | "hiking";
+export type {
+  Bike,
+  BikeCategory,
+  BikeComponent,
+  BikeType,
+  BracketingParameter,
+  BracketingRun,
+  BracketingSeries,
+  CatalogBikeVariant,
+  CatalogManufacturer,
+  CompatibilityResult,
+  CompatibilityVerdict,
+  ComponentModel,
+  ComponentSlot,
+  MaintenanceInterval,
+  MaintenanceLogEntry,
+  RideFeedback,
+  Setup,
+  SetupCondition,
+  SetupValue,
+  TypedAttribute,
+  WheelSize,
+} from "./garage";
 
+export { SLOT_GROUPS } from "./garage";
+
+/** Legacy category alias used by older demo components */
 export type ComponentCategory =
   | "fork"
   | "shock"
@@ -23,45 +41,6 @@ export type ComponentCategory =
   | "battery"
   | "display"
   | "other";
-
-export interface Component {
-  id: string;
-  bikeId: string;
-  category: ComponentCategory;
-  manufacturer: string;
-  model: string;
-  specs: Record<string, string | number | boolean>;
-  serialNumber?: string;
-  purchaseDate?: string;
-  notes?: string;
-  currentSettings: Record<string, string | number>;
-}
-
-export interface Setup {
-  id: string;
-  bikeId: string;
-  name: string;
-  description?: string;
-  settingsSnapshot: Record<string, string | number>;
-  createdAt: string;
-  linkedRideId?: string;
-  isActive: boolean;
-}
-
-export interface Bike {
-  id: string;
-  name: string;
-  type: BikeType;
-  year?: number;
-  frameSize?: string;
-  weightKg?: number;
-  color?: string;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-  components: Component[];
-  setups: Setup[];
-}
 
 export interface SensorMetrics {
   gForcePeak: number;
@@ -78,7 +57,7 @@ export interface Ride {
   id: string;
   bikeId: string;
   setupId?: string;
-  sportType: BikeType;
+  sportType: import("./garage").BikeType;
   startTime: string;
   endTime?: string;
   distanceM: number;
@@ -109,6 +88,7 @@ export interface RiderProfile {
     avgRideDurationMin: number;
     weeklyDistanceKm: number;
   };
+  riderWeightKg?: number;
 }
 
 export interface Product {
@@ -120,11 +100,12 @@ export interface Product {
   imageUrl?: string;
   compatibilityTags: string[];
   description: string;
+  componentModelId?: string;
 }
 
 export interface Recommendation {
   id: string;
-  type: "setup" | "route" | "product" | "technique";
+  type: "setup" | "route" | "product" | "technique" | "maintenance";
   title: string;
   content: string;
   reasoning: string;

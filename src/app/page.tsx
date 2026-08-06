@@ -52,11 +52,11 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {activeBike.setups.find((s) => s.isActive) && (
+          {activeBike.setups.find((s) => s.isCurrent) && (
             <div className="mt-3 rounded-xl bg-surface-elevated px-3 py-2 text-sm">
               <span className="text-text-secondary">Aktives Setup: </span>
               <span className="font-medium">
-                {activeBike.setups.find((s) => s.isActive)?.name}
+                {activeBike.setups.find((s) => s.isCurrent)?.label}
               </span>
             </div>
           )}
