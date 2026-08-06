@@ -18,21 +18,96 @@ export type SyncPayload = {
   updatedAt?: string;
 };
 
-export async function pullSync(): Promise<SyncPayload | null> {
+export type PullResult = {
+  payload: SyncPayload | null;
+  updatedAt: string | null;
+};
+
+export async function pullSync(): Promise<PullResult> {
   const res = await fetch("/api/sync", { method: "GET" });
-  if (res.status === 401) return null;
+  if (res.status === 401) return { payload: null, updatedAt: null };
   if (!res.ok) throw new Error(`Sync pull failed: ${res.status}`);
   const data = await res.json();
-  return (data.payload as SyncPayload) ?? null;
+  return {
+    payload: (data.payload as SyncPayload) ?? null,
+    updatedAt: data.updatedAt ?? data.payload?.updatedAt ?? null,
+  };
 }
 
-export async function pushSync(payload: SyncPayload): Promise<void> {
+export async function pushSync(
+  payload: SyncPayload,
+  clientUpdatedAt?: string | null
+): Promise<{ updatedAt: string }> {
   const res = await fetch("/api/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ payload }),
+    body: JSON.stringify({
+      payload,
+      clientUpdatedAt: clientUpdatedAt ?? payload.updatedAt ?? null,
+    }),
   });
-  if (!res.ok) throw new Error(`Sync push failed: ${res.status}`);
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 409) {
+    const err = new Error("sync_conflict") as Error & {
+      remote?: SyncPayload;
+      remoteUpdatedAt?: string;
+    };
+    err.remote = data.payload;
+    err.remoteUpdatedAt = data.remoteUpdatedAt;
+    throw err;
+  }
+  if (!res.ok) throw new Error(data.error || `Sync push failed: ${res.status}`);
+  return { updatedAt: data.updatedAt || new Date().toISOString() };
+}
+
+/** Pull then push if local is newer or remote empty — LWW. */
+export async function syncBidirectional(local: SyncPayload): Promise<{
+  merged: SyncPayload;
+  direction: "pulled" | "pushed" | "noop";
+}> {
+  const remote = await pullSync();
+  const localAt = local.updatedAt
+    ? new Date(local.updatedAt).getTime()
+    : 0;
+  const remoteAt = remote.updatedAt
+    ? new Date(remote.updatedAt).getTime()
+    : 0;
+
+  if (!remote.payload) {
+    const { updatedAt } = await pushSync({
+      ...local,
+      updatedAt: new Date().toISOString(),
+    });
+    return {
+      merged: { ...local, updatedAt },
+      direction: "pushed",
+    };
+  }
+
+  if (remoteAt > localAt) {
+    return {
+      merged: {
+        ...remote.payload,
+        updatedAt: remote.updatedAt ?? remote.payload.updatedAt,
+      },
+      direction: "pulled",
+    };
+  }
+
+  if (localAt > remoteAt) {
+    const { updatedAt } = await pushSync(local, remote.updatedAt);
+    return {
+      merged: { ...local, updatedAt },
+      direction: "pushed",
+    };
+  }
+
+  return {
+    merged: local.updatedAt
+      ? local
+      : { ...local, updatedAt: remote.updatedAt ?? undefined },
+    direction: "noop",
+  };
 }
 
 export async function fetchProfileTier(): Promise<{

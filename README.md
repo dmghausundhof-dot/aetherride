@@ -117,5 +117,20 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 3. Stripe Webhook auf `/api/webhooks/stripe`
 4. Supabase Auth Redirect: `https://<domain>/auth/callback`
 
+## Web-Produktion (Demo-Gaps Schnitt 1)
+
+- Legal: Env `NEXT_PUBLIC_LEGAL_*` + `/legal/impressum` · `/legal/widerruf` (ohne Impressum: Marketplace-Checkout gesperrt)
+- Export: GPX + FIT Download unter Datenschutz
+- Katalog: `npm run catalog:import` ← `data/catalog/extra-seed.json` → Yeti/Orbea
+- Sync: LWW mit `updated_at` + Pull nach Login
+- Discover: Heatmap aus eigenen Rides, Elevation `/api/elevation`, Mapillary `/api/trail`
+
+### Launch-Checkliste (Prozess)
+
+- [ ] DSFA abgeschlossen  
+- [ ] A11y-Audit ohne kritische Befunde  
+- [ ] Offline-Regression Flugmodus  
+- [ ] Store-Richtlinien-Vorprüfung  
+
 ---
 AetherRide · Spec 1.0 · August 2026

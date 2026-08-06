@@ -1,4 +1,5 @@
 import type { ComponentModel, TypedAttribute } from "@/types/garage";
+import imported from "./imported.json";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -28,7 +29,7 @@ function attr(
  * Quellen u. a.: BikeRadar Achsstandards, BIKE Magazin BB-Standards,
  * S.H.I.S. Headset-System, RockShox/Fox Service Docs, ETRTO-Praxis.
  */
-export const COMPONENT_CATALOG: ComponentModel[] = [
+const BASE_COMPONENT_CATALOG: ComponentModel[] = [
   // —— Gabeln ——
   {
     id: "cm-fox-36-factory-170",
@@ -1151,6 +1152,54 @@ export const COMPONENT_CATALOG: ComponentModel[] = [
     verifiedBy: "AetherRide Editorial",
     safetyCritical: false,
   },
+];
+
+function mapImportedComponents(): ComponentModel[] {
+  const list = (imported.components || []) as Array<{
+    id: string;
+    slot: ComponentModel["slot"];
+    manufacturer: string;
+    model: string;
+    variant?: string;
+    modelYear?: number;
+    attributes?: Array<{
+      key: string;
+      valueEnum?: string;
+      valueNum?: number;
+      valueText?: string;
+      unit?: string;
+      source?: TypedAttribute["source"];
+    }>;
+  }>;
+  return list.map((c) => ({
+    id: c.id,
+    slot: c.slot,
+    manufacturer: c.manufacturer,
+    model: c.model,
+    variant: c.variant,
+    modelYear: c.modelYear,
+    attributes: (c.attributes || []).map((a) =>
+      attr(a.key, {
+        text: a.valueText ?? a.valueEnum,
+        num: a.valueNum,
+        enum: a.valueEnum,
+        unit: a.unit,
+        source: a.source,
+      })
+    ),
+    adjusters: [],
+    torqueSpecs: [],
+    source: "manufacturer_doc" as const,
+    sourceUrl: "catalog-import",
+    verifiedAt: VERIFIED,
+    verifiedBy: "catalog-import",
+    safetyCritical: false,
+  }));
+}
+
+export const COMPONENT_CATALOG: ComponentModel[] = [
+  ...BASE_COMPONENT_CATALOG,
+  ...mapImportedComponents(),
 ];
 
 export function getComponentModel(id: string): ComponentModel | undefined {

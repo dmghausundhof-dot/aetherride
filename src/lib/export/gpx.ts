@@ -12,16 +12,18 @@ export function rideToGpx(ride: Ride, bikeName?: string): string {
       : synthesizeTrack(ride);
 
   const trkpts = pts
-    .map(
-      (p) =>
-        `      <trkpt lat="${p.lat}" lon="${p.lng}">${
-          p.elev != null ? `\n        <ele>${p.elev}</ele>` : ""
-        }\n        <time>${new Date(
-          typeof p.time === "number"
-            ? ride.startTime
-            : ride.startTime
-        ).toISOString()}</time>\n      </trkpt>`
-    )
+    .map((p, i) => {
+      const t =
+        typeof p.time === "number"
+          ? new Date(new Date(ride.startTime).getTime() + p.time * 1000)
+          : new Date(
+              new Date(ride.startTime).getTime() +
+                (i * ride.durationSec * 1000) / Math.max(1, pts.length - 1)
+            );
+      return `      <trkpt lat="${p.lat}" lon="${p.lng}">${
+        p.elev != null ? `\n        <ele>${p.elev}</ele>` : ""
+      }\n        <time>${t.toISOString()}</time>\n      </trkpt>`;
+    })
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>

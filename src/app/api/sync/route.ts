@@ -45,14 +45,49 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const payload = body?.payload ?? body;
+    const clientUpdatedAt =
+      typeof body?.clientUpdatedAt === "string"
+        ? body.clientUpdatedAt
+        : typeof payload?.updatedAt === "string"
+          ? payload.updatedAt
+          : null;
+
     if (!payload || typeof payload !== "object") {
       return NextResponse.json({ error: "invalid payload" }, { status: 400 });
     }
 
+    const { data: existing } = await supabase
+      .from("sync_snapshots")
+      .select("payload, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing?.updated_at && clientUpdatedAt) {
+      const remoteMs = new Date(existing.updated_at).getTime();
+      const clientMs = new Date(clientUpdatedAt).getTime();
+      // Last-write-wins: reject stale push (remote newer than client's base)
+      if (
+        Number.isFinite(remoteMs) &&
+        Number.isFinite(clientMs) &&
+        remoteMs > clientMs + 500
+      ) {
+        return NextResponse.json(
+          {
+            error: "conflict",
+            code: "stale_client",
+            remoteUpdatedAt: existing.updated_at,
+            payload: existing.payload,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    const now = new Date().toISOString();
     const row = {
       user_id: user.id,
-      payload: { ...payload, updatedAt: new Date().toISOString() },
-      updated_at: new Date().toISOString(),
+      payload: { ...payload, updatedAt: now },
+      updated_at: now,
     };
 
     const { error } = await supabase.from("sync_snapshots").upsert(row, {
@@ -63,7 +98,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, updatedAt: now });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "sync failed" },

@@ -1,10 +1,12 @@
 import type { CatalogManufacturer } from "@/types/garage";
+import imported from "./imported.json";
 
 /**
  * OEM-Bike-Katalog für F-GAR-001 Weg 1 (Hersteller → Modell → Jahr → Variante).
  * Vorbefüllung der Komponenten aus OEM-Ausstattung.
+ * Zusätzliche Hersteller: `npm run catalog:import` → imported.json
  */
-export const BIKE_CATALOG: CatalogManufacturer[] = [
+const BASE_CATALOG: CatalogManufacturer[] = [
   {
     id: "mfr-transition",
     name: "Transition",
@@ -138,6 +140,11 @@ export const BIKE_CATALOG: CatalogManufacturer[] = [
       },
     ],
   },
+];
+
+export const BIKE_CATALOG: CatalogManufacturer[] = [
+  ...BASE_CATALOG,
+  ...((imported.manufacturers || []) as CatalogManufacturer[]),
 ];
 
 export function findCatalogBike(id: string) {

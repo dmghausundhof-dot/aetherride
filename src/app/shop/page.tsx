@@ -7,7 +7,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import {
-  MARKETPLACE_LEGAL,
+  getMarketplaceLegal,
   buildMarketplaceDraft,
 } from "@/lib/shop/marketplace";
 import {
@@ -31,6 +31,7 @@ export default function ShopPage() {
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const [hideIncompatible, setHideIncompatible] = useState(true);
   const [legalOk, setLegalOk] = useState(false);
+  const legal = getMarketplaceLegal();
 
   const productConsent =
     consents.find((c) => c.purpose === "product_recommendations")?.granted ??
@@ -248,33 +249,59 @@ export default function ShopPage() {
       {commerceMode === "marketplace" && (
         <section className="rounded-2xl border border-border bg-surface p-4 text-xs text-text-secondary">
           <h3 className="mb-2 text-sm font-semibold text-foreground">
-            Phase-3-Pflichten (Demo)
+            Marketplace — Pflichtangaben
           </h3>
-          <p>{MARKETPLACE_LEGAL.imprint}</p>
-          <p className="mt-1">{MARKETPLACE_LEGAL.withdrawal}</p>
-          <p className="mt-1">
-            {MARKETPLACE_LEGAL.shipping} · Warenkorb{" "}
-            {draft.totalEur.toFixed(2)} € inkl. Versand{" "}
-            {draft.shippingEur.toFixed(2)} €
-          </p>
-          <p className="mt-1">{MARKETPLACE_LEGAL.warranty}</p>
-          <p className="mt-1">{MARKETPLACE_LEGAL.gpsr}</p>
-          <p className="mt-1">{MARKETPLACE_LEGAL.batteryNote}</p>
-          <p className="mt-1">{draft.stripeNote}</p>
+          {!legal.configured ? (
+            <p className="rounded-lg border border-warning/40 bg-warning/10 p-2 text-warning">
+              Rechtstexte nicht konfiguriert. Bitte{" "}
+              <code className="text-[10px]">NEXT_PUBLIC_LEGAL_IMPRINT</code>{" "}
+              setzen — Checkout gesperrt.
+            </p>
+          ) : (
+            <>
+              <p>{legal.imprint}</p>
+              <p className="mt-1">
+                {legal.withdrawal}{" "}
+                <Link href="/legal/widerruf" className="text-accent">
+                  Details
+                </Link>
+              </p>
+              <p className="mt-1">
+                {legal.shipping} · Warenkorb {draft.totalEur.toFixed(2)} € inkl.
+                Versand {draft.shippingEur.toFixed(2)} €
+              </p>
+              <p className="mt-1">{legal.warranty}</p>
+              <p className="mt-1">{legal.gpsr}</p>
+              <p className="mt-1">{legal.batteryNote}</p>
+              <p className="mt-1">{legal.dispute}</p>
+              <p className="mt-1">
+                <Link href="/legal/impressum" className="text-accent">
+                  Impressum
+                </Link>
+                {" · "}
+                {draft.stripeNote}
+              </p>
+            </>
+          )}
           <label className="mt-3 flex items-start gap-2 text-sm text-foreground">
             <input
               type="checkbox"
               checked={legalOk}
               onChange={(e) => setLegalOk(e.target.checked)}
+              disabled={!legal.configured}
               className="mt-1"
             />
-            Pflichtangaben gelesen (Widerruf, Versand, GPSR)
+            Pflichtangaben gelesen (
+            <Link href="/legal/widerruf" className="text-accent">
+              Widerruf
+            </Link>
+            , Versand, GPSR)
           </label>
           <button
             type="button"
-            disabled={!legalOk}
+            disabled={!legalOk || !legal.configured}
             onClick={async () => {
-              if (!legalOk) return;
+              if (!legalOk || !legal.configured) return;
               const res = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -292,7 +319,7 @@ export default function ShopPage() {
               alert(data.error || "Checkout fehlgeschlagen (Login + Stripe Env?)");
             }}
             className={`mt-3 block w-full rounded-xl py-2.5 text-center text-sm font-semibold text-white ${
-              legalOk
+              legalOk && legal.configured
                 ? "bg-accent"
                 : "pointer-events-none bg-surface-elevated opacity-40"
             }`}
