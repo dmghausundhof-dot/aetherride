@@ -5,7 +5,8 @@ import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
 import { Check, X, TrendingUp, Wrench, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import type { RideFeedback } from "@/types";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -15,6 +16,8 @@ function PostRideContent() {
   const recommendations = useAppStore((s) => s.recommendations);
   const acceptRecommendation = useAppStore((s) => s.acceptRecommendation);
   const dismissRecommendation = useAppStore((s) => s.dismissRecommendation);
+  const submitRideFeedback = useAppStore((s) => s.submitRideFeedback);
+  const rideFeedbacks = useAppStore((s) => s.rideFeedbacks);
   const bikes = useAppStore((s) => s.bikes);
 
   const ride = rides.find((r) => r.id === rideId) || rides[0];
@@ -22,6 +25,18 @@ function PostRideContent() {
   const rec = recommendations.find(
     (r) => r.relatedRideId === ride?.id && r.status === "shown"
   );
+  const existingFeedback = ride
+    ? rideFeedbacks.find((f) => f.rideId === ride.id)
+    : undefined;
+
+  const [overall, setOverall] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [frontFeel, setFrontFeel] =
+    useState<RideFeedback["frontFeel"]>(undefined);
+  const [brakeDive, setBrakeDive] =
+    useState<RideFeedback["brakeDive"]>(undefined);
+  const [smallBump, setSmallBump] =
+    useState<RideFeedback["smallBump"]>(undefined);
+  const [feedbackDone, setFeedbackDone] = useState(!!existingFeedback);
 
   if (!ride) {
     return (
@@ -137,6 +152,132 @@ function PostRideContent() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* F-SET-004 Subjektives Feedback ≤3 Taps */}
+      {!feedbackDone && (
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-1 font-semibold">Wie war&apos;s?</h3>
+          <p className="mb-3 text-xs text-text-secondary">
+            Max. 3 Taps, überspringbar — kategoriale Antworten für die
+            Setup-Auswertung (F-SET-004).
+          </p>
+          <div className="mb-3 flex justify-between gap-1">
+            {([1, 2, 3, 4, 5] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setOverall(n)}
+                className={`flex-1 rounded-xl py-2 text-sm font-semibold ${
+                  overall === n ? "bg-accent text-white" : "bg-surface-elevated"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <div className="mb-2 text-xs text-text-secondary">Front</div>
+          <div className="mb-3 flex gap-2">
+            {(
+              [
+                ["too_soft", "zu weich"],
+                ["ok", "passt"],
+                ["too_firm", "zu hart"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setFrontFeel(id)}
+                className={`flex-1 rounded-lg py-2 text-xs ${
+                  frontFeel === id ? "bg-primary text-white" : "bg-surface-elevated"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mb-2 text-xs text-text-secondary">Anbremsen</div>
+          <div className="mb-3 flex gap-2">
+            {(
+              [
+                ["dives", "taucht ab"],
+                ["neutral", "neutral"],
+                ["harsh", "hart"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setBrakeDive(id)}
+                className={`flex-1 rounded-lg py-2 text-xs ${
+                  brakeDive === id ? "bg-primary text-white" : "bg-surface-elevated"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mb-2 text-xs text-text-secondary">Kleine Schläge</div>
+          <div className="mb-3 flex gap-2">
+            {(
+              [
+                ["harsh", "rau"],
+                ["ok", "passt"],
+                ["vague", "vage"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSmallBump(id)}
+                className={`flex-1 rounded-lg py-2 text-xs ${
+                  smallBump === id ? "bg-primary text-white" : "bg-surface-elevated"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                submitRideFeedback({
+                  rideId: ride.id,
+                  overallFeel: overall,
+                  frontFeel,
+                  brakeDive,
+                  smallBump,
+                  skipped: false,
+                });
+                setFeedbackDone(true);
+              }}
+              className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+            >
+              Speichern
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                submitRideFeedback({
+                  rideId: ride.id,
+                  overallFeel: overall,
+                  skipped: true,
+                });
+                setFeedbackDone(true);
+              }}
+              className="flex-1 rounded-xl border border-border py-2.5 text-sm"
+            >
+              Überspringen
+            </button>
+          </div>
+        </section>
+      )}
+      {feedbackDone && (
+        <p className="text-center text-xs text-text-secondary">
+          Feedback erfasst{existingFeedback?.skipped || false ? " (übersprungen)" : ""}.
+        </p>
       )}
 
       {/* Recommendation */}

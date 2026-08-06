@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { bikeCategoryLabel, slotLabel } from "@/lib/catalog/slots";
+import type { BikeCategory, ComponentSlot } from "@/types/garage";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -27,25 +29,21 @@ export function bikeTypeLabel(type: string): string {
     e_mtb: "E-MTB",
     e_gravel: "E-Gravel",
     hiking: "Wandern",
+    mtb_trail: "MTB Trail",
+    mtb_am: "All-Mountain",
+    mtb_enduro: "Enduro",
+    dh: "Downhill",
+    urban: "Urban",
+    emtb: "E-MTB",
+    etrekking: "E-Trekking",
   };
-  return map[type] || type;
+  return map[type] || bikeCategoryLabel(type as BikeCategory) || type;
 }
 
 export function categoryLabel(cat: string): string {
-  const map: Record<string, string> = {
-    fork: "Gabel",
-    shock: "Dämpfer",
-    tire_front: "Reifen vorne",
-    tire_rear: "Reifen hinten",
-    wheelset: "Laufräder",
-    drivetrain: "Antrieb",
-    brakes: "Bremsen",
-    cockpit: "Cockpit",
-    saddle: "Sattel",
-    motor: "Motor",
-    battery: "Akku",
-    display: "Display",
-    other: "Sonstiges",
-  };
-  return map[cat] || cat;
+  try {
+    return slotLabel(cat as ComponentSlot);
+  } catch {
+    return cat;
+  }
 }

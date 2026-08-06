@@ -30,8 +30,15 @@ Version 1.0 · Spec-konform · Offline-First · Outdoor Design System
 - Bestellbestätigung + API-Anbindung
 - Kompatibilitäts-Badges aus der Garage
 
+### 5. Garage & Setup P0 (Spec F-GAR / F-SET)
+- Katalog-/Basis-/Import-Anlage mit OEM-Vorbefüllung
+- Pflicht-Slots, Historie (`installed_at`/`removed_at`), Verschieben inkl. Laufleistung
+- Regelbasierte Kompatibilitäts-Engine (4 Urteile, Begründungskette, Drehmomente aus Docs)
+- Wartungslog + Intervalle (RockShox/Fox/Industriepraxis)
+- Immutable Setup-Versionen + Bracketing-Auswertung (1,5× gepoolte SD)
+- Post-Ride-Feedback ≤3 Taps (F-SET-004)
+
 ### Weitere Kernfeatures
-- Multi-Bike-Garage (Komponenten, Setups, Historie)
 - Live-Ride mit Sensor + Bosch + Karte
 - Post-Ride-Analyse + KI-Setup-Empfehlungen
 - Discover mit Match-Score
