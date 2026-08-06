@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bike as BikeIcon,
   Plus,
@@ -14,6 +14,10 @@ import { AddBikeWizard } from "@/components/garage/AddBikeWizard";
 import { BikeSilhouette } from "@/components/garage/BikeSilhouette";
 import { BracketingPanel } from "@/components/garage/BracketingPanel";
 import { InstallComponentSheet } from "@/components/garage/InstallComponentSheet";
+import {
+  SetupAdjusterEditor,
+  seedAdjusterValuesFromBike,
+} from "@/components/garage/SetupAdjusterEditor";
 import { VerdictPill } from "@/components/garage/VerdictPill";
 import { SLOT_GROUPS } from "@/types";
 import { bikeCategoryLabel, slotLabel } from "@/lib/catalog/slots";
@@ -65,9 +69,14 @@ export default function GaragePage() {
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
     useState<SetupCondition>("general");
+  const [setupValues, setSetupValues] = useState<Record<string, number>>({});
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
+
+  useEffect(() => {
+    if (selected) setSetupValues(seedAdjusterValuesFromBike(selected));
+  }, [selected?.id, selected?.updatedAt]);
 
   const compat = useMemo(
     () => (selected ? checkBikeCompatibility(selected) : []),
@@ -105,9 +114,11 @@ export default function GaragePage() {
       bikeId: selected.id,
       label: setupLabel.trim(),
       conditions: setupCondition,
-      description: "Neue immutable Version",
+      description: "Neue immutable Version · Adjuster editiert",
+      valueOverrides: setupValues,
     });
     setSetupLabel("");
+    setSetupValues(seedAdjusterValuesFromBike(selected));
   };
 
   return (
@@ -537,8 +548,9 @@ export default function GaragePage() {
                   Neues Setup (immutable)
                 </h3>
                 <p className="mb-2 text-xs text-text-secondary">
-                  Jede Änderung erzeugt eine neue Version mit Parent-Referenz
-                  (F-SET-001).
+                  Adjuster vorausgefüllt vom aktuellen Bike. Speichern erzeugt
+                  eine neue Version mit Parent-Referenz (F-SET-001) — kein
+                  reines Klonen.
                 </p>
                 <div className="flex flex-col gap-2">
                   <input
@@ -569,6 +581,20 @@ export default function GaragePage() {
                       </option>
                     ))}
                   </select>
+                  <SetupAdjusterEditor
+                    bike={selected}
+                    values={setupValues}
+                    onChange={setSetupValues}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSetupValues(seedAdjusterValuesFromBike(selected))
+                    }
+                    className="rounded-xl border border-border py-2 text-xs text-text-secondary"
+                  >
+                    Vom aktuellen Bike neu laden
+                  </button>
                   <button
                     type="button"
                     onClick={createSetup}
