@@ -49,6 +49,9 @@ export default function ProfilePage() {
           <p className="text-sm text-text-secondary">
             Erklärbar & korrigierbar (F-AI-002)
           </p>
+          <Link href="/login" className="text-xs text-accent">
+            Konto anmelden / registrieren
+          </Link>
         </div>
       </header>
 

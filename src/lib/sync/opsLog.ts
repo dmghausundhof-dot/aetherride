@@ -143,6 +143,15 @@ export async function flushOpsLog(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      if (res.status === 401) {
+        recordFlushAttempt(false);
+        return {
+          flushed: 0,
+          skipped: true,
+          reason: "Sync erfordert Anmeldung — bitte unter /login einloggen",
+          attempt: getFlushAttemptCount(),
+        };
+      }
       if (res.ok) {
         const data = (await res.json()) as {
           revision?: string;
@@ -164,7 +173,7 @@ export async function flushOpsLog(
         };
       }
     } catch {
-      // Fallback lokal
+      // Fallback lokal nur wenn API nicht erreichbar (Tests/Offline)
     }
   }
 

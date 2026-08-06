@@ -74,8 +74,7 @@ export default function PrivacyExportPage() {
   const setActiveFamilyRider = useAppStore((s) => s.setActiveFamilyRider);
   const assignSetupToRider = useAppStore((s) => s.assignSetupToRider);
   const authSession = useAppStore((s) => s.authSession);
-  const signIn = useAppStore((s) => s.signIn);
-  const signOutUser = useAppStore((s) => s.signOutUser);
+  const signOutUserAsync = useAppStore((s) => s.signOutUserAsync);
   const continueLocal = useAppStore((s) => s.continueLocal);
   const requestDeleteAccount = useAppStore((s) => s.requestDeleteAccount);
   const confirmDeleteAccountLocal = useAppStore(
@@ -323,13 +322,12 @@ export default function PrivacyExportPage() {
             : "Nicht angemeldet — lokale Nutzung möglich"}
         </p>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => signIn("email", "fahrer@example.com")}
-            className="rounded-lg bg-surface-elevated px-3 py-1.5 text-xs"
+          <Link
+            href="/login"
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
           >
-            E-Mail
-          </button>
+            Anmelden / Registrieren
+          </Link>
           <button
             type="button"
             onClick={() => continueLocal()}
@@ -339,7 +337,7 @@ export default function PrivacyExportPage() {
           </button>
           <button
             type="button"
-            onClick={() => signOutUser()}
+            onClick={() => signOutUserAsync()}
             className="rounded-lg bg-surface-elevated px-3 py-1.5 text-xs"
           >
             Abmelden
@@ -351,7 +349,7 @@ export default function PrivacyExportPage() {
               alert(
                 r.skipped
                   ? r.reason
-                  : `${r.flushed} Ops synchronisiert (Demo-Flush)`
+                  : `${r.flushed} Ops synchronisiert`
               );
             }}
             className="rounded-lg bg-accent px-3 py-1.5 text-xs text-white"

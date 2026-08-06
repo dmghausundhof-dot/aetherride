@@ -165,5 +165,9 @@ export function isPlausibleEmail(email: string): boolean {
 }
 
 export const AUTH_DEMO_BANNER =
-  "Web-Demo: kein echter IdP (Apple/Google/E-Mail). Session nur lokal — Produktion: OAuth + Backend.";
+  "Apple/Google OAuth noch nicht konfiguriert. E-Mail/Passwort läuft über Server-Session (HTTP-only Cookie).";
+
+/** @deprecated lokal nur noch für anonymous / Legacy */
+export const AUTH_LOCAL_ONLY_NOTE =
+  "Lokaler Mock ohne Server — Sync eingeschränkt.";
 
