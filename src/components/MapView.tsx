@@ -9,6 +9,8 @@ interface MapViewProps {
   center?: [number, number]; // [lng, lat]
   zoom?: number;
   track?: { lat: number; lng: number }[];
+  /** Geplante Route (Discover-Handoff) — gestrichelt */
+  routeLine?: { lat: number; lng: number }[];
   showUserLocation?: boolean;
   onMapReady?: (map: maplibregl.Map) => void;
 }
@@ -25,6 +27,7 @@ export function MapView({
   center = [12.15, 47.45], // Alpenraum
   zoom = 12,
   track = [],
+  routeLine = [],
   showUserLocation = false,
   onMapReady,
 }: MapViewProps) {
@@ -139,6 +142,38 @@ export function MapView({
       });
     }
   }, [track, ready]);
+
+  // Geplante Route (unter Live-Track)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || routeLine.length < 2) return;
+
+    const geojson = {
+      type: "Feature" as const,
+      properties: {},
+      geometry: {
+        type: "LineString" as const,
+        coordinates: routeLine.map((p) => [p.lng, p.lat]),
+      },
+    };
+    const source = map.getSource("route") as maplibregl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(geojson);
+    } else {
+      map.addSource("route", { type: "geojson", data: geojson });
+      map.addLayer({
+        id: "route-line",
+        type: "line",
+        source: "route",
+        paint: {
+          "line-color": "#3B82F6",
+          "line-width": 3,
+          "line-opacity": 0.55,
+          "line-dasharray": [2, 2],
+        },
+      });
+    }
+  }, [routeLine, ready]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>

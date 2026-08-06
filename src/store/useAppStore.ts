@@ -50,6 +50,11 @@ import {
   type BikeCalibration,
 } from "@/lib/sensor/calibration";
 import {
+  buildTrackStats,
+  type PlannedRoute,
+  type TrackPoint,
+} from "@/lib/routing/rideHandoff";
+import {
   continueWithoutAccount,
   loadSession,
   requestAccountDeletion,
@@ -92,6 +97,8 @@ interface AppState {
   activeBikeId: string | null;
   isRiding: boolean;
   currentRide: Partial<Ride> | null;
+  /** Discover → Ride: geplante Route bis Start/Clear */
+  plannedRoute: PlannedRoute | null;
   liveMetrics: SensorMetrics | null;
   boschConnected: boolean;
   boschLive: {
@@ -217,6 +224,8 @@ interface AppState {
   syncNow: () => Promise<{ flushed: number; skipped: boolean; reason?: string }>;
 
   startRide: (bikeId: string, sportType: BikeType) => void;
+  setPlannedRoute: (route: PlannedRoute | null) => void;
+  appendTrackPoint: (point: TrackPoint) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
   updateBoschLive: (data: Partial<AppState["boschLive"]>) => void;
   endRide: () => Ride | null;
@@ -387,6 +396,7 @@ export const useAppStore = create<AppState>()(
       activeBikeId: null,
       isRiding: false,
       currentRide: null,
+      plannedRoute: null,
       liveMetrics: null,
       boschConnected: false,
       boschLive: null,
@@ -1077,6 +1087,7 @@ export const useAppStore = create<AppState>()(
       startRide: (bikeId, sportType) => {
         const bike = get().bikes.find((b) => b.id === bikeId);
         const activeSetup = bike?.setups.find((s) => s.isCurrent);
+        const planned = get().plannedRoute;
         set({
           isRiding: true,
           currentRide: {
@@ -1088,6 +1099,9 @@ export const useAppStore = create<AppState>()(
             distanceM: 0,
             elevationGainM: 0,
             durationSec: 0,
+            track: [],
+            plannedRouteId: planned?.id,
+            plannedRouteName: planned?.name,
             summaryMetrics: {
               gForcePeak: 0,
               gForceRms: 0,
@@ -1105,6 +1119,24 @@ export const useAppStore = create<AppState>()(
           },
         });
       },
+
+      setPlannedRoute: (route) => set({ plannedRoute: route }),
+
+      appendTrackPoint: (point) =>
+        set((s) => {
+          if (!s.currentRide) return s;
+          const prev = s.currentRide.track ?? [];
+          const track = [...prev, point].slice(-5000);
+          return {
+            currentRide: {
+              ...s.currentRide,
+              track,
+              distanceM: Math.round(
+                buildTrackStats(track, s.plannedRoute).distanceM
+              ),
+            },
+          };
+        }),
 
       updateLiveMetrics: (metrics) =>
         set((s) => ({
@@ -1126,12 +1158,15 @@ export const useAppStore = create<AppState>()(
         })),
 
       endRide: () => {
-        const { currentRide, liveMetrics, boschLive } = get();
+        const { currentRide, liveMetrics, boschLive, plannedRoute } = get();
         if (!currentRide || !currentRide.id) return null;
 
         const endTime = new Date().toISOString();
         const start = new Date(currentRide.startTime!).getTime();
         const durationSec = Math.round((Date.now() - start) / 1000);
+        const track = (currentRide.track ?? []) as TrackPoint[];
+        const stats = buildTrackStats(track, plannedRoute);
+        const hasRealTrack = track.length >= 2;
 
         const ride: Ride = {
           id: currentRide.id,
@@ -1140,10 +1175,16 @@ export const useAppStore = create<AppState>()(
           sportType: currentRide.sportType!,
           startTime: currentRide.startTime!,
           endTime,
-          distanceM: currentRide.distanceM || Math.round(durationSec * 4.2),
-          elevationGainM:
-            currentRide.elevationGainM || Math.round(durationSec * 0.8),
+          distanceM: hasRealTrack
+            ? stats.distanceM || Math.round(durationSec * 4.2)
+            : currentRide.distanceM || Math.round(durationSec * 4.2),
+          elevationGainM: hasRealTrack
+            ? stats.elevationGainM || Math.round(durationSec * 0.8)
+            : currentRide.elevationGainM || Math.round(durationSec * 0.8),
           durationSec,
+          track: hasRealTrack ? track : undefined,
+          plannedRouteId: currentRide.plannedRouteId,
+          plannedRouteName: currentRide.plannedRouteName,
           summaryMetrics: liveMetrics || currentRide.summaryMetrics!,
           motorData: boschLive
             ? {
@@ -1185,6 +1226,7 @@ export const useAppStore = create<AppState>()(
           rides: [ride, ...s.rides],
           isRiding: false,
           currentRide: null,
+          plannedRoute: null,
           liveMetrics: null,
           bikes: s.bikes.map((b) =>
             b.id === ride.bikeId
