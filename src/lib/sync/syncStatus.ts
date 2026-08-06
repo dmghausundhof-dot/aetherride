@@ -1,11 +1,12 @@
 /**
  * Sync-Status & Online-Erkennung (Spec 5.6 / F-ACC-002 / NFR-15)
- * Web-Demo: ehrlich lokal, kein Fake-Backend.
  */
 
 import { opsLogStats, pendingOps } from "./opsLog";
 import {
+  getLastConflictCount,
   getLastFlushAt,
+  getPulledServerOps,
   getServerRevisionCursor,
 } from "./syncMeta";
 
@@ -16,9 +17,11 @@ export interface SyncClientState {
   synced: number;
   total: number;
   lastFlushAt: string | null;
-  /** Demo: nächster Backoff-Versuch (ms), nur Stub */
+  /** Demo: nächster Backoff-Versuch (ms) */
   nextBackoffMs: number;
   serverRevisionCursor: string | null;
+  lastConflicts: number;
+  lastPulled: number;
   note: string;
 }
 
@@ -36,15 +39,19 @@ export function backoffMsForAttempt(attempt: number): number {
 export function getSyncClientState(syncEnabled: boolean): SyncClientState {
   const stats = opsLogStats();
   const online = isBrowserOnline();
+  const lastConflicts = getLastConflictCount();
+  const lastPulled = getPulledServerOps();
   let note: string;
   if (!syncEnabled) {
     note = "Lokal · Sync aus (Konto nötig, F-ACC-002)";
   } else if (!online) {
-    note = "Offline · Queue lokal (NFR-15 Demo)";
+    note = "Offline · Queue lokal (NFR-15)";
   } else if (stats.pending > 0) {
-    note = `${stats.pending} ausstehend · Demo-Flush ohne Netz`;
+    note = `${stats.pending} ausstehend · Sync v2 bereit`;
+  } else if (lastConflicts > 0) {
+    note = `Synchron · ${lastConflicts} Konflikt(e) (LWW)`;
   } else {
-    note = "Synchron (Demo-Markierung)";
+    note = "Synchron (Server v2)";
   }
   return {
     online,
@@ -55,6 +62,8 @@ export function getSyncClientState(syncEnabled: boolean): SyncClientState {
     lastFlushAt: getLastFlushAt(),
     nextBackoffMs: backoffMsForAttempt(Math.min(stats.pending, 5)),
     serverRevisionCursor: getServerRevisionCursor(),
+    lastConflicts,
+    lastPulled,
     note,
   };
 }
@@ -63,6 +72,7 @@ export function syncChipLabel(state: SyncClientState): string {
   if (!state.syncEnabled) return "Lokal · Sync aus";
   if (!state.online) return "Offline";
   if (state.pending > 0) return `${state.pending} pending`;
+  if (state.lastConflicts > 0) return `${state.lastConflicts} conflicts`;
   return "Sync ok";
 }
 

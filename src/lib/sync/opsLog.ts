@@ -1,16 +1,17 @@
 /**
  * Spec 5.6 — Sync-Engine (Ops-Log)
  *
- * Client führt append-only Ops-Log; Sync bei Konto + Online.
- * Web-Demo: lokaler Queue-Persist + Flush-Stub (kein echtes Backend).
- *
- * Produktions-Shape POST /sync:
- * { since?: serverRevision, ops: OpsEntry[] } → { revision, ackedIds[], conflicts[] }
+ * Client: append-only Ops-Log.
+ * Sync v2: POST /api/sync mit since= + LWW-Merge (authentifiziert).
  */
 
 import {
   bumpServerRevisionCursor,
+  getServerRevisionCursor,
+  markConflicts,
   setLastFlushAt,
+  setPulledCount,
+  setServerRevisionCursor,
 } from "./syncMeta";
 
 export type OpsEntity =
@@ -91,26 +92,30 @@ export function markSynced(ids: string[]) {
   save(all);
 }
 
+export type FlushResult = {
+  flushed: number;
+  skipped: boolean;
+  reason?: string;
+  revision?: string;
+  via?: "server_v2" | "local_test";
+  attempt?: number;
+  conflicts?: number;
+  pulled?: number;
+};
+
 /**
- * Flush: in Produktion POST /sync mit since=<cursor>.
- * Demo: versucht optional /api/sync; sonst lokal markieren.
+ * Flush gegen Sync v2 (auth + LWW).
+ * `useApiStub: false` → nur lokaler Test-Flush (kein Server-Claim).
  */
 export async function flushOpsLog(
   syncEnabled: boolean,
   opts?: {
     requireOnline?: boolean;
     online?: boolean;
-    /** Wenn true: POST /api/sync Stub (Echo-Ack), sonst rein lokal */
+    /** Default true: POST /api/sync. false = lokaler Test-Pfad */
     useApiStub?: boolean;
   }
-): Promise<{
-  flushed: number;
-  skipped: boolean;
-  reason?: string;
-  revision?: string;
-  via?: "local_demo" | "api_stub";
-  attempt?: number;
-}> {
+): Promise<FlushResult> {
   if (!syncEnabled) {
     recordFlushAttempt(false);
     return {
@@ -132,15 +137,18 @@ export async function flushOpsLog(
       attempt: getFlushAttemptCount(),
     };
   }
-  const pending = pendingOps();
-  if (!pending.length) return { flushed: 0, skipped: false };
 
-  if (opts?.useApiStub !== false && typeof fetch !== "undefined") {
+  const pending = pendingOps();
+  const useApi = opts?.useApiStub !== false;
+
+  if (useApi && typeof fetch !== "undefined") {
     try {
-      const body = buildSyncRequestStub(null);
+      const since = getServerRevisionCursor();
+      const body = buildSyncRequestStub(since);
       const res = await fetch("/api/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(body),
       });
       if (res.status === 401) {
@@ -156,38 +164,76 @@ export async function flushOpsLog(
         const data = (await res.json()) as {
           revision?: string;
           ackedIds?: string[];
+          conflicts?: { operation_id: string; reason: string }[];
+          pulledOps?: unknown[];
+          appliedCount?: number;
         };
         const ids = data.ackedIds?.length
           ? data.ackedIds
           : pending.map((p) => p.id);
         markSynced(ids);
-        const revision = data.revision ?? bumpServerRevisionCursor();
+        if (data.revision) {
+          setServerRevisionCursor(data.revision);
+        }
+        const conflicts = Array.isArray(data.conflicts) ? data.conflicts.length : 0;
+        const pulled = Array.isArray(data.pulledOps) ? data.pulledOps.length : 0;
+        markConflicts(conflicts);
+        setPulledCount(pulled);
         setLastFlushAt(new Date().toISOString());
         recordFlushAttempt(true);
         return {
           flushed: ids.length,
           skipped: false,
-          revision,
-          via: "api_stub",
+          revision: data.revision,
+          via: "server_v2",
           attempt: getFlushAttemptCount(),
+          conflicts,
+          pulled,
         };
       }
-    } catch {
-      // Fallback lokal nur wenn API nicht erreichbar (Tests/Offline)
+      recordFlushAttempt(false);
+      const errPayload = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      return {
+        flushed: 0,
+        skipped: true,
+        reason: errPayload?.error ?? `Sync HTTP ${res.status}`,
+        attempt: getFlushAttemptCount(),
+      };
+    } catch (e) {
+      recordFlushAttempt(false);
+      return {
+        flushed: 0,
+        skipped: true,
+        reason:
+          e instanceof Error
+            ? `Sync-Netzwerk: ${e.message}`
+            : "Sync-Netzwerkfehler",
+        attempt: getFlushAttemptCount(),
+      };
     }
   }
 
-  await new Promise((r) => setTimeout(r, 200));
+  // Lokaler Test-Pfad (kein Server-Claim)
+  if (!pending.length) {
+    return { flushed: 0, skipped: false, via: "local_test" };
+  }
+  await new Promise((r) => setTimeout(r, 20));
   markSynced(pending.map((p) => p.id));
   const revision = bumpServerRevisionCursor();
   setLastFlushAt(new Date().toISOString());
+  markConflicts(0);
+  setPulledCount(0);
   recordFlushAttempt(true);
   return {
     flushed: pending.length,
     skipped: false,
     revision,
-    via: "local_demo",
+    via: "local_test",
     attempt: getFlushAttemptCount(),
+    conflicts: 0,
+    pulled: 0,
   };
 }
 
@@ -227,7 +273,7 @@ export function opsLogStats() {
   };
 }
 
-/** Dokumentiertes Request-Shape für Native/Backend */
+/** Request-Shape für Native/Backend (Sync v2) */
 export function buildSyncRequestStub(since: string | null) {
   return {
     since,
@@ -249,7 +295,7 @@ export interface SyncAckResponse {
   note: string;
 }
 
-/** Server-Echo für /api/sync — kein Multi-Device-Claim */
+/** Legacy-Echo (ältere Tests) — Produktion nutzt serverStore */
 export function buildSyncAckFromRequest(body: {
   ops?: { operation_id: string }[];
 }): SyncAckResponse {
@@ -258,6 +304,6 @@ export function buildSyncAckFromRequest(body: {
     revision: `rev_stub_${Date.now().toString(36)}`,
     ackedIds: ids,
     conflicts: [],
-    note: "Demo-Ack — kein echtes Multi-Device-Sync (F-ACC-002 Stub).",
+    note: "Legacy-Ack — Sync v2 nutzt serverStore + LWW.",
   };
 }
