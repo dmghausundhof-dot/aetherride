@@ -165,7 +165,7 @@ export function isPlausibleEmail(email: string): boolean {
 }
 
 export const AUTH_DEMO_BANNER =
-  "E-Mail/Passwort über Supabase Auth (wenn Env gesetzt). Google/Apple OAuth ist vorbereitet und kommt zum Schluss.";
+  "E-Mail/Passwort über Supabase. Google/Apple OAuth: NEXT_PUBLIC_OAUTH_ENABLED=true + Provider im Dashboard.";
 
 /** @deprecated lokal nur noch für anonymous / Legacy */
 export const AUTH_LOCAL_ONLY_NOTE =

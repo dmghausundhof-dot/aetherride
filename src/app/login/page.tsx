@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/clientAuth";
 import { isPlausibleEmail } from "@/lib/auth/session";
 import { PROFESSIONAL_ROADMAP_STEPS } from "@/lib/platform/professionalRoadmap";
+import type { OAuthProviderStatus } from "@/lib/auth/oauthPrep";
 
 function LoginForm() {
   const router = useRouter();
@@ -34,26 +35,44 @@ function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
   const [backendLabel, setBackendLabel] = useState<string | null>(null);
+  const [oauthProviders, setOauthProviders] = useState<OAuthProviderStatus[]>(
+    []
+  );
+  const [oauthSummary, setOauthSummary] = useState<string | null>(null);
+  const [oauthSetup, setOauthSetup] = useState<string[]>([]);
 
   useEffect(() => {
     const err = params.get("error");
     if (err === "auth_callback") {
       setError("Auth-Callback fehlgeschlagen — bitte erneut anmelden.");
     } else if (err === "supabase_missing") {
-      setError("Supabase-Env fehlt — bitte NEXT_PUBLIC_SUPABASE_URL/ANON_KEY setzen.");
+      setError(
+        "Supabase-Env fehlt — bitte NEXT_PUBLIC_SUPABASE_URL/ANON_KEY setzen."
+      );
     }
     void fetchServerSession().then((s) => {
       if (s.authBackend === "supabase") {
-        setBackendLabel("Supabase Auth · E-Mail/Passwort");
+        setBackendLabel("Supabase Auth · E-Mail/Passwort + OAuth");
       } else if (s.authBackend === "local_file") {
-        setBackendLabel(
-          "Lokaler Fallback (Supabase-Env fehlt) · OAuth vorbereitet"
-        );
-      }
-      if (s.oauthPrep) {
-        setInfo(s.oauthPrep);
+        setBackendLabel("Lokaler Fallback (Supabase-Env fehlt)");
       }
     });
+    void fetch("/api/auth/oauth/status", { cache: "no-store" })
+      .then((r) => r.json())
+      .then(
+        (d: {
+          providers?: OAuthProviderStatus[];
+          summaryDe?: string;
+          setupStepsDe?: string[];
+          anyReady?: boolean;
+        }) => {
+          setOauthProviders(d.providers ?? []);
+          setOauthSummary(d.summaryDe ?? null);
+          setOauthSetup(d.setupStepsDe ?? []);
+          if (!d.anyReady && d.summaryDe) setInfo(d.summaryDe);
+        }
+      )
+      .catch(() => undefined);
   }, [params]);
 
   const submit = async (e: FormEvent) => {
@@ -92,7 +111,7 @@ function LoginForm() {
       applyServerSession(toAuthSession(res));
       if (res.authBackend === "local_file") {
         setInfo(
-          "Hinweis: Supabase-Env fehlt — lokaler File-Store aktiv. Für Produktion URL + Anon-Key setzen."
+          "Hinweis: Supabase-Env fehlt — lokaler File-Store aktiv."
         );
       }
       setOnboardingCompleted(true);
@@ -113,10 +132,7 @@ function LoginForm() {
         window.location.href = r.url;
         return;
       }
-      setError(
-        r.error ||
-          "OAuth kommt zum Schluss — Flag NEXT_PUBLIC_OAUTH_ENABLED + Provider im Dashboard."
-      );
+      setError(r.error || "OAuth nicht verfügbar — Setup prüfen.");
     } catch {
       setError("OAuth-Start fehlgeschlagen.");
     } finally {
@@ -134,8 +150,7 @@ function LoginForm() {
           {mode === "login" ? "Anmelden" : "Konto erstellen"}
         </h1>
         <p className="text-sm text-text-secondary">
-          {backendLabel ??
-            "E-Mail/Passwort · Supabase (oder lokaler Fallback)"}
+          {backendLabel ?? "E-Mail/Passwort · Google/Apple OAuth"}
         </p>
       </header>
 
@@ -216,26 +231,31 @@ function LoginForm() {
 
       <div className="space-y-2 text-sm">
         <p className="text-[11px] text-text-secondary">
-          OAuth vorbereitet — Aktivierung zum Schluss (Dashboard + Flag).
+          {oauthSummary ?? "OAuth-Status wird geladen…"}
         </p>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void tryOAuth("apple")}
-          className="w-full rounded-xl bg-foreground/80 py-2.5 text-background opacity-70"
-          title="Vorbereitet — Feature-Flag aus"
-        >
-          Apple — vorbereitet (zum Schluss)
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void tryOAuth("google")}
-          className="w-full rounded-xl border border-border py-2.5 opacity-70"
-          title="Vorbereitet — Feature-Flag aus"
-        >
-          Google — vorbereitet (zum Schluss)
-        </button>
+        {oauthProviders.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            disabled={busy || !p.enabled}
+            onClick={() => void tryOAuth(p.id)}
+            className={`w-full rounded-xl py-2.5 ${
+              p.id === "apple"
+                ? "bg-foreground/80 text-background"
+                : "border border-border"
+            } disabled:opacity-50`}
+            title={p.blockedReasonDe ?? p.titleDe}
+          >
+            {p.enabled ? p.titleDe : `${p.titleDe} — nicht konfiguriert`}
+          </button>
+        ))}
+        {!oauthProviders.some((p) => p.enabled) && oauthSetup.length > 0 && (
+          <ol className="list-decimal space-y-0.5 pl-4 text-[10px] text-text-secondary">
+            {oauthSetup.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ol>
+        )}
       </div>
 
       <button
@@ -253,15 +273,14 @@ function LoginForm() {
       <section className="rounded-xl border border-border bg-surface p-3 text-[11px] text-text-secondary">
         <p className="font-medium text-foreground">Roadmap</p>
         <ol className="mt-1 list-decimal space-y-0.5 pl-4">
-          {PROFESSIONAL_ROADMAP_STEPS.filter((s) =>
-            [3, 4, 9].includes(s.id)
-          ).map((s) => (
-            <li key={s.id}>
-              {s.id}. {s.titleDe}
-              {s.status === "in_progress" ? " ← jetzt" : ""}
-              {s.status === "done" ? " ✓" : ""}
-            </li>
-          ))}
+          {PROFESSIONAL_ROADMAP_STEPS.filter((s) => [3, 9].includes(s.id)).map(
+            (s) => (
+              <li key={s.id}>
+                {s.id}. {s.titleDe}
+                {s.status === "done" ? " ✓" : ""}
+              </li>
+            )
+          )}
         </ol>
       </section>
 

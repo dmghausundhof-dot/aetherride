@@ -64,15 +64,14 @@ export default function OnboardingPage() {
             Konto erstellen / Anmelden
           </Link>
           <p className="text-center text-[11px] text-text-secondary">
-            E-Mail + Passwort · Supabase Auth (OAuth zum Schluss)
+            E-Mail/Passwort · Google/Apple über /login (wenn OAuth konfiguriert)
           </p>
-          <button
-            type="button"
-            disabled
-            className="w-full rounded-xl bg-foreground/70 py-2.5 text-sm text-background opacity-50"
+          <Link
+            href="/login?next=/onboarding"
+            className="block w-full rounded-xl bg-foreground/80 py-2.5 text-center text-sm text-background"
           >
-            Apple / Google — vorbereitet, Aktivierung zum Schluss
-          </button>
+            Mit Google / Apple anmelden
+          </Link>
           <button
             type="button"
             onClick={() => {

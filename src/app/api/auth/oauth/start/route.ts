@@ -8,8 +8,7 @@ import {
 } from "@/lib/auth/oauthPrep";
 
 /**
- * OAuth starten (Google/Apple) — nur wenn Feature-Flag + Supabase.
- * Default: 503 mit Vorbereitungshinweis.
+ * OAuth starten (Google/Apple) — Supabase signInWithOAuth
  */
 export async function POST(req: Request) {
   if (!isSupabaseConfigured()) {
@@ -17,6 +16,7 @@ export async function POST(req: Request) {
       {
         error: "Supabase nicht konfiguriert.",
         code: "SUPABASE_MISSING",
+        callbackUrl: getOAuthCallbackUrl(),
       },
       { status: 503 }
     );
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error: oauthPrepSummaryDe(),
-        code: "OAUTH_DEFERRED",
+        code: "OAUTH_DISABLED",
         providers: listOAuthProvidersPrep(),
         callbackUrl: getOAuthCallbackUrl(),
       },
@@ -41,7 +41,11 @@ export async function POST(req: Request) {
   const prep = listOAuthProvidersPrep().find((p) => p.id === provider);
   if (!prep?.enabled) {
     return NextResponse.json(
-      { error: prep?.blockedReasonDe ?? "Provider nicht bereit", code: "OAUTH_BLOCKED" },
+      {
+        error: prep?.blockedReasonDe ?? "Provider nicht bereit",
+        code: "OAUTH_BLOCKED",
+        hints: prep?.envHints,
+      },
       { status: 503 }
     );
   }
@@ -53,11 +57,19 @@ export async function POST(req: Request) {
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo },
+    options: {
+      redirectTo,
+      skipBrowserRedirect: false,
+    },
   });
   if (error || !data.url) {
     return NextResponse.json(
-      { error: error?.message ?? "OAuth-Start fehlgeschlagen" },
+      {
+        error:
+          error?.message ??
+          "OAuth-Start fehlgeschlagen — Provider im Supabase-Dashboard prüfen.",
+        code: "OAUTH_START_FAILED",
+      },
       { status: 400 }
     );
   }

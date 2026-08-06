@@ -1,7 +1,6 @@
 /**
- * Professionelle Roadmap (F-ACC → Marktreife)
+ * Professionelle Roadmap (F-ACC → Marktreife) — Schritte 1–9
  * Human-Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
- * Legal-Prep (Checkliste/Bundle) bereit — Sign-offs sind menschlich.
  */
 
 export const PROFESSIONAL_ROADMAP_STEPS = [
@@ -17,7 +16,7 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 3,
-    titleDe: "Supabase E-Mail/Passwort (OAuth vorbereitet, später)",
+    titleDe: "Supabase E-Mail/Passwort",
     status: "done" as const,
   },
   {
@@ -47,7 +46,7 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 9,
-    titleDe: "OAuth Google/Apple (zum Schluss)",
-    status: "in_progress" as const,
+    titleDe: "OAuth Google/Apple (Supabase + Feature-Flag)",
+    status: "done" as const,
   },
 ] as const;
