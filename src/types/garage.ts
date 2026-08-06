@@ -65,13 +65,13 @@ export type BracketingParameter =
   | "fork.lsc"
   | "fork.hsc"
   | "fork.sag_pct"
-  | "shock.air_pressure_psi"
-  | "shock.rebound"
-  | "shock.lsc"
-  | "shock.hsc"
-  | "shock.sag_pct"
-  | "tire.front_psi"
-  | "tire.rear_psi";
+  | "rear_shock.air_pressure_psi"
+  | "rear_shock.rebound"
+  | "rear_shock.lsc"
+  | "rear_shock.hsc"
+  | "rear_shock.sag_pct"
+  | "tire_front.pressure_psi"
+  | "tire_rear.pressure_psi";
 
 /** Spec F-GAR-002 Pflicht-Slots (MTB/E-MTB + Gravel/Road-Erweiterungen) */
 export type ComponentSlot =

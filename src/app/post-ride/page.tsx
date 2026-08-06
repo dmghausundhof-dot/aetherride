@@ -21,6 +21,9 @@ function PostRideContent() {
   const rides = useAppStore((s) => s.rides);
   const recommendations = useAppStore((s) => s.recommendations);
   const acceptRecommendation = useAppStore((s) => s.acceptRecommendation);
+  const applyRecommendationManually = useAppStore(
+    (s) => s.applyRecommendationManually
+  );
   const dismissRecommendation = useAppStore((s) => s.dismissRecommendation);
   const submitRideFeedback = useAppStore((s) => s.submitRideFeedback);
   const rideFeedbacks = useAppStore((s) => s.rideFeedbacks);
@@ -485,22 +488,55 @@ function PostRideContent() {
             </ul>
           )}
           <p className="text-xs text-text-secondary mb-4">{rec.reasoning}</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => {
-                acceptRecommendation(rec.id);
-              }}
-              disabled={!!rec.observationOnly || !rec.setupApply || Object.keys(rec.setupApply).length === 0}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white disabled:opacity-40"
-            >
-              <Check className="h-4 w-4" /> Übernehmen
-            </button>
-            <button
-              onClick={() => dismissRecommendation(rec.id)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm"
-            >
-              <X className="h-4 w-4" /> Verwerfen
-            </button>
+          {rec.observationOnly &&
+            rec.setupApply &&
+            Object.keys(rec.setupApply).length > 0 && (
+              <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                Gate G-2 offen — kein Auto-Übernehmen. Du kannst die
+                vorausgefüllten Werte trotzdem manuell in die Garage legen
+                (Beobachtung, kein Fake-Gate-Pass).
+                <ul className="mt-1 list-inside list-disc tabular-nums">
+                  {Object.entries(rec.setupApply).map(([k, v]) => (
+                    <li key={k}>
+                      {k}: {v}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  acceptRecommendation(rec.id);
+                }}
+                disabled={
+                  !!rec.observationOnly ||
+                  !rec.setupApply ||
+                  Object.keys(rec.setupApply).length === 0
+                }
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white disabled:opacity-40"
+              >
+                <Check className="h-4 w-4" /> Übernehmen
+              </button>
+              <button
+                onClick={() => dismissRecommendation(rec.id)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm"
+              >
+                <X className="h-4 w-4" /> Verwerfen
+              </button>
+            </div>
+            {rec.observationOnly &&
+              rec.setupApply &&
+              Object.keys(rec.setupApply).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => applyRecommendationManually(rec.id)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-accent py-2.5 text-sm font-medium text-accent"
+                >
+                  <Wrench className="h-4 w-4" /> Manuell in Garage übernehmen
+                </button>
+              )}
           </div>
         </section>
       )}

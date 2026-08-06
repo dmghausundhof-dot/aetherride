@@ -2,18 +2,11 @@
 
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import {
+  BRACKETING_PARAMS,
+  bracketingUnit,
+} from "@/lib/setup/bracketingKeys";
 import type { Bike, BracketingParameter } from "@/types";
-
-const PARAMS: { id: BracketingParameter; label: string }[] = [
-  { id: "fork.rebound", label: "Gabel Zugstufe" },
-  { id: "fork.lsc", label: "Gabel LSC" },
-  { id: "fork.sag_pct", label: "Gabel SAG %" },
-  { id: "fork.air_pressure_psi", label: "Gabel Luftdruck" },
-  { id: "shock.rebound", label: "Dämpfer Zugstufe" },
-  { id: "shock.sag_pct", label: "Dämpfer SAG %" },
-  { id: "tire.front_psi", label: "Reifen vorn psi" },
-  { id: "tire.rear_psi", label: "Reifen hinten psi" },
-];
 
 export function BracketingPanel({ bike }: { bike: Bike }) {
   const seriesList = useAppStore((s) =>
@@ -22,16 +15,20 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
   const startBracketing = useAppStore((s) => s.startBracketing);
   const addBracketingRun = useAppStore((s) => s.addBracketingRun);
   const evaluateBracketing = useAppStore((s) => s.evaluateBracketing);
+  const applyBracketingBest = useAppStore((s) => s.applyBracketingBest);
   const canUseProFeature = useAppStore((s) => s.canUseProFeature);
   const pro = canUseProFeature("bracketing");
 
-  const [parameter, setParameter] = useState<BracketingParameter>("fork.rebound");
+  const [parameter, setParameter] =
+    useState<BracketingParameter>("fork.rebound");
   const [from, setFrom] = useState(6);
   const [to, setTo] = useState(10);
   const [step, setStep] = useState(2);
   const [segment, setSegment] = useState("Heimtrail Abfahrt");
+  const [appliedMsg, setAppliedMsg] = useState<string | null>(null);
 
   const active = seriesList[0];
+  const unit = bracketingUnit(parameter);
 
   const create = () => {
     if (!pro) return;
@@ -43,6 +40,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
       step,
       referenceSegmentLabel: segment,
     });
+    setAppliedMsg(null);
   };
 
   const addDemoRuns = (seriesId: string, value: number) => {
@@ -60,12 +58,22 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
     }
   };
 
+  const takeBest = () => {
+    if (!active) return;
+    const id = applyBracketingBest(active.id);
+    setAppliedMsg(
+      id
+        ? "Beste Werte als neue Setup-Version übernommen."
+        : "Kein belegbarer Bestwert — nichts übernommen."
+    );
+  };
+
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <h3 className="mb-1 font-semibold">Bracketing</h3>
       <p className="mb-3 text-xs text-text-secondary">
-        Nur ein Parameter pro Serie. Effekt gilt erst bei |Δ| &gt; 1,5× gepoolter
-        SD und n≥2 (F-SET-003).
+        Nur ein Parameter pro Serie. Keys = slot.adjuster (wie Setup). Effekt
+        gilt erst bei |Δ| &gt; 1,5× gepoolter SD und n≥2 (F-SET-003).
       </p>
       {!pro && (
         <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
@@ -85,15 +93,15 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
             }
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 disabled:opacity-50"
           >
-            {PARAMS.map((p) => (
+            {BRACKETING_PARAMS.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.label}
+                {p.label} ({p.unit})
               </option>
             ))}
           </select>
         </label>
         <label>
-          Von
+          Von ({unit})
           <input
             type="number"
             value={from}
@@ -102,7 +110,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           />
         </label>
         <label>
-          Bis
+          Bis ({unit})
           <input
             type="number"
             value={to}
@@ -180,6 +188,19 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
                 ` · Beste: ${active.provenBestValue} ${active.unit}`}
               {active.noProvenDifference && " · kein belegbarer Unterschied"}
             </p>
+          )}
+          {active.provenBestValue !== undefined &&
+            !active.noProvenDifference && (
+              <button
+                type="button"
+                onClick={takeBest}
+                className="mt-2 w-full rounded-xl border border-accent py-2 text-sm font-semibold text-accent"
+              >
+                Beste übernehmen
+              </button>
+            )}
+          {appliedMsg && (
+            <p className="mt-2 text-xs text-text-secondary">{appliedMsg}</p>
           )}
         </div>
       )}

@@ -238,7 +238,7 @@ function pickOneRecommendation(input: {
       limits:
         "Bis Gate G-2 keine automatische Klick-/Druck-Übernahme. Immer Verdacht, nie Feststellung.",
       confidence: bottomPerKm > 1 ? "medium" : "low",
-      apply: {},
+      apply: { "fork.air_pressure_psi": psiHint },
       evidence: [
         sag != null ? `SAG=${sag}%` : "SAG unbekannt",
         `BottomOut/km=${bottomPerKm.toFixed(2)}`,
@@ -271,7 +271,7 @@ function pickOneRecommendation(input: {
         "Mehr Ansprechen und Traktion; Federweg wird eher genutzt. Danach Rebound ggf. 1 Klick öffnen (weniger Dämpfung), weil weniger Federenergie.",
       limits: `${sagBand.sourceNote ?? ""} Herstellergrenzen am Ventil beachten.`.trim(),
       confidence: "medium",
-      apply: gated ? {} : { "fork.air_pressure_psi": newPsi },
+      apply: { "fork.air_pressure_psi": newPsi },
       evidence: [
         `SAG=${sag}% < ${sagBand.min}%`,
         firm ? "Feedback straff/tot" : `FNI=${ride.summaryMetrics.fni}`,
@@ -301,7 +301,7 @@ function pickOneRecommendation(input: {
         "Mehr Gegenhalt in der Kurve und beim Anbremsen. Bei Bedarf später Progression (Token) — nicht beides auf einmal.",
       limits: "Eine Parameteränderung. Rebound danach ggf. 1 Klick langsamer (mehr Dämpfung) bei höherem Druck.",
       confidence: "medium",
-      apply: gated ? {} : { "fork.air_pressure_psi": newPsi },
+      apply: { "fork.air_pressure_psi": newPsi },
       evidence: [`SAG=${sag}% > ${sagBand.max}%`, "Feedback packt/taucht"],
       observationOnly: gated,
       workshopLine: "SAG per O-Ring korrigieren, dann 1 Segment testen.",
@@ -326,7 +326,7 @@ function pickOneRecommendation(input: {
         "Ruhigere Front in Schlagfolgen, etwas weniger Pop. Nur Low-Speed-Zug — keine Aussage zu High-Speed-Druck (Square-Edge).",
       limits: `Hersteller 0–${reboundMax} Klicks von geschlossen. Zielbänder sind Hypothesen bis G-2 (A-03).`,
       confidence: "medium",
-      apply: gated ? {} : { "fork.rebound": target },
+      apply: { "fork.rebound": target },
       evidence: [
         `ζ=${zeta}`,
         `Impacts/km=${hipk.toFixed(1)}`,

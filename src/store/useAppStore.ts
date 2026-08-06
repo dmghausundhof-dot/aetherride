@@ -16,6 +16,11 @@ import {
 } from "@/lib/maintenance/intervals";
 import { evaluateBracketingSeries } from "@/lib/setup/bracketing";
 import {
+  bracketingParamToSetupOverride,
+  bracketingUnit,
+  normalizeBracketingParameter,
+} from "@/lib/setup/bracketingKeys";
+import {
   buildSetupValuesFromBike,
   createImmutableSetup,
   recommendedSagPct,
@@ -200,6 +205,13 @@ interface AppState {
     run: Omit<BracketingRun, "id" | "createdAt">
   ) => void;
   evaluateBracketing: (seriesId: string) => void;
+  /** Bracketing-Bestwert als neue Setup-Version (ohne Fake-Gate) */
+  applyBracketingBest: (seriesId: string) => string | null;
+  /**
+   * Manuelle Übernahme einer Beobachtungs-Empfehlung in die Garage.
+   * Nutzt vorausgefüllte apply-Werte; setzt G-2 nicht auf passed.
+   */
+  applyRecommendationManually: (id: string) => string | null;
 
   submitRideFeedback: (feedback: Omit<RideFeedback, "createdAt">) => void;
   updateRiderProfile: (patch: Partial<RiderProfile>) => void;
@@ -1017,17 +1029,21 @@ export const useAppStore = create<AppState>()(
         if (!bike || !setup) return "";
         // Nur ein Parameter – Validierung
         if (rangeFrom === rangeTo) return "";
+        const normalized =
+          normalizeBracketingParameter(parameter) ?? parameter;
         const id = uuidv4();
-        const unit = parameter.includes("psi")
-          ? "psi"
-          : parameter.includes("sag")
-            ? "%"
-            : "clicks";
+        const unit = bracketingUnit(normalized) || (
+          normalized.includes("psi")
+            ? "psi"
+            : normalized.includes("sag")
+              ? "%"
+              : "clicks"
+        );
         const series: BracketingSeries = {
           id,
           bikeId,
           setupId: setup.id,
-          parameter,
+          parameter: normalized as BracketingParameter,
           unit,
           rangeFrom,
           rangeTo,
@@ -1074,6 +1090,83 @@ export const useAppStore = create<AppState>()(
               : ser
           ),
         }));
+      },
+
+      applyBracketingBest: (seriesId) => {
+        const series = get().bracketingSeries.find((s) => s.id === seriesId);
+        if (
+          !series ||
+          series.provenBestValue === undefined ||
+          series.noProvenDifference
+        ) {
+          return null;
+        }
+        const overrides = bracketingParamToSetupOverride(
+          series.parameter,
+          series.provenBestValue
+        );
+        const setupId = get().createSetupVersion({
+          bikeId: series.bikeId,
+          label: `Bracketing · ${series.parameter}`,
+          conditions: "general",
+          description: `Beste belegt: ${series.provenBestValue} ${series.unit} (${series.referenceSegmentLabel})`,
+          valueOverrides: overrides,
+        });
+        appendOp({
+          entity: "setup",
+          entityId: series.bikeId,
+          op: "create",
+          payload: { source: "bracketing", ...overrides },
+        });
+        return setupId || null;
+      },
+
+      applyRecommendationManually: (id) => {
+        const rec = get().recommendations.find((r) => r.id === id);
+        if (
+          !rec ||
+          rec.type !== "setup" ||
+          !rec.relatedBikeId ||
+          !rec.setupApply ||
+          Object.keys(rec.setupApply).length === 0
+        ) {
+          return null;
+        }
+        const setupId = get().createSetupVersion({
+          bikeId: rec.relatedBikeId,
+          label: `Manuell · ${rec.ruleId ?? "Setup"}`.trim(),
+          conditions: "general",
+          description: rec.observationOnly
+            ? `Manuell übernommen · Beobachtung G-2 (Gate offen). ${rec.title}`
+            : rec.title,
+          valueOverrides: recommendationToSetupOverrides({
+            ruleId: rec.ruleId ?? "SR",
+            title: rec.title,
+            why: rec.reasoning,
+            expectedEffect: rec.expectedEffect ?? "",
+            limits: rec.limits ?? "",
+            confidence: rec.confidence ?? "medium",
+            apply: rec.setupApply,
+            evidence: rec.evidence ?? [],
+            observationOnly: !!rec.observationOnly,
+          }),
+        });
+        set((s) => ({
+          recommendations: s.recommendations.map((r) =>
+            r.id === id ? { ...r, status: "accepted" } : r
+          ),
+        }));
+        appendOp({
+          entity: "setup",
+          entityId: rec.relatedBikeId,
+          op: "create",
+          payload: {
+            source: "manual_observation",
+            observationOnly: !!rec.observationOnly,
+            ...rec.setupApply,
+          },
+        });
+        return setupId || null;
       },
 
       submitRideFeedback: (feedback) =>

@@ -1,6 +1,7 @@
 import { buildPostRideAnalysis } from "./setupRecommendation";
 import type { Bike, Ride, RideFeedback } from "@/types";
 import type { BikeCalibration } from "@/lib/sensor/calibration";
+import { G2_SUSPENSION_GATE_PASSED } from "@/lib/sensor/fni";
 
 function assert(c: boolean, m: string) {
   if (!c) throw new Error(m);
@@ -153,8 +154,12 @@ const sagFirst = buildPostRideAnalysis({
 assert(sagFirst.recommendation?.ruleId === "SR-SAG-02", "SAG/bottom before rebound");
 assert(sagFirst.recommendation?.observationOnly === true, "bottom-out observation only");
 assert(
-  Object.keys(sagFirst.recommendation?.apply ?? {}).length === 0,
-  "no auto apply on bottom-out"
+  sagFirst.recommendation?.apply["fork.air_pressure_psi"] != null,
+  "manual psi suggestion for garage"
+);
+assert(
+  G2_SUSPENSION_GATE_PASSED === false,
+  "gate still open — no fake pass"
 );
 
 console.log("setupRecommendation tests OK", {
