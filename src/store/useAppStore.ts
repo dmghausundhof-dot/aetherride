@@ -247,7 +247,15 @@ interface AppState {
     rideId: string,
     conditions: NonNullable<Ride["conditions"]>
   ) => void;
-  syncNow: () => Promise<{ flushed: number; skipped: boolean; reason?: string }>;
+  syncNow: () => Promise<{
+    flushed: number;
+    skipped: boolean;
+    reason?: string;
+    revision?: string;
+    via?: "server_v2" | "local_test";
+    conflicts?: number;
+    pulled?: number;
+  }>;
 
   startRide: (bikeId: string, sportType: BikeType) => void;
   setPlannedRoute: (route: PlannedRoute | null) => void;

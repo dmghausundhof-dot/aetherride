@@ -42,17 +42,29 @@ async function main() {
   const offline = await flushOpsLog(true, { online: false });
   assert(!!offline.skipped && !!offline.reason?.includes("Offline"), "offline skip");
 
-  const ok = await flushOpsLog(true, { online: true });
-  assert(!ok.skipped && (ok.flushed ?? 0) >= 1, "flush demo");
+  // Lokaler Test-Pfad (kein Fake-Server-Claim)
+  const ok = await flushOpsLog(true, { online: true, useApiStub: false });
+  assert(!ok.skipped && (ok.flushed ?? 0) >= 1, "flush local_test");
+  assert(ok.via === "local_test", "via local_test");
   assert(!!ok.revision?.startsWith("rev_demo_"), "revision");
+
+  const req = buildSyncRequestStub(null);
+  assert(Array.isArray(req.ops), "request stub");
+  assert(
+    req.ops.every(
+      (o) => o.operation_id && o.entity && o.entity_id && o.client_ts
+    ),
+    "v2 op shape"
+  );
 
   const state = getSyncClientState(true);
   assert(typeof state.note === "string", "state note");
-  assert(Array.isArray(buildSyncRequestStub(null).ops), "request stub");
+  assert(!state.note.includes("Demo-Flush ohne Netz"), "no demo-flush copy");
 
   console.log("opsLog.test OK", {
     flushed: ok.flushed,
     pending: opsLogStats().pending,
+    note: state.note,
   });
 }
 

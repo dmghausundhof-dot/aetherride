@@ -2,9 +2,9 @@
  * Professionelle Roadmap (F-ACC → Marktreife)
  * Schrittweise — Gates G-0/G-1/G-2/G-5/A-06/A-08 bleiben ehrlich offen.
  *
- * 1. ✅ Auth: E-Mail/Passwort + HTTP-only Session (dieser Slice)
- * 2. Sync: Ops an authentifizierten /api/sync + User-scoped Persistenz
- * 3. OAuth Apple/Google (Env-Keys nötig)
+ * 1. ✅ Auth: E-Mail/Passwort + HTTP-only Session
+ * 2. ✅ Sync: LWW-Merge + User-scoped File-Store + Delta since=
+ * 3. OAuth Apple/Google (Env-Keys nötig) ← next
  * 4. Postgres statt File-User-Store
  * 5. Stripe Checkout (Demand + Keys)
  * 6. G-4 Katalog-Skalierung
@@ -20,13 +20,13 @@ export const PROFESSIONAL_ROADMAP_STEPS = [
   },
   {
     id: 2,
-    titleDe: "Authentifizierter Sync + serverseitige Ops",
-    status: "in_progress" as const,
+    titleDe: "Authentifizierter Sync + LWW + User-Ops-Store",
+    status: "done" as const,
   },
   {
     id: 3,
     titleDe: "OAuth Apple/Google",
-    status: "planned" as const,
+    status: "in_progress" as const,
   },
   {
     id: 4,

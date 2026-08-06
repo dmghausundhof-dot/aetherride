@@ -1,39 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildSyncAckFromRequest } from "@/lib/sync/opsLog";
 import { getSessionFromCookies } from "@/lib/auth/serverSession";
-import { promises as fs } from "fs";
-import path from "path";
+import {
+  getUserSyncStatus,
+  loadUserSyncStore,
+  opsSince,
+  pushUserOps,
+} from "@/lib/sync/serverStore";
+import type { IncomingSyncOp } from "@/lib/sync/conflictMerge";
 
 /**
- * F-ACC-002 Sync
- * Mit Session: Ops user-scoped auf Server ablegen (File-Stub).
- * Ohne Session: 401 — Sync erfordert Konto.
- * Produktion: Postgres + Conflict-Merge.
+ * F-ACC-002 Sync v2
+ * POST: Push Ops + LWW-Merge + Pull seit `since`
+ * GET: Status / Delta seit ?since=
  */
 
-async function persistUserOps(
-  userId: string,
-  body: { ops?: { operation_id: string }[]; since?: string | null }
-) {
-  const dir = path.join(process.cwd(), "data", "sync");
-  await fs.mkdir(dir, { recursive: true });
-  const file = path.join(dir, `${userId}.json`);
-  let prev: { revisions: unknown[] } = { revisions: [] };
-  try {
-    prev = JSON.parse(await fs.readFile(file, "utf8")) as typeof prev;
-  } catch {
-    /* new */
-  }
-  const ack = buildSyncAckFromRequest(body);
-  prev.revisions.push({
-    at: new Date().toISOString(),
-    since: body.since ?? null,
-    ack,
-    opCount: Array.isArray(body.ops) ? body.ops.length : 0,
-  });
-  prev.revisions = prev.revisions.slice(-50);
-  await fs.writeFile(file, JSON.stringify(prev, null, 2), "utf8");
-  return ack;
+function normalizeOps(raw: unknown): IncomingSyncOp[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((o) => {
+      const x = o as Record<string, unknown>;
+      return {
+        operation_id: String(x.operation_id ?? ""),
+        entity: String(x.entity ?? ""),
+        entity_id: String(x.entity_id ?? ""),
+        op: (x.op as IncomingSyncOp["op"]) ?? "update",
+        client_ts: String(x.client_ts ?? new Date().toISOString()),
+        payload: x.payload,
+      };
+    })
+    .filter((o) => o.operation_id && o.entity && o.entity_id);
 }
 
 export async function POST(req: NextRequest) {
@@ -49,26 +44,51 @@ export async function POST(req: NextRequest) {
       );
     }
     const body = (await req.json()) as {
-      ops?: { operation_id: string }[];
+      ops?: unknown[];
       since?: string | null;
     };
-    const ack = await persistUserOps(session.id, body);
+    const result = await pushUserOps(
+      session.id,
+      normalizeOps(body.ops),
+      body.since
+    );
     return NextResponse.json(
-      { ...ack, userId: session.id, note: "User-scoped File-Persistenz (Stub)" },
+      {
+        revision: result.revision,
+        ackedIds: result.ackedIds,
+        conflicts: result.conflicts,
+        duplicates: result.duplicates,
+        appliedCount: result.appliedCount,
+        pulledOps: result.pulledOps,
+        userId: session.id,
+        note: result.note,
+      },
       { status: 200 }
     );
-  } catch {
+  } catch (e) {
+    console.error("[sync POST]", e);
     return NextResponse.json({ error: "Invalid sync payload" }, { status: 400 });
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getSessionFromCookies();
+  if (!session) {
+    return NextResponse.json({
+      status: "auth_required",
+      note: "Anmeldung unter /login erforderlich",
+      userId: null,
+    });
+  }
+  const since = req.nextUrl.searchParams.get("since");
+  const status = await getUserSyncStatus(session.id);
+  const store = await loadUserSyncStore(session.id);
+  const pulled = opsSince(store, since);
   return NextResponse.json({
-    status: session ? "authenticated" : "auth_required",
-    note: session
-      ? "POST /api/sync mit Session-Cookie"
-      : "Anmeldung unter /login erforderlich",
-    userId: session?.id ?? null,
+    status: "authenticated",
+    userId: session.id,
+    ...status,
+    pulledOps: since != null ? pulled : undefined,
+    note: "GET ?since=revision für Delta-Pull",
   });
 }

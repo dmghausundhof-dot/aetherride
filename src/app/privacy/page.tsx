@@ -346,11 +346,18 @@ export default function PrivacyExportPage() {
             type="button"
             onClick={async () => {
               const r = await syncNow();
-              alert(
-                r.skipped
-                  ? r.reason
-                  : `${r.flushed} Ops synchronisiert`
-              );
+              if (r.skipped) {
+                alert(r.reason ?? "Sync übersprungen");
+                return;
+              }
+              const parts = [
+                `${r.flushed} Ops ack`,
+                r.via === "server_v2" ? "Server v2" : r.via,
+                r.conflicts ? `${r.conflicts} Konflikte (LWW)` : null,
+                r.pulled ? `${r.pulled} gezogen` : null,
+                r.revision ? `rev ${r.revision}` : null,
+              ].filter(Boolean);
+              alert(parts.join(" · "));
             }}
             className="rounded-lg bg-accent px-3 py-1.5 text-xs text-white"
           >
@@ -374,7 +381,7 @@ export default function PrivacyExportPage() {
           </button>
         </div>
         <div className="mt-3 rounded-lg bg-surface-elevated p-2 text-[11px] text-text-secondary">
-          <p className="font-medium text-foreground">Sync-Status (5.6 Stub)</p>
+          <p className="font-medium text-foreground">Sync-Status (v2 · LWW)</p>
           <p>
             {syncState.note} · pending {opsStats.pending}/{opsStats.total}
             {syncState.lastFlushAt
@@ -382,6 +389,12 @@ export default function PrivacyExportPage() {
               : ""}
             {syncState.serverRevisionCursor
               ? ` · cursor ${syncState.serverRevisionCursor}`
+              : ""}
+            {syncState.lastConflicts > 0
+              ? ` · Konflikte ${syncState.lastConflicts}`
+              : ""}
+            {syncState.lastPulled > 0
+              ? ` · gezogen ${syncState.lastPulled}`
               : ""}
           </p>
           {pendingPreview.length > 0 && (
