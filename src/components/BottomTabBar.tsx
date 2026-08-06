@@ -2,19 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Warehouse, Bike, Compass, ShoppingBag } from "lucide-react";
+import { Home, Warehouse, Bike, Compass, ShoppingBag, Footprints } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const tabs = [
-  { id: "home", href: "/", label: "Home", icon: Home },
-  { id: "garage", href: "/garage", label: "Garage", icon: Warehouse },
-  { id: "ride", href: "/ride", label: "Ride", icon: Bike, highlight: true },
-  { id: "discover", href: "/discover", label: "Discover", icon: Compass },
-  { id: "shop", href: "/shop", label: "Shop", icon: ShoppingBag },
-];
+import { useAppStore } from "@/store/useAppStore";
+import { uiVisibilityForMode } from "@/lib/mode/hiking";
 
 export function BottomTabBar() {
   const pathname = usePathname();
+  const appMode = useAppStore((s) => s.appMode);
+  const ui = uiVisibilityForMode(appMode);
+
+  const tabs = [
+    { id: "home", href: "/", label: "Home", icon: Home },
+    ...(ui.garageBikeFeatures
+      ? [{ id: "garage", href: "/garage", label: "Garage", icon: Warehouse }]
+      : []),
+    {
+      id: "ride",
+      href: "/ride",
+      label: appMode === "hiking" ? "Tour" : "Ride",
+      icon: appMode === "hiking" ? Footprints : Bike,
+      highlight: true,
+    },
+    { id: "discover", href: "/discover", label: "Discover", icon: Compass },
+    ...(ui.shopBikeParts
+      ? [{ id: "shop", href: "/shop", label: "Shop", icon: ShoppingBag }]
+      : []),
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">

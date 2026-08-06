@@ -47,7 +47,23 @@ export interface SensorMetrics {
   gForceRms: number;
   leanAngleMax: number;
   impactCount: number;
+  hardImpactCount?: number;
   flowScore: number;
+  /** F-SEN-004 Teilwerte — einzeln sichtbar */
+  flowParts?: {
+    speedConstancy: number;
+    smoothness: number;
+    brakeEconomy: number;
+    lineStability: number;
+  };
+  flowTerrainClass?: string;
+  /** FNI 0–100 Index — nie mm/% */
+  fni?: number;
+  fniReference?: string;
+  fniGated?: boolean;
+  bottomOutCount?: number;
+  suspensionActivityRms?: number;
+  leanConfidence?: string;
   estimatedTravelUsagePct?: number;
   avgCadence?: number;
   maxSpeed?: number;
@@ -129,6 +145,14 @@ export interface Recommendation {
   relatedBikeId?: string;
   relatedRideId?: string;
   status: "shown" | "accepted" | "dismissed";
+  /** F-AI-003 EvidenceSheet */
+  evidence?: string[];
+  expectedEffect?: string;
+  limits?: string;
+  confidence?: "high" | "medium" | "low";
+  ruleId?: string;
+  observationOnly?: boolean;
+  setupApply?: Record<string, number>;
 }
 
 export type TabId = "home" | "garage" | "ride" | "discover" | "shop";

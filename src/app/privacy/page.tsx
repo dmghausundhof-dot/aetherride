@@ -15,6 +15,7 @@ import {
   rideToGpx,
   rideToStravaActivityStub,
 } from "@/lib/export/gpx";
+import { downloadFit, rideToFit } from "@/lib/export/fit";
 import {
   CONSENT_LABELS,
   type ConsentPurpose,
@@ -35,6 +36,13 @@ export default function PrivacyExportPage() {
   const activeFamilyRiderId = useAppStore((s) => s.activeFamilyRiderId);
   const setActiveFamilyRider = useAppStore((s) => s.setActiveFamilyRider);
   const assignSetupToRider = useAppStore((s) => s.assignSetupToRider);
+  const authSession = useAppStore((s) => s.authSession);
+  const signIn = useAppStore((s) => s.signIn);
+  const signOutUser = useAppStore((s) => s.signOutUser);
+  const continueLocal = useAppStore((s) => s.continueLocal);
+  const requestDeleteAccount = useAppStore((s) => s.requestDeleteAccount);
+  const accountDeletion = useAppStore((s) => s.accountDeletion);
+  const syncNow = useAppStore((s) => s.syncNow);
 
   const [riderName, setRiderName] = useState("");
   const [riderWeight, setRiderWeight] = useState(70);
@@ -62,6 +70,81 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
+          <Shield className="h-4 w-4 text-accent" /> Konto (F-ACC-001/004)
+        </h3>
+        <p className="mb-2 text-xs text-text-secondary">
+          {authSession.user
+            ? `${authSession.user.displayName} · ${authSession.user.provider} · Sync ${
+                authSession.syncEnabled ? "an" : "aus"
+              }`
+            : "Nicht angemeldet — lokale Nutzung möglich"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => signIn("email", "fahrer@example.com")}
+            className="rounded-lg bg-surface-elevated px-3 py-1.5 text-xs"
+          >
+            E-Mail
+          </button>
+          <button
+            type="button"
+            onClick={() => continueLocal()}
+            className="rounded-lg bg-surface-elevated px-3 py-1.5 text-xs"
+          >
+            Lokal
+          </button>
+          <button
+            type="button"
+            onClick={() => signOutUser()}
+            className="rounded-lg bg-surface-elevated px-3 py-1.5 text-xs"
+          >
+            Abmelden
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const r = await syncNow();
+              alert(
+                r.skipped
+                  ? r.reason
+                  : `${r.flushed} Ops synchronisiert (Demo-Flush)`
+              );
+            }}
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs text-white"
+          >
+            Sync jetzt
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const req = requestDeleteAccount();
+              if (!req) alert("Konto nötig für Löschung");
+              else
+                alert(
+                  `Löschung beantragt — Wirkung bis ${new Date(
+                    req.effectiveBy
+                  ).toLocaleDateString("de-DE")} (≤30 Tage)`
+                );
+            }}
+            className="rounded-lg border border-error/40 px-3 py-1.5 text-xs text-error"
+          >
+            Konto löschen
+          </button>
+        </div>
+        {accountDeletion && (
+          <p className="mt-2 text-[11px] text-warning">
+            Löschung {accountDeletion.status} · wirksam bis{" "}
+            {new Date(accountDeletion.effectiveBy).toLocaleDateString("de-DE")}
+            {accountDeletion.confirmationEmailSent
+              ? " · E-Mail-Bestätigung (Demo)"
+              : ""}
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-2 flex items-center gap-2 font-semibold">
           <Download className="h-4 w-4 text-accent" /> Export (Art. 20)
         </h3>
         <div className="flex flex-col gap-2">
@@ -80,6 +163,18 @@ export default function PrivacyExportPage() {
             className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-40"
           >
             Letzten Ride als GPX
+          </button>
+          <button
+            type="button"
+            disabled={!lastRide}
+            onClick={() => {
+              if (!lastRide) return;
+              const fit = rideToFit(lastRide, { privacyZones });
+              downloadFit(`aetherride-${lastRide.id.slice(0, 8)}.fit`, fit);
+            }}
+            className="rounded-xl border border-border py-2.5 text-sm font-semibold disabled:opacity-40"
+          >
+            Letzten Ride als FIT (Garmin SDK)
           </button>
           <button
             type="button"

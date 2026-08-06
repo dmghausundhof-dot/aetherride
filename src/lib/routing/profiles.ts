@@ -1,16 +1,23 @@
 /**
- * Sportartspezifische Routing-Profile
+ * F-NAV-001 — Sieben Spec-Profile mit eigener Kostenfunktion
  *
- * Produktion:
- * - Self-hosted OSRM oder Valhalla
- * - Custom Lua/Lua-ähnliche Profiles oder Valhalla costing models
- * - OSM Tags: highway, surface, mtb:scale, mtb:scale:imba, trail_visibility,
- *   sac_scale, smoothness, tracktype
+ * Spec-IDs: MTB_TRAIL, MTB_ENDURO, GRAVEL, ROAD, EBIKE_TOUR, EMTB, HIKING
+ * OSM-Tags only; fehlendes Tagging → Unsicherheitsmarkierung, kein Optimismus.
  *
- * Offline: vorberechnete PMTiles + graph tiles oder on-device GraphHopper Lite
+ * Produktion: Valhalla costing (online = offline, Spec 5.4).
  */
 
 export type RoutingProfile =
+  | "MTB_TRAIL"
+  | "MTB_ENDURO"
+  | "GRAVEL"
+  | "ROAD"
+  | "EBIKE_TOUR"
+  | "EMTB"
+  | "HIKING";
+
+/** Legacy-Alias für bestehenden Demo-Code */
+export type LegacyRoutingProfile =
   | "mtb_allmountain"
   | "mtb_enduro"
   | "gravel"
@@ -18,82 +25,205 @@ export type RoutingProfile =
   | "ebike"
   | "hiking";
 
-export interface ProfileConfig {
-  id: RoutingProfile;
-  label: string;
-  prefer: string[];
-  avoid: string[];
-  maxSurfaceRoughness: number; // 0–1
-  preferMtbScaleMax?: number;
-  preferElevation: boolean;
+export interface CostWeights {
+  /** Bevorzuge mtb:scale in [min,max] */
+  mtbScalePrefer?: [number, number];
+  mtbScaleAvoidAbove?: number;
+  /** sac_scale für Hiking */
+  sacPrefer?: string[];
+  surfacePrefer: string[];
+  surfaceAvoid: string[];
+  highwayPrefer: string[];
+  highwayAvoid: string[];
+  /** Steigung: höher = mehr Hm akzeptabel */
+  elevationAppetite: number;
+  useRoads: number; // 0–1 Valhalla-ähnlich
+  avoidBadSurfaces: number;
+  turnPenalty: number;
+  /** E-Bike: steilere Anstiege akzeptabler */
   eBikeAssistFactor?: number;
 }
 
+export interface ProfileConfig {
+  id: RoutingProfile;
+  label: string;
+  costing: CostWeights;
+  /** OSM-Tag-Grundlage (Dokumentation) */
+  osmTags: string[];
+}
+
 export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
-  mtb_allmountain: {
-    id: "mtb_allmountain",
-    label: "MTB All-Mountain",
-    prefer: ["path", "track", "cycleway", "mtb:scale=0-3"],
-    avoid: ["motorway", "trunk", "steps"],
-    maxSurfaceRoughness: 0.75,
-    preferMtbScaleMax: 3,
-    preferElevation: true,
+  MTB_TRAIL: {
+    id: "MTB_TRAIL",
+    label: "MTB Trail",
+    osmTags: ["highway", "surface", "mtb:scale", "smoothness", "tracktype"],
+    costing: {
+      mtbScalePrefer: [0, 3],
+      mtbScaleAvoidAbove: 5,
+      surfacePrefer: ["dirt", "compacted", "gravel", "ground"],
+      surfaceAvoid: ["paving_stones"],
+      highwayPrefer: ["path", "track", "cycleway"],
+      highwayAvoid: ["motorway", "trunk", "steps"],
+      elevationAppetite: 0.7,
+      useRoads: 0.15,
+      avoidBadSurfaces: 0.35,
+      turnPenalty: 8,
+    },
   },
-  mtb_enduro: {
-    id: "mtb_enduro",
-    label: "Enduro",
-    prefer: ["path", "track", "mtb:scale=2-5"],
-    avoid: ["motorway", "trunk", "primary", "steps"],
-    maxSurfaceRoughness: 0.95,
-    preferMtbScaleMax: 5,
-    preferElevation: true,
+  MTB_ENDURO: {
+    id: "MTB_ENDURO",
+    label: "MTB Enduro",
+    osmTags: ["mtb:scale", "mtb:scale:uphill", "surface", "trail_visibility"],
+    costing: {
+      mtbScalePrefer: [2, 5],
+      surfacePrefer: ["dirt", "ground", "rock"],
+      surfaceAvoid: ["asphalt"],
+      highwayPrefer: ["path", "track"],
+      highwayAvoid: ["motorway", "trunk", "primary", "steps"],
+      elevationAppetite: 0.95,
+      useRoads: 0.05,
+      avoidBadSurfaces: 0.1,
+      turnPenalty: 5,
+    },
   },
-  gravel: {
-    id: "gravel",
+  GRAVEL: {
+    id: "GRAVEL",
     label: "Gravel",
-    prefer: ["track", "path", "unclassified", "tertiary", "surface=gravel|compacted|fine_gravel"],
-    avoid: ["motorway", "trunk", "steps", "mtb:scale>=4"],
-    maxSurfaceRoughness: 0.55,
-    preferElevation: false,
+    osmTags: ["surface", "smoothness", "tracktype", "network"],
+    costing: {
+      mtbScaleAvoidAbove: 3,
+      surfacePrefer: ["gravel", "compacted", "fine_gravel", "asphalt"],
+      surfaceAvoid: ["mud", "sand"],
+      highwayPrefer: ["track", "unclassified", "tertiary", "cycleway"],
+      highwayAvoid: ["motorway", "trunk", "steps"],
+      elevationAppetite: 0.45,
+      useRoads: 0.4,
+      avoidBadSurfaces: 0.45,
+      turnPenalty: 10,
+    },
   },
-  road: {
-    id: "road",
+  ROAD: {
+    id: "ROAD",
     label: "Rennrad",
-    prefer: ["cycleway", "primary", "secondary", "tertiary", "surface=asphalt|paved"],
-    avoid: ["path", "track", "footway", "steps", "surface=gravel|dirt|mud"],
-    maxSurfaceRoughness: 0.2,
-    preferElevation: false,
+    osmTags: ["highway", "surface", "cycleway", "smoothness"],
+    costing: {
+      surfacePrefer: ["asphalt", "paved", "concrete"],
+      surfaceAvoid: ["gravel", "dirt", "mud", "sand"],
+      highwayPrefer: ["cycleway", "primary", "secondary", "tertiary"],
+      highwayAvoid: ["path", "track", "footway", "steps"],
+      elevationAppetite: 0.25,
+      useRoads: 0.85,
+      avoidBadSurfaces: 0.9,
+      turnPenalty: 12,
+    },
   },
-  ebike: {
-    id: "ebike",
-    label: "E-Bike",
-    prefer: ["cycleway", "track", "path", "tertiary"],
-    avoid: ["motorway", "steps"],
-    maxSurfaceRoughness: 0.7,
-    preferElevation: true,
-    eBikeAssistFactor: 1.4, // steilere Anstiege akzeptabel
+  EBIKE_TOUR: {
+    id: "EBIKE_TOUR",
+    label: "E-Bike Tour",
+    osmTags: ["highway", "surface", "bicycle", "access", "incline"],
+    costing: {
+      surfacePrefer: ["asphalt", "compacted", "gravel"],
+      surfaceAvoid: ["mud"],
+      highwayPrefer: ["cycleway", "track", "tertiary", "secondary"],
+      highwayAvoid: ["motorway", "steps"],
+      elevationAppetite: 0.75,
+      useRoads: 0.5,
+      avoidBadSurfaces: 0.4,
+      turnPenalty: 9,
+      eBikeAssistFactor: 1.5,
+    },
   },
-  hiking: {
-    id: "hiking",
+  EMTB: {
+    id: "EMTB",
+    label: "E-MTB",
+    osmTags: ["mtb:scale", "surface", "tracktype", "incline"],
+    costing: {
+      mtbScalePrefer: [0, 4],
+      surfacePrefer: ["dirt", "compacted", "gravel"],
+      surfaceAvoid: [],
+      highwayPrefer: ["path", "track", "cycleway"],
+      highwayAvoid: ["motorway", "trunk", "steps"],
+      elevationAppetite: 0.9,
+      useRoads: 0.2,
+      avoidBadSurfaces: 0.25,
+      turnPenalty: 7,
+      eBikeAssistFactor: 1.6,
+    },
+  },
+  HIKING: {
+    id: "HIKING",
     label: "Wandern",
-    prefer: ["path", "footway", "track", "sac_scale=hiking|mountain_hiking"],
-    avoid: ["motorway", "trunk", "primary"],
-    maxSurfaceRoughness: 0.9,
-    preferElevation: true,
+    osmTags: ["sac_scale", "trail_visibility", "highway", "foot", "incline"],
+    costing: {
+      sacPrefer: ["hiking", "mountain_hiking", "demanding_mountain_hiking"],
+      surfacePrefer: ["ground", "dirt", "grass", "rock"],
+      surfaceAvoid: [],
+      highwayPrefer: ["path", "footway", "track", "steps"],
+      highwayAvoid: ["motorway", "trunk", "primary"],
+      elevationAppetite: 0.85,
+      useRoads: 0.1,
+      avoidBadSurfaces: 0.2,
+      turnPenalty: 4,
+    },
   },
 };
 
+export function legacyToSpec(p: LegacyRoutingProfile | RoutingProfile): RoutingProfile {
+  const map: Record<string, RoutingProfile> = {
+    mtb_allmountain: "MTB_TRAIL",
+    mtb_enduro: "MTB_ENDURO",
+    gravel: "GRAVEL",
+    road: "ROAD",
+    ebike: "EBIKE_TOUR",
+    hiking: "HIKING",
+    MTB_TRAIL: "MTB_TRAIL",
+    MTB_ENDURO: "MTB_ENDURO",
+    GRAVEL: "GRAVEL",
+    ROAD: "ROAD",
+    EBIKE_TOUR: "EBIKE_TOUR",
+    EMTB: "EMTB",
+    HIKING: "HIKING",
+  };
+  return map[p] ?? "MTB_TRAIL";
+}
+
+export interface RouteEdgeDemo {
+  id: string;
+  distanceM: number;
+  highway: string;
+  surface?: string;
+  mtbScale?: number;
+  sacScale?: string;
+  bicycleAccess?: "yes" | "no" | "dismount" | "unknown";
+  inclinePct?: number;
+  latlng: [number, number][];
+}
+
+export interface RouteResult {
+  profile: RoutingProfile;
+  distanceM: number;
+  durationS: number;
+  elevationGainM: number;
+  geometry: GeoJSON.LineString;
+  uncertainKm: number;
+  uncertainShare: number;
+  accessWarnings: string[];
+  blocked: boolean;
+  edges: RouteEdgeDemo[];
+  costingNote: string;
+}
+
 /**
- * Beispiel-Call an einen Routing-Service (Produktion).
- * Hier nur Interface – echte Calls gehen an /api/route oder self-hosted OSRM.
+ * Demo-Router mit Spec-Kostenfunktion auf synthetischen Kanten.
+ * Produktion: Valhalla FFI /api/route — identisch online/offline.
  */
 export async function requestRoute(
-  profile: RoutingProfile,
+  profile: RoutingProfile | LegacyRoutingProfile,
   from: [number, number],
   to: [number, number]
-): Promise<{ distanceM: number; durationS: number; geometry: GeoJSON.LineString } | null> {
-  // Placeholder – in Produktion:
-  // const res = await fetch(`/api/route?profile=${profile}&from=...&to=...`);
-  console.log(`[Routing] ${profile}: ${from} → ${to}`);
-  return null;
+): Promise<RouteResult | null> {
+  const id = legacyToSpec(profile);
+  const cfg = ROUTING_PROFILES[id];
+  const { scoreDemoRoute } = await import("./engine");
+  return scoreDemoRoute(cfg, from, to);
 }

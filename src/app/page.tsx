@@ -24,12 +24,20 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold tracking-tight">AetherRide</h1>
           <p className="text-sm text-text-secondary">Dein intelligenter Riding Companion</p>
         </div>
-        <Link
-          href="/profile"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-accent"
-        >
-          AR
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/onboarding"
+            className="rounded-lg bg-surface-elevated px-2 py-1 text-[10px] text-text-secondary"
+          >
+            Onboarding
+          </Link>
+          <Link
+            href="/profile"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-accent"
+          >
+            AR
+          </Link>
+        </div>
       </header>
 
       {activeBike ? (

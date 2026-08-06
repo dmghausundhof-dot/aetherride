@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Compass,
   Mountain,
@@ -15,6 +15,14 @@ import { estimateRange } from "@/lib/ebike/range";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
 import { getTrailViewNear } from "@/lib/routing/trailView";
 import { buildDemoElevationProfile } from "@/lib/routing/elevationProfile";
+import {
+  ROUTING_PROFILES,
+  requestRoute,
+  type RoutingProfile,
+  type RouteResult,
+} from "@/lib/routing/profiles";
+import { buildManeuvers, speakTbt } from "@/lib/routing/turnByTurn";
+import { HIKING_GEAR_DEFAULT } from "@/lib/mode/hiking";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView } from "@/components/MapView";
 import Link from "next/link";
@@ -29,11 +37,30 @@ export default function DiscoverPage() {
   const boschLive = useAppStore((s) => s.boschLive);
   const canUseProFeature = useAppStore((s) => s.canUseProFeature);
   const consents = useAppStore((s) => s.consents);
+  const appMode = useAppStore((s) => s.appMode);
   const rangePro = canUseProFeature("range");
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const [minutes, setMinutes] = useState(150);
   const [tab, setTab] = useState<DiscoverTab>("routes");
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [routingProfile, setRoutingProfile] = useState<RoutingProfile>(
+    appMode === "hiking" ? "HIKING" : "MTB_TRAIL"
+  );
+  const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
+
+  useEffect(() => {
+    if (appMode === "hiking") setRoutingProfile("HIKING");
+  }, [appMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    requestRoute(routingProfile, [47.45, 12.15], [47.48, 12.22]).then((r) => {
+      if (!cancelled) setRouteResult(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [routingProfile]);
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -100,7 +127,80 @@ export default function DiscoverPage() {
 
       {tab === "routes" && (
         <>
-          {activeBike && (
+          <section className="rounded-2xl border border-border bg-surface p-4">
+            <h3 className="mb-2 flex items-center gap-2 font-semibold">
+              <Compass className="h-4 w-4 text-accent" /> Routing-Profil (F-NAV-001)
+            </h3>
+            <div className="mb-3 flex flex-wrap gap-1">
+              {(Object.keys(ROUTING_PROFILES) as RoutingProfile[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setRoutingProfile(id)}
+                  className={`rounded-lg px-2 py-1 text-[10px] font-medium ${
+                    routingProfile === id
+                      ? "bg-accent text-white"
+                      : "bg-surface-elevated text-text-secondary"
+                  }`}
+                >
+                  {ROUTING_PROFILES[id].label}
+                </button>
+              ))}
+            </div>
+            {routeResult && (
+              <div className="space-y-2 text-sm">
+                <p>
+                  {(routeResult.distanceM / 1000).toFixed(1)} km ·{" "}
+                  {routeResult.elevationGainM} hm ·{" "}
+                  {Math.round(routeResult.durationS / 60)} min
+                </p>
+                <p className="text-xs text-text-secondary">
+                  Unsichere Abschnitte: {routeResult.uncertainKm} km (
+                  {Math.round(routeResult.uncertainShare * 100)} %) — nicht
+                  optimistisch bewertet
+                </p>
+                {routeResult.accessWarnings.length > 0 && (
+                  <ul className="list-inside list-disc text-xs text-warning">
+                    {routeResult.accessWarnings.map((w) => (
+                      <li key={w}>{w}</li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-[10px] text-text-secondary">
+                  {routeResult.costingNote}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const man = buildManeuvers(routeResult);
+                    const next = man.find((m) => m.type !== "start");
+                    if (next) speakTbt(next.instructionDe, "de");
+                  }}
+                  className="rounded-xl bg-accent px-3 py-2 text-xs font-medium text-white"
+                >
+                  TbT-Ansage testen (F-NAV-003)
+                </button>
+              </div>
+            )}
+          </section>
+
+          {appMode === "hiking" && (
+            <section className="rounded-2xl border border-border bg-surface p-4">
+              <h3 className="mb-2 font-semibold">Ausrüstungsliste</h3>
+              <ul className="space-y-1 text-sm">
+                {HIKING_GEAR_DEFAULT.map((g) => (
+                  <li key={g.id} className="flex justify-between">
+                    <span>{g.label}</span>
+                    <span className="text-xs text-text-secondary">
+                      {g.essential ? "Pflicht" : "Optional"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {activeBike && appMode === "bike" && (
             <div className="rounded-xl bg-primary/20 px-3 py-2 text-sm">
               <span className="text-text-secondary">Aktuelles Bike: </span>
               <span className="font-medium">{activeBike.name}</span>
