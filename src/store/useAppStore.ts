@@ -1309,6 +1309,8 @@ export const useAppStore = create<AppState>()(
                 ruleId: card.ruleId,
                 observationOnly: card.observationOnly,
                 setupApply: card.apply,
+                workshopLine: card.workshopLine,
+                coachLine: card.coachLine,
               });
             }
           }
@@ -1425,6 +1427,8 @@ export const useAppStore = create<AppState>()(
             ruleId: card.ruleId,
             observationOnly: card.observationOnly,
             setupApply: card.apply,
+            workshopLine: card.workshopLine,
+            coachLine: card.coachLine,
           });
         }
       },

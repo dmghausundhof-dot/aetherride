@@ -11,6 +11,8 @@ import {
   type BikeCalibration,
   type MountMode,
 } from "@/lib/sensor/calibration";
+import { sagMmFromPct, sagStartBand } from "@/lib/setup/forumCopy";
+import type { BikeCategory } from "@/types";
 
 const MOUNTS: { id: MountMode; label: string }[] = [
   { id: "HANDLEBAR", label: "Lenker" },
@@ -24,15 +26,18 @@ const MOUNTS: { id: MountMode; label: string }[] = [
 export function CalibrationWizard({
   bikeId,
   travelFrontMm,
+  category = "mtb_enduro",
   initial,
   onSave,
 }: {
   bikeId: string;
   travelFrontMm?: number;
+  category?: BikeCategory;
   initial?: BikeCalibration | null;
   onSave: (cal: BikeCalibration) => void;
 }) {
   const [step, setStep] = useState(0);
+  const band = useMemo(() => sagStartBand(category, "fork"), [category]);
   const suggested = useMemo(
     () =>
       suggestMountMode({
@@ -47,8 +52,9 @@ export function CalibrationWizard({
       : suggested
   );
   const [confirmed, setConfirmed] = useState(false);
-  const [sagMm, setSagMm] = useState(initial?.sagFrontMm ?? 38);
   const travel = travelFrontMm ?? 160;
+  const defaultSag = sagMmFromPct(travel, band.targetPct);
+  const [sagMm, setSagMm] = useState(initial?.sagFrontMm ?? defaultSag);
 
   const finish = () => {
     const still = Array.from({ length: 40 }, () => ({
@@ -58,7 +64,7 @@ export function CalibrationWizard({
     }));
     const q = orientationFromStillSamples(still);
     const trials = [0, 1, 2].map(() =>
-      estimateZetaFromPeaks([1.0, 0.62, 0.39, 0.24], 2.35 + Math.random() * 0.1)
+      estimateZetaFromPeaks([1.0, 0.55, 0.3, 0.17], 2.35 + Math.random() * 0.1)
     );
     const suspension = combineBounceTrials(trials);
     const base = initial ?? createEmptyCalibration(bikeId);
@@ -80,7 +86,8 @@ export function CalibrationWizard({
     <div className="rounded-2xl border border-border bg-surface p-4">
       <h3 className="mb-1 font-semibold">Kalibrierung (~45 s)</h3>
       <p className="mb-3 text-xs text-text-secondary">
-        F-SEN-002 · Ausrichtung → Bounce (ζ) → SAG · verfällt bei Halterungs-/Fahrwerkswechsel
+        F-SEN-002 · Ausrichtung → Bounce (ζ) → SAG · verfällt bei
+        Halterungs-/Fahrwerkswechsel
       </p>
 
       {step === 0 && (
@@ -141,8 +148,13 @@ export function CalibrationWizard({
       {step === 2 && (
         <div className="space-y-3">
           <p className="text-sm">
-            Drei kräftige Front-Kompressionen, loslassen. Misst Low-Speed-Zugstufe
-            (ζ) — keine Aussage zur High-Speed-Druckstufe.
+            Drei kräftige Front-Kompressionen, loslassen. Misst{" "}
+            <strong>Low-Speed-Zug</strong> (ζ) um den Arbeitspunkt — keine
+            Aussage zur High-Speed-Druckstufe (Square-Edge).
+          </p>
+          <p className="text-xs text-text-secondary">
+            Werkstatt: log. Dekrement aus Ausschwingen · Coach: „Wie schnell kommt
+            die Gabel beruhigt zurück?“
           </p>
           <button
             type="button"
@@ -158,8 +170,20 @@ export function CalibrationWizard({
         <div className="space-y-3">
           <p className="text-sm">
             SAG per O-Ring in mm — <strong>nicht</strong> aus Beschleunigung
-            geschätzt.
+            geschätzt. Erst SAG, dann Zugstufe (Fox/RockShox).
           </p>
+          <div className="rounded-xl bg-surface-elevated p-3 text-xs">
+            <p className="font-medium">
+              Startband Gabel: {band.minPct}–{band.maxPct} % · Ziel ~{band.targetPct} %
+            </p>
+            <p className="mt-1 text-text-secondary">{band.sourceNote}</p>
+            <p className="mt-2 text-warning">{band.disclaimer}</p>
+            <p className="mt-2 text-text-secondary">
+              Orientierung bei {travel} mm Hub:{" "}
+              {sagMmFromPct(travel, band.minPct)}–
+              {sagMmFromPct(travel, band.maxPct)} mm O-Ring.
+            </p>
+          </div>
           <label className="block text-sm">
             SAG vorn (mm)
             <input
@@ -171,6 +195,11 @@ export function CalibrationWizard({
           </label>
           <p className="text-xs text-text-secondary">
             ≈ {sagPct(sagMm, travel)} % von {travel} mm Hub
+            {sagPct(sagMm, travel) != null &&
+            (sagPct(sagMm, travel)! < band.minPct ||
+              sagPct(sagMm, travel)! > band.maxPct)
+              ? " — außerhalb Startband (ok, wenn bewusst)"
+              : " — im Startband"}
           </p>
           {(mount === "HANDLEBAR" || mount === "STEM") && confirmed ? (
             <button

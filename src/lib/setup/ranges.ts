@@ -8,11 +8,10 @@ import type {
 } from "@/types/garage";
 
 /**
- * SAG-Richtwerte aus Magazin-/OEM-Praxis (Simplon, Dirt MTB, Enduro MTB Mag):
- * XC 20–25 %, AM/Trail 25–30 %, Enduro 25–35 %, Freeride/DH 30–40 %.
- * Gabel typisch etwas weniger SAG als Dämpfer (~20–25 % vs. 25–30 %).
+ * SAG-Richtwerte — DACH Enduro / Fox / RockShox / BIKE-Praxis.
+ * Gabel typisch weniger SAG als Dämpfer. Startwerte, kein Gesetz
+ * (TrailHead-Charts können danebenliegen — eMTB-News).
  */
-
 export function recommendedSagPct(
   category: BikeCategory,
   end: "fork" | "shock"
@@ -21,15 +20,15 @@ export function recommendedSagPct(
     BikeCategory,
     { fork: [number, number]; shock: [number, number] }
   > = {
-    mtb_trail: { fork: [20, 25], shock: [25, 30] },
-    mtb_am: { fork: [20, 25], shock: [25, 30] },
-    mtb_enduro: { fork: [20, 26], shock: [27, 35] },
-    dh: { fork: [25, 30], shock: [30, 40] },
+    mtb_trail: { fork: [15, 22], shock: [25, 30] },
+    mtb_am: { fork: [18, 24], shock: [25, 30] },
+    mtb_enduro: { fork: [18, 25], shock: [25, 32] },
+    dh: { fork: [22, 28], shock: [28, 35] },
     gravel: { fork: [15, 20], shock: [20, 25] },
     road: { fork: [15, 20], shock: [15, 20] },
     urban: { fork: [15, 20], shock: [15, 20] },
-    emtb: { fork: [20, 26], shock: [27, 35] },
-    etrekking: { fork: [20, 25], shock: [25, 30] },
+    emtb: { fork: [18, 25], shock: [25, 32] },
+    etrekking: { fork: [18, 24], shock: [25, 30] },
     hiking: { fork: [0, 0], shock: [0, 0] },
   };
   const [min, max] = table[category][end];

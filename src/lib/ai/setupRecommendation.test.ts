@@ -41,6 +41,14 @@ const bike = {
           unit: "psi",
           outOfSpec: false,
         },
+        {
+          bikeComponentId: "c1",
+          slot: "fork",
+          adjusterKey: "sag_pct",
+          valueNum: 22,
+          unit: "%",
+          outOfSpec: false,
+        },
       ],
       createdAt: "",
       createdBy: "user",
@@ -49,7 +57,6 @@ const bike = {
   ],
   totalOdometerKm: 100,
   totalHours: 10,
-  currentSetupId: "s1",
 } as unknown as Bike;
 
 const ride: Ride = {
@@ -89,7 +96,7 @@ const cal: BikeCalibration = {
     accepted: true,
     scopeNote: "test",
   },
-  sagFrontMm: 40,
+  sagFrontMm: 35, // ~22 % of 160 — im Band
   sagRearMm: null,
   travelFrontMm: 160,
   travelRearMm: null,
@@ -99,8 +106,8 @@ const cal: BikeCalibration = {
 const feedback: RideFeedback = {
   rideId: "r1",
   overallFeel: 3,
-  frontFeel: "too_firm",
-  smallBump: "harsh",
+  frontFeel: "rupft",
+  smallBump: "rupft",
   skipped: false,
   createdAt: new Date().toISOString(),
 };
@@ -115,8 +122,42 @@ const analysis = buildPostRideAnalysis({
 assert(analysis.facts.length >= 2, "facts");
 assert(analysis.observations.length <= 3, "max 3 observations");
 assert(analysis.recommendation != null, "has recommendation");
-assert(analysis.recommendation!.ruleId === "SR-REB-01", "SR-REB-01");
-// G-2 offen → observationOnly
-assert(analysis.recommendation!.observationOnly === true, "gated observation");
+assert(analysis.recommendation!.ruleId === "SR-REB-01", "SR-REB-01 when SAG ok");
+assert(analysis.recommendation!.observationOnly === true, "G-2 gated");
+assert(!!analysis.recommendation!.workshopLine, "workshop line");
+assert(!!analysis.recommendation!.coachLine, "coach line");
 
-console.log("setupRecommendation tests OK");
+// SAG-first: hoher SAG + Bottom-out → Observation C, nicht Druck-Apply
+const softCal: BikeCalibration = {
+  ...cal,
+  sagFrontMm: 48, // 30 % > Enduro-Band
+};
+const bottomRide: Ride = {
+  ...ride,
+  summaryMetrics: {
+    ...ride.summaryMetrics,
+    bottomOutCount: 4,
+  },
+};
+const softFb: RideFeedback = {
+  ...feedback,
+  frontFeel: "packt_nicht",
+  smallBump: "ok",
+};
+const sagFirst = buildPostRideAnalysis({
+  bike,
+  ride: bottomRide,
+  feedback: softFb,
+  calibration: softCal,
+});
+assert(sagFirst.recommendation?.ruleId === "SR-SAG-02", "SAG/bottom before rebound");
+assert(sagFirst.recommendation?.observationOnly === true, "bottom-out observation only");
+assert(
+  Object.keys(sagFirst.recommendation?.apply ?? {}).length === 0,
+  "no auto apply on bottom-out"
+);
+
+console.log("setupRecommendation tests OK", {
+  reb: analysis.recommendation?.ruleId,
+  sag: sagFirst.recommendation?.ruleId,
+});

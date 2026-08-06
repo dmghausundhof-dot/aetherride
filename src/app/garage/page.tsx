@@ -199,6 +199,7 @@ export default function GaragePage() {
                     <CalibrationWizard
                       bikeId={selected.id}
                       travelFrontMm={selected.travelFrontMm}
+                      category={selected.category}
                       initial={selectedCal}
                       onSave={(cal) => {
                         setBikeCalibration(selected.id, cal);
