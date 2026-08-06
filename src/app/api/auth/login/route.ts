@@ -6,6 +6,11 @@ import {
   isAuthSecretHardened,
   setSessionCookie,
 } from "@/lib/auth/serverSession";
+import {
+  authBackendLabelDe,
+  getAuthBackend,
+} from "@/lib/supabase/config";
+import { authUserFromSupabase } from "@/lib/auth/supabaseUser";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +26,30 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (getAuthBackend() === "supabase") {
+      const { createSupabaseServerClient } = await import(
+        "@/lib/supabase/server"
+      );
+      const supabase = await createSupabaseServerClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error || !data.user) {
+        return NextResponse.json(
+          { error: error?.message || "E-Mail oder Passwort falsch." },
+          { status: 401 }
+        );
+      }
+      return NextResponse.json({
+        user: authUserFromSupabase(data.user),
+        syncEnabled: true,
+        authBackend: "supabase",
+        authSecretHardened: isAuthSecretHardened(),
+      });
+    }
+
     const user = await authenticateEmail(email, password);
     if (!user) {
       return NextResponse.json(
@@ -38,7 +67,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       user: publicUser(user),
       syncEnabled: true,
+      authBackend: "local_file",
       authSecretHardened: isAuthSecretHardened(),
+      note: authBackendLabelDe("local_file"),
     });
   } catch (e) {
     console.error("[auth/login]", e);

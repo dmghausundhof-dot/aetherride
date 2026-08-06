@@ -1,10 +1,12 @@
 /**
- * HTTP-only JWT Session (F-ACC-001 Produktionsschicht)
+ * Session-Zugriff: Supabase (primär) oder Legacy-JWT (File-Fallback)
  */
 
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { AuthUser } from "./session";
+import { getAuthBackend, isSupabaseConfigured } from "@/lib/supabase/config";
+import { authUserFromSupabase } from "./supabaseUser";
 
 export const SESSION_COOKIE = "aetherride_session";
 
@@ -20,6 +22,7 @@ function secretKey() {
 }
 
 export function isAuthSecretHardened(): boolean {
+  if (isSupabaseConfigured()) return true;
   const s = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
   return Boolean(s && s.length >= 32);
 }
@@ -89,7 +92,22 @@ export async function clearSessionCookie(): Promise<void> {
   });
 }
 
-export async function getSessionFromCookies(): Promise<AuthUser | null> {
+async function getSupabaseSessionUser(): Promise<AuthUser | null> {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const { createSupabaseServerClient } = await import(
+      "@/lib/supabase/server"
+    );
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    return authUserFromSupabase(data.user);
+  } catch {
+    return null;
+  }
+}
+
+async function getLegacyJwtUser(): Promise<AuthUser | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -102,6 +120,13 @@ export async function getSessionFromCookies(): Promise<AuthUser | null> {
     provider: "email",
     createdAt: "",
   };
+}
+
+export async function getSessionFromCookies(): Promise<AuthUser | null> {
+  if (getAuthBackend() === "supabase") {
+    return getSupabaseSessionUser();
+  }
+  return getLegacyJwtUser();
 }
 
 export function claimsToAuthUser(c: SessionClaims): AuthUser {

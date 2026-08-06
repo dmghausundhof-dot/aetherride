@@ -165,7 +165,7 @@ export function isPlausibleEmail(email: string): boolean {
 }
 
 export const AUTH_DEMO_BANNER =
-  "Apple/Google OAuth noch nicht konfiguriert. E-Mail/Passwort läuft über Server-Session (HTTP-only Cookie).";
+  "E-Mail/Passwort über Supabase Auth (wenn Env gesetzt). Google/Apple OAuth ist vorbereitet und kommt zum Schluss.";
 
 /** @deprecated lokal nur noch für anonymous / Legacy */
 export const AUTH_LOCAL_ONLY_NOTE =
