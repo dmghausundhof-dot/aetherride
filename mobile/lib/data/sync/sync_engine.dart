@@ -1,8 +1,28 @@
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
 
-/// Sync-Engine-Stub: zieht/pusht Snapshots im Hintergrund (Web: `/api/sync`).
-/// UI bleibt offline-fähig — niemals direkter Netz-Lesepfad aus Widgets.
+import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/config.dart';
+import '../local/app_database.dart';
+import '../local/garage_repository.dart';
+import 'sync_payload.dart';
+
+/// Sync-Engine: UI bleibt offline; Netz nur hier.
 class SyncEngine {
+  SyncEngine({
+    required AppDatabase db,
+    required GarageRepository garage,
+    http.Client? httpClient,
+  })  : _db = db,
+        _garage = garage,
+        _http = httpClient ?? http.Client();
+
+  final AppDatabase _db;
+  final GarageRepository _garage;
+  final http.Client _http;
   bool _running = false;
 
   bool get isRunning => _running;
@@ -10,18 +30,160 @@ class SyncEngine {
   Future<void> start() async {
     if (_running) return;
     _running = true;
-    debugPrint('SyncEngine: gestartet (Stub)');
+    debugPrint('SyncEngine: gestartet');
+    try {
+      await syncNow();
+    } catch (e) {
+      debugPrint('SyncEngine start sync: $e');
+    }
   }
 
   Future<void> stop() async {
     _running = false;
   }
 
-  Future<void> pullNow() async {
-    debugPrint('SyncEngine: pullNow (Stub)');
+  Future<String?> _accessToken() async {
+    if (!AppConfig.isSupabaseConfigured) return null;
+    try {
+      return Supabase.instance.client.auth.currentSession?.accessToken;
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<void> pushNow() async {
-    debugPrint('SyncEngine: pushNow (Stub)');
+  Future<({SyncPayload? payload, String? updatedAt})> pullNow() async {
+    final token = await _accessToken();
+    if (token == null) {
+      debugPrint('SyncEngine: pull übersprungen (kein Auth)');
+      return (payload: null, updatedAt: null);
+    }
+    final res = await _http.get(
+      Uri.parse('${AppConfig.apiBaseUrl}/api/sync'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+    if (res.statusCode == 401) {
+      return (payload: null, updatedAt: null);
+    }
+    if (res.statusCode != 200) {
+      throw Exception('Sync pull failed: ${res.statusCode}');
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final raw = data['payload'];
+    final updatedAt = data['updatedAt'] as String?;
+    if (raw is! Map) return (payload: null, updatedAt: updatedAt);
+    return (
+      payload: SyncPayload.fromJson(Map<String, dynamic>.from(raw)),
+      updatedAt: updatedAt ?? raw['updatedAt'] as String?,
+    );
   }
+
+  Future<String> pushNow(SyncPayload payload, {String? clientUpdatedAt}) async {
+    final token = await _accessToken();
+    if (token == null) throw Exception('unauthorized');
+    final res = await _http.post(
+      Uri.parse('${AppConfig.apiBaseUrl}/api/sync'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'payload': payload.toJson(),
+        'clientUpdatedAt': clientUpdatedAt ?? payload.updatedAt,
+      }),
+    );
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode == 409) {
+      final err = SyncConflictException(
+        remote: data['payload'] is Map
+            ? SyncPayload.fromJson(
+                Map<String, dynamic>.from(data['payload'] as Map),
+              )
+            : null,
+        remoteUpdatedAt: data['remoteUpdatedAt'] as String?,
+      );
+      throw err;
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception(data['error'] ?? 'Sync push failed: ${res.statusCode}');
+    }
+    return data['updatedAt'] as String? ?? DateTime.now().toIso8601String();
+  }
+
+  /// LWW bidirectional — mirrors web `syncBidirectional`.
+  Future<({SyncPayload merged, String direction})> syncNow() async {
+    final local = await _garage.buildSyncPayload();
+    final remote = await pullNow();
+
+    final localAt = DateTime.tryParse(local.updatedAt ?? '')?.millisecondsSinceEpoch ?? 0;
+    final remoteAt =
+        DateTime.tryParse(remote.updatedAt ?? '')?.millisecondsSinceEpoch ?? 0;
+
+    if (remote.payload == null) {
+      final stamped = local.copyWith(
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      );
+      try {
+        final updatedAt = await pushNow(stamped);
+        final merged = stamped.copyWith(updatedAt: updatedAt);
+        await _record('pushed', updatedAt);
+        return (merged: merged, direction: 'pushed');
+      } catch (e) {
+        debugPrint('SyncEngine push empty-remote: $e');
+        return (merged: local, direction: 'noop');
+      }
+    }
+
+    if (remoteAt > localAt) {
+      await _garage.applyRemotePayload(
+        remote.payload!.copyWith(updatedAt: remote.updatedAt),
+      );
+      await _record('pulled', remote.updatedAt);
+      return (
+        merged: remote.payload!.copyWith(updatedAt: remote.updatedAt),
+        direction: 'pulled'
+      );
+    }
+
+    if (localAt > remoteAt) {
+      try {
+        final updatedAt = await pushNow(local, clientUpdatedAt: remote.updatedAt);
+        await _record('pushed', updatedAt);
+        return (
+          merged: local.copyWith(updatedAt: updatedAt),
+          direction: 'pushed'
+        );
+      } on SyncConflictException catch (e) {
+        if (e.remote != null) {
+          await _garage.applyRemotePayload(e.remote!);
+          await _record('pulled', e.remoteUpdatedAt);
+          return (merged: e.remote!, direction: 'pulled');
+        }
+        rethrow;
+      }
+    }
+
+    await _record('noop', remote.updatedAt ?? local.updatedAt);
+    return (merged: local, direction: 'noop');
+  }
+
+  Future<void> _record(String direction, String? at) async {
+    await _db.into(_db.syncState).insertOnConflictUpdate(
+          SyncStateCompanion.insert(
+            id: const Value(1),
+            lastDirection: Value(direction),
+            remoteUpdatedAt: Value(at),
+            localUpdatedAt: Value(at),
+          ),
+        );
+  }
+}
+
+class SyncConflictException implements Exception {
+  SyncConflictException({this.remote, this.remoteUpdatedAt});
+  final SyncPayload? remote;
+  final String? remoteUpdatedAt;
 }

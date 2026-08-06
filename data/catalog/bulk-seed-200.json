@@ -1,0 +1,2001 @@
+{
+  "manufacturers": [
+    {
+      "id": "bulk",
+      "name": "Bulk Seed",
+      "bikes": []
+    }
+  ],
+  "components": [
+    {
+      "id": "bulk-fork-0",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 0",
+      "year": 2020,
+      "attributes": {
+        "travel_mm": 150,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-1",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 1",
+      "year": 2021,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-2",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 2",
+      "year": 2022,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-3",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 3",
+      "year": 2023,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-4",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 4",
+      "year": 2024,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-5",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 5",
+      "year": 2025,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-6",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 6",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-7",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 7",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-8",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 8",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-9",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 9",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-10",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 10",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-11",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 11",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-12",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 12",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-13",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 13",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-14",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 14",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-15",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 15",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-16",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 16",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-17",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 17",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-18",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 18",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-19",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 19",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-20",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 20",
+      "year": 2022,
+      "attributes": {
+        "travel_mm": 170,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-21",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 21",
+      "year": 2023,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-22",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 22",
+      "year": 2024,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-23",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 23",
+      "year": 2025,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-24",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 24",
+      "year": 2020,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-25",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 25",
+      "year": 2021,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-26",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 26",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-27",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 27",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-28",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 28",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-29",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 29",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-30",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 30",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-31",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 31",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-32",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 32",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-33",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 33",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-34",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 34",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-35",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 35",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-36",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 36",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-37",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 37",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-38",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 38",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-39",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 39",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-40",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 40",
+      "year": 2024,
+      "attributes": {
+        "travel_mm": 160,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-41",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 41",
+      "year": 2025,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-42",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 42",
+      "year": 2020,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-43",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 43",
+      "year": 2021,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-44",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 44",
+      "year": 2022,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-45",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 45",
+      "year": 2023,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-46",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 46",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-47",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 47",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-48",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 48",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-49",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 49",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-50",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 50",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-51",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 51",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-52",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 52",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-53",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 53",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-54",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 54",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-55",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 55",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-56",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 56",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-57",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 57",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-58",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 58",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-59",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 59",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-60",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 60",
+      "year": 2020,
+      "attributes": {
+        "travel_mm": 150,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-61",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 61",
+      "year": 2021,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-62",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 62",
+      "year": 2022,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-63",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 63",
+      "year": 2023,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-64",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 64",
+      "year": 2024,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-65",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 65",
+      "year": 2025,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-66",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 66",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-67",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 67",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-68",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 68",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-69",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 69",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-70",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 70",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-71",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 71",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-72",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 72",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-73",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 73",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-74",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 74",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-75",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 75",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-76",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 76",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-77",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 77",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-78",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 78",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-79",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 79",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-80",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 80",
+      "year": 2022,
+      "attributes": {
+        "travel_mm": 170,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-81",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 81",
+      "year": 2023,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-82",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 82",
+      "year": 2024,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-83",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 83",
+      "year": 2025,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-84",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 84",
+      "year": 2020,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-85",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 85",
+      "year": 2021,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-86",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 86",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-87",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 87",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-88",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 88",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-89",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 89",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-90",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 90",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-91",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 91",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-92",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 92",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-93",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 93",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-94",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 94",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-95",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 95",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-96",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 96",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-97",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 97",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-98",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 98",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-99",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 99",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-100",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 100",
+      "year": 2024,
+      "attributes": {
+        "travel_mm": 160,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-101",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 101",
+      "year": 2025,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-102",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 102",
+      "year": 2020,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-103",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 103",
+      "year": 2021,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-104",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 104",
+      "year": 2022,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-105",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 105",
+      "year": 2023,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-106",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 106",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-107",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 107",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-108",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 108",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-109",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 109",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-110",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 110",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-111",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 111",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-112",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 112",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-113",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 113",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-114",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 114",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-115",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 115",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-116",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 116",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-117",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 117",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-118",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 118",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-119",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 119",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-120",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 120",
+      "year": 2020,
+      "attributes": {
+        "travel_mm": 150,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-121",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 121",
+      "year": 2021,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-122",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 122",
+      "year": 2022,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-123",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 123",
+      "year": 2023,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-124",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 124",
+      "year": 2024,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-125",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 125",
+      "year": 2025,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-126",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 126",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-127",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 127",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-128",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 128",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-129",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 129",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-130",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 130",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-131",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 131",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-132",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 132",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-133",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 133",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-134",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 134",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-135",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 135",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-136",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 136",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-137",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 137",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-138",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 138",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-139",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 139",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-140",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 140",
+      "year": 2022,
+      "attributes": {
+        "travel_mm": 170,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-141",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 141",
+      "year": 2023,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-142",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 142",
+      "year": 2024,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-143",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 143",
+      "year": 2025,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-144",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 144",
+      "year": 2020,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-145",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 145",
+      "year": 2021,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-146",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 146",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-147",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 147",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-148",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 148",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-149",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 149",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-150",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 150",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-151",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 151",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-152",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 152",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-153",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 153",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-154",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 154",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-155",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 155",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-156",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 156",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-157",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 157",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-158",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 158",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-159",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 159",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-160",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 160",
+      "year": 2024,
+      "attributes": {
+        "travel_mm": 160,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-161",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 161",
+      "year": 2025,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-162",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 162",
+      "year": 2020,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-163",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 163",
+      "year": 2021,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-164",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 164",
+      "year": 2022,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-165",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 165",
+      "year": 2023,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-166",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 166",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-167",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 167",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-168",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 168",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-169",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 169",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-170",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 170",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-171",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 171",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-172",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 172",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-173",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 173",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-174",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 174",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-175",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 175",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-176",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 176",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-177",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 177",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-178",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 178",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-179",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 179",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-fork-180",
+      "slot": "fork",
+      "manufacturer": "Fox",
+      "model": "Model 180",
+      "year": 2020,
+      "attributes": {
+        "travel_mm": 150,
+        "steerer": "tapered",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_shock-181",
+      "slot": "rear_shock",
+      "manufacturer": "RockShox",
+      "model": "Model 181",
+      "year": 2021,
+      "attributes": {
+        "eye_to_eye_mm": 210,
+        "stroke_mm": 55
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_front-182",
+      "slot": "tire_front",
+      "manufacturer": "Shimano",
+      "model": "Model 182",
+      "year": 2022,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-tire_rear-183",
+      "slot": "tire_rear",
+      "manufacturer": "SRAM",
+      "model": "Model 183",
+      "year": 2023,
+      "attributes": {
+        "etrto": "62-622",
+        "wheel_size": "29"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_front-184",
+      "slot": "brake_front",
+      "manufacturer": "Maxxis",
+      "model": "Model 184",
+      "year": 2024,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-brake_rear-185",
+      "slot": "brake_rear",
+      "manufacturer": "WTB",
+      "model": "Model 185",
+      "year": 2025,
+      "attributes": {
+        "rotor_max_mm": 203,
+        "mount": "postmount"
+      },
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-cassette-186",
+      "slot": "cassette",
+      "manufacturer": "Hope",
+      "model": "Model 186",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-chain-187",
+      "slot": "chain",
+      "manufacturer": "RaceFace",
+      "model": "Model 187",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-crankset-188",
+      "slot": "crankset",
+      "manufacturer": "Thomson",
+      "model": "Model 188",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-stem-189",
+      "slot": "stem",
+      "manufacturer": "OneUp",
+      "model": "Model 189",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-handlebar-190",
+      "slot": "handlebar",
+      "manufacturer": "Fox",
+      "model": "Model 190",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-seatpost-191",
+      "slot": "seatpost",
+      "manufacturer": "RockShox",
+      "model": "Model 191",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-saddle-192",
+      "slot": "saddle",
+      "manufacturer": "Shimano",
+      "model": "Model 192",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-front_rim-193",
+      "slot": "front_rim",
+      "manufacturer": "SRAM",
+      "model": "Model 193",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rear_rim-194",
+      "slot": "rear_rim",
+      "manufacturer": "Maxxis",
+      "model": "Model 194",
+      "year": 2022,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_front-195",
+      "slot": "rotor_front",
+      "manufacturer": "WTB",
+      "model": "Model 195",
+      "year": 2023,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-rotor_rear-196",
+      "slot": "rotor_rear",
+      "manufacturer": "Hope",
+      "model": "Model 196",
+      "year": 2024,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-pedals-197",
+      "slot": "pedals",
+      "manufacturer": "RaceFace",
+      "model": "Model 197",
+      "year": 2025,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-headset-198",
+      "slot": "headset",
+      "manufacturer": "Thomson",
+      "model": "Model 198",
+      "year": 2020,
+      "attributes": {},
+      "source": "bulk_seed"
+    },
+    {
+      "id": "bulk-bottom_bracket-199",
+      "slot": "bottom_bracket",
+      "manufacturer": "OneUp",
+      "model": "Model 199",
+      "year": 2021,
+      "attributes": {},
+      "source": "bulk_seed"
+    }
+  ]
+}

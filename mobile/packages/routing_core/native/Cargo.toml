@@ -1,0 +1,9 @@
+[package]
+name = "routing_core"
+version = "0.1.0"
+edition = "2021"
+description = "AetherRide Valhalla offline FFI scaffold (Spec §5.1 routing_core)"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+name = "routing_core"
