@@ -1,5 +1,10 @@
 # dsp_core
 
-Rust (geteilt iOS/Android): Kalibrierung, Orientierungsfusion, Filterbank, Ereignisdetektoren, Fenster-Features.
+Rust signal processing (Spec §5.5) + Dart FFI with pure-Dart fallback.
 
-Übergabe an Dart nur blockweise / über gemeinsamen Speicher (FFI) — Spec §5.1 / §5.5.
+```bash
+cd native && cargo test && cargo build --release
+# Link libdsp_core into Android/iOS via CMake / Xcode (see README in mobile/)
+```
+
+C ABI: `dsp_fuse_block(samples, len, impact_threshold_g, lean_alpha, out) -> int`

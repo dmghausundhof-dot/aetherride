@@ -1,55 +1,41 @@
 # AetherRide Mobile (Flutter)
 
-Offline-first Flutter-Gerüst nach Spec §5: UI + Riverpod + Domäne in Dart; zeitkritische Pfade als native Module (FFI / Platform Channels, **nur 1-s-Blöcke**).
+Offline-first Flutter-Client nach Spec §5.
 
-## Status
+## Schnitte (implementiert)
 
-Scaffold mit `android/` + `ios/` (Flutter 3.44.x). Native Plugins noch Stubs; Drift-Schema folgt.
+| ID | Inhalt |
+|---|---|
+| S1 | Drift SQLite + SyncEngine ↔ `/api/sync` (Bearer) + Supabase Auth |
+| S2 | `dsp_core` Rust + Dart FFI/Fallback; `sensor_core` Android/iOS 1-s-Blöcke |
+| S3 | `ble_core` Standard-BLE (CSC) + LDI-Shell/Simulator |
+| S4 | MapLibre Discover + Online-Routing via `/api/route` |
+| S5 | Catalog Postgres + `/api/catalog` + Upsert-Skript (G-4-Pfad) |
+| S6 | Overpass-Report, Open-Meteo `/api/weather`, Outdooractive-Adapter, Trailforks attribution-only |
+| S7 | `routing_core` Valhalla FFI-Scaffold (NOT_IMPLEMENTED bis Link) |
 
-## Voraussetzungen
-
-- Flutter **stable** (≥ 3.24, getestet gegen 3.44.x)
-- Xcode (iOS) / Android SDK (Android)
+## Start
 
 ```bash
-# SDK (falls noch nicht installiert)
-git clone https://github.com/flutter/flutter.git -b stable ~/flutter
 export PATH="$HOME/flutter/bin:$PATH"
-
 cd mobile
-./tool/bootstrap_platforms.sh   # erzeugt android/ + ios/
 flutter pub get
-flutter run
+
+flutter run \
+  --dart-define=SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+  --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
-## Schichtung (Spec §5.2)
+## Native libs
 
-```
-presentation/   Widgets, Design-Tokens, Bottom-Nav
-providers/      Riverpod (unidirektional)
-domain/         reines Dart (Bike, Sensor-Contracts, BLE)
-data/           Drift/SQLite + Sync-Stubs (lesen IMMER lokal)
-native/         Channel-Contracts → sensor_core, ble_core, …
-packages/       READMEs für native Hot-Path-Module
+```bash
+cd packages/dsp_core/native && cargo test && cargo build --release
+cd packages/routing_core/native && cargo test
 ```
 
-## Native Module (MUSS)
+## Tests
 
-| Modul | Kanal / FFI | Übergabe |
-|---|---|---|
-| `sensor_core` | `com.aetherride/sensor_core` | 1-s-Blöcke, kein Sample-für-Sample |
-| `ble_core` | `com.aetherride/ble_core` | Bosch LDI read-only |
-| `location_core` | `com.aetherride/location_core` | Batch während Ride |
-| `map_core` | MapLibre GL Native | Embed |
-| `routing_core` | Valhalla C++/FFI | identisch Online/Offline |
-| `dsp_core` | Rust FFI | Filter, Fusion, Features |
-
-Web-Contracts zum Spiegeln: `src/lib/sensor/SensorFusion.ts`, `src/lib/ble/BoschLDI.ts`.
-
-## Tabs (Parität Web)
-
-Home · Garage · Ride · Discover · Shop
-
-## Offline-First
-
-UI liest ausschließlich aus Drift. Sync-Engine aktualisiert im Hintergrund — Netzausfall ist kein UI-Sonderfall.
+```bash
+flutter test
+cd packages/dsp_core && flutter test
+```

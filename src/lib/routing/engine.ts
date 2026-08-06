@@ -81,6 +81,18 @@ export function valhallaCosting(profile: RoutingProfile): {
           },
         },
       };
+    case "emtb":
+      return {
+        costing: "bicycle",
+        costing_options: {
+          bicycle: {
+            bicycle_type: "mountain",
+            use_roads: 0.2,
+            use_hills: 0.95,
+            avoid_bad_surfaces: 0.1,
+          },
+        },
+      };
     case "mtb_enduro":
       return {
         costing: "bicycle",

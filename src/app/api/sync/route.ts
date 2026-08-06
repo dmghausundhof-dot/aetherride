@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAuthedClient } from "@/lib/supabase/authed";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createAuthedClient(req);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createAuthedClient(req);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -65,7 +65,6 @@ export async function POST(req: Request) {
     if (existing?.updated_at && clientUpdatedAt) {
       const remoteMs = new Date(existing.updated_at).getTime();
       const clientMs = new Date(clientUpdatedAt).getTime();
-      // Last-write-wins: reject stale push (remote newer than client's base)
       if (
         Number.isFinite(remoteMs) &&
         Number.isFinite(clientMs) &&
@@ -86,7 +85,14 @@ export async function POST(req: Request) {
     const now = new Date().toISOString();
     const row = {
       user_id: user.id,
-      payload: { ...payload, updatedAt: now },
+      payload: {
+        ...payload,
+        updatedAt: now,
+        payloadVersion:
+          typeof payload.payloadVersion === "number"
+            ? payload.payloadVersion
+            : 1,
+      },
       updated_at: now,
     };
 

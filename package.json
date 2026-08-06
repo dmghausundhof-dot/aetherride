@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "catalog:import": "node scripts/import-catalog.mjs"
+    "catalog:import": "node scripts/import-catalog.mjs",
+    "catalog:upsert": "node scripts/catalog-upsert-supabase.mjs",
+    "geo:overpass": "node scripts/overpass-mtb-enrichment.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
