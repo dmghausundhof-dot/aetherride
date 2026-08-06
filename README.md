@@ -89,17 +89,17 @@ src/
 └── types/               # Spec-konforme Datenmodelle
 ```
 
-## Nächster Schritt (echte Mobile-App)
+## Mobile (Flutter-Gerüst)
 
-1. Flutter-Projekt mit denselben TypeScript-Models als Shared Spec
-2. Native Module:
-   - Sensor: CoreMotion / SensorManager → Platform Channel → SensorFusionEngine
-   - BLE: flutter_blue_plus + Bosch LDI Characteristic Mapping
-3. MapLibre Flutter + PMTiles Offline-Packs
-4. Backend: PostgreSQL + TimescaleDB + Vector-DB (Empfehlungen)
-5. Shop: Stripe / Partner-Händler API
+Scaffold unter [`mobile/`](mobile/) — Spec §5 (Riverpod, Offline-First, native Hot-Path-Contracts).
 
-Die gesamte Domain-Logik und die Contracts sind bereits produktionsreif.
+```bash
+cd mobile
+./tool/bootstrap_platforms.sh   # einmalig: android/ + ios/
+flutter pub get && flutter run
+```
+
+Tabs: Home · Garage · Ride · Discover · Shop. Native Stubs: `sensor_core`, `ble_core`, `location_core` (+ READMEs für map/routing/dsp). Details: [`mobile/README.md`](mobile/README.md).
 
 ## Produktionsschicht (Supabase · Stripe · Grok)
 
