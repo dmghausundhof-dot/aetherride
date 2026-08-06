@@ -7,6 +7,7 @@ import { Check, X, TrendingUp, Wrench, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import type { RideFeedback } from "@/types";
+import { SetupLiabilityNotice } from "@/components/SetupLiabilityNotice";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -381,6 +382,9 @@ function PostRideContent() {
           {rec.limits && (
             <p className="mb-2 text-xs text-text-secondary">Grenzen: {rec.limits}</p>
           )}
+          <div className="mb-3">
+            <SetupLiabilityNotice variant="short" />
+          </div>
           {rec.evidence && rec.evidence.length > 0 && (
             <ul className="mb-4 list-inside list-disc text-xs text-text-secondary">
               {rec.evidence.map((e) => (

@@ -1,18 +1,31 @@
 /**
  * G-0 / Kap. 5 — Native Platform-Channel-Contracts
  *
- * Zielplattform Spec: Flutter + native dsp_core / routing_core.
+ * Zielplattform Spec: Flutter + native dsp_core / routing_core — erst nach G-0.
  * Diese Web-App ist die Spec-treue Demo-Schicht; Channels dokumentieren
- * die Produktions-Schnittstelle.
+ * die Produktions-Schnittstelle. Kein Fake-Flutter.
  */
+
+import { g0StatusShort, isG0Closed } from "./g0TeamSetup";
 
 export const NATIVE_CHANNELS = {
   sensorBatch: "aetherride/sensor_batch",
+  location: "aetherride/location",
   bleBosch: "aetherride/ble_bosch_ldi",
   bleStandard: "aetherride/ble_standard",
   routing: "aetherride/routing_valhalla",
   tts: "aetherride/tts",
   pmtiles: "aetherride/pmtiles",
+  dspFfi: "aetherride/dsp_ffi",
+} as const;
+
+/** Spec-Invariante: keine MethodChannel-Calls pro Sample */
+export const SENSOR_BATCH_INVARIANTS = {
+  sampleRateHz: 200 as const,
+  transferBlockSec: 1,
+  productionEncoding: "int16_deltas",
+  demoEncoding: "float64",
+  noPerSampleMethodChannel: true,
 } as const;
 
 export interface SensorBatchMessage {
@@ -29,6 +42,15 @@ export interface SensorBatchMessage {
   }[];
   speedMs: number;
   headingDeg?: number;
+}
+
+export interface LocationSampleMessage {
+  tMs: number;
+  lat: number;
+  lng: number;
+  altitudeM?: number;
+  accuracyM?: number;
+  speedMs?: number;
 }
 
 export interface RoutingRequestMessage {
@@ -54,6 +76,7 @@ export interface PlatformCapabilityReport {
   boschLdi: boolean;
   /** Web-Demo Status */
   webDemoOnly: true;
+  g0Closed: boolean;
   notes: string[];
 }
 
@@ -65,12 +88,14 @@ export function webDemoCapabilities(): PlatformCapabilityReport {
     pmtiles: false,
     boschLdi: false,
     webDemoOnly: true,
+    g0Closed: isG0Closed(),
     notes: [
-      "G-0 offen: Kein Flutter — Next.js Web-Demo mit Spec-Contracts.",
+      g0StatusShort(),
       "Sensorik: WebSensorSimulator 200 Hz Batches (nicht CoreMotion).",
       "Routing: Demo-Kostenfunktion; Valhalla FFI ausstehend.",
       "FNI/Durchschlag/Setup-Rec: Engine vorhanden, Gate G-2 steuert Live.",
-      "Wegerecht: Demo-Regeln Tirol/Bayern, redaktionell gesichtet — Gate G-5 Legal ausstehend (keine Launch-Freigabe).",
+      "Wegerecht: Demo-Regeln Tirol/Bayern — Gate G-5 Legal ausstehend.",
+      "A-08 Setup-Haftung: redaktioneller Entwurf, Legal ausstehend.",
     ],
   };
 }

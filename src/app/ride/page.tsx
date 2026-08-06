@@ -265,10 +265,10 @@ export default function RidePage() {
       )}
 
       {isRiding && liveMetrics ? (
-        <>
+        <div aria-live="polite" aria-atomic="false" aria-label="Live-Metriken">
           <div className="grid grid-cols-2 gap-3">
             <MetricCard
-              icon={<Gauge className="h-5 w-5" />}
+              icon={<Gauge className="h-5 w-5" aria-hidden />}
               label="G-Force Peak"
               value={`${liveMetrics.gForcePeak} g`}
               accent
@@ -337,7 +337,7 @@ export default function RidePage() {
               </div>
             )
           ) : null}
-        </>
+        </div>
       ) : (
         <div className="rounded-2xl border border-border bg-surface p-5 text-center text-sm text-text-secondary">
           <p className="mb-1 font-medium text-foreground">Sensor-Pipeline bereit</p>
@@ -391,20 +391,26 @@ export default function RidePage() {
         )}
         {!isRiding ? (
           <button
+            type="button"
             onClick={handleStart}
             disabled={!activeBike && appMode === "bike"}
+            aria-label="Ride starten"
             className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-xl shadow-accent/30 transition active:scale-95 disabled:opacity-40"
           >
-            <Play className="ml-1 h-10 w-10 fill-current" />
+            <Play className="ml-1 h-10 w-10 fill-current" aria-hidden />
           </button>
         ) : (
           <button
+            type="button"
             onClick={handleEnd}
+            aria-label={
+              confirmEnd ? "Ride beenden bestätigen" : "Ride beenden"
+            }
             className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-xl transition active:scale-95 ${
               confirmEnd ? "bg-error" : "bg-error/70"
             }`}
           >
-            <Square className="h-9 w-9 fill-current" />
+            <Square className="h-9 w-9 fill-current" aria-hidden />
           </button>
         )}
         <p className="text-sm text-text-secondary">

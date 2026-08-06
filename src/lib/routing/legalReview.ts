@@ -79,7 +79,7 @@ export const LEGAL_REVIEW_BY_JURISDICTION: Record<
     openQuestions: [
       "Saisonfenster und Vertragspartner je Route — Aktualität 2026?",
       "Verhältnis Forstgesetz zu lokalen MTB-Verträgen — Legal-Formulierung?",
-      "Haftungs-Disclaimer-Text für App-Store / Onboarding (A-08)?",
+      "Haftungs-Disclaimer Setup: siehe src/lib/legal/setupLiability.ts (A-08 Entwurf, Legal ausstehend)",
     ],
     launchEligible: false,
   },

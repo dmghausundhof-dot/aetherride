@@ -4,6 +4,8 @@ import { useAppStore } from "@/store/useAppStore";
 import { User, Sparkles, Crown } from "lucide-react";
 import Link from "next/link";
 import type { RiderProfile } from "@/types";
+import { G0StatusPanel } from "@/components/G0StatusPanel";
+import { SetupLiabilityNotice } from "@/components/SetupLiabilityNotice";
 
 export default function ProfilePage() {
   const profile = useAppStore((s) => s.riderProfile);
@@ -36,6 +38,9 @@ export default function ProfilePage() {
           </p>
         </div>
       </header>
+
+      <G0StatusPanel />
+      <SetupLiabilityNotice variant="short" />
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 font-semibold">App-Modus</h3>
