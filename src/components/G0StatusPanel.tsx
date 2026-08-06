@@ -10,10 +10,18 @@ import {
   evaluateG0GoNoGo,
   isG0Closed,
 } from "@/lib/platform/g0TeamSetup";
+import {
+  G0_WORKSHOP_AGENDA,
+  g0WorkshopStatusSummary,
+  renderG0WorkshopPackMarkdown,
+  setG0WorkshopLocalNote,
+} from "@/lib/platform/g0Workshop";
+import { downloadText } from "@/lib/export/gpx";
 
 export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
   const closed = isG0Closed();
   const go = evaluateG0GoNoGo();
+  const totalMin = G0_WORKSHOP_AGENDA.reduce((n, a) => n + a.minutes, 0);
 
   if (compact) {
     return (
@@ -45,6 +53,9 @@ export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
         {g0StatusShort()}
       </p>
       <p className="mt-2 text-xs text-text-secondary">
+        Workshop: {g0WorkshopStatusSummary()}
+      </p>
+      <p className="mt-2 text-xs text-text-secondary">
         Go/No-Go (aktuell): <span className="font-medium">{go.result}</span>
       </p>
       <ul className="mt-1 list-inside list-disc text-[11px] text-text-secondary">
@@ -52,6 +63,43 @@ export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
           <li key={r}>{r}</li>
         ))}
       </ul>
+
+      <h4 className="mt-3 text-xs font-semibold">
+        Decision-Workshop (~{totalMin} Min)
+      </h4>
+      <ol className="mt-1 list-inside list-decimal text-[11px] text-text-secondary">
+        {G0_WORKSHOP_AGENDA.map((a) => (
+          <li key={a.id}>
+            {a.minutes}&apos; {a.titleDe}
+          </li>
+        ))}
+      </ol>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            downloadText(
+              "aetherride-g0-workshop-pack.md",
+              renderG0WorkshopPackMarkdown(),
+              "text/markdown;charset=utf-8"
+            )
+          }
+          className="rounded-lg bg-accent px-2 py-1 text-[10px] font-medium text-white"
+        >
+          Workshop-Pack (.md)
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setG0WorkshopLocalNote(
+              `termin_vorgemerkt:${new Date().toISOString()}`
+            )
+          }
+          className="rounded-lg border border-border px-2 py-1 text-[10px]"
+        >
+          Termin lokal vormerken
+        </button>
+      </div>
 
       <h4 className="mt-3 text-xs font-semibold">Checkliste</h4>
       <ul className="mt-1 space-y-1 text-[11px] text-text-secondary">
@@ -62,7 +110,7 @@ export function G0StatusPanel({ compact = false }: { compact?: boolean }) {
         ))}
       </ul>
 
-      <h4 className="mt-3 text-xs font-semibold">Native-Module-Matrix</h4>
+      <h4 className="mt-3 text-xs font-semibold">Native-Modul-Matrix</h4>
       <div className="mt-1 overflow-x-auto">
         <table className="w-full text-left text-[10px] text-text-secondary">
           <thead>

@@ -31,6 +31,15 @@ import {
   renderG5AttorneyBriefMarkdown,
 } from "@/lib/routing/g5AttorneyBrief";
 import { G5_LEGAL_REVIEW_PASSED } from "@/lib/routing/legalReview";
+import {
+  COUNSEL_FIRM_CANDIDATES,
+  counselDispatchStatusLabel,
+  getCounselDispatchMeta,
+  markCounselPackageSentNow,
+  clearCounselMarkedSent,
+  renderG5CounselCoverLetter,
+  renderG5CounselDispatchChecklistMarkdown,
+} from "@/lib/routing/g5CounselDispatch";
 
 export default function PrivacyExportPage() {
   const rides = useAppStore((s) => s.rides);
@@ -56,12 +65,14 @@ export default function PrivacyExportPage() {
 
   const [riderName, setRiderName] = useState("");
   const [riderWeight, setRiderWeight] = useState(70);
+  const [dispatchTick, setDispatchTick] = useState(0);
   const lastRide = rides[0];
   const activeBike = bikes.find((b) => b.isActive) || bikes[0];
   const syncState = getSyncClientState(authSession.syncEnabled);
   const opsStats = opsLogStats();
   const pendingPreview = describePendingOps(3);
   const attorney = attorneyPackageStatus();
+  const dispatch = useMemo(() => getCounselDispatchMeta(), [dispatchTick]);
 
   const jsonPreview = useMemo(
     () =>
@@ -83,25 +94,97 @@ export default function PrivacyExportPage() {
       </header>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-2 font-semibold">G-5 Anwalt-Paket (Wegerecht)</h3>
+        <h3 className="mb-2 font-semibold">G-5 an echte Kanzlei</h3>
         <p className="mb-2 text-xs text-text-secondary">{attorney.summaryDe}</p>
-        <p className="mb-3 text-[11px] text-text-secondary">
-          Master-Gate G5_LEGAL_REVIEW_PASSED = {String(G5_LEGAL_REVIEW_PASSED)}.
-          Sign-off offen: {attorney.pendingSignOff.join(", ")}. Kein Fake-Gutachten.
+        <p className="mb-2 text-[11px] text-text-secondary">
+          Status:{" "}
+          <span className="font-medium text-foreground">
+            {counselDispatchStatusLabel(dispatch.status)}
+          </span>
+          {" · "}
+          Gate G5 = {String(G5_LEGAL_REVIEW_PASSED)} · Sign-off offen:{" "}
+          {attorney.pendingSignOff.join(", ")}
+          {dispatch.markedSentAt
+            ? ` · markiert versendet ${new Date(dispatch.markedSentAt).toLocaleString("de-DE")}`
+            : ""}
         </p>
-        <button
-          type="button"
-          onClick={() =>
-            downloadText(
-              "aetherride-g5-anwalt-briefing.md",
-              renderG5AttorneyBriefMarkdown(),
-              "text/markdown;charset=utf-8"
-            )
-          }
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
-        >
-          Briefing für Kanzlei herunterladen
-        </button>
+        <p className="mb-3 text-[11px] text-text-secondary">
+          Kein Auto-Versand. Absender-Vorschlag: {dispatch.suggestedSenderName} (
+          {dispatch.suggestedSenderEmail}).
+        </p>
+        <div className="mb-3 space-y-1 text-[11px] text-text-secondary">
+          <p className="font-medium text-foreground">Kanzlei-Profile (Auswahl)</p>
+          {COUNSEL_FIRM_CANDIDATES.map((c) => (
+            <p key={c.id}>
+              <span className="font-medium text-foreground">{c.focusDe}</span>
+              {" — "}
+              {c.searchHintDe}
+            </p>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-g5-anwalt-briefing.md",
+                renderG5AttorneyBriefMarkdown(),
+                "text/markdown;charset=utf-8"
+              )
+            }
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white"
+          >
+            Briefing (.md)
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-g5-anschreiben.txt",
+                renderG5CounselCoverLetter(),
+                "text/plain;charset=utf-8"
+              )
+            }
+            className="rounded-lg border border-border px-3 py-1.5 text-xs"
+          >
+            Anschreiben
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText(
+                "aetherride-g5-versand-checkliste.md",
+                renderG5CounselDispatchChecklistMarkdown(),
+                "text/markdown;charset=utf-8"
+              )
+            }
+            className="rounded-lg border border-border px-3 py-1.5 text-xs"
+          >
+            Versand-Checkliste
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              markCounselPackageSentNow();
+              setDispatchTick((n) => n + 1);
+            }}
+            className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs"
+          >
+            Als versendet markieren
+          </button>
+          {dispatch.markedSentAt && (
+            <button
+              type="button"
+              onClick={() => {
+                clearCounselMarkedSent();
+                setDispatchTick((n) => n + 1);
+              }}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary"
+            >
+              Markierung löschen
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
