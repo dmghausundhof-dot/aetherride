@@ -52,6 +52,19 @@ C shim: `native/cpp/valhalla_actor_c.{h,cpp}` — real `tyr::actor_t` when `AETH
 cd native && cargo test && cargo test --features valhalla
 ```
 
+## Smoke
+
+```bash
+# Host FFI
+cd mobile/packages/routing_core/native && cargo build
+cd ../../.. && ROUTING_CORE_LIB=$PWD/packages/routing_core/native/target/debug/librouting_core.so \
+  flutter test test/routing_core_ffi_smoke_test.dart
+
+# Android emulator (x86_64 graph-only jniLibs)
+./scripts/routing/install-android-jni.sh --graph-only x86_64   # after cargo --target x86_64-linux-android
+# or push jniLibs + scripts/routing/android_ffi_smoke.c via NDK clang (see PR notes)
+```
+
 ## Flutter
 
 - `RoutingClient` → FFI offline graph / Valhalla, fallback HTTP `/api/route`
