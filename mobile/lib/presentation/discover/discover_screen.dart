@@ -1686,35 +1686,3 @@ class _MiniElevPainter extends CustomPainter {
   bool shouldRepaint(covariant _MiniElevPainter oldDelegate) =>
       oldDelegate.samples != samples;
 }
-
-class _MiniElevPainter extends CustomPainter {
-  _MiniElevPainter(this.samples);
-  final List<double> samples;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (samples.length < 2) return;
-    final minV = samples.reduce((a, b) => a < b ? a : b);
-    final maxV = samples.reduce((a, b) => a > b ? a : b);
-    final span = (maxV - minV).abs() < 1 ? 1.0 : (maxV - minV);
-    final path = Path();
-    for (var i = 0; i < samples.length; i++) {
-      final x = size.width * i / (samples.length - 1);
-      final y = size.height * (1 - (samples[i] - minV) / span);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    final paint = Paint()
-      ..color = const Color(0xFFFF6B35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MiniElevPainter oldDelegate) =>
-      oldDelegate.samples != samples;
-}
