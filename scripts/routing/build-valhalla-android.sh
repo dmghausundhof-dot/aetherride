@@ -13,6 +13,10 @@
 #   ./scripts/routing/build-valhalla-android.sh arm64-v8a
 #   source data/routing/dist/valhalla-build/prefix-android-arm64-v8a/aetherride-env.sh
 #   cd mobile/packages/routing_core/native && cargo build --features valhalla --target aarch64-linux-android
+#   ./scripts/routing/install-android-jni.sh   # or: npm run routing:valhalla:android then pipeline
+#
+# Convenience: ./scripts/routing/valhalla-android-pipeline.sh
+# npm: routing:valhalla:android → build-valhalla-android.sh only; install via install-android-jni.sh / pipeline.
 set -euo pipefail
 
 ABI="${1:-arm64-v8a}"

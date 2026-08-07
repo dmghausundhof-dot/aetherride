@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../data/export/gpx.dart';
+import '../../data/export/export_trimmed.dart';
 import '../../data/export/json_export.dart';
 import '../../domain/privacy/consents.dart';
 import '../../providers/app_providers.dart';
@@ -120,6 +120,13 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     return file.path;
   }
 
+  Future<String> _writeBytes(String filename, List<int> bytes) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dir.path, filename));
+    await file.writeAsBytes(bytes);
+    return file.path;
+  }
+
   Future<void> _exportGpx() async {
     setState(() {
       _busy = true;
@@ -132,14 +139,48 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
         return;
       }
       final bike = await ref.read(garageRepositoryProvider).getActiveBike();
-      final gpx = rideToGpx(rides.first, bikeName: bike?.name);
+      final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+      final gpx = exportGpxTrimmed(
+        rides.first,
+        zones: zones,
+        bikeName: bike?.name,
+      );
       final path = await _writeExport(
         'aetherride-${rides.first.id.substring(0, 8)}.gpx',
         gpx,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('GPX gespeichert: $path')),
+          SnackBar(content: Text('GPX (privacy-trimmed) gespeichert: $path')),
+        );
+      }
+    } catch (e) {
+      setState(() => _message = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _exportFit() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
+      if (rides.isEmpty) {
+        setState(() => _message = 'Kein Ride zum Exportieren.');
+        return;
+      }
+      final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+      final bytes = exportFitTrimmed(rides.first, zones: zones);
+      final path = await _writeBytes(
+        'aetherride-${rides.first.id.substring(0, 8)}.fit',
+        bytes,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('FIT gespeichert: $path')),
         );
       }
     } catch (e) {
@@ -158,9 +199,13 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
       final bikes = await ref.read(garageRepositoryProvider).listBikes();
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 50);
       final consents = await ref.read(garageRepositoryProvider).listConsents();
+      final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+      final trimmedRides = [
+        for (final r in rides) rideWithTrimmedTrack(r, zones),
+      ];
       final json = fullJsonExport(
         bikes: bikes,
-        rides: rides,
+        rides: trimmedRides,
         consents: consents,
       );
       final path = await _writeExport('aetherride-export.json', json);
@@ -255,6 +300,12 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
             onPressed: _busy ? null : _exportGpx,
             icon: const Icon(Icons.route),
             label: const Text('Letzter Ride als GPX'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _exportFit,
+            icon: const Icon(Icons.directions_bike),
+            label: const Text('Letzter Ride als FIT'),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(

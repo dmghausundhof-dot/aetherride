@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -43,6 +44,45 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   final List<SensorBlock> _chunkBuf = [];
   int _chunkSeq = 0;
   static const _chunkEvery = 30;
+
+  final FlutterTts _tts = FlutterTts();
+  bool _ttsMuted = false;
+  String? _lastSpokenCueId;
+  String? _lastSpokenText;
+  String? _lastSpokenPhase;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_tts.setLanguage('de-DE'));
+    unawaited(_tts.setSpeechRate(0.5));
+  }
+
+  /// Speak nav banner at ~80 m (near) and once when remaining first enters range.
+  void _maybeSpeakNav(NavCue cue, int remainingM) {
+    if (_ttsMuted || !ref.read(isRidingProvider)) return;
+    final near = remainingM <= 80;
+    final approach = remainingM <= 300;
+    if (!near && !approach) return;
+    final phase = near ? 'near' : 'approach';
+    final text = cueBannerText(cue, remainingM);
+    if (_lastSpokenCueId == cue.id &&
+        (_lastSpokenPhase == phase || _lastSpokenText == text)) {
+      return;
+    }
+    _lastSpokenCueId = cue.id;
+    _lastSpokenText = text;
+    _lastSpokenPhase = phase;
+    unawaited(_tts.speak(text));
+  }
+
+  void _considerNavTts() {
+    final route = ref.read(activeRouteProvider);
+    if (route == null || route.coordinates.length < 4) return;
+    final cues = buildNavCues(route.coordinates);
+    final nxt = nextCue(cues, ref.read(rideDistanceMProvider));
+    if (nxt != null) _maybeSpeakNav(nxt.cue, nxt.remainingM);
+  }
 
 
   void _bumpIdle() {
@@ -105,6 +145,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           elev: fix.altitudeM,
         ),
       );
+      _considerNavTts();
     });
     _sensorSub = sensor.blocks.listen((b) {
       final fused = b.fused;
@@ -139,9 +180,15 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       if (!_usingGps) {
         ref.read(rideDistanceMProvider.notifier).state += 4.2;
       }
+      _considerNavTts();
     });
     _bumpIdle();
-    setState(() => _confirmStop = 0);
+    setState(() {
+      _confirmStop = 0;
+      _lastSpokenCueId = null;
+      _lastSpokenText = null;
+      _lastSpokenPhase = null;
+    });
   }
 
   Future<void> _stop() async {
@@ -238,6 +285,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _locSub?.cancel();
     _tick?.cancel();
     _idleLock?.cancel();
+    unawaited(_tts.stop());
     super.dispose();
   }
 
@@ -261,6 +309,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         appBar: AppBar(
           title: Text(riding ? 'Live' : 'Bereit'),
           actions: [
+            IconButton(
+              tooltip: _ttsMuted ? 'TTS an' : 'TTS stumm',
+              onPressed: () {
+                setState(() => _ttsMuted = !_ttsMuted);
+                if (_ttsMuted) unawaited(_tts.stop());
+              },
+              icon: Icon(
+                _ttsMuted ? Icons.volume_off_outlined : Icons.volume_up_outlined,
+              ),
+            ),
             IconButton(
               tooltip: 'Sunlight Mode',
               onPressed: () {
@@ -340,6 +398,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                         'Optional: Route in Discover wählen und „Losfahren“.',
                         style: TextStyle(color: AppColors.muted),
                       ),
+                    if (!riding) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Geschwindigkeit: Standard-BLE CSC. '
+                        'E-Bike Live (Bosch LDI) folgt (G-1).',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     if (!riding) ...[
                       Text('Handy am Lenker?',
@@ -406,7 +474,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _bigStat(
-                            '${(_ldi?.speedKmh ?? 0).toStringAsFixed(0)}',
+                            (_ldi?.speedKmh ?? 0).toStringAsFixed(0),
                             'km/h',
                           ),
                           _bigStat(

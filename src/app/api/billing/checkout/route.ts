@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAuthedClient } from "@/lib/supabase/authed";
 import {
   appUrl,
   getStripe,
@@ -9,7 +9,7 @@ import {
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createAuthedClient(req);
     const {
       data: { user },
     } = await supabase.auth.getUser();

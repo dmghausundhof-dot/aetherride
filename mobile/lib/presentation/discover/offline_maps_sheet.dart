@@ -1,15 +1,25 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_tiles.dart';
 
-/// Offline-Karten: PMTiles-URL + Region-Pack-Platzhalter.
+/// Hardcoded region catalog (demo).
+const _kRegions = [
+  (
+    id: 'schwarzwald-nord',
+    name: 'Schwarzwald Nord',
+  ),
+];
+
+/// Offline-Karten: PMTiles-URL + Region-Packs.
 class OfflineMapsSheet extends StatefulWidget {
   const OfflineMapsSheet({super.key});
 
@@ -20,8 +30,10 @@ class OfflineMapsSheet extends StatefulWidget {
 class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   final _urlCtrl = TextEditingController();
   String? _regionPref;
+  String? _activatedPath;
   String? _valhallaStatus;
   bool _loading = true;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -35,45 +47,100 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     super.dispose();
   }
 
-  Future<File> _prefsFile() async {
-    final dir = await getApplicationSupportDirectory();
-    return File(p.join(dir.path, 'offline_maps_prefs.json'));
-  }
-
   Future<void> _load() async {
     final compileTime = AppConfig.pmtilesUrl;
     var override = '';
     String? region;
+    String? activated;
     try {
-      final f = await _prefsFile();
-      if (await f.exists()) {
-        final m = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-        override = (m['pmtilesUrl'] as String?) ?? '';
-        region = m['regionPack'] as String?;
-      }
+      final m = await OfflineMapsPrefs.read();
+      override = (m['pmtilesUrl'] as String?) ?? '';
+      region = m['regionPack'] as String?;
+      activated = m['activatedPackPath'] as String?;
     } catch (_) {}
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
     if (!mounted) return;
     setState(() {
       _urlCtrl.text = override.isNotEmpty ? override : compileTime;
       _regionPref = region;
+      _activatedPath = activated;
       _valhallaStatus = status;
       _loading = false;
     });
   }
 
-  Future<void> _savePrefs({String? pmtilesUrl, String? regionPack}) async {
-    final f = await _prefsFile();
-    Map<String, dynamic> m = {};
+  Future<void> _savePrefs({
+    String? pmtilesUrl,
+    String? regionPack,
+    String? activatedPackPath,
+  }) async {
+    await OfflineMapsPrefs.merge({
+      if (pmtilesUrl != null) 'pmtilesUrl': pmtilesUrl,
+      if (regionPack != null) 'regionPack': regionPack,
+      if (activatedPackPath != null) 'activatedPackPath': activatedPackPath,
+    });
+  }
+
+  Future<void> _downloadAndActivate(({String id, String name}) region) async {
+    setState(() => _busy = true);
     try {
-      if (await f.exists()) {
-        final decoded = jsonDecode(await f.readAsString());
-        if (decoded is Map) m = Map<String, dynamic>.from(decoded);
+      final docs = await getApplicationDocumentsDirectory();
+      final regionDir = Directory(p.join(docs.path, 'regions', region.id));
+      await regionDir.create(recursive: true);
+      final target = File(p.join(regionDir.path, 'offline_graph.json'));
+
+      var gotRemote = false;
+      final candidates = [
+        Uri.parse(
+          '${AppConfig.apiBaseUrl}/offline/${region.id}/offline_graph.json',
+        ),
+        Uri.parse(
+          '${AppConfig.apiBaseUrl}/api/offline/packs/${region.id}/offline_graph.json',
+        ),
+      ];
+      for (final url in candidates) {
+        try {
+          final res = await http.get(url).timeout(const Duration(seconds: 12));
+          if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
+            await target.writeAsBytes(res.bodyBytes);
+            gotRemote = true;
+            break;
+          }
+        } catch (_) {}
       }
-    } catch (_) {}
-    if (pmtilesUrl != null) m['pmtilesUrl'] = pmtilesUrl;
-    if (regionPack != null) m['regionPack'] = regionPack;
-    await f.writeAsString(jsonEncode(m));
+      if (!gotRemote) {
+        final data = await rootBundle.load('assets/routing/offline_graph.json');
+        await target.writeAsBytes(data.buffer.asUint8List());
+      }
+
+      await _savePrefs(
+        regionPack: region.name,
+        activatedPackPath: regionDir.path,
+      );
+      OfflineTilesStore.instance.clearCache();
+      if (!mounted) return;
+      setState(() {
+        _regionPref = region.name;
+        _activatedPath = regionDir.path;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            gotRemote
+                ? '${region.name} heruntergeladen & aktiv'
+                : '${region.name} aus Bundle aktiviert',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Region-Pack: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -127,16 +194,18 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
                     ),
-                    onPressed: () async {
-                      await _savePrefs(pmtilesUrl: _urlCtrl.text.trim());
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('PMTiles-URL gespeichert'),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _busy
+                        ? null
+                        : () async {
+                            await _savePrefs(pmtilesUrl: _urlCtrl.text.trim());
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('PMTiles-URL gespeichert'),
+                                ),
+                              );
+                            }
+                          },
                     child: const Text('URL speichern'),
                   ),
                   const SizedBox(height: 20),
@@ -149,29 +218,22 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                   const SizedBox(height: 4),
                   Text(
                     _regionPref == null
-                        ? 'Noch keine Region vorgemerkt.'
-                        : 'Vorgemerkt: $_regionPref',
+                        ? 'Noch keine Region aktiv.'
+                        : 'Aktiv: $_regionPref'
+                            '${_activatedPath != null ? '\n$_activatedPath' : ''}',
                     style: const TextStyle(color: AppColors.muted, fontSize: 13),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      const region = 'Alpen-Demo (bald)';
-                      await _savePrefs(regionPack: region);
-                      setState(() => _regionPref = region);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Download folgt — Region vorgemerkt.',
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.download_outlined),
-                    label: const Text('Region-Pack (bald)'),
-                  ),
+                  for (final r in _kRegions)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _busy ? null : () => _downloadAndActivate(r),
+                        icon: const Icon(Icons.download_outlined),
+                        label: Text('${r.name} laden & aktivieren'),
+                      ),
+                    ),
                 ],
               ),
             ),

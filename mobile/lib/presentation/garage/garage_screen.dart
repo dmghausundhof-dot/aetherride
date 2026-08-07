@@ -11,6 +11,7 @@ import '../../domain/compatibility/rules.dart';
 import '../../domain/component.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../providers/app_providers.dart';
+import '../billing/upgrade_screen.dart';
 import 'setup_sheet.dart';
 
 class GarageScreen extends ConsumerWidget {
@@ -127,6 +128,13 @@ class GarageScreen extends ConsumerWidget {
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Abbrechen'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx, false);
+                openUpgradeScreen(context);
+              },
+              child: const Text('Upgrade'),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),

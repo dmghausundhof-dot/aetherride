@@ -8,5 +8,6 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         flutterEngine.plugins.add(SensorCorePlugin())
         flutterEngine.plugins.add(LocationCorePlugin())
+        flutterEngine.plugins.add(BoschLdiPlugin())
     }
 }

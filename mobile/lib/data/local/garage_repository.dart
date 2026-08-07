@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/bike.dart';
 import '../../domain/privacy/consents.dart';
+import '../../domain/privacy/track_trim.dart';
 import '../../domain/setup.dart';
 import '../sync/sync_payload.dart';
 import 'app_database.dart';
@@ -226,7 +227,15 @@ class GarageRepository {
               'durationSec': r.movingTimeSec,
               'name': r.name,
               'routeId': r.routeId,
-              'track': jsonDecode(r.trackJson),
+              'track': () {
+                final raw = jsonDecode(r.trackJson);
+                if (raw is! List) return <dynamic>[];
+                final track = [
+                  for (final e in raw)
+                    if (e is Map) Map<String, dynamic>.from(e),
+                ];
+                return trimTrackForPrivacyZones(track, zones);
+              }(),
               'feedback': _parseFeedbackJson(r.feedbackJson),
               'notes': r.feedbackJson,
               'summaryMetrics': jsonDecode(r.summaryJson),

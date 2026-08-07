@@ -9,6 +9,7 @@ import '../../domain/saved_route.dart';
 import '../../domain/setup.dart';
 import '../../providers/app_providers.dart';
 import '../auth/auth_screen.dart';
+import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
 import '../privacy/privacy_screen.dart';
 
@@ -105,6 +106,8 @@ class HomeScreen extends ConsumerWidget {
                           builder: (_) => const AuthScreen(),
                         ),
                       );
+                    } else if (value == 'upgrade') {
+                      openUpgradeScreen(context);
                     } else if (value == 'privacy') {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -117,6 +120,10 @@ class HomeScreen extends ConsumerWidget {
                   },
                   itemBuilder: (_) => const [
                     PopupMenuItem(value: 'auth', child: Text('Konto')),
+                    PopupMenuItem(
+                      value: 'upgrade',
+                      child: Text('AetherRide Pro'),
+                    ),
                     PopupMenuItem(value: 'chat', child: Text('Chat')),
                     PopupMenuItem(
                       value: 'privacy',

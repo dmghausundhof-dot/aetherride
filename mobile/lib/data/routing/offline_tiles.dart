@@ -5,8 +5,12 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../native/routing_core_ffi.dart';
+import 'offline_maps_prefs.dart';
 
 /// Copies bundled `offline_graph.json` into app support for FFI file access.
+///
+/// Prefers an activated region pack path from [OfflineMapsPrefs]
+/// (`offline_maps_prefs.json` → `activatedPackPath`).
 ///
 /// Valhalla tile extracts need `librouting_core` built with `--features valhalla`
 /// (see `RoutingCoreFfi.valhallaLinkStatus` / `RoutingCoreCodes.valhallaUnlinked`).
@@ -17,14 +21,38 @@ class OfflineTilesStore {
   String? _cachedPath;
   final _ffi = RoutingCoreFfi();
 
+  void clearCache() => _cachedPath = null;
+
   /// Directory containing `offline_graph.json` (or override via [overridePath]).
   Future<String?> ensureTilesPath({String? overridePath}) async {
     if (overridePath != null && overridePath.isNotEmpty) {
-      final f = File(overridePath);
-      if (await f.exists()) return overridePath;
-      final d = Directory(overridePath);
-      if (await d.exists()) return overridePath;
+      final asFile = File(overridePath);
+      if (await asFile.exists()) {
+        return p.dirname(overridePath);
+      }
+      final asDir = Directory(overridePath);
+      if (await asDir.exists()) return overridePath;
     }
+
+    final activated = await OfflineMapsPrefs.activatedPackPath();
+    if (activated != null && activated.isNotEmpty) {
+      final graphInDir = File(p.join(activated, 'offline_graph.json'));
+      if (await graphInDir.exists()) {
+        _cachedPath = activated;
+        return activated;
+      }
+      final asFile = File(activated);
+      if (await asFile.exists()) {
+        _cachedPath = p.dirname(activated);
+        return _cachedPath;
+      }
+      final asDir = Directory(activated);
+      if (await asDir.exists()) {
+        _cachedPath = activated;
+        return activated;
+      }
+    }
+
     if (_cachedPath != null) return _cachedPath;
 
     final support = await getApplicationSupportDirectory();

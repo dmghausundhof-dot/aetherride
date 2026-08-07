@@ -67,10 +67,20 @@ class BleCoreChannel {
       }
       return _connected;
     } on MissingPluginException {
-      debugPrint('ble_core: LDI Plugin fehlt — Simulator');
-      _connected = true;
-      _startStub();
-      return true;
+      // LDI stub only in debug + explicit dart-define (never in release).
+      // CSC path above is unchanged. See packages/ble_core/README.md (G-1).
+      const sim = bool.fromEnvironment('AETHER_LDI_SIM', defaultValue: false);
+      if (kDebugMode && sim) {
+        debugPrint('ble_core: LDI Plugin fehlt — Simulator (AETHER_LDI_SIM)');
+        _connected = true;
+        _startStub();
+        return true;
+      }
+      debugPrint(
+        'ble_core: LDI unavailable (G-1 pending) — stay disconnected',
+      );
+      _connected = false;
+      return false;
     }
   }
 

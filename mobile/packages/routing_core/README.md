@@ -23,6 +23,18 @@ npm run routing:region -- data/routing/regions/schwarzwald-nord.json
 
 Outputs under `data/routing/dist/<id>/` (gitignored). Manifests: `data/routing/manifests/`.
 
+## Valhalla Android JNI
+
+```bash
+# Build libvalhalla for NDK (needs ANDROID_NDK_HOME)
+npm run routing:valhalla:android
+
+# Then cargo --features valhalla + copy into jniLibs:
+./scripts/routing/install-android-jni.sh
+# Or one-shot (build + cargo + jni):
+./scripts/routing/valhalla-android-pipeline.sh
+```
+
 Bundled demo graph (OSM-derived, **single copy in git**): `mobile/assets/routing/offline_graph.json`.
 
 After a region build, refresh the asset:

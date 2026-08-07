@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
+import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
 import '../privacy/privacy_screen.dart';
 
@@ -198,6 +199,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               child: const Text('Jetzt synchronisieren'),
             ),
             const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => openUpgradeScreen(context),
+              icon: const Icon(Icons.workspace_premium_outlined),
+              label: const Text('AetherRide Pro'),
+            ),
+            const SizedBox(height: 12),
             OutlinedButton(
               onPressed: _busy
                   ? null
@@ -285,6 +292,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 label: const Text('Mit Apple'),
               ),
             ],
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => openUpgradeScreen(context),
+              icon: const Icon(Icons.workspace_premium_outlined),
+              label: const Text('AetherRide Pro'),
+            ),
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () {
