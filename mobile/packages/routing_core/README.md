@@ -34,6 +34,8 @@ export ANDROID_NDK_HOME=…
 source data/routing/dist/valhalla-build/prefix-android-arm64-v8a/aetherride-env.sh
 cd mobile/packages/routing_core/native
 cargo build --release --features valhalla --target aarch64-linux-android
+# Produces librouting_core.so (~9 MB) with Valhalla statically linked; package
+# libprotobuf.so (+ libc++_shared.so) from the NDK/protobuf prefix into the APK.
 
 # iOS (macOS + Xcode)
 ./scripts/routing/build-valhalla-ios.sh
