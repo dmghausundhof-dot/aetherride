@@ -166,7 +166,7 @@ export function buildHeatmap(input?: {
       visible: consent,
       hideReason: consent
         ? undefined
-        : "Heatmap-Beitrag Opt-in fehlt (F-ACC-006)",
+        : "Beitrag zur Beliebtheitskarte ist aus — unter Privatsphäre aktivierbar",
       osmWayId: undefined,
     });
   }
@@ -182,7 +182,7 @@ export function buildHeatmap(input?: {
             ...s,
             intensity: 0,
             visible: false,
-            hideReason: `k-Anonymität: nur ${users} Nutzer < ${K}`,
+            hideReason: `Zu wenig Fahrer auf dem Abschnitt (${users} von mind. ${K})`,
           };
         }
         return {
@@ -204,8 +204,8 @@ export function buildHeatmap(input?: {
     attribution: "© OpenStreetMap Mitwirkende · AetherRide eigene Aggregate",
     disclaimer: fromRides.length
       ? consent
-        ? `Eigene Rides (Privacy-Trim). Community k≥${K} folgt serverseitig.`
-        : `Heatmap-Beitrag Opt-in fehlt — eigene Segmente ausgeblendet.`
-      : `Kaltstart/Demo-Segmente mit k≥${K}. Kein Zukauf fremder Heatmap-Daten (R-06).`,
+        ? `Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet). Beliebte Community-Abschnitte erst ab ${K} verschiedenen Fahrern.`
+        : `Deine Strecken sind ausgeblendet — Beitrag unter Privatsphäre einschalten.`
+      : `Noch wenig eigene Daten — Beispielabschnitte. Sichtbar erst ab ${K} verschiedenen Fahrern (Privatsphäre).`,
   };
 }
