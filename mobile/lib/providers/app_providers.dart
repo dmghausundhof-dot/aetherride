@@ -4,8 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/config.dart';
 import '../data/local/app_database.dart';
 import '../data/local/garage_repository.dart';
+import '../data/routing/route_repository.dart';
 import '../data/sync/sync_engine.dart';
 import '../domain/bike.dart';
+import '../domain/saved_route.dart';
 import '../native/ble_core_channel.dart';
 import '../native/location_core_channel.dart';
 import '../native/sensor_core_channel.dart';
@@ -18,6 +20,14 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 
 final garageRepositoryProvider = Provider<GarageRepository>((ref) {
   return GarageRepository(ref.watch(appDatabaseProvider));
+});
+
+final routeRepositoryProvider = Provider<RouteRepository>((ref) {
+  return RouteRepository(ref.watch(appDatabaseProvider));
+});
+
+final savedRoutesProvider = FutureProvider<List<SavedRouteEntry>>((ref) {
+  return ref.watch(routeRepositoryProvider).listSaved();
 });
 
 final bikesProvider = FutureProvider<List<Bike>>((ref) {

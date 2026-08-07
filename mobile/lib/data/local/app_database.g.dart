@@ -3109,6 +3109,843 @@ class CatalogCacheCompanion extends UpdateCompanion<CatalogCacheData> {
   }
 }
 
+class $SavedRoutesTable extends SavedRoutes
+    with TableInfo<$SavedRoutesTable, SavedRoute> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SavedRoutesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _distanceKmMeta =
+      const VerificationMeta('distanceKm');
+  @override
+  late final GeneratedColumn<double> distanceKm = GeneratedColumn<double>(
+      'distance_km', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _elevationMMeta =
+      const VerificationMeta('elevationM');
+  @override
+  late final GeneratedColumn<double> elevationM = GeneratedColumn<double>(
+      'elevation_m', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _durationMinMeta =
+      const VerificationMeta('durationMin');
+  @override
+  late final GeneratedColumn<int> durationMin = GeneratedColumn<int>(
+      'duration_min', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('engine'));
+  static const VerificationMeta _geometryJsonMeta =
+      const VerificationMeta('geometryJson');
+  @override
+  late final GeneratedColumn<String> geometryJson = GeneratedColumn<String>(
+      'geometry_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _waypointsJsonMeta =
+      const VerificationMeta('waypointsJson');
+  @override
+  late final GeneratedColumn<String> waypointsJson = GeneratedColumn<String>(
+      'waypoints_json', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('[]'));
+  static const VerificationMeta _layersJsonMeta =
+      const VerificationMeta('layersJson');
+  @override
+  late final GeneratedColumn<String> layersJson = GeneratedColumn<String>(
+      'layers_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _savedAtMeta =
+      const VerificationMeta('savedAt');
+  @override
+  late final GeneratedColumn<DateTime> savedAt = GeneratedColumn<DateTime>(
+      'saved_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        distanceKm,
+        elevationM,
+        durationMin,
+        source,
+        geometryJson,
+        waypointsJson,
+        layersJson,
+        savedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'saved_routes';
+  @override
+  VerificationContext validateIntegrity(Insertable<SavedRoute> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('distance_km')) {
+      context.handle(
+          _distanceKmMeta,
+          distanceKm.isAcceptableOrUnknown(
+              data['distance_km']!, _distanceKmMeta));
+    } else if (isInserting) {
+      context.missing(_distanceKmMeta);
+    }
+    if (data.containsKey('elevation_m')) {
+      context.handle(
+          _elevationMMeta,
+          elevationM.isAcceptableOrUnknown(
+              data['elevation_m']!, _elevationMMeta));
+    } else if (isInserting) {
+      context.missing(_elevationMMeta);
+    }
+    if (data.containsKey('duration_min')) {
+      context.handle(
+          _durationMinMeta,
+          durationMin.isAcceptableOrUnknown(
+              data['duration_min']!, _durationMinMeta));
+    } else if (isInserting) {
+      context.missing(_durationMinMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    }
+    if (data.containsKey('geometry_json')) {
+      context.handle(
+          _geometryJsonMeta,
+          geometryJson.isAcceptableOrUnknown(
+              data['geometry_json']!, _geometryJsonMeta));
+    }
+    if (data.containsKey('waypoints_json')) {
+      context.handle(
+          _waypointsJsonMeta,
+          waypointsJson.isAcceptableOrUnknown(
+              data['waypoints_json']!, _waypointsJsonMeta));
+    }
+    if (data.containsKey('layers_json')) {
+      context.handle(
+          _layersJsonMeta,
+          layersJson.isAcceptableOrUnknown(
+              data['layers_json']!, _layersJsonMeta));
+    }
+    if (data.containsKey('saved_at')) {
+      context.handle(_savedAtMeta,
+          savedAt.isAcceptableOrUnknown(data['saved_at']!, _savedAtMeta));
+    } else if (isInserting) {
+      context.missing(_savedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SavedRoute map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SavedRoute(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      distanceKm: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}distance_km'])!,
+      elevationM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}elevation_m'])!,
+      durationMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_min'])!,
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      geometryJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}geometry_json']),
+      waypointsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}waypoints_json'])!,
+      layersJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}layers_json']),
+      savedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}saved_at'])!,
+    );
+  }
+
+  @override
+  $SavedRoutesTable createAlias(String alias) {
+    return $SavedRoutesTable(attachedDatabase, alias);
+  }
+}
+
+class SavedRoute extends DataClass implements Insertable<SavedRoute> {
+  final String id;
+  final String name;
+  final double distanceKm;
+  final double elevationM;
+  final int durationMin;
+  final String source;
+  final String? geometryJson;
+  final String waypointsJson;
+  final String? layersJson;
+  final DateTime savedAt;
+  const SavedRoute(
+      {required this.id,
+      required this.name,
+      required this.distanceKm,
+      required this.elevationM,
+      required this.durationMin,
+      required this.source,
+      this.geometryJson,
+      required this.waypointsJson,
+      this.layersJson,
+      required this.savedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['distance_km'] = Variable<double>(distanceKm);
+    map['elevation_m'] = Variable<double>(elevationM);
+    map['duration_min'] = Variable<int>(durationMin);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || geometryJson != null) {
+      map['geometry_json'] = Variable<String>(geometryJson);
+    }
+    map['waypoints_json'] = Variable<String>(waypointsJson);
+    if (!nullToAbsent || layersJson != null) {
+      map['layers_json'] = Variable<String>(layersJson);
+    }
+    map['saved_at'] = Variable<DateTime>(savedAt);
+    return map;
+  }
+
+  SavedRoutesCompanion toCompanion(bool nullToAbsent) {
+    return SavedRoutesCompanion(
+      id: Value(id),
+      name: Value(name),
+      distanceKm: Value(distanceKm),
+      elevationM: Value(elevationM),
+      durationMin: Value(durationMin),
+      source: Value(source),
+      geometryJson: geometryJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(geometryJson),
+      waypointsJson: Value(waypointsJson),
+      layersJson: layersJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(layersJson),
+      savedAt: Value(savedAt),
+    );
+  }
+
+  factory SavedRoute.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SavedRoute(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      distanceKm: serializer.fromJson<double>(json['distanceKm']),
+      elevationM: serializer.fromJson<double>(json['elevationM']),
+      durationMin: serializer.fromJson<int>(json['durationMin']),
+      source: serializer.fromJson<String>(json['source']),
+      geometryJson: serializer.fromJson<String?>(json['geometryJson']),
+      waypointsJson: serializer.fromJson<String>(json['waypointsJson']),
+      layersJson: serializer.fromJson<String?>(json['layersJson']),
+      savedAt: serializer.fromJson<DateTime>(json['savedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'distanceKm': serializer.toJson<double>(distanceKm),
+      'elevationM': serializer.toJson<double>(elevationM),
+      'durationMin': serializer.toJson<int>(durationMin),
+      'source': serializer.toJson<String>(source),
+      'geometryJson': serializer.toJson<String?>(geometryJson),
+      'waypointsJson': serializer.toJson<String>(waypointsJson),
+      'layersJson': serializer.toJson<String?>(layersJson),
+      'savedAt': serializer.toJson<DateTime>(savedAt),
+    };
+  }
+
+  SavedRoute copyWith(
+          {String? id,
+          String? name,
+          double? distanceKm,
+          double? elevationM,
+          int? durationMin,
+          String? source,
+          Value<String?> geometryJson = const Value.absent(),
+          String? waypointsJson,
+          Value<String?> layersJson = const Value.absent(),
+          DateTime? savedAt}) =>
+      SavedRoute(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        distanceKm: distanceKm ?? this.distanceKm,
+        elevationM: elevationM ?? this.elevationM,
+        durationMin: durationMin ?? this.durationMin,
+        source: source ?? this.source,
+        geometryJson:
+            geometryJson.present ? geometryJson.value : this.geometryJson,
+        waypointsJson: waypointsJson ?? this.waypointsJson,
+        layersJson: layersJson.present ? layersJson.value : this.layersJson,
+        savedAt: savedAt ?? this.savedAt,
+      );
+  SavedRoute copyWithCompanion(SavedRoutesCompanion data) {
+    return SavedRoute(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      distanceKm:
+          data.distanceKm.present ? data.distanceKm.value : this.distanceKm,
+      elevationM:
+          data.elevationM.present ? data.elevationM.value : this.elevationM,
+      durationMin:
+          data.durationMin.present ? data.durationMin.value : this.durationMin,
+      source: data.source.present ? data.source.value : this.source,
+      geometryJson: data.geometryJson.present
+          ? data.geometryJson.value
+          : this.geometryJson,
+      waypointsJson: data.waypointsJson.present
+          ? data.waypointsJson.value
+          : this.waypointsJson,
+      layersJson:
+          data.layersJson.present ? data.layersJson.value : this.layersJson,
+      savedAt: data.savedAt.present ? data.savedAt.value : this.savedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedRoute(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('distanceKm: $distanceKm, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('durationMin: $durationMin, ')
+          ..write('source: $source, ')
+          ..write('geometryJson: $geometryJson, ')
+          ..write('waypointsJson: $waypointsJson, ')
+          ..write('layersJson: $layersJson, ')
+          ..write('savedAt: $savedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, distanceKm, elevationM, durationMin,
+      source, geometryJson, waypointsJson, layersJson, savedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SavedRoute &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.distanceKm == this.distanceKm &&
+          other.elevationM == this.elevationM &&
+          other.durationMin == this.durationMin &&
+          other.source == this.source &&
+          other.geometryJson == this.geometryJson &&
+          other.waypointsJson == this.waypointsJson &&
+          other.layersJson == this.layersJson &&
+          other.savedAt == this.savedAt);
+}
+
+class SavedRoutesCompanion extends UpdateCompanion<SavedRoute> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<double> distanceKm;
+  final Value<double> elevationM;
+  final Value<int> durationMin;
+  final Value<String> source;
+  final Value<String?> geometryJson;
+  final Value<String> waypointsJson;
+  final Value<String?> layersJson;
+  final Value<DateTime> savedAt;
+  final Value<int> rowid;
+  const SavedRoutesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.distanceKm = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.durationMin = const Value.absent(),
+    this.source = const Value.absent(),
+    this.geometryJson = const Value.absent(),
+    this.waypointsJson = const Value.absent(),
+    this.layersJson = const Value.absent(),
+    this.savedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SavedRoutesCompanion.insert({
+    required String id,
+    required String name,
+    required double distanceKm,
+    required double elevationM,
+    required int durationMin,
+    this.source = const Value.absent(),
+    this.geometryJson = const Value.absent(),
+    this.waypointsJson = const Value.absent(),
+    this.layersJson = const Value.absent(),
+    required DateTime savedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
+        distanceKm = Value(distanceKm),
+        elevationM = Value(elevationM),
+        durationMin = Value(durationMin),
+        savedAt = Value(savedAt);
+  static Insertable<SavedRoute> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<double>? distanceKm,
+    Expression<double>? elevationM,
+    Expression<int>? durationMin,
+    Expression<String>? source,
+    Expression<String>? geometryJson,
+    Expression<String>? waypointsJson,
+    Expression<String>? layersJson,
+    Expression<DateTime>? savedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (distanceKm != null) 'distance_km': distanceKm,
+      if (elevationM != null) 'elevation_m': elevationM,
+      if (durationMin != null) 'duration_min': durationMin,
+      if (source != null) 'source': source,
+      if (geometryJson != null) 'geometry_json': geometryJson,
+      if (waypointsJson != null) 'waypoints_json': waypointsJson,
+      if (layersJson != null) 'layers_json': layersJson,
+      if (savedAt != null) 'saved_at': savedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SavedRoutesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<double>? distanceKm,
+      Value<double>? elevationM,
+      Value<int>? durationMin,
+      Value<String>? source,
+      Value<String?>? geometryJson,
+      Value<String>? waypointsJson,
+      Value<String?>? layersJson,
+      Value<DateTime>? savedAt,
+      Value<int>? rowid}) {
+    return SavedRoutesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      distanceKm: distanceKm ?? this.distanceKm,
+      elevationM: elevationM ?? this.elevationM,
+      durationMin: durationMin ?? this.durationMin,
+      source: source ?? this.source,
+      geometryJson: geometryJson ?? this.geometryJson,
+      waypointsJson: waypointsJson ?? this.waypointsJson,
+      layersJson: layersJson ?? this.layersJson,
+      savedAt: savedAt ?? this.savedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (distanceKm.present) {
+      map['distance_km'] = Variable<double>(distanceKm.value);
+    }
+    if (elevationM.present) {
+      map['elevation_m'] = Variable<double>(elevationM.value);
+    }
+    if (durationMin.present) {
+      map['duration_min'] = Variable<int>(durationMin.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (geometryJson.present) {
+      map['geometry_json'] = Variable<String>(geometryJson.value);
+    }
+    if (waypointsJson.present) {
+      map['waypoints_json'] = Variable<String>(waypointsJson.value);
+    }
+    if (layersJson.present) {
+      map['layers_json'] = Variable<String>(layersJson.value);
+    }
+    if (savedAt.present) {
+      map['saved_at'] = Variable<DateTime>(savedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedRoutesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('distanceKm: $distanceKm, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('durationMin: $durationMin, ')
+          ..write('source: $source, ')
+          ..write('geometryJson: $geometryJson, ')
+          ..write('waypointsJson: $waypointsJson, ')
+          ..write('layersJson: $layersJson, ')
+          ..write('savedAt: $savedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RouteCacheTable extends RouteCache
+    with TableInfo<$RouteCacheTable, RouteCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RouteCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _cacheKeyMeta =
+      const VerificationMeta('cacheKey');
+  @override
+  late final GeneratedColumn<String> cacheKey = GeneratedColumn<String>(
+      'cache_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileMeta =
+      const VerificationMeta('profile');
+  @override
+  late final GeneratedColumn<String> profile = GeneratedColumn<String>(
+      'profile', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadJsonMeta =
+      const VerificationMeta('payloadJson');
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+      'payload_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fetchedAtMeta =
+      const VerificationMeta('fetchedAt');
+  @override
+  late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
+      'fetched_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, cacheKey, profile, payloadJson, fetchedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'route_cache';
+  @override
+  VerificationContext validateIntegrity(Insertable<RouteCacheData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('cache_key')) {
+      context.handle(_cacheKeyMeta,
+          cacheKey.isAcceptableOrUnknown(data['cache_key']!, _cacheKeyMeta));
+    } else if (isInserting) {
+      context.missing(_cacheKeyMeta);
+    }
+    if (data.containsKey('profile')) {
+      context.handle(_profileMeta,
+          profile.isAcceptableOrUnknown(data['profile']!, _profileMeta));
+    } else if (isInserting) {
+      context.missing(_profileMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+          _payloadJsonMeta,
+          payloadJson.isAcceptableOrUnknown(
+              data['payload_json']!, _payloadJsonMeta));
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(_fetchedAtMeta,
+          fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta));
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RouteCacheData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RouteCacheData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      cacheKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cache_key'])!,
+      profile: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile'])!,
+      payloadJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload_json'])!,
+      fetchedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fetched_at'])!,
+    );
+  }
+
+  @override
+  $RouteCacheTable createAlias(String alias) {
+    return $RouteCacheTable(attachedDatabase, alias);
+  }
+}
+
+class RouteCacheData extends DataClass implements Insertable<RouteCacheData> {
+  final String id;
+  final String cacheKey;
+  final String profile;
+  final String payloadJson;
+  final DateTime fetchedAt;
+  const RouteCacheData(
+      {required this.id,
+      required this.cacheKey,
+      required this.profile,
+      required this.payloadJson,
+      required this.fetchedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['cache_key'] = Variable<String>(cacheKey);
+    map['profile'] = Variable<String>(profile);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['fetched_at'] = Variable<DateTime>(fetchedAt);
+    return map;
+  }
+
+  RouteCacheCompanion toCompanion(bool nullToAbsent) {
+    return RouteCacheCompanion(
+      id: Value(id),
+      cacheKey: Value(cacheKey),
+      profile: Value(profile),
+      payloadJson: Value(payloadJson),
+      fetchedAt: Value(fetchedAt),
+    );
+  }
+
+  factory RouteCacheData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RouteCacheData(
+      id: serializer.fromJson<String>(json['id']),
+      cacheKey: serializer.fromJson<String>(json['cacheKey']),
+      profile: serializer.fromJson<String>(json['profile']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      fetchedAt: serializer.fromJson<DateTime>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'cacheKey': serializer.toJson<String>(cacheKey),
+      'profile': serializer.toJson<String>(profile),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'fetchedAt': serializer.toJson<DateTime>(fetchedAt),
+    };
+  }
+
+  RouteCacheData copyWith(
+          {String? id,
+          String? cacheKey,
+          String? profile,
+          String? payloadJson,
+          DateTime? fetchedAt}) =>
+      RouteCacheData(
+        id: id ?? this.id,
+        cacheKey: cacheKey ?? this.cacheKey,
+        profile: profile ?? this.profile,
+        payloadJson: payloadJson ?? this.payloadJson,
+        fetchedAt: fetchedAt ?? this.fetchedAt,
+      );
+  RouteCacheData copyWithCompanion(RouteCacheCompanion data) {
+    return RouteCacheData(
+      id: data.id.present ? data.id.value : this.id,
+      cacheKey: data.cacheKey.present ? data.cacheKey.value : this.cacheKey,
+      profile: data.profile.present ? data.profile.value : this.profile,
+      payloadJson:
+          data.payloadJson.present ? data.payloadJson.value : this.payloadJson,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteCacheData(')
+          ..write('id: $id, ')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('profile: $profile, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, cacheKey, profile, payloadJson, fetchedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RouteCacheData &&
+          other.id == this.id &&
+          other.cacheKey == this.cacheKey &&
+          other.profile == this.profile &&
+          other.payloadJson == this.payloadJson &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class RouteCacheCompanion extends UpdateCompanion<RouteCacheData> {
+  final Value<String> id;
+  final Value<String> cacheKey;
+  final Value<String> profile;
+  final Value<String> payloadJson;
+  final Value<DateTime> fetchedAt;
+  final Value<int> rowid;
+  const RouteCacheCompanion({
+    this.id = const Value.absent(),
+    this.cacheKey = const Value.absent(),
+    this.profile = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RouteCacheCompanion.insert({
+    required String id,
+    required String cacheKey,
+    required String profile,
+    required String payloadJson,
+    required DateTime fetchedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        cacheKey = Value(cacheKey),
+        profile = Value(profile),
+        payloadJson = Value(payloadJson),
+        fetchedAt = Value(fetchedAt);
+  static Insertable<RouteCacheData> custom({
+    Expression<String>? id,
+    Expression<String>? cacheKey,
+    Expression<String>? profile,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (cacheKey != null) 'cache_key': cacheKey,
+      if (profile != null) 'profile': profile,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RouteCacheCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? cacheKey,
+      Value<String>? profile,
+      Value<String>? payloadJson,
+      Value<DateTime>? fetchedAt,
+      Value<int>? rowid}) {
+    return RouteCacheCompanion(
+      id: id ?? this.id,
+      cacheKey: cacheKey ?? this.cacheKey,
+      profile: profile ?? this.profile,
+      payloadJson: payloadJson ?? this.payloadJson,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (cacheKey.present) {
+      map['cache_key'] = Variable<String>(cacheKey.value);
+    }
+    if (profile.present) {
+      map['profile'] = Variable<String>(profile.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<DateTime>(fetchedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteCacheCompanion(')
+          ..write('id: $id, ')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('profile: $profile, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3120,6 +3957,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ConsentsTable consents = $ConsentsTable(this);
   late final $SyncStateTable syncState = $SyncStateTable(this);
   late final $CatalogCacheTable catalogCache = $CatalogCacheTable(this);
+  late final $SavedRoutesTable savedRoutes = $SavedRoutesTable(this);
+  late final $RouteCacheTable routeCache = $RouteCacheTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3132,7 +3971,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         rideChunksMeta,
         consents,
         syncState,
-        catalogCache
+        catalogCache,
+        savedRoutes,
+        routeCache
       ];
 }
 
@@ -4710,6 +5551,421 @@ typedef $$CatalogCacheTableProcessedTableManager = ProcessedTableManager<
     ),
     CatalogCacheData,
     PrefetchHooks Function()>;
+typedef $$SavedRoutesTableCreateCompanionBuilder = SavedRoutesCompanion
+    Function({
+  required String id,
+  required String name,
+  required double distanceKm,
+  required double elevationM,
+  required int durationMin,
+  Value<String> source,
+  Value<String?> geometryJson,
+  Value<String> waypointsJson,
+  Value<String?> layersJson,
+  required DateTime savedAt,
+  Value<int> rowid,
+});
+typedef $$SavedRoutesTableUpdateCompanionBuilder = SavedRoutesCompanion
+    Function({
+  Value<String> id,
+  Value<String> name,
+  Value<double> distanceKm,
+  Value<double> elevationM,
+  Value<int> durationMin,
+  Value<String> source,
+  Value<String?> geometryJson,
+  Value<String> waypointsJson,
+  Value<String?> layersJson,
+  Value<DateTime> savedAt,
+  Value<int> rowid,
+});
+
+class $$SavedRoutesTableFilterComposer
+    extends Composer<_$AppDatabase, $SavedRoutesTable> {
+  $$SavedRoutesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get distanceKm => $composableBuilder(
+      column: $table.distanceKm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get elevationM => $composableBuilder(
+      column: $table.elevationM, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationMin => $composableBuilder(
+      column: $table.durationMin, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get geometryJson => $composableBuilder(
+      column: $table.geometryJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get waypointsJson => $composableBuilder(
+      column: $table.waypointsJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get layersJson => $composableBuilder(
+      column: $table.layersJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get savedAt => $composableBuilder(
+      column: $table.savedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SavedRoutesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SavedRoutesTable> {
+  $$SavedRoutesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get distanceKm => $composableBuilder(
+      column: $table.distanceKm, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get elevationM => $composableBuilder(
+      column: $table.elevationM, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationMin => $composableBuilder(
+      column: $table.durationMin, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get geometryJson => $composableBuilder(
+      column: $table.geometryJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get waypointsJson => $composableBuilder(
+      column: $table.waypointsJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get layersJson => $composableBuilder(
+      column: $table.layersJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get savedAt => $composableBuilder(
+      column: $table.savedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SavedRoutesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SavedRoutesTable> {
+  $$SavedRoutesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get distanceKm => $composableBuilder(
+      column: $table.distanceKm, builder: (column) => column);
+
+  GeneratedColumn<double> get elevationM => $composableBuilder(
+      column: $table.elevationM, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMin => $composableBuilder(
+      column: $table.durationMin, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get geometryJson => $composableBuilder(
+      column: $table.geometryJson, builder: (column) => column);
+
+  GeneratedColumn<String> get waypointsJson => $composableBuilder(
+      column: $table.waypointsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get layersJson => $composableBuilder(
+      column: $table.layersJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get savedAt =>
+      $composableBuilder(column: $table.savedAt, builder: (column) => column);
+}
+
+class $$SavedRoutesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SavedRoutesTable,
+    SavedRoute,
+    $$SavedRoutesTableFilterComposer,
+    $$SavedRoutesTableOrderingComposer,
+    $$SavedRoutesTableAnnotationComposer,
+    $$SavedRoutesTableCreateCompanionBuilder,
+    $$SavedRoutesTableUpdateCompanionBuilder,
+    (SavedRoute, BaseReferences<_$AppDatabase, $SavedRoutesTable, SavedRoute>),
+    SavedRoute,
+    PrefetchHooks Function()> {
+  $$SavedRoutesTableTableManager(_$AppDatabase db, $SavedRoutesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SavedRoutesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SavedRoutesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SavedRoutesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<double> distanceKm = const Value.absent(),
+            Value<double> elevationM = const Value.absent(),
+            Value<int> durationMin = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<String?> geometryJson = const Value.absent(),
+            Value<String> waypointsJson = const Value.absent(),
+            Value<String?> layersJson = const Value.absent(),
+            Value<DateTime> savedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SavedRoutesCompanion(
+            id: id,
+            name: name,
+            distanceKm: distanceKm,
+            elevationM: elevationM,
+            durationMin: durationMin,
+            source: source,
+            geometryJson: geometryJson,
+            waypointsJson: waypointsJson,
+            layersJson: layersJson,
+            savedAt: savedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            required double distanceKm,
+            required double elevationM,
+            required int durationMin,
+            Value<String> source = const Value.absent(),
+            Value<String?> geometryJson = const Value.absent(),
+            Value<String> waypointsJson = const Value.absent(),
+            Value<String?> layersJson = const Value.absent(),
+            required DateTime savedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SavedRoutesCompanion.insert(
+            id: id,
+            name: name,
+            distanceKm: distanceKm,
+            elevationM: elevationM,
+            durationMin: durationMin,
+            source: source,
+            geometryJson: geometryJson,
+            waypointsJson: waypointsJson,
+            layersJson: layersJson,
+            savedAt: savedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SavedRoutesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SavedRoutesTable,
+    SavedRoute,
+    $$SavedRoutesTableFilterComposer,
+    $$SavedRoutesTableOrderingComposer,
+    $$SavedRoutesTableAnnotationComposer,
+    $$SavedRoutesTableCreateCompanionBuilder,
+    $$SavedRoutesTableUpdateCompanionBuilder,
+    (SavedRoute, BaseReferences<_$AppDatabase, $SavedRoutesTable, SavedRoute>),
+    SavedRoute,
+    PrefetchHooks Function()>;
+typedef $$RouteCacheTableCreateCompanionBuilder = RouteCacheCompanion Function({
+  required String id,
+  required String cacheKey,
+  required String profile,
+  required String payloadJson,
+  required DateTime fetchedAt,
+  Value<int> rowid,
+});
+typedef $$RouteCacheTableUpdateCompanionBuilder = RouteCacheCompanion Function({
+  Value<String> id,
+  Value<String> cacheKey,
+  Value<String> profile,
+  Value<String> payloadJson,
+  Value<DateTime> fetchedAt,
+  Value<int> rowid,
+});
+
+class $$RouteCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $RouteCacheTable> {
+  $$RouteCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get profile => $composableBuilder(
+      column: $table.profile, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fetchedAt => $composableBuilder(
+      column: $table.fetchedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$RouteCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $RouteCacheTable> {
+  $$RouteCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get profile => $composableBuilder(
+      column: $table.profile, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fetchedAt => $composableBuilder(
+      column: $table.fetchedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RouteCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RouteCacheTable> {
+  $$RouteCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get cacheKey =>
+      $composableBuilder(column: $table.cacheKey, builder: (column) => column);
+
+  GeneratedColumn<String> get profile =>
+      $composableBuilder(column: $table.profile, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+}
+
+class $$RouteCacheTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RouteCacheTable,
+    RouteCacheData,
+    $$RouteCacheTableFilterComposer,
+    $$RouteCacheTableOrderingComposer,
+    $$RouteCacheTableAnnotationComposer,
+    $$RouteCacheTableCreateCompanionBuilder,
+    $$RouteCacheTableUpdateCompanionBuilder,
+    (
+      RouteCacheData,
+      BaseReferences<_$AppDatabase, $RouteCacheTable, RouteCacheData>
+    ),
+    RouteCacheData,
+    PrefetchHooks Function()> {
+  $$RouteCacheTableTableManager(_$AppDatabase db, $RouteCacheTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RouteCacheTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RouteCacheTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RouteCacheTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> cacheKey = const Value.absent(),
+            Value<String> profile = const Value.absent(),
+            Value<String> payloadJson = const Value.absent(),
+            Value<DateTime> fetchedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RouteCacheCompanion(
+            id: id,
+            cacheKey: cacheKey,
+            profile: profile,
+            payloadJson: payloadJson,
+            fetchedAt: fetchedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String cacheKey,
+            required String profile,
+            required String payloadJson,
+            required DateTime fetchedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RouteCacheCompanion.insert(
+            id: id,
+            cacheKey: cacheKey,
+            profile: profile,
+            payloadJson: payloadJson,
+            fetchedAt: fetchedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RouteCacheTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RouteCacheTable,
+    RouteCacheData,
+    $$RouteCacheTableFilterComposer,
+    $$RouteCacheTableOrderingComposer,
+    $$RouteCacheTableAnnotationComposer,
+    $$RouteCacheTableCreateCompanionBuilder,
+    $$RouteCacheTableUpdateCompanionBuilder,
+    (
+      RouteCacheData,
+      BaseReferences<_$AppDatabase, $RouteCacheTable, RouteCacheData>
+    ),
+    RouteCacheData,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4730,4 +5986,8 @@ class $AppDatabaseManager {
       $$SyncStateTableTableManager(_db, _db.syncState);
   $$CatalogCacheTableTableManager get catalogCache =>
       $$CatalogCacheTableTableManager(_db, _db.catalogCache);
+  $$SavedRoutesTableTableManager get savedRoutes =>
+      $$SavedRoutesTableTableManager(_db, _db.savedRoutes);
+  $$RouteCacheTableTableManager get routeCache =>
+      $$RouteCacheTableTableManager(_db, _db.routeCache);
 }

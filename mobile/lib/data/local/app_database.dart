@@ -111,6 +111,35 @@ class CatalogCache extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Persistierte Discover-Library (Geometry + Waypoints + Layer-Parts).
+class SavedRoutes extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  RealColumn get distanceKm => real()();
+  RealColumn get elevationM => real()();
+  IntColumn get durationMin => integer()();
+  TextColumn get source => text().withDefault(const Constant('engine'))();
+  TextColumn get geometryJson => text().nullable()();
+  TextColumn get waypointsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get layersJson => text().nullable()();
+  DateTimeColumn get savedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Offline-First Cache für zuletzt berechnete A–B-Routen.
+class RouteCache extends Table {
+  TextColumn get id => text()();
+  TextColumn get cacheKey => text()();
+  TextColumn get profile => text()();
+  TextColumn get payloadJson => text()();
+  DateTimeColumn get fetchedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Bikes,
@@ -121,13 +150,28 @@ class CatalogCache extends Table {
     Consents,
     SyncState,
     CatalogCache,
+    SavedRoutes,
+    RouteCache,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(savedRoutes);
+            await m.createTable(routeCache);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

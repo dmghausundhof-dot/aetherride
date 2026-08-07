@@ -113,23 +113,63 @@ export type ClientRouteResult = {
   steps?: import("@/lib/routing/navSteps").NavStep[];
 };
 
-/** Client-Call an /api/route */
-export async function requestRoute(
+export type RequestRouteFailure = {
+  ok: false;
+  status: number;
+  rateLimited: boolean;
+  message: string;
+};
+
+export type RequestRouteSuccess = {
+  ok: true;
+  data: ClientRouteResult;
+};
+
+/** Client-Call an /api/route (mit Rate-Limit-Erkennung) */
+export async function requestRouteDetailed(
   profile: RoutingProfile,
   from: [number, number],
-  to: [number, number]
-): Promise<ClientRouteResult | null> {
+  to: [number, number],
+  vias: [number, number][] = []
+): Promise<RequestRouteSuccess | RequestRouteFailure> {
   const qs = new URLSearchParams({
     profile,
     from: `${from[0]},${from[1]}`,
     to: `${to[0]},${to[1]}`,
   });
+  for (const v of vias) {
+    qs.append("via", `${v[0]},${v[1]}`);
+  }
   const res = await fetch(`/api/route?${qs}`);
   if (!res.ok) {
-    console.error("[Routing]", res.status, await res.text());
-    return null;
+    const text = await res.text();
+    const rateLimited =
+      res.status === 429 ||
+      /429|rate limit|minutely api limit/i.test(text);
+    if (!rateLimited) {
+      console.error("[Routing]", res.status, text.slice(0, 240));
+    } else {
+      console.warn("[Routing] Rate limit — weitere Engine-Calls pausiert");
+    }
+    return {
+      ok: false,
+      status: res.status,
+      rateLimited,
+      message: text.slice(0, 300),
+    };
   }
-  return res.json();
+  return { ok: true, data: await res.json() };
+}
+
+/** Client-Call an /api/route */
+export async function requestRoute(
+  profile: RoutingProfile,
+  from: [number, number],
+  to: [number, number],
+  vias: [number, number][] = []
+): Promise<ClientRouteResult | null> {
+  const result = await requestRouteDetailed(profile, from, to, vias);
+  return result.ok ? result.data : null;
 }
 
 /** Map bike category → routing profile */

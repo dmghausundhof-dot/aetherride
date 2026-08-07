@@ -1,0 +1,157 @@
+/**
+ * Smoke-Tests Discover Map Layers + Trail-Attach Persistenz-Vertrag.
+ * Ausführen: npx tsx src/lib/routing/discoverMapLayers.test.ts
+ */
+import { buildDiscoverMapLayers } from "./discoverMapLayers";
+import { emptyDraft, type PlanDraft } from "./planDraft";
+import { SEED_TRAILS } from "./trailSegments";
+import type { ClientRouteResult } from "./profiles";
+
+function assert(cond: boolean, msg: string) {
+  if (!cond) throw new Error(msg);
+}
+
+const line = (coords: [number, number][]): GeoJSON.LineString => ({
+  type: "LineString",
+  coordinates: coords,
+});
+
+const fakeResult = (
+  geometry: GeoJSON.LineString,
+  distanceM = 5000
+): ClientRouteResult => ({
+  distanceM,
+  durationS: 1800,
+  geometry,
+  engine: "test",
+  profile: "mtb_allmountain",
+});
+
+function testLayersActiveAndAlt() {
+  const activeGeom = line([
+    [8.4, 48.6],
+    [8.41, 48.61],
+  ]);
+  const altGeom = line([
+    [8.4, 48.6],
+    [8.42, 48.6],
+  ]);
+  const draft: PlanDraft = {
+    ...emptyDraft("mtb_allmountain", [8.4, 48.6]),
+    mode: "quick",
+    label: "Kurz",
+    computed: fakeResult(activeGeom),
+  };
+  const layers = buildDiscoverMapLayers({
+    draft,
+    quickOptions: [
+      {
+        id: "q1",
+        label: "Kurz",
+        reason: "test",
+        result: fakeResult(activeGeom),
+      },
+      {
+        id: "q2",
+        label: "Lang",
+        reason: "test",
+        result: fakeResult(altGeom, 12000),
+      },
+    ],
+    activeQuickId: "q1",
+    trails: [],
+    showTrails: false,
+  });
+  assert(
+    layers.some((l) => l.role === "active"),
+    "active layer missing"
+  );
+  assert(
+    layers.some((l) => l.role === "alt" && l.id === "alt-q2"),
+    "alt layer for non-active quick missing"
+  );
+  assert(
+    !layers.some((l) => l.id === "alt-q1"),
+    "active quick should not also be alt"
+  );
+}
+
+function testHybridParts() {
+  const approach = line([
+    [8.4, 48.6],
+    [8.41, 48.635],
+  ]);
+  const trail = SEED_TRAILS[0].geometry;
+  const merged = line([
+    ...(approach.coordinates as [number, number][]),
+    ...(trail.coordinates as [number, number][]),
+  ]);
+  const draft: PlanDraft = {
+    ...emptyDraft("mtb_allmountain", [8.4, 48.6]),
+    mode: "hybrid",
+    computed: fakeResult(merged),
+    layers: { approach, trail },
+  };
+  const layers = buildDiscoverMapLayers({
+    draft,
+    quickOptions: [],
+    trails: [],
+    showTrails: false,
+  });
+  assert(
+    layers.some((l) => l.role === "approach"),
+    "approach missing"
+  );
+  assert(layers.some((l) => l.role === "trail"), "trail missing");
+  assert(
+    layers.some((l) => l.id === "active-merged" || l.role === "active"),
+    "merged/active outline missing"
+  );
+}
+
+async function testAttachAppendPersistsLayers() {
+  // Ohne Netz: Persistenz-Vertrag anhand eines Hybrid-Drafts (wie nach attach).
+  const approach = line([
+    [8.4, 48.6],
+    [8.41, 48.635],
+  ]);
+  const trail = SEED_TRAILS[0].geometry;
+  const merged = line([
+    ...(approach.coordinates as [number, number][]),
+    ...(trail.coordinates as [number, number][]),
+  ]);
+  const draft: PlanDraft = {
+    ...emptyDraft("mtb_allmountain", [8.4, 48.6]),
+    mode: "hybrid",
+    label: "Kaltenbronn Flow",
+    computed: fakeResult(merged),
+    layers: { approach, trail },
+    attachedTrailId: SEED_TRAILS[0].id,
+    waypoints: [
+      { id: "start", role: "start", lngLat: [8.4, 48.6], label: "Start" },
+      { id: "end", role: "end", lngLat: [8.438, 48.65], label: "Ziel" },
+    ],
+  };
+  assert(draft.layers?.trail != null, "trail layer not set");
+  assert(draft.computed?.geometry != null, "computed geometry missing");
+  assert(draft.mode === "hybrid", "mode should be hybrid");
+  const savedLayers = {
+    approach: draft.layers?.approach,
+    tour: draft.layers?.tour,
+    trail: draft.layers?.trail,
+  };
+  assert(savedLayers.trail != null, "saved layers must include trail");
+  assert(savedLayers.approach != null, "saved layers must include approach");
+}
+
+async function main() {
+  testLayersActiveAndAlt();
+  testHybridParts();
+  await testAttachAppendPersistsLayers();
+  console.log("discoverMapLayers.test.ts: ok");
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

@@ -88,6 +88,7 @@ class RoutingClient {
     required GeoPoint to,
     RoutingProfile profile = RoutingProfile.mtbTrail,
     bool preferOffline = false,
+    List<GeoPoint> vias = const [],
   }) async {
     if (preferOffline || AppConfig.preferOfflineRouting) {
       final offline = await _tryOffline(from, to, profile);
@@ -95,7 +96,7 @@ class RoutingClient {
     }
 
     try {
-      return await _requestOnline(from, to, profile);
+      return await _requestOnline(from, to, profile, vias: vias);
     } catch (_) {
       final offline = await _tryOffline(from, to, profile);
       if (offline != null) return offline;
@@ -142,19 +143,25 @@ class RoutingClient {
   Future<RouteResult> _requestOnline(
     GeoPoint from,
     GeoPoint to,
-    RoutingProfile profile,
-  ) async {
-    // Web-API: from=lng,lat&to=lng,lat (Spec /api/route)
-    final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/route').replace(
-      queryParameters: {
-        'from': '${from.lng},${from.lat}',
-        'to': '${to.lng},${to.lat}',
-        'profile': profile.apiId,
-      },
+    RoutingProfile profile, {
+    List<GeoPoint> vias = const [],
+  }) async {
+    // Web-API: from=lng,lat&to=lng,lat&via=... (Spec /api/route)
+    final qp = <String, String>{
+      'from': '${from.lng},${from.lat}',
+      'to': '${to.lng},${to.lat}',
+      'profile': profile.apiId,
+    };
+    var url = Uri.parse('${AppConfig.apiBaseUrl}/api/route').replace(
+      queryParameters: qp,
     );
-    final res = await _http.get(uri, headers: {'Accept': 'application/json'});
+    if (vias.isNotEmpty) {
+      final extra = vias.map((v) => 'via=${v.lng},${v.lat}').join('&');
+      url = Uri.parse('${url.toString()}&$extra');
+    }
+    final res = await _http.get(url, headers: {'Accept': 'application/json'});
     if (res.statusCode != 200) {
-      throw Exception('Route failed: ${res.statusCode}');
+      throw Exception('Route failed: ${res.statusCode} ${res.body}');
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     final coords = <GeoPoint>[];

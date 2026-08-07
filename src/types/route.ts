@@ -38,6 +38,12 @@ export interface SavedRoute {
   geometry?: GeoJSON.LineString | null;
   /** Optionale Waypoints für erneutes Planen */
   waypoints?: { role: "start" | "via" | "end"; lngLat: [number, number]; label?: string }[];
+  /** Hybrid-/Trail-Segmente für Map-Layer nach Reload */
+  layers?: {
+    approach?: GeoJSON.LineString;
+    tour?: GeoJSON.LineString;
+    trail?: GeoJSON.LineString;
+  };
 }
 
 export type RideLiveLayer = "map" | "data" | "suspension";

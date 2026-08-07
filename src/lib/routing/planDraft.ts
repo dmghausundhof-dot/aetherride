@@ -3,9 +3,66 @@
  */
 
 import type { ClientRouteResult, RoutingProfile } from "@/lib/routing/profiles";
-import { requestRoute } from "@/lib/routing/profiles";
+import { requestRoute, requestRouteDetailed } from "@/lib/routing/profiles";
 import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
 import type { NavStep } from "@/lib/routing/navSteps";
+
+export type QuickOption = {
+  id: string;
+  label: string;
+  reason: string;
+  result: ClientRouteResult;
+};
+
+export type ComputeQuickOptionsResult = {
+  options: QuickOption[];
+  rateLimited: boolean;
+  fromCache: boolean;
+};
+
+const quickCache = new Map<string, QuickOption[]>();
+
+function quickCacheKey(
+  start: [number, number],
+  profile: RoutingProfile,
+  minutes: number
+): string {
+  // ~100 m grid — avoids refetch on tiny GPS jitter
+  const lng = Math.round(start[0] * 1000) / 1000;
+  const lat = Math.round(start[1] * 1000) / 1000;
+  const bucket = Math.round(minutes / 15) * 15;
+  return `${profile}|${lng},${lat}|${bucket}`;
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Straight-line stand-in when engine is rate-limited / offline. */
+export function approximateOutAndBack(
+  start: [number, number],
+  to: [number, number],
+  profile: RoutingProfile,
+  label: string
+): ClientRouteResult {
+  const mid: [number, number] = [
+    (start[0] + to[0]) / 2,
+    (start[1] + to[1]) / 2,
+  ];
+  const coordinates: [number, number][] = [start, mid, to, mid, start];
+  const distM =
+    Math.hypot(to[0] - start[0], to[1] - start[1]) * 111_000 * 2 * 1.15;
+  return {
+    distanceM: Math.round(distM),
+    durationS: Math.round(distM / 4.5),
+    geometry: { type: "LineString", coordinates },
+    engine: "approx",
+    profile,
+    warnings: [
+      `Näherung „${label}“ — Routing-API pausiert (Limit). Später neu berechnen.`,
+    ],
+  };
+}
 
 export type PlanMode = "quick" | "point_to_point" | "tour" | "hybrid";
 
@@ -48,6 +105,13 @@ export type PlanDraft = {
   hybrid?: { strategy: HybridStrategy };
   computed?: ClientRouteResult | null;
   label?: string;
+  /** Separate geometries for map layers (hybrid / trail attach) */
+  layers?: {
+    approach?: GeoJSON.LineString;
+    tour?: GeoJSON.LineString;
+    trail?: GeoJSON.LineString;
+  };
+  attachedTrailId?: string;
 };
 
 export function emptyDraft(
@@ -97,6 +161,48 @@ export function setEnd(
     waypoints: [...rest, { id: "end", role: "end", lngLat, label }],
     computed: null,
   };
+}
+
+export function viasOf(draft: PlanDraft): [number, number][] {
+  return draft.waypoints
+    .filter((w) => w.role === "via")
+    .map((w) => w.lngLat);
+}
+
+export function addVia(
+  draft: PlanDraft,
+  lngLat: [number, number],
+  label?: string
+): PlanDraft {
+  const vias = draft.waypoints.filter((w) => w.role === "via");
+  const start = draft.waypoints.filter((w) => w.role === "start");
+  const end = draft.waypoints.filter((w) => w.role === "end");
+  const via: PlanWaypoint = {
+    id: `via-${Date.now()}`,
+    role: "via",
+    lngLat,
+    label: label ?? `Via ${vias.length + 1}`,
+  };
+  return {
+    ...draft,
+    waypoints: [...start, ...vias, via, ...end],
+    computed: null,
+  };
+}
+
+export function removeWaypoint(draft: PlanDraft, id: string): PlanDraft {
+  return {
+    ...draft,
+    waypoints: draft.waypoints.filter((w) => w.id !== id),
+    computed: null,
+  };
+}
+
+export function orderedWaypoints(draft: PlanDraft): PlanWaypoint[] {
+  const start = draft.waypoints.filter((w) => w.role === "start");
+  const vias = draft.waypoints.filter((w) => w.role === "via");
+  const end = draft.waypoints.filter((w) => w.role === "end");
+  return [...start, ...vias, ...end];
 }
 
 /** Concatenate LineStrings (skip duplicate join point). */
@@ -186,33 +292,110 @@ export function quickDestinations(
   ];
 }
 
-export type QuickOption = {
-  id: string;
-  label: string;
-  reason: string;
-  result: ClientRouteResult;
-};
-
-/** Compute up to 3 quick A→B options from start (engine). */
+/**
+ * Quick-Optionen mit Cache, Sequenz + Pause (GraphHopper Free-Tier).
+ * Default: nur 1 Engine-Call; weitere per `limit` / „Mehr laden“.
+ */
 export async function computeQuickOptions(
   start: [number, number],
   profile: RoutingProfile,
-  minutes: number
-): Promise<QuickOption[]> {
+  minutes: number,
+  opts?: {
+    limit?: number;
+    /** Mindestabstand zwischen Engine-Calls (ms) */
+    gapMs?: number;
+    signal?: AbortSignal;
+    /** Cache ignorieren (manuelles Neu berechnen) */
+    force?: boolean;
+    /** Bei Limit geometrische Näherung statt leerer Liste */
+    allowApprox?: boolean;
+  }
+): Promise<ComputeQuickOptionsResult> {
+  const limit = Math.max(1, Math.min(3, opts?.limit ?? 1));
+  const gapMs = opts?.gapMs ?? 1200;
+  const allowApprox = opts?.allowApprox ?? true;
+  const key = quickCacheKey(start, profile, minutes);
+
+  if (!opts?.force) {
+    const cached = quickCache.get(key);
+    if (cached && cached.length >= limit) {
+      return {
+        options: cached.slice(0, limit),
+        rateLimited: false,
+        fromCache: true,
+      };
+    }
+  }
+
   const dests = quickDestinations(start, minutes);
-  const out: QuickOption[] = [];
-  for (const d of dests) {
-    const result = await requestRoute(profile, start, d.to);
-    if (result) {
+  const existing = (!opts?.force ? quickCache.get(key) : undefined) ?? [];
+  const out: QuickOption[] = [...existing];
+  let rateLimited = false;
+
+  for (let i = 0; i < dests.length && out.length < limit; i++) {
+    if (opts?.signal?.aborted) break;
+    if (out.some((o) => o.id === dests[i].id)) continue;
+
+    if (out.length > existing.length || i > 0) {
+      // pause before every new engine call after the first in this run
+      const newCalls = out.filter((o) => !existing.some((e) => e.id === o.id))
+        .length;
+      if (newCalls > 0 || existing.length > 0) await sleep(gapMs);
+    }
+    if (opts?.signal?.aborted) break;
+
+    const d = dests[i];
+    const res = await requestRouteDetailed(profile, start, d.to);
+    if (res.ok) {
       out.push({
         id: d.id,
         label: d.label,
         reason: d.reason,
-        result,
+        result: res.data,
       });
+      continue;
+    }
+    if (res.rateLimited) {
+      rateLimited = true;
+      if (allowApprox) {
+        out.push({
+          id: d.id,
+          label: d.label,
+          reason: `${d.reason} (Näherung)`,
+          result: approximateOutAndBack(start, d.to, profile, d.label),
+        });
+        while (out.length < limit) {
+          const next = dests.find((x) => !out.some((o) => o.id === x.id));
+          if (!next) break;
+          out.push({
+            id: next.id,
+            label: next.label,
+            reason: `${next.reason} (Näherung)`,
+            result: approximateOutAndBack(
+              start,
+              next.to,
+              profile,
+              next.label
+            ),
+          });
+        }
+      }
+      break;
     }
   }
-  return out;
+
+  if (out.some((o) => o.result.engine !== "approx")) {
+    quickCache.set(
+      key,
+      out.filter((o) => o.result.engine !== "approx")
+    );
+  }
+
+  return {
+    options: out.slice(0, limit),
+    rateLimited,
+    fromCache: existing.length > 0 && out.length === existing.length,
+  };
 }
 
 export async function computePointToPoint(
@@ -221,7 +404,7 @@ export async function computePointToPoint(
   const from = startOf(draft);
   const to = endOf(draft);
   if (!from || !to) return null;
-  return requestRoute(draft.profile, from, to);
+  return requestRoute(draft.profile, from, to, viasOf(draft));
 }
 
 /** Adopt tour geometry as-is (demo line if missing). */
@@ -243,14 +426,21 @@ export function adoptTour(tour: BaseTour, profile: RoutingProfile): ClientRouteR
   };
 }
 
+export type SnapParts = {
+  merged: ClientRouteResult;
+  approach?: ClientRouteResult;
+  tour: ClientRouteResult;
+};
+
 /**
  * Hybrid snap: route user → tour entry, then follow tour track.
+ * Returns separate parts for map layers.
  */
-export async function snapToTour(
+export async function snapToTourParts(
   userStart: [number, number],
   tour: BaseTour,
   profile: RoutingProfile
-): Promise<ClientRouteResult | null> {
+): Promise<SnapParts | null> {
   const tourGeom =
     tour.geometry ??
     buildDemoGeometry(tour.id, tour.distanceKm ?? 20);
@@ -271,19 +461,127 @@ export async function snapToTour(
 
   if (!approach) {
     return {
-      ...tourPart,
-      warnings: [
-        ...(tourPart.warnings ?? []),
-        "Anschluss zur Tour konnte nicht geroutet werden — nur Tour-Track.",
-      ],
+      merged: {
+        ...tourPart,
+        warnings: [
+          ...(tourPart.warnings ?? []),
+          "Anschluss zur Tour konnte nicht geroutet werden — nur Tour-Track.",
+        ],
+      },
+      tour: tourPart,
     };
   }
 
-  return mergeRouteResults(
-    [approach, tourPart],
+  return {
+    merged: mergeRouteResults(
+      [approach, tourPart],
+      profile,
+      ["Hybrid: Position → Tour-Einstieg, dann Tour-Track"]
+    ),
+    approach,
+    tour: tourPart,
+  };
+}
+
+export async function snapToTour(
+  userStart: [number, number],
+  tour: BaseTour,
+  profile: RoutingProfile
+): Promise<ClientRouteResult | null> {
+  const parts = await snapToTourParts(userStart, tour, profile);
+  return parts?.merged ?? null;
+}
+
+export type AttachTrailMode = "append" | "via_chain";
+
+/**
+ * Connect a trail segment into the current draft.
+ * - append: approach → trail geometry (+ optional continue to end)
+ * - via_chain: trail entry/mid/exit as vias, engine re-routes
+ */
+export async function attachTrailToDraft(
+  draft: PlanDraft,
+  segment: {
+    id: string;
+    name: string;
+    geometry: GeoJSON.LineString;
+  },
+  mode: AttachTrailMode,
+  userStart?: [number, number] | null
+): Promise<PlanDraft | null> {
+  const coords = (segment.geometry.coordinates ?? []) as [number, number][];
+  if (coords.length < 2) return null;
+  const entry = coords[0];
+  const exit = coords[coords.length - 1];
+  const mid = coords[Math.floor(coords.length / 2)];
+  const origin = userStart ?? startOf(draft) ?? entry;
+  const profile = draft.profile;
+
+  if (mode === "via_chain") {
+    let next = setStart(draft, origin, "Start");
+    next = {
+      ...next,
+      waypoints: next.waypoints.filter((w) => w.role !== "via"),
+    };
+    next = addVia(next, entry, `${segment.name} Einstieg`);
+    next = addVia(next, mid, `${segment.name} Mitte`);
+    next = addVia(next, exit, `${segment.name} Ausstieg`);
+    if (!endOf(next)) next = setEnd(next, exit, "Ziel");
+    const computed = await computePointToPoint(next);
+    return {
+      ...next,
+      mode: "hybrid",
+      hybrid: { strategy: "replan" },
+      computed,
+      label: `${segment.name} (Via)`,
+      attachedTrailId: segment.id,
+      layers: { trail: segment.geometry },
+    };
+  }
+
+  // append
+  const approach = await requestRoute(profile, origin, entry);
+  const trailDist =
+    Math.hypot(exit[0] - entry[0], exit[1] - entry[1]) * 111_000 * 1.4;
+  const trailPart: ClientRouteResult = {
+    distanceM: Math.round(trailDist),
+    durationS: Math.round(trailDist / 4),
+    geometry: segment.geometry,
+    engine: "trail-seed",
     profile,
-    ["Hybrid: Position → Tour-Einstieg, dann Tour-Track"]
-  );
+    warnings: [`Trail „${segment.name}“ eingefügt (Seed-Geometrie).`],
+  };
+
+  const parts: ClientRouteResult[] = [];
+  if (approach) parts.push(approach);
+  parts.push(trailPart);
+
+  const end = endOf(draft);
+  if (end && (end[0] !== exit[0] || end[1] !== exit[1])) {
+    const continuePart = await requestRoute(profile, exit, end);
+    if (continuePart) parts.push(continuePart);
+  }
+
+  const merged = mergeRouteResults(parts, profile, [
+    `Trail angehängt: ${segment.name}`,
+  ]);
+
+  return {
+    ...setStart(
+      end ? draft : setEnd(draft, exit, "Trail-Ende"),
+      origin,
+      "Hier"
+    ),
+    mode: "hybrid",
+    hybrid: { strategy: "snap" },
+    computed: merged,
+    label: `${segment.name} (angehängt)`,
+    attachedTrailId: segment.id,
+    layers: {
+      approach: approach?.geometry,
+      trail: segment.geometry,
+    },
+  };
 }
 
 export function geometryFromTourCenter(

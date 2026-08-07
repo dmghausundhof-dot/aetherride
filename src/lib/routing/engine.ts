@@ -318,19 +318,20 @@ function stepsFromGraphhopper(
 
 async function routeGraphhopper(
   profile: RoutingProfile,
-  from: [number, number],
-  to: [number, number]
+  points: [number, number][]
 ): Promise<RouteResult> {
   const key = process.env.GRAPHHOPPER_API_KEY?.trim();
   if (!key) throw new Error("GRAPHHOPPER_API_KEY missing");
+  if (points.length < 2) throw new Error("GraphHopper: need ≥2 points");
   const base = (
     process.env.GRAPHHOPPER_URL || "https://graphhopper.com/api/1"
   ).replace(/\/$/, "");
   const ghProfile = graphhopperProfile(profile);
   const params = new URLSearchParams();
   // GraphHopper expects lat,lng
-  params.append("point", `${from[1]},${from[0]}`);
-  params.append("point", `${to[1]},${to[0]}`);
+  for (const [lng, lat] of points) {
+    params.append("point", `${lat},${lng}`);
+  }
   params.set("profile", ghProfile);
   params.set("locale", "de");
   params.set("points_encoded", "false");
@@ -413,13 +414,60 @@ async function routeOsrm(
 export async function computeRoute(
   profile: RoutingProfile,
   from: [number, number],
-  to: [number, number]
+  to: [number, number],
+  vias: [number, number][] = []
 ): Promise<RouteResult> {
+  const points = [from, ...vias, to];
   const kind = engine();
   if (kind === "demo") return demoRoute(profile, from, to);
-  if (kind === "graphhopper") return routeGraphhopper(profile, from, to);
-  if (kind === "valhalla") return routeValhalla(profile, from, to);
-  return routeOsrm(profile, from, to);
+  if (kind === "graphhopper") return routeGraphhopper(profile, points);
+  if (kind === "valhalla") {
+    // Valhalla vias: route sequentially for now
+    if (vias.length === 0) return routeValhalla(profile, from, to);
+    const parts: RouteResult[] = [];
+    let prev = from;
+    for (const p of [...vias, to]) {
+      parts.push(await routeValhalla(profile, prev, p));
+      prev = p;
+    }
+    return {
+      distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
+      durationS: parts.reduce((a, p) => a + p.durationS, 0),
+      geometry: {
+        type: "LineString",
+        coordinates: parts.flatMap((p, i) =>
+          i === 0
+            ? p.geometry.coordinates
+            : p.geometry.coordinates.slice(1)
+        ),
+      },
+      engine: "valhalla",
+      profile,
+      steps: parts.flatMap((p) => p.steps ?? []),
+      warnings: parts.flatMap((p) => p.warnings ?? []),
+    };
+  }
+  if (vias.length === 0) return routeOsrm(profile, from, to);
+  // OSRM via: concatenate
+  const parts: RouteResult[] = [];
+  let prev = from;
+  for (const p of [...vias, to]) {
+    parts.push(await routeOsrm(profile, prev, p));
+    prev = p;
+  }
+  return {
+    distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
+    durationS: parts.reduce((a, p) => a + p.durationS, 0),
+    geometry: {
+      type: "LineString",
+      coordinates: parts.flatMap((p, i) =>
+        i === 0 ? p.geometry.coordinates : p.geometry.coordinates.slice(1)
+      ),
+    },
+    engine: "osrm",
+    profile,
+    steps: parts.flatMap((p) => p.steps ?? []),
+  };
 }
 
 export function isValidLngLat(pair: [number, number]): boolean {

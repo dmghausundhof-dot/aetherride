@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   Compass,
   Crosshair,
-  MapPin,
   Mountain,
   Navigation,
   Play,
@@ -21,7 +20,7 @@ import {
 } from "@/lib/routing/suggestions";
 import { estimateRange } from "@/lib/ebike/range";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import { MapView, type MapMarker } from "@/components/MapView";
+import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
 import {
   profileForBikeCategory,
   ROUTING_PROFILES,
@@ -46,20 +45,30 @@ import type { OutdooractiveTour } from "@/lib/geo/outdooractive";
 import type { TrailforksPin } from "@/lib/geo/trailCondition";
 import {
   adoptTour,
+  addVia,
+  attachTrailToDraft,
   computePointToPoint,
   computeQuickOptions,
   emptyDraft,
   endOf,
   geometryFromTourCenter,
+  orderedWaypoints,
+  removeWaypoint,
   setEnd,
   setStart,
-  snapToTour,
+  snapToTourParts,
   startOf,
   type BaseTour,
   type PlanDraft,
   type PlanMode,
   type QuickOption,
 } from "@/lib/routing/planDraft";
+import {
+  buildDiscoverMapLayers,
+  elevationFromGeometry,
+} from "@/lib/routing/discoverMapLayers";
+import { trailsNear, type TrailSegment } from "@/lib/routing/trailSegments";
+import { ElevationChart } from "@/components/discover/ElevationChart";
 
 type SheetMode = "quick" | "plan" | "tours";
 
@@ -139,11 +148,16 @@ function DiscoverPageInner() {
   const [draft, setDraft] = useState<PlanDraft>(() =>
     emptyDraft(routingProfile, FALLBACK_CENTER)
   );
-  const [pickTarget, setPickTarget] = useState<"start" | "end" | null>(null);
+  const [pickTarget, setPickTarget] = useState<"start" | "end" | "via" | null>(
+    null
+  );
   const [routingBusy, setRoutingBusy] = useState(false);
   const [routingMsg, setRoutingMsg] = useState<string | null>(null);
   const [quickOptions, setQuickOptions] = useState<QuickOption[]>([]);
   const [quickBusy, setQuickBusy] = useState(false);
+  const [quickRateLimited, setQuickRateLimited] = useState(false);
+  const quickAbortRef = useRef<AbortController | null>(null);
+  const quickDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewTour, setPreviewTour] = useState<BaseTour | null>(null);
   const [oaTours, setOaTours] = useState<OutdooractiveTour[]>([]);
   const [oaAttr, setOaAttr] = useState<string | null>(null);
@@ -153,6 +167,9 @@ function DiscoverPageInner() {
   const [manualProfile, setManualProfile] = useState<RoutingProfile | null>(
     null
   );
+  const [showTrails, setShowTrails] = useState(true);
+  const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
+  const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeProfile = manualProfile ?? routingProfile;
 
@@ -200,6 +217,28 @@ function DiscoverPageInner() {
   }, [detailId, activeBike, profile, minutes, range, routes]);
 
   const origin = userPos ?? mapCenter;
+
+  const nearbyTrails = useMemo(
+    () => trailsNear(origin, 0.5),
+    [origin]
+  );
+
+  const mapLayers: MapRouteLayer[] = useMemo(
+    () =>
+      buildDiscoverMapLayers({
+        draft,
+        quickOptions,
+        activeQuickId: quickOptions.find((q) => q.label === draft.label)?.id,
+        trails: nearbyTrails,
+        showTrails: showTrails && sheetMode === "tours",
+      }),
+    [draft, quickOptions, nearbyTrails, showTrails, sheetMode]
+  );
+
+  const elevProfile = useMemo(
+    () => elevationFromGeometry(draft.computed?.geometry),
+    [draft.computed?.geometry]
+  );
 
   useEffect(() => {
     if (highlightRouteId) {
@@ -263,36 +302,68 @@ function DiscoverPageInner() {
     };
   }, []);
 
-  const refreshQuick = useCallback(async () => {
-    setQuickBusy(true);
-    setRoutingMsg(null);
-    try {
-      const opts = await computeQuickOptions(origin, activeProfile, minutes);
-      setQuickOptions(opts);
-      if (!opts.length) {
-        setRoutingMsg(
-          "Keine Quick-Routen — Planer nutzen oder Filter prüfen."
+  const refreshQuick = useCallback(
+    async (opts?: { force?: boolean; limit?: number }) => {
+      quickAbortRef.current?.abort();
+      const ac = new AbortController();
+      quickAbortRef.current = ac;
+      setQuickBusy(true);
+      setRoutingMsg(null);
+      try {
+        const { options, rateLimited, fromCache } = await computeQuickOptions(
+          origin,
+          activeProfile,
+          minutes,
+          {
+            limit: opts?.limit ?? 1,
+            force: opts?.force,
+            signal: ac.signal,
+            allowApprox: true,
+          }
         );
-      } else {
-        setDraft((d) => ({
-          ...setStart(
-            { ...d, mode: "quick" as PlanMode, profile: activeProfile },
-            origin,
-            "Hier"
-          ),
-          computed: opts[0].result,
-          label: opts[0].label,
-        }));
-        setPreviewTour(null);
+        if (ac.signal.aborted) return;
+        setQuickOptions(options);
+        setQuickRateLimited(rateLimited);
+        if (!options.length) {
+          setRoutingMsg(
+            "Keine Quick-Routen — Planer nutzen oder Filter prüfen."
+          );
+        } else {
+          if (rateLimited) {
+            setRoutingMsg(
+              "Routing-Limit erreicht — Näherungen angezeigt. Später neu berechnen."
+            );
+          } else if (fromCache) {
+            setRoutingMsg(null);
+          }
+          setDraft((d) => ({
+            ...setStart(
+              { ...d, mode: "quick" as PlanMode, profile: activeProfile },
+              origin,
+              "Hier"
+            ),
+            computed: options[0].result,
+            label: options[0].label,
+          }));
+          setPreviewTour(null);
+        }
+      } finally {
+        if (!ac.signal.aborted) setQuickBusy(false);
       }
-    } finally {
-      setQuickBusy(false);
-    }
-  }, [origin, activeProfile, minutes]);
+    },
+    [origin, activeProfile, minutes]
+  );
 
   useEffect(() => {
     if (sheetMode !== "quick") return;
-    void refreshQuick();
+    if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
+    quickDebounceRef.current = setTimeout(() => {
+      void refreshQuick({ limit: 1 });
+    }, 600);
+    return () => {
+      if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
+      quickAbortRef.current?.abort();
+    };
   }, [sheetMode, refreshQuick]);
 
   const openDetail = useCallback(
@@ -352,9 +423,88 @@ function DiscoverPageInner() {
         lngLat: w.lngLat,
         label: w.label,
       })),
+      layers: draft.layers
+        ? {
+            approach: draft.layers.approach,
+            tour: draft.layers.tour,
+            trail: draft.layers.trail,
+          }
+        : undefined,
     };
     saveRoute(entry);
   }, [draft, saveRoute]);
+
+  const loadSavedRoute = useCallback(
+    (r: SavedRoute) => {
+      if (r.geometry) {
+        const profile = activeProfile;
+        const waypoints =
+          r.waypoints?.map((w, i) => ({
+            id: `${w.role}-${i}`,
+            role: w.role,
+            lngLat: w.lngLat,
+            label: w.label,
+          })) ?? [];
+        setDraft({
+          mode: r.layers?.approach || r.layers?.tour || r.layers?.trail
+            ? "hybrid"
+            : waypoints.length >= 2
+              ? "point_to_point"
+              : "tour",
+          profile,
+          waypoints,
+          computed: {
+            distanceM: r.distanceKm * 1000,
+            durationS: r.durationMin * 60,
+            geometry: r.geometry,
+            engine: "saved",
+            profile,
+          },
+          label: r.name,
+          layers: r.layers,
+        });
+        setSheetMode("plan");
+        setPreviewTour(null);
+        setRoutingMsg("Gespeicherte Route geladen");
+        return;
+      }
+      const suggestion = activeBike
+        ? getSuggestionById(r.id, {
+            bike: activeBike,
+            profile,
+            availableMinutes: minutes,
+            rangeKmHigh: range?.kmHigh,
+          })
+        : null;
+      if (suggestion) startWithSuggestion(suggestion);
+      else {
+        setActiveRoute({
+          id: r.id,
+          name: r.name,
+          distanceKm: r.distanceKm,
+          elevationM: r.elevationM,
+          durationMin: r.durationMin,
+          mtbScale: r.mtbScale,
+          surface: r.surface,
+          reasons: r.reasons,
+          geometry: buildDemoGeometry(r.id, r.distanceKm),
+          source: "suggestion",
+          setAt: new Date().toISOString(),
+        });
+        router.push("/ride");
+      }
+    },
+    [
+      activeBike,
+      activeProfile,
+      minutes,
+      profile,
+      range?.kmHigh,
+      router,
+      setActiveRoute,
+      startWithSuggestion,
+    ]
+  );
 
   const runPlanRoute = async () => {
     setRoutingBusy(true);
@@ -372,6 +522,7 @@ function DiscoverPageInner() {
         label: "Geplante Route",
         baseTour: undefined,
         hybrid: undefined,
+        layers: undefined,
       });
       setPreviewTour(null);
       setRoutingMsg(
@@ -400,6 +551,7 @@ function DiscoverPageInner() {
       hybrid: { strategy: "adopt" },
       computed: adopted,
       label: tour.name,
+      layers: { tour: adopted.geometry },
     });
     if (tour.center) setMapCenter(tour.center);
   };
@@ -408,11 +560,12 @@ function DiscoverPageInner() {
     setRoutingBusy(true);
     setRoutingMsg(null);
     try {
-      const result = await snapToTour(origin, tour, activeProfile);
-      if (!result) {
+      const parts = await snapToTourParts(origin, tour, activeProfile);
+      if (!parts) {
         setRoutingMsg("Hybrid-Snap fehlgeschlagen");
         return;
       }
+      const { merged: result, approach, tour: tourPart } = parts;
       setPreviewTour(tour);
       const tourCoords = (tour.geometry?.coordinates ??
         result.geometry.coordinates) as [number, number][];
@@ -436,6 +589,10 @@ function DiscoverPageInner() {
         hybrid: { strategy: "snap" },
         computed: result,
         label: `${tour.name} (von hier)`,
+        layers: {
+          approach: approach?.geometry,
+          tour: tourPart.geometry,
+        },
       });
       setRoutingMsg(
         `Hybrid · ${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min`
@@ -446,13 +603,73 @@ function DiscoverPageInner() {
     }
   };
 
+  const attachTrail = async (
+    trail: TrailSegment,
+    mode: "append" | "via_chain"
+  ) => {
+    setRoutingBusy(true);
+    setRoutingMsg(null);
+    try {
+      const next = await attachTrailToDraft(draft, trail, mode, origin);
+      if (!next) {
+        setRoutingMsg("Trail konnte nicht verbunden werden");
+        return;
+      }
+      setDraft(next);
+      setSelectedTrailId(trail.id);
+      setRoutingMsg(
+        next.computed
+          ? `${trail.name} · ${(next.computed.distanceM / 1000).toFixed(1)} km`
+          : `${trail.name} eingefügt`
+      );
+    } finally {
+      setRoutingBusy(false);
+    }
+  };
+
+  const schedulePlanRecompute = useCallback(
+    (nextDraft: PlanDraft) => {
+      setDraft(nextDraft);
+      if (planDebounceRef.current) clearTimeout(planDebounceRef.current);
+      planDebounceRef.current = setTimeout(() => {
+        void (async () => {
+          if (!startOf(nextDraft) || !endOf(nextDraft)) return;
+          setRoutingBusy(true);
+          try {
+            const result = await computePointToPoint({
+              ...nextDraft,
+              profile: activeProfile,
+            });
+            if (result) {
+              setDraft((d) => ({
+                ...d,
+                mode: "point_to_point",
+                computed: result,
+                label: d.label || "Geplante Route",
+                layers: undefined,
+              }));
+              setRoutingMsg(
+                `${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min`
+              );
+            }
+          } finally {
+            setRoutingBusy(false);
+          }
+        })();
+      }, 700);
+    },
+    [activeProfile]
+  );
+
   const onMapClick = (lngLat: [number, number]) => {
     if (!pickTarget) return;
     if (pickTarget === "start") {
-      setDraft((d) => setStart(d, lngLat, "Start (Karte)"));
+      schedulePlanRecompute(setStart(draft, lngLat, "Start (Karte)"));
       setMapCenter(lngLat);
+    } else if (pickTarget === "end") {
+      schedulePlanRecompute(setEnd(draft, lngLat, "Ziel (Karte)"));
     } else {
-      setDraft((d) => setEnd(d, lngLat, "Ziel (Karte)"));
+      schedulePlanRecompute(addVia(draft, lngLat));
     }
     setPickTarget(null);
     setSheetMode("plan");
@@ -460,15 +677,24 @@ function DiscoverPageInner() {
 
   const markers: MapMarker[] = useMemo(() => {
     const m: MapMarker[] = [];
-    const s = startOf(draft);
-    const e = endOf(draft);
-    if (s) m.push({ id: "start", lngLat: s, color: "#43A047", label: "Start" });
-    if (e) m.push({ id: "end", lngLat: e, color: "#E53935", label: "Ziel" });
+    let viaIdx = 0;
+    for (const w of orderedWaypoints(draft)) {
+      if (w.role === "start") {
+        m.push({ id: w.id, lngLat: w.lngLat, color: "#43A047", label: "S" });
+      } else if (w.role === "end") {
+        m.push({ id: w.id, lngLat: w.lngLat, color: "#E53935", label: "Z" });
+      } else {
+        viaIdx += 1;
+        m.push({
+          id: w.id,
+          lngLat: w.lngLat,
+          color: "#FFB300",
+          label: String(viaIdx),
+        });
+      }
+    }
     return m;
   }, [draft]);
-
-  const activeGeometry = draft.computed?.geometry ?? null;
-  const secondaryGeometry = previewTour?.geometry ?? null;
 
   if (detailRoute) {
     return (
@@ -571,22 +797,44 @@ function DiscoverPageInner() {
           className="absolute inset-0 rounded-none"
           center={mapCenter}
           zoom={11}
-          route={activeGeometry}
-          secondaryRoute={
-            secondaryGeometry &&
-            secondaryGeometry !== activeGeometry
-              ? secondaryGeometry
-              : null
-          }
+          routes={mapLayers}
           markers={markers}
           interactiveSelect={pickTarget !== null}
           onMapClick={onMapClick}
-          fitRoute={Boolean(activeGeometry)}
+          onRouteClick={(id) => {
+            if (id.startsWith("alt-")) {
+              const qid = id.replace("alt-", "");
+              const q = quickOptions.find((x) => x.id === qid);
+              if (q) {
+                setDraft((d) => ({
+                  ...setStart(
+                    { ...d, mode: "quick", profile: activeProfile },
+                    origin,
+                    "Hier"
+                  ),
+                  computed: q.result,
+                  label: q.label,
+                  layers: undefined,
+                }));
+                setSheetMode("quick");
+              }
+            }
+            if (id.startsWith("trail-")) {
+              setSelectedTrailId(id.replace("trail-", ""));
+              setShowTrails(true);
+              setSheetMode("tours");
+            }
+          }}
+          fitRoute={mapLayers.length > 0}
         />
         {pickTarget && (
           <div className="absolute left-3 right-3 top-3 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white">
             Tippe auf die Karte für{" "}
-            {pickTarget === "start" ? "Start" : "Ziel"}
+            {pickTarget === "start"
+              ? "Start"
+              : pickTarget === "end"
+                ? "Ziel"
+                : "Via"}
             <button
               type="button"
               className="ml-2 underline"
@@ -594,6 +842,13 @@ function DiscoverPageInner() {
             >
               Abbrechen
             </button>
+          </div>
+        )}
+        {elevProfile && elevProfile.points.length > 1 && (
+          <div className="pointer-events-none absolute bottom-14 left-3 right-3 rounded-xl bg-black/55 p-2">
+            <div className="pointer-events-auto max-h-24 overflow-hidden opacity-90 [&_svg]:h-16">
+              <ElevationChart elev={elevProfile} />
+            </div>
           </div>
         )}
         {statsLine && (
@@ -715,65 +970,116 @@ function DiscoverPageInner() {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                disabled={quickBusy}
-                onClick={() => void refreshQuick()}
-                className="rounded-xl border border-border py-2 text-xs font-medium"
-              >
-                Neu berechnen
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={quickBusy}
+                  onClick={() => void refreshQuick({ force: true, limit: 1 })}
+                  className="flex-1 rounded-xl border border-border py-2 text-xs font-medium"
+                >
+                  Neu berechnen
+                </button>
+                {quickOptions.length < 3 && (
+                  <button
+                    type="button"
+                    disabled={quickBusy || quickRateLimited}
+                    onClick={() =>
+                      void refreshQuick({
+                        limit: Math.min(3, Math.max(1, quickOptions.length) + 1),
+                      })
+                    }
+                    className="flex-1 rounded-xl border border-border py-2 text-xs font-medium disabled:opacity-40"
+                  >
+                    Weitere Option
+                  </button>
+                )}
+              </div>
+              {quickRateLimited && (
+                <p className="text-[11px] text-warning">
+                  GraphHopper-Minutenlimit — warte kurz oder nutze den Planer
+                  sparsam.
+                </p>
+              )}
             </div>
           )}
 
           {sheetMode === "plan" && (
             <div className="flex flex-col gap-3">
               <p className="text-[11px] text-text-secondary">
-                Start und Ziel setzen · Tap auf Karte oder Buttons
+                Start, Via und Ziel — wie Komoot: Waypoint-Liste steuert die Route
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setPickTarget("start")}
-                  className={`rounded-xl border px-3 py-2.5 text-left text-xs ${
+                  className={`rounded-xl border px-2 py-2 text-left text-[11px] ${
                     pickTarget === "start"
                       ? "border-accent bg-accent/10"
                       : "border-border bg-surface"
                   }`}
                 >
-                  <div className="flex items-center gap-1 font-medium">
-                    <MapPin className="h-3.5 w-3.5 text-green-500" /> Start
-                  </div>
-                  <div className="mt-0.5 truncate text-text-secondary">
-                    {startOf(draft)
-                      ? `${startOf(draft)![1].toFixed(3)}, ${startOf(draft)![0].toFixed(3)}`
-                      : "Tippen…"}
-                  </div>
+                  Start
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickTarget("via")}
+                  className={`rounded-xl border px-2 py-2 text-left text-[11px] ${
+                    pickTarget === "via"
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-surface"
+                  }`}
+                >
+                  + Via
                 </button>
                 <button
                   type="button"
                   onClick={() => setPickTarget("end")}
-                  className={`rounded-xl border px-3 py-2.5 text-left text-xs ${
+                  className={`rounded-xl border px-2 py-2 text-left text-[11px] ${
                     pickTarget === "end"
                       ? "border-accent bg-accent/10"
                       : "border-border bg-surface"
                   }`}
                 >
-                  <div className="flex items-center gap-1 font-medium">
-                    <MapPin className="h-3.5 w-3.5 text-red-500" /> Ziel
-                  </div>
-                  <div className="mt-0.5 truncate text-text-secondary">
-                    {endOf(draft)
-                      ? `${endOf(draft)![1].toFixed(3)}, ${endOf(draft)![0].toFixed(3)}`
-                      : "Tippen…"}
-                  </div>
+                  Ziel
                 </button>
               </div>
+              <ul className="flex flex-col gap-1.5">
+                {orderedWaypoints(draft).map((w, i) => (
+                  <li
+                    key={w.id}
+                    className="flex items-center justify-between rounded-lg border border-border px-2.5 py-1.5 text-xs"
+                  >
+                    <span>
+                      {w.role === "start"
+                        ? "S"
+                        : w.role === "end"
+                          ? "Z"
+                          : i}
+                      {" · "}
+                      {w.label ?? w.role} · {w.lngLat[1].toFixed(3)},{" "}
+                      {w.lngLat[0].toFixed(3)}
+                    </span>
+                    {w.role === "via" && (
+                      <button
+                        type="button"
+                        className="text-text-secondary"
+                        onClick={() =>
+                          schedulePlanRecompute(removeWaypoint(draft, w.id))
+                        }
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
               <button
                 type="button"
                 onClick={() => {
                   if (userPos) {
-                    setDraft((d) => setStart(d, userPos, "Meine Position"));
+                    schedulePlanRecompute(
+                      setStart(draft, userPos, "Meine Position")
+                    );
                   }
                 }}
                 className="text-left text-[11px] font-medium text-accent"
@@ -793,6 +1099,70 @@ function DiscoverPageInner() {
 
           {sheetMode === "tours" && (
             <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                  Trails in der Nähe
+                </h3>
+                <label className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                  <input
+                    type="checkbox"
+                    checked={showTrails}
+                    onChange={(e) => setShowTrails(e.target.checked)}
+                  />
+                  Overlay
+                </label>
+              </div>
+              {nearbyTrails.length === 0 ? (
+                <p className="text-[11px] text-text-secondary">
+                  Keine Seed-Trails in der Nähe — Karte verschieben / Ort setzen.
+                </p>
+              ) : (
+                nearbyTrails.map((t) => (
+                  <article
+                    key={t.id}
+                    className={`rounded-xl border p-3 ${
+                      selectedTrailId === t.id
+                        ? "border-accent bg-accent/10"
+                        : "border-border bg-surface"
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{t.name}</div>
+                    <p className="text-[11px] text-text-secondary">
+                      {t.difficulty ?? "—"} · {t.provider}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                        onClick={() => {
+                          setSelectedTrailId(t.id);
+                          setShowTrails(true);
+                          setMapCenter(t.center);
+                        }}
+                      >
+                        Anzeigen
+                      </button>
+                      <button
+                        type="button"
+                        disabled={routingBusy}
+                        className="rounded-lg border border-accent/40 px-2.5 py-1.5 text-[11px] text-accent"
+                        onClick={() => void attachTrail(t, "append")}
+                      >
+                        Anhängen
+                      </button>
+                      <button
+                        type="button"
+                        disabled={routingBusy}
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                        onClick={() => void attachTrail(t, "via_chain")}
+                      >
+                        Als Via
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
+
               <FilterChips
                 minutes={minutes}
                 onMinutes={setMinutes}
@@ -967,43 +1337,7 @@ function DiscoverPageInner() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (r.geometry) {
-                            startWithComputed(r.name, {
-                              distanceM: r.distanceKm * 1000,
-                              durationS: r.durationMin * 60,
-                              geometry: r.geometry,
-                              engine: "saved",
-                              profile: activeProfile,
-                            });
-                            return;
-                          }
-                          const suggestion = activeBike
-                            ? getSuggestionById(r.id, {
-                                bike: activeBike,
-                                profile,
-                                availableMinutes: minutes,
-                                rangeKmHigh: range?.kmHigh,
-                              })
-                            : null;
-                          if (suggestion) startWithSuggestion(suggestion);
-                          else {
-                            setActiveRoute({
-                              id: r.id,
-                              name: r.name,
-                              distanceKm: r.distanceKm,
-                              elevationM: r.elevationM,
-                              durationMin: r.durationMin,
-                              mtbScale: r.mtbScale,
-                              surface: r.surface,
-                              reasons: r.reasons,
-                              geometry: buildDemoGeometry(r.id, r.distanceKm),
-                              source: "suggestion",
-                              setAt: new Date().toISOString(),
-                            });
-                            router.push("/ride");
-                          }
-                        }}
+                        onClick={() => loadSavedRoute(r)}
                         className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-accent py-1.5 text-[11px] font-semibold text-white"
                       >
                         <Play className="h-3.5 w-3.5 fill-current" /> Losfahren

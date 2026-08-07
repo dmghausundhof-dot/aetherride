@@ -1090,6 +1090,9 @@ export const useAppStore = create<AppState>()(
             source,
             geometry:
               "geometry" in route ? (route.geometry ?? null) : undefined,
+            waypoints:
+              "waypoints" in route ? route.waypoints : undefined,
+            layers: "layers" in route ? route.layers : undefined,
           };
           return { savedRoutes: [entry, ...s.savedRoutes] };
         }),
