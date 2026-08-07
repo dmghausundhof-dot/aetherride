@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/active_route.dart';
 import '../../domain/ble.dart';
@@ -15,6 +19,12 @@ import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
+
+/// Lux reading — sensors_plus has no AmbientLightEvent yet; local stand-in.
+class AmbientLightEvent {
+  const AmbientLightEvent(this.lux);
+  final double lux;
+}
 
 class RideScreen extends ConsumerStatefulWidget {
   const RideScreen({super.key});
@@ -51,12 +61,140 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   String? _lastSpokenText;
   String? _lastSpokenPhase;
 
+  MapLibreMapController? _rideMap;
+  int _mapDrawSkip = 0;
+
+  /// When false, light sensor drives [sunlightModeProvider]; manual toggle locks.
+  bool _sunlightAuto = true;
+  StreamSubscription<AmbientLightEvent>? _lightSub;
+  DateTime? _brightSince;
+  static const _sunlightLux = 8000.0;
+  static const _sunlightHold = Duration(seconds: 4);
+  static const _ambientLightChannel = EventChannel('com.aetherride/ambient_light');
+
   @override
   void initState() {
     super.initState();
     unawaited(_tts.setLanguage('de-DE'));
     unawaited(_tts.setSpeechRate(0.5));
+    _startAutoSunlight();
   }
+
+  /// Auto-Sunlight: lux > 8000 for ~4s → enable; else reset while auto.
+  /// sensors_plus is imported for SensorInterval; lux comes from TYPE_LIGHT.
+  void _startAutoSunlight() {
+    _lightSub?.cancel();
+    try {
+      _lightSub = _ambientLightChannel
+          .receiveBroadcastStream(
+            SensorInterval.normalInterval.inMicroseconds,
+          )
+          .map((raw) {
+            final lux = raw is num
+                ? raw.toDouble()
+                : (raw is List && raw.isNotEmpty)
+                    ? (raw.first as num).toDouble()
+                    : 0.0;
+            return AmbientLightEvent(lux);
+          })
+          .listen(_onAmbientLight, onError: (_) {});
+    } catch (_) {
+      // No light sensor — manual toggle only.
+    }
+  }
+
+  void _onAmbientLight(AmbientLightEvent event) {
+    if (!_sunlightAuto || !mounted) return;
+    final now = DateTime.now();
+    if (event.lux > _sunlightLux) {
+      _brightSince ??= now;
+      if (now.difference(_brightSince!) >= _sunlightHold) {
+        if (!ref.read(sunlightModeProvider)) {
+          ref.read(sunlightModeProvider.notifier).state = true;
+        }
+      }
+    } else {
+      _brightSince = null;
+      if (ref.read(sunlightModeProvider)) {
+        ref.read(sunlightModeProvider.notifier).state = false;
+      }
+    }
+  }
+
+  void _toggleSunlightManual() {
+    _sunlightAuto = false;
+    _brightSince = null;
+    final on = ref.read(sunlightModeProvider);
+    ref.read(sunlightModeProvider.notifier).state = !on;
+  }
+
+  LatLng _mapTarget(ActiveRoute? route) {
+    if (_track.isNotEmpty) {
+      final p = _track.last;
+      return LatLng(p.lat, p.lng);
+    }
+    if (route != null && route.coordinates.isNotEmpty) {
+      final c = route.coordinates.first;
+      return LatLng(c[1], c[0]);
+    }
+    return const LatLng(47.99, 7.85);
+  }
+
+  Future<void> _drawRideMap() async {
+    final c = _rideMap;
+    if (c == null) return;
+    try {
+      await c.clearLines();
+      final route = ref.read(activeRouteProvider);
+      if (route != null && route.coordinates.length >= 2) {
+        await c.addLine(
+          LineOptions(
+            geometry: [
+              for (final p in route.coordinates) LatLng(p[1], p[0]),
+            ],
+            lineColor: '#4FC3F7',
+            lineWidth: 4,
+            lineOpacity: 0.85,
+          ),
+        );
+      }
+      if (_track.length >= 2) {
+        final line = [for (final p in _track) LatLng(p.lat, p.lng)];
+        await c.addLine(
+          LineOptions(
+            geometry: line,
+            lineColor: '#FF6B35',
+            lineWidth: 5,
+          ),
+        );
+        final last = line.last;
+        await c.animateCamera(CameraUpdate.newLatLngZoom(last, 15));
+      } else if (route != null && route.coordinates.length >= 2) {
+        final pts = [
+          for (final p in route.coordinates) LatLng(p[1], p[0]),
+        ];
+        await c.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              southwest: LatLng(
+                pts.map((e) => e.latitude).reduce((a, b) => a < b ? a : b),
+                pts.map((e) => e.longitude).reduce((a, b) => a < b ? a : b),
+              ),
+              northeast: LatLng(
+                pts.map((e) => e.latitude).reduce((a, b) => a > b ? a : b),
+                pts.map((e) => e.longitude).reduce((a, b) => a > b ? a : b),
+              ),
+            ),
+            left: 28,
+            top: 28,
+            right: 28,
+            bottom: 28,
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
 
   /// Speak nav banner at ~80 m (near) and once when remaining first enters range.
   void _maybeSpeakNav(NavCue cue, int remainingM) {
@@ -146,6 +284,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         ),
       );
       _considerNavTts();
+      _mapDrawSkip += 1;
+      if (_mapDrawSkip >= 3 || _track.length == 2) {
+        _mapDrawSkip = 0;
+        unawaited(_drawRideMap());
+      }
     });
     _sensorSub = sensor.blocks.listen((b) {
       final fused = b.fused;
@@ -197,6 +340,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       return;
     }
     await _flushChunk(force: true);
+    final uploadRideId = _rideId;
+    if (_rawUploadConsent && uploadRideId != null) {
+      unawaited(
+        ref.read(rideChunkRepositoryProvider).uploadPending(rideId: uploadRideId),
+      );
+    }
     await _sensorSub?.cancel();
     await _bleSub?.cancel();
     await _locSub?.cancel();
@@ -268,6 +417,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       _rawUploadConsent = false;
       _chunkBuf.clear();
       _chunkSeq = 0;
+      _rideMap = null;
+      _mapDrawSkip = 0;
     });
 
     if (!mounted) return;
@@ -283,6 +434,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _sensorSub?.cancel();
     _bleSub?.cancel();
     _locSub?.cancel();
+    _lightSub?.cancel();
     _tick?.cancel();
     _idleLock?.cancel();
     unawaited(_tts.stop());
@@ -320,10 +472,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               ),
             ),
             IconButton(
-              tooltip: 'Sunlight Mode',
-              onPressed: () {
-                ref.read(sunlightModeProvider.notifier).state = !sunlight;
-              },
+              tooltip: _sunlightAuto
+                  ? 'Sunlight Mode (Auto)'
+                  : 'Sunlight Mode (Manuell)',
+              onPressed: _toggleSunlightManual,
               icon: Icon(
                 Icons.wb_sunny_outlined,
                 color: sunlight ? AppColors.sunAccent : null,
@@ -401,10 +553,18 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     if (!riding) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Geschwindigkeit: Standard-BLE CSC. '
-                        'E-Bike Live (Bosch LDI) folgt (G-1).',
+                        _cscStatusLine(),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.muted,
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _cscStatusLine(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.muted,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -588,18 +748,22 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   ) {
     switch (layer) {
       case RideLiveLayer.map:
-        return Card(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                route != null
-                    ? 'Route aktiv · ${route.coordinates.length} Punkte\n'
-                        '(MapLibre-Layer analog Discover)'
-                    : 'Freeride · Track wird aufgezeichnet',
-                textAlign: TextAlign.center,
-              ),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: MapLibreMap(
+            styleString: AppConfig.mapStyleUrl,
+            initialCameraPosition: CameraPosition(
+              target: _mapTarget(route),
+              zoom: 14,
             ),
+            myLocationEnabled: true,
+            trackCameraPosition: false,
+            onMapCreated: (c) {
+              _rideMap = c;
+            },
+            onStyleLoadedCallback: () {
+              unawaited(_drawRideMap());
+            },
           ),
         );
       case RideLiveLayer.data:
@@ -683,6 +847,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
         );
     }
+  }
+
+  String _cscStatusLine() {
+    final connected =
+        ref.read(bleCoreProvider).isConnected || _ldi != null;
+    final csc = connected ? 'CSC verbunden' : 'CSC bereit (Standard-BLE)';
+    return '$csc · LDI folgt G-1';
   }
 
   Widget _bigStat(String value, String label) {

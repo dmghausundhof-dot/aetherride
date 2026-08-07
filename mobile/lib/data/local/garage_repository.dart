@@ -6,10 +6,12 @@ import 'package:uuid/uuid.dart';
 import '../../domain/bike.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/track_trim.dart';
+import '../../domain/rider_profile.dart';
 import '../../domain/setup.dart';
 import '../sync/sync_payload.dart';
 import 'app_database.dart';
 import 'setup_repository.dart';
+import 'user_profile_store.dart';
 
 /// Offline-First: UI liest ausschließlich aus Drift.
 class GarageRepository {
@@ -17,6 +19,9 @@ class GarageRepository {
 
   final AppDatabase _db;
   final _uuid = const Uuid();
+
+  /// Optional profile/family store for SyncPayload.
+  UserProfileStore? profileStore;
 
   /// Local flag: free tier user added a 2nd bike (still allowed offline).
   bool freeTierExtraBike = false;
@@ -272,6 +277,10 @@ class GarageRepository {
       subscriptionTier: subscriptionTier,
       freeTierExtraBike: freeTierExtraBike ? true : null,
       activeBikeId: active,
+      riderProfile: profileStore?.riderProfile.toJson(),
+      familyRiders: profileStore == null
+          ? null
+          : [for (final r in profileStore!.familyRiders) r.toJson()],
       updatedAt: state?.localUpdatedAt,
       payloadVersion: state?.payloadVersion ?? 1,
     );
@@ -384,6 +393,7 @@ class GarageRepository {
     await _db.clearAllTables();
     freeTierExtraBike = false;
     subscriptionTier = 'free';
+    await profileStore?.clear();
   }
 
   Future<void> applyRemotePayload(SyncPayload payload) async {
@@ -393,6 +403,23 @@ class GarageRepository {
     }
     if (payload.freeTierExtraBike == true) {
       freeTierExtraBike = true;
+    }
+    final store = profileStore;
+    if (store != null) {
+      await store.load();
+      if (payload.riderProfile is Map) {
+        store.riderProfile = RiderProfile.fromJson(
+          Map<String, dynamic>.from(payload.riderProfile as Map),
+        );
+      }
+      if (payload.familyRiders is List) {
+        store.familyRiders = [
+          for (final e in payload.familyRiders as List)
+            if (e is Map)
+              FamilyRider.fromJson(Map<String, dynamic>.from(e)),
+        ];
+      }
+      await store.save();
     }
     final setupRepo = SetupRepository(_db);
     await _db.transaction(() async {

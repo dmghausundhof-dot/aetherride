@@ -43,6 +43,13 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       _bikeName = bike?.name;
       if (ride != null) {
         _analysis = analyzePostRide(ride: ride, bikeName: bike?.name);
+        final fb = ride.feedback;
+        if (fb != null && !fb.skipped) {
+          _feel = fb.overallFeel.clamp(1, 5);
+          _front = fb.frontFeel;
+          _brake = fb.brakeDive;
+          _bump = fb.smallBump;
+        }
       }
     });
   }
@@ -151,11 +158,20 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
                         o.text,
-                        style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.muted,
+                        ),
                       ),
                     ),
+                  const SizedBox(height: 12),
+                  _MetricBars(
+                    feel: _feel,
+                    brake: _brake,
+                    ride: ride,
+                  ),
                   if (analysis.setupSuggestion != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Card(
                       color: AppColors.accent.withValues(alpha: 0.12),
                       child: Padding(
@@ -163,20 +179,24 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              analysis.setupSuggestion!.title,
-                              style: const TextStyle(fontWeight: FontWeight.w800),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    analysis.setupSuggestion!.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                _ConfidenceBadge(
+                                  confidence:
+                                      analysis.setupSuggestion!.confidence,
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 4),
                             Text(analysis.setupSuggestion!.content),
-                            const SizedBox(height: 4),
-                            Text(
-                              analysis.setupSuggestion!.reasoning,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.muted,
-                              ),
-                            ),
                             const SizedBox(height: 4),
                             Text(
                               'Erwartung: ${analysis.setupSuggestion!.expectedEffect}',
@@ -189,28 +209,46 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                                 color: AppColors.muted,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.accent,
-                                  ),
-                                  onPressed: _acceptedSuggestion || _saving
-                                      ? null
-                                      : _acceptSuggestion,
+                            if (analysis
+                                .setupSuggestion!.reasoning
+                                .trim()
+                                .isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Evidenz',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              for (final line in _evidenceLines(
+                                analysis.setupSuggestion!.reasoning,
+                              ))
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
                                   child: Text(
-                                    _acceptedSuggestion
-                                        ? 'Übernommen'
-                                        : 'Empfehlung annehmen',
+                                    '· $line',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.muted,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Konfidenz ${analysis.setupSuggestion!.confidence}',
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                              ],
+                            ],
+                            const SizedBox(height: 8),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.accent,
+                              ),
+                              onPressed: _acceptedSuggestion || _saving
+                                  ? null
+                                  : _acceptSuggestion,
+                              child: Text(
+                                _acceptedSuggestion
+                                    ? 'Übernommen'
+                                    : 'Empfehlung annehmen',
+                              ),
                             ),
                           ],
                         ),
@@ -305,6 +343,164 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+List<String> _evidenceLines(String reasoning) {
+  return reasoning
+      .split(' · ')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+}
+
+String _confidenceLabel(String confidence) {
+  return switch (confidence) {
+    'high' => 'hoch',
+    'medium' => 'mittel',
+    'low' => 'niedrig',
+    _ => confidence,
+  };
+}
+
+class _ConfidenceBadge extends StatelessWidget {
+  const _ConfidenceBadge({required this.confidence});
+
+  final String confidence;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    switch (confidence) {
+      case 'high':
+        bg = AppColors.trail.withValues(alpha: 0.18);
+        fg = AppColors.trail;
+      case 'medium':
+        bg = AppColors.accent.withValues(alpha: 0.18);
+        fg = AppColors.accent;
+      default:
+        bg = AppColors.muted.withValues(alpha: 0.12);
+        fg = AppColors.muted;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Konfidenz ${_confidenceLabel(confidence)}',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricBars extends StatelessWidget {
+  const _MetricBars({
+    required this.feel,
+    required this.brake,
+    required this.ride,
+  });
+
+  final int feel;
+  final String? brake;
+  final RideRecord ride;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = ride.summary;
+    final km = ride.distanceKm;
+    final impacts = (m['impactCount'] as num?)?.toInt() ?? 0;
+    final impactsPerKm = km > 0.5 ? impacts / km : impacts.toDouble();
+    final impactPct = (impactsPerKm / 6).clamp(0.0, 1.0);
+
+    final rows = <({String label, String value, double pct, bool accent})>[
+      (
+        label: 'Feel',
+        value: '$feel / 5',
+        pct: (feel / 5).clamp(0.0, 1.0),
+        accent: true,
+      ),
+    ];
+
+    if (brake != null) {
+      final brakePct = switch (brake) {
+        'dives' => 0.35,
+        'neutral' => 0.65,
+        'harsh' => 0.9,
+        _ => 0.5,
+      };
+      final brakeLabel = switch (brake) {
+        'dives' => 'taucht',
+        'neutral' => 'neutral',
+        'harsh' => 'hart',
+        _ => brake!,
+      };
+      rows.add((
+        label: 'Brake',
+        value: brakeLabel,
+        pct: brakePct,
+        accent: false,
+      ));
+    }
+
+    rows.add((
+      label: 'Impact',
+      value: impactsPerKm.toStringAsFixed(1),
+      pct: impactPct,
+      accent: false,
+    ));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Metriken',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 8),
+        for (final r in rows) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  r.label,
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ),
+              Text(
+                r.value,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: r.pct,
+              minHeight: 6,
+              backgroundColor: AppColors.forest.withValues(alpha: 0.08),
+              color: r.accent ? AppColors.accent : AppColors.trail,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
     );
   }
 }

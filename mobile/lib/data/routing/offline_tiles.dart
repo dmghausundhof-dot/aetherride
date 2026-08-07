@@ -37,7 +37,11 @@ class OfflineTilesStore {
     final activated = await OfflineMapsPrefs.activatedPackPath();
     if (activated != null && activated.isNotEmpty) {
       final graphInDir = File(p.join(activated, 'offline_graph.json'));
-      if (await graphInDir.exists()) {
+      final valhallaInDir = File(p.join(activated, 'valhalla.json'));
+      final tilesDir = Directory(p.join(activated, 'tiles'));
+      if (await graphInDir.exists() ||
+          await valhallaInDir.exists() ||
+          await tilesDir.exists()) {
         _cachedPath = activated;
         return activated;
       }

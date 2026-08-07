@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { upsertSubscriptionTierInSyncSnapshot } from "@/lib/billing/syncTier";
 
 /**
- * MVP Play Billing verify: non-empty purchaseToken → set profiles.subscription_tier = pro.
- * Full Google Play Developer API validation is out of scope for this shell.
+ * Play Billing verify (2B):
+ * - Always writes profiles.subscription_tier AND sync_snapshots.payload.subscriptionTier
+ *   so Mobile LWW does not revert to free.
+ * - Until 2A (Google Play Developer API): trusts non-empty purchaseToken
+ *   (document as PLAY_VERIFY_STUB / trusted-token MVP).
+ * - When GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is set, real validation is expected (2A) —
+ *   currently returns 501 so we do not fake Google checks.
+ *
+ * Ops: create Play product `aetherride_pro_monthly` (see mobile/README Billing).
  */
 export async function POST(req: Request) {
   try {
@@ -31,6 +39,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const hasGoogleCreds = Boolean(
+      process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON?.trim()
+    );
+    const forceStub = process.env.PLAY_VERIFY_STUB === "1";
+
+    // 2A: credentials present and stub not forced → Google API (not wired yet).
+    if (hasGoogleCreds && !forceStub) {
+      return NextResponse.json(
+        {
+          error:
+            "Google Play Developer API validation pending (2A). Set PLAY_VERIFY_STUB=1 for trusted-token path until then.",
+        },
+        { status: 501 }
+      );
+    }
+
     const admin = createAdminClient();
     const now = new Date().toISOString();
 
@@ -43,44 +67,29 @@ export async function POST(req: Request) {
       })
       .eq("id", user.id);
 
-    if (profileErr) {
-      // Fallback: note tier in sync_snapshots payload when profiles column/update fails.
-      const { data: snap } = await admin
-        .from("sync_snapshots")
-        .select("payload")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const payload =
-        snap?.payload && typeof snap.payload === "object"
-          ? { ...(snap.payload as Record<string, unknown>) }
-          : {};
-      payload.subscriptionTier = "pro";
-      payload.playPurchase = {
+    await upsertSubscriptionTierInSyncSnapshot(admin, user.id, "pro", {
+      playPurchase: {
         productId,
         packageName,
         verifiedAt: now,
         tokenLen: purchaseToken.length,
-      };
-      payload.updatedAt = now;
-      await admin.from("sync_snapshots").upsert(
-        {
-          user_id: user.id,
-          payload,
-          updated_at: now,
-        },
-        { onConflict: "user_id" }
-      );
+        mode: "trusted_token_mvp",
+      },
+    });
+
+    if (profileErr) {
       return NextResponse.json({
         ok: true,
         tier: "pro",
         via: "sync_snapshots",
+        profileError: profileErr.message,
       });
     }
 
     return NextResponse.json({
       ok: true,
       tier: "pro",
-      via: "profiles",
+      via: "profiles+sync_snapshots",
       productId,
       packageName,
     });

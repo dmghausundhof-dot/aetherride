@@ -28,26 +28,32 @@ pub fn resolve_bundle(path: &Path) -> Option<TileBundle> {
         return None;
     }
 
-    let graph = path.join("offline_graph.json");
-    if graph.is_file() {
-        return Some(TileBundle::OfflineGraph(graph));
-    }
-
     let config = path.join("valhalla.json");
+    let tiles_dir = path.join("tiles");
+    let tiles_tar = path.join("valhalla_tiles.tar");
+    // Prefer Valhalla when config + tiles (dir or extract) are present.
+    if config.is_file() && (tiles_dir.is_dir() || tiles_tar.is_file()) {
+        return Some(TileBundle::ValhallaExtract {
+            root: path.to_path_buf(),
+            config,
+        });
+    }
     if config.is_file() {
         return Some(TileBundle::ValhallaExtract {
             root: path.to_path_buf(),
             config,
         });
     }
-
-    // Valhalla tile tree often lives under tiles/ without config in the same folder
-    let tiles_dir = path.join("tiles");
     if tiles_dir.is_dir() {
         return Some(TileBundle::ValhallaExtract {
             root: path.to_path_buf(),
-            config: config,
+            config,
         });
+    }
+
+    let graph = path.join("offline_graph.json");
+    if graph.is_file() {
+        return Some(TileBundle::OfflineGraph(graph));
     }
 
     None
@@ -72,6 +78,20 @@ mod tests {
         assert!(matches!(
             resolve_bundle(&dir),
             Some(TileBundle::OfflineGraph(_))
+        ));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn prefers_valhalla_when_both_present() {
+        let dir = std::env::temp_dir().join("ar_tiles_test_both");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("tiles")).unwrap();
+        fs::write(dir.join("offline_graph.json"), "{}").unwrap();
+        fs::write(dir.join("valhalla.json"), "{}").unwrap();
+        assert!(matches!(
+            resolve_bundle(&dir),
+            Some(TileBundle::ValhallaExtract { .. })
         ));
         let _ = fs::remove_dir_all(&dir);
     }

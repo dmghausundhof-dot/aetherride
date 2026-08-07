@@ -43,6 +43,7 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
       }
     }
     try {
+      await ref.read(userProfileStoreProvider).load();
       await ref.read(garageRepositoryProvider).seedDemoIfEmpty();
       await ref.read(syncEngineProvider).start();
     } catch (e) {

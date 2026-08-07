@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
+import { upsertSubscriptionTierInSyncSnapshot } from "@/lib/billing/syncTier";
 
 export const runtime = "nodejs";
 
@@ -39,6 +40,13 @@ async function setProFromSubscription(
       updated_at: new Date().toISOString(),
     })
     .eq("id", resolvedUserId);
+
+  await upsertSubscriptionTierInSyncSnapshot(
+    admin,
+    resolvedUserId,
+    active ? "pro" : "free",
+    { stripeSubscriptionId: sub.id }
+  );
 }
 
 export async function POST(req: Request) {
@@ -130,6 +138,7 @@ export async function POST(req: Request) {
               updated_at: new Date().toISOString(),
             })
             .eq("id", data.id);
+          await upsertSubscriptionTierInSyncSnapshot(admin, data.id, "free");
         }
         break;
       }

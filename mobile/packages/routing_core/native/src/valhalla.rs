@@ -174,6 +174,23 @@ pub fn route_with_valhalla(
     )
 }
 
+/// 1 if real libvalhalla is linked into this binary, else 0.
+pub fn is_linked() -> i32 {
+    #[cfg(feature = "valhalla")]
+    {
+        extern "C" {
+            fn valhalla_is_linked() -> i32;
+        }
+        // Avoid name collision with the C symbol on the public API — callers use
+        // `routing_core_valhalla_is_linked` (see lib.rs).
+        unsafe { valhalla_is_linked() }
+    }
+    #[cfg(not(feature = "valhalla"))]
+    {
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

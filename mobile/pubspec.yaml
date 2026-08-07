@@ -27,6 +27,10 @@ dependencies:
   url_launcher: ^6.3.1
   flutter_tts: ^4.2.0
   in_app_purchase: ^3.2.0
+  crypto: ^3.0.6
+  archive: ^4.0.2
+  sensors_plus: ^6.1.1
+  image_picker: ^1.1.2
   dsp_core:
     path: packages/dsp_core
 

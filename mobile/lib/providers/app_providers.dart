@@ -9,11 +9,14 @@ import '../data/local/garage_repository.dart';
 import '../data/local/ride_chunk_repository.dart';
 import '../data/local/ride_repository.dart';
 import '../data/local/setup_repository.dart';
+import '../data/local/user_profile_store.dart';
 import '../data/routing/route_repository.dart';
 import '../data/sync/sync_engine.dart';
+import '../data/weather/weather_client.dart';
 import '../domain/bike.dart';
 import '../domain/component.dart';
 import '../domain/ride.dart';
+import '../domain/rider_profile.dart';
 import '../domain/saved_route.dart';
 import '../domain/setup.dart';
 import '../native/ble_core_channel.dart';
@@ -26,8 +29,22 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
+final userProfileStoreProvider = Provider<UserProfileStore>((ref) {
+  return UserProfileStore();
+});
+
+final weatherClientProvider = Provider<WeatherClient>((ref) => WeatherClient());
+
+final riderProfileProvider = FutureProvider<RiderProfile>((ref) async {
+  final store = ref.watch(userProfileStoreProvider);
+  await store.load();
+  return store.riderProfile;
+});
+
 final garageRepositoryProvider = Provider<GarageRepository>((ref) {
-  return GarageRepository(ref.watch(appDatabaseProvider));
+  final garage = GarageRepository(ref.watch(appDatabaseProvider));
+  garage.profileStore = ref.watch(userProfileStoreProvider);
+  return garage;
 });
 
 final componentRepositoryProvider = Provider<ComponentRepository>((ref) {

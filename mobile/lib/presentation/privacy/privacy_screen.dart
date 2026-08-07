@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -25,6 +26,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
   List<PrivacyZone> _zones = [];
   bool _busy = false;
   String? _message;
+  int _pendingChunks = 0;
 
   @override
   void initState() {
@@ -38,11 +40,39 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     final zones = await garage.listPrivacyZones();
     final merged = defaultConsentGrants();
     merged.addAll(consents);
+    final pending =
+        await ref.read(rideChunkRepositoryProvider).pendingCount();
     if (mounted) {
       setState(() {
         _consents = merged;
         _zones = zones;
+        _pendingChunks = pending;
       });
+    }
+  }
+
+  Future<void> _uploadChunks() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final n = await ref.read(rideChunkRepositoryProvider).uploadPending();
+      final left = await ref.read(rideChunkRepositoryProvider).pendingCount();
+      if (mounted) {
+        setState(() {
+          _pendingChunks = left;
+          _message = n > 0
+              ? '$n Chunk(s) hochgeladen, $left ausstehend'
+              : left > 0
+                  ? 'Kein Upload (Login/Netz?) — $left ausstehend'
+                  : 'Keine ausstehenden Chunks';
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -55,9 +85,19 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
   }
 
   Future<void> _addZone() async {
+    Position? lastPos;
+    try {
+      lastPos = await Geolocator.getLastKnownPosition();
+    } catch (_) {}
+    if (!mounted) return;
+    final usedLastKnown = lastPos != null;
     final label = TextEditingController(text: 'Zuhause');
-    final lat = TextEditingController(text: '47.448');
-    final lng = TextEditingController(text: '12.148');
+    final lat = TextEditingController(
+      text: lastPos != null ? lastPos.latitude.toStringAsFixed(5) : '',
+    );
+    final lng = TextEditingController(
+      text: lastPos != null ? lastPos.longitude.toStringAsFixed(5) : '',
+    );
     final radius = TextEditingController(text: '200');
     final ok = await showDialog<bool>(
       context: context,
@@ -73,12 +113,18 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
               ),
               TextField(
                 controller: lat,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Lat'),
               ),
               TextField(
                 controller: lng,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
                 decoration: const InputDecoration(labelText: 'Lng'),
               ),
               TextField(
@@ -86,6 +132,20 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Radius (m)'),
               ),
+              if (usedLastKnown) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Lat/Lng vorausgefüllt mit der zuletzt bekannten Position '
+                  '(Geolocator). Bitte prüfen und ggf. anpassen.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Keine zuletzt bekannte Position — Lat/Lng manuell eintragen.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ],
             ],
           ),
         ),
@@ -102,12 +162,22 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
       ),
     );
     if (ok != true) return;
+    final parsedLat = double.tryParse(lat.text.replaceAll(',', '.'));
+    final parsedLng = double.tryParse(lng.text.replaceAll(',', '.'));
+    if (parsedLat == null || parsedLng == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte gültige Lat/Lng angeben')),
+        );
+      }
+      return;
+    }
     final zone = PrivacyZone(
       id: const Uuid().v4(),
       label: label.text.trim().isEmpty ? 'Zone' : label.text.trim(),
-      lat: double.tryParse(lat.text) ?? 47.448,
-      lng: double.tryParse(lng.text) ?? 12.148,
-      radiusM: double.tryParse(radius.text) ?? 200,
+      lat: parsedLat,
+      lng: parsedLng,
+      radiusM: double.tryParse(radius.text.replaceAll(',', '.')) ?? 200,
     );
     await ref.read(garageRepositoryProvider).upsertPrivacyZone(zone);
     await _load();
@@ -248,6 +318,17 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
                   ? null
                   : (v) => _setConsent(purpose, v),
             ),
+          if (_pendingChunks > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Rohdaten-Upload: $_pendingChunks Chunk(s) ausstehend',
+              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+            ),
+            TextButton(
+              onPressed: _busy ? null : _uploadChunks,
+              child: const Text('Jetzt hochladen'),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -288,6 +369,12 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
                 },
               ),
             ),
+          const SizedBox(height: 12),
+          const Text(
+            'Familien-Link / Mitfahrer: unter Profil → Familien-Garage '
+            'weitere Fahrer mit eigenem Gewicht anlegen.',
+            style: TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
           const SizedBox(height: 20),
           Text(
             'Export (Art. 20)',

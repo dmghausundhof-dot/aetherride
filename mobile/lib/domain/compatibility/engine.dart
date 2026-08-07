@@ -185,6 +185,28 @@ List<CompatibilityResult> checkBikeCompatibility(
   return out;
 }
 
+/// Kandidat (z. B. Shop-Produkt) gegen installierte Teile prüfen.
+/// Ersetzt den Slot des Kandidaten und wertet nur betroffene Regeln aus.
+List<CompatibilityResult> checkCandidateOnBike(
+  List<BikeComponent> installed,
+  BikeComponent candidate,
+) {
+  final comps = <BikeComponent>[
+    for (final c in installed)
+      if (c.slot != candidate.slot) c,
+    candidate,
+  ];
+  final out = <CompatibilityResult>[];
+  for (final rule in compatibilityRules) {
+    if (rule.slotA != candidate.slot && rule.slotB != candidate.slot) {
+      continue;
+    }
+    final r = evaluateRule(comps, rule);
+    if (r != null) out.add(r);
+  }
+  return out;
+}
+
 CompatVerdict aggregateVerdict(List<CompatibilityResult> results) {
   if (results.isEmpty) return CompatVerdict.insufficientData;
   var worst = CompatVerdict.compatible;

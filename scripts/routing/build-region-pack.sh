@@ -88,18 +88,38 @@ else
 fi
 
 python3 - <<PY
-import json, hashlib, time
+import json, hashlib, time, os, subprocess, shutil
 from pathlib import Path
 out = Path("$OUT")
 region = json.load(open("$REGION_FILE"))
+cdn_base = os.environ.get("ROUTING_CDN_BASE", "").rstrip("/")
 files = {}
 for name in ["offline_graph.json", "valhalla.json", "valhalla_tiles.tar"]:
     p = out / name
     if p.is_file():
-        files[name] = {"bytes": p.stat().st_size, "sha256_16": hashlib.sha256(p.read_bytes()).hexdigest()[:16]}
+        digest = hashlib.sha256(p.read_bytes()).hexdigest()
+        files[name] = {
+            "bytes": p.stat().st_size,
+            "sha256": digest,
+            "sha256_16": digest[:16],
+        }
 tiles = out / "tiles"
 if tiles.is_dir():
     files["tiles/"] = {"file_count": sum(1 for _ in tiles.rglob("*") if _.is_file())}
+
+# Pack archive: prefer tar.zst when zstd available, always also tar.gz for mobile
+pack_members = []
+for name in ["manifest.json", "offline_graph.json", "valhalla.json", "valhalla_tiles.tar"]:
+    if (out / name).is_file() or name == "manifest.json":
+        pack_members.append(name)
+# write preliminary manifest without pack hashes first
+cdn = dict(region.get("cdn") or {})
+if cdn_base:
+    cdn["baseUrl"] = cdn_base
+pack_name = cdn.get("pack") or f"{region['id']}.tar.zst"
+cdn["pack"] = pack_name
+cdn.setdefault("packGz", f"{region['id']}.tar.gz")
+
 manifest = {
     "id": region["id"],
     "name": region["name"],
@@ -110,8 +130,72 @@ manifest = {
         "valhalla_tiles": "tiles/" in files or "valhalla_tiles.tar" in files,
     },
     "files": files,
-    "cdn": region.get("cdn") or {},
+    "cdn": cdn,
 }
+(out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+
+def sha_entry(path: Path):
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    return {"bytes": path.stat().st_size, "sha256": digest, "sha256_16": digest[:16]}
+
+# Build tar.gz of pack contents (graph + config + optional tiles tree)
+gz_path = out / cdn["packGz"]
+tar_args = ["tar", "-czf", str(gz_path), "-C", str(out)]
+for name in ["manifest.json", "offline_graph.json", "valhalla.json"]:
+    if (out / name).is_file():
+        tar_args.append(name)
+if tiles.is_dir():
+    tar_args.append("tiles")
+if (out / "valhalla_tiles.tar").is_file():
+    tar_args.append("valhalla_tiles.tar")
+subprocess.check_call(tar_args)
+files[cdn["packGz"]] = sha_entry(gz_path)
+
+zst_path = out / pack_name
+if shutil.which("zstd"):
+    # recompress from tar stream
+    raw_tar = out / f"{region['id']}.tar"
+    tar_raw = ["tar", "-cf", str(raw_tar), "-C", str(out)]
+    for name in ["manifest.json", "offline_graph.json", "valhalla.json"]:
+        if (out / name).is_file():
+            tar_raw.append(name)
+    if tiles.is_dir():
+        tar_raw.append("tiles")
+    if (out / "valhalla_tiles.tar").is_file():
+        tar_raw.append("valhalla_tiles.tar")
+    subprocess.check_call(tar_raw)
+    subprocess.check_call(["zstd", "-f", "-q", "-o", str(zst_path), str(raw_tar)])
+    raw_tar.unlink(missing_ok=True)
+    files[pack_name] = sha_entry(zst_path)
+else:
+    # No zstd: point pack at gzip archive so CDN clients still resolve
+    cdn["pack"] = cdn["packGz"]
+    pack_name = cdn["pack"]
+    print("zstd not found — using tar.gz as cdn.pack", flush=True)
+
+manifest["files"] = files
+manifest["cdn"] = cdn
+(out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+# refresh gzip so it includes final manifest with pack hashes
+subprocess.check_call(tar_args)
+files[cdn["packGz"]] = sha_entry(gz_path)
+if (out / pack_name).is_file() and pack_name.endswith(".zst"):
+    # rebuild zst with updated manifest
+    raw_tar = out / f"{region['id']}.tar"
+    tar_raw = ["tar", "-cf", str(raw_tar), "-C", str(out)]
+    for name in ["manifest.json", "offline_graph.json", "valhalla.json"]:
+        if (out / name).is_file():
+            tar_raw.append(name)
+    if tiles.is_dir():
+        tar_raw.append("tiles")
+    if (out / "valhalla_tiles.tar").is_file():
+        tar_raw.append("valhalla_tiles.tar")
+    subprocess.check_call(tar_raw)
+    subprocess.check_call(["zstd", "-f", "-q", "-o", str(zst_path), str(raw_tar)])
+    raw_tar.unlink(missing_ok=True)
+    files[pack_name] = sha_entry(zst_path)
+
+manifest["files"] = files
 (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 manifests = Path("$ROOT/data/routing/manifests")
 manifests.mkdir(parents=True, exist_ok=True)
@@ -119,4 +203,16 @@ manifests.mkdir(parents=True, exist_ok=True)
 print(json.dumps(manifest, indent=2))
 PY
 
-echo "==> Done: $OUT"
+# Dev serve convenience: symlink/copy into public/offline/<id>/
+PUBLIC_OFFLINE="$ROOT/public/offline/$REGION_ID"
+mkdir -p "$PUBLIC_OFFLINE"
+for f in offline_graph.json valhalla.json manifest.json; do
+  if [[ -f "$OUT/$f" ]]; then
+    cp -f "$OUT/$f" "$PUBLIC_OFFLINE/$f"
+  fi
+done
+for f in "$OUT"/*.tar.gz "$OUT"/*.tar.zst; do
+  [[ -f "$f" ]] && cp -f "$f" "$PUBLIC_OFFLINE/$(basename "$f")"
+done
+
+echo "==> Done: $OUT (public mirror: $PUBLIC_OFFLINE)"

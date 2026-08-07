@@ -325,3 +325,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     );
   }
 }
+
+void openAuthScreen(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (_) => const AuthScreen()),
+  );
+}

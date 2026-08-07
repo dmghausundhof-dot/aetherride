@@ -9,5 +9,6 @@ class MainActivity : FlutterActivity() {
         flutterEngine.plugins.add(SensorCorePlugin())
         flutterEngine.plugins.add(LocationCorePlugin())
         flutterEngine.plugins.add(BoschLdiPlugin())
+        flutterEngine.plugins.add(AmbientLightPlugin())
     }
 }

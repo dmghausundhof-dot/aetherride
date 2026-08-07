@@ -25,15 +25,22 @@ Outputs under `data/routing/dist/<id>/` (gitignored). Manifests: `data/routing/m
 
 ## Valhalla Android JNI
 
+Needs `ANDROID_NDK_HOME` (or `sdk.dir` + NDK under `mobile/android/local.properties`).
+Optional: put `cmake`/`ninja` on `PATH` (e.g. `~/tools`).
+
 ```bash
-# Build libvalhalla for NDK (needs ANDROID_NDK_HOME)
+# One-shot: NDK prefix → cargo --features valhalla → jniLibs (arm64-v8a)
 npm run routing:valhalla:android
 
-# Then cargo --features valhalla + copy into jniLibs:
-./scripts/routing/install-android-jni.sh
-# Or one-shot (build + cargo + jni):
-./scripts/routing/valhalla-android-pipeline.sh
+# Graph-only .so (no libvalhalla) for emulator x86_64:
+./scripts/routing/install-android-jni.sh --graph-only x86_64
+
+# Skip C++ rebuild if prefix already exists:
+SKIP_VALHALLA_BUILD=1 npm run routing:valhalla:android
 ```
+
+Dart probes `routing_core_valhalla_is_linked` (dynsym). Pack dirs with both
+`offline_graph.json` and Valhalla tiles prefer the **Valhalla** engine.
 
 Bundled demo graph (OSM-derived, **single copy in git**): `mobile/assets/routing/offline_graph.json`.
 

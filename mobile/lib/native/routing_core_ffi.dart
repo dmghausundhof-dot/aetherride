@@ -33,19 +33,23 @@ class RoutingCoreFfi {
     return _lib != null;
   }
 
-  /// True when native `valhalla_is_linked()` reports 1 (real libvalhalla).
-  /// False if stub, symbol missing, or lib not loaded.
+  /// True when native reports real libvalhalla (not stub).
+  /// Prefers exported `routing_core_valhalla_is_linked`, falls back to C shim.
   bool isValhallaLinked() {
     _ensure();
     if (_lib == null) return false;
-    try {
-      final fn = _lib!.lookupFunction<Int32 Function(), int Function()>(
-        'valhalla_is_linked',
-      );
-      return fn() == 1;
-    } catch (_) {
-      return false;
+    for (final name in [
+      'routing_core_valhalla_is_linked',
+      'valhalla_is_linked',
+    ]) {
+      try {
+        final fn = _lib!.lookupFunction<Int32 Function(), int Function()>(name);
+        return fn() == 1;
+      } catch (_) {
+        continue;
+      }
     }
+    return false;
   }
 
   /// Short status string for offline maps / diagnostics UI.

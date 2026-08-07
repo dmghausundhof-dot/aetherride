@@ -46,6 +46,7 @@ next-env.d.ts
 
 # routing region builds (tiles / large PBF / full graphs)
 data/routing/dist/
+public/offline/
 .env*.local
 
 # Stakeholder / Spec drafts (keep local; not needed to build)

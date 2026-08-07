@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 
 class ChatMessage {
@@ -26,13 +27,46 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
-  final _messages = <ChatMessage>[
-    const ChatMessage(
-      role: 'assistant',
-      text: 'Frag mich zu Setup, Routen oder Teilen.',
-    ),
-  ];
+  final _messages = <ChatMessage>[];
   bool _busy = false;
+  bool _historyLoaded = false;
+
+  static const _welcome = ChatMessage(
+    role: 'assistant',
+    text: 'Frag mich zu Setup, Routen oder Teilen.',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final store = ref.read(userProfileStoreProvider);
+    await store.load();
+    if (!mounted) return;
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll([
+          for (final e in store.chatHistory)
+            ChatMessage(
+              role: (e['role'] as String?) ?? 'assistant',
+              text: (e['text'] as String?) ?? '',
+            ),
+        ]);
+      if (_messages.isEmpty) {
+        _messages.add(_welcome);
+      }
+      _historyLoaded = true;
+    });
+    _scrollToEnd();
+  }
+
+  Future<void> _persist(String role, String text) async {
+    await ref.read(userProfileStoreProvider).appendChat(role, text);
+  }
 
   @override
   void dispose() {
@@ -52,6 +86,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _busy = true;
       _input.clear();
     });
+    await _persist('user', q);
     _scrollToEnd();
 
     try {
@@ -81,14 +116,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         setState(() {
           _messages.add(ChatMessage(role: 'assistant', text: text));
         });
+        await _persist('assistant', text);
       }
     } catch (e) {
+      final err = 'Netzwerkfehler: $e';
       if (mounted) {
         setState(() {
-          _messages.add(
-            ChatMessage(role: 'assistant', text: 'Netzwerkfehler: $e'),
-          );
+          _messages.add(ChatMessage(role: 'assistant', text: err));
         });
+        await _persist('assistant', err);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -136,36 +172,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
           Expanded(
-            child: ListView.builder(
-              controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              itemCount: _messages.length,
-              itemBuilder: (context, i) {
-                final m = _messages[i];
-                final isUser = m.role == 'user';
-                return Align(
-                  alignment:
-                      isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.sizeOf(context).width * 0.82,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? AppColors.accent.withValues(alpha: 0.15)
-                          : AppColors.forest.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(m.text),
+            child: !_historyLoaded
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scroll,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, i) {
+                      final m = _messages[i];
+                      final isUser = m.role == 'user';
+                      return Align(
+                        alignment: isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isUser
+                                ? AppColors.accent.withValues(alpha: 0.15)
+                                : AppColors.forest.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(m.text),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           SafeArea(
             top: false,

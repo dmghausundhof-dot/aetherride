@@ -2,6 +2,20 @@
 
 Offline-first Flutter-Client nach Spec §5.
 
+## Billing (Pro)
+
+Hybrid: Stripe Checkout (web) + Google Play subscription `aetherride_pro_monthly`.
+
+### Play Console (ops — not automated)
+
+1. App package: `com.aetherride.aetherride_mobile`
+2. Create **Subscription** product / base plan ID exactly `aetherride_pro_monthly`
+3. Internal / closed testing track + License Tester accounts
+4. Sign a release/debug build that uses Play Billing Library
+5. Later (2A): service account with Android Publisher API → set `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` on the API; drop `PLAY_VERIFY_STUB`
+
+Server verify (`POST /api/billing/play-verify`) always writes `profiles.subscription_tier` **and** `sync_snapshots.payload.subscriptionTier` so Mobile LWW stays Pro.
+
 ## Schnitte (implementiert)
 
 | ID | Inhalt |

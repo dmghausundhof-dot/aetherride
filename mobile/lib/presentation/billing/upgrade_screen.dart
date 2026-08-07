@@ -161,13 +161,34 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     }
   }
 
+  Future<void> _applyTierFromMe(String accessToken) async {
+    try {
+      final res = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/auth/me'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Accept': 'application/json',
+        },
+      );
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final tier = data['subscriptionTier'] as String?;
+      if (tier == 'pro' || tier == 'free') {
+        ref.read(subscriptionTierProvider.notifier).state = tier!;
+        ref.read(garageRepositoryProvider).subscriptionTier = tier;
+      }
+    } catch (_) {}
+  }
+
   Future<void> _syncAfterPurchase() async {
     setState(() {
       _busy = true;
       _message = null;
     });
     try {
+      final token = await _accessToken();
       await ref.read(syncEngineProvider).syncNow();
+      if (token != null) await _applyTierFromMe(token);
       final tier = ref.read(subscriptionTierProvider);
       setState(() => _message = 'Sync OK — Tarif: $tier');
     } catch (e) {

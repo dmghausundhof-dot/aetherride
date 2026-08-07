@@ -87,6 +87,8 @@ class RideChunksMeta extends Table {
   DateTimeColumn get windowStart => dateTime()();
   DateTimeColumn get windowEnd => dateTime()();
   TextColumn get localPath => text().nullable()();
+  DateTimeColumn get uploadedAt => dateTime().nullable()();
+  TextColumn get remotePath => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -187,7 +189,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -220,6 +222,10 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 5) {
             await m.createTable(privacyZones);
+          }
+          if (from < 6) {
+            await m.addColumn(rideChunksMeta, rideChunksMeta.uploadedAt);
+            await m.addColumn(rideChunksMeta, rideChunksMeta.remotePath);
           }
         },
       );

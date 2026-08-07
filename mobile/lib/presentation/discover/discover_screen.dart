@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/routing/elevation_client.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
@@ -188,14 +192,161 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _detailId;
   bool _showTrails = true;
 
+  List<_RouteSuggestion> _tours = List<_RouteSuggestion>.from(_seedRoutes);
+  int? _durationBucket; // 60 / 90 / 120
+  String? _surfaceFilter;
+  bool _heatmapConsent = false;
+  String? _elevationSummary;
+  List<double> _elevationSamples = const [];
+  String? _oaStatus;
+
   static const _fallback = GeoPoint(47.99, 7.85);
+  static const _durationBuckets = [60, 90, 120];
+  static const _surfaceTags = ['flow/compact', 'trail/root'];
 
   RouteRepository get _routes => ref.read(routeRepositoryProvider);
+  final _elevationClient = ElevationClient();
 
   @override
   void initState() {
     super.initState();
     _locate();
+    _loadHeatmapConsent();
+    _fetchOutdooractive();
+  }
+
+  Future<void> _loadHeatmapConsent() async {
+    try {
+      final consents =
+          await ref.read(garageRepositoryProvider).listConsents();
+      if (!mounted) return;
+      setState(() {
+        _heatmapConsent = consents['heatmap_contribution'] == true;
+      });
+      if (_heatmapConsent) await _drawAll();
+    } catch (_) {}
+  }
+
+  Future<void> _fetchOutdooractive() async {
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/outdooractive')
+          .replace(queryParameters: {'type': 'tour'});
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        if (mounted) {
+          setState(() => _oaStatus = 'Outdooractive offline — Seeds');
+        }
+        return;
+      }
+      final data = jsonDecode(res.body);
+      if (data is! Map) return;
+      final toursRaw = data['tours'] as List? ?? const [];
+      if (toursRaw.isEmpty) return;
+      final parsed = <_RouteSuggestion>[];
+      for (final raw in toursRaw) {
+        if (raw is! Map) continue;
+        final m = Map<String, dynamic>.from(raw);
+        final id = (m['id'] as String?) ?? '';
+        final title = (m['title'] as String?) ?? (m['name'] as String?) ?? '';
+        if (id.isEmpty || title.isEmpty) continue;
+        final centerRaw = m['center'];
+        LatLng center = const LatLng(47.5, 11.5);
+        if (centerRaw is List && centerRaw.length >= 2) {
+          final lng = (centerRaw[0] as num).toDouble();
+          final lat = (centerRaw[1] as num).toDouble();
+          center = LatLng(lat, lng);
+        }
+        final difficulty = (m['difficulty'] as String?) ?? 'S1–S2';
+        final surface = difficulty.toLowerCase().contains('schwer') ||
+                difficulty.toLowerCase().contains('s2')
+            ? 'trail/root'
+            : 'flow/compact';
+        parsed.add(
+          _RouteSuggestion(
+            id: id,
+            name: title,
+            distanceKm: (m['lengthKm'] as num?)?.toDouble() ?? 20,
+            elevationM: (m['elevationM'] as num?)?.round() ?? 800,
+            durationMin: (m['durationMin'] as num?)?.round() ?? 120,
+            mtbScale: difficulty,
+            surface: surface,
+            loop: true,
+            matchScore: 80,
+            reasons: [
+              if (m['summary'] is String) m['summary'] as String,
+              'Outdooractive Enrichment',
+              if (data['attribution'] is String) data['attribution'] as String,
+            ],
+            center: center,
+          ),
+        );
+      }
+      if (parsed.isEmpty || !mounted) return;
+      setState(() {
+        _tours = parsed;
+        _oaStatus = data['configured'] == true
+            ? 'Outdooractive'
+            : 'Outdooractive Demo';
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _oaStatus = 'Outdooractive offline — Seeds');
+      }
+    }
+  }
+
+  Future<void> _refreshElevation(RouteResult? result) async {
+    if (result == null || result.coordinates.length < 2) {
+      setState(() {
+        _elevationSummary = null;
+        _elevationSamples = const [];
+      });
+      return;
+    }
+    final profile = await _elevationClient.fetchForTrack(result.coordinates);
+    if (!mounted) return;
+    if (profile == null) {
+      final approx = (result.distanceM * 0.03).round();
+      setState(() {
+        _elevationSummary = '~$approx hm (geschätzt)';
+        _elevationSamples = const [];
+      });
+      return;
+    }
+    final samples = <double>[];
+    for (final p in profile.points) {
+      final e = p['elevation'] ?? p['elev'] ?? p['ele'] ?? p['z'];
+      if (e is num) samples.add(e.toDouble());
+    }
+    setState(() {
+      _elevationSummary =
+          '+${profile.gainM.round()} / −${profile.lossM.round()} hm'
+          '${profile.source != null ? ' · ${profile.source}' : ''}';
+      _elevationSamples = samples;
+    });
+  }
+
+  Future<void> _openTrailView({LatLng? near}) async {
+    final c = near ?? LatLng(_origin.lat, _origin.lng);
+    final uri = Uri.parse(
+      'https://www.mapillary.com/app/?lat=${c.latitude}&lng=${c.longitude}&z=16',
+    );
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Trail View — Mapillary')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Trail View — Mapillary')),
+        );
+      }
+    }
   }
 
   Future<void> _locate() async {
@@ -236,9 +387,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   GeoPoint get _origin => _userPos ?? _start ?? _fallback;
 
   List<_RouteSuggestion> get _filtered {
-    return _seedRoutes.where((r) {
-      final delta = (r.durationMin - _minutes).abs();
-      return delta <= 90;
+    return _tours.where((r) {
+      if (_durationBucket != null) {
+        final delta = (r.durationMin - _durationBucket!).abs();
+        if (delta > 45) return false;
+      } else {
+        final delta = (r.durationMin - _minutes).abs();
+        if (delta > 90) return false;
+      }
+      if (_surfaceFilter != null && r.surface != _surfaceFilter) {
+        return false;
+      }
+      return true;
     }).toList();
   }
 
@@ -317,7 +477,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _error = 'Keine Quick-Routen — Planer nutzen.';
       }
     });
-    if (out.isNotEmpty) await _drawRoute(out.first.result);
+    if (out.isNotEmpty) {
+      await _drawRoute(out.first.result);
+      await _refreshElevation(out.first.result);
+    }
   }
 
   Future<void> _calcAb() async {
@@ -346,6 +509,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _tourLayer = null;
       });
       await _drawAll();
+      await _refreshElevation(result);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -466,6 +630,25 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (c == null) return;
     try {
       await c.clearLines();
+      if (_heatmapConsent) {
+        // Minimal MVP: soft opacity polylines as local heatmap stand-in
+        final heatTracks = <List<GeoPoint>>[
+          if (_computed != null && _computed!.coordinates.length >= 2)
+            _computed!.coordinates,
+          for (final tr in _seedTrails) tr.points,
+        ];
+        for (final track in heatTracks) {
+          if (track.length < 2) continue;
+          await c.addLine(
+            LineOptions(
+              geometry: track.map((p) => LatLng(p.lat, p.lng)).toList(),
+              lineColor: '#FF7043',
+              lineWidth: 10,
+              lineOpacity: 0.22,
+            ),
+          );
+        }
+      }
       if (_showTrails) {
         for (final trail in _seedTrails) {
           await c.addLine(
@@ -563,6 +746,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _drawRoute(RouteResult result) async {
     setState(() => _computed = result);
     await _drawAll();
+    await _refreshElevation(result);
   }
 
   Future<void> _syncMarkers() async {
@@ -734,7 +918,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final style = AppConfig.mapStyleUrl;
     final detail = _detailId == null
         ? null
-        : _seedRoutes.cast<_RouteSuggestion?>().firstWhere(
+        : _tours.cast<_RouteSuggestion?>().firstWhere(
               (r) => r?.id == _detailId,
               orElse: () => null,
             );
@@ -757,6 +941,28 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     color: AppColors.muted,
                   ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Elevation: ${detail.elevationM} hm · ${detail.surface}',
+              style: const TextStyle(fontSize: 13),
+            ),
+            if (_elevationSummary != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                _elevationSummary!,
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ],
+            if (_elevationSamples.length >= 2) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 48,
+                child: CustomPaint(
+                  painter: _MiniElevPainter(_elevationSamples),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             ...detail.reasons.map(
               (r) => Padding(
@@ -775,6 +981,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             OutlinedButton(
               onPressed: _loading ? null : () => _hybridSnap(detail),
               child: const Text('Von hier starten (Hybrid)'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _openTrailView(near: detail.center),
+              icon: const Icon(Icons.streetview),
+              label: const Text('Trail View — Mapillary'),
             ),
           ],
         ),
@@ -803,6 +1015,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Trail View',
+                        onPressed: () => _openTrailView(),
+                        icon: const Icon(Icons.streetview),
+                      ),
+                      IconButton(
                         tooltip: 'Offline-Karten',
                         onPressed: () {
                           showModalBottomSheet<void>(
@@ -820,24 +1037,70 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ),
                     ],
                   ),
-                  FutureBuilder<Map<String, bool>>(
-                    future: ref.read(garageRepositoryProvider).listConsents(),
-                    builder: (context, snap) {
-                      final heatmap =
-                          snap.data?['heatmap_contribution'] == true;
-                      if (heatmap) return const SizedBox.shrink();
-                      return const Padding(
-                        padding: EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          'Heatmaps nach Consent (P2)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.muted,
-                          ),
+                  if (_oaStatus != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        _oaStatus!,
+                        style: TextStyle(fontSize: 11, color: AppColors.muted),
+                      ),
+                    ),
+                  if (_heatmapConsent)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        'Heatmap aktiv (lokal)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF7043),
                         ),
-                      );
-                    },
+                      ),
+                    )
+                  else
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        'Heatmaps nach Consent (P2)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final m in _durationBuckets) ...[
+                          FilterChip(
+                            label: Text('$m min'),
+                            selected: _durationBucket == m,
+                            onSelected: (sel) {
+                              setState(() {
+                                _durationBucket = sel ? m : null;
+                                if (sel) _minutes = m;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        for (final s in _surfaceTags) ...[
+                          FilterChip(
+                            label: Text(s.split('/').first),
+                            selected: _surfaceFilter == s,
+                            onSelected: (sel) {
+                              setState(() {
+                                _surfaceFilter = sel ? s : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
@@ -879,7 +1142,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     max: 240,
                     divisions: 13,
                     label: '$_minutes min',
-                    onChanged: (v) => setState(() => _minutes = v.round()),
+                    onChanged: (v) => setState(() {
+                      _minutes = v.round();
+                      _durationBucket = null;
+                    }),
                   ),
                 ],
               ),
@@ -947,7 +1213,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                               child: Text(
                                 '${_label ?? 'Route'} · '
                                 '${(_computed!.distanceM / 1000).toStringAsFixed(1)} km · '
-                                '${(_computed!.durationS / 60).round()} min',
+                                '${(_computed!.durationS / 60).round()} min'
+                                '${_elevationSummary != null ? ' · $_elevationSummary' : ''}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -1272,6 +1539,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         '${r.distanceKm} km · ${r.elevationM} hm · ${r.durationMin} min · ${r.matchScore}%',
                         style: TextStyle(fontSize: 12, color: AppColors.muted),
                       ),
+                      Text(
+                        r.surface,
+                        style: TextStyle(fontSize: 11, color: AppColors.muted),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -1297,6 +1568,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             onPressed:
                                 _loading ? null : () => _hybridSnap(r),
                             child: const Text('Von hier'),
+                          ),
+                          IconButton(
+                            tooltip: 'Trail View',
+                            onPressed: () => _openTrailView(near: r.center),
+                            icon: const Icon(Icons.streetview, size: 20),
                           ),
                           const Spacer(),
                           FilledButton(
@@ -1370,4 +1646,75 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
     ];
   }
+}
+
+class _MiniElevPainter extends CustomPainter {
+  _MiniElevPainter(this.samples);
+
+  final List<double> samples;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (samples.length < 2 || size.width <= 0 || size.height <= 0) return;
+    var minV = samples.first;
+    var maxV = samples.first;
+    for (final v in samples) {
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+    final range = (maxV - minV).abs() < 1 ? 1.0 : (maxV - minV);
+    final path = Path();
+    for (var i = 0; i < samples.length; i++) {
+      final x = size.width * i / (samples.length - 1);
+      final y = size.height -
+          ((samples[i] - minV) / range) * (size.height - 4) -
+          2;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    final paint = Paint()
+      ..color = AppColors.accent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniElevPainter oldDelegate) =>
+      oldDelegate.samples != samples;
+}
+
+class _MiniElevPainter extends CustomPainter {
+  _MiniElevPainter(this.samples);
+  final List<double> samples;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (samples.length < 2) return;
+    final minV = samples.reduce((a, b) => a < b ? a : b);
+    final maxV = samples.reduce((a, b) => a > b ? a : b);
+    final span = (maxV - minV).abs() < 1 ? 1.0 : (maxV - minV);
+    final path = Path();
+    for (var i = 0; i < samples.length; i++) {
+      final x = size.width * i / (samples.length - 1);
+      final y = size.height * (1 - (samples[i] - minV) / span);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    final paint = Paint()
+      ..color = const Color(0xFFFF6B35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniElevPainter oldDelegate) =>
+      oldDelegate.samples != samples;
 }

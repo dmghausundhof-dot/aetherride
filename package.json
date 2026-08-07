@@ -16,7 +16,7 @@
     "routing:region": "bash scripts/routing/build-region-pack.sh",
     "routing:region:graph-only": "SKIP_TILES=1 bash scripts/routing/build-region-pack.sh",
     "routing:sync-demo": "bash scripts/routing/sync-demo-graph.sh",
-    "routing:valhalla:android": "bash scripts/routing/build-valhalla-android.sh arm64-v8a"
+    "routing:valhalla:android": "bash scripts/routing/valhalla-android-pipeline.sh arm64-v8a"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

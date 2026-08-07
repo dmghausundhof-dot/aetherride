@@ -2363,9 +2363,29 @@ class $RideChunksMetaTable extends RideChunksMeta
   late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
       'local_path', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _uploadedAtMeta =
+      const VerificationMeta('uploadedAt');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, rideId, seq, windowStart, windowEnd, localPath];
+  late final GeneratedColumn<DateTime> uploadedAt = GeneratedColumn<DateTime>(
+      'uploaded_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _remotePathMeta =
+      const VerificationMeta('remotePath');
+  @override
+  late final GeneratedColumn<String> remotePath = GeneratedColumn<String>(
+      'remote_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        rideId,
+        seq,
+        windowStart,
+        windowEnd,
+        localPath,
+        uploadedAt,
+        remotePath
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2411,6 +2431,18 @@ class $RideChunksMetaTable extends RideChunksMeta
       context.handle(_localPathMeta,
           localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta));
     }
+    if (data.containsKey('uploaded_at')) {
+      context.handle(
+          _uploadedAtMeta,
+          uploadedAt.isAcceptableOrUnknown(
+              data['uploaded_at']!, _uploadedAtMeta));
+    }
+    if (data.containsKey('remote_path')) {
+      context.handle(
+          _remotePathMeta,
+          remotePath.isAcceptableOrUnknown(
+              data['remote_path']!, _remotePathMeta));
+    }
     return context;
   }
 
@@ -2432,6 +2464,10 @@ class $RideChunksMetaTable extends RideChunksMeta
           .read(DriftSqlType.dateTime, data['${effectivePrefix}window_end'])!,
       localPath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}local_path']),
+      uploadedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}uploaded_at']),
+      remotePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remote_path']),
     );
   }
 
@@ -2449,13 +2485,17 @@ class RideChunksMetaData extends DataClass
   final DateTime windowStart;
   final DateTime windowEnd;
   final String? localPath;
+  final DateTime? uploadedAt;
+  final String? remotePath;
   const RideChunksMetaData(
       {required this.id,
       required this.rideId,
       required this.seq,
       required this.windowStart,
       required this.windowEnd,
-      this.localPath});
+      this.localPath,
+      this.uploadedAt,
+      this.remotePath});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2466,6 +2506,12 @@ class RideChunksMetaData extends DataClass
     map['window_end'] = Variable<DateTime>(windowEnd);
     if (!nullToAbsent || localPath != null) {
       map['local_path'] = Variable<String>(localPath);
+    }
+    if (!nullToAbsent || uploadedAt != null) {
+      map['uploaded_at'] = Variable<DateTime>(uploadedAt);
+    }
+    if (!nullToAbsent || remotePath != null) {
+      map['remote_path'] = Variable<String>(remotePath);
     }
     return map;
   }
@@ -2480,6 +2526,12 @@ class RideChunksMetaData extends DataClass
       localPath: localPath == null && nullToAbsent
           ? const Value.absent()
           : Value(localPath),
+      uploadedAt: uploadedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploadedAt),
+      remotePath: remotePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remotePath),
     );
   }
 
@@ -2493,6 +2545,8 @@ class RideChunksMetaData extends DataClass
       windowStart: serializer.fromJson<DateTime>(json['windowStart']),
       windowEnd: serializer.fromJson<DateTime>(json['windowEnd']),
       localPath: serializer.fromJson<String?>(json['localPath']),
+      uploadedAt: serializer.fromJson<DateTime?>(json['uploadedAt']),
+      remotePath: serializer.fromJson<String?>(json['remotePath']),
     );
   }
   @override
@@ -2505,6 +2559,8 @@ class RideChunksMetaData extends DataClass
       'windowStart': serializer.toJson<DateTime>(windowStart),
       'windowEnd': serializer.toJson<DateTime>(windowEnd),
       'localPath': serializer.toJson<String?>(localPath),
+      'uploadedAt': serializer.toJson<DateTime?>(uploadedAt),
+      'remotePath': serializer.toJson<String?>(remotePath),
     };
   }
 
@@ -2514,7 +2570,9 @@ class RideChunksMetaData extends DataClass
           int? seq,
           DateTime? windowStart,
           DateTime? windowEnd,
-          Value<String?> localPath = const Value.absent()}) =>
+          Value<String?> localPath = const Value.absent(),
+          Value<DateTime?> uploadedAt = const Value.absent(),
+          Value<String?> remotePath = const Value.absent()}) =>
       RideChunksMetaData(
         id: id ?? this.id,
         rideId: rideId ?? this.rideId,
@@ -2522,6 +2580,8 @@ class RideChunksMetaData extends DataClass
         windowStart: windowStart ?? this.windowStart,
         windowEnd: windowEnd ?? this.windowEnd,
         localPath: localPath.present ? localPath.value : this.localPath,
+        uploadedAt: uploadedAt.present ? uploadedAt.value : this.uploadedAt,
+        remotePath: remotePath.present ? remotePath.value : this.remotePath,
       );
   RideChunksMetaData copyWithCompanion(RideChunksMetaCompanion data) {
     return RideChunksMetaData(
@@ -2532,6 +2592,10 @@ class RideChunksMetaData extends DataClass
           data.windowStart.present ? data.windowStart.value : this.windowStart,
       windowEnd: data.windowEnd.present ? data.windowEnd.value : this.windowEnd,
       localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      uploadedAt:
+          data.uploadedAt.present ? data.uploadedAt.value : this.uploadedAt,
+      remotePath:
+          data.remotePath.present ? data.remotePath.value : this.remotePath,
     );
   }
 
@@ -2543,14 +2607,16 @@ class RideChunksMetaData extends DataClass
           ..write('seq: $seq, ')
           ..write('windowStart: $windowStart, ')
           ..write('windowEnd: $windowEnd, ')
-          ..write('localPath: $localPath')
+          ..write('localPath: $localPath, ')
+          ..write('uploadedAt: $uploadedAt, ')
+          ..write('remotePath: $remotePath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, rideId, seq, windowStart, windowEnd, localPath);
+  int get hashCode => Object.hash(id, rideId, seq, windowStart, windowEnd,
+      localPath, uploadedAt, remotePath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2560,7 +2626,9 @@ class RideChunksMetaData extends DataClass
           other.seq == this.seq &&
           other.windowStart == this.windowStart &&
           other.windowEnd == this.windowEnd &&
-          other.localPath == this.localPath);
+          other.localPath == this.localPath &&
+          other.uploadedAt == this.uploadedAt &&
+          other.remotePath == this.remotePath);
 }
 
 class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
@@ -2570,6 +2638,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
   final Value<DateTime> windowStart;
   final Value<DateTime> windowEnd;
   final Value<String?> localPath;
+  final Value<DateTime?> uploadedAt;
+  final Value<String?> remotePath;
   final Value<int> rowid;
   const RideChunksMetaCompanion({
     this.id = const Value.absent(),
@@ -2578,6 +2648,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
     this.windowStart = const Value.absent(),
     this.windowEnd = const Value.absent(),
     this.localPath = const Value.absent(),
+    this.uploadedAt = const Value.absent(),
+    this.remotePath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RideChunksMetaCompanion.insert({
@@ -2587,6 +2659,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
     required DateTime windowStart,
     required DateTime windowEnd,
     this.localPath = const Value.absent(),
+    this.uploadedAt = const Value.absent(),
+    this.remotePath = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         rideId = Value(rideId),
@@ -2600,6 +2674,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
     Expression<DateTime>? windowStart,
     Expression<DateTime>? windowEnd,
     Expression<String>? localPath,
+    Expression<DateTime>? uploadedAt,
+    Expression<String>? remotePath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2609,6 +2685,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
       if (windowStart != null) 'window_start': windowStart,
       if (windowEnd != null) 'window_end': windowEnd,
       if (localPath != null) 'local_path': localPath,
+      if (uploadedAt != null) 'uploaded_at': uploadedAt,
+      if (remotePath != null) 'remote_path': remotePath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2620,6 +2698,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
       Value<DateTime>? windowStart,
       Value<DateTime>? windowEnd,
       Value<String?>? localPath,
+      Value<DateTime?>? uploadedAt,
+      Value<String?>? remotePath,
       Value<int>? rowid}) {
     return RideChunksMetaCompanion(
       id: id ?? this.id,
@@ -2628,6 +2708,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
       windowStart: windowStart ?? this.windowStart,
       windowEnd: windowEnd ?? this.windowEnd,
       localPath: localPath ?? this.localPath,
+      uploadedAt: uploadedAt ?? this.uploadedAt,
+      remotePath: remotePath ?? this.remotePath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2653,6 +2735,12 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
     if (localPath.present) {
       map['local_path'] = Variable<String>(localPath.value);
     }
+    if (uploadedAt.present) {
+      map['uploaded_at'] = Variable<DateTime>(uploadedAt.value);
+    }
+    if (remotePath.present) {
+      map['remote_path'] = Variable<String>(remotePath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2668,6 +2756,8 @@ class RideChunksMetaCompanion extends UpdateCompanion<RideChunksMetaData> {
           ..write('windowStart: $windowStart, ')
           ..write('windowEnd: $windowEnd, ')
           ..write('localPath: $localPath, ')
+          ..write('uploadedAt: $uploadedAt, ')
+          ..write('remotePath: $remotePath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5900,6 +5990,8 @@ typedef $$RideChunksMetaTableCreateCompanionBuilder = RideChunksMetaCompanion
   required DateTime windowStart,
   required DateTime windowEnd,
   Value<String?> localPath,
+  Value<DateTime?> uploadedAt,
+  Value<String?> remotePath,
   Value<int> rowid,
 });
 typedef $$RideChunksMetaTableUpdateCompanionBuilder = RideChunksMetaCompanion
@@ -5910,6 +6002,8 @@ typedef $$RideChunksMetaTableUpdateCompanionBuilder = RideChunksMetaCompanion
   Value<DateTime> windowStart,
   Value<DateTime> windowEnd,
   Value<String?> localPath,
+  Value<DateTime?> uploadedAt,
+  Value<String?> remotePath,
   Value<int> rowid,
 });
 
@@ -5939,6 +6033,12 @@ class $$RideChunksMetaTableFilterComposer
 
   ColumnFilters<String> get localPath => $composableBuilder(
       column: $table.localPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get uploadedAt => $composableBuilder(
+      column: $table.uploadedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get remotePath => $composableBuilder(
+      column: $table.remotePath, builder: (column) => ColumnFilters(column));
 }
 
 class $$RideChunksMetaTableOrderingComposer
@@ -5967,6 +6067,12 @@ class $$RideChunksMetaTableOrderingComposer
 
   ColumnOrderings<String> get localPath => $composableBuilder(
       column: $table.localPath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get uploadedAt => $composableBuilder(
+      column: $table.uploadedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remotePath => $composableBuilder(
+      column: $table.remotePath, builder: (column) => ColumnOrderings(column));
 }
 
 class $$RideChunksMetaTableAnnotationComposer
@@ -5995,6 +6101,12 @@ class $$RideChunksMetaTableAnnotationComposer
 
   GeneratedColumn<String> get localPath =>
       $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get uploadedAt => $composableBuilder(
+      column: $table.uploadedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get remotePath => $composableBuilder(
+      column: $table.remotePath, builder: (column) => column);
 }
 
 class $$RideChunksMetaTableTableManager extends RootTableManager<
@@ -6030,6 +6142,8 @@ class $$RideChunksMetaTableTableManager extends RootTableManager<
             Value<DateTime> windowStart = const Value.absent(),
             Value<DateTime> windowEnd = const Value.absent(),
             Value<String?> localPath = const Value.absent(),
+            Value<DateTime?> uploadedAt = const Value.absent(),
+            Value<String?> remotePath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               RideChunksMetaCompanion(
@@ -6039,6 +6153,8 @@ class $$RideChunksMetaTableTableManager extends RootTableManager<
             windowStart: windowStart,
             windowEnd: windowEnd,
             localPath: localPath,
+            uploadedAt: uploadedAt,
+            remotePath: remotePath,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -6048,6 +6164,8 @@ class $$RideChunksMetaTableTableManager extends RootTableManager<
             required DateTime windowStart,
             required DateTime windowEnd,
             Value<String?> localPath = const Value.absent(),
+            Value<DateTime?> uploadedAt = const Value.absent(),
+            Value<String?> remotePath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               RideChunksMetaCompanion.insert(
@@ -6057,6 +6175,8 @@ class $$RideChunksMetaTableTableManager extends RootTableManager<
             windowStart: windowStart,
             windowEnd: windowEnd,
             localPath: localPath,
+            uploadedAt: uploadedAt,
+            remotePath: remotePath,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

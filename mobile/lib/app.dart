@@ -11,9 +11,9 @@ class AetherRideApp extends StatelessWidget {
     return MaterialApp(
       title: 'AetherRide',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       home: const AppShell(),
     );
   }

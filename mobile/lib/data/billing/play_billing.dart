@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-/// Google Play product id for AetherRide Pro (monthly).
+/// Google Play subscription product id for AetherRide Pro (monthly).
 const kPlayProMonthlyId = 'aetherride_pro_monthly';
 
 class PurchaseUpdate {
@@ -16,7 +16,10 @@ class PurchaseUpdate {
   final String productId;
 }
 
-/// Thin wrapper around `in_app_purchase` for Pro monthly.
+/// Thin wrapper around `in_app_purchase` for Pro monthly **subscription**.
+///
+/// Play subscriptions use [InAppPurchase.buyNonConsumable] in the Flutter
+/// plugin (there is no separate buySubscription API on the main interface).
 class PlayBilling {
   PlayBilling({InAppPurchase? iap}) : _iap = iap ?? InAppPurchase.instance;
 
@@ -61,6 +64,7 @@ class PlayBilling {
     }
   }
 
+  /// Starts the Play Billing flow for the Pro monthly **subscription** SKU.
   Future<void> buyProMonthly() async {
     final available = await _iap.isAvailable();
     if (!available) {
@@ -71,10 +75,14 @@ class PlayBilling {
       throw Exception(response.error!.message);
     }
     if (response.productDetails.isEmpty) {
-      throw Exception('Produkt $kPlayProMonthlyId nicht gefunden');
+      throw Exception(
+        'Abo-Produkt $kPlayProMonthlyId nicht gefunden. '
+        'In Play Console als Subscription anlegen (Internal Testing + License Tester).',
+      );
     }
     final product = response.productDetails.first;
     final param = PurchaseParam(productDetails: product);
+    // Subscription SKUs are purchased via buyNonConsumable in this plugin.
     final ok = await _iap.buyNonConsumable(purchaseParam: param);
     if (!ok) throw Exception('Kauf konnte nicht gestartet werden');
   }

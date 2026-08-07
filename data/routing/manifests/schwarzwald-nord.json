@@ -1,12 +1,7 @@
 {
   "id": "schwarzwald-nord",
-  "name": "Nordschwarzwald (Freiburg\u2013Todtnau Demo)",
-  "bbox": [
-    7.84,
-    47.94,
-    7.93,
-    48.0
-  ],
+  "name": "Nordschwarzwald (Freiburg–Todtnau Demo)",
+  "bbox": [7.84, 47.94, 7.93, 48.0],
   "builtAt": "2026-08-07T07:54:55Z",
   "engines": {
     "offline_graph": true,
@@ -29,9 +24,15 @@
       "file_count": 5
     }
   },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "schwarzwald-nord.tar.zst",
+    "packGz": "schwarzwald-nord.tar.gz"
+  },
   "source": "overpass+osmium+valhalla-docker",
   "shipped": {
     "flutter_asset": "mobile/assets/routing/offline_graph.json",
-    "build_tiles": "scripts/routing/build-region-pack.sh"
+    "build_tiles": "scripts/routing/build-region-pack.sh",
+    "note": "Re-run npm run routing:region to refresh full sha256 + tar archives"
   }
 }

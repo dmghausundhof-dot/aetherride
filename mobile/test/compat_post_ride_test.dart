@@ -53,7 +53,38 @@ void main() {
     expect(r?.verdict, CompatVerdict.insufficientData);
   });
 
-  test('post-ride suggests slower rebound on harsh feedback', () {
+  test('checkCandidateOnBike replaces slot', () {
+    final installed = [
+      BikeComponent(
+        id: '1',
+        bikeId: 'b',
+        slot: ComponentSlot.cassette,
+        attributes: const {'freehub_standard': 'hg'},
+      ),
+      BikeComponent(
+        id: '2',
+        bikeId: 'b',
+        slot: ComponentSlot.rearHub,
+        attributes: const {
+          'freehub_standard': 'microspline',
+          'rear_spacing': '148x12',
+          'rotor_mount': '6bolt',
+        },
+      ),
+    ];
+    final candidate = BikeComponent(
+      id: 'c',
+      bikeId: 'b',
+      slot: ComponentSlot.cassette,
+      catalogModelId: 'cat-1',
+      attributes: const {'freehub_standard': 'microspline'},
+    );
+    final results = checkCandidateOnBike(installed, candidate);
+    final drv = results.where((r) => r.ruleCode == 'RL-DRV-011');
+    expect(drv, isNotEmpty);
+    expect(drv.first.verdict, CompatVerdict.compatible);
+  });
+
     final ride = RideRecord(
       id: 'r1',
       bikeId: 'b',

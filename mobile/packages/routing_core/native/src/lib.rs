@@ -74,7 +74,14 @@ fn write_coords(path: &[(f64, f64)], out: *mut c_double, cap: u32) -> Result<u32
     Ok(need)
 }
 
-/// Offline route. Prefer `offline_graph.json`; Valhalla extract needs feature link.
+/// Dynsym-visible link probe for Dart FFI (`DynamicLibrary.lookup`).
+/// Prefer this over looking up the C shim `valhalla_is_linked` directly.
+#[no_mangle]
+pub unsafe extern "C" fn routing_core_valhalla_is_linked() -> c_int {
+    valhalla::is_linked()
+}
+
+/// Offline route. Prefer Valhalla extract when present; else offline_graph.
 #[no_mangle]
 pub unsafe extern "C" fn routing_core_route(
     req: *const RouteRequest,

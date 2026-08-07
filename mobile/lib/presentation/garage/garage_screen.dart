@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
@@ -10,6 +12,8 @@ import '../../domain/compatibility/engine.dart';
 import '../../domain/compatibility/rules.dart';
 import '../../domain/component.dart';
 import '../../domain/maintenance/intervals.dart';
+import '../../domain/setup/fingerprint.dart';
+import '../../domain/setup/sag_guide.dart';
 import '../../providers/app_providers.dart';
 import '../billing/upgrade_screen.dart';
 import 'setup_sheet.dart';
@@ -460,6 +464,8 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
               ' · Kompat: ${verdictLabel(aggregate)}',
             ),
             const SizedBox(height: 8),
+            _BikePhotoAndSag(bike: bike),
+            const SizedBox(height: 8),
             Builder(
               builder: (context) {
                 final setupAsync =
@@ -530,8 +536,15 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                         ),
                         title: Text(a.label, style: const TextStyle(fontSize: 13)),
                         subtitle: Text(
-                          '${a.remainingLabel} · ${a.progressPct}%',
+                          '${a.remainingLabel} · ${a.progressPct}% · Tip: Shop',
                           style: const TextStyle(fontSize: 11),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.storefront_outlined, size: 20),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            ref.read(shellTabIndexProvider.notifier).state = 4;
+                          },
                         ),
                       ),
                   ],
@@ -969,6 +982,144 @@ class _InstallComponentSheetState
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BikePhotoAndSag extends ConsumerWidget {
+  const _BikePhotoAndSag({required this.bike});
+  final Bike bike;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = ref.watch(userProfileStoreProvider);
+    final photo = store.bikePhotos[bike.id];
+    final weight = store.riderProfile.riderWeightKg;
+    final fork = estimateAirPsi(
+      riderWeightKg: weight,
+      category: bike.category,
+      end: 'fork',
+    );
+    final shock = estimateAirPsi(
+      riderWeightKg: weight,
+      category: bike.category,
+      end: 'shock',
+    );
+    final setupAsync = ref.watch(currentSetupProvider(bike.id));
+    final fp = SetupFingerprint.fromSetup(setupAsync.valueOrNull);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 72,
+                height: 72,
+                color: AppColors.forest.withValues(alpha: 0.12),
+                child: photo != null && File(photo).existsSync()
+                    ? Image.file(File(photo), fit: BoxFit.cover)
+                    : const Icon(Icons.pedal_bike, size: 36),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Silhouette / Foto',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  Text(
+                    fp.lines.join(' · '),
+                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final x = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        maxWidth: 1600,
+                      );
+                      if (x == null) return;
+                      await store.setBikePhoto(bike.id, x.path);
+                      // ignore: unused_result
+                      ref.refresh(riderProfileProvider);
+                    },
+                    icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                    label: const Text('Foto'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Sag-Guide (Fahrer ${weight.toStringAsFixed(0)} kg)',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        Text(
+          'Gabel: ${fork.psiTarget} psi '
+          '(${fork.psiMin}–${fork.psiMax}) · SAG ${fork.sag.target.toStringAsFixed(0)}%',
+          style: const TextStyle(fontSize: 13),
+        ),
+        Text(
+          'Dämpfer: ${shock.psiTarget} psi '
+          '(${shock.psiMin}–${shock.psiMax}) · SAG ${shock.sag.target.toStringAsFixed(0)}%',
+          style: const TextStyle(fontSize: 13),
+        ),
+        Text(
+          fork.note,
+          style: const TextStyle(fontSize: 11, color: AppColors.muted),
+        ),
+        const SizedBox(height: 4),
+        TextButton(
+          onPressed: () {
+            showDialog<void>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('SAG messen'),
+                content: Text(sagMeasureSteps('fork').join('\n\n')),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: const Text('Messschritte anzeigen'),
+        ),
+        TextField(
+          decoration: const InputDecoration(
+            labelText: 'Odometer-Import (km addieren)',
+            isDense: true,
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          onSubmitted: (raw) async {
+            final km = double.tryParse(raw.replaceAll(',', '.'));
+            if (km == null || km <= 0) return;
+            await ref.read(garageRepositoryProvider).addOdometer(
+                  bikeId: bike.id,
+                  distanceKm: km,
+                  hours: km / 18,
+                );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('+$km km importiert')),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 }
