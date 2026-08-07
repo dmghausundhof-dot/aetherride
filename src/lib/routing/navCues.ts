@@ -1,9 +1,13 @@
 /**
- * Einfache Turn-by-Turn-Cues aus einer Polyline (F-NAV-003 Stub).
- * Produktion später: Engine-Steps; hier: Bearing-Wechsel entlang Geometry.
+ * F-NAV-003 — Cues aus Engine-Steps, Fallback Bearing entlang Polyline.
  */
 
 import type { NavCue } from "@/types/route";
+import type { NavStep } from "@/lib/routing/navSteps";
+import {
+  nextEngineStep,
+  stepBannerText,
+} from "@/lib/routing/navSteps";
 
 function haversineM(
   a: [number, number],
@@ -43,6 +47,18 @@ function turnInstruction(delta: number): string | null {
   return d > 0 ? "Scharf rechts" : "Scharf links";
 }
 
+export function cuesFromEngineSteps(steps: NavStep[]): NavCue[] {
+  return steps
+    .filter((s) => s.type !== "start")
+    .map((s) => ({
+      id: s.id,
+      distanceAlongM: s.distanceAlongM,
+      instruction: s.instruction,
+      bearingDeg: s.bearingDeg ?? 0,
+    }));
+}
+
+/** Bearing-Fallback wenn keine Engine-Steps */
 export function buildNavCues(
   geometry: GeoJSON.LineString | null | undefined
 ): NavCue[] {
@@ -62,7 +78,6 @@ export function buildNavCues(
     along += seg;
     windowAlong += seg;
 
-    // Alle ~120 m Sample — glatte Ellipsen erzeugen sonst keine Cues
     if (windowAlong < 120 && i < coords.length - 1) continue;
 
     const start = coords[windowStart] as [number, number];
@@ -96,7 +111,17 @@ export function buildNavCues(
   return cues;
 }
 
-/** Nächster Cue relativ zur zurückgelegten Distanz */
+/** Bevorzugt Engine-Steps, sonst Bearing-Stub */
+export function resolveNavCues(input: {
+  steps?: NavStep[] | null;
+  geometry?: GeoJSON.LineString | null;
+}): NavCue[] {
+  if (input.steps && input.steps.length > 0) {
+    return cuesFromEngineSteps(input.steps);
+  }
+  return buildNavCues(input.geometry);
+}
+
 export function nextCue(
   cues: NavCue[],
   distanceAlongM: number
@@ -120,3 +145,5 @@ export function cueBannerText(
   }
   return `In ${remainingM} m ${cue.instruction.toLowerCase()}`;
 }
+
+export { nextEngineStep, stepBannerText };
