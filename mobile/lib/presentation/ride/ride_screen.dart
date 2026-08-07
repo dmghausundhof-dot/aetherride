@@ -852,7 +852,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   String _cscStatusLine() {
     final connected =
         ref.read(bleCoreProvider).isConnected || _ldi != null;
-    final csc = connected ? 'CSC verbunden' : 'CSC bereit (Standard-BLE)';
+    final riding = ref.read(isRidingProvider);
+    final csc = connected
+        ? 'CSC verbunden'
+        : (riding ? 'CSC nicht verbunden' : 'CSC bereit (Standard-BLE)');
     return '$csc · LDI folgt G-1';
   }
 

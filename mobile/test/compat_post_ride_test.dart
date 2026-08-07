@@ -85,6 +85,7 @@ void main() {
     expect(drv.first.verdict, CompatVerdict.compatible);
   });
 
+  test('post-ride suggests slower rebound on harsh feedback', () {
     final ride = RideRecord(
       id: 'r1',
       bikeId: 'b',
