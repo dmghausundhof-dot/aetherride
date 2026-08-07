@@ -11,7 +11,11 @@
  */
 
 import { forecastWear, type WearForecast } from "@/lib/maintenance/wearPrediction";
-import { SHOP_PRODUCTS, type ShopProduct } from "@/lib/shop/catalog";
+import {
+  SHOP_PRODUCTS,
+  getShopProduct,
+  type ShopProduct,
+} from "@/lib/shop/catalog";
 import type { Bike, Ride, Setup } from "@/types";
 
 export interface ProductRecommendation {
@@ -29,50 +33,25 @@ export interface ProductRecommendation {
 function productForWear(f: WearForecast): ShopProduct | undefined {
   switch (f.kind) {
     case "chain":
-      return SHOP_PRODUCTS.find((p) => p.slot === "cassette"); // oft Bundle-Hinweis
+      return getShopProduct("sp-sram-xx-chain");
     case "brake_pads_front":
     case "brake_pads_rear":
-      return SHOP_PRODUCTS.find((p) =>
-        p.name.toLowerCase().includes("brake") || p.slot.includes("brake")
-      ) ?? SHOP_PRODUCTS.find((p) => p.slot === "tire_front");
+      return getShopProduct("sp-shimano-pad-demo");
     case "cassette":
-      return SHOP_PRODUCTS.find((p) => p.id === "sp-sram-cassette-xd");
+      return getShopProduct("sp-sram-cassette-xd");
     case "tires":
-      return SHOP_PRODUCTS.find((p) => p.slot === "tire_front");
+      return getShopProduct("sp-maxxis-assegai");
     default:
       return undefined;
   }
 }
 
-/** Explizite Shop-Produkte für Beläge nachrüsten wenn Katalog leer */
-const PAD_FALLBACK: ShopProduct = {
-  id: "sp-shimano-pad-demo",
-  name: "Shimano XT Resin Beläge (Paar)",
-  manufacturer: "Shimano",
-  slot: "brake_pads_front",
-  componentModelId: "cm-shimano-xt-pad",
-  priceEur: 29,
-  description: "Ersatzbeläge — Wechsel bei < 0,5–1 mm (BIKE Magazin)",
-  affiliateUrl: "https://bike.shimano.com/",
-  merchantName: "Shimano Händlernetz (Demo)",
-};
-
-const CHAIN_FALLBACK: ShopProduct = {
-  id: "sp-sram-xx-chain",
-  name: "SRAM XX Eagle Transmission Chain",
-  manufacturer: "SRAM",
-  slot: "chain",
-  componentModelId: "cm-sram-xx-chain",
-  priceEur: 119,
-  description: "12-fach Kette — Wechselziel 0,5 % Längung (Velopit/Park Tool)",
-  affiliateUrl: "https://www.sram.com/",
-  merchantName: "SRAM Händler (Demo)",
-};
-
 function resolveProduct(f: WearForecast): ShopProduct {
-  if (f.kind === "chain") return CHAIN_FALLBACK;
-  if (f.kind.startsWith("brake")) return PAD_FALLBACK;
-  return productForWear(f) ?? CHAIN_FALLBACK;
+  return (
+    productForWear(f) ??
+    getShopProduct("sp-sram-xx-chain") ??
+    SHOP_PRODUCTS[0]
+  );
 }
 
 export function recommendProductsFromWear(
@@ -151,7 +130,7 @@ export function recommendSeasonal(
 ): ProductRecommendation[] {
   // Okt–März: nass/kalt
   if (month < 4 || month >= 10) {
-    const tire = SHOP_PRODUCTS.find((p) => p.id === "sp-maxxis-assegai");
+    const tire = getShopProduct("sp-maxxis-assegai");
     if (!tire) return [];
     return [
       {

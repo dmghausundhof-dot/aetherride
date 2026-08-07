@@ -16,9 +16,49 @@ export interface ShopProduct {
   /** Partner-Händler Checkout-URL (Affiliate) */
   affiliateUrl: string;
   merchantName: string;
+  /** Kurzer visueller Hinweis für Platzhalter-Karte (ohne Asset-Pipeline) */
+  visualHint: string;
 }
 
+/** Browse-Chips im Shop (Fahrer-Jobs, nicht Spec-IDs) */
+export const SHOP_BROWSE_SLOTS: { slot: ComponentSlot | "all"; label: string }[] =
+  [
+    { slot: "all", label: "Alle" },
+    { slot: "chain", label: "Kette" },
+    { slot: "brake_pads_front", label: "Beläge" },
+    { slot: "tire_front", label: "Reifen" },
+    { slot: "cassette", label: "Kassette" },
+    { slot: "fork", label: "Gabel" },
+    { slot: "rear_shock", label: "Dämpfer" },
+    { slot: "seatpost", label: "Dropper" },
+    { slot: "battery", label: "Akku" },
+  ];
+
 export const SHOP_PRODUCTS: ShopProduct[] = [
+  {
+    id: "sp-sram-xx-chain",
+    name: "SRAM XX Eagle Transmission Chain",
+    manufacturer: "SRAM",
+    slot: "chain",
+    componentModelId: "cm-sram-xx-chain",
+    priceEur: 119,
+    description: "12-fach Kette — Wechselziel 0,5 % Längung (Velopit/Park Tool)",
+    affiliateUrl: "https://www.bike-components.de/de/SRAM/",
+    merchantName: "bike-components (Demo-Partner)",
+    visualHint: "chain",
+  },
+  {
+    id: "sp-shimano-pad-demo",
+    name: "Shimano XT Resin Beläge (Paar)",
+    manufacturer: "Shimano",
+    slot: "brake_pads_front",
+    componentModelId: "cm-shimano-xt-pad",
+    priceEur: 29,
+    description: "Ersatzbeläge — Wechsel bei < 0,5–1 mm (BIKE Magazin)",
+    affiliateUrl: "https://www.bike-components.de/de/Shimano/",
+    merchantName: "bike-components (Demo-Partner)",
+    visualHint: "pads",
+  },
   {
     id: "sp-fox-36",
     name: "Fox 36 Factory Grip2 170mm",
@@ -29,6 +69,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Enduro-Gabel 170 mm, Grip2, Boost 15×110",
     affiliateUrl: "https://www.bike-components.de/de/Fox/",
     merchantName: "bike-components (Demo-Partner)",
+    visualHint: "fork",
   },
   {
     id: "sp-maxxis-assegai",
@@ -40,6 +81,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Vorderreifen DD MaxxGrip",
     affiliateUrl: "https://www.bike-discount.de/",
     merchantName: "bike-discount (Demo-Partner)",
+    visualHint: "tire",
   },
   {
     id: "sp-maxxis-dhr",
@@ -51,6 +93,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Hinterreifen MaxxTerra DD",
     affiliateUrl: "https://www.bike-discount.de/",
     merchantName: "bike-discount (Demo-Partner)",
+    visualHint: "tire",
   },
   {
     id: "sp-sram-cassette-xd",
@@ -62,6 +105,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Kassette XD — Freilauf muss XD sein",
     affiliateUrl: "https://www.chainreactioncycles.com/",
     merchantName: "CRC (Demo-Partner)",
+    visualHint: "cassette",
   },
   {
     id: "sp-shimano-ms",
@@ -73,6 +117,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Kassette Micro Spline — inkompatibel zu XD-Naben",
     affiliateUrl: "https://bike.shimano.com/",
     merchantName: "Shimano Händlernetz (Demo)",
+    visualHint: "cassette",
   },
   {
     id: "sp-rs-superdeluxe",
@@ -84,6 +129,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Standard-Eyelet 230×65 — Rahmenmaß prüfen",
     affiliateUrl: "https://www.sram.com/en/rockshox",
     merchantName: "SRAM/RockShox Händler (Demo)",
+    visualHint: "shock",
   },
   {
     id: "sp-fox-x2",
@@ -95,6 +141,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Trunnion 205×65",
     affiliateUrl: "https://www.ridefox.com/",
     merchantName: "Fox Händler (Demo)",
+    visualHint: "shock",
   },
   {
     id: "sp-bosch-800",
@@ -106,6 +153,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Smart System Akku — nur bei passendem Motor-Interface",
     affiliateUrl: "https://www.bosch-ebike.com/",
     merchantName: "Bosch eBike Händler (Demo)",
+    visualHint: "battery",
   },
   {
     id: "sp-oneup-316",
@@ -117,5 +165,57 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     description: "Dropper Ø 31,6 mm",
     affiliateUrl: "https://oneupcomponents.com/",
     merchantName: "OneUp (Demo)",
+    visualHint: "dropper",
   },
 ];
+
+export function getShopProduct(id: string): ShopProduct | undefined {
+  return SHOP_PRODUCTS.find((p) => p.id === id);
+}
+
+export function productsForSlot(slot: ComponentSlot): ShopProduct[] {
+  if (slot === "brake_pads_rear") {
+    return SHOP_PRODUCTS.filter(
+      (p) => p.slot === "brake_pads_front" || p.slot === "brake_pads_rear"
+    );
+  }
+  if (slot === "tire_rear") {
+    return SHOP_PRODUCTS.filter(
+      (p) => p.slot === "tire_front" || p.slot === "tire_rear"
+    );
+  }
+  return SHOP_PRODUCTS.filter((p) => p.slot === slot);
+}
+
+/** Wear-Kind → Shop-Slot für Deep-Links */
+export function wearKindToShopSlot(
+  kind: string
+): ComponentSlot | undefined {
+  switch (kind) {
+    case "chain":
+      return "chain";
+    case "brake_pads_front":
+      return "brake_pads_front";
+    case "brake_pads_rear":
+      return "brake_pads_rear";
+    case "cassette":
+      return "cassette";
+    case "tires":
+      return "tire_front";
+    default:
+      return undefined;
+  }
+}
+
+export function shopHref(opts?: {
+  productId?: string;
+  slot?: ComponentSlot | string;
+  job?: "replace" | "browse" | "season";
+}): string {
+  const params = new URLSearchParams();
+  if (opts?.productId) params.set("focus", opts.productId);
+  if (opts?.slot) params.set("slot", opts.slot);
+  if (opts?.job) params.set("job", opts.job);
+  const q = params.toString();
+  return q ? `/shop?${q}` : "/shop";
+}
