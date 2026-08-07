@@ -43,3 +43,25 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// Copies cargo-built routing_core (+ protobuf / c++_shared) into jniLibs when present.
+// Manual: ./scripts/routing/install-android-jni.sh
+val routingCoreSo =
+    file(
+        "${project.projectDir}/../../packages/routing_core/native/target/" +
+            "aarch64-linux-android/release/librouting_core.so",
+    )
+val routingJniDir = file("${project.projectDir}/src/main/jniLibs/arm64-v8a")
+
+tasks.register<Exec>("installRoutingCoreJni") {
+    // rootProject = mobile/android → ../../ = repo root
+    workingDir = rootProject.projectDir.parentFile.parentFile
+    commandLine("bash", "scripts/routing/install-android-jni.sh")
+    inputs.file(routingCoreSo)
+    outputs.dir(routingJniDir)
+    onlyIf { routingCoreSo.exists() }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("installRoutingCoreJni")
+}

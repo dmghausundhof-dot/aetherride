@@ -12,7 +12,7 @@ Offline-first Flutter-Client nach Spec §5.
 | S4 | MapLibre Discover + Online-Routing via `/api/route` |
 | S5 | Catalog Postgres + `/api/catalog` + Upsert-Skript (G-4-Pfad) |
 | S6 | Overpass-Report, Open-Meteo `/api/weather`, Outdooractive-Adapter, Trailforks attribution-only |
-| S7 | `routing_core` Offline-Graph (OSM) + Valhalla NDK/iOS Build-Skripte |
+| S7 | `routing_core` Offline-Graph (OSM) + Valhalla NDK/iOS; APK via `install-android-jni.sh` |
 
 ## Start
 
