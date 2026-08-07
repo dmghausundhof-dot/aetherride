@@ -25,7 +25,8 @@ flutter pub get
 
 flutter run \
   --dart-define=SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
-  --dart-define=API_BASE_URL=http://10.0.2.2:3000
+  --dart-define=API_BASE_URL=http://10.0.2.2:3001 \
+  --dart-define=STADIA_API_KEY=$STADIA_API_KEY
 ```
 
 ## Android build

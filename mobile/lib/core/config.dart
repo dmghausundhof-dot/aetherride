@@ -12,13 +12,19 @@ abstract final class AppConfig {
   );
 
   /// Next.js API origin for sync / route / catalog (local or production).
+  /// Emulator → host loopback: http://10.0.2.2:3001
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'http://10.0.2.2:3001',
   );
 
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
+    defaultValue: '',
+  );
+
+  static const stadiaApiKey = String.fromEnvironment(
+    'STADIA_API_KEY',
     defaultValue: '',
   );
 
@@ -46,4 +52,13 @@ abstract final class AppConfig {
 
   static bool get isSupabaseConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+  /// MapLibre style URL: Stadia Outdoors if key set, else demo tiles.
+  static String get mapStyleUrl {
+    if (stadiaApiKey.isNotEmpty) {
+      return 'https://tiles.stadiamaps.com/styles/outdoors.json'
+          '?api_key=$stadiaApiKey';
+    }
+    return 'https://demotiles.maplibre.org/style.json';
+  }
 }

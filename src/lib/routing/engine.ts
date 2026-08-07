@@ -19,16 +19,17 @@ export type RouteResult = {
   distanceM: number;
   durationS: number;
   geometry: GeoJSON.LineString;
-  engine: "valhalla" | "osrm" | "demo";
+  engine: "valhalla" | "osrm" | "graphhopper" | "demo";
   profile: RoutingProfile;
   warnings?: string[];
   /** F-NAV-003 Turn-by-Turn */
   steps?: NavStep[];
 };
 
-function engine(): "valhalla" | "osrm" | "demo" {
+function engine(): "valhalla" | "osrm" | "graphhopper" | "demo" {
   const e = (process.env.ROUTING_ENGINE || "").toLowerCase();
-  if (e === "valhalla" || e === "osrm") return e;
+  if (e === "valhalla" || e === "osrm" || e === "graphhopper") return e;
+  if (process.env.GRAPHHOPPER_API_KEY) return "graphhopper";
   if (process.env.VALHALLA_URL) return "valhalla";
   if (process.env.OSRM_URL) return "osrm";
   return "demo";
@@ -139,6 +140,34 @@ export function osrmProfile(profile: RoutingProfile): string {
   return "bike";
 }
 
+/**
+ * GraphHopper Cloud profile.
+ * Free/basic plans often only allow car|bike|foot — mtb/hike/racingbike need higher tier.
+ * Override with GRAPHHOPPER_ALLOW_EXTENDED_PROFILES=1 when the account supports them.
+ */
+export function graphhopperProfile(profile: RoutingProfile): string {
+  const extended =
+    process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES === "1" ||
+    process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES === "true";
+  if (extended) {
+    switch (profile) {
+      case "hiking":
+        return "hike";
+      case "road":
+        return "racingbike";
+      case "mtb_allmountain":
+      case "mtb_enduro":
+      case "emtb":
+        return "mtb";
+      case "gravel":
+      case "ebike":
+      default:
+        return "bike";
+    }
+  }
+  return profile === "hiking" ? "foot" : "bike";
+}
+
 function decodePolyline6(str: string): [number, number][] {
   let index = 0;
   let lat = 0;
@@ -192,7 +221,7 @@ function demoRoute(
     profile,
     steps: stepsFromDemoGeometry(coords),
     warnings: [
-      "Kein ROUTING_ENGINE konfiguriert — Demo-Geometrie. Setze VALHALLA_URL oder OSRM_URL.",
+      "Kein ROUTING_ENGINE konfiguriert — Demo-Geometrie. Setze GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL.",
     ],
   };
 }
@@ -214,7 +243,12 @@ async function routeValhalla(
     costing_options,
     directions_options: { units: "kilometers", language: "en-US" },
   };
-  const res = await fetch(`${base}/route`, {
+  const stadiaKey = process.env.STADIA_API_KEY?.trim();
+  const routeUrl =
+    stadiaKey && /stadiamaps\.com/i.test(base)
+      ? `${base}/route/v1?api_key=${encodeURIComponent(stadiaKey)}`
+      : `${base}/route`;
+  const res = await fetch(routeUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -237,6 +271,112 @@ async function routeValhalla(
     engine: "valhalla",
     profile,
     steps: steps.length ? steps : stepsFromDemoGeometry(coordinates),
+  };
+}
+
+function stepsFromGraphhopper(
+  instructions: Array<{
+    text?: string;
+    distance?: number;
+    time?: number;
+    interval?: [number, number];
+    sign?: number;
+  }>,
+  coordinates: [number, number][]
+): NavStep[] {
+  let along = 0;
+  const steps: NavStep[] = [];
+  for (let i = 0; i < instructions.length; i++) {
+    const ins = instructions[i];
+    const lengthM = Math.round(ins.distance ?? 0);
+    const idx = ins.interval?.[0] ?? 0;
+    const coord = coordinates[Math.min(idx, coordinates.length - 1)];
+    const sign = ins.sign ?? 0;
+    let type: NavStep["type"] = "turn";
+    if (sign === 0) type = "continue";
+    else if (sign === 4 || sign === 5) type = "arrive";
+    else if (sign === 6) type = "roundabout";
+    else if (Math.abs(sign) === 3) type = "uturn";
+    else if (i === 0) type = "start";
+    const text = ins.text || "Weiter";
+    steps.push({
+      id: `gh-${i}`,
+      type,
+      instruction: text,
+      instructionEn: text,
+      distanceAlongM: along,
+      lengthM,
+      coordinate: coord
+        ? { lng: coord[0], lat: coord[1] }
+        : undefined,
+      engineType: sign,
+    });
+    along += lengthM;
+  }
+  return steps;
+}
+
+async function routeGraphhopper(
+  profile: RoutingProfile,
+  from: [number, number],
+  to: [number, number]
+): Promise<RouteResult> {
+  const key = process.env.GRAPHHOPPER_API_KEY?.trim();
+  if (!key) throw new Error("GRAPHHOPPER_API_KEY missing");
+  const base = (
+    process.env.GRAPHHOPPER_URL || "https://graphhopper.com/api/1"
+  ).replace(/\/$/, "");
+  const ghProfile = graphhopperProfile(profile);
+  const params = new URLSearchParams();
+  // GraphHopper expects lat,lng
+  params.append("point", `${from[1]},${from[0]}`);
+  params.append("point", `${to[1]},${to[0]}`);
+  params.set("profile", ghProfile);
+  params.set("locale", "de");
+  params.set("points_encoded", "false");
+  params.set("elevation", "true");
+  params.set("instructions", "true");
+  params.set("key", key);
+
+  const res = await fetch(`${base}/route?${params}`);
+  if (!res.ok) {
+    throw new Error(`GraphHopper ${res.status}: ${await res.text()}`);
+  }
+  const data = await res.json();
+  const path = data.paths?.[0];
+  if (!path?.points?.coordinates) throw new Error("GraphHopper: no path");
+
+  const coordinates = (path.points.coordinates as number[][]).map(
+    (c) => [c[0], c[1]] as [number, number]
+  );
+  const geometry: GeoJSON.LineString = {
+    type: "LineString",
+    coordinates,
+  };
+  const instructions = Array.isArray(path.instructions)
+    ? path.instructions
+    : [];
+  const steps = stepsFromGraphhopper(instructions, coordinates);
+  const warnings: string[] = [];
+  if (
+    process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES !== "1" &&
+    (profile.startsWith("mtb") || profile === "emtb" || profile === "hiking")
+  ) {
+    warnings.push(
+      `GraphHopper-Account: Profil „${ghProfile}“ (Basic). Für mtb/hike GRAPHHOPPER_ALLOW_EXTENDED_PROFILES=1 nach Plan-Upgrade.`
+    );
+  }
+
+  return {
+    distanceM: Math.round(path.distance || 0),
+    durationS: Math.round((path.time || 0) / 1000),
+    geometry,
+    engine: "graphhopper",
+    profile,
+    steps: steps.length
+      ? steps
+      : stepsFromDemoGeometry(coordinates),
+    warnings: warnings.length ? warnings : undefined,
   };
 }
 
@@ -277,6 +417,7 @@ export async function computeRoute(
 ): Promise<RouteResult> {
   const kind = engine();
   if (kind === "demo") return demoRoute(profile, from, to);
+  if (kind === "graphhopper") return routeGraphhopper(profile, from, to);
   if (kind === "valhalla") return routeValhalla(profile, from, to);
   return routeOsrm(profile, from, to);
 }

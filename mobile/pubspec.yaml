@@ -23,6 +23,7 @@ dependencies:
   supabase_flutter: ^2.8.0
   flutter_blue_plus: ^1.35.2
   maplibre_gl: ^0.21.0
+  geolocator: ^13.0.2
   dsp_core:
     path: packages/dsp_core
 

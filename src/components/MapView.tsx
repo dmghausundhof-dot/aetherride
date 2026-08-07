@@ -25,7 +25,7 @@ function ensurePmtilesProtocol() {
   pmtilesRegistered = true;
 }
 
-function buildStyle(): maplibregl.StyleSpecification {
+function buildStyle(): maplibregl.StyleSpecification | string {
   const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
   if (pmtilesUrl) {
     const sourceUrl = pmtilesUrl.startsWith("pmtiles://")
@@ -93,6 +93,12 @@ function buildStyle(): maplibregl.StyleSpecification {
     };
   }
 
+  const stadiaKey = process.env.NEXT_PUBLIC_STADIA_API_KEY?.trim();
+  if (stadiaKey) {
+    // Hosted vector style (Outdoors) — domain whitelist in Stadia dashboard
+    return `https://tiles.stadiamaps.com/styles/outdoors.json?api_key=${encodeURIComponent(stadiaKey)}`;
+  }
+
   return {
     version: 8,
     sources: {
@@ -117,7 +123,7 @@ function buildStyle(): maplibregl.StyleSpecification {
 
 /**
  * MapLibre-Karte.
- * PMTiles wenn NEXT_PUBLIC_PMTILES_URL gesetzt, sonst OSM-Raster-Fallback.
+ * Priorität: PMTiles → Stadia Outdoors → OSM-Raster-Fallback.
  */
 export function MapView({
   className = "",
@@ -132,6 +138,9 @@ export function MapView({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const usingPmtiles = Boolean(process.env.NEXT_PUBLIC_PMTILES_URL?.trim());
+  const usingStadia = Boolean(
+    !usingPmtiles && process.env.NEXT_PUBLIC_STADIA_API_KEY?.trim()
+  );
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -238,7 +247,11 @@ export function MapView({
         </div>
       )}
       <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/80">
-        {usingPmtiles ? "PMTiles · Offline-fähig" : "OSM-Raster · PMTiles via Env"}
+        {usingPmtiles
+          ? "PMTiles · Offline-fähig"
+          : usingStadia
+            ? "Stadia Outdoors · © OSM"
+            : "OSM-Raster · Fallback"}
       </div>
     </div>
   );

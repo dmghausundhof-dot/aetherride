@@ -7,6 +7,7 @@ import '../data/local/garage_repository.dart';
 import '../data/sync/sync_engine.dart';
 import '../domain/bike.dart';
 import '../native/ble_core_channel.dart';
+import '../native/location_core_channel.dart';
 import '../native/sensor_core_channel.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -52,6 +53,12 @@ final sensorCoreProvider = Provider<SensorCoreChannel>((ref) {
 
 final bleCoreProvider = Provider<BleCoreChannel>((ref) {
   final channel = BleCoreChannel();
+  ref.onDispose(channel.dispose);
+  return channel;
+});
+
+final locationCoreProvider = Provider<LocationCoreChannel>((ref) {
+  final channel = LocationCoreChannel();
   ref.onDispose(channel.dispose);
   return channel;
 });

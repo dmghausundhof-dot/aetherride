@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
+import '../auth/auth_screen.dart';
 
 /// Spec-naher Home-Companion: Bike-Chip, Heute-passt-Hero, Ride-CTA.
 class HomeScreen extends ConsumerWidget {
@@ -11,6 +12,10 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bikes = ref.watch(bikesProvider);
+    final session = ref.watch(authSessionProvider).valueOrNull;
+    final initials = session?.user.email != null
+        ? session!.user.email!.substring(0, 1).toUpperCase()
+        : 'AR';
 
     return Scaffold(
       body: SafeArea(
@@ -63,13 +68,25 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                CircleAvatar(
-                  backgroundColor: AppColors.forest.withValues(alpha: 0.12),
-                  child: const Text(
-                    'AR',
-                    style: TextStyle(
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.w700,
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AuthScreen(),
+                      ),
+                    );
+                  },
+                  customBorder: const CircleBorder(),
+                  child: CircleAvatar(
+                    backgroundColor: AppColors.forest.withValues(alpha: 0.12),
+                    child: Text(
+                      initials,
+                      style: TextStyle(
+                        color: session != null
+                            ? AppColors.accent
+                            : AppColors.muted,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),

@@ -1,0 +1,19 @@
+mobile
+mobile/**
+data
+data/**
+node_modules
+node_modules/**
+.next
+.next/**
+.git
+.git/**
+**/.dart_tool
+**/build
+**/target
+*.pbf
+*.osm.pbf
+Claude INhalte
+Claude INhalte/**
+*.tar.gz
+docker-compose.valhalla.yml

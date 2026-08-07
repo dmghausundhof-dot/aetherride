@@ -16,9 +16,8 @@ const PARAMS: { id: BracketingParameter; label: string }[] = [
 ];
 
 export function BracketingPanel({ bike }: { bike: Bike }) {
-  const seriesList = useAppStore((s) =>
-    s.bracketingSeries.filter((x) => x.bikeId === bike.id)
-  );
+  const bracketingSeries = useAppStore((s) => s.bracketingSeries);
+  const seriesList = bracketingSeries.filter((x) => x.bikeId === bike.id);
   const startBracketing = useAppStore((s) => s.startBracketing);
   const addBracketingRun = useAppStore((s) => s.addBracketingRun);
   const evaluateBracketing = useAppStore((s) => s.evaluateBracketing);

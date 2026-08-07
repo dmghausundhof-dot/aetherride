@@ -1,14 +1,14 @@
 {
   "id": "schwarzwald-nord",
-  "name": "Nordschwarzwald (Freiburg–Todtnau Demo)",
-  "bbox": [7.84, 47.94, 7.93, 48.00],
+  "name": "Schwarzwald Süd (Freiburg–Todtnau–Titisee)",
+  "bbox": [7.70, 47.80, 8.20, 48.15],
   "osm": {
-    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
-    "note": "Full Land extract for tiles; Overpass uses bbox for offline_graph"
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/freiburg-regbez-latest.osm.pbf",
+    "note": "Regierungsbezirk Freiburg (~150MB), clipped to bbox for Valhalla tiles"
   },
   "graph": {
-    "maxNodes": 15000,
-    "maxEdges": 25000
+    "maxNodes": 80000,
+    "maxEdges": 120000
   },
   "outputDir": "data/routing/dist/schwarzwald-nord",
   "valhalla": {

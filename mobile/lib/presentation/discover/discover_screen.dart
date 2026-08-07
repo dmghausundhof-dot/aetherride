@@ -233,9 +233,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   @override
   Widget build(BuildContext context) {
-    final style = AppConfig.pmtilesUrl.isNotEmpty
-        ? 'https://demotiles.maplibre.org/style.json'
-        : 'https://demotiles.maplibre.org/style.json';
+    final style = AppConfig.mapStyleUrl;
 
     final detail = _detailId == null
         ? null

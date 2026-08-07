@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/active_route.dart';
 import '../../domain/ble.dart';
 import '../../domain/sensor.dart';
+import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 
@@ -22,10 +23,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   BoschLiveData? _ldi;
   StreamSubscription<SensorBlock>? _sensorSub;
   StreamSubscription<BoschLiveData>? _bleSub;
+  StreamSubscription<LocationFix>? _locSub;
   Timer? _tick;
   Timer? _idleLock;
   int _confirmStop = 0;
   DateTime? _startedAt;
+  bool _usingGps = false;
+
 
   void _bumpIdle() {
     ref.read(autoLockedProvider.notifier).state = false;
@@ -42,17 +46,21 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   Future<void> _start() async {
     final sensor = ref.read(sensorCoreProvider);
     final ble = ref.read(bleCoreProvider);
+    final location = ref.read(locationCoreProvider);
     await sensor.start();
     await ble.connect();
+    await location.startRideTracking();
+    _usingGps = location.lastFix != null;
+    _locSub = location.fixes.listen((_) {
+      if (!mounted || ref.read(isPausedProvider)) return;
+      _usingGps = true;
+      ref.read(rideDistanceMProvider.notifier).state = location.distanceM;
+    });
     _sensorSub = sensor.blocks.listen((b) {
       if (mounted) setState(() => _metrics = b.fused);
     });
     _bleSub = ble.liveData.listen((d) {
       if (mounted) setState(() => _ldi = d);
-      // Auto-Pause bei Stillstand
-      if (d.speedKmh < 2) {
-        // handled softly — pause optional
-      }
     });
     _startedAt = DateTime.now();
     ref.read(isRidingProvider.notifier).state = true;
@@ -66,8 +74,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         ref.read(rideElapsedSecProvider.notifier).state =
             DateTime.now().difference(start).inSeconds;
       }
-      // Sim-Distanz wenn keine echte Location
-      ref.read(rideDistanceMProvider.notifier).state += 4.2;
+      // Sim-Distanz nur wenn noch kein GPS-Fix
+      if (!_usingGps) {
+        ref.read(rideDistanceMProvider.notifier).state += 4.2;
+      }
     });
     _bumpIdle();
     setState(() => _confirmStop = 0);
@@ -80,10 +90,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
     await _sensorSub?.cancel();
     await _bleSub?.cancel();
+    await _locSub?.cancel();
     _tick?.cancel();
     _idleLock?.cancel();
     await ref.read(sensorCoreProvider).stop();
     await ref.read(bleCoreProvider).disconnect();
+    await ref.read(locationCoreProvider).stopRideTracking();
     ref.read(isRidingProvider.notifier).state = false;
     ref.read(isPausedProvider.notifier).state = false;
     ref.read(autoLockedProvider.notifier).state = false;
@@ -91,6 +103,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     setState(() {
       _confirmStop = 0;
       _metrics = null;
+      _usingGps = false;
     });
   }
 
@@ -98,6 +111,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   void dispose() {
     _sensorSub?.cancel();
     _bleSub?.cancel();
+    _locSub?.cancel();
     _tick?.cancel();
     _idleLock?.cancel();
     super.dispose();

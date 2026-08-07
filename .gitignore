@@ -46,3 +46,4 @@ next-env.d.ts
 
 # routing region builds (tiles / large PBF / full graphs)
 data/routing/dist/
+.env*.local

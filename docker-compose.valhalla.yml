@@ -1,0 +1,21 @@
+# Local Valhalla for AetherRide (Schwarzwald-Nord demo tiles).
+# Start: docker compose -f docker-compose.valhalla.yml up -d
+# Health: curl -s http://127.0.0.1:8002/status
+services:
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: aetherride-valhalla
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data/routing/dist/schwarzwald-nord/custom_files:/custom_files
+    environment:
+      # Existing tiles already in custom_files — do not rebuild from PBF
+      use_tiles_ignore_pbf: "True"
+      force_rebuild: "False"
+      build_elevation: "False"
+      build_admins: "False"
+      build_time_zones: "False"
+      build_tar: "True"
+      server_threads: "2"
+    restart: unless-stopped
