@@ -61,6 +61,7 @@ export default function HomePage() {
   const boschLive = useAppStore((s) => s.boschLive);
   const profile = useAppStore((s) => s.riderProfile);
   const intervals = useAppStore((s) => s.maintenanceIntervals);
+  const consents = useAppStore((s) => s.consents);
   const setCurrentSetup = useAppStore((s) => s.setCurrentSetup);
   const activeRoute = useAppStore((s) => s.activeRoute);
   const setActiveRoute = useAppStore((s) => s.setActiveRoute);
@@ -462,7 +463,8 @@ export default function HomePage() {
         <section className="rounded-2xl border border-border bg-surface p-6 text-center">
           <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
           <p className="mt-2 text-sm text-text-secondary">
-            Katalog, Basis oder Import — danach startet der Companion.
+            Katalog, Basis oder Import — danach startet der Companion und
+            passende Teile.
           </p>
           <div className="mt-4 grid gap-2 text-left sm:grid-cols-3">
             {(
@@ -482,6 +484,12 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
+          <p className="mt-4 text-xs text-text-secondary">
+            Nach dem Anlegen:{" "}
+            <Link href={shopHref()} className="text-accent">
+              passende Teile im Shop
+            </Link>
+          </p>
         </section>
       )}
 
@@ -494,7 +502,11 @@ export default function HomePage() {
             <div className="text-xs text-text-secondary">km diese Woche</div>
           </div>
           <Link
-            href={alerts[0]?.href ?? "/garage?tab=maintenance"}
+            href={
+              alerts[0]?.shopHref ??
+              alerts[0]?.href ??
+              "/garage?tab=maintenance"
+            }
             className="rounded-xl border border-border bg-surface p-3 text-center"
           >
             <div className="truncate text-sm font-semibold">
@@ -509,6 +521,34 @@ export default function HomePage() {
             </div>
           </Link>
         </section>
+      )}
+
+      {shopRec && (
+        <Link
+          href={shopHref({
+            productId: shopRec.product.id,
+            job: "replace",
+          })}
+          className="flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 transition hover:border-warning/60"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/20 text-warning">
+            <ShoppingBag className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold uppercase tracking-wide text-warning">
+              Passt zu deinem Bike
+            </div>
+            <div className="mt-0.5 text-sm font-semibold leading-snug">
+              {shopRec.product.name}
+            </div>
+            <p className="mt-1 text-xs text-text-secondary">
+              {shopRec.triggeringDataPoint} · ab {shopRec.product.priceEur} €
+            </p>
+            <span className="mt-2 inline-flex items-center text-xs font-medium text-accent">
+              Im Shop prüfen <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </Link>
       )}
 
       <div className="flex flex-col gap-2">
