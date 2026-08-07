@@ -1057,8 +1057,8 @@ class _BikePhotoAndSag extends ConsumerWidget {
                       await dest.parent.create(recursive: true);
                       await File(x.path).copy(dest.path);
                       await store.setBikePhoto(bike.id, dest.path);
-                      // ignore: unused_result
-                      ref.refresh(riderProfileProvider);
+                      // Rebuild this ConsumerWidget subtree via invalidate.
+                      ref.invalidate(currentSetupProvider(bike.id));
                     },
                     icon: const Icon(Icons.photo_camera_outlined, size: 18),
                     label: const Text('Foto'),
