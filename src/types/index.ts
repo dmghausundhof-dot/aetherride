@@ -128,6 +128,8 @@ export interface Recommendation {
   score: number;
   relatedBikeId?: string;
   relatedRideId?: string;
+  /** Shop-Produkt für Deep-Link (type === "product") */
+  relatedProductId?: string;
   status: "shown" | "accepted" | "dismissed";
 }
 

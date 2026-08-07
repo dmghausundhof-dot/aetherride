@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Play,
   CloudSun,
+  ShoppingBag,
 } from "lucide-react";
 import Link from "next/link";
 import { suggestRoutes } from "@/lib/routing/suggestions";
@@ -30,6 +31,8 @@ import { ElevationStrip } from "@/components/ElevationStrip";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
+import { shopHref } from "@/lib/shop/catalog";
+import { allProductRecommendations } from "@/lib/shop/recommendations";
 
 type WeatherPayload = {
   trailHint: TrailHint;
@@ -97,6 +100,23 @@ export default function HomePage() {
         .slice(0, 1)[0],
     [recommendations]
   );
+
+  const productConsent =
+    useAppStore((s) => s.consents).find(
+      (c) => c.purpose === "product_recommendations"
+    )?.granted ?? false;
+
+  const shopRec = useMemo(() => {
+    if (!activeBike || !productConsent) return null;
+    const setup = activeBike.setups.find((s) => s.isCurrent);
+    return (
+      allProductRecommendations({
+        bike: activeBike,
+        rides,
+        setup,
+      })[0] ?? null
+    );
+  }, [activeBike, rides, productConsent]);
 
   const loadWeather = useCallback(async (lat: number, lon: number) => {
     try {
@@ -362,12 +382,20 @@ export default function HomePage() {
                 )}
               </div>
             </div>
-            <Link
-              href="/garage"
-              className="flex items-center gap-1 text-sm text-accent"
-            >
-              Garage <ChevronRight className="h-4 w-4" />
-            </Link>
+            <div className="flex flex-col items-end gap-1">
+              <Link
+                href="/garage"
+                className="flex items-center gap-1 text-sm text-accent"
+              >
+                Garage <ChevronRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href={shopHref({ job: "browse" })}
+                className="flex items-center gap-1 text-xs text-text-secondary hover:text-accent"
+              >
+                Passende Teile <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
 
           {currentSetup && (

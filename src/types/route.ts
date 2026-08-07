@@ -1,3 +1,5 @@
+import type { NavStep } from "@/lib/routing/navSteps";
+
 /** Aktive Navigationsroute — Bridge Discover/Home → Ride */
 
 export interface ActiveRoute {
@@ -12,6 +14,8 @@ export interface ActiveRoute {
   reasons?: [string, string, string];
   /** LineString [lng, lat] — Demo oder Engine */
   geometry: GeoJSON.LineString | null;
+  /** F-NAV-003 Engine- oder Demo-Steps */
+  steps?: NavStep[];
   source: "suggestion" | "engine" | "import";
   setAt: string;
 }

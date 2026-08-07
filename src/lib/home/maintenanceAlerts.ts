@@ -6,6 +6,7 @@
 import type { Bike, MaintenanceInterval, Ride } from "@/types";
 import { evaluateIntervalDue } from "@/lib/maintenance/intervals";
 import { forecastWear } from "@/lib/maintenance/wearPrediction";
+import { shopHref, wearKindToShopSlot } from "@/lib/shop/catalog";
 
 export interface MaintenanceAlert {
   id: string;
@@ -15,6 +16,8 @@ export interface MaintenanceAlert {
   reasoning: string;
   sourceLabel: string;
   href: string;
+  /** Optionaler Shop-Deep-Link bei Verschleiß */
+  shopHref?: string;
 }
 
 export function buildMaintenanceAlerts(input: {
@@ -51,6 +54,7 @@ export function buildMaintenanceAlerts(input: {
     if (!w.dueSoon && w.usedRatio < 0.8) continue;
     const severity: "overdue" | "due_soon" =
       w.usedRatio >= 1 || w.remainingKmHigh <= 0 ? "overdue" : "due_soon";
+    const slot = wearKindToShopSlot(w.kind);
     alerts.push({
       id: `wear-${w.kind}`,
       severity,
@@ -59,6 +63,9 @@ export function buildMaintenanceAlerts(input: {
       reasoning: w.reasoning,
       sourceLabel: w.sourceLabel,
       href: "/garage?tab=maintenance",
+      shopHref: slot
+        ? shopHref({ slot, job: "replace" })
+        : shopHref({ job: "replace" }),
     });
   }
 

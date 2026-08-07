@@ -1318,6 +1318,7 @@ export const useAppStore = create<AppState>()(
               score: pr.confidence === "high" ? 0.85 : 0.65,
               relatedBikeId: bikeBefore.id,
               relatedRideId: ride.id,
+              relatedProductId: pr.product.id,
             });
           }
         }
