@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Build regional Valhalla tile extract + package with offline_graph from same OSM coverage.
-# Requires: docker (gis-ops/valhalla or ghcr.io/gis-ops/docker-valhalla/valhalla)
+# Build regional Valhalla tile extract + offline_graph from same OSM coverage.
+# Requires: docker (gis-ops valhalla + iboates/osmium)
+#
+# Prefer small Overpass extract for demo bboxes (USE_OVERPASS=1, default).
+# Set USE_GEOFABRIK=1 for full Land PBF + osmium clip.
 #
 # Usage:
 #   ./scripts/routing/build-region-pack.sh data/routing/regions/schwarzwald-nord.json
+#   SKIP_TILES=1 ./scripts/routing/build-region-pack.sh ...
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REGION_FILE="${1:-$ROOT/data/routing/regions/schwarzwald-nord.json}"
@@ -14,13 +18,13 @@ mkdir -p "$OUT" "$CUSTOM_FILES"
 
 echo "==> Region $REGION_ID → $OUT"
 
-# 1) offline_graph from Overpass (same bbox as region)
 echo "==> offline_graph (Overpass / OSM)"
 node "$ROOT/scripts/routing/osm-to-offline-graph.mjs" "$REGION_FILE" --out "$OUT/offline_graph.json"
 
-# 2) Optional: clip Geofabrik PBF to bbox with osmium (if available)
 PBF_URL="$(python3 -c "import json;print(json.load(open('$REGION_FILE'))['osm']['geofabrik'])")"
 BBOX="$(python3 -c "import json;b=json.load(open('$REGION_FILE'))['bbox'];print(f\"{b[0]},{b[1]},{b[2]},{b[3]}\")")"
+# south,west,north,east for overpass
+OVERPASS_BOX="$(python3 -c "import json;b=json.load(open('$REGION_FILE'))['bbox'];print(f\"{b[1]},{b[0]},{b[3]},{b[2]}\")")"
 PBF_FULL="$CUSTOM_FILES/region-full.osm.pbf"
 PBF_CLIP="$CUSTOM_FILES/region.osm.pbf"
 
@@ -28,33 +32,48 @@ if [[ "${SKIP_TILES:-}" == "1" ]]; then
   echo "==> SKIP_TILES=1 — writing manifest without Valhalla tiles"
 else
   if [[ ! -f "$PBF_CLIP" ]]; then
-    if [[ ! -f "$PBF_FULL" ]]; then
-      echo "==> Download Geofabrik extract"
-      curl -L --fail -o "$PBF_FULL" "$PBF_URL"
-    fi
-    if command -v osmium >/dev/null 2>&1; then
-      echo "==> Clip PBF to bbox $BBOX"
-      osmium extract -b "$BBOX" "$PBF_FULL" -o "$PBF_CLIP" --overwrite
+    if [[ "${USE_GEOFABRIK:-}" == "1" ]]; then
+      if [[ ! -f "$PBF_FULL" ]]; then
+        echo "==> Download Geofabrik extract"
+        curl -L --fail -o "$PBF_FULL" "$PBF_URL"
+      fi
+      if command -v osmium >/dev/null 2>&1; then
+        echo "==> Clip PBF to bbox $BBOX"
+        osmium extract -b "$BBOX" "$PBF_FULL" -o "$PBF_CLIP" --overwrite
+      else
+        echo "==> Clip PBF via docker iboates/osmium"
+        docker pull iboates/osmium:latest
+        # entrypoint is already `osmium`
+        docker run --rm -v "$CUSTOM_FILES:/data" iboates/osmium:latest \
+          extract -b "$BBOX" /data/$(basename "$PBF_FULL") -o /data/$(basename "$PBF_CLIP") --overwrite
+      fi
     else
-      echo "WARN: osmium not found — using full extract (slow/large). Install osmium-tool or set SKIP_TILES=1"
-      ln -sfn "$(basename "$PBF_FULL")" "$PBF_CLIP" 2>/dev/null || cp "$PBF_FULL" "$PBF_CLIP"
+      echo "==> Overpass OSM XML for bbox → PBF (USE_GEOFABRIK=1 for Land extract)"
+      curl -sS -m 180 -o "$CUSTOM_FILES/region.osm" -X POST 'https://overpass-api.de/api/interpreter' \
+        --data-binary "[out:xml][timeout:120];(way[\"highway\"](${OVERPASS_BOX});>;);out body;"
+      docker pull iboates/osmium:latest
+      docker run --rm -v "$CUSTOM_FILES:/data" iboates/osmium:latest \
+        cat /data/region.osm -o /data/region.osm.pbf --overwrite
     fi
   fi
 
   IMAGE="${VALHALLA_DOCKER_IMAGE:-ghcr.io/gis-ops/docker-valhalla/valhalla:latest}"
   echo "==> Valhalla tiles via Docker ($IMAGE)"
   docker pull "$IMAGE" || true
-  # gis-ops image builds tiles from /custom_files/*.pbf into /custom_files/valhalla_tiles
-  docker run --rm \
-    -e tile_urls="" \
-    -e use_tiles_ignore_pbf=False \
-    -e build_elevation=False \
-    -e build_admins=False \
-    -e build_time_zones=False \
-    -e serve_tiles=False \
+  docker run --rm --entrypoint /bin/bash \
     -v "$CUSTOM_FILES:/custom_files" \
     "$IMAGE" \
-    /bin/bash -c 'ls /custom_files/*.pbf >/dev/null && valhalla_build_config --mjolnir-tile-dir /custom_files/valhalla_tiles --mjolnir-tile-extract /custom_files/valhalla_tiles.tar --mjolnir-timezone /custom_files/tz.sqlite --mjolnir-admin /custom_files/admins.sqlite > /custom_files/valhalla.json && valhalla_build_tiles -c /custom_files/valhalla.json /custom_files/*.pbf && valhalla_build_extract -c /custom_files/valhalla.json -v || true'
+    -lc 'set -e
+      ls /custom_files/*.pbf
+      valhalla_build_config \
+        --mjolnir-tile-dir /custom_files/valhalla_tiles \
+        --mjolnir-tile-extract /custom_files/valhalla_tiles.tar \
+        --mjolnir-timezone /custom_files/tz.sqlite \
+        --mjolnir-admin /custom_files/admins.sqlite \
+        > /custom_files/valhalla.json
+      valhalla_build_tiles -c /custom_files/valhalla.json /custom_files/*.pbf
+      valhalla_build_extract -c /custom_files/valhalla.json -v
+    '
 
   if [[ -d "$CUSTOM_FILES/valhalla_tiles" ]]; then
     rm -rf "$OUT/tiles"
@@ -68,9 +87,8 @@ else
   fi
 fi
 
-# 3) Manifest for app / CDN
 python3 - <<PY
-import json, hashlib, os, time
+import json, hashlib, time
 from pathlib import Path
 out = Path("$OUT")
 region = json.load(open("$REGION_FILE"))
@@ -78,12 +96,10 @@ files = {}
 for name in ["offline_graph.json", "valhalla.json", "valhalla_tiles.tar"]:
     p = out / name
     if p.is_file():
-        h = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
-        files[name] = {"bytes": p.stat().st_size, "sha256_16": h}
+        files[name] = {"bytes": p.stat().st_size, "sha256_16": hashlib.sha256(p.read_bytes()).hexdigest()[:16]}
 tiles = out / "tiles"
 if tiles.is_dir():
-    n = sum(1 for _ in tiles.rglob("*") if _.is_file())
-    files["tiles/"] = {"file_count": n}
+    files["tiles/"] = {"file_count": sum(1 for _ in tiles.rglob("*") if _.is_file())}
 manifest = {
     "id": region["id"],
     "name": region["name"],
@@ -97,6 +113,9 @@ manifest = {
     "cdn": region.get("cdn") or {},
 }
 (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+manifests = Path("$ROOT/data/routing/manifests")
+manifests.mkdir(parents=True, exist_ok=True)
+(manifests / f"{region['id']}.json").write_text(json.dumps(manifest, indent=2) + "\n")
 print(json.dumps(manifest, indent=2))
 PY
 
