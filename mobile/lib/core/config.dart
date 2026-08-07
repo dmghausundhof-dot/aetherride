@@ -22,6 +22,18 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
+  /// Path to Valhalla extract dir or `offline_graph.json` (empty = bundled sample).
+  static const offlineTilesPath = String.fromEnvironment(
+    'OFFLINE_TILES_PATH',
+    defaultValue: '',
+  );
+
+  /// Prefer FFI offline routing before HTTP `/api/route`.
+  static const preferOfflineRouting = bool.fromEnvironment(
+    'PREFER_OFFLINE_ROUTING',
+    defaultValue: false,
+  );
+
   static const outdooractiveApiKey = String.fromEnvironment(
     'OUTDOORACTIVE_API_KEY',
     defaultValue: '',

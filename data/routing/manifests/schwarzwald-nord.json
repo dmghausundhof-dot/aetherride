@@ -1,0 +1,37 @@
+{
+  "id": "schwarzwald-nord",
+  "name": "Nordschwarzwald (Freiburg\u2013Todtnau Demo)",
+  "bbox": [
+    7.84,
+    47.94,
+    7.93,
+    48.0
+  ],
+  "builtAt": "2026-08-07T07:54:55Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": true
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 1740619,
+      "sha256_16": "dc6006725ea0d3bf"
+    },
+    "valhalla.json": {
+      "bytes": 7630,
+      "sha256_16": "4b7bced250a42f51"
+    },
+    "valhalla_tiles.tar": {
+      "bytes": 2324480,
+      "sha256_16": "f089d8f314cff8c6"
+    },
+    "tiles/": {
+      "file_count": 5
+    }
+  },
+  "source": "overpass+osmium+valhalla-docker",
+  "shipped": {
+    "flutter_asset": "mobile/assets/routing/offline_graph.json",
+    "build_tiles": "scripts/routing/build-region-pack.sh"
+  }
+}

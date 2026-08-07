@@ -1,0 +1,22 @@
+{
+  "id": "schwarzwald-nord",
+  "name": "Nordschwarzwald (Freiburg–Todtnau Demo)",
+  "bbox": [7.84, 47.94, 7.93, 48.00],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+    "note": "Full Land extract for tiles; Overpass uses bbox for offline_graph"
+  },
+  "graph": {
+    "maxNodes": 15000,
+    "maxEdges": 25000
+  },
+  "outputDir": "data/routing/dist/schwarzwald-nord",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "schwarzwald-nord.tar.zst"
+  }
+}
