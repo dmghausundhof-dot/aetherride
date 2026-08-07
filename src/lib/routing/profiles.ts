@@ -110,6 +110,7 @@ export type ClientRouteResult = {
   engine: string;
   profile: RoutingProfile;
   warnings?: string[];
+  steps?: import("@/lib/routing/navSteps").NavStep[];
 };
 
 /** Client-Call an /api/route */
