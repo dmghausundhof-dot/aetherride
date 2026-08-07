@@ -327,8 +327,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   for (final r in store.familyRiders)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
+                      selected: store.activeFamilyRiderId == r.id,
+                      leading: Icon(
+                        store.activeFamilyRiderId == r.id
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        color: store.activeFamilyRiderId == r.id
+                            ? AppColors.accent
+                            : AppColors.muted,
+                      ),
                       title: Text(r.displayName),
                       subtitle: Text('${r.weightKg.toStringAsFixed(0)} kg'),
+                      onTap: () async {
+                        await store.setActiveFamilyRider(
+                          store.activeFamilyRiderId == r.id ? null : r.id,
+                        );
+                        setState(() {});
+                      },
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () async {
@@ -340,9 +355,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         },
                       ),
                     ),
+                  if (store.activeFamilyRiderId != null)
+                    Text(
+                      'Aktiv für Sync/Gewicht: ${store.familyRiders.where((x) => x.id == store.activeFamilyRiderId).map((x) => x.displayName).followedBy(const ['—']).first}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
                 ],
               );
             },
+          ),
+          const Divider(),
+          const Text('Shop-Modus', style: TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'affiliate', label: Text('Affiliate')),
+              ButtonSegment(value: 'marketplace', label: Text('Marktplatz')),
+            ],
+            selected: {store.commerceMode},
+            onSelectionChanged: (s) async {
+              await store.setCommerceMode(s.first);
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            store.commerceMode == 'marketplace'
+                ? 'Checkout über Plattform (Browser).'
+                : 'Partner-Links / externes Shop-Fenster.',
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
           const Divider(),
           const Text('Legal', style: TextStyle(fontWeight: FontWeight.w800)),

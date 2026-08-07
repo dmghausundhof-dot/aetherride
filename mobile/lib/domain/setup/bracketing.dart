@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import '../ride.dart';
+
 /// F-SET-003 Bracketing-Auswertung (Port src/lib/setup/bracketing.ts).
 
 class BracketingRun {
@@ -130,6 +132,77 @@ BracketingSeries createBlindPair({
     runs: runs,
   );
 }
+
+/// Baut Bracketing-Runs aus gespeicherten Rides (Feedback + Summary).
+/// Ordnet Runs abwechselnd A/B zu, wenn genug Rides mit Feedback vorhanden.
+List<BracketingRun> runsFromRides({
+  required List<RideRecord> rides,
+  required double configA,
+  required double configB,
+  String? bikeId,
+}) {
+  final filtered = [
+    for (final r in rides)
+      if (bikeId == null || r.bikeId == bikeId)
+        if (r.feedback != null && r.feedback!.skipped != true) r,
+  ];
+  if (filtered.isEmpty) return const [];
+
+    final runs = <BracketingRun>[];
+  for (var i = 0; i < filtered.length; i++) {
+    final r = filtered[i];
+    final cfg = i.isEven ? configA : configB;
+    final flow = (r.summary['avgFlow'] as num?)?.toDouble() ?? 60;
+    final feel = (r.feedback?.overallFeel ?? 3).toDouble();
+    final harsh = r.feedback?.smallBump == 'harsh'
+        ? 6.0
+        : r.feedback?.frontFeel == 'too_firm'
+            ? 5.0
+            : 3.5;
+    runs.add(
+      BracketingRun(
+        configValue: cfg,
+        segmentTimeSec: (r.movingTimeSec > 0 ? r.movingTimeSec : 600).toDouble(),
+        flowScore: flow.clamp(0, 100),
+        impactHardness: harsh.clamp(1, 10),
+        subjectiveRating: feel.clamp(1, 5),
+      ),
+    );
+  }
+  return runs;
+}
+
+/// Demo-Runs nur als Fallback wenn keine Ride-Daten.
+List<BracketingRun> syntheticBracketRuns(double a, double b) => [
+      BracketingRun(
+        configValue: a,
+        segmentTimeSec: 120,
+        flowScore: 70,
+        impactHardness: 4,
+        subjectiveRating: 3,
+      ),
+      BracketingRun(
+        configValue: a,
+        segmentTimeSec: 118,
+        flowScore: 72,
+        impactHardness: 3.5,
+        subjectiveRating: 4,
+      ),
+      BracketingRun(
+        configValue: b,
+        segmentTimeSec: 125,
+        flowScore: 68,
+        impactHardness: 5,
+        subjectiveRating: 3,
+      ),
+      BracketingRun(
+        configValue: b,
+        segmentTimeSec: 122,
+        flowScore: 69,
+        impactHardness: 4.5,
+        subjectiveRating: 3,
+      ),
+    ];
 
 BracketingEvaluation evaluateBracketingSeries(BracketingSeries series) {
   final grouped = <double, List<BracketingRun>>{};

@@ -249,7 +249,11 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                         _openFullShop();
                       },
                       icon: const Icon(Icons.open_in_browser),
-                      label: const Text('Im Web-Shop öffnen'),
+                      label: Text(
+                        store.commerceMode == 'marketplace'
+                            ? 'Im Marktplatz öffnen'
+                            : 'Partner-Shop öffnen',
+                      ),
                     ),
                   ],
                 ),
@@ -339,7 +343,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 OutlinedButton.icon(
                   onPressed: _openFullShop,
                   icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Vollständiger Shop im Browser'),
+                  label: Text(
+                    ref.read(userProfileStoreProvider).commerceMode ==
+                            'marketplace'
+                        ? 'Marktplatz im Browser'
+                        : 'Partner-Shop im Browser',
+                  ),
                 ),
               ],
             ),

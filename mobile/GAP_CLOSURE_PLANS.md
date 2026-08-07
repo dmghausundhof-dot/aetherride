@@ -36,3 +36,10 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - Play Console Produkt + Google Verify 2A
 - Valhalla-Tiles ohne Docker-Build
 - Mapillary-Full-Trail ohne Token
+
+## Follow-up (nach Plans A–G)
+- Discover: geroutete Tour-Geometrie um OA/TF-Center (APIs liefern keine Polylines)
+- Heatmap aus lokalen Rides + Privacy-Zonen (`domain/routing/heatmap.dart`)
+- Bracketing-Auswertung aus Ride-Feedback (`runsFromRides`)
+- Trailforks-Pins auf Discover-Karte
+- `commerceMode` Sync + Profil-Umschalter; aktiver Familien-Fahrer

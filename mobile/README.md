@@ -16,6 +16,12 @@ Hybrid: Stripe Checkout (web) + Google Play subscription `aetherride_pro_monthly
 
 Server verify (`POST /api/billing/play-verify`) always writes `profiles.subscription_tier` **and** `sync_snapshots.payload.subscriptionTier` so Mobile LWW stays Pro.
 
+## Ride Chunks (ops)
+
+1. Apply SQL once on Supabase: `supabase/ride_chunks.sql` (bucket + meta table + RLS)
+2. Mobile queues uploads via Drift v6 → `POST /api/ride-chunks` (Bearer)
+3. Confirm storage policies allow authenticated write to the ride-chunks bucket
+
 ## Schnitte (implementiert)
 
 | ID | Inhalt |

@@ -19,6 +19,8 @@ class UserProfileStore {
   Map<String, String> bikePhotos = {}; // bikeId → local path
   List<String> wishlistIds = []; // catalog / shop ids
   List<Map<String, dynamic>> chatHistory = [];
+  /// Sync-Feld: `affiliate` | `marketplace` (Web-Parität).
+  String commerceMode = 'affiliate';
 
   Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -53,6 +55,10 @@ class UserProfileStore {
         for (final e in (m['chatHistory'] as List? ?? const []))
           if (e is Map) Map<String, dynamic>.from(e),
       ];
+      final cm = m['commerceMode'] as String?;
+      if (cm == 'affiliate' || cm == 'marketplace') {
+        commerceMode = cm!;
+      }
     } catch (_) {}
   }
 
@@ -67,6 +73,7 @@ class UserProfileStore {
         'bikePhotos': bikePhotos,
         'wishlistIds': wishlistIds,
         'chatHistory': chatHistory,
+        'commerceMode': commerceMode,
       }),
     );
   }
@@ -78,6 +85,21 @@ class UserProfileStore {
 
   Future<void> setFamilyRiders(List<FamilyRider> riders) async {
     familyRiders = riders;
+    if (activeFamilyRiderId != null &&
+        !riders.any((r) => r.id == activeFamilyRiderId)) {
+      activeFamilyRiderId = null;
+    }
+    await save();
+  }
+
+  Future<void> setActiveFamilyRider(String? id) async {
+    activeFamilyRiderId = id;
+    await save();
+  }
+
+  Future<void> setCommerceMode(String mode) async {
+    if (mode != 'affiliate' && mode != 'marketplace') return;
+    commerceMode = mode;
     await save();
   }
 
@@ -115,6 +137,7 @@ class UserProfileStore {
     bikePhotos = {};
     wishlistIds = [];
     chatHistory = [];
+    commerceMode = 'affiliate';
     await save();
   }
 }

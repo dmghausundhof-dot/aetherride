@@ -281,6 +281,7 @@ class GarageRepository {
       familyRiders: profileStore == null
           ? null
           : [for (final r in profileStore!.familyRiders) r.toJson()],
+      commerceMode: profileStore?.commerceMode,
       updatedAt: state?.localUpdatedAt,
       payloadVersion: state?.payloadVersion ?? 1,
     );
@@ -418,6 +419,10 @@ class GarageRepository {
             if (e is Map)
               FamilyRider.fromJson(Map<String, dynamic>.from(e)),
         ];
+      }
+      final cm = payload.commerceMode;
+      if (cm is String && (cm == 'affiliate' || cm == 'marketplace')) {
+        store.commerceMode = cm;
       }
       await store.save();
     }

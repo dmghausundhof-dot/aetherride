@@ -170,43 +170,26 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
           parentSetupId: current?.id,
         );
 
-    // Demo-Auswertung mit synthetischen Runs (UI zeigt Blind-Hinweis)
+    // Auswertung: bevorzugt echte Ride-Metriken, sonst synthetischer Fallback
+    final rides = await ref.read(rideRepositoryProvider).listRides(limit: 40);
+    var runs = runsFromRides(
+      rides: rides,
+      configA: a.toDouble(),
+      configB: b.toDouble(),
+      bikeId: widget.bike.id,
+    );
+    final fromRides = runs.length >= 2;
+    if (runs.length < 4) {
+      runs = [...runs, ...syntheticBracketRuns(a.toDouble(), b.toDouble())];
+    }
+
     final eval = evaluateBracketingSeries(
       BracketingSeries(
         adjusterKey: 'fork.rebound',
         rangeFrom: a.toDouble(),
         rangeTo: b.toDouble(),
         step: (b - a).abs() < 1e-6 ? 2.0 : (b - a).abs().toDouble(),
-        runs: [
-          BracketingRun(
-            configValue: a.toDouble(),
-            segmentTimeSec: 120,
-            flowScore: 70,
-            impactHardness: 4,
-            subjectiveRating: 3,
-          ),
-          BracketingRun(
-            configValue: a.toDouble(),
-            segmentTimeSec: 118,
-            flowScore: 72,
-            impactHardness: 3.5,
-            subjectiveRating: 4,
-          ),
-          BracketingRun(
-            configValue: b.toDouble(),
-            segmentTimeSec: 125,
-            flowScore: 68,
-            impactHardness: 5,
-            subjectiveRating: 3,
-          ),
-          BracketingRun(
-            configValue: b.toDouble(),
-            segmentTimeSec: 122,
-            flowScore: 69,
-            impactHardness: 4.5,
-            subjectiveRating: 3,
-          ),
-        ],
+        runs: runs,
       ),
     );
 
@@ -214,8 +197,9 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
     await _load();
     if (mounted) {
       setState(() {
-        _bracketMsg =
-            'Blind: fahre A und B ohne Labels zu kennen. ${eval.summary}';
+        _bracketMsg = fromRides
+            ? 'Blind A/B angelegt · Auswertung aus ${rides.where((r) => r.bikeId == widget.bike.id && r.feedback != null).length} Rides: ${eval.summary}'
+            : 'Blind A/B angelegt · noch zu wenig Ride-Feedback — Demo-Auswertung: ${eval.summary}';
       });
     }
   }

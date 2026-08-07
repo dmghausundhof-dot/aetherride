@@ -14,10 +14,28 @@ import '../../data/routing/elevation_client.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
+import '../../domain/routing/heatmap.dart';
 import '../../domain/saved_route.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import 'offline_maps_sheet.dart';
+
+class _TfPin {
+  const _TfPin({
+    required this.id,
+    required this.name,
+    required this.center,
+    required this.openUrl,
+    this.difficulty,
+    this.conditionLabel,
+  });
+  final String id;
+  final String name;
+  final LatLng center;
+  final String openUrl;
+  final String? difficulty;
+  final String? conditionLabel;
+}
 
 class _RouteSuggestion {
   const _RouteSuggestion({
@@ -169,6 +187,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   MapLibreMapController? _map;
   Symbol? _startSymbol;
   Symbol? _endSymbol;
+  List<Symbol> _tfSymbols = [];
 
   _SheetMode _mode = _SheetMode.quick;
   RoutingProfile _profile = RoutingProfile.mtbTrail;
@@ -199,6 +218,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _elevationSummary;
   List<double> _elevationSamples = const [];
   String? _oaStatus;
+  List<_TfPin> _tfPins = [];
+  String? _heatmapNote;
 
   static const _fallback = GeoPoint(47.99, 7.85);
   static const _durationBuckets = [60, 90, 120];
@@ -213,6 +234,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _locate();
     _loadHeatmapConsent();
     _fetchOutdooractive();
+    _fetchTrailforks();
   }
 
   Future<void> _loadHeatmapConsent() async {
@@ -224,6 +246,42 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _heatmapConsent = consents['heatmap_contribution'] == true;
       });
       if (_heatmapConsent) await _drawAll();
+    } catch (_) {}
+  }
+
+  Future<void> _fetchTrailforks() async {
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/trailforks')
+          .replace(queryParameters: {'hint': 'dry_likely'});
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return;
+      final pins = <_TfPin>[];
+      for (final raw in (data['pins'] as List? ?? const [])) {
+        if (raw is! Map) continue;
+        final m = Map<String, dynamic>.from(raw);
+        final centerRaw = m['center'];
+        if (centerRaw is! List || centerRaw.length < 2) continue;
+        final lng = (centerRaw[0] as num).toDouble();
+        final lat = (centerRaw[1] as num).toDouble();
+        pins.add(
+          _TfPin(
+            id: (m['id'] as String?) ?? 'tf',
+            name: (m['name'] as String?) ?? 'Trailforks',
+            center: LatLng(lat, lng),
+            openUrl: (m['openUrl'] as String?) ??
+                'https://www.trailforks.com/',
+            difficulty: m['difficulty'] as String?,
+            conditionLabel: m['conditionLabel'] as String?,
+          ),
+        );
+      }
+      if (pins.isEmpty || !mounted) return;
+      setState(() => _tfPins = pins);
+      await _drawAll();
     } catch (_) {}
   }
 
@@ -581,7 +639,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         to: entry,
         profile: _profile,
       );
-      final track = _demoLoop(tour.center, tour.distanceKm);
+      final track = await _routedTourGeometry(tour.center, tour.distanceKm);
       final merged = RouteResult(
         coordinates: [...approach.coordinates, ...track],
         distanceM: approach.distanceM + tour.distanceKm * 1000,
@@ -615,6 +673,39 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  /// Geroutete Rundtour um [center]; Fallback synthetisches Rechteck.
+  Future<List<GeoPoint>> _routedTourGeometry(
+    LatLng center,
+    double distanceKm,
+  ) async {
+    final half = 0.008 + (distanceKm / 200).clamp(0.0, 0.04) * 0.5;
+    final waypoints = [
+      GeoPoint(center.latitude, center.longitude),
+      GeoPoint(center.latitude + half, center.longitude + half * 0.4),
+      GeoPoint(center.latitude + half * 0.2, center.longitude - half),
+      GeoPoint(center.latitude - half * 0.8, center.longitude - half * 0.3),
+      GeoPoint(center.latitude, center.longitude),
+    ];
+    final coords = <GeoPoint>[];
+    try {
+      for (var i = 0; i < waypoints.length - 1; i++) {
+        final leg = await _routes.planRoute(
+          from: waypoints[i],
+          to: waypoints[i + 1],
+          profile: _profile,
+        );
+        if (leg.coordinates.isEmpty) continue;
+        if (coords.isEmpty) {
+          coords.addAll(leg.coordinates);
+        } else {
+          coords.addAll(leg.coordinates.skip(1));
+        }
+      }
+    } catch (_) {}
+    if (coords.length >= 4) return coords;
+    return _demoLoop(center, distanceKm);
+  }
+
   List<GeoPoint> _demoLoop(LatLng center, double distanceKm) {
     final half = 0.01 + (distanceKm / 180) * 0.035;
     return [
@@ -632,22 +723,38 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       await c.clearLines();
       if (_heatmapConsent) {
-        // Minimal MVP: soft opacity polylines as local heatmap stand-in
-        final heatTracks = <List<GeoPoint>>[
-          if (_computed != null && _computed!.coordinates.length >= 2)
-            _computed!.coordinates,
-          for (final tr in _seedTrails) tr.points,
-        ];
-        for (final track in heatTracks) {
-          if (track.length < 2) continue;
-          await c.addLine(
-            LineOptions(
-              geometry: track.map((p) => LatLng(p.lat, p.lng)).toList(),
-              lineColor: '#FF7043',
-              lineWidth: 10,
-              lineOpacity: 0.22,
-            ),
+        try {
+          final rides =
+              await ref.read(rideRepositoryProvider).listRides(limit: 40);
+          final zones =
+              await ref.read(garageRepositoryProvider).listPrivacyZones();
+          final heat = buildHeatmapFromRides(
+            consentHeatmap: true,
+            rides: [
+              for (final r in rides) (id: r.id, track: r.track),
+            ],
+            privacyZones: zones,
+            includeSeedFallback: true,
           );
+          if (mounted) {
+            setState(() => _heatmapNote = heat.disclaimer);
+          }
+          for (final seg in heat.visibleSegments) {
+            if (seg.coordinatesLngLat.length < 2) continue;
+            await c.addLine(
+              LineOptions(
+                geometry: [
+                  for (final p in seg.coordinatesLngLat)
+                    LatLng(p[1], p[0]),
+                ],
+                lineColor: '#FF7043',
+                lineWidth: 6 + seg.intensity * 8,
+                lineOpacity: 0.18 + seg.intensity * 0.25,
+              ),
+            );
+          }
+        } catch (_) {
+          // Fall through — map still usable without heatmap.
         }
       }
       if (_showTrails) {
@@ -756,6 +863,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       if (_startSymbol != null) await c.removeSymbol(_startSymbol!);
       if (_endSymbol != null) await c.removeSymbol(_endSymbol!);
+      for (final s in _tfSymbols) {
+        await c.removeSymbol(s);
+      }
+      _tfSymbols = [];
       if (_start != null) {
         _startSymbol = await c.addSymbol(
           SymbolOptions(
@@ -776,13 +887,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
         );
       }
+      for (final pin in _tfPins.take(12)) {
+        final sym = await c.addSymbol(
+          SymbolOptions(
+            geometry: pin.center,
+            iconImage: 'marker-15',
+            textField: 'TF',
+            textSize: 11,
+            textOffset: const Offset(0, 1.2),
+          ),
+        );
+        _tfSymbols.add(sym);
+      }
     } catch (_) {}
   }
 
-  void _startRide({_RouteSuggestion? suggestion}) {
+  Future<void> _startRide({_RouteSuggestion? suggestion}) async {
     final engine = _computed;
     if (suggestion != null && engine == null) {
-      final loop = _demoLoop(suggestion.center, suggestion.distanceKm);
+      final loop =
+          await _routedTourGeometry(suggestion.center, suggestion.distanceKm);
       ref.read(activeRouteProvider.notifier).state = ActiveRoute(
         id: suggestion.id,
         name: suggestion.name,
@@ -1047,11 +1171,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ),
                     ),
                   if (_heatmapConsent)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
-                        'Heatmap aktiv (lokal)',
-                        style: TextStyle(
+                        _heatmapNote ?? 'Heatmap aktiv (eigene Rides)',
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFFFF7043),
@@ -1062,7 +1186,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     const Padding(
                       padding: EdgeInsets.only(bottom: 6),
                       child: Text(
-                        'Heatmaps nach Consent (P2)',
+                        'Heatmaps nach Consent (Privatsphäre)',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.muted,
@@ -1549,18 +1673,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         children: [
                           OutlinedButton(
                             onPressed: () async {
-                              final loop = _demoLoop(r.center, r.distanceKm);
-                              final fake = RouteResult(
+                              final loop = await _routedTourGeometry(
+                                r.center,
+                                r.distanceKm,
+                              );
+                              final preview = RouteResult(
                                 coordinates: loop,
                                 distanceM: r.distanceKm * 1000,
                                 durationS: r.durationMin * 60.0,
-                                engine: 'tour-adopt',
+                                engine: 'tour-routed',
                               );
                               setState(() {
-                                _computed = fake;
+                                _computed = preview;
                                 _label = r.name;
                               });
-                              await _drawRoute(fake);
+                              await _drawRoute(preview);
                             },
                             child: const Text('Vorschau'),
                           ),
