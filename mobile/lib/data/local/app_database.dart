@@ -17,6 +17,7 @@ class Bikes extends Table {
   IntColumn get year => integer().nullable()();
   TextColumn get wheelSize => text().nullable()();
   RealColumn get odometerKm => real().withDefault(const Constant(0.0))();
+  RealColumn get hours => real().withDefault(const Constant(0.0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -24,6 +25,7 @@ class Bikes extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('ComponentRow')
 class Components extends Table {
   TextColumn get id => text()();
   TextColumn get bikeId => text()();
@@ -41,6 +43,7 @@ class Components extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('SetupRow')
 class Setups extends Table {
   TextColumn get id => text()();
   TextColumn get bikeId => text()();
@@ -48,6 +51,12 @@ class Setups extends Table {
   TextColumn get valuesJson => text()();
   DateTimeColumn get createdAt => dateTime()();
   BoolColumn get immutable => boolean().withDefault(const Constant(true))();
+  BoolColumn get isCurrent => boolean().withDefault(const Constant(false))();
+  TextColumn get conditions => text().withDefault(const Constant('general'))();
+  IntColumn get version => integer().withDefault(const Constant(1))();
+  TextColumn get parentSetupId => text().nullable()();
+  TextColumn get linkedRideId => text().nullable()();
+  TextColumn get createdBy => text().withDefault(const Constant('user'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -60,6 +69,11 @@ class Rides extends Table {
   DateTimeColumn get endedAt => dateTime().nullable()();
   RealColumn get distanceKm => real().withDefault(const Constant(0.0))();
   IntColumn get movingTimeSec => integer().withDefault(const Constant(0))();
+  RealColumn get elevationM => real().withDefault(const Constant(0.0))();
+  TextColumn get name => text().nullable()();
+  TextColumn get routeId => text().nullable()();
+  TextColumn get trackJson => text().withDefault(const Constant('[]'))();
+  TextColumn get feedbackJson => text().nullable()();
   TextColumn get summaryJson => text().withDefault(const Constant('{}'))();
 
   @override
@@ -140,6 +154,20 @@ class RouteCache extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// F-ACC-005 Privatsphärenzonen (lat/lng/radius).
+@DataClassName('PrivacyZoneRow')
+class PrivacyZones extends Table {
+  TextColumn get id => text()();
+  TextColumn get label => text()();
+  RealColumn get lat => real()();
+  RealColumn get lng => real()();
+  RealColumn get radiusM => real().withDefault(const Constant(200.0))();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Bikes,
@@ -152,13 +180,14 @@ class RouteCache extends Table {
     CatalogCache,
     SavedRoutes,
     RouteCache,
+    PrivacyZones,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -170,8 +199,53 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(savedRoutes);
             await m.createTable(routeCache);
           }
+          if (from < 3) {
+            await m.addColumn(rides, rides.elevationM);
+            await m.addColumn(rides, rides.name);
+            await m.addColumn(rides, rides.routeId);
+            await m.addColumn(rides, rides.trackJson);
+            await m.addColumn(rides, rides.feedbackJson);
+            try {
+              await m.addColumn(bikes, bikes.isActive);
+            } catch (_) {}
+          }
+          if (from < 4) {
+            await m.addColumn(bikes, bikes.hours);
+            await m.addColumn(setups, setups.isCurrent);
+            await m.addColumn(setups, setups.conditions);
+            await m.addColumn(setups, setups.version);
+            await m.addColumn(setups, setups.parentSetupId);
+            await m.addColumn(setups, setups.linkedRideId);
+            await m.addColumn(setups, setups.createdBy);
+          }
+          if (from < 5) {
+            await m.createTable(privacyZones);
+          }
         },
       );
+
+  /// Löscht alle Zeilen (Konto löschen / lokaler Wipe).
+  Future<void> clearAllTables() async {
+    await transaction(() async {
+      await delete(rideChunksMeta).go();
+      await delete(rides).go();
+      await delete(setups).go();
+      await delete(components).go();
+      await delete(bikes).go();
+      await delete(consents).go();
+      await delete(privacyZones).go();
+      await delete(savedRoutes).go();
+      await delete(routeCache).go();
+      await delete(catalogCache).go();
+      await delete(syncState).go();
+    });
+  }
+}
+
+/// Absolute path to the on-disk SQLite file (for wipe / delete account).
+Future<String> appDatabaseFilePath() async {
+  final dir = await getApplicationDocumentsDirectory();
+  return p.join(dir.path, 'aetherride.sqlite');
 }
 
 LazyDatabase _openConnection() {

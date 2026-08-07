@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -16,14 +17,18 @@ class SyncEngine {
     required AppDatabase db,
     required GarageRepository garage,
     http.Client? httpClient,
+    void Function(SyncPayload merged)? onSynced,
   })  : _db = db,
         _garage = garage,
-        _http = httpClient ?? http.Client();
+        _http = httpClient ?? http.Client(),
+        _onSynced = onSynced;
 
   final AppDatabase _db;
   final GarageRepository _garage;
   final http.Client _http;
+  final void Function(SyncPayload merged)? _onSynced;
   bool _running = false;
+  Timer? _periodic;
 
   bool get isRunning => _running;
 
@@ -31,6 +36,16 @@ class SyncEngine {
     if (_running) return;
     _running = true;
     debugPrint('SyncEngine: gestartet');
+    _periodic?.cancel();
+    _periodic = Timer.periodic(const Duration(minutes: 5), (_) {
+      unawaited(() async {
+        try {
+          await syncNow();
+        } catch (e) {
+          debugPrint('SyncEngine periodic: $e');
+        }
+      }());
+    });
     try {
       await syncNow();
     } catch (e) {
@@ -39,6 +54,8 @@ class SyncEngine {
   }
 
   Future<void> stop() async {
+    _periodic?.cancel();
+    _periodic = null;
     _running = false;
   }
 
@@ -130,6 +147,7 @@ class SyncEngine {
         final updatedAt = await pushNow(stamped);
         final merged = stamped.copyWith(updatedAt: updatedAt);
         await _record('pushed', updatedAt);
+        _onSynced?.call(merged);
         return (merged: merged, direction: 'pushed');
       } catch (e) {
         debugPrint('SyncEngine push empty-remote: $e');
@@ -138,28 +156,26 @@ class SyncEngine {
     }
 
     if (remoteAt > localAt) {
-      await _garage.applyRemotePayload(
-        remote.payload!.copyWith(updatedAt: remote.updatedAt),
-      );
+      final merged =
+          remote.payload!.copyWith(updatedAt: remote.updatedAt);
+      await _garage.applyRemotePayload(merged);
       await _record('pulled', remote.updatedAt);
-      return (
-        merged: remote.payload!.copyWith(updatedAt: remote.updatedAt),
-        direction: 'pulled'
-      );
+      _onSynced?.call(merged);
+      return (merged: merged, direction: 'pulled');
     }
 
     if (localAt > remoteAt) {
       try {
         final updatedAt = await pushNow(local, clientUpdatedAt: remote.updatedAt);
         await _record('pushed', updatedAt);
-        return (
-          merged: local.copyWith(updatedAt: updatedAt),
-          direction: 'pushed'
-        );
+        final merged = local.copyWith(updatedAt: updatedAt);
+        _onSynced?.call(merged);
+        return (merged: merged, direction: 'pushed');
       } on SyncConflictException catch (e) {
         if (e.remote != null) {
           await _garage.applyRemotePayload(e.remote!);
           await _record('pulled', e.remoteUpdatedAt);
+          _onSynced?.call(e.remote!);
           return (merged: e.remote!, direction: 'pulled');
         }
         rethrow;

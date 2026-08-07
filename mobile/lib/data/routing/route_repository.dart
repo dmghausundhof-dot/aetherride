@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/saved_route.dart';
 import '../local/app_database.dart';
+import 'elevation_client.dart';
 import 'routing_client.dart';
 
 List<List<double>> _geoPointsToLngLat(List<GeoPoint> points) =>
@@ -12,12 +13,20 @@ List<List<double>> _geoPointsToLngLat(List<GeoPoint> points) =>
 
 /// Offline-First: UI liest Saved/Cache aus Drift; Netz nur hier.
 class RouteRepository {
-  RouteRepository(this._db, {RoutingClient? client})
-      : _client = client ?? RoutingClient();
+  RouteRepository(
+    this._db, {
+    RoutingClient? client,
+    ElevationClient? elevation,
+  })  : _client = client ?? RoutingClient(),
+        _elevation = elevation ?? ElevationClient();
 
   final AppDatabase _db;
   final RoutingClient _client;
+  final ElevationClient _elevation;
   final _uuid = const Uuid();
+
+  /// Last elevation gain from online `/api/elevation` (nullable if offline/fail).
+  double? lastElevationGainM;
 
   Future<List<SavedRouteEntry>> listSaved() async {
     final rows = await (_db.select(_db.savedRoutes)
@@ -94,7 +103,10 @@ class RouteRepository {
   }) async {
     final key = _cacheKey(from, to, profile, vias);
     final cached = await _readCache(key);
-    if (cached != null) return cached;
+    if (cached != null) {
+      lastElevationGainM = null;
+      return cached;
+    }
 
     final result = await _client.requestRoute(
       from: from,
@@ -103,6 +115,12 @@ class RouteRepository {
       vias: vias,
       preferOffline: preferOffline,
     );
+    if (!preferOffline) {
+      final elev = await _elevation.fetchForTrack(result.coordinates);
+      lastElevationGainM = elev?.gainM;
+    } else {
+      lastElevationGainM = null;
+    }
     await _writeCache(key, profile, result);
     return result;
   }

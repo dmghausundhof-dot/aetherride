@@ -23,7 +23,16 @@ npm run routing:region -- data/routing/regions/schwarzwald-nord.json
 
 Outputs under `data/routing/dist/<id>/` (gitignored). Manifests: `data/routing/manifests/`.
 
-Bundled demo graph (OSM-derived): `mobile/assets/routing/offline_graph.json`.
+Bundled demo graph (OSM-derived, **single copy in git**): `mobile/assets/routing/offline_graph.json`.
+
+After a region build, refresh the asset:
+
+```bash
+./scripts/routing/sync-demo-graph.sh
+# or: ./scripts/routing/sync-demo-graph.sh data/routing/dist/<id>/offline_graph.json
+```
+
+Rust tests load the same asset path (no duplicate under `native/testdata/`).
 
 ## Link libvalhalla (Android NDK / iOS)
 

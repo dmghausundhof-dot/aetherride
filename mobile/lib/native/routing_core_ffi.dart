@@ -19,6 +19,11 @@ abstract final class RoutingCoreCodes {
 /// Android: expects `librouting_core.so` in jniLibs (plus `libprotobuf.so` /
 /// `libc++_shared.so` when built with `--features valhalla`). Install via
 /// `scripts/routing/install-android-jni.sh`.
+///
+/// Valhalla link flag: Cargo `--features valhalla` + `AETHER_VALHALLA_LINKED`
+/// (VALHALLA_LIB_DIR). Without it, Valhalla tile paths return
+/// [RoutingCoreCodes.valhallaUnlinked] (1). Use [isValhallaLinked] /
+/// [OfflineTilesStore.valhallaLinkStatus] for UI diagnostics.
 class RoutingCoreFfi {
   DynamicLibrary? _lib;
   bool _tried = false;
@@ -26,6 +31,35 @@ class RoutingCoreFfi {
   bool get available {
     _ensure();
     return _lib != null;
+  }
+
+  /// True when native `valhalla_is_linked()` reports 1 (real libvalhalla).
+  /// False if stub, symbol missing, or lib not loaded.
+  bool isValhallaLinked() {
+    _ensure();
+    if (_lib == null) return false;
+    try {
+      final fn = _lib!.lookupFunction<Int32 Function(), int Function()>(
+        'valhalla_is_linked',
+      );
+      return fn() == 1;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Short status string for offline maps / diagnostics UI.
+  String valhallaLinkStatus({String? tilesPath}) {
+    if (!available) return 'native missing';
+    final linked = isValhallaLinked();
+    if (tilesPath != null && tilesPath.isNotEmpty) {
+      final engine = engineForTiles(tilesPath) ?? 'none';
+      if (engine == 'valhalla' && !linked) {
+        return 'valhalla_unlinked (code ${RoutingCoreCodes.valhallaUnlinked})';
+      }
+      return 'engine=$engine linked=$linked';
+    }
+    return linked ? 'valhalla_linked' : 'valhalla_unlinked';
   }
 
   void _ensure() {

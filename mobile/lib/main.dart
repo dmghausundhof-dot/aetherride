@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,13 +12,7 @@ import 'providers/app_providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (AppConfig.isSupabaseConfigured) {
-    await Supabase.initialize(
-      url: AppConfig.supabaseUrl,
-      publishableKey: AppConfig.supabaseAnonKey,
-    );
-  }
-
+  // UI zuerst zeichnen — Supabase darf den Cold-Start nicht blockieren.
   runApp(const ProviderScope(child: _Bootstrap()));
 }
 
@@ -30,12 +27,27 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final garage = ref.read(garageRepositoryProvider);
-      await garage.seedDemoIfEmpty();
-      final sync = ref.read(syncEngineProvider);
-      await sync.start();
-    });
+    unawaited(_boot());
+  }
+
+  Future<void> _boot() async {
+    if (AppConfig.isSupabaseConfigured) {
+      try {
+        await Supabase.initialize(
+          url: AppConfig.supabaseUrl,
+          publishableKey: AppConfig.supabaseAnonKey,
+        ).timeout(const Duration(seconds: 10));
+        if (mounted) ref.invalidate(authSessionProvider);
+      } catch (e) {
+        debugPrint('Supabase init: $e');
+      }
+    }
+    try {
+      await ref.read(garageRepositoryProvider).seedDemoIfEmpty();
+      await ref.read(syncEngineProvider).start();
+    } catch (e) {
+      debugPrint('Bootstrap: $e');
+    }
   }
 
   @override

@@ -53,6 +53,13 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
       type: DriftSqlType.double,
       requiredDuringInsert: false,
       defaultValue: const Constant(0.0));
+  static const VerificationMeta _hoursMeta = const VerificationMeta('hours');
+  @override
+  late final GeneratedColumn<double> hours = GeneratedColumn<double>(
+      'hours', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
   static const VerificationMeta _isActiveMeta =
       const VerificationMeta('isActive');
   @override
@@ -79,6 +86,7 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
         year,
         wheelSize,
         odometerKm,
+        hours,
         isActive,
         updatedAt
       ];
@@ -131,6 +139,10 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
           odometerKm.isAcceptableOrUnknown(
               data['odometer_km']!, _odometerKmMeta));
     }
+    if (data.containsKey('hours')) {
+      context.handle(
+          _hoursMeta, hours.isAcceptableOrUnknown(data['hours']!, _hoursMeta));
+    }
     if (data.containsKey('is_active')) {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
@@ -166,6 +178,8 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
           .read(DriftSqlType.string, data['${effectivePrefix}wheel_size']),
       odometerKm: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}odometer_km'])!,
+      hours: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}hours'])!,
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -188,6 +202,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
   final int? year;
   final String? wheelSize;
   final double odometerKm;
+  final double hours;
   final bool isActive;
   final DateTime updatedAt;
   const BikeRow(
@@ -199,6 +214,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       this.year,
       this.wheelSize,
       required this.odometerKm,
+      required this.hours,
       required this.isActive,
       required this.updatedAt});
   @override
@@ -220,6 +236,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       map['wheel_size'] = Variable<String>(wheelSize);
     }
     map['odometer_km'] = Variable<double>(odometerKm);
+    map['hours'] = Variable<double>(hours);
     map['is_active'] = Variable<bool>(isActive);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -239,6 +256,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           ? const Value.absent()
           : Value(wheelSize),
       odometerKm: Value(odometerKm),
+      hours: Value(hours),
       isActive: Value(isActive),
       updatedAt: Value(updatedAt),
     );
@@ -256,6 +274,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       year: serializer.fromJson<int?>(json['year']),
       wheelSize: serializer.fromJson<String?>(json['wheelSize']),
       odometerKm: serializer.fromJson<double>(json['odometerKm']),
+      hours: serializer.fromJson<double>(json['hours']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -272,6 +291,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       'year': serializer.toJson<int?>(year),
       'wheelSize': serializer.toJson<String?>(wheelSize),
       'odometerKm': serializer.toJson<double>(odometerKm),
+      'hours': serializer.toJson<double>(hours),
       'isActive': serializer.toJson<bool>(isActive),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -286,6 +306,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           Value<int?> year = const Value.absent(),
           Value<String?> wheelSize = const Value.absent(),
           double? odometerKm,
+          double? hours,
           bool? isActive,
           DateTime? updatedAt}) =>
       BikeRow(
@@ -297,6 +318,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
         year: year.present ? year.value : this.year,
         wheelSize: wheelSize.present ? wheelSize.value : this.wheelSize,
         odometerKm: odometerKm ?? this.odometerKm,
+        hours: hours ?? this.hours,
         isActive: isActive ?? this.isActive,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -311,6 +333,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       wheelSize: data.wheelSize.present ? data.wheelSize.value : this.wheelSize,
       odometerKm:
           data.odometerKm.present ? data.odometerKm.value : this.odometerKm,
+      hours: data.hours.present ? data.hours.value : this.hours,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -327,6 +350,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           ..write('year: $year, ')
           ..write('wheelSize: $wheelSize, ')
           ..write('odometerKm: $odometerKm, ')
+          ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -335,7 +359,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
 
   @override
   int get hashCode => Object.hash(id, name, category, brand, model, year,
-      wheelSize, odometerKm, isActive, updatedAt);
+      wheelSize, odometerKm, hours, isActive, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -348,6 +372,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           other.year == this.year &&
           other.wheelSize == this.wheelSize &&
           other.odometerKm == this.odometerKm &&
+          other.hours == this.hours &&
           other.isActive == this.isActive &&
           other.updatedAt == this.updatedAt);
 }
@@ -361,6 +386,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
   final Value<int?> year;
   final Value<String?> wheelSize;
   final Value<double> odometerKm;
+  final Value<double> hours;
   final Value<bool> isActive;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -373,6 +399,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.year = const Value.absent(),
     this.wheelSize = const Value.absent(),
     this.odometerKm = const Value.absent(),
+    this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -386,6 +413,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.year = const Value.absent(),
     this.wheelSize = const Value.absent(),
     this.odometerKm = const Value.absent(),
+    this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -402,6 +430,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     Expression<int>? year,
     Expression<String>? wheelSize,
     Expression<double>? odometerKm,
+    Expression<double>? hours,
     Expression<bool>? isActive,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -415,6 +444,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       if (year != null) 'year': year,
       if (wheelSize != null) 'wheel_size': wheelSize,
       if (odometerKm != null) 'odometer_km': odometerKm,
+      if (hours != null) 'hours': hours,
       if (isActive != null) 'is_active': isActive,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -430,6 +460,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       Value<int?>? year,
       Value<String?>? wheelSize,
       Value<double>? odometerKm,
+      Value<double>? hours,
       Value<bool>? isActive,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -442,6 +473,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       year: year ?? this.year,
       wheelSize: wheelSize ?? this.wheelSize,
       odometerKm: odometerKm ?? this.odometerKm,
+      hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -475,6 +507,9 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     if (odometerKm.present) {
       map['odometer_km'] = Variable<double>(odometerKm.value);
     }
+    if (hours.present) {
+      map['hours'] = Variable<double>(hours.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -498,6 +533,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
           ..write('year: $year, ')
           ..write('wheelSize: $wheelSize, ')
           ..write('odometerKm: $odometerKm, ')
+          ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -507,7 +543,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
 }
 
 class $ComponentsTable extends Components
-    with TableInfo<$ComponentsTable, Component> {
+    with TableInfo<$ComponentsTable, ComponentRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -598,7 +634,7 @@ class $ComponentsTable extends Components
   String get actualTableName => $name;
   static const String $name = 'components';
   @override
-  VerificationContext validateIntegrity(Insertable<Component> instance,
+  VerificationContext validateIntegrity(Insertable<ComponentRow> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
@@ -669,9 +705,9 @@ class $ComponentsTable extends Components
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Component map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ComponentRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Component(
+    return ComponentRow(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       bikeId: attachedDatabase.typeMapping
@@ -703,7 +739,7 @@ class $ComponentsTable extends Components
   }
 }
 
-class Component extends DataClass implements Insertable<Component> {
+class ComponentRow extends DataClass implements Insertable<ComponentRow> {
   final String id;
   final String bikeId;
   final String slot;
@@ -715,7 +751,7 @@ class Component extends DataClass implements Insertable<Component> {
   final double odometerKm;
   final String attributesJson;
   final DateTime updatedAt;
-  const Component(
+  const ComponentRow(
       {required this.id,
       required this.bikeId,
       required this.slot,
@@ -779,10 +815,10 @@ class Component extends DataClass implements Insertable<Component> {
     );
   }
 
-  factory Component.fromJson(Map<String, dynamic> json,
+  factory ComponentRow.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Component(
+    return ComponentRow(
       id: serializer.fromJson<String>(json['id']),
       bikeId: serializer.fromJson<String>(json['bikeId']),
       slot: serializer.fromJson<String>(json['slot']),
@@ -814,7 +850,7 @@ class Component extends DataClass implements Insertable<Component> {
     };
   }
 
-  Component copyWith(
+  ComponentRow copyWith(
           {String? id,
           String? bikeId,
           String? slot,
@@ -826,7 +862,7 @@ class Component extends DataClass implements Insertable<Component> {
           double? odometerKm,
           String? attributesJson,
           DateTime? updatedAt}) =>
-      Component(
+      ComponentRow(
         id: id ?? this.id,
         bikeId: bikeId ?? this.bikeId,
         slot: slot ?? this.slot,
@@ -841,8 +877,8 @@ class Component extends DataClass implements Insertable<Component> {
         attributesJson: attributesJson ?? this.attributesJson,
         updatedAt: updatedAt ?? this.updatedAt,
       );
-  Component copyWithCompanion(ComponentsCompanion data) {
-    return Component(
+  ComponentRow copyWithCompanion(ComponentsCompanion data) {
+    return ComponentRow(
       id: data.id.present ? data.id.value : this.id,
       bikeId: data.bikeId.present ? data.bikeId.value : this.bikeId,
       slot: data.slot.present ? data.slot.value : this.slot,
@@ -867,7 +903,7 @@ class Component extends DataClass implements Insertable<Component> {
 
   @override
   String toString() {
-    return (StringBuffer('Component(')
+    return (StringBuffer('ComponentRow(')
           ..write('id: $id, ')
           ..write('bikeId: $bikeId, ')
           ..write('slot: $slot, ')
@@ -899,7 +935,7 @@ class Component extends DataClass implements Insertable<Component> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Component &&
+      (other is ComponentRow &&
           other.id == this.id &&
           other.bikeId == this.bikeId &&
           other.slot == this.slot &&
@@ -913,7 +949,7 @@ class Component extends DataClass implements Insertable<Component> {
           other.updatedAt == this.updatedAt);
 }
 
-class ComponentsCompanion extends UpdateCompanion<Component> {
+class ComponentsCompanion extends UpdateCompanion<ComponentRow> {
   final Value<String> id;
   final Value<String> bikeId;
   final Value<String> slot;
@@ -957,7 +993,7 @@ class ComponentsCompanion extends UpdateCompanion<Component> {
         bikeId = Value(bikeId),
         slot = Value(slot),
         updatedAt = Value(updatedAt);
-  static Insertable<Component> custom({
+  static Insertable<ComponentRow> custom({
     Expression<String>? id,
     Expression<String>? bikeId,
     Expression<String>? slot,
@@ -1078,7 +1114,7 @@ class ComponentsCompanion extends UpdateCompanion<Component> {
   }
 }
 
-class $SetupsTable extends Setups with TableInfo<$SetupsTable, Setup> {
+class $SetupsTable extends Setups with TableInfo<$SetupsTable, SetupRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1120,16 +1156,74 @@ class $SetupsTable extends Setups with TableInfo<$SetupsTable, Setup> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("immutable" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _isCurrentMeta =
+      const VerificationMeta('isCurrent');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, bikeId, label, valuesJson, createdAt, immutable];
+  late final GeneratedColumn<bool> isCurrent = GeneratedColumn<bool>(
+      'is_current', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_current" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _conditionsMeta =
+      const VerificationMeta('conditions');
+  @override
+  late final GeneratedColumn<String> conditions = GeneratedColumn<String>(
+      'conditions', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('general'));
+  static const VerificationMeta _versionMeta =
+      const VerificationMeta('version');
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+      'version', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _parentSetupIdMeta =
+      const VerificationMeta('parentSetupId');
+  @override
+  late final GeneratedColumn<String> parentSetupId = GeneratedColumn<String>(
+      'parent_setup_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _linkedRideIdMeta =
+      const VerificationMeta('linkedRideId');
+  @override
+  late final GeneratedColumn<String> linkedRideId = GeneratedColumn<String>(
+      'linked_ride_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdByMeta =
+      const VerificationMeta('createdBy');
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+      'created_by', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('user'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        bikeId,
+        label,
+        valuesJson,
+        createdAt,
+        immutable,
+        isCurrent,
+        conditions,
+        version,
+        parentSetupId,
+        linkedRideId,
+        createdBy
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'setups';
   @override
-  VerificationContext validateIntegrity(Insertable<Setup> instance,
+  VerificationContext validateIntegrity(Insertable<SetupRow> instance,
       {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
@@ -1168,15 +1262,45 @@ class $SetupsTable extends Setups with TableInfo<$SetupsTable, Setup> {
       context.handle(_immutableMeta,
           immutable.isAcceptableOrUnknown(data['immutable']!, _immutableMeta));
     }
+    if (data.containsKey('is_current')) {
+      context.handle(_isCurrentMeta,
+          isCurrent.isAcceptableOrUnknown(data['is_current']!, _isCurrentMeta));
+    }
+    if (data.containsKey('conditions')) {
+      context.handle(
+          _conditionsMeta,
+          conditions.isAcceptableOrUnknown(
+              data['conditions']!, _conditionsMeta));
+    }
+    if (data.containsKey('version')) {
+      context.handle(_versionMeta,
+          version.isAcceptableOrUnknown(data['version']!, _versionMeta));
+    }
+    if (data.containsKey('parent_setup_id')) {
+      context.handle(
+          _parentSetupIdMeta,
+          parentSetupId.isAcceptableOrUnknown(
+              data['parent_setup_id']!, _parentSetupIdMeta));
+    }
+    if (data.containsKey('linked_ride_id')) {
+      context.handle(
+          _linkedRideIdMeta,
+          linkedRideId.isAcceptableOrUnknown(
+              data['linked_ride_id']!, _linkedRideIdMeta));
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(_createdByMeta,
+          createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta));
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Setup map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SetupRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Setup(
+    return SetupRow(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       bikeId: attachedDatabase.typeMapping
@@ -1189,6 +1313,18 @@ class $SetupsTable extends Setups with TableInfo<$SetupsTable, Setup> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       immutable: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}immutable'])!,
+      isCurrent: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_current'])!,
+      conditions: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}conditions'])!,
+      version: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}version'])!,
+      parentSetupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}parent_setup_id']),
+      linkedRideId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}linked_ride_id']),
+      createdBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_by'])!,
     );
   }
 
@@ -1198,20 +1334,32 @@ class $SetupsTable extends Setups with TableInfo<$SetupsTable, Setup> {
   }
 }
 
-class Setup extends DataClass implements Insertable<Setup> {
+class SetupRow extends DataClass implements Insertable<SetupRow> {
   final String id;
   final String bikeId;
   final String label;
   final String valuesJson;
   final DateTime createdAt;
   final bool immutable;
-  const Setup(
+  final bool isCurrent;
+  final String conditions;
+  final int version;
+  final String? parentSetupId;
+  final String? linkedRideId;
+  final String createdBy;
+  const SetupRow(
       {required this.id,
       required this.bikeId,
       required this.label,
       required this.valuesJson,
       required this.createdAt,
-      required this.immutable});
+      required this.immutable,
+      required this.isCurrent,
+      required this.conditions,
+      required this.version,
+      this.parentSetupId,
+      this.linkedRideId,
+      required this.createdBy});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1221,6 +1369,16 @@ class Setup extends DataClass implements Insertable<Setup> {
     map['values_json'] = Variable<String>(valuesJson);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['immutable'] = Variable<bool>(immutable);
+    map['is_current'] = Variable<bool>(isCurrent);
+    map['conditions'] = Variable<String>(conditions);
+    map['version'] = Variable<int>(version);
+    if (!nullToAbsent || parentSetupId != null) {
+      map['parent_setup_id'] = Variable<String>(parentSetupId);
+    }
+    if (!nullToAbsent || linkedRideId != null) {
+      map['linked_ride_id'] = Variable<String>(linkedRideId);
+    }
+    map['created_by'] = Variable<String>(createdBy);
     return map;
   }
 
@@ -1232,19 +1390,35 @@ class Setup extends DataClass implements Insertable<Setup> {
       valuesJson: Value(valuesJson),
       createdAt: Value(createdAt),
       immutable: Value(immutable),
+      isCurrent: Value(isCurrent),
+      conditions: Value(conditions),
+      version: Value(version),
+      parentSetupId: parentSetupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentSetupId),
+      linkedRideId: linkedRideId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedRideId),
+      createdBy: Value(createdBy),
     );
   }
 
-  factory Setup.fromJson(Map<String, dynamic> json,
+  factory SetupRow.fromJson(Map<String, dynamic> json,
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Setup(
+    return SetupRow(
       id: serializer.fromJson<String>(json['id']),
       bikeId: serializer.fromJson<String>(json['bikeId']),
       label: serializer.fromJson<String>(json['label']),
       valuesJson: serializer.fromJson<String>(json['valuesJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       immutable: serializer.fromJson<bool>(json['immutable']),
+      isCurrent: serializer.fromJson<bool>(json['isCurrent']),
+      conditions: serializer.fromJson<String>(json['conditions']),
+      version: serializer.fromJson<int>(json['version']),
+      parentSetupId: serializer.fromJson<String?>(json['parentSetupId']),
+      linkedRideId: serializer.fromJson<String?>(json['linkedRideId']),
+      createdBy: serializer.fromJson<String>(json['createdBy']),
     );
   }
   @override
@@ -1257,26 +1431,46 @@ class Setup extends DataClass implements Insertable<Setup> {
       'valuesJson': serializer.toJson<String>(valuesJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'immutable': serializer.toJson<bool>(immutable),
+      'isCurrent': serializer.toJson<bool>(isCurrent),
+      'conditions': serializer.toJson<String>(conditions),
+      'version': serializer.toJson<int>(version),
+      'parentSetupId': serializer.toJson<String?>(parentSetupId),
+      'linkedRideId': serializer.toJson<String?>(linkedRideId),
+      'createdBy': serializer.toJson<String>(createdBy),
     };
   }
 
-  Setup copyWith(
+  SetupRow copyWith(
           {String? id,
           String? bikeId,
           String? label,
           String? valuesJson,
           DateTime? createdAt,
-          bool? immutable}) =>
-      Setup(
+          bool? immutable,
+          bool? isCurrent,
+          String? conditions,
+          int? version,
+          Value<String?> parentSetupId = const Value.absent(),
+          Value<String?> linkedRideId = const Value.absent(),
+          String? createdBy}) =>
+      SetupRow(
         id: id ?? this.id,
         bikeId: bikeId ?? this.bikeId,
         label: label ?? this.label,
         valuesJson: valuesJson ?? this.valuesJson,
         createdAt: createdAt ?? this.createdAt,
         immutable: immutable ?? this.immutable,
+        isCurrent: isCurrent ?? this.isCurrent,
+        conditions: conditions ?? this.conditions,
+        version: version ?? this.version,
+        parentSetupId:
+            parentSetupId.present ? parentSetupId.value : this.parentSetupId,
+        linkedRideId:
+            linkedRideId.present ? linkedRideId.value : this.linkedRideId,
+        createdBy: createdBy ?? this.createdBy,
       );
-  Setup copyWithCompanion(SetupsCompanion data) {
-    return Setup(
+  SetupRow copyWithCompanion(SetupsCompanion data) {
+    return SetupRow(
       id: data.id.present ? data.id.value : this.id,
       bikeId: data.bikeId.present ? data.bikeId.value : this.bikeId,
       label: data.label.present ? data.label.value : this.label,
@@ -1284,44 +1478,84 @@ class Setup extends DataClass implements Insertable<Setup> {
           data.valuesJson.present ? data.valuesJson.value : this.valuesJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       immutable: data.immutable.present ? data.immutable.value : this.immutable,
+      isCurrent: data.isCurrent.present ? data.isCurrent.value : this.isCurrent,
+      conditions:
+          data.conditions.present ? data.conditions.value : this.conditions,
+      version: data.version.present ? data.version.value : this.version,
+      parentSetupId: data.parentSetupId.present
+          ? data.parentSetupId.value
+          : this.parentSetupId,
+      linkedRideId: data.linkedRideId.present
+          ? data.linkedRideId.value
+          : this.linkedRideId,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('Setup(')
+    return (StringBuffer('SetupRow(')
           ..write('id: $id, ')
           ..write('bikeId: $bikeId, ')
           ..write('label: $label, ')
           ..write('valuesJson: $valuesJson, ')
           ..write('createdAt: $createdAt, ')
-          ..write('immutable: $immutable')
+          ..write('immutable: $immutable, ')
+          ..write('isCurrent: $isCurrent, ')
+          ..write('conditions: $conditions, ')
+          ..write('version: $version, ')
+          ..write('parentSetupId: $parentSetupId, ')
+          ..write('linkedRideId: $linkedRideId, ')
+          ..write('createdBy: $createdBy')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, bikeId, label, valuesJson, createdAt, immutable);
+  int get hashCode => Object.hash(
+      id,
+      bikeId,
+      label,
+      valuesJson,
+      createdAt,
+      immutable,
+      isCurrent,
+      conditions,
+      version,
+      parentSetupId,
+      linkedRideId,
+      createdBy);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Setup &&
+      (other is SetupRow &&
           other.id == this.id &&
           other.bikeId == this.bikeId &&
           other.label == this.label &&
           other.valuesJson == this.valuesJson &&
           other.createdAt == this.createdAt &&
-          other.immutable == this.immutable);
+          other.immutable == this.immutable &&
+          other.isCurrent == this.isCurrent &&
+          other.conditions == this.conditions &&
+          other.version == this.version &&
+          other.parentSetupId == this.parentSetupId &&
+          other.linkedRideId == this.linkedRideId &&
+          other.createdBy == this.createdBy);
 }
 
-class SetupsCompanion extends UpdateCompanion<Setup> {
+class SetupsCompanion extends UpdateCompanion<SetupRow> {
   final Value<String> id;
   final Value<String> bikeId;
   final Value<String> label;
   final Value<String> valuesJson;
   final Value<DateTime> createdAt;
   final Value<bool> immutable;
+  final Value<bool> isCurrent;
+  final Value<String> conditions;
+  final Value<int> version;
+  final Value<String?> parentSetupId;
+  final Value<String?> linkedRideId;
+  final Value<String> createdBy;
   final Value<int> rowid;
   const SetupsCompanion({
     this.id = const Value.absent(),
@@ -1330,6 +1564,12 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
     this.valuesJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.immutable = const Value.absent(),
+    this.isCurrent = const Value.absent(),
+    this.conditions = const Value.absent(),
+    this.version = const Value.absent(),
+    this.parentSetupId = const Value.absent(),
+    this.linkedRideId = const Value.absent(),
+    this.createdBy = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SetupsCompanion.insert({
@@ -1339,19 +1579,31 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
     required String valuesJson,
     required DateTime createdAt,
     this.immutable = const Value.absent(),
+    this.isCurrent = const Value.absent(),
+    this.conditions = const Value.absent(),
+    this.version = const Value.absent(),
+    this.parentSetupId = const Value.absent(),
+    this.linkedRideId = const Value.absent(),
+    this.createdBy = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         bikeId = Value(bikeId),
         label = Value(label),
         valuesJson = Value(valuesJson),
         createdAt = Value(createdAt);
-  static Insertable<Setup> custom({
+  static Insertable<SetupRow> custom({
     Expression<String>? id,
     Expression<String>? bikeId,
     Expression<String>? label,
     Expression<String>? valuesJson,
     Expression<DateTime>? createdAt,
     Expression<bool>? immutable,
+    Expression<bool>? isCurrent,
+    Expression<String>? conditions,
+    Expression<int>? version,
+    Expression<String>? parentSetupId,
+    Expression<String>? linkedRideId,
+    Expression<String>? createdBy,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1361,6 +1613,12 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
       if (valuesJson != null) 'values_json': valuesJson,
       if (createdAt != null) 'created_at': createdAt,
       if (immutable != null) 'immutable': immutable,
+      if (isCurrent != null) 'is_current': isCurrent,
+      if (conditions != null) 'conditions': conditions,
+      if (version != null) 'version': version,
+      if (parentSetupId != null) 'parent_setup_id': parentSetupId,
+      if (linkedRideId != null) 'linked_ride_id': linkedRideId,
+      if (createdBy != null) 'created_by': createdBy,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1372,6 +1630,12 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
       Value<String>? valuesJson,
       Value<DateTime>? createdAt,
       Value<bool>? immutable,
+      Value<bool>? isCurrent,
+      Value<String>? conditions,
+      Value<int>? version,
+      Value<String?>? parentSetupId,
+      Value<String?>? linkedRideId,
+      Value<String>? createdBy,
       Value<int>? rowid}) {
     return SetupsCompanion(
       id: id ?? this.id,
@@ -1380,6 +1644,12 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
       valuesJson: valuesJson ?? this.valuesJson,
       createdAt: createdAt ?? this.createdAt,
       immutable: immutable ?? this.immutable,
+      isCurrent: isCurrent ?? this.isCurrent,
+      conditions: conditions ?? this.conditions,
+      version: version ?? this.version,
+      parentSetupId: parentSetupId ?? this.parentSetupId,
+      linkedRideId: linkedRideId ?? this.linkedRideId,
+      createdBy: createdBy ?? this.createdBy,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1405,6 +1675,24 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
     if (immutable.present) {
       map['immutable'] = Variable<bool>(immutable.value);
     }
+    if (isCurrent.present) {
+      map['is_current'] = Variable<bool>(isCurrent.value);
+    }
+    if (conditions.present) {
+      map['conditions'] = Variable<String>(conditions.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (parentSetupId.present) {
+      map['parent_setup_id'] = Variable<String>(parentSetupId.value);
+    }
+    if (linkedRideId.present) {
+      map['linked_ride_id'] = Variable<String>(linkedRideId.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1420,6 +1708,12 @@ class SetupsCompanion extends UpdateCompanion<Setup> {
           ..write('valuesJson: $valuesJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('immutable: $immutable, ')
+          ..write('isCurrent: $isCurrent, ')
+          ..write('conditions: $conditions, ')
+          ..write('version: $version, ')
+          ..write('parentSetupId: $parentSetupId, ')
+          ..write('linkedRideId: $linkedRideId, ')
+          ..write('createdBy: $createdBy, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1469,6 +1763,39 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _elevationMMeta =
+      const VerificationMeta('elevationM');
+  @override
+  late final GeneratedColumn<double> elevationM = GeneratedColumn<double>(
+      'elevation_m', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _routeIdMeta =
+      const VerificationMeta('routeId');
+  @override
+  late final GeneratedColumn<String> routeId = GeneratedColumn<String>(
+      'route_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _trackJsonMeta =
+      const VerificationMeta('trackJson');
+  @override
+  late final GeneratedColumn<String> trackJson = GeneratedColumn<String>(
+      'track_json', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('[]'));
+  static const VerificationMeta _feedbackJsonMeta =
+      const VerificationMeta('feedbackJson');
+  @override
+  late final GeneratedColumn<String> feedbackJson = GeneratedColumn<String>(
+      'feedback_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _summaryJsonMeta =
       const VerificationMeta('summaryJson');
   @override
@@ -1478,8 +1805,20 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
       requiredDuringInsert: false,
       defaultValue: const Constant('{}'));
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, bikeId, startedAt, endedAt, distanceKm, movingTimeSec, summaryJson];
+  List<GeneratedColumn> get $columns => [
+        id,
+        bikeId,
+        startedAt,
+        endedAt,
+        distanceKm,
+        movingTimeSec,
+        elevationM,
+        name,
+        routeId,
+        trackJson,
+        feedbackJson,
+        summaryJson
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1523,6 +1862,30 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
           movingTimeSec.isAcceptableOrUnknown(
               data['moving_time_sec']!, _movingTimeSecMeta));
     }
+    if (data.containsKey('elevation_m')) {
+      context.handle(
+          _elevationMMeta,
+          elevationM.isAcceptableOrUnknown(
+              data['elevation_m']!, _elevationMMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    }
+    if (data.containsKey('route_id')) {
+      context.handle(_routeIdMeta,
+          routeId.isAcceptableOrUnknown(data['route_id']!, _routeIdMeta));
+    }
+    if (data.containsKey('track_json')) {
+      context.handle(_trackJsonMeta,
+          trackJson.isAcceptableOrUnknown(data['track_json']!, _trackJsonMeta));
+    }
+    if (data.containsKey('feedback_json')) {
+      context.handle(
+          _feedbackJsonMeta,
+          feedbackJson.isAcceptableOrUnknown(
+              data['feedback_json']!, _feedbackJsonMeta));
+    }
     if (data.containsKey('summary_json')) {
       context.handle(
           _summaryJsonMeta,
@@ -1550,6 +1913,16 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
           .read(DriftSqlType.double, data['${effectivePrefix}distance_km'])!,
       movingTimeSec: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}moving_time_sec'])!,
+      elevationM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}elevation_m'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name']),
+      routeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}route_id']),
+      trackJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}track_json'])!,
+      feedbackJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feedback_json']),
       summaryJson: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}summary_json'])!,
     );
@@ -1568,6 +1941,11 @@ class Ride extends DataClass implements Insertable<Ride> {
   final DateTime? endedAt;
   final double distanceKm;
   final int movingTimeSec;
+  final double elevationM;
+  final String? name;
+  final String? routeId;
+  final String trackJson;
+  final String? feedbackJson;
   final String summaryJson;
   const Ride(
       {required this.id,
@@ -1576,6 +1954,11 @@ class Ride extends DataClass implements Insertable<Ride> {
       this.endedAt,
       required this.distanceKm,
       required this.movingTimeSec,
+      required this.elevationM,
+      this.name,
+      this.routeId,
+      required this.trackJson,
+      this.feedbackJson,
       required this.summaryJson});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1588,6 +1971,17 @@ class Ride extends DataClass implements Insertable<Ride> {
     }
     map['distance_km'] = Variable<double>(distanceKm);
     map['moving_time_sec'] = Variable<int>(movingTimeSec);
+    map['elevation_m'] = Variable<double>(elevationM);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    if (!nullToAbsent || routeId != null) {
+      map['route_id'] = Variable<String>(routeId);
+    }
+    map['track_json'] = Variable<String>(trackJson);
+    if (!nullToAbsent || feedbackJson != null) {
+      map['feedback_json'] = Variable<String>(feedbackJson);
+    }
     map['summary_json'] = Variable<String>(summaryJson);
     return map;
   }
@@ -1602,6 +1996,15 @@ class Ride extends DataClass implements Insertable<Ride> {
           : Value(endedAt),
       distanceKm: Value(distanceKm),
       movingTimeSec: Value(movingTimeSec),
+      elevationM: Value(elevationM),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      routeId: routeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(routeId),
+      trackJson: Value(trackJson),
+      feedbackJson: feedbackJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(feedbackJson),
       summaryJson: Value(summaryJson),
     );
   }
@@ -1616,6 +2019,11 @@ class Ride extends DataClass implements Insertable<Ride> {
       endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
       distanceKm: serializer.fromJson<double>(json['distanceKm']),
       movingTimeSec: serializer.fromJson<int>(json['movingTimeSec']),
+      elevationM: serializer.fromJson<double>(json['elevationM']),
+      name: serializer.fromJson<String?>(json['name']),
+      routeId: serializer.fromJson<String?>(json['routeId']),
+      trackJson: serializer.fromJson<String>(json['trackJson']),
+      feedbackJson: serializer.fromJson<String?>(json['feedbackJson']),
       summaryJson: serializer.fromJson<String>(json['summaryJson']),
     );
   }
@@ -1629,6 +2037,11 @@ class Ride extends DataClass implements Insertable<Ride> {
       'endedAt': serializer.toJson<DateTime?>(endedAt),
       'distanceKm': serializer.toJson<double>(distanceKm),
       'movingTimeSec': serializer.toJson<int>(movingTimeSec),
+      'elevationM': serializer.toJson<double>(elevationM),
+      'name': serializer.toJson<String?>(name),
+      'routeId': serializer.toJson<String?>(routeId),
+      'trackJson': serializer.toJson<String>(trackJson),
+      'feedbackJson': serializer.toJson<String?>(feedbackJson),
       'summaryJson': serializer.toJson<String>(summaryJson),
     };
   }
@@ -1640,6 +2053,11 @@ class Ride extends DataClass implements Insertable<Ride> {
           Value<DateTime?> endedAt = const Value.absent(),
           double? distanceKm,
           int? movingTimeSec,
+          double? elevationM,
+          Value<String?> name = const Value.absent(),
+          Value<String?> routeId = const Value.absent(),
+          String? trackJson,
+          Value<String?> feedbackJson = const Value.absent(),
           String? summaryJson}) =>
       Ride(
         id: id ?? this.id,
@@ -1648,6 +2066,12 @@ class Ride extends DataClass implements Insertable<Ride> {
         endedAt: endedAt.present ? endedAt.value : this.endedAt,
         distanceKm: distanceKm ?? this.distanceKm,
         movingTimeSec: movingTimeSec ?? this.movingTimeSec,
+        elevationM: elevationM ?? this.elevationM,
+        name: name.present ? name.value : this.name,
+        routeId: routeId.present ? routeId.value : this.routeId,
+        trackJson: trackJson ?? this.trackJson,
+        feedbackJson:
+            feedbackJson.present ? feedbackJson.value : this.feedbackJson,
         summaryJson: summaryJson ?? this.summaryJson,
       );
   Ride copyWithCompanion(RidesCompanion data) {
@@ -1661,6 +2085,14 @@ class Ride extends DataClass implements Insertable<Ride> {
       movingTimeSec: data.movingTimeSec.present
           ? data.movingTimeSec.value
           : this.movingTimeSec,
+      elevationM:
+          data.elevationM.present ? data.elevationM.value : this.elevationM,
+      name: data.name.present ? data.name.value : this.name,
+      routeId: data.routeId.present ? data.routeId.value : this.routeId,
+      trackJson: data.trackJson.present ? data.trackJson.value : this.trackJson,
+      feedbackJson: data.feedbackJson.present
+          ? data.feedbackJson.value
+          : this.feedbackJson,
       summaryJson:
           data.summaryJson.present ? data.summaryJson.value : this.summaryJson,
     );
@@ -1675,6 +2107,11 @@ class Ride extends DataClass implements Insertable<Ride> {
           ..write('endedAt: $endedAt, ')
           ..write('distanceKm: $distanceKm, ')
           ..write('movingTimeSec: $movingTimeSec, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('name: $name, ')
+          ..write('routeId: $routeId, ')
+          ..write('trackJson: $trackJson, ')
+          ..write('feedbackJson: $feedbackJson, ')
           ..write('summaryJson: $summaryJson')
           ..write(')'))
         .toString();
@@ -1682,7 +2119,18 @@ class Ride extends DataClass implements Insertable<Ride> {
 
   @override
   int get hashCode => Object.hash(
-      id, bikeId, startedAt, endedAt, distanceKm, movingTimeSec, summaryJson);
+      id,
+      bikeId,
+      startedAt,
+      endedAt,
+      distanceKm,
+      movingTimeSec,
+      elevationM,
+      name,
+      routeId,
+      trackJson,
+      feedbackJson,
+      summaryJson);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1693,6 +2141,11 @@ class Ride extends DataClass implements Insertable<Ride> {
           other.endedAt == this.endedAt &&
           other.distanceKm == this.distanceKm &&
           other.movingTimeSec == this.movingTimeSec &&
+          other.elevationM == this.elevationM &&
+          other.name == this.name &&
+          other.routeId == this.routeId &&
+          other.trackJson == this.trackJson &&
+          other.feedbackJson == this.feedbackJson &&
           other.summaryJson == this.summaryJson);
 }
 
@@ -1703,6 +2156,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
   final Value<DateTime?> endedAt;
   final Value<double> distanceKm;
   final Value<int> movingTimeSec;
+  final Value<double> elevationM;
+  final Value<String?> name;
+  final Value<String?> routeId;
+  final Value<String> trackJson;
+  final Value<String?> feedbackJson;
   final Value<String> summaryJson;
   final Value<int> rowid;
   const RidesCompanion({
@@ -1712,6 +2170,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     this.endedAt = const Value.absent(),
     this.distanceKm = const Value.absent(),
     this.movingTimeSec = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.name = const Value.absent(),
+    this.routeId = const Value.absent(),
+    this.trackJson = const Value.absent(),
+    this.feedbackJson = const Value.absent(),
     this.summaryJson = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1722,6 +2185,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     this.endedAt = const Value.absent(),
     this.distanceKm = const Value.absent(),
     this.movingTimeSec = const Value.absent(),
+    this.elevationM = const Value.absent(),
+    this.name = const Value.absent(),
+    this.routeId = const Value.absent(),
+    this.trackJson = const Value.absent(),
+    this.feedbackJson = const Value.absent(),
     this.summaryJson = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -1734,6 +2202,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     Expression<DateTime>? endedAt,
     Expression<double>? distanceKm,
     Expression<int>? movingTimeSec,
+    Expression<double>? elevationM,
+    Expression<String>? name,
+    Expression<String>? routeId,
+    Expression<String>? trackJson,
+    Expression<String>? feedbackJson,
     Expression<String>? summaryJson,
     Expression<int>? rowid,
   }) {
@@ -1744,6 +2217,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
       if (endedAt != null) 'ended_at': endedAt,
       if (distanceKm != null) 'distance_km': distanceKm,
       if (movingTimeSec != null) 'moving_time_sec': movingTimeSec,
+      if (elevationM != null) 'elevation_m': elevationM,
+      if (name != null) 'name': name,
+      if (routeId != null) 'route_id': routeId,
+      if (trackJson != null) 'track_json': trackJson,
+      if (feedbackJson != null) 'feedback_json': feedbackJson,
       if (summaryJson != null) 'summary_json': summaryJson,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1756,6 +2234,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
       Value<DateTime?>? endedAt,
       Value<double>? distanceKm,
       Value<int>? movingTimeSec,
+      Value<double>? elevationM,
+      Value<String?>? name,
+      Value<String?>? routeId,
+      Value<String>? trackJson,
+      Value<String?>? feedbackJson,
       Value<String>? summaryJson,
       Value<int>? rowid}) {
     return RidesCompanion(
@@ -1765,6 +2248,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
       endedAt: endedAt ?? this.endedAt,
       distanceKm: distanceKm ?? this.distanceKm,
       movingTimeSec: movingTimeSec ?? this.movingTimeSec,
+      elevationM: elevationM ?? this.elevationM,
+      name: name ?? this.name,
+      routeId: routeId ?? this.routeId,
+      trackJson: trackJson ?? this.trackJson,
+      feedbackJson: feedbackJson ?? this.feedbackJson,
       summaryJson: summaryJson ?? this.summaryJson,
       rowid: rowid ?? this.rowid,
     );
@@ -1791,6 +2279,21 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     if (movingTimeSec.present) {
       map['moving_time_sec'] = Variable<int>(movingTimeSec.value);
     }
+    if (elevationM.present) {
+      map['elevation_m'] = Variable<double>(elevationM.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (routeId.present) {
+      map['route_id'] = Variable<String>(routeId.value);
+    }
+    if (trackJson.present) {
+      map['track_json'] = Variable<String>(trackJson.value);
+    }
+    if (feedbackJson.present) {
+      map['feedback_json'] = Variable<String>(feedbackJson.value);
+    }
     if (summaryJson.present) {
       map['summary_json'] = Variable<String>(summaryJson.value);
     }
@@ -1809,6 +2312,11 @@ class RidesCompanion extends UpdateCompanion<Ride> {
           ..write('endedAt: $endedAt, ')
           ..write('distanceKm: $distanceKm, ')
           ..write('movingTimeSec: $movingTimeSec, ')
+          ..write('elevationM: $elevationM, ')
+          ..write('name: $name, ')
+          ..write('routeId: $routeId, ')
+          ..write('trackJson: $trackJson, ')
+          ..write('feedbackJson: $feedbackJson, ')
           ..write('summaryJson: $summaryJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3946,6 +4454,348 @@ class RouteCacheCompanion extends UpdateCompanion<RouteCacheData> {
   }
 }
 
+class $PrivacyZonesTable extends PrivacyZones
+    with TableInfo<$PrivacyZonesTable, PrivacyZoneRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PrivacyZonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+      'lat', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+      'lng', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _radiusMMeta =
+      const VerificationMeta('radiusM');
+  @override
+  late final GeneratedColumn<double> radiusM = GeneratedColumn<double>(
+      'radius_m', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(200.0));
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, label, lat, lng, radiusM, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'privacy_zones';
+  @override
+  VerificationContext validateIntegrity(Insertable<PrivacyZoneRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+          _latMeta, lat.isAcceptableOrUnknown(data['lat']!, _latMeta));
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+          _lngMeta, lng.isAcceptableOrUnknown(data['lng']!, _lngMeta));
+    } else if (isInserting) {
+      context.missing(_lngMeta);
+    }
+    if (data.containsKey('radius_m')) {
+      context.handle(_radiusMMeta,
+          radiusM.isAcceptableOrUnknown(data['radius_m']!, _radiusMMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PrivacyZoneRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PrivacyZoneRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      label: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label'])!,
+      lat: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}lat'])!,
+      lng: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}lng'])!,
+      radiusM: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}radius_m'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $PrivacyZonesTable createAlias(String alias) {
+    return $PrivacyZonesTable(attachedDatabase, alias);
+  }
+}
+
+class PrivacyZoneRow extends DataClass implements Insertable<PrivacyZoneRow> {
+  final String id;
+  final String label;
+  final double lat;
+  final double lng;
+  final double radiusM;
+  final DateTime updatedAt;
+  const PrivacyZoneRow(
+      {required this.id,
+      required this.label,
+      required this.lat,
+      required this.lng,
+      required this.radiusM,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['label'] = Variable<String>(label);
+    map['lat'] = Variable<double>(lat);
+    map['lng'] = Variable<double>(lng);
+    map['radius_m'] = Variable<double>(radiusM);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PrivacyZonesCompanion toCompanion(bool nullToAbsent) {
+    return PrivacyZonesCompanion(
+      id: Value(id),
+      label: Value(label),
+      lat: Value(lat),
+      lng: Value(lng),
+      radiusM: Value(radiusM),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PrivacyZoneRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PrivacyZoneRow(
+      id: serializer.fromJson<String>(json['id']),
+      label: serializer.fromJson<String>(json['label']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lng: serializer.fromJson<double>(json['lng']),
+      radiusM: serializer.fromJson<double>(json['radiusM']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'label': serializer.toJson<String>(label),
+      'lat': serializer.toJson<double>(lat),
+      'lng': serializer.toJson<double>(lng),
+      'radiusM': serializer.toJson<double>(radiusM),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PrivacyZoneRow copyWith(
+          {String? id,
+          String? label,
+          double? lat,
+          double? lng,
+          double? radiusM,
+          DateTime? updatedAt}) =>
+      PrivacyZoneRow(
+        id: id ?? this.id,
+        label: label ?? this.label,
+        lat: lat ?? this.lat,
+        lng: lng ?? this.lng,
+        radiusM: radiusM ?? this.radiusM,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  PrivacyZoneRow copyWithCompanion(PrivacyZonesCompanion data) {
+    return PrivacyZoneRow(
+      id: data.id.present ? data.id.value : this.id,
+      label: data.label.present ? data.label.value : this.label,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      radiusM: data.radiusM.present ? data.radiusM.value : this.radiusM,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivacyZoneRow(')
+          ..write('id: $id, ')
+          ..write('label: $label, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('radiusM: $radiusM, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, label, lat, lng, radiusM, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PrivacyZoneRow &&
+          other.id == this.id &&
+          other.label == this.label &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.radiusM == this.radiusM &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PrivacyZonesCompanion extends UpdateCompanion<PrivacyZoneRow> {
+  final Value<String> id;
+  final Value<String> label;
+  final Value<double> lat;
+  final Value<double> lng;
+  final Value<double> radiusM;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PrivacyZonesCompanion({
+    this.id = const Value.absent(),
+    this.label = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.radiusM = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PrivacyZonesCompanion.insert({
+    required String id,
+    required String label,
+    required double lat,
+    required double lng,
+    this.radiusM = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        label = Value(label),
+        lat = Value(lat),
+        lng = Value(lng),
+        updatedAt = Value(updatedAt);
+  static Insertable<PrivacyZoneRow> custom({
+    Expression<String>? id,
+    Expression<String>? label,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<double>? radiusM,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (label != null) 'label': label,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (radiusM != null) 'radius_m': radiusM,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PrivacyZonesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? label,
+      Value<double>? lat,
+      Value<double>? lng,
+      Value<double>? radiusM,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return PrivacyZonesCompanion(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      radiusM: radiusM ?? this.radiusM,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (radiusM.present) {
+      map['radius_m'] = Variable<double>(radiusM.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PrivacyZonesCompanion(')
+          ..write('id: $id, ')
+          ..write('label: $label, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('radiusM: $radiusM, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3959,6 +4809,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CatalogCacheTable catalogCache = $CatalogCacheTable(this);
   late final $SavedRoutesTable savedRoutes = $SavedRoutesTable(this);
   late final $RouteCacheTable routeCache = $RouteCacheTable(this);
+  late final $PrivacyZonesTable privacyZones = $PrivacyZonesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3973,7 +4824,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         syncState,
         catalogCache,
         savedRoutes,
-        routeCache
+        routeCache,
+        privacyZones
       ];
 }
 
@@ -3986,6 +4838,7 @@ typedef $$BikesTableCreateCompanionBuilder = BikesCompanion Function({
   Value<int?> year,
   Value<String?> wheelSize,
   Value<double> odometerKm,
+  Value<double> hours,
   Value<bool> isActive,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -3999,6 +4852,7 @@ typedef $$BikesTableUpdateCompanionBuilder = BikesCompanion Function({
   Value<int?> year,
   Value<String?> wheelSize,
   Value<double> odometerKm,
+  Value<double> hours,
   Value<bool> isActive,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -4035,6 +4889,9 @@ class $$BikesTableFilterComposer extends Composer<_$AppDatabase, $BikesTable> {
 
   ColumnFilters<double> get odometerKm => $composableBuilder(
       column: $table.odometerKm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get hours => $composableBuilder(
+      column: $table.hours, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
@@ -4076,6 +4933,9 @@ class $$BikesTableOrderingComposer
   ColumnOrderings<double> get odometerKm => $composableBuilder(
       column: $table.odometerKm, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get hours => $composableBuilder(
+      column: $table.hours, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 
@@ -4116,6 +4976,9 @@ class $$BikesTableAnnotationComposer
   GeneratedColumn<double> get odometerKm => $composableBuilder(
       column: $table.odometerKm, builder: (column) => column);
 
+  GeneratedColumn<double> get hours =>
+      $composableBuilder(column: $table.hours, builder: (column) => column);
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
@@ -4154,6 +5017,7 @@ class $$BikesTableTableManager extends RootTableManager<
             Value<int?> year = const Value.absent(),
             Value<String?> wheelSize = const Value.absent(),
             Value<double> odometerKm = const Value.absent(),
+            Value<double> hours = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -4167,6 +5031,7 @@ class $$BikesTableTableManager extends RootTableManager<
             year: year,
             wheelSize: wheelSize,
             odometerKm: odometerKm,
+            hours: hours,
             isActive: isActive,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -4180,6 +5045,7 @@ class $$BikesTableTableManager extends RootTableManager<
             Value<int?> year = const Value.absent(),
             Value<String?> wheelSize = const Value.absent(),
             Value<double> odometerKm = const Value.absent(),
+            Value<double> hours = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -4193,6 +5059,7 @@ class $$BikesTableTableManager extends RootTableManager<
             year: year,
             wheelSize: wheelSize,
             odometerKm: odometerKm,
+            hours: hours,
             isActive: isActive,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -4382,14 +5249,17 @@ class $$ComponentsTableAnnotationComposer
 class $$ComponentsTableTableManager extends RootTableManager<
     _$AppDatabase,
     $ComponentsTable,
-    Component,
+    ComponentRow,
     $$ComponentsTableFilterComposer,
     $$ComponentsTableOrderingComposer,
     $$ComponentsTableAnnotationComposer,
     $$ComponentsTableCreateCompanionBuilder,
     $$ComponentsTableUpdateCompanionBuilder,
-    (Component, BaseReferences<_$AppDatabase, $ComponentsTable, Component>),
-    Component,
+    (
+      ComponentRow,
+      BaseReferences<_$AppDatabase, $ComponentsTable, ComponentRow>
+    ),
+    ComponentRow,
     PrefetchHooks Function()> {
   $$ComponentsTableTableManager(_$AppDatabase db, $ComponentsTable table)
       : super(TableManagerState(
@@ -4467,14 +5337,17 @@ class $$ComponentsTableTableManager extends RootTableManager<
 typedef $$ComponentsTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
     $ComponentsTable,
-    Component,
+    ComponentRow,
     $$ComponentsTableFilterComposer,
     $$ComponentsTableOrderingComposer,
     $$ComponentsTableAnnotationComposer,
     $$ComponentsTableCreateCompanionBuilder,
     $$ComponentsTableUpdateCompanionBuilder,
-    (Component, BaseReferences<_$AppDatabase, $ComponentsTable, Component>),
-    Component,
+    (
+      ComponentRow,
+      BaseReferences<_$AppDatabase, $ComponentsTable, ComponentRow>
+    ),
+    ComponentRow,
     PrefetchHooks Function()>;
 typedef $$SetupsTableCreateCompanionBuilder = SetupsCompanion Function({
   required String id,
@@ -4483,6 +5356,12 @@ typedef $$SetupsTableCreateCompanionBuilder = SetupsCompanion Function({
   required String valuesJson,
   required DateTime createdAt,
   Value<bool> immutable,
+  Value<bool> isCurrent,
+  Value<String> conditions,
+  Value<int> version,
+  Value<String?> parentSetupId,
+  Value<String?> linkedRideId,
+  Value<String> createdBy,
   Value<int> rowid,
 });
 typedef $$SetupsTableUpdateCompanionBuilder = SetupsCompanion Function({
@@ -4492,6 +5371,12 @@ typedef $$SetupsTableUpdateCompanionBuilder = SetupsCompanion Function({
   Value<String> valuesJson,
   Value<DateTime> createdAt,
   Value<bool> immutable,
+  Value<bool> isCurrent,
+  Value<String> conditions,
+  Value<int> version,
+  Value<String?> parentSetupId,
+  Value<String?> linkedRideId,
+  Value<String> createdBy,
   Value<int> rowid,
 });
 
@@ -4521,6 +5406,24 @@ class $$SetupsTableFilterComposer
 
   ColumnFilters<bool> get immutable => $composableBuilder(
       column: $table.immutable, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isCurrent => $composableBuilder(
+      column: $table.isCurrent, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get conditions => $composableBuilder(
+      column: $table.conditions, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get version => $composableBuilder(
+      column: $table.version, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get parentSetupId => $composableBuilder(
+      column: $table.parentSetupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get linkedRideId => $composableBuilder(
+      column: $table.linkedRideId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+      column: $table.createdBy, builder: (column) => ColumnFilters(column));
 }
 
 class $$SetupsTableOrderingComposer
@@ -4549,6 +5452,26 @@ class $$SetupsTableOrderingComposer
 
   ColumnOrderings<bool> get immutable => $composableBuilder(
       column: $table.immutable, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isCurrent => $composableBuilder(
+      column: $table.isCurrent, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get conditions => $composableBuilder(
+      column: $table.conditions, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get version => $composableBuilder(
+      column: $table.version, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get parentSetupId => $composableBuilder(
+      column: $table.parentSetupId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get linkedRideId => $composableBuilder(
+      column: $table.linkedRideId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+      column: $table.createdBy, builder: (column) => ColumnOrderings(column));
 }
 
 class $$SetupsTableAnnotationComposer
@@ -4577,19 +5500,37 @@ class $$SetupsTableAnnotationComposer
 
   GeneratedColumn<bool> get immutable =>
       $composableBuilder(column: $table.immutable, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCurrent =>
+      $composableBuilder(column: $table.isCurrent, builder: (column) => column);
+
+  GeneratedColumn<String> get conditions => $composableBuilder(
+      column: $table.conditions, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get parentSetupId => $composableBuilder(
+      column: $table.parentSetupId, builder: (column) => column);
+
+  GeneratedColumn<String> get linkedRideId => $composableBuilder(
+      column: $table.linkedRideId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
 }
 
 class $$SetupsTableTableManager extends RootTableManager<
     _$AppDatabase,
     $SetupsTable,
-    Setup,
+    SetupRow,
     $$SetupsTableFilterComposer,
     $$SetupsTableOrderingComposer,
     $$SetupsTableAnnotationComposer,
     $$SetupsTableCreateCompanionBuilder,
     $$SetupsTableUpdateCompanionBuilder,
-    (Setup, BaseReferences<_$AppDatabase, $SetupsTable, Setup>),
-    Setup,
+    (SetupRow, BaseReferences<_$AppDatabase, $SetupsTable, SetupRow>),
+    SetupRow,
     PrefetchHooks Function()> {
   $$SetupsTableTableManager(_$AppDatabase db, $SetupsTable table)
       : super(TableManagerState(
@@ -4608,6 +5549,12 @@ class $$SetupsTableTableManager extends RootTableManager<
             Value<String> valuesJson = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<bool> immutable = const Value.absent(),
+            Value<bool> isCurrent = const Value.absent(),
+            Value<String> conditions = const Value.absent(),
+            Value<int> version = const Value.absent(),
+            Value<String?> parentSetupId = const Value.absent(),
+            Value<String?> linkedRideId = const Value.absent(),
+            Value<String> createdBy = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SetupsCompanion(
@@ -4617,6 +5564,12 @@ class $$SetupsTableTableManager extends RootTableManager<
             valuesJson: valuesJson,
             createdAt: createdAt,
             immutable: immutable,
+            isCurrent: isCurrent,
+            conditions: conditions,
+            version: version,
+            parentSetupId: parentSetupId,
+            linkedRideId: linkedRideId,
+            createdBy: createdBy,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -4626,6 +5579,12 @@ class $$SetupsTableTableManager extends RootTableManager<
             required String valuesJson,
             required DateTime createdAt,
             Value<bool> immutable = const Value.absent(),
+            Value<bool> isCurrent = const Value.absent(),
+            Value<String> conditions = const Value.absent(),
+            Value<int> version = const Value.absent(),
+            Value<String?> parentSetupId = const Value.absent(),
+            Value<String?> linkedRideId = const Value.absent(),
+            Value<String> createdBy = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SetupsCompanion.insert(
@@ -4635,6 +5594,12 @@ class $$SetupsTableTableManager extends RootTableManager<
             valuesJson: valuesJson,
             createdAt: createdAt,
             immutable: immutable,
+            isCurrent: isCurrent,
+            conditions: conditions,
+            version: version,
+            parentSetupId: parentSetupId,
+            linkedRideId: linkedRideId,
+            createdBy: createdBy,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -4647,14 +5612,14 @@ class $$SetupsTableTableManager extends RootTableManager<
 typedef $$SetupsTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
     $SetupsTable,
-    Setup,
+    SetupRow,
     $$SetupsTableFilterComposer,
     $$SetupsTableOrderingComposer,
     $$SetupsTableAnnotationComposer,
     $$SetupsTableCreateCompanionBuilder,
     $$SetupsTableUpdateCompanionBuilder,
-    (Setup, BaseReferences<_$AppDatabase, $SetupsTable, Setup>),
-    Setup,
+    (SetupRow, BaseReferences<_$AppDatabase, $SetupsTable, SetupRow>),
+    SetupRow,
     PrefetchHooks Function()>;
 typedef $$RidesTableCreateCompanionBuilder = RidesCompanion Function({
   required String id,
@@ -4663,6 +5628,11 @@ typedef $$RidesTableCreateCompanionBuilder = RidesCompanion Function({
   Value<DateTime?> endedAt,
   Value<double> distanceKm,
   Value<int> movingTimeSec,
+  Value<double> elevationM,
+  Value<String?> name,
+  Value<String?> routeId,
+  Value<String> trackJson,
+  Value<String?> feedbackJson,
   Value<String> summaryJson,
   Value<int> rowid,
 });
@@ -4673,6 +5643,11 @@ typedef $$RidesTableUpdateCompanionBuilder = RidesCompanion Function({
   Value<DateTime?> endedAt,
   Value<double> distanceKm,
   Value<int> movingTimeSec,
+  Value<double> elevationM,
+  Value<String?> name,
+  Value<String?> routeId,
+  Value<String> trackJson,
+  Value<String?> feedbackJson,
   Value<String> summaryJson,
   Value<int> rowid,
 });
@@ -4702,6 +5677,21 @@ class $$RidesTableFilterComposer extends Composer<_$AppDatabase, $RidesTable> {
 
   ColumnFilters<int> get movingTimeSec => $composableBuilder(
       column: $table.movingTimeSec, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get elevationM => $composableBuilder(
+      column: $table.elevationM, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get routeId => $composableBuilder(
+      column: $table.routeId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get trackJson => $composableBuilder(
+      column: $table.trackJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get feedbackJson => $composableBuilder(
+      column: $table.feedbackJson, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get summaryJson => $composableBuilder(
       column: $table.summaryJson, builder: (column) => ColumnFilters(column));
@@ -4735,6 +5725,22 @@ class $$RidesTableOrderingComposer
       column: $table.movingTimeSec,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<double> get elevationM => $composableBuilder(
+      column: $table.elevationM, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get routeId => $composableBuilder(
+      column: $table.routeId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get trackJson => $composableBuilder(
+      column: $table.trackJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get feedbackJson => $composableBuilder(
+      column: $table.feedbackJson,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get summaryJson => $composableBuilder(
       column: $table.summaryJson, builder: (column) => ColumnOrderings(column));
 }
@@ -4765,6 +5771,21 @@ class $$RidesTableAnnotationComposer
 
   GeneratedColumn<int> get movingTimeSec => $composableBuilder(
       column: $table.movingTimeSec, builder: (column) => column);
+
+  GeneratedColumn<double> get elevationM => $composableBuilder(
+      column: $table.elevationM, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get routeId =>
+      $composableBuilder(column: $table.routeId, builder: (column) => column);
+
+  GeneratedColumn<String> get trackJson =>
+      $composableBuilder(column: $table.trackJson, builder: (column) => column);
+
+  GeneratedColumn<String> get feedbackJson => $composableBuilder(
+      column: $table.feedbackJson, builder: (column) => column);
 
   GeneratedColumn<String> get summaryJson => $composableBuilder(
       column: $table.summaryJson, builder: (column) => column);
@@ -4799,6 +5820,11 @@ class $$RidesTableTableManager extends RootTableManager<
             Value<DateTime?> endedAt = const Value.absent(),
             Value<double> distanceKm = const Value.absent(),
             Value<int> movingTimeSec = const Value.absent(),
+            Value<double> elevationM = const Value.absent(),
+            Value<String?> name = const Value.absent(),
+            Value<String?> routeId = const Value.absent(),
+            Value<String> trackJson = const Value.absent(),
+            Value<String?> feedbackJson = const Value.absent(),
             Value<String> summaryJson = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -4809,6 +5835,11 @@ class $$RidesTableTableManager extends RootTableManager<
             endedAt: endedAt,
             distanceKm: distanceKm,
             movingTimeSec: movingTimeSec,
+            elevationM: elevationM,
+            name: name,
+            routeId: routeId,
+            trackJson: trackJson,
+            feedbackJson: feedbackJson,
             summaryJson: summaryJson,
             rowid: rowid,
           ),
@@ -4819,6 +5850,11 @@ class $$RidesTableTableManager extends RootTableManager<
             Value<DateTime?> endedAt = const Value.absent(),
             Value<double> distanceKm = const Value.absent(),
             Value<int> movingTimeSec = const Value.absent(),
+            Value<double> elevationM = const Value.absent(),
+            Value<String?> name = const Value.absent(),
+            Value<String?> routeId = const Value.absent(),
+            Value<String> trackJson = const Value.absent(),
+            Value<String?> feedbackJson = const Value.absent(),
             Value<String> summaryJson = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -4829,6 +5865,11 @@ class $$RidesTableTableManager extends RootTableManager<
             endedAt: endedAt,
             distanceKm: distanceKm,
             movingTimeSec: movingTimeSec,
+            elevationM: elevationM,
+            name: name,
+            routeId: routeId,
+            trackJson: trackJson,
+            feedbackJson: feedbackJson,
             summaryJson: summaryJson,
             rowid: rowid,
           ),
@@ -5966,6 +7007,194 @@ typedef $$RouteCacheTableProcessedTableManager = ProcessedTableManager<
     ),
     RouteCacheData,
     PrefetchHooks Function()>;
+typedef $$PrivacyZonesTableCreateCompanionBuilder = PrivacyZonesCompanion
+    Function({
+  required String id,
+  required String label,
+  required double lat,
+  required double lng,
+  Value<double> radiusM,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$PrivacyZonesTableUpdateCompanionBuilder = PrivacyZonesCompanion
+    Function({
+  Value<String> id,
+  Value<String> label,
+  Value<double> lat,
+  Value<double> lng,
+  Value<double> radiusM,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$PrivacyZonesTableFilterComposer
+    extends Composer<_$AppDatabase, $PrivacyZonesTable> {
+  $$PrivacyZonesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get lat => $composableBuilder(
+      column: $table.lat, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get lng => $composableBuilder(
+      column: $table.lng, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get radiusM => $composableBuilder(
+      column: $table.radiusM, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PrivacyZonesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PrivacyZonesTable> {
+  $$PrivacyZonesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get lat => $composableBuilder(
+      column: $table.lat, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get lng => $composableBuilder(
+      column: $table.lng, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get radiusM => $composableBuilder(
+      column: $table.radiusM, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PrivacyZonesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PrivacyZonesTable> {
+  $$PrivacyZonesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lng =>
+      $composableBuilder(column: $table.lng, builder: (column) => column);
+
+  GeneratedColumn<double> get radiusM =>
+      $composableBuilder(column: $table.radiusM, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$PrivacyZonesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PrivacyZonesTable,
+    PrivacyZoneRow,
+    $$PrivacyZonesTableFilterComposer,
+    $$PrivacyZonesTableOrderingComposer,
+    $$PrivacyZonesTableAnnotationComposer,
+    $$PrivacyZonesTableCreateCompanionBuilder,
+    $$PrivacyZonesTableUpdateCompanionBuilder,
+    (
+      PrivacyZoneRow,
+      BaseReferences<_$AppDatabase, $PrivacyZonesTable, PrivacyZoneRow>
+    ),
+    PrivacyZoneRow,
+    PrefetchHooks Function()> {
+  $$PrivacyZonesTableTableManager(_$AppDatabase db, $PrivacyZonesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PrivacyZonesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PrivacyZonesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PrivacyZonesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> label = const Value.absent(),
+            Value<double> lat = const Value.absent(),
+            Value<double> lng = const Value.absent(),
+            Value<double> radiusM = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PrivacyZonesCompanion(
+            id: id,
+            label: label,
+            lat: lat,
+            lng: lng,
+            radiusM: radiusM,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String label,
+            required double lat,
+            required double lng,
+            Value<double> radiusM = const Value.absent(),
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PrivacyZonesCompanion.insert(
+            id: id,
+            label: label,
+            lat: lat,
+            lng: lng,
+            radiusM: radiusM,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PrivacyZonesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PrivacyZonesTable,
+    PrivacyZoneRow,
+    $$PrivacyZonesTableFilterComposer,
+    $$PrivacyZonesTableOrderingComposer,
+    $$PrivacyZonesTableAnnotationComposer,
+    $$PrivacyZonesTableCreateCompanionBuilder,
+    $$PrivacyZonesTableUpdateCompanionBuilder,
+    (
+      PrivacyZoneRow,
+      BaseReferences<_$AppDatabase, $PrivacyZonesTable, PrivacyZoneRow>
+    ),
+    PrivacyZoneRow,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5990,4 +7219,6 @@ class $AppDatabaseManager {
       $$SavedRoutesTableTableManager(_db, _db.savedRoutes);
   $$RouteCacheTableTableManager get routeCache =>
       $$RouteCacheTableTableManager(_db, _db.routeCache);
+  $$PrivacyZonesTableTableManager get privacyZones =>
+      $$PrivacyZonesTableTableManager(_db, _db.privacyZones);
 }

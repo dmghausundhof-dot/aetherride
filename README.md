@@ -130,6 +130,14 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - `/api/route` → Valhalla (`VALHALLA_URL`) oder OSRM (`OSRM_URL`); ohne Env Demo-Geometrie
 - MapLibre: `NEXT_PUBLIC_PMTILES_URL` (pmtiles://) oder OSM-Raster-Fallback
 - Discover → „Route berechnen“ zeichnet Engine-Polyline
+- Demo-Offline-Graph: nur `mobile/assets/routing/offline_graph.json` (Sync: `./scripts/routing/sync-demo-graph.sh`)
+- Region-Builds unter `data/routing/dist/` sind gitignored (~GB); Manifeste/Region-Configs bleiben im Repo
+
+## Was gehört (nicht) ins GitHub-Repo
+
+**Committen:** `src/`, `mobile/` (Quellcode), `scripts/`, `data/catalog/oem-seed.json` + `extra-seed.json`, `data/routing/{regions,manifests}/`, `.env.example`, Locks.
+
+**Lokal behalten / ignoriert:** `.env.local`, `.vercel/`, `node_modules/`, `.next/`, `data/routing/dist/`, Build-Artefakte, `Claude INhalte/` (Spec-Entwürfe), synthetische `bulk-seed*.json`.
 
 ### Launch-Checkliste (Prozess)
 

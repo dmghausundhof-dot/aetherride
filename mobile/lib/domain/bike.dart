@@ -32,6 +32,8 @@ class Bike {
     this.year,
     this.wheelSize,
     this.odometerKm = 0,
+    this.hours = 0,
+    this.isActive = false,
   });
 
   final String id;
@@ -42,6 +44,21 @@ class Bike {
   final int? year;
   final WheelSize? wheelSize;
   final double odometerKm;
+  final double hours;
+  final bool isActive;
+
+  String get categoryLabel => switch (category) {
+        BikeCategory.mtbTrail => 'MTB Trail',
+        BikeCategory.mtbAm => 'MTB AM',
+        BikeCategory.mtbEnduro => 'Enduro',
+        BikeCategory.dh => 'DH',
+        BikeCategory.gravel => 'Gravel',
+        BikeCategory.road => 'Road',
+        BikeCategory.urban => 'Urban',
+        BikeCategory.emtb => 'E-MTB',
+        BikeCategory.etrekking => 'E-Trekking',
+        BikeCategory.hiking => 'Wandern',
+      };
 
   Bike copyWith({
     String? name,
@@ -51,6 +68,8 @@ class Bike {
     int? year,
     WheelSize? wheelSize,
     double? odometerKm,
+    double? hours,
+    bool? isActive,
   }) {
     return Bike(
       id: id,
@@ -61,6 +80,8 @@ class Bike {
       year: year ?? this.year,
       wheelSize: wheelSize ?? this.wheelSize,
       odometerKm: odometerKm ?? this.odometerKm,
+      hours: hours ?? this.hours,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

@@ -2,14 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/active_route.dart';
 import '../../domain/ble.dart';
+import '../../domain/ride.dart';
+import '../../domain/routing/nav_cues.dart';
 import '../../domain/sensor.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../post_ride/post_ride_screen.dart';
 
 class RideScreen extends ConsumerStatefulWidget {
   const RideScreen({super.key});
@@ -29,6 +33,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   int _confirmStop = 0;
   DateTime? _startedAt;
   bool _usingGps = false;
+  final List<TrackPoint> _track = [];
+  double _peakG = 1;
+  double _flowSum = 0;
+  int _flowN = 0;
+
+  String? _rideId;
+  bool _rawUploadConsent = false;
+  final List<SensorBlock> _chunkBuf = [];
+  int _chunkSeq = 0;
+  static const _chunkEvery = 30;
 
 
   void _bumpIdle() {
@@ -43,21 +57,68 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
+  Future<void> _flushChunk({bool force = false}) async {
+    if (!_rawUploadConsent || _rideId == null) {
+      _chunkBuf.clear();
+      return;
+    }
+    if (!force && _chunkBuf.length < _chunkEvery) return;
+    if (_chunkBuf.isEmpty) return;
+    final blocks = List<SensorBlock>.from(_chunkBuf);
+    _chunkBuf.clear();
+    final seq = _chunkSeq++;
+    final rideId = _rideId!;
+    try {
+      await ref.read(rideChunkRepositoryProvider).appendChunk(
+            rideId: rideId,
+            seq: seq,
+            blocks: blocks,
+          );
+    } catch (_) {
+      // Keep ride UI light — chunk write failures are non-fatal.
+    }
+  }
+
   Future<void> _start() async {
     final sensor = ref.read(sensorCoreProvider);
     final ble = ref.read(bleCoreProvider);
     final location = ref.read(locationCoreProvider);
+    final consents = await ref.read(garageRepositoryProvider).listConsents();
+    _rawUploadConsent = consents['raw_data_upload'] == true;
+    _rideId = const Uuid().v4();
+    _chunkBuf.clear();
+    _chunkSeq = 0;
+
     await sensor.start();
     await ble.connect();
     await location.startRideTracking();
     _usingGps = location.lastFix != null;
-    _locSub = location.fixes.listen((_) {
+    _locSub = location.fixes.listen((fix) {
       if (!mounted || ref.read(isPausedProvider)) return;
       _usingGps = true;
       ref.read(rideDistanceMProvider.notifier).state = location.distanceM;
+      _track.add(
+        TrackPoint(
+          lat: fix.lat,
+          lng: fix.lng,
+          timeMs: fix.timestamp.millisecondsSinceEpoch,
+          elev: fix.altitudeM,
+        ),
+      );
     });
     _sensorSub = sensor.blocks.listen((b) {
-      if (mounted) setState(() => _metrics = b.fused);
+      final fused = b.fused;
+      if (fused == null) return;
+      if (mounted) setState(() => _metrics = fused);
+      if (fused.gForcePeak > _peakG) _peakG = fused.gForcePeak;
+      _flowSum += fused.flowContribution;
+      _flowN += 1;
+      if (_rawUploadConsent) {
+        _chunkBuf.add(b);
+        if (_chunkBuf.length >= _chunkEvery) {
+          unawaited(_flushChunk());
+        }
+      }
     });
     _bleSub = ble.liveData.listen((d) {
       if (mounted) setState(() => _ldi = d);
@@ -88,6 +149,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       setState(() => _confirmStop = 1);
       return;
     }
+    await _flushChunk(force: true);
     await _sensorSub?.cancel();
     await _bleSub?.cancel();
     await _locSub?.cancel();
@@ -96,15 +158,77 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     await ref.read(sensorCoreProvider).stop();
     await ref.read(bleCoreProvider).disconnect();
     await ref.read(locationCoreProvider).stopRideTracking();
+
+    final started = _startedAt ?? DateTime.now();
+    final ended = DateTime.now();
+    final distanceM = ref.read(rideDistanceMProvider);
+    final elapsed = ref.read(rideElapsedSecProvider);
+    final route = ref.read(activeRouteProvider);
+    final bike = await ref.read(garageRepositoryProvider).getActiveBike();
+    final bikeId = bike?.id ?? 'unknown';
+
+    // Fallback-Track wenn kein GPS: synthetische Punkte entlang Distanz
+    var track = List<TrackPoint>.from(_track);
+    if (track.length < 2 && distanceM > 10) {
+      final steps = (elapsed.clamp(2, 120));
+      for (var i = 0; i < steps; i++) {
+        track.add(
+          TrackPoint(
+            lat: 47.99 + i * 0.0001,
+            lng: 7.85 + i * 0.00012,
+            timeMs: started.millisecondsSinceEpoch + i * 1000,
+          ),
+        );
+      }
+    }
+
+    final record = await ref.read(rideRepositoryProvider).endRide(
+          id: _rideId,
+          bikeId: bikeId,
+          startedAt: started,
+          endedAt: ended,
+          distanceKm: distanceM / 1000,
+          movingTimeSec: elapsed,
+          name: route?.name ?? 'Ride',
+          routeId: route?.id,
+          elevationM: route?.elevationM ?? distanceM * 0.03,
+          track: track,
+          summary: {
+            'peakG': _peakG,
+            'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
+            'usingGps': _usingGps,
+            if (_ldi != null) 'soc': _ldi!.batterySocPercent,
+          },
+        );
+
     ref.read(isRidingProvider.notifier).state = false;
     ref.read(isPausedProvider.notifier).state = false;
     ref.read(autoLockedProvider.notifier).state = false;
     ref.read(activeRouteProvider.notifier).state = null;
+    ref.read(rideElapsedSecProvider.notifier).state = 0;
+    ref.read(rideDistanceMProvider.notifier).state = 0;
+    ref.invalidate(bikesProvider);
+    ref.invalidate(recentRidesProvider);
     setState(() {
       _confirmStop = 0;
       _metrics = null;
       _usingGps = false;
+      _track.clear();
+      _peakG = 1;
+      _flowSum = 0;
+      _flowN = 0;
+      _rideId = null;
+      _rawUploadConsent = false;
+      _chunkBuf.clear();
+      _chunkSeq = 0;
     });
+
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PostRideScreen(rideId: record.id),
+      ),
+    );
   }
 
   @override
@@ -159,7 +283,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (route != null)
+                    if (route != null) ...[
                       Card(
                         child: ListTile(
                           leading: const Icon(Icons.navigation),
@@ -179,8 +303,39 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                   },
                                 ),
                         ),
-                      )
-                    else if (!riding)
+                      ),
+                      if (riding && route.coordinates.length >= 4)
+                        Builder(
+                          builder: (context) {
+                            final cues = buildNavCues(route.coordinates);
+                            final nxt = nextCue(cues, distanceM);
+                            if (nxt == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Container(
+                              margin: const EdgeInsets.only(top: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.accent.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Text(
+                                cueBannerText(nxt.cue, nxt.remainingM),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                    ] else if (!riding)
                       const Text(
                         'Optional: Route in Discover wählen und „Losfahren“.',
                         style: TextStyle(color: AppColors.muted),

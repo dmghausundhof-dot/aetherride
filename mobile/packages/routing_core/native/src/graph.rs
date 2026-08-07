@@ -242,7 +242,9 @@ mod tests {
 
     #[test]
     fn routes_osm_derived_asset_graph() {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("testdata/offline_graph_osm.json");
+        // Canonical demo graph: mobile/assets/routing/offline_graph.json (no duplicate in testdata)
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../assets/routing/offline_graph.json");
         let g = load_graph(&path).expect("load osm graph");
         let r = route(&g, Profile::MtbEnduro, 47.99, 7.85, 47.95, 7.92).expect("osm route");
         assert!(r.distance_m > 500.0, "dist {}", r.distance_m);

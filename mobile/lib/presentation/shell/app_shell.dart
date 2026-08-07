@@ -9,26 +9,54 @@ import '../home/home_screen.dart';
 import '../ride/ride_screen.dart';
 import '../shop/shop_screen.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
-  static const _tabs = [
-    HomeScreen(),
-    GarageScreen(),
-    RideScreen(),
-    DiscoverScreen(),
-    ShopScreen(),
-  ];
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  /// Tabs erst beim ersten Besuch bauen — verhindert Discover/MapLibre/GPS
+  /// beim Cold-Start (ANR durch GeolocatorLocationService).
+  final Set<int> _visited = {0};
+
+  Widget _tabBody(int i) {
+    if (!_visited.contains(i)) return const SizedBox.shrink();
+    switch (i) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const GarageScreen();
+      case 2:
+        return const RideScreen();
+      case 3:
+        return const DiscoverScreen();
+      case 4:
+        return const ShopScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final index = ref.watch(shellTabIndexProvider);
+    if (!_visited.contains(index)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _visited.add(index));
+      });
+    }
 
     return Scaffold(
-      body: IndexedStack(index: index, children: _tabs),
+      body: IndexedStack(
+        index: index,
+        children: List.generate(5, _tabBody),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) {
+          setState(() => _visited.add(i));
           ref.read(shellTabIndexProvider.notifier).state = i;
         },
         destinations: const [

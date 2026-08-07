@@ -13,6 +13,7 @@ import '../../domain/active_route.dart';
 import '../../domain/saved_route.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import 'offline_maps_sheet.dart';
 
 class _RouteSuggestion {
   const _RouteSuggestion({
@@ -209,10 +210,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           perm == LocationPermission.deniedForever) {
         return;
       }
-      final pos = await Geolocator.getCurrentPosition(
+      // Last-known zuerst — startet keinen Location-Service (ANR-Risiko).
+      Position? pos = await Geolocator.getLastKnownPosition();
+      pos ??= await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 8),
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 5),
         ),
       );
       if (!mounted) return;
@@ -800,11 +803,40 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ),
                       ),
                       IconButton(
+                        tooltip: 'Offline-Karten',
+                        onPressed: () {
+                          showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (_) => const OfflineMapsSheet(),
+                          );
+                        },
+                        icon: const Icon(Icons.map_outlined),
+                      ),
+                      IconButton(
                         tooltip: 'Meine Position',
                         onPressed: _locate,
                         icon: const Icon(Icons.my_location),
                       ),
                     ],
+                  ),
+                  FutureBuilder<Map<String, bool>>(
+                    future: ref.read(garageRepositoryProvider).listConsents(),
+                    builder: (context, snap) {
+                      final heatmap =
+                          snap.data?['heatmap_contribution'] == true;
+                      if (heatmap) return const SizedBox.shrink();
+                      return const Padding(
+                        padding: EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          'Heatmaps nach Consent (P2)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   Row(
                     children: [

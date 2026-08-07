@@ -2,12 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/config.dart';
+import '../data/catalog/catalog_client.dart';
 import '../data/local/app_database.dart';
+import '../data/local/component_repository.dart';
 import '../data/local/garage_repository.dart';
+import '../data/local/ride_chunk_repository.dart';
+import '../data/local/ride_repository.dart';
+import '../data/local/setup_repository.dart';
 import '../data/routing/route_repository.dart';
 import '../data/sync/sync_engine.dart';
 import '../domain/bike.dart';
+import '../domain/component.dart';
+import '../domain/ride.dart';
 import '../domain/saved_route.dart';
+import '../domain/setup.dart';
 import '../native/ble_core_channel.dart';
 import '../native/location_core_channel.dart';
 import '../native/sensor_core_channel.dart';
@@ -22,6 +30,28 @@ final garageRepositoryProvider = Provider<GarageRepository>((ref) {
   return GarageRepository(ref.watch(appDatabaseProvider));
 });
 
+final componentRepositoryProvider = Provider<ComponentRepository>((ref) {
+  return ComponentRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(garageRepositoryProvider),
+  );
+});
+
+final rideRepositoryProvider = Provider<RideRepository>((ref) {
+  return RideRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(garageRepositoryProvider),
+  );
+});
+
+final rideChunkRepositoryProvider = Provider<RideChunkRepository>((ref) {
+  return RideChunkRepository(ref.watch(appDatabaseProvider));
+});
+
+final catalogClientProvider = Provider<CatalogClient>((ref) {
+  return CatalogClient(ref.watch(appDatabaseProvider));
+});
+
 final routeRepositoryProvider = Provider<RouteRepository>((ref) {
   return RouteRepository(ref.watch(appDatabaseProvider));
 });
@@ -34,10 +64,39 @@ final bikesProvider = FutureProvider<List<Bike>>((ref) {
   return ref.watch(garageRepositoryProvider).listBikes();
 });
 
+final recentRidesProvider = FutureProvider<List<RideRecord>>((ref) {
+  return ref.watch(rideRepositoryProvider).listRides(limit: 20);
+});
+
+final bikeComponentsProvider =
+    FutureProvider.family<List<BikeComponent>, String>((ref, bikeId) {
+  return ref.watch(componentRepositoryProvider).listInstalled(bikeId);
+});
+
+final setupRepositoryProvider = Provider<SetupRepository>((ref) {
+  return SetupRepository(ref.watch(appDatabaseProvider));
+});
+
+final currentSetupProvider =
+    FutureProvider.family<BikeSetup?, String>((ref, bikeId) {
+  return ref.watch(setupRepositoryProvider).getCurrent(bikeId);
+});
+
+/// 'free' | 'pro' — from sync payload when present.
+final subscriptionTierProvider = StateProvider<String>((ref) => 'free');
+
 final syncEngineProvider = Provider<SyncEngine>((ref) {
+  final garage = ref.watch(garageRepositoryProvider);
   final engine = SyncEngine(
     db: ref.watch(appDatabaseProvider),
-    garage: ref.watch(garageRepositoryProvider),
+    garage: garage,
+    onSynced: (merged) {
+      final tier = merged.subscriptionTier;
+      if (tier == 'pro' || tier == 'free') {
+        ref.read(subscriptionTierProvider.notifier).state = tier!;
+        garage.subscriptionTier = tier;
+      }
+    },
   );
   ref.onDispose(engine.stop);
   return engine;
@@ -51,8 +110,13 @@ final authSessionProvider = StreamProvider<Session?>((ref) {
   if (!AppConfig.isSupabaseConfigured) {
     return Stream.value(null);
   }
-  final client = Supabase.instance.client;
-  return client.auth.onAuthStateChange.map((e) => e.session);
+  try {
+    final client = Supabase.instance.client;
+    return client.auth.onAuthStateChange.map((e) => e.session);
+  } catch (_) {
+    // Supabase noch nicht initialisiert (Boot läuft async).
+    return Stream.value(null);
+  }
 });
 
 final sensorCoreProvider = Provider<SensorCoreChannel>((ref) {
