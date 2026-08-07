@@ -18,6 +18,9 @@ import {
   X,
   Pause,
   Navigation,
+  Sun,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { MapView } from "@/components/MapView";
 import { WebSensorSimulator, type FusedMetrics } from "@/lib/sensor/SensorFusion";
@@ -27,10 +30,11 @@ import { estimateRange } from "@/lib/ebike/range";
 import { centerOfGeometry } from "@/lib/routing/demoGeometry";
 import { formatRouteChip } from "@/lib/routing/activeRoute";
 import {
-  buildNavCues,
+  resolveNavCues,
   cueBannerText,
   nextCue,
 } from "@/lib/routing/navCues";
+import { pickAnnounce } from "@/lib/routing/navSteps";
 import { pointAlongLine } from "@/lib/geo/trackMath";
 import type { MountCheck, RideLiveLayer } from "@/types/route";
 
@@ -71,6 +75,9 @@ export default function RidePage() {
   const [layer, setLayer] = useState<RideLiveLayer>("map");
   const [navBanner, setNavBanner] = useState<string | null>(null);
   const [gpsMode, setGpsMode] = useState<"live" | "sim" | "idle">("idle");
+  const [sunlight, setSunlight] = useState(false);
+  const [autoLocked, setAutoLocked] = useState(false);
+  const [sunlightAuto, setSunlightAuto] = useState(false);
 
   const sensorRef = useRef<WebSensorSimulator | null>(null);
   const boschRef = useRef<ReturnType<typeof createBoschLDIClient> | null>(null);
@@ -82,14 +89,21 @@ export default function RidePage() {
   const simTickRef = useRef(0);
   const gpsLiveRef = useRef(false);
   const lastSpokenCueRef = useRef<string | null>(null);
+  const announceSpokenRef = useRef<Set<string>>(new Set());
+  const idleSinceRef = useRef<number>(Date.now());
+  const brightSinceRef = useRef<number | null>(null);
 
   const track = currentRide?.track ?? [];
   const elapsed = currentRide?.durationSec ?? 0;
   const distanceM = currentRide?.distanceM ?? 0;
 
   const navCues = useMemo(
-    () => buildNavCues(activeRoute?.geometry ?? null),
-    [activeRoute?.geometry]
+    () =>
+      resolveNavCues({
+        steps: activeRoute?.steps,
+        geometry: activeRoute?.geometry ?? null,
+      }),
+    [activeRoute?.steps, activeRoute?.geometry]
   );
 
   const mapCenter = useMemo((): [number, number] => {
@@ -136,6 +150,9 @@ export default function RidePage() {
       simTickRef.current = 0;
       gpsLiveRef.current = false;
       lastSpokenCueRef.current = null;
+      announceSpokenRef.current = new Set();
+      setAutoLocked(false);
+      idleSinceRef.current = Date.now();
       return;
     }
 
@@ -272,14 +289,28 @@ export default function RidePage() {
       }
 
       const route = state.activeRoute;
-      if (route?.geometry) {
-        const cues = buildNavCues(route.geometry);
+      if (route) {
+        const cues = resolveNavCues({
+          steps: route.steps,
+          geometry: route.geometry,
+        });
         const along = state.currentRide?.distanceM ?? 0;
         const nxt = nextCue(cues, along);
+        const speed = state.boschLive?.speed ?? 18;
         if (nxt) {
           const text = cueBannerText(nxt.cue, nxt.remainingM);
           setNavBanner(text);
-          if (
+          // Map cue back to step for 400/150/30 announce
+          const step = route.steps?.find((s) => s.id === nxt.cue.id);
+          if (step) {
+            const ann = pickAnnounce(
+              step,
+              nxt.remainingM,
+              speed,
+              announceSpokenRef.current
+            );
+            if (ann) speakHint(ann);
+          } else if (
             nxt.remainingM < 120 &&
             lastSpokenCueRef.current !== nxt.cue.id
           ) {
@@ -289,6 +320,14 @@ export default function RidePage() {
         } else {
           setNavBanner(null);
         }
+      }
+
+      // Auto-Lock nach 20 s ohne Interaktion (Spec Flow B)
+      if (
+        Date.now() - idleSinceRef.current > 20_000 &&
+        !useAppStore.getState().isPaused
+      ) {
+        setAutoLocked(true);
       }
     }, 1000);
 
@@ -309,12 +348,58 @@ export default function RidePage() {
     suspensionActive,
   ]);
 
+  // Sunlight Mode: AmbientLightSensor > 8000 lx für > 4 s, sonst manuell
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ALS = (window as any).AmbientLightSensor;
+    if (!ALS) return;
+    let sensor: { start: () => void; stop: () => void; illuminance?: number } | null =
+      null;
+    try {
+      sensor = new ALS({ frequency: 1 });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (sensor as any).onreading = () => {
+        const lux = (sensor as { illuminance?: number } | null)?.illuminance ?? 0;
+        if (lux > 8000) {
+          if (brightSinceRef.current == null) brightSinceRef.current = Date.now();
+          else if (Date.now() - brightSinceRef.current > 4000) {
+            setSunlightAuto(true);
+            setSunlight(true);
+          }
+        } else {
+          brightSinceRef.current = null;
+          if (sunlightAuto) {
+            setSunlightAuto(false);
+            setSunlight(false);
+          }
+        }
+      };
+      sensor?.start();
+    } catch {
+      /* Browser ohne Sensor / Permission */
+    }
+    return () => {
+      try {
+        sensor?.stop();
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [sunlightAuto]);
+
+  const bumpIdle = () => {
+    idleSinceRef.current = Date.now();
+    if (autoLocked) setAutoLocked(false);
+  };
+
   const handleStart = () => {
     if (!activeBike) return;
+    bumpIdle();
     startRide(activeBike.id, activeBike.type);
   };
 
   const handleEnd = () => {
+    bumpIdle();
     if (!confirmEnd) {
       setConfirmEnd(true);
       return;
@@ -324,9 +409,35 @@ export default function RidePage() {
   };
 
   const speedKmh = boschLive?.speed ?? 0;
+  void navCues;
 
   return (
-    <div className="flex min-h-[calc(100dvh-4.5rem)] flex-col">
+    <div
+      className="relative flex min-h-[calc(100dvh-4.5rem)] flex-col"
+      data-ride-theme={sunlight ? "sunlight" : undefined}
+      onPointerDown={bumpIdle}
+      onDoubleClick={() => {
+        bumpIdle();
+        setAutoLocked(false);
+      }}
+    >
+      {isRiding && autoLocked && (
+        <button
+          type="button"
+          className="ride-autolock"
+          onClick={bumpIdle}
+          onDoubleClick={bumpIdle}
+          aria-label="Entsperren"
+        >
+          <Lock className="mb-3 h-10 w-10 text-accent" />
+          <p className="text-lg font-semibold">Auto-Lock</p>
+          <p className="mt-1 text-sm text-text-secondary">
+            Doppeltipp oder tippen zum Aufwecken
+          </p>
+          <Unlock className="mt-4 h-5 w-5 text-text-secondary" />
+        </button>
+      )}
+
       {/* Recording pulse */}
       {isRiding && (
         <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2">
@@ -361,16 +472,34 @@ export default function RidePage() {
               </p>
             )}
           </div>
-          {activeRoute && !isRiding && (
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
-              onClick={() => clearActiveRoute()}
-              className="rounded-lg p-1.5 text-text-secondary hover:bg-surface-elevated"
-              aria-label="Route entfernen"
+              onClick={() => {
+                setSunlightAuto(false);
+                setSunlight((v) => !v);
+              }}
+              className={`rounded-lg p-1.5 ${
+                sunlight
+                  ? "bg-accent/20 text-accent"
+                  : "text-text-secondary hover:bg-surface-elevated"
+              }`}
+              aria-label="Sunlight Mode"
+              title="Sunlight Mode"
             >
-              <X className="h-4 w-4" />
+              <Sun className="h-4 w-4" />
             </button>
-          )}
+            {activeRoute && !isRiding && (
+              <button
+                type="button"
+                onClick={() => clearActiveRoute()}
+                className="rounded-lg p-1.5 text-text-secondary hover:bg-surface-elevated"
+                aria-label="Route entfernen"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </header>
 
         {/* Route chip */}

@@ -59,12 +59,48 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* High contrast outdoor mode helpers */
+/* High contrast outdoor mode helpers (legacy dark) */
 .outdoor-high-contrast {
   --background: #000000;
   --surface: #0A1210;
   --foreground: #FFFFFF;
   --text-secondary: #D0D8D4;
+}
+
+/* Spec §4.1 Sunlight Mode — nur Ride-Screen */
+[data-ride-theme="sunlight"] {
+  --background: #ffffff;
+  --foreground: #05100c;
+  --surface: #f1f4f2;
+  --surface-elevated: #e8eeea;
+  --primary: #14503a;
+  --primary-dark: #0d3b2e;
+  --accent: #b33f14;
+  --accent-hover: #8f3210;
+  --text-secondary: #3c4c46;
+  --border: #c9d6d0;
+  --success: #15803d;
+  --warning: #a16207;
+  --error: #b91c1c;
+  --muted: #d5e0da;
+  color-scheme: light;
+  transition: background-color 400ms ease, color 400ms ease;
+}
+
+[data-ride-theme="sunlight"] .ride-line-thick {
+  stroke-width: calc(1px + 1px);
+}
+
+.ride-autolock {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  backdrop-filter: blur(2px);
 }
 
 /* Safe area for bottom tab bar */

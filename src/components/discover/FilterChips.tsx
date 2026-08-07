@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   DEFAULT_ROUTE_FILTERS,
   ELEVATION_OPTIONS,
@@ -74,7 +75,7 @@ export function FilterChips({
         ))}
         {SURFACE_OPTIONS.filter((o) => o.id != null).map((o) => (
           <Chip
-            key={o.id}
+            key={o.id!}
             active={filters.surfaceQuery === o.id}
             onClick={() =>
               onChange({
@@ -111,7 +112,7 @@ function Chip({
 }: {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button

@@ -50,12 +50,26 @@ class RouteResult {
     required this.distanceM,
     required this.durationS,
     this.engine,
+    this.steps = const [],
   });
 
   final List<GeoPoint> coordinates;
   final double distanceM;
   final double durationS;
   final String? engine;
+  final List<RouteStep> steps;
+}
+
+class RouteStep {
+  const RouteStep({
+    required this.id,
+    required this.instruction,
+    required this.distanceAlongM,
+  });
+
+  final String id;
+  final String instruction;
+  final double distanceAlongM;
 }
 
 /// Online `/api/route` + offline `routing_core` FFI (Spec §5.4).
@@ -118,6 +132,7 @@ class RoutingClient {
         distanceM: r.distanceM,
         durationS: r.durationS,
         engine: r.engine,
+        steps: const [],
       );
     } on RoutingCoreException {
       return null;
@@ -129,12 +144,11 @@ class RoutingClient {
     GeoPoint to,
     RoutingProfile profile,
   ) async {
+    // Web-API: from=lng,lat&to=lng,lat (Spec /api/route)
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/route').replace(
       queryParameters: {
-        'fromLat': '${from.lat}',
-        'fromLng': '${from.lng}',
-        'toLat': '${to.lat}',
-        'toLng': '${to.lng}',
+        'from': '${from.lng},${from.lat}',
+        'to': '${to.lng},${to.lat}',
         'profile': profile.apiId,
       },
     );
@@ -144,11 +158,21 @@ class RoutingClient {
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     final coords = <GeoPoint>[];
-    final geom = data['geometry'] ?? data['coordinates'];
-    if (geom is List) {
+    final geom = data['geometry'];
+    if (geom is Map && geom['coordinates'] is List) {
+      for (final c in geom['coordinates'] as List) {
+        if (c is List && c.length >= 2) {
+          coords.add(
+            GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()),
+          );
+        }
+      }
+    } else if (geom is List) {
       for (final c in geom) {
         if (c is List && c.length >= 2) {
-          coords.add(GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()));
+          coords.add(
+            GeoPoint((c[1] as num).toDouble(), (c[0] as num).toDouble()),
+          );
         } else if (c is Map) {
           coords.add(
             GeoPoint(
@@ -162,6 +186,22 @@ class RoutingClient {
     if (coords.isEmpty) {
       coords.addAll([from, to]);
     }
+
+    final rawSteps = data['steps'];
+    final steps = <RouteStep>[];
+    if (rawSteps is List) {
+      for (final s in rawSteps) {
+        if (s is! Map) continue;
+        steps.add(
+          RouteStep(
+            id: '${s['id']}',
+            instruction: '${s['instruction'] ?? 'Weiter'}',
+            distanceAlongM: (s['distanceAlongM'] as num?)?.toDouble() ?? 0,
+          ),
+        );
+      }
+    }
+
     return RouteResult(
       coordinates: coords,
       distanceM: (data['distance'] as num?)?.toDouble() ??
@@ -171,6 +211,7 @@ class RoutingClient {
           (data['durationS'] as num?)?.toDouble() ??
           0,
       engine: data['engine'] as String?,
+      steps: steps,
     );
   }
 }

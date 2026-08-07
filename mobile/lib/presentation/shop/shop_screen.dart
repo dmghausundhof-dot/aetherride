@@ -18,7 +18,9 @@ class ShopScreen extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Affiliate + Marketplace folgen. Kompat-Urteile aus der Garage-Domäne.',
+              'Passende Teile für dein Bike — Kompat-Urteile aus der Garage, '
+              'Kauf beim Partner. Die vollständige Shop-Erfahrung läuft aktuell '
+              'in der Web-App (Slot-Filter, Merkliste, Anlass-Empfehlungen).',
             ),
           ],
         ),

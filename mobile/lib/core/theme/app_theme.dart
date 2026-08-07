@@ -8,6 +8,14 @@ abstract final class AppColors {
   static const Color surface = Color(0xFFF4F6F3);
   static const Color surfaceDark = Color(0xFF121A16);
   static const Color muted = Color(0xFF6B7C72);
+
+  // Spec §4.1 Sunlight
+  static const Color sunBg = Color(0xFFFFFFFF);
+  static const Color sunSurface = Color(0xFFF1F4F2);
+  static const Color sunText = Color(0xFF05100C);
+  static const Color sunMuted = Color(0xFF3C4C46);
+  static const Color sunAccent = Color(0xFFB33F14);
+  static const Color sunPrimary = Color(0xFF14503A);
 }
 
 abstract final class AppTheme {
@@ -53,5 +61,25 @@ abstract final class AppTheme {
           brightness: Brightness.dark,
         ),
         scaffoldBackgroundColor: AppColors.surfaceDark,
+      );
+
+  /// Spec Sunlight Mode — nur Ride
+  static ThemeData get sunlight => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        colorScheme: const ColorScheme.light(
+          primary: AppColors.sunPrimary,
+          secondary: AppColors.sunAccent,
+          surface: AppColors.sunSurface,
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onSurface: AppColors.sunText,
+        ),
+        scaffoldBackgroundColor: AppColors.sunBg,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.sunSurface,
+          foregroundColor: AppColors.sunText,
+          elevation: 0,
+        ),
       );
 }

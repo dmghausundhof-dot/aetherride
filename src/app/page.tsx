@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { suggestRoutes } from "@/lib/routing/suggestions";
+import { estimateRange } from "@/lib/ebike/range";
 import { greetingLine, avatarInitials } from "@/lib/home/greeting";
 import {
   buildMaintenanceAlerts,
@@ -66,6 +67,9 @@ export default function HomePage() {
   const activeRoute = useAppStore((s) => s.activeRoute);
   const setActiveRoute = useAppStore((s) => s.setActiveRoute);
   const clearActiveRoute = useAppStore((s) => s.clearActiveRoute);
+  const calibration = useAppStore((s) => s.rangeCalibration);
+  const canUseProFeature = useAppStore((s) => s.canUseProFeature);
+  const rangePro = canUseProFeature("range");
   const router = useRouter();
 
   const [weather, setWeather] = useState<WeatherPayload | null>(null);
@@ -90,18 +94,6 @@ export default function HomePage() {
 
   const ready = bikeReadyStatus(alerts);
 
-  const tipRec = useMemo(
-    () =>
-      recommendations
-        .filter(
-          (r) =>
-            r.status === "shown" &&
-            (r.type === "setup" || r.type === "product" || r.type === "technique")
-        )
-        .slice(0, 1)[0],
-    [recommendations]
-  );
-
   const productConsent =
     consents.find((c) => c.purpose === "product_recommendations")?.granted ??
     false;
@@ -117,6 +109,18 @@ export default function HomePage() {
       })[0] ?? null
     );
   }, [activeBike, rides, productConsent]);
+
+  const tipRec = useMemo(() => {
+    const list = recommendations.filter(
+      (r) =>
+        r.status === "shown" &&
+        (r.type === "setup" || r.type === "product" || r.type === "technique")
+    );
+    if (shopRec) {
+      return list.find((r) => r.type !== "product");
+    }
+    return list[0];
+  }, [recommendations, shopRec]);
 
   const loadWeather = useCallback(async (lat: number, lon: number) => {
     try {
@@ -176,13 +180,38 @@ export default function HomePage() {
   const todayRoute = useMemo(() => {
     if (!activeBike) return null;
     const minutes = profile.fitnessIndicators.avgRideDurationMin || 150;
+    const rangeEst =
+      activeBike.isEbike && rangePro
+        ? estimateRange({
+            bike: activeBike,
+            profile,
+            calibration: calibration ?? undefined,
+            socPercent: boschLive?.soc ?? 87,
+          })
+        : undefined;
     const routes = suggestRoutes({
       bike: activeBike,
       profile,
       availableMinutes: minutes,
+      rangeKmHigh: rangeEst?.kmHigh,
     });
     return routes[0] ?? null;
-  }, [activeBike, profile]);
+  }, [activeBike, profile, rangePro, calibration, boschLive]);
+
+  const heroRange = useMemo(() => {
+    if (!activeBike?.isEbike || !rangePro) return null;
+    return estimateRange({
+      bike: activeBike,
+      profile,
+      calibration: calibration ?? undefined,
+      socPercent: boschLive?.soc ?? 87,
+    });
+  }, [activeBike, profile, rangePro, calibration, boschLive]);
+
+  const rangeTight =
+    !!todayRoute &&
+    !!heroRange &&
+    todayRoute.distanceKm > heroRange.kmHigh * 0.85;
 
   const setupHint = useMemo(
     () =>
@@ -300,6 +329,33 @@ export default function HomePage() {
             <p className="mt-2 text-sm text-text-secondary leading-snug">
               Weil: {heroReason}
             </p>
+          )}
+          {activeBike.isEbike && (
+            <div
+              className={`mt-2 rounded-xl px-3 py-2 text-xs ${
+                rangeTight
+                  ? "bg-warning/10 text-warning"
+                  : "bg-primary/15 text-text-secondary"
+              }`}
+            >
+              {heroRange ? (
+                <>
+                  <span className="font-medium text-foreground">
+                    Reichweite {heroRange.kmLow}–{heroRange.kmHigh} km
+                  </span>
+                  {boschLive?.soc != null && (
+                    <span> · Akku {boschLive.soc}%</span>
+                  )}
+                  {rangeTight
+                    ? ` — Tour ${todayRoute.distanceKm} km ist eng`
+                    : ` · Tour ${todayRoute.distanceKm} km passt`}
+                </>
+              ) : (
+                <span>
+                  Reichweitenprognose mit Pro — Tour {todayRoute.distanceKm} km
+                </span>
+              )}
+            </div>
           )}
           <EvidenceSheet title="Begründung ansehen" className="mt-2">
             <ul className="list-disc space-y-1 pl-4">
