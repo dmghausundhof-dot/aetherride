@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "bbox": [7.80, 47.92, 7.95, 48.02],
+  "nodes": [
+    { "id": "a", "lat": 47.99, "lng": 7.85 },
+    { "id": "b", "lat": 47.98, "lng": 7.87 },
+    { "id": "c", "lat": 47.97, "lng": 7.89 },
+    { "id": "d", "lat": 47.96, "lng": 7.90 },
+    { "id": "e", "lat": 47.95, "lng": 7.92 },
+    { "id": "f", "lat": 47.975, "lng": 7.86 },
+    { "id": "g", "lat": 47.965, "lng": 7.88 }
+  ],
+  "edges": [
+    { "from": "a", "to": "b", "length_m": 1800, "highway": "path", "mtb_scale": 2, "surface": "ground" },
+    { "from": "b", "to": "c", "length_m": 1600, "highway": "path", "mtb_scale": 3, "surface": "ground" },
+    { "from": "c", "to": "d", "length_m": 1400, "highway": "track", "mtb_scale": 2, "surface": "compacted" },
+    { "from": "d", "to": "e", "length_m": 1700, "highway": "path", "mtb_scale": 4, "surface": "ground" },
+    { "from": "a", "to": "f", "length_m": 1200, "highway": "track", "mtb_scale": 1, "surface": "gravel" },
+    { "from": "f", "to": "g", "length_m": 1500, "highway": "path", "mtb_scale": 2, "surface": "ground" },
+    { "from": "g", "to": "d", "length_m": 1300, "highway": "path", "mtb_scale": 2, "surface": "ground" },
+    { "from": "b", "to": "g", "length_m": 1100, "highway": "cycleway", "mtb_scale": 0, "surface": "asphalt" },
+    { "from": "c", "to": "e", "length_m": 2200, "highway": "tertiary", "mtb_scale": 0, "surface": "asphalt" }
+  ]
+}
