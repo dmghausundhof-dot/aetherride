@@ -1,0 +1,3 @@
+# Native libs are produced by scripts/routing/install-android-jni.sh
+*.so
+!**/README.txt
