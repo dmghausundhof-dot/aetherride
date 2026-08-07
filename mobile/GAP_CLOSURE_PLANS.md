@@ -53,10 +53,17 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - Export Share-Sheet (GPX/FIT/JSON)
 - `activeFamilyRiderId` Sync + `effectiveWeightKg`
 
-## Follow-up 3
+## Follow-up 3 — DONE
 - Play-Verify 2A: Google Publisher API (`googlePlayVerify.ts`)
 - Chat: Suggested Prompts, Tool-Wahl, Bearer-Auth, Quota-Hinweis
 - Home Evidence aufklappbar
 - Discover: Scale/Rundkurs/hm-Filter + Consent-Link
 - Garage: Odometer absolut + Stunden
 - Range-Calibration persist/sync + nach E-Ride
+
+## Follow-up 4
+- Web-Sync: rangeCalibration, savedRoutes, maintenanceLogs, commerceMode
+- Offline-Packs Katalog `GET /api/offline/packs`
+- Wartungslogs Sync + Garage-UI
+- Post-Ride Assist-Summary (Schätzung)
+- Strava Export-Stub (ohne OAuth)

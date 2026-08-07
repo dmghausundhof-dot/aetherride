@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../domain/ebike/assist_log.dart';
 import '../../domain/post_ride/analyze.dart';
 import '../../domain/ride.dart';
 import '../../providers/app_providers.dart';
@@ -25,6 +26,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   bool _saving = false;
   PostRideAnalysis? _analysis;
   bool _acceptedSuggestion = false;
+  AssistRideSummary? _assist;
 
   @override
   void initState() {
@@ -43,6 +45,14 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       _bikeName = bike?.name;
       if (ride != null) {
         _analysis = analyzePostRide(ride: ride, bikeName: bike?.name);
+        _assist = buildEstimatedAssistLog(
+          durationSec: ride.movingTimeSec > 0 ? ride.movingTimeSec : 600,
+          distanceM: ride.distanceKm * 1000,
+          elevationGainM: ride.elevationM,
+          avgSpeedKmh: ride.movingTimeSec > 0
+              ? ride.distanceKm / (ride.movingTimeSec / 3600)
+              : null,
+        );
         final fb = ride.feedback;
         if (fb != null && !fb.skipped) {
           _feel = fb.overallFeel.clamp(1, 5);
@@ -255,6 +265,39 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       ),
                     ),
                   ],
+                ],
+                if (_assist != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Assist (Schätzung)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Dominant: ${_assist!.dominantMode.toUpperCase()} · '
+                    '~${_assist!.estimatedTotalWh} Wh',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    [
+                      for (final e in _assist!.modeSharePct.entries)
+                        if (e.value > 0) '${e.key} ${e.value}%',
+                    ].join(' · '),
+                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                  const SizedBox(height: 4),
+                  for (final s in _assist!.segments.take(3))
+                    Text(
+                      '· ${s.label}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _assist!.disclaimer,
+                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
                 ],
                 const SizedBox(height: 24),
                 Text(

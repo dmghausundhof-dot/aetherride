@@ -301,6 +301,9 @@ class GarageRepository {
       activeFamilyRiderId: profileStore?.activeFamilyRiderId,
       commerceMode: profileStore?.commerceMode,
       rangeCalibration: profileStore?.rangeCalibration?.toJson(),
+      maintenanceLogs: profileStore == null
+          ? null
+          : profileStore!.maintenanceLogs,
       updatedAt: state?.localUpdatedAt,
       payloadVersion: state?.payloadVersion ?? 1,
     );
@@ -450,6 +453,12 @@ class GarageRepository {
         store.rangeCalibration = RangeCalibration.fromJson(
           Map<String, dynamic>.from(payload.rangeCalibration as Map),
         );
+      }
+      if (payload.maintenanceLogs is List) {
+        store.maintenanceLogs = [
+          for (final e in payload.maintenanceLogs as List)
+            if (e is Map) Map<String, dynamic>.from(e),
+        ];
       }
       await store.save();
     }

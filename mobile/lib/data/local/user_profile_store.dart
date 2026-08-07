@@ -23,6 +23,7 @@ class UserProfileStore {
   /// Sync-Feld: `affiliate` | `marketplace` (Web-Parität).
   String commerceMode = 'affiliate';
   RangeCalibration? rangeCalibration;
+  List<Map<String, dynamic>> maintenanceLogs = [];
 
   Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -66,6 +67,10 @@ class UserProfileStore {
           Map<String, dynamic>.from(m['rangeCalibration'] as Map),
         );
       }
+      maintenanceLogs = [
+        for (final e in (m['maintenanceLogs'] as List? ?? const []))
+          if (e is Map) Map<String, dynamic>.from(e),
+      ];
     } catch (_) {}
   }
 
@@ -83,6 +88,7 @@ class UserProfileStore {
         'commerceMode': commerceMode,
         if (rangeCalibration != null)
           'rangeCalibration': rangeCalibration!.toJson(),
+        'maintenanceLogs': maintenanceLogs,
       }),
     );
   }
@@ -114,6 +120,30 @@ class UserProfileStore {
 
   Future<void> setRangeCalibration(RangeCalibration cal) async {
     rangeCalibration = cal;
+    await save();
+  }
+
+  Future<void> addMaintenanceLog({
+    required String bikeId,
+    required String activity,
+    double? odometerKm,
+    double? hours,
+    String performer = 'self',
+    String? notes,
+  }) async {
+    maintenanceLogs.insert(0, {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'bikeId': bikeId,
+      'date': DateTime.now().toIso8601String().substring(0, 10),
+      'activity': activity,
+      'performer': performer,
+      if (odometerKm != null) 'odometerKm': odometerKm,
+      if (hours != null) 'hours': hours,
+      if (notes != null) 'notes': notes,
+    });
+    if (maintenanceLogs.length > 120) {
+      maintenanceLogs = maintenanceLogs.sublist(0, 120);
+    }
     await save();
   }
 
@@ -164,6 +194,7 @@ class UserProfileStore {
     chatHistory = [];
     commerceMode = 'affiliate';
     rangeCalibration = null;
+    maintenanceLogs = [];
     await save();
   }
 }

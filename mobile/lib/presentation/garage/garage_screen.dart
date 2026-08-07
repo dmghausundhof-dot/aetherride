@@ -1123,6 +1123,13 @@ class _BikePhotoAndSag extends ConsumerWidget {
                   odometerKm: km,
                   hours: bike.hours,
                 );
+            await ref.read(userProfileStoreProvider).addMaintenanceLog(
+                  bikeId: bike.id,
+                  activity: 'Kilometerstand aktualisiert',
+                  odometerKm: km,
+                  hours: bike.hours,
+                  notes: 'Manuell / Import: ${km.toStringAsFixed(0)} km',
+                );
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1152,6 +1159,13 @@ class _BikePhotoAndSag extends ConsumerWidget {
                   bikeId: bike.id,
                   odometerKm: bike.odometerKm,
                   hours: h,
+                );
+            await ref.read(userProfileStoreProvider).addMaintenanceLog(
+                  bikeId: bike.id,
+                  activity: 'Betriebsstunden aktualisiert',
+                  odometerKm: bike.odometerKm,
+                  hours: h,
+                  notes: 'Manuell: ${h.toStringAsFixed(1)} h',
                 );
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1185,6 +1199,38 @@ class _BikePhotoAndSag extends ConsumerWidget {
             }
           },
         ),
+        const SizedBox(height: 10),
+        Text(
+          'Wartungslog',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        ...() {
+          final logs = store.maintenanceLogs
+              .where((e) => e['bikeId'] == bike.id)
+              .take(5)
+              .toList();
+          if (logs.isEmpty) {
+            return [
+              const Text(
+                'Noch keine Einträge — Odometer-Set erzeugt Logs.',
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ];
+          }
+          return [
+            for (final e in logs)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '${e['date'] ?? '—'} · ${e['activity'] ?? ''}'
+                  '${e['odometerKm'] != null ? ' · ${(e['odometerKm'] as num).toStringAsFixed(0)} km' : ''}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+          ];
+        }(),
       ],
     );
   }

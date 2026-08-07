@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/export/export_trimmed.dart';
 import '../../data/export/json_export.dart';
+import '../../data/export/strava_stub.dart';
 import '../../domain/privacy/consents.dart';
 import '../../providers/app_providers.dart';
 
@@ -272,6 +273,35 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     }
   }
 
+  Future<void> _exportStravaStub() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
+      if (rides.isEmpty) {
+        setState(() => _message = 'Kein Ride zum Exportieren.');
+        return;
+      }
+      final json = rideToStravaActivityJson(rides.first);
+      final path = await _writeExport(
+        'aetherride-strava-${rides.first.id.substring(0, 8)}.json',
+        json,
+      );
+      await _sharePath(path, mime: 'application/json');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Strava-Stub geteilt · $path')),
+        );
+      }
+    } catch (e) {
+      setState(() => _message = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _exportJson() async {
     setState(() {
       _busy = true;
@@ -412,6 +442,12 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
             onPressed: _busy ? null : _exportJson,
             icon: const Icon(Icons.data_object),
             label: const Text('JSON-Vollexport'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _exportStravaStub,
+            icon: const Icon(Icons.upload_outlined),
+            label: const Text('Strava-Payload (Stub, kein OAuth)'),
           ),
           if (_message != null) ...[
             const SizedBox(height: 12),

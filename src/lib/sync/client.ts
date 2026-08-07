@@ -16,6 +16,9 @@ export type SyncPayload = {
   subscriptionTier?: SubscriptionTier;
   commerceMode?: unknown;
   rangeCalibration?: unknown;
+  savedRoutes?: unknown;
+  freeTierExtraBike?: boolean;
+  maintenanceLogs?: unknown;
   activeBikeId?: string | null;
   updatedAt?: string;
   /** Schema version for Flutter/Web payload mapping */

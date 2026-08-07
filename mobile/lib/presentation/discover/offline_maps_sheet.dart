@@ -36,11 +36,36 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   bool _loading = true;
   bool _busy = false;
   String? _progress;
+  List<({String id, String name})> _regions = List.from(_kFallbackRegions);
 
   @override
   void initState() {
     super.initState();
     _load();
+    _fetchCatalog();
+  }
+
+  Future<void> _fetchCatalog() async {
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${AppConfig.apiBaseUrl}/api/offline/packs'),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return;
+      final packs = <({String id, String name})>[];
+      for (final raw in (data['packs'] as List? ?? const [])) {
+        if (raw is! Map) continue;
+        final id = raw['id'] as String?;
+        if (id == null || id.isEmpty) continue;
+        packs.add((id: id, name: (raw['name'] as String?) ?? id));
+      }
+      if (packs.isEmpty || !mounted) return;
+      setState(() => _regions = packs);
+    } catch (_) {}
   }
 
   @override
@@ -383,7 +408,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                     const LinearProgressIndicator(),
                   ],
                   const SizedBox(height: 8),
-                  for (final r in _kFallbackRegions)
+                  for (final r in _regions)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: OutlinedButton.icon(

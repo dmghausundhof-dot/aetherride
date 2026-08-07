@@ -69,6 +69,9 @@ export default function ProfilePage() {
       riderProfile?: unknown;
       subscriptionTier?: "free" | "pro";
       commerceMode?: unknown;
+      rangeCalibration?: unknown;
+      savedRoutes?: unknown;
+      maintenanceLogs?: unknown;
       activeBikeId?: string | null;
     }) => {
       if (remote.subscriptionTier === "pro" || remote.subscriptionTier === "free") {
@@ -98,6 +101,26 @@ export default function ProfilePage() {
         ...(remote.riderProfile
           ? { riderProfile: remote.riderProfile as typeof s.riderProfile }
           : {}),
+        ...(remote.commerceMode === "affiliate" ||
+        remote.commerceMode === "marketplace"
+          ? { commerceMode: remote.commerceMode }
+          : {}),
+        ...(remote.rangeCalibration &&
+        typeof remote.rangeCalibration === "object"
+          ? {
+              rangeCalibration:
+                remote.rangeCalibration as typeof s.rangeCalibration,
+            }
+          : {}),
+        ...(Array.isArray(remote.savedRoutes)
+          ? { savedRoutes: remote.savedRoutes as typeof s.savedRoutes }
+          : {}),
+        ...(Array.isArray(remote.maintenanceLogs)
+          ? {
+              maintenanceLogs:
+                remote.maintenanceLogs as typeof s.maintenanceLogs,
+            }
+          : {}),
         ...(remote.activeBikeId !== undefined
           ? { activeBikeId: remote.activeBikeId }
           : {}),
@@ -121,6 +144,9 @@ export default function ProfilePage() {
           riderProfile: useAppStore.getState().riderProfile,
           subscriptionTier: useAppStore.getState().subscriptionTier,
           commerceMode: useAppStore.getState().commerceMode,
+          rangeCalibration: useAppStore.getState().rangeCalibration,
+          savedRoutes: useAppStore.getState().savedRoutes,
+          maintenanceLogs: useAppStore.getState().maintenanceLogs,
           activeBikeId: useAppStore.getState().activeBikeId,
           updatedAt: new Date().toISOString(),
         };
@@ -229,6 +255,9 @@ export default function ProfilePage() {
         riderProfile: store.riderProfile,
         subscriptionTier: store.subscriptionTier,
         commerceMode: store.commerceMode,
+        rangeCalibration: store.rangeCalibration,
+        savedRoutes: store.savedRoutes,
+        maintenanceLogs: store.maintenanceLogs,
         activeBikeId: store.activeBikeId,
         updatedAt: new Date().toISOString(),
       };
