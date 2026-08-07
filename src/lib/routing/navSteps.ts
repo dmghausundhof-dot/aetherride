@@ -323,21 +323,7 @@ export function stepBannerText(step: NavStep, remainingM: number): string {
   return `In ${remainingM} m ${step.instruction.toLowerCase()}`;
 }
 
-/** Welche Ansage-Stufe (400/150/30) gerade fällig ist */
-export function dueAnnounceTier(
-  remainingM: number,
-  speedKmh: number,
-  alreadyAnnounced: Set<string>
-): { key: string; text: string } | null {
-  const distances = announceDistancesForSpeed(speedKmh);
-  const next = distances
-    .slice()
-    .sort((a, b) => b - a)
-    .find((d) => remainingM <= d + 15 && remainingM > d - 40);
-  if (next == null) return null;
-  return null; // caller uses step id + tier
-}
-
+/** Welche Ansage-Stufe (400/150/30) gerade fällig ist — siehe pickAnnounce */
 export function announceKey(stepId: string, tierM: number): string {
   return `${stepId}@${tierM}`;
 }

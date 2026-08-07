@@ -97,15 +97,6 @@ export default function RidePage() {
   const elapsed = currentRide?.durationSec ?? 0;
   const distanceM = currentRide?.distanceM ?? 0;
 
-  const navCues = useMemo(
-    () =>
-      resolveNavCues({
-        steps: activeRoute?.steps,
-        geometry: activeRoute?.geometry ?? null,
-      }),
-    [activeRoute?.steps, activeRoute?.geometry]
-  );
-
   const mapCenter = useMemo((): [number, number] => {
     if (track.length > 0) {
       const last = track[track.length - 1];
@@ -409,7 +400,6 @@ export default function RidePage() {
   };
 
   const speedKmh = boschLive?.speed ?? 0;
-  void navCues;
 
   return (
     <div

@@ -5,7 +5,9 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/routing/routing_client.dart';
+import '../../domain/active_route.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/ride_providers.dart';
 
 class _RouteSuggestion {
   const _RouteSuggestion({
@@ -181,7 +183,51 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     } catch (_) {}
   }
 
-  void _startRide() {
+  void _startRide({_RouteSuggestion? suggestion}) {
+    final s = suggestion;
+    final engine = _route;
+    if (s != null) {
+      ref.read(activeRouteProvider.notifier).state = ActiveRoute(
+        id: s.id,
+        name: s.name,
+        distanceKm: s.distanceKm,
+        elevationM: s.elevationM.toDouble(),
+        durationMin: s.durationMin,
+        mtbScale: s.mtbScale,
+        coordinates: engine?.coordinates
+                .map((p) => [p.lng, p.lat])
+                .toList() ??
+            const [],
+        steps: engine?.steps
+                .map(
+                  (st) => NavStep(
+                    id: st.id,
+                    instruction: st.instruction,
+                    distanceAlongM: st.distanceAlongM,
+                  ),
+                )
+                .toList() ??
+            const [],
+      );
+    } else if (engine != null) {
+      ref.read(activeRouteProvider.notifier).state = ActiveRoute(
+        id: 'engine-${DateTime.now().millisecondsSinceEpoch}',
+        name: 'Berechnete Route',
+        distanceKm: engine.distanceM / 1000,
+        elevationM: engine.distanceM * 0.03,
+        durationMin: (engine.durationS / 60).round(),
+        coordinates: engine.coordinates.map((p) => [p.lng, p.lat]).toList(),
+        steps: engine.steps
+            .map(
+              (st) => NavStep(
+                id: st.id,
+                instruction: st.instruction,
+                distanceAlongM: st.distanceAlongM,
+              ),
+            )
+            .toList(),
+      );
+    }
     ref.read(shellTabIndexProvider.notifier).state = 2;
   }
 
@@ -237,7 +283,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
             const SizedBox(height: 24),
             FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
-              onPressed: _startRide,
+              onPressed: () => _startRide(suggestion: detail),
               icon: const Icon(Icons.play_arrow),
               label: const Text('Losfahren'),
             ),
