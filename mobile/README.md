@@ -19,6 +19,7 @@ Server verify (`POST /api/billing/play-verify`) validates via Google when creden
 ## Ride Chunks (ops)
 
 1. Apply SQL once on Supabase: `supabase/ride_chunks.sql` (bucket + meta table + RLS)
+   - **Erledigt** auf Projekt `aetherride` (`krmgatsugplouzrhhozn`): Tabelle `ride_chunk_uploads` + Bucket `ride-chunks`
 2. Mobile queues uploads via Drift v6 → `POST /api/ride-chunks` (Bearer)
 3. Confirm storage policies allow authenticated write to the ride-chunks bucket
 

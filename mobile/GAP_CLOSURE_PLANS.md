@@ -68,9 +68,20 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - Post-Ride Assist-Summary (Schätzung)
 - Strava Export-Stub (ohne OAuth)
 
-## Follow-up 5
+## Follow-up 5 — DONE
 - Offline-Pack-IDs dynamisch aus Dateisystem
 - wishlistIds Sync
 - Strava OAuth-Scaffold `GET /api/strava`
 - Ops-Checklist `scripts/ops-checklist.sh`
 - Privacy: Chunk-Health immer sichtbar + Strava-Status
+
+## Ops erledigt
+- `ride_chunks.sql` auf Supabase-Projekt `aetherride` (krmgatsugplouzrhhozn) angewendet
+  (`ride_chunk_uploads` + Bucket `ride-chunks`)
+
+## Ops offen (manuell)
+- Play Console Produkt `aetherride_pro_monthly` + License Tester
+- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (sonst Trusted-Token-MVP)
+- Region/Valhalla-Build (`npm run routing:region` / `routing:valhalla:android`)
+- Mapillary- / Strava-Tokens in Env
+- Bosch LDI echtes Protokoll (Hardware G-1)
