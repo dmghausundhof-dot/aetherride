@@ -83,19 +83,21 @@ if [[ ! -f "$PB_AND/lib/libprotobuf.so" && ! -f "$PB_AND/lib/libprotobuf.a" ]]; 
   cmake --install "$TOOLS/protobuf-android-build-$ABI"
 fi
 
-BUILD_DIR="$WORK/build-android-$ABI"
+BUILD_DIR="$WORK/build-android-$ABI-static"
 PREFIX="$WORK/prefix-android-$ABI"
+LZ4_AND="${LZ4_ANDROID:-$TOOLS/lz4-android}"
 mkdir -p "$BUILD_DIR" "$PREFIX"
 
 TOOLCHAIN="$NDK/build/cmake/android.toolchain.cmake"
-export PKG_CONFIG_PATH="${TOOLS}/lz4-android/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
-echo "==> Configure Valhalla ($ABI)"
-cmake -S "$WORK/valhalla" -B "$BUILD_DIR" -G Ninja \
+export PKG_CONFIG_PATH="${LZ4_AND}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+echo "==> Configure Valhalla ($ABI, static modules)"
+cmake -S "$VALHALLA_SRC" -B "$BUILD_DIR" -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" \
   -DANDROID_ABI="$ABI" \
   -DANDROID_PLATFORM="android-$API" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+  -DCMAKE_PREFIX_PATH="$LZ4_AND" \
   -DENABLE_TOOLS=OFF \
   -DENABLE_DATA_TOOLS=OFF \
   -DENABLE_HTTP=OFF \
@@ -104,7 +106,6 @@ cmake -S "$WORK/valhalla" -B "$BUILD_DIR" -G Ninja \
   -DENABLE_NODE_BINDINGS=OFF \
   -DENABLE_TESTS=OFF \
   -DBUILD_SHARED_LIBS=OFF \
-  -DCMAKE_PREFIX_PATH="$TOOLS/lz4-android" \
   -DENABLE_STATIC_LIBRARY_MODULES=ON \
   -DBoost_INCLUDE_DIR="$BOOST_DIR" \
   -DProtobuf_INCLUDE_DIR="$PB_AND/include" \
@@ -116,27 +117,61 @@ echo "==> Build Valhalla"
 cmake --build "$BUILD_DIR" --parallel "$(nproc)"
 cmake --install "$BUILD_DIR"
 
+# Install only ships a thin libvalhalla.a — copy component archives for Cargo.
+echo "==> Install Valhalla component static libs"
+mkdir -p "$PREFIX/lib"
+while IFS= read -r -d '' lib; do
+  cp -f "$lib" "$PREFIX/lib/"
+done < <(find "$BUILD_DIR/src" -name 'libvalhalla-*.a' -print0)
+
 # Compile AetherRide C shim against installed headers (NDK clang)
 CXX="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
 SHIM_OUT="$PREFIX/lib/libvalhalla_actor_c.a"
 "$CXX" --target=aarch64-linux-android$API -std=c++17 -fPIC -O2 \
   -DAETHER_VALHALLA_LINKED \
   -I"$PREFIX/include" \
+  -I"$PREFIX/include/valhalla" \
+  -I"$PREFIX/include/valhalla/third_party" \
+  -I"$PB_AND/include" \
+  -I"$BOOST_DIR" \
   -I"$ROOT/mobile/packages/routing_core/native/cpp" \
   -c "$ROOT/mobile/packages/routing_core/native/cpp/valhalla_actor_c.cpp" \
   -o "$WORK/valhalla_actor_c.o"
-llvm-ar rcs "$SHIM_OUT" "$WORK/valhalla_actor_c.o" 2>/dev/null || \
-  "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" rcs "$SHIM_OUT" "$WORK/valhalla_actor_c.o"
+"$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar" rcs "$SHIM_OUT" "$WORK/valhalla_actor_c.o"
+
+NDK_BIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+RUST_TARGET="aarch64-linux-android"
+case "$ABI" in
+  armeabi-v7a) RUST_TARGET="armv7-linux-androideabi" ;;
+  x86_64) RUST_TARGET="x86_64-linux-android" ;;
+  x86) RUST_TARGET="i686-linux-android" ;;
+esac
 
 cat > "$PREFIX/aetherride-env.sh" <<EOF
+# Source before: cargo build --features valhalla --target $RUST_TARGET
+export ANDROID_NDK_HOME="$NDK"
 export VALHALLA_LIB_DIR="$PREFIX/lib"
 export VALHALLA_INCLUDE_DIR="$PREFIX/include"
 export VALHALLA_LINK_LIB=valhalla
 export VALHALLA_LINK_KIND=static
-export ANDROID_NDK_HOME="$NDK"
-# After sourcing, from native/:
-#   cargo build --features valhalla --target aarch64-linux-android
+export PROTOBUF_LIB_DIR="$PB_AND/lib"
+export PROTOBUF_INCLUDE_DIR="$PB_AND/include"
+export LZ4_LIB_DIR="$LZ4_AND/lib"
+export BOOST_ROOT="$BOOST_DIR"
+export VALHALLA_EXTRA_INCLUDES="\$PROTOBUF_INCLUDE_DIR:\$BOOST_ROOT:\$VALHALLA_INCLUDE_DIR/valhalla/third_party"
+export CC_${RUST_TARGET//-/_}="$NDK_BIN/aarch64-linux-android${API}-clang"
+export CXX_${RUST_TARGET//-/_}="$NDK_BIN/aarch64-linux-android${API}-clang++"
+export AR_${RUST_TARGET//-/_}="$NDK_BIN/llvm-ar"
+export CARGO_TARGET_$(echo "$RUST_TARGET" | tr 'a-z-' 'A-Z_')_LINKER="$NDK_BIN/aarch64-linux-android${API}-clang"
+export LIBRARY_PATH="\$PROTOBUF_LIB_DIR:\$LZ4_LIB_DIR:\${LIBRARY_PATH:-}"
+echo "Valhalla Android env ready (API=$API, ABI=$ABI)."
 EOF
+
+# Fix clang triple for non-arm64 ABIs in generated env
+if [[ "$ABI" != "arm64-v8a" ]]; then
+  echo "WARN: adjust CC/CXX/LINKER triples in $PREFIX/aetherride-env.sh for ABI=$ABI" >&2
+fi
 
 echo "Installed to $PREFIX"
 echo "source $PREFIX/aetherride-env.sh"
+echo "cd mobile/packages/routing_core/native && cargo build --release --features valhalla --target $RUST_TARGET"

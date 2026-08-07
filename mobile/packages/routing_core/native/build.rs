@@ -15,22 +15,84 @@ fn main() {
 
         if let Ok(inc) = env::var("VALHALLA_INCLUDE_DIR") {
             build.include(&inc);
+            build.include(format!("{inc}/valhalla"));
+            build.include(format!("{inc}/valhalla/third_party"));
             build.define("AETHER_VALHALLA_LINKED", None);
             println!("cargo:warning=linking Valhalla headers from {inc}");
         }
 
+        // Extra -I paths (protobuf, boost, date, …), colon/semicolon-separated
+        if let Ok(extra) = env::var("VALHALLA_EXTRA_INCLUDES") {
+            for p in extra.split([':', ';']).filter(|s| !s.is_empty()) {
+                build.include(p);
+            }
+        }
+        if let Ok(pb) = env::var("PROTOBUF_INCLUDE_DIR") {
+            build.include(pb);
+        }
+        if let Ok(boost) = env::var("BOOST_ROOT") {
+            build.include(boost);
+        }
+
         if let Ok(lib) = env::var("VALHALLA_LIB_DIR") {
             println!("cargo:rustc-link-search=native={lib}");
-            // Prefer shared on Android NDK, static on iOS — override via VALHALLA_LINK_LIB
             let link_lib = env::var("VALHALLA_LINK_LIB").unwrap_or_else(|_| "valhalla".into());
             let kind = env::var("VALHALLA_LINK_KIND").unwrap_or_else(|_| "dylib".into());
-            println!("cargo:rustc-link-lib={kind}={link_lib}");
-            // Common transitive deps when statically linking
+
+            if let Ok(pb) = env::var("PROTOBUF_LIB_DIR") {
+                println!("cargo:rustc-link-search=native={pb}");
+            }
+            if let Ok(lz4) = env::var("LZ4_LIB_DIR") {
+                println!("cargo:rustc-link-search=native={lz4}");
+            }
+
+            let target = env::var("TARGET").unwrap_or_default();
+            let android = target.contains("android");
+
             if kind == "static" {
-                for dep in ["protobuf", "z", "curl", "sqlite3"] {
-                    println!("cargo:rustc-link-lib={dep}");
+                // Valhalla 3.5 installs a thin libvalhalla.a; real code is in component archives.
+                // --start-group resolves circular deps; pass full paths so order is preserved.
+                let components = [
+                    "valhalla-tyr",
+                    "valhalla-thor",
+                    "valhalla-odin",
+                    "valhalla-loki",
+                    "valhalla-meili",
+                    "valhalla-skadi",
+                    "valhalla-sif",
+                    "valhalla-baldr",
+                    "valhalla-midgard",
+                    "valhalla-proto",
+                    link_lib.as_str(),
+                ];
+                println!("cargo:rustc-link-arg=-Wl,--start-group");
+                for name in components {
+                    let archive = format!("{lib}/lib{name}.a");
+                    if PathBuf::from(&archive).exists() {
+                        println!("cargo:rustc-link-arg={archive}");
+                    } else {
+                        println!("cargo:warning=missing {archive}");
+                    }
                 }
-                println!("cargo:rustc-link-lib=stdc++");
+                println!("cargo:rustc-link-arg=-Wl,--end-group");
+                println!("cargo:rustc-link-lib=dylib=protobuf");
+                println!("cargo:rustc-link-lib=dylib=lz4");
+                println!("cargo:rustc-link-lib=z");
+                if !android {
+                    println!("cargo:rustc-link-lib=curl");
+                    println!("cargo:rustc-link-lib=sqlite3");
+                    println!("cargo:rustc-link-lib=stdc++");
+                }
+            } else {
+                println!("cargo:rustc-link-lib={kind}={link_lib}");
+            }
+
+            if android {
+                println!("cargo:rustc-link-lib=dylib=c++_shared");
+                println!("cargo:rustc-link-lib=log");
+                println!("cargo:rustc-link-lib=android");
+                // Fail the link if Valhalla/protobuf still unresolved.
+                println!("cargo:rustc-link-arg=-Wl,-z,defs");
             }
         } else {
             println!(
@@ -43,5 +105,10 @@ fn main() {
         println!("cargo:rerun-if-changed=cpp/valhalla_actor_c.h");
         println!("cargo:rerun-if-env-changed=VALHALLA_INCLUDE_DIR");
         println!("cargo:rerun-if-env-changed=VALHALLA_LIB_DIR");
+        println!("cargo:rerun-if-env-changed=VALHALLA_EXTRA_INCLUDES");
+        println!("cargo:rerun-if-env-changed=PROTOBUF_INCLUDE_DIR");
+        println!("cargo:rerun-if-env-changed=PROTOBUF_LIB_DIR");
+        println!("cargo:rerun-if-env-changed=LZ4_LIB_DIR");
+        println!("cargo:rerun-if-env-changed=BOOST_ROOT");
     }
 }
