@@ -15,21 +15,28 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.aetherride.aetherride_mobile"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        ndk {
+            // Ship arm64 (devices) + x86_64 (emulator) when present under jniLibs.
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Debug keys until release signing is configured.
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // Prefer our packaged libc++_shared / protobuf over duplicates from plugins.
+            pickFirsts += listOf("**/libc++_shared.so", "**/libprotobuf.so")
         }
     }
 }
@@ -44,8 +51,9 @@ flutter {
     source = "../.."
 }
 
-// Copies cargo-built routing_core (+ protobuf / c++_shared) into jniLibs when present.
+// Optional: copy cargo-built routing_core (+ protobuf / c++_shared) into jniLibs.
 // Manual: ./scripts/routing/install-android-jni.sh
+// Skipped when the cargo artifact is absent (does not fail the app build).
 val routingCoreSo =
     file(
         "${project.projectDir}/../../packages/routing_core/native/target/" +
@@ -54,7 +62,6 @@ val routingCoreSo =
 val routingJniDir = file("${project.projectDir}/src/main/jniLibs/arm64-v8a")
 
 tasks.register<Exec>("installRoutingCoreJni") {
-    // rootProject = mobile/android → ../../ = repo root
     workingDir = rootProject.projectDir.parentFile.parentFile
     commandLine("bash", "scripts/routing/install-android-jni.sh")
     inputs.file(routingCoreSo)

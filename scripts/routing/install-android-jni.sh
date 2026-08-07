@@ -37,6 +37,21 @@ NATIVE="$ROOT/mobile/packages/routing_core/native"
 SRC="$NATIVE/target/$RUST_TARGET/release/librouting_core.so"
 JNI="$ROOT/mobile/android/app/src/main/jniLibs/$ABI"
 NDK="${ANDROID_NDK_HOME:-${ANDROID_NDK:-}}"
+# Fallbacks when Gradle/preBuild does not export ANDROID_NDK_HOME
+if [[ -z "$NDK" || ! -d "$NDK" ]]; then
+  if [[ -f "$ROOT/mobile/android/local.properties" ]]; then
+    sdk_dir=$(grep -E '^sdk\.dir=' "$ROOT/mobile/android/local.properties" | head -1 | cut -d= -f2- | tr -d '\r')
+    if [[ -n "$sdk_dir" && -d "$sdk_dir/ndk" ]]; then
+      NDK=$(ls -d "$sdk_dir"/ndk/*/ 2>/dev/null | sort -V | tail -1 | sed 's:/*$::')
+    fi
+  fi
+fi
+if [[ -z "$NDK" || ! -d "$NDK" ]]; then
+  for cand in "$HOME/Android/Sdk/ndk"/*; do
+    [[ -d "$cand" ]] || continue
+    NDK="$cand"
+  done
+fi
 
 if [[ ! -f "$SRC" ]]; then
   echo "Missing $SRC" >&2

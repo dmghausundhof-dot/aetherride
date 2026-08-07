@@ -18,6 +18,8 @@ Offline-first Flutter-Client nach Spec §5.
 
 ```bash
 export PATH="$HOME/flutter/bin:$PATH"
+# AGP 9: JDK 17 empfohlen (nicht 21/25)
+export JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/17.0.9-tem}"
 cd mobile
 flutter pub get
 
@@ -25,6 +27,18 @@ flutter run \
   --dart-define=SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
   --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
+
+## Android build
+
+```bash
+export JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/17.0.9-tem}"
+# Optional Valhalla jniLibs (arm64): source …/aetherride-env.sh && cargo build --release --features valhalla --target aarch64-linux-android
+# Emulator graph-only: cargo build --release --target x86_64-linux-android && ./scripts/routing/install-android-jni.sh --graph-only x86_64
+flutter build apk --debug
+# → build/app/outputs/flutter-apk/app-debug.apk
+```
+
+`preBuild` kopiert `librouting_core` (+ protobuf) nach `jniLibs`, wenn das Cargo-Artifact existiert.
 
 ## Native libs
 

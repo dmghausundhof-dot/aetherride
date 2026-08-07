@@ -16,6 +16,7 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    // Required by Flutter plugin loader / AGP evaluation order for this template.
     project.evaluationDependsOn(":app")
 }
 
