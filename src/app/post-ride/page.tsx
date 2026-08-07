@@ -7,10 +7,12 @@ import { Check, X, TrendingUp, Wrench, ArrowLeft, Lightbulb } from "lucide-react
 import Link from "next/link";
 import { Suspense, useMemo, useState } from "react";
 import type { RideFeedback } from "@/types";
-import { analyzePostRide } from "@/lib/ai/postRideAnalysis";
+import { analyzePostRide, setupSuggestionToRecommendation } from "@/lib/ai/postRideAnalysis";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { MapView } from "@/components/MapView";
 import { SetupFingerprint } from "@/components/SetupFingerprint";
+import { ConfidenceBadge } from "@/components/ConfidenceBadge";
+import { RideMetricBars } from "@/components/RideMetricBars";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -113,46 +115,30 @@ function PostRideContent() {
             r.status === "shown"
         )
       ) {
-        addRecommendation({
-          type: "setup",
-          title: next.setupSuggestion.title,
-          content: `${next.setupSuggestion.content} Erwartet: ${next.setupSuggestion.expectedEffect}`,
-          reasoning: `${next.setupSuggestion.reasoning}. Grenzen: ${next.setupSuggestion.limits}. Konfidenz: ${next.setupSuggestion.confidence}.`,
-          score: 0.85,
-          relatedBikeId: bike.id,
-          relatedRideId: ride.id,
-        });
+        addRecommendation(
+          setupSuggestionToRecommendation(
+            next.setupSuggestion,
+            bike.id,
+            ride.id
+          )
+        );
       }
     }
   };
 
   const displaySetup = useMemo(() => {
-    if (setupRec) {
-      const expectMatch = setupRec.content.match(/Erwartet:\s*(.+)$/i);
-      const limitsMatch = setupRec.reasoning.match(/Grenzen:\s*([^.]+)/i);
-      const confMatch = setupRec.reasoning.match(/Konfidenz:\s*(\w+)/i);
-      const confRaw = confMatch?.[1]?.toLowerCase();
+    if (setupRec?.setupDetail) {
       return {
         title: setupRec.title,
-        content: expectMatch
-          ? setupRec.content.replace(/\s*Erwartet:.+$/i, "").trim()
-          : setupRec.content,
-        reasoning: setupRec.reasoning
-          .replace(/\s*Grenzen:.+$/i, "")
-          .trim(),
-        expectedEffect: expectMatch?.[1],
-        limits: limitsMatch?.[1]?.trim(),
-        confidence:
-          confRaw === "high" || confRaw === "hoch"
-            ? "high"
-            : confRaw === "medium" || confRaw === "mittel"
-              ? "medium"
-              : confRaw === "low" || confRaw === "niedrig"
-                ? "low"
-                : undefined,
+        content: setupRec.content,
+        reasoning: setupRec.reasoning,
+        expectedEffect: setupRec.setupDetail.expectedEffect,
+        limits: setupRec.setupDetail.limits,
+        confidence: setupRec.setupDetail.confidence,
         id: setupRec.id as string | null,
       };
     }
+    // Legacy-Recommendations ohne setupDetail: Analyse-Objekt bevorzugen
     const s = analysis?.setupSuggestion;
     if (!s) return null;
     return {
@@ -162,7 +148,7 @@ function PostRideContent() {
       expectedEffect: s.expectedEffect,
       limits: s.limits,
       confidence: s.confidence,
-      id: null as string | null,
+      id: (setupRec?.id as string | null) ?? null,
     };
   }, [setupRec, analysis]);
 
@@ -260,13 +246,14 @@ function PostRideContent() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 font-semibold">Sensor-Details</h3>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-xs text-text-secondary">Peak G-Force</div>
-            <div className="text-lg font-semibold tabular-nums">
-              {ride.summaryMetrics.gForcePeak} g
-            </div>
-          </div>
+        <RideMetricBars
+          impactCount={ride.summaryMetrics.impactCount}
+          distanceM={ride.distanceM}
+          flowScore={ride.summaryMetrics.flowScore}
+          gForcePeak={ride.summaryMetrics.gForcePeak}
+          gForceRms={ride.summaryMetrics.gForceRms}
+        />
+        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg bg-surface-elevated p-2">
             <div className="text-xs text-text-secondary">Max Lean</div>
             <div className="text-lg font-semibold tabular-nums">
@@ -274,15 +261,9 @@ function PostRideContent() {
             </div>
           </div>
           <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-xs text-text-secondary">Impacts</div>
+            <div className="text-xs text-text-secondary">Impacts gesamt</div>
             <div className="text-lg font-semibold tabular-nums">
               {ride.summaryMetrics.impactCount}
-            </div>
-          </div>
-          <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-xs text-text-secondary">RMS G</div>
-            <div className="text-lg font-semibold tabular-nums">
-              {ride.summaryMetrics.gForceRms} g
             </div>
           </div>
         </div>
@@ -457,9 +438,12 @@ function PostRideContent() {
 
       {displaySetup && (
         <section className="rounded-2xl border border-accent/40 bg-surface p-4">
-          <div className="mb-2 flex items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <Wrench className="h-5 w-5 text-accent" />
             <h3 className="font-semibold">Was du ändern kannst</h3>
+            {displaySetup.confidence && (
+              <ConfidenceBadge confidence={displaySetup.confidence} />
+            )}
           </div>
           <p className="text-sm font-medium">{displaySetup.title}</p>
           <p className="mt-1 text-sm text-text-secondary">{displaySetup.content}</p>
@@ -472,15 +456,6 @@ function PostRideContent() {
           {displaySetup.limits && (
             <p className="mt-1 text-xs text-text-secondary">
               Grenzen: {displaySetup.limits}
-              {displaySetup.confidence
-                ? ` · Konfidenz: ${
-                    displaySetup.confidence === "high"
-                      ? "hoch"
-                      : displaySetup.confidence === "medium"
-                        ? "mittel"
-                        : "niedrig"
-                  }`
-                : ""}
             </p>
           )}
           <EvidenceSheet title="Warum?" className="mt-2">

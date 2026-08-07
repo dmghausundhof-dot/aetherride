@@ -130,6 +130,12 @@ export interface Recommendation {
   relatedRideId?: string;
   /** Shop-Produkt für Deep-Link (type === "product") */
   relatedProductId?: string;
+  /** F-AI-003 strukturierte Setup-Felder — kein Text-Parsing nötig */
+  setupDetail?: {
+    expectedEffect: string;
+    limits: string;
+    confidence: "low" | "medium" | "high";
+  };
   status: "shown" | "accepted" | "dismissed";
 }
 

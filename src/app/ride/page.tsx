@@ -36,6 +36,7 @@ import {
 } from "@/lib/routing/navCues";
 import { pickAnnounce } from "@/lib/routing/navSteps";
 import { pointAlongLine } from "@/lib/geo/trackMath";
+import { activeDurationSec } from "@/lib/ride/activeDuration";
 import type { MountCheck, RideLiveLayer } from "@/types/route";
 
 const LAYERS: { id: RideLiveLayer; label: string; icon: typeof MapIcon }[] = [
@@ -239,9 +240,13 @@ export default function RidePage() {
       if (!state.isRiding || state.isPaused) return;
 
       if (state.currentRide?.startTime) {
-        const durationSec = Math.round(
-          (Date.now() - new Date(state.currentRide.startTime).getTime()) / 1000
-        );
+        const startMs = new Date(state.currentRide.startTime).getTime();
+        const durationSec = activeDurationSec({
+          startMs,
+          pauseAccumMs: state.pauseAccumMs,
+          pauseStartedAt: null,
+          isPaused: false,
+        });
         useAppStore.setState({
           currentRide: { ...state.currentRide, durationSec },
         });

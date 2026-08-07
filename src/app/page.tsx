@@ -26,7 +26,6 @@ import {
   bikeReadyStatus,
 } from "@/lib/home/maintenanceAlerts";
 import { setupConditionHint, type TrailHint } from "@/lib/home/setupHint";
-import { weeklyRideKm } from "@/lib/garage/readiness";
 import { useRouter } from "next/navigation";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
@@ -34,6 +33,8 @@ import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
 import { shopHref } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
+import type { Recommendation } from "@/types";
+import type { ProductRecommendation } from "@/lib/shop/recommendations";
 
 type WeatherPayload = {
   trailHint: TrailHint;
@@ -98,29 +99,33 @@ export default function HomePage() {
     consents.find((c) => c.purpose === "product_recommendations")?.granted ??
     false;
 
-  const shopRec = useMemo(() => {
+  /** Spec 4.7.1: maximal eine Empfehlung — Setup vor Shop */
+  const primaryTip = useMemo(():
+    | { kind: "rec"; rec: Recommendation }
+    | { kind: "shop"; shop: ProductRecommendation }
+    | null => {
+    const setupOrTech = recommendations.find(
+      (r) =>
+        r.status === "shown" &&
+        (r.type === "setup" || r.type === "technique")
+    );
+    if (setupOrTech) return { kind: "rec", rec: setupOrTech };
+
+    const productRec = recommendations.find(
+      (r) => r.status === "shown" && r.type === "product"
+    );
+    if (productRec) return { kind: "rec", rec: productRec };
+
     if (!activeBike || !productConsent) return null;
     const setup = activeBike.setups.find((s) => s.isCurrent);
-    return (
+    const shop =
       allProductRecommendations({
         bike: activeBike,
         rides,
         setup,
-      })[0] ?? null
-    );
-  }, [activeBike, rides, productConsent]);
-
-  const tipRec = useMemo(() => {
-    const list = recommendations.filter(
-      (r) =>
-        r.status === "shown" &&
-        (r.type === "setup" || r.type === "product" || r.type === "technique")
-    );
-    if (shopRec) {
-      return list.find((r) => r.type !== "product");
-    }
-    return list[0];
-  }, [recommendations, shopRec]);
+      })[0] ?? null;
+    return shop ? { kind: "shop", shop } : null;
+  }, [recommendations, activeBike, rides, productConsent]);
 
   const loadWeather = useCallback(async (lat: number, lon: number) => {
     try {
@@ -445,12 +450,6 @@ export default function HomePage() {
               >
                 Garage <ChevronRight className="h-4 w-4" />
               </Link>
-              <Link
-                href={shopHref({ job: "browse" })}
-                className="flex items-center gap-1 text-xs text-text-secondary hover:text-accent"
-              >
-                Passende Teile <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
             </div>
           </div>
 
@@ -540,70 +539,9 @@ export default function HomePage() {
             ))}
           </div>
           <p className="mt-4 text-xs text-text-secondary">
-            Nach dem Anlegen:{" "}
-            <Link href={shopHref()} className="text-accent">
-              passende Teile im Shop
-            </Link>
+            Danach zeigt Home, was als Nächstes passt.
           </p>
         </section>
-      )}
-
-      {activeBike && (
-        <section className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-border bg-surface p-3 text-center">
-            <div className="tabular-nums text-2xl font-bold">
-              {weeklyRideKm(rides, activeBike.id).toFixed(0)}
-            </div>
-            <div className="text-xs text-text-secondary">km diese Woche</div>
-          </div>
-          <Link
-            href={
-              alerts[0]?.shopHref ??
-              alerts[0]?.href ??
-              "/garage?tab=maintenance"
-            }
-            className="rounded-xl border border-border bg-surface p-3 text-center"
-          >
-            <div className="truncate text-sm font-semibold">
-              {alerts[0]
-                ? alerts[0].severity === "overdue"
-                  ? "Überfällig"
-                  : "Bald fällig"
-                : "Alles ok"}
-            </div>
-            <div className="mt-0.5 truncate text-xs text-text-secondary">
-              {alerts[0]?.title ?? "Keine Fälligkeit"}
-            </div>
-          </Link>
-        </section>
-      )}
-
-      {shopRec && (
-        <Link
-          href={shopHref({
-            productId: shopRec.product.id,
-            job: "replace",
-          })}
-          className="flex gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 transition hover:border-warning/60"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/20 text-warning">
-            <ShoppingBag className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-warning">
-              Passt zu deinem Bike
-            </div>
-            <div className="mt-0.5 text-sm font-semibold leading-snug">
-              {shopRec.product.name}
-            </div>
-            <p className="mt-1 text-xs text-text-secondary">
-              {shopRec.triggeringDataPoint} · ab {shopRec.product.priceEur} €
-            </p>
-            <span className="mt-2 inline-flex items-center text-xs font-medium text-accent">
-              Im Shop prüfen <ChevronRight className="h-3.5 w-3.5" />
-            </span>
-          </div>
-        </Link>
       )}
 
       <div className="flex flex-col gap-2">
@@ -640,7 +578,7 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* max. 2 Wartung — vor KI-Tipp */}
+      {/* max. 2 Wartung */}
       {alerts.length > 0 && (
         <section className="flex flex-col gap-2">
           {alerts.map((a) => (
@@ -659,15 +597,6 @@ export default function HomePage() {
                     <div className="text-sm font-medium">{a.title}</div>
                     <div className="text-xs text-text-secondary">{a.detail}</div>
                   </Link>
-                  {a.shopHref && (
-                    <Link
-                      href={a.shopHref}
-                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent"
-                    >
-                      Passendes Teil im Shop{" "}
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
-                  )}
                   <EvidenceSheet title="Warum?" className="mt-1">
                     <p>{a.reasoning}</p>
                     <p className="mt-1">Quelle: {a.sourceLabel}</p>
@@ -679,21 +608,23 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* max. 1 Tipp */}
-      {tipRec && (
+      {/* Spec 4.7.1: maximal eine Empfehlung */}
+      {primaryTip?.kind === "rec" && (
         <section className="rounded-xl border border-border bg-surface p-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-accent">
             Tipp für dich
           </div>
-          <div className="mt-1 text-sm font-medium">{tipRec.title}</div>
-          <p className="mt-1 text-sm text-text-secondary">{tipRec.content}</p>
+          <div className="mt-1 text-sm font-medium">{primaryTip.rec.title}</div>
+          <p className="mt-1 text-sm text-text-secondary">
+            {primaryTip.rec.content}
+          </p>
           <EvidenceSheet title="Warum?" className="mt-2">
-            {tipRec.reasoning}
+            {primaryTip.rec.reasoning}
           </EvidenceSheet>
-          {tipRec.type === "product" && (
+          {primaryTip.rec.type === "product" && (
             <Link
               href={shopHref({
-                productId: tipRec.relatedProductId,
+                productId: primaryTip.rec.relatedProductId,
                 job: "replace",
               })}
               className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent"
@@ -702,6 +633,31 @@ export default function HomePage() {
             </Link>
           )}
         </section>
+      )}
+      {primaryTip?.kind === "shop" && (
+        <Link
+          href={shopHref({
+            productId: primaryTip.shop.product.id,
+            job: "replace",
+          })}
+          className="flex gap-3 rounded-xl border border-border bg-surface p-3 transition hover:border-accent/40"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
+            <ShoppingBag className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold uppercase tracking-wide text-accent">
+              Tipp für dich
+            </div>
+            <div className="mt-0.5 text-sm font-medium leading-snug">
+              {primaryTip.shop.product.name}
+            </div>
+            <p className="mt-1 text-xs text-text-secondary">
+              {primaryTip.shop.triggeringDataPoint} · ab{" "}
+              {primaryTip.shop.product.priceEur} €
+            </p>
+          </div>
+        </Link>
       )}
 
       {lastRide && (

@@ -208,8 +208,8 @@ export function setupSuggestionToRecommendation(
   return {
     type: "setup",
     title: suggestion.title,
-    content: `${suggestion.content} Erwartet: ${suggestion.expectedEffect}`,
-    reasoning: `${suggestion.reasoning}. Grenzen: ${suggestion.limits}. Konfidenz: ${suggestion.confidence}.`,
+    content: suggestion.content,
+    reasoning: suggestion.reasoning,
     score:
       suggestion.confidence === "high"
         ? 0.9
@@ -218,5 +218,10 @@ export function setupSuggestionToRecommendation(
           : 0.55,
     relatedBikeId: bikeId,
     relatedRideId: rideId,
+    setupDetail: {
+      expectedEffect: suggestion.expectedEffect,
+      limits: suggestion.limits,
+      confidence: suggestion.confidence,
+    },
   };
 }

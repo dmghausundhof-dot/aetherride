@@ -2,7 +2,7 @@
  * Smoke-Tests: Post-Ride-Analyse & Home-Wartung.
  * Ausführen: npx tsx src/lib/ai/postRideAnalysis.test.ts
  */
-import { analyzePostRide } from "./postRideAnalysis";
+import { analyzePostRide, setupSuggestionToRecommendation } from "./postRideAnalysis";
 import { buildMaintenanceAlerts } from "@/lib/home/maintenanceAlerts";
 import { greetingLine, timeOfDayGreeting } from "@/lib/home/greeting";
 import { setupConditionHint } from "@/lib/home/setupHint";
@@ -113,8 +113,22 @@ const alerts = buildMaintenanceAlerts({
 if (alerts.length === 0) throw new Error("expected maintenance alert");
 if (alerts.length > 2) throw new Error("max 2 alerts");
 
+const mapped = setupSuggestionToRecommendation(
+  analysis.setupSuggestion!,
+  "b1",
+  "r1"
+);
+if (!mapped.setupDetail) throw new Error("setupDetail required");
+if (mapped.setupDetail.confidence !== "high") {
+  throw new Error(`confidence ${mapped.setupDetail.confidence}`);
+}
+if (/Erwartet:|Grenzen:|Konfidenz:/.test(mapped.content + mapped.reasoning)) {
+  throw new Error("structured fields must not be string-encoded");
+}
+
 console.log("postRideAnalysis.test.ts OK", {
   suggestion: analysis.setupSuggestion.title,
   observations: analysis.observations.length,
   alerts: alerts.map((a) => a.title),
+  setupDetail: mapped.setupDetail,
 });

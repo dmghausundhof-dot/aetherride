@@ -71,6 +71,7 @@ import {
   trackElevationGainM,
 } from "@/lib/geo/trackMath";
 import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
+import { activeDurationSec } from "@/lib/ride/activeDuration";
 
 export type SubscriptionTier = "free" | "pro";
 
@@ -86,6 +87,10 @@ interface AppState {
   savedRoutes: SavedRoute[];
   isRiding: boolean;
   isPaused: boolean;
+  /** Summe pausierter Millisekunden (abgeschlossene Pausen) */
+  pauseAccumMs: number;
+  /** Zeitpunkt des aktuellen Pause-Starts, sonst null */
+  pauseStartedAt: number | null;
   currentRide: Partial<Ride> | null;
   liveMetrics: SensorMetrics | null;
   boschConnected: boolean;
@@ -382,6 +387,8 @@ export const useAppStore = create<AppState>()(
       savedRoutes: [],
       isRiding: false,
       isPaused: false,
+      pauseAccumMs: 0,
+      pauseStartedAt: null,
       currentRide: null,
       liveMetrics: null,
       boschConnected: false,
@@ -1094,6 +1101,8 @@ export const useAppStore = create<AppState>()(
         set({
           isRiding: true,
           isPaused: false,
+          pauseAccumMs: 0,
+          pauseStartedAt: null,
           currentRide: {
             id: uuidv4(),
             bikeId,
@@ -1124,17 +1133,24 @@ export const useAppStore = create<AppState>()(
       },
 
       pauseRide: () => {
-        if (!get().isRiding) return;
-        set({ isPaused: true });
+        if (!get().isRiding || get().isPaused) return;
+        set({ isPaused: true, pauseStartedAt: Date.now() });
       },
 
       resumeRide: () => {
-        if (!get().isRiding) return;
-        set({ isPaused: false });
+        if (!get().isRiding || !get().isPaused) return;
+        const { pauseStartedAt, pauseAccumMs } = get();
+        const extra =
+          pauseStartedAt != null ? Date.now() - pauseStartedAt : 0;
+        set({
+          isPaused: false,
+          pauseStartedAt: null,
+          pauseAccumMs: pauseAccumMs + extra,
+        });
       },
 
       appendTrackPoint: (point) => {
-        const { isRiding, isPaused, currentRide } = get();
+        const { isRiding, isPaused, currentRide, pauseAccumMs } = get();
         if (!isRiding || isPaused || !currentRide) return;
         const nextPoint = {
           lat: point.lat,
@@ -1152,7 +1168,12 @@ export const useAppStore = create<AppState>()(
         const startMs = currentRide.startTime
           ? new Date(currentRide.startTime).getTime()
           : Date.now();
-        const durationSec = Math.round((Date.now() - startMs) / 1000);
+        const durationSec = activeDurationSec({
+          startMs,
+          pauseAccumMs,
+          pauseStartedAt: null,
+          isPaused: false,
+        });
         set({
           currentRide: {
             ...currentRide,
@@ -1184,12 +1205,25 @@ export const useAppStore = create<AppState>()(
         })),
 
       endRide: () => {
-        const { currentRide, liveMetrics, boschLive, activeRoute } = get();
+        const {
+          currentRide,
+          liveMetrics,
+          boschLive,
+          activeRoute,
+          pauseAccumMs,
+          pauseStartedAt,
+          isPaused,
+        } = get();
         if (!currentRide || !currentRide.id) return null;
 
         const endTime = new Date().toISOString();
         const start = new Date(currentRide.startTime!).getTime();
-        const durationSec = Math.round((Date.now() - start) / 1000);
+        const durationSec = activeDurationSec({
+          startMs: start,
+          pauseAccumMs,
+          pauseStartedAt,
+          isPaused,
+        });
         const track = currentRide.track ?? [];
         const fromTrack = track.length >= 2 ? trackDistanceM(track) : 0;
         const elevFromTrack =
@@ -1259,6 +1293,8 @@ export const useAppStore = create<AppState>()(
           rides: [ride, ...s.rides],
           isRiding: false,
           isPaused: false,
+          pauseAccumMs: 0,
+          pauseStartedAt: null,
           currentRide: null,
           liveMetrics: null,
           activeRoute: null,
