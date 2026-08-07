@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
@@ -1045,9 +1047,16 @@ class _BikePhotoAndSag extends ConsumerWidget {
                       final x = await picker.pickImage(
                         source: ImageSource.gallery,
                         maxWidth: 1600,
+                        imageQuality: 85,
                       );
                       if (x == null) return;
-                      await store.setBikePhoto(bike.id, x.path);
+                      final dir = await getApplicationSupportDirectory();
+                      final dest = File(
+                        p.join(dir.path, 'bike_photos', '${bike.id}.jpg'),
+                      );
+                      await dest.parent.create(recursive: true);
+                      await File(x.path).copy(dest.path);
+                      await store.setBikePhoto(bike.id, dest.path);
                       // ignore: unused_result
                       ref.refresh(riderProfileProvider);
                     },
