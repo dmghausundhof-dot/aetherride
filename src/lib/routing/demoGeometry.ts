@@ -1,0 +1,79 @@
+/**
+ * Deterministische Demo-Geometrie für Routenvorschläge,
+ * wenn noch keine Engine-Polyline vorliegt.
+ */
+
+const BASE: Record<string, { lat: number; lng: number }> = {
+  "r-kaltenbronn": { lat: 48.642, lng: 8.425 },
+  "r-alpbach-enduro": { lat: 47.399, lng: 11.944 },
+  "r-soell-flow": { lat: 47.505, lng: 12.192 },
+  default: { lat: 47.45, lng: 12.15 },
+};
+
+function hashSeed(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+/** Abgerundetes Rechteck mit klaren Kurven (für Navi-Demo-Cues) */
+export function buildDemoGeometry(
+  routeId: string,
+  distanceKm: number
+): GeoJSON.LineString {
+  const center = BASE[routeId] ?? BASE.default;
+  const seed = hashSeed(routeId);
+  const halfLng = 0.01 + (distanceKm / 180) * 0.035 + (seed % 5) * 0.0008;
+  const halfLat = halfLng * 0.7;
+  const cornerPts = 8;
+  const coordinates: [number, number][] = [];
+
+  const corners: [number, number][] = [
+    [center.lng - halfLng, center.lat - halfLat],
+    [center.lng + halfLng, center.lat - halfLat],
+    [center.lng + halfLng, center.lat + halfLat],
+    [center.lng - halfLng, center.lat + halfLat],
+  ];
+
+  for (let c = 0; c < 4; c++) {
+    const a = corners[c];
+    const b = corners[(c + 1) % 4];
+    const steps = Math.max(12, Math.round(20 + (seed % 7)));
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps;
+      // leichte Ausbauchung der Kanten
+      const bulge = 0.15 * Math.sin(t * Math.PI) * ((seed % 3) + 1) * 0.001;
+      const lng = a[0] + (b[0] - a[0]) * t;
+      const lat = a[1] + (b[1] - a[1]) * t;
+      const nx = -(b[1] - a[1]);
+      const ny = b[0] - a[0];
+      const nlen = Math.hypot(nx, ny) || 1;
+      coordinates.push([
+        Math.round((lng + (nx / nlen) * bulge) * 1e6) / 1e6,
+        Math.round((lat + (ny / nlen) * bulge) * 1e6) / 1e6,
+      ]);
+    }
+    // Eck-Fillet
+    for (let k = 1; k <= cornerPts; k++) {
+      const t = k / (cornerPts + 1);
+      const next = corners[(c + 1) % 4];
+      const after = corners[(c + 2) % 4];
+      const lng = next[0] + (after[0] - next[0]) * t * 0.15;
+      const lat = next[1] + (after[1] - next[1]) * t * 0.15;
+      coordinates.push([
+        Math.round(lng * 1e6) / 1e6,
+        Math.round(lat * 1e6) / 1e6,
+      ]);
+    }
+  }
+  coordinates.push(coordinates[0]);
+  return { type: "LineString", coordinates };
+}
+
+export function centerOfGeometry(
+  geometry: GeoJSON.LineString | null | undefined
+): [number, number] {
+  if (!geometry?.coordinates?.length) return [12.15, 47.45];
+  const mid = geometry.coordinates[Math.floor(geometry.coordinates.length / 2)];
+  return [mid[0], mid[1]];
+}

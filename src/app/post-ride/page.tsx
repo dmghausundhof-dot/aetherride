@@ -9,6 +9,8 @@ import { Suspense, useMemo, useState } from "react";
 import type { RideFeedback } from "@/types";
 import { analyzePostRide } from "@/lib/ai/postRideAnalysis";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
+import { MapView } from "@/components/MapView";
+import { SetupFingerprint } from "@/components/SetupFingerprint";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -186,7 +188,24 @@ function PostRideContent() {
         {bike && (
           <p className="mb-3 text-sm text-text-secondary">
             {bike.name} · {bikeTypeLabel(ride.sportType)}
+            {setup ? ` · Setup „${setup.label}“` : ""}
           </p>
+        )}
+        {setup && (
+          <div className="mb-3">
+            <SetupFingerprint setup={setup} />
+          </div>
+        )}
+        {ride.track && ride.track.length >= 2 && (
+          <MapView
+            className="mb-3 aspect-[16/9] w-full overflow-hidden rounded-xl"
+            center={[ride.track[0].lng, ride.track[0].lat]}
+            zoom={12}
+            track={ride.track.map((p) => ({ lat: p.lat, lng: p.lng }))}
+          />
+        )}
+        {ride.notes && (
+          <p className="mb-3 text-xs text-accent">{ride.notes}</p>
         )}
         <div className="grid grid-cols-2 gap-4">
           <div>

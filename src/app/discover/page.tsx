@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Compass,
   Mountain,
@@ -9,9 +9,10 @@ import {
   Flame,
   Camera,
   AreaChart,
+  Play,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { suggestRoutes } from "@/lib/routing/suggestions";
+import { suggestRoutes, type RouteSuggestion } from "@/lib/routing/suggestions";
 import { estimateRange } from "@/lib/ebike/range";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
 import {
@@ -32,10 +33,15 @@ import {
   type ClientRouteResult,
 } from "@/lib/routing/profiles";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
+import {
+  activeRouteFromEngine,
+  activeRouteFromSuggestion,
+} from "@/lib/routing/activeRoute";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
 
 function DiscoverPageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const highlightRouteId = searchParams.get("route");
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -47,6 +53,7 @@ function DiscoverPageInner() {
   const boschLive = useAppStore((s) => s.boschLive);
   const canUseProFeature = useAppStore((s) => s.canUseProFeature);
   const consents = useAppStore((s) => s.consents);
+  const setActiveRoute = useAppStore((s) => s.setActiveRoute);
   const rangePro = canUseProFeature("range");
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const [minutes, setMinutes] = useState(150);
@@ -154,6 +161,21 @@ function DiscoverPageInner() {
 
   const photo = trail.photos[photoIdx];
 
+  const startWithSuggestion = (r: RouteSuggestion) => {
+    setActiveRoute(
+      activeRouteFromSuggestion(r, engineRoute?.geometry ?? null)
+    );
+    router.push("/ride");
+  };
+
+  const startWithEngineRoute = () => {
+    if (!engineRoute) return;
+    setActiveRoute(
+      activeRouteFromEngine("Berechnete Route", engineRoute)
+    );
+    router.push("/ride");
+  };
+
   const runRouting = async () => {
     setRoutingBusy(true);
     setRoutingMsg(null);
@@ -258,6 +280,16 @@ function DiscoverPageInner() {
               zoom={12}
               route={engineRoute?.geometry ?? null}
             />
+            {engineRoute && (
+              <button
+                type="button"
+                onClick={startWithEngineRoute}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent/10 py-2.5 text-sm font-semibold text-accent"
+              >
+                <Play className="h-4 w-4 fill-current" />
+                Diese Route losfahren
+              </button>
+            )}
           </div>
 
           {activeBike?.isEbike && !rangePro && (
@@ -323,12 +355,15 @@ function DiscoverPageInner() {
                 {r.rangeNote && (
                   <p className="mt-2 text-xs text-warning">{r.rangeNote}</p>
                 )}
-                <Link
-                  href="/ride"
-                  className="mt-3 inline-flex text-sm font-medium text-accent"
-                >
-                  Mit dieser Route Ride starten →
-                </Link>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startWithSuggestion(r)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+                  >
+                    <Play className="h-4 w-4 fill-current" /> Losfahren
+                  </button>
+                </div>
               </article>
             ))}
           </div>

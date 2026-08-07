@@ -278,3 +278,42 @@ export function suggestRoutes(input: {
         ] as [string, string, string],
       }));
 }
+
+/** Einzelnen Seed als Vorschlag auflösen (Deep-Link / Detail). */
+export function getSuggestionById(
+  id: string,
+  input: {
+    bike: Bike;
+    profile: RiderProfile;
+    availableMinutes?: number;
+    rangeKmHigh?: number;
+  }
+): RouteSuggestion | null {
+  const fromList = suggestRoutes({
+    ...input,
+    availableMinutes: input.availableMinutes ?? 300,
+  }).find((r) => r.id === id);
+  if (fromList) return fromList;
+
+  const seed = SEEDS.find((s) => s.id === id);
+  if (!seed) return null;
+
+  return {
+    id: seed.id,
+    name: seed.name,
+    category: input.bike.category,
+    distanceKm: seed.distanceKm,
+    elevationM: seed.elevationM,
+    durationMin: seed.durationMin,
+    mtbScale: seed.mtbScale,
+    surface: seed.surface,
+    loop: seed.loop,
+    uncertainKmPct: seed.uncertainKmPct,
+    matchScore: 70,
+    reasons: [
+      `Passt grob zu ${input.bike.name}`,
+      `${seed.distanceKm} km · ${seed.elevationM} hm · ${seed.mtbScale}`,
+      seed.loop ? "Rundkurs" : "Point-to-point",
+    ],
+  };
+}

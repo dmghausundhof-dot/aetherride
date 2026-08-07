@@ -64,6 +64,13 @@ import type {
   SetupCondition,
   WheelSize,
 } from "@/types";
+import type { ActiveRoute, SavedRoute } from "@/types/route";
+import type { RouteSuggestion } from "@/lib/routing/suggestions";
+import {
+  trackDistanceM,
+  trackElevationGainM,
+} from "@/lib/geo/trackMath";
+import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
 
 export type SubscriptionTier = "free" | "pro";
 
@@ -73,7 +80,12 @@ interface AppState {
   riderProfile: RiderProfile;
   recommendations: Recommendation[];
   activeBikeId: string | null;
+  /** Discover/Home → Ride Bridge */
+  activeRoute: ActiveRoute | null;
+  /** Discover Library — gespeicherte Touren */
+  savedRoutes: SavedRoute[];
   isRiding: boolean;
+  isPaused: boolean;
   currentRide: Partial<Ride> | null;
   liveMetrics: SensorMetrics | null;
   boschConnected: boolean;
@@ -185,7 +197,20 @@ interface AppState {
   assignSetupToRider: (riderId: string, setupId: string) => void;
   setCommerceMode: (mode: CommerceMode) => void;
 
+  setActiveRoute: (route: ActiveRoute | null) => void;
+  clearActiveRoute: () => void;
+  saveRoute: (route: RouteSuggestion | SavedRoute | ActiveRoute) => void;
+  unsaveRoute: (id: string) => void;
+  isRouteSaved: (id: string) => boolean;
   startRide: (bikeId: string, sportType: BikeType) => void;
+  pauseRide: () => void;
+  resumeRide: () => void;
+  appendTrackPoint: (point: {
+    lat: number;
+    lng: number;
+    elev?: number;
+    time?: number;
+  }) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
   updateBoschLive: (data: Partial<AppState["boschLive"]>) => void;
   endRide: () => Ride | null;
@@ -353,7 +378,10 @@ export const useAppStore = create<AppState>()(
       riderProfile: defaultProfile,
       recommendations: [],
       activeBikeId: null,
+      activeRoute: null,
+      savedRoutes: [],
       isRiding: false,
+      isPaused: false,
       currentRide: null,
       liveMetrics: null,
       boschConnected: false,
@@ -1025,11 +1053,47 @@ export const useAppStore = create<AppState>()(
           ],
         })),
 
+      setActiveRoute: (route) => set({ activeRoute: route }),
+
+      clearActiveRoute: () => set({ activeRoute: null }),
+
+      saveRoute: (route) =>
+        set((s) => {
+          if (s.savedRoutes.some((r) => r.id === route.id)) return s;
+          const entry: SavedRoute = {
+            id: route.id,
+            name: route.name,
+            distanceKm: route.distanceKm,
+            elevationM: route.elevationM,
+            durationMin: route.durationMin,
+            mtbScale: route.mtbScale,
+            surface: route.surface,
+            loop: "loop" in route ? route.loop : undefined,
+            reasons: route.reasons,
+            matchScore: "matchScore" in route ? route.matchScore : undefined,
+            savedAt: new Date().toISOString(),
+            source:
+              "source" in route && route.source === "engine"
+                ? "engine"
+                : "suggestion",
+          };
+          return { savedRoutes: [entry, ...s.savedRoutes] };
+        }),
+
+      unsaveRoute: (id) =>
+        set((s) => ({
+          savedRoutes: s.savedRoutes.filter((r) => r.id !== id),
+        })),
+
+      isRouteSaved: (id) => get().savedRoutes.some((r) => r.id === id),
+
       startRide: (bikeId, sportType) => {
         const bike = get().bikes.find((b) => b.id === bikeId);
         const activeSetup = bike?.setups.find((s) => s.isCurrent);
+        const route = get().activeRoute;
         set({
           isRiding: true,
+          isPaused: false,
           currentRide: {
             id: uuidv4(),
             bikeId,
@@ -1039,6 +1103,8 @@ export const useAppStore = create<AppState>()(
             distanceM: 0,
             elevationGainM: 0,
             durationSec: 0,
+            track: [],
+            notes: route ? `Route: ${route.name}` : undefined,
             summaryMetrics: {
               gForcePeak: 0,
               gForceRms: 0,
@@ -1053,6 +1119,47 @@ export const useAppStore = create<AppState>()(
             leanAngleMax: 0,
             impactCount: 0,
             flowScore: 75,
+          },
+        });
+      },
+
+      pauseRide: () => {
+        if (!get().isRiding) return;
+        set({ isPaused: true });
+      },
+
+      resumeRide: () => {
+        if (!get().isRiding) return;
+        set({ isPaused: false });
+      },
+
+      appendTrackPoint: (point) => {
+        const { isRiding, isPaused, currentRide } = get();
+        if (!isRiding || isPaused || !currentRide) return;
+        const nextPoint = {
+          lat: point.lat,
+          lng: point.lng,
+          elev: point.elev,
+          time: point.time ?? Date.now(),
+        };
+        const track = [...(currentRide.track ?? []), nextPoint];
+        const distanceM = Math.round(trackDistanceM(track));
+        const elevFromTrack = trackElevationGainM(track);
+        const elevationGainM =
+          elevFromTrack > 0
+            ? Math.round(elevFromTrack)
+            : currentRide.elevationGainM ?? 0;
+        const startMs = currentRide.startTime
+          ? new Date(currentRide.startTime).getTime()
+          : Date.now();
+        const durationSec = Math.round((Date.now() - startMs) / 1000);
+        set({
+          currentRide: {
+            ...currentRide,
+            track,
+            distanceM,
+            elevationGainM,
+            durationSec,
           },
         });
       },
@@ -1077,12 +1184,16 @@ export const useAppStore = create<AppState>()(
         })),
 
       endRide: () => {
-        const { currentRide, liveMetrics, boschLive } = get();
+        const { currentRide, liveMetrics, boschLive, activeRoute } = get();
         if (!currentRide || !currentRide.id) return null;
 
         const endTime = new Date().toISOString();
         const start = new Date(currentRide.startTime!).getTime();
         const durationSec = Math.round((Date.now() - start) / 1000);
+        const track = currentRide.track ?? [];
+        const fromTrack = track.length >= 2 ? trackDistanceM(track) : 0;
+        const elevFromTrack =
+          track.length >= 2 ? trackElevationGainM(track) : 0;
 
         const ride: Ride = {
           id: currentRide.id,
@@ -1091,10 +1202,22 @@ export const useAppStore = create<AppState>()(
           sportType: currentRide.sportType!,
           startTime: currentRide.startTime!,
           endTime,
-          distanceM: currentRide.distanceM || Math.round(durationSec * 4.2),
+          distanceM:
+            currentRide.distanceM ||
+            Math.round(fromTrack) ||
+            Math.round(durationSec * 4.2),
           elevationGainM:
-            currentRide.elevationGainM || Math.round(durationSec * 0.8),
+            currentRide.elevationGainM ||
+            Math.round(elevFromTrack) ||
+            (activeRoute
+              ? Math.round(
+                  (activeRoute.elevationM * durationSec) /
+                    Math.max(60, activeRoute.durationMin * 60)
+                )
+              : Math.round(durationSec * 0.8)),
           durationSec,
+          track: track.length > 0 ? track : undefined,
+          notes: currentRide.notes,
           summaryMetrics: liveMetrics || currentRide.summaryMetrics!,
           motorData: boschLive
             ? {
@@ -1135,8 +1258,10 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           rides: [ride, ...s.rides],
           isRiding: false,
+          isPaused: false,
           currentRide: null,
           liveMetrics: null,
+          activeRoute: null,
           bikes: s.bikes.map((b) =>
             b.id === ride.bikeId
               ? {
@@ -1338,6 +1463,15 @@ export const useAppStore = create<AppState>()(
           const start = new Date();
           start.setDate(start.getDate() - 2);
           const end = new Date(start.getTime() + 95 * 60 * 1000);
+          const demoGeom = buildDemoGeometry("r-kaltenbronn", 28);
+          const demoTrack = demoGeom.coordinates
+            .filter((_, i) => i % 3 === 0)
+            .map((c, i) => ({
+              lng: c[0],
+              lat: c[1],
+              elev: 700 + Math.sin(i / 5) * 80,
+              time: start.getTime() + i * 60_000,
+            }));
           set((s) => ({
             rides: [
               {
@@ -1350,6 +1484,8 @@ export const useAppStore = create<AppState>()(
                 distanceM: 28400,
                 elevationGainM: 920,
                 durationSec: 95 * 60,
+                track: demoTrack,
+                notes: "Demo-Ride Kaltenbronn-ähnlich",
                 summaryMetrics: {
                   gForcePeak: 3.8,
                   gForceRms: 1.35,
@@ -1357,7 +1493,6 @@ export const useAppStore = create<AppState>()(
                   impactCount: 42,
                   flowScore: 71,
                 },
-                notes: "Demo-Ride Kaltenbronn-ähnlich",
               },
               ...s.rides,
             ],
@@ -1422,6 +1557,8 @@ export const useAppStore = create<AppState>()(
           familyRiders: base.familyRiders ?? [],
           activeFamilyRiderId: base.activeFamilyRiderId ?? null,
           commerceMode: base.commerceMode ?? "affiliate",
+          activeRoute: base.activeRoute ?? null,
+          savedRoutes: base.savedRoutes ?? [],
           storageVersion: STORAGE_VERSION,
         } as AppState;
       },
@@ -1431,6 +1568,8 @@ export const useAppStore = create<AppState>()(
         riderProfile: s.riderProfile,
         recommendations: s.recommendations,
         activeBikeId: s.activeBikeId,
+        activeRoute: s.activeRoute,
+        savedRoutes: s.savedRoutes,
         boschConnected: s.boschConnected,
         maintenanceLogs: s.maintenanceLogs,
         maintenanceIntervals: s.maintenanceIntervals,

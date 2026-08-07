@@ -25,9 +25,11 @@ import {
 } from "@/lib/home/maintenanceAlerts";
 import { setupConditionHint, type TrailHint } from "@/lib/home/setupHint";
 import { weeklyRideKm } from "@/lib/garage/readiness";
+import { useRouter } from "next/navigation";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { SetupFingerprint } from "@/components/SetupFingerprint";
+import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
 
 type WeatherPayload = {
   trailHint: TrailHint;
@@ -57,6 +59,10 @@ export default function HomePage() {
   const profile = useAppStore((s) => s.riderProfile);
   const intervals = useAppStore((s) => s.maintenanceIntervals);
   const setCurrentSetup = useAppStore((s) => s.setCurrentSetup);
+  const activeRoute = useAppStore((s) => s.activeRoute);
+  const setActiveRoute = useAppStore((s) => s.setActiveRoute);
+  const clearActiveRoute = useAppStore((s) => s.clearActiveRoute);
+  const router = useRouter();
 
   const [weather, setWeather] = useState<WeatherPayload | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -183,6 +189,17 @@ export default function HomePage() {
 
   const initials = avatarInitials(displayName);
 
+  const startWithTodayRoute = useCallback(() => {
+    if (!todayRoute) return;
+    setActiveRoute(activeRouteFromSuggestion(todayRoute));
+    router.push("/ride");
+  }, [todayRoute, setActiveRoute, router]);
+
+  const startFreeride = useCallback(() => {
+    clearActiveRoute();
+    router.push("/ride");
+  }, [clearActiveRoute, router]);
+
   const ridesOnSetup = useMemo(() => {
     if (!currentSetup || !activeBike) return 0;
     return rides.filter(
@@ -280,12 +297,13 @@ export default function HomePage() {
             >
               Route ansehen <ChevronRight className="h-4 w-4" />
             </Link>
-            <Link
-              href="/ride"
+            <button
+              type="button"
+              onClick={startWithTodayRoute}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
             >
-              <Play className="h-4 w-4 fill-current" /> Ride
-            </Link>
+              <Play className="h-4 w-4 fill-current" /> Losfahren
+            </button>
           </div>
         </section>
       ) : activeBike ? (
@@ -465,13 +483,39 @@ export default function HomePage() {
         </section>
       )}
 
-      <Link
-        href="/ride"
-        className="flex items-center justify-center gap-3 rounded-2xl bg-accent py-4 text-lg font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent-hover active:scale-[0.98]"
-      >
-        <Play className="h-6 w-6 fill-current" />
-        Ride starten
-      </Link>
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (activeRoute) {
+              router.push("/ride");
+              return;
+            }
+            if (todayRoute) {
+              startWithTodayRoute();
+              return;
+            }
+            startFreeride();
+          }}
+          className="flex items-center justify-center gap-3 rounded-2xl bg-accent py-4 text-lg font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent-hover active:scale-[0.98]"
+        >
+          <Play className="h-6 w-6 fill-current" />
+          {activeRoute
+            ? `${activeRoute.name} starten`
+            : todayRoute
+              ? `${todayRoute.name} starten`
+              : "Freifahren starten"}
+        </button>
+        {(activeRoute || todayRoute) && (
+          <button
+            type="button"
+            onClick={startFreeride}
+            className="rounded-xl border border-border py-2.5 text-sm font-medium text-text-secondary"
+          >
+            Ohne Route freifahren
+          </button>
+        )}
+      </div>
 
       {/* max. 2 Wartung — vor KI-Tipp */}
       {alerts.length > 0 && (

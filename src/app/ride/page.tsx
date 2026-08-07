@@ -1,21 +1,56 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
-import { bikeTypeLabel, formatDuration } from "@/lib/utils";
-import { Play, Square, Activity, Gauge, Zap, Volume2 } from "lucide-react";
+import { bikeTypeLabel, formatDistance, formatDuration } from "@/lib/utils";
+import {
+  Play,
+  Square,
+  Activity,
+  Gauge,
+  Zap,
+  Volume2,
+  Map as MapIcon,
+  LayoutGrid,
+  Waves,
+  X,
+  Pause,
+  Navigation,
+} from "lucide-react";
 import { MapView } from "@/components/MapView";
 import { WebSensorSimulator, type FusedMetrics } from "@/lib/sensor/SensorFusion";
 import { createBoschLDIClient, type BoschLiveData } from "@/lib/ble/BoschLDI";
 import { hintsFromMetrics, speakHint } from "@/lib/sensor/liveHints";
 import { estimateRange } from "@/lib/ebike/range";
+import { centerOfGeometry } from "@/lib/routing/demoGeometry";
+import { formatRouteChip } from "@/lib/routing/activeRoute";
+import {
+  buildNavCues,
+  cueBannerText,
+  nextCue,
+} from "@/lib/routing/navCues";
+import { pointAlongLine } from "@/lib/geo/trackMath";
+import type { MountCheck, RideLiveLayer } from "@/types/route";
+
+const LAYERS: { id: RideLiveLayer; label: string; icon: typeof MapIcon }[] = [
+  { id: "map", label: "Karte", icon: MapIcon },
+  { id: "data", label: "Daten", icon: LayoutGrid },
+  { id: "suspension", label: "Fahrwerk", icon: Waves },
+];
 
 export default function RidePage() {
   const router = useRouter();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
+  const activeRoute = useAppStore((s) => s.activeRoute);
+  const clearActiveRoute = useAppStore((s) => s.clearActiveRoute);
   const isRiding = useAppStore((s) => s.isRiding);
+  const isPaused = useAppStore((s) => s.isPaused);
+  const pauseRide = useAppStore((s) => s.pauseRide);
+  const resumeRide = useAppStore((s) => s.resumeRide);
+  const currentRide = useAppStore((s) => s.currentRide);
   const liveMetrics = useAppStore((s) => s.liveMetrics);
   const boschLive = useAppStore((s) => s.boschLive);
   const boschConnected = useAppStore((s) => s.boschConnected);
@@ -23,22 +58,54 @@ export default function RidePage() {
   const endRide = useAppStore((s) => s.endRide);
   const updateLiveMetrics = useAppStore((s) => s.updateLiveMetrics);
   const updateBoschLive = useAppStore((s) => s.updateBoschLive);
+  const appendTrackPoint = useAppStore((s) => s.appendTrackPoint);
   const profile = useAppStore((s) => s.riderProfile);
   const calibration = useAppStore((s) => s.rangeCalibration);
   const canUseProFeature = useAppStore((s) => s.canUseProFeature);
   const rangePro = canUseProFeature("range");
 
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
-  const [elapsed, setElapsed] = useState(0);
-  const [track, setTrack] = useState<{ lat: number; lng: number }[]>([]);
   const [hint, setHint] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [mountCheck, setMountCheck] = useState<MountCheck>("unknown");
+  const [layer, setLayer] = useState<RideLiveLayer>("map");
+  const [navBanner, setNavBanner] = useState<string | null>(null);
+  const [gpsMode, setGpsMode] = useState<"live" | "sim" | "idle">("idle");
+
   const sensorRef = useRef<WebSensorSimulator | null>(null);
   const boschRef = useRef<ReturnType<typeof createBoschLDIClient> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const geoWatchRef = useRef<number | null>(null);
   const standRef = useRef(0);
   const impactStreakRef = useRef(0);
   const lastImpactRef = useRef(false);
+  const simTickRef = useRef(0);
+  const gpsLiveRef = useRef(false);
+  const lastSpokenCueRef = useRef<string | null>(null);
+
+  const track = currentRide?.track ?? [];
+  const elapsed = currentRide?.durationSec ?? 0;
+  const distanceM = currentRide?.distanceM ?? 0;
+
+  const navCues = useMemo(
+    () => buildNavCues(activeRoute?.geometry ?? null),
+    [activeRoute?.geometry]
+  );
+
+  const mapCenter = useMemo((): [number, number] => {
+    if (track.length > 0) {
+      const last = track[track.length - 1];
+      return [last.lng, last.lat];
+    }
+    return centerOfGeometry(activeRoute?.geometry ?? null);
+  }, [track, activeRoute?.geometry]);
+
+  const remainingElev = useMemo(() => {
+    if (!activeRoute) return null;
+    const planned = activeRoute.elevationM;
+    const done = currentRide?.elevationGainM ?? 0;
+    return Math.max(0, planned - done);
+  }, [activeRoute, currentRide?.elevationGainM]);
 
   const range =
     activeBike?.isEbike && rangePro
@@ -51,14 +118,24 @@ export default function RidePage() {
         })
       : null;
 
+  const suspensionActive = mountCheck === "mounted";
+
   useEffect(() => {
     if (!isRiding) {
       sensorRef.current?.stop();
       boschRef.current?.disconnect();
       if (timerRef.current) clearInterval(timerRef.current);
-      setElapsed(0);
+      if (geoWatchRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geoWatchRef.current);
+        geoWatchRef.current = null;
+      }
       setHint(null);
       setConfirmEnd(false);
+      setNavBanner(null);
+      setGpsMode("idle");
+      simTickRef.current = 0;
+      gpsLiveRef.current = false;
+      lastSpokenCueRef.current = null;
       return;
     }
 
@@ -67,6 +144,7 @@ export default function RidePage() {
     let impactTotal = 0;
 
     sensor.start((m: FusedMetrics) => {
+      if (useAppStore.getState().isPaused) return;
       if (m.impactDetected) {
         impactTotal += 1;
         impactStreakRef.current += 1;
@@ -81,12 +159,16 @@ export default function RidePage() {
         leanAngleMax: m.leanAngleDeg,
         impactCount: impactTotal,
         flowScore: Math.round(55 + m.flowContribution * 40),
+        estimatedTravelUsagePct: suspensionActive
+          ? Math.round(40 + m.flowContribution * 45)
+          : undefined,
       });
     }, 15);
 
     const bosch = createBoschLDIClient();
     boschRef.current = bosch;
     bosch.onData((data: BoschLiveData) => {
+      if (useAppStore.getState().isPaused) return;
       updateBoschLive({
         speed: data.speedKmh,
         soc: data.batterySocPercent,
@@ -95,8 +177,12 @@ export default function RidePage() {
         odometer: data.odometerKm,
       });
 
-      if (data.speedKmh < 3) standRef.current += 1;
+      if (data.speedKmh < 2) standRef.current += 1;
       else standRef.current = 0;
+
+      if (standRef.current > 30 && !useAppStore.getState().isPaused) {
+        pauseRide();
+      }
 
       const liveHints = hintsFromMetrics({
         speedKmh: data.speedKmh,
@@ -113,31 +199,118 @@ export default function RidePage() {
     });
     bosch.connect();
 
-    let t = 0;
-    const baseLat = 47.45;
-    const baseLng = 12.15;
-    timerRef.current = setInterval(() => {
-      t += 1;
-      setElapsed(t);
-      setTrack((prev) => [
-        ...prev.slice(-200),
-        {
-          lat: baseLat + Math.sin(t / 40) * 0.008 + (Math.random() - 0.5) * 0.0003,
-          lng: baseLng + t * 0.00015 + Math.cos(t / 30) * 0.004,
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      geoWatchRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          gpsLiveRef.current = true;
+          setGpsMode("live");
+          if (useAppStore.getState().isPaused) return;
+          appendTrackPoint({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            elev: pos.coords.altitude ?? undefined,
+            time: pos.timestamp,
+          });
         },
-      ]);
+        () => {
+          if (!gpsLiveRef.current) setGpsMode("sim");
+        },
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
+      );
+      window.setTimeout(() => {
+        if (!gpsLiveRef.current && useAppStore.getState().isRiding) {
+          setGpsMode("sim");
+        }
+      }, 2500);
+    } else {
+      setGpsMode("sim");
+    }
+
+    timerRef.current = setInterval(() => {
+      const state = useAppStore.getState();
+      if (!state.isRiding || state.isPaused) return;
+
+      if (state.currentRide?.startTime) {
+        const durationSec = Math.round(
+          (Date.now() - new Date(state.currentRide.startTime).getTime()) / 1000
+        );
+        useAppStore.setState({
+          currentRide: { ...state.currentRide, durationSec },
+        });
+      }
+
+      if (!gpsLiveRef.current) {
+        setGpsMode("sim");
+        simTickRef.current += 1;
+        const geometry = state.activeRoute?.geometry;
+        const plannedSec = Math.max(
+          60,
+          (state.activeRoute?.durationMin ?? 90) * 60
+        );
+        if (geometry && geometry.coordinates.length > 1) {
+          const progress = Math.min(0.995, simTickRef.current / plannedSec);
+          const pt = pointAlongLine(geometry, progress);
+          appendTrackPoint({
+            lat: pt.lat,
+            lng: pt.lng,
+            elev:
+              (state.activeRoute?.elevationM ?? 0) *
+              Math.sin(progress * Math.PI),
+            time: Date.now(),
+          });
+        } else {
+          const t = simTickRef.current;
+          appendTrackPoint({
+            lat:
+              47.45 +
+              Math.sin(t / 40) * 0.008 +
+              (Math.random() - 0.5) * 0.0002,
+            lng: 12.15 + t * 0.00015 + Math.cos(t / 30) * 0.004,
+            time: Date.now(),
+          });
+        }
+      }
+
+      const route = state.activeRoute;
+      if (route?.geometry) {
+        const cues = buildNavCues(route.geometry);
+        const along = state.currentRide?.distanceM ?? 0;
+        const nxt = nextCue(cues, along);
+        if (nxt) {
+          const text = cueBannerText(nxt.cue, nxt.remainingM);
+          setNavBanner(text);
+          if (
+            nxt.remainingM < 120 &&
+            lastSpokenCueRef.current !== nxt.cue.id
+          ) {
+            lastSpokenCueRef.current = nxt.cue.id;
+            speakHint(text);
+          }
+        } else {
+          setNavBanner(null);
+        }
+      }
     }, 1000);
 
     return () => {
       sensor.stop();
       bosch.disconnect();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (geoWatchRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geoWatchRef.current);
+      }
     };
-  }, [isRiding, updateBoschLive, updateLiveMetrics]);
+  }, [
+    isRiding,
+    updateBoschLive,
+    updateLiveMetrics,
+    appendTrackPoint,
+    pauseRide,
+    suspensionActive,
+  ]);
 
   const handleStart = () => {
     if (!activeBike) return;
-    setTrack([]);
     startRide(activeBike.id, activeBike.type);
   };
 
@@ -150,138 +323,379 @@ export default function RidePage() {
     if (ride) router.push(`/post-ride?id=${ride.id}`);
   };
 
+  const speedKmh = boschLive?.speed ?? 0;
+
   return (
-    <div className="flex flex-col gap-4 p-4 pt-6">
-      <header>
-        <h1 className="text-2xl font-bold">Ride</h1>
-        {activeBike && (
-          <p className="text-sm text-text-secondary">
-            {activeBike.name} · {bikeTypeLabel(activeBike.type)}
-          </p>
-        )}
-      </header>
-
-      <MapView
-        className="aspect-[4/3] w-full"
-        center={[12.15, 47.45]}
-        zoom={13}
-        track={track}
-      />
-
-      {hint && isRiding && (
-        <div className="flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
-          <Volume2 className="h-4 w-4 text-accent" />
-          <span>{hint}</span>
-          <span className="ml-auto text-[10px] text-text-secondary">
-            ≤6 Wörter · F-SEN-005
-          </span>
-        </div>
-      )}
-
-      {range && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
-          Restreichweite ca.{" "}
-          <span className="font-semibold text-accent">
-            {range.kmLow}–{range.kmHigh} km
-          </span>
-          <span className="text-xs text-text-secondary">
-            {" "}
-            · {range.confidence}
-          </span>
-        </div>
-      )}
-
-      {isRiding && liveMetrics ? (
-        <div className="grid grid-cols-2 gap-3">
-          <MetricCard
-            icon={<Gauge className="h-5 w-5" />}
-            label="G-Force Peak"
-            value={`${liveMetrics.gForcePeak} g`}
-            accent
-          />
-          <MetricCard
-            icon={<Activity className="h-5 w-5" />}
-            label="Lean Angle"
-            value={`${liveMetrics.leanAngleMax}°`}
-          />
-          <MetricCard
-            icon={<Activity className="h-5 w-5" />}
-            label="Impacts"
-            value={`${liveMetrics.impactCount}`}
-          />
-          <MetricCard
-            icon={<Activity className="h-5 w-5" />}
-            label="Flow Score"
-            value={`${liveMetrics.flowScore}`}
-            accent
-          />
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-border bg-surface p-5 text-center text-sm text-text-secondary">
-          <p className="mb-1 font-medium text-foreground">Sensor-Pipeline bereit</p>
-          <p>Live-Hinweise nur als kurze Sprachansagen — kein Ablesen während der Fahrt.</p>
-        </div>
-      )}
-
-      {isRiding && boschConnected && boschLive && (
-        <div className="rounded-2xl border border-primary/30 bg-primary/15 p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-accent">
-            <Zap className="h-4 w-4" /> Bosch Live Data Interface (LDI)
-          </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div>
-              <div className="text-xl font-bold tabular-nums">{boschLive.speed}</div>
-              <div className="text-[10px] text-text-secondary">km/h</div>
-            </div>
-            <div>
-              <div className="text-xl font-bold tabular-nums">{boschLive.soc}%</div>
-              <div className="text-[10px] text-text-secondary">SOC</div>
-            </div>
-            <div>
-              <div className="text-xl font-bold tabular-nums">
-                {boschLive.riderPower}
-              </div>
-              <div className="text-[10px] text-text-secondary">W Rider</div>
-            </div>
-            <div>
-              <div className="text-xl font-bold tabular-nums">{boschLive.cadence}</div>
-              <div className="text-[10px] text-text-secondary">rpm</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col items-center gap-4 pt-2">
-        {isRiding && (
-          <div className="text-5xl font-bold tracking-tight tabular-nums">
-            {formatDuration(elapsed)}
-          </div>
-        )}
-        {!isRiding ? (
-          <button
-            onClick={handleStart}
-            disabled={!activeBike}
-            className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-xl shadow-accent/30 transition active:scale-95 disabled:opacity-40"
-          >
-            <Play className="ml-1 h-10 w-10 fill-current" />
-          </button>
-        ) : (
-          <button
-            onClick={handleEnd}
-            className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-xl transition active:scale-95 ${
-              confirmEnd ? "bg-error" : "bg-error/70"
+    <div className="flex min-h-[calc(100dvh-4.5rem)] flex-col">
+      {/* Recording pulse */}
+      {isRiding && (
+        <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2">
+          <span
+            className={`h-2.5 w-2.5 rounded-full bg-accent ${
+              isPaused ? "opacity-40" : "animate-pulse"
             }`}
-          >
-            <Square className="h-9 w-9 fill-current" />
-          </button>
+            aria-hidden
+          />
+          <span className="text-xs font-medium text-accent">
+            {isPaused ? "Pausiert" : "Aufnahme läuft"}
+          </span>
+          <span className="ml-auto text-[10px] text-text-secondary">
+            {gpsMode === "live"
+              ? "GPS live"
+              : gpsMode === "sim"
+                ? "Track-Simulation"
+                : "…"}
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-1 flex-col gap-3 p-4 pt-4">
+        <header className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold">
+              {isRiding ? "Live" : "Bereit"}
+            </h1>
+            {activeBike && (
+              <p className="truncate text-sm text-text-secondary">
+                {activeBike.name} · {bikeTypeLabel(activeBike.type)}
+              </p>
+            )}
+          </div>
+          {activeRoute && !isRiding && (
+            <button
+              type="button"
+              onClick={() => clearActiveRoute()}
+              className="rounded-lg p-1.5 text-text-secondary hover:bg-surface-elevated"
+              aria-label="Route entfernen"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </header>
+
+        {/* Route chip */}
+        {activeRoute ? (
+          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+            <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{activeRoute.name}</div>
+              <div className="text-xs text-text-secondary">
+                {formatRouteChip(activeRoute)}
+              </div>
+            </div>
+          </div>
+        ) : (
+          !isRiding && (
+            <Link
+              href="/discover"
+              className="rounded-xl border border-dashed border-border px-3 py-2 text-center text-sm text-text-secondary"
+            >
+              Optional: Route in Discover wählen →
+            </Link>
+          )
         )}
-        <p className="text-sm text-text-secondary">
-          {isRiding
-            ? confirmEnd
-              ? "Nochmal tippen zum Beenden"
-              : "Beenden erfordert 2 Tipps"
-            : "Tippen zum Starten"}
-        </p>
+
+        {/* Nav banner */}
+        {isRiding && navBanner && (
+          <div className="rounded-xl border border-accent/50 bg-accent/15 px-3 py-2.5 text-center text-sm font-semibold">
+            {navBanner}
+          </div>
+        )}
+
+        {/* Live layer switcher */}
+        {isRiding && (
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-elevated p-1">
+            {LAYERS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setLayer(id)}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium ${
+                  layer === id
+                    ? "bg-accent text-white"
+                    : "text-text-secondary"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Layer content */}
+        {(!isRiding || layer === "map") && (
+          <MapView
+            className={`w-full overflow-hidden rounded-2xl ${
+              isRiding ? "min-h-[42vh] flex-1" : "aspect-[4/3]"
+            }`}
+            center={mapCenter}
+            zoom={13}
+            track={track.map((p) => ({ lat: p.lat, lng: p.lng }))}
+            route={activeRoute?.geometry ?? null}
+          />
+        )}
+
+        {isRiding && layer === "data" && (
+          <div className="grid grid-cols-2 gap-3">
+            <MetricCard
+              icon={<Gauge className="h-5 w-5" />}
+              label="Geschwindigkeit"
+              value={`${speedKmh}`}
+              unit="km/h"
+              accent
+            />
+            <MetricCard
+              icon={<Activity className="h-5 w-5" />}
+              label="Distanz"
+              value={formatDistance(distanceM)}
+            />
+            <MetricCard
+              icon={<Activity className="h-5 w-5" />}
+              label="Zeit"
+              value={formatDuration(elapsed)}
+            />
+            <MetricCard
+              icon={<Activity className="h-5 w-5" />}
+              label="Höhenmeter"
+              value={`${currentRide?.elevationGainM ?? 0}`}
+              unit="m"
+            />
+            {boschConnected && boschLive && (
+              <>
+                <MetricCard
+                  icon={<Zap className="h-5 w-5" />}
+                  label="Akku"
+                  value={`${boschLive.soc}`}
+                  unit="%"
+                />
+                <MetricCard
+                  icon={<Zap className="h-5 w-5" />}
+                  label="Leistung"
+                  value={`${boschLive.riderPower}`}
+                  unit="W"
+                />
+              </>
+            )}
+            {range && (
+              <div className="col-span-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+                Restreichweite ca.{" "}
+                <span className="font-semibold text-accent">
+                  {range.kmLow}–{range.kmHigh} km
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isRiding && layer === "suspension" && (
+          <div className="rounded-2xl border border-border bg-surface p-4">
+            {suspensionActive ? (
+              <div className="grid grid-cols-2 gap-3">
+                <MetricCard
+                  icon={<Gauge className="h-5 w-5" />}
+                  label="G-Force Peak"
+                  value={`${liveMetrics?.gForcePeak ?? 0} g`}
+                  accent
+                />
+                <MetricCard
+                  icon={<Activity className="h-5 w-5" />}
+                  label="Lean"
+                  value={`${liveMetrics?.leanAngleMax ?? 0}°`}
+                />
+                <MetricCard
+                  icon={<Activity className="h-5 w-5" />}
+                  label="Impacts"
+                  value={`${liveMetrics?.impactCount ?? 0}`}
+                />
+                <MetricCard
+                  icon={<Activity className="h-5 w-5" />}
+                  label="Flow"
+                  value={`${liveMetrics?.flowScore ?? 0}`}
+                  accent
+                />
+                <div className="col-span-2">
+                  <div className="mb-1 text-xs text-text-secondary">
+                    Federweg-Nutzung (geschätzt)
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-surface-elevated">
+                    <div
+                      className="h-full rounded-full bg-accent transition-all"
+                      style={{
+                        width: `${liveMetrics?.estimatedTravelUsagePct ?? 50}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-sm text-text-secondary">
+                <p className="mb-2 font-medium text-foreground">
+                  Fahrwerksanalyse aus
+                </p>
+                <p className="mb-3">
+                  Handy am Lenker befestigen und als montiert markieren — sonst
+                  keine Federungsdaten.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMountCheck("mounted")}
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Als montiert markieren
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {hint && isRiding && !isPaused && (
+          <div className="flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+            <Volume2 className="h-4 w-4 text-accent" />
+            <span>{hint}</span>
+          </div>
+        )}
+
+        {/* Ready checks */}
+        {!isRiding && (
+          <div className="rounded-2xl border border-border bg-surface p-4">
+            <p className="mb-3 text-sm font-medium">Vor dem Start</p>
+            <ul className="mb-4 space-y-2 text-sm">
+              <li className="flex justify-between">
+                <span className="text-text-secondary">Aktives Bike</span>
+                <span className={activeBike ? "text-success" : "text-error"}>
+                  {activeBike ? "✓" : "fehlt"}
+                </span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-text-secondary">Route</span>
+                <span>
+                  {activeRoute ? activeRoute.name : "Freeride (optional)"}
+                </span>
+              </li>
+            </ul>
+            <p className="mb-2 text-sm text-text-secondary">
+              Handy am Lenker?
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMountCheck("mounted")}
+                className={`rounded-xl border py-2.5 text-sm font-medium ${
+                  mountCheck === "mounted"
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border"
+                }`}
+              >
+                Ja — Analyse an
+              </button>
+              <button
+                type="button"
+                onClick={() => setMountCheck("handheld")}
+                className={`rounded-xl border py-2.5 text-sm font-medium ${
+                  mountCheck === "handheld"
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border"
+                }`}
+              >
+                Nein — nur Track
+              </button>
+            </div>
+            {mountCheck === "unknown" && (
+              <p className="mt-2 text-xs text-text-secondary">
+                Optional — ohne Antwort startet Freeride ohne Fahrwerksanalyse.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Bottom chrome — always in thumb zone */}
+        <div className="mt-auto flex flex-col items-center gap-3 pb-2 pt-2">
+          {isRiding && (
+            <div className="grid w-full grid-cols-3 gap-2 text-center">
+              <div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {speedKmh}
+                </div>
+                <div className="text-[10px] text-text-secondary">km/h</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {formatDistance(distanceM)}
+                </div>
+                <div className="text-[10px] text-text-secondary">Distanz</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {remainingElev != null
+                    ? remainingElev
+                    : (currentRide?.elevationGainM ?? 0)}
+                </div>
+                <div className="text-[10px] text-text-secondary">
+                  {remainingElev != null ? "hm übrig" : "hm"}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isRiding && (
+            <div className="text-4xl font-bold tracking-tight tabular-nums">
+              {formatDuration(elapsed)}
+            </div>
+          )}
+
+          <div className="flex items-center gap-6">
+            {isRiding && (
+              <button
+                type="button"
+                onClick={() => (isPaused ? resumeRide() : pauseRide())}
+                className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface"
+                aria-label={isPaused ? "Fortsetzen" : "Pause"}
+              >
+                {isPaused ? (
+                  <Play className="ml-0.5 h-6 w-6 fill-current" />
+                ) : (
+                  <Pause className="h-6 w-6" />
+                )}
+              </button>
+            )}
+
+            {!isRiding ? (
+              <button
+                type="button"
+                onClick={handleStart}
+                disabled={!activeBike}
+                className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-xl shadow-accent/30 transition active:scale-95 disabled:opacity-40"
+                aria-label="Ride starten"
+              >
+                <Play className="ml-1 h-10 w-10 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleEnd}
+                className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-xl transition active:scale-95 ${
+                  confirmEnd ? "bg-error" : "bg-error/70"
+                }`}
+                aria-label="Ride beenden"
+              >
+                <Square className="h-9 w-9 fill-current" />
+              </button>
+            )}
+          </div>
+
+          <p className="text-sm text-text-secondary">
+            {isRiding
+              ? confirmEnd
+                ? "Nochmal tippen zum Beenden"
+                : isPaused
+                  ? "Pausiert — tippe Play zum Weiterfahren"
+                  : "Beenden erfordert 2 Tipps"
+              : activeRoute
+                ? `${activeRoute.name} starten`
+                : "Freifahren starten"}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -291,11 +705,13 @@ function MetricCard({
   icon,
   label,
   value,
+  unit,
   accent,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: string | number;
+  unit?: string;
   accent?: boolean;
 }) {
   return (
@@ -308,6 +724,11 @@ function MetricCard({
         className={`text-2xl font-bold tabular-nums ${accent ? "text-accent" : ""}`}
       >
         {value}
+        {unit ? (
+          <span className="ml-1 text-sm font-medium text-text-secondary">
+            {unit}
+          </span>
+        ) : null}
       </div>
     </div>
   );
