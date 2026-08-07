@@ -33,9 +33,14 @@ fi
 mkdir -p "$WORK" "$TOOLS"
 cd "$WORK"
 
-if [[ ! -d valhalla/.git ]]; then
-  git clone --depth 1 --recurse-submodules https://github.com/valhalla/valhalla.git
+# Prefer Valhalla 3.5.x on NDK: mainline needs std::format (incomplete in NDK libc++).
+VALHALLA_REF="${VALHALLA_REF:-3.5.1}"
+if [[ ! -d "valhalla-$VALHALLA_REF/.git" ]]; then
+  echo "==> Clone Valhalla $VALHALLA_REF"
+  git clone --depth 1 --branch "$VALHALLA_REF" --recurse-submodules \
+    https://github.com/valhalla/valhalla.git "valhalla-$VALHALLA_REF"
 fi
+VALHALLA_SRC="$WORK/valhalla-$VALHALLA_REF"
 
 # Boost headers
 BOOST_VER="${BOOST_VER:-1.85.0}"
@@ -83,6 +88,7 @@ PREFIX="$WORK/prefix-android-$ABI"
 mkdir -p "$BUILD_DIR" "$PREFIX"
 
 TOOLCHAIN="$NDK/build/cmake/android.toolchain.cmake"
+export PKG_CONFIG_PATH="${TOOLS}/lz4-android/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 echo "==> Configure Valhalla ($ABI)"
 cmake -S "$WORK/valhalla" -B "$BUILD_DIR" -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" \
@@ -97,7 +103,8 @@ cmake -S "$WORK/valhalla" -B "$BUILD_DIR" -G Ninja \
   -DENABLE_PYTHON_BINDINGS=OFF \
   -DENABLE_NODE_BINDINGS=OFF \
   -DENABLE_TESTS=OFF \
-  -DBUILD_SHARED_LIBS=ON \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_PREFIX_PATH="$TOOLS/lz4-android" \
   -DENABLE_STATIC_LIBRARY_MODULES=ON \
   -DBoost_INCLUDE_DIR="$BOOST_DIR" \
   -DProtobuf_INCLUDE_DIR="$PB_AND/include" \
@@ -125,7 +132,7 @@ cat > "$PREFIX/aetherride-env.sh" <<EOF
 export VALHALLA_LIB_DIR="$PREFIX/lib"
 export VALHALLA_INCLUDE_DIR="$PREFIX/include"
 export VALHALLA_LINK_LIB=valhalla
-export VALHALLA_LINK_KIND=dylib
+export VALHALLA_LINK_KIND=static
 export ANDROID_NDK_HOME="$NDK"
 # After sourcing, from native/:
 #   cargo build --features valhalla --target aarch64-linux-android
