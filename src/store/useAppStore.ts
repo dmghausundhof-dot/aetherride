@@ -1067,6 +1067,14 @@ export const useAppStore = create<AppState>()(
       saveRoute: (route) =>
         set((s) => {
           if (s.savedRoutes.some((r) => r.id === route.id)) return s;
+          const source: SavedRoute["source"] =
+            "source" in route
+              ? route.source === "engine"
+                ? "engine"
+                : route.source === "import"
+                  ? "import"
+                  : "suggestion"
+              : "suggestion";
           const entry: SavedRoute = {
             id: route.id,
             name: route.name,
@@ -1079,10 +1087,9 @@ export const useAppStore = create<AppState>()(
             reasons: route.reasons,
             matchScore: "matchScore" in route ? route.matchScore : undefined,
             savedAt: new Date().toISOString(),
-            source:
-              "source" in route && route.source === "engine"
-                ? "engine"
-                : "suggestion",
+            source,
+            geometry:
+              "geometry" in route ? (route.geometry ?? null) : undefined,
           };
           return { savedRoutes: [entry, ...s.savedRoutes] };
         }),

@@ -33,7 +33,11 @@ export interface SavedRoute {
   reasons?: [string, string, string];
   matchScore?: number;
   savedAt: string;
-  source: "suggestion" | "engine";
+  source: "suggestion" | "engine" | "import";
+  /** Persistierte Geometrie (Engine / Hybrid / Demo) */
+  geometry?: GeoJSON.LineString | null;
+  /** Optionale Waypoints für erneutes Planen */
+  waypoints?: { role: "start" | "via" | "end"; lngLat: [number, number]; label?: string }[];
 }
 
 export type RideLiveLayer = "map" | "data" | "suspension";

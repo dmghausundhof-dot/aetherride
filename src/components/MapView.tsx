@@ -5,15 +5,28 @@ import maplibregl from "maplibre-gl";
 import { Protocol } from "pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+export type MapMarker = {
+  id: string;
+  lngLat: [number, number];
+  color?: string;
+  label?: string;
+};
+
 interface MapViewProps {
   className?: string;
   center?: [number, number];
   zoom?: number;
   track?: { lat: number; lng: number }[];
-  /** Zusätzliche Route (Routing-Engine) */
+  /** Primäre Route (aktiv) */
   route?: GeoJSON.LineString | null;
+  /** Sekundäre / Preview-Route (gedimmt) */
+  secondaryRoute?: GeoJSON.LineString | null;
+  markers?: MapMarker[];
   showUserLocation?: boolean;
+  interactiveSelect?: boolean;
+  onMapClick?: (lngLat: [number, number]) => void;
   onMapReady?: (map: maplibregl.Map) => void;
+  fitRoute?: boolean;
 }
 
 let pmtilesRegistered = false;
@@ -95,7 +108,6 @@ function buildStyle(): maplibregl.StyleSpecification | string {
 
   const stadiaKey = process.env.NEXT_PUBLIC_STADIA_API_KEY?.trim();
   if (stadiaKey) {
-    // Hosted vector style (Outdoors) — domain whitelist in Stadia dashboard
     return `https://tiles.stadiamaps.com/styles/outdoors.json?api_key=${encodeURIComponent(stadiaKey)}`;
   }
 
@@ -131,16 +143,25 @@ export function MapView({
   zoom = 12,
   track = [],
   route = null,
+  secondaryRoute = null,
+  markers = [],
   showUserLocation = false,
+  interactiveSelect = false,
+  onMapClick,
   onMapReady,
+  fitRoute = false,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const onClickRef = useRef(onMapClick);
   const [ready, setReady] = useState(false);
   const usingPmtiles = Boolean(process.env.NEXT_PUBLIC_PMTILES_URL?.trim());
   const usingStadia = Boolean(
     !usingPmtiles && process.env.NEXT_PUBLIC_STADIA_API_KEY?.trim()
   );
+
+  onClickRef.current = onMapClick;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -175,6 +196,10 @@ export function MapView({
       }
     });
 
+    map.on("click", (e) => {
+      onClickRef.current?.([e.lngLat.lng, e.lngLat.lat]);
+    });
+
     map.on("error", (e) => {
       console.warn("[MapView]", e.error);
     });
@@ -182,6 +207,8 @@ export function MapView({
     mapRef.current = map;
 
     return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -191,13 +218,31 @@ export function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    map.setCenter(center);
+  }, [center, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    map.getCanvas().style.cursor = interactiveSelect ? "crosshair" : "";
+  }, [interactiveSelect, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
 
     const upsertLine = (
       id: string,
       coordinates: [number, number][],
-      color: string
+      color: string,
+      width: number,
+      opacity: number
     ) => {
-      if (coordinates.length < 2) return;
+      if (coordinates.length < 2) {
+        if (map.getLayer(`${id}-line`)) map.removeLayer(`${id}-line`);
+        if (map.getSource(id)) map.removeSource(id);
+        return;
+      }
       const geojson: GeoJSON.Feature = {
         type: "Feature",
         properties: {},
@@ -214,8 +259,8 @@ export function MapView({
           source: id,
           paint: {
             "line-color": color,
-            "line-width": 4,
-            "line-opacity": 0.9,
+            "line-width": width,
+            "line-opacity": opacity,
           },
         });
       }
@@ -225,18 +270,58 @@ export function MapView({
       upsertLine(
         "track",
         track.map((p) => [p.lng, p.lat]),
-        "#FF6B35"
+        "#FF6B35",
+        4,
+        0.9
       );
     }
 
-    if (route?.coordinates?.length) {
-      upsertLine(
-        "route",
-        route.coordinates as [number, number][],
-        "#4FC3F7"
-      );
+    upsertLine(
+      "secondary-route",
+      (secondaryRoute?.coordinates as [number, number][]) ?? [],
+      "#90A4AE",
+      3,
+      0.55
+    );
+
+    upsertLine(
+      "route",
+      (route?.coordinates as [number, number][]) ?? [],
+      "#4FC3F7",
+      4.5,
+      0.95
+    );
+
+    if (fitRoute && route?.coordinates?.length) {
+      const bounds = new maplibregl.LngLatBounds();
+      for (const c of route.coordinates as [number, number][]) {
+        bounds.extend(c);
+      }
+      if (secondaryRoute?.coordinates?.length) {
+        for (const c of secondaryRoute.coordinates as [number, number][]) {
+          bounds.extend(c);
+        }
+      }
+      map.fitBounds(bounds, { padding: 48, maxZoom: 14, duration: 600 });
     }
-  }, [track, route, ready]);
+  }, [track, route, secondaryRoute, ready, fitRoute]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = markers.map((m) => {
+      const marker = new maplibregl.Marker({ color: m.color ?? "#4FC3F7" })
+        .setLngLat(m.lngLat)
+        .addTo(map);
+      if (m.label) {
+        marker.setPopup(
+          new maplibregl.Popup({ offset: 12 }).setText(m.label)
+        );
+      }
+      return marker;
+    });
+  }, [markers, ready]);
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>
