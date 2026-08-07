@@ -35,7 +35,10 @@ source data/routing/dist/valhalla-build/prefix-android-arm64-v8a/aetherride-env.
 cd mobile/packages/routing_core/native
 cargo build --release --features valhalla --target aarch64-linux-android
 # Produces librouting_core.so (~9 MB) with Valhalla statically linked; package
-# libprotobuf.so (+ libc++_shared.so) from the NDK/protobuf prefix into the APK.
+# libprotobuf.so (+ libc++_shared.so) from the NDK/protobuf prefix into the APK:
+#   ./scripts/routing/install-android-jni.sh
+# Flutter loads `librouting_core.so` from `android/app/src/main/jniLibs/<abi>/`
+# (preBuild copies when the cargo artifact exists).
 
 # iOS (macOS + Xcode)
 ./scripts/routing/build-valhalla-ios.sh

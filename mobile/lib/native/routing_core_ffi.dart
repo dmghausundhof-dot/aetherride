@@ -15,6 +15,10 @@ abstract final class RoutingCoreCodes {
 }
 
 /// Dart binding for routing_core offline FFI (Spec §5.1 / §5.4).
+///
+/// Android: expects `librouting_core.so` in jniLibs (plus `libprotobuf.so` /
+/// `libc++_shared.so` when built with `--features valhalla`). Install via
+/// `scripts/routing/install-android-jni.sh`.
 class RoutingCoreFfi {
   DynamicLibrary? _lib;
   bool _tried = false;
@@ -29,6 +33,7 @@ class RoutingCoreFfi {
     _tried = true;
     try {
       if (Platform.isAndroid) {
+        _preloadAndroidDeps();
         _lib = DynamicLibrary.open('librouting_core.so');
       } else if (Platform.isIOS || Platform.isMacOS) {
         _lib = DynamicLibrary.process();
@@ -42,6 +47,17 @@ class RoutingCoreFfi {
       }
     } catch (_) {
       _lib = null;
+    }
+  }
+
+  /// Load DT_NEEDED partners before routing_core (same jniLibs ABI folder).
+  static void _preloadAndroidDeps() {
+    for (final name in ['libc++_shared.so', 'libprotobuf.so']) {
+      try {
+        DynamicLibrary.open(name);
+      } catch (_) {
+        // graph-only builds omit protobuf; c++_shared may already be loaded.
+      }
     }
   }
 
@@ -60,6 +76,27 @@ class RoutingCoreFfi {
       }
     } catch (_) {
       return false;
+    }
+  }
+
+  /// `"offline_graph"` | `"valhalla"` | `"none"` | `null` if native missing.
+  String? engineForTiles(String tilesPath) {
+    _ensure();
+    if (_lib == null) return null;
+    try {
+      final fn = _lib!.lookupFunction<Pointer<Utf8> Function(Pointer<Utf8>), Pointer<Utf8> Function(Pointer<Utf8>)>(
+        'routing_core_engine_for_tiles',
+      );
+      final p = tilesPath.toNativeUtf8();
+      try {
+        final r = fn(p);
+        if (r == nullptr) return 'none';
+        return r.toDartString();
+      } finally {
+        calloc.free(p);
+      }
+    } catch (_) {
+      return null;
     }
   }
 
@@ -93,6 +130,7 @@ class RoutingCoreFfi {
     final out = calloc<_RouteSummary>();
     final profilePtr = profile.toNativeUtf8();
     final tilesPtr = tilesPath.toNativeUtf8();
+    final engine = engineForTiles(tilesPath) ?? 'offline_graph';
 
     try {
       req.ref
@@ -103,13 +141,7 @@ class RoutingCoreFfi {
         ..profile = profilePtr.cast()
         ..tilesPath = tilesPtr.cast();
 
-      // Probe for coordinate count
       var code = fn(req, out, nullptr, 0);
-      if (code == RoutingCoreCodes.bufferTooSmall ||
-          (code == RoutingCoreCodes.ok && out.ref.coordinateCount > 0)) {
-        // ok with null buffer still writes count when we handle BUFFER — our Rust
-        // returns BUFFER_TOO_SMALL and fills summary when cap too small / null.
-      }
       if (code == RoutingCoreCodes.bufferTooSmall || code == RoutingCoreCodes.ok) {
         final n = out.ref.coordinateCount;
         if (n == 0 && code == RoutingCoreCodes.ok) {
@@ -117,7 +149,7 @@ class RoutingCoreFfi {
             distanceM: out.ref.distanceM,
             durationS: out.ref.durationS,
             coordinatesLngLat: const [],
-            engine: 'offline_graph',
+            engine: engine,
           );
         }
         final buf = calloc<Double>(n * 2);
@@ -134,7 +166,7 @@ class RoutingCoreFfi {
             distanceM: out.ref.distanceM,
             durationS: out.ref.durationS,
             coordinatesLngLat: coords,
-            engine: 'offline_graph',
+            engine: engine,
           );
         } finally {
           calloc.free(buf);
