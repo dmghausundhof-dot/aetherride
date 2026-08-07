@@ -249,6 +249,8 @@ export interface Bike {
   wheelSizeRear?: WheelSize;
   weightKg?: number;
   color?: string;
+  /** Optionales Bike-Foto (Data-URL oder https) — Garage-Identität */
+  photoUrl?: string;
   isActive: boolean;
   isEbike: boolean;
   createdAt: string;

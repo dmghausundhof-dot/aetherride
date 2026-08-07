@@ -126,6 +126,8 @@ interface AppState {
     model?: string;
   }) => string;
   removeComponent: (bikeId: string, componentId: string) => void;
+  /** Ausgebautes Teil wieder einbauen (Ersatzteil-Regal) */
+  reinstallComponent: (bikeId: string, componentId: string) => void;
   moveComponent: (componentId: string, fromBikeId: string, toBikeId: string) => void;
   updateComponentSettings: (
     bikeId: string,
@@ -707,6 +709,38 @@ export const useAppStore = create<AppState>()(
                 }
               : b
           ),
+        }));
+      },
+
+      reinstallComponent: (bikeId, componentId) => {
+        const bike = get().bikes.find((b) => b.id === bikeId);
+        if (!bike) return;
+        const spare = bike.components.find((c) => c.id === componentId);
+        if (!spare?.removedAt) return;
+        const now = new Date().toISOString();
+        set((s) => ({
+          bikes: s.bikes.map((b) => {
+            if (b.id !== bikeId) return b;
+            return {
+              ...b,
+              components: b.components.map((c) => {
+                if (c.id === componentId) {
+                  return {
+                    ...c,
+                    removedAt: undefined,
+                    installedAt: now,
+                    odometerKmAtInstall: b.totalOdometerKm,
+                    hoursAtInstall: b.totalHours,
+                  };
+                }
+                if (c.slot === spare.slot && !c.removedAt) {
+                  return { ...c, removedAt: now };
+                }
+                return c;
+              }),
+              updatedAt: now,
+            };
+          }),
         }));
       },
 

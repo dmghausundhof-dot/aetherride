@@ -3,6 +3,7 @@
  */
 
 import type { Setup, SetupCondition } from "@/types";
+import { setupConditionLabel } from "@/lib/setup/conditionLabels";
 
 export type TrailHint = "dry_likely" | "damp_possible" | "wet_likely";
 
@@ -40,26 +41,28 @@ export function setupConditionHint(
         ? "feucht"
         : "trocken";
 
+  const currentLabel = setupConditionLabel(current.conditions);
+
   if (better) {
     return {
-      message: `Setup „${current.label}“ (${current.conditions}) passt schlecht zu ${trailLabel}en Trails — „${better.label}“ wäre besser.`,
+      message: `Setup „${current.label}“ (${currentLabel}) passt schlecht zu ${trailLabel}en Trails — „${better.label}“ wäre besser.`,
       suggestedSetupId: better.id,
       suggestedLabel: better.label,
-      reasoning: `Aktuelles Setup für ${current.conditions}, Wetterlage ${trailHint}.`,
+      reasoning: `Aktuelles Setup für ${currentLabel}, Wetterlage ${trailHint}.`,
     };
   }
 
   if (current.conditions === "wet" && trailHint === "dry_likely") {
     return {
       message: `Setup „${current.label}“ ist auf nass ausgelegt — heute eher trocken.`,
-      reasoning: `conditions=${current.conditions}, trailHint=${trailHint}`,
+      reasoning: `conditions=${currentLabel}, trailHint=${trailHint}`,
     };
   }
 
   if (current.conditions === "dry" && trailHint === "wet_likely") {
     return {
       message: `Setup „${current.label}“ ist auf trocken ausgelegt — Trails eher nass.`,
-      reasoning: `conditions=${current.conditions}, trailHint=${trailHint}`,
+      reasoning: `conditions=${currentLabel}, trailHint=${trailHint}`,
     };
   }
 

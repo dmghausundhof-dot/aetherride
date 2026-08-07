@@ -24,6 +24,7 @@ import {
   bikeReadyStatus,
 } from "@/lib/home/maintenanceAlerts";
 import { setupConditionHint, type TrailHint } from "@/lib/home/setupHint";
+import { weeklyRideKm } from "@/lib/garage/readiness";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { SetupFingerprint } from "@/components/SetupFingerprint";
@@ -309,26 +310,38 @@ export default function HomePage() {
           </p>
           <div className="mt-1 flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/30 text-accent">
-                <Bike className="h-6 w-6" />
-              </div>
+              {activeBike.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={activeBike.photoUrl}
+                  alt=""
+                  className="h-12 w-12 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/30 text-accent">
+                  <Bike className="h-6 w-6" />
+                </div>
+              )}
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold">{activeBike.name}</h2>
                   <span
-                    className={`h-2 w-2 rounded-full ${
-                      ready === "ready" ? "bg-success" : "bg-warning"
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      ready === "ready"
+                        ? "bg-success/15 text-success"
+                        : "bg-warning/15 text-warning"
                     }`}
-                    title={ready === "ready" ? "bereit" : "Wartung beachten"}
-                  />
-                  <span className="text-xs text-text-secondary">
-                    {ready === "ready" ? "bereit" : "Wartung"}
+                  >
+                    {ready === "ready" ? "Bereit" : "Wartung"}
                   </span>
                 </div>
                 <p className="text-sm text-text-secondary">
                   {bikeTypeLabel(activeBike.type)}
                   {activeBike.year ? ` · ${activeBike.year}` : ""}
                 </p>
+                {alerts[0] && (
+                  <p className="mt-0.5 text-xs text-warning">{alerts[0].title}</p>
+                )}
               </div>
             </div>
             <Link
@@ -401,12 +414,53 @@ export default function HomePage() {
         </section>
       ) : (
         <section className="rounded-2xl border border-border bg-surface p-6 text-center">
-          <p className="mb-3 text-text-secondary">Noch kein Bike angelegt</p>
+          <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Katalog, Basis oder Import — danach startet der Companion.
+          </p>
+          <div className="mt-4 grid gap-2 text-left sm:grid-cols-3">
+            {(
+              [
+                ["Katalog", "OEM-Teile vorgefüllt"],
+                ["Basis", "Schnell anlegen"],
+                ["Import", "km später übernehmen"],
+              ] as const
+            ).map(([title, desc]) => (
+              <Link
+                key={title}
+                href="/garage"
+                className="rounded-xl border border-border bg-surface-elevated p-3"
+              >
+                <div className="text-sm font-medium">{title}</div>
+                <div className="mt-1 text-xs text-text-secondary">{desc}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {activeBike && (
+        <section className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-border bg-surface p-3 text-center">
+            <div className="tabular-nums text-2xl font-bold">
+              {weeklyRideKm(rides, activeBike.id).toFixed(0)}
+            </div>
+            <div className="text-xs text-text-secondary">km diese Woche</div>
+          </div>
           <Link
-            href="/garage"
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-white"
+            href={alerts[0]?.href ?? "/garage?tab=maintenance"}
+            className="rounded-xl border border-border bg-surface p-3 text-center"
           >
-            Bike hinzufügen
+            <div className="truncate text-sm font-semibold">
+              {alerts[0]
+                ? alerts[0].severity === "overdue"
+                  ? "Überfällig"
+                  : "Bald fällig"
+                : "Alles ok"}
+            </div>
+            <div className="mt-0.5 truncate text-xs text-text-secondary">
+              {alerts[0]?.title ?? "Keine Fälligkeit"}
+            </div>
           </Link>
         </section>
       )}
@@ -419,7 +473,7 @@ export default function HomePage() {
         Ride starten
       </Link>
 
-      {/* max. 2 Wartung */}
+      {/* max. 2 Wartung — vor KI-Tipp */}
       {alerts.length > 0 && (
         <section className="flex flex-col gap-2">
           {alerts.map((a) => (

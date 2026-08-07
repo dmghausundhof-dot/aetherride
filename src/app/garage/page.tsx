@@ -3,19 +3,25 @@
 import { useMemo, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Bike as BikeIcon,
   Plus,
   Settings2,
   Wrench,
   ShieldCheck,
   History,
   ArrowRightLeft,
+  Download,
+  AlertTriangle,
+  Package,
 } from "lucide-react";
 import { AddBikeWizard } from "@/components/garage/AddBikeWizard";
 import { BikeSilhouette } from "@/components/garage/BikeSilhouette";
 import { BracketingPanel } from "@/components/garage/BracketingPanel";
 import { InstallComponentSheet } from "@/components/garage/InstallComponentSheet";
 import { VerdictPill } from "@/components/garage/VerdictPill";
+import { SagGuideForBike } from "@/components/garage/SagGuidePanel";
+import { BikePhotoControl } from "@/components/garage/BikePhotoControl";
+import { OdometerImportPanel } from "@/components/garage/OdometerImportPanel";
+import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { SLOT_GROUPS } from "@/types";
 import { bikeCategoryLabel, slotLabel } from "@/lib/catalog/slots";
 import { getComponentModel, modelDisplayName } from "@/lib/catalog/components";
@@ -25,10 +31,24 @@ import {
 } from "@/lib/compatibility/engine";
 import { evaluateIntervalDue } from "@/lib/maintenance/intervals";
 import { forecastWear } from "@/lib/maintenance/wearPrediction";
-import { recommendedSagPct } from "@/lib/setup/ranges";
 import { templatesForCategory } from "@/lib/setup/templates";
 import {
-  bikeCompletenessPct,
+  SETUP_CONDITION_OPTIONS,
+  setupConditionLabel,
+} from "@/lib/setup/conditionLabels";
+import {
+  buildMaintenanceAlerts,
+  bikeReadyStatus,
+} from "@/lib/home/maintenanceAlerts";
+import {
+  readinessLabel,
+  verdictSummaryDe,
+} from "@/lib/garage/readiness";
+import {
+  buildServiceReport,
+  downloadServiceReport,
+} from "@/lib/garage/serviceReport";
+import {
   getActiveComponents,
   getMissingSlots,
   useAppStore,
@@ -45,12 +65,14 @@ function GaragePageInner() {
   const setCurrentSetup = useAppStore((s) => s.setCurrentSetup);
   const createSetupVersion = useAppStore((s) => s.createSetupVersion);
   const removeComponent = useAppStore((s) => s.removeComponent);
+  const reinstallComponent = useAppStore((s) => s.reinstallComponent);
   const moveComponent = useAppStore((s) => s.moveComponent);
   const maintenanceLogs = useAppStore((s) => s.maintenanceLogs);
   const maintenanceIntervals = useAppStore((s) => s.maintenanceIntervals);
   const markIntervalDone = useAppStore((s) => s.markIntervalDone);
   const applySetupTemplate = useAppStore((s) => s.applySetupTemplate);
   const rides = useAppStore((s) => s.rides);
+  const riderWeight = useAppStore((s) => s.riderProfile.riderWeightKg);
 
   const [selectedId, setSelectedId] = useState<string | null>(activeBikeId);
   const initialTab = (searchParams.get("tab") as Tab | null) || "overview";
@@ -72,6 +94,8 @@ function GaragePageInner() {
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
     useState<SetupCondition>("dry");
+  const [compatOpen, setCompatOpen] = useState(false);
+  const [moveTargetId, setMoveTargetId] = useState<string>("");
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
@@ -86,7 +110,9 @@ function GaragePageInner() {
 
   const activeComponents = selected ? getActiveComponents(selected) : [];
   const missing = selected ? getMissingSlots(selected) : [];
-  const completeness = selected ? bikeCompletenessPct(selected) : 0;
+  const spareParts = selected
+    ? selected.components.filter((c) => !!c.removedAt)
+    : [];
 
   const intervals = selected
     ? maintenanceIntervals.filter((i) => i.bikeId === selected.id)
@@ -94,6 +120,25 @@ function GaragePageInner() {
   const logs = selected
     ? maintenanceLogs.filter((l) => l.bikeId === selected.id)
     : [];
+
+  const alerts = useMemo(
+    () =>
+      selected
+        ? buildMaintenanceAlerts({
+            bike: selected,
+            rides,
+            intervals: maintenanceIntervals,
+            max: 3,
+          })
+        : [],
+    [selected, rides, maintenanceIntervals]
+  );
+  const ready = bikeReadyStatus(alerts);
+  const currentSetup = selected?.setups.find((s) => s.isCurrent);
+  const nextAction = alerts[0];
+  const costSum = logs
+    .filter((l) => l.costEur != null)
+    .reduce((s, l) => s + (l.costEur ?? 0), 0);
 
   const selectBike = (id: string) => {
     setSelectedId(id);
@@ -111,6 +156,17 @@ function GaragePageInner() {
     setSetupLabel("");
   };
 
+  const exportReport = () => {
+    if (!selected) return;
+    const text = buildServiceReport({
+      bike: selected,
+      logs: maintenanceLogs,
+      rides,
+    });
+    const slug = selected.name.replace(/\s+/g, "-").toLowerCase();
+    downloadServiceReport(`aetherride-service-${slug}.txt`, text);
+  };
+
   return (
     <div className="flex flex-col gap-4 p-4 pt-6">
       <header className="flex items-center justify-between">
@@ -124,31 +180,56 @@ function GaragePageInner() {
         </button>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-        {bikes.map((bike) => (
-          <button
-            key={bike.id}
-            type="button"
-            onClick={() => selectBike(bike.id)}
-            className={`flex-shrink-0 rounded-xl border px-4 py-3 text-left ${
-              selected?.id === bike.id
-                ? "border-accent bg-accent/10"
-                : "border-border bg-surface"
-            }`}
-          >
-            <div className="font-medium">{bike.name}</div>
-            <div className="text-xs text-text-secondary">
-              {bikeCategoryLabel(bike.category)}
-              {bike.isActive ? " · aktiv" : ""}
-            </div>
-          </button>
-        ))}
-      </div>
+      {bikes.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+          {bikes.map((bike) => (
+            <button
+              key={bike.id}
+              type="button"
+              onClick={() => selectBike(bike.id)}
+              className={`flex-shrink-0 rounded-xl border px-4 py-3 text-left ${
+                selected?.id === bike.id
+                  ? "border-accent bg-accent/10"
+                  : "border-border bg-surface"
+              }`}
+            >
+              <div className="font-medium">{bike.name}</div>
+              <div className="text-xs text-text-secondary">
+                {bikeCategoryLabel(bike.category)}
+                {bike.isActive ? " · aktiv" : ""}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {!selected ? (
-        <div className="py-12 text-center text-text-secondary">
-          Noch kein Bike — Katalog, Basis oder Import nutzen.
-        </div>
+        <section className="rounded-2xl border border-border bg-surface p-6 text-center">
+          <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Drei Wege — Katalog mit OEM-Teilen, schnelle Basis, oder Import von
+            Computer/GPX.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {(
+              [
+                ["Katalog", "Modell wählen, Slots vorgefüllt"],
+                ["Basis", "Name + Kategorie, später ergänzen"],
+                ["Import", "Platzhalter + km später übernehmen"],
+              ] as const
+            ).map(([title, desc]) => (
+              <button
+                key={title}
+                type="button"
+                onClick={() => setShowWizard(true)}
+                className="rounded-xl border border-border bg-surface-elevated p-3 text-left"
+              >
+                <div className="font-medium text-sm">{title}</div>
+                <div className="mt-1 text-xs text-text-secondary">{desc}</div>
+              </button>
+            ))}
+          </div>
+        </section>
       ) : (
         <>
           <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-elevated p-1 text-xs">
@@ -175,6 +256,134 @@ function GaragePageInner() {
 
           {tab === "overview" && (
             <div className="flex flex-col gap-4">
+              <BikePhotoControl
+                bikeId={selected.id}
+                photoUrl={selected.photoUrl}
+              />
+
+              <section className="rounded-2xl border border-border bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-semibold">{selected.name}</h2>
+                    <p className="text-sm text-text-secondary">
+                      {bikeCategoryLabel(selected.category)}
+                      {selected.year ? ` · ${selected.year}` : ""}
+                      {selected.frameSize ? ` · ${selected.frameSize}` : ""}
+                      {selected.travelFrontMm
+                        ? ` · ${selected.travelFrontMm}/${selected.travelRearMm ?? "–"} mm`
+                        : ""}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      ready === "ready"
+                        ? "bg-success/15 text-success"
+                        : "bg-warning/15 text-warning"
+                    }`}
+                  >
+                    {readinessLabel(ready)}
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+                  <div className="rounded-xl bg-surface-elevated p-2">
+                    <div className="tabular-nums text-lg font-bold">
+                      {selected.totalOdometerKm.toFixed(0)}
+                    </div>
+                    <div className="text-[10px] text-text-secondary">km</div>
+                  </div>
+                  <div className="rounded-xl bg-surface-elevated p-2">
+                    <div className="tabular-nums text-lg font-bold">
+                      {selected.totalHours.toFixed(1)}
+                    </div>
+                    <div className="text-[10px] text-text-secondary">Stunden</div>
+                  </div>
+                  <div className="rounded-xl bg-surface-elevated p-2">
+                    <div className="tabular-nums text-lg font-bold">
+                      {costSum > 0 ? `${costSum.toFixed(0)}€` : "—"}
+                    </div>
+                    <div className="text-[10px] text-text-secondary">Kosten</div>
+                  </div>
+                </div>
+              </section>
+
+              {alerts.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {alerts.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setTab("maintenance")}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                        a.severity === "overdue"
+                          ? "border-error/40 bg-error/10 text-error"
+                          : "border-warning/40 bg-warning/10 text-warning"
+                      }`}
+                    >
+                      {a.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {nextAction && (
+                <button
+                  type="button"
+                  onClick={() => setTab("maintenance")}
+                  className="flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-left"
+                >
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-warning">
+                      Nächste Aktion
+                    </div>
+                    <div className="mt-1 font-semibold">{nextAction.title}</div>
+                    <p className="mt-0.5 text-sm text-text-secondary">
+                      {nextAction.detail}
+                    </p>
+                  </div>
+                </button>
+              )}
+
+              {currentSetup && (
+                <section className="rounded-2xl border border-border bg-surface p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold">Aktives Setup</h3>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-accent"
+                      onClick={() => setTab("setups")}
+                    >
+                      Wechseln
+                    </button>
+                  </div>
+                  <p className="mt-1 text-sm">
+                    „{currentSetup.label}“ ·{" "}
+                    {setupConditionLabel(currentSetup.conditions)}
+                  </p>
+                  <div className="mt-2">
+                    <SetupFingerprint setup={currentSetup} />
+                  </div>
+                  {selected.setups.filter((s) => !s.isCurrent).length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selected.setups
+                        .filter((s) => !s.isCurrent)
+                        .slice(0, 3)
+                        .map((s) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setCurrentSetup(selected.id, s.id)}
+                            className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-xs"
+                          >
+                            → {s.label}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
               <BikeSilhouette
                 bike={selected}
                 maintenanceSlots={intervals
@@ -193,127 +402,107 @@ function GaragePageInner() {
                 }}
               />
 
-              <section className="rounded-2xl border border-border bg-surface p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/30 text-accent">
-                    <BikeIcon className="h-7 w-7" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold">{selected.name}</h2>
-                    <p className="text-sm text-text-secondary">
-                      {bikeCategoryLabel(selected.category)}
-                      {selected.year ? ` · ${selected.year}` : ""}
-                      {selected.frameSize ? ` · ${selected.frameSize}` : ""}
-                      {selected.travelFrontMm
-                        ? ` · ${selected.travelFrontMm}/${selected.travelRearMm ?? "–"} mm`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-                  <div className="rounded-xl bg-surface-elevated p-2">
-                    <div className="tabular-nums text-lg font-bold">
-                      {completeness}%
-                    </div>
-                    <div className="text-[10px] text-text-secondary">Erfasst</div>
-                  </div>
-                  <div className="rounded-xl bg-surface-elevated p-2">
-                    <div className="tabular-nums text-lg font-bold">
-                      {selected.totalOdometerKm.toFixed(0)}
-                    </div>
-                    <div className="text-[10px] text-text-secondary">km</div>
-                  </div>
-                  <div className="rounded-xl bg-surface-elevated p-2">
-                    <div className="tabular-nums text-lg font-bold">
-                      {selected.totalHours.toFixed(1)}
-                    </div>
-                    <div className="text-[10px] text-text-secondary">Stunden</div>
-                  </div>
-                </div>
-                {missing[0] && (
-                  <p className="mt-3 text-sm text-warning">
-                    Fehlt: {slotLabel(missing[0])} —{" "}
-                    <button
-                      type="button"
-                      className="text-accent underline"
-                      onClick={() => {
-                        setTab("components");
-                        setInstallSlot(missing[0]);
-                      }}
-                    >
-                      ergänzen
-                    </button>
-                  </p>
-                )}
-              </section>
+              {missing[0] && (
+                <p className="text-sm text-warning">
+                  Fehlt: {slotLabel(missing[0])} —{" "}
+                  <button
+                    type="button"
+                    className="text-accent underline"
+                    onClick={() => {
+                      setTab("components");
+                      setInstallSlot(missing[0]);
+                    }}
+                  >
+                    ergänzen
+                  </button>
+                </p>
+              )}
 
               <section className="rounded-2xl border border-border bg-surface p-4">
-                <div className="mb-2 flex items-center justify-between">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 text-left"
+                  onClick={() => setCompatOpen((v) => !v)}
+                >
                   <h3 className="flex items-center gap-2 font-semibold">
                     <ShieldCheck className="h-4 w-4 text-accent" />
                     Kompatibilität
                   </h3>
-                  <VerdictPill verdict={overallVerdict} />
-                </div>
-                <p className="mb-2 text-xs text-text-secondary">
-                  Regelbasiert, kein ML. Fehlt ein Attribut → Daten fehlen, nie
-                  raten.
+                  <div className="flex items-center gap-2">
+                    <VerdictPill verdict={overallVerdict} />
+                    <span className="text-xs text-text-secondary">
+                      {compatOpen ? "zuklappen" : "Details"}
+                    </span>
+                  </div>
+                </button>
+                <p className="mt-2 text-xs text-text-secondary">
+                  {verdictSummaryDe(overallVerdict)} · regelbasiert, kein ML.
+                  Fehlt ein Attribut → Daten fehlen, nie raten.
                 </p>
-                <div className="flex max-h-56 flex-col gap-2 overflow-y-auto">
-                  {compat.slice(0, 12).map((r) => (
-                    <details
-                      key={r.ruleCode}
-                      className="rounded-xl border border-border bg-surface-elevated p-2 text-xs"
-                    >
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
-                        <span className="font-medium">
-                          {r.ruleCode}: {r.title}
-                        </span>
-                        <VerdictPill verdict={r.verdict} />
-                      </summary>
-                      <p className="mt-2 text-text-secondary">{r.explainDe}</p>
-                      {r.evidence.map((e, i) => (
-                        <p key={i} className="mt-1 tabular-nums">
-                          {e.attributeKey}: {String(e.valueA)} vs{" "}
-                          {String(e.valueB)}
-                          {e.sourceA ? ` (${e.sourceA})` : ""}
-                        </p>
-                      ))}
-                      {r.torqueSpecs.map((t) => (
-                        <p key={t.fastener} className="mt-1">
-                          {t.fastener}: {t.nm} Nm — {t.sourceLabel}
-                        </p>
-                      ))}
-                      {r.sourceUrl && (
-                        <a
-                          href={r.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-1 inline-block text-accent"
-                        >
-                          Quelle
-                        </a>
-                      )}
-                    </details>
-                  ))}
-                  {compat.length === 0 && (
-                    <p className="text-xs text-text-secondary">
-                      Noch keine prüfbaren Slot-Paare.
-                    </p>
-                  )}
-                </div>
+                {compatOpen && (
+                  <div className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
+                    {compat.slice(0, 12).map((r) => (
+                      <details
+                        key={r.ruleCode}
+                        className="rounded-xl border border-border bg-surface-elevated p-2 text-xs"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
+                          <span className="font-medium">{r.title}</span>
+                          <VerdictPill verdict={r.verdict} />
+                        </summary>
+                        <p className="mt-2 text-text-secondary">{r.explainDe}</p>
+                        {r.evidence.map((e, i) => (
+                          <p key={i} className="mt-1 tabular-nums">
+                            {e.attributeKey}: {String(e.valueA)} vs{" "}
+                            {String(e.valueB)}
+                            {e.sourceA ? ` (${e.sourceA})` : ""}
+                          </p>
+                        ))}
+                        {r.torqueSpecs.map((t) => (
+                          <p key={t.fastener} className="mt-1">
+                            {t.fastener}: {t.nm} Nm — {t.sourceLabel}
+                          </p>
+                        ))}
+                        {r.sourceUrl && (
+                          <a
+                            href={r.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-block text-accent"
+                          >
+                            Quelle
+                          </a>
+                        )}
+                      </details>
+                    ))}
+                    {compat.length === 0 && (
+                      <p className="text-xs text-text-secondary">
+                        Noch keine prüfbaren Slot-Paare.
+                      </p>
+                    )}
+                  </div>
+                )}
               </section>
 
-              <section className="rounded-2xl border border-border bg-surface p-4 text-sm">
-                <h3 className="mb-2 font-semibold">SAG-Richtwerte (Magazine)</h3>
-                <p className="text-xs text-text-secondary">
-                  Enduro MTB Mag / Simplon / Dirt: Gabel{" "}
-                  {recommendedSagPct(selected.category, "fork").min}–
-                  {recommendedSagPct(selected.category, "fork").max} %, Dämpfer{" "}
-                  {recommendedSagPct(selected.category, "shock").min}–
-                  {recommendedSagPct(selected.category, "shock").max} %
-                </p>
-              </section>
+              <SagGuideForBike
+                bike={selected}
+                defaultWeightKg={riderWeight}
+              />
+
+              <OdometerImportPanel
+                bikeId={selected.id}
+                odometerKm={selected.totalOdometerKm}
+                hours={selected.totalHours}
+              />
+
+              <button
+                type="button"
+                onClick={exportReport}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface py-3 text-sm font-medium"
+              >
+                <Download className="h-4 w-4 text-accent" />
+                Service-Report exportieren
+              </button>
             </div>
           )}
 
@@ -386,7 +575,10 @@ function GaragePageInner() {
                                       `${comp.manufacturer ?? ""} ${comp.model ?? ""}`}
                                 </div>
                                 <div className="mt-1 text-xs text-text-secondary">
-                                  Einbau {new Date(comp.installedAt).toLocaleDateString("de-DE")}{" "}
+                                  Einbau{" "}
+                                  {new Date(comp.installedAt).toLocaleDateString(
+                                    "de-DE"
+                                  )}{" "}
                                   · ≈ {usageKm.toFixed(0)} km Laufleistung
                                   {!comp.componentModelId &&
                                     " · Freitext (keine Kompat-Prüfung)"}
@@ -425,24 +617,41 @@ function GaragePageInner() {
                                 Ausbauen
                               </button>
                               {bikes.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const other = bikes.find(
-                                      (b) => b.id !== selected.id
-                                    );
-                                    if (other)
+                                <div className="inline-flex items-center gap-1">
+                                  <select
+                                    className="rounded-lg border border-border bg-muted px-1 py-1 text-xs"
+                                    value={moveTargetId}
+                                    onChange={(e) =>
+                                      setMoveTargetId(e.target.value)
+                                    }
+                                  >
+                                    <option value="">Ziel-Bike…</option>
+                                    {bikes
+                                      .filter((b) => b.id !== selected.id)
+                                      .map((b) => (
+                                        <option key={b.id} value={b.id}>
+                                          {b.name}
+                                        </option>
+                                      ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    disabled={!moveTargetId}
+                                    onClick={() => {
+                                      if (!moveTargetId) return;
                                       moveComponent(
                                         comp.id,
                                         selected.id,
-                                        other.id
+                                        moveTargetId
                                       );
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs"
-                                >
-                                  <ArrowRightLeft className="h-3 w-3" />
-                                  Verschieben
-                                </button>
+                                      setMoveTargetId("");
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs disabled:opacity-40"
+                                  >
+                                    <ArrowRightLeft className="h-3 w-3" />
+                                    Verschieben
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -452,13 +661,69 @@ function GaragePageInner() {
                   </section>
                 );
               })}
+
+              <section>
+                <h3 className="mb-2 flex items-center gap-2 font-semibold">
+                  <Package className="h-4 w-4 text-accent" />
+                  Ersatzteil-Regal
+                </h3>
+                <p className="mb-2 text-xs text-text-secondary">
+                  Ausgebaute Teile bleiben hier — z. B. zweites Laufrad oder
+                  Trainingskette. Wiedereinbau ersetzt den aktiven Slot.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {spareParts.map((comp) => {
+                    const model = comp.componentModelId
+                      ? getComponentModel(comp.componentModelId)
+                      : undefined;
+                    return (
+                      <div
+                        key={comp.id}
+                        className="rounded-xl border border-dashed border-border bg-surface p-3"
+                      >
+                        <div className="text-xs uppercase tracking-wide text-text-secondary">
+                          {slotLabel(comp.slot)}
+                        </div>
+                        <div className="font-medium">
+                          {model
+                            ? modelDisplayName(model)
+                            : comp.freeText ||
+                              `${comp.manufacturer ?? ""} ${comp.model ?? ""}`}
+                        </div>
+                        <div className="mt-1 text-xs text-text-secondary">
+                          Ausgebaut{" "}
+                          {comp.removedAt
+                            ? new Date(comp.removedAt).toLocaleDateString(
+                                "de-DE"
+                              )
+                            : ""}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            reinstallComponent(selected.id, comp.id)
+                          }
+                          className="mt-2 rounded-lg bg-accent px-2 py-1 text-xs font-semibold text-white"
+                        >
+                          Wieder einbauen
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {spareParts.length === 0 && (
+                    <p className="text-sm text-text-secondary">
+                      Regal leer — Teile ausbauen, um sie hier zu lagern.
+                    </p>
+                  )}
+                </div>
+              </section>
             </div>
           )}
 
           {tab === "setups" && (
             <div className="flex flex-col gap-4">
               <section className="rounded-2xl border border-border bg-surface p-4">
-                <h3 className="mb-2 font-semibold">Setup-Vorlagen (F-SET-002)</h3>
+                <h3 className="mb-2 font-semibold">Setup-Vorlagen</h3>
                 <p className="mb-2 text-xs text-text-secondary">
                   Ausgangspunkte — keine Empfehlung. Fox/RockShox-Gewichtstabellen
                   & Editorial-Presets.
@@ -468,9 +733,7 @@ function GaragePageInner() {
                     <button
                       key={tpl.id}
                       type="button"
-                      onClick={() =>
-                        applySetupTemplate(selected.id, tpl.id)
-                      }
+                      onClick={() => applySetupTemplate(selected.id, tpl.id)}
                       className="rounded-xl border border-border bg-surface-elevated p-3 text-left text-sm"
                     >
                       <div className="font-medium">{tpl.label}</div>
@@ -494,11 +757,10 @@ function GaragePageInner() {
               <section className="rounded-2xl border border-border bg-surface p-4">
                 <h3 className="mb-2 flex items-center gap-2 font-semibold">
                   <Settings2 className="h-4 w-4 text-accent" />
-                  Neues Setup (immutable)
+                  Neues Setup
                 </h3>
                 <p className="mb-2 text-xs text-text-secondary">
-                  Jede Änderung erzeugt eine neue Version mit Parent-Referenz
-                  (F-SET-001).
+                  Jede Änderung erzeugt eine neue Version mit Vorgänger-Referenz.
                 </p>
                 <div className="flex flex-col gap-2">
                   <input
@@ -514,17 +776,9 @@ function GaragePageInner() {
                     }
                     className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
                   >
-                    {(
-                      [
-                        "dry",
-                        "wet",
-                        "mixed",
-                        "bikepark",
-                        "race",
-                      ] as SetupCondition[]
-                    ).map((c) => (
-                      <option key={c} value={c}>
-                        {c}
+                    {SETUP_CONDITION_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
                       </option>
                     ))}
                   </select>
@@ -563,7 +817,7 @@ function GaragePageInner() {
                         )}
                       </div>
                       <p className="mt-1 text-xs text-text-secondary">
-                        {setup.conditions}
+                        {setupConditionLabel(setup.conditions)}
                         {setup.parentSetupId ? " · hat Vorgänger" : " · Wurzel"}
                         {setup.riderWeightKg
                           ? ` · Fahrer ${setup.riderWeightKg} kg`
@@ -593,11 +847,9 @@ function GaragePageInner() {
           {tab === "maintenance" && (
             <div className="flex flex-col gap-4">
               <section>
-                <h3 className="mb-2 font-semibold">
-                  Verschleißprognose (Spanne)
-                </h3>
+                <h3 className="mb-2 font-semibold">Verschleißprognose</h3>
                 <p className="mb-2 text-xs text-text-secondary">
-                  Belastungsgewichtet · nie Punktwert (F-GAR-005 P1)
+                  Belastungsgewichtet · Spanne, nie Punktwert.
                 </p>
                 <div className="flex flex-col gap-2">
                   {forecastWear(selected, rides).map((f) => (
@@ -676,7 +928,9 @@ function GaragePageInner() {
                                   ? "bg-warning"
                                   : "bg-success"
                             }`}
-                            style={{ width: `${Math.min(100, due.progressPct)}%` }}
+                            style={{
+                              width: `${Math.min(100, due.progressPct)}%`,
+                            }}
                           />
                         </div>
                       </div>
@@ -691,10 +945,24 @@ function GaragePageInner() {
               </section>
 
               <section>
-                <h3 className="mb-2 flex items-center gap-2 font-semibold">
-                  <History className="h-4 w-4 text-accent" />
-                  Wartungslog
+                <h3 className="mb-2 flex items-center justify-between gap-2 font-semibold">
+                  <span className="inline-flex items-center gap-2">
+                    <History className="h-4 w-4 text-accent" />
+                    Wartungslog
+                  </span>
+                  <button
+                    type="button"
+                    onClick={exportReport}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-accent"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Report
+                  </button>
                 </h3>
+                {costSum > 0 && (
+                  <p className="mb-2 text-xs text-text-secondary">
+                    Kosten gesamt: {costSum.toFixed(2)} €
+                  </p>
+                )}
                 <div className="flex flex-col gap-2">
                   {logs.map((log) => (
                     <div
@@ -708,7 +976,9 @@ function GaragePageInner() {
                         {log.odometerKm !== undefined
                           ? ` · ${log.odometerKm.toFixed(0)} km`
                           : ""}
-                        {log.costEur !== undefined ? ` · ${log.costEur} €` : ""}
+                        {log.costEur !== undefined
+                          ? ` · ${log.costEur} €`
+                          : ""}
                       </div>
                       {log.notes && (
                         <p className="mt-1 text-xs text-text-secondary">
@@ -746,7 +1016,11 @@ function GaragePageInner() {
 
 export default function GaragePage() {
   return (
-    <Suspense fallback={<div className="p-6 text-center">Garage wird geladen…</div>}>
+    <Suspense
+      fallback={
+        <div className="p-6 text-center">Garage wird geladen…</div>
+      }
+    >
       <GaragePageInner />
     </Suspense>
   );

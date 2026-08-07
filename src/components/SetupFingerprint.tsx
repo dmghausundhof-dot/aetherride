@@ -1,29 +1,38 @@
 "use client";
 
 import type { Setup } from "@/types";
+import { setupConditionLabel } from "@/lib/setup/conditionLabels";
 
-/** Kompakter Setup-Fingerprint (Sag / Rebound / Druck) für Home. */
+/** Kompakter Setup-Fingerprint (Sag / Rebound / Druck) für Home & Garage. */
 export function SetupFingerprint({ setup }: { setup: Setup }) {
   const sag = setup.values.find((v) => /sag/i.test(v.adjusterKey));
   const rebound = setup.values.find(
     (v) => v.slot === "fork" && /rebound/i.test(v.adjusterKey)
   );
-  const psi = setup.values.find(
+  const forkPsi = setup.values.find(
+    (v) =>
+      v.slot === "fork" && /air_pressure|pressure|psi/i.test(v.adjusterKey)
+  );
+  const tirePsi = setup.values.find(
     (v) => v.slot === "tire_front" && /pressure|psi/i.test(v.adjusterKey)
   );
 
   const chips = [
-    sag ? { label: "Sag", value: `${sag.valueNum}${sag.unit || "%"}` } : null,
-    rebound
-      ? { label: "Zug", value: `${rebound.valueNum}` }
+    sag
+      ? { label: "SAG", value: `${sag.valueNum}${sag.unit === "percent" || !sag.unit ? "%" : sag.unit}` }
       : null,
-    psi ? { label: "psi V", value: `${psi.valueNum}` } : null,
+    forkPsi
+      ? { label: "Gabel", value: `${forkPsi.valueNum} psi` }
+      : rebound
+        ? { label: "Zug", value: `${rebound.valueNum}` }
+        : null,
+    tirePsi ? { label: "Reifen V", value: `${tirePsi.valueNum}` } : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
   if (chips.length === 0) {
     return (
       <p className="text-xs text-text-secondary">
-        Setup „{setup.label}“ · {setup.conditions}
+        Setup „{setup.label}“ · {setupConditionLabel(setup.conditions)}
       </p>
     );
   }
@@ -40,7 +49,7 @@ export function SetupFingerprint({ setup }: { setup: Setup }) {
         </div>
       ))}
       <span className="text-xs text-text-secondary">
-        {setup.conditions}
+        {setupConditionLabel(setup.conditions)}
       </span>
     </div>
   );
