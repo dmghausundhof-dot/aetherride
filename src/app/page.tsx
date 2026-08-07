@@ -103,9 +103,8 @@ export default function HomePage() {
   );
 
   const productConsent =
-    useAppStore((s) => s.consents).find(
-      (c) => c.purpose === "product_recommendations"
-    )?.granted ?? false;
+    consents.find((c) => c.purpose === "product_recommendations")?.granted ??
+    false;
 
   const shopRec = useMemo(() => {
     if (!activeBike || !productConsent) return null;
@@ -604,6 +603,15 @@ export default function HomePage() {
                     <div className="text-sm font-medium">{a.title}</div>
                     <div className="text-xs text-text-secondary">{a.detail}</div>
                   </Link>
+                  {a.shopHref && (
+                    <Link
+                      href={a.shopHref}
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent"
+                    >
+                      Passendes Teil im Shop{" "}
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Link>
+                  )}
                   <EvidenceSheet title="Warum?" className="mt-1">
                     <p>{a.reasoning}</p>
                     <p className="mt-1">Quelle: {a.sourceLabel}</p>
@@ -626,6 +634,17 @@ export default function HomePage() {
           <EvidenceSheet title="Warum?" className="mt-2">
             {tipRec.reasoning}
           </EvidenceSheet>
+          {tipRec.type === "product" && (
+            <Link
+              href={shopHref({
+                productId: tipRec.relatedProductId,
+                job: "replace",
+              })}
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent"
+            >
+              Im Shop prüfen <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
         </section>
       )}
 
