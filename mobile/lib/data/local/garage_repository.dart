@@ -304,6 +304,7 @@ class GarageRepository {
       maintenanceLogs: profileStore == null
           ? null
           : profileStore!.maintenanceLogs,
+      wishlistIds: profileStore == null ? null : profileStore!.wishlistIds,
       updatedAt: state?.localUpdatedAt,
       payloadVersion: state?.payloadVersion ?? 1,
     );
@@ -458,6 +459,12 @@ class GarageRepository {
         store.maintenanceLogs = [
           for (final e in payload.maintenanceLogs as List)
             if (e is Map) Map<String, dynamic>.from(e),
+        ];
+      }
+      if (payload.wishlistIds is List) {
+        store.wishlistIds = [
+          for (final e in payload.wishlistIds as List)
+            if (e is String) e,
         ];
       }
       await store.save();

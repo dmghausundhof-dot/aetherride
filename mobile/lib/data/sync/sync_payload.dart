@@ -13,6 +13,7 @@ class SyncPayload {
     this.commerceMode,
     this.rangeCalibration,
     this.maintenanceLogs,
+    this.wishlistIds,
     this.activeBikeId,
     this.savedRoutes,
     this.freeTierExtraBike,
@@ -32,6 +33,7 @@ class SyncPayload {
   final dynamic commerceMode;
   final dynamic rangeCalibration;
   final dynamic maintenanceLogs;
+  final dynamic wishlistIds;
   final String? activeBikeId;
   final dynamic savedRoutes;
   final bool? freeTierExtraBike;
@@ -52,6 +54,7 @@ class SyncPayload {
       commerceMode: json['commerceMode'],
       rangeCalibration: json['rangeCalibration'],
       maintenanceLogs: json['maintenanceLogs'],
+      wishlistIds: json['wishlistIds'],
       activeBikeId: json['activeBikeId'] as String?,
       savedRoutes: json['savedRoutes'] ?? json['saved_routes'],
       freeTierExtraBike: json['freeTierExtraBike'] as bool?,
@@ -74,6 +77,7 @@ class SyncPayload {
         if (commerceMode != null) 'commerceMode': commerceMode,
         if (rangeCalibration != null) 'rangeCalibration': rangeCalibration,
         if (maintenanceLogs != null) 'maintenanceLogs': maintenanceLogs,
+        if (wishlistIds != null) 'wishlistIds': wishlistIds,
         if (activeBikeId != null) 'activeBikeId': activeBikeId,
         if (savedRoutes != null) 'savedRoutes': savedRoutes,
         if (freeTierExtraBike != null) 'freeTierExtraBike': freeTierExtraBike,
@@ -95,6 +99,7 @@ class SyncPayload {
     dynamic commerceMode,
     dynamic rangeCalibration,
     dynamic maintenanceLogs,
+    dynamic wishlistIds,
     bool? freeTierExtraBike,
     String? activeBikeId,
     String? updatedAt,
@@ -114,6 +119,7 @@ class SyncPayload {
       commerceMode: commerceMode ?? this.commerceMode,
       rangeCalibration: rangeCalibration ?? this.rangeCalibration,
       maintenanceLogs: maintenanceLogs ?? this.maintenanceLogs,
+      wishlistIds: wishlistIds ?? this.wishlistIds,
       activeBikeId: activeBikeId ?? this.activeBikeId,
       savedRoutes: savedRoutes ?? this.savedRoutes,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,

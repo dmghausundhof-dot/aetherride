@@ -9,7 +9,7 @@ import {
  * Artefakte selbst bleiben Ops/Docker; hier nur Manifest-Metadaten.
  */
 export async function GET() {
-  const ids = listKnownPackIds();
+  const ids = await listKnownPackIds();
   const packs = [];
   for (const id of ids) {
     const m = await readOfflineManifest(id);

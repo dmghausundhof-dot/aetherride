@@ -19,6 +19,7 @@ export type SyncPayload = {
   savedRoutes?: unknown;
   freeTierExtraBike?: boolean;
   maintenanceLogs?: unknown;
+  wishlistIds?: unknown;
   activeBikeId?: string | null;
   updatedAt?: string;
   /** Schema version for Flutter/Web payload mapping */

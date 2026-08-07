@@ -1,4 +1,4 @@
-import { readFile, access } from "fs/promises";
+import { readFile, access, readdir } from "fs/promises";
 import path from "path";
 import { constants } from "fs";
 
@@ -16,6 +16,7 @@ export type OfflinePackManifest = {
 };
 
 const ROOT = process.cwd();
+const SAFE_ID = /^[a-zA-Z0-9_-]+$/;
 
 function candidates(id: string, file?: string): string[] {
   const safeId = id.replace(/[^a-zA-Z0-9_-]/g, "");
@@ -46,9 +47,14 @@ export async function readOfflineManifest(
 ): Promise<OfflinePackManifest | null> {
   const p = await firstExisting(candidates(id, "manifest.json"));
   if (!p) {
-    // manifests/schwarzwald-nord.json
     const alt = await firstExisting([
-      path.join(ROOT, "data", "routing", "manifests", `${id.replace(/[^a-zA-Z0-9_-]/g, "")}.json`),
+      path.join(
+        ROOT,
+        "data",
+        "routing",
+        "manifests",
+        `${id.replace(/[^a-zA-Z0-9_-]/g, "")}.json`
+      ),
     ]);
     if (!alt) return null;
     const raw = await readFile(alt, "utf8");
@@ -74,7 +80,45 @@ export async function readOfflinePackFile(
   return { bytes, contentType };
 }
 
-export function listKnownPackIds(): string[] {
-  // Demo catalog — extend when more region configs ship.
-  return ["schwarzwald-nord"];
+async function dirNames(dir: string): Promise<string[]> {
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    return entries
+      .filter((e) => e.isDirectory() && SAFE_ID.test(e.name))
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
+
+async function manifestBasenames(dir: string): Promise<string[]> {
+  try {
+    const entries = await readdir(dir);
+    return entries
+      .filter((n) => n.endsWith(".json"))
+      .map((n) => n.replace(/\.json$/i, ""))
+      .filter((id) => SAFE_ID.test(id));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Scans public/offline, data/routing/dist and manifests/.
+ * Always includes schwarzwald-nord as demo fallback.
+ */
+export async function listKnownPackIds(): Promise<string[]> {
+  const ids = new Set<string>(["schwarzwald-nord"]);
+  for (const id of await dirNames(path.join(ROOT, "public", "offline"))) {
+    ids.add(id);
+  }
+  for (const id of await dirNames(path.join(ROOT, "data", "routing", "dist"))) {
+    ids.add(id);
+  }
+  for (const id of await manifestBasenames(
+    path.join(ROOT, "data", "routing", "manifests")
+  )) {
+    ids.add(id);
+  }
+  return [...ids].sort();
 }

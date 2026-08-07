@@ -1,13 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/export/export_trimmed.dart';
 import '../../data/export/json_export.dart';
@@ -29,11 +32,36 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
   bool _busy = false;
   String? _message;
   int _pendingChunks = 0;
+  String? _stravaStatus;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _checkStrava();
+  }
+
+  Future<void> _checkStrava() async {
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${AppConfig.apiBaseUrl}/api/strava'),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(const Duration(seconds: 6));
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body);
+      if (data is! Map || !mounted) return;
+      setState(() {
+        _stravaStatus = data['configured'] == true
+            ? 'Strava OAuth konfiguriert'
+            : 'Strava OAuth nicht konfiguriert — Stub-Export nutzen';
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _stravaStatus = 'Strava-Status offline');
+      }
+    }
   }
 
   Future<void> _load() async {
@@ -361,17 +389,17 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
                   ? null
                   : (v) => _setConsent(purpose, v),
             ),
-          if (_pendingChunks > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Rohdaten-Upload: $_pendingChunks Chunk(s) ausstehend',
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
-            ),
+          const SizedBox(height: 8),
+          Text(
+            'Rohdaten-Chunks: $_pendingChunks ausstehend'
+            '${_consents['raw_data_upload'] == true ? '' : ' (Consent aus)'}',
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+          if (_pendingChunks > 0)
             TextButton(
               onPressed: _busy ? null : _uploadChunks,
               child: const Text('Jetzt hochladen'),
             ),
-          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -449,6 +477,13 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
             icon: const Icon(Icons.upload_outlined),
             label: const Text('Strava-Payload (Stub, kein OAuth)'),
           ),
+          if (_stravaStatus != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _stravaStatus!,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+          ],
           if (_message != null) ...[
             const SizedBox(height: 12),
             Text(_message!, style: const TextStyle(color: AppColors.muted)),

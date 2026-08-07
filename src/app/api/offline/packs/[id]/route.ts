@@ -16,7 +16,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     return NextResponse.json(
       {
         error: "pack not found",
-        known: listKnownPackIds(),
+        known: await listKnownPackIds(),
       },
       { status: 404 }
     );

@@ -22,6 +22,12 @@ Server verify (`POST /api/billing/play-verify`) validates via Google when creden
 2. Mobile queues uploads via Drift v6 → `POST /api/ride-chunks` (Bearer)
 3. Confirm storage policies allow authenticated write to the ride-chunks bucket
 
+Ops dry-run (ohne Secrets):
+
+```bash
+bash scripts/ops-checklist.sh
+```
+
 ## Schnitte (implementiert)
 
 | ID | Inhalt |

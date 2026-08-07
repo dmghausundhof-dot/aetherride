@@ -61,9 +61,16 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - Garage: Odometer absolut + Stunden
 - Range-Calibration persist/sync + nach E-Ride
 
-## Follow-up 4
+## Follow-up 4 — DONE
 - Web-Sync: rangeCalibration, savedRoutes, maintenanceLogs, commerceMode
 - Offline-Packs Katalog `GET /api/offline/packs`
 - Wartungslogs Sync + Garage-UI
 - Post-Ride Assist-Summary (Schätzung)
 - Strava Export-Stub (ohne OAuth)
+
+## Follow-up 5
+- Offline-Pack-IDs dynamisch aus Dateisystem
+- wishlistIds Sync
+- Strava OAuth-Scaffold `GET /api/strava`
+- Ops-Checklist `scripts/ops-checklist.sh`
+- Privacy: Chunk-Health immer sichtbar + Strava-Status
