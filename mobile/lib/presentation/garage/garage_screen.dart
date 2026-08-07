@@ -1107,8 +1107,64 @@ class _BikePhotoAndSag extends ConsumerWidget {
           child: const Text('Messschritte anzeigen'),
         ),
         TextField(
+          decoration: InputDecoration(
+            labelText:
+                'Odometer absolut setzen (jetzt ${bike.odometerKm.toStringAsFixed(0)} km)',
+            hintText: bike.odometerKm.toStringAsFixed(0),
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          onSubmitted: (raw) async {
+            final km = double.tryParse(raw.replaceAll(',', '.'));
+            if (km == null || km < 0) return;
+            await ref.read(garageRepositoryProvider).setOdometerAbsolute(
+                  bikeId: bike.id,
+                  odometerKm: km,
+                  hours: bike.hours,
+                );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Stand: ${km.toStringAsFixed(0)} km · ${bike.hours.toStringAsFixed(1)} h',
+                  ),
+                ),
+              );
+              ref.invalidate(bikesProvider);
+            }
+          },
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          decoration: InputDecoration(
+            labelText:
+                'Stunden absolut setzen (jetzt ${bike.hours.toStringAsFixed(1)} h)',
+            hintText: bike.hours.toStringAsFixed(1),
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          onSubmitted: (raw) async {
+            final h = double.tryParse(raw.replaceAll(',', '.'));
+            if (h == null || h < 0) return;
+            await ref.read(garageRepositoryProvider).setOdometerAbsolute(
+                  bikeId: bike.id,
+                  odometerKm: bike.odometerKm,
+                  hours: h,
+                );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Stunden: ${h.toStringAsFixed(1)} h')),
+              );
+              ref.invalidate(bikesProvider);
+            }
+          },
+        ),
+        const SizedBox(height: 6),
+        TextField(
           decoration: const InputDecoration(
-            labelText: 'Odometer-Import (km addieren)',
+            labelText: 'Oder km addieren',
             isDense: true,
             border: OutlineInputBorder(),
           ),
@@ -1125,6 +1181,7 @@ class _BikePhotoAndSag extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('+$km km importiert')),
               );
+              ref.invalidate(bikesProvider);
             }
           },
         ),

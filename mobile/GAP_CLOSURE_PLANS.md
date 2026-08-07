@@ -33,7 +33,7 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 
 ## Bewusst nicht „echt“ schließbar ohne Ops/Hardware
 - Bosch LDI Protokoll (G-1)
-- Play Console Produkt + Google Verify 2A
+- Play Console Produkt (Verify-Code 2A ist verdrahtet; Produkt/Credentials = Ops)
 - Valhalla-Tiles ohne Docker-Build
 - Mapillary-Full-Trail ohne Token
 
@@ -44,7 +44,7 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - Trailforks-Pins auf Discover-Karte (tippbar → Deep-Link)
 - `commerceMode` Sync + Profil-Umschalter; aktiver Familien-Fahrer
 
-## Follow-up 2
+## Follow-up 2 — DONE
 - Trail View in-app via `/api/trail` (Demo ohne Token)
 - TTS Spec 400/150/30 + Engine-Steps (`nav_announce.dart`)
 - Live-Hints F-SEN-005 während Ride
@@ -52,3 +52,11 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - SyncEngine flush pending Ride-Chunks
 - Export Share-Sheet (GPX/FIT/JSON)
 - `activeFamilyRiderId` Sync + `effectiveWeightKg`
+
+## Follow-up 3
+- Play-Verify 2A: Google Publisher API (`googlePlayVerify.ts`)
+- Chat: Suggested Prompts, Tool-Wahl, Bearer-Auth, Quota-Hinweis
+- Home Evidence aufklappbar
+- Discover: Scale/Rundkurs/hm-Filter + Consent-Link
+- Garage: Odometer absolut + Stunden
+- Range-Calibration persist/sync + nach E-Ride

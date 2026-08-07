@@ -12,9 +12,9 @@ Hybrid: Stripe Checkout (web) + Google Play subscription `aetherride_pro_monthly
 2. Create **Subscription** product / base plan ID exactly `aetherride_pro_monthly`
 3. Internal / closed testing track + License Tester accounts
 4. Sign a release/debug build that uses Play Billing Library
-5. Later (2A): service account with Android Publisher API → set `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` on the API; drop `PLAY_VERIFY_STUB`
+5. 2A: service account with Android Publisher API → set `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` on the API (JSON string). Optional `PLAY_VERIFY_STUB=1` forces trusted-token MVP even with credentials.
 
-Server verify (`POST /api/billing/play-verify`) always writes `profiles.subscription_tier` **and** `sync_snapshots.payload.subscriptionTier` so Mobile LWW stays Pro.
+Server verify (`POST /api/billing/play-verify`) validates via Google when credentials are set, otherwise trusted-token MVP; always writes `profiles.subscription_tier` **and** `sync_snapshots.payload.subscriptionTier`.
 
 ## Ride Chunks (ops)
 

@@ -14,12 +14,35 @@ class RangeCalibration {
     required this.cdA,
     required this.riderPowerW,
     this.samples = 0,
+    this.updatedAt,
   });
 
   final double crr;
   final double cdA;
   final double riderPowerW;
   final int samples;
+  final String? updatedAt;
+
+  Map<String, dynamic> toJson() => {
+        'crr': crr,
+        'cdA': cdA,
+        'riderPowerW': riderPowerW,
+        'samples': samples,
+        if (updatedAt != null) 'updatedAt': updatedAt,
+      };
+
+  factory RangeCalibration.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return const RangeCalibration(crr: 0.015, cdA: 0.4, riderPowerW: 120);
+    }
+    return RangeCalibration(
+      crr: (json['crr'] as num?)?.toDouble() ?? 0.015,
+      cdA: (json['cdA'] as num?)?.toDouble() ?? 0.4,
+      riderPowerW: (json['riderPowerW'] as num?)?.toDouble() ?? 120,
+      samples: (json['samples'] as num?)?.toInt() ?? 0,
+      updatedAt: json['updatedAt'] as String?,
+    );
+  }
 }
 
 class RangeEstimate {
@@ -81,6 +104,33 @@ RangeCalibration defaultCalibration({
     crr: _baseCrr(category, tirePressurePsi),
     cdA: _baseCdA(category),
     riderPowerW: 90 + skillLevel * 15.0,
+  );
+}
+
+/// Kalman-artige Ein-Schritt-Anpassung nach Ride (Port calibrateFromRide).
+RangeCalibration calibrateFromRide({
+  required RangeCalibration prev,
+  required double distanceKm,
+  required double movingTimeSec,
+  required double batteryWhUsed,
+  double? avgRiderPowerW,
+}) {
+  if (distanceKm < 2 || batteryWhUsed < 10) return prev;
+  final observedWhPerKm = batteryWhUsed / distanceKm;
+  final speedKmh =
+      movingTimeSec > 0 ? distanceKm / (movingTimeSec / 3600) : 18;
+  final expected =
+      prev.crr * 180 + prev.cdA * 40 + 200 / math.max(8, speedKmh);
+  final err = observedWhPerKm - expected;
+  final k = 1 / (prev.samples + 2);
+  final nextPower = avgRiderPowerW ?? prev.riderPowerW;
+  return RangeCalibration(
+    crr: (prev.crr + k * err * 0.00008).clamp(0.006, 0.04),
+    cdA: (prev.cdA + k * err * 0.002).clamp(0.25, 0.6),
+    riderPowerW:
+        (prev.riderPowerW + k * (nextPower - prev.riderPowerW)).clamp(60, 250),
+    samples: prev.samples + 1,
+    updatedAt: DateTime.now().toUtc().toIso8601String(),
   );
 }
 

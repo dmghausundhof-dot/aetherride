@@ -11,10 +11,12 @@ import 'package:uuid/uuid.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/active_route.dart';
+import '../../domain/bike.dart';
 import '../../domain/ble.dart';
 import '../../domain/ride.dart';
 import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
+import '../../domain/ebike/range.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
 import '../../native/location_core_channel.dart';
@@ -65,6 +67,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   int _hardImpactStreak = 0;
   double _standSeconds = 0;
   double _prevPeakG = 0;
+  double? _startSoc;
 
   MapLibreMapController? _rideMap;
   int _mapDrawSkip = 0;
@@ -364,6 +367,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     });
     _bleSub = ble.liveData.listen((d) {
       if (mounted) setState(() => _ldi = d);
+      _startSoc ??= d.batterySocPercent;
     });
     _startedAt = DateTime.now();
     _spokenAnnounceKeys.clear();
@@ -371,6 +375,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _hardImpactStreak = 0;
     _standSeconds = 0;
     _prevPeakG = 0;
+    _startSoc = null;
     ref.read(isRidingProvider.notifier).state = true;
     ref.read(isPausedProvider.notifier).state = false;
     ref.read(rideElapsedSecProvider.notifier).state = 0;
@@ -460,6 +465,32 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             if (_ldi != null) 'soc': _ldi!.batterySocPercent,
           },
         );
+
+    // E-Bike Reichweiten-Kalibrierung wenn genug Distanz + SOC-Delta
+    final isEbike = bike?.category == BikeCategory.emtb ||
+        bike?.category == BikeCategory.etrekking;
+    if (isEbike && distanceM >= 2000) {
+      final endSoc = _ldi?.batterySocPercent;
+      final startSoc = _startSoc;
+      final batteryWh = 500.0;
+      double whUsed;
+      if (startSoc != null && endSoc != null && startSoc > endSoc) {
+        whUsed = batteryWh * ((startSoc - endSoc) / 100);
+      } else {
+        whUsed = (distanceM / 1000) * 12; // Heuristik
+      }
+      final store = ref.read(userProfileStoreProvider);
+      await store.load();
+      final prev = store.rangeCalibration ??
+          defaultCalibration(category: bike!.category);
+      final next = calibrateFromRide(
+        prev: prev,
+        distanceKm: distanceM / 1000,
+        movingTimeSec: elapsed.toDouble(),
+        batteryWhUsed: whUsed,
+      );
+      await store.setRangeCalibration(next);
+    }
 
     ref.read(isRidingProvider.notifier).state = false;
     ref.read(isPausedProvider.notifier).state = false;

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/bike.dart';
+import '../../domain/ebike/range.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/track_trim.dart';
 import '../../domain/rider_profile.dart';
@@ -129,6 +130,22 @@ class GarageRepository {
       bike.copyWith(
         odometerKm: bike.odometerKm + distanceKm,
         hours: bike.hours + hours,
+      ),
+    );
+  }
+
+  /// Absoluter Stand (Web-OdometerImportPanel-Parität).
+  Future<void> setOdometerAbsolute({
+    required String bikeId,
+    required double odometerKm,
+    required double hours,
+  }) async {
+    final bike = await getById(bikeId);
+    if (bike == null) return;
+    await upsert(
+      bike.copyWith(
+        odometerKm: odometerKm.clamp(0, 1e7),
+        hours: hours.clamp(0, 1e6),
       ),
     );
   }
@@ -283,6 +300,7 @@ class GarageRepository {
           : [for (final r in profileStore!.familyRiders) r.toJson()],
       activeFamilyRiderId: profileStore?.activeFamilyRiderId,
       commerceMode: profileStore?.commerceMode,
+      rangeCalibration: profileStore?.rangeCalibration?.toJson(),
       updatedAt: state?.localUpdatedAt,
       payloadVersion: state?.payloadVersion ?? 1,
     );
@@ -427,6 +445,11 @@ class GarageRepository {
       final cm = payload.commerceMode;
       if (cm is String && (cm == 'affiliate' || cm == 'marketplace')) {
         store.commerceMode = cm;
+      }
+      if (payload.rangeCalibration is Map) {
+        store.rangeCalibration = RangeCalibration.fromJson(
+          Map<String, dynamic>.from(payload.rangeCalibration as Map),
+        );
       }
       await store.save();
     }

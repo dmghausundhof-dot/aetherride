@@ -304,7 +304,7 @@ class _FingerprintCard extends StatelessWidget {
   }
 }
 
-class _TipHero extends ConsumerWidget {
+class _TipHero extends ConsumerStatefulWidget {
   const _TipHero({
     required this.setup,
     required this.saved,
@@ -318,21 +318,36 @@ class _TipHero extends ConsumerWidget {
   final double? weightKg;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TipHero> createState() => _TipHeroState();
+}
+
+class _TipHeroState extends ConsumerState<_TipHero> {
+  bool _evidenceOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final setup = widget.setup;
+    final saved = widget.saved;
+    final weather = widget.weather;
+    final weightKg = widget.weightKg;
     final fp = SetupFingerprint.fromSetup(setup);
-    final route = (saved != null && saved!.isNotEmpty) ? saved!.first : null;
+    final route = (saved != null && saved.isNotEmpty) ? saved.first : null;
     final title = route?.name ?? 'Freifahren starten';
     final subtitle = route == null
         ? 'Keine gespeicherte Tour — Discover öffnen oder Freeride'
         : '${route.distanceKm.toStringAsFixed(1)} km · '
             '${route.elevationM.round()} hm · ${route.durationMin} min';
-    final reason = [
-      if (weather != null) 'Trail: ${weather!.trailLabel}',
-      if (fp.lines.isNotEmpty) fp.lines.first,
-      if (route != null) 'Gespeicherte Route'
-      else 'Zeitfenster bereit',
-      if (weightKg != null) 'Fahrer ${weightKg!.toStringAsFixed(0)} kg',
-    ].join(' · ');
+    final reasons = <String>[
+      if (weather != null)
+        'Wetter: ${weather.trailLabel} (${weather.tempC.toStringAsFixed(0)}°)',
+      if (fp.lines.isNotEmpty) 'Fingerprint: ${fp.lines.first}',
+      if (route != null)
+        'Gespeicherte Route: ${route.name}'
+      else
+        'Zeitfenster bereit — keine Saved Route',
+      if (weightKg != null)
+        'Fahrergewicht ${weightKg.toStringAsFixed(0)} kg (aktiv)',
+    ];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -367,12 +382,46 @@ class _TipHero extends ConsumerWidget {
                 ),
           ),
           const SizedBox(height: 8),
-          Text(reason, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 8),
-          const Text(
-            'Evidence: Wetter-API · Setup-Fingerprint · Saved Routes',
-            style: TextStyle(fontSize: 11, color: AppColors.muted),
+          Text(
+            reasons.take(2).join(' · '),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
+          const SizedBox(height: 4),
+          InkWell(
+            onTap: () => setState(() => _evidenceOpen = !_evidenceOpen),
+            child: Row(
+              children: [
+                Text(
+                  _evidenceOpen ? 'Warum? einklappen' : 'Warum? Evidence',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                  ),
+                ),
+                Icon(
+                  _evidenceOpen ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: AppColors.accent,
+                ),
+              ],
+            ),
+          ),
+          if (_evidenceOpen) ...[
+            const SizedBox(height: 6),
+            for (final r in reasons)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '· $r',
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ),
+            const Text(
+              'Quellen: Wetter-API · Setup-Fingerprint · Saved Routes',
+              style: TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
@@ -438,18 +487,21 @@ class _OnboardingCards extends StatelessWidget {
   }
 }
 
-class _RangeCard extends StatelessWidget {
+class _RangeCard extends ConsumerWidget {
   const _RangeCard({required this.bike, this.setup});
 
   final Bike bike;
   final BikeSetup? setup;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = ref.watch(userProfileStoreProvider);
     final tirePsi = setup?.valueFor('tire_rear.pressure_psi') ?? 24;
     final est = estimateRange(
       category: bike.category,
+      calibration: store.rangeCalibration,
       tirePressurePsi: tirePsi,
+      riderWeightKg: store.effectiveWeightKg,
       bikeWeightKg: bike.category == BikeCategory.emtb ? 24 : 22,
     );
     return Container(
@@ -469,6 +521,12 @@ class _RangeCard extends StatelessWidget {
           Text(
             '${est.kmLow}–${est.kmHigh} km · ${est.batteryWh} Wh · '
             '${est.whPerKmLow}–${est.whPerKmHigh} Wh/km',
+          ),
+          Text(
+            est.calibrated
+                ? 'Kalibriert · ${est.confidence} (${store.rangeCalibration?.samples ?? 0} Samples)'
+                : 'Noch nicht kalibriert — nach E-Rides genauer',
+            style: const TextStyle(fontSize: 11, color: AppColors.muted),
           ),
         ],
       ),

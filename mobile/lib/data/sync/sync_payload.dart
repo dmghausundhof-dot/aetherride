@@ -11,6 +11,7 @@ class SyncPayload {
     this.riderProfile,
     this.subscriptionTier,
     this.commerceMode,
+    this.rangeCalibration,
     this.activeBikeId,
     this.savedRoutes,
     this.freeTierExtraBike,
@@ -28,6 +29,7 @@ class SyncPayload {
   final dynamic riderProfile;
   final String? subscriptionTier;
   final dynamic commerceMode;
+  final dynamic rangeCalibration;
   final String? activeBikeId;
   final dynamic savedRoutes;
   final bool? freeTierExtraBike;
@@ -46,6 +48,7 @@ class SyncPayload {
       riderProfile: json['riderProfile'],
       subscriptionTier: json['subscriptionTier'] as String?,
       commerceMode: json['commerceMode'],
+      rangeCalibration: json['rangeCalibration'],
       activeBikeId: json['activeBikeId'] as String?,
       savedRoutes: json['savedRoutes'] ?? json['saved_routes'],
       freeTierExtraBike: json['freeTierExtraBike'] as bool?,
@@ -66,6 +69,7 @@ class SyncPayload {
         if (riderProfile != null) 'riderProfile': riderProfile,
         if (subscriptionTier != null) 'subscriptionTier': subscriptionTier,
         if (commerceMode != null) 'commerceMode': commerceMode,
+        if (rangeCalibration != null) 'rangeCalibration': rangeCalibration,
         if (activeBikeId != null) 'activeBikeId': activeBikeId,
         if (savedRoutes != null) 'savedRoutes': savedRoutes,
         if (freeTierExtraBike != null) 'freeTierExtraBike': freeTierExtraBike,
@@ -85,6 +89,7 @@ class SyncPayload {
     dynamic savedRoutes,
     String? subscriptionTier,
     dynamic commerceMode,
+    dynamic rangeCalibration,
     bool? freeTierExtraBike,
     String? activeBikeId,
     String? updatedAt,
@@ -102,6 +107,7 @@ class SyncPayload {
       riderProfile: riderProfile ?? this.riderProfile,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       commerceMode: commerceMode ?? this.commerceMode,
+      rangeCalibration: rangeCalibration ?? this.rangeCalibration,
       activeBikeId: activeBikeId ?? this.activeBikeId,
       savedRoutes: savedRoutes ?? this.savedRoutes,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,

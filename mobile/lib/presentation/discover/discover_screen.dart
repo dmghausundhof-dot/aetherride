@@ -19,6 +19,7 @@ import '../../domain/routing/trail_view.dart';
 import '../../domain/saved_route.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../profile/profile_screen.dart';
 import 'offline_maps_sheet.dart';
 
 class _TfPin {
@@ -216,6 +217,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<_RouteSuggestion> _tours = List<_RouteSuggestion>.from(_seedRoutes);
   int? _durationBucket; // 60 / 90 / 120
   String? _surfaceFilter;
+  String? _scaleFilter; // S0 / S1 / S2+
+  bool? _loopOnly;
+  int? _minElevationM;
   bool _heatmapConsent = false;
   String? _elevationSummary;
   List<double> _elevationSamples = const [];
@@ -463,6 +467,28 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       if (_surfaceFilter != null && r.surface != _surfaceFilter) {
         return false;
+      }
+      if (_scaleFilter != null) {
+        final scale = r.mtbScale.toUpperCase();
+        if (_scaleFilter == 'S0' && !scale.contains('S0')) return false;
+        if (_scaleFilter == 'S1' &&
+            !scale.contains('S1') &&
+            !scale.contains('S0')) {
+          return false;
+        }
+        if (_scaleFilter == 'S2+' &&
+            !(scale.contains('S2') ||
+                scale.contains('S3') ||
+                scale.contains('S4'))) {
+          return false;
+        }
+      }
+      if (_minElevationM != null && r.elevationM < _minElevationM!) {
+        return false;
+      }
+      if (_loopOnly == true) {
+        // Heuristik: längere Touren eher Rundkurse / OA-Touren
+        if (r.distanceKm < 8) return false;
       }
       return true;
     }).toList();
@@ -1193,13 +1219,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ),
                     )
                   else
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        'Heatmaps nach Consent (Privatsphäre)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: InkWell(
+                        onTap: () => openPrivacyScreen(context),
+                        child: const Text(
+                          'Heatmaps nach Consent — Privatsphäre öffnen',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ),
@@ -1227,6 +1257,38 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             onSelected: (sel) {
                               setState(() {
                                 _surfaceFilter = sel ? s : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        for (final sc in ['S0', 'S1', 'S2+']) ...[
+                          FilterChip(
+                            label: Text(sc),
+                            selected: _scaleFilter == sc,
+                            onSelected: (sel) {
+                              setState(() {
+                                _scaleFilter = sel ? sc : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        FilterChip(
+                          label: const Text('Rundkurs'),
+                          selected: _loopOnly == true,
+                          onSelected: (sel) {
+                            setState(() => _loopOnly = sel ? true : null);
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        for (final hm in [400, 800, 1200]) ...[
+                          FilterChip(
+                            label: Text('≥$hm hm'),
+                            selected: _minElevationM == hm,
+                            onSelected: (sel) {
+                              setState(() {
+                                _minElevationM = sel ? hm : null;
                               });
                             },
                           ),

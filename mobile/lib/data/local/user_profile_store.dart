@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../domain/ebike/range.dart';
 import '../../domain/rider_profile.dart';
 
 /// Persistiert Rider-Profil + Familien-Fahrer (Sync-fähig).
@@ -21,6 +22,7 @@ class UserProfileStore {
   List<Map<String, dynamic>> chatHistory = [];
   /// Sync-Feld: `affiliate` | `marketplace` (Web-Parität).
   String commerceMode = 'affiliate';
+  RangeCalibration? rangeCalibration;
 
   Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -59,6 +61,11 @@ class UserProfileStore {
       if (cm == 'affiliate' || cm == 'marketplace') {
         commerceMode = cm!;
       }
+      if (m['rangeCalibration'] is Map) {
+        rangeCalibration = RangeCalibration.fromJson(
+          Map<String, dynamic>.from(m['rangeCalibration'] as Map),
+        );
+      }
     } catch (_) {}
   }
 
@@ -74,6 +81,8 @@ class UserProfileStore {
         'wishlistIds': wishlistIds,
         'chatHistory': chatHistory,
         'commerceMode': commerceMode,
+        if (rangeCalibration != null)
+          'rangeCalibration': rangeCalibration!.toJson(),
       }),
     );
   }
@@ -100,6 +109,11 @@ class UserProfileStore {
   Future<void> setCommerceMode(String mode) async {
     if (mode != 'affiliate' && mode != 'marketplace') return;
     commerceMode = mode;
+    await save();
+  }
+
+  Future<void> setRangeCalibration(RangeCalibration cal) async {
+    rangeCalibration = cal;
     await save();
   }
 
@@ -149,6 +163,7 @@ class UserProfileStore {
     wishlistIds = [];
     chatHistory = [];
     commerceMode = 'affiliate';
+    rangeCalibration = null;
     await save();
   }
 }

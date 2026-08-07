@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
@@ -16,7 +17,18 @@ class ChatMessage {
   final String text;
 }
 
-/// Einfache Chat-UI → POST `${API}/api/chat`.
+class _SuggestedPrompt {
+  const _SuggestedPrompt({
+    required this.label,
+    required this.query,
+    required this.tool,
+  });
+  final String label;
+  final String query;
+  final String tool;
+}
+
+/// Chat-UI → POST `${API}/api/chat` (Web-Parität inkl. Prompts/Tools/Bearer).
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -30,11 +42,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _messages = <ChatMessage>[];
   bool _busy = false;
   bool _historyLoaded = false;
+  String _tool = 'auto';
+  String? _quotaNote;
 
   static const _welcome = ChatMessage(
     role: 'assistant',
     text: 'Frag mich zu Setup, Routen oder Teilen.',
   );
+
+  static const _prompts = <_SuggestedPrompt>[
+    _SuggestedPrompt(
+      label: 'Garage',
+      query: 'Was steckt in meiner Garage?',
+      tool: 'garage',
+    ),
+    _SuggestedPrompt(
+      label: 'Reichweite',
+      query: 'Welche Reichweite habe ich mit aktuellem Akku?',
+      tool: 'range',
+    ),
+    _SuggestedPrompt(
+      label: 'Setups',
+      query: 'Welche Setups hatte ich und was hat sich geändert?',
+      tool: 'setup_history',
+    ),
+    _SuggestedPrompt(
+      label: 'Rides',
+      query: 'Zusammenfassung meiner letzten Rides',
+      tool: 'ride_stats',
+    ),
+    _SuggestedPrompt(
+      label: 'Routen',
+      query: 'Welche Routen passen zu mir?',
+      tool: 'route_search',
+    ),
+    _SuggestedPrompt(
+      label: 'Shop',
+      query: 'Brauche ich bald neue Verschleißteile?',
+      tool: 'product_search',
+    ),
+  ];
 
   @override
   void initState() {
@@ -75,16 +122,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  Future<void> _send() async {
+  Future<void> _send({String? query, String? tool}) async {
     final riding = ref.read(isRidingProvider);
     if (riding || _busy) return;
-    final q = _input.text.trim();
+    final q = (query ?? _input.text).trim();
     if (q.isEmpty) return;
+    final toolName = tool ?? _tool;
 
     setState(() {
       _messages.add(ChatMessage(role: 'user', text: q));
       _busy = true;
-      _input.clear();
+      if (query == null) _input.clear();
+      _quotaNote = null;
     });
     await _persist('user', q);
     _scrollToEnd();
@@ -97,7 +146,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final active = await garage.getActiveBike();
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 12);
       final profile = store.riderProfile;
-      // Chat-API verlangt profile; Gewicht aus aktivem Familien-Fahrer.
       final profilePayload = {
         ...profile.toJson(),
         'riderWeightKg': store.effectiveWeightKg,
@@ -107,19 +155,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           : {
               'id': active.id,
               'name': active.name,
-              'category': active.category,
+              'category': active.category.name,
               'brand': active.brand,
               'model': active.model,
             };
+
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (AppConfig.isSupabaseConfigured) {
+        try {
+          final token =
+              Supabase.instance.client.auth.currentSession?.accessToken;
+          if (token != null && token.isNotEmpty) {
+            headers['Authorization'] = 'Bearer $token';
+          }
+        } catch (_) {}
+      }
+
       final res = await http.post(
         Uri.parse('${AppConfig.apiBaseUrl}/api/chat'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: headers,
         body: jsonEncode({
           'query': q,
-          'tool': 'auto',
+          'tool': toolName,
           'profile': profilePayload,
           'bike': bikeJson,
           'bikes': [
@@ -127,7 +187,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               {
                 'id': b.id,
                 'name': b.name,
-                'category': b.category,
+                'category': b.category.name,
                 'brand': b.brand,
                 'model': b.model,
               },
@@ -143,7 +203,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 'summary': r.summary,
               },
           ],
-          'calibration': null,
+          'calibration': store.rangeCalibration?.toJson(),
         }),
       );
       String text;
@@ -152,6 +212,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         text = (data['text'] as String?) ??
             (data['error'] as String?) ??
             'Keine Antwort.';
+        final remaining = data['remaining'];
+        final dayLimit = data['dayLimit'];
+        if (remaining is num && dayLimit is num) {
+          _quotaNote = 'Quota: ${remaining.toInt()}/${dayLimit.toInt()} heute';
+        }
         if (res.statusCode == 429) {
           text = '$text\n\nLimit erreicht.';
         }
@@ -219,6 +284,82 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
             ),
+          if (!riding)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final p in _prompts) ...[
+                          ActionChip(
+                            label: Text(p.label),
+                            onPressed: blocked
+                                ? null
+                                : () => _send(query: p.query, tool: p.tool),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: _tool,
+                    isDense: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Tool',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'auto', child: Text('Auto')),
+                      DropdownMenuItem(value: 'garage', child: Text('Garage')),
+                      DropdownMenuItem(value: 'range', child: Text('Reichweite')),
+                      DropdownMenuItem(
+                        value: 'setup_history',
+                        child: Text('Setup-Historie'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'ride_stats',
+                        child: Text('Ride-Stats'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'route_search',
+                        child: Text('Routen'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'product_search',
+                        child: Text('Shop'),
+                      ),
+                    ],
+                    onChanged: blocked
+                        ? null
+                        : (v) {
+                            if (v != null) setState(() => _tool = v);
+                          },
+                  ),
+                  if (_quotaNote != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        _quotaNote!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           Expanded(
             child: !_historyLoaded
                 ? const Center(child: CircularProgressIndicator())
@@ -281,7 +422,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     style: IconButton.styleFrom(
                       backgroundColor: AppColors.accent,
                     ),
-                    onPressed: blocked ? null : _send,
+                    onPressed: blocked ? null : () => _send(),
                     icon: _busy
                         ? const SizedBox(
                             width: 18,
