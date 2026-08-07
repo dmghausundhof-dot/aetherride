@@ -607,6 +607,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _mode = _SheetMode.tours;
       });
       await _drawAll();
+      await _refreshElevation(merged);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
