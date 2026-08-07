@@ -90,13 +90,61 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _scrollToEnd();
 
     try {
+      final store = ref.read(userProfileStoreProvider);
+      await store.load();
+      final garage = ref.read(garageRepositoryProvider);
+      final bikes = await garage.listBikes();
+      final active = await garage.getActiveBike();
+      final rides = await ref.read(rideRepositoryProvider).listRides(limit: 12);
+      final profile = store.riderProfile;
+      // Chat-API verlangt profile; Gewicht aus aktivem Familien-Fahrer.
+      final profilePayload = {
+        ...profile.toJson(),
+        'riderWeightKg': store.effectiveWeightKg,
+      };
+      final bikeJson = active == null
+          ? null
+          : {
+              'id': active.id,
+              'name': active.name,
+              'category': active.category,
+              'brand': active.brand,
+              'model': active.model,
+            };
       final res = await http.post(
         Uri.parse('${AppConfig.apiBaseUrl}/api/chat'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'query': q, 'tool': 'auto'}),
+        body: jsonEncode({
+          'query': q,
+          'tool': 'auto',
+          'profile': profilePayload,
+          'bike': bikeJson,
+          'bikes': [
+            for (final b in bikes)
+              {
+                'id': b.id,
+                'name': b.name,
+                'category': b.category,
+                'brand': b.brand,
+                'model': b.model,
+              },
+          ],
+          'rides': [
+            for (final r in rides)
+              {
+                'id': r.id,
+                'bikeId': r.bikeId,
+                'startedAt': r.startedAt.toIso8601String(),
+                'distanceKm': r.distanceKm,
+                'movingTimeSec': r.movingTimeSec,
+                'summary': r.summary,
+              },
+          ],
+          'calibration': null,
+        }),
       );
       String text;
       try {

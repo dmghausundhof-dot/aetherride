@@ -103,6 +103,17 @@ class UserProfileStore {
     await save();
   }
 
+  /// Gewicht des aktiven Familien-Fahrers oder eigenes Rider-Gewicht.
+  double get effectiveWeightKg {
+    final id = activeFamilyRiderId;
+    if (id != null) {
+      for (final r in familyRiders) {
+        if (r.id == id) return r.weightKg;
+      }
+    }
+    return riderProfile.riderWeightKg;
+  }
+
   Future<void> setBikePhoto(String bikeId, String path) async {
     bikePhotos[bikeId] = path;
     await save();

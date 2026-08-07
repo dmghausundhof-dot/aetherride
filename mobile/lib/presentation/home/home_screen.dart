@@ -66,7 +66,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final bikes = ref.watch(bikesProvider);
     final session = ref.watch(authSessionProvider).valueOrNull;
     final savedRoutes = ref.watch(savedRoutesProvider);
-    final profileAsync = ref.watch(riderProfileProvider);
     final store = ref.watch(userProfileStoreProvider);
 
     final active = bikes.whenData((list) {
@@ -225,7 +224,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               setup: setupAsync.valueOrNull,
               saved: savedRoutes.valueOrNull,
               weather: _weather,
-              weightKg: profileAsync.valueOrNull?.riderWeightKg,
+              weightKg: store.effectiveWeightKg,
             ),
             if (active != null &&
                 (active.category == BikeCategory.emtb ||

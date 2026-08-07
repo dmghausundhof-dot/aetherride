@@ -15,6 +15,7 @@ import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/routing/heatmap.dart';
+import '../../domain/routing/trail_view.dart';
 import '../../domain/saved_route.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -188,6 +189,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Symbol? _startSymbol;
   Symbol? _endSymbol;
   List<Symbol> _tfSymbols = [];
+  final Map<String, _TfPin> _tfBySymbolId = {};
 
   _SheetMode _mode = _SheetMode.quick;
   RoutingProfile _profile = RoutingProfile.mtbTrail;
@@ -388,20 +390,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _openTrailView({LatLng? near}) async {
     final c = near ?? LatLng(_origin.lat, _origin.lng);
-    final uri = Uri.parse(
-      'https://www.mapillary.com/app/?lat=${c.latitude}&lng=${c.longitude}&z=16',
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _TrailViewSheet(lat: c.latitude, lng: c.longitude),
     );
+  }
+
+  Future<void> _onTfSymbolTapped(Symbol symbol) async {
+    final pin = _tfBySymbolId[symbol.id];
+    if (pin == null) return;
     try {
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trail View — Mapillary')),
-        );
-      }
+      await launchUrl(
+        Uri.parse(pin.openUrl),
+        mode: LaunchMode.externalApplication,
+      );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trail View — Mapillary')),
+          SnackBar(content: Text(pin.name)),
         );
       }
     }
@@ -867,6 +875,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         await c.removeSymbol(s);
       }
       _tfSymbols = [];
+      _tfBySymbolId.clear();
       if (_start != null) {
         _startSymbol = await c.addSymbol(
           SymbolOptions(
@@ -898,6 +907,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
         );
         _tfSymbols.add(sym);
+        _tfBySymbolId[sym.id] = pin;
       }
     } catch (_) {}
   }
@@ -1288,7 +1298,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   ),
                   onMapCreated: (c) async {
                     _map = c;
+                    c.onSymbolTapped.add(_onTfSymbolTapped);
                     if (_computed != null) await _drawRoute(_computed!);
+                    await _drawAll();
                   },
                   onMapClick: (point, latLng) async {
                     if (_mode != _SheetMode.plan) return;
@@ -1773,6 +1785,168 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
         ),
     ];
+  }
+}
+
+class _TrailViewSheet extends StatefulWidget {
+  const _TrailViewSheet({required this.lat, required this.lng});
+  final double lat;
+  final double lng;
+
+  @override
+  State<_TrailViewSheet> createState() => _TrailViewSheetState();
+}
+
+class _TrailViewSheetState extends State<_TrailViewSheet> {
+  TrailViewResult? _result;
+  String? _error;
+  bool _loading = true;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final r = await fetchTrailViewNear(lat: widget.lat, lng: widget.lng);
+      if (!mounted) return;
+      setState(() {
+        _result = r;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = '$e';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final photos = _result?.photos ?? const <TrailPhoto>[];
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Trail View',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              Text(_error!, style: const TextStyle(color: Colors.redAccent))
+            else ...[
+              SizedBox(
+                height: 220,
+                child: photos.isEmpty
+                    ? const Center(child: Text('Keine Fotos in der Nähe'))
+                    : PageView.builder(
+                        itemCount: photos.length,
+                        onPageChanged: (i) => setState(() => _page = i),
+                        itemBuilder: (ctx, i) {
+                          final p = photos[i];
+                          if (p.isNetworkImage) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                p.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _demoTile(p.title),
+                              ),
+                            );
+                          }
+                          return _demoTile(p.title);
+                        },
+                      ),
+              ),
+              if (photos.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  photos[_page.clamp(0, photos.length - 1)].title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  photos[_page.clamp(0, photos.length - 1)].attributionHtml,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                _result?.disclaimer ?? '',
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+              Text(
+                _result?.attribution ?? '',
+                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  launchUrl(
+                    Uri.parse(
+                      'https://www.mapillary.com/app/?lat=${widget.lat}&lng=${widget.lng}&z=16',
+                    ),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+                icon: const Icon(Icons.open_in_browser),
+                label: const Text('Mapillary öffnen'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _demoTile(String title) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF4A7C59), Color(0xFF2D4A35)],
+        ),
+      ),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(16),
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Color(0xFFE8F0E9),
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
+      ),
+    );
   }
 }
 

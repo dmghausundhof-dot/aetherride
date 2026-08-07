@@ -13,8 +13,10 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/active_route.dart';
 import '../../domain/ble.dart';
 import '../../domain/ride.dart';
+import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
 import '../../domain/sensor.dart';
+import '../../domain/sensor/live_hints.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -57,9 +59,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
   final FlutterTts _tts = FlutterTts();
   bool _ttsMuted = false;
-  String? _lastSpokenCueId;
+  final Set<String> _spokenAnnounceKeys = {};
   String? _lastSpokenText;
-  String? _lastSpokenPhase;
+  String? _liveHintText;
+  int _hardImpactStreak = 0;
+  double _standSeconds = 0;
+  double _prevPeakG = 0;
 
   MapLibreMapController? _rideMap;
   int _mapDrawSkip = 0;
@@ -196,32 +201,85 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 
 
-  /// Speak nav banner at ~80 m (near) and once when remaining first enters range.
+  /// Engine-Steps (400/150/30) bevorzugt; sonst Bearing-Cues als Fallback.
   void _maybeSpeakNav(NavCue cue, int remainingM) {
     if (_ttsMuted || !ref.read(isRidingProvider)) return;
-    final near = remainingM <= 80;
-    final approach = remainingM <= 300;
-    if (!near && !approach) return;
-    final phase = near ? 'near' : 'approach';
-    final text = cueBannerText(cue, remainingM);
-    if (_lastSpokenCueId == cue.id &&
-        (_lastSpokenPhase == phase || _lastSpokenText == text)) {
-      return;
-    }
-    _lastSpokenCueId = cue.id;
+    final speed = _ldi?.speedKmh ?? 0;
+    final text = pickAnnounce(
+      stepId: cue.id,
+      instruction: cue.instruction,
+      isArrive: cue.instruction == 'Ziel erreicht',
+      remainingM: remainingM.toDouble(),
+      speedKmh: speed,
+      spoken: _spokenAnnounceKeys,
+    );
+    if (text == null) return;
+    if (_lastSpokenText == text) return;
     _lastSpokenText = text;
-    _lastSpokenPhase = phase;
     unawaited(_tts.speak(text));
   }
 
   void _considerNavTts() {
     final route = ref.read(activeRouteProvider);
     if (route == null || route.coordinates.length < 4) return;
+    final along = ref.read(rideDistanceMProvider);
+    final speed = _ldi?.speedKmh ?? 0;
+
+    if (route.steps.isNotEmpty) {
+      final nxt = nextRouteStep(route.steps, along);
+      if (nxt != null) {
+        final text = pickAnnounce(
+          stepId: nxt.step.id,
+          instruction: nxt.step.instruction,
+          isArrive: nxt.step.instruction.toLowerCase().contains('ziel'),
+          remainingM: nxt.remainingM,
+          speedKmh: speed,
+          spoken: _spokenAnnounceKeys,
+        );
+        if (text != null &&
+            !_ttsMuted &&
+            ref.read(isRidingProvider) &&
+            _lastSpokenText != text) {
+          _lastSpokenText = text;
+          unawaited(_tts.speak(text));
+        }
+        return;
+      }
+    }
+
     final cues = buildNavCues(route.coordinates);
-    final nxt = nextCue(cues, ref.read(rideDistanceMProvider));
+    final nxt = nextCue(cues, along);
     if (nxt != null) _maybeSpeakNav(nxt.cue, nxt.remainingM);
   }
 
+  void _considerLiveHints(FusedMetrics fused) {
+    final speed = _ldi?.speedKmh ?? 0;
+    if (speed < 3) {
+      _standSeconds += 1;
+    } else {
+      _standSeconds = 0;
+    }
+    final impactJust = fused.gForcePeak >= 3.2 && fused.gForcePeak > _prevPeakG;
+    _prevPeakG = fused.gForcePeak;
+    if (impactJust) {
+      _hardImpactStreak += 1;
+    } else if (fused.gForcePeak < 2.0) {
+      _hardImpactStreak = 0;
+    }
+    final hints = hintsFromMetrics(
+      speedKmh: speed,
+      standSeconds: _standSeconds,
+      impactJustDetected: impactJust,
+      hardImpactStreak: _hardImpactStreak,
+    );
+    if (hints.isEmpty) return;
+    final h = hints.first;
+    if (_liveHintText == h.text) return;
+    if (mounted) setState(() => _liveHintText = h.text);
+    if (!_ttsMuted && h.kind != 'stand') {
+      unawaited(_tts.speak(clampHint(h.text)));
+    }
+  }
 
   void _bumpIdle() {
     ref.read(autoLockedProvider.notifier).state = false;
@@ -308,6 +366,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       if (mounted) setState(() => _ldi = d);
     });
     _startedAt = DateTime.now();
+    _spokenAnnounceKeys.clear();
+    _liveHintText = null;
+    _hardImpactStreak = 0;
+    _standSeconds = 0;
+    _prevPeakG = 0;
     ref.read(isRidingProvider.notifier).state = true;
     ref.read(isPausedProvider.notifier).state = false;
     ref.read(rideElapsedSecProvider.notifier).state = 0;
@@ -324,13 +387,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         ref.read(rideDistanceMProvider.notifier).state += 4.2;
       }
       _considerNavTts();
+      final m = _metrics;
+      if (m != null) _considerLiveHints(m);
     });
     _bumpIdle();
     setState(() {
       _confirmStop = 0;
-      _lastSpokenCueId = null;
       _lastSpokenText = null;
-      _lastSpokenPhase = null;
+      _liveHintText = null;
     });
   }
 
@@ -544,6 +608,18 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                               ),
                             );
                           },
+                        ),
+                      if (riding && _liveHintText != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            _liveHintText!,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange.shade800,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                     ] else if (!riding)
                       const Text(

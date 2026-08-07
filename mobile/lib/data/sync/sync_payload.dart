@@ -7,6 +7,7 @@ class SyncPayload {
     this.consents,
     this.privacyZones,
     this.familyRiders,
+    this.activeFamilyRiderId,
     this.riderProfile,
     this.subscriptionTier,
     this.commerceMode,
@@ -23,6 +24,7 @@ class SyncPayload {
   final dynamic consents;
   final dynamic privacyZones;
   final dynamic familyRiders;
+  final String? activeFamilyRiderId;
   final dynamic riderProfile;
   final String? subscriptionTier;
   final dynamic commerceMode;
@@ -40,6 +42,7 @@ class SyncPayload {
       consents: json['consents'],
       privacyZones: json['privacyZones'],
       familyRiders: json['familyRiders'],
+      activeFamilyRiderId: json['activeFamilyRiderId'] as String?,
       riderProfile: json['riderProfile'],
       subscriptionTier: json['subscriptionTier'] as String?,
       commerceMode: json['commerceMode'],
@@ -58,6 +61,8 @@ class SyncPayload {
         if (consents != null) 'consents': consents,
         if (privacyZones != null) 'privacyZones': privacyZones,
         if (familyRiders != null) 'familyRiders': familyRiders,
+        if (activeFamilyRiderId != null)
+          'activeFamilyRiderId': activeFamilyRiderId,
         if (riderProfile != null) 'riderProfile': riderProfile,
         if (subscriptionTier != null) 'subscriptionTier': subscriptionTier,
         if (commerceMode != null) 'commerceMode': commerceMode,
@@ -75,9 +80,11 @@ class SyncPayload {
     dynamic consents,
     dynamic privacyZones,
     dynamic familyRiders,
+    String? activeFamilyRiderId,
     dynamic riderProfile,
     dynamic savedRoutes,
     String? subscriptionTier,
+    dynamic commerceMode,
     bool? freeTierExtraBike,
     String? activeBikeId,
     String? updatedAt,
@@ -90,9 +97,11 @@ class SyncPayload {
       consents: consents ?? this.consents,
       privacyZones: privacyZones ?? this.privacyZones,
       familyRiders: familyRiders ?? this.familyRiders,
+      activeFamilyRiderId:
+          activeFamilyRiderId ?? this.activeFamilyRiderId,
       riderProfile: riderProfile ?? this.riderProfile,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
-      commerceMode: commerceMode,
+      commerceMode: commerceMode ?? this.commerceMode,
       activeBikeId: activeBikeId ?? this.activeBikeId,
       savedRoutes: savedRoutes ?? this.savedRoutes,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,

@@ -37,9 +37,18 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 - Valhalla-Tiles ohne Docker-Build
 - Mapillary-Full-Trail ohne Token
 
-## Follow-up (nach Plans A–G)
+## Follow-up (nach Plans A–G) — DONE
 - Discover: geroutete Tour-Geometrie um OA/TF-Center (APIs liefern keine Polylines)
 - Heatmap aus lokalen Rides + Privacy-Zonen (`domain/routing/heatmap.dart`)
 - Bracketing-Auswertung aus Ride-Feedback (`runsFromRides`)
-- Trailforks-Pins auf Discover-Karte
+- Trailforks-Pins auf Discover-Karte (tippbar → Deep-Link)
 - `commerceMode` Sync + Profil-Umschalter; aktiver Familien-Fahrer
+
+## Follow-up 2
+- Trail View in-app via `/api/trail` (Demo ohne Token)
+- TTS Spec 400/150/30 + Engine-Steps (`nav_announce.dart`)
+- Live-Hints F-SEN-005 während Ride
+- Chat mitsendet bike/rides/profile
+- SyncEngine flush pending Ride-Chunks
+- Export Share-Sheet (GPX/FIT/JSON)
+- `activeFamilyRiderId` Sync + `effectiveWeightKg`

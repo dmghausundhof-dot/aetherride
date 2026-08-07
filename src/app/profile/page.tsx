@@ -65,6 +65,7 @@ export default function ProfilePage() {
       consents?: unknown;
       privacyZones?: unknown;
       familyRiders?: unknown;
+      activeFamilyRiderId?: string | null;
       riderProfile?: unknown;
       subscriptionTier?: "free" | "pro";
       commerceMode?: unknown;
@@ -91,6 +92,9 @@ export default function ProfilePage() {
         ...(Array.isArray(remote.familyRiders)
           ? { familyRiders: remote.familyRiders as typeof s.familyRiders }
           : {}),
+        ...(remote.activeFamilyRiderId !== undefined
+          ? { activeFamilyRiderId: remote.activeFamilyRiderId }
+          : {}),
         ...(remote.riderProfile
           ? { riderProfile: remote.riderProfile as typeof s.riderProfile }
           : {}),
@@ -113,6 +117,7 @@ export default function ProfilePage() {
           consents: useAppStore.getState().consents,
           privacyZones: useAppStore.getState().privacyZones,
           familyRiders: useAppStore.getState().familyRiders,
+          activeFamilyRiderId: useAppStore.getState().activeFamilyRiderId,
           riderProfile: useAppStore.getState().riderProfile,
           subscriptionTier: useAppStore.getState().subscriptionTier,
           commerceMode: useAppStore.getState().commerceMode,
@@ -220,6 +225,7 @@ export default function ProfilePage() {
         consents: store.consents,
         privacyZones: store.privacyZones,
         familyRiders: store.familyRiders,
+        activeFamilyRiderId: store.activeFamilyRiderId,
         riderProfile: store.riderProfile,
         subscriptionTier: store.subscriptionTier,
         commerceMode: store.commerceMode,

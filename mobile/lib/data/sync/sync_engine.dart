@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
 import '../local/app_database.dart';
 import '../local/garage_repository.dart';
+import '../local/ride_chunk_repository.dart';
 import 'sync_payload.dart';
 
 /// Sync-Engine: UI bleibt offline; Netz nur hier.
@@ -16,15 +17,18 @@ class SyncEngine {
   SyncEngine({
     required AppDatabase db,
     required GarageRepository garage,
+    RideChunkRepository? rideChunks,
     http.Client? httpClient,
     void Function(SyncPayload merged)? onSynced,
   })  : _db = db,
         _garage = garage,
+        _rideChunks = rideChunks,
         _http = httpClient ?? http.Client(),
         _onSynced = onSynced;
 
   final AppDatabase _db;
   final GarageRepository _garage;
+  final RideChunkRepository? _rideChunks;
   final http.Client _http;
   final void Function(SyncPayload merged)? _onSynced;
   bool _running = false;
@@ -148,9 +152,11 @@ class SyncEngine {
         final merged = stamped.copyWith(updatedAt: updatedAt);
         await _record('pushed', updatedAt);
         _onSynced?.call(merged);
+        await _flushRideChunks();
         return (merged: merged, direction: 'pushed');
       } catch (e) {
         debugPrint('SyncEngine push empty-remote: $e');
+        await _flushRideChunks();
         return (merged: local, direction: 'noop');
       }
     }
@@ -161,6 +167,7 @@ class SyncEngine {
       await _garage.applyRemotePayload(merged);
       await _record('pulled', remote.updatedAt);
       _onSynced?.call(merged);
+      await _flushRideChunks();
       return (merged: merged, direction: 'pulled');
     }
 
@@ -170,12 +177,14 @@ class SyncEngine {
         await _record('pushed', updatedAt);
         final merged = local.copyWith(updatedAt: updatedAt);
         _onSynced?.call(merged);
+        await _flushRideChunks();
         return (merged: merged, direction: 'pushed');
       } on SyncConflictException catch (e) {
         if (e.remote != null) {
           await _garage.applyRemotePayload(e.remote!);
           await _record('pulled', e.remoteUpdatedAt);
           _onSynced?.call(e.remote!);
+          await _flushRideChunks();
           return (merged: e.remote!, direction: 'pulled');
         }
         rethrow;
@@ -183,7 +192,19 @@ class SyncEngine {
     }
 
     await _record('noop', remote.updatedAt ?? local.updatedAt);
+    await _flushRideChunks();
     return (merged: local, direction: 'noop');
+  }
+
+  Future<void> _flushRideChunks() async {
+    final chunks = _rideChunks;
+    if (chunks == null) return;
+    try {
+      final n = await chunks.uploadPending();
+      if (n > 0) debugPrint('SyncEngine: $n Ride-Chunks hochgeladen');
+    } catch (e) {
+      debugPrint('SyncEngine ride-chunks: $e');
+    }
   }
 
   Future<void> _record(String direction, String? at) async {

@@ -107,6 +107,7 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   final engine = SyncEngine(
     db: ref.watch(appDatabaseProvider),
     garage: garage,
+    rideChunks: ref.watch(rideChunkRepositoryProvider),
     onSynced: (merged) {
       final tier = merged.subscriptionTier;
       if (tier == 'pro' || tier == 'free') {

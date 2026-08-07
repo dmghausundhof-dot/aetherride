@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -183,6 +184,15 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     await _load();
   }
 
+  Future<void> _sharePath(String path, {String? mime}) async {
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path, mimeType: mime)],
+        subject: 'AetherRide Export',
+      ),
+    );
+  }
+
   Future<String> _writeExport(String filename, String content) async {
     final dir = await getApplicationDocumentsDirectory();
     final file = File(p.join(dir.path, filename));
@@ -219,9 +229,10 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
         'aetherride-${rides.first.id.substring(0, 8)}.gpx',
         gpx,
       );
+      await _sharePath(path, mime: 'application/gpx+xml');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('GPX (privacy-trimmed) gespeichert: $path')),
+          SnackBar(content: Text('GPX geteilt · $path')),
         );
       }
     } catch (e) {
@@ -248,9 +259,10 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
         'aetherride-${rides.first.id.substring(0, 8)}.fit',
         bytes,
       );
+      await _sharePath(path, mime: 'application/octet-stream');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('FIT gespeichert: $path')),
+          SnackBar(content: Text('FIT geteilt · $path')),
         );
       }
     } catch (e) {
@@ -279,9 +291,10 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
         consents: consents,
       );
       final path = await _writeExport('aetherride-export.json', json);
+      await _sharePath(path, mime: 'application/json');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('JSON gespeichert: $path')),
+          SnackBar(content: Text('JSON geteilt · $path')),
         );
       }
     } catch (e) {

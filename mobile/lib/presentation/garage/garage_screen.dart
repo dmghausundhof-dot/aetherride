@@ -996,7 +996,7 @@ class _BikePhotoAndSag extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final store = ref.watch(userProfileStoreProvider);
     final photo = store.bikePhotos[bike.id];
-    final weight = store.riderProfile.riderWeightKg;
+    final weight = store.effectiveWeightKg;
     final fork = estimateAirPsi(
       riderWeightKg: weight,
       category: bike.category,
