@@ -32,7 +32,10 @@ function baseUrl(kind: "valhalla" | "osrm"): string | null {
   return (process.env.OSRM_URL || "").replace(/\/$/, "") || null;
 }
 
-/** Valhalla costing model per AetherRide profile */
+/** Valhalla costing model per AetherRide profile.
+ * Keep in sync with `mobile/packages/routing_core/native/src/profiles.rs`
+ * and `data/routing/valhalla-costing.json`.
+ */
 export function valhallaCosting(profile: RoutingProfile): {
   costing: string;
   costing_options?: Record<string, Record<string, string | number | boolean>>;

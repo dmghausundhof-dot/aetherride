@@ -1,0 +1,29 @@
+{
+  "id": "schwarzwald-nord",
+  "name": "Nordschwarzwald (Freiburg\u2013Todtnau Demo)",
+  "bbox": [
+    7.84,
+    47.94,
+    7.93,
+    48.0
+  ],
+  "builtAt": "2026-08-06T22:40:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 990980,
+      "sha256_16": "3bf918dd751800a0"
+    }
+  },
+  "shipped": {
+    "flutter_asset": "mobile/assets/routing/offline_graph.json",
+    "sample": "data/routing/offline_graph.sample.json",
+    "build_graph": "npm run routing:region:graph-only",
+    "build_tiles": "npm run routing:region  # needs Docker + osmium",
+    "link_android": "./scripts/routing/build-valhalla-android.sh arm64-v8a",
+    "link_ios": "./scripts/routing/build-valhalla-ios.sh"
+  }
+}

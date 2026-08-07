@@ -1,0 +1,75 @@
+{
+  "_comment": "Mirror of src/lib/routing/engine.ts valhallaCosting — keep in sync with mobile/packages/routing_core/native/src/profiles.rs",
+  "profiles": {
+    "hiking": {
+      "costing": "pedestrian",
+      "costing_options": { "pedestrian": { "walking_speed": 4.5, "use_hills": 0.6 } }
+    },
+    "road": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "road",
+          "use_roads": 0.9,
+          "use_hills": 0.2,
+          "avoid_bad_surfaces": 0.8
+        }
+      }
+    },
+    "gravel": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "hybrid",
+          "use_roads": 0.4,
+          "use_hills": 0.4,
+          "avoid_bad_surfaces": 0.3
+        }
+      }
+    },
+    "ebike": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "hybrid",
+          "use_roads": 0.5,
+          "use_hills": 0.85,
+          "avoid_bad_surfaces": 0.4
+        }
+      }
+    },
+    "emtb": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "mountain",
+          "use_roads": 0.2,
+          "use_hills": 0.95,
+          "avoid_bad_surfaces": 0.1
+        }
+      }
+    },
+    "mtb_enduro": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "mountain",
+          "use_roads": 0.1,
+          "use_hills": 0.9,
+          "avoid_bad_surfaces": 0.05
+        }
+      }
+    },
+    "mtb_allmountain": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "mountain",
+          "use_roads": 0.25,
+          "use_hills": 0.75,
+          "avoid_bad_surfaces": 0.15
+        }
+      }
+    }
+  }
+}
