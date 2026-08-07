@@ -1,12 +1,19 @@
 /**
  * Server-side routing against Valhalla or OSRM (Env-configured).
  * Spec F-NAV-001 — sportartspezifische Profile.
+ * Spec F-NAV-003 — Maneuver/Steps in RouteResult.
  */
 
 import {
   ROUTING_PROFILES,
   type RoutingProfile,
 } from "@/lib/routing/profiles";
+import {
+  stepsFromDemoGeometry,
+  stepsFromOsrmLegs,
+  stepsFromValhallaLeg,
+  type NavStep,
+} from "@/lib/routing/navSteps";
 
 export type RouteResult = {
   distanceM: number;
@@ -15,6 +22,8 @@ export type RouteResult = {
   engine: "valhalla" | "osrm" | "demo";
   profile: RoutingProfile;
   warnings?: string[];
+  /** F-NAV-003 Turn-by-Turn */
+  steps?: NavStep[];
 };
 
 function engine(): "valhalla" | "osrm" | "demo" {
@@ -181,6 +190,7 @@ function demoRoute(
     geometry: { type: "LineString", coordinates: coords },
     engine: "demo",
     profile,
+    steps: stepsFromDemoGeometry(coords),
     warnings: [
       "Kein ROUTING_ENGINE konfiguriert — Demo-Geometrie. Setze VALHALLA_URL oder OSRM_URL.",
     ],
@@ -202,7 +212,7 @@ async function routeValhalla(
     ],
     costing,
     costing_options,
-    directions_options: { units: "kilometers" },
+    directions_options: { units: "kilometers", language: "en-US" },
   };
   const res = await fetch(`${base}/route`, {
     method: "POST",
@@ -214,15 +224,19 @@ async function routeValhalla(
   }
   const data = await res.json();
   const trip = data.trip;
-  const shape = trip?.legs?.[0]?.shape || trip?.shape;
+  const leg = trip?.legs?.[0];
+  const shape = leg?.shape || trip?.shape;
   if (!shape) throw new Error("Valhalla: no shape");
   const coordinates = decodePolyline6(shape);
+  const maneuvers = Array.isArray(leg?.maneuvers) ? leg.maneuvers : [];
+  const steps = stepsFromValhallaLeg(maneuvers, coordinates, true);
   return {
     distanceM: Math.round((trip.summary?.length || 0) * 1000),
     durationS: Math.round(trip.summary?.time || 0),
     geometry: { type: "LineString", coordinates },
     engine: "valhalla",
     profile,
+    steps: steps.length ? steps : stepsFromDemoGeometry(coordinates),
   };
 }
 
@@ -234,7 +248,7 @@ async function routeOsrm(
   const base = baseUrl("osrm");
   if (!base) throw new Error("OSRM_URL missing");
   const p = osrmProfile(profile);
-  const url = `${base}/route/v1/${p}/${from[0]},${from[1]};${to[0]},${to[1]}?overview=full&geometries=geojson`;
+  const url = `${base}/route/v1/${p}/${from[0]},${from[1]};${to[0]},${to[1]}?overview=full&geometries=geojson&steps=true&annotations=false`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`OSRM ${res.status}: ${await res.text()}`);
@@ -242,12 +256,17 @@ async function routeOsrm(
   const data = await res.json();
   const route = data.routes?.[0];
   if (!route?.geometry) throw new Error("OSRM: no route");
+  const geometry = route.geometry as GeoJSON.LineString;
+  const steps = stepsFromOsrmLegs(route.legs ?? []);
   return {
     distanceM: Math.round(route.distance),
     durationS: Math.round(route.duration),
-    geometry: route.geometry as GeoJSON.LineString,
+    geometry,
     engine: "osrm",
     profile,
+    steps: steps.length
+      ? steps
+      : stepsFromDemoGeometry(geometry.coordinates as [number, number][]),
   };
 }
 
