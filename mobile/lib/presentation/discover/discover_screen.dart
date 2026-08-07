@@ -162,7 +162,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           const Padding(
             padding: EdgeInsets.all(8),
             child: Text(
-              'Online: /api/route · Offline Valhalla FFI folgt (S7). '
+              'Online: /api/route · Offline: routing_core (offline_graph / Valhalla FFI). '
               '© OpenStreetMap',
               style: TextStyle(fontSize: 11),
             ),

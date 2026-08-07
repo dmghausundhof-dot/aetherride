@@ -11,7 +11,10 @@
     "catalog:export-oem": "npx tsx scripts/export-oem-catalog.ts",
     "catalog:upsert": "node scripts/catalog-upsert-supabase.mjs",
     "catalog:upsert-oem": "node scripts/catalog-upsert-supabase.mjs data/catalog/oem-seed.json",
-    "geo:overpass": "node scripts/overpass-mtb-enrichment.mjs"
+    "geo:overpass": "node scripts/overpass-mtb-enrichment.mjs",
+    "routing:graph": "node scripts/routing/osm-to-offline-graph.mjs",
+    "routing:region": "bash scripts/routing/build-region-pack.sh",
+    "routing:region:graph-only": "SKIP_TILES=1 bash scripts/routing/build-region-pack.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

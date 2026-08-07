@@ -1,0 +1,26 @@
+group = "com.aetherride.dsp_core"
+version = "1.0"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "com.aetherride.dsp_core"
+    compileSdk = 36
+    defaultConfig {
+        minSdk = 24
+    }
+}

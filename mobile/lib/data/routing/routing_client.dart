@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../../core/config.dart';
+import '../../native/routing_core_ffi.dart';
+import 'offline_tiles.dart';
 
 enum RoutingProfile {
   mtbTrail,
@@ -56,17 +58,77 @@ class RouteResult {
   final String? engine;
 }
 
-/// Online routing via Next.js `/api/route` (Valhalla/OSRM). Offline FFI = S7.
+/// Online `/api/route` + offline `routing_core` FFI (Spec §5.4).
 class RoutingClient {
-  RoutingClient({http.Client? httpClient}) : _http = httpClient ?? http.Client();
+  RoutingClient({
+    http.Client? httpClient,
+    RoutingCoreFfi? ffi,
+  })  : _http = httpClient ?? http.Client(),
+        _ffi = ffi ?? RoutingCoreFfi();
 
   final http.Client _http;
+  final RoutingCoreFfi _ffi;
 
   Future<RouteResult> requestRoute({
     required GeoPoint from,
     required GeoPoint to,
     RoutingProfile profile = RoutingProfile.mtbTrail,
+    bool preferOffline = false,
   }) async {
+    if (preferOffline || AppConfig.preferOfflineRouting) {
+      final offline = await _tryOffline(from, to, profile);
+      if (offline != null) return offline;
+    }
+
+    try {
+      return await _requestOnline(from, to, profile);
+    } catch (_) {
+      final offline = await _tryOffline(from, to, profile);
+      if (offline != null) return offline;
+      rethrow;
+    }
+  }
+
+  Future<RouteResult?> _tryOffline(
+    GeoPoint from,
+    GeoPoint to,
+    RoutingProfile profile,
+  ) async {
+    if (!_ffi.available) return null;
+    final tiles = await OfflineTilesStore.instance.ensureTilesPath(
+      overridePath: AppConfig.offlineTilesPath.isEmpty
+          ? null
+          : AppConfig.offlineTilesPath,
+    );
+    if (tiles == null || !_ffi.tilesOk(tiles)) return null;
+    try {
+      final r = _ffi.tryOfflineRoute(
+        fromLat: from.lat,
+        fromLng: from.lng,
+        toLat: to.lat,
+        toLng: to.lng,
+        profile: profile.apiId,
+        tilesPath: tiles,
+      );
+      if (r == null) return null;
+      return RouteResult(
+        coordinates: r.coordinatesLngLat
+            .map((c) => GeoPoint(c[1], c[0]))
+            .toList(),
+        distanceM: r.distanceM,
+        durationS: r.durationS,
+        engine: r.engine,
+      );
+    } on RoutingCoreException {
+      return null;
+    }
+  }
+
+  Future<RouteResult> _requestOnline(
+    GeoPoint from,
+    GeoPoint to,
+    RoutingProfile profile,
+  ) async {
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/route').replace(
       queryParameters: {
         'fromLat': '${from.lat}',
