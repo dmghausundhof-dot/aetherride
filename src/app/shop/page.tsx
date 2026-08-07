@@ -15,6 +15,7 @@ import {
   checkCandidateOnBike,
 } from "@/lib/compatibility/engine";
 import { VerdictPill } from "@/components/garage/VerdictPill";
+import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { slotLabel } from "@/lib/catalog/slots";
 import type { CompatibilityVerdict } from "@/types";
 import Link from "next/link";
@@ -130,7 +131,9 @@ export default function ShopPage() {
               <p className="mt-1 text-xs text-warning">
                 Auslöser: {r.triggeringDataPoint}
               </p>
-              <p className="mt-1 text-xs text-text-secondary">{r.reason}</p>
+              <EvidenceSheet title="Warum?" className="mt-1">
+                {r.reason}
+              </EvidenceSheet>
               <a
                 href={r.product.affiliateUrl}
                 target="_blank"

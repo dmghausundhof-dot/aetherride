@@ -3,10 +3,12 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
-import { Check, X, TrendingUp, Wrench, ArrowLeft } from "lucide-react";
+import { Check, X, TrendingUp, Wrench, ArrowLeft, Lightbulb } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import type { RideFeedback } from "@/types";
+import { analyzePostRide } from "@/lib/ai/postRideAnalysis";
+import { EvidenceSheet } from "@/components/EvidenceSheet";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -17,17 +19,31 @@ function PostRideContent() {
   const acceptRecommendation = useAppStore((s) => s.acceptRecommendation);
   const dismissRecommendation = useAppStore((s) => s.dismissRecommendation);
   const submitRideFeedback = useAppStore((s) => s.submitRideFeedback);
+  const addRecommendation = useAppStore((s) => s.addRecommendation);
   const rideFeedbacks = useAppStore((s) => s.rideFeedbacks);
   const bikes = useAppStore((s) => s.bikes);
 
   const ride = rides.find((r) => r.id === rideId) || rides[0];
   const bike = ride ? bikes.find((b) => b.id === ride.bikeId) : null;
-  const rec = recommendations.find(
-    (r) => r.relatedRideId === ride?.id && r.status === "shown"
+  const setup = bike?.setups.find(
+    (s) => s.id === ride?.setupId || s.isCurrent
   );
   const existingFeedback = ride
     ? rideFeedbacks.find((f) => f.rideId === ride.id)
     : undefined;
+
+  const setupRec = recommendations.find(
+    (r) =>
+      r.relatedRideId === ride?.id &&
+      r.type === "setup" &&
+      r.status === "shown"
+  );
+  const otherRec = recommendations.find(
+    (r) =>
+      r.relatedRideId === ride?.id &&
+      r.type !== "setup" &&
+      r.status === "shown"
+  );
 
   const [overall, setOverall] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [frontFeel, setFrontFeel] =
@@ -37,6 +53,16 @@ function PostRideContent() {
   const [smallBump, setSmallBump] =
     useState<RideFeedback["smallBump"]>(undefined);
   const [feedbackDone, setFeedbackDone] = useState(!!existingFeedback);
+
+  const analysis = useMemo(() => {
+    if (!ride || !bike) return null;
+    return analyzePostRide({
+      ride,
+      bike,
+      setup,
+      feedback: existingFeedback,
+    });
+  }, [ride, bike, setup, existingFeedback]);
 
   if (!ride) {
     return (
@@ -49,10 +75,99 @@ function PostRideContent() {
     );
   }
 
+  const persistFeedback = (payload: {
+    overallFeel: 1 | 2 | 3 | 4 | 5;
+    frontFeel?: RideFeedback["frontFeel"];
+    brakeDive?: RideFeedback["brakeDive"];
+    smallBump?: RideFeedback["smallBump"];
+    skipped: boolean;
+  }) => {
+    submitRideFeedback({
+      rideId: ride.id,
+      ...payload,
+    });
+    setFeedbackDone(true);
+    if (!payload.skipped && bike) {
+      const next = analyzePostRide({
+        ride,
+        bike,
+        setup,
+        feedback: {
+          rideId: ride.id,
+          createdAt: new Date().toISOString(),
+          overallFeel: payload.overallFeel,
+          frontFeel: payload.frontFeel,
+          brakeDive: payload.brakeDive,
+          smallBump: payload.smallBump,
+          skipped: false,
+        },
+      });
+      if (
+        next.setupSuggestion &&
+        !recommendations.some(
+          (r) =>
+            r.relatedRideId === ride.id &&
+            r.type === "setup" &&
+            r.status === "shown"
+        )
+      ) {
+        addRecommendation({
+          type: "setup",
+          title: next.setupSuggestion.title,
+          content: `${next.setupSuggestion.content} Erwartet: ${next.setupSuggestion.expectedEffect}`,
+          reasoning: `${next.setupSuggestion.reasoning}. Grenzen: ${next.setupSuggestion.limits}. Konfidenz: ${next.setupSuggestion.confidence}.`,
+          score: 0.85,
+          relatedBikeId: bike.id,
+          relatedRideId: ride.id,
+        });
+      }
+    }
+  };
+
+  const displaySetup = useMemo(() => {
+    if (setupRec) {
+      const expectMatch = setupRec.content.match(/Erwartet:\s*(.+)$/i);
+      const limitsMatch = setupRec.reasoning.match(/Grenzen:\s*([^.]+)/i);
+      const confMatch = setupRec.reasoning.match(/Konfidenz:\s*(\w+)/i);
+      const confRaw = confMatch?.[1]?.toLowerCase();
+      return {
+        title: setupRec.title,
+        content: expectMatch
+          ? setupRec.content.replace(/\s*Erwartet:.+$/i, "").trim()
+          : setupRec.content,
+        reasoning: setupRec.reasoning
+          .replace(/\s*Grenzen:.+$/i, "")
+          .trim(),
+        expectedEffect: expectMatch?.[1],
+        limits: limitsMatch?.[1]?.trim(),
+        confidence:
+          confRaw === "high" || confRaw === "hoch"
+            ? "high"
+            : confRaw === "medium" || confRaw === "mittel"
+              ? "medium"
+              : confRaw === "low" || confRaw === "niedrig"
+                ? "low"
+                : undefined,
+        id: setupRec.id as string | null,
+      };
+    }
+    const s = analysis?.setupSuggestion;
+    if (!s) return null;
+    return {
+      title: s.title,
+      content: s.content,
+      reasoning: s.reasoning,
+      expectedEffect: s.expectedEffect,
+      limits: s.limits,
+      confidence: s.confidence,
+      id: null as string | null,
+    };
+  }, [setupRec, analysis]);
+
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
       <header className="flex items-center gap-3">
-        <button onClick={() => router.push("/")} className="p-1">
+        <button type="button" onClick={() => router.push("/")} className="p-1">
           <ArrowLeft className="h-6 w-6" />
         </button>
         <div>
@@ -63,11 +178,10 @@ function PostRideContent() {
         </div>
       </header>
 
-      {/* Summary */}
-      <section className="rounded-2xl bg-surface border border-border p-4">
+      <section className="rounded-2xl border border-border bg-surface p-4">
         <div className="mb-3 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-accent" />
-          <h2 className="font-semibold">Zusammenfassung</h2>
+          <h2 className="font-semibold">Was passiert ist</h2>
         </div>
         {bike && (
           <p className="mb-3 text-sm text-text-secondary">
@@ -76,77 +190,98 @@ function PostRideContent() {
         )}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="tabular-nums text-2xl font-bold">
+            <div className="text-2xl font-bold tabular-nums">
               {formatDistance(ride.distanceM)}
             </div>
             <div className="text-xs text-text-secondary">Distanz</div>
           </div>
           <div>
-            <div className="tabular-nums text-2xl font-bold">
+            <div className="text-2xl font-bold tabular-nums">
               {formatDuration(ride.durationSec)}
             </div>
             <div className="text-xs text-text-secondary">Dauer</div>
           </div>
           <div>
-            <div className="tabular-nums text-2xl font-bold">
+            <div className="text-2xl font-bold tabular-nums">
               {ride.elevationGainM} m
             </div>
             <div className="text-xs text-text-secondary">Höhenmeter</div>
           </div>
           <div>
-            <div className="tabular-nums text-2xl font-bold text-accent">
+            <div className="text-2xl font-bold tabular-nums text-accent">
               {ride.summaryMetrics.flowScore}
             </div>
             <div className="text-xs text-text-secondary">Flow Score</div>
           </div>
         </div>
+        {analysis && (
+          <ul className="mt-3 space-y-1 text-xs text-text-secondary">
+            {analysis.facts.map((f) => (
+              <li key={f}>· {f}</li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      {/* Sensor Details */}
-      <section className="rounded-2xl bg-surface border border-border p-4">
-        <h3 className="mb-3 font-semibold">Sensor-Analyse</h3>
+      {analysis && analysis.observations.length > 0 && (
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-accent" />
+            <h2 className="font-semibold">Was aufgefallen ist</h2>
+          </div>
+          <ul className="space-y-2 text-sm">
+            {analysis.observations.map((o) => (
+              <li key={o.id} className="rounded-lg bg-surface-elevated px-3 py-2">
+                {o.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="mb-3 font-semibold">Sensor-Details</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-text-secondary text-xs">Peak G-Force</div>
-            <div className="tabular-nums text-lg font-semibold">
+            <div className="text-xs text-text-secondary">Peak G-Force</div>
+            <div className="text-lg font-semibold tabular-nums">
               {ride.summaryMetrics.gForcePeak} g
             </div>
           </div>
           <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-text-secondary text-xs">Max Lean</div>
-            <div className="tabular-nums text-lg font-semibold">
+            <div className="text-xs text-text-secondary">Max Lean</div>
+            <div className="text-lg font-semibold tabular-nums">
               {ride.summaryMetrics.leanAngleMax}°
             </div>
           </div>
           <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-text-secondary text-xs">Impacts</div>
-            <div className="tabular-nums text-lg font-semibold">
+            <div className="text-xs text-text-secondary">Impacts</div>
+            <div className="text-lg font-semibold tabular-nums">
               {ride.summaryMetrics.impactCount}
             </div>
           </div>
           <div className="rounded-lg bg-surface-elevated p-2">
-            <div className="text-text-secondary text-xs">RMS G</div>
-            <div className="tabular-nums text-lg font-semibold">
+            <div className="text-xs text-text-secondary">RMS G</div>
+            <div className="text-lg font-semibold tabular-nums">
               {ride.summaryMetrics.gForceRms} g
             </div>
           </div>
         </div>
       </section>
 
-      {/* Motor Data */}
       {ride.motorData && (
-        <section className="rounded-2xl bg-primary/15 border border-primary/30 p-4">
+        <section className="rounded-2xl border border-primary/30 bg-primary/15 p-4">
           <h3 className="mb-3 font-semibold text-accent">Bosch Motor-Daten</h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <div className="text-text-secondary text-xs">Ø SOC</div>
-              <div className="tabular-nums text-lg font-semibold">
+              <div className="text-xs text-text-secondary">Ø SOC</div>
+              <div className="text-lg font-semibold tabular-nums">
                 {ride.motorData.avgSoc}%
               </div>
             </div>
             <div>
-              <div className="text-text-secondary text-xs">Ø Rider Power</div>
-              <div className="tabular-nums text-lg font-semibold">
+              <div className="text-xs text-text-secondary">Ø Rider Power</div>
+              <div className="text-lg font-semibold tabular-nums">
                 {ride.motorData.avgRiderPower} W
               </div>
             </div>
@@ -157,7 +292,9 @@ function PostRideContent() {
       {ride.assistSummary && (
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h3 className="mb-2 font-semibold">Assist-Modus-Log (F-EBK-005)</h3>
-          <p className="mb-2 text-xs text-warning">{ride.assistSummary.disclaimer}</p>
+          <p className="mb-2 text-xs text-warning">
+            {ride.assistSummary.disclaimer}
+          </p>
           <p className="mb-2 text-sm">
             Dominant:{" "}
             <span className="font-semibold uppercase">
@@ -165,39 +302,24 @@ function PostRideContent() {
             </span>{" "}
             · ≈ {ride.assistSummary.estimatedTotalWh} Wh
           </p>
-          <div className="mb-2 flex flex-wrap gap-2 text-[11px]">
-            {Object.entries(ride.assistSummary.modeSharePct).map(([m, pct]) =>
-              pct > 0 ? (
-                <span
-                  key={m}
-                  className="rounded-md bg-surface-elevated px-2 py-0.5 uppercase"
-                >
-                  {m} {pct}%
-                </span>
-              ) : null
-            )}
-          </div>
-          <ul className="space-y-1 text-xs text-text-secondary">
-            {ride.assistSummary.segments.map((s) => (
-              <li key={s.id}>
-                {s.label} · {(s.distanceM / 1000).toFixed(1)} km · Quelle{" "}
-                {s.source}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[10px] text-text-secondary">
-            {ride.assistSummary.sourceLabel}
-          </p>
+          <EvidenceSheet title="Segmente">
+            <ul className="space-y-1">
+              {ride.assistSummary.segments.map((s) => (
+                <li key={s.id}>
+                  {s.label} · {(s.distanceM / 1000).toFixed(1)} km · Quelle{" "}
+                  {s.source}
+                </li>
+              ))}
+            </ul>
+          </EvidenceSheet>
         </section>
       )}
 
-      {/* F-SET-004 Subjektives Feedback ≤3 Taps */}
       {!feedbackDone && (
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h3 className="mb-1 font-semibold">Wie war&apos;s?</h3>
           <p className="mb-3 text-xs text-text-secondary">
-            Max. 3 Taps, überspringbar — kategoriale Antworten für die
-            Setup-Auswertung (F-SET-004).
+            Max. 3 Taps — verbessert die Setup-Empfehlung (F-SET-004 / F-AI-003).
           </p>
           <div className="mb-3 flex justify-between gap-1">
             {([1, 2, 3, 4, 5] as const).map((n) => (
@@ -279,31 +401,27 @@ function PostRideContent() {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => {
-                submitRideFeedback({
-                  rideId: ride.id,
+              onClick={() =>
+                persistFeedback({
                   overallFeel: overall,
                   frontFeel,
                   brakeDive,
                   smallBump,
                   skipped: false,
-                });
-                setFeedbackDone(true);
-              }}
+                })
+              }
               className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
             >
               Speichern
             </button>
             <button
               type="button"
-              onClick={() => {
-                submitRideFeedback({
-                  rideId: ride.id,
+              onClick={() =>
+                persistFeedback({
                   overallFeel: overall,
                   skipped: true,
-                });
-                setFeedbackDone(true);
-              }}
+                })
+              }
               className="flex-1 rounded-xl border border-border py-2.5 text-sm"
             >
               Überspringen
@@ -313,41 +431,100 @@ function PostRideContent() {
       )}
       {feedbackDone && (
         <p className="text-center text-xs text-text-secondary">
-          Feedback erfasst{existingFeedback?.skipped || false ? " (übersprungen)" : ""}.
+          Feedback erfasst
+          {existingFeedback?.skipped ? " (übersprungen)" : ""}.
         </p>
       )}
 
-      {/* Recommendation */}
-      {rec && (
-        <section className="rounded-2xl bg-surface border border-accent/40 p-4">
+      {displaySetup && (
+        <section className="rounded-2xl border border-accent/40 bg-surface p-4">
           <div className="mb-2 flex items-center gap-2">
             <Wrench className="h-5 w-5 text-accent" />
-            <h3 className="font-semibold">{rec.title}</h3>
+            <h3 className="font-semibold">Was du ändern kannst</h3>
           </div>
-          <p className="text-sm mb-2">{rec.content}</p>
-          <p className="text-xs text-text-secondary mb-4">{rec.reasoning}</p>
-          <div className="flex gap-2">
+          <p className="text-sm font-medium">{displaySetup.title}</p>
+          <p className="mt-1 text-sm text-text-secondary">{displaySetup.content}</p>
+          {displaySetup.expectedEffect && (
+            <p className="mt-2 text-sm">
+              <span className="text-text-secondary">Erwartete Wirkung: </span>
+              {displaySetup.expectedEffect}
+            </p>
+          )}
+          {displaySetup.limits && (
+            <p className="mt-1 text-xs text-text-secondary">
+              Grenzen: {displaySetup.limits}
+              {displaySetup.confidence
+                ? ` · Konfidenz: ${
+                    displaySetup.confidence === "high"
+                      ? "hoch"
+                      : displaySetup.confidence === "medium"
+                        ? "mittel"
+                        : "niedrig"
+                  }`
+                : ""}
+            </p>
+          )}
+          <EvidenceSheet title="Warum?" className="mt-2">
+            {displaySetup.reasoning}
+          </EvidenceSheet>
+          {displaySetup.id && (
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => acceptRecommendation(displaySetup.id!)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+              >
+                <Check className="h-4 w-4" /> Übernehmen
+              </button>
+              <button
+                type="button"
+                onClick={() => dismissRecommendation(displaySetup.id!)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm"
+              >
+                <X className="h-4 w-4" /> Verwerfen
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Produkt/Wartung nur wenn keine Setup-Empfehlung (F-AI-003: Fokus) */}
+      {otherRec && !displaySetup && (
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-1 text-sm font-semibold">{otherRec.title}</h3>
+          <p className="text-sm text-text-secondary">{otherRec.content}</p>
+          <EvidenceSheet title="Warum?" className="mt-2">
+            {otherRec.reasoning}
+          </EvidenceSheet>
+          <div className="mt-3 flex gap-2">
             <button
-              onClick={() => {
-                acceptRecommendation(rec.id);
-              }}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+              type="button"
+              onClick={() => acceptRecommendation(otherRec.id)}
+              className="flex-1 rounded-xl bg-accent py-2 text-sm font-medium text-white"
             >
-              <Check className="h-4 w-4" /> Übernehmen
+              Übernehmen
             </button>
             <button
-              onClick={() => dismissRecommendation(rec.id)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm"
+              type="button"
+              onClick={() => dismissRecommendation(otherRec.id)}
+              className="flex-1 rounded-xl border border-border py-2 text-sm"
             >
-              <X className="h-4 w-4" /> Verwerfen
+              Verwerfen
             </button>
           </div>
         </section>
       )}
 
+      <p className="text-center text-xs text-text-secondary">
+        Tiefe Fragen?{" "}
+        <Link href="/chat" className="text-accent">
+          Mehr fragen (KI)
+        </Link>
+      </p>
+
       <Link
         href="/"
-        className="rounded-xl bg-surface border border-border py-3 text-center font-medium"
+        className="rounded-xl border border-border bg-surface py-3 text-center font-medium"
       >
         Fertig
       </Link>

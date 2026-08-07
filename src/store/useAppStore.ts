@@ -29,6 +29,10 @@ import {
 import { buildEstimatedAssistLog } from "@/lib/ebike/assistLog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import {
+  analyzePostRide,
+  setupSuggestionToRecommendation,
+} from "@/lib/ai/postRideAnalysis";
+import {
   DEFAULT_CONSENTS,
   DEFAULT_PRIVACY_ZONES,
   type ConsentPurpose,
@@ -1112,7 +1116,29 @@ export const useAppStore = create<AppState>()(
           ),
         }));
 
-        // F-SHP-002: anlassbezogene Produktempfehlungen (nur mit Consent)
+        // F-AI-003: max. 1 Setup-Empfehlung aus Ride-Metriken (+ später Feedback)
+        if (bikeBefore) {
+          const setup =
+            bikeBefore.setups.find((s) => s.id === ride.setupId) ||
+            bikeBefore.setups.find((s) => s.isCurrent);
+          const analysis = analyzePostRide({
+            ride,
+            bike: bikeBefore,
+            setup,
+            feedback: get().rideFeedbacks.find((f) => f.rideId === ride.id),
+          });
+          if (analysis.setupSuggestion) {
+            get().addRecommendation(
+              setupSuggestionToRecommendation(
+                analysis.setupSuggestion,
+                bikeBefore.id,
+                ride.id
+              )
+            );
+          }
+        }
+
+        // F-SHP-002: anlassbezogene Produktempfehlungen (nur mit Consent, max. 1)
         const productConsent = get().consents.find(
           (c) => c.purpose === "product_recommendations"
         )?.granted;
@@ -1123,7 +1149,8 @@ export const useAppStore = create<AppState>()(
             rides: [ride, ...get().rides],
             setup,
           });
-          for (const pr of precs.slice(0, 2)) {
+          const pr = precs[0];
+          if (pr) {
             get().addRecommendation({
               type: "product",
               title: pr.title,
@@ -1135,12 +1162,14 @@ export const useAppStore = create<AppState>()(
             });
           }
         }
-        // Wartungshinweise als Recommendations
+        // Wartungshinweise als Recommendations (max. 2)
         const bike = get().bikes.find((b) => b.id === ride.bikeId);
         if (bike) {
+          let maintCount = 0;
           for (const interval of get().maintenanceIntervals.filter(
             (i) => i.bikeId === bike.id
           )) {
+            if (maintCount >= 2) break;
             const due = evaluateIntervalDue(
               interval,
               bike.totalOdometerKm,
@@ -1149,13 +1178,17 @@ export const useAppStore = create<AppState>()(
             if (due.status === "overdue" || due.status === "due_soon") {
               get().addRecommendation({
                 type: "maintenance",
-                title: due.status === "overdue" ? "Wartung überfällig" : "Wartung bald fällig",
+                title:
+                  due.status === "overdue"
+                    ? "Wartung überfällig"
+                    : "Wartung bald fällig",
                 content: interval.label,
                 reasoning: `Fortschritt ${due.progressPct}% · verbleibend ${due.remainingLabel}. Quelle: ${interval.sourceLabel}`,
                 score: due.status === "overdue" ? 0.95 : 0.7,
                 relatedBikeId: bike.id,
                 relatedRideId: ride.id,
               });
+              maintCount += 1;
             }
           }
         }
@@ -1265,16 +1298,56 @@ export const useAppStore = create<AppState>()(
         );
         if (dry) get().setCurrentSetup(get().bikes[0].id, dry.id);
 
-        set({
-          boschConnected: true,
-          boschLive: {
-            speed: 0,
-            soc: 87,
-            riderPower: 0,
-            cadence: 0,
-            odometer: 1247,
-          },
-        });
+        const demoBike = get().bikes[0];
+        const demoSetup = demoBike?.setups.find((s) => s.isCurrent);
+        if (demoBike) {
+          const start = new Date();
+          start.setDate(start.getDate() - 2);
+          const end = new Date(start.getTime() + 95 * 60 * 1000);
+          set((s) => ({
+            rides: [
+              {
+                id: uuidv4(),
+                bikeId: demoBike.id,
+                setupId: demoSetup?.id,
+                sportType: demoBike.type,
+                startTime: start.toISOString(),
+                endTime: end.toISOString(),
+                distanceM: 28400,
+                elevationGainM: 920,
+                durationSec: 95 * 60,
+                summaryMetrics: {
+                  gForcePeak: 3.8,
+                  gForceRms: 1.35,
+                  leanAngleMax: 38,
+                  impactCount: 42,
+                  flowScore: 71,
+                },
+                notes: "Demo-Ride Kaltenbronn-ähnlich",
+              },
+              ...s.rides,
+            ],
+            boschConnected: true,
+            boschLive: {
+              speed: 0,
+              soc: 87,
+              riderPower: 0,
+              cadence: 0,
+              odometer: 1247,
+            },
+          }));
+        } else {
+          set({
+            boschConnected: true,
+            boschLive: {
+              speed: 0,
+              soc: 87,
+              riderPower: 0,
+              cadence: 0,
+              odometer: 1247,
+            },
+          });
+        }
       },
     }),
     {

@@ -1,9 +1,50 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { bikeTypeLabel, formatDistance, formatDuration } from "@/lib/utils";
-import { Bike, Zap, TrendingUp, Wrench, ChevronRight, Play } from "lucide-react";
+import {
+  bikeTypeLabel,
+  formatDistance,
+  formatDuration,
+} from "@/lib/utils";
+import {
+  Bike,
+  Zap,
+  TrendingUp,
+  AlertTriangle,
+  ChevronRight,
+  Play,
+  CloudSun,
+} from "lucide-react";
 import Link from "next/link";
+import { suggestRoutes } from "@/lib/routing/suggestions";
+import { greetingLine, avatarInitials } from "@/lib/home/greeting";
+import {
+  buildMaintenanceAlerts,
+  bikeReadyStatus,
+} from "@/lib/home/maintenanceAlerts";
+import { setupConditionHint, type TrailHint } from "@/lib/home/setupHint";
+import { ElevationStrip } from "@/components/ElevationStrip";
+import { EvidenceSheet } from "@/components/EvidenceSheet";
+import { SetupFingerprint } from "@/components/SetupFingerprint";
+
+type WeatherPayload = {
+  trailHint: TrailHint;
+  current?: {
+    temperature_2m?: number;
+    precipitation?: number;
+    weather_code?: number;
+  };
+  attribution?: string;
+};
+
+const FALLBACK_COORDS = { lat: 48.0, lon: 8.2 }; // Nordschwarzwald / Kaltenbronn-Nähe
+
+function trailHintLabel(hint: TrailHint): string {
+  if (hint === "wet_likely") return "eher nass";
+  if (hint === "damp_possible") return "feucht möglich";
+  return "eher trocken";
+}
 
 export default function HomePage() {
   const bikes = useAppStore((s) => s.bikes);
@@ -12,65 +53,342 @@ export default function HomePage() {
   const recommendations = useAppStore((s) => s.recommendations);
   const boschConnected = useAppStore((s) => s.boschConnected);
   const boschLive = useAppStore((s) => s.boschLive);
+  const profile = useAppStore((s) => s.riderProfile);
+  const intervals = useAppStore((s) => s.maintenanceIntervals);
+  const setCurrentSetup = useAppStore((s) => s.setCurrentSetup);
+
+  const [weather, setWeather] = useState<WeatherPayload | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const lastRide = rides[0];
-  const openRecs = recommendations.filter((r) => r.status === "shown").slice(0, 2);
+  const currentSetup = activeBike?.setups.find((s) => s.isCurrent);
+
+  const alerts = useMemo(
+    () =>
+      activeBike
+        ? buildMaintenanceAlerts({
+            bike: activeBike,
+            rides,
+            intervals,
+            max: 2,
+          })
+        : [],
+    [activeBike, rides, intervals]
+  );
+
+  const ready = bikeReadyStatus(alerts);
+
+  const tipRec = useMemo(
+    () =>
+      recommendations
+        .filter(
+          (r) =>
+            r.status === "shown" &&
+            (r.type === "setup" || r.type === "product" || r.type === "technique")
+        )
+        .slice(0, 1)[0],
+    [recommendations]
+  );
+
+  const loadWeather = useCallback(async (lat: number, lon: number) => {
+    try {
+      const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as WeatherPayload;
+      if (data.trailHint) setWeather(data);
+    } catch {
+      /* offline / API down — Hero bleibt ohne Wetter */
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!cancelled) {
+            void loadWeather(pos.coords.latitude, pos.coords.longitude);
+          }
+        },
+        () => {
+          if (!cancelled) {
+            void loadWeather(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
+          }
+        },
+        { timeout: 8000, maximumAge: 30 * 60 * 1000 }
+      );
+    } else {
+      void loadWeather(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [loadWeather]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        const data = await res.json();
+        if (!cancelled && data.user?.displayName) {
+          setDisplayName(data.user.displayName);
+        } else if (!cancelled && data.user?.email) {
+          setDisplayName(data.user.email.split("@")[0]);
+        }
+      } catch {
+        /* anon */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const todayRoute = useMemo(() => {
+    if (!activeBike) return null;
+    const minutes = profile.fitnessIndicators.avgRideDurationMin || 150;
+    const routes = suggestRoutes({
+      bike: activeBike,
+      profile,
+      availableMinutes: minutes,
+    });
+    return routes[0] ?? null;
+  }, [activeBike, profile]);
+
+  const setupHint = useMemo(
+    () =>
+      setupConditionHint(
+        currentSetup,
+        activeBike?.setups ?? [],
+        weather?.trailHint ?? null
+      ),
+    [currentSetup, activeBike, weather]
+  );
+
+  const heroReason = useMemo(() => {
+    if (!todayRoute) return null;
+    const parts = [...todayRoute.reasons];
+    if (weather?.trailHint) {
+      parts[0] = `${trailHintLabel(weather.trailHint)}${
+        weather.current?.temperature_2m != null
+          ? `, ${Math.round(weather.current.temperature_2m)} °C`
+          : ""
+      } · ${parts[0]}`;
+    }
+    return parts.slice(0, 2).join(" — ");
+  }, [todayRoute, weather]);
+
+  const initials = avatarInitials(displayName);
+
+  const ridesOnSetup = useMemo(() => {
+    if (!currentSetup || !activeBike) return 0;
+    return rides.filter(
+      (r) => r.bikeId === activeBike.id && r.setupId === currentSetup.id
+    ).length;
+  }, [rides, currentSetup, activeBike]);
+
+  const setupAgeDays = useMemo(() => {
+    if (!currentSetup) return null;
+    const ms = Date.now() - new Date(currentSetup.createdAt).getTime();
+    return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+  }, [currentSetup]);
 
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">AetherRide</h1>
-          <p className="text-sm text-text-secondary">Dein intelligenter Riding Companion</p>
-        </div>
+      <header className="flex items-center justify-between gap-3">
+        {activeBike ? (
+          <Link
+            href="/garage"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2"
+          >
+            <Bike className="h-4 w-4 shrink-0 text-accent" />
+            <span className="truncate text-sm font-semibold">
+              {activeBike.name}
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-text-secondary" />
+          </Link>
+        ) : (
+          <div className="flex-1" />
+        )}
         <Link
           href="/profile"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-accent"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-accent"
+          aria-label="Profil"
         >
-          AR
+          {initials}
         </Link>
       </header>
 
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {greetingLine(displayName)}
+        </h1>
+        <p className="text-sm text-text-secondary">AetherRide</p>
+      </div>
+
+      {/* HEUTE PASST */}
+      {activeBike && todayRoute ? (
+        <section className="rounded-2xl border border-accent/40 bg-surface p-4">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-accent">
+              Heute passt
+            </span>
+            {weather && (
+              <span className="inline-flex items-center gap-1 text-xs text-text-secondary">
+                <CloudSun className="h-3.5 w-3.5" />
+                {trailHintLabel(weather.trailHint)}
+                {weather.current?.temperature_2m != null
+                  ? ` · ${Math.round(weather.current.temperature_2m)}°`
+                  : ""}
+              </span>
+            )}
+          </div>
+          <h2 className="text-xl font-bold">{todayRoute.name}</h2>
+          <p className="mt-1 tabular-nums text-sm text-text-secondary">
+            {todayRoute.distanceKm} km · {todayRoute.elevationM} hm ·{" "}
+            {Math.floor(todayRoute.durationMin / 60)}:
+            {(todayRoute.durationMin % 60).toString().padStart(2, "0")} h
+            {todayRoute.mtbScale !== "—" ? ` · ${todayRoute.mtbScale}` : ""}
+          </p>
+          <div className="mt-2 text-accent">
+            <ElevationStrip
+              elevationM={todayRoute.elevationM}
+              distanceKm={todayRoute.distanceKm}
+            />
+          </div>
+          {heroReason && (
+            <p className="mt-2 text-sm text-text-secondary leading-snug">
+              Weil: {heroReason}
+            </p>
+          )}
+          <EvidenceSheet title="Begründung ansehen" className="mt-2">
+            <ul className="list-disc space-y-1 pl-4">
+              {todayRoute.reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+              {weather?.attribution && <li>{weather.attribution}</li>}
+              {todayRoute.rangeNote && <li>{todayRoute.rangeNote}</li>}
+            </ul>
+          </EvidenceSheet>
+          <div className="mt-3 flex gap-2">
+            <Link
+              href={`/discover?route=${todayRoute.id}`}
+              className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border py-2.5 text-sm font-medium"
+            >
+              Route ansehen <ChevronRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/ride"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+            >
+              <Play className="h-4 w-4 fill-current" /> Ride
+            </Link>
+          </div>
+        </section>
+      ) : activeBike ? (
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <p className="text-sm text-text-secondary mb-3">
+            Noch kein passender Routenvorschlag — in Discover entdecken.
+          </p>
+          <Link
+            href="/discover"
+            className="inline-flex items-center gap-1 text-sm font-medium text-accent"
+          >
+            Route wählen <ChevronRight className="h-4 w-4" />
+          </Link>
+        </section>
+      ) : null}
+
+      {/* Dein Bike */}
       {activeBike ? (
-        <section className="rounded-2xl bg-surface border border-border p-4">
-          <div className="flex items-start justify-between">
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <p className="mt-1 text-xs text-text-secondary">
+            DEIN BIKE
+          </p>
+          <div className="mt-1 flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/30 text-accent">
                 <Bike className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="font-semibold text-lg">{activeBike.name}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold">{activeBike.name}</h2>
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      ready === "ready" ? "bg-success" : "bg-warning"
+                    }`}
+                    title={ready === "ready" ? "bereit" : "Wartung beachten"}
+                  />
+                  <span className="text-xs text-text-secondary">
+                    {ready === "ready" ? "bereit" : "Wartung"}
+                  </span>
+                </div>
                 <p className="text-sm text-text-secondary">
                   {bikeTypeLabel(activeBike.type)}
                   {activeBike.year ? ` · ${activeBike.year}` : ""}
                 </p>
               </div>
             </div>
-            <Link href="/garage" className="text-sm text-accent flex items-center gap-1">
+            <Link
+              href="/garage"
+              className="flex items-center gap-1 text-sm text-accent"
+            >
               Garage <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
 
-          {activeBike.setups.find((s) => s.isCurrent) && (
-            <div className="mt-3 rounded-xl bg-surface-elevated px-3 py-2 text-sm">
-              <span className="text-text-secondary">Aktives Setup: </span>
-              <span className="font-medium">
-                {activeBike.setups.find((s) => s.isCurrent)?.label}
-              </span>
+          {currentSetup && (
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm">
+                  <span className="text-text-secondary">Setup </span>
+                  <span className="font-medium">„{currentSetup.label}“</span>
+                </span>
+                <span className="text-xs text-text-secondary">
+                  {setupAgeDays != null ? `seit ${setupAgeDays} Tagen` : ""}
+                  {ridesOnSetup > 0 ? ` · ${ridesOnSetup} Rides` : ""}
+                </span>
+              </div>
+              <SetupFingerprint setup={currentSetup} />
+            </div>
+          )}
+
+          {setupHint && (
+            <div className="mt-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-sm">
+              <p>{setupHint.message}</p>
+              {setupHint.suggestedSetupId && activeBike && (
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-semibold text-accent"
+                  onClick={() =>
+                    setCurrentSetup(activeBike.id, setupHint.suggestedSetupId!)
+                  }
+                >
+                  Auf „{setupHint.suggestedLabel}“ wechseln
+                </button>
+              )}
+              <EvidenceSheet title="Warum?" className="mt-1">
+                {setupHint.reasoning}
+              </EvidenceSheet>
             </div>
           )}
 
           {boschConnected && boschLive && (
             <div className="mt-3 flex items-center gap-4 rounded-xl bg-primary/20 px-3 py-2">
               <Zap className="h-5 w-5 text-accent" />
-              <div className="flex-1 grid grid-cols-3 gap-2 text-center text-sm">
+              <div className="grid flex-1 grid-cols-3 gap-2 text-center text-sm">
                 <div>
-                  <div className="tabular-nums font-semibold text-lg">{boschLive.soc}%</div>
+                  <div className="text-lg font-semibold tabular-nums">
+                    {boschLive.soc}%
+                  </div>
                   <div className="text-xs text-text-secondary">Akku</div>
                 </div>
                 <div>
-                  <div className="tabular-nums font-semibold text-lg">{boschLive.odometer}</div>
+                  <div className="text-lg font-semibold tabular-nums">
+                    {boschLive.odometer}
+                  </div>
                   <div className="text-xs text-text-secondary">km gesamt</div>
                 </div>
                 <div>
@@ -82,8 +400,8 @@ export default function HomePage() {
           )}
         </section>
       ) : (
-        <section className="rounded-2xl bg-surface border border-border p-6 text-center">
-          <p className="text-text-secondary mb-3">Noch kein Bike angelegt</p>
+        <section className="rounded-2xl border border-border bg-surface p-6 text-center">
+          <p className="mb-3 text-text-secondary">Noch kein Bike angelegt</p>
           <Link
             href="/garage"
             className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-white"
@@ -101,25 +419,57 @@ export default function HomePage() {
         Ride starten
       </Link>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Link
-          href="/chat"
-          className="rounded-xl border border-border bg-surface px-3 py-3 text-center text-sm font-medium"
-        >
-          KI-Chat
-        </Link>
-        <Link
-          href="/privacy"
-          className="rounded-xl border border-border bg-surface px-3 py-3 text-center text-sm font-medium"
-        >
-          Export & Privacy
-        </Link>
-      </div>
+      {/* max. 2 Wartung */}
+      {alerts.length > 0 && (
+        <section className="flex flex-col gap-2">
+          {alerts.map((a) => (
+            <div
+              key={a.id}
+              className="rounded-xl border border-border bg-surface px-3 py-3"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle
+                  className={`mt-0.5 h-4 w-4 shrink-0 ${
+                    a.severity === "overdue" ? "text-error" : "text-warning"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <Link href={a.href} className="block">
+                    <div className="text-sm font-medium">{a.title}</div>
+                    <div className="text-xs text-text-secondary">{a.detail}</div>
+                  </Link>
+                  <EvidenceSheet title="Warum?" className="mt-1">
+                    <p>{a.reasoning}</p>
+                    <p className="mt-1">Quelle: {a.sourceLabel}</p>
+                  </EvidenceSheet>
+                </div>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* max. 1 Tipp */}
+      {tipRec && (
+        <section className="rounded-xl border border-border bg-surface p-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-accent">
+            Tipp für dich
+          </div>
+          <div className="mt-1 text-sm font-medium">{tipRec.title}</div>
+          <p className="mt-1 text-sm text-text-secondary">{tipRec.content}</p>
+          <EvidenceSheet title="Warum?" className="mt-2">
+            {tipRec.reasoning}
+          </EvidenceSheet>
+        </section>
+      )}
 
       {lastRide && (
-        <section className="rounded-2xl bg-surface border border-border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold flex items-center gap-2">
+        <Link
+          href={`/post-ride?id=${lastRide.id}`}
+          className="rounded-2xl border border-border bg-surface p-4 transition hover:border-accent/40"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-semibold">
               <TrendingUp className="h-4 w-4 text-accent" />
               Letzter Ride
             </h3>
@@ -129,55 +479,29 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>
-              <div className="tabular-nums text-xl font-bold">
+              <div className="text-xl font-bold tabular-nums">
                 {formatDistance(lastRide.distanceM)}
               </div>
               <div className="text-xs text-text-secondary">Distanz</div>
             </div>
             <div>
-              <div className="tabular-nums text-xl font-bold">
-                {formatDuration(lastRide.durationSec)}
+              <div className="text-xl font-bold tabular-nums">
+                {lastRide.elevationGainM} m
               </div>
-              <div className="text-xs text-text-secondary">Zeit</div>
+              <div className="text-xs text-text-secondary">Höhenmeter</div>
             </div>
             <div>
-              <div className="tabular-nums text-xl font-bold text-accent">
+              <div className="text-xl font-bold tabular-nums text-accent">
                 {lastRide.summaryMetrics.flowScore}
               </div>
               <div className="text-xs text-text-secondary">Flow</div>
             </div>
           </div>
-        </section>
+          <p className="mt-2 text-center text-xs text-accent">
+            Analyse öffnen · {formatDuration(lastRide.durationSec)}
+          </p>
+        </Link>
       )}
-
-      {openRecs.length > 0 && (
-        <section>
-          <h3 className="mb-2 font-semibold flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-accent" />
-            KI-Empfehlungen
-          </h3>
-          <div className="flex flex-col gap-2">
-            {openRecs.map((rec) => (
-              <div key={rec.id} className="rounded-xl bg-surface border border-border p-3">
-                <div className="font-medium text-sm">{rec.title}</div>
-                <p className="text-sm text-text-secondary mt-1">{rec.content}</p>
-                <p className="text-xs text-text-secondary/70 mt-2">{rec.reasoning}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-surface border border-border p-3 text-center">
-          <div className="tabular-nums text-2xl font-bold">{bikes.length}</div>
-          <div className="text-xs text-text-secondary">Bikes</div>
-        </div>
-        <div className="rounded-xl bg-surface border border-border p-3 text-center">
-          <div className="tabular-nums text-2xl font-bold">{rides.length}</div>
-          <div className="text-xs text-text-secondary">Rides</div>
-        </div>
-      </section>
     </div>
   );
 }

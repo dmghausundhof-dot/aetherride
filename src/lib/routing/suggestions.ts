@@ -43,6 +43,22 @@ interface RouteSeed {
 
 const SEEDS: RouteSeed[] = [
   {
+    id: "r-kaltenbronn",
+    name: "Kaltenbronn Runde",
+    categories: ["mtb_enduro", "mtb_am", "mtb_trail", "emtb"],
+    distanceKm: 34,
+    elevationM: 980,
+    durationMin: 160,
+    mtbScale: "S1–S2",
+    surface: "trail/root",
+    loop: true,
+    uncertainKmPct: 10,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
     id: "r-alpbach-enduro",
     name: "Enduro Alpbachtal",
     categories: ["mtb_enduro", "mtb_am", "emtb"],

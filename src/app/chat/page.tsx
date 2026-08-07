@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MessageSquare, ShieldAlert, Wrench } from "lucide-react";
+import { MessageSquare, ShieldAlert, Wrench, ArrowLeft } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { type ChatToolName } from "@/lib/ai/chat";
 import Link from "next/link";
@@ -25,6 +25,40 @@ type QuotaInfo = {
   reason?: string;
 };
 
+const SUGGESTED_PROMPTS: { label: string; query: string; tool: ChatToolName }[] =
+  [
+    {
+      label: "Garage-Überblick",
+      query: "Was steckt in meiner Garage?",
+      tool: "garage",
+    },
+    {
+      label: "Reichweite",
+      query: "Welche Reichweite habe ich mit aktuellem Akku?",
+      tool: "range",
+    },
+    {
+      label: "Setup-Historie",
+      query: "Welche Setups hatte ich und was hat sich geändert?",
+      tool: "setup_history",
+    },
+    {
+      label: "Ride-Stats",
+      query: "Zusammenfassung meiner letzten Rides",
+      tool: "ride_stats",
+    },
+    {
+      label: "Routen",
+      query: "Welche Routen passen zu mir?",
+      tool: "route_search",
+    },
+    {
+      label: "Verschleiß / Shop",
+      query: "Brauche ich bald neue Verschleißteile?",
+      tool: "product_search",
+    },
+  ];
+
 export default function ChatPage() {
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -43,7 +77,7 @@ export default function ChatPage() {
     {
       id: "sys",
       role: "assistant",
-      text: "Fragen zu Garage, Kompatibilität, Setup, Rides, Routen oder Produkten. Zahlen kommen nur aus Engines (Numeric-Guard, F-AI-001/004). Grok nur nach Login (Free/Pro-Limits).",
+      text: "Hier kannst du gezielt nachfragen — Garage, Kompatibilität, Setup, Rides, Routen, Produkte. Zahlen kommen nur aus Engines (Numeric-Guard). Für die meisten Entscheidungen reichen Home und Post-Ride.",
     },
   ]);
 
@@ -58,12 +92,13 @@ export default function ChatPage() {
     [bike, bikes, rides, profile, calibration]
   );
 
-  const send = async () => {
-    if (!input.trim() || isRiding || busy) return;
-    const q = input.trim();
+  const send = async (override?: { query: string; tool?: ChatToolName | "auto" }) => {
+    const q = (override?.query ?? input).trim();
+    if (!q || isRiding || busy) return;
+    const toolHint = override?.tool ?? tool;
     setBusy(true);
     setMessages((m) => [...m, { id: `u-${Date.now()}`, role: "user", text: q }]);
-    setInput("");
+    if (!override) setInput("");
 
     try {
       const res = await fetch("/api/chat", {
@@ -71,7 +106,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: q,
-          tool,
+          tool: toolHint,
           ...ctx,
         }),
       });
@@ -116,11 +151,17 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col gap-4 p-4 pt-6">
       <header>
+        <Link
+          href="/profile"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-accent"
+        >
+          <ArrowLeft className="h-4 w-4" /> Profil
+        </Link>
         <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <MessageSquare className="h-6 w-6 text-accent" /> KI-Chat
+          <MessageSquare className="h-6 w-6 text-accent" /> Mehr fragen
         </h1>
         <p className="text-sm text-text-secondary">
-          F-AI-004 · Grok · Numeric-Guard · Free/Pro-Limits
+          Power-User-Chat · Engines + Numeric-Guard · optional Grok
         </p>
         {quota && (
           <p className="mt-1 text-xs text-text-secondary">
@@ -153,31 +194,48 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-1 text-[10px]">
-        {(
-          [
-            "auto",
-            "garage",
-            "compat",
-            "setup_history",
-            "ride_stats",
-            "route_search",
-            "product_search",
-            "range",
-          ] as const
-        ).map((t) => (
+      <div className="flex flex-wrap gap-2">
+        {SUGGESTED_PROMPTS.map((p) => (
           <button
-            key={t}
+            key={p.label}
             type="button"
-            onClick={() => setTool(t)}
-            className={`rounded-full px-2 py-1 ${
-              tool === t ? "bg-accent text-white" : "bg-surface-elevated"
-            }`}
+            disabled={isRiding || busy}
+            onClick={() => void send({ query: p.query, tool: p.tool })}
+            className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium disabled:opacity-40"
           >
-            {t}
+            {p.label}
           </button>
         ))}
       </div>
+
+      <details className="text-xs text-text-secondary">
+        <summary className="cursor-pointer text-accent">Engine manuell wählen</summary>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {(
+            [
+              "auto",
+              "garage",
+              "compat",
+              "setup_history",
+              "ride_stats",
+              "route_search",
+              "product_search",
+              "range",
+            ] as const
+          ).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTool(t)}
+              className={`rounded-full px-2 py-1 ${
+                tool === t ? "bg-accent text-white" : "bg-surface-elevated"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </details>
 
       <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto rounded-2xl border border-border bg-surface p-3">
         {messages.map((m) => (
@@ -228,8 +286,8 @@ export default function ChatPage() {
       </div>
 
       <p className="text-center text-xs text-text-secondary">
-        <Link href="/profile" className="text-accent">
-          Profil / Abo
+        <Link href="/" className="text-accent">
+          Zurück zu Home
         </Link>
         {" · "}
         Free 5/Tag · Pro 50/Tag

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Bike as BikeIcon,
   Plus,
@@ -36,7 +37,8 @@ import type { ComponentSlot, SetupCondition } from "@/types";
 
 type Tab = "overview" | "components" | "setups" | "maintenance";
 
-export default function GaragePage() {
+function GaragePageInner() {
+  const searchParams = useSearchParams();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const setActiveBike = useAppStore((s) => s.setActiveBike);
@@ -51,12 +53,25 @@ export default function GaragePage() {
   const rides = useAppStore((s) => s.rides);
 
   const [selectedId, setSelectedId] = useState<string | null>(activeBikeId);
-  const [tab, setTab] = useState<Tab>("overview");
+  const initialTab = (searchParams.get("tab") as Tab | null) || "overview";
+  const [tab, setTab] = useState<Tab>(
+    ["overview", "components", "setups", "maintenance"].includes(initialTab)
+      ? initialTab
+      : "overview"
+  );
+
+  useEffect(() => {
+    const t = searchParams.get("tab") as Tab | null;
+    if (t && ["overview", "components", "setups", "maintenance"].includes(t)) {
+      setTab(t);
+    }
+  }, [searchParams]);
+
   const [showWizard, setShowWizard] = useState(false);
   const [installSlot, setInstallSlot] = useState<ComponentSlot | null>(null);
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
-    useState<SetupCondition>("general");
+    useState<SetupCondition>("dry");
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
@@ -501,7 +516,6 @@ export default function GaragePage() {
                   >
                     {(
                       [
-                        "general",
                         "dry",
                         "wet",
                         "mixed",
@@ -727,5 +741,13 @@ export default function GaragePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function GaragePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center">Garage wird geladen…</div>}>
+      <GaragePageInner />
+    </Suspense>
   );
 }

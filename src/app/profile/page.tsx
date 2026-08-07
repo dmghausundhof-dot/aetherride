@@ -643,7 +643,7 @@ export default function ProfilePage() {
         Datenexport · Privatsphäre · Familie →
       </Link>
       <Link href="/chat" className="text-center text-sm text-accent">
-        KI-Chat (Engines + Numeric-Guard) →
+        Mehr fragen (KI-Chat, Power-User) →
       </Link>
     </div>
   );

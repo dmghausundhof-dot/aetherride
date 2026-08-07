@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Compass,
   Mountain,
@@ -30,10 +31,13 @@ import {
   requestRoute,
   type ClientRouteResult,
 } from "@/lib/routing/profiles";
+import { EvidenceSheet } from "@/components/EvidenceSheet";
 
 type DiscoverTab = "routes" | "heatmap" | "trail" | "profile";
 
-export default function DiscoverPage() {
+function DiscoverPageInner() {
+  const searchParams = useSearchParams();
+  const highlightRouteId = searchParams.get("route");
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const bikes = useAppStore((s) => s.bikes);
   const rides = useAppStore((s) => s.rides);
@@ -83,6 +87,13 @@ export default function DiscoverPage() {
       rangeKmHigh: range?.kmHigh,
     });
   }, [activeBike, profile, minutes, range]);
+
+  useEffect(() => {
+    if (!highlightRouteId) return;
+    setTab("routes");
+    const el = document.getElementById(`route-${highlightRouteId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightRouteId, routes]);
 
   const heatmap = useMemo(
     () =>
@@ -272,8 +283,13 @@ export default function DiscoverPage() {
           <div className="flex flex-col gap-3">
             {routes.map((r) => (
               <article
+                id={`route-${r.id}`}
                 key={r.id}
-                className="rounded-2xl border border-border bg-surface p-4"
+                className={`rounded-2xl border bg-surface p-4 ${
+                  highlightRouteId === r.id
+                    ? "border-accent ring-1 ring-accent/40"
+                    : "border-border"
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -297,14 +313,22 @@ export default function DiscoverPage() {
                     {r.surface}
                   </span>
                 </div>
-                <ol className="mt-3 list-decimal space-y-1 pl-4 text-xs text-text-secondary">
-                  {r.reasons.map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ol>
+                <EvidenceSheet title="Warum dieser Vorschlag?" className="mt-3">
+                  <ol className="list-decimal space-y-1 pl-4">
+                    {r.reasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ol>
+                </EvidenceSheet>
                 {r.rangeNote && (
                   <p className="mt-2 text-xs text-warning">{r.rangeNote}</p>
                 )}
+                <Link
+                  href="/ride"
+                  className="mt-3 inline-flex text-sm font-medium text-accent"
+                >
+                  Mit dieser Route Ride starten →
+                </Link>
               </article>
             ))}
           </div>
@@ -496,5 +520,15 @@ export default function DiscoverPage() {
         OSM · Mapillary CC BY-SA · eigene Aggregate
       </p>
     </div>
+  );
+}
+
+export default function DiscoverPage() {
+  return (
+    <Suspense
+      fallback={<div className="p-6 text-center">Discover wird geladen…</div>}
+    >
+      <DiscoverPageInner />
+    </Suspense>
   );
 }
