@@ -761,7 +761,7 @@ function DiscoverPageInner() {
   }
 
   const statsLine = draft.computed
-    ? `${(draft.computed.distanceM / 1000).toFixed(1)} km · ${Math.round(draft.computed.durationS / 60)} min · ${draft.computed.engine}`
+    ? `${(draft.computed.distanceM / 1000).toFixed(1)} km · ${Math.round(draft.computed.durationS / 60)} min`
     : null;
 
   return (
@@ -1152,7 +1152,7 @@ function DiscoverPageInner() {
               </div>
               {nearbyTrails.length === 0 ? (
                 <p className="text-[11px] text-text-secondary">
-                  Keine Seed-Trails in der Nähe — Karte verschieben / Ort setzen.
+                  Keine Trail-Hinweise in der Nähe — Karte verschieben oder Ort setzen.
                 </p>
               ) : (
                 nearbyTrails.map((t) => (
@@ -1279,7 +1279,7 @@ function DiscoverPageInner() {
                       {[
                         t.difficulty,
                         t.lengthKm != null ? `${t.lengthKm} km` : null,
-                        t.source === "demo" ? "Demo" : null,
+                        t.source === "demo" ? "Beispiel" : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}

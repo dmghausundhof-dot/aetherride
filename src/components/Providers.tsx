@@ -5,9 +5,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const seedDemoData = useAppStore((s) => s.seedDemoData);
   const onboardingDone = useAppStore((s) => s.onboardingDone);
-  const bikes = useAppStore((s) => s.bikes);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -22,13 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!ready) return;
-    if (onboardingDone && bikes.length === 0) {
-      seedDemoData();
-    }
-  }, [ready, onboardingDone, bikes.length, seedDemoData]);
-
+  // Kein Auto-Demo-Bike/Ride — leere Garage nach Freeride/Skip bleibt leer.
   const showOnboarding = ready && !onboardingDone;
 
   return (

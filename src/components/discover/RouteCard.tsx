@@ -30,6 +30,9 @@ export function RouteCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="font-semibold">{route.name}</h3>
+            <p className="mt-0.5 text-[11px] text-text-secondary">
+              Tour-Idee · Geometrie wird beim Planen geroutet
+            </p>
             <p className="mt-0.5 text-xs tabular-nums text-text-secondary">
               {route.distanceKm} km · {route.elevationM} hm · {route.durationMin}{" "}
               min

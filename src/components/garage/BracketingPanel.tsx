@@ -63,13 +63,12 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
     <section className="rounded-2xl border border-border bg-surface p-4">
       <h3 className="mb-1 font-semibold">Bracketing</h3>
       <p className="mb-3 text-xs text-text-secondary">
-        Nur ein Parameter pro Serie. Effekt gilt erst bei |Δ| &gt; 1,5× gepoolter
-        SD und n≥2 (F-SET-003).
+        Nur ein Parameter pro Serie. Effekt gilt erst bei klarer Differenz und
+        mind. zwei vergleichbaren Rides.
       </p>
       {!pro && (
         <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-          Bracketing ist Pro (Spec 1.4). Unter Profil freischalten — Demo-Daten
-          starten mit Pro.
+          Bracketing ist Pro. Unter Profil freischalten.
         </div>
       )}
 

@@ -108,6 +108,9 @@ export function RouteDetail({
 
       <header>
         <h2 className="text-xl font-bold">{route.name}</h2>
+        <p className="mt-1 text-xs text-text-secondary">
+          Tour-Idee — Strecke beim Planen oder Starten live berechnen
+        </p>
         <p className="mt-1 text-sm tabular-nums text-text-secondary">
           {route.distanceKm} km · {route.elevationM} hm · {route.durationMin} min
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
@@ -273,7 +276,7 @@ export function RouteDetail({
               </div>
               {trail?.usingDemo && (
                 <p className="text-[11px] text-text-secondary">
-                  Beispielbilder — Live-Trail-Fotos folgen mit Standortfreigabe.
+                  Beispielbilder — Live-Fotos brauchen Mapillary-Zugang (Ops).
                 </p>
               )}
             </>

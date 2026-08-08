@@ -16,7 +16,7 @@ const HINT_STYLES: Record<string, string> = {
   fork: "from-sky-900/50 to-sky-700/20 text-sky-200",
   tire: "from-stone-800/60 to-stone-600/20 text-stone-200",
   cassette: "from-zinc-800/60 to-zinc-600/20 text-zinc-200",
-  shock: "from-indigo-900/50 to-indigo-700/20 text-indigo-200",
+  shock: "from-stone-800/50 to-stone-700/20 text-stone-200",
   battery: "from-emerald-900/50 to-emerald-700/20 text-emerald-200",
   dropper: "from-teal-900/50 to-teal-700/20 text-teal-200",
 };

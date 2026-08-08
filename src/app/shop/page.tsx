@@ -477,9 +477,7 @@ function ShopPageInner() {
                     </summary>
                     <ul className="mt-1 list-disc pl-4">
                       {results.slice(0, 4).map((r) => (
-                        <li key={r.ruleCode}>
-                          {r.ruleCode}: {r.explainDe}
-                        </li>
+                        <li key={r.ruleCode}>{r.explainDe}</li>
                       ))}
                     </ul>
                   </details>

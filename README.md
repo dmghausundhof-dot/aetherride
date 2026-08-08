@@ -165,3 +165,6 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - Ehrlicher Routing-Status (`/api/routing/status`), Demo-Fallback bei Live-Fehler
 - Strava-UI erst bei OAuth-Config; Shop „Beispielkatalog“; Heatmap ohne Fake-Community
 - Mehr Discover-Seeds (City/Gravel/Road DACH)
+- Kein Auto-Demo-Bike/Ride nach Onboarding; Spec-IDs aus Rider-UI
+- Tour-Ideen klar gelabelt; Partner-Copy ehrlich (OA/TF/Mapillary)
+- Shop: Urteile ohne Rule-Codes; Visuals ohne Indigo-Bias

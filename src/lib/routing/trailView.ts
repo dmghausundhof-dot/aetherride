@@ -42,17 +42,17 @@ function demoPhotos(lat: number, lng: number): TrailPhoto[] {
               <stop offset="0%" stop-color="#4a7c59"/><stop offset="100%" stop-color="#2d4a35"/>
             </linearGradient></defs>
             <rect width="640" height="360" fill="url(#g)"/>
-            <text x="40" y="180" fill="#e8f0e9" font-size="28" font-family="sans-serif">Trail S2 · Demo</text>
-            <text x="40" y="220" fill="#b8d4bc" font-size="16" font-family="sans-serif">Mapillary Token fehlt</text>
+            <text x="40" y="180" fill="#e8f0e9" font-size="28" font-family="sans-serif">Trail-Foto Beispiel</text>
+            <text x="40" y="220" fill="#b8d4bc" font-size="16" font-family="sans-serif">Mapillary nicht konfiguriert</text>
           </svg>`
         ),
       lat: lat + 0.002,
       lng: lng + 0.003,
       headingDeg: 125,
-      username: "demo",
-      title: "Demo — Token konfigurieren",
+      username: "beispiel",
+      title: "Beispiel — Mapillary-Zugang fehlt",
       license: "CC BY-SA 4.0",
-      attributionHtml: "Demo-Platzhalter · Mapillary CC BY-SA",
+      attributionHtml: "Beispiel-Platzhalter · Mapillary CC BY-SA",
       mapillaryKey: "demo",
     },
   ];
@@ -67,7 +67,7 @@ export function getTrailViewNear(
     attribution:
       "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
     disclaimer:
-      "Demo-Fallback — setze MAPILLARY_ACCESS_TOKEN für Live-Bilder (F-NAV-006).",
+      "Beispielbilder — Live-Trail-View braucht Mapillary-Token.",
     usingDemo: true,
   };
 }

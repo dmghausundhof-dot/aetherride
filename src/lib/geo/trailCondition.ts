@@ -91,10 +91,10 @@ export function buildTrailforksPins(trailHint?: string | null): {
 
   const disclaimer =
     trailforksMode === "attribution_only"
-      ? "Trailforks nur als Deep-Link + Attribution — kein Status-/Geometrie-Mirror ohne Partnerschaft."
+      ? "Beispiel-Regionen mit Link zu Trailforks — kein Live-Zustand in AetherRide."
       : trailforksMode === "enabled"
-        ? "Trailforks Condition Layer aktiv (Partnerschaft)."
-        : "Trailforks-Partnerschaft ausstehend — Wetter-Proxy als Status-Hinweis.";
+        ? "Trailforks-Zustand aktiv (Partnerschaft)."
+        : "Trailforks-Partnerschaft ausstehend — Wetter nur als grober Hinweis.";
 
   return { mode: trailforksMode, pins, disclaimer };
 }

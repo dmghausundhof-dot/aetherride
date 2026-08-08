@@ -85,7 +85,7 @@ export function InstallComponentSheet({
           <>
             <p className="mb-2 text-xs text-warning">
               Ohne Katalogbezug sind Kompatibilitätsprüfung und Setup-Automatik
-              gesperrt (F-GAR-002).
+              eingeschränkt.
             </p>
             <input
               value={freeText}

@@ -160,7 +160,7 @@ export function BikeSilhouette({
     <div className="rounded-2xl border border-border bg-surface p-3">
       <div className="mb-1 flex items-center justify-between text-[10px] text-text-secondary">
         <span>Schema · {drawKind}</span>
-        <span>F-GAR-004</span>
+        <span>Hotspots</span>
       </div>
       <svg viewBox="0 0 320 200" className="h-auto w-full" role="img">
         <title>{bike.name} Schema ({drawKind})</title>

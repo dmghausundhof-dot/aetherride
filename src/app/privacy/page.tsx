@@ -73,7 +73,7 @@ export default function PrivacyExportPage() {
       <header>
         <h1 className="text-2xl font-bold">Daten & Privatsphäre</h1>
         <p className="text-sm text-text-secondary">
-          F-ACC-003/005/006/007 · Export · Zonen · Familie
+          Export · Privatbereiche · Familie
         </p>
       </header>
 
@@ -227,16 +227,16 @@ export default function PrivacyExportPage() {
           }
           className="mt-1 text-sm text-accent"
         >
-          + Demo-Zone „Arbeit“
+          + Beispiel-Zone „Arbeit“
         </button>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Users className="h-4 w-4 text-accent" /> Familien-Garage (P3)
+          <Users className="h-4 w-4 text-accent" /> Familien-Garage
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
-          Ein Bike, mehrere Fahrer mit eigenen Setups (F-ACC-007).
+          Ein Bike, mehrere Fahrer mit eigenen Setups.
         </p>
         {familyRiders.map((r) => (
           <button

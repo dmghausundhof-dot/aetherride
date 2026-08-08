@@ -70,7 +70,6 @@ import {
   trackDistanceM,
   trackElevationGainM,
 } from "@/lib/geo/trackMath";
-import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
 import { activeDurationSec } from "@/lib/ride/activeDuration";
 
 export type SubscriptionTier = "free" | "pro";
@@ -526,7 +525,7 @@ export const useAppStore = create<AppState>()(
           get().bikes.length >= 1
         ) {
           throw new Error(
-            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten (Spec 1.4)."
+            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten."
           );
         }
         const found = findCatalogBike(catalogBikeId);
@@ -619,7 +618,7 @@ export const useAppStore = create<AppState>()(
           get().bikes.length >= 1
         ) {
           throw new Error(
-            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten (Spec 1.4)."
+            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten."
           );
         }
         const id = uuidv4();
@@ -1499,7 +1498,7 @@ export const useAppStore = create<AppState>()(
       seedDemoData: () => {
         const existing = get().bikes;
         if (existing.length > 0) return;
-        // Free-Tier: max. 1 Bike — kein Demo-Pro-Bypass
+        // Explizit aufrufbar (Dev/QA) — kein Fake-Bosch, kein stiller Demo-Ride.
         set({ subscriptionTier: "free" });
         get().addBikeFromCatalog({
           catalogBikeId: "cat-transition-spire-2024",
@@ -1519,72 +1518,10 @@ export const useAppStore = create<AppState>()(
             "tire_rear.pressure_psi": 22,
           },
         });
-        // restore dry as current
         const dry = get().bikes[0]?.setups.find((s) =>
           s.label.includes("OEM")
         );
         if (dry) get().setCurrentSetup(get().bikes[0].id, dry.id);
-
-        const demoBike = get().bikes[0];
-        const demoSetup = demoBike?.setups.find((s) => s.isCurrent);
-        if (demoBike) {
-          const start = new Date();
-          start.setDate(start.getDate() - 2);
-          const end = new Date(start.getTime() + 95 * 60 * 1000);
-          const demoGeom = buildDemoGeometry("r-kaltenbronn", 28);
-          const demoTrack = demoGeom.coordinates
-            .filter((_, i) => i % 3 === 0)
-            .map((c, i) => ({
-              lng: c[0],
-              lat: c[1],
-              elev: 700 + Math.sin(i / 5) * 80,
-              time: start.getTime() + i * 60_000,
-            }));
-          set((s) => ({
-            rides: [
-              {
-                id: uuidv4(),
-                bikeId: demoBike.id,
-                setupId: demoSetup?.id,
-                sportType: demoBike.type,
-                startTime: start.toISOString(),
-                endTime: end.toISOString(),
-                distanceM: 28400,
-                elevationGainM: 920,
-                durationSec: 95 * 60,
-                track: demoTrack,
-                notes: "Demo-Ride Kaltenbronn-ähnlich",
-                summaryMetrics: {
-                  gForcePeak: 3.8,
-                  gForceRms: 1.35,
-                  leanAngleMax: 38,
-                  impactCount: 42,
-                  flowScore: 71,
-                },
-              },
-              ...s.rides,
-            ],
-            boschConnected: true,
-            boschLive: {
-              speed: 0,
-              soc: 87,
-              riderPower: 0,
-              cadence: 0,
-              odometer: 1247,
-            },
-          }));
-        } else {
-          set({
-            boschConnected: true,
-            boschLive: {
-              speed: 0,
-              soc: 87,
-              riderPower: 0,
-              cadence: 0,
-              odometer: 1247,
-            },
-          });
-        }
       },
     }),
     {
