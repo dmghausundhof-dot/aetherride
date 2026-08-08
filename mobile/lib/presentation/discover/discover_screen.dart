@@ -768,7 +768,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               for (final r in rides) (id: r.id, track: r.track),
             ],
             privacyZones: zones,
-            includeSeedFallback: true,
+            includeSeedFallback: false,
           );
           if (mounted) {
             setState(() => _heatmapNote = heat.disclaimer);

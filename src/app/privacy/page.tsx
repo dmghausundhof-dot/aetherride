@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Download,
   FileJson,
@@ -28,6 +28,7 @@ export default function PrivacyExportPage() {
   const profile = useAppStore((s) => s.riderProfile);
   const consents = useAppStore((s) => s.consents);
   const setConsent = useAppStore((s) => s.setConsent);
+  const [stravaConfigured, setStravaConfigured] = useState(false);
   const privacyZones = useAppStore((s) => s.privacyZones);
   const addPrivacyZone = useAppStore((s) => s.addPrivacyZone);
   const removePrivacyZone = useAppStore((s) => s.removePrivacyZone);
@@ -51,6 +52,21 @@ export default function PrivacyExportPage() {
       }).slice(0, 400) + "…",
     [bikes, rides, profile]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/strava")
+      .then((r) => r.json())
+      .then((data: { configured?: boolean }) => {
+        if (!cancelled) setStravaConfigured(Boolean(data.configured));
+      })
+      .catch(() => {
+        if (!cancelled) setStravaConfigured(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
@@ -112,22 +128,30 @@ export default function PrivacyExportPage() {
           >
             Letzten Ride als FIT
           </button>
-          <button
-            type="button"
-            disabled={!lastRide}
-            onClick={() => {
-              if (!lastRide) return;
-              const stub = rideToStravaActivityStub(lastRide);
-              downloadText(
-                "strava-activity-payload.json",
-                JSON.stringify(stub, null, 2),
-                "application/json"
-              );
-            }}
-            className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
-          >
-            Strava-Export vorbereiten (JSON — Upload folgt nach OAuth)
-          </button>
+          {stravaConfigured ? (
+            <button
+              type="button"
+              disabled={!lastRide}
+              onClick={() => {
+                if (!lastRide) return;
+                const stub = rideToStravaActivityStub(lastRide);
+                downloadText(
+                  "strava-activity-payload.json",
+                  JSON.stringify(stub, null, 2),
+                  "application/json"
+                );
+              }}
+              className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
+            >
+              Strava-Export vorbereiten (JSON)
+            </button>
+          ) : (
+            <p className="rounded-xl border border-dashed border-border px-3 py-2.5 text-xs text-text-secondary">
+              Strava-Upload folgt nach OAuth (
+              <code className="text-[10px]">STRAVA_CLIENT_ID</code> /{" "}
+              <code className="text-[10px]">SECRET</code>). Bis dahin: GPX/FIT.
+            </p>
+          )}
         </div>
         <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-surface-elevated p-2 text-[10px] text-text-secondary">
           {jsonPreview}

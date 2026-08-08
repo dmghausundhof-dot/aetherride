@@ -32,7 +32,7 @@ import {
 } from "@/lib/routing/profiles";
 import {
   DEMO_ROUTING_NOTICE,
-  hasPublicRoutingHint,
+  type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
 import {
   activeRouteFromEngine,
@@ -179,6 +179,9 @@ function DiscoverPageInner() {
   );
   const [showTrails, setShowTrails] = useState(true);
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
+  const [routingNotice, setRoutingNotice] = useState<string | null>(
+    DEMO_ROUTING_NOTICE
+  );
   const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeProfile = manualProfile ?? routingProfile;
@@ -258,6 +261,21 @@ function DiscoverPageInner() {
       setSheetMode("tours");
     }
   }, [highlightRouteId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/routing/status")
+      .then((r) => r.json())
+      .then((data: RoutingStatusPayload) => {
+        if (!cancelled) setRoutingNotice(data.notice ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setRoutingNotice(DEMO_ROUTING_NOTICE);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setDraft((d) => ({ ...d, profile: activeProfile }));
@@ -750,9 +768,9 @@ function DiscoverPageInner() {
     <div className="flex min-h-[calc(100dvh-5rem)] flex-col">
       {/* Dach */}
       <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-5">
-        {!hasPublicRoutingHint() && (
+        {routingNotice && (
           <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
-            {DEMO_ROUTING_NOTICE}
+            {routingNotice}
           </p>
         )}
         <div className="flex items-start justify-between gap-3">

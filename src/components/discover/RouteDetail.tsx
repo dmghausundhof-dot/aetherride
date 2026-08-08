@@ -69,7 +69,7 @@ export function RouteDetail({
         consentHeatmap: heatmapConsent,
         rides,
         privacyZones,
-        includeSeedFallback: true,
+        includeSeedFallback: false,
       }),
     [heatmapConsent, rides, privacyZones]
   );

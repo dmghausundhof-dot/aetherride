@@ -433,14 +433,39 @@ export async function computeRoute(
   const points = [from, ...vias, to];
   const kind = engine();
   if (kind === "demo") return demoRoute(profile, from, to);
-  if (kind === "graphhopper") return routeGraphhopper(profile, points);
-  if (kind === "valhalla") {
-    // Valhalla vias: route sequentially for now
-    if (vias.length === 0) return routeValhalla(profile, from, to);
+
+  try {
+    if (kind === "graphhopper") return await routeGraphhopper(profile, points);
+    if (kind === "valhalla") {
+      if (vias.length === 0) return await routeValhalla(profile, from, to);
+      const parts: RouteResult[] = [];
+      let prev = from;
+      for (const p of [...vias, to]) {
+        parts.push(await routeValhalla(profile, prev, p));
+        prev = p;
+      }
+      return {
+        distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
+        durationS: parts.reduce((a, p) => a + p.durationS, 0),
+        geometry: {
+          type: "LineString",
+          coordinates: parts.flatMap((p, i) =>
+            i === 0
+              ? p.geometry.coordinates
+              : p.geometry.coordinates.slice(1)
+          ),
+        },
+        engine: "valhalla",
+        profile,
+        steps: parts.flatMap((p) => p.steps ?? []),
+        warnings: parts.flatMap((p) => p.warnings ?? []),
+      };
+    }
+    if (vias.length === 0) return await routeOsrm(profile, from, to);
     const parts: RouteResult[] = [];
     let prev = from;
     for (const p of [...vias, to]) {
-      parts.push(await routeValhalla(profile, prev, p));
+      parts.push(await routeOsrm(profile, prev, p));
       prev = p;
     }
     return {
@@ -449,38 +474,33 @@ export async function computeRoute(
       geometry: {
         type: "LineString",
         coordinates: parts.flatMap((p, i) =>
-          i === 0
-            ? p.geometry.coordinates
-            : p.geometry.coordinates.slice(1)
+          i === 0 ? p.geometry.coordinates : p.geometry.coordinates.slice(1)
         ),
       },
-      engine: "valhalla",
+      engine: "osrm",
       profile,
       steps: parts.flatMap((p) => p.steps ?? []),
-      warnings: parts.flatMap((p) => p.warnings ?? []),
+    };
+  } catch (e) {
+    const demo = demoRoute(profile, from, to);
+    const msg = e instanceof Error ? e.message : "Routing fehlgeschlagen";
+    return {
+      ...demo,
+      warnings: [
+        `Live-Routing (${kind}) fehlgeschlagen — Demo-Geometrie. ${msg}`,
+        ...(demo.warnings ?? []),
+      ],
     };
   }
-  if (vias.length === 0) return routeOsrm(profile, from, to);
-  // OSRM via: concatenate
-  const parts: RouteResult[] = [];
-  let prev = from;
-  for (const p of [...vias, to]) {
-    parts.push(await routeOsrm(profile, prev, p));
-    prev = p;
-  }
-  return {
-    distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
-    durationS: parts.reduce((a, p) => a + p.durationS, 0),
-    geometry: {
-      type: "LineString",
-      coordinates: parts.flatMap((p, i) =>
-        i === 0 ? p.geometry.coordinates : p.geometry.coordinates.slice(1)
-      ),
-    },
-    engine: "osrm",
-    profile,
-    steps: parts.flatMap((p) => p.steps ?? []),
-  };
+}
+
+/** Welche Engine ist konfiguriert (ohne Netzwerk-Probe). */
+export function configuredRoutingEngine(): RouteResult["engine"] {
+  return engine();
+}
+
+export function isLiveRoutingConfigured(): boolean {
+  return configuredRoutingEngine() !== "demo";
 }
 
 export function isValidLngLat(pair: [number, number]): boolean {

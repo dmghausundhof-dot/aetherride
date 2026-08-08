@@ -42,21 +42,25 @@ export async function GET(req: Request) {
     }
     const data = await res.json();
     const tours = normalizeOutdooractivePayload(data, q);
+    const usingDemo = tours.length === 0;
     return NextResponse.json({
       provider: "outdooractive",
       role: "enrichment_dach",
       configured: true,
+      usingDemoFallback: usingDemo,
       query: q,
       bbox,
-      tours: tours.length ? tours : outdooractiveDemoResponse(q).tours,
+      tours: usingDemo ? outdooractiveDemoResponse(q).tours : tours,
       attribution: "Daten © Outdooractive — Enrichment, keine Routing-Wahrheit",
-      warning: tours.length
-        ? undefined
-        : "API ok, aber keine normalisierbaren Touren — Demo gemischt",
+      warning: usingDemo
+        ? "API erreichbar, aber keine normalisierbaren Touren — Demo-Enrichment"
+        : undefined,
     });
   } catch {
     return NextResponse.json({
       ...outdooractiveDemoResponse(q),
+      configured: false,
+      usingDemoFallback: true,
       warning: "Outdooractive nicht erreichbar — Demo-Fallback",
     });
   }

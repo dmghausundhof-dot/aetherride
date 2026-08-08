@@ -147,6 +147,7 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - [ ] Store-Richtlinien-Vorprüfung  
 - [ ] Play Produkt `aetherride_pro_monthly` + License Tester + `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`  
 - [ ] Routing-Env live (`VALHALLA_URL` / `OSRM_URL` / `GRAPHHOPPER_API_KEY`) — sonst Demo-Geometrie  
+- [ ] Nach erfolgreichem Smoke: `NEXT_PUBLIC_ROUTING_LIVE=true` (Discover-Banner erst dann weg)  
 - [ ] Partner-Tokens: Mapillary, Outdooractive, Strava OAuth  
 - [ ] `NEXT_PUBLIC_LEGAL_*` für Marketplace (Affiliate braucht das nicht)  
 - [ ] Vercel-Deploy + Stripe Webhook Prod  
@@ -161,4 +162,6 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - Shop Empty ohne Negativ-Spam
 - Rider-UI ohne Spec-/Engine-Jargon; Profil Einfach/Advanced
 - BikeChip auf Home/Discover
-
+- Ehrlicher Routing-Status (`/api/routing/status`), Demo-Fallback bei Live-Fehler
+- Strava-UI erst bei OAuth-Config; Shop „Beispielkatalog“; Heatmap ohne Fake-Community
+- Mehr Discover-Seeds (City/Gravel/Road DACH)

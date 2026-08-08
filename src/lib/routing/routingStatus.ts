@@ -1,13 +1,26 @@
 /**
- * Ob echte Routing-Engines konfiguriert sind (sonst Demo-Geometrie).
- * Client-sichtbar nur über NEXT_PUBLIC_* — Server kennt VALHALLA_URL etc.
+ * Routing-Status für UI: konfiguriert vs. Demo.
+ * `NEXT_PUBLIC_ROUTING_LIVE` erst nach erfolgreichem Smoke setzen — sonst kein Fake-Live.
  */
+
+export type RoutingStatusPayload = {
+  configured: boolean;
+  engine: "valhalla" | "osrm" | "graphhopper" | "demo";
+  /** Nur true nach manuellem Smoke (NEXT_PUBLIC_ROUTING_LIVE). */
+  liveVerified: boolean;
+  notice: string | null;
+};
+
+export const DEMO_ROUTING_NOTICE =
+  "Routen nutzen Demo-Geometrie — Live-Routing nicht konfiguriert.";
+
+export const UNVERIFIED_ROUTING_NOTICE =
+  "Routing-Key gesetzt — Live noch nicht verifiziert. Bei Fehlern Demo-Geometrie.";
+
+/** Manueller Override für UI (nach erfolgreichem Smoke). */
 export function hasPublicRoutingHint(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_ROUTING_LIVE === "1" ||
       process.env.NEXT_PUBLIC_ROUTING_LIVE === "true"
   );
 }
-
-export const DEMO_ROUTING_NOTICE =
-  "Routen können Demo-Geometrie sein, solange kein Live-Routing konfiguriert ist.";

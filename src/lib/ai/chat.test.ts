@@ -29,12 +29,15 @@ const bad = numericGuard("Ich schätze 999 km Reichweite.", set);
 assert(!bad.ok && bad.usedFallback, "Halluzination verworfen");
 assert(bad.text.includes("42"), "Fallback = Engine-Text");
 
-const heat = buildHeatmap({ consentHeatmap: true });
+const heat = buildHeatmap({ consentHeatmap: true, includeSeedFallback: true });
 assert(heat.kThreshold === 5, "k=5");
 assert(
   heat.segments.every((s) => s.uniqueUsers >= 5 || !s.visible),
   "unter k unsichtbar"
 );
+const heatEmpty = buildHeatmap({ consentHeatmap: true });
+assert(heatEmpty.segments.length === 0, "ohne Seed kein Community-Demo");
+assert(heatEmpty.coldStart, "Kaltstart ohne eigene Rides");
 
 const bike: Bike = {
   id: "b1",

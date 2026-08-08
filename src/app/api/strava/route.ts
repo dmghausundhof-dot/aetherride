@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       configured: false,
       message:
-        "Strava OAuth nicht konfiguriert — setze STRAVA_CLIENT_ID und STRAVA_CLIENT_SECRET. Bis dahin: Privacy → Strava-Payload-Stub.",
+        "Strava OAuth nicht konfiguriert — setze STRAVA_CLIENT_ID und STRAVA_CLIENT_SECRET. Export bis dahin: GPX/FIT unter Daten & Privatsphäre.",
     });
   }
 

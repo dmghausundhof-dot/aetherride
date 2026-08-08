@@ -46,7 +46,7 @@ HeatmapResult buildHeatmapFromRides({
   required bool consentHeatmap,
   required List<({String id, List<Map<String, dynamic>> track})> rides,
   List<PrivacyZone> privacyZones = const [],
-  bool includeSeedFallback = true,
+  bool includeSeedFallback = false,
 }) {
   final fromRides = <HeatSegment>[];
 
@@ -92,7 +92,9 @@ HeatmapResult buildHeatmapFromRides({
         ? (consentHeatmap
             ? 'Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet).'
             : 'Deine Strecken sind ausgeblendet — Consent unter Privatsphäre.')
-        : 'Noch wenig eigene Daten — Beispielabschnitte bis genug Rides da sind.',
+        : (useSeed
+            ? 'Noch wenig eigene Daten — Beispielabschnitte bis genug Rides da sind.'
+            : 'Noch keine eigenen Tracks für die Beliebtheitskarte — kein Community-Demo.'),
   );
 }
 

@@ -44,7 +44,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 119,
     description: "12-fach Kette — Wechselziel 0,5 % Längung (Velopit/Park Tool)",
     affiliateUrl: "https://www.bike-components.de/de/SRAM/",
-    merchantName: "bike-components (Demo-Partner)",
+    merchantName: "bike-components (Beispielkatalog)",
     visualHint: "chain",
   },
   {
@@ -56,7 +56,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 29,
     description: "Ersatzbeläge — Wechsel bei < 0,5–1 mm (BIKE Magazin)",
     affiliateUrl: "https://www.bike-components.de/de/Shimano/",
-    merchantName: "bike-components (Demo-Partner)",
+    merchantName: "bike-components (Beispielkatalog)",
     visualHint: "pads",
   },
   {
@@ -68,7 +68,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 1249,
     description: "Enduro-Gabel 170 mm, Grip2, Boost 15×110",
     affiliateUrl: "https://www.bike-components.de/de/Fox/",
-    merchantName: "bike-components (Demo-Partner)",
+    merchantName: "bike-components (Beispielkatalog)",
     visualHint: "fork",
   },
   {
@@ -80,7 +80,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 89,
     description: "Vorderreifen DD MaxxGrip",
     affiliateUrl: "https://www.bike-discount.de/",
-    merchantName: "bike-discount (Demo-Partner)",
+    merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
   },
   {
@@ -92,7 +92,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 85,
     description: "Hinterreifen MaxxTerra DD",
     affiliateUrl: "https://www.bike-discount.de/",
-    merchantName: "bike-discount (Demo-Partner)",
+    merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
   },
   {
@@ -104,7 +104,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 329,
     description: "Kassette XD — Freilauf muss XD sein",
     affiliateUrl: "https://www.chainreactioncycles.com/",
-    merchantName: "CRC (Demo-Partner)",
+    merchantName: "CRC (Beispielkatalog)",
     visualHint: "cassette",
   },
   {
@@ -116,7 +116,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 189,
     description: "Kassette Micro Spline — inkompatibel zu XD-Naben",
     affiliateUrl: "https://bike.shimano.com/",
-    merchantName: "Shimano Händlernetz (Demo)",
+    merchantName: "Shimano Händlernetz (Beispiel)",
     visualHint: "cassette",
   },
   {
@@ -128,7 +128,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 679,
     description: "Standard-Eyelet 230×65 — Rahmenmaß prüfen",
     affiliateUrl: "https://www.sram.com/en/rockshox",
-    merchantName: "SRAM/RockShox Händler (Demo)",
+    merchantName: "SRAM/RockShox Händler (Beispiel)",
     visualHint: "shock",
   },
   {
@@ -140,7 +140,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 749,
     description: "Trunnion 205×65",
     affiliateUrl: "https://www.ridefox.com/",
-    merchantName: "Fox Händler (Demo)",
+    merchantName: "Fox Händler (Beispiel)",
     visualHint: "shock",
   },
   {
@@ -152,7 +152,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 999,
     description: "Smart System Akku — nur bei passendem Motor-Interface",
     affiliateUrl: "https://www.bosch-ebike.com/",
-    merchantName: "Bosch eBike Händler (Demo)",
+    merchantName: "Bosch eBike Händler (Beispiel)",
     visualHint: "battery",
   },
   {
@@ -164,7 +164,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     priceEur: 289,
     description: "Dropper Ø 31,6 mm",
     affiliateUrl: "https://oneupcomponents.com/",
-    merchantName: "OneUp (Demo)",
+    merchantName: "OneUp (Beispiel)",
     visualHint: "dropper",
   },
 ];

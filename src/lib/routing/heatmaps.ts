@@ -172,7 +172,7 @@ export function buildHeatmap(input?: {
   }
 
   const useSeed =
-    fromRides.length === 0 && (input?.includeSeedFallback ?? true);
+    fromRides.length === 0 && (input?.includeSeedFallback ?? false);
 
   const seedSegments: HeatSegment[] = useSeed
     ? SEED_SEGMENTS.map((s) => {
@@ -206,6 +206,8 @@ export function buildHeatmap(input?: {
       ? consent
         ? `Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet). Beliebte Community-Abschnitte erst ab ${K} verschiedenen Fahrern.`
         : `Deine Strecken sind ausgeblendet — Beitrag unter Privatsphäre einschalten.`
-      : `Noch wenig eigene Daten — Beispielabschnitte. Sichtbar erst ab ${K} verschiedenen Fahrern (Privatsphäre).`,
+      : useSeed
+        ? `Noch wenig eigene Daten — Beispielabschnitte. Sichtbar erst ab ${K} verschiedenen Fahrern (Privatsphäre).`
+        : `Noch keine eigenen Tracks für die Beliebtheitskarte — fahre Touren, dann erscheint deine Heatmap hier (kein Community-Demo).`,
   };
 }
