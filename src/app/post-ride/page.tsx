@@ -291,7 +291,7 @@ function PostRideContent() {
 
       {ride.assistSummary && (
         <section className="rounded-2xl border border-border bg-surface p-4">
-          <h3 className="mb-2 font-semibold">Assist-Modus-Log (F-EBK-005)</h3>
+          <h3 className="mb-2 font-semibold">Assist-Modus-Log</h3>
           <p className="mb-2 text-xs text-warning">
             {ride.assistSummary.disclaimer}
           </p>
@@ -319,7 +319,7 @@ function PostRideContent() {
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h3 className="mb-1 font-semibold">Wie war&apos;s?</h3>
           <p className="mb-3 text-xs text-text-secondary">
-            Max. 3 Taps — verbessert die Setup-Empfehlung (F-SET-004 / F-AI-003).
+            Max. 3 Taps — verbessert die nächste Setup-Empfehlung.
           </p>
           <div className="mb-3 flex justify-between gap-1">
             {([1, 2, 3, 4, 5] as const).map((n) => (

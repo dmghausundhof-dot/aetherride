@@ -77,7 +77,7 @@ export default function ChatPage() {
     {
       id: "sys",
       role: "assistant",
-      text: "Hier kannst du gezielt nachfragen — Garage, Kompatibilität, Setup, Rides, Routen, Produkte. Zahlen kommen nur aus Engines (Numeric-Guard). Für die meisten Entscheidungen reichen Home und Post-Ride.",
+      text: "Frag nach Garage, Setup, Reichweite, Routen oder Teilen. Zahlen kommen aus deinen App-Daten — nicht aus dem Chat-Modell. Für die meisten Entscheidungen reichen Home und Post-Ride.",
     },
   ]);
 
@@ -161,27 +161,27 @@ export default function ChatPage() {
           <MessageSquare className="h-6 w-6 text-accent" /> Mehr fragen
         </h1>
         <p className="text-sm text-text-secondary">
-          Power-User-Chat · Engines + Numeric-Guard · optional Grok
+          KI-Coach zu Bike, Setup und Touren
         </p>
         {quota && (
           <p className="mt-1 text-xs text-text-secondary">
             Kontingent ({quota.tier}): {quota.dayUsed}/{quota.dayLimit} heute
             {quota.remaining != null ? ` · ${quota.remaining} übrig` : ""}
             {quota.reason === "login_required_for_grok"
-              ? " · Login für Grok nötig"
+              ? " · Anmeldung für Cloud-KI nötig"
               : ""}
           </p>
         )}
         {!quota && (
           <p className="mt-1 text-xs text-text-secondary">
-            Lokal: {subscriptionTier} — Limits gelten server-seitig nach Login
+            Tarif: {subscriptionTier} — Tageslimits nach Anmeldung
           </p>
         )}
       </header>
 
       {isRiding && (
         <div className="rounded-xl border border-error/40 bg-error/10 px-3 py-2 text-sm text-error">
-          Chat während der Fahrt gesperrt (Spec F-AI-004).
+          Chat während der Fahrt gesperrt — Sicherheit zuerst.
         </div>
       )}
 
@@ -208,8 +208,11 @@ export default function ChatPage() {
         ))}
       </div>
 
+      {process.env.NODE_ENV === "development" && (
       <details className="text-xs text-text-secondary">
-        <summary className="cursor-pointer text-accent">Engine manuell wählen</summary>
+        <summary className="cursor-pointer text-accent">
+          Debug: Tool manuell wählen
+        </summary>
         <div className="mt-2 flex flex-wrap gap-1">
           {(
             [
@@ -236,6 +239,7 @@ export default function ChatPage() {
           ))}
         </div>
       </details>
+      )}
 
       <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto rounded-2xl border border-border bg-surface p-3">
         {messages.map((m) => (
@@ -248,18 +252,23 @@ export default function ChatPage() {
             }`}
           >
             <p className="whitespace-pre-wrap">{m.text}</p>
-            {m.tool && (
+            {m.tool && process.env.NODE_ENV === "development" && (
               <p className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-text-secondary">
                 <Wrench className="h-3 w-3" /> {m.tool}
-                {m.usedGrok ? " · Grok" : " · Fallback"}
+                {m.usedGrok ? " · Cloud-KI" : " · lokal"}
                 {m.guarded && (
                   <span className="inline-flex items-center gap-0.5 text-warning">
-                    <ShieldAlert className="h-3 w-3" /> Guard → Fallback
+                    <ShieldAlert className="h-3 w-3" /> Zahlen geprüft
                     {m.rejected?.length
                       ? ` (verwirft ${m.rejected.join(", ")})`
                       : ""}
                   </span>
                 )}
+              </p>
+            )}
+            {m.guarded && process.env.NODE_ENV !== "development" && (
+              <p className="mt-1 text-[10px] text-text-secondary">
+                Antwort anhand deiner Garage-/Ride-Daten geprüft
               </p>
             )}
           </div>

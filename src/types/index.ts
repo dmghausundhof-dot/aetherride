@@ -55,7 +55,8 @@ export interface SensorMetrics {
 
 export interface Ride {
   id: string;
-  bikeId: string;
+  /** Leer = Freeride ohne Garage-Bike */
+  bikeId?: string;
   setupId?: string;
   sportType: import("./garage").BikeType;
   startTime: string;
@@ -72,7 +73,7 @@ export interface Ride {
     avgCadence: number;
     totalOdometer: number;
   };
-  /** F-EBK-005 Assist-Log (Schätzung/manuell/OEM) */
+  /** Assist-Log (Schätzung/manuell/OEM) */
   assistSummary?: import("@/lib/ebike/assistLog").AssistRideSummary;
   notes?: string;
 }

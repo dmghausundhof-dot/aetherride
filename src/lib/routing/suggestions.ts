@@ -1,10 +1,11 @@
 /**
- * F-NAV-004 Routenvorschläge
+ * Routenvorschläge
  * Jeder Vorschlag nennt genau drei Begründungsfaktoren.
- * Eingang: aktives Bike, Rider-Profil, verfügbare Zeit.
+ * Eingang: aktives Bike (optional), Rider-Profil, verfügbare Zeit.
  */
 
 import type { Bike, BikeCategory, RiderProfile } from "@/types";
+import type { RoutingProfile } from "@/lib/routing/profiles";
 
 export interface RouteSuggestion {
   id: string;
@@ -18,7 +19,7 @@ export interface RouteSuggestion {
   loop: boolean;
   uncertainKmPct: number;
   matchScore: number;
-  /** Genau drei Faktoren (Spec MUSS) */
+  /** Genau drei Faktoren */
   reasons: [string, string, string];
   rangeOk?: boolean;
   rangeNote?: string;
@@ -156,31 +157,60 @@ const SEEDS: RouteSeed[] = [
   },
 ];
 
+export function categoryForRoutingProfile(
+  profile: RoutingProfile
+): BikeCategory {
+  switch (profile) {
+    case "mtb_enduro":
+      return "mtb_enduro";
+    case "gravel":
+      return "gravel";
+    case "road":
+      return "road";
+    case "urban":
+      return "urban";
+    case "ebike":
+      return "etrekking";
+    case "emtb":
+      return "emtb";
+    case "hiking":
+      return "hiking";
+    case "mtb_allmountain":
+    default:
+      return "mtb_am";
+  }
+}
+
 export function suggestRoutes(input: {
-  bike: Bike;
+  bike?: Bike | null;
+  categoryHint?: BikeCategory;
   profile: RiderProfile;
   availableMinutes?: number;
   rangeKmHigh?: number;
 }): RouteSuggestion[] {
   const minutes = input.availableMinutes ?? 150;
-  const scored = SEEDS.filter((s) => s.categories.includes(input.bike.category))
+  const category =
+    input.bike?.category ?? input.categoryHint ?? "mtb_am";
+  const bikeName = input.bike?.name ?? "dein Profil";
+  const travel = input.bike?.travelFrontMm;
+  const isEbike = input.bike?.isEbike ?? false;
+
+  const scored = SEEDS.filter((s) => s.categories.includes(category))
     .map((s) => {
       const reasons: string[] = [];
       let score = 50;
 
-      // Bike category / travel
-      if (s.categories.includes(input.bike.category)) {
+      if (s.categories.includes(category)) {
         score += 15;
         reasons.push(
-          `Passt zu ${input.bike.name} (${input.bike.category}${
-            input.bike.travelFrontMm
-              ? `, ${input.bike.travelFrontMm} mm Federweg`
-              : ""
-          })`
+          input.bike
+            ? `Passt zu ${bikeName}${
+                travel ? ` (${travel} mm Federweg)` : ""
+              }`
+            : `Passt zu ${category.replace(/_/g, " ")}`
         );
       }
 
-      // Style prefs + Terrain-Share (F-AI-002)
       const terrain = input.profile.terrainShare;
       if (input.profile.preferences.preferTechnical && s.technical) {
         score += 12;
@@ -195,10 +225,11 @@ export function suggestRoutes(input: {
         score += 10;
         reasons.push(`S3+-Anteil ${terrain.s3plus}% in deinem Terrainprofil`);
       } else {
-        reasons.push(`Oberfläche ${s.surface}, Unsicherheit ${s.uncertainKmPct}% OSM-Tags`);
+        reasons.push(
+          `Oberfläche ${s.surface}, Unsicherheit ${s.uncertainKmPct}% OSM-Tags`
+        );
       }
 
-      // Time fit
       const timeDelta = Math.abs(s.durationMin - minutes);
       if (timeDelta <= 30) {
         score += 12;
@@ -211,10 +242,9 @@ export function suggestRoutes(input: {
         reasons.push(`Länger als geplant (${s.durationMin} vs ${minutes} min)`);
       }
 
-      // E-bike range
       let rangeOk: boolean | undefined;
       let rangeNote: string | undefined;
-      if (input.bike.isEbike && input.rangeKmHigh !== undefined) {
+      if (isEbike && input.rangeKmHigh !== undefined) {
         rangeOk = s.distanceKm <= input.rangeKmHigh * 0.85;
         if (rangeOk) {
           score += 8;
@@ -228,7 +258,6 @@ export function suggestRoutes(input: {
         }
       }
 
-      // ensure exactly 3 reasons
       while (reasons.length < 3) {
         reasons.push(
           s.loop
@@ -240,7 +269,7 @@ export function suggestRoutes(input: {
       return {
         id: s.id,
         name: s.name,
-        category: input.bike.category,
+        category,
         distanceKm: s.distanceKm,
         elevationM: s.elevationM,
         durationMin: s.durationMin,
@@ -262,7 +291,7 @@ export function suggestRoutes(input: {
     : SEEDS.slice(0, 3).map((s, i) => ({
         id: s.id,
         name: s.name,
-        category: input.bike.category,
+        category,
         distanceKm: s.distanceKm,
         elevationM: s.elevationM,
         durationMin: s.durationMin,
@@ -283,7 +312,8 @@ export function suggestRoutes(input: {
 export function getSuggestionById(
   id: string,
   input: {
-    bike: Bike;
+    bike?: Bike | null;
+    categoryHint?: BikeCategory;
     profile: RiderProfile;
     availableMinutes?: number;
     rangeKmHigh?: number;
@@ -297,11 +327,13 @@ export function getSuggestionById(
 
   const seed = SEEDS.find((s) => s.id === id);
   if (!seed) return null;
+  const category =
+    input.bike?.category ?? input.categoryHint ?? seed.categories[0];
 
   return {
     id: seed.id,
     name: seed.name,
-    category: input.bike.category,
+    category,
     distanceKm: seed.distanceKm,
     elevationM: seed.elevationM,
     durationMin: seed.durationMin,
@@ -311,7 +343,9 @@ export function getSuggestionById(
     uncertainKmPct: seed.uncertainKmPct,
     matchScore: 70,
     reasons: [
-      `Passt grob zu ${input.bike.name}`,
+      input.bike
+        ? `Passt grob zu ${input.bike.name}`
+        : `Passend für ${category.replace(/_/g, " ")}`,
       `${seed.distanceKm} km · ${seed.elevationM} hm · ${seed.mtbScale}`,
       seed.loop ? "Rundkurs" : "Point-to-point",
     ],

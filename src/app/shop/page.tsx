@@ -272,15 +272,61 @@ function ShopPageInner() {
           </Link>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-surface p-3 text-sm text-text-secondary">
-          Noch kein Bike — Kompatibilität erst nach{" "}
-          <Link href="/garage" className="text-accent">
-            Anlage in der Garage
+        <div className="rounded-2xl border border-border bg-surface p-4 text-center">
+          <p className="text-sm font-medium">Passende Teile nach deinem Bike</p>
+          <p className="mt-1 text-xs text-text-secondary">
+            Lege ein Bike an — dann filtern wir nach Kompatibilität statt nach
+            Rätselraten.
+          </p>
+          <Link
+            href="/garage?wizard=catalog"
+            className="mt-3 inline-flex rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"
+          >
+            Bike anlegen
           </Link>
-          .
         </div>
       )}
 
+      {!activeBike ? (
+        <section className="space-y-3">
+          <p className="text-xs text-text-secondary">
+            Beispiele aus dem Partner-Katalog (ohne Kompat-Prüfung):
+          </p>
+          {SHOP_PRODUCTS.slice(0, 4).map((p) => (
+            <div
+              key={p.id}
+              className="rounded-2xl border border-border bg-surface p-4"
+            >
+              <div className="flex gap-3">
+                <ProductVisual product={p} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs uppercase tracking-wide text-text-secondary">
+                    {p.manufacturer}
+                  </div>
+                  <h3 className="mt-0.5 font-semibold leading-snug">{p.name}</h3>
+                  <div className="mt-1 text-lg font-bold tabular-nums text-accent">
+                    {p.priceEur.toLocaleString("de-DE")} €
+                  </div>
+                </div>
+              </div>
+              <a
+                href={p.affiliateUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+              >
+                Beim Partner ansehen <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          ))}
+          <p className="pb-2 text-center text-[11px] text-text-secondary">
+            Preise und Versand beim Partner · voller Katalog nach Bike-Anlage
+          </p>
+        </section>
+      ) : null}
+
+      {activeBike ? (
+      <>
       <div className="grid grid-cols-3 gap-2">
         {(
           [
@@ -438,9 +484,9 @@ function ShopPageInner() {
                     </ul>
                   </details>
                 )}
-                {verdict === "INSUFFICIENT_DATA" && (
-                  <p className="mt-2 text-xs text-warning">
-                    Nicht als „passend“ beworben — Attribute in der Garage
+                {verdict === "INSUFFICIENT_DATA" && activeBike && (
+                  <p className="mt-2 text-xs text-text-secondary">
+                    Für ein klares Urteil fehlende Attribute in der Garage
                     ergänzen.
                   </p>
                 )}
@@ -627,6 +673,9 @@ function ShopPageInner() {
           )}
         </details>
       )}
+
+      </>
+      ) : null}
 
       <p className="text-center text-xs text-text-secondary">
         Preise und Versand beim Partner ·{" "}

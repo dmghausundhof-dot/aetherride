@@ -22,7 +22,15 @@ const CATEGORIES: BikeCategory[] = [
   "hiking",
 ];
 
-export function AddBikeWizard({ onClose }: { onClose: () => void }) {
+export function AddBikeWizard({
+  onClose,
+  initialMode = "catalog",
+  initialCategory,
+}: {
+  onClose: () => void;
+  initialMode?: Mode;
+  initialCategory?: BikeCategory;
+}) {
   const addBikeFromCatalog = useAppStore((s) => s.addBikeFromCatalog);
   const addBikeBasic = useAppStore((s) => s.addBikeBasic);
   const addBikeFromImport = useAppStore((s) => s.addBikeFromImport);
@@ -30,7 +38,7 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const manufacturers = useMemo(() => listCatalogManufacturers(), []);
 
-  const [mode, setMode] = useState<Mode>("catalog");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [mfrId, setMfrId] = useState(manufacturers[0]?.id ?? "");
   const mfr = manufacturers.find((m) => m.id === mfrId);
   const [bikeId, setBikeId] = useState(mfr?.bikes[0]?.id ?? "");
@@ -39,7 +47,9 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const [basicCategory, setBasicCategory] = useState<BikeCategory>("mtb_am");
+  const [basicCategory, setBasicCategory] = useState<BikeCategory>(
+    initialCategory ?? "mtb_am"
+  );
   const [travelF, setTravelF] = useState(150);
   const [travelR, setTravelR] = useState(140);
   const [wheel, setWheel] = useState<WheelSize>("29");
@@ -94,8 +104,7 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
 
         {freeBlocked && (
           <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-            Free: bereits 1 Bike. Multi-Bike ist Pro (Spec 1.4) — unter Profil
-            umschalten.
+            Free: bereits 1 Bike. Multi-Bike ist Pro — unter Profil freischalten.
           </div>
         )}
         {error && (
@@ -129,7 +138,7 @@ export function AddBikeWizard({ onClose }: { onClose: () => void }) {
 
         <p className="mb-3 text-xs text-text-secondary">
           {mode === "catalog" &&
-            "OEM-Ausstattung wird vollständig vorbefüllt (F-GAR-001 Weg 1)."}
+            "OEM-Ausstattung wird vollständig vorbefüllt."}
           {mode === "basic" &&
             "Kategorie + Federweg + Laufradgröße – Komponenten später ergänzen."}
           {mode === "import" &&

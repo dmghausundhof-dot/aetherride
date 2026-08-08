@@ -1,5 +1,5 @@
 /**
- * Sportartspezifische Routing-Profile (Spec F-NAV-001 — 7 Profile)
+ * Sportartspezifische Routing-Profile
  *
  * Produktion:
  * - Self-hosted OSRM oder Valhalla (VALHALLA_URL / OSRM_URL / ROUTING_ENGINE)
@@ -12,6 +12,7 @@ export type RoutingProfile =
   | "mtb_enduro"
   | "gravel"
   | "road"
+  | "urban"
   | "ebike"
   | "emtb"
   | "hiking";
@@ -72,6 +73,21 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
     ],
     avoid: ["path", "track", "footway", "steps", "surface=gravel|dirt|mud"],
     maxSurfaceRoughness: 0.2,
+    preferElevation: false,
+  },
+  urban: {
+    id: "urban",
+    label: "City / Alltag",
+    prefer: [
+      "cycleway",
+      "residential",
+      "tertiary",
+      "living_street",
+      "path",
+      "surface=asphalt|paved|concrete",
+    ],
+    avoid: ["motorway", "trunk", "mtb:scale>=2", "steps"],
+    maxSurfaceRoughness: 0.35,
     preferElevation: false,
   },
   ebike: {
@@ -182,11 +198,12 @@ export function profileForBikeCategory(category: string): RoutingProfile {
       return "gravel";
     case "road":
       return "road";
+    case "urban":
+      return "urban";
     case "emtb":
       return "emtb";
     case "etrekking":
     case "ebike":
-    case "urban":
       return "ebike";
     case "hiking":
       return "hiking";
@@ -194,3 +211,6 @@ export function profileForBikeCategory(category: string): RoutingProfile {
       return "mtb_allmountain";
   }
 }
+
+/** Neutraler Discover-Default ohne aktives Bike */
+export const DEFAULT_DISCOVER_PROFILE: RoutingProfile = "mtb_allmountain";

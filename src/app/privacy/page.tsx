@@ -126,7 +126,7 @@ export default function PrivacyExportPage() {
             }}
             className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
           >
-            Strava-Payload (ohne OAuth — spätere Anbindung)
+            Strava-Export vorbereiten (JSON — Upload folgt nach OAuth)
           </button>
         </div>
         <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-surface-elevated p-2 text-[10px] text-text-secondary">

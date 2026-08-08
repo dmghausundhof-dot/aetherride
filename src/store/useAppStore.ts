@@ -114,6 +114,9 @@ interface AppState {
   familyRiders: FamilyRider[];
   activeFamilyRiderId: string | null;
   commerceMode: CommerceMode;
+  /** First-Run Flow A abgeschlossen oder übersprungen */
+  onboardingDone: boolean;
+  preferredSport: BikeCategory | null;
 
   setActiveBike: (id: string) => void;
   addBikeFromCatalog: (input: {
@@ -207,7 +210,7 @@ interface AppState {
   saveRoute: (route: RouteSuggestion | SavedRoute | ActiveRoute) => void;
   unsaveRoute: (id: string) => void;
   isRouteSaved: (id: string) => boolean;
-  startRide: (bikeId: string, sportType: BikeType) => void;
+  startRide: (bikeId: string | null, sportType: BikeType) => void;
   pauseRide: () => void;
   resumeRide: () => void;
   appendTrackPoint: (point: {
@@ -223,6 +226,7 @@ interface AppState {
   dismissRecommendation: (id: string) => void;
   acceptRecommendation: (id: string) => void;
   seedDemoData: () => void;
+  markOnboardingDone: (sport?: BikeCategory | null) => void;
 
   /** @deprecated use createSetupVersion */
   addSetup: (
@@ -262,22 +266,22 @@ const PROFILE_EXPLANATIONS: Record<string, string> = {
   style:
     "Abgeleitet aus Impact-Häufigkeit und Flow-Scores deiner Rides — jederzeit korrigierbar.",
   skillLevel:
-    "Selbsteinschätzung 1–5; beeinflusst Routenvorschläge und Reichweiten-P_fahrer.",
+    "Selbsteinschätzung 1–5; beeinflusst Routenvorschläge und Reichweite.",
   preferTechnical:
     "Gewichtet Routen mit höherem mtb:scale und rootigem Untergrund stärker.",
   preferFlow:
     "Bevorzugt flowige Trails und kompakte Oberflächen in Discover.",
   preferSteep: "Hebt Routen mit mehr Höhenmetern und steileren Rampen an.",
   eBikeAssistPreference:
-    "Nur Logging/Prognose-Kontext — keine Motorsteuerung (F-EBK-000).",
+    "Nur Logging und Reichweiten-Kontext — keine Motorsteuerung.",
   riderWeightKg:
-    "Für SAG-Vorlagen und Reichweitenphysik (Art. 9 DSGVO: lokal, korrigierbar).",
+    "Für SAG-Vorlagen und Reichweite — lokal gespeichert, jederzeit änderbar.",
   avgRideDurationMin: "Aus abgeschlossenen Rides gemittelt — manuell überschreibbar.",
   weeklyDistanceKm: "Rollierende Wochenkilometer — manuell überschreibbar.",
   terrainShare:
-    "Verteilung über mtb:scale / Oberfläche aus Historie — korrigierbar (F-AI-002).",
+    "Verteilung über Trail-Schwierigkeit / Oberfläche aus deiner Historie.",
   styleIndicators:
-    "Bremsintensität, Querbeschleunigung, Impacts, Sprünge — erklärbar, kein Embedding.",
+    "Bremsintensität, Querbeschleunigung, Impacts, Sprünge — erklärbar und korrigierbar.",
 };
 
 const defaultProfile: RiderProfile = {
@@ -406,12 +410,20 @@ export const useAppStore = create<AppState>()(
       familyRiders: [],
       activeFamilyRiderId: null,
       commerceMode: "affiliate",
+      onboardingDone: false,
+      preferredSport: null,
 
       setActiveBike: (id) =>
         set((s) => ({
           activeBikeId: id,
           bikes: ensureSingleActive(s.bikes, id),
         })),
+
+      markOnboardingDone: (sport) =>
+        set({
+          onboardingDone: true,
+          preferredSport: sport ?? get().preferredSport,
+        }),
 
       updateRiderProfile: (patch) =>
         set((s) => ({
@@ -1105,9 +1117,14 @@ export const useAppStore = create<AppState>()(
       isRouteSaved: (id) => get().savedRoutes.some((r) => r.id === id),
 
       startRide: (bikeId, sportType) => {
-        const bike = get().bikes.find((b) => b.id === bikeId);
+        const bike = bikeId
+          ? get().bikes.find((b) => b.id === bikeId)
+          : undefined;
         const activeSetup = bike?.setups.find((s) => s.isCurrent);
         const route = get().activeRoute;
+        const freerideNote = !bike
+          ? "Freeride ohne Bike — Garage später ergänzen"
+          : undefined;
         set({
           isRiding: true,
           isPaused: false,
@@ -1115,7 +1132,7 @@ export const useAppStore = create<AppState>()(
           pauseStartedAt: null,
           currentRide: {
             id: uuidv4(),
-            bikeId,
+            bikeId: bike?.id,
             setupId: activeSetup?.id,
             sportType,
             startTime: new Date().toISOString(),
@@ -1123,7 +1140,9 @@ export const useAppStore = create<AppState>()(
             elevationGainM: 0,
             durationSec: 0,
             track: [],
-            notes: route ? `Route: ${route.name}` : undefined,
+            notes: route
+              ? `Route: ${route.name}`
+              : freerideNote,
             summaryMetrics: {
               gForcePeak: 0,
               gForceRms: 0,
@@ -1241,7 +1260,7 @@ export const useAppStore = create<AppState>()(
 
         const ride: Ride = {
           id: currentRide.id,
-          bikeId: currentRide.bikeId!,
+          bikeId: currentRide.bikeId,
           setupId: currentRide.setupId,
           sportType: currentRide.sportType!,
           startTime: currentRide.startTime!,
@@ -1274,7 +1293,9 @@ export const useAppStore = create<AppState>()(
             : undefined,
         };
 
-        const bikeBefore = get().bikes.find((b) => b.id === ride.bikeId);
+        const bikeBefore = ride.bikeId
+          ? get().bikes.find((b) => b.id === ride.bikeId)
+          : undefined;
         if (bikeBefore?.isEbike) {
           ride.assistSummary = buildEstimatedAssistLog({
             durationSec: ride.durationSec,
@@ -1478,7 +1499,7 @@ export const useAppStore = create<AppState>()(
       seedDemoData: () => {
         const existing = get().bikes;
         if (existing.length > 0) return;
-        // Free-Tier (Spec 1.4): max. 1 Bike — kein Demo-Pro-Bypass
+        // Free-Tier: max. 1 Bike — kein Demo-Pro-Bypass
         set({ subscriptionTier: "free" });
         get().addBikeFromCatalog({
           catalogBikeId: "cat-transition-spire-2024",
@@ -1606,6 +1627,8 @@ export const useAppStore = create<AppState>()(
           commerceMode: base.commerceMode ?? "affiliate",
           activeRoute: base.activeRoute ?? null,
           savedRoutes: base.savedRoutes ?? [],
+          onboardingDone: base.onboardingDone ?? false,
+          preferredSport: base.preferredSport ?? null,
           storageVersion: STORAGE_VERSION,
         } as AppState;
       },
@@ -1630,6 +1653,8 @@ export const useAppStore = create<AppState>()(
         familyRiders: s.familyRiders,
         activeFamilyRiderId: s.activeFamilyRiderId,
         commerceMode: s.commerceMode,
+        onboardingDone: s.onboardingDone,
+        preferredSport: s.preferredSport,
       }),
     }
   )

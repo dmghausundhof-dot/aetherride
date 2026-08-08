@@ -94,6 +94,18 @@ export function valhallaCosting(profile: RoutingProfile): {
           },
         },
       };
+    case "urban":
+      return {
+        costing: "bicycle",
+        costing_options: {
+          bicycle: {
+            bicycle_type: "hybrid",
+            use_roads: 0.75,
+            use_hills: 0.15,
+            avoid_bad_surfaces: 0.7,
+          },
+        },
+      };
     case "emtb":
       return {
         costing: "bicycle",
@@ -161,6 +173,7 @@ export function graphhopperProfile(profile: RoutingProfile): string {
         return "mtb";
       case "gravel":
       case "ebike":
+      case "urban":
       default:
         return "bike";
     }

@@ -16,17 +16,24 @@ import { useAppStore } from "@/store/useAppStore";
 import {
   getSuggestionById,
   suggestRoutes,
+  categoryForRoutingProfile,
   type RouteSuggestion,
 } from "@/lib/routing/suggestions";
 import { estimateRange } from "@/lib/ebike/range";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
+import { BikeChip } from "@/components/BikeChip";
 import {
   profileForBikeCategory,
   ROUTING_PROFILES,
+  DEFAULT_DISCOVER_PROFILE,
   type ClientRouteResult,
   type RoutingProfile,
 } from "@/lib/routing/profiles";
+import {
+  DEMO_ROUTING_NOTICE,
+  hasPublicRoutingHint,
+} from "@/lib/routing/routingStatus";
 import {
   activeRouteFromEngine,
   activeRouteFromSuggestion,
@@ -132,8 +139,11 @@ function DiscoverPageInner() {
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
 
   const routingProfile = useMemo(
-    () => profileForBikeCategory(activeBike?.category || "mtb_enduro"),
-    [activeBike?.category]
+    () =>
+      activeBike
+        ? profileForBikeCategory(activeBike.category)
+        : DEFAULT_DISCOVER_PROFILE,
+    [activeBike]
   );
 
   const [sheetMode, setSheetMode] = useState<SheetMode>("quick");
@@ -172,6 +182,7 @@ function DiscoverPageInner() {
   const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeProfile = manualProfile ?? routingProfile;
+  const categoryHint = categoryForRoutingProfile(activeProfile);
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -188,14 +199,14 @@ function DiscoverPageInner() {
   }, [activeBike, profile, calibration, boschLive, rangePro]);
 
   const routes = useMemo(() => {
-    if (!activeBike) return [];
     return suggestRoutes({
       bike: activeBike,
+      categoryHint,
       profile,
       availableMinutes: minutes,
       rangeKmHigh: range?.kmHigh,
     });
-  }, [activeBike, profile, minutes, range]);
+  }, [activeBike, categoryHint, profile, minutes, range]);
 
   const filtered = useMemo(
     () => filterRouteSuggestions(routes, filters),
@@ -203,10 +214,11 @@ function DiscoverPageInner() {
   );
 
   const detailRoute = useMemo(() => {
-    if (!detailId || !activeBike) return null;
+    if (!detailId) return null;
     return (
       getSuggestionById(detailId, {
         bike: activeBike,
+        categoryHint,
         profile,
         availableMinutes: minutes,
         rangeKmHigh: range?.kmHigh,
@@ -214,7 +226,7 @@ function DiscoverPageInner() {
       routes.find((r) => r.id === detailId) ??
       null
     );
-  }, [detailId, activeBike, profile, minutes, range, routes]);
+  }, [detailId, activeBike, categoryHint, profile, minutes, range, routes]);
 
   const origin = userPos ?? mapCenter;
 
@@ -468,14 +480,13 @@ function DiscoverPageInner() {
         setRoutingMsg("Gespeicherte Route geladen");
         return;
       }
-      const suggestion = activeBike
-        ? getSuggestionById(r.id, {
-            bike: activeBike,
-            profile,
-            availableMinutes: minutes,
-            rangeKmHigh: range?.kmHigh,
-          })
-        : null;
+      const suggestion = getSuggestionById(r.id, {
+        bike: activeBike,
+        categoryHint,
+        profile,
+        availableMinutes: minutes,
+        rangeKmHigh: range?.kmHigh,
+      });
       if (suggestion) startWithSuggestion(suggestion);
       else {
         setActiveRoute({
@@ -497,6 +508,7 @@ function DiscoverPageInner() {
     [
       activeBike,
       activeProfile,
+      categoryHint,
       minutes,
       profile,
       range?.kmHigh,
@@ -738,28 +750,36 @@ function DiscoverPageInner() {
     <div className="flex min-h-[calc(100dvh-5rem)] flex-col">
       {/* Dach */}
       <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-5">
+        {!hasPublicRoutingHint() && (
+          <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
+            {DEMO_ROUTING_NOTICE}
+          </p>
+        )}
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold tracking-tight">Discover</h1>
             <p className="text-xs text-text-secondary">
               {activeBike
                 ? `${activeBike.name} · ${bikeCategoryLabel(activeBike.category)}`
-                : "Kein Bike aktiv"}
+                : "Touren-Ideen — Bike optional für präzisere Vorschläge"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (userPos) {
-                setMapCenter(userPos);
-                setDraft((d) => setStart(d, userPos, "Meine Position"));
-              }
-            }}
-            className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
-          >
-            <Crosshair className="h-3.5 w-3.5" />
-            {userPos ? "Hier" : "Ort…"}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <BikeChip />
+            <button
+              type="button"
+              onClick={() => {
+                if (userPos) {
+                  setMapCenter(userPos);
+                  setDraft((d) => setStart(d, userPos, "Meine Position"));
+                }
+              }}
+              className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
+            >
+              <Crosshair className="h-3.5 w-3.5" />
+              {userPos ? "Hier" : "Ort…"}
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-1 text-[11px]">

@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AetherRide – Intelligent Outdoor & Bike App",
+  title: "AetherRide – Tourenapp, die dein Bike kennt",
   description:
-    "All-in-One App für Mountainbike, Enduro, Gravel, E-Bike & Wandern. Garage, Sensor-Setup, Navigation, Bosch Live Data & KI.",
+    "MTB, Enduro, Gravel & E-MTB: Garage, Setup, Navigation und Fahrwerks-Feedback in einer App.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

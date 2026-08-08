@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
   const rangeCalibration = useAppStore((s) => s.rangeCalibration);
+  const [advanced, setAdvanced] = useState(false);
   const store = useAppStore();
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -317,7 +318,7 @@ export default function ProfilePage() {
         <div>
           <h1 className="text-xl font-bold">Rider Profil</h1>
           <p className="text-sm text-text-secondary">
-            Erklärbar & korrigierbar (F-AI-002)
+            Fahrstil und Terrain — jederzeit korrigierbar
           </p>
         </div>
       </header>
@@ -419,7 +420,7 @@ export default function ProfilePage() {
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
           Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Offline, Reichweite,
-          KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr (Spec 1.4).
+          KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
         </p>
         <p className="mb-3 text-sm font-medium">
           Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}
@@ -476,10 +477,10 @@ export default function ProfilePage() {
             }
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           >
-            <option value="aggressive">aggressive</option>
-            <option value="flow">flow</option>
-            <option value="efficient">efficient</option>
-            <option value="explorative">explorative</option>
+            <option value="aggressive">Aggressiv</option>
+            <option value="flow">Flow</option>
+            <option value="efficient">Effizient</option>
+            <option value="explorative">Explorativ</option>
           </select>
           <p className="mt-1 text-[11px] text-text-secondary">
             {explanations.style}
@@ -519,8 +520,19 @@ export default function ProfilePage() {
         </label>
       </section>
 
+      <button
+        type="button"
+        onClick={() => setAdvanced((v) => !v)}
+        className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-secondary"
+      >
+        {advanced
+          ? "Erweiterte Einstellungen ausblenden"
+          : "Erweiterte Einstellungen (Terrain & Indikatoren)"}
+      </button>
+
+      {advanced && (
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-3 font-semibold">Terrainanteil (korrigierbar)</h3>
+        <h3 className="mb-3 font-semibold">Terrainanteil</h3>
         <p className="mb-2 text-[11px] text-text-secondary">
           {explanations.terrainShare}
         </p>
@@ -555,7 +567,9 @@ export default function ProfilePage() {
           </label>
         ))}
       </section>
+      )}
 
+      {advanced && (
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 font-semibold">Fahrstil-Indikatoren</h3>
         <p className="mb-2 text-[11px] text-text-secondary">
@@ -595,6 +609,7 @@ export default function ProfilePage() {
           </label>
         ))}
       </section>
+      )}
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold">

@@ -389,9 +389,13 @@ export default function RidePage() {
   };
 
   const handleStart = () => {
-    if (!activeBike) return;
     bumpIdle();
-    startRide(activeBike.id, activeBike.type);
+    if (activeBike) {
+      startRide(activeBike.id, activeBike.type);
+      return;
+    }
+    // Freeride ohne Garage-Bike — Track immer, Analyse nur mit Mount + Bike
+    startRide(null, "all_mountain");
   };
 
   const handleEnd = () => {
@@ -685,11 +689,15 @@ export default function RidePage() {
           <div className="rounded-2xl border border-border bg-surface p-4">
             <p className="mb-3 text-sm font-medium">Vor dem Start</p>
             <ul className="mb-4 space-y-2 text-sm">
-              <li className="flex justify-between">
+              <li className="flex justify-between gap-3">
                 <span className="text-text-secondary">Aktives Bike</span>
-                <span className={activeBike ? "text-success" : "text-error"}>
-                  {activeBike ? "✓" : "fehlt"}
-                </span>
+                {activeBike ? (
+                  <span className="text-success">{activeBike.name}</span>
+                ) : (
+                  <Link href="/garage?wizard=basic" className="text-accent">
+                    Optional — anlegen
+                  </Link>
+                )}
               </li>
               <li className="flex justify-between">
                 <span className="text-text-secondary">Route</span>
@@ -698,6 +706,12 @@ export default function RidePage() {
                 </span>
               </li>
             </ul>
+            {!activeBike && (
+              <p className="mb-3 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-xs text-text-secondary">
+                Du kannst sofort tracken. Setup- und Fahrwerksanalyse brauchen
+                ein Bike in der Garage.
+              </p>
+            )}
             <p className="mb-2 text-sm text-text-secondary">
               Handy am Lenker?
             </p>
@@ -788,8 +802,7 @@ export default function RidePage() {
               <button
                 type="button"
                 onClick={handleStart}
-                disabled={!activeBike}
-                className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-xl shadow-accent/30 transition active:scale-95 disabled:opacity-40"
+                className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-xl shadow-accent/30 transition active:scale-95"
                 aria-label="Ride starten"
               >
                 <Play className="ml-1 h-10 w-10 fill-current" />

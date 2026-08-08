@@ -145,6 +145,20 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - [ ] A11y-Audit ohne kritische Befunde  
 - [ ] Offline-Regression Flugmodus  
 - [ ] Store-Richtlinien-Vorprüfung  
+- [ ] Play Produkt `aetherride_pro_monthly` + License Tester + `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`  
+- [ ] Routing-Env live (`VALHALLA_URL` / `OSRM_URL` / `GRAPHHOPPER_API_KEY`) — sonst Demo-Geometrie  
+- [ ] Partner-Tokens: Mapillary, Outdooractive, Strava OAuth  
+- [ ] `NEXT_PUBLIC_LEGAL_*` für Marketplace (Affiliate braucht das nicht)  
+- [ ] Vercel-Deploy + Stripe Webhook Prod  
+- [ ] Bosch LDI Hardware (G-1) — bewusst Ops/HW  
 
----
-AetherRide · Spec 1.0 · August 2026
+### UX-Fixes (Code, Aug 2026)
+
+- First-Run Onboarding (Sport → Gewicht → Bike/Freeride)
+- AddBikeWizard Mode-Param (Katalog/Basis/Import)
+- Freeride ohne Garage-Bike
+- Discover: Seeds ohne Bike, City-Profil, neutraler Default
+- Shop Empty ohne Negativ-Spam
+- Rider-UI ohne Spec-/Engine-Jargon; Profil Einfach/Advanced
+- BikeChip auf Home/Discover
+

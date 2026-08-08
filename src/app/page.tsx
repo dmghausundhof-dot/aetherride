@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { SetupFingerprint } from "@/components/SetupFingerprint";
+import { BikeChip } from "@/components/BikeChip";
 import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
 import { shopHref } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
@@ -270,20 +271,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
       <header className="flex items-center justify-between gap-3">
-        {activeBike ? (
-          <Link
-            href="/garage"
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2"
-          >
-            <Bike className="h-4 w-4 shrink-0 text-accent" />
-            <span className="truncate text-sm font-semibold">
-              {activeBike.name}
-            </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-text-secondary" />
-          </Link>
-        ) : (
-          <div className="flex-1" />
-        )}
+        <BikeChip className="min-w-0 flex-1" />
         <Link
           href="/profile"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-sm font-semibold text-accent"
@@ -523,14 +511,14 @@ export default function HomePage() {
           <div className="mt-4 grid gap-2 text-left sm:grid-cols-3">
             {(
               [
-                ["Katalog", "OEM-Teile vorgefüllt"],
-                ["Basis", "Schnell anlegen"],
-                ["Import", "km später übernehmen"],
+                ["catalog", "Katalog", "OEM-Teile vorgefüllt"],
+                ["basic", "Basis", "Schnell anlegen"],
+                ["import", "Import", "km später übernehmen"],
               ] as const
-            ).map(([title, desc]) => (
+            ).map(([mode, title, desc]) => (
               <Link
-                key={title}
-                href="/garage"
+                key={mode}
+                href={`/garage?wizard=${mode}`}
                 className="rounded-xl border border-border bg-surface-elevated p-3"
               >
                 <div className="text-sm font-medium">{title}</div>

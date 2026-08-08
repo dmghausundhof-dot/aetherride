@@ -82,20 +82,37 @@ function GaragePageInner() {
       : "overview"
   );
 
-  useEffect(() => {
-    const t = searchParams.get("tab") as Tab | null;
-    if (t && ["overview", "components", "setups", "maintenance"].includes(t)) {
-      setTab(t);
-    }
-  }, [searchParams]);
-
   const [showWizard, setShowWizard] = useState(false);
+  const [wizardMode, setWizardMode] = useState<
+    "catalog" | "basic" | "import"
+  >("catalog");
+  const [wizardCategory, setWizardCategory] = useState<
+    import("@/types").BikeCategory | undefined
+  >(undefined);
   const [installSlot, setInstallSlot] = useState<ComponentSlot | null>(null);
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
     useState<SetupCondition>("dry");
   const [compatOpen, setCompatOpen] = useState(false);
   const [moveTargetId, setMoveTargetId] = useState<string>("");
+
+  useEffect(() => {
+    const t = searchParams.get("tab") as Tab | null;
+    if (t && ["overview", "components", "setups", "maintenance"].includes(t)) {
+      setTab(t);
+    }
+    const wizard = searchParams.get("wizard");
+    if (
+      wizard === "catalog" ||
+      wizard === "basic" ||
+      wizard === "import"
+    ) {
+      setWizardMode(wizard);
+      setShowWizard(true);
+    }
+    const cat = searchParams.get("category");
+    if (cat) setWizardCategory(cat as import("@/types").BikeCategory);
+  }, [searchParams]);
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
@@ -173,7 +190,10 @@ function GaragePageInner() {
         <h1 className="text-2xl font-bold">Garage</h1>
         <button
           type="button"
-          onClick={() => setShowWizard(true)}
+          onClick={() => {
+            setWizardMode("catalog");
+            setShowWizard(true);
+          }}
           className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-medium text-white"
         >
           <Plus className="h-4 w-4" /> Bike
@@ -213,15 +233,18 @@ function GaragePageInner() {
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             {(
               [
-                ["Katalog", "Modell wählen, Slots vorgefüllt"],
-                ["Basis", "Name + Kategorie, später ergänzen"],
-                ["Import", "Platzhalter + km später übernehmen"],
+                ["catalog", "Katalog", "Modell wählen, Slots vorgefüllt"],
+                ["basic", "Basis", "Name + Kategorie, später ergänzen"],
+                ["import", "Import", "Platzhalter + km später übernehmen"],
               ] as const
-            ).map(([title, desc]) => (
+            ).map(([mode, title, desc]) => (
               <button
-                key={title}
+                key={mode}
                 type="button"
-                onClick={() => setShowWizard(true)}
+                onClick={() => {
+                  setWizardMode(mode);
+                  setShowWizard(true);
+                }}
                 className="rounded-xl border border-border bg-surface-elevated p-3 text-left"
               >
                 <div className="font-medium text-sm">{title}</div>
@@ -1002,7 +1025,13 @@ function GaragePageInner() {
         </>
       )}
 
-      {showWizard && <AddBikeWizard onClose={() => setShowWizard(false)} />}
+      {showWizard && (
+        <AddBikeWizard
+          initialMode={wizardMode}
+          initialCategory={wizardCategory}
+          onClose={() => setShowWizard(false)}
+        />
+      )}
       {selected && installSlot && (
         <InstallComponentSheet
           bike={selected}
