@@ -48,6 +48,11 @@ import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import { RouteCard } from "@/components/discover/RouteCard";
 import { FilterChips } from "@/components/discover/FilterChips";
 import { RouteDetail } from "@/components/discover/RouteDetail";
+import {
+  bboxAround,
+  fetchCommunityHeatmap,
+} from "@/lib/heatmap/client";
+import type { HeatmapResult } from "@/lib/routing/heatmaps";
 import type { SavedRoute } from "@/types/route";
 import type { OutdooractiveTour } from "@/lib/geo/outdooractive";
 import type { TrailforksPin } from "@/lib/geo/trailCondition";
@@ -199,6 +204,10 @@ function DiscoverPageInner() {
   const [routingNotice, setRoutingNotice] = useState<string | null>(
     DEMO_ROUTING_NOTICE
   );
+  const [communityHeat, setCommunityHeat] = useState<HeatmapResult | null>(
+    null
+  );
+  const [heatmapNote, setHeatmapNote] = useState<string | null>(null);
   const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeProfile = manualProfile ?? routingProfile;
@@ -207,6 +216,34 @@ function DiscoverPageInner() {
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
     false;
+
+  // Community-Heatmap um Kartenmitte (k≥5 Server-Filter). Debounce per ~0.05°.
+  const heatBboxKey = `${(mapCenter[0] * 20).toFixed(0)}:${(mapCenter[1] * 20).toFixed(0)}`;
+  useEffect(() => {
+    let cancelled = false;
+    const t = setTimeout(() => {
+      const [lng, lat] = mapCenter;
+      void fetchCommunityHeatmap(bboxAround(lng, lat)).then((r) => {
+        if (cancelled) return;
+        if (r == null) {
+          setCommunityHeat(null);
+          setHeatmapNote("Community-Heatmap offline");
+          return;
+        }
+        setCommunityHeat(r);
+        setHeatmapNote(
+          r.coldStart
+            ? r.disclaimer
+            : `${r.segments.length} Community-Segmente · ${r.disclaimer}`
+        );
+      });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by quantized center
+  }, [heatBboxKey]);
 
   const range = useMemo(() => {
     if (!activeBike?.isEbike || !rangePro) return undefined;
@@ -255,17 +292,37 @@ function DiscoverPageInner() {
     [origin]
   );
 
-  const mapLayers: MapRouteLayer[] = useMemo(
-    () =>
-      buildDiscoverMapLayers({
-        draft,
-        quickOptions,
-        activeQuickId: quickOptions.find((q) => q.label === draft.label)?.id,
-        trails: nearbyTrails,
-        showTrails: showTrails && sheetMode === "tours",
-      }),
-    [draft, quickOptions, nearbyTrails, showTrails, sheetMode]
-  );
+  const mapLayers: MapRouteLayer[] = useMemo(() => {
+    const base = buildDiscoverMapLayers({
+      draft,
+      quickOptions,
+      activeQuickId: quickOptions.find((q) => q.label === draft.label)?.id,
+      trails: nearbyTrails,
+      showTrails: showTrails && sheetMode === "tours",
+    });
+    const heat: MapRouteLayer[] = (communityHeat?.segments ?? [])
+      .filter((s) => s.visible && s.coordinates.length >= 2)
+      .slice(0, 40)
+      .map((s) => ({
+        id: s.id,
+        role: "trail" as const,
+        geometry: {
+          type: "LineString" as const,
+          coordinates: s.coordinates,
+        },
+        color: "#E65100",
+        width: 5 + s.intensity * 7,
+        opacity: 0.22 + s.intensity * 0.35,
+      }));
+    return [...heat, ...base];
+  }, [
+    draft,
+    quickOptions,
+    nearbyTrails,
+    showTrails,
+    sheetMode,
+    communityHeat,
+  ]);
 
   const elevProfile = useMemo(
     () => elevationFromGeometry(draft.computed?.geometry),
@@ -990,6 +1047,17 @@ function DiscoverPageInner() {
             {routingNotice}
           </p>
         )}
+        {heatmapNote && (
+          <p className="rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 text-[11px] text-text-secondary">
+            Beliebt: {heatmapNote}
+            {!heatmapConsent && (
+              <>
+                {" "}
+                · Eigene Beiträge unter Privatsphäre
+              </>
+            )}
+          </p>
+        )}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold tracking-tight">Discover</h1>
@@ -1080,7 +1148,7 @@ function DiscoverPageInner() {
               setSheetMode("tours");
             }
           }}
-          fitRoute={mapLayers.length > 0}
+          fitRoute={Boolean(draft.computed)}
         />
         {pickTarget && (
           <div className="absolute left-3 right-3 top-3 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white">

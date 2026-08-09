@@ -15,17 +15,42 @@ import Link from "next/link";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { buildElevationForSuggestion } from "@/lib/routing/suggestionElevation";
 import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
-import { buildHeatmap } from "@/lib/routing/heatmaps";
+import {
+  buildHeatmap,
+  type HeatmapResult,
+} from "@/lib/routing/heatmaps";
+import {
+  bboxAround,
+  fetchCommunityHeatmap,
+} from "@/lib/heatmap/client";
 import {
   getTrailViewNear,
   type TrailViewResult,
 } from "@/lib/routing/trailView";
-import { MapView } from "@/components/MapView";
+import { MapView, type MapRouteLayer } from "@/components/MapView";
 import { ElevationChart } from "@/components/discover/ElevationChart";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import type { RangeEstimate } from "@/lib/ebike/range";
 
 type DetailLayer = "overview" | "heat" | "trail" | "elevation";
+
+function heatSegmentsToRoutes(
+  segments: HeatmapResult["segments"]
+): MapRouteLayer[] {
+  return segments
+    .filter((s) => s.visible && s.coordinates.length >= 2)
+    .map((s) => ({
+      id: s.id,
+      role: "trail" as const,
+      geometry: {
+        type: "LineString" as const,
+        coordinates: s.coordinates,
+      },
+      color: s.id.startsWith("cell-") ? "#E65100" : "#FF7043",
+      width: 4 + s.intensity * 6,
+      opacity: 0.35 + s.intensity * 0.4,
+    }));
+}
 
 export function RouteDetail({
   route,
@@ -57,11 +82,13 @@ export function RouteDetail({
   const [layer, setLayer] = useState<DetailLayer>("overview");
   const [photoIdx, setPhotoIdx] = useState(0);
   const [trail, setTrail] = useState<TrailViewResult | null>(null);
+  const [community, setCommunity] = useState<HeatmapResult | null>(null);
+  const [communityErr, setCommunityErr] = useState<string | null>(null);
 
   const center = useMemo(() => demoCenterLngLat(route.id), [route.id]);
   const elev = useMemo(() => buildElevationForSuggestion(route), [route]);
 
-  const heatmap = useMemo(
+  const localHeat = useMemo(
     () =>
       buildHeatmap({
         consentHeatmap: heatmapConsent,
@@ -70,6 +97,53 @@ export function RouteDetail({
         includeSeedFallback: false,
       }),
     [heatmapConsent, rides, privacyZones]
+  );
+
+  useEffect(() => {
+    if (layer !== "heat") return;
+    let cancelled = false;
+    const [lng, lat] = center;
+    setCommunityErr(null);
+    void fetchCommunityHeatmap(bboxAround(lng, lat)).then((r) => {
+      if (cancelled) return;
+      if (r == null) {
+        setCommunity(null);
+        setCommunityErr("Community-Heatmap offline");
+        return;
+      }
+      setCommunity(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [layer, center]);
+
+  const mergedHeat = useMemo((): HeatmapResult => {
+    const localVisible = localHeat.segments.filter((s) => s.visible);
+    const communityVisible = community?.segments.filter((s) => s.visible) ?? [];
+    const segments = [...localVisible, ...communityVisible];
+    return {
+      segments,
+      coldStart:
+        segments.length === 0 ||
+        (localHeat.coldStart && (community?.coldStart ?? true)),
+      kThreshold: community?.kThreshold ?? localHeat.kThreshold,
+      attribution: [localHeat.attribution, community?.attribution]
+        .filter(Boolean)
+        .join(" · "),
+      disclaimer: [
+        localHeat.disclaimer,
+        community?.disclaimer,
+        communityErr,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    };
+  }, [localHeat, community, communityErr]);
+
+  const heatRoutes = useMemo(
+    () => heatSegmentsToRoutes(mergedHeat.segments),
+    [mergedHeat.segments]
   );
 
   useEffect(() => {
@@ -208,46 +282,60 @@ export function RouteDetail({
 
       {layer === "heat" && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-text-secondary">{heatmap.disclaimer}</p>
-          {heatmap.coldStart && (
+          <p className="text-xs text-text-secondary">{mergedHeat.disclaimer}</p>
+          {mergedHeat.coldStart && (
             <p className="text-xs text-warning">
-              Noch wenig Daten in der Region — Beliebtheit wird mit mehr Rides
-              genauer.
+              Noch wenig Community-Daten (k≥{mergedHeat.kThreshold}) — eigene
+              Rides und mehr Fahrer füllen die Karte.
             </p>
           )}
           {!heatmapConsent && (
             <p className="text-xs">
-              Beitrag unter{" "}
+              Eigene Beiträge unter{" "}
               <Link href="/privacy" className="text-accent">
                 Privatsphäre
               </Link>{" "}
-              aktivieren.
+              aktivieren. Community-Segmente (k≥{mergedHeat.kThreshold}) sind
+              trotzdem sichtbar, sobald genug Fahrer da sind.
             </p>
           )}
           <MapView
             className="aspect-[4/3] w-full overflow-hidden rounded-2xl"
             center={center}
             zoom={12}
-            track={heatmap.segments
-              .filter((s) => s.visible)
-              .flatMap((s) =>
-                s.coordinates.map(([lng, lat]) => ({ lat, lng }))
-              )}
+            routes={heatRoutes}
+            fitRoute={heatRoutes.length > 0}
           />
           <ul className="space-y-2 text-xs">
-            {heatmap.segments
+            {mergedHeat.segments
               .filter((s) => s.visible)
-              .slice(0, 6)
+              .slice(0, 8)
               .map((s) => (
                 <li
                   key={s.id}
                   className="rounded-xl border border-accent/30 bg-accent/5 px-3 py-2"
                 >
-                  Beliebter Abschnitt · {s.uniqueUsers} Fahrer · Intensität{" "}
+                  {s.id.startsWith("cell-")
+                    ? "Community"
+                    : s.id.startsWith("ride-")
+                      ? "Eigene Ride"
+                      : "Abschnitt"}
+                  {" · "}
+                  {s.uniqueUsers} Fahrer · Intensität{" "}
                   {(s.intensity * 100).toFixed(0)} %
                 </li>
               ))}
+            {mergedHeat.segments.filter((s) => s.visible).length === 0 && (
+              <li className="text-text-secondary">
+                Keine sichtbaren Segmente in diesem Ausschnitt.
+              </li>
+            )}
           </ul>
+          {mergedHeat.attribution ? (
+            <p className="text-[10px] text-text-secondary">
+              {mergedHeat.attribution}
+            </p>
+          ) : null}
         </div>
       )}
 
