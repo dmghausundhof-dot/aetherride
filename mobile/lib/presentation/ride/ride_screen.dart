@@ -84,6 +84,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
   MapLibreMapController? _rideMap;
   int _mapDrawSkip = 0;
+  int _rideMapDrawGen = 0;
   String _mapStyle = AppConfig.mapStyleUrl;
   bool _offRoute = false;
   String? _offRouteBanner;
@@ -196,13 +197,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   Future<void> _drawRideMap() async {
     final c = _rideMap;
     if (c == null) return;
+    final gen = ++_rideMapDrawGen;
     try {
       await c.clearLines();
+      if (gen != _rideMapDrawGen) return;
       final route = ref.read(activeRouteProvider);
       if (route != null && route.coordinates.length >= 2) {
         final planned = [
           for (final p in route.coordinates) LatLng(p[1], p[0]),
         ];
+        if (gen != _rideMapDrawGen) return;
         await c.addLine(
           LineOptions(
             geometry: planned,
@@ -212,6 +216,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             lineJoin: 'round',
           ),
         );
+        if (gen != _rideMapDrawGen) return;
         await c.addLine(
           LineOptions(
             geometry: planned,
@@ -222,6 +227,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
         );
       }
+      if (gen != _rideMapDrawGen) return;
       if (_track.length >= 2) {
         final line = [for (final p in _track) LatLng(p.lat, p.lng)];
         await c.addLine(
@@ -233,6 +239,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             lineJoin: 'round',
           ),
         );
+        if (gen != _rideMapDrawGen) return;
         await c.addLine(
           LineOptions(
             geometry: line,
@@ -241,30 +248,40 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             lineJoin: 'round',
           ),
         );
+        if (gen != _rideMapDrawGen) return;
         final last = line.last;
         await c.animateCamera(CameraUpdate.newLatLngZoom(last, 15));
       } else if (route != null && route.coordinates.length >= 2) {
         final pts = [
           for (final p in route.coordinates) LatLng(p[1], p[0]),
         ];
-        await c.animateCamera(
-          CameraUpdate.newLatLngBounds(
-            LatLngBounds(
-              southwest: LatLng(
-                pts.map((e) => e.latitude).reduce((a, b) => a < b ? a : b),
-                pts.map((e) => e.longitude).reduce((a, b) => a < b ? a : b),
+        final swLat =
+            pts.map((e) => e.latitude).reduce((a, b) => a < b ? a : b);
+        final swLng =
+            pts.map((e) => e.longitude).reduce((a, b) => a < b ? a : b);
+        final neLat =
+            pts.map((e) => e.latitude).reduce((a, b) => a > b ? a : b);
+        final neLng =
+            pts.map((e) => e.longitude).reduce((a, b) => a > b ? a : b);
+        if (gen != _rideMapDrawGen) return;
+        if ((neLat - swLat).abs() < 1e-5 && (neLng - swLng).abs() < 1e-5) {
+          await c.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(swLat, swLng), 14),
+          );
+        } else {
+          await c.animateCamera(
+            CameraUpdate.newLatLngBounds(
+              LatLngBounds(
+                southwest: LatLng(swLat, swLng),
+                northeast: LatLng(neLat, neLng),
               ),
-              northeast: LatLng(
-                pts.map((e) => e.latitude).reduce((a, b) => a > b ? a : b),
-                pts.map((e) => e.longitude).reduce((a, b) => a > b ? a : b),
-              ),
+              left: 28,
+              top: 28,
+              right: 28,
+              bottom: 28,
             ),
-            left: 28,
-            top: 28,
-            right: 28,
-            bottom: 28,
-          ),
-        );
+          );
+        }
       }
     } catch (_) {}
   }
@@ -497,7 +514,35 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _gpsStallSec = 0;
 
     await sensor.start();
-    await ble.connect();
+    final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+    Bike? active;
+    for (final b in bikes) {
+      if (b.isActive) {
+        active = b;
+        break;
+      }
+    }
+    active ??= bikes.isEmpty ? null : bikes.first;
+    final wheel = active?.wheelSize;
+    if (wheel != null) {
+      ble.wheelCircumferenceM = switch (wheel) {
+        WheelSize.w275 => 2.070,
+        WheelSize.w29 => 2.105,
+        WheelSize.c700 => 2.130,
+        WheelSize.b650 => 1.935,
+      };
+    }
+    final cscOk = await ble.connect();
+    if (!cscOk && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ble.statusDetail ??
+                'Kein CSC-Sensor gefunden — GPS-Track weiter aktiv.',
+          ),
+        ),
+      );
+    }
     await location.startRideTracking();
     _usingGps = false;
     _locSub = location.fixes.listen((fix) {
@@ -967,6 +1012,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _tick?.cancel();
     _idleLock?.cancel();
     unawaited(_tts.stop());
+    // Stop CSC reconnect when leaving Ride.
+    unawaited(ref.read(bleCoreProvider).disconnect());
     super.dispose();
   }
 
@@ -1096,6 +1143,30 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             _cscStatusLine(),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: AppColors.muted,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: () async {
+                                final ble = ref.read(bleCoreProvider);
+                                final ok = await ble.connect();
+                                if (!mounted) return;
+                                setState(() {});
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      ok
+                                          ? (ble.statusDetail ??
+                                              'CSC verbunden')
+                                          : (ble.statusDetail ??
+                                              'Kein CSC gefunden'),
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.bluetooth_searching, size: 18),
+                              label: const Text('CSC suchen'),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1602,12 +1673,15 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 
   String _cscStatusLine() {
-    final connected =
-        ref.read(bleCoreProvider).isConnected || _ldi != null;
+    final ble = ref.read(bleCoreProvider);
     final riding = ref.read(isRidingProvider);
-    if (connected) return 'CSC verbunden';
-    if (riding) return 'CSC nicht verbunden · GPS-Track aktiv';
-    return 'CSC bereit (Standard-BLE)';
+    if (ble.isConnected) {
+      return ble.statusDetail ?? 'CSC verbunden';
+    }
+    if (riding) {
+      return ble.statusDetail ?? 'CSC nicht verbunden · GPS-Track aktiv';
+    }
+    return 'CSC bereit — Sensor einschalten';
   }
 
   Widget _bigStat(String value, String label) {

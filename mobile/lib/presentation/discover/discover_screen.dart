@@ -21,6 +21,7 @@ import '../../data/import/gpx_import.dart';
 import '../../data/routing/elevation_client.dart';
 import '../../data/routing/geocode_client.dart';
 import '../../data/routing/osm_routes_client.dart';
+import '../../data/routing/osm_trail_network_client.dart';
 import '../../data/routing/route_collections.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
@@ -29,11 +30,13 @@ import '../../domain/bike.dart';
 import '../../domain/routing/heatmap.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/routing_status_client.dart';
+import '../../domain/routing/trail_difficulty.dart';
 import '../../domain/routing/trail_view.dart';
 import '../../domain/saved_route.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../profile/profile_screen.dart';
+import '../map/map_pin_image.dart';
 import 'offline_maps_sheet.dart';
 
 /// MapLibre in Flutter braucht Eager-Gesten, sonst frisst Parent/PlatformView Zoom/Pan.
@@ -125,11 +128,15 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   MapLibreMapController? _map;
+  bool _styleReady = false;
+  bool _pinImagesReady = false;
+  int _drawGen = 0;
   Symbol? _startSymbol;
   Symbol? _endSymbol;
   Symbol? _ideaSymbol;
   LatLng? _ideaPin;
   List<Symbol> _tfSymbols = [];
+  List<Symbol> _tourSymbols = [];
   final Map<String, _TfPin> _tfBySymbolId = {};
 
   _SheetMode _mode = _SheetMode.quick;
@@ -154,6 +161,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _detailId;
 
   List<_RouteSuggestion> _tours = <_RouteSuggestion>[];
+  List<OsmTrailSegment> _trailNetwork = [];
+  bool _showTrailNetwork = true;
+  String? _selectedTrailId;
+  String? _trailNetworkStatus;
+  TrailDifficulty? _trailScaleFilter;
   int? _durationBucket; // 60 / 90 / 120
   String? _surfaceFilter;
   String? _scaleFilter; // S0 / S1 / S2+
@@ -194,6 +206,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _loadHeatmapConsent();
     _fetchOutdooractive();
     _fetchOsmRoutes();
+    _fetchTrailNetwork();
     _fetchTrailforks();
     unawaited(_fetchRoutingStatus());
     unawaited(
@@ -286,6 +299,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _applyAddressHit(GeocodeHit hit) async {
     final target = _addrTarget ?? 'start';
     final p = GeoPoint(hit.lat, hit.lng);
+    final becameOrigin = target != 'end' && _userPos == null && _start == null;
     setState(() {
       if (target == 'end') {
         _end = p;
@@ -306,6 +320,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           CameraUpdate.newLatLngZoom(LatLng(hit.lat, hit.lng), 12),
         );
       } catch (_) {}
+    }
+    if (target != 'end' || becameOrigin) {
+      _refreshNearbyDataSources();
     }
     if (_start != null && _end != null) {
       await _calcAb();
@@ -423,13 +440,239 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (!mounted) return;
     if (changed == true) {
       final s = await AppConfig.resolveMapStyleUrl();
-      setState(() => _mapStyle = s);
-      await _drawAll();
+      if (!mounted) return;
+      setState(() {
+        _mapStyle = s;
+        _styleReady = false;
+        _pinImagesReady = false;
+      });
     }
+  }
+
+  List<OsmTrailSegment> get _visibleTrailNetwork {
+    var list = _trailNetwork;
+    if (_trailScaleFilter != null) {
+      list = [
+        for (final t in list)
+          if (t.difficulty == _trailScaleFilter) t,
+      ];
+    }
+    return list;
+  }
+
+  Future<void> _fetchTrailNetwork() async {
+    try {
+      if (!_hasRealOrigin) {
+        if (mounted) {
+          setState(
+            () => _trailNetworkStatus =
+                'Standort oder Start setzen für Trailnetz',
+          );
+        }
+        return;
+      }
+      final o = _origin;
+      if (mounted) {
+        setState(() => _trailNetworkStatus = 'Trailnetz lädt…');
+      }
+      final hits = await OsmTrailNetworkClient().fetchNearby(
+        lat: o.lat,
+        lon: o.lng,
+        radiusKm: 8,
+      );
+      if (!mounted) return;
+      setState(() {
+        _trailNetwork = hits;
+        _trailNetworkStatus = hits.isEmpty
+            ? 'Kein OSM-Trailnetz in der Nähe'
+            : 'Trailnetz ${hits.length} · Tippen zum Auswählen';
+      });
+      await _drawAll();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _trailNetworkStatus = 'Trailnetz offline');
+      }
+    }
+  }
+
+  /// Nächsten Trail-Einstieg zu [from] wählen; Geometrie ggf. umdrehen.
+  ({List<List<double>> geometry, GeoPoint entry, GeoPoint exit})
+      _orientTrailToOrigin(OsmTrailSegment trail, GeoPoint from) {
+    final first = trail.geometry.first;
+    final last = trail.geometry.last;
+    final dFirst = _distKm(from.lat, from.lng, first[1], first[0]);
+    final dLast = _distKm(from.lat, from.lng, last[1], last[0]);
+    if (dLast < dFirst) {
+      final rev = trail.geometry.reversed.toList();
+      return (
+        geometry: rev,
+        entry: GeoPoint(rev.first[1], rev.first[0]),
+        exit: GeoPoint(rev.last[1], rev.last[0]),
+      );
+    }
+    return (
+      geometry: trail.geometry,
+      entry: GeoPoint(first[1], first[0]),
+      exit: GeoPoint(last[1], last[0]),
+    );
+  }
+
+  void _refreshNearbyDataSources() {
+    unawaited(_fetchOutdooractive());
+    unawaited(_fetchOsmRoutes());
+    unawaited(_fetchTrailNetwork());
+    unawaited(_fetchTrailforks());
+  }
+
+  Future<void> _showTrailSheet(OsmTrailSegment trail) async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  trail.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${trail.difficultyLabel} · ${trail.lengthKm.toStringAsFixed(1)} km'
+                  '${trail.surface != null ? ' · ${trail.surface}' : ''}'
+                  '${trail.highway != null ? ' · ${trail.highway}' : ''}',
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'OSM-Live-Pfad — Tippen auf der Karte wählt Trails. '
+                  'Anfahrt zum Einstieg, dann als Overlay speichern oder fahren.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    unawaited(_approachTrail(trail));
+                  },
+                  icon: const Icon(Icons.navigation),
+                  label: const Text('Zum Trailhead anfahren'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    unawaited(_adoptTrailAsOverlay(trail));
+                  },
+                  icon: const Icon(Icons.timeline),
+                  label: const Text('Trail auf Route legen'),
+                ),
+                if (trail.url != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      Uri.parse(trail.url!),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    child: const Text('Auf OpenStreetMap öffnen'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _approachTrail(OsmTrailSegment trail) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _selectedTrailId = trail.id;
+      _status = 'Anfahrt zum Trailhead…';
+    });
+    try {
+      final oriented = _orientTrailToOrigin(trail, _origin);
+      final approach = await _routes.planRoute(
+        from: _origin,
+        to: oriented.entry,
+        profile: _profile,
+      );
+      final trailPts = [
+        for (final p in oriented.geometry) GeoPoint(p[1], p[0]),
+      ];
+      final merged = RouteResult(
+        coordinates: [...approach.coordinates, ...trailPts],
+        distanceM: approach.distanceM + trail.lengthKm * 1000,
+        durationS: approach.durationS + (trail.lengthKm / 12) * 3600,
+        engine: '${approach.engine ?? 'engine'}+trail',
+        steps: approach.steps,
+      );
+      if (!mounted) return;
+      setState(() {
+        _approach = approach;
+        _trailOverlay = trailPts;
+        _tourLayer = null;
+        _computed = merged;
+        _label = trail.name;
+        _start = _origin;
+        _end = oriented.exit;
+        _ideaPin = null;
+        _mode = _SheetMode.plan;
+        _status =
+            'Anfahrt + Trail · ${(merged.distanceM / 1000).toStringAsFixed(1)} km · ${trail.difficultyLabel}';
+        _loading = false;
+      });
+      await _drawAll();
+      await _syncMarkers();
+      await _refreshElevation(merged);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = '$e';
+        });
+      }
+    }
+  }
+
+  Future<void> _adoptTrailAsOverlay(OsmTrailSegment trail) async {
+    final oriented = _orientTrailToOrigin(trail, _origin);
+    final trailPts = [
+      for (final p in oriented.geometry) GeoPoint(p[1], p[0]),
+    ];
+    setState(() {
+      _selectedTrailId = trail.id;
+      _trailOverlay = trailPts;
+      _computed = RouteResult(
+        coordinates: trailPts,
+        distanceM: trail.lengthKm * 1000,
+        durationS: (trail.lengthKm / 12) * 3600,
+        engine: 'osm-trail',
+      );
+      _label = trail.name;
+      _start = oriented.entry;
+      _end = oriented.exit;
+      _mode = _SheetMode.plan;
+      _status =
+          'Trail gelegt · ${trail.difficultyLabel} · ${trail.lengthKm.toStringAsFixed(1)} km — speichern oder Los';
+    });
+    await _drawAll();
+    await _syncMarkers();
   }
 
   Future<void> _fetchTrailforks() async {
     try {
+      if (!_hasRealOrigin) return;
       final o = _origin;
       final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/trailforks')
           .replace(queryParameters: {
@@ -707,7 +950,46 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _onQuickLineTapped(Line line) async {
     final data = line.data;
-    if (data == null || data['kind'] != 'quick') return;
+    if (data == null) return;
+    final kind = data['kind'];
+
+    if (kind == 'trail') {
+      final id = data['id'] as String?;
+      if (id == null) return;
+      OsmTrailSegment? trail;
+      for (final t in _trailNetwork) {
+        if (t.id == id) {
+          trail = t;
+          break;
+        }
+      }
+      if (trail == null) return;
+      setState(() {
+        _selectedTrailId = trail!.id;
+        _selectedTourId = null;
+        _mode = _SheetMode.tours;
+        _status =
+            '${trail.name} · ${trail.difficultyLabel} · ${trail.lengthKm.toStringAsFixed(1)} km';
+      });
+      await _drawAll();
+      if (mounted) await _showTrailSheet(trail);
+      return;
+    }
+
+    if (kind == 'tour') {
+      final id = data['id'] as String?;
+      if (id == null) return;
+      setState(() {
+        _selectedTourId = id;
+        _selectedTrailId = null;
+        _detailId = id;
+        _mode = _SheetMode.tours;
+      });
+      await _drawAll();
+      return;
+    }
+
+    if (kind != 'quick') return;
     final id = data['id'] as String?;
     final label = data['label'] as String?;
     _QuickOption? match;
@@ -722,6 +1004,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _computed = match!.result;
       _label = match.label;
       _selectedTourId = null;
+      _selectedTrailId = null;
       _status = 'Alternative gewählt: ${match.label}';
     });
     await _drawRoute(match.result);
@@ -797,6 +1080,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       });
       unawaited(_fetchOutdooractive());
       unawaited(_fetchOsmRoutes());
+      unawaited(_fetchTrailNetwork());
       unawaited(_fetchTrailforks());
       await _map?.animateCamera(
         CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12),
@@ -1193,9 +1477,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (c is List && c.length >= 2) {
         final a = (c[0] as num).toDouble();
         final b = (c[1] as num).toDouble();
-        // Heuristik: |lng| typically > |lat| in DACH → [lng,lat]
-        if (a.abs() <= 90 && b.abs() > 90) {
-          out.add([b, a]);
+        // GeoJSON: [lng, lat]. Tausch nur bei klarem [lat,lng]-Muster.
+        if (a.abs() <= 90 &&
+            b.abs() <= 180 &&
+            a.abs() > b.abs() &&
+            b.abs() <= 90) {
+          out.add([b, a]); // lat,lng → lng,lat
         } else {
           out.add([a, b]);
         }
@@ -1230,30 +1517,34 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         r.id.contains('demo');
   }
 
-  /// Komoot-ähnliche Route: dunkles Casing + helle Hauptlinie.
+  /// Komoot-ähnliche Route: dunkles Casing + helle Hauptlinie (nur aktiv).
   Future<void> _addKomootLine(
     MapLibreMapController c,
     List<LatLng> geometry, {
     required bool active,
     String lineColor = '#2ECC71',
     Map<String, dynamic>? data,
+    bool casing = true,
   }) async {
     if (geometry.length < 2) return;
-    await c.addLine(
-      LineOptions(
-        geometry: geometry,
-        lineColor: '#14241C',
-        lineWidth: active ? 12 : 8,
-        lineOpacity: active ? 0.92 : 0.4,
-        lineJoin: 'round',
-      ),
-    );
+    if (casing && active) {
+      await c.addLine(
+        LineOptions(
+          geometry: geometry,
+          lineColor: '#14241C',
+          lineWidth: 12,
+          lineOpacity: 0.92,
+          lineJoin: 'round',
+        ),
+        data, // same data so tap on casing still selects trail/route
+      );
+    }
     await c.addLine(
       LineOptions(
         geometry: geometry,
         lineColor: lineColor,
-        lineWidth: active ? 5.5 : 3.2,
-        lineOpacity: active ? 1.0 : 0.72,
+        lineWidth: active ? 5.5 : 3.0,
+        lineOpacity: active ? 1.0 : 0.55,
         lineJoin: 'round',
       ),
       data,
@@ -1371,9 +1662,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _drawAll() async {
     final c = _map;
-    if (c == null) return;
+    if (c == null || !_styleReady) return;
+    final gen = ++_drawGen;
     try {
       await c.clearLines();
+      if (gen != _drawGen) return;
           if (_heatmapConsent) {
         try {
           final rides =
@@ -1423,6 +1716,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ...heat.visibleSegments,
             ...?community?.visibleSegments,
           ]) {
+            if (gen != _drawGen) return;
             if (seg.coordinatesLngLat.length < 2) continue;
             await c.addLine(
               LineOptions(
@@ -1440,18 +1734,55 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Fall through — map still usable without heatmap.
         }
       }
-      // Tour-/OSM-Tracks (Komoot-Stil): alle dezent, ausgewählte kräftig.
-      for (final tour in _tours) {
-        if (!tour.hasTrack) continue;
+      // Trailnetz zuerst (faint), Auswahl hervorgehoben — Community-Erwartung.
+      if (_showTrailNetwork) {
+        for (final trail in _visibleTrailNetwork.take(60)) {
+          if (gen != _drawGen) return;
+          final geom = [
+            for (final p in trail.geometry) LatLng(p[1], p[0]),
+          ];
+          final selected = trail.id == _selectedTrailId;
+          if (selected) {
+            await _addKomootLine(
+              c,
+              geom,
+              active: true,
+              casing: true,
+              lineColor: trail.lineColor,
+              data: {'kind': 'trail', 'id': trail.id},
+            );
+          } else {
+            await c.addLine(
+              LineOptions(
+                geometry: geom,
+                lineColor: trail.lineColor,
+                lineWidth: 2.4,
+                lineOpacity: 0.42,
+                lineJoin: 'round',
+              ),
+              {'kind': 'trail', 'id': trail.id},
+            );
+          }
+        }
+      }
+      // Nur ausgewählte Tour + max. 2 nahe Tracks — nicht alle OSM-Relationen.
+      final trackTours = _tours.where((t) => t.hasTrack).toList();
+      final selected = trackTours.where((t) => t.id == _selectedTourId);
+      final others = trackTours
+          .where((t) => t.id != _selectedTourId)
+          .take(2);
+      for (final tour in [...selected, ...others]) {
+        if (gen != _drawGen) return;
         final geom = [
           for (final p in tour.trackLngLat!) LatLng(p[1], p[0]),
         ];
-        final selected = tour.id == _selectedTourId;
+        final isSelected = tour.id == _selectedTourId;
         await _addKomootLine(
           c,
           geom,
-          active: selected,
-          lineColor: selected ? '#00C853' : '#66BB6A',
+          active: isSelected,
+          casing: isSelected,
+          lineColor: isSelected ? '#00C853' : '#66BB6A',
           data: {'kind': 'tour', 'id': tour.id},
         );
       }
@@ -1509,25 +1840,35 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             if (_label != null) 'label': _label,
           },
         );
-        await c.animateCamera(
-          CameraUpdate.newLatLngBounds(
-            LatLngBounds(
-              southwest: LatLng(
-                line.map((e) => e.latitude).reduce((a, b) => a < b ? a : b),
-                line.map((e) => e.longitude).reduce((a, b) => a < b ? a : b),
+        if (gen != _drawGen) return;
+        final swLat =
+            line.map((e) => e.latitude).reduce((a, b) => a < b ? a : b);
+        final swLng =
+            line.map((e) => e.longitude).reduce((a, b) => a < b ? a : b);
+        final neLat =
+            line.map((e) => e.latitude).reduce((a, b) => a > b ? a : b);
+        final neLng =
+            line.map((e) => e.longitude).reduce((a, b) => a > b ? a : b);
+        if ((neLat - swLat).abs() < 1e-5 && (neLng - swLng).abs() < 1e-5) {
+          await c.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(swLat, swLng), 14),
+          );
+        } else {
+          await c.animateCamera(
+            CameraUpdate.newLatLngBounds(
+              LatLngBounds(
+                southwest: LatLng(swLat, swLng),
+                northeast: LatLng(neLat, neLng),
               ),
-              northeast: LatLng(
-                line.map((e) => e.latitude).reduce((a, b) => a > b ? a : b),
-                line.map((e) => e.longitude).reduce((a, b) => a > b ? a : b),
-              ),
+              left: 40,
+              top: 40,
+              right: 40,
+              bottom: 120,
             ),
-            left: 40,
-            top: 40,
-            right: 40,
-            bottom: 120,
-          ),
-        );
+          );
+        }
       }
+      if (gen != _drawGen) return;
       await _syncMarkers();
     } catch (_) {}
   }
@@ -1538,10 +1879,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     await _refreshElevation(result);
   }
 
+  Future<void> _ensurePinImages(MapLibreMapController c) async {
+    if (_pinImagesReady) return;
+    try {
+      final green = await buildMapPinPng(fill: const Color(0xFF00C853));
+      final orange = await buildMapPinPng(fill: const Color(0xFFFF6B35));
+      final blue = await buildMapPinPng(fill: const Color(0xFF29B6F6));
+      await c.addImage('aether-pin', green);
+      await c.addImage('aether-pin-b', orange);
+      await c.addImage('aether-pin-idea', blue);
+      _pinImagesReady = true;
+    } catch (_) {
+      // Style without custom images — text-only symbols still work.
+    }
+  }
+
   Future<void> _syncMarkers() async {
     final c = _map;
-    if (c == null) return;
+    if (c == null || !_styleReady) return;
     try {
+      await _ensurePinImages(c);
       if (_startSymbol != null) await c.removeSymbol(_startSymbol!);
       if (_endSymbol != null) await c.removeSymbol(_endSymbol!);
       if (_ideaSymbol != null) await c.removeSymbol(_ideaSymbol!);
@@ -1553,11 +1910,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       _tfSymbols = [];
       _tfBySymbolId.clear();
+      for (final s in _tourSymbols) {
+        await c.removeSymbol(s);
+      }
+      _tourSymbols = [];
+      const pin = 'aether-pin';
       if (_ideaPin != null) {
         _ideaSymbol = await c.addSymbol(
           SymbolOptions(
             geometry: _ideaPin!,
-            iconImage: 'marker-15',
+            iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
+            iconSize: 1.2,
             textField: 'Idee',
             textSize: 12,
             textOffset: const Offset(0, 1.3),
@@ -1568,7 +1931,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _startSymbol = await c.addSymbol(
           SymbolOptions(
             geometry: LatLng(_start!.lat, _start!.lng),
-            iconImage: 'marker-15',
+            iconImage: _pinImagesReady ? pin : null,
             iconSize: 1.35,
             textField: 'A',
             textSize: 14,
@@ -1583,7 +1946,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _endSymbol = await c.addSymbol(
           SymbolOptions(
             geometry: LatLng(_end!.lat, _end!.lng),
-            iconImage: 'marker-15',
+            iconImage: _pinImagesReady ? 'aether-pin-b' : null,
             iconSize: 1.35,
             textField: 'B',
             textSize: 14,
@@ -1594,18 +1957,38 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
         );
       }
-      for (final pin in _tfPins.take(12)) {
+      for (final pinTf in _tfPins.take(12)) {
         final sym = await c.addSymbol(
           SymbolOptions(
-            geometry: pin.center,
-            iconImage: 'marker-15',
+            geometry: pinTf.center,
+            iconImage: _pinImagesReady ? pin : null,
+            iconSize: 1.0,
             textField: 'TF',
             textSize: 11,
             textOffset: const Offset(0, 1.2),
           ),
         );
         _tfSymbols.add(sym);
-        _tfBySymbolId[sym.id] = pin;
+        _tfBySymbolId[sym.id] = pinTf;
+      }
+      // Tour-Pins ohne volle Polyline (Rest der OSM-Liste).
+      final drawnIds = {
+        if (_selectedTourId != null) _selectedTourId!,
+        ..._tours.where((t) => t.hasTrack).take(3).map((t) => t.id),
+      };
+      for (final tour in _filtered.take(16)) {
+        if (drawnIds.contains(tour.id) && tour.hasTrack) continue;
+        final sym = await c.addSymbol(
+          SymbolOptions(
+            geometry: tour.center,
+            iconImage: _pinImagesReady ? pin : null,
+            iconSize: 0.9,
+            textField: 'T',
+            textSize: 11,
+            textOffset: const Offset(0, 1.15),
+          ),
+        );
+        _tourSymbols.add(sym);
       }
     } catch (_) {}
   }
@@ -2280,6 +2663,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         style: TextStyle(fontSize: 11, color: AppColors.muted),
                       ),
                     ),
+                  if (_mode == _SheetMode.tours && _trailNetworkStatus != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        _trailNetworkStatus!,
+                        style: TextStyle(fontSize: 11, color: AppColors.muted),
+                      ),
+                    ),
                   if (_mode == _SheetMode.tours && _heatmapConsent)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 6),
@@ -2474,6 +2865,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             child: Stack(
               children: [
                 MapLibreMap(
+                  key: ValueKey(_mapStyle),
                   styleString: style,
                   initialCameraPosition: CameraPosition(
                     target: LatLng(_mapCenter.lat, _mapCenter.lng),
@@ -2485,15 +2877,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   zoomGesturesEnabled: true,
                   tiltGesturesEnabled: true,
                   gestureRecognizers: _mapGestures,
-                  onMapCreated: (c) async {
+                  onMapCreated: (c) {
                     _map = c;
+                    _styleReady = false;
+                    _pinImagesReady = false;
                     c.onSymbolTapped.add(_onTfSymbolTapped);
                     c.onLineTapped.add(_onQuickLineTapped);
-                    await _drawAll();
+                  },
+                  onStyleLoadedCallback: () {
+                    _styleReady = true;
+                    unawaited(_drawAll());
                   },
                   onMapClick: (point, latLng) async {
                     if (_mode != _SheetMode.plan) return;
                     final p = GeoPoint(latLng.latitude, latLng.longitude);
+                    final wasWithoutOrigin = !_hasRealOrigin;
                     setState(() {
                       switch (_pick) {
                         case _PickMode.via:
@@ -2518,6 +2916,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       }
                     });
                     await _syncMarkers();
+                    if (wasWithoutOrigin && _hasRealOrigin) {
+                      _refreshNearbyDataSources();
+                    }
                     if (_start != null && _end != null) {
                       await _calcAb();
                     }
@@ -3002,20 +3403,108 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           children: [
             Row(
               children: [
-                Text(
-                  'Vom Standort (${list.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                const Expanded(
+                  child: Text(
+                    'Trails & Touren',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
-                const Spacer(),
+                FilterChip(
+                  label: Text(_showTrailNetwork ? 'Netz an' : 'Netz aus'),
+                  selected: _showTrailNetwork,
+                  onSelected: (v) {
+                    setState(() => _showTrailNetwork = v);
+                    unawaited(_drawAll());
+                  },
+                ),
               ],
             ),
+            const SizedBox(height: 6),
+            // Difficulty legend — what MTB riders expect on the map.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final d in TrailDifficulty.values) ...[
+                    FilterChip(
+                      label: Text(trailDifficultyLabel(d)),
+                      selected: _trailScaleFilter == d,
+                      avatar: CircleAvatar(
+                        backgroundColor: Color(
+                          int.parse(
+                            'FF${trailDifficultyColor(d).substring(1)}',
+                            radix: 16,
+                          ),
+                        ),
+                        radius: 6,
+                      ),
+                      onSelected: (sel) {
+                        setState(() {
+                          _trailScaleFilter = sel ? d : null;
+                        });
+                        unawaited(_drawAll());
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  TextButton(
+                    onPressed: _loading
+                        ? null
+                        : () => unawaited(_fetchTrailNetwork()),
+                    child: const Text('Netz neu'),
+                  ),
+                ],
+              ),
+            ),
+            if (_selectedTrailId != null) ...[
+              const SizedBox(height: 8),
+              Builder(
+                builder: (_) {
+                  OsmTrailSegment? sel;
+                  for (final t in _trailNetwork) {
+                    if (t.id == _selectedTrailId) {
+                      sel = t;
+                      break;
+                    }
+                  }
+                  if (sel == null) return const SizedBox.shrink();
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.terrain,
+                        color: Color(
+                          int.parse(
+                            'FF${sel.lineColor.substring(1)}',
+                            radix: 16,
+                          ),
+                        ),
+                      ),
+                      title: Text(sel.name),
+                      subtitle: Text(
+                        '${sel.difficultyLabel} · ${sel.lengthKm.toStringAsFixed(1)} km',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.navigation),
+                        onPressed: () => unawaited(_approachTrail(sel!)),
+                      ),
+                      onTap: () => unawaited(_showTrailSheet(sel!)),
+                    ),
+                  );
+                },
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              'Touren vom Standort (${list.length})',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 8, top: 4),
               child: Text(
                 _hasRealOrigin
                     ? 'Sortiert nach Nähe zu ${o.lat.toStringAsFixed(2)}°N, ${o.lng.toStringAsFixed(2)}°E'
                         '${_userPos != null ? ' (GPS)' : ''}'
-                    : 'Standort oder Start setzen — Touren für DACH & Frankreich',
+                    : 'Standort oder Start setzen — Trails für DACH & Frankreich',
                 style: const TextStyle(fontSize: 11, color: AppColors.muted),
               ),
             ),
@@ -3044,7 +3533,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       InkWell(
-                        onTap: () => setState(() => _detailId = r.id),
+                        onTap: () {
+                          setState(() {
+                            _detailId = r.id;
+                            _selectedTourId = r.id;
+                          });
+                          unawaited(_drawAll());
+                        },
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
