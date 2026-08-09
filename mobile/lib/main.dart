@@ -44,7 +44,7 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
     }
     try {
       await ref.read(userProfileStoreProvider).load();
-      await ref.read(garageRepositoryProvider).seedDemoIfEmpty();
+      // Kein Auto-Demo-Bike — leere Garage bleibt leer (wie Web nach Freeride/Skip).
       await ref.read(syncEngineProvider).start();
     } catch (e) {
       debugPrint('Bootstrap: $e');

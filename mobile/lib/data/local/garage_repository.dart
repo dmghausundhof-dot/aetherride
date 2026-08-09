@@ -150,6 +150,7 @@ class GarageRepository {
     );
   }
 
+  /// Optional QA-Seed — nicht im App-Start aufrufen (leere Garage ehrlich lassen).
   Future<void> seedDemoIfEmpty() async {
     final count = await _db.select(_db.bikes).get();
     if (count.isNotEmpty) return;
