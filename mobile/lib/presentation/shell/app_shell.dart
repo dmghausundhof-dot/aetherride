@@ -21,8 +21,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// beim Cold-Start (ANR durch GeolocatorLocationService).
   final Set<int> _visited = {0};
 
-  Widget _tabBody(int i) {
-    if (!_visited.contains(i)) return const SizedBox.shrink();
+  Widget _tabBody(int i, Set<int> mountedTabs) {
+    if (!mountedTabs.contains(i)) return const SizedBox.shrink();
     switch (i) {
       case 0:
         return const HomeScreen();
@@ -42,19 +42,23 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(shellTabIndexProvider);
+    // Aktiven Tab sofort einblenden — sonst ein Frame lang leerer Slot
+    // (Nav schon gewechselt → wirkt wie „Reiter springen“).
+    final mountedTabs = {..._visited, index};
     if (!_visited.contains(index)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _visited.add(index));
+        if (!mounted) return;
+        if (_visited.add(index)) setState(() {});
       });
     }
 
     return Scaffold(
       body: IndexedStack(
         index: index,
-        children: List.generate(5, _tabBody),
+        children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
+        selectedIndex: index.clamp(0, 4),
         onDestinationSelected: (i) {
           setState(() => _visited.add(i));
           ref.read(shellTabIndexProvider.notifier).state = i;
