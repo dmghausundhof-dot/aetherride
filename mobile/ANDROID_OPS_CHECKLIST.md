@@ -38,8 +38,12 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [x] Bundled `mobile/assets/routing/offline_graph.json` an Pack synchronisiert
 - [x] Lokal servierbar: `GET /api/offline/packs` / `…/schwarzwald-nord/schwarzwald-nord.tar.gz`
 - [x] Smoke: `bash scripts/smoke-offline-pack.sh [--push]` (API 200 + Pack ~24 MB; Push nach `/sdcard/Download/`)
-- [ ] Emulator UI: Offline-Sheet → Region laden (`http://10.0.2.2:3001`) und Valhalla-Status
+- [x] Offline-Sheet: API-Base sichtbar, Pack zurücksetzen, Style/Pack → Karte neu laden
+- [ ] Emulator UI manuell: Offline-Sheet → Region laden und Valhalla-Status prüfen
 - [x] Basemap: Roh-`.pmtiles` abgelehnt; Style-JSON-URL (Web+Mobile gleiche Heuristik)
+- [x] Discover: Routing-Status-Banner (`/api/routing/status`)
+- [x] Post-Ride Heatmap-Contribute mit ehrlicher Snackbar
+- [x] GPX-Import: UTF-8 + `lon` vor `lat`
 
 ## Android OAuth Client (nur bei Google Sign-In)
 

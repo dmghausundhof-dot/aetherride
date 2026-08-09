@@ -56,19 +56,16 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       _message = 'Kauf wird verifiziert…';
     });
     try {
-      await _verifyPlay(
+      final mode = await _verifyPlay(
         purchaseToken: update.purchaseToken,
         productId: update.productId,
       );
       await ref.read(syncEngineProvider).syncNow();
       if (!mounted) return;
       setState(() {
-        _message ??= 'Pro aktiv (Play). Sync OK.';
-        if (_message!.contains('Trusted-Token')) {
-          _message = '$_message Sync OK.';
-        } else {
-          _message = 'Pro aktiv (Play). Sync OK.';
-        }
+        _message = mode == 'trusted_token_mvp'
+            ? 'Pro gesetzt (Trusted-Token-MVP — ohne Google Play Service Account). Sync OK.'
+            : 'Pro aktiv (Play). Sync OK.';
       });
     } catch (e) {
       if (mounted) setState(() => _message = 'Play: $e');
@@ -123,7 +120,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     }
   }
 
-  Future<void> _verifyPlay({
+  Future<String?> _verifyPlay({
     required String purchaseToken,
     required String productId,
   }) async {
@@ -152,11 +149,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       ref.read(subscriptionTierProvider.notifier).state = tier!;
       ref.read(garageRepositoryProvider).subscriptionTier = tier;
     }
-    if (mode == 'trusted_token_mvp') {
-      // Caller may overwrite with success snack; keep honesty on mode.
-      _message =
-          'Pro gesetzt (Trusted-Token-MVP — ohne Google Play Service Account).';
-    }
+    return mode;
   }
 
   Future<void> _playBuy() async {
@@ -283,6 +276,12 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
             TextButton(
               onPressed: _busy ? null : _playRestore,
               child: const Text('Play-Käufe wiederherstellen'),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Hinweis: Ohne GOOGLE_PLAY_SERVICE_ACCOUNT_JSON prüft der Server '
+              'nur den Trusted-Token (MVP) — kein Publisher-API-Verify.',
+              style: TextStyle(color: AppColors.muted, fontSize: 12),
             ),
           ],
           const SizedBox(height: 16),

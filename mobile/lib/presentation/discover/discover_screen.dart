@@ -25,6 +25,7 @@ import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/heatmap.dart';
 import '../../data/routing/heatmap_client.dart';
+import '../../data/routing/routing_status_client.dart';
 import '../../domain/routing/trail_view.dart';
 import '../../domain/saved_route.dart';
 import '../../providers/app_providers.dart';
@@ -287,6 +288,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _oaStatus;
   List<_TfPin> _tfPins = [];
   String? _heatmapNote;
+  String? _routingStatusNote;
   String _mapStyle = AppConfig.mapStyleUrl;
   final _geocode = GeocodeClient();
   final _startAddrCtrl = TextEditingController();
@@ -311,6 +313,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _loadHeatmapConsent();
     _fetchOutdooractive();
     _fetchTrailforks();
+    unawaited(_fetchRoutingStatus());
     unawaited(
       AppConfig.resolveMapStyleUrl().then((s) {
         if (!mounted || s == _mapStyle) return;
@@ -501,6 +504,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       });
       if (_heatmapConsent) await _drawAll();
     } catch (_) {}
+  }
+
+  Future<void> _fetchRoutingStatus() async {
+    final s = await fetchRoutingStatus();
+    if (!mounted || s == null) return;
+    setState(() => _routingStatusNote = s.bannerText);
+  }
+
+  Future<void> _openOfflineMaps() async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const OfflineMapsSheet(),
+    );
+    if (!mounted) return;
+    if (changed == true) {
+      final s = await AppConfig.resolveMapStyleUrl();
+      setState(() => _mapStyle = s);
+      await _drawAll();
+    }
   }
 
   Future<void> _fetchTrailforks() async {
@@ -1689,7 +1712,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           xml = await File(f.path!).readAsString();
         } else {
           final bytes = await f.readAsBytes();
-          xml = String.fromCharCodes(bytes);
+          xml = decodeGpxBytes(bytes);
         }
       } catch (_) {}
     }
@@ -2193,11 +2216,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             case 'trailview':
                               _openTrailView();
                             case 'offline':
-                              showModalBottomSheet<void>(
-                                context: context,
-                                isScrollControlled: true,
-                                builder: (_) => const OfflineMapsSheet(),
-                              );
+                              unawaited(_openOfflineMaps());
                           }
                         },
                         itemBuilder: (_) => const [
@@ -2217,6 +2236,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ),
                     ],
                   ),
+                  if (_routingStatusNote != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        _routingStatusNote!,
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
                   if (_mode == _SheetMode.tours && _oaStatus != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),

@@ -11,42 +11,98 @@ import '../../domain/routing/heatmap.dart';
 Future<String?> _bearer() async =>
     Supabase.instance.client.auth.currentSession?.accessToken;
 
+class HeatmapContributeResult {
+  const HeatmapContributeResult({
+    required this.upserted,
+    required this.message,
+    this.ok = false,
+  });
+
+  final int upserted;
+  final String message;
+  final bool ok;
+}
+
 /// Contribute trimmed ride points as privacy cells (requires login + consent).
-Future<int> contributeHeatmapTrack({
+Future<HeatmapContributeResult> contributeHeatmapTrack({
   required List<Map<String, dynamic>> track,
   required List<PrivacyZone> privacyZones,
 }) async {
   final token = await _bearer();
-  if (token == null) return 0;
+  if (token == null) {
+    return const HeatmapContributeResult(
+      upserted: 0,
+      message: 'Heatmap: eingeloggt nötig für Community-Beitrag',
+    );
+  }
   final trimmed = trimTrackForPrivacyZones(track, privacyZones);
-  if (trimmed.length < 4) return 0;
+  if (trimmed.length < 4) {
+    return const HeatmapContributeResult(
+      upserted: 0,
+      message: 'Heatmap: zu wenig Track-Punkte nach Privacy-Trim',
+    );
+  }
   final points = <Map<String, double>>[];
   for (final p in trimmed) {
     final lat = (p['lat'] as num?)?.toDouble();
     final lng =
         (p['lng'] as num?)?.toDouble() ?? (p['lon'] as num?)?.toDouble();
     if (lat == null || lng == null) continue;
+    if (lat.abs() < 1e-6 && lng.abs() < 1e-6) continue;
     points.add({'lat': lat, 'lng': lng});
   }
-  if (points.length < 4) return 0;
-
-  final res = await http
-      .post(
-        Uri.parse('${AppConfig.apiBaseUrl}/api/heatmap/contribute'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({'consent': true, 'track': points}),
-      )
-      .timeout(const Duration(seconds: 20));
-  if (res.statusCode < 200 || res.statusCode >= 300) return 0;
-  final m = jsonDecode(res.body);
-  if (m is Map && m['upserted'] is num) {
-    return (m['upserted'] as num).toInt();
+  if (points.length < 4) {
+    return const HeatmapContributeResult(
+      upserted: 0,
+      message: 'Heatmap: keine gültigen GPS-Punkte',
+    );
   }
-  return 0;
+
+  try {
+    final res = await http
+        .post(
+          Uri.parse('${AppConfig.apiBaseUrl}/api/heatmap/contribute'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({'consent': true, 'track': points}),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      String detail = 'HTTP ${res.statusCode}';
+      try {
+        final m = jsonDecode(res.body);
+        if (m is Map && m['message'] != null) detail = m['message'].toString();
+        if (m is Map && m['error'] != null) detail = m['error'].toString();
+      } catch (_) {}
+      return HeatmapContributeResult(
+        upserted: 0,
+        message: 'Heatmap-Beitrag fehlgeschlagen ($detail)',
+      );
+    }
+    final m = jsonDecode(res.body);
+    final n = (m is Map && m['upserted'] is num)
+        ? (m['upserted'] as num).toInt()
+        : 0;
+    if (n <= 0) {
+      return const HeatmapContributeResult(
+        upserted: 0,
+        message: 'Heatmap: keine neuen Zellen (bereits beigetragen?)',
+      );
+    }
+    return HeatmapContributeResult(
+      upserted: n,
+      ok: true,
+      message: 'Heatmap: $n Zellen beigetragen (sichtbar ab k≥$kHeatmapThreshold)',
+    );
+  } catch (e) {
+    return HeatmapContributeResult(
+      upserted: 0,
+      message: 'Heatmap offline ($e)',
+    );
+  }
 }
 
 /// Fetch community segments (already k-filtered server-side).

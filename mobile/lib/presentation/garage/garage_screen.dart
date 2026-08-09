@@ -363,7 +363,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
         xml = await File(f.path!).readAsString();
       } else {
         final bytes = await f.readAsBytes();
-        xml = String.fromCharCodes(bytes);
+        xml = decodeGpxBytes(bytes);
       }
     } catch (_) {}
     if (xml == null) {
@@ -1300,7 +1300,9 @@ class _InstallComponentSheetState
       attrs[_attrKey.text.trim()] = num.tryParse(raw) ?? raw;
     }
     // Default-Attribute für Kompat-Checks (Platzhalter, nicht Katalog-Wahrheit)
+    var usedPlaceholders = false;
     if (_slot == ComponentSlot.frame && !attrs.containsKey('rear_spacing')) {
+      usedPlaceholders = true;
       attrs['rear_spacing'] = '148x12';
       attrs['max_tire_width_mm'] = 2.6;
       attrs['bb_standard'] = 'BSA73';
@@ -1310,13 +1312,18 @@ class _InstallComponentSheetState
     }
     if (_slot == ComponentSlot.rearHub &&
         !attrs.containsKey('freehub_standard')) {
+      usedPlaceholders = true;
       attrs['freehub_standard'] = 'microspline';
       attrs['rear_spacing'] = '148x12';
       attrs['rotor_mount'] = '6bolt';
     }
     if (_slot == ComponentSlot.cassette &&
         !attrs.containsKey('freehub_standard')) {
+      usedPlaceholders = true;
       attrs['freehub_standard'] = 'microspline';
+    }
+    if (usedPlaceholders) {
+      attrs['_compat_placeholder'] = true;
     }
     await ref.read(componentRepositoryProvider).install(
           bikeId: widget.bikeId,
@@ -1326,7 +1333,18 @@ class _InstallComponentSheetState
           catalogModelId: _catalogModelId,
           attributes: attrs,
         );
-    if (mounted) Navigator.pop(context, true);
+    if (!mounted) return;
+    if (usedPlaceholders) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Kompat-Platzhalter gesetzt (z. B. 148×12 / Microspline) — '
+            'keine Katalog-Wahrheit. Attribute prüfen.',
+          ),
+        ),
+      );
+    }
+    Navigator.pop(context, true);
   }
 
   @override

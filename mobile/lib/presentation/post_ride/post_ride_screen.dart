@@ -84,24 +84,26 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     try {
       final consents =
           await ref.read(garageRepositoryProvider).listConsents();
-      if (consents[ConsentPurpose.heatmapContribution.apiId] == true) {
-        final zones =
-            await ref.read(garageRepositoryProvider).listPrivacyZones();
-        final n = await contributeHeatmapTrack(
-          track: ride.track,
-          privacyZones: zones,
-        );
-        if (mounted && n > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Heatmap: $n Zellen beigetragen (sichtbar ab k≥5)',
-              ),
-            ),
-          );
-        }
+      if (consents[ConsentPurpose.heatmapContribution.apiId] != true) {
+        return;
       }
-    } catch (_) {}
+      final zones =
+          await ref.read(garageRepositoryProvider).listPrivacyZones();
+      final r = await contributeHeatmapTrack(
+        track: ride.track,
+        privacyZones: zones,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(r.message)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Heatmap: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _uploadStrava() async {

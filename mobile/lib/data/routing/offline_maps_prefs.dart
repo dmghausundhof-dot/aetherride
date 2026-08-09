@@ -26,7 +26,13 @@ abstract final class OfflineMapsPrefs {
   static Future<void> merge(Map<String, dynamic> patch) async {
     final f = await file();
     final m = await read();
-    m.addAll(patch);
+    for (final e in patch.entries) {
+      if (e.value == null) {
+        m.remove(e.key);
+      } else {
+        m[e.key] = e.value;
+      }
+    }
     await f.writeAsString(jsonEncode(m));
   }
 

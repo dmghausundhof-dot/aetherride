@@ -322,6 +322,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           ),
         ),
       );
+      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -372,16 +373,41 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     await _savePrefs(pmtilesUrl: url);
     if (!mounted) return;
     final resolved = await AppConfig.resolveMapStyleUrl();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           url.isEmpty
               ? 'Override gelöscht — Default-Style aktiv'
-              : 'Style gespeichert. Aktiv: $resolved',
+              : 'Style gespeichert. Karte wird neu geladen: $resolved',
         ),
       ),
     );
-    setState(() {});
+    Navigator.of(context).pop(true);
+  }
+
+  Future<void> _clearActivatedPack() async {
+    await OfflineMapsPrefs.merge({
+      'regionPack': null,
+      'activatedPackPath': null,
+      'engineHint': null,
+    });
+    OfflineTilesStore.instance.clearCache();
+    final status = await OfflineTilesStore.instance.valhallaLinkStatus();
+    if (!mounted) return;
+    setState(() {
+      _regionPref = null;
+      _activatedPath = null;
+      _engineHint = null;
+      _valhallaStatus = status;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Region-Pack zurückgesetzt — Bundle-Graph als Fallback'),
+      ),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -412,6 +438,16 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
+                  ),
+                  Text(
+                    'API: ${AppConfig.apiBaseUrl}',
+                    style: const TextStyle(color: AppColors.muted, fontSize: 11),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Emulator: Host-API unter 10.0.2.2 (Default). '
+                    'Smoke: bash scripts/smoke-offline-pack.sh --push',
+                    style: TextStyle(color: AppColors.muted, fontSize: 11),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -526,6 +562,11 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                         icon: const Icon(Icons.download_outlined),
                         label: Text('${r.name} laden & aktivieren'),
                       ),
+                    ),
+                  if (_activatedPath != null)
+                    TextButton(
+                      onPressed: _busy ? null : _clearActivatedPack,
+                      child: const Text('Region-Pack zurücksetzen'),
                     ),
                 ],
               ),

@@ -208,14 +208,18 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           await ref.read(garageRepositoryProvider).listPrivacyZones();
       var n = 0;
       for (final r in rides) {
-        n += await contributeHeatmapTrack(
+        final res = await contributeHeatmapTrack(
           track: r.track,
           privacyZones: zones,
         );
+        n += res.upserted;
       }
       if (mounted && n > 0) {
         setState(() => _message =
             'Heatmap: $n Zellen beigetragen (sichtbar erst ab k≥5).');
+      } else if (mounted && rides.isNotEmpty) {
+        setState(() => _message =
+            'Heatmap: kein Beitrag (Login/Consent/Track prüfen).');
       }
     } catch (_) {}
   }

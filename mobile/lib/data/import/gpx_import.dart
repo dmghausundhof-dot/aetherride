@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 /// Minimal GPX → Track (trkpt / rtept).
@@ -19,18 +20,30 @@ class GpxTrack {
       math.max(10, (distanceKm / 12 * 60).round());
 }
 
+/// Decode GPX bytes as UTF-8 (with BOM strip); fallback latin1.
+String decodeGpxBytes(List<int> bytes) {
+  try {
+    var s = utf8.decode(bytes, allowMalformed: true);
+    if (s.startsWith('\uFEFF')) s = s.substring(1);
+    return s;
+  } catch (_) {
+    return latin1.decode(bytes, allowInvalid: true);
+  }
+}
+
 GpxTrack? parseGpx(String xml, {String fallbackName = 'GPX-Import'}) {
   final pts = <({double lat, double lng, double? elev})>[];
-  final re = RegExp(
-    r'<(?:trkpt|rtept)\s+[^>]*lat="([^"]+)"[^>]*lon="([^"]+)"[^>]*>(.*?)</(?:trkpt|rtept)>',
-    caseSensitive: false,
-    dotAll: true,
-  );
-  for (final m in re.allMatches(xml)) {
-    final lat = double.tryParse(m.group(1) ?? '');
-    final lng = double.tryParse(m.group(2) ?? '');
-    if (lat == null || lng == null) continue;
-    final body = m.group(3) ?? '';
+
+  void addFromAttrs(String attrs, [String body = '']) {
+    final latM = RegExp(r'''lat\s*=\s*["']([^"']+)["']''', caseSensitive: false)
+        .firstMatch(attrs);
+    final lonM = RegExp(
+      r'''(?:lon|lng)\s*=\s*["']([^"']+)["']''',
+      caseSensitive: false,
+    ).firstMatch(attrs);
+    final lat = double.tryParse(latM?.group(1) ?? '');
+    final lng = double.tryParse(lonM?.group(1) ?? '');
+    if (lat == null || lng == null) return;
     final elevM = RegExp(r'<ele>\s*([-0-9.]+)\s*</ele>', caseSensitive: false)
         .firstMatch(body);
     pts.add((
@@ -39,17 +52,22 @@ GpxTrack? parseGpx(String xml, {String fallbackName = 'GPX-Import'}) {
       elev: elevM != null ? double.tryParse(elevM.group(1)!) : null,
     ));
   }
+
+  final re = RegExp(
+    r'<(?:trkpt|rtept)\s+([^>]+?)>(.*?)</(?:trkpt|rtept)>',
+    caseSensitive: false,
+    dotAll: true,
+  );
+  for (final m in re.allMatches(xml)) {
+    addFromAttrs(m.group(1) ?? '', m.group(2) ?? '');
+  }
   if (pts.length < 2) {
-    // Self-closing form
     final re2 = RegExp(
-      r'<(?:trkpt|rtept)\s+[^>]*lat="([^"]+)"[^>]*lon="([^"]+)"[^/]*/>',
+      r'<(?:trkpt|rtept)\s+([^>]+?)/\s*>',
       caseSensitive: false,
     );
     for (final m in re2.allMatches(xml)) {
-      final lat = double.tryParse(m.group(1) ?? '');
-      final lng = double.tryParse(m.group(2) ?? '');
-      if (lat == null || lng == null) continue;
-      pts.add((lat: lat, lng: lng, elev: null));
+      addFromAttrs(m.group(1) ?? '');
     }
   }
   if (pts.length < 2) return null;
