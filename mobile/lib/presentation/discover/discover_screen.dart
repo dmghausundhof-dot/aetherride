@@ -1192,7 +1192,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }).toList();
 
     if (cat == null) {
-      return [...base]..sort(_byDistanceFromOrigin);
+      final sorted = List<_RouteSuggestion>.from(base);
+      sorted.sort(_byDistanceFromOrigin);
+      return sorted;
     }
     // Nähe zuerst, innerhalb davon Kategorie-Treffer nach vorn.
     final matched = <_RouteSuggestion>[];
@@ -1206,9 +1208,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
     matched.sort(_byDistanceFromOrigin);
     rest.sort(_byDistanceFromOrigin);
-    return matched.isEmpty
-        ? [...base]..sort(_byDistanceFromOrigin)
-        : [...matched, ...rest];
+    if (matched.isEmpty) {
+      final sorted = List<_RouteSuggestion>.from(base);
+      sorted.sort(_byDistanceFromOrigin);
+      return sorted;
+    }
+    return [...matched, ...rest];
   }
 
   int _byDistanceFromOrigin(_RouteSuggestion a, _RouteSuggestion b) {
