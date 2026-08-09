@@ -1,4 +1,5 @@
 import type { HeatmapResult, HeatSegment } from "@/lib/routing/heatmaps";
+import { trimTrackForHeatmap } from "@/lib/routing/heatmaps";
 import { HEATMAP_K_THRESHOLD } from "@/lib/heatmap/cells";
 
 export type HeatmapBbox = {
@@ -7,6 +8,97 @@ export type HeatmapBbox = {
   east: number;
   north: number;
 };
+
+export type HeatmapContributeResult = {
+  upserted: number;
+  message: string;
+  ok: boolean;
+};
+
+/**
+ * POST /api/heatmap/contribute — trimmed track cells (login + consent required).
+ * Mirrors mobile heatmap_client.contributeHeatmapTrack.
+ */
+export async function contributeHeatmapTrack(input: {
+  track: { lat: number; lng: number }[];
+  privacyZones: { lat: number; lng: number; radiusM: number }[];
+}): Promise<HeatmapContributeResult> {
+  const trimmed = trimTrackForHeatmap(input.track, input.privacyZones);
+  if (trimmed.length < 4) {
+    return {
+      upserted: 0,
+      ok: false,
+      message: "Heatmap: zu wenig Track-Punkte nach Privacy-Trim",
+    };
+  }
+  const points = trimmed
+    .filter(
+      (p) =>
+        Number.isFinite(p.lat) &&
+        Number.isFinite(p.lng) &&
+        !(Math.abs(p.lat) < 1e-6 && Math.abs(p.lng) < 1e-6)
+    )
+    .map((p) => ({ lat: p.lat, lng: p.lng }));
+  if (points.length < 4) {
+    return {
+      upserted: 0,
+      ok: false,
+      message: "Heatmap: keine gültigen GPS-Punkte",
+    };
+  }
+
+  try {
+    const res = await fetch("/api/heatmap/contribute", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ consent: true, track: points }),
+    });
+    if (res.status === 401) {
+      return {
+        upserted: 0,
+        ok: false,
+        message: "Heatmap: eingeloggt nötig für Community-Beitrag",
+      };
+    }
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const m = (await res.json()) as { message?: string; error?: string };
+        detail = m.message || m.error || detail;
+      } catch {
+        /* ignore */
+      }
+      return {
+        upserted: 0,
+        ok: false,
+        message: `Heatmap-Beitrag fehlgeschlagen (${detail})`,
+      };
+    }
+    const m = (await res.json()) as { upserted?: number };
+    const n = typeof m.upserted === "number" ? m.upserted : 0;
+    if (n <= 0) {
+      return {
+        upserted: 0,
+        ok: false,
+        message: "Heatmap: keine neuen Zellen (bereits beigetragen?)",
+      };
+    }
+    return {
+      upserted: n,
+      ok: true,
+      message: `Heatmap: ${n} Zellen beigetragen (sichtbar ab k≥${HEATMAP_K_THRESHOLD})`,
+    };
+  } catch (e) {
+    return {
+      upserted: 0,
+      ok: false,
+      message: `Heatmap offline (${e instanceof Error ? e.message : "Netzwerk"})`,
+    };
+  }
+}
 
 /**
  * GET /api/heatmap — community segments already filtered to k≥threshold.

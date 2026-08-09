@@ -1,10 +1,11 @@
 // Contract-Spiegel von src/lib/ble/BoschLDI.ts (Bosch LDI read-only).
+// SoC/Power sind nullable: CSC liefert nur Speed/Cadence — keine erfundenen LDI-Werte.
 
 class BoschLiveData {
   const BoschLiveData({
     required this.speedKmh,
-    required this.batterySocPercent,
-    required this.riderPowerW,
+    this.batterySocPercent,
+    this.riderPowerW,
     required this.cadenceRpm,
     required this.odometerKm,
     required this.lightStatus,
@@ -16,8 +17,10 @@ class BoschLiveData {
   });
 
   final double speedKmh;
-  final double batterySocPercent;
-  final double riderPowerW;
+  /// null = kein LDI/Battery (z. B. nur CSC).
+  final double? batterySocPercent;
+  /// null = kein Power-Meter / kein LDI-Power.
+  final double? riderPowerW;
   final double cadenceRpm;
   final double odometerKm;
   final bool lightStatus;
@@ -29,11 +32,15 @@ class BoschLiveData {
 
   factory BoschLiveData.fromMap(Map<Object?, Object?> map) {
     double d(Object? v) => (v as num?)?.toDouble() ?? 0;
+    double? dOpt(Object? v) => (v as num?)?.toDouble();
     bool b(Object? v) => v == true;
     return BoschLiveData(
       speedKmh: d(map['speedKmh']),
-      batterySocPercent: d(map['batterySocPercent']),
-      riderPowerW: d(map['riderPowerW']),
+      batterySocPercent: map.containsKey('batterySocPercent')
+          ? dOpt(map['batterySocPercent'])
+          : null,
+      riderPowerW:
+          map.containsKey('riderPowerW') ? dOpt(map['riderPowerW']) : null,
       cadenceRpm: d(map['cadenceRpm']),
       odometerKm: d(map['odometerKm']),
       lightStatus: b(map['lightStatus']),

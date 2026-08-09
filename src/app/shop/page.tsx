@@ -315,12 +315,13 @@ function ShopPageInner() {
                 rel="noreferrer"
                 className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
               >
-                Beim Partner ansehen <ExternalLink className="h-3.5 w-3.5" />
+                Beim Beispiel-Händler ansehen{" "}
+                <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
           ))}
           <p className="pb-2 text-center text-[11px] text-text-secondary">
-            Preise und Versand beim Partner · voller Katalog nach Bike-Anlage
+            Beispielkatalog — keine Live-Partner; Preise nur zur Orientierung
           </p>
         </section>
       ) : null}
@@ -375,7 +376,7 @@ function ShopPageInner() {
                   rel="noreferrer"
                   className="mt-2 inline-flex items-center gap-1 text-xs text-accent"
                 >
-                  Beim Partner · {r.product.priceEur} €{" "}
+                  Beim Beispiel-Händler · {r.product.priceEur} €{" "}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
@@ -537,7 +538,7 @@ function ShopPageInner() {
                       rel="noopener noreferrer"
                       className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
                     >
-                      Beim Partner <ExternalLink className="h-4 w-4" />
+                      Beispiel-Link <ExternalLink className="h-4 w-4" />
                     </a>
                   ) : (
                     <Link
@@ -570,7 +571,7 @@ function ShopPageInner() {
                   : "bg-surface-elevated"
               )}
             >
-              Partner-Links
+              Beispiel-Links
             </button>
             <button
               type="button"
@@ -676,7 +677,7 @@ function ShopPageInner() {
       ) : null}
 
       <p className="text-center text-xs text-text-secondary">
-        Preise und Versand beim Partner ·{" "}
+        Beispielkatalog — keine Live-Käufe ·{" "}
         <Link href="/checkout" className="text-accent">
           Merkliste öffnen
         </Link>

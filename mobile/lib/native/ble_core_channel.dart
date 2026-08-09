@@ -14,7 +14,8 @@ enum BlePermissionResult {
   unsupported,
 }
 
-/// Standard BLE (CSC / Power / HR) + Bosch LDI shell (behind G-1).
+/// Standard BLE CSC (0x1816) + Bosch LDI shell (behind G-1).
+/// Power Meter / HR are not implemented — do not invent SoC or power from cadence.
 class BleCoreChannel {
   BleCoreChannel({
     MethodChannel? method,
@@ -30,15 +31,17 @@ class BleCoreChannel {
   StreamSubscription<List<int>>? _cscSub;
   final _controller = StreamController<BoschLiveData>.broadcast();
   bool _connected = false;
+  /// True when live data comes from CSC only (no LDI SoC/power).
+  bool _cscOnly = false;
   Timer? _stubTimer;
   double _soc = 87;
   double _odo = 1247.4;
   double _speed = 0;
   double _cadence = 0;
-  final double _power = 0;
 
   Stream<BoschLiveData> get liveData => _controller.stream;
   bool get isConnected => _connected;
+  bool get isCscOnly => _cscOnly;
 
   /// Request Android 12+ BLE runtime permissions via a short probe scan.
   /// Does not require a sensor — Freeride remains usable without CSC.
@@ -82,9 +85,8 @@ class BleCoreChannel {
         if (_connected) 'connected',
         'speed',
         'cadence',
-        'power',
-        // LDI fields only after G-1 native plugin:
-        // 'batterySoc', 'lightStatus', …
+        // LDI / Power Meter not wired yet:
+        // 'power', 'batterySoc', 'lightStatus', …
       };
 
   Future<bool> connect({String? deviceId}) async {
@@ -106,6 +108,7 @@ class BleCoreChannel {
       });
       _connected = ok ?? false;
       if (_connected) {
+        _cscOnly = false;
         _sub ??=
             _events.receiveBroadcastStream().listen(_onEvent, onError: _onError);
       }
@@ -117,6 +120,7 @@ class BleCoreChannel {
       if (kDebugMode && sim) {
         debugPrint('ble_core: LDI Plugin fehlt — Simulator (AETHER_LDI_SIM)');
         _connected = true;
+        _cscOnly = false;
         _startStub();
         return true;
       }
@@ -136,7 +140,7 @@ class BleCoreChannel {
     await Future<void>.delayed(const Duration(seconds: 4));
     await FlutterBluePlus.stopScan();
 
-    // CSC service UUID 0x1816
+    // CSC service UUID 0x1816 only (no Power 0x1818 / HR 0x180D yet).
     BluetoothDevice? target;
     for (final r in FlutterBluePlus.lastScanResults) {
       if (r.advertisementData.serviceUuids
@@ -159,7 +163,8 @@ class BleCoreChannel {
       }
     }
     _connected = true;
-    _startTelemetryTicker();
+    _cscOnly = true;
+    _startCscTicker();
     return true;
   }
 
@@ -170,25 +175,25 @@ class BleCoreChannel {
     _speed = _cadence * 0.28;
   }
 
-  void _startTelemetryTicker() {
+  /// CSC-only telemetry: speed + cadence. SoC/Power stay null (no LDI).
+  void _startCscTicker() {
     _stubTimer?.cancel();
     _stubTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       _emit(
         BoschLiveData(
           speedKmh: _speed,
-          batterySocPercent: _soc,
-          riderPowerW: _power > 0 ? _power : _cadence * 2.2,
+          batterySocPercent: null,
+          riderPowerW: null,
           cadenceRpm: _cadence,
-          odometerKm: _odo,
+          odometerKm: 0,
           lightStatus: false,
-          ambientBrightness: 50,
+          ambientBrightness: 0,
           systemLock: false,
           bikeNotDriving: _speed < 1,
           chargerConnected: false,
           timestampMs: DateTime.now().millisecondsSinceEpoch,
         ),
       );
-      _odo += _speed / 7200;
     });
   }
 
@@ -199,6 +204,7 @@ class BleCoreChannel {
     await _sub?.cancel();
     _sub = null;
     _connected = false;
+    _cscOnly = false;
     try {
       for (final d in FlutterBluePlus.connectedDevices) {
         await d.disconnect();
@@ -213,6 +219,7 @@ class BleCoreChannel {
 
   void _onEvent(dynamic event) {
     if (event is! Map) return;
+    _cscOnly = false;
     _emit(BoschLiveData.fromMap(Map<Object?, Object?>.from(event)));
   }
 

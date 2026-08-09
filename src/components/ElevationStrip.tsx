@@ -1,17 +1,31 @@
 /**
  * Mini-Höhenprofil für Home „HEUTE PASST“ (Spec ElevationStrip).
+ * Ohne echte Elev-Serie: synthetisches Profil — UI kennzeichnet als Schätzung.
  */
 
 export function ElevationStrip({
   elevationM,
   distanceKm,
   className,
+  /** Echte Höhenpunkte (z. B. Ride-Track); sonst synthetisch */
+  elevProfile,
+  /** Kennzeichnung wenn Profil geschätzt/synthetisch ist */
+  estimated,
 }: {
   elevationM: number;
   distanceKm: number;
   className?: string;
+  elevProfile?: number[];
+  estimated?: boolean;
 }) {
-  const points = buildSyntheticProfile(elevationM, distanceKm);
+  const fromTrack =
+    elevProfile &&
+    elevProfile.length >= 4 &&
+    elevProfile.some((v) => Number.isFinite(v));
+  const points = fromTrack
+    ? elevProfile!
+    : buildSyntheticProfile(elevationM, distanceKm);
+  const isEstimate = estimated ?? !fromTrack;
   const max = Math.max(...points, 1);
   const min = Math.min(...points, 0);
   const span = Math.max(max - min, 1);
@@ -26,24 +40,32 @@ export function ElevationStrip({
     .join(" ");
 
   return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      className={className}
-      aria-hidden
-      preserveAspectRatio="none"
-      width="100%"
-      height={28}
-    >
-      <path
-        d={d}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-accent"
-      />
-    </svg>
+    <div className={className}>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        aria-label={
+          isEstimate
+            ? `Höhenschätzung ca. ${elevationM} hm`
+            : `Höhenprofil ca. ${elevationM} hm`
+        }
+        preserveAspectRatio="none"
+        width="100%"
+        height={28}
+      >
+        <path
+          d={d}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-accent"
+        />
+      </svg>
+      {isEstimate && (
+        <p className="mt-0.5 text-[10px] text-text-secondary">Schätzung</p>
+      )}
+    </div>
   );
 }
 

@@ -47,6 +47,7 @@ export function RouteCard({
           <ElevationStrip
             elevationM={route.elevationM}
             distanceKm={route.distanceKm}
+            estimated
           />
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">

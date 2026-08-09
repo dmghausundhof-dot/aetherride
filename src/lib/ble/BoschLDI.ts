@@ -1,20 +1,11 @@
 /**
  * AetherRide – Bosch Live Data Interface (LDI) Client
  *
- * Basiert auf der offiziellen Bosch Live Data Interface Spec (V1.0, Mai 2026).
- * Read-only BLE Interface – keine Partnerschaft erforderlich.
+ * Contract + Web-Simulation. Im Browser: immer Simulator (kein BLE, keine
+ * echte Hardware). Native BLE lebt in der Flutter-App.
  *
- * Verfügbare Datenpunkte laut Spec:
- * Speed, Battery SOC, Rider Power, Cadence, Odometer, Time,
- * Light Status, Ambient Brightness, Light Reserve, System Lock,
- * Bike Not Driving, Charger Connected, Diagnosis Connected
- *
- * In Produktion:
- * - Flutter: flutter_blue_plus + native Platform Channel für hohe Frequenz
- * - iOS: CoreBluetooth
- * - Android: BluetoothGatt
- *
- * Diese Datei enthält die Web-Simulation + die Contract-Interfaces.
+ * Datenpunkte laut Spec (Read-only): Speed, Battery SOC, Rider Power, Cadence,
+ * Odometer, Light Status, Ambient Brightness, System Lock, …
  */
 
 export interface BoschLiveData {
@@ -47,8 +38,9 @@ export interface BoschLDIClient {
 export const BOSCH_LDI_SERVICE = "00000010-eaa2-11e9-81b4-2a2ae2dbcce4"; // Beispiel aus Community + Spec-Nähe
 
 /**
- * Web-Simulator, der realistisches Bosch-Verhalten nachbildet.
- * In nativer App wird diese Klasse durch echte BLE-GATT-Implementierung ersetzt.
+ * Web-Simulator — kein echtes Bosch-BLE. Nur Demo-Werte für UI/Flow.
+ * Native (Flutter) ersetzt dies durch echte GATT-Implementierung.
+ * UI muss „Simulation“ kennzeichnen — nie als echte Hardware-Verbindung ausgeben.
  */
 export class BoschLDIWebSimulator implements BoschLDIClient {
   private connected = false;
@@ -118,9 +110,9 @@ export class BoschLDIWebSimulator implements BoschLDIClient {
 }
 
 /**
- * Factory – in Produktion wird hier die native Implementierung gewählt.
+ * Factory — im Browser immer Web-Simulator (kein BLE).
+ * Native Clients leben in der Flutter-App, nicht hier.
  */
 export function createBoschLDIClient(): BoschLDIClient {
-  // In Flutter/Native: return new BoschLDINativeClient();
   return new BoschLDIWebSimulator();
 }

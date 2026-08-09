@@ -36,7 +36,7 @@ const ROLE_STYLE: Record<
 > = {
   active: { color: "#4FC3F7", width: 5, opacity: 0.95 },
   alt: { color: "#90A4AE", width: 3, opacity: 0.45 },
-  tour: { color: "#AB47BC", width: 4, opacity: 0.85 },
+  tour: { color: "#26A69A", width: 4, opacity: 0.85 },
   approach: { color: "#66BB6A", width: 4, opacity: 0.9, dasharray: [2, 2] },
   trail: { color: "#B0BEC5", width: 2.5, opacity: 0.55, dasharray: [1.5, 1.5] },
   approx: { color: "#78909C", width: 3.5, opacity: 0.65, dasharray: [2, 2] },

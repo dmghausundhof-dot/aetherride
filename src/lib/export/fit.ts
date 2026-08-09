@@ -112,18 +112,26 @@ export function rideToFit(ride: Ride): Uint8Array {
     { num: 2, size: 2, base: 132 }, // altitude (scaled)
   ]);
 
+  let written = 0;
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
+    const lat = typeof p.lat === "number" ? p.lat : null;
+    const lng = typeof p.lng === "number" ? p.lng : null;
+    // Skip missing / Null Island / out-of-range — never write 0,0.
+    if (lat == null || lng == null) continue;
+    if (Math.abs(lat) < 1e-6 && Math.abs(lng) < 1e-6) continue;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
     const t =
       typeof p.time === "number"
         ? startFit + Math.floor(p.time)
-        : startFit + i * 30;
+        : startFit + written * 30;
     records.u8(1);
     records.u32(t);
-    records.i32(toSemi(p.lat));
-    records.i32(toSemi(p.lng));
+    records.i32(toSemi(lat));
+    records.i32(toSemi(lng));
     const alt = p.elev != null ? Math.round((p.elev + 500) * 5) : 0xffff;
     records.u16(alt);
+    written++;
   }
 
   // session def local 2, global 18

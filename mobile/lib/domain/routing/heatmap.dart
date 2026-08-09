@@ -94,7 +94,8 @@ HeatmapResult buildHeatmapFromRides({
     attribution: '© OpenStreetMap · AetherRide eigene Aggregate',
     disclaimer: fromRides.isNotEmpty
         ? (consentHeatmap
-            ? 'Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet).'
+            ? 'Lokal aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet) '
+                '— keine Community-Nutzerzahl; k≥$kHeatmapThreshold gilt nur serverseitig.'
             : 'Deine Strecken sind ausgeblendet — Consent unter Privatsphäre.')
         : (useSeed
             ? 'Noch wenig eigene Daten — Beispielabschnitte bis genug Rides da sind.'

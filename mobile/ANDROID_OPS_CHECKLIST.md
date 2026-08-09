@@ -11,17 +11,18 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [x] Deep-Link Redirects in Auth `uri_allow_list`:
   `io.aetherride.app://login-callback/`, `io.aetherride.app://strava-callback/`,
   plus `http://localhost:3000/**` / `3001/**`
-- [ ] Mobile OAuth Client (Android package + SHA) in Supabase Dashboard hinterlegt  
+- [ ] Mobile OAuth Client (Package + SHA) in Supabase Dashboard  
   Package: `com.aetherride.aetherride_mobile` — SHA via `scripts/ops-android-auth.sh`
+- [x] Google/Apple Buttons default **aus** (`ENABLE_GOOGLE_OAUTH` / `ENABLE_APPLE_OAUTH`)
 - [x] `SUPABASE_SERVICE_ROLE_KEY` lokal gesetzt (Account-Delete, Strava-Store, Heatmap)
 
 ## Strava
 
 - [x] Upload-Route: GPX → Strava Uploads API; sonst Metadaten (Code)
 - [x] Kein Fake-Track bei leerem GPS — GPX/FIT (Code)
-- [ ] `STRAVA_CLIENT_ID` + `STRAVA_CLIENT_SECRET` in Env (`.env.local` noch leer)
+- [ ] `STRAVA_CLIENT_ID` + `STRAVA_CLIENT_SECRET` in Env
 - [ ] Strava App Redirect: `{APP_URL}/api/strava/callback`
-- [ ] Optional: `STRAVA_STATE_SECRET` (sonst CLIENT_SECRET für State-HMAC)
+- [ ] Optional: `STRAVA_STATE_SECRET`
 - [ ] Nach Connect: Mobile/Web „Letzten Ride zu Strava“ testen
 
 ## Play Billing
@@ -30,38 +31,41 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [ ] License Tester Account für Restore/Kauf-Smoke
 - [ ] Optional: `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` für Server-Verify
 - [ ] App Signing + Internal Testing Track
+- [x] UI: Trusted-Token-MVP ehrlich gelabelt (ohne Publisher-API)
 
 ## Routing / Offline (Valhalla)
 
 - [x] Android JNI Valhalla-linked (`jniLibs/arm64-v8a`, `GRAPH_ONLY=0`)
-- [x] Region-Pack `schwarzwald-nord` mit `valhalla.json` + `tiles/` + `schwarzwald-nord.tar.gz`
-- [x] Bundled `mobile/assets/routing/offline_graph.json` an Pack synchronisiert
-- [x] Lokal servierbar: `GET /api/offline/packs` / `…/schwarzwald-nord/schwarzwald-nord.tar.gz`
-- [x] Smoke: `bash scripts/smoke-offline-pack.sh [--push]` (API 200 + Pack ~24 MB; Push nach `/sdcard/Download/`)
-- [x] Offline-Sheet: API-Base sichtbar, Pack zurücksetzen, Style/Pack → Karte neu laden
-- [ ] Emulator UI manuell: Offline-Sheet → Region laden und Valhalla-Status prüfen
-- [x] Basemap: Roh-`.pmtiles` abgelehnt; Style-JSON-URL (Web+Mobile gleiche Heuristik)
-- [x] Discover: Routing-Status-Banner (`/api/routing/status`)
-- [x] Post-Ride Heatmap-Contribute mit ehrlicher Snackbar
-- [x] GPX-Import: UTF-8 + `lon` vor `lat`
+- [x] Region-Pack `schwarzwald-nord` + Smoke-Script
+- [x] Offline-Sheet: API-Base, Pack zurücksetzen, Style-Reload
+- [x] Basemap Style-JSON Heuristik; Roh-`.pmtiles` abgelehnt
+- [x] Discover Routing-Status-Banner
+- [ ] Emulator UI manuell: Pack laden + Valhalla-Status
+- [ ] `NEXT_PUBLIC_ROUTING_LIVE=1` nach Smoke (sonst „nicht verifiziert“)
 
-## Android OAuth Client (nur bei Google Sign-In)
+## Honesty Fixes (Code, Aug 2026)
 
-- Google Provider derzeit **aus** — Deep-Link Redirect reicht für E-Mail/OAuth-Browser.
-- Wenn Google aktiviert wird: Package `com.aetherride.aetherride_mobile` + SHA aus `scripts/ops-android-auth.sh`
-- Auth-Screen: Hinweis, dass Google ohne Provider/SHA fehlschlägt
+- [x] CSC: kein Fake-SoC/Power — nur Kadenz/Tempo; SoC zeigt „LDI folgt G-1“
+- [x] Sensor-Stub nur Debug + `AETHER_SENSOR_SIM`
+- [x] FIT: Null-Island-Punkte übersprungen
+- [x] Web Ride: Sensor/Bosch klar als Simulation
+- [x] Web Post-Ride: Heatmap Contribute
+- [x] Web Profil: Konto löschen
+- [x] Consents default alle aus (Opt-in)
+- [x] Shop/Offline/Elevation ehrlich gelabelt
 
 ## Outdooractive / Mapillary
 
-- [x] OA Keys lokal → Live-Pfad (List + Detail-Hydration); Discover sendet `lat`/`lon`
-- [x] Mapillary über `/api/trail` live (`usingDemo: false`) — Token server-seitig, nicht `NEXT_PUBLIC`
+- [x] OA Keys lokal → Live-Pfad (List + Detail-Hydration)
+- [x] Mapillary über `/api/trail` live — Token server-seitig
 
 ## LDI / Bosch (Hardware)
 
-- [ ] NDA / Partner-Zugang (siehe `packages/ble_core/README.md` Gates G-1)
-- [ ] Kein Fake-SDK — Ride-UI bleibt „LDI folgt G-1“ bis Hardware da ist
+- [ ] NDA / Partner-Zugang (Gates G-1 in `packages/ble_core/README.md`)
+- [x] Kein Fake-SDK in Release — Ride-UI „LDI folgt G-1“; Sim nur Debug
 
 ## Community-Heatmap
 
-- [x] `heatmap_cells` SQL live (Projekt aetherride)
+- [x] `heatmap_cells` SQL live
+- [x] Contribute Mobile + Web (Post-Ride)
 - [ ] Mehrere Test-Accounts mit Consent → Zellen erst ab k≥5 sichtbar

@@ -547,7 +547,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     });
     _bleSub = ble.liveData.listen((d) {
       if (mounted) setState(() => _ldi = d);
-      _startSoc ??= d.batterySocPercent;
+      // Nur echte LDI-SoC — CSC liefert null, nicht erfinden.
+      final soc = d.batterySocPercent;
+      if (soc != null) _startSoc ??= soc;
     });
     _startedAt = DateTime.now();
     _spokenAnnounceKeys.clear();
@@ -851,7 +853,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             'gpsStallSim': _gpsStallSec >= 3 && _allowGpsStallSim,
             'trackPoints': track.length,
             'elevationSource': elevSource,
-            if (_ldi != null) 'soc': _ldi!.batterySocPercent,
+            if (_ldi?.batterySocPercent != null)
+              'soc': _ldi!.batterySocPercent,
           },
         );
 
@@ -1373,20 +1376,26 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               children: [
                 _MetricRow(
-                  'Speed',
+                  'Tempo',
                   '${_effectiveSpeedKmh.toStringAsFixed(1)} km/h',
                 ),
                 _MetricRow(
-                  'SOC',
-                  '${(_ldi?.batterySocPercent ?? 0).toStringAsFixed(0)} %',
+                  'SoC',
+                  _ldi?.batterySocPercent != null
+                      ? '${_ldi!.batterySocPercent!.toStringAsFixed(0)} %'
+                      : '— (LDI folgt G-1)',
                 ),
                 _MetricRow(
-                  'Power',
-                  '${(_ldi?.riderPowerW ?? 0).toStringAsFixed(0)} W',
+                  'Leistung',
+                  _ldi?.riderPowerW != null
+                      ? '${_ldi!.riderPowerW!.toStringAsFixed(0)} W'
+                      : '—',
                 ),
                 _MetricRow(
-                  'Cadence',
-                  '${(_ldi?.cadenceRpm ?? 0).toStringAsFixed(0)} rpm',
+                  'Kadenz',
+                  _ldi != null
+                      ? '${_ldi!.cadenceRpm.toStringAsFixed(0)} rpm'
+                      : '—',
                 ),
               ],
             ),

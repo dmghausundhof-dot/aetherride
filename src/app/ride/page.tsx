@@ -508,6 +508,16 @@ export default function RidePage() {
         </div>
       )}
 
+      {/* Web: Sensor + Bosch LDI sind immer Simulation — kein echtes BLE */}
+      <div
+        className="border-b border-amber-500/40 bg-amber-500/10 px-4 py-2 text-[11px] leading-snug text-amber-950 dark:text-amber-100"
+        role="status"
+      >
+        <strong className="font-semibold">Simulation:</strong> Sensoren
+        (WebSensorSimulator) und Bosch LDI laufen im Browser nur als Demo —
+        keine echte Hardware-Verbindung. Echtes BLE gibt es in der Mobile-App.
+      </div>
+
       <div className="flex flex-1 flex-col gap-3 p-4 pt-4">
         <header className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -656,13 +666,13 @@ export default function RidePage() {
               <>
                 <MetricCard
                   icon={<Zap className="h-5 w-5" />}
-                  label="Akku"
+                  label="Akku (Sim.)"
                   value={`${boschLive.soc}`}
                   unit="%"
                 />
                 <MetricCard
                   icon={<Zap className="h-5 w-5" />}
-                  label="Leistung"
+                  label="Leistung (Sim.)"
                   value={`${boschLive.riderPower}`}
                   unit="W"
                 />

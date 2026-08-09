@@ -59,7 +59,7 @@ export const DEFAULT_CONSENTS: ConsentState[] = (
   Object.keys(CONSENT_LABELS) as ConsentPurpose[]
 ).map((purpose) => ({
   purpose,
-  granted: purpose === "product_recommendations", // sinnvoller Default für Demo-Shop
+  granted: false, // Opt-in — kein Demo-Shop-Default
   updatedAt: new Date().toISOString(),
   policyVersion: "1.0",
 }));

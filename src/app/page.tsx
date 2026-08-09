@@ -328,6 +328,7 @@ export default function HomePage() {
             <ElevationStrip
               elevationM={todayRoute.elevationM}
               distanceKm={todayRoute.distanceKm}
+              estimated
             />
           </div>
           {heroReason && (
@@ -490,24 +491,31 @@ export default function HomePage() {
           )}
 
           {boschConnected && boschLive && (
-            <div className="mt-3 flex items-center gap-4 rounded-xl bg-primary/20 px-3 py-2">
-              <Zap className="h-5 w-5 text-accent" />
-              <div className="grid flex-1 grid-cols-3 gap-2 text-center text-sm">
-                <div>
-                  <div className="text-lg font-semibold tabular-nums">
-                    {boschLive.soc}%
+            <div className="mt-3 rounded-xl bg-primary/20 px-3 py-2">
+              <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-warning">
+                Simulation — kein echtes Bosch LDI
+              </div>
+              <div className="flex items-center gap-4">
+                <Zap className="h-5 w-5 text-accent" />
+                <div className="grid flex-1 grid-cols-3 gap-2 text-center text-sm">
+                  <div>
+                    <div className="text-lg font-semibold tabular-nums">
+                      {boschLive.soc}%
+                    </div>
+                    <div className="text-xs text-text-secondary">Akku (Sim.)</div>
                   </div>
-                  <div className="text-xs text-text-secondary">Akku</div>
-                </div>
-                <div>
-                  <div className="text-lg font-semibold tabular-nums">
-                    {boschLive.odometer}
+                  <div>
+                    <div className="text-lg font-semibold tabular-nums">
+                      {boschLive.odometer}
+                    </div>
+                    <div className="text-xs text-text-secondary">km gesamt</div>
                   </div>
-                  <div className="text-xs text-text-secondary">km gesamt</div>
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-success">verbunden</div>
-                  <div className="text-xs text-text-secondary">Bosch LDI</div>
+                  <div>
+                    <div className="text-xs font-medium text-warning">
+                      Web-Simulator
+                    </div>
+                    <div className="text-xs text-text-secondary">kein BLE</div>
+                  </div>
                 </div>
               </div>
             </div>

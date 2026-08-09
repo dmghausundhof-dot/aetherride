@@ -10,7 +10,7 @@ Dart-Contract: `lib/native/ble_core_channel.dart`
 
 ## Status
 
-- **CSC / Standard BLE** (0x1816): live via `flutter_blue_plus` in `BleCoreChannel`.
+- **CSC / Standard BLE** (0x1816): live via `flutter_blue_plus` in `BleCoreChannel` — speed/cadence only; SoC/Power stay null until LDI/Power Meter.
 - **Bosch LDI (G-1)**: Android shell `BoschLdiPlugin` — `connect` returns `false`, other methods `UnimplementedError` / `"G-1 pending"`.
 - LDI Dart stub telemetry only when `kDebugMode` **and** `--dart-define=AETHER_LDI_SIM=true`. Release never starts the stub.
 

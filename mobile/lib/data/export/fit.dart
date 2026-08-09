@@ -31,10 +31,16 @@ Uint8List rideToFit(RideRecord ride) {
     (2, 2, 132),
   ]);
 
+  var written = 0;
   for (var i = 0; i < pts.length; i++) {
     final p = pts[i];
-    final lat = (p['lat'] as num?)?.toDouble() ?? 0;
-    final lng = (p['lng'] as num?)?.toDouble() ?? 0;
+    final lat = (p['lat'] as num?)?.toDouble();
+    final lng = (p['lng'] as num?)?.toDouble() ??
+        (p['lon'] as num?)?.toDouble();
+    // Skip missing / Null Island / out-of-range — never write 0,0.
+    if (lat == null || lng == null) continue;
+    if (lat.abs() < 1e-6 && lng.abs() < 1e-6) continue;
+    if (lat.abs() > 90 || lng.abs() > 180) continue;
     final elev = (p['elev'] as num?)?.toDouble() ??
         (p['elevation'] as num?)?.toDouble();
     final timeRaw = p['time'] ?? p['timeMs'];
@@ -48,7 +54,7 @@ Uint8List rideToFit(RideRecord ride) {
         t = startFit + timeRaw.round();
       }
     } else {
-      t = startFit + i * 30;
+      t = startFit + written * 30;
     }
     records.u8(1);
     records.u32(t);
@@ -56,6 +62,7 @@ Uint8List rideToFit(RideRecord ride) {
     records.i32(_toSemi(lng));
     final alt = elev != null ? ((elev + 500) * 5).round() : 0xffff;
     records.u16(alt.clamp(0, 0xffff));
+    written++;
   }
 
   _writeDefinition(records, 2, 18, const [

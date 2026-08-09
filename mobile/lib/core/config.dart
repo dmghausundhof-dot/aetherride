@@ -70,6 +70,18 @@ abstract final class AppConfig {
     defaultValue: 'io.aetherride.app://login-callback/',
   );
 
+  /// Google OAuth button — default aus (Provider/SHA oft noch nicht fertig).
+  static const enableGoogleOAuth = bool.fromEnvironment(
+    'ENABLE_GOOGLE_OAUTH',
+    defaultValue: false,
+  );
+
+  /// Apple OAuth button — default aus bis Provider/Entitlements stehen.
+  static const enableAppleOAuth = bool.fromEnvironment(
+    'ENABLE_APPLE_OAUTH',
+    defaultValue: false,
+  );
+
   static bool get isSupabaseConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 

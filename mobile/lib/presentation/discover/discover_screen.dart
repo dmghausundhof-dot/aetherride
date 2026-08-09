@@ -2260,7 +2260,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
                         _heatmapNote ??
-                            'Heatmap aktiv (lokal + Community k≥5 wenn Backend)',
+                            'Heatmap: lokal eigene Rides; Community erst ab k≥5 vom Backend',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

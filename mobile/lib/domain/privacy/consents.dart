@@ -61,10 +61,9 @@ const consentLabels = <ConsentPurpose, ConsentLabel>{
   ),
 };
 
-/// Default: product recommendations on (demo shop), rest off.
+/// Default: all consents off (opt-in).
 Map<String, bool> defaultConsentGrants() => {
-      for (final p in ConsentPurpose.values)
-        p.apiId: p == ConsentPurpose.productRecommendations,
+      for (final p in ConsentPurpose.values) p.apiId: false,
     };
 
 class PrivacyZone {

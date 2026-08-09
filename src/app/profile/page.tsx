@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { User, Sparkles, Crown, LogIn, LogOut, Cloud } from "lucide-react";
+import { User, Sparkles, Crown, LogIn, LogOut, Cloud, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { RiderProfile } from "@/types";
 import {
@@ -309,6 +309,74 @@ export default function ProfilePage() {
     }
   };
 
+  const deleteAccount = async () => {
+    const ok = window.confirm(
+      "Konto löschen?\n\nRemote-Konto und lokale App-Daten werden entfernt. " +
+        "Exportiere vorher GPX/JSON unter Daten & Privatsphäre."
+    );
+    if (!ok) return;
+    const confirmText = window.prompt(
+      'Zum Bestätigen „DELETE“ eingeben:',
+      ""
+    );
+    if (confirmText !== "DELETE") {
+      setAuthMsg("Abgebrochen — Bestätigung war nicht DELETE.");
+      return;
+    }
+    setBusy(true);
+    setAuthMsg(null);
+    let remoteMsg: string | null = null;
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+      if (res.status === 200) {
+        remoteMsg = "Remote-Konto gelöscht.";
+      } else if (res.status === 503) {
+        remoteMsg =
+          data.message ||
+          "Remote-Löschung nicht verfügbar (Service-Role fehlt) — nur lokale Daten werden entfernt.";
+      } else if (res.status === 401) {
+        remoteMsg = "Nicht angemeldet — nur lokale Daten werden entfernt.";
+      } else {
+        remoteMsg = `Remote-Löschung fehlgeschlagen (${
+          data.message || data.error || res.status
+        }) — lokal trotzdem gelöscht.`;
+      }
+    } catch {
+      remoteMsg = "Server nicht erreichbar — nur lokale Daten werden entfernt.";
+    }
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* ignore */
+    }
+    try {
+      await useAppStore.persist.clearStorage();
+    } catch {
+      try {
+        localStorage.removeItem("aetherride-storage");
+      } catch {
+        /* ignore */
+      }
+    }
+    setAuthUser(null);
+    setBusy(false);
+    setAuthMsg(
+      remoteMsg ??
+        "Lokale Daten gelöscht. Export ggf. unter Privatsphäre nachholen."
+    );
+    window.setTimeout(() => {
+      window.location.href = "/";
+    }, 800);
+  };
+
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
       <header className="flex items-center gap-3">
@@ -352,6 +420,14 @@ export default function ProfilePage() {
                 className="inline-flex items-center gap-1 rounded-xl bg-surface-elevated px-3 py-2 text-xs font-medium"
               >
                 <LogOut className="h-3.5 w-3.5" /> Abmelden
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void deleteAccount()}
+                className="inline-flex items-center gap-1 rounded-xl border border-error/50 px-3 py-2 text-xs font-medium text-error"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Konto löschen
               </button>
             </div>
           </div>
@@ -419,7 +495,8 @@ export default function ProfilePage() {
           <Crown className="h-4 w-4 text-accent" /> Abo
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
-          Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Offline, Reichweite,
+          Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Reichweite.
+          Offline-Regionen nur in der Mobile-App.
           KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
         </p>
         <p className="mb-3 text-sm font-medium">

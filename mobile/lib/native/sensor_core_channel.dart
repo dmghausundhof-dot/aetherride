@@ -36,8 +36,18 @@ class SensorCoreChannel {
       _sub ??=
           _events.receiveBroadcastStream().listen(_onEvent, onError: _onError);
     } on MissingPluginException {
-      debugPrint('sensor_core: Plugin fehlt — Stub + dsp_core');
-      _startStub(sampleRateHz);
+      // Stub only in debug + explicit dart-define (never in release).
+      const sim = bool.fromEnvironment('AETHER_SENSOR_SIM', defaultValue: false);
+      if (kDebugMode && sim) {
+        debugPrint(
+          'sensor_core: Plugin fehlt — Simulator (AETHER_SENSOR_SIM)',
+        );
+        _startStub(sampleRateHz);
+        return;
+      }
+      debugPrint(
+        'sensor_core: Plugin fehlt — fail-closed (kein Stub in Release)',
+      );
     }
   }
 

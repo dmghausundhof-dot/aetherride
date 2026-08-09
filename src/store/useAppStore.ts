@@ -228,7 +228,9 @@ interface AppState {
     time?: number;
   }) => void;
   updateLiveMetrics: (metrics: Partial<SensorMetrics>) => void;
-  updateBoschLive: (data: Partial<AppState["boschLive"]>) => void;
+  updateBoschLive: (
+    data: Partial<NonNullable<AppState["boschLive"]>>
+  ) => void;
   endRide: () => Ride | null;
   addRecommendation: (rec: Omit<Recommendation, "id" | "status">) => void;
   dismissRecommendation: (id: string) => void;
@@ -1270,7 +1272,15 @@ export const useAppStore = create<AppState>()(
 
       updateBoschLive: (data) =>
         set((s) => ({
-          boschLive: s.boschLive ? { ...s.boschLive, ...data } : null,
+          // Web: Simulator-Stream — UI kennzeichnet als Simulation, kein echtes BLE.
+          boschConnected: true,
+          boschLive: {
+            speed: data.speed ?? s.boschLive?.speed ?? 0,
+            soc: data.soc ?? s.boschLive?.soc ?? 0,
+            riderPower: data.riderPower ?? s.boschLive?.riderPower ?? 0,
+            cadence: data.cadence ?? s.boschLive?.cadence ?? 0,
+            odometer: data.odometer ?? s.boschLive?.odometer ?? 0,
+          },
         })),
 
       endRide: () => {
@@ -1368,6 +1378,8 @@ export const useAppStore = create<AppState>()(
           pauseStartedAt: null,
           currentRide: null,
           liveMetrics: null,
+          boschConnected: false,
+          boschLive: null,
           activeRoute: null,
           bikes: s.bikes.map((b) =>
             b.id === ride.bikeId
@@ -1620,7 +1632,6 @@ export const useAppStore = create<AppState>()(
         activeRoute: s.activeRoute,
         savedRoutes: s.savedRoutes,
         routeCollections: s.routeCollections,
-        boschConnected: s.boschConnected,
         maintenanceLogs: s.maintenanceLogs,
         maintenanceIntervals: s.maintenanceIntervals,
         bracketingSeries: s.bracketingSeries,

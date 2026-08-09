@@ -66,4 +66,41 @@ void main() {
     expect(bytes.length, greaterThan(20));
     expect(String.fromCharCodes(bytes.sublist(8, 12)), '.FIT');
   });
+
+  test('rideToFit skips Null Island and missing lat/lng', () {
+    final ride = RideRecord(
+      id: 'r2',
+      bikeId: 'b1',
+      startedAt: DateTime.utc(2026, 1, 1, 10),
+      endedAt: DateTime.utc(2026, 1, 1, 11),
+      distanceKm: 1,
+      movingTimeSec: 600,
+      elevationM: 10,
+      track: [
+        {'lat': 0, 'lng': 0, 'time': 0},
+        {'lat': 47.5, 'lng': 12.2, 'elev': 800, 'time': 30},
+        {'lng': 12.3, 'time': 60}, // missing lat
+        {'lat': 47.51, 'lng': 12.21, 'elev': 801, 'time': 90},
+      ],
+    );
+    final withJunk = rideToFit(ride);
+    final clean = rideToFit(
+      RideRecord(
+        id: 'r2c',
+        bikeId: 'b1',
+        startedAt: ride.startedAt,
+        endedAt: ride.endedAt,
+        distanceKm: 1,
+        movingTimeSec: 600,
+        elevationM: 10,
+        track: [
+          {'lat': 47.5, 'lng': 12.2, 'elev': 800, 'time': 30},
+          {'lat': 47.51, 'lng': 12.21, 'elev': 801, 'time': 90},
+        ],
+      ),
+    );
+    // Same number of record messages → same length as clean track.
+    expect(withJunk.length, clean.length);
+    expect(String.fromCharCodes(withJunk.sublist(8, 12)), '.FIT');
+  });
 }

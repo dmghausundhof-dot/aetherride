@@ -259,22 +259,30 @@ export default function PrivacyExportPage() {
                   {stravaBusy ? "Lade hoch…" : "Letzten Ride zu Strava"}
                 </button>
               )}
-              <button
-                type="button"
-                disabled={!lastRide}
-                onClick={() => {
-                  if (!lastRide) return;
-                  const stub = rideToStravaActivityStub(lastRide);
-                  downloadText(
-                    "strava-activity-payload.json",
-                    JSON.stringify(stub, null, 2),
-                    "application/json"
-                  );
-                }}
-                className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
-              >
-                Strava-Payload (Stub JSON)
-              </button>
+              <details className="rounded-xl border border-border px-3 py-2">
+                <summary className="cursor-pointer text-xs text-text-secondary">
+                  Advanced — Stub-Export
+                </summary>
+                <button
+                  type="button"
+                  disabled={!lastRide}
+                  onClick={() => {
+                    if (!lastRide) return;
+                    const stub = rideToStravaActivityStub(lastRide);
+                    downloadText(
+                      "strava-activity-payload.json",
+                      JSON.stringify(stub, null, 2),
+                      "application/json"
+                    );
+                  }}
+                  className="mt-2 w-full rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
+                >
+                  Strava-Payload (Stub JSON)
+                </button>
+                <p className="mt-1 text-[10px] text-text-secondary">
+                  Lokaler Dev-/QA-Export — kein Live-Upload.
+                </p>
+              </details>
             </>
           ) : (
             <p className="rounded-xl border border-dashed border-border px-3 py-2.5 text-xs text-text-secondary">
@@ -284,6 +292,30 @@ export default function PrivacyExportPage() {
               <code className="text-[10px]">strava_connections</code>. Bis dahin:
               GPX/FIT.
             </p>
+          )}
+          {!stravaConfigured && lastRide && (
+            <details className="rounded-xl border border-border px-3 py-2">
+              <summary className="cursor-pointer text-xs text-text-secondary">
+                Advanced — Stub-Export
+              </summary>
+              <button
+                type="button"
+                onClick={() => {
+                  const stub = rideToStravaActivityStub(lastRide);
+                  downloadText(
+                    "strava-activity-payload.json",
+                    JSON.stringify(stub, null, 2),
+                    "application/json"
+                  );
+                }}
+                className="mt-2 w-full rounded-xl border border-border py-2.5 text-sm"
+              >
+                Strava-Payload (Stub JSON)
+              </button>
+              <p className="mt-1 text-[10px] text-text-secondary">
+                Lokaler Dev-/QA-Export — kein Live-Upload.
+              </p>
+            </details>
           )}
           {stravaStatusMsg && (
             <p className="text-xs text-text-secondary">{stravaStatusMsg}</p>

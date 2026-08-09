@@ -274,8 +274,8 @@ export function RouteDetail({
             </div>
           )}
           <p className="text-[11px] text-text-secondary">
-            Offline-Paket ca.{" "}
-            {Math.max(8, Math.round(route.distanceKm * 0.35))} MB (Schätzung)
+            Offline-Pakete gibt es derzeit nur in der Mobile-App (API vorhanden,
+            Web-Download noch nicht).
           </p>
         </div>
       )}

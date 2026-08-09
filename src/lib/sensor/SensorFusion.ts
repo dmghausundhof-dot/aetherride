@@ -123,8 +123,8 @@ export class SensorFusionEngine {
 }
 
 /**
- * Web-Simulator – erzeugt realistische Sensor-Samples.
- * Ersetzt in Produktion den nativen Sensor-Stream.
+ * Web-Simulator — kein Geräte-IMU. Erzeugt Demo-Sensor-Samples für den Ride-Flow.
+ * Native App nutzt echte Sensoren; UI muss „Simulation“ kennzeichnen.
  */
 export class WebSensorSimulator {
   private engine: SensorFusionEngine;

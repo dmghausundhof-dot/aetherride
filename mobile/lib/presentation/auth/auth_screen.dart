@@ -357,29 +357,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     : 'Neu hier? Registrieren',
               ),
             ),
-            if (AppConfig.isSupabaseConfigured) ...[
+            if (AppConfig.isSupabaseConfigured &&
+                (AppConfig.enableGoogleOAuth ||
+                    AppConfig.enableAppleOAuth)) ...[
               const SizedBox(height: 8),
               const Divider(),
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : () => _oauth(OAuthProvider.google),
-                icon: const Icon(Icons.g_mobiledata),
-                label: const Text('Mit Google'),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text(
-                  'Google nur wenn in Supabase aktiv + Android-SHA hinterlegt '
-                  '(scripts/ops-android-auth.sh). Sonst E-Mail-Login nutzen.',
-                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+              if (AppConfig.enableGoogleOAuth) ...[
+                OutlinedButton.icon(
+                  onPressed:
+                      _busy ? null : () => _oauth(OAuthProvider.google),
+                  icon: const Icon(Icons.g_mobiledata),
+                  label: const Text('Mit Google'),
                 ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : () => _oauth(OAuthProvider.apple),
-                icon: const Icon(Icons.apple),
-                label: const Text('Mit Apple'),
-              ),
+                const SizedBox(height: 8),
+              ],
+              if (AppConfig.enableAppleOAuth)
+                OutlinedButton.icon(
+                  onPressed:
+                      _busy ? null : () => _oauth(OAuthProvider.apple),
+                  icon: const Icon(Icons.apple),
+                  label: const Text('Mit Apple'),
+                ),
             ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
