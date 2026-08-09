@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/active_route.dart';
+import '../domain/bike.dart';
 import '../data/sync/sync_engine.dart' show SyncAuthStatus;
 
 export '../data/sync/sync_engine.dart' show SyncAuthStatus;
@@ -19,6 +20,18 @@ final syncAuthStatusProvider =
 final isRidingProvider = StateProvider<bool>((ref) => false);
 
 final isPausedProvider = StateProvider<bool>((ref) => false);
+
+/// null = noch nicht aus Store geladen; false = Overlay zeigen.
+final onboardingDoneProvider = StateProvider<bool?>((ref) => null);
+
+/// Ride-Tab: einmalig Freeride starten (nach Onboarding).
+final rideAutostartProvider = StateProvider<bool>((ref) => false);
+
+/// Garage: Add-Sheet öffnen, sobald der Tab gemountet ist.
+final garageOpenAddPendingProvider = StateProvider<bool>((ref) => false);
+
+/// Kategorie-Vorbefüllung für Garage-Add aus Onboarding.
+final garageAddCategoryProvider = StateProvider<BikeCategory?>((ref) => null);
 
 final rideLayerProvider =
     StateProvider<RideLiveLayer>((ref) => RideLiveLayer.map);

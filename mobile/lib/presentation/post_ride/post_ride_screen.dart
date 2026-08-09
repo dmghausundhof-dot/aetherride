@@ -40,6 +40,9 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   bool _acceptedSuggestion = false;
   AssistRideSummary? _assist;
   double _replayProgress = 0;
+  bool _stravaConfigured = false;
+  bool _stravaConnected = false;
+  String? _stravaHint;
 
   @override
   void initState() {
@@ -48,6 +51,28 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   }
 
   Future<void> _load() async {
+    try {
+      final s = await fetchStravaStatus();
+      if (mounted) {
+        setState(() {
+          _stravaConfigured = s.configured;
+          _stravaConnected = s.connected;
+          _stravaHint = s.configured
+              ? (s.connected
+                  ? null
+                  : 'Strava verbinden unter Daten & Privatsphäre.')
+              : 'Strava-Keys fehlen — GPX/FIT nutzen.';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _stravaConfigured = false;
+          _stravaConnected = false;
+          _stravaHint = 'Strava-Status nicht erreichbar — GPX/FIT nutzen.';
+        });
+      }
+    }
     final ride = await ref.read(rideRepositoryProvider).getById(widget.rideId);
     final bike = ride == null
         ? null
@@ -273,6 +298,40 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   '${ride.elevationM.round()} hm',
                   style: const TextStyle(color: AppColors.muted),
                 ),
+                if (ride.summary['gpsStallSim'] == true) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Text(
+                      'Sim-Track war aktiv'
+                      '${ride.summary['simDistanceM'] is num ? ' (~${((ride.summary['simDistanceM'] as num) / 1000).toStringAsFixed(1)} km simuliert)' : ''}'
+                      ' — Distanz/Analyse ggf. unzuverlässig. Für echte Rides AETHER_SIM_MOTION aus.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+                if (() {
+                  final hours = ride.movingTimeSec / 3600;
+                  if (hours < 1 / 60) return false;
+                  final avg = ride.distanceKm / hours;
+                  return avg > 45;
+                }()) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ungewöhnlich hohe Durchschnittsgeschwindigkeit — GPS/Sim prüfen.',
+                    style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text(
                   'Track-Replay',
@@ -341,19 +400,21 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _uploadStrava,
+                        onPressed: (_stravaConfigured && _stravaConnected)
+                            ? _uploadStrava
+                            : null,
                         icon: const Icon(Icons.upload_outlined),
                         label: const Text('Strava'),
                       ),
                     ),
                   ],
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(top: 4),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'Strava: mit GPS-Track via Uploads-API; ohne Track nur Metadaten '
-                    '(braucht OAuth + STRAVA_* Keys).',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    _stravaHint ??
+                        'Strava: mit GPS-Track via Uploads-API; ohne Track nur Metadaten.',
+                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
                   ),
                 ),
                 if (analysis != null) ...[

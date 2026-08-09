@@ -1,9 +1,15 @@
 /**
- * Näherungs-Geometrie / Pin-Zentren für Tour-Ideen.
- * Nicht als echter Trail/Track darstellen — UI soll „Näherung“ kennzeichnen.
+ * Näherungs-Geometrie / Pin-Zentren für Tour-Ideen (Dev/Test only).
+ * Production: buildDemoGeometry wirft; demoCenterLngLat nur noch neutrale Übersicht.
  */
 
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
+
 const BASE: Record<string, { lat: number; lng: number }> = {
+  "idea-koenigstuhl": { lat: 49.398, lng: 8.726 },
+  "idea-odenwald-trail": { lat: 49.45, lng: 8.82 },
+  "idea-neckartal-gravel": { lat: 49.38, lng: 8.68 },
+  "r-heidelberg-city": { lat: 49.41, lng: 8.705 },
   "idea-kaltenbronn": { lat: 48.642, lng: 8.425 },
   "idea-schauinsland": { lat: 47.912, lng: 7.898 },
   "idea-dreisam-city": { lat: 47.995, lng: 7.845 },
@@ -61,6 +67,11 @@ export function buildDemoGeometry(
   routeId: string,
   distanceKm: number
 ): GeoJSON.LineString {
+  if (!allowDemoContent()) {
+    throw new Error(
+      "Demo-Geometrie in Production deaktiviert — Live-Routing oder GPX nutzen.",
+    );
+  }
   const center = BASE[routeId] ?? BASE.default;
   const seed = hashSeed(routeId);
   const halfLng = 0.01 + (distanceKm / 180) * 0.035 + (seed % 5) * 0.0008;

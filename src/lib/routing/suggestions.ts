@@ -6,6 +6,7 @@
 
 import type { Bike, BikeCategory, RiderProfile } from "@/types";
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 import { demoCenterLngLat, haversineKm } from "@/lib/routing/demoGeometry";
 
 export interface RouteSuggestion {
@@ -48,6 +49,70 @@ interface RouteSeed {
 }
 
 const SEEDS: RouteSeed[] = [
+  {
+    id: "idea-koenigstuhl",
+    name: "Königstuhl Trail-Idee",
+    categories: ["mtb_enduro", "mtb_am", "mtb_trail", "emtb"],
+    distanceKm: 18,
+    elevationM: 620,
+    durationMin: 110,
+    mtbScale: "S1–S2",
+    surface: "trail/forest",
+    loop: true,
+    uncertainKmPct: 15,
+    technical: true,
+    steep: true,
+    flowy: false,
+    ebikeFriendly: true,
+  },
+  {
+    id: "idea-odenwald-trail",
+    name: "Odenwald Süd Trail-Idee",
+    categories: ["mtb_trail", "mtb_am", "gravel", "emtb"],
+    distanceKm: 28,
+    elevationM: 740,
+    durationMin: 140,
+    mtbScale: "S1–S2",
+    surface: "trail/root",
+    loop: true,
+    uncertainKmPct: 16,
+    technical: true,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "idea-neckartal-gravel",
+    name: "Neckartal Gravel-Idee",
+    categories: ["gravel", "etrekking", "road", "emtb"],
+    distanceKm: 42,
+    elevationM: 280,
+    durationMin: 150,
+    mtbScale: "—",
+    surface: "gravel/asphalt",
+    loop: false,
+    uncertainKmPct: 10,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-heidelberg-city",
+    name: "Heidelberg City Loop",
+    categories: ["urban", "etrekking", "road"],
+    distanceKm: 14,
+    elevationM: 160,
+    durationMin: 50,
+    mtbScale: "—",
+    surface: "asphalt/bike-lane",
+    loop: true,
+    uncertainKmPct: 8,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
   {
     id: "idea-kaltenbronn",
     name: "Kaltenbronn Runden-Idee",
@@ -489,6 +554,7 @@ function scoreSeed(
 export function listAllRouteSuggestions(
   input: SuggestInput
 ): RouteSuggestion[] {
+  if (!allowDemoContent()) return [];
   const category =
     input.bike?.category ?? input.categoryHint ?? "mtb_am";
   const near = input.near;
@@ -542,6 +608,7 @@ export function getSuggestionById(
     availableMinutes: input.availableMinutes ?? 300,
   }).find((r) => r.id === id);
   if (fromList) return fromList;
+  if (!allowDemoContent()) return null;
 
   const seed = SEEDS.find((s) => s.id === id);
   if (!seed) return null;

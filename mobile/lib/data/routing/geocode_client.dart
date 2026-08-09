@@ -24,7 +24,12 @@ class GeocodeClient {
 
   final http.Client _http;
 
-  Future<List<GeocodeHit>> search(String query, {int limit = 5}) async {
+  Future<List<GeocodeHit>> search(
+    String query, {
+    int limit = 5,
+    double? biasLat,
+    double? biasLng,
+  }) async {
     var q = query.trim();
     // Adb/%-Eingaben und Copy-Paste mit Encoding robust machen.
     try {
@@ -32,11 +37,16 @@ class GeocodeClient {
     } catch (_) {}
     q = q.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (q.length < 2) return const [];
+    final params = <String, String>{
+      'q': q,
+      'limit': '$limit',
+    };
+    if (biasLat != null && biasLng != null) {
+      params['lat'] = biasLat.toStringAsFixed(5);
+      params['lon'] = biasLng.toStringAsFixed(5);
+    }
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/geocode').replace(
-      queryParameters: {
-        'q': q,
-        'limit': '$limit',
-      },
+      queryParameters: params,
     );
     final res = await _http
         .get(uri, headers: {'Accept': 'application/json'})

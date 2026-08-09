@@ -2,6 +2,8 @@
  * Outdooractive Enrichment — normalisierte Touren (nicht Routing-Truth).
  */
 
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
+
 export interface OutdooractiveTour {
   id: string;
   title: string;
@@ -460,6 +462,17 @@ export function outdooractiveDemoResponse(
   query?: string | null,
   bbox?: string | null
 ): OutdooractiveResponse {
+  if (!allowDemoContent()) {
+    return {
+      provider: "outdooractive",
+      role: "enrichment_eu",
+      configured: false,
+      query,
+      tours: [],
+      attribution: "Outdooractive — keine Demo-Touren in Production",
+      warning: "Outdooractive nicht konfiguriert oder keine Live-Treffer",
+    };
+  }
   const q = query?.trim().toLowerCase();
   let tours = q
     ? DEMO_TOURS.filter((t) => t.title.toLowerCase().includes(q))

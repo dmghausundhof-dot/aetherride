@@ -70,12 +70,15 @@ class RouteRepository {
     List<GeoPoint> tour = const [],
     List<GeoPoint> trail = const [],
     String source = 'engine',
+    double? elevationGainM,
   }) async {
     final entry = SavedRouteEntry(
       id: 'saved-${_uuid.v4()}',
       name: name,
       distanceKm: result.distanceM / 1000,
-      elevationM: result.distanceM * 0.03,
+      elevationM: elevationGainM != null && elevationGainM > 0
+          ? elevationGainM
+          : result.distanceM * 0.03,
       durationMin: (result.durationS / 60).round(),
       savedAt: DateTime.now().toUtc(),
       source: source,

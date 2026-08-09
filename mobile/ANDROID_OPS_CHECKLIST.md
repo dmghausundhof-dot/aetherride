@@ -47,6 +47,7 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 ## Honesty Fixes (Code, Aug 2026)
 
 - [x] CSC: kein Fake-SoC/Power — nur Kadenz/Tempo; SoC zeigt „LDI folgt G-1“
+- [x] CSC Measurement: Wheel/Crank nach BLE-Spec (kein Kadenz→Speed-Hack)
 - [x] Sensor-Stub nur Debug + `AETHER_SENSOR_SIM`
 - [x] FIT: Null-Island-Punkte übersprungen
 - [x] Web Ride: Sensor/Bosch klar als Simulation
@@ -54,6 +55,12 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [x] Web Profil: Konto löschen
 - [x] Consents default alle aus (Opt-in)
 - [x] Shop/Offline/Elevation ehrlich gelabelt
+- [x] Release: Demo-Touren/Seeds/Freiburg-Fallback fail-closed (`AppConfig.allowDemoContent`)
+- [x] Release-API-Default → `https://aetherride.vercel.app` (Override via `API_BASE_URL`)
+- [x] Datenschutz-Seite `/legal/datenschutz` + Profil-Link
+- [x] Crash-Reporting-Scaffold (Sentry via `SENTRY_DSN`)
+- [x] Release Signing via `android/key.properties` + R8 minify
+- [x] CI: `.github/workflows/flutter-mobile.yml`
 
 ## Outdooractive / Mapillary
 

@@ -2,6 +2,8 @@
  * Smoke-Tests: ActiveRoute / Navi-Cues / Track-Math.
  * Ausführen: npx tsx src/lib/routing/activeRoute.test.ts
  */
+process.env.ALLOW_DEMO_CONTENT = "true";
+
 import assert from "node:assert/strict";
 import { buildDemoGeometry, centerOfGeometry } from "./demoGeometry";
 import { buildNavCues, cueBannerText, nextCue } from "./navCues";

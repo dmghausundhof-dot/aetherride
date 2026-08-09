@@ -9,6 +9,7 @@ import {
   trailforksRegionUrl,
   trailforksTrailUrl,
 } from "@/lib/geo/trailforks";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 export type TrailCondition =
   | "unknown"
@@ -144,6 +145,16 @@ export function buildTrailforksPins(
   disclaimer: string;
 } {
   const { condition, label } = conditionFromTrailHint(trailHint);
+  if (!allowDemoContent()) {
+    return {
+      mode: trailforksMode,
+      pins: [],
+      disclaimer:
+        trailforksMode === "enabled"
+          ? "Trailforks-Zustand aktiv (Partnerschaft)."
+          : "Keine Beispiel-Pins — Trailforks-Partnerschaft ausstehend.",
+    };
+  }
   let pins: TrailforksPin[] = SEED_PINS.map((p) => ({
     ...p,
     condition,

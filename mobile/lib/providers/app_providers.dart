@@ -45,6 +45,9 @@ final riderProfileProvider = FutureProvider<RiderProfile>((ref) async {
 final garageRepositoryProvider = Provider<GarageRepository>((ref) {
   final garage = GarageRepository(ref.watch(appDatabaseProvider));
   garage.profileStore = ref.watch(userProfileStoreProvider);
+  if (AppConfig.forcePro) {
+    garage.subscriptionTier = 'pro';
+  }
   return garage;
 });
 
@@ -101,15 +104,26 @@ final currentSetupProvider =
 });
 
 /// 'free' | 'pro' — from sync payload when present.
-final subscriptionTierProvider = StateProvider<String>((ref) => 'free');
+/// Debug/Test: [AppConfig.forcePro] hält den Tarif dauerhaft auf Pro.
+final subscriptionTierProvider = StateProvider<String>((ref) {
+  return AppConfig.forcePro ? 'pro' : 'free';
+});
 
 final syncEngineProvider = Provider<SyncEngine>((ref) {
   final garage = ref.watch(garageRepositoryProvider);
+  if (AppConfig.forcePro) {
+    garage.subscriptionTier = 'pro';
+  }
   final engine = SyncEngine(
     db: ref.watch(appDatabaseProvider),
     garage: garage,
     rideChunks: ref.watch(rideChunkRepositoryProvider),
     onSynced: (merged) {
+      if (AppConfig.forcePro) {
+        ref.read(subscriptionTierProvider.notifier).state = 'pro';
+        garage.subscriptionTier = 'pro';
+        return;
+      }
       final tier = merged.subscriptionTier;
       if (tier == 'pro' || tier == 'free') {
         ref.read(subscriptionTierProvider.notifier).state = tier!;

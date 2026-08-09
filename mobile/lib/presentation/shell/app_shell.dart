@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/ride_providers.dart';
 import '../discover/discover_screen.dart';
 import '../garage/garage_screen.dart';
 import '../home/home_screen.dart';
+import '../onboarding/onboarding_flow.dart';
 import '../ride/ride_screen.dart';
 import '../shop/shop_screen.dart';
 
@@ -42,6 +44,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(shellTabIndexProvider);
+    final onboardingDone = ref.watch(onboardingDoneProvider);
     // Aktiven Tab sofort einblenden — sonst ein Frame lang leerer Slot
     // (Nav schon gewechselt → wirkt wie „Reiter springen“).
     final mountedTabs = {..._visited, index};
@@ -53,9 +56,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: index,
-        children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: index,
+            children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
+          ),
+          if (onboardingDone == false) const OnboardingFlow(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index.clamp(0, 4),

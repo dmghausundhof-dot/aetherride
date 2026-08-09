@@ -4,6 +4,7 @@
 
 import type { ClientRouteResult, RoutingProfile } from "@/lib/routing/profiles";
 import { requestRoute, requestRouteDetailed } from "@/lib/routing/profiles";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
 import type { NavStep } from "@/lib/routing/navSteps";
 
@@ -618,10 +619,9 @@ export function geometryFromTourCenter(
   id: string,
   center: [number, number] | undefined,
   distanceKm: number
-): GeoJSON.LineString {
+): GeoJSON.LineString | null {
+  if (!allowDemoContent()) return null;
   if (!center) return buildDemoGeometry(id, distanceKm);
-  // Temporarily use buildDemoGeometry which looks up BASE by id;
-  // for OA tours, synthesize around center via a unique id hash path:
   return buildDemoGeometryAround(center, distanceKm, id);
 }
 

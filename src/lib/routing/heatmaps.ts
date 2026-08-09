@@ -10,6 +10,8 @@
  * CONPRO2023 De-Anonymisierung — Aggregation VOR Render.
  */
 
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
+
 export interface HeatSegment {
   id: string;
   /** OSM-way-ähnliche Polyline (lng,lat) */
@@ -182,7 +184,9 @@ export function buildHeatmap(input?: {
   }
 
   const useSeed =
-    fromRides.length === 0 && (input?.includeSeedFallback ?? false);
+    fromRides.length === 0 &&
+    (input?.includeSeedFallback ?? false) &&
+    allowDemoContent();
 
   const seedSegments: HeatSegment[] = useSeed
     ? SEED_SEGMENTS.map((s) => {

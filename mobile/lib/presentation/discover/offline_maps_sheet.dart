@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -470,13 +471,21 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                   if (AppConfig.usingFreeBasemap) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'Aktuell Free-Basemap (OpenFreeMap) — Stadia/Style via '
-                      '`scripts/mobile-with-env.sh` + .env.local.',
+                      'Aktuell Standard-Kartenstil (OpenFreeMap). '
+                      'Optional Stadia oder eigener Style-JSON.',
                       style: TextStyle(
                         color: AppColors.accent.withValues(alpha: 0.95),
                         fontSize: 12,
                       ),
                     ),
+                    if (kDebugMode)
+                      Text(
+                        'Debug: scripts/mobile-with-env.sh + .env.local',
+                        style: TextStyle(
+                          color: AppColors.muted.withValues(alpha: 0.95),
+                          fontSize: 11,
+                        ),
+                      ),
                   ],
                   const SizedBox(height: 12),
                   TextField(

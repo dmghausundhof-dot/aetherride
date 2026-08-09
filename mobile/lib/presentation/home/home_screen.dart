@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -42,19 +43,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _loadWeather() async {
     try {
-      var lat = 47.99;
-      var lon = 7.85;
+      double? lat;
+      double? lon;
       try {
         final perm = await Geolocator.checkPermission();
         if (perm == LocationPermission.denied) {
           await Geolocator.requestPermission();
         }
-        final pos = await Geolocator.getLastKnownPosition();
+        Position? pos;
+        try {
+          pos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 8),
+            ),
+          );
+        } catch (_) {
+          pos = await Geolocator.getLastKnownPosition();
+          if (pos != null &&
+              DateTime.now().difference(pos.timestamp) >
+                  const Duration(minutes: 10)) {
+            pos = null;
+          }
+        }
         if (pos != null) {
           lat = pos.latitude;
           lon = pos.longitude;
         }
       } catch (_) {}
+      if (lat == null || lon == null) {
+        if (mounted) setState(() => _weatherLoading = false);
+        return;
+      }
       final w = await ref.read(weatherClientProvider).fetch(lat: lat, lon: lon);
       if (mounted) {
         setState(() {
@@ -144,18 +164,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onPressed: () => openChatScreen(context),
                   icon: const Icon(Icons.chat_bubble_outline),
                 ),
-                InkWell(
-                  onTap: () => openProfileScreen(context),
-                  borderRadius: BorderRadius.circular(24),
-                  child: CircleAvatar(
-                    backgroundColor: AppColors.forest.withValues(alpha: 0.12),
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: session != null
-                            ? AppColors.accent
-                            : AppColors.muted,
-                        fontWeight: FontWeight.w700,
+                Semantics(
+                  button: true,
+                  label: 'Profil',
+                  child: Tooltip(
+                    message: 'Profil',
+                    child: InkWell(
+                      onTap: () => openProfileScreen(context),
+                      borderRadius: BorderRadius.circular(24),
+                      child: CircleAvatar(
+                        backgroundColor:
+                            AppColors.forest.withValues(alpha: 0.12),
+                        child: Text(
+                          initials,
+                          style: TextStyle(
+                            color: session != null
+                                ? AppColors.accent
+                                : AppColors.muted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -232,7 +260,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               weather: _weather,
               weightKg: store.effectiveWeightKg,
             ),
-            if (!AppConfig.isSupabaseConfigured) ...[
+            if (kDebugMode && !AppConfig.isSupabaseConfigured) ...[
               const SizedBox(height: 12),
               Material(
                 color: AppColors.sunSurface,
@@ -316,10 +344,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 backgroundColor: AppColors.accent,
                 minimumSize: const Size.fromHeight(52),
               ),
-              onPressed: () =>
-                  ref.read(shellTabIndexProvider.notifier).state = 2,
-              child: const Text('Ride starten'),
+              onPressed: () {
+                final done = ref.read(onboardingDoneProvider);
+                if (done == false) {
+                  // Overlay ist schon sichtbar — Fokus auf Step 3.
+                  return;
+                }
+                ref.read(shellTabIndexProvider.notifier).state = 2;
+              },
+              child: Text(
+                bikes.valueOrNull?.isEmpty == true
+                    ? 'Freeride starten'
+                    : 'Ride starten',
+              ),
             ),
+            if (bikes.valueOrNull?.isEmpty == true) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Ohne Bike möglich — GPS-Track wird lokal gespeichert.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.muted.withValues(alpha: 0.95),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
@@ -400,10 +449,25 @@ class _TipHeroState extends ConsumerState<_TipHero> {
     final weather = widget.weather;
     final weightKg = widget.weightKg;
     final fp = SetupFingerprint.fromSetup(setup);
-    final route = (saved != null && saved.isNotEmpty) ? saved.first : null;
+    // Nicht die neueste Mega-Tour als „Heute passt“ — Dauer/Distanz-Cap.
+    final avgMin =
+        ref.watch(riderProfileProvider).valueOrNull?.avgRideDurationMin ?? 90;
+    final maxMin = avgMin + 45;
+    const maxKm = 40.0;
+    SavedRouteEntry? route;
+    if (saved != null) {
+      for (final r in saved) {
+        if (r.durationMin <= maxMin && r.distanceKm <= maxKm) {
+          route = r;
+          break;
+        }
+      }
+    }
     final title = route?.name ?? 'Freifahren starten';
     final subtitle = route == null
-        ? 'Keine gespeicherte Tour — Discover öffnen oder Freeride'
+        ? (saved != null && saved.isNotEmpty
+            ? 'Gespeicherte Touren zu lang — Discover Schnell oder Freeride'
+            : 'Keine passende Tour — Discover öffnen oder Freeride')
         : '${route.distanceKm.toStringAsFixed(1)} km · '
             '${route.elevationM.round()} hm · ${route.durationMin} min';
     final reasons = <String>[
@@ -413,7 +477,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
       if (route != null)
         'Gespeicherte Route: ${route.name}'
       else
-        'Zeitfenster bereit — keine Saved Route',
+        'Zeitfenster ≤ ${maxMin.round()} min · ≤ ${maxKm.toStringAsFixed(0)} km',
       if (weightKg != null)
         'Fahrergewicht ${weightKg.toStringAsFixed(0)} kg (aktiv)',
     ];

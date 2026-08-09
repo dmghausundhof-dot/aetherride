@@ -146,8 +146,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     final mode = data['mode'] as String?;
     final tier = data['tier'] as String?;
     if (tier == 'pro' || tier == 'free') {
-      ref.read(subscriptionTierProvider.notifier).state = tier!;
-      ref.read(garageRepositoryProvider).subscriptionTier = tier;
+      final effective = AppConfig.forcePro ? 'pro' : tier!;
+      ref.read(subscriptionTierProvider.notifier).state = effective;
+      ref.read(garageRepositoryProvider).subscriptionTier = effective;
     }
     return mode;
   }
@@ -211,8 +212,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           ? user['subscriptionTier'] as String?
           : data['subscriptionTier'] as String?;
       if (tier == 'pro' || tier == 'free') {
-        ref.read(subscriptionTierProvider.notifier).state = tier!;
-        ref.read(garageRepositoryProvider).subscriptionTier = tier;
+        final effective = AppConfig.forcePro ? 'pro' : tier!;
+        ref.read(subscriptionTierProvider.notifier).state = effective;
+        ref.read(garageRepositoryProvider).subscriptionTier = effective;
       }
     } catch (_) {}
   }

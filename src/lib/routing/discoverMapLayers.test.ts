@@ -2,6 +2,8 @@
  * Smoke-Tests Discover Map Layers + Trail-Attach Persistenz-Vertrag.
  * Ausführen: npx tsx src/lib/routing/discoverMapLayers.test.ts
  */
+process.env.ALLOW_DEMO_CONTENT = "true";
+
 import { buildDiscoverMapLayers } from "./discoverMapLayers";
 import { emptyDraft, type PlanDraft } from "./planDraft";
 import { SEED_TRAILS } from "./trailSegments";

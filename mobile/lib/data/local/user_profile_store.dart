@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../domain/bike.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/rider_profile.dart';
 
@@ -17,6 +18,9 @@ class UserProfileStore {
   String? displayName;
   String? bikePhotoPath; // active bike local photo override path map via bikePhotos
 
+  /// Profilbild (lokal oder https).
+  String? profilePhotoPath;
+
   Map<String, String> bikePhotos = {}; // bikeId → local path oder https-URL
   /// Pending local paths still needing Storage-Upload (bikeId → path).
   Map<String, String> bikePhotoPending = {};
@@ -26,6 +30,12 @@ class UserProfileStore {
   String commerceMode = 'affiliate';
   RangeCalibration? rangeCalibration;
   List<Map<String, dynamic>> maintenanceLogs = [];
+
+  /// Einmaliges Onboarding (Sport → Gewicht → erster Ride / Garage).
+  bool onboardingDone = false;
+
+  /// Aus Onboarding — für Garage-Wizard / Filter.
+  BikeCategory? preferredSport;
 
   Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -48,6 +58,7 @@ class UserProfileStore {
       ];
       activeFamilyRiderId = m['activeFamilyRiderId'] as String?;
       displayName = m['displayName'] as String?;
+      profilePhotoPath = m['profilePhotoPath'] as String?;
       bikePhotos = {
         for (final e in (m['bikePhotos'] as Map? ?? {}).entries)
           e.key.toString(): e.value.toString(),
@@ -77,6 +88,10 @@ class UserProfileStore {
         for (final e in (m['maintenanceLogs'] as List? ?? const []))
           if (e is Map) Map<String, dynamic>.from(e),
       ];
+      onboardingDone = m.containsKey('onboardingDone')
+          ? m['onboardingDone'] == true
+          : true; // Legacy: bestehende Profile ohne Key nicht erneut onboarden
+      preferredSport = bikeCategoryFromName(m['preferredSport'] as String?);
     } catch (_) {}
   }
 
@@ -88,6 +103,7 @@ class UserProfileStore {
         'familyRiders': [for (final r in familyRiders) r.toJson()],
         'activeFamilyRiderId': activeFamilyRiderId,
         'displayName': displayName,
+        if (profilePhotoPath != null) 'profilePhotoPath': profilePhotoPath,
         'bikePhotos': bikePhotos,
         'bikePhotoPending': bikePhotoPending,
         'wishlistIds': wishlistIds,
@@ -96,8 +112,27 @@ class UserProfileStore {
         if (rangeCalibration != null)
           'rangeCalibration': rangeCalibration!.toJson(),
         'maintenanceLogs': maintenanceLogs,
+        'onboardingDone': onboardingDone,
+        if (preferredSport != null) 'preferredSport': preferredSport!.name,
       }),
     );
+  }
+
+  Future<void> markOnboardingDone({
+    BikeCategory? sport,
+    double? weightKg,
+  }) async {
+    if (sport != null) preferredSport = sport;
+    if (weightKg != null) {
+      riderProfile = riderProfile.copyWith(riderWeightKg: weightKg);
+    }
+    onboardingDone = true;
+    await save();
+  }
+
+  Future<void> setProfilePhoto(String? path) async {
+    profilePhotoPath = path;
+    await save();
   }
 
   Future<void> setRiderProfile(RiderProfile p) async {
@@ -247,6 +282,7 @@ class UserProfileStore {
     familyRiders = [];
     activeFamilyRiderId = null;
     displayName = null;
+    profilePhotoPath = null;
     bikePhotos = {};
     bikePhotoPending = {};
     wishlistIds = [];
@@ -254,6 +290,16 @@ class UserProfileStore {
     commerceMode = 'affiliate';
     rangeCalibration = null;
     maintenanceLogs = [];
+    onboardingDone = false;
+    preferredSport = null;
     await save();
   }
+}
+
+BikeCategory? bikeCategoryFromName(String? name) {
+  if (name == null || name.isEmpty) return null;
+  for (final c in BikeCategory.values) {
+    if (c.name == name) return c;
+  }
+  return null;
 }

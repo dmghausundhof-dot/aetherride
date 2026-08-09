@@ -66,15 +66,25 @@ class TrailViewResult {
   final bool usingDemo;
 
   factory TrailViewResult.fromJson(Map<String, dynamic> m) {
+    final allowDemo = AppConfig.allowDemoContent;
+    final rawPhotos = [
+      for (final raw in (m['photos'] as List? ?? const []))
+        if (raw is Map) TrailPhoto.fromJson(Map<String, dynamic>.from(raw)),
+    ];
+    final usingDemo = m['usingDemo'] == true;
+    final photos = allowDemo
+        ? rawPhotos
+        : [
+            for (final p in rawPhotos)
+              if (!p.demo && p.isNetworkImage) p,
+          ];
     return TrailViewResult(
-      photos: [
-        for (final raw in (m['photos'] as List? ?? const []))
-          if (raw is Map)
-            TrailPhoto.fromJson(Map<String, dynamic>.from(raw)),
-      ],
+      photos: photos,
       attribution: (m['attribution'] as String?) ?? '',
-      disclaimer: (m['disclaimer'] as String?) ?? '',
-      usingDemo: m['usingDemo'] == true,
+      disclaimer: (!allowDemo && usingDemo)
+          ? 'Keine Live-Trail-Fotos an diesem Ort.'
+          : ((m['disclaimer'] as String?) ?? ''),
+      usingDemo: allowDemo && usingDemo,
     );
   }
 }
@@ -100,7 +110,7 @@ Future<TrailViewResult> fetchTrailViewNear({
         photos: const [],
         attribution: 'Mapillary CC BY-SA 4.0',
         disclaimer: 'Trail View offline (${res.statusCode}).',
-        usingDemo: true,
+        usingDemo: false,
       );
     }
     final data = jsonDecode(res.body);
@@ -109,7 +119,7 @@ Future<TrailViewResult> fetchTrailViewNear({
         photos: [],
         attribution: '',
         disclaimer: 'Ungültige Trail-Antwort.',
-        usingDemo: true,
+        usingDemo: false,
       );
     }
     return TrailViewResult.fromJson(Map<String, dynamic>.from(data));

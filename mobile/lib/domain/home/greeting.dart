@@ -25,5 +25,5 @@ String avatarInitials({String? displayName, String? email}) {
   if (email != null && email.contains('@')) {
     return email.substring(0, 2).toUpperCase();
   }
-  return 'AR';
+  return '?';
 }

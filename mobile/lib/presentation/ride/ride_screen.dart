@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,11 @@ import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
+
+Set<Factory<OneSequenceGestureRecognizer>> get _rideMapGestures =>
+    <Factory<OneSequenceGestureRecognizer>>{
+      Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer()),
+    };
 
 /// Lux reading — sensors_plus has no AmbientLightEvent yet; local stand-in.
 class AmbientLightEvent {
@@ -92,9 +98,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   double _lastGpsDistanceM = 0;
   int _gpsStallSec = 0;
 
+  /// Distanz-Sim nur explizit — nie default in Debug (QA/Emulator sonst Fake-km).
   static bool get _allowGpsStallSim =>
-      kDebugMode ||
       const bool.fromEnvironment('AETHER_SIM_MOTION', defaultValue: false);
+
+  /// Meter die nur aus Sim kamen (nicht persistieren / Track-Override).
+  double _simDistanceM = 0;
+  bool _simMotionUsed = false;
 
   /// When false, light sensor drives [sunlightModeProvider]; manual toggle locks.
   bool _sunlightAuto = true;
@@ -165,7 +175,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     ref.read(sunlightModeProvider.notifier).state = !on;
   }
 
-  LatLng _mapTarget(ActiveRoute? route) {
+  LatLng? _mapTargetOrNull(ActiveRoute? route) {
     if (_track.isNotEmpty) {
       final p = _track.last;
       return LatLng(p.lat, p.lng);
@@ -174,8 +184,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       final c = route.coordinates.first;
       return LatLng(c[1], c[0]);
     }
-    return const LatLng(47.99, 7.85);
+    return null;
   }
+
+  /// DACH+FR Übersicht bis GPS — kein Stadt-Fake.
+  static const _regionOverview = LatLng(47.2, 6.5);
+
+  LatLng _mapTarget(ActiveRoute? route) =>
+      _mapTargetOrNull(route) ?? _regionOverview;
 
   Future<void> _drawRideMap() async {
     final c = _rideMap;
@@ -184,14 +200,25 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       await c.clearLines();
       final route = ref.read(activeRouteProvider);
       if (route != null && route.coordinates.length >= 2) {
+        final planned = [
+          for (final p in route.coordinates) LatLng(p[1], p[0]),
+        ];
         await c.addLine(
           LineOptions(
-            geometry: [
-              for (final p in route.coordinates) LatLng(p[1], p[0]),
-            ],
-            lineColor: '#4FC3F7',
-            lineWidth: 4,
-            lineOpacity: 0.85,
+            geometry: planned,
+            lineColor: '#14241C',
+            lineWidth: 11,
+            lineOpacity: 0.9,
+            lineJoin: 'round',
+          ),
+        );
+        await c.addLine(
+          LineOptions(
+            geometry: planned,
+            lineColor: '#00C853',
+            lineWidth: 5,
+            lineOpacity: 1,
+            lineJoin: 'round',
           ),
         );
       }
@@ -200,8 +227,18 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         await c.addLine(
           LineOptions(
             geometry: line,
+            lineColor: '#BF360C',
+            lineWidth: 9,
+            lineOpacity: 0.85,
+            lineJoin: 'round',
+          ),
+        );
+        await c.addLine(
+          LineOptions(
+            geometry: line,
             lineColor: '#FF6B35',
-            lineWidth: 5,
+            lineWidth: 4.5,
+            lineJoin: 'round',
           ),
         );
         final last = line.last;
@@ -231,7 +268,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
     } catch (_) {}
   }
-
 
   /// LDI-Speed, sonst GPS (Freeride ohne CSC).
   double get _effectiveSpeedKmh {
@@ -565,6 +601,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _alongRouteM = 0;
     _offRoute = false;
     _offRouteBanner = null;
+    _simDistanceM = 0;
+    _simMotionUsed = false;
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || ref.read(isPausedProvider)) return;
       final start = _startedAt;
@@ -573,22 +611,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             DateTime.now().difference(start).inSeconds;
       }
       if (!_usingGps) {
-        // Ohne Fix: kein Fake-Track in Release. Sim nur Debug / AETHER_SIM_MOTION.
         if (_allowGpsStallSim) {
-          ref.read(rideDistanceMProvider.notifier).state += 4.2;
-          final last = _track.isNotEmpty ? _track.last : null;
-          final baseLat = last?.lat ?? 47.995;
-          final baseLng = last?.lng ?? 7.85;
-          final t = ref.read(rideElapsedSecProvider);
-          _track.add(
-            TrackPoint(
-              lat: baseLat + math.sin(t / 18) * 0.00018,
-              lng: baseLng + t * 0.00004,
-              timeMs: DateTime.now().millisecondsSinceEpoch,
-              elev: 280 + t * 0.4,
-            ),
-          );
-          if (mounted && t % 3 == 0) setState(() {});
+          _tickSimMotion(elevFallback: 280);
         } else {
           _gpsStatus = 'Warte auf GPS — Track erst mit Fix';
           if (mounted && ref.read(rideElapsedSecProvider) % 3 == 0) {
@@ -601,33 +625,20 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           _lastGpsDistanceM = d;
           _gpsStallSec = 0;
           _gpsStatus = null;
+          // Echte GPS-Distanz; Sim-Anteil nicht mitzählen.
           ref.read(rideDistanceMProvider.notifier).state = d;
         } else {
           _gpsStallSec += 1;
           if (_gpsStallSec >= 5) {
             _gpsStatus = _allowGpsStallSim
-                ? 'GPS still — Sim-Track'
+                ? 'GPS still — Sim-Track (nicht speichern)'
                 : 'GPS still — Signal schwach / Stand';
             if (mounted && ref.read(rideElapsedSecProvider) % 3 == 0) {
               setState(() {});
             }
           }
-          // Emulator/Stillstand: nur Debug oder AETHER_SIM_MOTION.
           if (_gpsStallSec >= 5 && _allowGpsStallSim) {
-            ref.read(rideDistanceMProvider.notifier).state += 4.2;
-            final last = _track.isNotEmpty ? _track.last : null;
-            final baseLat = last?.lat ?? 47.995;
-            final baseLng = last?.lng ?? 7.85;
-            final t = ref.read(rideElapsedSecProvider);
-            _track.add(
-              TrackPoint(
-                lat: baseLat + math.sin(t / 18) * 0.00018,
-                lng: baseLng + t * 0.00004,
-                timeMs: DateTime.now().millisecondsSinceEpoch,
-                elev: last?.elev ?? 280,
-              ),
-            );
-            if (mounted && t % 3 == 0) setState(() {});
+            _tickSimMotion(elevFallback: _track.isNotEmpty ? _track.last.elev : 280);
           }
         }
       }
@@ -642,6 +653,28 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       _lastSpokenText = null;
       _liveHintText = null;
     });
+  }
+
+  /// Nur mit AETHER_SIM_MOTION — UI-Odometer kann steigen, Persistenz filtert.
+  void _tickSimMotion({required double? elevFallback}) {
+    const stepM = 4.2;
+    _simMotionUsed = true;
+    _simDistanceM += stepM;
+    ref.read(rideDistanceMProvider.notifier).state += stepM;
+    final last = _track.isNotEmpty ? _track.last : null;
+    final baseLat = last?.lat ?? _regionOverview.latitude;
+    final baseLng = last?.lng ?? _regionOverview.longitude;
+    final t = ref.read(rideElapsedSecProvider);
+    _track.add(
+      TrackPoint(
+        lat: baseLat + math.sin(t / 18) * 0.00018,
+        lng: baseLng + t * 0.00004,
+        timeMs: DateTime.now().millisecondsSinceEpoch,
+        elev: elevFallback ?? last?.elev ?? 280,
+      ),
+    );
+    _gpsStatus = 'Sim-Track aktiv (AETHER_SIM_MOTION)';
+    if (mounted && t % 3 == 0) setState(() {});
   }
 
   double _distanceAlongTrackM(List<TrackPoint> track) {
@@ -817,13 +850,20 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final bike = await ref.read(garageRepositoryProvider).getActiveBike();
     final bikeId = bike?.id ?? 'unknown';
 
-    // Kein Fake-Track: ohne GPS bleibt der Track leer (Post-Ride zeigt das ehrlich).
     var track = List<TrackPoint>.from(_track);
 
-    // Distanz aus Track, wenn Odometer leer blieb (Stillstand-GPS).
-    final trackDist = _distanceAlongTrackM(track);
-    if (trackDist > distanceM + 15) {
-      distanceM = trackDist;
+    // Sim-Meter nie persistieren; Track-Haversine nicht als Override bei Sim.
+    if (_simMotionUsed) {
+      distanceM = math.max(0, distanceM - _simDistanceM);
+      if (!_usingGps) {
+        track = const [];
+        distanceM = 0;
+      }
+    } else {
+      final trackDist = _distanceAlongTrackM(track);
+      if (trackDist > distanceM + 15) {
+        distanceM = trackDist;
+      }
     }
 
     final elevFromRoute = route?.elevationM;
@@ -850,7 +890,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             'peakG': _peakG,
             'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
             'usingGps': _usingGps,
-            'gpsStallSim': _gpsStallSec >= 3 && _allowGpsStallSim,
+            'gpsStallSim': _simMotionUsed,
+            'simDistanceM': _simDistanceM,
             'trackPoints': track.length,
             'elevationSource': elevSource,
             if (_ldi?.batterySocPercent != null)
@@ -931,6 +972,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(rideAutostartProvider, (prev, next) {
+      if (next != true) return;
+      ref.read(rideAutostartProvider.notifier).state = false;
+      if (ref.read(isRidingProvider)) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_start());
+      });
+    });
+
     final riding = ref.watch(isRidingProvider);
     final paused = ref.watch(isPausedProvider);
     final route = ref.watch(activeRouteProvider);
@@ -998,25 +1049,34 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         body: GestureDetector(
           onTap: _bumpIdle,
           onDoubleTap: _bumpIdle,
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: riding
+              ? _buildLiveHud(
+                  theme: theme,
+                  route: route,
+                  layer: layer,
+                  mount: mount,
+                  paused: paused,
+                  locked: locked,
+                  elapsed: elapsed,
+                  distanceM: distanceM,
+                )
+              : Stack(
                   children: [
-                    if (route != null) ...[
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.navigation),
-                          title: Text(route.name),
-                          subtitle: Text(
-                            '${route.distanceKm} km · ${route.elevationM.round()} hm'
-                            '${route.steps.isNotEmpty ? ' · ${route.steps.length} Manöver' : ''}',
-                          ),
-                          trailing: riding
-                              ? null
-                              : IconButton(
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (route != null)
+                            Card(
+                              child: ListTile(
+                                leading: const Icon(Icons.navigation),
+                                title: Text(route.name),
+                                subtitle: Text(
+                                  '${route.distanceKm} km · ${route.elevationM.round()} hm'
+                                  '${route.steps.isNotEmpty ? ' · ${route.steps.length} Manöver' : ''}',
+                                ),
+                                trailing: IconButton(
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
                                     ref
@@ -1024,322 +1084,391 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                         .state = null;
                                   },
                                 ),
-                        ),
-                      ),
-                      if (riding && _offRouteBanner != null)
-                        Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
+                              ),
+                            )
+                          else
+                            const Text(
+                              'Optional: Route in Discover wählen und „Losfahren“.',
+                              style: TextStyle(color: AppColors.muted),
+                            ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _cscStatusLine(),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.muted,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.orange.shade400),
-                          ),
-                          child: Row(
+                          const SizedBox(height: 12),
+                          Text('Handy am Lenker?',
+                              style: theme.textTheme.titleSmall),
+                          const SizedBox(height: 8),
+                          Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  _offRouteBanner!,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.orange.shade900,
-                                    fontSize: 15,
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor:
+                                        mount == MountCheck.mounted
+                                            ? AppColors.accent
+                                            : null,
                                   ),
+                                  onPressed: () {
+                                    ref
+                                        .read(mountCheckProvider.notifier)
+                                        .state = MountCheck.mounted;
+                                  },
+                                  child: const Text('Ja — Analyse an'),
                                 ),
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  _bumpIdle();
-                                  unawaited(_rejoinRoute());
-                                },
-                                child: Text(
-                                  'Zurück',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.orange.shade900,
-                                  ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    ref
+                                        .read(mountCheckProvider.notifier)
+                                        .state = MountCheck.handheld;
+                                  },
+                                  child: const Text('Nein — nur Track'),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      if (riding && route.coordinates.length >= 4)
-                        Builder(
-                          builder: (context) {
-                            String? banner;
-                            if (route.steps.isNotEmpty) {
-                              final nxt = nextRouteStep(
-                                route.steps,
-                                _alongRouteM,
-                              );
-                              if (nxt != null) {
-                                banner = cueBannerText(
-                                  NavCue(
-                                    id: nxt.step.id,
-                                    distanceAlongM: nxt.step.distanceAlongM,
-                                    instruction: nxt.step.instruction,
-                                    bearingDeg: 0,
-                                  ),
-                                  nxt.remainingM.round(),
-                                );
-                              }
-                            } else {
-                              final cues = buildNavCues(route.coordinates);
-                              final nxt = nextCue(cues, _alongRouteM);
-                              if (nxt != null) {
-                                banner = cueBannerText(
-                                  nxt.cue,
-                                  nxt.remainingM,
-                                );
-                              }
-                            }
-                            if (banner == null) {
-                              return const SizedBox.shrink();
-                            }
-                            return Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.accent.withValues(alpha: 0.4),
-                                ),
-                              ),
-                              child: Text(
-                                banner,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      if (riding && _liveHintText != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            _liveHintText!,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.orange.shade800,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                    ] else if (!riding)
-                      const Text(
-                        'Optional: Route in Discover wählen und „Losfahren“.',
-                        style: TextStyle(color: AppColors.muted),
-                      ),
-                    if (!riding) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _cscStatusLine(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        _cscStatusLine(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.muted,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (_gpsStatus != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _gpsStatus!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.orange.shade800,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ],
-                    const SizedBox(height: 12),
-                    if (!riding) ...[
-                      Text('Handy am Lenker?',
-                          style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: mount == MountCheck.mounted
-                                    ? AppColors.accent
-                                    : null,
-                              ),
-                              onPressed: () {
-                                ref.read(mountCheckProvider.notifier).state =
-                                    MountCheck.mounted;
-                              },
-                              child: const Text('Ja — Analyse an'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                ref.read(mountCheckProvider.notifier).state =
-                                    MountCheck.handheld;
-                              },
-                              child: const Text('Nein — nur Track'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (riding) ...[
-                      const SizedBox(height: 8),
-                      SegmentedButton<RideLiveLayer>(
-                        segments: const [
-                          ButtonSegment(
-                            value: RideLiveLayer.map,
-                            label: Text('Karte'),
-                            icon: Icon(Icons.map),
-                          ),
-                          ButtonSegment(
-                            value: RideLiveLayer.data,
-                            label: Text('Daten'),
-                            icon: Icon(Icons.grid_view),
-                          ),
-                          ButtonSegment(
-                            value: RideLiveLayer.suspension,
-                            label: Text('Fahrwerk'),
-                            icon: Icon(Icons.waves),
-                          ),
-                        ],
-                        selected: {layer},
-                        onSelectionChanged: (s) {
-                          _bumpIdle();
-                          ref.read(rideLayerProvider.notifier).state = s.first;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(child: _buildLayer(layer, mount, route)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _bigStat(
-                            (_effectiveSpeedKmh).toStringAsFixed(0),
-                            'km/h',
-                          ),
-                          _bigStat(
-                            distanceM < 1000
-                                ? (distanceM / 1000).toStringAsFixed(2)
-                                : (distanceM / 1000).toStringAsFixed(1),
-                            'km',
-                          ),
-                          _bigStat(_fmt(elapsed), 'Zeit'),
-                        ],
-                      ),
-                    ] else
-                      const Spacer(),
-                    if (_metrics != null &&
-                        layer == RideLiveLayer.suspension) ...[
-                      _MetricRow(
-                        'G-Peak',
-                        _metrics!.gForcePeak.toStringAsFixed(2),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        if (riding)
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              _bumpIdle();
-                              ref.read(isPausedProvider.notifier).state =
-                                  !paused;
-                            },
-                            icon: Icon(
-                              paused ? Icons.play_arrow : Icons.pause,
-                            ),
-                          ),
-                        if (riding) const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
+                          const Spacer(),
+                          FilledButton(
                             style: FilledButton.styleFrom(
-                              backgroundColor: riding
-                                  ? (_confirmStop > 0
-                                      ? Colors.red
-                                      : Colors.redAccent)
-                                  : AppColors.accent,
+                              backgroundColor: AppColors.accent,
                               minimumSize: const Size.fromHeight(64),
                             ),
                             onPressed: () async {
                               _bumpIdle();
-                              if (riding) {
-                                await _stop();
-                              } else {
-                                await _start();
-                              }
+                              await _start();
                             },
                             child: Text(
-                              riding
-                                  ? (_confirmStop > 0
-                                      ? 'Nochmal tippen'
-                                      : 'Stop')
-                                  : (route != null
-                                      ? '${route.name} starten'
-                                      : 'Freifahren starten'),
+                              route != null
+                                  ? '${route.name} starten'
+                                  : 'Freifahren starten',
                               style: const TextStyle(fontSize: 16),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (riding && _confirmStop == 0)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Beenden erfordert 2 Tipps',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: AppColors.muted),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (locked && riding)
-                Positioned.fill(
-                  child: Material(
-                    color: theme.scaffoldBackgroundColor.withValues(alpha: 0.92),
-                    child: InkWell(
-                      onTap: _bumpIdle,
-                      onDoubleTap: _bumpIdle,
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.lock, size: 48, color: AppColors.accent),
-                          SizedBox(height: 12),
-                          Text('Auto-Lock',
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w600)),
-                          SizedBox(height: 4),
-                          Text('Doppeltipp zum Aufwecken'),
                         ],
                       ),
                     ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveHud({
+    required ThemeData theme,
+    required ActiveRoute? route,
+    required RideLiveLayer layer,
+    required MountCheck mount,
+    required bool paused,
+    required bool locked,
+    required int elapsed,
+    required double distanceM,
+  }) {
+    String? navBanner;
+    if (route != null && route.coordinates.length >= 4) {
+      if (route.steps.isNotEmpty) {
+        final nxt = nextRouteStep(route.steps, _alongRouteM);
+        if (nxt != null) {
+          navBanner = cueBannerText(
+            NavCue(
+              id: nxt.step.id,
+              distanceAlongM: nxt.step.distanceAlongM,
+              instruction: nxt.step.instruction,
+              bearingDeg: 0,
+            ),
+            nxt.remainingM.round(),
+          );
+        }
+      } else {
+        final cues = buildNavCues(route.coordinates);
+        final nxt = nextCue(cues, _alongRouteM);
+        if (nxt != null) {
+          navBanner = cueBannerText(nxt.cue, nxt.remainingM);
+        }
+      }
+    }
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: layer == RideLiveLayer.map
+              ? MapLibreMap(
+                  key: ValueKey('live-$_mapStyle'),
+                  styleString: _mapStyle,
+                  initialCameraPosition: CameraPosition(
+                    target: _mapTarget(route),
+                    zoom: 14,
+                  ),
+                  myLocationEnabled: true,
+                  trackCameraPosition: false,
+                  compassEnabled: true,
+                  scrollGesturesEnabled: true,
+                  zoomGesturesEnabled: true,
+                  rotateGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
+                  gestureRecognizers: _rideMapGestures,
+                  onMapCreated: (c) {
+                    _rideMap = c;
+                  },
+                  onStyleLoadedCallback: () {
+                    unawaited(_drawRideMap());
+                  },
+                )
+              : ColoredBox(
+                  color: theme.scaffoldBackgroundColor,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 88, 16, 160),
+                    child: _buildLayer(layer, mount, route),
+                  ),
+                ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (navBanner != null)
+                  Material(
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.accent,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Text(
+                        navBanner,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  )
+                else if (route != null)
+                  Material(
+                    borderRadius: BorderRadius.circular(12),
+                    color: theme.cardColor.withValues(alpha: 0.92),
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.navigation, size: 20),
+                      title: Text(
+                        route.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        '${route.distanceKm} km · ${route.elevationM.round()} hm',
+                      ),
+                    ),
+                  ),
+                if (_offRouteBanner != null) ...[
+                  const SizedBox(height: 8),
+                  Material(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.orange.shade100,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _offRouteBanner!,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: Colors.orange.shade900,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              _bumpIdle();
+                              unawaited(_rejoinRoute());
+                            },
+                            child: Text(
+                              'Zurück',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                if (_liveHintText != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _liveHintText!,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange.shade800,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                if (_gpsStatus != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _gpsStatus!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.orange.shade800,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 12,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SegmentedButton<RideLiveLayer>(
+                segments: const [
+                  ButtonSegment(
+                    value: RideLiveLayer.map,
+                    label: Text('Karte'),
+                    icon: Icon(Icons.map),
+                  ),
+                  ButtonSegment(
+                    value: RideLiveLayer.data,
+                    label: Text('Daten'),
+                    icon: Icon(Icons.grid_view),
+                  ),
+                  ButtonSegment(
+                    value: RideLiveLayer.suspension,
+                    label: Text('Fahrwerk'),
+                    icon: Icon(Icons.waves),
+                  ),
+                ],
+                selected: {layer},
+                onSelectionChanged: (s) {
+                  _bumpIdle();
+                  ref.read(rideLayerProvider.notifier).state = s.first;
+                },
+              ),
+              const SizedBox(height: 10),
+              Material(
+                borderRadius: BorderRadius.circular(16),
+                color: theme.cardColor.withValues(alpha: 0.94),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _bigStat(
+                        (_effectiveSpeedKmh).toStringAsFixed(0),
+                        'km/h',
+                      ),
+                      _bigStat(
+                        distanceM < 1000
+                            ? (distanceM / 1000).toStringAsFixed(2)
+                            : (distanceM / 1000).toStringAsFixed(1),
+                        'km',
+                      ),
+                      _bigStat(_fmt(elapsed), 'Zeit'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.tonal(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                      ),
+                      onPressed: () {
+                        _bumpIdle();
+                        ref.read(isPausedProvider.notifier).state = !paused;
+                      },
+                      child: Text(
+                        paused ? 'Weiter' : 'Pause',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _confirmStop > 0
+                            ? Colors.red
+                            : Colors.redAccent,
+                        minimumSize: const Size.fromHeight(56),
+                      ),
+                      onPressed: () async {
+                        _bumpIdle();
+                        await _stop();
+                      },
+                      child: Text(
+                        _confirmStop > 0 ? 'Nochmal tippen' : 'Stop',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_confirmStop == 0)
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Beenden erfordert 2 Tipps',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: AppColors.muted),
                   ),
                 ),
             ],
           ),
         ),
-      ),
+        if (locked)
+          Positioned.fill(
+            child: Material(
+              color: theme.scaffoldBackgroundColor.withValues(alpha: 0.92),
+              child: InkWell(
+                onTap: _bumpIdle,
+                onDoubleTap: _bumpIdle,
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock, size: 48, color: AppColors.accent),
+                    SizedBox(height: 12),
+                    Text('Auto-Lock',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 4),
+                    Text('Doppeltipp zum Aufwecken'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1361,6 +1490,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ),
             myLocationEnabled: true,
             trackCameraPosition: false,
+            scrollGesturesEnabled: true,
+            zoomGesturesEnabled: true,
+            rotateGesturesEnabled: true,
+            tiltGesturesEnabled: true,
+            gestureRecognizers: _rideMapGestures,
             onMapCreated: (c) {
               _rideMap = c;
             },
@@ -1370,34 +1504,43 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
         );
       case RideLiveLayer.data:
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _MetricRow(
-                  'Tempo',
-                  '${_effectiveSpeedKmh.toStringAsFixed(1)} km/h',
-                ),
-                _MetricRow(
-                  'SoC',
-                  _ldi?.batterySocPercent != null
-                      ? '${_ldi!.batterySocPercent!.toStringAsFixed(0)} %'
-                      : '— (LDI folgt G-1)',
-                ),
-                _MetricRow(
-                  'Leistung',
-                  _ldi?.riderPowerW != null
-                      ? '${_ldi!.riderPowerW!.toStringAsFixed(0)} W'
-                      : '—',
-                ),
-                _MetricRow(
-                  'Kadenz',
-                  _ldi != null
-                      ? '${_ldi!.cadenceRpm.toStringAsFixed(0)} rpm'
-                      : '—',
-                ),
-              ],
+        return Semantics(
+          label: 'Live-Daten',
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _MetricRow(
+                    'Tempo',
+                    '${_effectiveSpeedKmh.toStringAsFixed(1)} km/h',
+                  ),
+                  _MetricRow(
+                    'Distanz',
+                    '${(ref.read(rideDistanceMProvider) / 1000).toStringAsFixed(2)} km',
+                  ),
+                  _MetricRow(
+                    'Zeit',
+                    _fmt(ref.read(rideElapsedSecProvider)),
+                  ),
+                  if (_ldi?.batterySocPercent != null)
+                    _MetricRow(
+                      'SoC',
+                      '${_ldi!.batterySocPercent!.toStringAsFixed(0)} %',
+                    ),
+                  if (_ldi?.riderPowerW != null)
+                    _MetricRow(
+                      'Leistung',
+                      '${_ldi!.riderPowerW!.toStringAsFixed(0)} W',
+                    ),
+                  _MetricRow(
+                    'Kadenz',
+                    _ldi != null && _ldi!.cadenceRpm > 0
+                        ? '${_ldi!.cadenceRpm.toStringAsFixed(0)} rpm'
+                        : '—',
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -1462,10 +1605,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final connected =
         ref.read(bleCoreProvider).isConnected || _ldi != null;
     final riding = ref.read(isRidingProvider);
-    final csc = connected
-        ? 'CSC verbunden'
-        : (riding ? 'CSC nicht verbunden' : 'CSC bereit (Standard-BLE)');
-    return '$csc · LDI folgt G-1';
+    if (connected) return 'CSC verbunden';
+    if (riding) return 'CSC nicht verbunden · GPS-Track aktiv';
+    return 'CSC bereit (Standard-BLE)';
   }
 
   Widget _bigStat(String value, String label) {

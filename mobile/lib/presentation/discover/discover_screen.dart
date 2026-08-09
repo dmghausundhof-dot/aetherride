@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -18,6 +20,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/import/gpx_import.dart';
 import '../../data/routing/elevation_client.dart';
 import '../../data/routing/geocode_client.dart';
+import '../../data/routing/osm_routes_client.dart';
 import '../../data/routing/route_collections.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
@@ -32,6 +35,12 @@ import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../profile/profile_screen.dart';
 import 'offline_maps_sheet.dart';
+
+/// MapLibre in Flutter braucht Eager-Gesten, sonst frisst Parent/PlatformView Zoom/Pan.
+Set<Factory<OneSequenceGestureRecognizer>> get _mapGestures =>
+    <Factory<OneSequenceGestureRecognizer>>{
+      Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer()),
+    };
 
 class _TfPin {
   const _TfPin({
@@ -90,392 +99,6 @@ class _RouteSuggestion {
       trackLngLat != null && trackLngLat!.length >= 2;
 }
 
-/// Lokale Tour-*Ideen* (Schwarzwald/Freiburg) — keine Track-Polylines.
-/// Geometrie erst via Live-Routing, sonst ehrliche Näherung (gestrichelt).
-const _seedRoutes = <_RouteSuggestion>[
-  _RouteSuggestion(
-    id: 'idea-schauinsland',
-    name: 'Schauinsland Trail-Idee',
-    distanceKm: 22,
-    elevationM: 980,
-    durationMin: 130,
-    mtbScale: 'S1–S2',
-    surface: 'trail/forest',
-    loop: true,
-    matchScore: 90,
-    reasons: [
-      'Idee für MTB um Freiburg — kein gespeicherter GPS-Track',
-      'Live-Routing oder GPX nötig für echte Linienführung',
-    ],
-    center: LatLng(47.912, 7.898),
-    categories: const [
-      BikeCategory.mtbTrail,
-      BikeCategory.mtbAm,
-      BikeCategory.mtbEnduro,
-      BikeCategory.emtb,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'idea-kaltenbronn',
-    name: 'Kaltenbronn Runden-Idee',
-    distanceKm: 34,
-    elevationM: 980,
-    durationMin: 160,
-    mtbScale: 'S1–S2',
-    surface: 'trail/root',
-    loop: true,
-    matchScore: 86,
-    reasons: [
-      'Schwarzwald-Klassiker als Idee — Geometrie nicht vorgeliefert',
-    ],
-    center: LatLng(48.642, 8.425),
-    categories: const [
-      BikeCategory.mtbTrail,
-      BikeCategory.mtbAm,
-      BikeCategory.gravel,
-      BikeCategory.emtb,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'idea-dreisam-city',
-    name: 'Dreisam City-Schleife',
-    distanceKm: 12,
-    elevationM: 80,
-    durationMin: 45,
-    mtbScale: '—',
-    surface: 'asphalt/path',
-    loop: true,
-    matchScore: 84,
-    reasons: [
-      'City-/Urban-Idee entlang der Dreisam — nicht als Trail verkauft',
-    ],
-    center: LatLng(47.995, 7.845),
-    categories: const [
-      BikeCategory.urban,
-      BikeCategory.etrekking,
-      BikeCategory.road,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'idea-kaiserstuhl-road',
-    name: 'Kaiserstuhl Rennrad-Idee',
-    distanceKm: 48,
-    elevationM: 620,
-    durationMin: 140,
-    mtbScale: '—',
-    surface: 'asphalt',
-    loop: true,
-    matchScore: 82,
-    reasons: [
-      'Rennrad-/Gravel-Idee westlich Freiburg — Strecke erst routen',
-    ],
-    center: LatLng(48.09, 7.67),
-    categories: const [
-      BikeCategory.road,
-      BikeCategory.gravel,
-      BikeCategory.etrekking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-freiburg-city',
-    name: 'Freiburg City Loop',
-    distanceKm: 18.5,
-    elevationM: 210,
-    durationMin: 55,
-    mtbScale: '—',
-    surface: 'asphalt/bike-lane',
-    loop: true,
-    matchScore: 80,
-    reasons: [
-      'Urban-Idee Freiburg — Radwege/Asphalt, kein Trail',
-      'Live-Routing für konkrete Linie nötig',
-    ],
-    center: LatLng(47.999, 7.842),
-    categories: const [
-      BikeCategory.urban,
-      BikeCategory.etrekking,
-      BikeCategory.road,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-bodensee-road',
-    name: 'Bodensee Südufer',
-    distanceKm: 72,
-    elevationM: 280,
-    durationMin: 200,
-    mtbScale: '—',
-    surface: 'asphalt',
-    loop: false,
-    matchScore: 78,
-    reasons: [
-      'Lange Road-/E-Trekking-Idee — flach und asphaltiert',
-    ],
-    center: LatLng(47.66, 9.18),
-    categories: const [
-      BikeCategory.road,
-      BikeCategory.etrekking,
-      BikeCategory.urban,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-inn-flat',
-    name: 'Inn-Radweg Entspannt',
-    distanceKm: 34,
-    elevationM: 120,
-    durationMin: 90,
-    mtbScale: '—',
-    surface: 'asphalt',
-    loop: false,
-    matchScore: 76,
-    reasons: [
-      'Flache Road/Urban-Idee — wenig Höhenmeter',
-    ],
-    center: LatLng(47.56, 12.17),
-    categories: const [
-      BikeCategory.road,
-      BikeCategory.gravel,
-      BikeCategory.etrekking,
-      BikeCategory.urban,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-stuttgart-urban',
-    name: 'Stuttgart Höhenpark-Runde',
-    distanceKm: 22,
-    elevationM: 340,
-    durationMin: 70,
-    mtbScale: '—',
-    surface: 'asphalt/path',
-    loop: true,
-    matchScore: 74,
-    reasons: [
-      'Urban-/E-Trekking-Idee Stuttgart — nicht MTB',
-    ],
-    center: LatLng(48.76, 9.16),
-    categories: const [
-      BikeCategory.urban,
-      BikeCategory.etrekking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-schwarzwald-gravel',
-    name: 'Schwarzwald Gravel West',
-    distanceKm: 58,
-    elevationM: 1120,
-    durationMin: 210,
-    mtbScale: '—',
-    surface: 'gravel/forest',
-    loop: true,
-    matchScore: 81,
-    reasons: [
-      'Gravel-Idee Schwarzwald — Forstwege, kein Singletrail',
-    ],
-    center: LatLng(48.05, 7.95),
-    categories: const [
-      BikeCategory.gravel,
-      BikeCategory.etrekking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-kitz-gravel',
-    name: 'Gravel Loop Kitzbühel (Idee)',
-    distanceKm: 62.1,
-    elevationM: 890,
-    durationMin: 180,
-    mtbScale: '—',
-    surface: 'gravel/asphalt',
-    loop: true,
-    matchScore: 79,
-    reasons: [
-      'Gravel-/Road-Idee Kitzbühel — Strecke erst live routen',
-    ],
-    center: LatLng(47.45, 12.39),
-    categories: const [
-      BikeCategory.gravel,
-      BikeCategory.etrekking,
-      BikeCategory.road,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-hochkoenig-emtb',
-    name: 'E-MTB Hochkönig (Idee)',
-    distanceKm: 41.2,
-    elevationM: 1580,
-    durationMin: 165,
-    mtbScale: 'S2–S3',
-    surface: 'trail/alpine',
-    loop: false,
-    matchScore: 77,
-    reasons: [
-      'Alpine E-MTB-Idee — technisch, kein vorgelieferter Track',
-    ],
-    center: LatLng(47.42, 13.1),
-    categories: const [
-      BikeCategory.emtb,
-      BikeCategory.mtbEnduro,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-wilder-kaiser-hike',
-    name: 'Wilder Kaiser Höhenweg',
-    distanceKm: 14.2,
-    elevationM: 980,
-    durationMin: 300,
-    mtbScale: 'T2',
-    surface: 'path',
-    loop: false,
-    matchScore: 70,
-    reasons: [
-      'Wander-Idee — nicht als Bike-Trail verkauft',
-    ],
-    center: LatLng(47.56, 12.3),
-    categories: const [
-      BikeCategory.hiking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-tegernsee-gravel',
-    name: 'Tegernsee Gravel Mix',
-    distanceKm: 45,
-    elevationM: 780,
-    durationMin: 150,
-    mtbScale: '—',
-    surface: 'gravel/asphalt',
-    loop: true,
-    matchScore: 75,
-    reasons: [
-      'Gravel-/Road-Idee Tegernsee — gemischte Oberfläche',
-    ],
-    center: LatLng(47.71, 11.76),
-    categories: const [
-      BikeCategory.gravel,
-      BikeCategory.road,
-      BikeCategory.emtb,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-vosges-gravel',
-    name: "Vosges Ballon d'Alsace",
-    distanceKm: 42,
-    elevationM: 1100,
-    durationMin: 180,
-    mtbScale: 'S1',
-    surface: 'gravel/forest',
-    loop: true,
-    matchScore: 73,
-    reasons: [
-      'Frankreich Vogesen — Gravel/MTB-Idee',
-    ],
-    center: LatLng(47.82, 6.84),
-    categories: const [
-      BikeCategory.gravel,
-      BikeCategory.mtbAm,
-      BikeCategory.emtb,
-      BikeCategory.etrekking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-alsace-road',
-    name: "Route des Vins d'Alsace",
-    distanceKm: 55,
-    elevationM: 480,
-    durationMin: 160,
-    mtbScale: '—',
-    surface: 'asphalt',
-    loop: false,
-    matchScore: 72,
-    reasons: [
-      'Frankreich Elsass — Road/E-Trekking',
-    ],
-    center: LatLng(48.08, 7.45),
-    categories: const [
-      BikeCategory.road,
-      BikeCategory.etrekking,
-      BikeCategory.gravel,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-annecy-road',
-    name: "Lac d'Annecy Rundfahrt",
-    distanceKm: 40,
-    elevationM: 220,
-    durationMin: 120,
-    mtbScale: '—',
-    surface: 'asphalt/bike-lane',
-    loop: true,
-    matchScore: 71,
-    reasons: [
-      'Frankreich Annecy — flache See-Runde',
-    ],
-    center: LatLng(45.9, 6.13),
-    categories: const [
-      BikeCategory.road,
-      BikeCategory.urban,
-      BikeCategory.etrekking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-morzine-emtb',
-    name: 'Morzine Portes du Soleil',
-    distanceKm: 28,
-    elevationM: 1200,
-    durationMin: 150,
-    mtbScale: 'S2–S3',
-    surface: 'trail/alpine',
-    loop: false,
-    matchScore: 70,
-    reasons: [
-      'Frankreich Morzine — alpine Trails',
-    ],
-    center: LatLng(46.18, 6.71),
-    categories: const [
-      BikeCategory.emtb,
-      BikeCategory.mtbEnduro,
-      BikeCategory.mtbAm,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-provence-gravel',
-    name: 'Luberon Gravel Mix',
-    distanceKm: 48,
-    elevationM: 650,
-    durationMin: 170,
-    mtbScale: '—',
-    surface: 'gravel/asphalt',
-    loop: true,
-    matchScore: 69,
-    reasons: [
-      'Frankreich Provence — Gravel/Road',
-    ],
-    center: LatLng(43.84, 5.23),
-    categories: const [
-      BikeCategory.gravel,
-      BikeCategory.road,
-      BikeCategory.etrekking,
-    ],
-  ),
-  _RouteSuggestion(
-    id: 'r-bretagne-coast',
-    name: 'Côte de Granit Rose',
-    distanceKm: 38,
-    elevationM: 180,
-    durationMin: 110,
-    mtbScale: '—',
-    surface: 'asphalt/path',
-    loop: false,
-    matchScore: 68,
-    reasons: [
-      'Frankreich Bretagne — Küstenradweg',
-    ],
-    center: LatLng(48.83, -3.48),
-    categories: const [
-      BikeCategory.road,
-      BikeCategory.urban,
-      BikeCategory.etrekking,
-    ],
-  ),
-];
-
 class _QuickOption {
   const _QuickOption({
     required this.id,
@@ -488,48 +111,6 @@ class _QuickOption {
   final String reason;
   final RouteResult result;
 }
-
-class _TrailSeed {
-  const _TrailSeed({
-    required this.id,
-    required this.name,
-    required this.difficulty,
-    required this.points,
-  });
-  final String id;
-  final String name;
-  final String difficulty;
-  final List<GeoPoint> points;
-}
-
-/// Kurze Beispiel-Connectoren (5 Punkte) — kein OSM-/Partner-Track.
-/// Standardmäßig aus (`_showTrails = false`).
-const _seedTrails = <_TrailSeed>[
-  _TrailSeed(
-    id: 'beispiel-freiburg-west',
-    name: 'Beispiel-Connector West (kein Track)',
-    difficulty: 'S0–S1 · Demo',
-    points: [
-      GeoPoint(47.97, 7.8),
-      GeoPoint(47.975, 7.81),
-      GeoPoint(47.98, 7.82),
-      GeoPoint(47.985, 7.83),
-      GeoPoint(47.99, 7.84),
-    ],
-  ),
-  _TrailSeed(
-    id: 'beispiel-mooswald',
-    name: 'Beispiel-Connector Mooswald (kein Track)',
-    difficulty: 'S1 · Demo',
-    points: [
-      GeoPoint(48.005, 7.77),
-      GeoPoint(48.008, 7.775),
-      GeoPoint(48.012, 7.78),
-      GeoPoint(48.015, 7.785),
-      GeoPoint(48.018, 7.79),
-    ],
-  ),
-];
 
 enum _SheetMode { quick, plan, tours }
 
@@ -571,9 +152,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _label;
   List<_QuickOption> _quick = [];
   String? _detailId;
-  bool _showTrails = false;
 
-  List<_RouteSuggestion> _tours = List<_RouteSuggestion>.from(_seedRoutes);
+  List<_RouteSuggestion> _tours = <_RouteSuggestion>[];
   int? _durationBucket; // 60 / 90 / 120
   String? _surfaceFilter;
   String? _scaleFilter; // S0 / S1 / S2+
@@ -583,6 +163,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   bool _heatmapContributed = false;
   String? _elevationSummary;
   List<double> _elevationSamples = const [];
+  double? _elevationGainM;
   String? _oaStatus;
   List<_TfPin> _tfPins = [];
   String? _heatmapNote;
@@ -594,10 +175,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<GeocodeHit> _addrHits = const [];
   bool _addrBusy = false;
   String? _addrTarget; // 'start' | 'end'
+  Timer? _addrDebounce;
   int _quickGen = 0;
   String? _selectedTourId;
 
-  static const _fallback = GeoPoint(47.99, 7.85);
+  /// Nur Karten-Übersicht DACH+FR bis GPS da ist — nie Tour-Origin.
+  static const _regionOverview = GeoPoint(47.2, 6.5);
   static const _durationBuckets = [60, 90, 120];
   static const _surfaceTags = ['flow/compact', 'trail/root'];
 
@@ -610,6 +193,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _locate();
     _loadHeatmapConsent();
     _fetchOutdooractive();
+    _fetchOsmRoutes();
     _fetchTrailforks();
     unawaited(_fetchRoutingStatus());
     unawaited(
@@ -648,20 +232,40 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   @override
   void dispose() {
+    _addrDebounce?.cancel();
     _startAddrCtrl.dispose();
     _endAddrCtrl.dispose();
     super.dispose();
   }
 
+  void _scheduleAddressSearch(String target) {
+    _addrDebounce?.cancel();
+    _addrDebounce = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_searchAddress(target));
+    });
+  }
+
   Future<void> _searchAddress(String target) async {
     final q = target == 'end' ? _endAddrCtrl.text : _startAddrCtrl.text;
+    if (q.trim().length < 2) {
+      setState(() {
+        _addrHits = const [];
+        _addrBusy = false;
+        _addrTarget = target;
+      });
+      return;
+    }
     setState(() {
       _addrBusy = true;
       _addrTarget = target;
-      _addrHits = const [];
     });
     try {
-      final hits = await _geocode.search(q);
+      final o = _origin;
+      final hits = await _geocode.search(
+        q,
+        biasLat: o.lat,
+        biasLng: o.lng,
+      );
       if (!mounted) return;
       setState(() {
         _addrHits = hits;
@@ -867,6 +471,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _fetchOutdooractive() async {
     try {
+      if (!_hasRealOrigin && !AppConfig.allowDemoContent) {
+        if (mounted) {
+          setState(() => _oaStatus = 'Standort oder Start setzen für Touren');
+        }
+        return;
+      }
       final o = _origin;
       final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/outdooractive')
           .replace(queryParameters: {
@@ -879,18 +489,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           .timeout(const Duration(seconds: 12));
       if (res.statusCode < 200 || res.statusCode >= 300) {
         if (mounted) {
-          setState(() => _oaStatus = 'Outdooractive offline — Seeds');
+          setState(() => _oaStatus = 'Outdooractive offline');
         }
         return;
       }
       final data = jsonDecode(res.body);
       if (data is! Map) return;
       final toursRaw = data['tours'] as List? ?? const [];
-      if (toursRaw.isEmpty) return;
       final parsed = <_RouteSuggestion>[];
       for (final raw in toursRaw) {
         if (raw is! Map) continue;
         final m = Map<String, dynamic>.from(raw);
+        // Nur echte Demo-Einträge überspringen — Flag usingDemoFallback darf
+        // Live-Touren nicht mitlöschen.
+        if (m['source'] == 'demo' && !AppConfig.allowDemoContent) continue;
         final id = (m['id'] as String?) ?? '';
         final title = (m['title'] as String?) ?? (m['name'] as String?) ?? '';
         if (id.isEmpty || title.isEmpty) continue;
@@ -901,7 +513,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           final lat = (centerRaw[1] as num).toDouble();
           center = LatLng(lat, lng);
         }
-        final difficulty = (m['difficulty'] as String?) ?? 'S1–S2';
+        final difficulty = (m['difficulty'] as String?) ?? 'offen';
         final surface = difficulty.toLowerCase().contains('schwer') ||
                 difficulty.toLowerCase().contains('s2')
             ? 'trail/root'
@@ -910,10 +522,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         if (track != null && track.length >= 2 && centerRaw is! List) {
           center = LatLng(track.first[1], track.first[0]);
         }
-        final isDemo = m['source'] == 'demo' ||
-            data['usingDemoFallback'] == true;
         var durationMin = (m['durationMin'] as num?)?.round() ?? 120;
-        // Nur echte Sekunden-Werte korrigieren (API liefert Minuten)
         if (durationMin >= 1000) {
           durationMin = (durationMin / 60).round();
         }
@@ -922,7 +531,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             id: id.startsWith('oa-') ? id : 'oa-$id',
             name: title,
             distanceKm: (m['lengthKm'] as num?)?.toDouble() ?? 20,
-            elevationM: (m['elevationM'] as num?)?.round() ?? 800,
+            elevationM: (m['elevationM'] as num?)?.round() ?? 0,
             durationMin: durationMin,
             mtbScale: difficulty,
             surface: surface,
@@ -932,14 +541,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               if (m['summary'] is String) m['summary'] as String,
               if (track != null)
                 'Outdooractive mit Track-Polyline'
-              else if (isDemo)
-                'Outdooractive Beispiel (kein Live-Detail)'
               else
                 'Outdooractive Enrichment (ohne Track — Route berechnen)',
               if (data['attribution'] is String) data['attribution'] as String,
             ],
             center: center,
-            // Alle Bike-Kategorien — OA-Touren nicht hinter Filter verstecken
             categories: const [
               BikeCategory.mtbTrail,
               BikeCategory.mtbAm,
@@ -955,24 +561,101 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
         );
       }
-      if (parsed.isEmpty || !mounted) return;
+      if (!mounted) return;
+      if (parsed.isEmpty) {
+        setState(() {
+          _oaStatus = (data['warning'] as String?) ??
+              'Outdooractive — keine Live-Touren in der Nähe';
+        });
+        return;
+      }
       setState(() {
         final byId = <String, _RouteSuggestion>{
-          for (final s in _seedRoutes) s.id: s,
+          for (final t in _tours) t.id: t,
           for (final p in parsed) p.id: p,
         };
         _tours = byId.values.toList();
-        final demo = data['usingDemoFallback'] == true ||
-            data['configured'] != true ||
-            parsed.any((t) => t.reasons.any((r) => r.contains('Beispiel')));
-        _oaStatus = demo
-            ? 'Outdooractive Beispiel — keine Track-Wahrheit (${parsed.length})'
-            : 'Outdooractive Enrichment (${parsed.length})';
+        _oaStatus = 'Outdooractive ${parsed.length} · OSM/Tracks folgen';
       });
+      await _drawAll();
     } catch (_) {
       if (mounted) {
-        setState(() => _oaStatus = 'Outdooractive offline — Seeds');
+        setState(() => _oaStatus = 'Outdooractive offline');
       }
+    }
+  }
+
+  Future<void> _fetchOsmRoutes() async {
+    try {
+      if (!_hasRealOrigin) return;
+      final o = _origin;
+      final hits = await OsmRoutesClient().fetchNearby(
+        lat: o.lat,
+        lon: o.lng,
+        radiusKm: 20,
+      );
+      if (!mounted || hits.isEmpty) {
+        if (mounted && hits.isEmpty) {
+          setState(() {
+            final base = _oaStatus;
+            if (base == null || base.contains('OSM')) return;
+            _oaStatus = '$base · OSM keine Treffer';
+          });
+        }
+        return;
+      }
+      final parsed = <_RouteSuggestion>[];
+      for (final h in hits) {
+        final isMtb = h.type.toLowerCase().contains('mtb');
+        parsed.add(
+          _RouteSuggestion(
+            id: h.id,
+            name: h.title,
+            distanceKm: h.lengthKm,
+            elevationM: 0,
+            durationMin: h.durationMin,
+            mtbScale: h.difficulty ?? (isMtb ? 'S1' : 'offen'),
+            surface: isMtb ? 'trail/root' : 'flow/compact',
+            loop: false,
+            matchScore: 92,
+            reasons: [
+              if (h.summary != null) h.summary!,
+              'OpenStreetMap Relation · Live-Track',
+              if (h.url != null) h.url!,
+            ],
+            center: h.center,
+            categories: isMtb
+                ? const [
+                    BikeCategory.mtbTrail,
+                    BikeCategory.mtbAm,
+                    BikeCategory.mtbEnduro,
+                    BikeCategory.emtb,
+                  ]
+                : const [
+                    BikeCategory.gravel,
+                    BikeCategory.road,
+                    BikeCategory.urban,
+                    BikeCategory.etrekking,
+                    BikeCategory.hiking,
+                    BikeCategory.mtbTrail,
+                  ],
+            trackLngLat: h.geometry,
+          ),
+        );
+      }
+      setState(() {
+        final byId = <String, _RouteSuggestion>{
+          for (final t in _tours) t.id: t,
+          for (final p in parsed) p.id: p,
+        };
+        _tours = byId.values.toList();
+        final withTrack = _tours.where((t) => t.hasTrack).length;
+        _oaStatus =
+            'Touren ${_tours.length} (${withTrack} mit Track) · OSM ${parsed.length}';
+      });
+      await _drawAll();
+    } catch (_) {
+      // Overpass/API optional — OA bleibt nutzbar.
     }
   }
 
@@ -982,6 +665,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       setState(() {
         _elevationSummary = null;
         _elevationSamples = const [];
+        _elevationGainM = null;
       });
       return;
     }
@@ -990,6 +674,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (profile == null) {
       final approx = (result.distanceM * 0.03).round();
       setState(() {
+        _elevationGainM = result.distanceM * 0.03;
         _elevationSummary =
             '~$approx hm (Distanz-Schätzung — Höhen-API nicht erreichbar)';
         _elevationSamples = const [];
@@ -1002,6 +687,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (e is num) samples.add(e.toDouble());
     }
     setState(() {
+      _elevationGainM = profile.gainM;
       _elevationSummary =
           '+${profile.gainM.round()} / −${profile.lossM.round()} hm'
           '${profile.source != null ? ' · ${profile.source}' : ''}';
@@ -1058,36 +744,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  Future<void> _useDemoOrigin() async {
-    const p = _fallback;
-    setState(() {
-      _userPos = p;
-      _start = p;
-      _startAddrCtrl.text = 'Ort Freiburg';
-      _status = 'Start: Freiburg — Quick/Planen neu berechnen';
-    });
-    unawaited(_fetchOutdooractive());
-    unawaited(_fetchTrailforks());
-    try {
-      await _map?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 11),
-      );
-    } catch (_) {}
-    if (_mode == _SheetMode.quick) {
-      await _refreshQuick(limit: 3);
-    } else if (_mode == _SheetMode.plan && _end != null) {
-      await _calcAb();
-    } else {
-      await _syncMarkers();
-    }
-  }
-
   Future<void> _locate() async {
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
       if (!enabled) {
         if (mounted) {
-          setState(() => _status = 'Ortungsdienst aus — Start manuell oder Adresse');
+          setState(() => _status = 'Ortungsdienst aus — Start tippen oder Adresse');
         }
         return;
       }
@@ -1102,14 +764,28 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
         return;
       }
-      // Last-known zuerst — startet keinen Location-Service (ANR-Risiko).
-      Position? pos = await Geolocator.getLastKnownPosition();
-      pos ??= await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-          timeLimit: Duration(seconds: 5),
-        ),
-      );
+      // Frische Position zuerst — lastKnown kann alte Demo-/Test-Orte sein.
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 12),
+          ),
+        );
+      } catch (_) {
+        pos = await Geolocator.getLastKnownPosition();
+        if (pos != null) {
+          final age = DateTime.now().difference(pos.timestamp);
+          if (age > const Duration(minutes: 5)) pos = null;
+        }
+      }
+      if (pos == null) {
+        if (mounted) {
+          setState(() => _status = 'Kein GPS-Fix — Karte tippen oder Adresse suchen');
+        }
+        return;
+      }
       if (!mounted) return;
       final p = GeoPoint(pos.latitude, pos.longitude);
       setState(() {
@@ -1117,12 +793,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _start = p;
         _startAddrCtrl.text = 'Meine Position';
         _status =
-            'Position ${p.lat.toStringAsFixed(3)}, ${p.lng.toStringAsFixed(3)}';
+            'Position ${p.lat.toStringAsFixed(4)}, ${p.lng.toStringAsFixed(4)}';
       });
       unawaited(_fetchOutdooractive());
+      unawaited(_fetchOsmRoutes());
       unawaited(_fetchTrailforks());
       await _map?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 11),
+        CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12),
       );
       if (_mode == _SheetMode.quick) {
         await _refreshQuick();
@@ -1134,7 +811,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  GeoPoint get _origin => _userPos ?? _start ?? _fallback;
+  /// Tour-/API-Origin nur mit echtem Start oder GPS — kein Stadt-Fake.
+  GeoPoint? get _originOrNull => _userPos ?? _start;
+
+  GeoPoint get _origin =>
+      _originOrNull ?? _regionOverview;
+
+  bool get _hasRealOrigin => _userPos != null || _start != null;
+
+  GeoPoint get _mapCenter => _originOrNull ?? _regionOverview;
 
   /// Los-Leiste: in Planen nur bei echter Plan-Route, nicht bei Quick-Rest.
   bool get _showRideBar {
@@ -1380,57 +1065,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  Future<void> _attachTrail(_TrailSeed trail, {required bool asVia}) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final entry = trail.points.first;
-      final exit = trail.points.last;
-      final mid = trail.points[trail.points.length ~/ 2];
-      if (asVia) {
-        setState(() {
-          _start ??= _origin;
-          _vias
-            ..clear()
-            ..addAll([entry, mid, exit]);
-          _end ??= exit;
-          _pick = _PickMode.none;
-          _mode = _SheetMode.plan;
-        });
-        await _calcAb();
-        return;
-      }
-      final approach = await _routes.planRoute(
-        from: _origin,
-        to: entry,
-        profile: _profile,
-      );
-      final merged = RouteResult(
-        coordinates: [...approach.coordinates, ...trail.points],
-        distanceM: approach.distanceM + trail.points.length * 200.0,
-        durationS: approach.durationS + trail.points.length * 40.0,
-        engine: '${approach.engine ?? 'engine'}+trail',
-        steps: approach.steps,
-      );
-      if (!mounted) return;
-      setState(() {
-        _approach = approach;
-        _trailOverlay = trail.points;
-        _computed = merged;
-        _label = '${trail.name} (angehängt)';
-        _start = _origin;
-        _end = exit;
-      });
-      await _drawAll();
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _hybridSnap(_RouteSuggestion tour) async {
     setState(() {
       _loading = true;
@@ -1596,6 +1230,36 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         r.id.contains('demo');
   }
 
+  /// Komoot-ähnliche Route: dunkles Casing + helle Hauptlinie.
+  Future<void> _addKomootLine(
+    MapLibreMapController c,
+    List<LatLng> geometry, {
+    required bool active,
+    String lineColor = '#2ECC71',
+    Map<String, dynamic>? data,
+  }) async {
+    if (geometry.length < 2) return;
+    await c.addLine(
+      LineOptions(
+        geometry: geometry,
+        lineColor: '#14241C',
+        lineWidth: active ? 12 : 8,
+        lineOpacity: active ? 0.92 : 0.4,
+        lineJoin: 'round',
+      ),
+    );
+    await c.addLine(
+      LineOptions(
+        geometry: geometry,
+        lineColor: lineColor,
+        lineWidth: active ? 5.5 : 3.2,
+        lineOpacity: active ? 1.0 : 0.72,
+        lineJoin: 'round',
+      ),
+      data,
+    );
+  }
+
   /// Ziel-Vorschlag ~¼ der Ideendistanz NE vom Pin (A→B, editierbar).
   GeoPoint _suggestedEndNear(LatLng center, double distanceKm) {
     final legKm = (distanceKm * 0.25).clamp(3.0, 12.0);
@@ -1613,7 +1277,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     for (final r in _filtered) {
       if (r.id == id) return r;
     }
-    for (final r in _seedRoutes) {
+    for (final r in _tours) {
       if (r.id == id) return r;
     }
     return null;
@@ -1776,66 +1440,55 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Fall through — map still usable without heatmap.
         }
       }
-      if (_showTrails) {
-        for (final trail in _seedTrails) {
-          await c.addLine(
-            LineOptions(
-              geometry:
-                  trail.points.map((p) => LatLng(p.lat, p.lng)).toList(),
-              lineColor: '#B0BEC5',
-              lineWidth: 2.5,
-              lineOpacity: 0.55,
-            ),
-          );
-        }
+      // Tour-/OSM-Tracks (Komoot-Stil): alle dezent, ausgewählte kräftig.
+      for (final tour in _tours) {
+        if (!tour.hasTrack) continue;
+        final geom = [
+          for (final p in tour.trackLngLat!) LatLng(p[1], p[0]),
+        ];
+        final selected = tour.id == _selectedTourId;
+        await _addKomootLine(
+          c,
+          geom,
+          active: selected,
+          lineColor: selected ? '#00C853' : '#66BB6A',
+          data: {'kind': 'tour', 'id': tour.id},
+        );
       }
       if (_approach != null && _approach!.coordinates.length >= 2) {
-        await c.addLine(
-          LineOptions(
-            geometry: _approach!.coordinates
-                .map((p) => LatLng(p.lat, p.lng))
-                .toList(),
-            lineColor: '#66BB6A',
-            lineWidth: 4,
-          ),
+        await _addKomootLine(
+          c,
+          _approach!.coordinates.map((p) => LatLng(p.lat, p.lng)).toList(),
+          active: false,
+          lineColor: '#66BB6A',
         );
       }
       if (_tourLayer != null && _tourLayer!.coordinates.length >= 2) {
         final approx = (_tourLayer!.engine ?? '').contains('demo');
-        await c.addLine(
-          LineOptions(
-            geometry: _tourLayer!.coordinates
-                .map((p) => LatLng(p.lat, p.lng))
-                .toList(),
-            lineColor: approx ? '#9E9E9E' : '#AB47BC',
-            lineWidth: approx ? 3 : 4,
-            lineOpacity: approx ? 0.55 : 1.0,
-          ),
+        await _addKomootLine(
+          c,
+          _tourLayer!.coordinates.map((p) => LatLng(p.lat, p.lng)).toList(),
+          active: false,
+          lineColor: approx ? '#9E9E9E' : '#AB47BC',
         );
       }
       if (_trailOverlay != null && _trailOverlay!.length >= 2) {
-        await c.addLine(
-          LineOptions(
-            geometry:
-                _trailOverlay!.map((p) => LatLng(p.lat, p.lng)).toList(),
-            lineColor: '#FF6B35',
-            lineWidth: 4,
-          ),
+        await _addKomootLine(
+          c,
+          _trailOverlay!.map((p) => LatLng(p.lat, p.lng)).toList(),
+          active: true,
+          lineColor: '#FF6B35',
         );
       }
       for (final q in _quick) {
         if (q.label == _label) continue;
         if (q.result.coordinates.length < 2) continue;
-        await c.addLine(
-          LineOptions(
-            geometry: q.result.coordinates
-                .map((p) => LatLng(p.lat, p.lng))
-                .toList(),
-            lineColor: '#90A4AE',
-            lineWidth: 5,
-            lineOpacity: 0.6,
-          ),
-          {'kind': 'quick', 'id': q.id, 'label': q.label},
+        await _addKomootLine(
+          c,
+          q.result.coordinates.map((p) => LatLng(p.lat, p.lng)).toList(),
+          active: false,
+          lineColor: '#90A4AE',
+          data: {'kind': 'quick', 'id': q.id, 'label': q.label},
         );
       }
       if (_computed != null && _computed!.coordinates.length >= 2) {
@@ -1845,14 +1498,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         final line = _computed!.coordinates
             .map((p) => LatLng(p.lat, p.lng))
             .toList();
-        await c.addLine(
-          LineOptions(
-            geometry: line,
-            lineColor: approx ? '#78909C' : '#4FC3F7',
-            lineWidth: approx ? 3.5 : 5,
-            lineOpacity: approx ? 0.65 : 1.0,
-          ),
-          {
+        await _addKomootLine(
+          c,
+          line,
+          active: true,
+          lineColor: approx ? '#78909C' : '#00E676',
+          data: {
             'kind': 'active',
             'approx': approx,
             if (_label != null) 'label': _label,
@@ -1918,8 +1569,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           SymbolOptions(
             geometry: LatLng(_start!.lat, _start!.lng),
             iconImage: 'marker-15',
-            textField: 'S',
-            textOffset: const Offset(0, 1.2),
+            iconSize: 1.35,
+            textField: 'A',
+            textSize: 14,
+            textColor: '#FFFFFF',
+            textHaloColor: '#1B5E20',
+            textHaloWidth: 1.4,
+            textOffset: const Offset(0, 1.35),
           ),
         );
       }
@@ -1928,8 +1584,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           SymbolOptions(
             geometry: LatLng(_end!.lat, _end!.lng),
             iconImage: 'marker-15',
-            textField: 'Z',
-            textOffset: const Offset(0, 1.2),
+            iconSize: 1.35,
+            textField: 'B',
+            textSize: 14,
+            textColor: '#FFFFFF',
+            textHaloColor: '#BF360C',
+            textHaloWidth: 1.4,
+            textOffset: const Offset(0, 1.35),
           ),
         );
       }
@@ -2054,6 +1715,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       source: _approach != null || _tourLayer != null || _trailOverlay != null
           ? 'import'
           : 'engine',
+      elevationGainM: _elevationGainM,
     );
     ref.invalidate(savedRoutesProvider);
     if (!mounted) return;
@@ -2635,7 +2297,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: InkWell(
-                        onTap: () => openPrivacyScreen(context),
+                        onTap: () async {
+                          await openPrivacyScreen(context);
+                          if (mounted) await _loadHeatmapConsent();
+                        },
                         child: const Text(
                           'Heatmaps nach Consent — Privatsphäre öffnen',
                           style: TextStyle(
@@ -2811,9 +2476,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 MapLibreMap(
                   styleString: style,
                   initialCameraPosition: CameraPosition(
-                    target: LatLng(_origin.lat, _origin.lng),
-                    zoom: 11,
+                    target: LatLng(_mapCenter.lat, _mapCenter.lng),
+                    zoom: _hasRealOrigin ? 12 : 5.5,
                   ),
+                  compassEnabled: true,
+                  rotateGesturesEnabled: true,
+                  scrollGesturesEnabled: true,
+                  zoomGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
+                  gestureRecognizers: _mapGestures,
                   onMapCreated: (c) async {
                     _map = c;
                     c.onSymbolTapped.add(_onTfSymbolTapped);
@@ -2946,8 +2617,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                   SizedBox(
                     height: _mode == _SheetMode.plan
-                        ? (_ideaPin != null ? 380 : 320)
-                        : 240,
+                        ? (_ideaPin != null ? 280 : 220)
+                        : 170,
                     child: _buildSheetBody(),
                   ),
                 ],
@@ -2980,7 +2651,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? AppColors.accent : AppColors.sunSurface,
+            color: selected ? AppColors.accent : AppColors.chipIdle,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -2989,7 +2660,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               Icon(
                 icon,
                 size: 16,
-                color: selected ? Colors.white : AppColors.muted,
+                color: selected ? Colors.white : AppColors.chipIdleText,
               ),
               const SizedBox(width: 4),
               Text(
@@ -2997,7 +2668,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : AppColors.muted,
+                  color: selected ? Colors.white : AppColors.chipIdleText,
                 ),
               ),
             ],
@@ -3135,8 +2806,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             },
                       icon: const Icon(Icons.route),
                       label: Text(
-                        _end == null && ideaTour != null
-                            ? 'Route berechnen'
+                        ideaTour != null
+                            ? 'Route berechnen & speichern'
                             : 'Route berechnen',
                       ),
                     ),
@@ -3164,16 +2835,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _startAddrCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Start-Adresse',
-                      hintText: 'z. B. Freiburg Hbf',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                  child: Semantics(
+                    label: 'Start-Adresse',
+                    textField: true,
+                    child: TextField(
+                      controller: _startAddrCtrl,
+                      autofillHints: const [AutofillHints.addressCity],
+                      decoration: const InputDecoration(
+                        labelText: 'Start-Adresse',
+                        hintText: 'z. B. Heidelberg Hbf',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      textInputAction: TextInputAction.search,
+                      onChanged: (_) => _scheduleAddressSearch('start'),
+                      onSubmitted: (_) => _searchAddress('start'),
                     ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _searchAddress('start'),
                   ),
                 ),
                 IconButton(
@@ -3187,16 +2864,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _endAddrCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Ziel-Adresse',
-                      hintText: 'z. B. Kirchzarten',
-                      border: OutlineInputBorder(),
-                      isDense: true,
+                  child: Semantics(
+                    label: 'Ziel-Adresse',
+                    textField: true,
+                    child: TextField(
+                      controller: _endAddrCtrl,
+                      autofillHints: const [AutofillHints.addressCity],
+                      decoration: const InputDecoration(
+                        labelText: 'Ziel-Adresse',
+                        hintText: 'z. B. Wiesloch',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      textInputAction: TextInputAction.search,
+                      onChanged: (_) => _scheduleAddressSearch('end'),
+                      onSubmitted: (_) => _searchAddress('end'),
                     ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _searchAddress('end'),
                   ),
                 ),
                 IconButton(
@@ -3236,8 +2919,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   onPressed: () => setState(() => _pick = _PickMode.end),
                 ),
                 ActionChip(
-                  label: const Text('Ort Freiburg'),
-                  onPressed: () => unawaited(_useDemoOrigin()),
+                  label: Text(_userPos != null ? 'Hier' : 'Standort'),
+                  onPressed: () => unawaited(_locate()),
                 ),
               ],
             ),
@@ -3324,73 +3007,34 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
-                const Text(
-                  'Beispiel-Connectoren',
-                  style: TextStyle(fontSize: 11, color: AppColors.muted),
-                ),
-                Switch(
-                  value: _showTrails,
-                  onChanged: (v) async {
-                    setState(() => _showTrails = v);
-                    await _drawAll();
-                  },
-                ),
               ],
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                'Sortiert nach Nähe zu ${o.lat.toStringAsFixed(2)}°N, ${o.lng.toStringAsFixed(2)}°E'
-                '${_userPos != null ? ' (GPS)' : ''}',
+                _hasRealOrigin
+                    ? 'Sortiert nach Nähe zu ${o.lat.toStringAsFixed(2)}°N, ${o.lng.toStringAsFixed(2)}°E'
+                        '${_userPos != null ? ' (GPS)' : ''}'
+                    : 'Standort oder Start setzen — Touren für DACH & Frankreich',
                 style: const TextStyle(fontSize: 11, color: AppColors.muted),
               ),
             ),
-            if (list.isEmpty)
+            if (!_hasRealOrigin)
               const Padding(
-                padding: EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Keine Tour bei diesen Filtern — Filter lockern.',
+                  'Keine Beispiel-Touren — erst GPS oder Startpunkt, dann Live-Touren.',
                   style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
-            if (_showTrails)
+            if (list.isEmpty && _hasRealOrigin)
               const Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'Graue 5-Punkt-Linien — kein OSM-/Partner-Track.',
-                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  'Keine Tour bei diesen Filtern — Filter lockern oder später erneut laden.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
-            ..._seedTrails.map(              (tr) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(tr.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      Text(tr.difficulty, style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: _loading
-                                ? null
-                                : () => _attachTrail(tr, asVia: false),
-                            child: const Text('Anhängen'),
-                          ),
-                          TextButton(
-                            onPressed: _loading
-                                ? null
-                                : () => _attachTrail(tr, asVia: true),
-                            child: const Text('Als Via'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
             ...list.map((r) {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -3454,7 +3098,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                     ? null
                                     : () => _computeIdeaRoute(r),
                                 icon: const Icon(Icons.route, size: 18),
-                                label: const Text('Route berechnen'),
+                                label: const Text('Route berechnen & speichern'),
                               ),
                               const SizedBox(width: 8),
                             ] else
@@ -3671,11 +3315,19 @@ class _TrailViewSheetState extends State<_TrailViewSheet> {
                                 p.imageUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) =>
-                                    _demoTile(p.title),
+                                    AppConfig.allowDemoContent
+                                        ? _demoTile(p.title)
+                                        : const Center(
+                                            child: Text('Bild nicht verfügbar'),
+                                          ),
                               ),
                             );
                           }
-                          return _demoTile(p.title);
+                          return AppConfig.allowDemoContent
+                              ? _demoTile(p.title)
+                              : const Center(
+                                  child: Text('Keine Live-Fotos'),
+                                );
                         },
                       ),
               ),

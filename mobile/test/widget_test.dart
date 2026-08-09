@@ -1,6 +1,7 @@
 import 'package:aetherride_mobile/app.dart';
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/providers/app_providers.dart';
+import 'package:aetherride_mobile/providers/ride_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,6 +10,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          onboardingDoneProvider.overrideWith((ref) => true),
           bikesProvider.overrideWith(
             (ref) async => [
               const Bike(

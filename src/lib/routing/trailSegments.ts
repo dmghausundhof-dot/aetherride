@@ -1,7 +1,9 @@
 /**
  * Seed trail segments for Discover overlay / Tour↔Track join.
- * Demo geometry — not a partner geometry mirror.
+ * Nur außerhalb Production (`allowDemoContent`) — kein Partner-Geometry-Mirror.
  */
+
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 export type TrailSegment = {
   id: string;
@@ -19,7 +21,7 @@ function line(
   return { type: "LineString", coordinates: coords };
 }
 
-/** Schwarzwald / Demo corridor segments */
+/** Dev/Test only — Production: trailsNear/getTrailById liefern leer. */
 export const SEED_TRAILS: TrailSegment[] = [
   {
     id: "trail-kaltenbronn-flow",
@@ -83,6 +85,7 @@ export function trailsNear(
   center: [number, number],
   radiusDeg = 0.35
 ): TrailSegment[] {
+  if (!allowDemoContent()) return [];
   const [lng, lat] = center;
   return SEED_TRAILS.filter((t) => {
     const d = Math.hypot(t.center[0] - lng, t.center[1] - lat);
@@ -91,5 +94,6 @@ export function trailsNear(
 }
 
 export function getTrailById(id: string): TrailSegment | undefined {
+  if (!allowDemoContent()) return undefined;
   return SEED_TRAILS.find((t) => t.id === id);
 }

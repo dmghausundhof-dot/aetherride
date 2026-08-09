@@ -593,11 +593,15 @@ function DiscoverPageInner() {
 
   const searchAddress = useCallback(async () => {
     const q = addrQuery.trim();
-    if (q.length < 2) return;
+    if (q.length < 2) {
+      setAddrHits([]);
+      return;
+    }
     setAddrBusy(true);
     try {
+      const [lon, lat] = userPos ?? mapCenter;
       const res = await fetch(
-        `/api/geocode?q=${encodeURIComponent(q)}&limit=5`
+        `/api/geocode?q=${encodeURIComponent(q)}&limit=5&lat=${lat}&lon=${lon}`
       );
       const data = (await res.json()) as {
         hits?: { label: string; lat: number; lng: number }[];
@@ -615,7 +619,18 @@ function DiscoverPageInner() {
     } finally {
       setAddrBusy(false);
     }
-  }, [addrQuery]);
+  }, [addrQuery, userPos, mapCenter]);
+
+  useEffect(() => {
+    if (addrQuery.trim().length < 2) {
+      setAddrHits([]);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      void searchAddress();
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [addrQuery, searchAddress]);
 
   const loadSavedRoute = useCallback(
     (r: SavedRoute) => {
@@ -1370,7 +1385,10 @@ function DiscoverPageInner() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void searchAddress();
                   }}
-                  placeholder="z. B. Freiburg Hbf"
+                  aria-label={
+                    addrTarget === "end" ? "Ziel-Adresse" : "Start-Adresse"
+                  }
+                  placeholder="z. B. Wiesloch"
                   className="min-w-0 flex-1 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-xs"
                 />
                 <button

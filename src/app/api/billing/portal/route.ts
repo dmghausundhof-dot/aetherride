@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAuthedClient } from "@/lib/supabase/authed";
 import { appUrl, getStripe } from "@/lib/stripe";
 
-export async function POST() {
+/** Cookie (Web) oder Authorization: Bearer (Mobile). */
+export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createAuthedClient(req);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -20,8 +21,12 @@ export async function POST() {
 
     if (!profile?.stripe_customer_id) {
       return NextResponse.json(
-        { error: "no_stripe_customer" },
-        { status: 400 }
+        {
+          error: "no_stripe_customer",
+          message:
+            "Noch kein Stripe-Kunde — zuerst Pro über Checkout oder Play abonnieren.",
+        },
+        { status: 400 },
       );
     }
 
@@ -35,7 +40,7 @@ export async function POST() {
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "portal failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

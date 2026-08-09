@@ -1,3 +1,4 @@
+import '../../core/config.dart';
 import '../privacy/consents.dart';
 import '../privacy/track_trim.dart';
 
@@ -82,7 +83,8 @@ HeatmapResult buildHeatmapFromRides({
     );
   }
 
-  final useSeed = fromRides.isEmpty && includeSeedFallback;
+  final useSeed =
+      fromRides.isEmpty && includeSeedFallback && AppConfig.allowDemoContent;
   final seed = useSeed ? _seedSegments() : const <HeatSegment>[];
   final segments = [...fromRides, ...seed];
   final visibleCount = segments.where((s) => s.visible).length;

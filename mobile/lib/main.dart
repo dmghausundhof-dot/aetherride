@@ -7,13 +7,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config.dart';
+import 'core/crash_reporting.dart';
 import 'providers/app_providers.dart';
+import 'providers/ride_providers.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // UI zuerst zeichnen — Supabase darf den Cold-Start nicht blockieren.
-  runApp(const ProviderScope(child: _Bootstrap()));
+  await runWithCrashReporting(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    // UI zuerst zeichnen — Supabase darf den Cold-Start nicht blockieren.
+    runApp(const ProviderScope(child: _Bootstrap()));
+  });
 }
 
 class _Bootstrap extends ConsumerStatefulWidget {
@@ -44,10 +47,13 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
     }
     try {
       await ref.read(userProfileStoreProvider).load();
+      final store = ref.read(userProfileStoreProvider);
+      ref.read(onboardingDoneProvider.notifier).state = store.onboardingDone;
       // Kein Auto-Demo-Bike — leere Garage bleibt leer (wie Web nach Freeride/Skip).
       await ref.read(syncEngineProvider).start();
     } catch (e) {
       debugPrint('Bootstrap: $e');
+      ref.read(onboardingDoneProvider.notifier).state = false;
     }
   }
 

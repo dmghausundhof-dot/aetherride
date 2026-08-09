@@ -32,9 +32,12 @@ export async function GET(req: Request) {
     photon.searchParams.set("q", q);
     photon.searchParams.set("lang", "de");
     photon.searchParams.set("limit", String(limit));
-    // DACH bias
-    photon.searchParams.set("lat", "48.0");
-    photon.searchParams.set("lon", "10.0");
+    // DACH bias (override with lat/lon near user)
+    const biasLat = url.searchParams.get("lat") ?? "48.0";
+    const biasLon =
+      url.searchParams.get("lon") ?? url.searchParams.get("lng") ?? "10.0";
+    photon.searchParams.set("lat", biasLat);
+    photon.searchParams.set("lon", biasLon);
 
     const res = await fetch(photon.toString(), {
       headers: {

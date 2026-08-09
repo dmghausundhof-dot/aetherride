@@ -44,6 +44,7 @@ import {
   type FamilyRider,
 } from "@/lib/garage/family";
 import type { CommerceMode } from "@/lib/shop/marketplace";
+import { forcePro } from "@/lib/config/forcePro";
 import type {
   Bike,
   BikeCategory,
@@ -413,7 +414,7 @@ export const useAppStore = create<AppState>()(
       bracketingSeries: [],
       rideFeedbacks: [],
       storageVersion: STORAGE_VERSION,
-      subscriptionTier: "free",
+      subscriptionTier: forcePro() ? "pro" : "free",
       rangeCalibration: null,
       profileExplanations: PROFILE_EXPLANATIONS,
       consents: DEFAULT_CONSENTS,
@@ -452,10 +453,11 @@ export const useAppStore = create<AppState>()(
           },
         })),
 
-      setSubscriptionTier: (tier) => set({ subscriptionTier: tier }),
+      setSubscriptionTier: (tier) =>
+        set({ subscriptionTier: forcePro() ? "pro" : tier }),
 
       canUseProFeature: (feature) => {
-        const tier = get().subscriptionTier;
+        const tier = forcePro() ? "pro" : get().subscriptionTier;
         if (tier === "pro") return true;
         return false;
       },
@@ -533,6 +535,7 @@ export const useAppStore = create<AppState>()(
 
       addBikeFromCatalog: ({ catalogBikeId, frameSize, name }) => {
         if (
+          !forcePro() &&
           get().subscriptionTier === "free" &&
           get().bikes.length >= 1
         ) {
@@ -626,6 +629,7 @@ export const useAppStore = create<AppState>()(
 
       addBikeBasic: (input) => {
         if (
+          !forcePro() &&
           get().subscriptionTier === "free" &&
           get().bikes.length >= 1
         ) {
@@ -1552,7 +1556,7 @@ export const useAppStore = create<AppState>()(
         const existing = get().bikes;
         if (existing.length > 0) return;
         // Explizit aufrufbar (Dev/QA) — kein Fake-Bosch, kein stiller Demo-Ride.
-        set({ subscriptionTier: "free" });
+        set({ subscriptionTier: forcePro() ? "pro" : "free" });
         get().addBikeFromCatalog({
           catalogBikeId: "cat-transition-spire-2024",
           frameSize: "L",
@@ -1605,7 +1609,9 @@ export const useAppStore = create<AppState>()(
         return {
           ...base,
           riderProfile: profile,
-          subscriptionTier: base.subscriptionTier ?? "free",
+          subscriptionTier: forcePro()
+            ? "pro"
+            : base.subscriptionTier ?? "free",
           rangeCalibration: base.rangeCalibration ?? null,
           profileExplanations: PROFILE_EXPLANATIONS,
           consents: base.consents?.length ? base.consents : DEFAULT_CONSENTS,
@@ -1647,6 +1653,11 @@ export const useAppStore = create<AppState>()(
         onboardingDone: s.onboardingDone,
         preferredSport: s.preferredSport,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state && forcePro()) {
+          state.subscriptionTier = "pro";
+        }
+      },
     }
   )
 );

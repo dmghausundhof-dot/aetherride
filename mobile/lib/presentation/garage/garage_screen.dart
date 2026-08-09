@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -23,14 +24,30 @@ import '../../domain/setup.dart';
 import '../../domain/setup/fingerprint.dart';
 import '../../domain/setup/sag_guide.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/ride_providers.dart';
 import '../billing/upgrade_screen.dart';
 import 'setup_sheet.dart';
 
-class GarageScreen extends ConsumerWidget {
+class GarageScreen extends ConsumerStatefulWidget {
   const GarageScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GarageScreen> createState() => _GarageScreenState();
+}
+
+class _GarageScreenState extends ConsumerState<GarageScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final openAdd = ref.watch(garageOpenAddPendingProvider);
+    if (openAdd) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (!ref.read(garageOpenAddPendingProvider)) return;
+        ref.read(garageOpenAddPendingProvider.notifier).state = false;
+        unawaited(_openAddBike(context, ref));
+      });
+    }
+
     final bikes = ref.watch(bikesProvider);
 
     return Scaffold(
@@ -82,15 +99,23 @@ class GarageScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             children: [
-              ...List.generate(list.length, (i) {
-                return Padding(
-                  padding: EdgeInsets.only(bottom: i == list.length - 1 ? 0 : 8),
-                  child: _BikeTile(
-                    bike: list[i],
-                    onTap: () => _openDetail(context, ref, list[i]),
-                  ),
-                );
-              }),
+              ...() {
+                final sorted = List<Bike>.from(list)
+                  ..sort((a, b) {
+                    if (a.isActive == b.isActive) return 0;
+                    return a.isActive ? -1 : 1;
+                  });
+                return List.generate(sorted.length, (i) {
+                  return Padding(
+                    padding:
+                        EdgeInsets.only(bottom: i == sorted.length - 1 ? 0 : 8),
+                    child: _BikeTile(
+                      bike: sorted[i],
+                      onTap: () => _openDetail(context, ref, sorted[i]),
+                    ),
+                  );
+                });
+              }(),
               const SizedBox(height: 20),
               Text(
                 'Letzte Rides',
@@ -179,10 +204,13 @@ class GarageScreen extends ConsumerWidget {
       if (proceed != true) return;
     }
     if (!context.mounted) return;
+    final initialCategory = ref.read(garageAddCategoryProvider) ??
+        ref.read(userProfileStoreProvider).preferredSport;
+    ref.read(garageAddCategoryProvider.notifier).state = null;
     final created = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => const _AddBikeSheet(),
+      builder: (_) => _AddBikeSheet(initialCategory: initialCategory),
     );
     if (created == true) {
       ref.invalidate(bikesProvider);
@@ -203,42 +231,135 @@ class GarageScreen extends ConsumerWidget {
   }
 }
 
-class _BikeTile extends StatelessWidget {
+class _BikeTile extends ConsumerWidget {
   const _BikeTile({required this.bike, required this.onTap});
 
   final Bike bike;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      leading: Icon(
-        Icons.pedal_bike,
-        color: bike.isActive ? AppColors.accent : null,
-      ),
-      title: Text(bike.name),
-      subtitle: Text(
-        [
-          if (bike.brand != null) bike.brand!,
-          if (bike.model != null) bike.model!,
-          '${bike.odometerKm.toStringAsFixed(0)} km · '
-          '${bike.hours.toStringAsFixed(0)} h',
-          if (bike.isActive) 'aktiv',
-        ].join(' · '),
-      ),
-      trailing: Text(
-        bike.categoryLabel,
-        style: Theme.of(context).textTheme.labelSmall,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final store = ref.watch(userProfileStoreProvider);
+    final photo = store.bikePhotos[bike.id];
+    final hasPhoto = photo != null &&
+        (photo.startsWith('http') || File(photo).existsSync());
+
+    return Material(
+      color: AppColors.surfaceDark,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: bike.isActive ? AppColors.accent : AppColors.border,
+              width: bike.isActive ? 2 : 1,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 96,
+                height: 88,
+                child: hasPhoto
+                    ? (photo.startsWith('http')
+                        ? Image.network(photo, fit: BoxFit.cover)
+                        : Image.file(File(photo), fit: BoxFit.cover))
+                    : Container(
+                        color: AppColors.chipIdle,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.pedal_bike,
+                          size: 36,
+                          color: bike.isActive
+                              ? AppColors.accent
+                              : AppColors.muted,
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              bike.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (bike.isActive)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Aktiv',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        bike.categoryLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        [
+                          if (bike.brand != null) bike.brand!,
+                          if (bike.model != null) bike.model!,
+                          '${bike.odometerKm.toStringAsFixed(0)} km',
+                        ].join(' · '),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: Icon(Icons.chevron_right, color: AppColors.muted),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
 class _AddBikeSheet extends ConsumerStatefulWidget {
-  const _AddBikeSheet();
+  const _AddBikeSheet({this.initialCategory});
+
+  final BikeCategory? initialCategory;
 
   @override
   ConsumerState<_AddBikeSheet> createState() => _AddBikeSheetState();
@@ -251,7 +372,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
   final _brand = TextEditingController();
   final _model = TextEditingController();
   final _importNote = TextEditingController();
-  BikeCategory _category = BikeCategory.mtbAm;
+  late BikeCategory _category;
   WheelSize _wheel = WheelSize.w29;
   bool _busy = false;
   _AddBikeMode _mode = _AddBikeMode.catalog;
@@ -268,6 +389,11 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
   @override
   void initState() {
     super.initState();
+    _category = widget.initialCategory ?? BikeCategory.mtbAm;
+    // Urban/Road → Basis; Trail-Sports → Katalog (Web-Parität).
+    if (_category == BikeCategory.urban || _category == BikeCategory.road) {
+      _mode = _AddBikeMode.basic;
+    }
     _loadCatalog();
   }
 
@@ -553,14 +679,17 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? AppColors.accent : AppColors.sunSurface,
+            color: selected ? AppColors.accent : AppColors.chipIdle,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? AppColors.accent : AppColors.border,
+            ),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : null,
+              color: selected ? AppColors.onAccent : AppColors.chipIdleText,
             ),
           ),
         ),
@@ -1081,34 +1210,105 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
             if (_compat.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
-                'Kompatibilität',
+                'Kompatibilität mit deinen Teilen',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              for (final r in _compat.take(8))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  onTap: () => _showEvidence(context, r),
-                  title: Text(r.title, style: const TextStyle(fontSize: 13)),
-                  subtitle: Text(
-                    r.explainDe,
-                    style: const TextStyle(fontSize: 11),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 4),
+              Text(
+                'Ampel: grün = passt · orange = prüfen · rot = Konflikt',
+                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _CompatBadge(
+                    label: 'OK ${_compat.where((r) => r.verdict == CompatVerdict.compatible).length}',
+                    color: const Color(0xFF2D6A4F),
                   ),
-                  trailing: Text(
-                    verdictLabel(r.verdict),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: switch (r.verdict) {
-                        CompatVerdict.compatible => Colors.green,
-                        CompatVerdict.conditional => Colors.orange,
-                        CompatVerdict.incompatible => Colors.redAccent,
-                        CompatVerdict.insufficientData => AppColors.muted,
-                      },
+                  _CompatBadge(
+                    label: 'Prüfen ${_compat.where((r) => r.verdict == CompatVerdict.conditional || r.verdict == CompatVerdict.insufficientData).length}',
+                    color: Colors.orange,
+                  ),
+                  _CompatBadge(
+                    label: 'Konflikt ${_compat.where((r) => r.verdict == CompatVerdict.incompatible).length}',
+                    color: Colors.redAccent,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              for (final r in _compat.take(12))
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.chipIdle,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: InkWell(
+                    onTap: () => _showEvidence(context, r),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.only(top: 4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: switch (r.verdict) {
+                              CompatVerdict.compatible =>
+                                const Color(0xFF4CAF50),
+                              CompatVerdict.conditional => Colors.orange,
+                              CompatVerdict.incompatible => Colors.redAccent,
+                              CompatVerdict.insufficientData => AppColors.muted,
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                r.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                r.explainDe,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.muted,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          verdictLabel(r.verdict),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: switch (r.verdict) {
+                              CompatVerdict.compatible =>
+                                const Color(0xFF4CAF50),
+                              CompatVerdict.conditional => Colors.orange,
+                              CompatVerdict.incompatible => Colors.redAccent,
+                              CompatVerdict.insufficientData => AppColors.muted,
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1476,6 +1676,32 @@ class _InstallComponentSheetState
               child: const Text('Installieren'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompatBadge extends StatelessWidget {
+  const _CompatBadge({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
         ),
       ),
     );

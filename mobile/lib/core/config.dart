@@ -1,5 +1,4 @@
-/// Compile-time / runtime config for mobile.
-/// Pass via `--dart-define=SUPABASE_URL=...` etc.
+import 'package:flutter/foundation.dart';
 import '../data/routing/offline_maps_prefs.dart';
 
 abstract final class AppConfig {
@@ -13,12 +12,25 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
-  /// Next.js API origin for sync / route / catalog (local or production).
-  /// Emulator → host loopback: http://10.0.2.2:3001
-  static const apiBaseUrl = String.fromEnvironment(
+  /// Compile-time override. Empty → debug emulator / release production host.
+  static const _apiBaseUrlDefine = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3001',
+    defaultValue: '',
   );
+
+  /// Production Next.js origin (Play / TestFlight release builds).
+  static const productionApiBaseUrl = 'https://aetherride.vercel.app';
+
+  /// Emulator → host loopback when developing against local Next.js.
+  static const debugApiBaseUrl = 'http://10.0.2.2:3001';
+
+  /// Next.js API origin for sync / route / catalog.
+  static String get apiBaseUrl {
+    final fromEnv = _apiBaseUrlDefine.trim();
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return productionApiBaseUrl;
+    return debugApiBaseUrl;
+  }
 
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
@@ -82,8 +94,37 @@ abstract final class AppConfig {
     defaultValue: false,
   );
 
+  /// Optional Sentry DSN — empty = crash reporting disabled.
+  static const sentryDsn = String.fromEnvironment(
+    'SENTRY_DSN',
+    defaultValue: '',
+  );
+
+  /// Demo/seed UI is permanently off — market builds never show Freiburg seeds.
+  static bool get allowDemoContent => false;
+
+  /// Test-Account immer Pro.
+  /// - Debug: standardmäßig an (`AETHER_FORCE_FREE=true` zum Abschalten)
+  /// - Release: nur mit `--dart-define=AETHER_FORCE_PRO=true`
+  static bool get forcePro {
+    if (const bool.fromEnvironment('AETHER_FORCE_PRO', defaultValue: false)) {
+      return true;
+    }
+    if (const bool.fromEnvironment('AETHER_FORCE_FREE', defaultValue: false)) {
+      return false;
+    }
+    return kDebugMode;
+  }
+
   static bool get isSupabaseConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+  static bool get isCrashReportingConfigured => sentryDsn.trim().isNotEmpty;
+
+  /// Legal pages on the API/web origin.
+  static String get privacyPolicyUrl => '$apiBaseUrl/legal/datenschutz';
+  static String get impressumUrl => '$apiBaseUrl/legal/impressum';
+  static String get widerrufUrl => '$apiBaseUrl/legal/widerruf';
 
   /// Sync Style-URL: compile-time PMTiles-Style → Stadia → OpenFreeMap.
   /// Kein demotiles als Produkt-Default.

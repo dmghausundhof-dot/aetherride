@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/privacy/consents.dart';
@@ -28,7 +29,7 @@ class GarageRepository {
 
   /// Local flag: free tier user added a 2nd bike (still allowed offline).
   bool freeTierExtraBike = false;
-  String subscriptionTier = 'free';
+  String subscriptionTier = AppConfig.forcePro ? 'pro' : 'free';
 
   Future<List<Bike>> listBikes() async {
     final rows = await _db.select(_db.bikes).get();
@@ -64,6 +65,14 @@ class GarageRepository {
     bool makeActive = true,
   }) async {
     final existing = await listBikes();
+    if (catalogBikeId != null && catalogBikeId.isNotEmpty) {
+      for (final b in existing) {
+        if (b.catalogBikeId == catalogBikeId) {
+          if (makeActive) await setActiveBike(b.id);
+          return b;
+        }
+      }
+    }
     if (existing.isNotEmpty && subscriptionTier != 'pro') {
       freeTierExtraBike = true;
     }
@@ -466,12 +475,14 @@ class GarageRepository {
   Future<void> wipeLocalData() async {
     await _db.clearAllTables();
     freeTierExtraBike = false;
-    subscriptionTier = 'free';
+    subscriptionTier = AppConfig.forcePro ? 'pro' : 'free';
     await profileStore?.clear();
   }
 
   Future<void> applyRemotePayload(SyncPayload payload) async {
-    if (payload.subscriptionTier == 'pro' ||
+    if (AppConfig.forcePro) {
+      subscriptionTier = 'pro';
+    } else if (payload.subscriptionTier == 'pro' ||
         payload.subscriptionTier == 'free') {
       subscriptionTier = payload.subscriptionTier!;
     }

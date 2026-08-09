@@ -14,6 +14,7 @@ import {
   stepsFromValhallaLeg,
   type NavStep,
 } from "@/lib/routing/navSteps";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 export type RouteResult = {
   distanceM: number;
@@ -432,7 +433,12 @@ export async function computeRoute(
 ): Promise<RouteResult> {
   const points = [from, ...vias, to];
   const kind = engine();
-  if (kind === "demo") return demoRoute(profile, from, to);
+  if (kind === "demo") {
+    if (allowDemoContent()) return demoRoute(profile, from, to);
+    throw new Error(
+      "Kein Live-Routing konfiguriert — setze GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL.",
+    );
+  }
 
   try {
     if (kind === "graphhopper") return await routeGraphhopper(profile, points);
@@ -482,15 +488,21 @@ export async function computeRoute(
       steps: parts.flatMap((p) => p.steps ?? []),
     };
   } catch (e) {
-    const demo = demoRoute(profile, from, to);
-    const msg = e instanceof Error ? e.message : "Routing fehlgeschlagen";
-    return {
-      ...demo,
-      warnings: [
-        `Live-Routing (${kind}) fehlgeschlagen — Demo-Geometrie. ${msg}`,
-        ...(demo.warnings ?? []),
-      ],
-    };
+    // Production: fail-closed — never invent geometry after a live failure.
+    if (allowDemoContent()) {
+      const demo = demoRoute(profile, from, to);
+      const msg = e instanceof Error ? e.message : "Routing fehlgeschlagen";
+      return {
+        ...demo,
+        warnings: [
+          `Live-Routing (${kind}) fehlgeschlagen — Demo-Geometrie. ${msg}`,
+          ...(demo.warnings ?? []),
+        ],
+      };
+    }
+    throw e instanceof Error
+      ? e
+      : new Error("Live-Routing fehlgeschlagen");
   }
 }
 

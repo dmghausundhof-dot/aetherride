@@ -20,6 +20,15 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Force compileSdk 36 on Android library plugins (sentry_flutter etc. still pin 34).
+subprojects {
+    pluginManager.withPlugin("com.android.library") {
+        extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+            compileSdk = 36
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

@@ -64,7 +64,16 @@ export JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/17.0.9-tem}"
 # Emulator graph-only: cargo build --release --target x86_64-linux-android && ./scripts/routing/install-android-jni.sh --graph-only x86_64
 flutter build apk --debug
 # → build/app/outputs/flutter-apk/app-debug.apk
+
+# Release (Play): copy android/key.properties.example → android/key.properties
+flutter build appbundle --release \
+  --dart-define=SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+  --dart-define=API_BASE_URL=https://aetherride.vercel.app \
+  --dart-define=STADIA_API_KEY=$NEXT_PUBLIC_STADIA_API_KEY \
+  --dart-define=SENTRY_DSN=$SENTRY_DSN
 ```
+
+Marktreife-Plan: `MARKET_READY_PLAN.md`.
 
 `preBuild` kopiert `librouting_core` (+ protobuf) nach `jniLibs`, wenn das Cargo-Artifact existiert.
 

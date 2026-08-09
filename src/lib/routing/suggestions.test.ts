@@ -2,6 +2,8 @@
  * F-NAV-004 — jeder Vorschlag hat genau 3 Reasons.
  * Ausführen: npx tsx src/lib/routing/suggestions.test.ts
  */
+process.env.ALLOW_DEMO_CONTENT = "true";
+
 import { suggestRoutes } from "./suggestions";
 import type { Bike, RiderProfile } from "@/types";
 

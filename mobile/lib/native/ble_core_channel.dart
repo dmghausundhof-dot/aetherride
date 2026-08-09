@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../domain/ble.dart';
+import '../domain/ble/csc_measurement.dart';
 import 'native_channels.dart';
 
 enum BlePermissionResult {
@@ -38,6 +39,13 @@ class BleCoreChannel {
   double _odo = 1247.4;
   double _speed = 0;
   double _cadence = 0;
+  int? _prevWheelRevs;
+  int? _prevWheelEventTime;
+  int? _prevCrankRevs;
+  int? _prevCrankEventTime;
+
+  /// Default ~29×2.25 / gravel-ish; garage wheel size can override later.
+  double wheelCircumferenceM = 2.105;
 
   Stream<BoschLiveData> get liveData => _controller.stream;
   bool get isConnected => _connected;
@@ -168,11 +176,25 @@ class BleCoreChannel {
     return true;
   }
 
+  /// BLE CSC Measurement (0x2A5B) — flags + optional wheel/crank fields.
+  /// Speed only from wheel revs; cadence only from crank. No invented SoC/power.
   void _onCscBytes(List<int> data) {
-    if (data.length < 5) return;
-    // Simplified CSC parse — wheel/crank revs (demo mapping)
-    _cadence = (data[1] + data[2] * 256) % 120 + 40;
-    _speed = _cadence * 0.28;
+    final parsed = parseCscMeasurement(
+      data,
+      wheelCircumferenceM: wheelCircumferenceM,
+      prevWheelRevs: _prevWheelRevs,
+      prevWheelEventTime: _prevWheelEventTime,
+      prevCrankRevs: _prevCrankRevs,
+      prevCrankEventTime: _prevCrankEventTime,
+      speedKmh: _speed,
+      cadenceRpm: _cadence,
+    );
+    _speed = parsed.speedKmh;
+    _cadence = parsed.cadenceRpm;
+    _prevWheelRevs = parsed.prevWheelRevs;
+    _prevWheelEventTime = parsed.prevWheelEventTime;
+    _prevCrankRevs = parsed.prevCrankRevs;
+    _prevCrankEventTime = parsed.prevCrankEventTime;
   }
 
   /// CSC-only telemetry: speed + cadence. SoC/Power stay null (no LDI).
@@ -205,6 +227,12 @@ class BleCoreChannel {
     _sub = null;
     _connected = false;
     _cscOnly = false;
+    _prevWheelRevs = null;
+    _prevWheelEventTime = null;
+    _prevCrankRevs = null;
+    _prevCrankEventTime = null;
+    _speed = 0;
+    _cadence = 0;
     try {
       for (final d in FlutterBluePlus.connectedDevices) {
         await d.disconnect();
