@@ -34,6 +34,9 @@ export function RouteCard({
               Tour-Idee · Geometrie wird beim Planen geroutet
             </p>
             <p className="mt-0.5 text-xs tabular-nums text-text-secondary">
+              {route.distanceFromOriginKm != null
+                ? `~${route.distanceFromOriginKm} km entfernt · `
+                : ""}
               {route.distanceKm} km · {route.elevationM} hm · {route.durationMin}{" "}
               min
               {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""}

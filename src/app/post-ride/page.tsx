@@ -203,8 +203,13 @@ function PostRideContent() {
         </div>
       )}
       <header className="flex items-center gap-3">
-        <button type="button" onClick={() => router.push("/")} className="p-1">
-          <ArrowLeft className="h-6 w-6" />
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          aria-label="Zurück zur Startseite"
+          className="p-1"
+        >
+          <ArrowLeft className="h-6 w-6" aria-hidden />
         </button>
         <div>
           <h1 className="text-xl font-bold">Post-Ride Analyse</h1>

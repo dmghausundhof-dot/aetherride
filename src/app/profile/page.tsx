@@ -496,8 +496,8 @@ export default function ProfilePage() {
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
           Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Reichweite.
-          Offline-Regionen nur in der Mobile-App.
-          KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
+          Offline-Packs unter Discover herunterladen; Aktivierung in der
+          Mobile-App. KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
         </p>
         <p className="mb-3 text-sm font-medium">
           Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}

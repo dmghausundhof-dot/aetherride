@@ -97,8 +97,13 @@ export function AddBikeWizard({
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-4 sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">Bike anlegen</h2>
-          <button type="button" onClick={onClose} className="touch-target p-2">
-            <X className="h-5 w-5" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Schließen"
+            className="touch-target p-2"
+          >
+            <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
 

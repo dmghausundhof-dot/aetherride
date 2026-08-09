@@ -6,6 +6,7 @@
 
 import type { Bike, BikeCategory, RiderProfile } from "@/types";
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import { demoCenterLngLat, haversineKm } from "@/lib/routing/demoGeometry";
 
 export interface RouteSuggestion {
   id: string;
@@ -23,6 +24,10 @@ export interface RouteSuggestion {
   reasons: [string, string, string];
   rangeOk?: boolean;
   rangeNote?: string;
+  /** Pin-Zentrum [lng, lat] */
+  center?: [number, number];
+  /** Luftlinie vom Discover-Standort (km), wenn near gesetzt */
+  distanceFromOriginKm?: number;
 }
 
 interface RouteSeed {
@@ -251,6 +256,102 @@ const SEEDS: RouteSeed[] = [
     flowy: true,
     ebikeFriendly: true,
   },
+  {
+    id: "r-vosges-gravel",
+    name: "Vosges Ballon d'Alsace",
+    categories: ["gravel", "mtb_am", "emtb", "etrekking"],
+    distanceKm: 42,
+    elevationM: 1100,
+    durationMin: 180,
+    mtbScale: "S1",
+    surface: "gravel/forest",
+    loop: true,
+    uncertainKmPct: 8,
+    technical: false,
+    steep: true,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-alsace-road",
+    name: "Route des Vins d'Alsace",
+    categories: ["road", "etrekking", "gravel"],
+    distanceKm: 55,
+    elevationM: 480,
+    durationMin: 160,
+    mtbScale: "—",
+    surface: "asphalt",
+    loop: false,
+    uncertainKmPct: 3,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-annecy-road",
+    name: "Lac d'Annecy Rundfahrt",
+    categories: ["road", "urban", "etrekking"],
+    distanceKm: 40,
+    elevationM: 220,
+    durationMin: 120,
+    mtbScale: "—",
+    surface: "asphalt/bike-lane",
+    loop: true,
+    uncertainKmPct: 2,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-morzine-emtb",
+    name: "Morzine Portes du Soleil",
+    categories: ["emtb", "mtb_enduro", "mtb_am"],
+    distanceKm: 28,
+    elevationM: 1200,
+    durationMin: 150,
+    mtbScale: "S2–S3",
+    surface: "trail/alpine",
+    loop: false,
+    uncertainKmPct: 15,
+    technical: true,
+    steep: true,
+    flowy: false,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-provence-gravel",
+    name: "Luberon Gravel Mix",
+    categories: ["gravel", "road", "etrekking"],
+    distanceKm: 48,
+    elevationM: 650,
+    durationMin: 170,
+    mtbScale: "—",
+    surface: "gravel/asphalt",
+    loop: true,
+    uncertainKmPct: 5,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-bretagne-coast",
+    name: "Côte de Granit Rose",
+    categories: ["road", "urban", "etrekking"],
+    distanceKm: 38,
+    elevationM: 180,
+    durationMin: 110,
+    mtbScale: "—",
+    surface: "asphalt/path",
+    loop: false,
+    uncertainKmPct: 3,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
 ];
 
 export function categoryForRoutingProfile(
@@ -277,145 +378,166 @@ export function categoryForRoutingProfile(
   }
 }
 
-export function suggestRoutes(input: {
+type SuggestInput = {
   bike?: Bike | null;
   categoryHint?: BikeCategory;
   profile: RiderProfile;
   availableMinutes?: number;
   rangeKmHigh?: number;
-}): RouteSuggestion[] {
+  /** Discover-Standort [lng, lat] — sortiert Touren nach Nähe */
+  near?: [number, number];
+};
+
+function scoreSeed(
+  s: RouteSeed,
+  input: SuggestInput,
+  category: BikeCategory
+): RouteSuggestion {
   const minutes = input.availableMinutes ?? 150;
-  const category =
-    input.bike?.category ?? input.categoryHint ?? "mtb_am";
   const bikeName = input.bike?.name ?? "dein Profil";
   const travel = input.bike?.travelFrontMm;
   const isEbike = input.bike?.isEbike ?? false;
+  const reasons: string[] = [];
+  let score = 50;
 
-  const scored = SEEDS.filter((s) => s.categories.includes(category))
-    .map((s) => {
-      const reasons: string[] = [];
-      let score = 50;
+  if (s.categories.includes(category)) {
+    score += 15;
+    reasons.push(
+      input.bike
+        ? `Passt zu ${bikeName}${travel ? ` (${travel} mm Federweg)` : ""}`
+        : `Passt zu ${category.replace(/_/g, " ")}`
+    );
+  } else {
+    reasons.push(
+      `Andere Region/Kategorie (${s.categories[0]?.replace(/_/g, " ") ?? "Tour"})`
+    );
+  }
 
-      if (s.categories.includes(category)) {
-        score += 15;
-        reasons.push(
-          input.bike
-            ? `Passt zu ${bikeName}${
-                travel ? ` (${travel} mm Federweg)` : ""
-              }`
-            : `Passt zu ${category.replace(/_/g, " ")}`
-        );
-      }
+  const terrain = input.profile.terrainShare;
+  if (input.profile.preferences.preferTechnical && s.technical) {
+    score += 12;
+    reasons.push(`Technisch (mtb:scale ${s.mtbScale}) wie von dir bevorzugt`);
+  } else if (input.profile.preferences.preferFlow && s.flowy) {
+    score += 12;
+    reasons.push(`Flow-Charakter (${s.surface}) matched dein Profil`);
+  } else if (input.profile.preferences.preferSteep && s.steep) {
+    score += 10;
+    reasons.push(`Steile Abschnitte (~${s.elevationM} hm)`);
+  } else if (terrain && s.mtbScale.includes("S3") && terrain.s3plus >= 30) {
+    score += 10;
+    reasons.push(`S3+-Anteil ${terrain.s3plus}% in deinem Terrainprofil`);
+  } else if (reasons.length < 2) {
+    reasons.push(
+      `Oberfläche ${s.surface}, Unsicherheit ${s.uncertainKmPct}% OSM-Tags`
+    );
+  }
 
-      const terrain = input.profile.terrainShare;
-      if (input.profile.preferences.preferTechnical && s.technical) {
-        score += 12;
-        reasons.push(`Technisch (mtb:scale ${s.mtbScale}) wie von dir bevorzugt`);
-      } else if (input.profile.preferences.preferFlow && s.flowy) {
-        score += 12;
-        reasons.push(`Flow-Charakter (${s.surface}) matched dein Profil`);
-      } else if (input.profile.preferences.preferSteep && s.steep) {
-        score += 10;
-        reasons.push(`Steile Abschnitte (~${s.elevationM} hm)`);
-      } else if (terrain && s.mtbScale.includes("S3") && terrain.s3plus >= 30) {
-        score += 10;
-        reasons.push(`S3+-Anteil ${terrain.s3plus}% in deinem Terrainprofil`);
-      } else {
-        reasons.push(
-          `Oberfläche ${s.surface}, Unsicherheit ${s.uncertainKmPct}% OSM-Tags`
-        );
-      }
+  const timeDelta = Math.abs(s.durationMin - minutes);
+  if (timeDelta <= 30) {
+    score += 12;
+    reasons.push(`Dauer ~${s.durationMin} min passt zu deinen ${minutes} min`);
+  } else if (s.durationMin <= minutes + 45) {
+    score += 6;
+    reasons.push(`Machbar in ~${s.durationMin} min (Ziel ${minutes} min)`);
+  } else {
+    score -= 4;
+    reasons.push(`Andere Dauer (${s.durationMin} vs ${minutes} min)`);
+  }
 
-      const timeDelta = Math.abs(s.durationMin - minutes);
-      if (timeDelta <= 30) {
-        score += 12;
-        reasons.push(`Dauer ~${s.durationMin} min passt zu deinen ${minutes} min`);
-      } else if (s.durationMin <= minutes + 45) {
-        score += 6;
-        reasons.push(`Machbar in ~${s.durationMin} min (Ziel ${minutes} min)`);
-      } else {
-        score -= 8;
-        reasons.push(`Länger als geplant (${s.durationMin} vs ${minutes} min)`);
-      }
+  let rangeOk: boolean | undefined;
+  let rangeNote: string | undefined;
+  if (isEbike && input.rangeKmHigh !== undefined) {
+    rangeOk = s.distanceKm <= input.rangeKmHigh * 0.85;
+    if (rangeOk) {
+      score += 8;
+      if (reasons.length < 3)
+        reasons.push(`Distanz ${s.distanceKm} km innerhalb Reichweitenband`);
+    } else {
+      score -= 15;
+      rangeNote = `Route ${s.distanceKm} km > prognostizierte Reichweite ~${input.rangeKmHigh} km`;
+    }
+  }
 
-      let rangeOk: boolean | undefined;
-      let rangeNote: string | undefined;
-      if (isEbike && input.rangeKmHigh !== undefined) {
-        rangeOk = s.distanceKm <= input.rangeKmHigh * 0.85;
-        if (rangeOk) {
-          score += 8;
-          if (reasons.length < 3)
-            reasons.push(
-              `Distanz ${s.distanceKm} km innerhalb Reichweitenband`
-            );
-        } else {
-          score -= 15;
-          rangeNote = `Route ${s.distanceKm} km > prognostizierte Reichweite ~${input.rangeKmHigh} km`;
-        }
-      }
+  while (reasons.length < 3) {
+    reasons.push(
+      s.loop
+        ? `Rundkurs · ${s.distanceKm} km · ${s.elevationM} hm`
+        : `Point-to-point · ${s.distanceKm} km · ${s.elevationM} hm`
+    );
+  }
 
-      while (reasons.length < 3) {
-        reasons.push(
-          s.loop
-            ? `Rundkurs · ${s.distanceKm} km · ${s.elevationM} hm`
-            : `Point-to-point · ${s.distanceKm} km · ${s.elevationM} hm`
-        );
-      }
+  return {
+    id: s.id,
+    name: s.name,
+    category: s.categories.includes(category) ? category : s.categories[0],
+    distanceKm: s.distanceKm,
+    elevationM: s.elevationM,
+    durationMin: s.durationMin,
+    mtbScale: s.mtbScale,
+    surface: s.surface,
+    loop: s.loop,
+    uncertainKmPct: s.uncertainKmPct,
+    matchScore: Math.max(0, Math.min(99, Math.round(score))),
+    reasons: reasons.slice(0, 3) as [string, string, string],
+    rangeOk,
+    rangeNote,
+    center: demoCenterLngLat(s.id),
+  };
+}
 
-      return {
-        id: s.id,
-        name: s.name,
-        category,
-        distanceKm: s.distanceKm,
-        elevationM: s.elevationM,
-        durationMin: s.durationMin,
-        mtbScale: s.mtbScale,
-        surface: s.surface,
-        loop: s.loop,
-        uncertainKmPct: s.uncertainKmPct,
-        matchScore: Math.max(0, Math.min(99, Math.round(score))),
-        reasons: reasons.slice(0, 3) as [string, string, string],
-        rangeOk,
-        rangeNote,
-      } satisfies RouteSuggestion;
-    })
-    .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, 5);
+/** Vollständiger Discover-Katalog — nach Standort-Nähe, dann Match. */
+export function listAllRouteSuggestions(
+  input: SuggestInput
+): RouteSuggestion[] {
+  const category =
+    input.bike?.category ?? input.categoryHint ?? "mtb_am";
+  const near = input.near;
+  const scored = SEEDS.map((s) => {
+    const r = scoreSeed(s, input, category);
+    if (!near || !r.center) return r;
+    const dKm = haversineKm(near, r.center);
+    // Nähe boostet Match leicht (innerhalb ~80 km stark)
+    let match = r.matchScore;
+    if (dKm <= 25) match += 18;
+    else if (dKm <= 80) match += 10;
+    else if (dKm <= 200) match += 3;
+    else match -= 6;
+    return {
+      ...r,
+      distanceFromOriginKm: Math.round(dKm),
+      matchScore: Math.max(0, Math.min(99, match)),
+    };
+  });
+  if (near) {
+    return scored.sort((a, b) => {
+      const da = a.distanceFromOriginKm ?? 1e9;
+      const db = b.distanceFromOriginKm ?? 1e9;
+      if (da !== db) return da - db;
+      return b.matchScore - a.matchScore;
+    });
+  }
+  return scored.sort((a, b) => b.matchScore - a.matchScore);
+}
 
-  return scored.length
-    ? scored
-    : SEEDS.slice(0, 3).map((s, i) => ({
-        id: s.id,
-        name: s.name,
-        category,
-        distanceKm: s.distanceKm,
-        elevationM: s.elevationM,
-        durationMin: s.durationMin,
-        mtbScale: s.mtbScale,
-        surface: s.surface,
-        loop: s.loop,
-        uncertainKmPct: s.uncertainKmPct,
-        matchScore: 60 - i * 5,
-        reasons: [
-          "Wenige exakte Kategorie-Treffer — allgemeine Vorschläge",
-          `${s.distanceKm} km · ${s.elevationM} hm`,
-          `Unsichere OSM-Kilometer: ${s.uncertainKmPct}%`,
-        ] as [string, string, string],
-      }));
+/** Top-Vorschläge für Home/Chat (max. 5, Kategorie-fokussiert). */
+export function suggestRoutes(input: SuggestInput): RouteSuggestion[] {
+  const category =
+    input.bike?.category ?? input.categoryHint ?? "mtb_am";
+  const all = listAllRouteSuggestions(input);
+  const matched = all.filter((r) => {
+    const seed = SEEDS.find((s) => s.id === r.id);
+    return seed?.categories.includes(category);
+  });
+  const scored = (matched.length ? matched : all).slice(0, 5);
+  return scored;
 }
 
 /** Einzelnen Seed als Vorschlag auflösen (Deep-Link / Detail). */
 export function getSuggestionById(
   id: string,
-  input: {
-    bike?: Bike | null;
-    categoryHint?: BikeCategory;
-    profile: RiderProfile;
-    availableMinutes?: number;
-    rangeKmHigh?: number;
-  }
+  input: SuggestInput
 ): RouteSuggestion | null {
-  const fromList = suggestRoutes({
+  const fromList = listAllRouteSuggestions({
     ...input,
     availableMinutes: input.availableMinutes ?? 300,
   }).find((r) => r.id === id);

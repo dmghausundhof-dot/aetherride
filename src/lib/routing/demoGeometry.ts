@@ -1,5 +1,5 @@
 /**
- * Näherungs-Geometrie (Rechteck), wenn keine Engine-Polyline vorliegt.
+ * Näherungs-Geometrie / Pin-Zentren für Tour-Ideen.
  * Nicht als echter Trail/Track darstellen — UI soll „Näherung“ kennzeichnen.
  */
 
@@ -9,6 +9,21 @@ const BASE: Record<string, { lat: number; lng: number }> = {
   "idea-dreisam-city": { lat: 47.995, lng: 7.845 },
   "idea-kaiserstuhl-road": { lat: 48.09, lng: 7.67 },
   "r-kaltenbronn": { lat: 48.642, lng: 8.425 },
+  "r-kitz-gravel": { lat: 47.45, lng: 12.39 },
+  "r-hochkoenig-emtb": { lat: 47.42, lng: 13.1 },
+  "r-wilder-kaiser-hike": { lat: 47.56, lng: 12.3 },
+  "r-inn-flat": { lat: 47.56, lng: 12.17 },
+  "r-freiburg-city": { lat: 47.999, lng: 7.842 },
+  "r-schwarzwald-gravel": { lat: 48.05, lng: 7.95 },
+  "r-bodensee-road": { lat: 47.66, lng: 9.18 },
+  "r-stuttgart-urban": { lat: 48.76, lng: 9.16 },
+  "r-tegernsee-gravel": { lat: 47.71, lng: 11.76 },
+  "r-vosges-gravel": { lat: 47.82, lng: 6.84 },
+  "r-alsace-road": { lat: 48.08, lng: 7.45 },
+  "r-annecy-road": { lat: 45.9, lng: 6.13 },
+  "r-morzine-emtb": { lat: 46.18, lng: 6.71 },
+  "r-provence-gravel": { lat: 43.84, lng: 5.23 },
+  "r-bretagne-coast": { lat: 48.83, lng: -3.48 },
   default: { lat: 47.99, lng: 7.85 },
 };
 
@@ -19,11 +34,26 @@ function hashSeed(id: string): number {
 }
 
 /** Center [lng, lat] for pin-only tour ideas (no fake rectangle). */
-export function demoCenterLngLat(
-  routeId: string
-): [number, number] {
+export function demoCenterLngLat(routeId: string): [number, number] {
   const c = BASE[routeId] ?? BASE.default;
   return [c.lng, c.lat];
+}
+
+/** Luftlinie in km (approx). */
+export function haversineKm(
+  a: [number, number],
+  b: [number, number]
+): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const [lng1, lat1] = a;
+  const [lng2, lat2] = b;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
 }
 
 /** @deprecated Prefer pin-only + live routing; keep for tests/legacy. */
@@ -51,7 +81,6 @@ export function buildDemoGeometry(
     const steps = Math.max(12, Math.round(20 + (seed % 7)));
     for (let i = 0; i < steps; i++) {
       const t = i / steps;
-      // leichte Ausbauchung der Kanten
       const bulge = 0.15 * Math.sin(t * Math.PI) * ((seed % 3) + 1) * 0.001;
       const lng = a[0] + (b[0] - a[0]) * t;
       const lat = a[1] + (b[1] - a[1]) * t;
@@ -63,7 +92,6 @@ export function buildDemoGeometry(
         Math.round((lat + (ny / nlen) * bulge) * 1e6) / 1e6,
       ]);
     }
-    // Eck-Fillet
     for (let k = 1; k <= cornerPts; k++) {
       const t = k / (cornerPts + 1);
       const next = corners[(c + 1) % 4];

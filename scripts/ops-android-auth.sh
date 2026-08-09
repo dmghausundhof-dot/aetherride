@@ -42,6 +42,7 @@ echo "  GET /api/offline/packs"
 echo "  GET /api/offline/packs/schwarzwald-nord/schwarzwald-nord.tar.gz"
 echo "  Dist: data/routing/dist/schwarzwald-nord/"
 echo "  Smoke: bash scripts/smoke-offline-pack.sh [--push]"
+echo "  Flugmodus: bash scripts/smoke-offline-flight.sh"
 echo
 echo "Google Sign-In (optional):"
 echo "  1) Google Cloud OAuth Client (Web) → Supabase Auth → Google enable"

@@ -15,7 +15,7 @@ import {
 import { useAppStore } from "@/store/useAppStore";
 import {
   getSuggestionById,
-  suggestRoutes,
+  listAllRouteSuggestions,
   categoryForRoutingProfile,
   type RouteSuggestion,
 } from "@/lib/routing/suggestions";
@@ -48,6 +48,7 @@ import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import { RouteCard } from "@/components/discover/RouteCard";
 import { FilterChips } from "@/components/discover/FilterChips";
 import { RouteDetail } from "@/components/discover/RouteDetail";
+import { OfflinePacksPanel } from "@/components/discover/OfflinePacksPanel";
 import {
   bboxAround,
   fetchCommunityHeatmap,
@@ -255,19 +256,31 @@ function DiscoverPageInner() {
     });
   }, [activeBike, profile, calibration, boschLive, rangePro]);
 
+  const origin = userPos ?? mapCenter;
+
   const routes = useMemo(() => {
-    return suggestRoutes({
+    return listAllRouteSuggestions({
       bike: activeBike,
       categoryHint,
       profile,
       availableMinutes: minutes,
       rangeKmHigh: range?.kmHigh,
+      near: origin,
     });
-  }, [activeBike, categoryHint, profile, minutes, range]);
+  }, [activeBike, categoryHint, profile, minutes, range, origin]);
 
   const filtered = useMemo(
     () => filterRouteSuggestions(routes, filters),
     [routes, filters]
+  );
+
+  const nearbyRoutes = useMemo(
+    () => filtered.filter((r) => (r.distanceFromOriginKm ?? 9999) <= 120),
+    [filtered]
+  );
+  const fartherRoutes = useMemo(
+    () => filtered.filter((r) => (r.distanceFromOriginKm ?? 9999) > 120),
+    [filtered]
   );
 
   const detailRoute = useMemo(() => {
@@ -279,13 +292,12 @@ function DiscoverPageInner() {
         profile,
         availableMinutes: minutes,
         rangeKmHigh: range?.kmHigh,
+        near: origin,
       }) ??
       routes.find((r) => r.id === detailId) ??
       null
     );
-  }, [detailId, activeBike, categoryHint, profile, minutes, range, routes]);
-
-  const origin = userPos ?? mapCenter;
+  }, [detailId, activeBike, categoryHint, profile, minutes, range, routes, origin]);
 
   const nearbyTrails = useMemo(
     () => trailsNear(origin, 0.5),
@@ -380,7 +392,13 @@ function DiscoverPageInner() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/outdooractive?type=tour")
+    const [lng, lat] = userPos ?? mapCenter;
+    const qs = new URLSearchParams({
+      type: "tour",
+      lat: String(lat),
+      lon: String(lng),
+    });
+    void fetch(`/api/outdooractive?${qs}`)
       .then(async (r) => {
         if (cancelled || !r.ok) return;
         const data = await r.json();
@@ -392,7 +410,11 @@ function DiscoverPageInner() {
       })
       .catch(() => undefined);
 
-    void fetch("/api/trailforks")
+    const tfQs = new URLSearchParams({
+      lat: String(lat),
+      lon: String(lng),
+    });
+    void fetch(`/api/trailforks?${tfQs}`)
       .then(async (r) => {
         if (cancelled || !r.ok) return;
         const data = await r.json();
@@ -404,7 +426,7 @@ function DiscoverPageInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userPos, mapCenter]);
 
   const refreshQuick = useCallback(
     async (opts?: { force?: boolean; limit?: number }) => {
@@ -1544,66 +1566,138 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                Für dein Bike
+                Vom Standort ({nearbyRoutes.length}
+                {fartherRoutes.length ? ` · +${fartherRoutes.length} weiter` : ""}
+                )
               </h3>
+              <p className="text-[11px] text-text-secondary">
+                Sortiert nach Nähe zu{" "}
+                {userPos ? "deiner Position" : "Kartenmitte"} (
+                {origin[1].toFixed(2)}°N, {origin[0].toFixed(2)}°E)
+              </p>
               {filtered.length === 0 ? (
                 <p className="text-sm text-text-secondary">
-                  Keine Tour in der Nähe der Filter — Planer öffnen.
+                  Keine Tour bei diesen Filtern — Filter lockern oder Planer öffnen.
                 </p>
               ) : (
-                filtered.map((r) => (
-                  <div key={r.id} className="space-y-1.5">
-                    <RouteCard
-                      route={r}
-                      highlighted={
-                        highlightRouteId === r.id || previewTour?.id === r.id
-                      }
-                      saved={isRouteSaved(r.id)}
-                      onOpen={() => {
-                        previewBaseTour(suggestionToTour(r));
-                        openDetail(r.id);
-                      }}
-                      onStart={() => {
-                        previewBaseTour(suggestionToTour(r));
-                        startWithSuggestion(r);
-                      }}
-                      onToggleSave={() => toggleSave(r)}
-                    />
-                    <div className="flex gap-2 px-1">
-                      <button
-                        type="button"
-                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
-                        onClick={() => previewBaseTour(suggestionToTour(r))}
-                      >
-                        Vorschau
-                      </button>
-                      <button
-                        type="button"
-                        disabled={routingBusy}
-                        className="flex-1 rounded-lg border border-accent/40 py-1.5 text-[11px] font-medium text-accent"
-                        onClick={() => void runHybridSnap(suggestionToTour(r))}
-                      >
-                        Von hier
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
-                        onClick={() =>
-                          adoptIntoPlanMode(suggestionToTour(r))
+                <>
+                  {nearbyRoutes.map((r) => (
+                    <div key={r.id} className="space-y-1.5">
+                      <RouteCard
+                        route={r}
+                        highlighted={
+                          highlightRouteId === r.id || previewTour?.id === r.id
                         }
-                      >
-                        In Planen
-                      </button>
+                        saved={isRouteSaved(r.id)}
+                        onOpen={() => {
+                          previewBaseTour(suggestionToTour(r));
+                          openDetail(r.id);
+                        }}
+                        onStart={() => {
+                          previewBaseTour(suggestionToTour(r));
+                          startWithSuggestion(r);
+                        }}
+                        onToggleSave={() => toggleSave(r)}
+                      />
+                      <div className="flex gap-2 px-1">
+                        <button
+                          type="button"
+                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                          onClick={() => previewBaseTour(suggestionToTour(r))}
+                        >
+                          Vorschau
+                        </button>
+                        <button
+                          type="button"
+                          disabled={routingBusy}
+                          className="flex-1 rounded-lg border border-accent/40 py-1.5 text-[11px] font-medium text-accent"
+                          onClick={() => void runHybridSnap(suggestionToTour(r))}
+                        >
+                          Von hier
+                        </button>
+                        <button
+                          type="button"
+                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                          onClick={() =>
+                            adoptIntoPlanMode(suggestionToTour(r))
+                          }
+                        >
+                          In Planen
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  {fartherRoutes.length > 0 && (
+                    <>
+                      <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                        Weitere Regionen ({fartherRoutes.length})
+                      </h3>
+                      {fartherRoutes.map((r) => (
+                        <div key={r.id} className="space-y-1.5">
+                          <RouteCard
+                            route={r}
+                            highlighted={
+                              highlightRouteId === r.id ||
+                              previewTour?.id === r.id
+                            }
+                            saved={isRouteSaved(r.id)}
+                            onOpen={() => {
+                              previewBaseTour(suggestionToTour(r));
+                              openDetail(r.id);
+                            }}
+                            onStart={() => {
+                              previewBaseTour(suggestionToTour(r));
+                              startWithSuggestion(r);
+                            }}
+                            onToggleSave={() => toggleSave(r)}
+                          />
+                          <div className="flex gap-2 px-1">
+                            <button
+                              type="button"
+                              className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                              onClick={() =>
+                                previewBaseTour(suggestionToTour(r))
+                              }
+                            >
+                              Vorschau
+                            </button>
+                            <button
+                              type="button"
+                              disabled={routingBusy}
+                              className="flex-1 rounded-lg border border-accent/40 py-1.5 text-[11px] font-medium text-accent"
+                              onClick={() =>
+                                void runHybridSnap(suggestionToTour(r))
+                              }
+                            >
+                              Von hier
+                            </button>
+                            <button
+                              type="button"
+                              className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                              onClick={() =>
+                                adoptIntoPlanMode(suggestionToTour(r))
+                              }
+                            >
+                              In Planen
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </>
               )}
 
               <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                <Compass className="h-3.5 w-3.5" /> Outdooractive
+                <Compass className="h-3.5 w-3.5" /> Outdooractive ({oaTours.length})
               </h3>
               {oaWarning && (
                 <p className="text-[11px] text-warning">{oaWarning}</p>
+              )}
+              {oaTours.length === 0 && (
+                <p className="text-[11px] text-text-secondary">
+                  Keine OA-Touren in der Kartenregion.
+                </p>
               )}
               {oaTours.map((t) => {
                 const tour = oaToTour(t);
@@ -1664,12 +1758,12 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                <Mountain className="h-3.5 w-3.5" /> Trailforks
+                <Mountain className="h-3.5 w-3.5" /> Trailforks ({tfPins.length})
               </h3>
               <p className="text-[11px] text-text-secondary">
                 {tfDisclaimer ?? "Attribution — kein Geometrie-Mirror."}
               </p>
-              {tfPins.slice(0, 5).map((p) => (
+              {tfPins.map((p) => (
                 <div
                   key={p.id}
                   className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs"
@@ -1813,6 +1907,8 @@ function DiscoverPageInner() {
                   </div>
                 ))
               )}
+
+              <OfflinePacksPanel className="mt-4" />
             </div>
           )}
         </div>

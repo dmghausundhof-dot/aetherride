@@ -18,7 +18,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import Link from "next/link";
-import { suggestRoutes } from "@/lib/routing/suggestions";
+import { suggestRoutes, listAllRouteSuggestions } from "@/lib/routing/suggestions";
 import { estimateRange } from "@/lib/ebike/range";
 import { greetingLine, avatarInitials } from "@/lib/home/greeting";
 import {
@@ -77,6 +77,7 @@ export default function HomePage() {
   const [weather, setWeather] = useState<WeatherPayload | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [homeNear, setHomeNear] = useState<[number, number] | null>(null);
 
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const lastRide = rides[0];
@@ -146,17 +147,24 @@ export default function HomePage() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (!cancelled) {
+            const near: [number, number] = [
+              pos.coords.longitude,
+              pos.coords.latitude,
+            ];
+            setHomeNear(near);
             void loadWeather(pos.coords.latitude, pos.coords.longitude);
           }
         },
         () => {
           if (!cancelled) {
+            setHomeNear([FALLBACK_COORDS.lon, FALLBACK_COORDS.lat]);
             void loadWeather(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
           }
         },
         { timeout: 8000, maximumAge: 30 * 60 * 1000 }
       );
     } else {
+      setHomeNear([FALLBACK_COORDS.lon, FALLBACK_COORDS.lat]);
       void loadWeather(FALLBACK_COORDS.lat, FALLBACK_COORDS.lon);
     }
     return () => {
@@ -195,17 +203,30 @@ export default function HomePage() {
             bike: activeBike,
             profile,
             calibration: calibration ?? undefined,
-            socPercent: boschLive?.soc ?? 87,
+            socPercent: boschLive?.soc ?? undefined,
           })
         : undefined;
-    const routes = suggestRoutes({
+    const near =
+      homeNear ??
+      ([FALLBACK_COORDS.lon, FALLBACK_COORDS.lat] as [number, number]);
+    const local = listAllRouteSuggestions({
       bike: activeBike,
       profile,
       availableMinutes: minutes,
       rangeKmHigh: rangeEst?.kmHigh,
-    });
-    return routes[0] ?? null;
-  }, [activeBike, profile, rangePro, calibration, boschLive]);
+      near,
+    }).filter((r) => (r.distanceFromOriginKm ?? 9999) <= 80);
+    if (local[0]) return local[0];
+    return (
+      suggestRoutes({
+        bike: activeBike,
+        profile,
+        availableMinutes: minutes,
+        rangeKmHigh: rangeEst?.kmHigh,
+        near,
+      })[0] ?? null
+    );
+  }, [activeBike, profile, rangePro, calibration, boschLive, homeNear]);
 
   const heroRange = useMemo(() => {
     if (!activeBike?.isEbike || !rangePro) return null;
@@ -213,7 +234,7 @@ export default function HomePage() {
       bike: activeBike,
       profile,
       calibration: calibration ?? undefined,
-      socPercent: boschLive?.soc ?? 87,
+      socPercent: boschLive?.soc ?? undefined,
     });
   }, [activeBike, profile, rangePro, calibration, boschLive]);
 
@@ -319,6 +340,9 @@ export default function HomePage() {
           </div>
           <h2 className="text-xl font-bold">{todayRoute.name}</h2>
           <p className="mt-1 tabular-nums text-sm text-text-secondary">
+            {todayRoute.distanceFromOriginKm != null
+              ? `~${todayRoute.distanceFromOriginKm} km entfernt · `
+              : ""}
             {todayRoute.distanceKm} km · {todayRoute.elevationM} hm ·{" "}
             {Math.floor(todayRoute.durationMin / 60)}:
             {(todayRoute.durationMin % 60).toString().padStart(2, "0")} h

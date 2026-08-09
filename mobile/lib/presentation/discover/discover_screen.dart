@@ -176,6 +176,304 @@ const _seedRoutes = <_RouteSuggestion>[
       BikeCategory.etrekking,
     ],
   ),
+  _RouteSuggestion(
+    id: 'r-freiburg-city',
+    name: 'Freiburg City Loop',
+    distanceKm: 18.5,
+    elevationM: 210,
+    durationMin: 55,
+    mtbScale: '—',
+    surface: 'asphalt/bike-lane',
+    loop: true,
+    matchScore: 80,
+    reasons: [
+      'Urban-Idee Freiburg — Radwege/Asphalt, kein Trail',
+      'Live-Routing für konkrete Linie nötig',
+    ],
+    center: LatLng(47.999, 7.842),
+    categories: const [
+      BikeCategory.urban,
+      BikeCategory.etrekking,
+      BikeCategory.road,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-bodensee-road',
+    name: 'Bodensee Südufer',
+    distanceKm: 72,
+    elevationM: 280,
+    durationMin: 200,
+    mtbScale: '—',
+    surface: 'asphalt',
+    loop: false,
+    matchScore: 78,
+    reasons: [
+      'Lange Road-/E-Trekking-Idee — flach und asphaltiert',
+    ],
+    center: LatLng(47.66, 9.18),
+    categories: const [
+      BikeCategory.road,
+      BikeCategory.etrekking,
+      BikeCategory.urban,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-inn-flat',
+    name: 'Inn-Radweg Entspannt',
+    distanceKm: 34,
+    elevationM: 120,
+    durationMin: 90,
+    mtbScale: '—',
+    surface: 'asphalt',
+    loop: false,
+    matchScore: 76,
+    reasons: [
+      'Flache Road/Urban-Idee — wenig Höhenmeter',
+    ],
+    center: LatLng(47.56, 12.17),
+    categories: const [
+      BikeCategory.road,
+      BikeCategory.gravel,
+      BikeCategory.etrekking,
+      BikeCategory.urban,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-stuttgart-urban',
+    name: 'Stuttgart Höhenpark-Runde',
+    distanceKm: 22,
+    elevationM: 340,
+    durationMin: 70,
+    mtbScale: '—',
+    surface: 'asphalt/path',
+    loop: true,
+    matchScore: 74,
+    reasons: [
+      'Urban-/E-Trekking-Idee Stuttgart — nicht MTB',
+    ],
+    center: LatLng(48.76, 9.16),
+    categories: const [
+      BikeCategory.urban,
+      BikeCategory.etrekking,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-schwarzwald-gravel',
+    name: 'Schwarzwald Gravel West',
+    distanceKm: 58,
+    elevationM: 1120,
+    durationMin: 210,
+    mtbScale: '—',
+    surface: 'gravel/forest',
+    loop: true,
+    matchScore: 81,
+    reasons: [
+      'Gravel-Idee Schwarzwald — Forstwege, kein Singletrail',
+    ],
+    center: LatLng(48.05, 7.95),
+    categories: const [
+      BikeCategory.gravel,
+      BikeCategory.etrekking,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-kitz-gravel',
+    name: 'Gravel Loop Kitzbühel (Idee)',
+    distanceKm: 62.1,
+    elevationM: 890,
+    durationMin: 180,
+    mtbScale: '—',
+    surface: 'gravel/asphalt',
+    loop: true,
+    matchScore: 79,
+    reasons: [
+      'Gravel-/Road-Idee Kitzbühel — Strecke erst live routen',
+    ],
+    center: LatLng(47.45, 12.39),
+    categories: const [
+      BikeCategory.gravel,
+      BikeCategory.etrekking,
+      BikeCategory.road,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-hochkoenig-emtb',
+    name: 'E-MTB Hochkönig (Idee)',
+    distanceKm: 41.2,
+    elevationM: 1580,
+    durationMin: 165,
+    mtbScale: 'S2–S3',
+    surface: 'trail/alpine',
+    loop: false,
+    matchScore: 77,
+    reasons: [
+      'Alpine E-MTB-Idee — technisch, kein vorgelieferter Track',
+    ],
+    center: LatLng(47.42, 13.1),
+    categories: const [
+      BikeCategory.emtb,
+      BikeCategory.mtbEnduro,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-wilder-kaiser-hike',
+    name: 'Wilder Kaiser Höhenweg',
+    distanceKm: 14.2,
+    elevationM: 980,
+    durationMin: 300,
+    mtbScale: 'T2',
+    surface: 'path',
+    loop: false,
+    matchScore: 70,
+    reasons: [
+      'Wander-Idee — nicht als Bike-Trail verkauft',
+    ],
+    center: LatLng(47.56, 12.3),
+    categories: const [
+      BikeCategory.hiking,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-tegernsee-gravel',
+    name: 'Tegernsee Gravel Mix',
+    distanceKm: 45,
+    elevationM: 780,
+    durationMin: 150,
+    mtbScale: '—',
+    surface: 'gravel/asphalt',
+    loop: true,
+    matchScore: 75,
+    reasons: [
+      'Gravel-/Road-Idee Tegernsee — gemischte Oberfläche',
+    ],
+    center: LatLng(47.71, 11.76),
+    categories: const [
+      BikeCategory.gravel,
+      BikeCategory.road,
+      BikeCategory.emtb,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-vosges-gravel',
+    name: "Vosges Ballon d'Alsace",
+    distanceKm: 42,
+    elevationM: 1100,
+    durationMin: 180,
+    mtbScale: 'S1',
+    surface: 'gravel/forest',
+    loop: true,
+    matchScore: 73,
+    reasons: [
+      'Frankreich Vogesen — Gravel/MTB-Idee',
+    ],
+    center: LatLng(47.82, 6.84),
+    categories: const [
+      BikeCategory.gravel,
+      BikeCategory.mtbAm,
+      BikeCategory.emtb,
+      BikeCategory.etrekking,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-alsace-road',
+    name: "Route des Vins d'Alsace",
+    distanceKm: 55,
+    elevationM: 480,
+    durationMin: 160,
+    mtbScale: '—',
+    surface: 'asphalt',
+    loop: false,
+    matchScore: 72,
+    reasons: [
+      'Frankreich Elsass — Road/E-Trekking',
+    ],
+    center: LatLng(48.08, 7.45),
+    categories: const [
+      BikeCategory.road,
+      BikeCategory.etrekking,
+      BikeCategory.gravel,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-annecy-road',
+    name: "Lac d'Annecy Rundfahrt",
+    distanceKm: 40,
+    elevationM: 220,
+    durationMin: 120,
+    mtbScale: '—',
+    surface: 'asphalt/bike-lane',
+    loop: true,
+    matchScore: 71,
+    reasons: [
+      'Frankreich Annecy — flache See-Runde',
+    ],
+    center: LatLng(45.9, 6.13),
+    categories: const [
+      BikeCategory.road,
+      BikeCategory.urban,
+      BikeCategory.etrekking,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-morzine-emtb',
+    name: 'Morzine Portes du Soleil',
+    distanceKm: 28,
+    elevationM: 1200,
+    durationMin: 150,
+    mtbScale: 'S2–S3',
+    surface: 'trail/alpine',
+    loop: false,
+    matchScore: 70,
+    reasons: [
+      'Frankreich Morzine — alpine Trails',
+    ],
+    center: LatLng(46.18, 6.71),
+    categories: const [
+      BikeCategory.emtb,
+      BikeCategory.mtbEnduro,
+      BikeCategory.mtbAm,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-provence-gravel',
+    name: 'Luberon Gravel Mix',
+    distanceKm: 48,
+    elevationM: 650,
+    durationMin: 170,
+    mtbScale: '—',
+    surface: 'gravel/asphalt',
+    loop: true,
+    matchScore: 69,
+    reasons: [
+      'Frankreich Provence — Gravel/Road',
+    ],
+    center: LatLng(43.84, 5.23),
+    categories: const [
+      BikeCategory.gravel,
+      BikeCategory.road,
+      BikeCategory.etrekking,
+    ],
+  ),
+  _RouteSuggestion(
+    id: 'r-bretagne-coast',
+    name: 'Côte de Granit Rose',
+    distanceKm: 38,
+    elevationM: 180,
+    durationMin: 110,
+    mtbScale: '—',
+    surface: 'asphalt/path',
+    loop: false,
+    matchScore: 68,
+    reasons: [
+      'Frankreich Bretagne — Küstenradweg',
+    ],
+    center: LatLng(48.83, -3.48),
+    categories: const [
+      BikeCategory.road,
+      BikeCategory.urban,
+      BikeCategory.etrekking,
+    ],
+  ),
 ];
 
 class _QuickOption {
@@ -528,8 +826,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _fetchTrailforks() async {
     try {
+      final o = _origin;
       final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/trailforks')
-          .replace(queryParameters: {'hint': 'dry_likely'});
+          .replace(queryParameters: {
+        'hint': 'dry_likely',
+        'lat': '${o.lat}',
+        'lon': '${o.lng}',
+      });
       final res = await http
           .get(uri, headers: {'Accept': 'application/json'})
           .timeout(const Duration(seconds: 8));
@@ -609,13 +912,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
         final isDemo = m['source'] == 'demo' ||
             data['usingDemoFallback'] == true;
+        var durationMin = (m['durationMin'] as num?)?.round() ?? 120;
+        // Nur echte Sekunden-Werte korrigieren (API liefert Minuten)
+        if (durationMin >= 1000) {
+          durationMin = (durationMin / 60).round();
+        }
         parsed.add(
           _RouteSuggestion(
-            id: id,
+            id: id.startsWith('oa-') ? id : 'oa-$id',
             name: title,
             distanceKm: (m['lengthKm'] as num?)?.toDouble() ?? 20,
             elevationM: (m['elevationM'] as num?)?.round() ?? 800,
-            durationMin: (m['durationMin'] as num?)?.round() ?? 120,
+            durationMin: durationMin,
             mtbScale: difficulty,
             surface: surface,
             loop: true,
@@ -631,6 +939,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               if (data['attribution'] is String) data['attribution'] as String,
             ],
             center: center,
+            // Alle Bike-Kategorien — OA-Touren nicht hinter Filter verstecken
+            categories: const [
+              BikeCategory.mtbTrail,
+              BikeCategory.mtbAm,
+              BikeCategory.mtbEnduro,
+              BikeCategory.gravel,
+              BikeCategory.road,
+              BikeCategory.urban,
+              BikeCategory.emtb,
+              BikeCategory.etrekking,
+              BikeCategory.hiking,
+            ],
             trackLngLat: track,
           ),
         );
@@ -646,8 +966,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             data['configured'] != true ||
             parsed.any((t) => t.reasons.any((r) => r.contains('Beispiel')));
         _oaStatus = demo
-            ? 'Outdooractive Beispiel — keine Track-Wahrheit'
-            : 'Outdooractive Enrichment';
+            ? 'Outdooractive Beispiel — keine Track-Wahrheit (${parsed.length})'
+            : 'Outdooractive Enrichment (${parsed.length})';
       });
     } catch (_) {
       if (mounted) {
@@ -746,6 +1066,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _startAddrCtrl.text = 'Ort Freiburg';
       _status = 'Start: Freiburg — Quick/Planen neu berechnen';
     });
+    unawaited(_fetchOutdooractive());
+    unawaited(_fetchTrailforks());
     try {
       await _map?.animateCamera(
         CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 11),
@@ -797,6 +1119,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _status =
             'Position ${p.lat.toStringAsFixed(3)}, ${p.lng.toStringAsFixed(3)}';
       });
+      unawaited(_fetchOutdooractive());
+      unawaited(_fetchTrailforks());
       await _map?.animateCamera(
         CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 11),
       );
@@ -835,12 +1159,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final cat = active?.category;
 
     final base = _tours.where((r) {
+      // Dauer nur bei explizitem Bucket — sonst alle Regionen sichtbar.
       if (_durationBucket != null) {
         final delta = (r.durationMin - _durationBucket!).abs();
         if (delta > 45) return false;
-      } else {
-        final delta = (r.durationMin - _minutes).abs();
-        if (delta > 90) return false;
       }
       if (_surfaceFilter != null && r.surface != _surfaceFilter) {
         return false;
@@ -869,9 +1191,45 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return true;
     }).toList();
 
-    if (cat == null) return base;
-    final matched = base.where((r) => r.categories.contains(cat)).toList();
-    return matched.isNotEmpty ? matched : base;
+    if (cat == null) {
+      return [...base]..sort(_byDistanceFromOrigin);
+    }
+    // Nähe zuerst, innerhalb davon Kategorie-Treffer nach vorn.
+    final matched = <_RouteSuggestion>[];
+    final rest = <_RouteSuggestion>[];
+    for (final r in base) {
+      if (r.categories.contains(cat)) {
+        matched.add(r);
+      } else {
+        rest.add(r);
+      }
+    }
+    matched.sort(_byDistanceFromOrigin);
+    rest.sort(_byDistanceFromOrigin);
+    return matched.isEmpty
+        ? [...base]..sort(_byDistanceFromOrigin)
+        : [...matched, ...rest];
+  }
+
+  int _byDistanceFromOrigin(_RouteSuggestion a, _RouteSuggestion b) {
+    final o = _origin;
+    final da = _distKm(o.lat, o.lng, a.center.latitude, a.center.longitude);
+    final db = _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude);
+    final c = da.compareTo(db);
+    if (c != 0) return c;
+    return b.matchScore.compareTo(a.matchScore);
+  }
+
+  double _distKm(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = (lat2 - lat1) * math.pi / 180;
+    final dLng = (lng2 - lng1) * math.pi / 180;
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) *
+            math.cos(lat2 * math.pi / 180) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return 2 * r * math.asin(math.sqrt(a.clamp(0.0, 1.0)));
   }
 
   List<GeoPoint> _quickDestinations(GeoPoint start, int minutes) {
@@ -2950,16 +3308,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _buildToursSheet() {
         final list = _filtered;
+        final o = _origin;
         return ListView(
           padding: const EdgeInsets.all(12),
           children: [
             Row(
               children: [
-                const Text(
-                  'Beispiel-Connectoren',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                Text(
+                  'Vom Standort (${list.length})',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
+                const Text(
+                  'Beispiel-Connectoren',
+                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
                 Switch(
                   value: _showTrails,
                   onChanged: (v) async {
@@ -2969,6 +3332,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
               ],
             ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Sortiert nach Nähe zu ${o.lat.toStringAsFixed(2)}°N, ${o.lng.toStringAsFixed(2)}°E'
+                '${_userPos != null ? ' (GPS)' : ''}',
+                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+            ),
+            if (list.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Keine Tour bei diesen Filtern — Filter lockern.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ),
             if (_showTrails)
               const Padding(
                 padding: EdgeInsets.only(bottom: 8),
@@ -2977,8 +3356,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   style: TextStyle(fontSize: 11, color: AppColors.muted),
                 ),
               ),
-            ..._seedTrails.map(
-              (tr) => Card(
+            ..._seedTrails.map(              (tr) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
@@ -3040,6 +3418,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                               ),
                             ),
                             Text(
+                              '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt · '
                               '${r.distanceKm} km · ${r.elevationM} hm · ${r.durationMin} min · ${r.matchScore}%',
                               style: TextStyle(
                                 fontSize: 12,

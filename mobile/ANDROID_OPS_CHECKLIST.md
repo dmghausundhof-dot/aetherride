@@ -40,8 +40,9 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [x] Offline-Sheet: API-Base, Pack zurücksetzen, Style-Reload
 - [x] Basemap Style-JSON Heuristik; Roh-`.pmtiles` abgelehnt
 - [x] Discover Routing-Status-Banner
-- [ ] Emulator UI manuell: Pack laden + Valhalla-Status
-- [ ] `NEXT_PUBLIC_ROUTING_LIVE=1` nach Smoke (sonst „nicht verifiziert“)
+- [x] Flugmodus-Smoke: `bash scripts/smoke-offline-flight.sh` (API + manuelle Checkliste)
+- [ ] Emulator UI manuell: Pack laden + Valhalla-Status + Flugmodus-Checkliste
+- [ ] `NEXT_PUBLIC_ROUTING_LIVE=1` in Deploy-Env nach Smoke (lokal ok; nicht committen)
 
 ## Honesty Fixes (Code, Aug 2026)
 
