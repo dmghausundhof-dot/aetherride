@@ -4,15 +4,28 @@
 
 import type { Bike, Ride, RiderProfile, Setup } from "@/types";
 
+/** Enough GPS points for an honest track export / Strava upload. */
+export function rideHasExportableTrack(ride: Ride): boolean {
+  return Boolean(ride.track && ride.track.length >= 2);
+}
+
+/**
+ * GPX for a ride. Empty track → valid GPX with empty `<trkseg>`
+ * (no synthetic Berchtesgaden path).
+ */
 export function rideToGpx(ride: Ride, bikeName?: string): string {
   const name = `AetherRide ${new Date(ride.startTime).toISOString().slice(0, 10)}`;
-  const pts =
-    ride.track && ride.track.length > 0
-      ? ride.track
-      : synthesizeTrack(ride);
+  const pts = ride.track && ride.track.length > 0 ? ride.track : [];
 
   const trkpts = pts
     .map((p, i) => {
+      if (
+        !Number.isFinite(p.lat) ||
+        !Number.isFinite(p.lng) ||
+        (Math.abs(p.lat) < 1e-6 && Math.abs(p.lng) < 1e-6)
+      ) {
+        return null;
+      }
       const t =
         typeof p.time === "number"
           ? new Date(new Date(ride.startTime).getTime() + p.time * 1000)
@@ -24,13 +37,16 @@ export function rideToGpx(ride: Ride, bikeName?: string): string {
         p.elev != null ? `\n        <ele>${p.elev}</ele>` : ""
       }\n        <time>${t.toISOString()}</time>\n      </trkpt>`;
     })
+    .filter(Boolean)
     .join("\n");
+
+  const emptyNote = pts.length === 0 ? " · kein GPS-Track" : "";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="AetherRide" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
     <name>${escapeXml(name)}</name>
-    <desc>${escapeXml(bikeName || "Ride")} · ${ride.distanceM} m · ${ride.elevationGainM} hm</desc>
+    <desc>${escapeXml(bikeName || "Ride")} · ${ride.distanceM} m · ${ride.elevationGainM} hm${emptyNote}</desc>
     <time>${ride.startTime}</time>
   </metadata>
   <trk>
@@ -41,20 +57,6 @@ ${trkpts}
     </trkseg>
   </trk>
 </gpx>`;
-}
-
-function synthesizeTrack(ride: Ride): { lat: number; lng: number; elev?: number; time: number }[] {
-  const n = Math.max(10, Math.min(200, Math.round(ride.durationSec / 30)));
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    out.push({
-      lat: 47.45 + Math.sin(i / 8) * 0.01,
-      lng: 12.15 + i * 0.0002,
-      elev: 800 + (ride.elevationGainM * i) / n,
-      time: i,
-    });
-  }
-  return out;
 }
 
 function escapeXml(s: string): string {

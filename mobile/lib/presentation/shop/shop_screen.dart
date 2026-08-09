@@ -252,7 +252,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       label: Text(
                         store.commerceMode == 'marketplace'
                             ? 'Im Marktplatz öffnen'
-                            : 'Partner-Shop öffnen',
+                            : 'Beispiel-Shop öffnen',
                       ),
                     ),
                   ],
@@ -294,14 +294,14 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Katalog',
+                  'Beispielkatalog / Cache',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Passende Teile browsen — Kauf im Web-Shop.',
+                  'Kein Live-Partner-Shop — Cache/Beispiele. Kauf nur über externe Links.',
                   style: TextStyle(color: AppColors.muted, fontSize: 13),
                 ),
                 const SizedBox(height: 10),
@@ -347,7 +347,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     ref.read(userProfileStoreProvider).commerceMode ==
                             'marketplace'
                         ? 'Marktplatz im Browser'
-                        : 'Partner-Shop im Browser',
+                        : 'Beispielkatalog im Browser',
                   ),
                 ),
               ],
@@ -401,7 +401,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                           final onList = wishedIds.contains(it.id);
                           return ListTile(
                             title: Text('${it.manufacturer} ${it.model}'),
-                            subtitle: Text('${it.slot} · ${it.id}'),
+                            subtitle: Text('${it.manufacturer} · ${it.model}'),
                             dense: true,
                             onTap: () => _showDetail(it),
                             trailing: IconButton(

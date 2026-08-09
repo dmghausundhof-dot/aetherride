@@ -120,3 +120,42 @@ String cueBannerText(NavCue cue, int remainingM) {
   }
   return 'In $remainingM m ${cue.instruction.toLowerCase()}';
 }
+
+/// Bearing-Heuristik → RouteSteps (Offline / Online ohne Manöver-Liste).
+/// [coordinates] als GeoPoint (lat/lng); intern [lng,lat] für [buildNavCues].
+List<({String id, String instruction, double distanceAlongM})>
+    navStepsFromPolyline(List<({double lat, double lng})> coordinates) {
+  if (coordinates.length < 2) return const [];
+  final geom = [
+    for (final p in coordinates) [p.lng, p.lat],
+  ];
+  final cues = buildNavCues(geom);
+  if (cues.isEmpty && coordinates.length >= 2) {
+    return [
+      (
+        id: 'start',
+        instruction: 'Losfahren',
+        distanceAlongM: 0,
+      ),
+      (
+        id: 'finish',
+        instruction: 'Ziel erreicht',
+        distanceAlongM: 0,
+      ),
+    ];
+  }
+  final out = <({String id, String instruction, double distanceAlongM})>[
+    (id: 'start', instruction: 'Losfahren', distanceAlongM: 0),
+  ];
+  for (final c in cues) {
+    out.add(
+      (
+        id: c.id,
+        instruction: c.instruction,
+        distanceAlongM: c.distanceAlongM,
+      ),
+    );
+  }
+  return out;
+}
+

@@ -20,6 +20,8 @@ export type SyncPayload = {
   freeTierExtraBike?: boolean;
   maintenanceLogs?: unknown;
   wishlistIds?: unknown;
+  /** bikeId → public Storage URL (kein Gerätepfad) */
+  bikePhotos?: unknown;
   activeBikeId?: string | null;
   updatedAt?: string;
   /** Schema version for Flutter/Web payload mapping */

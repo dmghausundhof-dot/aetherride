@@ -16,6 +16,10 @@ class Bikes extends Table {
   TextColumn get model => text().nullable()();
   IntColumn get year => integer().nullable()();
   TextColumn get wheelSize => text().nullable()();
+  TextColumn get catalogBikeId => text().nullable()();
+  TextColumn get frameSize => text().nullable()();
+  IntColumn get travelFrontMm => integer().nullable()();
+  IntColumn get travelRearMm => integer().nullable()();
   RealColumn get odometerKm => real().withDefault(const Constant(0.0))();
   RealColumn get hours => real().withDefault(const Constant(0.0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
@@ -189,7 +193,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -226,6 +230,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 6) {
             await m.addColumn(rideChunksMeta, rideChunksMeta.uploadedAt);
             await m.addColumn(rideChunksMeta, rideChunksMeta.remotePath);
+          }
+          if (from < 7) {
+            await m.addColumn(bikes, bikes.catalogBikeId);
+            await m.addColumn(bikes, bikes.frameSize);
+            await m.addColumn(bikes, bikes.travelFrontMm);
+            await m.addColumn(bikes, bikes.travelRearMm);
           }
         },
       );

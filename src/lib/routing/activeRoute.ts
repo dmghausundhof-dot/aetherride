@@ -1,7 +1,6 @@
 import type { ActiveRoute } from "@/types/route";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { ClientRouteResult } from "@/lib/routing/profiles";
-import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
 import { stepsFromDemoGeometry } from "@/lib/routing/navSteps";
 
 export function activeRouteFromSuggestion(
@@ -9,8 +8,7 @@ export function activeRouteFromSuggestion(
   geometry?: GeoJSON.LineString | null,
   steps?: ClientRouteResult["steps"]
 ): ActiveRoute {
-  const geom =
-    geometry ?? buildDemoGeometry(suggestion.id, suggestion.distanceKm);
+  const geom = geometry && geometry.coordinates.length >= 2 ? geometry : null;
   return {
     id: suggestion.id,
     name: suggestion.name,
@@ -21,10 +19,11 @@ export function activeRouteFromSuggestion(
     surface: suggestion.surface,
     reasons: suggestion.reasons,
     geometry: geom,
-    steps:
-      steps ??
-      stepsFromDemoGeometry(geom.coordinates as [number, number][]),
-    source: geometry ? "engine" : "suggestion",
+    steps: geom
+      ? steps ??
+        stepsFromDemoGeometry(geom.coordinates as [number, number][])
+      : steps,
+    source: geom ? "engine" : "suggestion",
     setAt: new Date().toISOString(),
   };
 }

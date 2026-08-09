@@ -22,6 +22,7 @@ import '../domain/setup.dart';
 import '../native/ble_core_channel.dart';
 import '../native/location_core_channel.dart';
 import '../native/sensor_core_channel.dart';
+import 'ride_providers.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -114,6 +115,9 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
         ref.read(subscriptionTierProvider.notifier).state = tier!;
         garage.subscriptionTier = tier;
       }
+    },
+    onAuthStatus: (status) {
+      ref.read(syncAuthStatusProvider.notifier).state = status;
     },
   );
   ref.onDispose(engine.stop);

@@ -58,9 +58,13 @@ HeatmapResult buildHeatmapFromRides({
     final coords = <List<double>>[];
     for (var i = 0; i < trimmed.length; i += step) {
       final p = trimmed[i];
-      final lat = (p['lat'] as num?)?.toDouble() ?? 0;
+      final lat = (p['lat'] as num?)?.toDouble();
       final lng =
-          (p['lng'] as num?)?.toDouble() ?? (p['lon'] as num?)?.toDouble() ?? 0;
+          (p['lng'] as num?)?.toDouble() ?? (p['lon'] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+      // Skip Null-Island / missing coords coerced to 0.
+      if (lat.abs() < 1e-6 && lng.abs() < 1e-6) continue;
+      if (lat.abs() > 90 || lng.abs() > 180) continue;
       coords.add([lng, lat]);
     }
     if (coords.length < 2) continue;

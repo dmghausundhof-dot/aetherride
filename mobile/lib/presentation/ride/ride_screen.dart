@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
@@ -16,10 +19,13 @@ import '../../domain/ble.dart';
 import '../../domain/ride.dart';
 import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
+import '../../domain/routing/route_progress.dart';
+import '../../data/routing/routing_client.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
 import '../../native/location_core_channel.dart';
+import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
@@ -40,6 +46,7 @@ class RideScreen extends ConsumerStatefulWidget {
 class _RideScreenState extends ConsumerState<RideScreen> {
   FusedMetrics? _metrics;
   BoschLiveData? _ldi;
+  double _gpsSpeedKmh = 0;
   StreamSubscription<SensorBlock>? _sensorSub;
   StreamSubscription<BoschLiveData>? _bleSub;
   StreamSubscription<LocationFix>? _locSub;
@@ -71,6 +78,23 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
   MapLibreMapController? _rideMap;
   int _mapDrawSkip = 0;
+  String _mapStyle = AppConfig.mapStyleUrl;
+  bool _offRoute = false;
+  String? _offRouteBanner;
+  DateTime? _lastAutoRerouteAt;
+  bool _autoRerouteBusy = false;
+  /// User-Toggle (zusätzlich zu dart-define AETHER_AUTO_REROUTE).
+  bool _autoRerouteEnabled = AppConfig.autoReroute;
+  /// Distanz entlang Active Route (Nav); Odometer bleibt [rideDistanceMProvider].
+  double _alongRouteM = 0;
+  int _gpsFixCount = 0;
+  String? _gpsStatus;
+  double _lastGpsDistanceM = 0;
+  int _gpsStallSec = 0;
+
+  static bool get _allowGpsStallSim =>
+      kDebugMode ||
+      const bool.fromEnvironment('AETHER_SIM_MOTION', defaultValue: false);
 
   /// When false, light sensor drives [sunlightModeProvider]; manual toggle locks.
   bool _sunlightAuto = true;
@@ -86,6 +110,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     unawaited(_tts.setLanguage('de-DE'));
     unawaited(_tts.setSpeechRate(0.5));
     _startAutoSunlight();
+    unawaited(
+      AppConfig.resolveMapStyleUrl().then((s) {
+        if (mounted) setState(() => _mapStyle = s);
+      }),
+    );
   }
 
   /// Auto-Sunlight: lux > 8000 for ~4s → enable; else reset while auto.
@@ -204,10 +233,17 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 
 
+  /// LDI-Speed, sonst GPS (Freeride ohne CSC).
+  double get _effectiveSpeedKmh {
+    final ldi = _ldi?.speedKmh;
+    if (ldi != null && ldi > 0.5) return ldi;
+    return _gpsSpeedKmh;
+  }
+
   /// Engine-Steps (400/150/30) bevorzugt; sonst Bearing-Cues als Fallback.
   void _maybeSpeakNav(NavCue cue, int remainingM) {
     if (_ttsMuted || !ref.read(isRidingProvider)) return;
-    final speed = _ldi?.speedKmh ?? 0;
+    final speed = _effectiveSpeedKmh;
     final text = pickAnnounce(
       stepId: cue.id,
       instruction: cue.instruction,
@@ -225,8 +261,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   void _considerNavTts() {
     final route = ref.read(activeRouteProvider);
     if (route == null || route.coordinates.length < 4) return;
-    final along = ref.read(rideDistanceMProvider);
-    final speed = _ldi?.speedKmh ?? 0;
+    final along = _alongRouteM;
+    final speed = _effectiveSpeedKmh;
 
     if (route.steps.isNotEmpty) {
       final nxt = nextRouteStep(route.steps, along);
@@ -256,7 +292,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 
   void _considerLiveHints(FusedMetrics fused) {
-    final speed = _ldi?.speedKmh ?? 0;
+    final speed = _effectiveSpeedKmh;
     if (speed < 3) {
       _standSeconds += 1;
     } else {
@@ -318,7 +354,99 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
+  Future<bool> _preflightPermissions() async {
+    final location = ref.read(locationCoreProvider);
+    final result = await location.ensurePermissionDetailed();
+    if (!mounted) return false;
+    switch (result) {
+      case LocationPermissionResult.granted:
+        break;
+      case LocationPermissionResult.servicesDisabled:
+        final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Standort aus'),
+            content: const Text(
+              'Ohne Standort kein GPS-Track. Bitte Ortungsdienste einschalten.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Abbrechen'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Einstellungen'),
+              ),
+            ],
+          ),
+        );
+        if (go == true) await location.openLocationSettings();
+        return false;
+      case LocationPermissionResult.deniedForever:
+        final go = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Standort-Berechtigung'),
+            content: const Text(
+              'Standort dauerhaft verweigert. In den App-Einstellungen freigeben, '
+              'sonst bleibt der Track leer.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Abbrechen'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('App-Einstellungen'),
+              ),
+            ],
+          ),
+        );
+        if (go == true) await location.openAppSettings();
+        return false;
+      case LocationPermissionResult.denied:
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Standort nötig für Track & Navigation — erneut starten und erlauben.',
+              ),
+            ),
+          );
+        }
+        return false;
+    }
+
+    // BLE is optional (CSC) — prompt, never block Freeride.
+    final ble = ref.read(bleCoreProvider);
+    final bleResult = await ble.ensurePermission();
+    if (!mounted) return false;
+    if (bleResult == BlePermissionResult.adapterOff) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Bluetooth aus — Freeride ohne CSC möglich; Sensor später verbinden.',
+          ),
+        ),
+      );
+    } else if (bleResult == BlePermissionResult.denied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'BLE-Berechtigung fehlt — Freeride läuft ohne Kadenz/Leistung.',
+          ),
+        ),
+      );
+    }
+    return true;
+  }
+
   Future<void> _start() async {
+    final ok = await _preflightPermissions();
+    if (!ok || !mounted) return;
+
     final sensor = ref.read(sensorCoreProvider);
     final ble = ref.read(bleCoreProvider);
     final location = ref.read(locationCoreProvider);
@@ -327,15 +455,66 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _rideId = const Uuid().v4();
     _chunkBuf.clear();
     _chunkSeq = 0;
+    _gpsFixCount = 0;
+    _gpsStatus = 'Warte auf GPS…';
+    _lastGpsDistanceM = 0;
+    _gpsStallSec = 0;
 
     await sensor.start();
     await ble.connect();
     await location.startRideTracking();
-    _usingGps = location.lastFix != null;
+    _usingGps = false;
     _locSub = location.fixes.listen((fix) {
       if (!mounted || ref.read(isPausedProvider)) return;
-      _usingGps = true;
-      ref.read(rideDistanceMProvider.notifier).state = location.distanceM;
+      _gpsFixCount += 1;
+      final gpsKmh = (fix.speedMps * 3.6).clamp(0.0, 120.0);
+      if (gpsKmh > 0.3 || _gpsSpeedKmh > 0) {
+        _gpsSpeedKmh = gpsKmh;
+      }
+      if (_gpsFixCount >= 2) {
+        _usingGps = true;
+        final d = location.distanceM;
+        if (d > _lastGpsDistanceM + 1.0) {
+          _lastGpsDistanceM = d;
+          _gpsStallSec = 0;
+          _gpsStatus = null;
+          ref.read(rideDistanceMProvider.notifier).state = d;
+        } else if (_gpsStatus == null && d < 1) {
+          _gpsStatus = 'GPS-Fix…';
+        }
+      } else {
+        _gpsStatus = 'GPS-Fix $_gpsFixCount…';
+      }
+      final route = ref.read(activeRouteProvider);
+      if (route != null && route.coordinates.length >= 2) {
+        final prog = projectOntoRoute(
+          coordinates: route.coordinates,
+          lat: fix.lat,
+          lng: fix.lng,
+        );
+        _alongRouteM = prog.distanceAlongM;
+        final nextOff = updateOffRouteState(
+          currentlyOff: _offRoute,
+          crossTrackM: prog.crossTrackM,
+        );
+        if (nextOff != _offRoute) {
+          _offRoute = nextOff;
+          _offRouteBanner = nextOff ? 'Route verlassen' : null;
+          if (mounted) setState(() {});
+          if (nextOff && !_ttsMuted && ref.read(isRidingProvider)) {
+            unawaited(_tts.speak('Route verlassen'));
+          }
+          if (nextOff) unawaited(_maybeAutoReroute());
+        } else if (nextOff) {
+          unawaited(_maybeAutoReroute());
+        }
+      } else {
+        _alongRouteM = location.distanceM;
+        if (_offRoute || _offRouteBanner != null) {
+          _offRoute = false;
+          _offRouteBanner = null;
+        }
+      }
       _track.add(
         TrackPoint(
           lat: fix.lat,
@@ -344,6 +523,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           elev: fix.altitudeM,
         ),
       );
+      if (mounted) setState(() {});
       _considerNavTts();
       _mapDrawSkip += 1;
       if (_mapDrawSkip >= 3 || _track.length == 2) {
@@ -380,6 +560,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     ref.read(isPausedProvider.notifier).state = false;
     ref.read(rideElapsedSecProvider.notifier).state = 0;
     ref.read(rideDistanceMProvider.notifier).state = 0;
+    _alongRouteM = 0;
+    _offRoute = false;
+    _offRouteBanner = null;
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || ref.read(isPausedProvider)) return;
       final start = _startedAt;
@@ -387,20 +570,220 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         ref.read(rideElapsedSecProvider.notifier).state =
             DateTime.now().difference(start).inSeconds;
       }
-      // Sim-Distanz nur wenn noch kein GPS-Fix
       if (!_usingGps) {
-        ref.read(rideDistanceMProvider.notifier).state += 4.2;
+        // Ohne Fix: kein Fake-Track in Release. Sim nur Debug / AETHER_SIM_MOTION.
+        if (_allowGpsStallSim) {
+          ref.read(rideDistanceMProvider.notifier).state += 4.2;
+          final last = _track.isNotEmpty ? _track.last : null;
+          final baseLat = last?.lat ?? 47.995;
+          final baseLng = last?.lng ?? 7.85;
+          final t = ref.read(rideElapsedSecProvider);
+          _track.add(
+            TrackPoint(
+              lat: baseLat + math.sin(t / 18) * 0.00018,
+              lng: baseLng + t * 0.00004,
+              timeMs: DateTime.now().millisecondsSinceEpoch,
+              elev: 280 + t * 0.4,
+            ),
+          );
+          if (mounted && t % 3 == 0) setState(() {});
+        } else {
+          _gpsStatus = 'Warte auf GPS — Track erst mit Fix';
+          if (mounted && ref.read(rideElapsedSecProvider) % 3 == 0) {
+            setState(() {});
+          }
+        }
+      } else {
+        final d = location.distanceM;
+        if (d > _lastGpsDistanceM + 1.0) {
+          _lastGpsDistanceM = d;
+          _gpsStallSec = 0;
+          _gpsStatus = null;
+          ref.read(rideDistanceMProvider.notifier).state = d;
+        } else {
+          _gpsStallSec += 1;
+          if (_gpsStallSec >= 5) {
+            _gpsStatus = _allowGpsStallSim
+                ? 'GPS still — Sim-Track'
+                : 'GPS still — Signal schwach / Stand';
+            if (mounted && ref.read(rideElapsedSecProvider) % 3 == 0) {
+              setState(() {});
+            }
+          }
+          // Emulator/Stillstand: nur Debug oder AETHER_SIM_MOTION.
+          if (_gpsStallSec >= 5 && _allowGpsStallSim) {
+            ref.read(rideDistanceMProvider.notifier).state += 4.2;
+            final last = _track.isNotEmpty ? _track.last : null;
+            final baseLat = last?.lat ?? 47.995;
+            final baseLng = last?.lng ?? 7.85;
+            final t = ref.read(rideElapsedSecProvider);
+            _track.add(
+              TrackPoint(
+                lat: baseLat + math.sin(t / 18) * 0.00018,
+                lng: baseLng + t * 0.00004,
+                timeMs: DateTime.now().millisecondsSinceEpoch,
+                elev: last?.elev ?? 280,
+              ),
+            );
+            if (mounted && t % 3 == 0) setState(() {});
+          }
+        }
       }
       _considerNavTts();
       final m = _metrics;
       if (m != null) _considerLiveHints(m);
     });
     _bumpIdle();
+    unawaited(WakelockPlus.enable());
     setState(() {
       _confirmStop = 0;
       _lastSpokenText = null;
       _liveHintText = null;
     });
+  }
+
+  double _distanceAlongTrackM(List<TrackPoint> track) {
+    var sum = 0.0;
+    for (var i = 1; i < track.length; i++) {
+      sum += haversineM(
+        track[i - 1].lat,
+        track[i - 1].lng,
+        track[i].lat,
+        track[i].lng,
+      );
+    }
+    return sum;
+  }
+
+  double _elevationGainFromTrack(List<TrackPoint> track) {
+    var gain = 0.0;
+    double? prev;
+    for (final p in track) {
+      final e = p.elev;
+      if (e == null) continue;
+      if (prev != null && e > prev + 0.5) gain += e - prev;
+      prev = e;
+    }
+    return gain;
+  }
+
+  Future<void> _maybeAutoReroute() async {
+    if (!_autoRerouteEnabled) return;
+    if (_autoRerouteBusy || !ref.read(isRidingProvider)) return;
+    if (ref.read(isPausedProvider)) return;
+    final last = _lastAutoRerouteAt;
+    if (last != null &&
+        DateTime.now().difference(last).inSeconds <
+            AppConfig.autoRerouteCooldownSec) {
+      return;
+    }
+    _autoRerouteBusy = true;
+    try {
+      await _rejoinRoute();
+      _lastAutoRerouteAt = DateTime.now();
+    } finally {
+      _autoRerouteBusy = false;
+    }
+  }
+
+  Future<void> _rejoinRoute() async {
+    final route = ref.read(activeRouteProvider);
+    if (route == null || route.coordinates.length < 2) return;
+    final lastFix = _track.isNotEmpty ? _track.last : null;
+    if (lastFix == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kein GPS-Fix für Rejoin')),
+        );
+      }
+      return;
+    }
+    final prog = projectOntoRoute(
+      coordinates: route.coordinates,
+      lat: lastFix.lat,
+      lng: lastFix.lng,
+    );
+    // Rest der Originalroute ab Segment (nicht nur Endpunkt).
+    final rejoinIdx =
+        (prog.segmentIndex + 1).clamp(1, route.coordinates.length - 1);
+    final rejoinPt = route.coordinates[rejoinIdx];
+    final remaining = route.coordinates.sublist(rejoinIdx);
+    try {
+      List<List<double>> approach = const [];
+      List<NavStep> approachSteps = const [];
+      var approachDistM = 0.0;
+      if (prog.crossTrackM > 25) {
+        final result = await ref.read(routeRepositoryProvider).planRoute(
+              from: GeoPoint(lastFix.lat, lastFix.lng),
+              to: GeoPoint(rejoinPt[1], rejoinPt[0]),
+              profile: RoutingProfile.mtbTrail,
+            );
+        approach = result.coordinates.map((p) => [p.lng, p.lat]).toList();
+        approachDistM = result.distanceM;
+        approachSteps = result.steps
+            .map(
+              (st) => NavStep(
+                id: st.id,
+                instruction: st.instruction,
+                distanceAlongM: st.distanceAlongM,
+              ),
+            )
+            .toList();
+      }
+
+      final merged = <List<double>>[
+        ...approach,
+        ...remaining,
+      ];
+      if (merged.length < 2) {
+        throw StateError('Keine brauchbare Rejoin-Geometrie');
+      }
+
+      var remainDist = 0.0;
+      for (var i = 1; i < remaining.length; i++) {
+        remainDist += haversineM(
+          remaining[i - 1][1],
+          remaining[i - 1][0],
+          remaining[i][1],
+          remaining[i][0],
+        );
+      }
+
+      if (!mounted) return;
+      ref.read(activeRouteProvider.notifier).state = ActiveRoute(
+        id: '${route.id}-rejoin',
+        name: '${route.name} (Rejoin)',
+        distanceKm: (approachDistM + remainDist) / 1000,
+        elevationM: route.elevationM,
+        durationMin: ((approachDistM + remainDist) / 1000 / 12 * 60).round(),
+        mtbScale: route.mtbScale,
+        coordinates: merged,
+        steps: [
+          ...approachSteps,
+          for (final st in route.steps)
+            if (st.distanceAlongM >= prog.distanceAlongM)
+              NavStep(
+                id: st.id,
+                instruction: st.instruction,
+                distanceAlongM:
+                    (st.distanceAlongM - prog.distanceAlongM + approachDistM)
+                        .clamp(0, double.infinity),
+              ),
+        ],
+      );
+      setState(() {
+        _offRoute = false;
+        _offRouteBanner = null;
+        _alongRouteM = 0;
+      });
+      if (!_ttsMuted) unawaited(_tts.speak('Route neu berechnet'));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Rejoin fehlgeschlagen: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _stop() async {
@@ -426,26 +809,29 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
     final started = _startedAt ?? DateTime.now();
     final ended = DateTime.now();
-    final distanceM = ref.read(rideDistanceMProvider);
+    var distanceM = ref.read(rideDistanceMProvider);
     final elapsed = ref.read(rideElapsedSecProvider);
     final route = ref.read(activeRouteProvider);
     final bike = await ref.read(garageRepositoryProvider).getActiveBike();
     final bikeId = bike?.id ?? 'unknown';
 
-    // Fallback-Track wenn kein GPS: synthetische Punkte entlang Distanz
+    // Kein Fake-Track: ohne GPS bleibt der Track leer (Post-Ride zeigt das ehrlich).
     var track = List<TrackPoint>.from(_track);
-    if (track.length < 2 && distanceM > 10) {
-      final steps = (elapsed.clamp(2, 120));
-      for (var i = 0; i < steps; i++) {
-        track.add(
-          TrackPoint(
-            lat: 47.99 + i * 0.0001,
-            lng: 7.85 + i * 0.00012,
-            timeMs: started.millisecondsSinceEpoch + i * 1000,
-          ),
-        );
-      }
+
+    // Distanz aus Track, wenn Odometer leer blieb (Stillstand-GPS).
+    final trackDist = _distanceAlongTrackM(track);
+    if (trackDist > distanceM + 15) {
+      distanceM = trackDist;
     }
+
+    final elevFromRoute = route?.elevationM;
+    final elevFromTrack = _elevationGainFromTrack(track);
+    final elevHonest = elevFromRoute != null && elevFromRoute > 0
+        ? elevFromRoute
+        : elevFromTrack;
+    final elevSource = elevFromRoute != null && elevFromRoute > 0
+        ? 'route'
+        : (elevFromTrack > 0 ? 'gps_track' : 'none');
 
     final record = await ref.read(rideRepositoryProvider).endRide(
           id: _rideId,
@@ -456,12 +842,15 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           movingTimeSec: elapsed,
           name: route?.name ?? 'Ride',
           routeId: route?.id,
-          elevationM: route?.elevationM ?? distanceM * 0.03,
+          elevationM: elevHonest,
           track: track,
           summary: {
             'peakG': _peakG,
             'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
             'usingGps': _usingGps,
+            'gpsStallSim': _gpsStallSec >= 3 && _allowGpsStallSim,
+            'trackPoints': track.length,
+            'elevationSource': elevSource,
             if (_ldi != null) 'soc': _ldi!.batterySocPercent,
           },
         );
@@ -498,6 +887,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     ref.read(activeRouteProvider.notifier).state = null;
     ref.read(rideElapsedSecProvider.notifier).state = 0;
     ref.read(rideDistanceMProvider.notifier).state = 0;
+    unawaited(WakelockPlus.disable());
     ref.invalidate(bikesProvider);
     ref.invalidate(recentRidesProvider);
     setState(() {
@@ -556,6 +946,30 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         appBar: AppBar(
           title: Text(riding ? 'Live' : 'Bereit'),
           actions: [
+            if (riding && route != null)
+              IconButton(
+                tooltip: _autoRerouteEnabled
+                    ? 'Auto-Reroute an'
+                    : 'Auto-Reroute aus',
+                onPressed: () {
+                  setState(() => _autoRerouteEnabled = !_autoRerouteEnabled);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        _autoRerouteEnabled
+                            ? 'Auto-Reroute aktiv (Cooldown ${AppConfig.autoRerouteCooldownSec}s)'
+                            : 'Auto-Reroute aus — manueller Rejoin bleibt',
+                      ),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  _autoRerouteEnabled
+                      ? Icons.alt_route
+                      : Icons.alt_route_outlined,
+                  color: _autoRerouteEnabled ? AppColors.accent : null,
+                ),
+              ),
             IconButton(
               tooltip: _ttsMuted ? 'TTS an' : 'TTS stumm',
               onPressed: () {
@@ -609,12 +1023,77 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                 ),
                         ),
                       ),
+                      if (riding && _offRouteBanner != null)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade400),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _offRouteBanner!,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.orange.shade900,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  _bumpIdle();
+                                  unawaited(_rejoinRoute());
+                                },
+                                child: Text(
+                                  'Zurück',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.orange.shade900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       if (riding && route.coordinates.length >= 4)
                         Builder(
                           builder: (context) {
-                            final cues = buildNavCues(route.coordinates);
-                            final nxt = nextCue(cues, distanceM);
-                            if (nxt == null) {
+                            String? banner;
+                            if (route.steps.isNotEmpty) {
+                              final nxt = nextRouteStep(
+                                route.steps,
+                                _alongRouteM,
+                              );
+                              if (nxt != null) {
+                                banner = cueBannerText(
+                                  NavCue(
+                                    id: nxt.step.id,
+                                    distanceAlongM: nxt.step.distanceAlongM,
+                                    instruction: nxt.step.instruction,
+                                    bearingDeg: 0,
+                                  ),
+                                  nxt.remainingM.round(),
+                                );
+                              }
+                            } else {
+                              final cues = buildNavCues(route.coordinates);
+                              final nxt = nextCue(cues, _alongRouteM);
+                              if (nxt != null) {
+                                banner = cueBannerText(
+                                  nxt.cue,
+                                  nxt.remainingM,
+                                );
+                              }
+                            }
+                            if (banner == null) {
                               return const SizedBox.shrink();
                             }
                             return Container(
@@ -631,7 +1110,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                 ),
                               ),
                               child: Text(
-                                cueBannerText(nxt.cue, nxt.remainingM),
+                                banner,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 16,
@@ -674,6 +1153,17 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                           fontSize: 12,
                         ),
                       ),
+                      if (_gpsStatus != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _gpsStatus!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.orange.shade800,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ],
                     const SizedBox(height: 12),
                     if (!riding) ...[
@@ -741,11 +1231,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _bigStat(
-                            (_ldi?.speedKmh ?? 0).toStringAsFixed(0),
+                            (_effectiveSpeedKmh).toStringAsFixed(0),
                             'km/h',
                           ),
                           _bigStat(
-                            (distanceM / 1000).toStringAsFixed(1),
+                            distanceM < 1000
+                                ? (distanceM / 1000).toStringAsFixed(2)
+                                : (distanceM / 1000).toStringAsFixed(1),
                             'km',
                           ),
                           _bigStat(_fmt(elapsed), 'Zeit'),
@@ -858,7 +1350,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         return ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: MapLibreMap(
-            styleString: AppConfig.mapStyleUrl,
+            key: ValueKey(_mapStyle),
+            styleString: _mapStyle,
             initialCameraPosition: CameraPosition(
               target: _mapTarget(route),
               zoom: 14,
@@ -881,7 +1374,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               children: [
                 _MetricRow(
                   'Speed',
-                  '${(_ldi?.speedKmh ?? 0).toStringAsFixed(1)} km/h',
+                  '${_effectiveSpeedKmh.toStringAsFixed(1)} km/h',
                 ),
                 _MetricRow(
                   'SOC',

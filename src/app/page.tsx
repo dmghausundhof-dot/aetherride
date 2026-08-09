@@ -76,6 +76,7 @@ export default function HomePage() {
 
   const [weather, setWeather] = useState<WeatherPayload | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
   const lastRide = rides[0];
@@ -176,6 +177,8 @@ export default function HomePage() {
         }
       } catch {
         /* anon */
+      } finally {
+        if (!cancelled) setAuthChecked(true);
       }
     })();
     return () => {
@@ -287,6 +290,15 @@ export default function HomePage() {
         </h1>
         <p className="text-sm text-text-secondary">AetherRide</p>
       </div>
+
+      {authChecked && !displayName && (
+        <Link
+          href="/profile"
+          className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-secondary"
+        >
+          Sync nur mit Login — im Profil anmelden
+        </Link>
+      )}
 
       {/* HEUTE PASST */}
       {activeBike && todayRoute ? (

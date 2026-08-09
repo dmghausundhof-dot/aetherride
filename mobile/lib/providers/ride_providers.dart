@@ -1,8 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/active_route.dart';
+import '../data/sync/sync_engine.dart' show SyncAuthStatus;
+
+export '../data/sync/sync_engine.dart' show SyncAuthStatus;
 
 final activeRouteProvider = StateProvider<ActiveRoute?>((ref) => null);
+
+/// Discover-Einstieg von Home: einmalig in DiscoverScreen konsumieren.
+enum DiscoverLaunchMode { quick, plan, tours }
+
+final discoverLaunchModeProvider =
+    StateProvider<DiscoverLaunchMode?>((ref) => null);
+
+final syncAuthStatusProvider =
+    StateProvider<SyncAuthStatus>((ref) => SyncAuthStatus.unknown);
 
 final isRidingProvider = StateProvider<bool>((ref) => false);
 

@@ -117,6 +117,23 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 3. Stripe Webhook auf `/api/webhooks/stripe`
 4. Supabase Auth Redirect: `https://<domain>/auth/callback`
 
+## Mobile (Flutter)
+
+Emulator: AVD **`aether_api34`** (API 34). API 36-AVDs sind in diesem Projekt unzuverlässig.
+
+API gegen Host-Next: `API_BASE_URL=http://10.0.2.2:3001` (Next oft auf Port 3001).
+
+Keys aus `.env.local` als `--dart-define` (sonst Free-Basemap OpenFreeMap, kein demotiles):
+
+```bash
+./scripts/mobile-with-env.sh run -d emulator-5556
+# oder APK:
+./scripts/mobile-with-env.sh apk
+```
+
+Definiert u. a. `STADIA_API_KEY`, `PMTILES_URL`, `SUPABASE_*`, `API_BASE_URL`.
+Style-Priorität: Prefs-PMTiles-Style → compile-time PMTiles → Stadia → OpenFreeMap liberty.
+
 ## Web-Produktion (Demo-Gaps Schnitt 1)
 
 - Legal: Env `NEXT_PUBLIC_LEGAL_*` + `/legal/impressum` · `/legal/widerruf` (ohne Impressum: Marketplace-Checkout gesperrt)
@@ -141,6 +158,8 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 
 ### Launch-Checkliste (Prozess)
 
+Lokal abhaken: `./scripts/ops-checklist.sh`
+
 - [ ] DSFA abgeschlossen  
 - [ ] A11y-Audit ohne kritische Befunde  
 - [ ] Offline-Regression Flugmodus  
@@ -148,9 +167,10 @@ Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 - [ ] Play Produkt `aetherride_pro_monthly` + License Tester + `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`  
 - [ ] Routing-Env live (`VALHALLA_URL` / `OSRM_URL` / `GRAPHHOPPER_API_KEY`) — sonst Demo-Geometrie  
 - [ ] Nach erfolgreichem Smoke: `NEXT_PUBLIC_ROUTING_LIVE=true` (Discover-Banner erst dann weg)  
-- [ ] Partner-Tokens: Mapillary, Outdooractive, Strava OAuth  
+- [ ] Partner-Tokens: Mapillary, Outdooractive, Strava OAuth (`/api/strava` + `/api/strava/callback`)  
 - [ ] `NEXT_PUBLIC_LEGAL_*` für Marketplace (Affiliate braucht das nicht)  
 - [ ] Vercel-Deploy + Stripe Webhook Prod  
+- [ ] Mobile: `./scripts/mobile-with-env.sh` + Emulator **aether_api34**  
 - [ ] Bosch LDI Hardware (G-1) — bewusst Ops/HW  
 
 ### UX-Fixes (Code, Aug 2026)

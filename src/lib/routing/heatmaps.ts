@@ -155,7 +155,17 @@ export function buildHeatmap(input?: {
     const step = Math.max(1, Math.floor(trimmed.length / 8));
     const coords: [number, number][] = [];
     for (let i = 0; i < trimmed.length; i += step) {
-      coords.push([trimmed[i].lng, trimmed[i].lat]);
+      const p = trimmed[i];
+      if (
+        !Number.isFinite(p.lat) ||
+        !Number.isFinite(p.lng) ||
+        (Math.abs(p.lat) < 1e-6 && Math.abs(p.lng) < 1e-6) ||
+        Math.abs(p.lat) > 90 ||
+        Math.abs(p.lng) > 180
+      ) {
+        continue;
+      }
+      coords.push([p.lng, p.lat]);
     }
     if (coords.length < 2) continue;
     fromRides.push({

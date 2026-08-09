@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { buildElevationForSuggestion } from "@/lib/routing/suggestionElevation";
-import { buildDemoGeometry, centerOfGeometry } from "@/lib/routing/demoGeometry";
+import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
 import {
   getTrailViewNear,
@@ -39,6 +39,7 @@ export function RouteDetail({
   onBack,
   onStart,
   onToggleSave,
+  onAdoptIntoPlan,
 }: {
   route: RouteSuggestion;
   saved: boolean;
@@ -51,16 +52,13 @@ export function RouteDetail({
   onBack: () => void;
   onStart: () => void;
   onToggleSave: () => void;
+  onAdoptIntoPlan?: () => void;
 }) {
   const [layer, setLayer] = useState<DetailLayer>("overview");
   const [photoIdx, setPhotoIdx] = useState(0);
   const [trail, setTrail] = useState<TrailViewResult | null>(null);
 
-  const geometry = useMemo(
-    () => buildDemoGeometry(route.id, route.distanceKm),
-    [route.id, route.distanceKm]
-  );
-  const center = centerOfGeometry(geometry);
+  const center = useMemo(() => demoCenterLngLat(route.id), [route.id]);
   const elev = useMemo(() => buildElevationForSuggestion(route), [route]);
 
   const heatmap = useMemo(
@@ -150,8 +148,19 @@ export function RouteDetail({
             className="aspect-[4/3] w-full overflow-hidden rounded-2xl"
             center={center}
             zoom={12}
-            route={geometry}
+            markers={[
+              {
+                id: "idea",
+                lngLat: center,
+                color: "#78909C",
+                label: "Idee",
+              },
+            ]}
           />
+          <p className="text-[11px] text-text-secondary">
+            Nur Ortspunkt — kein gespeicherter Track. Live-Routing, Planen oder
+            GPX für eine echte Linie.
+          </p>
           <EvidenceSheet title="Warum dieser Vorschlag?">
             <ol className="list-decimal space-y-1 pl-4 text-sm">
               {route.reasons.map((r) => (
@@ -290,26 +299,37 @@ export function RouteDetail({
 
       {layer === "elevation" && <ElevationChart elev={elev} />}
 
-      <div className="flex gap-2 pb-2">
-        <button
-          type="button"
-          onClick={onToggleSave}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-3 text-sm"
-        >
-          {saved ? (
-            <BookmarkCheck className="h-4 w-4 text-accent" />
-          ) : (
-            <Bookmark className="h-4 w-4" />
-          )}
-          {saved ? "Gespeichert" : "Speichern"}
-        </button>
-        <button
-          type="button"
-          onClick={onStart}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white"
-        >
-          <Play className="h-4 w-4 fill-current" /> Losfahren
-        </button>
+      <div className="flex flex-col gap-2 pb-2">
+        {onAdoptIntoPlan && (
+          <button
+            type="button"
+            onClick={onAdoptIntoPlan}
+            className="rounded-xl border border-border py-2.5 text-sm font-medium"
+          >
+            In Planen
+          </button>
+        )}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onToggleSave}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-3 text-sm"
+          >
+            {saved ? (
+              <BookmarkCheck className="h-4 w-4 text-accent" />
+            ) : (
+              <Bookmark className="h-4 w-4" />
+            )}
+            {saved ? "Gespeichert" : "Speichern"}
+          </button>
+          <button
+            type="button"
+            onClick={onStart}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white"
+          >
+            <Play className="h-4 w-4 fill-current" /> Losfahren
+          </button>
+        </div>
       </div>
     </div>
   );

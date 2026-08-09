@@ -227,15 +227,15 @@ function GaragePageInner() {
         <section className="rounded-2xl border border-border bg-surface p-6 text-center">
           <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
           <p className="mt-2 text-sm text-text-secondary">
-            Drei Wege — Katalog mit OEM-Teilen, schnelle Basis, oder Import von
-            Computer/GPX.
+            Katalog mit OEM-Teilen, schnelle Basis, oder Bike-Platzhalter.
+            GPX-Routen importierst du unter Discover — kein Auto-Demo-Bike.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             {(
               [
                 ["catalog", "Katalog", "Modell wählen, Slots vorgefüllt"],
                 ["basic", "Basis", "Name + Kategorie, später ergänzen"],
-                ["import", "Import", "Platzhalter + km später übernehmen"],
+                ["import", "Platzhalter", "Bike ohne Komponenten — Track via Discover"],
               ] as const
             ).map(([mode, title, desc]) => (
               <button

@@ -26,6 +26,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   String? _message;
   PlayBilling? _play;
   StreamSubscription<PurchaseUpdate>? _playSub;
+  StreamSubscription<String>? _playErrSub;
 
   @override
   void initState() {
@@ -34,12 +35,16 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       _play = PlayBilling();
       unawaited(_play!.start());
       _playSub = _play!.updates.listen(_onPlayPurchase);
+      _playErrSub = _play!.errors.listen((msg) {
+        if (mounted) setState(() => _message = 'Play: $msg');
+      });
     }
   }
 
   @override
   void dispose() {
     _playSub?.cancel();
+    _playErrSub?.cancel();
     unawaited(_play?.dispose() ?? Future<void>.value());
     super.dispose();
   }
@@ -57,7 +62,14 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       );
       await ref.read(syncEngineProvider).syncNow();
       if (!mounted) return;
-      setState(() => _message = 'Pro aktiv (Play). Sync OK.');
+      setState(() {
+        _message ??= 'Pro aktiv (Play). Sync OK.';
+        if (_message!.contains('Trusted-Token')) {
+          _message = '$_message Sync OK.';
+        } else {
+          _message = 'Pro aktiv (Play). Sync OK.';
+        }
+      });
     } catch (e) {
       if (mounted) setState(() => _message = 'Play: $e');
     } finally {
@@ -134,10 +146,16 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     if (res.statusCode != 200) {
       throw Exception(data['error'] ?? 'verify ${res.statusCode}');
     }
+    final mode = data['mode'] as String?;
     final tier = data['tier'] as String?;
     if (tier == 'pro' || tier == 'free') {
       ref.read(subscriptionTierProvider.notifier).state = tier!;
       ref.read(garageRepositoryProvider).subscriptionTier = tier;
+    }
+    if (mode == 'trusted_token_mvp') {
+      // Caller may overwrite with success snack; keep honesty on mode.
+      _message =
+          'Pro gesetzt (Trusted-Token-MVP — ohne Google Play Service Account).';
     }
   }
 
@@ -161,6 +179,29 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     }
   }
 
+  Future<void> _playRestore() async {
+    final play = _play;
+    if (play == null) {
+      setState(() => _message = 'Play Billing nur auf Android.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _message = 'Käufe werden wiederhergestellt…';
+    });
+    try {
+      await play.restorePurchases();
+      setState(
+        () => _message =
+            'Restore gestartet — gültige Abos werden verifiziert.',
+      );
+    } catch (e) {
+      setState(() => _message = 'Restore: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _applyTierFromMe(String accessToken) async {
     try {
       final res = await http.get(
@@ -172,7 +213,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       );
       if (res.statusCode != 200) return;
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final tier = data['subscriptionTier'] as String?;
+      final user = data['user'];
+      final tier = user is Map
+          ? user['subscriptionTier'] as String?
+          : data['subscriptionTier'] as String?;
       if (tier == 'pro' || tier == 'free') {
         ref.read(subscriptionTierProvider.notifier).state = tier!;
         ref.read(garageRepositoryProvider).subscriptionTier = tier;
@@ -235,11 +279,16 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
               icon: const Icon(Icons.shop_outlined),
               label: const Text('Google Play — monatlich'),
             ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _busy ? null : _playRestore,
+              child: const Text('Play-Käufe wiederherstellen'),
+            ),
           ],
           const SizedBox(height: 16),
           OutlinedButton(
             onPressed: _busy ? null : _syncAfterPurchase,
-            child: const Text('Sync after purchase'),
+            child: const Text('Nach Kauf synchronisieren'),
           ),
           if (_message != null) ...[
             const SizedBox(height: 16),

@@ -17,7 +17,9 @@ class UserProfileStore {
   String? displayName;
   String? bikePhotoPath; // active bike local photo override path map via bikePhotos
 
-  Map<String, String> bikePhotos = {}; // bikeId → local path
+  Map<String, String> bikePhotos = {}; // bikeId → local path oder https-URL
+  /// Pending local paths still needing Storage-Upload (bikeId → path).
+  Map<String, String> bikePhotoPending = {};
   List<String> wishlistIds = []; // catalog / shop ids
   List<Map<String, dynamic>> chatHistory = [];
   /// Sync-Feld: `affiliate` | `marketplace` (Web-Parität).
@@ -48,6 +50,10 @@ class UserProfileStore {
       displayName = m['displayName'] as String?;
       bikePhotos = {
         for (final e in (m['bikePhotos'] as Map? ?? {}).entries)
+          e.key.toString(): e.value.toString(),
+      };
+      bikePhotoPending = {
+        for (final e in (m['bikePhotoPending'] as Map? ?? {}).entries)
           e.key.toString(): e.value.toString(),
       };
       wishlistIds = [
@@ -83,6 +89,7 @@ class UserProfileStore {
         'activeFamilyRiderId': activeFamilyRiderId,
         'displayName': displayName,
         'bikePhotos': bikePhotos,
+        'bikePhotoPending': bikePhotoPending,
         'wishlistIds': wishlistIds,
         'chatHistory': chatHistory,
         'commerceMode': commerceMode,
@@ -160,6 +167,57 @@ class UserProfileStore {
 
   Future<void> setBikePhoto(String bikeId, String path) async {
     bikePhotos[bikeId] = path;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      bikePhotoPending.remove(bikeId);
+    } else {
+      bikePhotoPending[bikeId] = path;
+    }
+    await save();
+  }
+
+  /// Nur syncbare Remote-URLs (keine Gerätepfade).
+  Map<String, String> syncableBikePhotos() => {
+        for (final e in bikePhotos.entries)
+          if (e.value.startsWith('http://') || e.value.startsWith('https://'))
+            e.key: e.value,
+      };
+
+  /// Pending lokale Fotos hochladen; bei Erfolg URL in [bikePhotos].
+  Future<void> flushPendingBikePhotoUploads(
+    Future<String?> Function(String bikeId, File file) upload,
+  ) async {
+    if (bikePhotoPending.isEmpty) return;
+    final pending = Map<String, String>.from(bikePhotoPending);
+    for (final e in pending.entries) {
+      final file = File(e.value);
+      if (!await file.exists()) {
+        bikePhotoPending.remove(e.key);
+        continue;
+      }
+      final url = await upload(e.key, file);
+      if (url != null && url.isNotEmpty) {
+        bikePhotos[e.key] = url;
+        bikePhotoPending.remove(e.key);
+      }
+    }
+    await save();
+  }
+
+  Future<void> mergeRemoteBikePhotos(Map<String, String> remote) async {
+    for (final e in remote.entries) {
+      if (!e.value.startsWith('http://') && !e.value.startsWith('https://')) {
+        continue;
+      }
+      final local = bikePhotos[e.key];
+      final localIsFile =
+          local != null && !local.startsWith('http') && File(local).existsSync();
+      if (localIsFile && bikePhotoPending.containsKey(e.key)) {
+        // Lokaler Pending-Upload hat Vorrang bis Upload gelingt.
+        continue;
+      }
+      bikePhotos[e.key] = e.value;
+      bikePhotoPending.remove(e.key);
+    }
     await save();
   }
 
@@ -190,6 +248,7 @@ class UserProfileStore {
     activeFamilyRiderId = null;
     displayName = null;
     bikePhotos = {};
+    bikePhotoPending = {};
     wishlistIds = [];
     chatHistory = [];
     commerceMode = 'affiliate';

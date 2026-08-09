@@ -1,13 +1,15 @@
 /**
- * Deterministische Demo-Geometrie für Routenvorschläge,
- * wenn noch keine Engine-Polyline vorliegt.
+ * Näherungs-Geometrie (Rechteck), wenn keine Engine-Polyline vorliegt.
+ * Nicht als echter Trail/Track darstellen — UI soll „Näherung“ kennzeichnen.
  */
 
 const BASE: Record<string, { lat: number; lng: number }> = {
+  "idea-kaltenbronn": { lat: 48.642, lng: 8.425 },
+  "idea-schauinsland": { lat: 47.912, lng: 7.898 },
+  "idea-dreisam-city": { lat: 47.995, lng: 7.845 },
+  "idea-kaiserstuhl-road": { lat: 48.09, lng: 7.67 },
   "r-kaltenbronn": { lat: 48.642, lng: 8.425 },
-  "r-alpbach-enduro": { lat: 47.399, lng: 11.944 },
-  "r-soell-flow": { lat: 47.505, lng: 12.192 },
-  default: { lat: 47.45, lng: 12.15 },
+  default: { lat: 47.99, lng: 7.85 },
 };
 
 function hashSeed(id: string): number {
@@ -16,7 +18,15 @@ function hashSeed(id: string): number {
   return Math.abs(h);
 }
 
-/** Abgerundetes Rechteck mit klaren Kurven (für Navi-Demo-Cues) */
+/** Center [lng, lat] for pin-only tour ideas (no fake rectangle). */
+export function demoCenterLngLat(
+  routeId: string
+): [number, number] {
+  const c = BASE[routeId] ?? BASE.default;
+  return [c.lng, c.lat];
+}
+
+/** @deprecated Prefer pin-only + live routing; keep for tests/legacy. */
 export function buildDemoGeometry(
   routeId: string,
   distanceKm: number

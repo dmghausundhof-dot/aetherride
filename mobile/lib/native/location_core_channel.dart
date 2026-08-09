@@ -24,6 +24,13 @@ class LocationFix {
   final DateTime timestamp;
 }
 
+enum LocationPermissionResult {
+  granted,
+  servicesDisabled,
+  denied,
+  deniedForever,
+}
+
 class LocationCoreChannel {
   static const _methods = MethodChannel('com.aetherride/location_core');
   static const _events = EventChannel('com.aetherride/location_core/fixes');
@@ -34,39 +41,66 @@ class LocationCoreChannel {
   LocationFix? _last;
   double _distanceM = 0;
   bool _native = false;
+  int _fixCount = 0;
 
   Stream<LocationFix> get fixes => _controller.stream;
   LocationFix? get lastFix => _last;
   double get distanceM => _distanceM;
+  int get fixCount => _fixCount;
 
-  Future<bool> ensurePermission() async {
-    var enabled = await Geolocator.isLocationServiceEnabled();
+  Future<LocationPermissionResult> checkPermissionDetailed() async {
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) return LocationPermissionResult.servicesDisabled;
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      return LocationPermissionResult.denied;
+    }
+    if (perm == LocationPermission.deniedForever) {
+      return LocationPermissionResult.deniedForever;
+    }
+    return LocationPermissionResult.granted;
+  }
+
+  Future<LocationPermissionResult> ensurePermissionDetailed() async {
+    final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
       debugPrint('location_core: Location Services aus');
-      return false;
+      return LocationPermissionResult.servicesDisabled;
     }
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied) {
       perm = await Geolocator.requestPermission();
     }
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
-      debugPrint('location_core: keine Permission');
-      return false;
+    if (perm == LocationPermission.deniedForever) {
+      return LocationPermissionResult.deniedForever;
     }
-    return true;
+    if (perm == LocationPermission.denied) {
+      return LocationPermissionResult.denied;
+    }
+    return LocationPermissionResult.granted;
   }
+
+  Future<bool> ensurePermission() async {
+    final r = await ensurePermissionDetailed();
+    return r == LocationPermissionResult.granted;
+  }
+
+  Future<void> openLocationSettings() => Geolocator.openLocationSettings();
+  Future<void> openAppSettings() => Geolocator.openAppSettings();
 
   Future<void> startRideTracking() async {
     await stopRideTracking();
     _distanceM = 0;
     _last = null;
+    _fixCount = 0;
     final ok = await ensurePermission();
     if (!ok) return;
 
+    var nativeOk = false;
     try {
       await _methods.invokeMethod<void>('start');
       _native = true;
+      nativeOk = true;
       _nativeSub = _events.receiveBroadcastStream().listen((raw) {
         if (raw is! Map) return;
         final fix = LocationFix(
@@ -83,7 +117,6 @@ class LocationCoreChannel {
         _onFix(fix);
       });
       debugPrint('location_core: native Foreground Service aktiv');
-      return;
     } on MissingPluginException {
       debugPrint('location_core: Plugin fehlt — Geolocator-Fallback');
       _native = false;
@@ -92,9 +125,10 @@ class LocationCoreChannel {
       _native = false;
     }
 
+    // Immer Geolocator parallel (Emulator: Native oft nur 1 Fix).
     const settings = LocationSettings(
-      accuracy: LocationAccuracy.best,
-      distanceFilter: 3,
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 0,
     );
     _geoSub = Geolocator.getPositionStream(locationSettings: settings).listen(
       (pos) {
@@ -109,19 +143,26 @@ class LocationCoreChannel {
           ),
         );
       },
+      onError: (e) => debugPrint('location_core: geolocator stream $e'),
     );
+    if (!nativeOk) {
+      debugPrint('location_core: nur Geolocator');
+    }
   }
 
   void _onFix(LocationFix fix) {
     if (_last != null) {
-      _distanceM += Geolocator.distanceBetween(
+      final d = Geolocator.distanceBetween(
         _last!.lat,
         _last!.lng,
         fix.lat,
         fix.lng,
       );
+      // Ignoriere Micro-Jitter < 1 m
+      if (d >= 1) _distanceM += d;
     }
     _last = fix;
+    _fixCount += 1;
     if (!_controller.isClosed) _controller.add(fix);
   }
 
@@ -138,8 +179,8 @@ class LocationCoreChannel {
     }
   }
 
-  Future<void> dispose() async {
-    await stopRideTracking();
-    await _controller.close();
+  void dispose() {
+    unawaited(stopRideTracking());
+    _controller.close();
   }
 }

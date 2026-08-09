@@ -282,9 +282,14 @@ export function AddBikeWizard({
               value={importNote}
               onChange={(e) => setImportNote(e.target.value)}
               rows={3}
-              placeholder="z. B. tour-alps-2026.gpx"
+              placeholder="z. B. Notiz zum Platzhalter-Bike"
               className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
             />
+            <span className="mt-1 block text-xs text-text-secondary">
+              GPX/FIT-Routen importierst du unter Discover (gespeicherte Route).
+              Hier entsteht nur ein Bike-Platzhalter ohne Komponenten — kein
+              Track-Import.
+            </span>
           </label>
         )}
 

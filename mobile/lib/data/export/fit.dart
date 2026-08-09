@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import '../../domain/ride.dart';
@@ -9,9 +8,8 @@ Uint8List rideToFit(RideRecord ride) {
   final fitEpoch = DateTime.utc(1989, 12, 31).millisecondsSinceEpoch;
   final startFit = ((startMs - fitEpoch) / 1000).floor();
 
-  final pts = ride.track.isNotEmpty
-      ? ride.track
-      : _synthesize(ride);
+  // Empty track → session only (no fake GPS path).
+  final pts = ride.track;
 
   final records = _FitBuf();
   _writeDefinition(records, 0, 0, const [
@@ -68,7 +66,7 @@ Uint8List rideToFit(RideRecord ride) {
     (22, 2, 132),
   ]);
   records.u8(2);
-  records.u32(startFit + math.max(1, ride.movingTimeSec));
+  records.u32(startFit + (ride.movingTimeSec < 1 ? 1 : ride.movingTimeSec));
   records.u8(2);
   records.u32((ride.movingTimeSec * 1000).round());
   records.u32((ride.distanceKm * 1000 * 100).round());
@@ -162,17 +160,4 @@ class _FitBuf {
   void i32(int n) => u32(n);
 
   Uint8List bytes() => Uint8List.fromList(parts);
-}
-
-List<Map<String, dynamic>> _synthesize(RideRecord ride) {
-  final n = (ride.movingTimeSec / 30).round().clamp(10, 100);
-  return [
-    for (var i = 0; i < n; i++)
-      {
-        'lat': 47.45 + math.sin(i / 8) * 0.01,
-        'lng': 12.15 + i * 0.0002,
-        'elev': 800 + (ride.elevationM * i) / n,
-        'time': i * 30,
-      },
-  ];
 }

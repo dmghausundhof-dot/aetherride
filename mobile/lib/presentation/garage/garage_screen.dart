@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,12 +9,17 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/garage/bike_photo_sync.dart';
+import '../../data/import/gpx_import.dart';
 import '../../data/local/app_database.dart';
 import '../../domain/bike.dart';
+import '../../domain/catalog_bike.dart';
 import '../../domain/compatibility/engine.dart';
 import '../../domain/compatibility/rules.dart';
 import '../../domain/component.dart';
 import '../../domain/maintenance/intervals.dart';
+import '../../domain/saved_route.dart';
+import '../../domain/setup.dart';
 import '../../domain/setup/fingerprint.dart';
 import '../../domain/setup/sag_guide.dart';
 import '../../providers/app_providers.dart';
@@ -39,16 +45,37 @@ class GarageScreen extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Garage ist leer'),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => _openAddBike(context, ref),
-                    child: const Text('Erstes Bike anlegen'),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomPaint(
+                      size: const Size(120, 72),
+                      painter: _EmptyBikeSilhouettePainter(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Deine Garage',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Lege dein erstes Bike an — Katalog, Basisdaten oder GPX-Import.\n'
+                      'Kein Demo-Bike wird automatisch erzeugt.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.muted, height: 1.35),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => _openAddBike(context, ref),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Erstes Bike anlegen'),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -217,53 +244,334 @@ class _AddBikeSheet extends ConsumerStatefulWidget {
   ConsumerState<_AddBikeSheet> createState() => _AddBikeSheetState();
 }
 
+enum _AddBikeMode { catalog, basic, importMode }
+
 class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
   final _name = TextEditingController();
   final _brand = TextEditingController();
   final _model = TextEditingController();
+  final _importNote = TextEditingController();
   BikeCategory _category = BikeCategory.mtbAm;
   WheelSize _wheel = WheelSize.w29;
   bool _busy = false;
+  _AddBikeMode _mode = _AddBikeMode.catalog;
+
+  List<CatalogManufacturer> _manufacturers = const [];
+  String? _mfrId;
+  String? _bikeId;
+  String _frameSize = 'L';
+  String? _catalogError;
+  bool _catalogLoading = true;
+  GpxTrack? _pickedGpx;
+  String? _gpxFileLabel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCatalog();
+  }
 
   @override
   void dispose() {
     _name.dispose();
     _brand.dispose();
     _model.dispose();
+    _importNote.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCatalog() async {
+    setState(() {
+      _catalogLoading = true;
+      _catalogError = null;
+    });
+    try {
+      final list = await ref.read(catalogClientProvider).fetchBikes();
+      if (!mounted) return;
+      setState(() {
+        _manufacturers = list;
+        _mfrId = list.isNotEmpty ? list.first.id : null;
+        final bikes = list.isNotEmpty ? list.first.bikes : const <CatalogBikeVariant>[];
+        _bikeId = bikes.isNotEmpty ? bikes.first.id : null;
+        _frameSize = bikes.isNotEmpty && bikes.first.frameSizeOptions.isNotEmpty
+            ? bikes.first.frameSizeOptions.first
+            : 'L';
+        _catalogLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _catalogLoading = false;
+        _catalogError = 'Katalog nicht erreichbar — Basis/Import nutzen.';
+        if (_mode == _AddBikeMode.catalog) _mode = _AddBikeMode.basic;
+      });
+    }
+  }
+
+  CatalogManufacturer? get _mfr {
+    final id = _mfrId;
+    if (id == null) return null;
+    for (final m in _manufacturers) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
+  CatalogBikeVariant? get _catBike {
+    final m = _mfr;
+    final id = _bikeId;
+    if (m == null || id == null) return null;
+    for (final b in m.bikes) {
+      if (b.id == id) return b;
+    }
+    return null;
+  }
+
+  Map<String, dynamic> _attrsFromPayload(String? payloadJson) {
+    if (payloadJson == null || payloadJson.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(payloadJson);
+      if (decoded is! Map) return {};
+      final m = Map<String, dynamic>.from(decoded);
+      final attrs = m['attributes'];
+      if (attrs is Map) return Map<String, dynamic>.from(attrs);
+      if (attrs is List) {
+        final out = <String, dynamic>{};
+        for (final e in attrs) {
+          if (e is! Map) continue;
+          final key = e['key'] as String?;
+          if (key == null) continue;
+          final val =
+              e['valueNum'] ?? e['valueEnum'] ?? e['value'] ?? e['valueStr'];
+          if (val != null) out[key] = val;
+        }
+        return out;
+      }
+    } catch (_) {}
+    return {};
+  }
+
+  Future<void> _pickGpx() async {
+    final f = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const ['gpx', 'xml'],
+    );
+    if (f == null) return;
+    String? xml;
+    try {
+      if (f.path != null) {
+        xml = await File(f.path!).readAsString();
+      } else {
+        final bytes = await f.readAsBytes();
+        xml = String.fromCharCodes(bytes);
+      }
+    } catch (_) {}
+    if (xml == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Datei konnte nicht gelesen werden')),
+        );
+      }
+      return;
+    }
+    final parsed = parseGpx(
+      xml,
+      fallbackName:
+          f.name.replaceAll(RegExp(r'\.gpx$', caseSensitive: false), ''),
+    );
+    if (parsed == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kein gültiger GPX-Track (min. 2 Punkte)')),
+        );
+      }
+      return;
+    }
+    setState(() {
+      _pickedGpx = parsed;
+      _gpxFileLabel = f.name;
+      if (_name.text.trim().isEmpty) _name.text = parsed.name;
+    });
   }
 
   Future<void> _save() async {
     setState(() => _busy = true);
     try {
-      final existing = await ref.read(garageRepositoryProvider).listBikes();
-      await ref.read(garageRepositoryProvider).addBikeBasic(
-            name: _name.text,
+      final garage = ref.read(garageRepositoryProvider);
+      final existing = await garage.listBikes();
+      final tier = ref.read(subscriptionTierProvider);
+      final Bike bike;
+      var oemInstalled = 0;
+      var oemMissed = 0;
+
+      if (_mode == _AddBikeMode.catalog) {
+        final mfr = _mfr;
+        final cat = _catBike;
+        if (mfr == null || cat == null) {
+          throw StateError('Bitte Hersteller und Modell wählen');
+        }
+        bike = await garage.addBikeBasic(
+          name: _name.text.trim().isEmpty
+              ? '${mfr.name} ${cat.name}'
+              : _name.text.trim(),
+          category: cat.isEbike && cat.category != BikeCategory.emtb
+              ? BikeCategory.emtb
+              : cat.category,
+          brand: mfr.name,
+          model: cat.name,
+          year: cat.year > 0 ? cat.year : null,
+          wheelSize: cat.wheelSizeFront,
+          catalogBikeId: cat.id,
+          frameSize: _frameSize,
+          travelFrontMm: cat.travelFrontMm,
+          travelRearMm: cat.travelRearMm,
+          makeActive: true,
+        );
+
+        final catalog = ref.read(catalogClientProvider);
+        final components = ref.read(componentRepositoryProvider);
+        for (final e in cat.oemComponents.entries) {
+          final slot = ComponentSlotLabel.fromApiId(e.key);
+          if (slot == null || slot == ComponentSlot.other) {
+            oemMissed += 1;
+            continue;
+          }
+          final model = await catalog.getModel(e.value);
+          if (model == null) oemMissed += 1;
+          final attrs = _attrsFromPayload(model?.payloadJson);
+          await components.install(
+            bikeId: bike.id,
+            slot: slot,
+            manufacturer: model?.manufacturer,
+            model: model?.model ?? e.value,
+            catalogModelId: e.value,
+            attributes: attrs,
+          );
+          oemInstalled += 1;
+        }
+
+        await ref.read(setupRepositoryProvider).createVersion(
+              bikeId: bike.id,
+              label: 'OEM Basis-Setup',
+              values: BikeSetup.defaultValues(),
+              createdBy: 'catalog',
+            );
+      } else if (_mode == _AddBikeMode.basic) {
+        bike = await garage.addBikeBasic(
+          name: _name.text,
+          category: _category,
+          brand: _brand.text,
+          model: _model.text,
+          wheelSize: _wheel,
+          makeActive: true,
+        );
+      } else {
+        final gpx = _pickedGpx;
+        if (gpx != null) {
+          bike = await garage.addBikeBasic(
+            name: _name.text.trim().isEmpty ? gpx.name : _name.text.trim(),
             category: _category,
-            brand: _brand.text,
-            model: _model.text,
-            wheelSize: _wheel,
             makeActive: true,
           );
+          await ref.read(routeRepositoryProvider).saveEntry(
+                SavedRouteEntry(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  name: gpx.name,
+                  distanceKm: gpx.distanceKm,
+                  elevationM: gpx.elevationM,
+                  durationMin: gpx.durationMinEstimate,
+                  source: 'gpx_import',
+                  coordinates: gpx.points,
+                  waypoints: const [],
+                  savedAt: DateTime.now().toUtc(),
+                ),
+              );
+          await garage.profileStore?.addMaintenanceLog(
+            bikeId: bike.id,
+            activity: 'gpx_import',
+            notes: _importNote.text.trim().isEmpty
+                ? 'GPX „${gpx.name}“ · ${gpx.distanceKm.toStringAsFixed(1)} km'
+                : _importNote.text.trim(),
+          );
+          ref.invalidate(savedRoutesProvider);
+        } else {
+          bike = await garage.addBikeFromImport(
+            name: _name.text.trim().isEmpty ? 'Import-Bike' : _name.text.trim(),
+            note: _importNote.text.trim().isEmpty
+                ? 'Import ohne GPX — Komponenten später ergänzen'
+                : _importNote.text.trim(),
+          );
+        }
+      }
+
       if (!mounted) return;
-      if (existing.isNotEmpty) {
+      if (existing.isNotEmpty && tier != 'pro') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Hinweis: Free = 1 Bike empfohlen — weiteres Bike lokal angelegt.',
+              'Free: weiteres Bike lokal angelegt (Multi-Bike ist Pro).',
+            ),
+          ),
+        );
+      } else if (_mode == _AddBikeMode.catalog) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              oemMissed == 0
+                  ? '${bike.name}: $oemInstalled OEM-Komponenten.'
+                  : '${bike.name}: $oemInstalled OEM, $oemMissed Slots/Modelle übersprungen.',
+            ),
+          ),
+        );
+      } else if (_mode == _AddBikeMode.importMode && _pickedGpx != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${bike.name}: GPX gespeichert (${_pickedGpx!.distanceKm.toStringAsFixed(1)} km).',
             ),
           ),
         );
       }
       Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Anlegen fehlgeschlagen: $e')),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  Widget _modeChip(_AddBikeMode mode, String label) {
+    final selected = _mode == mode;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _mode = mode),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.accent : AppColors.sunSurface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final cat = _catBike;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottom),
       child: SingleChildScrollView(
@@ -278,53 +586,220 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
                   ),
             ),
             const SizedBox(height: 12),
+            Row(
+              children: [
+                _modeChip(_AddBikeMode.catalog, 'Katalog'),
+                const SizedBox(width: 8),
+                _modeChip(_AddBikeMode.basic, 'Basis'),
+                const SizedBox(width: 8),
+                _modeChip(_AddBikeMode.importMode, 'Import'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              switch (_mode) {
+                _AddBikeMode.catalog =>
+                  'OEM-Ausstattung wird vollständig vorbefüllt.',
+                _AddBikeMode.basic =>
+                  'Kategorie + Laufrad — Komponenten später ergänzen.',
+                _AddBikeMode.importMode =>
+                  'GPX wählen → Bike + gespeicherte Route. Ohne Datei nur Notiz-Platzhalter.',
+              },
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (_catalogError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _catalogError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 12),
             TextField(
               controller: _name,
               decoration: const InputDecoration(
                 labelText: 'Name',
-                hintText: 'z. B. Trail Machine',
+                hintText: 'Optional',
               ),
               textInputAction: TextInputAction.next,
             ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<BikeCategory>(
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Kategorie'),
-              items: [
-                for (final c in BikeCategory.values)
-                  DropdownMenuItem(
-                    value: c,
-                    child: Text(Bike(id: '', name: '', category: c).categoryLabel),
+            if (_mode == _AddBikeMode.catalog) ...[
+              const SizedBox(height: 8),
+              if (_catalogLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_manufacturers.isEmpty)
+                const Text('Kein OEM-Katalog geladen.')
+              else ...[
+                DropdownButtonFormField<String>(
+                  key: ValueKey('mfr-$_mfrId'),
+                  initialValue: _mfrId,
+                  decoration: const InputDecoration(labelText: 'Hersteller'),
+                  items: [
+                    for (final m in _manufacturers)
+                      DropdownMenuItem(value: m.id, child: Text(m.name)),
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    final m = _manufacturers.firstWhere((x) => x.id == v);
+                    setState(() {
+                      _mfrId = v;
+                      _bikeId =
+                          m.bikes.isNotEmpty ? m.bikes.first.id : null;
+                      _frameSize = m.bikes.isNotEmpty &&
+                              m.bikes.first.frameSizeOptions.isNotEmpty
+                          ? m.bikes.first.frameSizeOptions.first
+                          : 'L';
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  key: ValueKey('bike-$_bikeId'),
+                  initialValue: _bikeId,
+                  decoration: const InputDecoration(labelText: 'Modell / Jahr'),
+                  items: [
+                    for (final b in _mfr?.bikes ?? const <CatalogBikeVariant>[])
+                      DropdownMenuItem(
+                        value: b.id,
+                        child: Text(
+                          '${b.name} (${b.year}) · ${Bike(id: '', name: '', category: b.category).categoryLabel}',
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    final b = _mfr?.bikes.firstWhere((x) => x.id == v);
+                    setState(() {
+                      _bikeId = v;
+                      _frameSize = b != null && b.frameSizeOptions.isNotEmpty
+                          ? b.frameSizeOptions.first
+                          : 'L';
+                    });
+                  },
+                ),
+                if ((cat?.frameSizeOptions ?? const []).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey('size-$_frameSize-$_bikeId'),
+                    initialValue: cat!.frameSizeOptions.contains(_frameSize)
+                        ? _frameSize
+                        : cat.frameSizeOptions.first,
+                    decoration:
+                        const InputDecoration(labelText: 'Rahmengröße'),
+                    items: [
+                      for (final s in cat.frameSizeOptions)
+                        DropdownMenuItem(value: s, child: Text(s)),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) setState(() => _frameSize = v);
+                    },
                   ),
+                ],
+                if (cat != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.sunSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      [
+                        if (cat.travelFrontMm != null)
+                          '${cat.travelFrontMm}/${cat.travelRearMm} mm',
+                        switch (cat.wheelSizeFront) {
+                          WheelSize.w29 => '29"',
+                          WheelSize.w275 => '27.5"',
+                          WheelSize.c700 => '700c',
+                          WheelSize.b650 => '650b',
+                        },
+                        if (cat.isEbike) 'E-Bike',
+                        '${cat.oemComponents.length} OEM-Komponenten',
+                      ].join(' · '),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
               ],
-              onChanged: (v) {
-                if (v != null) setState(() => _category = v);
-              },
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<WheelSize>(
-              initialValue: _wheel,
-              decoration: const InputDecoration(labelText: 'Laufradgröße'),
-              items: const [
-                DropdownMenuItem(value: WheelSize.w29, child: Text('29"')),
-                DropdownMenuItem(value: WheelSize.w275, child: Text('27.5"')),
-                DropdownMenuItem(value: WheelSize.c700, child: Text('700c')),
-                DropdownMenuItem(value: WheelSize.b650, child: Text('650b')),
+            ],
+            if (_mode == _AddBikeMode.basic) ...[
+              const SizedBox(height: 8),
+              DropdownButtonFormField<BikeCategory>(
+                initialValue: _category,
+                decoration: const InputDecoration(labelText: 'Kategorie'),
+                items: [
+                  for (final c in BikeCategory.values)
+                    DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        Bike(id: '', name: '', category: c).categoryLabel,
+                      ),
+                    ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _category = v);
+                },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<WheelSize>(
+                initialValue: _wheel,
+                decoration: const InputDecoration(labelText: 'Laufradgröße'),
+                items: const [
+                  DropdownMenuItem(value: WheelSize.w29, child: Text('29"')),
+                  DropdownMenuItem(value: WheelSize.w275, child: Text('27.5"')),
+                  DropdownMenuItem(value: WheelSize.c700, child: Text('700c')),
+                  DropdownMenuItem(value: WheelSize.b650, child: Text('650b')),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _wheel = v);
+                },
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _brand,
+                decoration:
+                    const InputDecoration(labelText: 'Marke (optional)'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _model,
+                decoration:
+                    const InputDecoration(labelText: 'Modell (optional)'),
+              ),
+            ],
+            if (_mode == _AddBikeMode.importMode) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _pickGpx,
+                icon: const Icon(Icons.upload_file),
+                label: Text(
+                  _gpxFileLabel == null
+                      ? 'GPX-Datei wählen'
+                      : 'GPX: $_gpxFileLabel',
+                ),
+              ),
+              if (_pickedGpx != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '${_pickedGpx!.distanceKm.toStringAsFixed(1)} km · '
+                  '${_pickedGpx!.elevationM.round()} hm · '
+                  '${_pickedGpx!.points.length} Punkte',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
-              onChanged: (v) {
-                if (v != null) setState(() => _wheel = v);
-              },
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _brand,
-              decoration: const InputDecoration(labelText: 'Marke (optional)'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _model,
-              decoration: const InputDecoration(labelText: 'Modell (optional)'),
-            ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _importNote,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Notiz (optional)',
+                  hintText: 'z. B. Quelle oder fehlende Komponenten',
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
@@ -824,7 +1299,7 @@ class _InstallComponentSheetState
       final raw = _attrVal.text.trim();
       attrs[_attrKey.text.trim()] = num.tryParse(raw) ?? raw;
     }
-    // Sensible demo presets for common slots
+    // Default-Attribute für Kompat-Checks (Platzhalter, nicht Katalog-Wahrheit)
     if (_slot == ComponentSlot.frame && !attrs.containsKey('rear_spacing')) {
       attrs['rear_spacing'] = '148x12';
       attrs['max_tire_width_mm'] = 2.6;
@@ -893,8 +1368,9 @@ class _InstallComponentSheetState
             TextField(
               controller: _catalogQ,
               decoration: InputDecoration(
-                labelText: 'Katalog suchen',
-                hintText: 'Hersteller / Modell',
+                labelText: 'Teile suchen (API/Cache)',
+                hintText: 'Hersteller / Modell — optional',
+                helperText: 'Ohne Treffer: Basisdaten manuell',
                 suffixIcon: IconButton(
                   icon: _searching
                       ? const SizedBox(
@@ -911,7 +1387,7 @@ class _InstallComponentSheetState
             if (_hits.isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(
-                'Katalogtreffer',
+                'Treffer',
                 style: Theme.of(context).textTheme.labelLarge,
               ),
               SizedBox(
@@ -941,7 +1417,7 @@ class _InstallComponentSheetState
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
-                  'Keine Katalogtreffer — manuell ausfüllen oder offline-Cache leer.',
+                  'Keine Treffer — manuell ausfüllen (Basis). Cache kann leer sein.',
                   style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
@@ -949,7 +1425,7 @@ class _InstallComponentSheetState
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
-                  'Katalog-ID: $_catalogModelId',
+                  'Cache-ID: $_catalogModelId',
                   style: const TextStyle(fontSize: 12, color: AppColors.accent),
                 ),
               ),
@@ -1021,9 +1497,7 @@ class _BikePhotoAndSag extends ConsumerWidget {
                 width: 72,
                 height: 72,
                 color: AppColors.forest.withValues(alpha: 0.12),
-                child: photo != null && File(photo).existsSync()
-                    ? Image.file(File(photo), fit: BoxFit.cover)
-                    : const Icon(Icons.pedal_bike, size: 36),
+                child: _bikePhotoWidget(photo),
               ),
             ),
             const SizedBox(width: 12),
@@ -1057,6 +1531,13 @@ class _BikePhotoAndSag extends ConsumerWidget {
                       await dest.parent.create(recursive: true);
                       await File(x.path).copy(dest.path);
                       await store.setBikePhoto(bike.id, dest.path);
+                      final url = await uploadBikePhotoToStorage(
+                        bikeId: bike.id,
+                        file: dest,
+                      );
+                      if (url != null) {
+                        await store.setBikePhoto(bike.id, url);
+                      }
                       // Rebuild this ConsumerWidget subtree via invalidate.
                       ref.invalidate(currentSetupProvider(bike.id));
                     },
@@ -1234,5 +1715,55 @@ class _BikePhotoAndSag extends ConsumerWidget {
       ],
     );
   }
+
+  Widget _bikePhotoWidget(String? photo) {
+    if (photo == null) {
+      return const Icon(Icons.pedal_bike, size: 36);
+    }
+    if (isRemotePhotoRef(photo)) {
+      return Image.network(
+        photo,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const Icon(Icons.pedal_bike, size: 36),
+      );
+    }
+    if (File(photo).existsSync()) {
+      return Image.file(File(photo), fit: BoxFit.cover);
+    }
+    return const Icon(Icons.pedal_bike, size: 36);
+  }
+}
+
+class _EmptyBikeSilhouettePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = AppColors.trail.withValues(alpha: 0.55)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final w = size.width;
+    final h = size.height;
+    // Simple MTB silhouette: wheels + frame + bars
+    canvas.drawCircle(Offset(w * 0.22, h * 0.72), h * 0.22, stroke);
+    canvas.drawCircle(Offset(w * 0.78, h * 0.72), h * 0.22, stroke);
+    final frame = Path()
+      ..moveTo(w * 0.22, h * 0.72)
+      ..lineTo(w * 0.42, h * 0.38)
+      ..lineTo(w * 0.68, h * 0.38)
+      ..lineTo(w * 0.78, h * 0.72)
+      ..moveTo(w * 0.42, h * 0.38)
+      ..lineTo(w * 0.5, h * 0.72)
+      ..moveTo(w * 0.68, h * 0.38)
+      ..lineTo(w * 0.5, h * 0.72)
+      ..moveTo(w * 0.42, h * 0.38)
+      ..lineTo(w * 0.36, h * 0.22)
+      ..lineTo(w * 0.28, h * 0.22);
+    canvas.drawPath(frame, stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 

@@ -39,9 +39,10 @@ const consentLabels = <ConsentPurpose, ConsentLabel>{
         'Sensor-Rohdaten nur bei WLAN und Opt-in (Spec F-SEN-006). Widerruf jederzeit.',
   ),
   ConsentPurpose.heatmapContribution: ConsentLabel(
-    title: 'Heatmap-Beitrag',
+    title: 'Heatmap (eigene + Community k≥5)',
     description:
-        'Anonymisierte Segmente nach Privacy-Trim und k≥5 (F-NAV-005). Kein Zeitstempel.',
+        'Lokal: eigene Rides. Mit Login: anonymisierte Zellen ohne Zeitstempel; '
+        'Community-Overlay erst ab ≥5 Fahrern pro Zelle. Kein Fake-Overlay ohne Backend.',
   ),
   ConsentPurpose.productRecommendations: ConsentLabel(
     title: 'Produktempfehlungen',
@@ -55,7 +56,8 @@ const consentLabels = <ConsentPurpose, ConsentLabel>{
   ConsentPurpose.healthData: ConsentLabel(
     title: 'Gesundheitsdaten (Art. 9)',
     description:
-        'Herzfrequenz / Health Connect — nur mit ausdrücklicher Einwilligung.',
+        'Vorbereitung — keine Health-Connect-Anbindung in dieser Version. '
+        'Einwilligung speichert nur die Präferenz für spätere Integration.',
   ),
 };
 

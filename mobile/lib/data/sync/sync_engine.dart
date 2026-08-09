@@ -7,10 +7,14 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
+import '../garage/bike_photo_sync.dart';
 import '../local/app_database.dart';
 import '../local/garage_repository.dart';
 import '../local/ride_chunk_repository.dart';
 import 'sync_payload.dart';
+
+/// Auth-Zustand der Sync-Engine (für UI-Banner).
+enum SyncAuthStatus { unknown, ok, noAuth, unauthorized }
 
 /// Sync-Engine: UI bleibt offline; Netz nur hier.
 class SyncEngine {
@@ -20,21 +24,31 @@ class SyncEngine {
     RideChunkRepository? rideChunks,
     http.Client? httpClient,
     void Function(SyncPayload merged)? onSynced,
+    void Function(SyncAuthStatus status)? onAuthStatus,
   })  : _db = db,
         _garage = garage,
         _rideChunks = rideChunks,
         _http = httpClient ?? http.Client(),
-        _onSynced = onSynced;
+        _onSynced = onSynced,
+        _onAuthStatus = onAuthStatus;
 
   final AppDatabase _db;
   final GarageRepository _garage;
   final RideChunkRepository? _rideChunks;
   final http.Client _http;
   final void Function(SyncPayload merged)? _onSynced;
+  final void Function(SyncAuthStatus status)? _onAuthStatus;
   bool _running = false;
   Timer? _periodic;
+  SyncAuthStatus _authStatus = SyncAuthStatus.unknown;
 
   bool get isRunning => _running;
+  SyncAuthStatus get authStatus => _authStatus;
+
+  void _setAuth(SyncAuthStatus s) {
+    _authStatus = s;
+    _onAuthStatus?.call(s);
+  }
 
   Future<void> start() async {
     if (_running) return;
@@ -63,22 +77,41 @@ class SyncEngine {
     _running = false;
   }
 
-  Future<String?> _accessToken() async {
+  Future<String?> _accessToken({bool forceRefresh = false}) async {
     if (!AppConfig.isSupabaseConfigured) return null;
     try {
-      return Supabase.instance.client.auth.currentSession?.accessToken;
+      final auth = Supabase.instance.client.auth;
+      if (forceRefresh) {
+        try {
+          await auth.refreshSession();
+        } catch (e) {
+          debugPrint('SyncEngine refreshSession: $e');
+        }
+      }
+      return auth.currentSession?.accessToken;
     } catch (_) {
       return null;
     }
   }
 
+  /// Bei 401 einmal Session refreshen und Token neu holen.
+  Future<String?> _tokenAfterUnauthorized() async {
+    final refreshed = await _accessToken(forceRefresh: true);
+    if (refreshed == null) {
+      _setAuth(SyncAuthStatus.unauthorized);
+      debugPrint('SyncEngine: Status=unauthorized (Refresh fehlgeschlagen)');
+    }
+    return refreshed;
+  }
+
   Future<({SyncPayload? payload, String? updatedAt})> pullNow() async {
-    final token = await _accessToken();
+    var token = await _accessToken();
     if (token == null) {
-      debugPrint('SyncEngine: pull übersprungen (kein Auth)');
+      _setAuth(SyncAuthStatus.noAuth);
+      debugPrint('SyncEngine: Status=noAuth — Sync nur mit Login');
       return (payload: null, updatedAt: null);
     }
-    final res = await _http.get(
+    var res = await _http.get(
       Uri.parse('${AppConfig.apiBaseUrl}/api/sync'),
       headers: {
         'Authorization': 'Bearer $token',
@@ -86,11 +119,27 @@ class SyncEngine {
       },
     );
     if (res.statusCode == 401) {
-      return (payload: null, updatedAt: null);
+      token = await _tokenAfterUnauthorized();
+      if (token == null) {
+        return (payload: null, updatedAt: null);
+      }
+      res = await _http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/sync'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+      if (res.statusCode == 401) {
+        _setAuth(SyncAuthStatus.unauthorized);
+        debugPrint('SyncEngine: Status=unauthorized (401 nach Refresh)');
+        return (payload: null, updatedAt: null);
+      }
     }
     if (res.statusCode != 200) {
       throw Exception('Sync pull failed: ${res.statusCode}');
     }
+    _setAuth(SyncAuthStatus.ok);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     final raw = data['payload'];
     final updatedAt = data['updatedAt'] as String?;
@@ -102,20 +151,33 @@ class SyncEngine {
   }
 
   Future<String> pushNow(SyncPayload payload, {String? clientUpdatedAt}) async {
-    final token = await _accessToken();
-    if (token == null) throw Exception('unauthorized');
-    final res = await _http.post(
-      Uri.parse('${AppConfig.apiBaseUrl}/api/sync'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({
-        'payload': payload.toJson(),
-        'clientUpdatedAt': clientUpdatedAt ?? payload.updatedAt,
-      }),
-    );
+    var token = await _accessToken();
+    if (token == null) {
+      _setAuth(SyncAuthStatus.noAuth);
+      throw Exception('unauthorized');
+    }
+    Future<http.Response> post(String t) => _http.post(
+          Uri.parse('${AppConfig.apiBaseUrl}/api/sync'),
+          headers: {
+            'Authorization': 'Bearer $t',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({
+            'payload': payload.toJson(),
+            'clientUpdatedAt': clientUpdatedAt ?? payload.updatedAt,
+          }),
+        );
+    var res = await post(token);
+    if (res.statusCode == 401) {
+      token = await _tokenAfterUnauthorized();
+      if (token == null) throw Exception('unauthorized');
+      res = await post(token);
+      if (res.statusCode == 401) {
+        _setAuth(SyncAuthStatus.unauthorized);
+        throw Exception('unauthorized');
+      }
+    }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 409) {
       final err = SyncConflictException(
@@ -131,11 +193,13 @@ class SyncEngine {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception(data['error'] ?? 'Sync push failed: ${res.statusCode}');
     }
+    _setAuth(SyncAuthStatus.ok);
     return data['updatedAt'] as String? ?? DateTime.now().toIso8601String();
   }
 
   /// LWW bidirectional — mirrors web `syncBidirectional`.
   Future<({SyncPayload merged, String direction})> syncNow() async {
+    await _flushBikePhotos();
     final local = await _garage.buildSyncPayload();
     final remote = await pullNow();
 
@@ -194,6 +258,18 @@ class SyncEngine {
     await _record('noop', remote.updatedAt ?? local.updatedAt);
     await _flushRideChunks();
     return (merged: local, direction: 'noop');
+  }
+
+  Future<void> _flushBikePhotos() async {
+    final store = _garage.profileStore;
+    if (store == null) return;
+    try {
+      await store.flushPendingBikePhotoUploads(
+        (bikeId, file) => uploadBikePhotoToStorage(bikeId: bikeId, file: file),
+      );
+    } catch (e) {
+      debugPrint('SyncEngine bike-photos: $e');
+    }
   }
 
   Future<void> _flushRideChunks() async {

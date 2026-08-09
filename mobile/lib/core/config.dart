@@ -1,5 +1,7 @@
 /// Compile-time / runtime config for mobile.
 /// Pass via `--dart-define=SUPABASE_URL=...` etc.
+import '../data/routing/offline_maps_prefs.dart';
+
 abstract final class AppConfig {
   static const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
@@ -50,15 +52,60 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
+  /// Off-Route → automatischer Rejoin (Cooldown). Default aus (manueller Button bleibt).
+  static const autoReroute = bool.fromEnvironment(
+    'AETHER_AUTO_REROUTE',
+    defaultValue: false,
+  );
+
+  /// Mindestabstand zwischen Auto-Reroutes (Sekunden).
+  static const autoRerouteCooldownSec = int.fromEnvironment(
+    'AETHER_AUTO_REROUTE_COOLDOWN_SEC',
+    defaultValue: 45,
+  );
+
+  /// OAuth Deep-Link zurück in die App (Android/iOS Intent + Supabase Redirect URLs).
+  static const oauthRedirectUrl = String.fromEnvironment(
+    'OAUTH_REDIRECT_URL',
+    defaultValue: 'io.aetherride.app://login-callback/',
+  );
+
   static bool get isSupabaseConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
-  /// MapLibre style URL: Stadia Outdoors if key set, else demo tiles.
+  /// Sync Style-URL: compile-time PMTiles-Style → Stadia → OpenFreeMap.
+  /// Kein demotiles als Produkt-Default.
   static String get mapStyleUrl {
+    final pm = pmtilesUrl.trim();
+    if (pm.isNotEmpty &&
+        (pm.endsWith('.json') ||
+            pm.contains('/styles/') ||
+            pm.contains('style.json'))) {
+      return pm;
+    }
     if (stadiaApiKey.isNotEmpty) {
       return 'https://tiles.stadiamaps.com/styles/outdoors.json'
           '?api_key=$stadiaApiKey';
     }
-    return 'https://demotiles.maplibre.org/style.json';
+    return 'https://tiles.openfreemap.org/styles/liberty';
   }
+
+  /// Runtime: Prefs-Override (Style-JSON-URL) vor compile-time Defaults.
+  static Future<String> resolveMapStyleUrl() async {
+    try {
+      final m = await OfflineMapsPrefs.read();
+      final override = (m['pmtilesUrl'] as String?)?.trim() ?? '';
+      if (override.isNotEmpty &&
+          (override.endsWith('.json') ||
+              override.contains('/styles/') ||
+              override.contains('style.json'))) {
+        return override;
+      }
+    } catch (_) {}
+    return mapStyleUrl;
+  }
+
+  static bool get usingFreeBasemap =>
+      stadiaApiKey.isEmpty &&
+      pmtilesUrl.trim().isEmpty;
 }

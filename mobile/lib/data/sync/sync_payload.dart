@@ -14,8 +14,10 @@ class SyncPayload {
     this.rangeCalibration,
     this.maintenanceLogs,
     this.wishlistIds,
+    this.bikePhotos,
     this.activeBikeId,
     this.savedRoutes,
+    this.routeCollections,
     this.freeTierExtraBike,
     this.updatedAt,
     this.payloadVersion = 1,
@@ -34,8 +36,10 @@ class SyncPayload {
   final dynamic rangeCalibration;
   final dynamic maintenanceLogs;
   final dynamic wishlistIds;
+  final dynamic bikePhotos;
   final String? activeBikeId;
   final dynamic savedRoutes;
+  final dynamic routeCollections;
   final bool? freeTierExtraBike;
   final String? updatedAt;
   final int payloadVersion;
@@ -55,8 +59,10 @@ class SyncPayload {
       rangeCalibration: json['rangeCalibration'],
       maintenanceLogs: json['maintenanceLogs'],
       wishlistIds: json['wishlistIds'],
+      bikePhotos: json['bikePhotos'],
       activeBikeId: json['activeBikeId'] as String?,
       savedRoutes: json['savedRoutes'] ?? json['saved_routes'],
+      routeCollections: json['routeCollections'],
       freeTierExtraBike: json['freeTierExtraBike'] as bool?,
       updatedAt: json['updatedAt'] as String?,
       payloadVersion: (json['payloadVersion'] as num?)?.toInt() ?? 1,
@@ -78,8 +84,10 @@ class SyncPayload {
         if (rangeCalibration != null) 'rangeCalibration': rangeCalibration,
         if (maintenanceLogs != null) 'maintenanceLogs': maintenanceLogs,
         if (wishlistIds != null) 'wishlistIds': wishlistIds,
+        if (bikePhotos != null) 'bikePhotos': bikePhotos,
         if (activeBikeId != null) 'activeBikeId': activeBikeId,
         if (savedRoutes != null) 'savedRoutes': savedRoutes,
+        if (routeCollections != null) 'routeCollections': routeCollections,
         if (freeTierExtraBike != null) 'freeTierExtraBike': freeTierExtraBike,
         if (updatedAt != null) 'updatedAt': updatedAt,
         'payloadVersion': payloadVersion,
@@ -95,11 +103,13 @@ class SyncPayload {
     String? activeFamilyRiderId,
     dynamic riderProfile,
     dynamic savedRoutes,
+    dynamic routeCollections,
     String? subscriptionTier,
     dynamic commerceMode,
     dynamic rangeCalibration,
     dynamic maintenanceLogs,
     dynamic wishlistIds,
+    dynamic bikePhotos,
     bool? freeTierExtraBike,
     String? activeBikeId,
     String? updatedAt,
@@ -120,8 +130,10 @@ class SyncPayload {
       rangeCalibration: rangeCalibration ?? this.rangeCalibration,
       maintenanceLogs: maintenanceLogs ?? this.maintenanceLogs,
       wishlistIds: wishlistIds ?? this.wishlistIds,
+      bikePhotos: bikePhotos ?? this.bikePhotos,
       activeBikeId: activeBikeId ?? this.activeBikeId,
       savedRoutes: savedRoutes ?? this.savedRoutes,
+      routeCollections: routeCollections ?? this.routeCollections,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,
       updatedAt: updatedAt ?? this.updatedAt,
       payloadVersion: payloadVersion ?? this.payloadVersion,

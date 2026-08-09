@@ -40,8 +40,12 @@ assert.notEqual(nxt!.cue.instruction, "Ziel erreicht");
 assert.match(cueBannerText(nxt!.cue, nxt!.remainingM), /In /);
 
 const ar = activeRouteFromSuggestion(sample);
-assert.ok((ar.geometry?.coordinates.length ?? 0) > 10);
+assert.equal(ar.geometry, null);
 assert.equal(ar.source, "suggestion");
+
+const arLive = activeRouteFromSuggestion(sample, g);
+assert.ok((arLive.geometry?.coordinates.length ?? 0) > 10);
+assert.equal(arLive.source, "engine");
 
 const a = pointAlongLine(g, 0);
 const b = pointAlongLine(g, 0.5);

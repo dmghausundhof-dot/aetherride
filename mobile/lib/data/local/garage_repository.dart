@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/bike.dart';
@@ -9,6 +10,7 @@ import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/track_trim.dart';
 import '../../domain/rider_profile.dart';
 import '../../domain/setup.dart';
+import '../routing/route_collections.dart';
 import '../sync/sync_payload.dart';
 import 'app_database.dart';
 import 'setup_repository.dart';
@@ -55,6 +57,10 @@ class GarageRepository {
     String? model,
     int? year,
     WheelSize? wheelSize,
+    String? catalogBikeId,
+    String? frameSize,
+    int? travelFrontMm,
+    int? travelRearMm,
     bool makeActive = true,
   }) async {
     final existing = await listBikes();
@@ -70,10 +76,39 @@ class GarageRepository {
       model: model?.trim().isEmpty == true ? null : model?.trim(),
       year: year,
       wheelSize: wheelSize,
+      catalogBikeId: catalogBikeId,
+      frameSize: frameSize,
+      travelFrontMm: travelFrontMm,
+      travelRearMm: travelRearMm,
       isActive: makeActive || existing.isEmpty,
     );
     await upsert(bike);
     if (bike.isActive) await setActiveBike(id);
+    return bike;
+  }
+
+  /// GPX/FIT-Platzhalter ohne Komponenten (Web-Parity).
+  Future<Bike> addBikeFromImport({
+    required String name,
+    String? note,
+  }) async {
+    final bike = await addBikeBasic(
+      name: name.trim().isEmpty ? 'Import-Bike' : name.trim(),
+      category: BikeCategory.mtbAm,
+      makeActive: true,
+    );
+    final store = profileStore;
+    if (store != null) {
+      await store.load();
+      await store.addMaintenanceLog(
+        bikeId: bike.id,
+        activity: 'import_placeholder',
+        notes: note?.trim().isEmpty == true
+            ? 'GPX/FIT-Platzhalter ohne Komponenten'
+            : note?.trim(),
+      );
+      await touchLocalSync();
+    }
     return bike;
   }
 
@@ -87,6 +122,10 @@ class GarageRepository {
             model: Value(bike.model),
             year: Value(bike.year),
             wheelSize: Value(bike.wheelSize?.name),
+            catalogBikeId: Value(bike.catalogBikeId),
+            frameSize: Value(bike.frameSize),
+            travelFrontMm: Value(bike.travelFrontMm),
+            travelRearMm: Value(bike.travelRearMm),
             odometerKm: Value(bike.odometerKm),
             hours: Value(bike.hours),
             isActive: Value(bike.isActive),
@@ -150,7 +189,8 @@ class GarageRepository {
     );
   }
 
-  /// Optional QA-Seed — nicht im App-Start aufrufen (leere Garage ehrlich lassen).
+  /// QA-only — niemals aus Production-Startpfaden aufrufen.
+  @visibleForTesting
   Future<void> seedDemoIfEmpty() async {
     final count = await _db.select(_db.bikes).get();
     if (count.isNotEmpty) return;
@@ -200,6 +240,7 @@ class GarageRepository {
           ..where((t) => t.id.equals(1)))
         .getSingleOrNull();
     final active = bikes.where((b) => b.isActive).map((b) => b.id).firstOrNull;
+    final colFrag = await RouteCollectionsStore.syncPayload();
 
     return SyncPayload(
       bikes: bikes
@@ -212,6 +253,10 @@ class GarageRepository {
               'model': b.model,
               'year': b.year,
               'wheelSize': b.wheelSize,
+              'catalogBikeId': b.catalogBikeId,
+              'frameSize': b.frameSize,
+              'travelFrontMm': b.travelFrontMm,
+              'travelRearMm': b.travelRearMm,
               'odometerKm': b.odometerKm,
               'hours': b.hours,
               'isActive': b.isActive,
@@ -292,6 +337,7 @@ class GarageRepository {
             'savedAt': s.savedAt.toIso8601String(),
           },
       ],
+      routeCollections: colFrag[RouteCollectionsStore.syncField],
       subscriptionTier: subscriptionTier,
       freeTierExtraBike: freeTierExtraBike ? true : null,
       activeBikeId: active,
@@ -306,6 +352,9 @@ class GarageRepository {
           ? null
           : profileStore!.maintenanceLogs,
       wishlistIds: profileStore == null ? null : profileStore!.wishlistIds,
+      bikePhotos: profileStore == null
+          ? null
+          : profileStore!.syncableBikePhotos(),
       updatedAt: state?.localUpdatedAt,
       payloadVersion: state?.payloadVersion ?? 1,
     );
@@ -468,6 +517,12 @@ class GarageRepository {
             if (e is String) e,
         ];
       }
+      if (payload.bikePhotos is Map) {
+        await store.mergeRemoteBikePhotos({
+          for (final e in (payload.bikePhotos as Map).entries)
+            e.key.toString(): e.value.toString(),
+        });
+      }
       await store.save();
     }
     final setupRepo = SetupRepository(_db);
@@ -487,6 +542,10 @@ class GarageRepository {
                   model: Value(m['model'] as String?),
                   year: Value((m['year'] as num?)?.toInt()),
                   wheelSize: Value(m['wheelSize'] as String?),
+                  catalogBikeId: Value(m['catalogBikeId'] as String?),
+                  frameSize: Value(m['frameSize'] as String?),
+                  travelFrontMm: Value((m['travelFrontMm'] as num?)?.toInt()),
+                  travelRearMm: Value((m['travelRearMm'] as num?)?.toInt()),
                   odometerKm: Value((m['odometerKm'] as num?)?.toDouble() ?? 0),
                   hours: Value((m['hours'] as num?)?.toDouble() ?? 0),
                   isActive: Value(m['isActive'] == true),
@@ -604,6 +663,7 @@ class GarageRepository {
       await _applyConsents(payload.consents);
       await _applyPrivacyZones(payload.privacyZones);
       await _applySavedRoutes(payload.savedRoutes);
+      await RouteCollectionsStore.applyFromSync(payload.routeCollections);
 
       if (payload.activeBikeId is String) {
         final aid = payload.activeBikeId as String;
@@ -738,6 +798,10 @@ class GarageRepository {
               (w) => w.name == row.wheelSize,
               orElse: () => WheelSize.w29,
             ),
+      catalogBikeId: row.catalogBikeId,
+      frameSize: row.frameSize,
+      travelFrontMm: row.travelFrontMm,
+      travelRearMm: row.travelRearMm,
       odometerKm: row.odometerKm,
       hours: row.hours,
       isActive: row.isActive,

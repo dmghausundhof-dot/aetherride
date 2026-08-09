@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
@@ -23,9 +26,48 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _register = false;
   bool _busy = false;
   String? _message;
+  StreamSubscription<AuthState>? _authSub;
+  bool _handledOAuthSession = false;
+  bool _awaitingOAuth = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (AppConfig.isSupabaseConfigured) {
+      try {
+        _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+          if (!_awaitingOAuth || _handledOAuthSession) return;
+          if (data.session != null && data.event == AuthChangeEvent.signedIn) {
+            unawaited(_onSessionReady());
+          }
+        });
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _onSessionReady() async {
+    if (!mounted || _handledOAuthSession) return;
+    _handledOAuthSession = true;
+    setState(() {
+      _busy = true;
+      _message = 'Angemeldet — synchronisiere…';
+    });
+    try {
+      await ref.read(syncEngineProvider).syncNow();
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _message = 'Angemeldet. Sync: $e';
+          _busy = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
+    unawaited(_authSub?.cancel() ?? Future.value());
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -59,6 +101,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 'Konto erstellt — ggf. E-Mail bestätigen, dann anmelden.',
           );
         } else {
+          _handledOAuthSession = true;
           await ref.read(syncEngineProvider).syncNow();
           if (mounted) Navigator.of(context).pop(true);
         }
@@ -67,6 +110,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           email: email,
           password: password,
         );
+        _handledOAuthSession = true;
         await ref.read(syncEngineProvider).syncNow();
         if (mounted) Navigator.of(context).pop(true);
       }
@@ -87,13 +131,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     setState(() {
       _busy = true;
       _message = null;
+      _handledOAuthSession = false;
+      _awaitingOAuth = true;
     });
     try {
-      await Supabase.instance.client.auth.signInWithOAuth(provider);
-      setState(
-        () => _message =
-            'Browser geöffnet — nach Login hierher zurückkehren.',
+      await Supabase.instance.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: AppConfig.oauthRedirectUrl,
+        authScreenLaunchMode: LaunchMode.externalApplication,
       );
+      if (mounted) {
+        setState(
+          () => _message =
+              'Browser geöffnet — nach Login kehrst du automatisch zurück.',
+        );
+      }
     } on AuthException catch (e) {
       setState(() => _message = e.message);
     } catch (e) {
@@ -114,8 +166,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Konto löschen?'),
         content: const Text(
-          'Lokale Daten werden gelöscht. Exportiere vorher GPX/JSON unter '
-          'Daten & Privatsphäre. Remote-Löschung ggf. zusätzlich im Web-Profil.',
+          'Remote-Konto und lokale App-Daten werden gelöscht. '
+          'Exportiere vorher GPX/JSON unter Daten & Privatsphäre.',
         ),
         actions: [
           TextButton(
@@ -133,7 +185,35 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (ok != true) return;
     setState(() => _busy = true);
     try {
+      String? remoteMsg;
       if (AppConfig.isSupabaseConfigured) {
+        final token =
+            Supabase.instance.client.auth.currentSession?.accessToken;
+        if (token != null) {
+          try {
+            final res = await http.post(
+              Uri.parse('${AppConfig.apiBaseUrl}/api/account/delete'),
+              headers: {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: '{"confirm":"DELETE"}',
+            );
+            if (res.statusCode == 200) {
+              remoteMsg = 'Remote-Konto gelöscht.';
+            } else if (res.statusCode == 503) {
+              remoteMsg =
+                  'Remote-Löschung nicht verfügbar — nur lokale Daten entfernt.';
+            } else {
+              remoteMsg =
+                  'Remote-Löschung fehlgeschlagen (${res.statusCode}) — lokal trotzdem gelöscht.';
+            }
+          } catch (_) {
+            remoteMsg =
+                'Server nicht erreichbar — nur lokale Daten entfernt.';
+          }
+        }
         try {
           await Supabase.instance.client.auth.signOut();
         } catch (_) {}
@@ -144,9 +224,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       ref.invalidate(recentRidesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Lokale Daten gelöscht. Export ggf. unter Privatsphäre nachholen.',
+              remoteMsg ??
+                  'Lokale Daten gelöscht. Export ggf. unter Privatsphäre nachholen.',
             ),
           ),
         );
@@ -284,6 +365,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 onPressed: _busy ? null : () => _oauth(OAuthProvider.google),
                 icon: const Icon(Icons.g_mobiledata),
                 label: const Text('Mit Google'),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Google nur wenn in Supabase aktiv + Android-SHA hinterlegt '
+                  '(scripts/ops-android-auth.sh). Sonst E-Mail-Login nutzen.',
+                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(

@@ -45,6 +45,30 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
   late final GeneratedColumn<String> wheelSize = GeneratedColumn<String>(
       'wheel_size', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _catalogBikeIdMeta =
+      const VerificationMeta('catalogBikeId');
+  @override
+  late final GeneratedColumn<String> catalogBikeId = GeneratedColumn<String>(
+      'catalog_bike_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _frameSizeMeta =
+      const VerificationMeta('frameSize');
+  @override
+  late final GeneratedColumn<String> frameSize = GeneratedColumn<String>(
+      'frame_size', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _travelFrontMmMeta =
+      const VerificationMeta('travelFrontMm');
+  @override
+  late final GeneratedColumn<int> travelFrontMm = GeneratedColumn<int>(
+      'travel_front_mm', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _travelRearMmMeta =
+      const VerificationMeta('travelRearMm');
+  @override
+  late final GeneratedColumn<int> travelRearMm = GeneratedColumn<int>(
+      'travel_rear_mm', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _odometerKmMeta =
       const VerificationMeta('odometerKm');
   @override
@@ -85,6 +109,10 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
         model,
         year,
         wheelSize,
+        catalogBikeId,
+        frameSize,
+        travelFrontMm,
+        travelRearMm,
         odometerKm,
         hours,
         isActive,
@@ -133,6 +161,28 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
       context.handle(_wheelSizeMeta,
           wheelSize.isAcceptableOrUnknown(data['wheel_size']!, _wheelSizeMeta));
     }
+    if (data.containsKey('catalog_bike_id')) {
+      context.handle(
+          _catalogBikeIdMeta,
+          catalogBikeId.isAcceptableOrUnknown(
+              data['catalog_bike_id']!, _catalogBikeIdMeta));
+    }
+    if (data.containsKey('frame_size')) {
+      context.handle(_frameSizeMeta,
+          frameSize.isAcceptableOrUnknown(data['frame_size']!, _frameSizeMeta));
+    }
+    if (data.containsKey('travel_front_mm')) {
+      context.handle(
+          _travelFrontMmMeta,
+          travelFrontMm.isAcceptableOrUnknown(
+              data['travel_front_mm']!, _travelFrontMmMeta));
+    }
+    if (data.containsKey('travel_rear_mm')) {
+      context.handle(
+          _travelRearMmMeta,
+          travelRearMm.isAcceptableOrUnknown(
+              data['travel_rear_mm']!, _travelRearMmMeta));
+    }
     if (data.containsKey('odometer_km')) {
       context.handle(
           _odometerKmMeta,
@@ -176,6 +226,14 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
           .read(DriftSqlType.int, data['${effectivePrefix}year']),
       wheelSize: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}wheel_size']),
+      catalogBikeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}catalog_bike_id']),
+      frameSize: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}frame_size']),
+      travelFrontMm: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}travel_front_mm']),
+      travelRearMm: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}travel_rear_mm']),
       odometerKm: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}odometer_km'])!,
       hours: attachedDatabase.typeMapping
@@ -201,6 +259,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
   final String? model;
   final int? year;
   final String? wheelSize;
+  final String? catalogBikeId;
+  final String? frameSize;
+  final int? travelFrontMm;
+  final int? travelRearMm;
   final double odometerKm;
   final double hours;
   final bool isActive;
@@ -213,6 +275,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       this.model,
       this.year,
       this.wheelSize,
+      this.catalogBikeId,
+      this.frameSize,
+      this.travelFrontMm,
+      this.travelRearMm,
       required this.odometerKm,
       required this.hours,
       required this.isActive,
@@ -235,6 +301,18 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
     if (!nullToAbsent || wheelSize != null) {
       map['wheel_size'] = Variable<String>(wheelSize);
     }
+    if (!nullToAbsent || catalogBikeId != null) {
+      map['catalog_bike_id'] = Variable<String>(catalogBikeId);
+    }
+    if (!nullToAbsent || frameSize != null) {
+      map['frame_size'] = Variable<String>(frameSize);
+    }
+    if (!nullToAbsent || travelFrontMm != null) {
+      map['travel_front_mm'] = Variable<int>(travelFrontMm);
+    }
+    if (!nullToAbsent || travelRearMm != null) {
+      map['travel_rear_mm'] = Variable<int>(travelRearMm);
+    }
     map['odometer_km'] = Variable<double>(odometerKm);
     map['hours'] = Variable<double>(hours);
     map['is_active'] = Variable<bool>(isActive);
@@ -255,6 +333,18 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       wheelSize: wheelSize == null && nullToAbsent
           ? const Value.absent()
           : Value(wheelSize),
+      catalogBikeId: catalogBikeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(catalogBikeId),
+      frameSize: frameSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(frameSize),
+      travelFrontMm: travelFrontMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(travelFrontMm),
+      travelRearMm: travelRearMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(travelRearMm),
       odometerKm: Value(odometerKm),
       hours: Value(hours),
       isActive: Value(isActive),
@@ -273,6 +363,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       model: serializer.fromJson<String?>(json['model']),
       year: serializer.fromJson<int?>(json['year']),
       wheelSize: serializer.fromJson<String?>(json['wheelSize']),
+      catalogBikeId: serializer.fromJson<String?>(json['catalogBikeId']),
+      frameSize: serializer.fromJson<String?>(json['frameSize']),
+      travelFrontMm: serializer.fromJson<int?>(json['travelFrontMm']),
+      travelRearMm: serializer.fromJson<int?>(json['travelRearMm']),
       odometerKm: serializer.fromJson<double>(json['odometerKm']),
       hours: serializer.fromJson<double>(json['hours']),
       isActive: serializer.fromJson<bool>(json['isActive']),
@@ -290,6 +384,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       'model': serializer.toJson<String?>(model),
       'year': serializer.toJson<int?>(year),
       'wheelSize': serializer.toJson<String?>(wheelSize),
+      'catalogBikeId': serializer.toJson<String?>(catalogBikeId),
+      'frameSize': serializer.toJson<String?>(frameSize),
+      'travelFrontMm': serializer.toJson<int?>(travelFrontMm),
+      'travelRearMm': serializer.toJson<int?>(travelRearMm),
       'odometerKm': serializer.toJson<double>(odometerKm),
       'hours': serializer.toJson<double>(hours),
       'isActive': serializer.toJson<bool>(isActive),
@@ -305,6 +403,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           Value<String?> model = const Value.absent(),
           Value<int?> year = const Value.absent(),
           Value<String?> wheelSize = const Value.absent(),
+          Value<String?> catalogBikeId = const Value.absent(),
+          Value<String?> frameSize = const Value.absent(),
+          Value<int?> travelFrontMm = const Value.absent(),
+          Value<int?> travelRearMm = const Value.absent(),
           double? odometerKm,
           double? hours,
           bool? isActive,
@@ -317,6 +419,13 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
         model: model.present ? model.value : this.model,
         year: year.present ? year.value : this.year,
         wheelSize: wheelSize.present ? wheelSize.value : this.wheelSize,
+        catalogBikeId:
+            catalogBikeId.present ? catalogBikeId.value : this.catalogBikeId,
+        frameSize: frameSize.present ? frameSize.value : this.frameSize,
+        travelFrontMm:
+            travelFrontMm.present ? travelFrontMm.value : this.travelFrontMm,
+        travelRearMm:
+            travelRearMm.present ? travelRearMm.value : this.travelRearMm,
         odometerKm: odometerKm ?? this.odometerKm,
         hours: hours ?? this.hours,
         isActive: isActive ?? this.isActive,
@@ -331,6 +440,16 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       model: data.model.present ? data.model.value : this.model,
       year: data.year.present ? data.year.value : this.year,
       wheelSize: data.wheelSize.present ? data.wheelSize.value : this.wheelSize,
+      catalogBikeId: data.catalogBikeId.present
+          ? data.catalogBikeId.value
+          : this.catalogBikeId,
+      frameSize: data.frameSize.present ? data.frameSize.value : this.frameSize,
+      travelFrontMm: data.travelFrontMm.present
+          ? data.travelFrontMm.value
+          : this.travelFrontMm,
+      travelRearMm: data.travelRearMm.present
+          ? data.travelRearMm.value
+          : this.travelRearMm,
       odometerKm:
           data.odometerKm.present ? data.odometerKm.value : this.odometerKm,
       hours: data.hours.present ? data.hours.value : this.hours,
@@ -349,6 +468,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           ..write('model: $model, ')
           ..write('year: $year, ')
           ..write('wheelSize: $wheelSize, ')
+          ..write('catalogBikeId: $catalogBikeId, ')
+          ..write('frameSize: $frameSize, ')
+          ..write('travelFrontMm: $travelFrontMm, ')
+          ..write('travelRearMm: $travelRearMm, ')
           ..write('odometerKm: $odometerKm, ')
           ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
@@ -358,8 +481,22 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, category, brand, model, year,
-      wheelSize, odometerKm, hours, isActive, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      name,
+      category,
+      brand,
+      model,
+      year,
+      wheelSize,
+      catalogBikeId,
+      frameSize,
+      travelFrontMm,
+      travelRearMm,
+      odometerKm,
+      hours,
+      isActive,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -371,6 +508,10 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           other.model == this.model &&
           other.year == this.year &&
           other.wheelSize == this.wheelSize &&
+          other.catalogBikeId == this.catalogBikeId &&
+          other.frameSize == this.frameSize &&
+          other.travelFrontMm == this.travelFrontMm &&
+          other.travelRearMm == this.travelRearMm &&
           other.odometerKm == this.odometerKm &&
           other.hours == this.hours &&
           other.isActive == this.isActive &&
@@ -385,6 +526,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
   final Value<String?> model;
   final Value<int?> year;
   final Value<String?> wheelSize;
+  final Value<String?> catalogBikeId;
+  final Value<String?> frameSize;
+  final Value<int?> travelFrontMm;
+  final Value<int?> travelRearMm;
   final Value<double> odometerKm;
   final Value<double> hours;
   final Value<bool> isActive;
@@ -398,6 +543,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.model = const Value.absent(),
     this.year = const Value.absent(),
     this.wheelSize = const Value.absent(),
+    this.catalogBikeId = const Value.absent(),
+    this.frameSize = const Value.absent(),
+    this.travelFrontMm = const Value.absent(),
+    this.travelRearMm = const Value.absent(),
     this.odometerKm = const Value.absent(),
     this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
@@ -412,6 +561,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.model = const Value.absent(),
     this.year = const Value.absent(),
     this.wheelSize = const Value.absent(),
+    this.catalogBikeId = const Value.absent(),
+    this.frameSize = const Value.absent(),
+    this.travelFrontMm = const Value.absent(),
+    this.travelRearMm = const Value.absent(),
     this.odometerKm = const Value.absent(),
     this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
@@ -429,6 +582,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     Expression<String>? model,
     Expression<int>? year,
     Expression<String>? wheelSize,
+    Expression<String>? catalogBikeId,
+    Expression<String>? frameSize,
+    Expression<int>? travelFrontMm,
+    Expression<int>? travelRearMm,
     Expression<double>? odometerKm,
     Expression<double>? hours,
     Expression<bool>? isActive,
@@ -443,6 +600,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       if (model != null) 'model': model,
       if (year != null) 'year': year,
       if (wheelSize != null) 'wheel_size': wheelSize,
+      if (catalogBikeId != null) 'catalog_bike_id': catalogBikeId,
+      if (frameSize != null) 'frame_size': frameSize,
+      if (travelFrontMm != null) 'travel_front_mm': travelFrontMm,
+      if (travelRearMm != null) 'travel_rear_mm': travelRearMm,
       if (odometerKm != null) 'odometer_km': odometerKm,
       if (hours != null) 'hours': hours,
       if (isActive != null) 'is_active': isActive,
@@ -459,6 +620,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       Value<String?>? model,
       Value<int?>? year,
       Value<String?>? wheelSize,
+      Value<String?>? catalogBikeId,
+      Value<String?>? frameSize,
+      Value<int?>? travelFrontMm,
+      Value<int?>? travelRearMm,
       Value<double>? odometerKm,
       Value<double>? hours,
       Value<bool>? isActive,
@@ -472,6 +637,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       model: model ?? this.model,
       year: year ?? this.year,
       wheelSize: wheelSize ?? this.wheelSize,
+      catalogBikeId: catalogBikeId ?? this.catalogBikeId,
+      frameSize: frameSize ?? this.frameSize,
+      travelFrontMm: travelFrontMm ?? this.travelFrontMm,
+      travelRearMm: travelRearMm ?? this.travelRearMm,
       odometerKm: odometerKm ?? this.odometerKm,
       hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,
@@ -504,6 +673,18 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     if (wheelSize.present) {
       map['wheel_size'] = Variable<String>(wheelSize.value);
     }
+    if (catalogBikeId.present) {
+      map['catalog_bike_id'] = Variable<String>(catalogBikeId.value);
+    }
+    if (frameSize.present) {
+      map['frame_size'] = Variable<String>(frameSize.value);
+    }
+    if (travelFrontMm.present) {
+      map['travel_front_mm'] = Variable<int>(travelFrontMm.value);
+    }
+    if (travelRearMm.present) {
+      map['travel_rear_mm'] = Variable<int>(travelRearMm.value);
+    }
     if (odometerKm.present) {
       map['odometer_km'] = Variable<double>(odometerKm.value);
     }
@@ -532,6 +713,10 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
           ..write('model: $model, ')
           ..write('year: $year, ')
           ..write('wheelSize: $wheelSize, ')
+          ..write('catalogBikeId: $catalogBikeId, ')
+          ..write('frameSize: $frameSize, ')
+          ..write('travelFrontMm: $travelFrontMm, ')
+          ..write('travelRearMm: $travelRearMm, ')
           ..write('odometerKm: $odometerKm, ')
           ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
@@ -4927,6 +5112,10 @@ typedef $$BikesTableCreateCompanionBuilder = BikesCompanion Function({
   Value<String?> model,
   Value<int?> year,
   Value<String?> wheelSize,
+  Value<String?> catalogBikeId,
+  Value<String?> frameSize,
+  Value<int?> travelFrontMm,
+  Value<int?> travelRearMm,
   Value<double> odometerKm,
   Value<double> hours,
   Value<bool> isActive,
@@ -4941,6 +5130,10 @@ typedef $$BikesTableUpdateCompanionBuilder = BikesCompanion Function({
   Value<String?> model,
   Value<int?> year,
   Value<String?> wheelSize,
+  Value<String?> catalogBikeId,
+  Value<String?> frameSize,
+  Value<int?> travelFrontMm,
+  Value<int?> travelRearMm,
   Value<double> odometerKm,
   Value<double> hours,
   Value<bool> isActive,
@@ -4976,6 +5169,18 @@ class $$BikesTableFilterComposer extends Composer<_$AppDatabase, $BikesTable> {
 
   ColumnFilters<String> get wheelSize => $composableBuilder(
       column: $table.wheelSize, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get catalogBikeId => $composableBuilder(
+      column: $table.catalogBikeId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get frameSize => $composableBuilder(
+      column: $table.frameSize, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get travelFrontMm => $composableBuilder(
+      column: $table.travelFrontMm, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get travelRearMm => $composableBuilder(
+      column: $table.travelRearMm, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get odometerKm => $composableBuilder(
       column: $table.odometerKm, builder: (column) => ColumnFilters(column));
@@ -5020,6 +5225,21 @@ class $$BikesTableOrderingComposer
   ColumnOrderings<String> get wheelSize => $composableBuilder(
       column: $table.wheelSize, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get catalogBikeId => $composableBuilder(
+      column: $table.catalogBikeId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get frameSize => $composableBuilder(
+      column: $table.frameSize, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get travelFrontMm => $composableBuilder(
+      column: $table.travelFrontMm,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get travelRearMm => $composableBuilder(
+      column: $table.travelRearMm,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<double> get odometerKm => $composableBuilder(
       column: $table.odometerKm, builder: (column) => ColumnOrderings(column));
 
@@ -5062,6 +5282,18 @@ class $$BikesTableAnnotationComposer
 
   GeneratedColumn<String> get wheelSize =>
       $composableBuilder(column: $table.wheelSize, builder: (column) => column);
+
+  GeneratedColumn<String> get catalogBikeId => $composableBuilder(
+      column: $table.catalogBikeId, builder: (column) => column);
+
+  GeneratedColumn<String> get frameSize =>
+      $composableBuilder(column: $table.frameSize, builder: (column) => column);
+
+  GeneratedColumn<int> get travelFrontMm => $composableBuilder(
+      column: $table.travelFrontMm, builder: (column) => column);
+
+  GeneratedColumn<int> get travelRearMm => $composableBuilder(
+      column: $table.travelRearMm, builder: (column) => column);
 
   GeneratedColumn<double> get odometerKm => $composableBuilder(
       column: $table.odometerKm, builder: (column) => column);
@@ -5106,6 +5338,10 @@ class $$BikesTableTableManager extends RootTableManager<
             Value<String?> model = const Value.absent(),
             Value<int?> year = const Value.absent(),
             Value<String?> wheelSize = const Value.absent(),
+            Value<String?> catalogBikeId = const Value.absent(),
+            Value<String?> frameSize = const Value.absent(),
+            Value<int?> travelFrontMm = const Value.absent(),
+            Value<int?> travelRearMm = const Value.absent(),
             Value<double> odometerKm = const Value.absent(),
             Value<double> hours = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
@@ -5120,6 +5356,10 @@ class $$BikesTableTableManager extends RootTableManager<
             model: model,
             year: year,
             wheelSize: wheelSize,
+            catalogBikeId: catalogBikeId,
+            frameSize: frameSize,
+            travelFrontMm: travelFrontMm,
+            travelRearMm: travelRearMm,
             odometerKm: odometerKm,
             hours: hours,
             isActive: isActive,
@@ -5134,6 +5374,10 @@ class $$BikesTableTableManager extends RootTableManager<
             Value<String?> model = const Value.absent(),
             Value<int?> year = const Value.absent(),
             Value<String?> wheelSize = const Value.absent(),
+            Value<String?> catalogBikeId = const Value.absent(),
+            Value<String?> frameSize = const Value.absent(),
+            Value<int?> travelFrontMm = const Value.absent(),
+            Value<int?> travelRearMm = const Value.absent(),
             Value<double> odometerKm = const Value.absent(),
             Value<double> hours = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
@@ -5148,6 +5392,10 @@ class $$BikesTableTableManager extends RootTableManager<
             model: model,
             year: year,
             wheelSize: wheelSize,
+            catalogBikeId: catalogBikeId,
+            frameSize: frameSize,
+            travelFrontMm: travelFrontMm,
+            travelRearMm: travelRearMm,
             odometerKm: odometerKm,
             hours: hours,
             isActive: isActive,

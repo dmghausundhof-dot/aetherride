@@ -79,8 +79,8 @@ function toSemi(deg: number): number {
 }
 
 /**
- * Build a minimal FIT activity with record messages from ride.track
- * (or synthesized points). Compatible with common FIT importers.
+ * Build a minimal FIT activity with record messages from ride.track.
+ * Empty track → session/lap only (no synthetic GPS points).
  */
 export function rideToFit(ride: Ride): Uint8Array {
   const startMs = new Date(ride.startTime).getTime();
@@ -88,15 +88,7 @@ export function rideToFit(ride: Ride): Uint8Array {
   const fitEpoch = Date.UTC(1989, 11, 31, 0, 0, 0);
   const startFit = Math.floor((startMs - fitEpoch) / 1000);
 
-  const pts =
-    ride.track && ride.track.length > 0
-      ? ride.track
-      : Array.from({ length: Math.max(10, Math.min(100, Math.round(ride.durationSec / 30))) }, (_, i) => ({
-          lat: 47.45 + Math.sin(i / 8) * 0.01,
-          lng: 12.15 + i * 0.0002,
-          elev: 800 + (ride.elevationGainM * i) / Math.max(1, Math.round(ride.durationSec / 30)),
-          time: i * 30,
-        }));
+  const pts = ride.track && ride.track.length > 0 ? ride.track : [];
 
   const records = new FitBuf();
   // file_id definition local 0, global 0

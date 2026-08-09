@@ -38,12 +38,13 @@ import {
   activeRouteFromEngine,
   activeRouteFromSuggestion,
 } from "@/lib/routing/activeRoute";
+import { parseGpx } from "@/lib/import/gpx";
 import {
   DEFAULT_ROUTE_FILTERS,
   filterRouteSuggestions,
   type RouteFilterState,
 } from "@/lib/routing/routeFilters";
-import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
+import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import { RouteCard } from "@/components/discover/RouteCard";
 import { FilterChips } from "@/components/discover/FilterChips";
 import { RouteDetail } from "@/components/discover/RouteDetail";
@@ -58,7 +59,6 @@ import {
   computeQuickOptions,
   emptyDraft,
   endOf,
-  geometryFromTourCenter,
   orderedWaypoints,
   removeWaypoint,
   setEnd,
@@ -86,7 +86,7 @@ function suggestionToTour(r: RouteSuggestion): BaseTour {
     id: r.id,
     name: r.name,
     provider: "seed",
-    geometry: buildDemoGeometry(r.id, r.distanceKm),
+    geometry: null,
     distanceKm: r.distanceKm,
     elevationM: r.elevationM,
     durationMin: r.durationMin,
@@ -95,21 +95,27 @@ function suggestionToTour(r: RouteSuggestion): BaseTour {
     reasons: r.reasons,
     matchScore: r.matchScore,
     loop: r.loop,
+    center: demoCenterLngLat(r.id),
   };
 }
 
 function oaToTour(t: OutdooractiveTour): BaseTour {
   const km = t.lengthKm ?? 20;
+  const hasLiveGeom = Boolean(t.geometry && t.geometry.length >= 2);
   return {
     id: t.id,
     name: t.title,
     provider: "outdooractive",
-    geometry: geometryFromTourCenter(t.id, t.center, km),
+    geometry: hasLiveGeom
+      ? { type: "LineString", coordinates: t.geometry! }
+      : null,
     distanceKm: km,
     elevationM: t.elevationM,
     durationMin: t.durationMin,
     mtbScale: t.difficulty,
-    attribution: "© Outdooractive",
+    attribution: hasLiveGeom
+      ? "© Outdooractive"
+      : "© Outdooractive · Tour-Idee (keine API-Geometry)",
     center: t.center,
     url: t.url,
   };
@@ -134,6 +140,17 @@ function DiscoverPageInner() {
   const saveRoute = useAppStore((s) => s.saveRoute);
   const unsaveRoute = useAppStore((s) => s.unsaveRoute);
   const isRouteSaved = useAppStore((s) => s.isRouteSaved);
+  const routeCollections = useAppStore((s) => s.routeCollections);
+  const createRouteCollection = useAppStore((s) => s.createRouteCollection);
+  const addRouteToCollection = useAppStore((s) => s.addRouteToCollection);
+  const [collectionName, setCollectionName] = useState("");
+  const gpxInputRef = useRef<HTMLInputElement | null>(null);
+  const [addrQuery, setAddrQuery] = useState("");
+  const [addrTarget, setAddrTarget] = useState<"start" | "end">("start");
+  const [addrHits, setAddrHits] = useState<
+    { label: string; lat: number; lng: number }[]
+  >([]);
+  const [addrBusy, setAddrBusy] = useState(false);
 
   const rangePro = canUseProFeature("range");
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
@@ -464,6 +481,63 @@ function DiscoverPageInner() {
     saveRoute(entry);
   }, [draft, saveRoute]);
 
+  const importGpxFile = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      const text = await file.text();
+      const parsed = parseGpx(text, file.name.replace(/\.gpx$/i, ""));
+      if (!parsed) {
+        setRoutingMsg("GPX ungültig oder zu wenige Punkte");
+        return;
+      }
+      const entry: SavedRoute = {
+        id: `import-${Date.now()}`,
+        name: parsed.name,
+        distanceKm: Math.round(parsed.distanceKm * 10) / 10,
+        elevationM: Math.round(parsed.elevationM),
+        durationMin: parsed.durationMin,
+        savedAt: new Date().toISOString(),
+        source: "import",
+        geometry: {
+          type: "LineString",
+          coordinates: parsed.coordinates,
+        },
+      };
+      saveRoute(entry);
+      setSheetMode("tours");
+      setRoutingMsg(
+        `GPX importiert: ${parsed.name} · ${parsed.distanceKm.toFixed(1)} km`
+      );
+    },
+    [saveRoute]
+  );
+
+  const searchAddress = useCallback(async () => {
+    const q = addrQuery.trim();
+    if (q.length < 2) return;
+    setAddrBusy(true);
+    try {
+      const res = await fetch(
+        `/api/geocode?q=${encodeURIComponent(q)}&limit=5`
+      );
+      const data = (await res.json()) as {
+        hits?: { label: string; lat: number; lng: number }[];
+        error?: string;
+      };
+      if (!res.ok) {
+        setAddrHits([]);
+        setRoutingMsg(data.error ?? `Adresssuche fehlgeschlagen (${res.status})`);
+        return;
+      }
+      setAddrHits(data.hits ?? []);
+      if (!data.hits?.length) setRoutingMsg(`Keine Treffer für „${q}“`);
+    } catch {
+      setRoutingMsg("Adresssuche fehlgeschlagen");
+    } finally {
+      setAddrBusy(false);
+    }
+  }, [addrQuery]);
+
   const loadSavedRoute = useCallback(
     (r: SavedRoute) => {
       if (r.geometry) {
@@ -516,7 +590,7 @@ function DiscoverPageInner() {
           mtbScale: r.mtbScale,
           surface: r.surface,
           reasons: r.reasons,
-          geometry: buildDemoGeometry(r.id, r.distanceKm),
+          geometry: null,
           source: "suggestion",
           setAt: new Date().toISOString(),
         });
@@ -565,6 +639,34 @@ function DiscoverPageInner() {
 
   const previewBaseTour = (tour: BaseTour) => {
     setPreviewTour(tour);
+    const pin =
+      tour.center ??
+      (tour.geometry?.coordinates[0] as [number, number] | undefined) ??
+      origin;
+    if (!tour.geometry || tour.geometry.coordinates.length < 2) {
+      setDraft({
+        mode: "tour",
+        profile: activeProfile,
+        waypoints: [
+          {
+            id: "start",
+            role: "start",
+            lngLat: pin,
+            label: "Tour-Ort",
+          },
+        ],
+        baseTour: tour,
+        hybrid: { strategy: "adopt" },
+        computed: null,
+        label: `${tour.name} (Idee)`,
+        layers: undefined,
+      });
+      setMapCenter(pin);
+      setRoutingMsg(
+        "Nur Ortspunkt — kein Track. In Planen + Ziel oder Live-Routing."
+      );
+      return;
+    }
     const adopted = adoptTour(tour, activeProfile);
     setDraft({
       mode: "tour",
@@ -573,7 +675,7 @@ function DiscoverPageInner() {
         {
           id: "start",
           role: "start",
-          lngLat: (tour.geometry?.coordinates[0] as [number, number]) ?? origin,
+          lngLat: (tour.geometry.coordinates[0] as [number, number]) ?? origin,
           label: "Tour-Start",
         },
       ],
@@ -583,6 +685,68 @@ function DiscoverPageInner() {
       label: tour.name,
       layers: { tour: adopted.geometry },
     });
+    if (tour.center) setMapCenter(tour.center);
+    setRoutingMsg(null);
+  };
+
+  const adoptIntoPlanMode = (tour: BaseTour) => {
+    const coords = (tour.geometry?.coordinates ?? []) as [number, number][];
+    const pin = tour.center ?? origin;
+    if (coords.length < 2) {
+      setPreviewTour(null);
+      setDraft({
+        mode: "point_to_point",
+        profile: activeProfile,
+        waypoints: [
+          {
+            id: "start",
+            role: "start",
+            lngLat: pin,
+            label: "Tour-Ort",
+          },
+        ],
+        computed: null,
+        label: `${tour.name} (Plan)`,
+        baseTour: tour,
+        hybrid: undefined,
+        layers: undefined,
+      });
+      setSheetMode("plan");
+      setMapCenter(pin);
+      setRoutingMsg(
+        `In Planen: ${tour.name} — Ziel setzen, dann Route berechnen (kein Track).`
+      );
+      return;
+    }
+    const startLngLat = coords[0] as [number, number];
+    const endLngLat = coords[coords.length - 1] as [number, number];
+    const adopted = adoptTour(tour, activeProfile);
+    setPreviewTour(null);
+    setDraft({
+      mode: "point_to_point",
+      profile: activeProfile,
+      waypoints: [
+        {
+          id: "start",
+          role: "start",
+          lngLat: startLngLat,
+          label: "Tour-Start",
+        },
+        {
+          id: "end",
+          role: "end",
+          lngLat: endLngLat,
+          label: "Tour-Ende",
+        },
+      ],
+      computed: adopted,
+      label: `${tour.name} (Plan)`,
+      baseTour: undefined,
+      hybrid: undefined,
+      layers: undefined,
+    });
+    setSheetMode("plan");
+    setRoutingMsg(`In Planen: ${tour.name} — Start/Ziel editierbar`);
     if (tour.center) setMapCenter(tour.center);
   };
 
@@ -691,16 +855,40 @@ function DiscoverPageInner() {
     [activeProfile]
   );
 
+  const applyAddressHit = useCallback(
+    (hit: { label: string; lat: number; lng: number }) => {
+      const lngLat: [number, number] = [hit.lng, hit.lat];
+      setDraft((prev) => {
+        const next =
+          addrTarget === "end"
+            ? setEnd(prev, lngLat, hit.label)
+            : setStart(prev, lngLat, hit.label);
+        schedulePlanRecompute(next);
+        return next;
+      });
+      setAddrHits([]);
+      setAddrQuery(hit.label);
+      setMapCenter([hit.lng, hit.lat]);
+      setRoutingMsg(`${addrTarget === "end" ? "Ziel" : "Start"}: ${hit.label}`);
+    },
+    [addrTarget, schedulePlanRecompute]
+  );
+
   const onMapClick = (lngLat: [number, number]) => {
     if (!pickTarget) return;
-    if (pickTarget === "start") {
-      schedulePlanRecompute(setStart(draft, lngLat, "Start (Karte)"));
-      setMapCenter(lngLat);
-    } else if (pickTarget === "end") {
-      schedulePlanRecompute(setEnd(draft, lngLat, "Ziel (Karte)"));
-    } else {
-      schedulePlanRecompute(addVia(draft, lngLat));
-    }
+    setDraft((prev) => {
+      let next = prev;
+      if (pickTarget === "start") {
+        next = setStart(prev, lngLat, "Start (Karte)");
+        setMapCenter(lngLat);
+      } else if (pickTarget === "end") {
+        next = setEnd(prev, lngLat, "Ziel (Karte)");
+      } else {
+        next = addVia(prev, lngLat);
+      }
+      schedulePlanRecompute(next);
+      return next;
+    });
     setPickTarget(null);
     setSheetMode("plan");
   };
@@ -720,6 +908,31 @@ function DiscoverPageInner() {
           lngLat: w.lngLat,
           color: "#FFB300",
           label: String(viaIdx),
+        });
+      }
+    }
+    const ideaCenter = draft.baseTour?.center;
+    const noTrack =
+      !draft.baseTour?.geometry ||
+      (draft.baseTour.geometry.coordinates?.length ?? 0) < 2;
+    if (
+      ideaCenter &&
+      noTrack &&
+      (draft.label?.includes("(Idee)") ||
+        draft.label?.includes("(Plan)") ||
+        !draft.computed)
+    ) {
+      const already = m.some(
+        (x) =>
+          Math.abs(x.lngLat[0] - ideaCenter[0]) < 1e-6 &&
+          Math.abs(x.lngLat[1] - ideaCenter[1]) < 1e-6
+      );
+      if (!already) {
+        m.push({
+          id: "tour-idea",
+          lngLat: ideaCenter,
+          color: "#78909C",
+          label: "Idee",
         });
       }
     }
@@ -745,6 +958,10 @@ function DiscoverPageInner() {
           onBack={closeDetail}
           onStart={() => startWithSuggestion(detailRoute)}
           onToggleSave={() => toggleSave(detailRoute)}
+          onAdoptIntoPlan={() => {
+            adoptIntoPlanMode(suggestionToTour(detailRoute));
+            closeDetail();
+          }}
         />
         <div className="flex flex-col gap-2">
           <button
@@ -1044,8 +1261,52 @@ function DiscoverPageInner() {
           {sheetMode === "plan" && (
             <div className="flex flex-col gap-3">
               <p className="text-[11px] text-text-secondary">
-                Start, Via und Ziel — wie Komoot: Waypoint-Liste steuert die Route
+                Adresse suchen oder auf die Karte tippen
               </p>
+              <div className="flex gap-2">
+                <select
+                  value={addrTarget}
+                  onChange={(e) =>
+                    setAddrTarget(e.target.value as "start" | "end")
+                  }
+                  className="rounded-lg border border-border bg-surface-elevated px-2 text-xs"
+                >
+                  <option value="start">Start</option>
+                  <option value="end">Ziel</option>
+                </select>
+                <input
+                  value={addrQuery}
+                  onChange={(e) => setAddrQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void searchAddress();
+                  }}
+                  placeholder="z. B. Freiburg Hbf"
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-xs"
+                />
+                <button
+                  type="button"
+                  disabled={addrBusy}
+                  onClick={() => void searchAddress()}
+                  className="rounded-lg border border-border px-2 text-xs font-medium"
+                >
+                  Suchen
+                </button>
+              </div>
+              {addrHits.length > 0 && (
+                <ul className="max-h-28 overflow-auto rounded-lg border border-border">
+                  {addrHits.map((h) => (
+                    <li key={`${h.label}-${h.lat}`}>
+                      <button
+                        type="button"
+                        className="w-full px-2 py-1.5 text-left text-[11px] hover:bg-surface-elevated"
+                        onClick={() => applyAddressHit(h)}
+                      >
+                        {h.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
@@ -1056,7 +1317,7 @@ function DiscoverPageInner() {
                       : "border-border bg-surface"
                   }`}
                 >
-                  Start
+                  Start tippen
                 </button>
                 <button
                   type="button"
@@ -1078,7 +1339,7 @@ function DiscoverPageInner() {
                       : "border-border bg-surface"
                   }`}
                 >
-                  Ziel
+                  Ziel tippen
                 </button>
               </div>
               <ul className="flex flex-col gap-1.5">
@@ -1256,6 +1517,15 @@ function DiscoverPageInner() {
                       >
                         Von hier
                       </button>
+                      <button
+                        type="button"
+                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                        onClick={() =>
+                          adoptIntoPlanMode(suggestionToTour(r))
+                        }
+                      >
+                        In Planen
+                      </button>
                     </div>
                   </div>
                 ))
@@ -1299,6 +1569,13 @@ function DiscoverPageInner() {
                         onClick={() => void runHybridSnap(tour)}
                       >
                         Von hier
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                        onClick={() => adoptIntoPlanMode(tour)}
+                      >
+                        In Planen
                       </button>
                       {t.url && (
                         <a
@@ -1349,6 +1626,25 @@ function DiscoverPageInner() {
               <h3 className="mt-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
                 Gespeichert
               </h3>
+              <div className="mb-2 flex flex-wrap gap-2">
+                <input
+                  ref={gpxInputRef}
+                  type="file"
+                  accept=".gpx,application/gpx+xml,text/xml"
+                  className="hidden"
+                  onChange={(e) => {
+                    void importGpxFile(e.target.files?.[0] ?? null);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => gpxInputRef.current?.click()}
+                  className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium"
+                >
+                  GPX importieren
+                </button>
+              </div>
               {savedRoutes.length === 0 ? (
                 <p className="text-sm text-text-secondary">
                   Noch nichts gespeichert.
@@ -1363,6 +1659,7 @@ function DiscoverPageInner() {
                     <p className="text-[11px] text-text-secondary">
                       {r.distanceKm} km · {r.elevationM} hm · {r.durationMin}{" "}
                       min
+                      {r.source === "import" ? " · Import" : ""}
                       {r.geometry ? " · mit Track" : ""}
                     </p>
                     <div className="mt-2 flex gap-2">
@@ -1373,6 +1670,30 @@ function DiscoverPageInner() {
                       >
                         Entfernen
                       </button>
+                      {routeCollections.length > 0 && (
+                        <label className="flex items-center gap-1 text-[11px]">
+                          <span className="sr-only">Sammlung</span>
+                          <select
+                            className="max-w-[7rem] rounded-lg border border-border bg-surface px-1 py-1.5"
+                            defaultValue=""
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              if (!id) return;
+                              addRouteToCollection(id, r.id);
+                              e.target.value = "";
+                            }}
+                          >
+                            <option value="" disabled>
+                              + Sammlung
+                            </option>
+                            {routeCollections.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                       <button
                         type="button"
                         onClick={() => loadSavedRoute(r)}
@@ -1382,6 +1703,46 @@ function DiscoverPageInner() {
                       </button>
                     </div>
                   </article>
+                ))
+              )}
+
+              <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                Sammlungen
+              </h3>
+              <p className="mb-2 text-[11px] text-text-secondary">
+                Lokale Ordner — kein Social-Feed.
+              </p>
+              <div className="mb-2 flex gap-2">
+                <input
+                  value={collectionName}
+                  onChange={(e) => setCollectionName(e.target.value)}
+                  placeholder="Name"
+                  className="flex-1 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    createRouteCollection(collectionName);
+                    setCollectionName("");
+                  }}
+                  className="rounded-lg bg-accent px-2.5 py-1.5 text-[11px] font-semibold text-white"
+                >
+                  Anlegen
+                </button>
+              </div>
+              {routeCollections.length === 0 ? (
+                <p className="text-sm text-text-secondary">Noch keine Sammlung.</p>
+              ) : (
+                routeCollections.map((c) => (
+                  <div
+                    key={c.id}
+                    className="rounded-xl border border-border bg-surface px-3 py-2 text-sm"
+                  >
+                    <span className="font-semibold">{c.name}</span>
+                    <span className="ml-2 text-[11px] text-text-secondary">
+                      {c.routeIds.length} Routen
+                    </span>
+                  </div>
                 ))
               )}
             </div>

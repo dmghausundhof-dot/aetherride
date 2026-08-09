@@ -26,8 +26,10 @@ class PlayBilling {
   final InAppPurchase _iap;
   StreamSubscription<List<PurchaseDetails>>? _sub;
   final _controller = StreamController<PurchaseUpdate>.broadcast();
+  final _errors = StreamController<String>.broadcast();
 
   Stream<PurchaseUpdate> get updates => _controller.stream;
+  Stream<String> get errors => _errors.stream;
 
   Future<bool> get isAvailable => _iap.isAvailable();
 
@@ -35,7 +37,10 @@ class PlayBilling {
     if (_sub != null) return;
     _sub = _iap.purchaseStream.listen(
       _onPurchases,
-      onError: (Object e) => debugPrint('PlayBilling: $e'),
+      onError: (Object e) {
+        debugPrint('PlayBilling: $e');
+        if (!_errors.isClosed) _errors.add('$e');
+      },
     );
   }
 
@@ -43,7 +48,9 @@ class PlayBilling {
     for (final p in purchases) {
       if (p.status == PurchaseStatus.pending) continue;
       if (p.status == PurchaseStatus.error) {
+        final msg = p.error?.message ?? 'Play-Kauf fehlgeschlagen';
         debugPrint('PlayBilling error: ${p.error}');
+        if (!_errors.isClosed) _errors.add(msg);
         continue;
       }
       if (p.status == PurchaseStatus.purchased ||
@@ -87,9 +94,18 @@ class PlayBilling {
     if (!ok) throw Exception('Kauf konnte nicht gestartet werden');
   }
 
+  Future<void> restorePurchases() async {
+    final available = await _iap.isAvailable();
+    if (!available) {
+      throw Exception('Play Billing nicht verfügbar');
+    }
+    await _iap.restorePurchases();
+  }
+
   Future<void> dispose() async {
     await _sub?.cancel();
     _sub = null;
     await _controller.close();
+    await _errors.close();
   }
 }

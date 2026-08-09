@@ -25,7 +25,7 @@ import {
 import { MapView } from "@/components/MapView";
 import { WebSensorSimulator, type FusedMetrics } from "@/lib/sensor/SensorFusion";
 import { createBoschLDIClient, type BoschLiveData } from "@/lib/ble/BoschLDI";
-import { hintsFromMetrics, speakHint } from "@/lib/sensor/liveHints";
+import { hintsFromMetrics, speakHint, speakNav } from "@/lib/sensor/liveHints";
 import { estimateRange } from "@/lib/ebike/range";
 import { centerOfGeometry } from "@/lib/routing/demoGeometry";
 import { formatRouteChip } from "@/lib/routing/activeRoute";
@@ -34,6 +34,10 @@ import {
   cueBannerText,
   nextCue,
 } from "@/lib/routing/navCues";
+import {
+  projectOntoRoute,
+  updateOffRouteState,
+} from "@/lib/routing/routeProgress";
 import { pickAnnounce } from "@/lib/routing/navSteps";
 import { pointAlongLine } from "@/lib/geo/trackMath";
 import { activeDurationSec } from "@/lib/ride/activeDuration";
@@ -75,6 +79,8 @@ export default function RidePage() {
   const [mountCheck, setMountCheck] = useState<MountCheck>("unknown");
   const [layer, setLayer] = useState<RideLiveLayer>("map");
   const [navBanner, setNavBanner] = useState<string | null>(null);
+  const [offRouteBanner, setOffRouteBanner] = useState<string | null>(null);
+  const [ttsMuted, setTtsMuted] = useState(false);
   const [gpsMode, setGpsMode] = useState<"live" | "sim" | "idle">("idle");
   const [sunlight, setSunlight] = useState(false);
   const [autoLocked, setAutoLocked] = useState(false);
@@ -93,6 +99,10 @@ export default function RidePage() {
   const announceSpokenRef = useRef<Set<string>>(new Set());
   const idleSinceRef = useRef<number>(Date.now());
   const brightSinceRef = useRef<number | null>(null);
+  const offRouteRef = useRef(false);
+  const alongRouteRef = useRef(0);
+  const ttsMutedRef = useRef(false);
+  ttsMutedRef.current = ttsMuted;
 
   const track = currentRide?.track ?? [];
   const elapsed = currentRide?.durationSec ?? 0;
@@ -138,11 +148,14 @@ export default function RidePage() {
       setHint(null);
       setConfirmEnd(false);
       setNavBanner(null);
+      setOffRouteBanner(null);
       setGpsMode("idle");
       simTickRef.current = 0;
       gpsLiveRef.current = false;
       lastSpokenCueRef.current = null;
       announceSpokenRef.current = new Set();
+      offRouteRef.current = false;
+      alongRouteRef.current = 0;
       setAutoLocked(false);
       idleSinceRef.current = Date.now();
       return;
@@ -202,7 +215,7 @@ export default function RidePage() {
       if (liveHints[0]) {
         setHint(liveHints[0].text);
         if (liveHints[0].kind === "safety" || liveHints[0].kind === "bracketing") {
-          speakHint(liveHints[0].text);
+          speakHint(liveHints[0].text, { muted: ttsMutedRef.current });
         }
       }
     });
@@ -214,12 +227,31 @@ export default function RidePage() {
           gpsLiveRef.current = true;
           setGpsMode("live");
           if (useAppStore.getState().isPaused) return;
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
           appendTrackPoint({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
+            lat,
+            lng,
             elev: pos.coords.altitude ?? undefined,
             time: pos.timestamp,
           });
+          const route = useAppStore.getState().activeRoute;
+          const coords = route?.geometry?.coordinates;
+          if (coords && coords.length >= 2) {
+            const prog = projectOntoRoute(coords, lat, lng);
+            alongRouteRef.current = prog.distanceAlongM;
+            const nextOff = updateOffRouteState(
+              offRouteRef.current,
+              prog.crossTrackM
+            );
+            if (nextOff !== offRouteRef.current) {
+              offRouteRef.current = nextOff;
+              setOffRouteBanner(nextOff ? "Route verlassen" : null);
+              if (nextOff) {
+                speakNav("Route verlassen", { muted: ttsMutedRef.current });
+              }
+            }
+          }
         },
         () => {
           if (!gpsLiveRef.current) setGpsMode("sim");
@@ -290,13 +322,30 @@ export default function RidePage() {
           steps: route.steps,
           geometry: route.geometry,
         });
-        const along = state.currentRide?.distanceM ?? 0;
+        let along = alongRouteRef.current;
+        const last = state.currentRide?.track?.at(-1);
+        const coords = route.geometry?.coordinates;
+        if (last && coords && coords.length >= 2) {
+          const prog = projectOntoRoute(coords, last.lat, last.lng);
+          along = prog.distanceAlongM;
+          alongRouteRef.current = along;
+          const nextOff = updateOffRouteState(
+            offRouteRef.current,
+            prog.crossTrackM
+          );
+          if (nextOff !== offRouteRef.current) {
+            offRouteRef.current = nextOff;
+            setOffRouteBanner(nextOff ? "Route verlassen" : null);
+            if (nextOff) {
+              speakNav("Route verlassen", { muted: ttsMutedRef.current });
+            }
+          }
+        }
         const nxt = nextCue(cues, along);
         const speed = state.boschLive?.speed ?? 18;
         if (nxt) {
           const text = cueBannerText(nxt.cue, nxt.remainingM);
           setNavBanner(text);
-          // Map cue back to step for 400/150/30 announce
           const step = route.steps?.find((s) => s.id === nxt.cue.id);
           if (step) {
             const ann = pickAnnounce(
@@ -305,13 +354,13 @@ export default function RidePage() {
               speed,
               announceSpokenRef.current
             );
-            if (ann) speakHint(ann);
+            if (ann) speakNav(ann, { muted: ttsMutedRef.current });
           } else if (
             nxt.remainingM < 120 &&
             lastSpokenCueRef.current !== nxt.cue.id
           ) {
             lastSpokenCueRef.current = nxt.cue.id;
-            speakHint(text);
+            speakNav(text, { muted: ttsMutedRef.current });
           }
         } else {
           setNavBanner(null);
@@ -524,10 +573,24 @@ export default function RidePage() {
         )}
 
         {/* Nav banner */}
+        {isRiding && offRouteBanner && (
+          <div className="rounded-xl border border-amber-500/60 bg-amber-500/15 px-3 py-2.5 text-center text-sm font-semibold text-amber-900 dark:text-amber-100">
+            {offRouteBanner}
+          </div>
+        )}
         {isRiding && navBanner && (
           <div className="rounded-xl border border-accent/50 bg-accent/15 px-3 py-2.5 text-center text-sm font-semibold">
             {navBanner}
           </div>
+        )}
+        {isRiding && (
+          <button
+            type="button"
+            onClick={() => setTtsMuted((m) => !m)}
+            className="self-end text-xs text-text-secondary underline"
+          >
+            {ttsMuted ? "Nav-Ansagen an" : "Nav-Ansagen stumm"}
+          </button>
         )}
 
         {/* Live layer switcher */}

@@ -60,6 +60,8 @@ else
   IMAGE="${VALHALLA_DOCKER_IMAGE:-ghcr.io/gis-ops/docker-valhalla/valhalla:latest}"
   echo "==> Valhalla tiles via Docker ($IMAGE)"
   docker pull "$IMAGE" || true
+  # Image runs as uid 59999 (valhalla) — host mount must be world-writable.
+  chmod a+rwx "$CUSTOM_FILES" 2>/dev/null || true
   docker run --rm --entrypoint /bin/bash \
     -v "$CUSTOM_FILES:/custom_files" \
     "$IMAGE" \

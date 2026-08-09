@@ -31,6 +31,10 @@ class Bike {
     this.model,
     this.year,
     this.wheelSize,
+    this.catalogBikeId,
+    this.frameSize,
+    this.travelFrontMm,
+    this.travelRearMm,
     this.odometerKm = 0,
     this.hours = 0,
     this.isActive = false,
@@ -43,6 +47,10 @@ class Bike {
   final String? model;
   final int? year;
   final WheelSize? wheelSize;
+  final String? catalogBikeId;
+  final String? frameSize;
+  final int? travelFrontMm;
+  final int? travelRearMm;
   final double odometerKm;
   final double hours;
   final bool isActive;
@@ -53,8 +61,8 @@ class Bike {
         BikeCategory.mtbEnduro => 'Enduro',
         BikeCategory.dh => 'DH',
         BikeCategory.gravel => 'Gravel',
-        BikeCategory.road => 'Road',
-        BikeCategory.urban => 'Urban',
+        BikeCategory.road => 'Rennrad',
+        BikeCategory.urban => 'City / Urban',
         BikeCategory.emtb => 'E-MTB',
         BikeCategory.etrekking => 'E-Trekking',
         BikeCategory.hiking => 'Wandern',
@@ -67,6 +75,10 @@ class Bike {
     String? model,
     int? year,
     WheelSize? wheelSize,
+    String? catalogBikeId,
+    String? frameSize,
+    int? travelFrontMm,
+    int? travelRearMm,
     double? odometerKm,
     double? hours,
     bool? isActive,
@@ -79,6 +91,10 @@ class Bike {
       model: model ?? this.model,
       year: year ?? this.year,
       wheelSize: wheelSize ?? this.wheelSize,
+      catalogBikeId: catalogBikeId ?? this.catalogBikeId,
+      frameSize: frameSize ?? this.frameSize,
+      travelFrontMm: travelFrontMm ?? this.travelFrontMm,
+      travelRearMm: travelRearMm ?? this.travelRearMm,
       odometerKm: odometerKm ?? this.odometerKm,
       hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,

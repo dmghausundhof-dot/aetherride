@@ -105,20 +105,26 @@ async function manifestBasenames(dir: string): Promise<string[]> {
 
 /**
  * Scans public/offline, data/routing/dist and manifests/.
- * Always includes schwarzwald-nord as demo fallback.
+ * Only IDs with a readable manifest are listed (no empty 404 traps).
  */
 export async function listKnownPackIds(): Promise<string[]> {
-  const ids = new Set<string>(["schwarzwald-nord"]);
+  const skip = new Set(["valhalla-build"]);
+  const candidates = new Set<string>(["schwarzwald-nord"]);
   for (const id of await dirNames(path.join(ROOT, "public", "offline"))) {
-    ids.add(id);
+    if (!skip.has(id)) candidates.add(id);
   }
   for (const id of await dirNames(path.join(ROOT, "data", "routing", "dist"))) {
-    ids.add(id);
+    if (!skip.has(id)) candidates.add(id);
   }
   for (const id of await manifestBasenames(
     path.join(ROOT, "data", "routing", "manifests")
   )) {
-    ids.add(id);
+    if (!skip.has(id)) candidates.add(id);
   }
-  return [...ids].sort();
+  const ids: string[] = [];
+  for (const id of candidates) {
+    const m = await readOfflineManifest(id);
+    if (m) ids.push(id);
+  }
+  return ids.sort();
 }

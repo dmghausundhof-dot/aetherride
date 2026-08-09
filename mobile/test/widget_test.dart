@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('AppShell zeigt AetherRide auf Home', (tester) async {
+  testWidgets('AppShell zeigt Home mit Navigation', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -25,7 +25,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('AetherRide'), findsWidgets);
     expect(find.text('Garage'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.textContaining('Wetter'), findsWidgets);
+    expect(find.text('Trail E-MTB'), findsWidgets);
   });
 }

@@ -13,6 +13,7 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_tiles.dart';
+import '../../data/routing/map_style_url.dart';
 
 /// Fallback catalog when API has no list endpoint.
 const _kFallbackRegions = [
@@ -36,6 +37,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   bool _loading = true;
   bool _busy = false;
   String? _progress;
+  String? _catalogNote;
   List<({String id, String name})> _regions = List.from(_kFallbackRegions);
 
   @override
@@ -53,7 +55,15 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
             headers: {'Accept': 'application/json'},
           )
           .timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return;
+      if (res.statusCode != 200) {
+        if (mounted) {
+          setState(
+            () => _catalogNote =
+                'Katalog HTTP ${res.statusCode} — Fallback Schwarzwald',
+          );
+        }
+        return;
+      }
       final data = jsonDecode(res.body);
       if (data is! Map) return;
       final packs = <({String id, String name})>[];
@@ -63,9 +73,25 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         if (id == null || id.isEmpty) continue;
         packs.add((id: id, name: (raw['name'] as String?) ?? id));
       }
-      if (packs.isEmpty || !mounted) return;
-      setState(() => _regions = packs);
-    } catch (_) {}
+      if (!mounted) return;
+      if (packs.isEmpty) {
+        setState(
+          () => _catalogNote = 'Katalog leer — Fallback Schwarzwald',
+        );
+        return;
+      }
+      setState(() {
+        _regions = packs;
+        _catalogNote = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _catalogNote =
+              'Katalog nicht erreichbar — Fallback Schwarzwald',
+        );
+      }
+    }
   }
 
   @override
@@ -290,7 +316,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           content: Text(
             sourceLabel == 'bundle'
                 ? '${region.name}: Bundle-Graph aktiv (kein Remote-Pack)'
-                : '${region.name} aktiv ($hint)',
+                : status.contains('unlinked') || status.contains('graph')
+                    ? '${region.name} aktiv ($hint) — $status'
+                    : '${region.name} aktiv ($hint)',
           ),
         ),
       );
@@ -310,9 +338,63 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     }
   }
 
+  /// True if URL looks like a MapLibre style JSON (not a raw .pmtiles file).
+  static bool isStyleJsonUrl(String raw) => isMapLibreStyleJsonUrl(raw);
+
+  String? _styleUrlError(String raw) {
+    final t = raw.trim();
+    if (t.isEmpty) return null;
+    if (t.toLowerCase().endsWith('.pmtiles') ||
+        t.toLowerCase().contains('.pmtiles?')) {
+      return 'Roh-.pmtiles wird nicht unterstützt — MapLibre-Style-JSON mit '
+          'pmtiles://-Source nötig.';
+    }
+    if (!isStyleJsonUrl(t) &&
+        !t.startsWith('http://') &&
+        !t.startsWith('https://')) {
+      return 'Ungültige URL';
+    }
+    if (!isStyleJsonUrl(t)) {
+      return 'Erwarte Style-JSON-URL (*.json oder /styles/…), keine Tile-Datei.';
+    }
+    return null;
+  }
+
+  Future<void> _saveStyleUrl() async {
+    final url = _urlCtrl.text.trim();
+    final err = _styleUrlError(url);
+    if (err != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      }
+      return;
+    }
+    await _savePrefs(pmtilesUrl: url);
+    if (!mounted) return;
+    final resolved = await AppConfig.resolveMapStyleUrl();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          url.isEmpty
+              ? 'Override gelöscht — Default-Style aktiv'
+              : 'Style gespeichert. Aktiv: $resolved',
+        ),
+      ),
+    );
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final activeStyleHint = _urlCtrl.text.trim().isNotEmpty &&
+            isStyleJsonUrl(_urlCtrl.text)
+        ? _urlCtrl.text.trim()
+        : (AppConfig.pmtilesUrl.isNotEmpty &&
+                isStyleJsonUrl(AppConfig.pmtilesUrl)
+            ? AppConfig.pmtilesUrl
+            : AppConfig.mapStyleUrl);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottom),
       child: _loading
@@ -326,32 +408,36 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Offline-Karten',
+                    'Offline-Karten & Routing',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   Text(
-                    'Compile-Zeit PMTiles: '
-                    '${AppConfig.pmtilesUrl.isEmpty ? '(leer)' : AppConfig.pmtilesUrl}',
+                    'Basemap (Kartenstil)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Nur MapLibre-Style-JSON. Roh-.pmtiles-Dateien werden '
+                    'abgelehnt — Style muss pmtiles://-Sources referenzieren.',
                     style: const TextStyle(color: AppColors.muted, fontSize: 12),
                   ),
-                  if (_valhallaStatus != null) ...[
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Aktiv (Resolver): $activeStyleHint',
+                    style: const TextStyle(color: AppColors.muted, fontSize: 11),
+                  ),
+                  if (AppConfig.usingFreeBasemap) ...[
+                    const SizedBox(height: 6),
                     Text(
-                      'Valhalla: $_valhallaStatus',
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                  if (_engineHint != null) ...[
-                    Text(
-                      'Pack-Engine: $_engineHint',
-                      style: const TextStyle(
-                        color: AppColors.muted,
+                      'Aktuell Free-Basemap (OpenFreeMap) — Stadia/Style via '
+                      '`scripts/mobile-with-env.sh` + .env.local.',
+                      style: TextStyle(
+                        color: AppColors.accent.withValues(alpha: 0.95),
                         fontSize: 12,
                       ),
                     ),
@@ -360,8 +446,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                   TextField(
                     controller: _urlCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'PMTiles-URL',
-                      hintText: 'https://…/region.pmtiles',
+                      labelText: 'Style-JSON-URL',
+                      hintText: 'https://…/styles/outdoors.json',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -370,31 +456,54 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
                     ),
-                    onPressed: _busy
-                        ? null
-                        : () async {
-                            await _savePrefs(pmtilesUrl: _urlCtrl.text.trim());
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('PMTiles-URL gespeichert'),
-                                ),
-                              );
-                            }
-                          },
-                    child: const Text('URL speichern'),
+                    onPressed: _busy ? null : _saveStyleUrl,
+                    child: const Text('Style speichern'),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Text(
-                    'Region-Pack',
+                    'Routing-Pack (Offline-Navigation)',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                   ),
                   const SizedBox(height: 4),
                   Text(
+                    'Lädt offline_graph.json (+ optional Valhalla-Daten). '
+                    'Volle Valhalla-Qualität braucht gelinktes libvalhalla.',
+                    style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                  ),
+                  if (_catalogNote != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _catalogNote!,
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  if (_valhallaStatus != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Engine: $_valhallaStatus',
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  if (_engineHint != null)
+                    Text(
+                      'Pack-Hinweis: $_engineHint',
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
                     _regionPref == null
-                        ? 'Noch keine Region aktiv.'
+                        ? 'Noch keine Region aktiv — Bundle-Graph als Fallback.'
                         : 'Aktiv: $_regionPref'
                             '${_activatedPath != null ? '\n$_activatedPath' : ''}',
                     style: const TextStyle(color: AppColors.muted, fontSize: 13),

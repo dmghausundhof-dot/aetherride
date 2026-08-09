@@ -17,7 +17,8 @@ export type MapRouteRole =
   | "alt"
   | "tour"
   | "approach"
-  | "trail";
+  | "trail"
+  | "approx";
 
 export type MapRouteLayer = {
   id: string;
@@ -37,7 +38,8 @@ const ROLE_STYLE: Record<
   alt: { color: "#90A4AE", width: 3, opacity: 0.45 },
   tour: { color: "#AB47BC", width: 4, opacity: 0.85 },
   approach: { color: "#66BB6A", width: 4, opacity: 0.9, dasharray: [2, 2] },
-  trail: { color: "#FF6B35", width: 3.5, opacity: 0.8, dasharray: [1.5, 1.5] },
+  trail: { color: "#B0BEC5", width: 2.5, opacity: 0.55, dasharray: [1.5, 1.5] },
+  approx: { color: "#78909C", width: 3.5, opacity: 0.65, dasharray: [2, 2] },
 };
 
 interface MapViewProps {
@@ -69,9 +71,33 @@ function ensurePmtilesProtocol() {
   pmtilesRegistered = true;
 }
 
+function isMapLibreStyleUrl(url: string): boolean {
+  const u = url.trim().toLowerCase();
+  if (!u) return false;
+  if (u.endsWith(".pmtiles") || u.includes(".pmtiles?")) return false;
+  return (
+    u.endsWith(".json") ||
+    u.includes("/styles/") ||
+    u.includes("style.json")
+  );
+}
+
+function isRawPmtilesUrl(url: string): boolean {
+  const u = url.trim().toLowerCase();
+  return (
+    u.endsWith(".pmtiles") ||
+    u.includes(".pmtiles?") ||
+    u.startsWith("pmtiles://")
+  );
+}
+
 function buildStyle(): maplibregl.StyleSpecification | string {
   const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
   if (pmtilesUrl) {
+    // Style-JSON URL (same model as mobile) — pass through to MapLibre.
+    if (isMapLibreStyleUrl(pmtilesUrl) && !isRawPmtilesUrl(pmtilesUrl)) {
+      return pmtilesUrl;
+    }
     const sourceUrl = pmtilesUrl.startsWith("pmtiles://")
       ? pmtilesUrl
       : `pmtiles://${pmtilesUrl}`;

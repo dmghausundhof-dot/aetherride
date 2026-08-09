@@ -37,7 +37,7 @@ export const CONSENT_LABELS: Record<
   heatmap_contribution: {
     title: "Heatmap-Beitrag",
     description:
-      "Anonymisierte Segmente nach Privacy-Trim und k≥5 (F-NAV-005). Kein Zeitstempel.",
+      "Anonymisierte Zellen ohne Zeitstempel; Community-Overlay erst ab k≥5 (F-NAV-005).",
   },
   product_recommendations: {
     title: "Produktempfehlungen",
@@ -51,7 +51,7 @@ export const CONSENT_LABELS: Record<
   health_data: {
     title: "Gesundheitsdaten (Art. 9)",
     description:
-      "Herzfrequenz / Health Connect — nur mit ausdrücklicher Einwilligung.",
+      "Vorbereitung — keine Health-Connect-Anbindung in dieser Version.",
   },
 };
 

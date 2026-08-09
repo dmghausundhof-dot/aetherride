@@ -1,9 +1,21 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/export/fit.dart';
+import '../../data/export/gpx.dart';
+import '../../data/export/strava_client.dart';
+import '../../data/routing/heatmap_client.dart';
 import '../../domain/ebike/assist_log.dart';
 import '../../domain/post_ride/analyze.dart';
+import '../../domain/privacy/consents.dart';
 import '../../domain/ride.dart';
 import '../../providers/app_providers.dart';
 
@@ -27,6 +39,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   PostRideAnalysis? _analysis;
   bool _acceptedSuggestion = false;
   AssistRideSummary? _assist;
+  double _replayProgress = 0;
 
   @override
   void initState() {
@@ -62,6 +75,51 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
         }
       }
     });
+    if (ride != null) {
+      unawaited(_postRideSideEffects(ride));
+    }
+  }
+
+  Future<void> _postRideSideEffects(RideRecord ride) async {
+    try {
+      final consents =
+          await ref.read(garageRepositoryProvider).listConsents();
+      if (consents[ConsentPurpose.heatmapContribution.apiId] == true) {
+        final zones =
+            await ref.read(garageRepositoryProvider).listPrivacyZones();
+        final n = await contributeHeatmapTrack(
+          track: ride.track,
+          privacyZones: zones,
+        );
+        if (mounted && n > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Heatmap: $n Zellen beigetragen (sichtbar ab k≥5)',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _uploadStrava() async {
+    final ride = _ride;
+    if (ride == null) return;
+    try {
+      final r = await uploadRideToStrava(ride);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(r.message)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Strava: $e')),
+        );
+      }
+    }
   }
 
   void _reanalyze(RideFeedback feedback) {
@@ -125,12 +183,76 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _shareGpx() async {
+    final ride = _ride;
+    if (ride == null) return;
+    if (!rideHasExportableTrack(ride)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kein GPS-Track — GPX wäre leer'),
+        ),
+      );
+      return;
+    }
+    try {
+      final gpx = rideToGpx(ride, bikeName: _bikeName);
+      final dir = await getTemporaryDirectory();
+      final path = p.join(
+        dir.path,
+        'aetherride-${ride.id.substring(0, math.min(8, ride.id.length))}.gpx',
+      );
+      await File(path).writeAsString(gpx);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(path, mimeType: 'application/gpx+xml')]),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('GPX-Export: $e')),
+      );
+    }
+  }
+
+  Future<void> _shareFit() async {
+    final ride = _ride;
+    if (ride == null) return;
+    try {
+      final bytes = rideToFit(ride);
+      final dir = await getTemporaryDirectory();
+      final path = p.join(
+        dir.path,
+        'aetherride-${ride.id.substring(0, math.min(8, ride.id.length))}.fit',
+      );
+      await File(path).writeAsBytes(bytes);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(path, mimeType: 'application/octet-stream')]),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('FIT-Export: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ride = _ride;
     final analysis = _analysis;
+    final track = ride?.track ?? const <Map<String, dynamic>>[];
     return Scaffold(
-      appBar: AppBar(title: const Text('Post-Ride')),
+      appBar: AppBar(
+        title: const Text('Post-Ride'),
+        actions: [
+          if (ride != null)
+            IconButton(
+              tooltip: 'GPX teilen',
+              onPressed: _shareGpx,
+              icon: const Icon(Icons.ios_share),
+            ),
+        ],
+      ),
       body: ride == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -144,10 +266,93 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${ride.distanceKm.toStringAsFixed(1)} km · '
-                  '${(ride.movingTimeSec / 60).round()} min · '
+                  '${ride.distanceKm < 1 ? ride.distanceKm.toStringAsFixed(2) : ride.distanceKm.toStringAsFixed(1)} km · '
+                  '${ride.movingTimeSec < 60 ? '${ride.movingTimeSec} s' : '${(ride.movingTimeSec / 60).round()} min'} · '
                   '${ride.elevationM.round()} hm',
                   style: const TextStyle(color: AppColors.muted),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Track-Replay',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 180,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.muted.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CustomPaint(
+                        painter: _TrackReplayPainter(
+                          track: track,
+                          progress: _replayProgress,
+                        ),
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ),
+                ),
+                if (track.length >= 2) ...[
+                  Slider(
+                    value: _replayProgress,
+                    onChanged: (v) => setState(() => _replayProgress = v),
+                  ),
+                  Text(
+                    'Position ${(100 * _replayProgress).round()} %',
+                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Kein GPS-Track — Replay zeigt Platzhalter.',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _shareGpx,
+                        icon: const Icon(Icons.download),
+                        label: const Text('GPX'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _shareFit,
+                        icon: const Icon(Icons.fitness_center),
+                        label: const Text('FIT'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _uploadStrava,
+                        icon: const Icon(Icons.upload_outlined),
+                        label: const Text('Strava'),
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Strava: mit GPS-Track via Uploads-API; ohne Track nur Metadaten '
+                    '(braucht OAuth + STRAVA_* Keys).',
+                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
                 ),
                 if (analysis != null) ...[
                   const SizedBox(height: 16),
@@ -462,8 +667,11 @@ class _MetricBars extends StatelessWidget {
     final m = ride.summary;
     final km = ride.distanceKm;
     final impacts = (m['impactCount'] as num?)?.toInt() ?? 0;
-    final impactsPerKm = km > 0.5 ? impacts / km : impacts.toDouble();
-    final impactPct = (impactsPerKm / 6).clamp(0.0, 1.0);
+    final shortRide = km < 0.5;
+    final impactsPerKm = shortRide
+        ? 0.0
+        : (km > 0 ? impacts / km : 0.0);
+    final impactPct = shortRide ? 0.0 : (impactsPerKm / 6).clamp(0.0, 1.0);
 
     final rows = <({String label, String value, double pct, bool accent})>[
       (
@@ -497,7 +705,7 @@ class _MetricBars extends StatelessWidget {
 
     rows.add((
       label: 'Impact',
-      value: impactsPerKm.toStringAsFixed(1),
+      value: shortRide ? 'n/a' : impactsPerKm.toStringAsFixed(1),
       pct: impactPct,
       accent: false,
     ));
@@ -505,6 +713,14 @@ class _MetricBars extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (shortRide)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Kurzride — Metriken eingeschränkt (< 0,5 km).',
+              style: TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+          ),
         Text(
           'Metriken',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -552,3 +768,76 @@ const _labelStyle = TextStyle(
   fontWeight: FontWeight.w600,
   fontSize: 13,
 );
+
+class _TrackReplayPainter extends CustomPainter {
+  _TrackReplayPainter({required this.track, required this.progress});
+
+  final List<Map<String, dynamic>> track;
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pts = <Offset>[];
+    for (final p in track) {
+      final lat = (p['lat'] as num?)?.toDouble();
+      final lng = (p['lng'] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+      pts.add(Offset(lng, lat));
+    }
+    if (pts.length < 2) {
+      final paint = Paint()
+        ..color = AppColors.muted.withValues(alpha: 0.35)
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(24, 40, size.width - 48, size.height - 80),
+          const Radius.circular(40),
+        ),
+        paint,
+      );
+      return;
+    }
+
+    double minX = pts.first.dx, maxX = pts.first.dx;
+    double minY = pts.first.dy, maxY = pts.first.dy;
+    for (final o in pts) {
+      minX = math.min(minX, o.dx);
+      maxX = math.max(maxX, o.dx);
+      minY = math.min(minY, o.dy);
+      maxY = math.max(maxY, o.dy);
+    }
+    final dx = (maxX - minX).abs() < 1e-9 ? 1e-5 : maxX - minX;
+    final dy = (maxY - minY).abs() < 1e-9 ? 1e-5 : maxY - minY;
+    final pad = 16.0;
+    Offset map(Offset o) {
+      final x = pad + (o.dx - minX) / dx * (size.width - 2 * pad);
+      final y = size.height - pad - (o.dy - minY) / dy * (size.height - 2 * pad);
+      return Offset(x, y);
+    }
+
+    final path = Path()..moveTo(map(pts.first).dx, map(pts.first).dy);
+    for (var i = 1; i < pts.length; i++) {
+      final m = map(pts[i]);
+      path.lineTo(m.dx, m.dy);
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.trail.withValues(alpha: 0.85)
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+    final idx =
+        ((pts.length - 1) * progress.clamp(0.0, 1.0)).round().clamp(0, pts.length - 1);
+    final cursor = map(pts[idx]);
+    canvas.drawCircle(cursor, 6, Paint()..color = AppColors.accent);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrackReplayPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.track != track;
+}
+

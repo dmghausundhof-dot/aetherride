@@ -24,6 +24,7 @@ dependencies:
   flutter_blue_plus: ^1.35.2
   maplibre_gl: ^0.21.0
   geolocator: ^13.0.2
+  app_links: ^6.3.3
   url_launcher: ^6.3.1
   flutter_tts: ^4.2.0
   in_app_purchase: ^3.2.0
@@ -34,6 +35,8 @@ dependencies:
   dsp_core:
     path: packages/dsp_core
   share_plus: ^13.3.0
+  file_picker: ^12.0.0-beta.7
+  wakelock_plus: ^1.7.0
 
 dev_dependencies:
   flutter_test:

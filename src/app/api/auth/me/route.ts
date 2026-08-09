@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAuthedClient } from "@/lib/supabase/authed";
 
-export async function GET() {
+/** Cookie (Web) oder Authorization: Bearer (Mobile). */
+export async function GET(req: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createAuthedClient(req);
     const {
       data: { user },
     } = await supabase.auth.getUser();

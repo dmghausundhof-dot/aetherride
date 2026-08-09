@@ -13,6 +13,7 @@ import {
   downloadText,
   fullJsonExport,
   rideToGpx,
+  rideHasExportableTrack,
   rideToStravaActivityStub,
 } from "@/lib/export/gpx";
 import { downloadBytes, rideToFit } from "@/lib/export/fit";
@@ -29,6 +30,12 @@ export default function PrivacyExportPage() {
   const consents = useAppStore((s) => s.consents);
   const setConsent = useAppStore((s) => s.setConsent);
   const [stravaConfigured, setStravaConfigured] = useState(false);
+  const [stravaAuthorizeUrl, setStravaAuthorizeUrl] = useState<string | null>(
+    null
+  );
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const [stravaStatusMsg, setStravaStatusMsg] = useState<string | null>(null);
+  const [stravaBusy, setStravaBusy] = useState(false);
   const privacyZones = useAppStore((s) => s.privacyZones);
   const addPrivacyZone = useAppStore((s) => s.addPrivacyZone);
   const removePrivacyZone = useAppStore((s) => s.removePrivacyZone);
@@ -54,12 +61,46 @@ export default function PrivacyExportPage() {
   );
 
   useEffect(() => {
+    const flag = new URLSearchParams(window.location.search).get("strava");
+    if (flag === "connected") {
+      setStravaConnected(true);
+      setStravaStatusMsg("Strava verbunden.");
+    } else if (flag === "not_configured") {
+      setStravaStatusMsg("Strava OAuth nicht konfiguriert.");
+    } else if (flag) {
+      setStravaStatusMsg(`Strava: ${flag}`);
+    }
+    if (document.cookie.includes("strava_connected=1")) {
+      setStravaConnected(true);
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
+    void fetch("/api/strava/status")
+      .then((r) => r.json())
+      .then((data: { configured?: boolean; connected?: boolean }) => {
+        if (cancelled) return;
+        if (data.configured) setStravaConfigured(true);
+        if (data.connected) setStravaConnected(true);
+      })
+      .catch(() => {});
     void fetch("/api/strava")
       .then((r) => r.json())
-      .then((data: { configured?: boolean }) => {
-        if (!cancelled) setStravaConfigured(Boolean(data.configured));
-      })
+      .then(
+        (data: {
+          configured?: boolean;
+          authorizeUrl?: string;
+          message?: string;
+        }) => {
+          if (cancelled) return;
+          setStravaConfigured(Boolean(data.configured));
+          setStravaAuthorizeUrl(data.authorizeUrl ?? null);
+          if (!data.configured && data.message) {
+            setStravaStatusMsg((prev) => prev ?? data.message!);
+          }
+        }
+      )
       .catch(() => {
         if (!cancelled) setStravaConfigured(false);
       });
@@ -67,6 +108,64 @@ export default function PrivacyExportPage() {
       cancelled = true;
     };
   }, []);
+
+  async function uploadLastRideToStrava() {
+    if (!lastRide) return;
+    setStravaBusy(true);
+    setStravaStatusMsg(null);
+    try {
+      const stub = rideToStravaActivityStub(lastRide) as {
+        name?: string;
+        type?: string;
+        sport_type?: string;
+        start_date_local?: string;
+        elapsed_time?: number;
+        distance?: number;
+        total_elevation_gain?: number;
+        description?: string;
+      };
+      const gpx = rideHasExportableTrack(lastRide)
+        ? rideToGpx(lastRide, activeBike?.name)
+        : undefined;
+      const res = await fetch("/api/strava/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: stub.name,
+          type: stub.type,
+          sport_type: stub.sport_type,
+          start_date_local: stub.start_date_local,
+          elapsed_time: stub.elapsed_time,
+          distance: stub.distance,
+          total_elevation_gain: stub.total_elevation_gain,
+          description: stub.description,
+          ...(gpx ? { gpx } : {}),
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+        mode?: string;
+        warning?: string;
+      };
+      if (!res.ok) {
+        setStravaStatusMsg(data.message || data.error || `Upload ${res.status}`);
+        return;
+      }
+      if (data.mode === "gpx_upload") {
+        setStravaStatusMsg("Bei Strava hochgeladen (mit Track).");
+      } else {
+        setStravaStatusMsg(
+          data.warning || "Bei Strava hochgeladen (nur Metadaten)."
+        );
+      }
+    } catch (e) {
+      setStravaStatusMsg(e instanceof Error ? e.message : "Upload fehlgeschlagen");
+    } finally {
+      setStravaBusy(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
@@ -87,6 +186,12 @@ export default function PrivacyExportPage() {
             disabled={!lastRide}
             onClick={() => {
               if (!lastRide) return;
+              if (!rideHasExportableTrack(lastRide)) {
+                window.alert(
+                  "Dieser Ride hat keinen GPS-Track — GPX wäre leer. JSON-Export nutzen."
+                );
+                return;
+              }
               const gpx = rideToGpx(lastRide, activeBike?.name);
               downloadText(
                 `aetherride-${lastRide.id.slice(0, 8)}.gpx`,
@@ -129,28 +234,59 @@ export default function PrivacyExportPage() {
             Letzten Ride als FIT
           </button>
           {stravaConfigured ? (
-            <button
-              type="button"
-              disabled={!lastRide}
-              onClick={() => {
-                if (!lastRide) return;
-                const stub = rideToStravaActivityStub(lastRide);
-                downloadText(
-                  "strava-activity-payload.json",
-                  JSON.stringify(stub, null, 2),
-                  "application/json"
-                );
-              }}
-              className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
-            >
-              Strava-Export vorbereiten (JSON)
-            </button>
+            <>
+              <p className="rounded-xl border border-border px-3 py-2 text-xs">
+                Status:{" "}
+                <strong>
+                  {stravaConnected ? "verbunden" : "konfiguriert, nicht verbunden"}
+                </strong>
+              </p>
+              {stravaAuthorizeUrl && !stravaConnected && (
+                <a
+                  href={stravaAuthorizeUrl}
+                  className="rounded-xl bg-accent py-2.5 text-center text-sm font-semibold text-white"
+                >
+                  Mit Strava verbinden
+                </a>
+              )}
+              {stravaConnected && (
+                <button
+                  type="button"
+                  disabled={!lastRide || stravaBusy}
+                  onClick={() => void uploadLastRideToStrava()}
+                  className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  {stravaBusy ? "Lade hoch…" : "Letzten Ride zu Strava"}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={!lastRide}
+                onClick={() => {
+                  if (!lastRide) return;
+                  const stub = rideToStravaActivityStub(lastRide);
+                  downloadText(
+                    "strava-activity-payload.json",
+                    JSON.stringify(stub, null, 2),
+                    "application/json"
+                  );
+                }}
+                className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
+              >
+                Strava-Payload (Stub JSON)
+              </button>
+            </>
           ) : (
             <p className="rounded-xl border border-dashed border-border px-3 py-2.5 text-xs text-text-secondary">
-              Strava-Upload folgt nach OAuth (
+              Strava Live-Upload braucht{" "}
               <code className="text-[10px]">STRAVA_CLIENT_ID</code> /{" "}
-              <code className="text-[10px]">SECRET</code>). Bis dahin: GPX/FIT.
+              <code className="text-[10px]">SECRET</code> und Tabelle{" "}
+              <code className="text-[10px]">strava_connections</code>. Bis dahin:
+              GPX/FIT.
             </p>
+          )}
+          {stravaStatusMsg && (
+            <p className="text-xs text-text-secondary">{stravaStatusMsg}</p>
           )}
         </div>
         <pre className="mt-3 max-h-24 overflow-auto rounded-lg bg-surface-elevated p-2 text-[10px] text-text-secondary">

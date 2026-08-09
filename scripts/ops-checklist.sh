@@ -1,57 +1,70 @@
 #!/usr/bin/env bash
-# AetherRide ops dry-run checklist (no secrets required).
+# Ops-Checkliste (Gap-Plan E) — lokal Abhakbares + externe Reste.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-ok() { printf '  OK  %s\n' "$*"; }
-warn() { printf '  !!  %s\n' "$*"; }
-info() { printf '  ·   %s\n' "$*"; }
+ok() { echo "  [OK] $*"; }
+miss() { echo "  [ ] $*"; }
+note() { echo "  · $*"; }
 
-echo "== AetherRide Ops Checklist =="
-
+echo "== AetherRide Ops-Check =="
 echo
-echo "[1] Ride chunks SQL"
-if [[ -f supabase/ride_chunks.sql ]]; then
-  ok "supabase/ride_chunks.sql vorhanden — in Supabase SQL Editor ausführen"
-  info "Bucket ride-chunks + Tabelle ride_chunk_uploads + RLS"
+
+echo "Env / Routing"
+if [[ -f .env.local ]]; then
+  ok ".env.local vorhanden"
+  for key in GRAPHHOPPER_API_KEY NEXT_PUBLIC_ROUTING_LIVE STADIA_API_KEY \
+    NEXT_PUBLIC_PMTILES_URL STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET \
+    NEXT_PUBLIC_SUPABASE_URL STRIPE_WEBHOOK_SECRET; do
+    if grep -qE "^${key}=" .env.local 2>/dev/null && \
+       ! grep -qE "^${key}=\s*$" .env.local 2>/dev/null; then
+      ok "$key gesetzt"
+    else
+      miss "$key fehlt oder leer"
+    fi
+  done
 else
-  warn "supabase/ride_chunks.sql fehlt"
+  miss ".env.local fehlt"
 fi
-
 echo
-echo "[2] Play Billing"
-info "Package: com.aetherride.aetherride_mobile"
-info "Product ID: aetherride_pro_monthly (siehe mobile/README.md)"
-if [[ -n "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:-}" ]]; then
-  ok "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON ist gesetzt (2A Verify aktiv)"
+
+echo "Mobile"
+if [[ -x scripts/mobile-with-env.sh ]]; then
+  ok "scripts/mobile-with-env.sh ausführbar (dart-defines)"
 else
-  warn "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON unset → trusted-token MVP / PLAY_VERIFY_STUB=1"
+  miss "scripts/mobile-with-env.sh"
 fi
-
+note "AVD: aether_api34 (nicht API 36)"
+note "API_BASE_URL=http://10.0.2.2:3001 gegen Host-Next"
 echo
-echo "[3] Offline region packs"
-for d in public/offline data/routing/dist data/routing/manifests; do
-  if [[ -d "$d" ]]; then
-    n=$(find "$d" -maxdepth 2 \( -name 'manifest.json' -o -name '*.json' \) 2>/dev/null | wc -l | tr -d ' ')
-    ok "$d ($n json-Dateien)"
+
+echo "Partner / Honesty"
+note "Trailforks: Attribution-only (kein Condition-Layer ohne Partnerschaft)"
+note "Mapillary: Token → Live; sonst ehrlicher Platzhalter"
+note "Outdooractive: Geometry wenn API liefert; sonst usingDemoFallback"
+note "Bosch LDI Hardware (G-1): bewusst nicht in diesem Batch"
+for key in OUTDOORACTIVE_API_KEY OUTDOORACTIVE_PROJECT_KEY MAPILLARY_ACCESS_TOKEN \
+  NEXT_PUBLIC_MAPILLARY_TOKEN; do
+  if [[ -f .env.local ]] && grep -qE "^${key}=" .env.local 2>/dev/null && \
+     ! grep -qE "^${key}=\s*$" .env.local 2>/dev/null; then
+    ok "$key gesetzt"
   else
-    info "$d fehlt (optional bis Region-Build)"
+    miss "$key fehlt — Live-Enrichment eingeschränkt (Demo/Platzhalter ok)"
   fi
 done
-info "Build: npm run routing:region  |  Valhalla Android: npm run routing:valhalla:android"
-
 echo
-echo "[4] Mapillary / Strava / Valhalla env"
-[[ -n "${MAPILLARY_ACCESS_TOKEN:-}${NEXT_PUBLIC_MAPILLARY_ACCESS_TOKEN:-}" ]] && ok "Mapillary-Token gesetzt" || warn "Mapillary-Token unset → Trail View Demo"
-[[ -n "${STRAVA_CLIENT_ID:-}" && -n "${STRAVA_CLIENT_SECRET:-}" ]] && ok "Strava OAuth env gesetzt" || warn "Strava OAuth unset → Stub-Export only"
-[[ -n "${VALHALLA_URL:-}" ]] && ok "VALHALLA_URL gesetzt" || info "VALHALLA_URL optional (Server-Routing)"
 
+echo "Externe Ops (nicht lokal fakebar)"
+miss "Vercel Env (Prod) synchron"
+miss "Stripe Webhook Endpoint Prod"
+miss "Play Service Account JSON + License Tester + SKU aetherride_pro_monthly"
+miss "STRAVA_CLIENT_ID/SECRET in .env.local + Strava Redirect → /api/strava/callback"
+ok "SQL: strava_connections + heatmap_cells + bike-photos (Supabase aetherride)"
+ok "Auth uri_allow_list: login-callback + strava-callback Deep-Links"
+ok "Valhalla JNI arm64 linked + schwarzwald-nord pack mit Tiles"
+miss "Bosch LDI G-1 (Hardware/NDA)"
 echo
-echo "[5] Bewusst Hardware/Ops"
-info "Bosch LDI echtes Protokoll = G-1 (Shell vorhanden)"
-info "Play Console Produkt + License Tester anlegen"
-info "GET /api/offline/packs · GET /api/strava · POST /api/billing/play-verify"
 
-echo
-echo "Done."
+echo "Done: lokal prüfbar abgehakt; Rest = echte Credentials/Freigaben."
+echo "Siehe auch: mobile/ANDROID_OPS_CHECKLIST.md · bash scripts/ops-android-auth.sh"

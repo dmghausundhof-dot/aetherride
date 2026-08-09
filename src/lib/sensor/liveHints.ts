@@ -53,14 +53,31 @@ export function hintsFromMetrics(input: {
   return hints;
 }
 
-/** Web Speech API Wrapper — fail silently */
-export function speakHint(text: string): void {
+/** Web Speech API Wrapper — fail silently; respects mute via opts. */
+export function speakHint(
+  text: string,
+  opts?: { muted?: boolean }
+): void {
+  if (opts?.muted) return;
   if (typeof window === "undefined") return;
   const synth = window.speechSynthesis;
   if (!synth) return;
   const u = new SpeechSynthesisUtterance(clampHint(text));
   u.lang = "de-DE";
   u.rate = 1.05;
+  synth.cancel();
+  synth.speak(u);
+}
+
+/** Nav-Ansagen ohne 6-Wort-Clamp (Manöver-Texte brauchen volle Länge). */
+export function speakNav(text: string, opts?: { muted?: boolean }): void {
+  if (opts?.muted) return;
+  if (typeof window === "undefined") return;
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+  const u = new SpeechSynthesisUtterance(text.trim());
+  u.lang = "de-DE";
+  u.rate = 1.0;
   synth.cancel();
   synth.speak(u);
 }

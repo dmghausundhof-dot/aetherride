@@ -1,18 +1,22 @@
-import 'dart:math' as math;
-
 import '../../domain/ride.dart';
 
+/// True if the ride has enough GPS points for an honest track export.
+bool rideHasExportableTrack(RideRecord ride) => ride.track.length >= 2;
+
 /// F-ACC-003 — GPX export for a single ride (web `rideToGpx`).
+/// Empty track → valid GPX with empty `<trkseg>` (no fake Berchtesgaden path).
 String rideToGpx(RideRecord ride, {String? bikeName}) {
   final name =
       'AetherRide ${ride.startedAt.toUtc().toIso8601String().substring(0, 10)}';
-  final pts = ride.track.isNotEmpty ? ride.track : _synthesizeTrack(ride);
+  final pts = ride.track;
 
   final trkpts = StringBuffer();
   for (var i = 0; i < pts.length; i++) {
     final p = pts[i];
-    final lat = (p['lat'] as num?)?.toDouble() ?? 0;
-    final lng = (p['lng'] as num?)?.toDouble() ?? 0;
+    final lat = (p['lat'] as num?)?.toDouble();
+    final lng = (p['lng'] as num?)?.toDouble();
+    if (lat == null || lng == null) continue;
+    if (lat.abs() < 1e-6 && lng.abs() < 1e-6) continue;
     final elev = p['elev'] ?? p['elevation'];
     DateTime t;
     final timeRaw = p['time'] ?? p['timeMs'];
@@ -43,11 +47,14 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
   }
 
   final distanceM = (ride.distanceKm * 1000).round();
+  final emptyNote = pts.isEmpty
+      ? ' · kein GPS-Track'
+      : '';
   return '''<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="AetherRide" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
     <name>${_escapeXml(name)}</name>
-    <desc>${_escapeXml(bikeName ?? 'Ride')} · $distanceM m · ${ride.elevationM.round()} hm</desc>
+    <desc>${_escapeXml(bikeName ?? 'Ride')} · $distanceM m · ${ride.elevationM.round()} hm$emptyNote</desc>
     <time>${ride.startedAt.toUtc().toIso8601String()}</time>
   </metadata>
   <trk>
@@ -57,19 +64,6 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
 $trkpts    </trkseg>
   </trk>
 </gpx>''';
-}
-
-List<Map<String, dynamic>> _synthesizeTrack(RideRecord ride) {
-  final n = (ride.movingTimeSec / 30).round().clamp(10, 200);
-  return [
-    for (var i = 0; i < n; i++)
-      {
-        'lat': 47.45 + math.sin(i / 8) * 0.01,
-        'lng': 12.15 + i * 0.0002,
-        'elev': 800 + (ride.elevationM * i) / n,
-        'time': i,
-      },
-  ];
 }
 
 String _escapeXml(String s) => s

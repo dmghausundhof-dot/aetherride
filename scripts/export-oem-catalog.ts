@@ -49,10 +49,20 @@ const manufacturers = BIKE_CATALOG.map((m) => ({
     name: b.name,
     category: b.category,
     year: b.year,
+    frameSizeOptions: b.frameSizeOptions,
+    travelFrontMm: b.travelFrontMm ?? null,
+    travelRearMm: b.travelRearMm ?? null,
+    wheelSizeFront: b.wheelSizeFront,
+    wheelSizeRear: b.wheelSizeRear,
+    isEbike: b.isEbike,
+    weightKgApprox: b.weightKgApprox ?? null,
+    sourceUrl: b.sourceUrl,
     oem_components: Object.entries(b.oemComponents ?? {}).map(([slot, modelId]) => ({
       slot,
       component_model_id: modelId,
     })),
+    // Map-Form für API/Wizard-Parity (Postgres speichert oft Array)
+    oemComponents: b.oemComponents ?? {},
   })),
 }));
 

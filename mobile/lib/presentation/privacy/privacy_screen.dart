@@ -1,20 +1,22 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/export/export_trimmed.dart';
 import '../../data/export/json_export.dart';
+import '../../data/export/strava_client.dart';
 import '../../data/export/strava_stub.dart';
+import '../../data/routing/heatmap_client.dart';
 import '../../domain/privacy/consents.dart';
 import '../../providers/app_providers.dart';
 
@@ -26,41 +28,122 @@ class PrivacyScreen extends ConsumerStatefulWidget {
   ConsumerState<PrivacyScreen> createState() => _PrivacyScreenState();
 }
 
-class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
+class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
+    with WidgetsBindingObserver {
   Map<String, bool> _consents = {};
   List<PrivacyZone> _zones = [];
   bool _busy = false;
   String? _message;
   int _pendingChunks = 0;
   String? _stravaStatus;
+  bool _stravaConfigured = false;
+  bool _stravaConnected = false;
+  String? _stravaAuthorizeUrl;
+  StreamSubscription<Uri>? _linkSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
     _checkStrava();
+    _listenStravaDeepLinks();
+  }
+
+  void _listenStravaDeepLinks() {
+    final links = AppLinks();
+    _linkSub = links.uriLinkStream.listen((uri) {
+      if (uri.host == 'strava-callback' ||
+          uri.toString().contains('strava-callback')) {
+        unawaited(_checkStrava());
+        if (mounted) {
+          final q = uri.queryParameters['strava'];
+          setState(() {
+            _message = q == 'connected'
+                ? 'Strava verbunden'
+                : (q != null ? 'Strava: $q' : 'Strava-Callback empfangen');
+          });
+        }
+      }
+    });
+    unawaited(() async {
+      final initial = await links.getInitialLink();
+      if (initial != null &&
+          (initial.host == 'strava-callback' ||
+              initial.toString().contains('strava-callback'))) {
+        await _checkStrava();
+      }
+    }());
+  }
+
+  @override
+  void dispose() {
+    _linkSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_checkStrava());
+    }
   }
 
   Future<void> _checkStrava() async {
     try {
-      final res = await http
-          .get(
-            Uri.parse('${AppConfig.apiBaseUrl}/api/strava'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(const Duration(seconds: 6));
-      if (res.statusCode != 200) return;
-      final data = jsonDecode(res.body);
-      if (data is! Map || !mounted) return;
+      final s = await fetchStravaStatus();
+      if (!mounted) return;
       setState(() {
-        _stravaStatus = data['configured'] == true
-            ? 'Strava OAuth konfiguriert'
-            : 'Strava OAuth nicht konfiguriert — Stub-Export nutzen';
+        _stravaConfigured = s.configured;
+        _stravaConnected = s.connected;
+        _stravaAuthorizeUrl = s.authorizeUrl;
+        _stravaStatus = s.message;
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _stravaStatus = 'Strava-Status offline');
+        setState(() => _stravaStatus =
+            'Strava-Status nicht erreichbar — Stub-Export bleibt lokal');
       }
+    }
+  }
+
+  Future<void> _connectStrava() async {
+    final url = _stravaAuthorizeUrl;
+    if (url == null) {
+      setState(() => _message =
+          'Strava-Authorize-URL fehlt — einloggen und erneut versuchen.');
+      return;
+    }
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && mounted) {
+      setState(() => _message = 'Browser konnte nicht geöffnet werden');
+    } else if (mounted) {
+      setState(() => _message =
+          'Strava im Browser — nach Freigabe zurück zur App, Status aktualisiert sich.');
+    }
+  }
+
+  Future<void> _uploadStravaLive() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
+      if (rides.isEmpty) {
+        setState(() => _message = 'Kein Ride zum Upload');
+        return;
+      }
+      final r = await uploadRideToStrava(rides.first);
+      if (mounted) setState(() => _message = r.message);
+    } catch (e) {
+      if (mounted) setState(() => _message = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -112,6 +195,29 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
           purpose: purpose.apiId,
           granted: granted,
         );
+    if (purpose == ConsentPurpose.heatmapContribution && granted) {
+      unawaited(_contributeHeatmapBestEffort());
+    }
+  }
+
+  Future<void> _contributeHeatmapBestEffort() async {
+    try {
+      final rides =
+          await ref.read(rideRepositoryProvider).listRides(limit: 20);
+      final zones =
+          await ref.read(garageRepositoryProvider).listPrivacyZones();
+      var n = 0;
+      for (final r in rides) {
+        n += await contributeHeatmapTrack(
+          track: r.track,
+          privacyZones: zones,
+        );
+      }
+      if (mounted && n > 0) {
+        setState(() => _message =
+            'Heatmap: $n Zellen beigetragen (sichtbar erst ab k≥5).');
+      }
+    } catch (_) {}
   }
 
   Future<void> _addZone() async {
@@ -475,8 +581,23 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportStravaStub,
             icon: const Icon(Icons.upload_outlined),
-            label: const Text('Strava-Payload (Stub, kein OAuth)'),
+            label: const Text('Strava-Payload (Stub — lokal)'),
           ),
+          if (_stravaConfigured) ...[
+            const SizedBox(height: 8),
+            if (!_stravaConnected && _stravaAuthorizeUrl != null)
+              FilledButton.icon(
+                onPressed: _busy ? null : _connectStrava,
+                icon: const Icon(Icons.link),
+                label: const Text('Mit Strava verbinden'),
+              ),
+            if (_stravaConnected)
+              FilledButton.icon(
+                onPressed: _busy ? null : _uploadStravaLive,
+                icon: const Icon(Icons.cloud_upload_outlined),
+                label: const Text('Letzten Ride zu Strava'),
+              ),
+          ],
           if (_stravaStatus != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -484,6 +605,16 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ],
+          const SizedBox(height: 4),
+          Text(
+            _stravaConfigured
+                ? (_stravaConnected
+                    ? 'Live-Upload nutzt gespeicherte OAuth-Tokens (Server).'
+                    : 'OAuth öffnet den Browser; nach Freigabe App fortsetzen.')
+                : 'Ohne STRAVA_CLIENT_ID/SECRET kein Netzwerk-Upload. '
+                    'GPX/FIT/JSON sind die ehrlichen Exportwege.',
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
           if (_message != null) ...[
             const SizedBox(height: 12),
             Text(_message!, style: const TextStyle(color: AppColors.muted)),

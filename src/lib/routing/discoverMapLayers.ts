@@ -44,11 +44,16 @@ export function buildDiscoverMapLayers(opts: {
       role: "approach",
     });
   }
-  if (draft.layers?.tour) {
+  if (draft.layers?.tour && draft.layers.tour.coordinates.length >= 2) {
+    const tourApprox =
+      draft.computed?.engine?.includes("demo") ||
+      draft.computed?.engine?.includes("pin") ||
+      draft.label?.includes("Näherung") ||
+      draft.label?.includes("(Idee)");
     layers.push({
       id: "tour-track",
       geometry: draft.layers.tour,
-      role: "tour",
+      role: tourApprox ? "approx" : "tour",
     });
   }
   if (draft.layers?.trail && !showTrails) {
@@ -59,7 +64,7 @@ export function buildDiscoverMapLayers(opts: {
     });
   }
 
-  if (draft.computed?.geometry) {
+  if (draft.computed?.geometry && draft.computed.geometry.coordinates.length >= 2) {
     // When we have approach+tour layers, still show merged as active outline
     // unless it's pure tour adopt without parts
     const hasParts = Boolean(
@@ -69,7 +74,11 @@ export function buildDiscoverMapLayers(opts: {
       layers.push({
         id: "active",
         geometry: draft.computed.geometry,
-        role: "active",
+        role:
+          draft.computed.engine?.includes("pin") ||
+          draft.computed.engine?.includes("demo")
+            ? "approx"
+            : "active",
       });
     } else if (!draft.layers?.tour && !draft.layers?.trail) {
       layers.push({

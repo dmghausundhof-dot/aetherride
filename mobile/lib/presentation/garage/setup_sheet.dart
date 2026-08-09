@@ -31,9 +31,16 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
   }
 
   Future<void> _load() async {
+    final store = ref.read(userProfileStoreProvider);
+    await store.load();
     final list =
         await ref.read(setupRepositoryProvider).listForBike(widget.bike.id);
-    if (mounted) setState(() => _setups = list);
+    if (mounted) {
+      setState(() {
+        _setups = list;
+        _riderWeight = store.effectiveWeightKg;
+      });
+    }
   }
 
   Future<void> _applyTemplate(SetupTemplate tpl) async {

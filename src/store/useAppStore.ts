@@ -84,6 +84,13 @@ interface AppState {
   activeRoute: ActiveRoute | null;
   /** Discover Library — gespeicherte Touren */
   savedRoutes: SavedRoute[];
+  /** Collections-lite (keine Social-Collections) */
+  routeCollections: {
+    id: string;
+    name: string;
+    routeIds: string[];
+    updatedAt: string;
+  }[];
   isRiding: boolean;
   isPaused: boolean;
   /** Summe pausierter Millisekunden (abgeschlossene Pausen) */
@@ -209,6 +216,8 @@ interface AppState {
   saveRoute: (route: RouteSuggestion | SavedRoute | ActiveRoute) => void;
   unsaveRoute: (id: string) => void;
   isRouteSaved: (id: string) => boolean;
+  createRouteCollection: (name: string) => string;
+  addRouteToCollection: (collectionId: string, routeId: string) => void;
   startRide: (bikeId: string | null, sportType: BikeType) => void;
   pauseRide: () => void;
   resumeRide: () => void;
@@ -388,6 +397,7 @@ export const useAppStore = create<AppState>()(
       activeBikeId: null,
       activeRoute: null,
       savedRoutes: [],
+      routeCollections: [],
       isRiding: false,
       isPaused: false,
       pauseAccumMs: 0,
@@ -1115,6 +1125,37 @@ export const useAppStore = create<AppState>()(
 
       isRouteSaved: (id) => get().savedRoutes.some((r) => r.id === id),
 
+      createRouteCollection: (name) => {
+        const id = `col-${Date.now()}`;
+        set((s) => ({
+          routeCollections: [
+            {
+              id,
+              name: name.trim() || "Sammlung",
+              routeIds: [],
+              updatedAt: new Date().toISOString(),
+            },
+            ...s.routeCollections,
+          ],
+        }));
+        return id;
+      },
+
+      addRouteToCollection: (collectionId, routeId) =>
+        set((s) => ({
+          routeCollections: s.routeCollections.map((c) =>
+            c.id === collectionId
+              ? {
+                  ...c,
+                  routeIds: c.routeIds.includes(routeId)
+                    ? c.routeIds
+                    : [...c.routeIds, routeId],
+                  updatedAt: new Date().toISOString(),
+                }
+              : c
+          ),
+        })),
+
       startRide: (bikeId, sportType) => {
         const bike = bikeId
           ? get().bikes.find((b) => b.id === bikeId)
@@ -1564,6 +1605,7 @@ export const useAppStore = create<AppState>()(
           commerceMode: base.commerceMode ?? "affiliate",
           activeRoute: base.activeRoute ?? null,
           savedRoutes: base.savedRoutes ?? [],
+          routeCollections: base.routeCollections ?? [],
           onboardingDone: base.onboardingDone ?? false,
           preferredSport: base.preferredSport ?? null,
           storageVersion: STORAGE_VERSION,
@@ -1577,6 +1619,7 @@ export const useAppStore = create<AppState>()(
         activeBikeId: s.activeBikeId,
         activeRoute: s.activeRoute,
         savedRoutes: s.savedRoutes,
+        routeCollections: s.routeCollections,
         boschConnected: s.boschConnected,
         maintenanceLogs: s.maintenanceLogs,
         maintenanceIntervals: s.maintenanceIntervals,

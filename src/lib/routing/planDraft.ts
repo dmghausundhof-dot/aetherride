@@ -407,11 +407,22 @@ export async function computePointToPoint(
   return requestRoute(draft.profile, from, to, viasOf(draft));
 }
 
-/** Adopt tour geometry as-is (demo line if missing). */
+/** Adopt tour geometry as-is. Without geometry: empty result (pin-only UI). */
 export function adoptTour(tour: BaseTour, profile: RoutingProfile): ClientRouteResult {
-  const geometry =
-    tour.geometry ??
-    buildDemoGeometry(tour.id, tour.distanceKm ?? 20);
+  if (!tour.geometry || tour.geometry.coordinates.length < 2) {
+    const pin = tour.center ?? ([0, 0] as [number, number]);
+    return {
+      distanceM: (tour.distanceKm ?? 0) * 1000,
+      durationS: (tour.durationMin ?? 0) * 60,
+      geometry: { type: "LineString", coordinates: [pin] },
+      engine: "tour-pin",
+      profile,
+      warnings: [
+        "Kein Tour-Track — nur Ortspunkt. Ziel setzen oder Live-Routing/GPX.",
+      ],
+    };
+  }
+  const geometry = tour.geometry;
   const distanceM = (tour.distanceKm ?? 20) * 1000;
   const durationS = (tour.durationMin ?? 90) * 60;
   return {
@@ -420,9 +431,6 @@ export function adoptTour(tour: BaseTour, profile: RoutingProfile): ClientRouteR
     geometry,
     engine: "tour-adopt",
     profile,
-    warnings: tour.geometry
-      ? undefined
-      : ["Tour-Geometrie genähert (Demo) — kein Partner-Track-Mirror."],
   };
 }
 
@@ -441,9 +449,31 @@ export async function snapToTourParts(
   tour: BaseTour,
   profile: RoutingProfile
 ): Promise<SnapParts | null> {
-  const tourGeom =
-    tour.geometry ??
-    buildDemoGeometry(tour.id, tour.distanceKm ?? 20);
+  if (!tour.geometry || tour.geometry.coordinates.length < 2) {
+    const entry = (tour.center ?? null) as [number, number] | null;
+    if (!entry) return null;
+    const approach = await requestRoute(profile, userStart, entry);
+    if (!approach) return null;
+    return {
+      merged: {
+        ...approach,
+        warnings: [
+          ...(approach.warnings ?? []),
+          "Anfahrt zum Ortspunkt — Tour-Track fehlt.",
+        ],
+      },
+      approach,
+      tour: {
+        distanceM: 0,
+        durationS: 0,
+        geometry: { type: "LineString", coordinates: [entry] },
+        engine: "tour-pin",
+        profile,
+        warnings: ["Kein Tour-Track"],
+      },
+    };
+  }
+  const tourGeom = tour.geometry;
   const entry = tourGeom.coordinates[0] as [number, number];
   if (!entry) return null;
 

@@ -1,6 +1,6 @@
 /**
- * F-SHP-001 / F-SHP-003 — Partnerkatalog mit ComponentModel-Bezug
- * Affiliate: Kauf beim Partner, kein In-App-Zahlungsverkehr (Spec 0.4.4 / 8.4).
+ * F-SHP-001 / F-SHP-003 — Beispielkatalog mit ComponentModel-Bezug
+ * Affiliate-URLs sind Platzhalter; Kauf nur extern (Spec 0.4.4 / 8.4).
  */
 
 import type { ComponentSlot } from "@/types";

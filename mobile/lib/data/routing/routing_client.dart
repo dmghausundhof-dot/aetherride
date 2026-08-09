@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 
 import '../../core/config.dart';
+import '../../domain/bike.dart';
+import '../../domain/routing/nav_cues.dart';
 import '../../native/routing_core_ffi.dart';
 import 'offline_tiles.dart';
 
@@ -11,6 +14,7 @@ enum RoutingProfile {
   mtbEnduro,
   gravel,
   road,
+  urban,
   ebikeTour,
   emtb,
   hiking,
@@ -22,6 +26,7 @@ extension RoutingProfileApi on RoutingProfile {
         RoutingProfile.mtbEnduro => 'mtb_enduro',
         RoutingProfile.gravel => 'gravel',
         RoutingProfile.road => 'road',
+        RoutingProfile.urban => 'urban',
         RoutingProfile.ebikeTour => 'ebike',
         RoutingProfile.emtb => 'emtb',
         RoutingProfile.hiking => 'hiking',
@@ -32,11 +37,27 @@ extension RoutingProfileApi on RoutingProfile {
         RoutingProfile.mtbEnduro => 'Enduro',
         RoutingProfile.gravel => 'Gravel',
         RoutingProfile.road => 'Rennrad',
+        RoutingProfile.urban => 'City / Urban',
         RoutingProfile.ebikeTour => 'E-Bike Tour',
         RoutingProfile.emtb => 'E-MTB',
         RoutingProfile.hiking => 'Wandern',
       };
 }
+
+RoutingProfile routingProfileForBike(BikeCategory category) =>
+    switch (category) {
+      BikeCategory.mtbTrail ||
+      BikeCategory.mtbAm ||
+      BikeCategory.dh =>
+        RoutingProfile.mtbTrail,
+      BikeCategory.mtbEnduro => RoutingProfile.mtbEnduro,
+      BikeCategory.gravel => RoutingProfile.gravel,
+      BikeCategory.road => RoutingProfile.road,
+      BikeCategory.urban => RoutingProfile.urban,
+      BikeCategory.emtb => RoutingProfile.emtb,
+      BikeCategory.etrekking => RoutingProfile.ebikeTour,
+      BikeCategory.hiking => RoutingProfile.hiking,
+    };
 
 class GeoPoint {
   const GeoPoint(this.lat, this.lng);
@@ -70,6 +91,20 @@ class RouteStep {
   final String id;
   final String instruction;
   final double distanceAlongM;
+}
+
+List<RouteStep> stepsFromCoordinates(List<GeoPoint> coords) {
+  final raw = navStepsFromPolyline([
+    for (final p in coords) (lat: p.lat, lng: p.lng),
+  ]);
+  return [
+    for (final s in raw)
+      RouteStep(
+        id: s.id,
+        instruction: s.instruction,
+        distanceAlongM: s.distanceAlongM,
+      ),
+  ];
 }
 
 /// Online `/api/route` + offline `routing_core` FFI (Spec §5.4).
@@ -126,14 +161,15 @@ class RoutingClient {
         tilesPath: tiles,
       );
       if (r == null) return null;
+      final coords = r.coordinatesLngLat
+          .map((c) => GeoPoint(c[1], c[0]))
+          .toList();
       return RouteResult(
-        coordinates: r.coordinatesLngLat
-            .map((c) => GeoPoint(c[1], c[0]))
-            .toList(),
+        coordinates: coords,
         distanceM: r.distanceM,
         durationS: r.durationS,
         engine: r.engine,
-        steps: const [],
+        steps: stepsFromCoordinates(coords),
       );
     } on RoutingCoreException {
       return null;
@@ -159,7 +195,9 @@ class RoutingClient {
       final extra = vias.map((v) => 'via=${v.lng},${v.lat}').join('&');
       url = Uri.parse('${url.toString()}&$extra');
     }
-    final res = await _http.get(url, headers: {'Accept': 'application/json'});
+    final res = await _http
+        .get(url, headers: {'Accept': 'application/json'})
+        .timeout(const Duration(seconds: 20));
     if (res.statusCode != 200) {
       throw Exception('Route failed: ${res.statusCode} ${res.body}');
     }
@@ -190,7 +228,8 @@ class RoutingClient {
         }
       }
     }
-    if (coords.isEmpty) {
+    final usedFallback = coords.isEmpty;
+    if (usedFallback) {
       coords.addAll([from, to]);
     }
 
@@ -217,8 +256,37 @@ class RoutingClient {
       durationS: (data['duration'] as num?)?.toDouble() ??
           (data['durationS'] as num?)?.toDouble() ??
           0,
-      engine: data['engine'] as String?,
-      steps: steps,
+      engine: usedFallback
+          ? 'fallback-line'
+          : data['engine'] as String?,
+      steps: steps.isNotEmpty ? steps : stepsFromCoordinates(coords),
     );
   }
+}
+
+/// Gerade-Linie Out-and-back wenn Live-Routing fehlt / Limit (Web-Parität).
+RouteResult approximateOutAndBack({
+  required GeoPoint from,
+  required GeoPoint to,
+  required String label,
+}) {
+  final mid = GeoPoint((from.lat + to.lat) / 2, (from.lng + to.lng) / 2);
+  final coords = [from, mid, to, mid, from];
+  final deg = math.sqrt(
+    math.pow(to.lat - from.lat, 2) + math.pow(to.lng - from.lng, 2),
+  );
+  final distM = deg * 111000 * 2 * 1.15;
+  return RouteResult(
+    coordinates: coords,
+    distanceM: distM.roundToDouble(),
+    durationS: (distM / 4.5).roundToDouble(),
+    engine: 'approx',
+    steps: [
+      RouteStep(
+        id: 'approx-out',
+        instruction: 'Näherung „$label“ — Live-Routing später erneut',
+        distanceAlongM: distM / 2,
+      ),
+    ],
+  );
 }

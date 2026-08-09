@@ -7,6 +7,13 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../domain/ble.dart';
 import 'native_channels.dart';
 
+enum BlePermissionResult {
+  granted,
+  adapterOff,
+  denied,
+  unsupported,
+}
+
 /// Standard BLE (CSC / Power / HR) + Bosch LDI shell (behind G-1).
 class BleCoreChannel {
   BleCoreChannel({
@@ -32,6 +39,43 @@ class BleCoreChannel {
 
   Stream<BoschLiveData> get liveData => _controller.stream;
   bool get isConnected => _connected;
+
+  /// Request Android 12+ BLE runtime permissions via a short probe scan.
+  /// Does not require a sensor — Freeride remains usable without CSC.
+  Future<BlePermissionResult> ensurePermission() async {
+    try {
+      final supported = await FlutterBluePlus.isSupported;
+      if (!supported) return BlePermissionResult.unsupported;
+      var state = await FlutterBluePlus.adapterState.first;
+      if (state != BluetoothAdapterState.on) {
+        try {
+          await FlutterBluePlus.turnOn();
+          state = await FlutterBluePlus.adapterState.first;
+        } catch (_) {
+          return BlePermissionResult.adapterOff;
+        }
+        if (state != BluetoothAdapterState.on) {
+          return BlePermissionResult.adapterOff;
+        }
+      }
+      try {
+        await FlutterBluePlus.startScan(
+          timeout: const Duration(seconds: 2),
+        );
+        await FlutterBluePlus.stopScan();
+        return BlePermissionResult.granted;
+      } catch (e) {
+        final msg = e.toString().toLowerCase();
+        if (msg.contains('permission') || msg.contains('denied')) {
+          return BlePermissionResult.denied;
+        }
+        // Adapter on but no devices / scan quirk — treat as usable.
+        return BlePermissionResult.granted;
+      }
+    } catch (_) {
+      return BlePermissionResult.unsupported;
+    }
+  }
 
   /// Capabilities for UI (Spec F-EBK MotorAdapter).
   Set<String> get capabilities => {

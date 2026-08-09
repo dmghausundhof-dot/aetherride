@@ -1,17 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/sync/sync_engine.dart';
 import '../../data/weather/weather_client.dart';
 import '../../domain/bike.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/home/greeting.dart';
 import '../../domain/maintenance/intervals.dart';
+import '../../domain/active_route.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/setup.dart';
 import '../../domain/setup/fingerprint.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
 import '../chat/chat_screen.dart';
 import '../profile/profile_screen.dart';
@@ -168,7 +174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _weatherLoading
                   ? 'Wetter wird geladen…'
                   : _weather == null
-                      ? 'AetherRide'
+                      ? 'Wetter nicht verfügbar'
                       : '${_weather!.tempC.toStringAsFixed(0)}° · ${_weather!.trailLabel} · ${_weather!.summary}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.muted,
@@ -226,6 +232,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               weather: _weather,
               weightKg: store.effectiveWeightKg,
             ),
+            if (!AppConfig.isSupabaseConfigured) ...[
+              const SizedBox(height: 12),
+              Material(
+                color: AppColors.sunSurface,
+                borderRadius: BorderRadius.circular(12),
+                child: const ListTile(
+                  dense: true,
+                  leading: Icon(Icons.settings_outlined),
+                  title: Text(
+                    'Supabase nicht konfiguriert',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'SUPABASE_URL / SUPABASE_ANON_KEY fehlen — Auth & Cloud-Sync aus.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+            if (AppConfig.isSupabaseConfigured &&
+                (ref.watch(syncAuthStatusProvider) == SyncAuthStatus.noAuth ||
+                    ref.watch(syncAuthStatusProvider) ==
+                        SyncAuthStatus.unauthorized)) ...[
+              const SizedBox(height: 12),
+              Material(
+                color: AppColors.sunSurface,
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.cloud_off_outlined),
+                  title: Text(
+                    ref.watch(syncAuthStatusProvider) ==
+                            SyncAuthStatus.unauthorized
+                        ? 'Sync: Sitzung abgelaufen'
+                        : 'Sync nur mit Login',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Garage/Rides bleiben lokal — Konto für Cloud-Sync.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (ref.watch(syncAuthStatusProvider) ==
+                          SyncAuthStatus.unauthorized)
+                        TextButton(
+                          onPressed: () {
+                            unawaited(
+                              ref.read(syncEngineProvider).syncNow(),
+                            );
+                          },
+                          child: const Text('Erneut'),
+                        ),
+                      TextButton(
+                        onPressed: () => openAuthScreen(context),
+                        child: const Text('Anmelden'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             if (active != null &&
                 (active.category == BikeCategory.emtb ||
                     active.category == BikeCategory.etrekking)) ...[
@@ -427,8 +496,11 @@ class _TipHeroState extends ConsumerState<_TipHero> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () =>
-                      ref.read(shellTabIndexProvider.notifier).state = 3,
+                  onPressed: () {
+                    ref.read(discoverLaunchModeProvider.notifier).state =
+                        DiscoverLaunchMode.tours;
+                    ref.read(shellTabIndexProvider.notifier).state = 3;
+                  },
                   child: const Text('Discover'),
                 ),
               ),
@@ -438,8 +510,36 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                   ),
-                  onPressed: () =>
-                      ref.read(shellTabIndexProvider.notifier).state = 2,
+                  onPressed: () {
+                    final r = route;
+                    if (r != null && r.coordinates.length >= 2) {
+                      ref.read(activeRouteProvider.notifier).state = ActiveRoute(
+                        id: r.id,
+                        name: r.name,
+                        distanceKm: r.distanceKm,
+                        elevationM: r.elevationM,
+                        durationMin: r.durationMin,
+                        coordinates: r.coordinates,
+                      );
+                    } else if (r != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Gespeicherte Tour ohne Track — Freeride oder Discover.',
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Keine gespeicherte Tour — Freeride oder Discover öffnen.',
+                          ),
+                        ),
+                      );
+                    }
+                    ref.read(shellTabIndexProvider.notifier).state = 2;
+                  },
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Losfahren'),
                 ),
@@ -465,7 +565,7 @@ class _OnboardingCards extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.pedal_bike),
           title: const Text('Bike anlegen'),
-          subtitle: const Text('Garage · Katalog oder Basisdaten'),
+          subtitle: const Text('Garage · Katalog, Basis oder GPX'),
           onTap: onGarage,
         ),
         ListTile(

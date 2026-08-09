@@ -87,4 +87,23 @@ void main() {
     expect(json, contains('aetherride-portable-v1'));
     expect(json, contains('ride-abcdef01'));
   });
+
+  test('rideToGpx empty track has no synthetic path', () {
+    final ride = RideRecord(
+      id: 'ride-empty01',
+      bikeId: 'b1',
+      startedAt: DateTime.utc(2026, 4, 1, 10),
+      endedAt: DateTime.utc(2026, 4, 1, 11),
+      distanceKm: 0,
+      movingTimeSec: 120,
+      elevationM: 0,
+      track: const [],
+    );
+    final gpx = rideToGpx(ride);
+    expect(gpx, contains('<gpx'));
+    expect(gpx, isNot(contains('47.45')));
+    expect(gpx, isNot(contains('12.15')));
+    expect(gpx, contains('kein GPS-Track'));
+    expect(rideHasExportableTrack(ride), isFalse);
+  });
 }

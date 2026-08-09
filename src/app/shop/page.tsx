@@ -244,7 +244,7 @@ function ShopPageInner() {
         <div>
           <h1 className="text-2xl font-bold">Shop</h1>
           <p className="text-sm text-text-secondary">
-            Passende Teile für dein Bike — Kauf beim Partner
+            Passende Teile für dein Bike — Beispielkatalog (kein Live-Partner)
           </p>
         </div>
         <Link
@@ -290,7 +290,7 @@ function ShopPageInner() {
       {!activeBike ? (
         <section className="space-y-3">
           <p className="text-xs text-text-secondary">
-            Beispiele aus dem Partner-Katalog (ohne Kompat-Prüfung):
+            Beispiele aus dem Beispielkatalog (ohne Kompat-Prüfung):
           </p>
           {SHOP_PRODUCTS.slice(0, 4).map((p) => (
             <div

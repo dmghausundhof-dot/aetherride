@@ -27,6 +27,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const slot = url.searchParams.get("slot");
   const q = (url.searchParams.get("q") || "").toLowerCase();
+  const id = url.searchParams.get("id");
   const limit = Math.min(
     parseInt(url.searchParams.get("limit") || "50", 10) || 50,
     200
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
       )
       .order("id")
       .limit(limit);
+    if (id) query = query.eq("id", id);
     if (slot) query = query.eq("slot", slot);
     if (q) {
       query = query.or(
@@ -90,6 +92,7 @@ export async function GET(req: Request) {
       source: "bundle",
     };
   });
+  if (id) items = items.filter((i) => i.id === id);
   if (slot) items = items.filter((i) => i.slot === slot);
   if (q) {
     items = items.filter(
