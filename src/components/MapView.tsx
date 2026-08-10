@@ -94,7 +94,6 @@ function isRawPmtilesUrl(url: string): boolean {
 function buildStyle(): maplibregl.StyleSpecification | string {
   const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
   if (pmtilesUrl) {
-    // Style-JSON URL (same model as mobile) — pass through to MapLibre.
     if (isMapLibreStyleUrl(pmtilesUrl) && !isRawPmtilesUrl(pmtilesUrl)) {
       return pmtilesUrl;
     }
@@ -390,7 +389,6 @@ export function MapView({
     }
 
     const layers = normalizeRoutes(routes, route, secondaryRoute);
-    // Draw non-active first, active last (on top)
     const ordered = [
       ...layers.filter((l) => l.role !== "active"),
       ...layers.filter((l) => l.role === "active"),
@@ -410,7 +408,6 @@ export function MapView({
       );
     }
 
-    // Cleanup stale layers
     for (const id of [...layerIdsRef.current]) {
       if (wanted.has(id)) continue;
       if (map.getLayer(`${id}-line`)) map.removeLayer(`${id}-line`);
@@ -465,8 +462,15 @@ export function MapView({
   }, [markers, ready]);
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl ${className}`}>
-      <div ref={containerRef} className="h-full w-full" />
+    <div
+      className={`relative overflow-hidden rounded-2xl ${className}`}
+      style={{
+        minHeight: className?.includes("absolute")
+          ? "min(55vh, 520px)"
+          : undefined,
+      }}
+    >
+      <div ref={containerRef} className="h-full w-full min-h-[280px]" />
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface text-sm text-text-secondary">
           Karte wird geladen…
