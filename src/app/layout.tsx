@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { BottomTabBar } from "@/components/BottomTabBar";
 import { Providers } from "@/components/Providers";
 
 const inter = Inter({
@@ -38,12 +37,7 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${inter.variable} h-full`}>
       <body className="min-h-full bg-background text-foreground antialiased">
-        <Providers>
-          <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
-            <main className="flex-1 pb-safe">{children}</main>
-            <BottomTabBar />
-          </div>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
