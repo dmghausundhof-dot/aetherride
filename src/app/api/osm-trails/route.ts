@@ -3,7 +3,14 @@
  * GET /api/osm-trails?lat=&lon=&radiusKm=
  *
  * Relations bleiben bei /api/osm-routes (Touren).
- * Hier: highway=path|track + mtb_scale, plus cycleways / bicycle-paths.
+ * Query bewusst nicht auf mtb_scale beschränkt: die meisten realen
+ * deutschen Trails sind gar nicht MTB-getaggt. Zusätzlich erfasst:
+ * sac_scale (Wander-Skala — wird NICHT auf S0–S3+ umgemünzt, das wäre eine
+ * erfundene Genauigkeit; erscheint ehrlich als "offen"), sowie unbefestigte
+ * path/track mit typischem Waldweg-Surface/Tracktype ohne jedes Bike-Tag.
+ * Ohne diese Erweiterung bleibt „Kein Trailnetz in der Nähe" für die
+ * meisten realen MTB-Gebieten (z. B. Odenwald) stehen, obwohl Trails da
+ * sind — sie sind nur nicht mtb_scale-getaggt.
  */
 
 import { NextResponse } from "next/server";
@@ -85,6 +92,9 @@ export async function GET(req: Request) {
   way["highway"~"path|track"]["mtb_scale"](around:${radiusM},${lat},${lon});
   way["highway"="cycleway"](around:${radiusM},${lat},${lon});
   way["highway"="path"]["bicycle"~"yes|designated"](around:${radiusM},${lat},${lon});
+  way["highway"~"path|track"]["sac_scale"](around:${radiusM},${lat},${lon});
+  way["highway"="path"]["surface"~"ground|gravel|dirt|grass|compacted|fine_gravel|earth|unpaved"]["bicycle"!="no"](around:${radiusM},${lat},${lon});
+  way["highway"="track"]["tracktype"~"grade2|grade3|grade4|grade5"]["bicycle"!="no"](around:${radiusM},${lat},${lon});
 );
 out body geom;
 `.trim();

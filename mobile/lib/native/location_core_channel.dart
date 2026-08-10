@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// GPS / Fused-Location für Ride-Tracking.
 /// Android: natives Foreground Service via Platform Channel; sonst Geolocator-Fallback.
@@ -95,6 +97,21 @@ class LocationCoreChannel {
     _fixCount = 0;
     final ok = await ensurePermission();
     if (!ok) return;
+
+    // Android 13+ (API 33): RideLocationService's foreground-service
+    // notification is otherwise silently suppressed without this — the
+    // service still runs, but tracking becomes invisible to the rider.
+    // Best-effort: never block ride start on the result.
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        final status = await ph.Permission.notification.status;
+        if (status.isDenied) {
+          await ph.Permission.notification.request();
+        }
+      } catch (e) {
+        debugPrint('location_core: notification permission request failed ($e)');
+      }
+    }
 
     var nativeOk = false;
     try {

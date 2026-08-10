@@ -27,6 +27,10 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 
 ## Play Billing
 
+Schritt-für-Schritt-Runbook (Keystore ist bereits generiert):
+[PLAY_CONSOLE_RUNBOOK.md](PLAY_CONSOLE_RUNBOOK.md)
+
+- [x] Upload-Keystore generiert (lokal, git-ignoriert) — SHA im Runbook
 - [ ] SKU `aetherride_pro_monthly` in Play Console angelegt
 - [ ] License Tester Account für Restore/Kauf-Smoke
 - [ ] Optional: `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` für Server-Verify
@@ -61,6 +65,9 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [x] Crash-Reporting-Scaffold (Sentry via `SENTRY_DSN`)
 - [x] Release Signing via `android/key.properties` + R8 minify
 - [x] CI: `.github/workflows/flutter-mobile.yml`
+- [x] R8-Fix 09.08.2026: Play-Core-Split-Install-Klassen (`proguard-rules.pro`) — Release-Build war rot, jetzt grün + CI-Job `release-build` baut `bundleRelease` mit
+- [x] FGS-Verhalten Android 14 (API 34) verifiziert: Start aus Foreground erlaubt, Service+Notification überleben Backgrounding (Details: `MARKET_READY_PLAN.md` P1-6). Android-15/16-Emulator zweimal an Emulator-eigenem SurfaceFlinger-Crash gescheitert — **echtes Android-15-Gerät vor Launch nachziehen**
+- [x] POST_NOTIFICATIONS Runtime-Request vor Ride-Start ergänzt (`permission_handler`) — ohne war die Ride-Notification auf Android 13+ unsichtbar
 
 ## Outdooractive / Mapillary
 

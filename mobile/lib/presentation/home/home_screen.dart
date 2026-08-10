@@ -22,6 +22,7 @@ import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
 import '../chat/chat_screen.dart';
 import '../profile/profile_screen.dart';
+import '../shared/bike_hero_banner.dart';
 
 /// Spec-naher Home-Companion: Wetter, Suggestions, Fingerprint, Wartung.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -87,12 +88,109 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  /// Detail-Sheet für Config-/Sync-Hinweise — vom Status-Icon geöffnet statt
+  /// dauerhaft im Feed zu stehen.
+  Future<void> _openSystemStatusSheet(
+    BuildContext context, {
+    required bool showSupabaseWarning,
+    required bool showSyncWarning,
+    required SyncAuthStatus syncStatus,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.l,
+              0,
+              AppSpacing.l,
+              AppSpacing.l,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Systemstatus',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                if (!showSupabaseWarning && !showSyncWarning)
+                  const Text(
+                    'Alles verbunden — Garage, Rides und Sync laufen normal.',
+                    style: TextStyle(color: AppColors.muted),
+                  ),
+                if (showSupabaseWarning) ...[
+                  const ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.settings_outlined),
+                    title: Text(
+                      'Supabase nicht konfiguriert',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      'SUPABASE_URL / SUPABASE_ANON_KEY fehlen — Auth & Cloud-Sync aus.',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                ],
+                if (showSyncWarning)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.cloud_off_outlined),
+                    title: Text(
+                      syncStatus == SyncAuthStatus.unauthorized
+                          ? 'Sync: Sitzung abgelaufen'
+                          : 'Sync nur mit Login',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: const Text(
+                      'Garage/Rides bleiben lokal — Konto für Cloud-Sync.',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (syncStatus == SyncAuthStatus.unauthorized)
+                          TextButton(
+                            onPressed: () {
+                              unawaited(ref.read(syncEngineProvider).syncNow());
+                              Navigator.pop(ctx);
+                            },
+                            child: const Text('Erneut'),
+                          ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            openAuthScreen(context);
+                          },
+                          child: const Text('Anmelden'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bikes = ref.watch(bikesProvider);
     final session = ref.watch(authSessionProvider).valueOrNull;
     final savedRoutes = ref.watch(savedRoutesProvider);
     final store = ref.watch(userProfileStoreProvider);
+    final syncStatus = ref.watch(syncAuthStatusProvider);
+    // Systemzustand (Config/Sync) ist ein Icon, kein Feed-Eintrag — Zuhause
+    // bleibt der ruhige, persönliche Teil der Startseite.
+    final showSupabaseWarning = kDebugMode && !AppConfig.isSupabaseConfigured;
+    final showSyncWarning = AppConfig.isSupabaseConfigured &&
+        (syncStatus == SyncAuthStatus.noAuth ||
+            syncStatus == SyncAuthStatus.unauthorized);
 
     final active = bikes.whenData((list) {
       if (list.isEmpty) return null;
@@ -120,12 +218,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: bikes.when(
                     data: (list) {
-                      final name =
-                          list.isEmpty ? 'Garage öffnen' : (active?.name ?? list.first.name);
+                      final name = list.isEmpty
+                          ? 'Garage öffnen'
+                          : (active?.name ?? list.first.name);
                       return InkWell(
                         onTap: () =>
                             ref.read(shellTabIndexProvider.notifier).state = 1,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.chip),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -135,17 +234,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             border: Border.all(
                               color: AppColors.forest.withValues(alpha: 0.2),
                             ),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.chip),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.pedal_bike, color: AppColors.accent),
-                              const SizedBox(width: 8),
+                              const Icon(Icons.pedal_bike,
+                                  color: AppColors.accent),
+                              const SizedBox(width: AppSpacing.s),
                               Expanded(
                                 child: Text(
                                   name,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700),
                                 ),
                               ),
                               const Icon(Icons.chevron_right, size: 18),
@@ -158,7 +259,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     error: (e, _) => Text('Fehler: $e'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s),
+                _SystemStatusIcon(
+                  hasNotice: showSupabaseWarning || showSyncWarning,
+                  onTap: () => _openSystemStatusSheet(
+                    context,
+                    showSupabaseWarning: showSupabaseWarning,
+                    showSyncWarning: showSyncWarning,
+                    syncStatus: syncStatus,
+                  ),
+                ),
                 IconButton(
                   tooltip: 'Chat',
                   onPressed: () => openChatScreen(context),
@@ -190,12 +300,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             Text(
               greet,
+              // forestOnDark statt forest: forest ist für Text auf hellem
+              // Grund kalibriert und fällt im Dark Theme unter 2:1 Kontrast.
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.forest,
+                    color: AppColors.forestOnDark,
                   ),
             ),
             Text(
@@ -208,7 +320,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppColors.muted,
                   ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.m),
             if (active != null)
               Consumer(
                 builder: (context, ref, _) {
@@ -225,8 +337,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: InkWell(
-                          onTap: () =>
-                              ref.read(shellTabIndexProvider.notifier).state = 1,
+                          onTap: () => ref
+                              .read(shellTabIndexProvider.notifier)
+                              .state = 1,
                           child: Text(
                             top.status == DueStatus.overdue
                                 ? 'Wartung fällig: ${top.label} → Garage / Shop'
@@ -249,10 +362,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             if (active != null) ...[
               _FingerprintCard(
-                bikeName: active.name,
+                bike: active,
                 setup: setupAsync.valueOrNull,
+                onTap: () =>
+                    ref.read(shellTabIndexProvider.notifier).state = 1,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.m),
             ],
             _TipHero(
               setup: setupAsync.valueOrNull,
@@ -260,77 +375,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               weather: _weather,
               weightKg: store.effectiveWeightKg,
             ),
-            if (kDebugMode && !AppConfig.isSupabaseConfigured) ...[
-              const SizedBox(height: 12),
-              Material(
-                color: AppColors.sunSurface,
-                borderRadius: BorderRadius.circular(12),
-                child: const ListTile(
-                  dense: true,
-                  leading: Icon(Icons.settings_outlined),
-                  title: Text(
-                    'Supabase nicht konfiguriert',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    'SUPABASE_URL / SUPABASE_ANON_KEY fehlen — Auth & Cloud-Sync aus.',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              ),
-            ],
-            if (AppConfig.isSupabaseConfigured &&
-                (ref.watch(syncAuthStatusProvider) == SyncAuthStatus.noAuth ||
-                    ref.watch(syncAuthStatusProvider) ==
-                        SyncAuthStatus.unauthorized)) ...[
-              const SizedBox(height: 12),
-              Material(
-                color: AppColors.sunSurface,
-                borderRadius: BorderRadius.circular(12),
-                child: ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.cloud_off_outlined),
-                  title: Text(
-                    ref.watch(syncAuthStatusProvider) ==
-                            SyncAuthStatus.unauthorized
-                        ? 'Sync: Sitzung abgelaufen'
-                        : 'Sync nur mit Login',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: const Text(
-                    'Garage/Rides bleiben lokal — Konto für Cloud-Sync.',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (ref.watch(syncAuthStatusProvider) ==
-                          SyncAuthStatus.unauthorized)
-                        TextButton(
-                          onPressed: () {
-                            unawaited(
-                              ref.read(syncEngineProvider).syncNow(),
-                            );
-                          },
-                          child: const Text('Erneut'),
-                        ),
-                      TextButton(
-                        onPressed: () => openAuthScreen(context),
-                        child: const Text('Anmelden'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            // Supabase-/Sync-Hinweise stehen nicht mehr im persönlichen
+            // Feed — sie hängen am Status-Icon oben (_SystemStatusIcon) und
+            // öffnen von dort ein Detail-Sheet (_openSystemStatusSheet).
             if (active != null &&
                 (active.category == BikeCategory.emtb ||
                     active.category == BikeCategory.etrekking)) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.m),
               _RangeCard(bike: active, setup: setupAsync.valueOrNull),
             ],
             if (bikes.valueOrNull?.isEmpty == true) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.l),
               _OnboardingCards(
                 onGarage: () =>
                     ref.read(shellTabIndexProvider.notifier).state = 1,
@@ -338,7 +393,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ref.read(shellTabIndexProvider.notifier).state = 4,
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.l),
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accent,
@@ -353,13 +408,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.read(shellTabIndexProvider.notifier).state = 2;
               },
               child: Text(
+                // Gleicher deutscher Begriff wie im Ride-Screen selbst
+                // („Freifahren starten") statt des englischen „Freeride".
                 bikes.valueOrNull?.isEmpty == true
-                    ? 'Freeride starten'
+                    ? 'Freifahren starten'
                     : 'Ride starten',
               ),
             ),
             if (bikes.valueOrNull?.isEmpty == true) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s),
               Text(
                 'Ohne Bike möglich — GPS-Track wird lokal gespeichert.',
                 textAlign: TextAlign.center,
@@ -369,13 +426,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.m),
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
               icon: const Icon(Icons.chat_bubble_outline),
               label: const Text('Assistent fragen'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s),
             TextButton(
               onPressed: () => openAuthScreen(context),
               child: const Text('Konto & Sync'),
@@ -387,37 +444,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
+/// Systemzustand als ruhiges Icon mit Punkt statt Feed-Eintrag. Ein Punkt
+/// heißt "es gibt einen Hinweis", kein Punkt heißt "alles ok" — Detail per
+/// Tap, nie ungefragt im persönlichen Feed.
+class _SystemStatusIcon extends StatelessWidget {
+  const _SystemStatusIcon({required this.hasNotice, required this.onTap});
+
+  final bool hasNotice;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: hasNotice ? 'Systemstatus — Hinweis vorhanden' : 'Systemstatus',
+      child: Tooltip(
+        message: hasNotice ? 'Systemstatus — Hinweis' : 'Systemstatus: ok',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.shield_outlined,
+                  size: 22,
+                  color: hasNotice ? Colors.orange.shade700 : AppColors.muted,
+                ),
+                if (hasNotice)
+                  Positioned(
+                    right: -1,
+                    top: -1,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.orange.shade700,
+                        border: Border.all(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FingerprintCard extends StatelessWidget {
-  const _FingerprintCard({required this.bikeName, this.setup});
-  final String bikeName;
+  const _FingerprintCard({required this.bike, this.setup, this.onTap});
+  final Bike bike;
   final BikeSetup? setup;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final fp = SetupFingerprint.fromSetup(setup);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.forest.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(bikeName, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(
-            fp.lines.join(' · '),
-            style: const TextStyle(fontSize: 13),
-          ),
-          if (fp.conditionLabel != null)
-            Text(
-              'Bedingungen: ${fp.conditionLabel}',
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        BikeHeroBanner(bike: bike, onTap: onTap),
+        if (fp.lines.isNotEmpty || fp.conditionLabel != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, AppSpacing.s, 2, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (fp.lines.isNotEmpty)
+                  Text(fp.lines.join(' · '), style: const TextStyle(fontSize: 13)),
+                if (fp.conditionLabel != null)
+                  Text(
+                    'Bedingungen: ${fp.conditionLabel}',
+                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+              ],
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -466,14 +577,14 @@ class _TipHeroState extends ConsumerState<_TipHero> {
     final title = route?.name ?? 'Freifahren starten';
     final subtitle = route == null
         ? (saved != null && saved.isNotEmpty
-            ? 'Gespeicherte Touren zu lang — Discover Schnell oder Freeride'
-            : 'Keine passende Tour — Discover öffnen oder Freeride')
+            ? 'Gespeicherte Touren zu lang — Discover öffnen oder Freifahren'
+            : 'Keine passende Tour — Discover öffnen oder Freifahren')
         : '${route.distanceKm.toStringAsFixed(1)} km · '
             '${route.elevationM.round()} hm · ${route.durationMin} min';
     final reasons = <String>[
       if (weather != null)
         'Wetter: ${weather.trailLabel} (${weather.tempC.toStringAsFixed(0)}°)',
-      if (fp.lines.isNotEmpty) 'Fingerprint: ${fp.lines.first}',
+      if (fp.lines.isNotEmpty) 'Dein Setup: ${fp.lines.first}',
       if (route != null)
         'Gespeicherte Route: ${route.name}'
       else
@@ -485,7 +596,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.45)),
       ),
       child: Column(
@@ -500,32 +611,32 @@ class _TipHeroState extends ConsumerState<_TipHero> {
               letterSpacing: 0.6,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.muted,
                 ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s),
           Text(
             reasons.take(2).join(' · '),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           InkWell(
             onTap: () => setState(() => _evidenceOpen = !_evidenceOpen),
             child: Row(
               children: [
                 Text(
-                  _evidenceOpen ? 'Warum? einklappen' : 'Warum? Evidence',
+                  _evidenceOpen ? 'Warum? einklappen' : 'Warum? Begründung',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -541,7 +652,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
             ),
           ),
           if (_evidenceOpen) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs),
             for (final r in reasons)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
@@ -551,24 +662,24 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                 ),
               ),
             const Text(
-              'Quellen: Wetter-API · Setup-Fingerprint · Saved Routes',
+              'Quellen: Wetter · Bike-Setup · Gespeicherte Touren',
               style: TextStyle(fontSize: 11, color: AppColors.muted),
             ),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.l),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
                     ref.read(discoverLaunchModeProvider.notifier).state =
-                        DiscoverLaunchMode.tours;
+                        DiscoverLaunchMode.discover;
                     ref.read(shellTabIndexProvider.notifier).state = 3;
                   },
                   child: const Text('Discover'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.s),
               Expanded(
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
@@ -577,7 +688,8 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                   onPressed: () {
                     final r = route;
                     if (r != null && r.coordinates.length >= 2) {
-                      ref.read(activeRouteProvider.notifier).state = ActiveRoute(
+                      ref.read(activeRouteProvider.notifier).state =
+                          ActiveRoute(
                         id: r.id,
                         name: r.name,
                         distanceKm: r.distanceKm,
@@ -589,7 +701,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Gespeicherte Tour ohne Track — Freeride oder Discover.',
+                            'Gespeicherte Tour ohne Track — Freifahren oder Discover.',
                           ),
                         ),
                       );
@@ -597,7 +709,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Keine gespeicherte Tour — Freeride oder Discover öffnen.',
+                            'Keine gespeicherte Tour — Freifahren oder Discover öffnen.',
                           ),
                         ),
                       );
@@ -671,7 +783,7 @@ class _RangeCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.forest.withValues(alpha: 0.15)),
       ),
       child: Column(
@@ -681,7 +793,7 @@ class _RangeCard extends ConsumerWidget {
             'Reichweite ${bike.categoryLabel}',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             '${est.kmLow}–${est.kmHigh} km · ${est.batteryWh} Wh · '
             '${est.whPerKmLow}–${est.whPerKmHigh} Wh/km',

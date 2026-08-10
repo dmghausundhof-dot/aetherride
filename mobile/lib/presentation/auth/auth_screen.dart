@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
+import '../../core/errors/friendly_error.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -118,7 +119,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } on AuthException catch (e) {
       setState(() => _message = e.message);
     } catch (e) {
-      setState(() => _message = e.toString());
+      setState(() => _message = friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -150,7 +151,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } on AuthException catch (e) {
       setState(() => _message = e.message);
     } catch (e) {
-      setState(() => _message = e.toString());
+      setState(() => _message = friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -238,7 +239,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      setState(() => _message = e.toString());
+      setState(() => _message = friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

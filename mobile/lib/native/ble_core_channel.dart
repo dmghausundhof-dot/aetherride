@@ -126,7 +126,7 @@ class BleCoreChannel {
       }
     } catch (e) {
       debugPrint('ble_core standard BLE: $e');
-      _statusDetail = 'CSC-Scan fehlgeschlagen';
+      _statusDetail = 'Radsensor-Suche fehlgeschlagen';
     }
 
     try {
@@ -154,7 +154,7 @@ class BleCoreChannel {
         'ble_core: LDI unavailable (G-1 pending) — stay disconnected',
       );
       _connected = false;
-      _statusDetail ??= 'Kein CSC-Sensor gefunden';
+      _statusDetail ??= 'Kein Radsensor gefunden';
       return false;
     }
   }
@@ -243,7 +243,7 @@ class BleCoreChannel {
     }
 
     if (target == null) {
-      _statusDetail = 'Kein CSC-Sensor in Reichweite';
+      _statusDetail = 'Kein Radsensor in Reichweite';
       return false;
     }
 
@@ -284,7 +284,7 @@ class BleCoreChannel {
         }
       }
       if (measurement == null) {
-        _statusDetail = 'CSC ohne Measurement (0x2A5B)';
+        _statusDetail = 'Radsensor gefunden, aber ohne Messwert';
         try {
           await device.disconnect();
         } catch (_) {}
@@ -299,11 +299,11 @@ class BleCoreChannel {
       _connSub = device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
           _connected = false;
-          _statusDetail = 'CSC getrennt';
+          _statusDetail = 'Radsensor getrennt';
           if (_wantConnection) _scheduleReconnect();
         } else if (state == BluetoothConnectionState.connected) {
           _connected = true;
-          _statusDetail = 'CSC verbunden';
+          _statusDetail = 'Radsensor verbunden';
         }
       });
 
@@ -312,12 +312,12 @@ class BleCoreChannel {
       await _saveLastRemoteId(_lastRemoteId!);
       _connected = true;
       _cscOnly = true;
-      _statusDetail = 'CSC verbunden · ${device.platformName}';
+      _statusDetail = 'Radsensor verbunden · ${device.platformName}';
       _startCscTicker();
       return true;
     } catch (e) {
       debugPrint('ble_core attach: $e');
-      _statusDetail = 'CSC-Connect fehlgeschlagen';
+      _statusDetail = 'Radsensor-Verbindung fehlgeschlagen';
       return false;
     }
   }
@@ -328,7 +328,7 @@ class BleCoreChannel {
       if (!_wantConnection || _connected) return;
       final id = _lastRemoteId;
       if (id == null) return;
-      _statusDetail = 'CSC reconnect…';
+      _statusDetail = 'Radsensor verbindet erneut …';
       try {
         final ok = await _attachCscDevice(BluetoothDevice.fromId(id));
         if (!ok && _wantConnection && !_connected) {

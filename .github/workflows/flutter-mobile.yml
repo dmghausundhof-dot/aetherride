@@ -25,3 +25,34 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
+
+  release-build:
+    # Catches a broken Release build (R8/Proguard rules, missing assets, …)
+    # before it's only discovered on a manual `flutter build appbundle`.
+    # No signing secrets needed: without android/key.properties, the release
+    # buildType falls back to the debug signingConfig (see app/build.gradle.kts) —
+    # this job proves the build compiles/packages, it does not produce a
+    # Play-uploadable artifact.
+    needs: analyze-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # AGP 9 requires JDK 17 (not 21/25) — matches local dev setup.
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build appbundle --release --dart-define=API_BASE_URL=https://aetherride.vercel.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-aab-debug-signed
+          path: mobile/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7

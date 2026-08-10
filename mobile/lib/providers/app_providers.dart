@@ -89,6 +89,11 @@ final recentRidesProvider = FutureProvider<List<RideRecord>>((ref) {
   return ref.watch(rideRepositoryProvider).listRides(limit: 20);
 });
 
+/// Fahrer-Kennzahlen fürs Profil (Anzahl Rides, Gesamt-km/-hm).
+final rideStatsProvider = FutureProvider<RideStats>((ref) {
+  return ref.watch(rideRepositoryProvider).statsSummary();
+});
+
 final bikeComponentsProvider =
     FutureProvider.family<List<BikeComponent>, String>((ref, bikeId) {
   return ref.watch(componentRepositoryProvider).listInstalled(bikeId);

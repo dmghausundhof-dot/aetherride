@@ -7,6 +7,20 @@ import '../../domain/ride.dart';
 import '../local/app_database.dart';
 import '../local/garage_repository.dart';
 
+/// Aggregierte Fahrer-Kennzahlen fürs Profil (Komoot/AllTrails-Stil:
+/// Aktivität statt reinem Einstellungsformular).
+class RideStats {
+  const RideStats({
+    required this.rideCount,
+    required this.totalKm,
+    required this.totalElevationM,
+  });
+
+  final int rideCount;
+  final double totalKm;
+  final double totalElevationM;
+}
+
 class RideRepository {
   RideRepository(this._db, this._garage);
 
@@ -20,6 +34,22 @@ class RideRepository {
           ..limit(limit))
         .get();
     return rows.map(_toDomain).toList();
+  }
+
+  /// SQL-Aggregat statt „limit hoch genug setzen und clientseitig summieren"
+  /// — korrekt unabhängig von der Ride-Anzahl.
+  Future<RideStats> statsSummary() async {
+    final countExp = _db.rides.id.count();
+    final kmExp = _db.rides.distanceKm.sum();
+    final hmExp = _db.rides.elevationM.sum();
+    final query = _db.selectOnly(_db.rides)
+      ..addColumns([countExp, kmExp, hmExp]);
+    final row = await query.getSingle();
+    return RideStats(
+      rideCount: row.read(countExp) ?? 0,
+      totalKm: row.read(kmExp) ?? 0.0,
+      totalElevationM: row.read(hmExp) ?? 0.0,
+    );
   }
 
   Future<RideRecord?> getById(String id) async {
@@ -81,10 +111,10 @@ class RideRepository {
 
   Future<void> submitFeedback(String rideId, RideFeedback feedback) async {
     await (_db.update(_db.rides)..where((t) => t.id.equals(rideId))).write(
-          RidesCompanion(
-            feedbackJson: Value(jsonEncode(feedback.toJson())),
-          ),
-        );
+      RidesCompanion(
+        feedbackJson: Value(jsonEncode(feedback.toJson())),
+      ),
+    );
     await _garage.touchLocalSync();
   }
 

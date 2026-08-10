@@ -30,6 +30,7 @@ import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
+import '../shared/empty_state.dart';
 
 Set<Factory<OneSequenceGestureRecognizer>> get _rideMapGestures =>
     <Factory<OneSequenceGestureRecognizer>>{
@@ -90,8 +91,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   String? _offRouteBanner;
   DateTime? _lastAutoRerouteAt;
   bool _autoRerouteBusy = false;
+
   /// User-Toggle (zusätzlich zu dart-define AETHER_AUTO_REROUTE).
   bool _autoRerouteEnabled = AppConfig.autoReroute;
+
   /// Distanz entlang Active Route (Nav); Odometer bleibt [rideDistanceMProvider].
   double _alongRouteM = 0;
   int _gpsFixCount = 0;
@@ -113,7 +116,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   DateTime? _brightSince;
   static const _sunlightLux = 8000.0;
   static const _sunlightHold = Duration(seconds: 4);
-  static const _ambientLightChannel = EventChannel('com.aetherride/ambient_light');
+  static const _ambientLightChannel =
+      EventChannel('com.aetherride/ambient_light');
 
   @override
   void initState() {
@@ -135,17 +139,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     try {
       _lightSub = _ambientLightChannel
           .receiveBroadcastStream(
-            SensorInterval.normalInterval.inMicroseconds,
-          )
+        SensorInterval.normalInterval.inMicroseconds,
+      )
           .map((raw) {
-            final lux = raw is num
-                ? raw.toDouble()
-                : (raw is List && raw.isNotEmpty)
-                    ? (raw.first as num).toDouble()
-                    : 0.0;
-            return AmbientLightEvent(lux);
-          })
-          .listen(_onAmbientLight, onError: (_) {});
+        final lux = raw is num
+            ? raw.toDouble()
+            : (raw is List && raw.isNotEmpty)
+                ? (raw.first as num).toDouble()
+                : 0.0;
+        return AmbientLightEvent(lux);
+      }).listen(_onAmbientLight, onError: (_) {});
     } catch (_) {
       // No light sensor — manual toggle only.
     }
@@ -480,7 +483,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Bluetooth aus — Freeride ohne CSC möglich; Sensor später verbinden.',
+            'Bluetooth aus — Freifahren auch ohne Radsensor möglich; Sensor später verbinden.',
           ),
         ),
       );
@@ -488,7 +491,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'BLE-Berechtigung fehlt — Freeride läuft ohne Kadenz/Leistung.',
+            'Bluetooth-Berechtigung fehlt — Freifahren läuft ohne Kadenz/Leistung.',
           ),
         ),
       );
@@ -538,7 +541,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         SnackBar(
           content: Text(
             ble.statusDetail ??
-                'Kein CSC-Sensor gefunden — GPS-Track weiter aktiv.',
+                'Kein Radsensor gefunden — GPS-Track läuft weiter.',
           ),
         ),
       );
@@ -683,7 +686,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             }
           }
           if (_gpsStallSec >= 5 && _allowGpsStallSim) {
-            _tickSimMotion(elevFallback: _track.isNotEmpty ? _track.last.elev : 280);
+            _tickSimMotion(
+                elevFallback: _track.isNotEmpty ? _track.last.elev : 280);
           }
         }
       }
@@ -875,7 +879,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final uploadRideId = _rideId;
     if (_rawUploadConsent && uploadRideId != null) {
       unawaited(
-        ref.read(rideChunkRepositoryProvider).uploadPending(rideId: uploadRideId),
+        ref
+            .read(rideChunkRepositoryProvider)
+            .uploadPending(rideId: uploadRideId),
       );
     }
     await _sensorSub?.cancel();
@@ -921,28 +927,27 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         : (elevFromTrack > 0 ? 'gps_track' : 'none');
 
     final record = await ref.read(rideRepositoryProvider).endRide(
-          id: _rideId,
-          bikeId: bikeId,
-          startedAt: started,
-          endedAt: ended,
-          distanceKm: distanceM / 1000,
-          movingTimeSec: elapsed,
-          name: route?.name ?? 'Ride',
-          routeId: route?.id,
-          elevationM: elevHonest,
-          track: track,
-          summary: {
-            'peakG': _peakG,
-            'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
-            'usingGps': _usingGps,
-            'gpsStallSim': _simMotionUsed,
-            'simDistanceM': _simDistanceM,
-            'trackPoints': track.length,
-            'elevationSource': elevSource,
-            if (_ldi?.batterySocPercent != null)
-              'soc': _ldi!.batterySocPercent,
-          },
-        );
+      id: _rideId,
+      bikeId: bikeId,
+      startedAt: started,
+      endedAt: ended,
+      distanceKm: distanceM / 1000,
+      movingTimeSec: elapsed,
+      name: route?.name ?? 'Ride',
+      routeId: route?.id,
+      elevationM: elevHonest,
+      track: track,
+      summary: {
+        'peakG': _peakG,
+        'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
+        'usingGps': _usingGps,
+        'gpsStallSim': _simMotionUsed,
+        'simDistanceM': _simDistanceM,
+        'trackPoints': track.length,
+        'elevationSource': elevSource,
+        if (_ldi?.batterySocPercent != null) 'soc': _ldi!.batterySocPercent,
+      },
+    );
 
     // E-Bike Reichweiten-Kalibrierung wenn genug Distanz + SOC-Delta
     final isEbike = bike?.category == BikeCategory.emtb ||
@@ -1078,7 +1083,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 if (_ttsMuted) unawaited(_tts.stop());
               },
               icon: Icon(
-                _ttsMuted ? Icons.volume_off_outlined : Icons.volume_up_outlined,
+                _ttsMuted
+                    ? Icons.volume_off_outlined
+                    : Icons.volume_up_outlined,
               ),
             ),
             IconButton(
@@ -1110,7 +1117,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               : Stack(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.l),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -1138,7 +1145,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                               'Optional: Route in Discover wählen und „Losfahren“.',
                               style: TextStyle(color: AppColors.muted),
                             ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.s),
                           Text(
                             _cscStatusLine(),
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -1158,30 +1165,30 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                     content: Text(
                                       ok
                                           ? (ble.statusDetail ??
-                                              'CSC verbunden')
+                                              'Radsensor verbunden')
                                           : (ble.statusDetail ??
-                                              'Kein CSC gefunden'),
+                                              'Kein Radsensor gefunden'),
                                     ),
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.bluetooth_searching, size: 18),
-                              label: const Text('CSC suchen'),
+                              icon: const Icon(Icons.bluetooth_searching,
+                                  size: 18),
+                              label: const Text('Radsensor suchen'),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.m),
                           Text('Handy am Lenker?',
                               style: theme.textTheme.titleSmall),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.s),
                           Row(
                             children: [
                               Expanded(
                                 child: OutlinedButton(
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor:
-                                        mount == MountCheck.mounted
-                                            ? AppColors.accent
-                                            : null,
+                                    foregroundColor: mount == MountCheck.mounted
+                                        ? AppColors.accent
+                                        : null,
                                   ),
                                   onPressed: () {
                                     ref
@@ -1191,7 +1198,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                   child: const Text('Ja — Analyse an'),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.s),
                               Expanded(
                                 child: OutlinedButton(
                                   onPressed: () {
@@ -1204,7 +1211,17 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                               ),
                             ],
                           ),
-                          const Spacer(),
+                          const Expanded(
+                            child: Center(
+                              child: EmptyStateIllustration(
+                                compact: true,
+                                icon: Icons.pedal_bike,
+                                title: 'Bereit zum Losfahren',
+                                message: 'GPS-Track startet sofort — Bluetooth-'
+                                    'Sensoren sind optional.',
+                              ),
+                            ),
+                          ),
                           FilledButton(
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.accent,
@@ -1294,26 +1311,38 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               : ColoredBox(
                   color: theme.scaffoldBackgroundColor,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 88, 16, 160),
+                    // 88/160: Platz für Top-Bar/Bottom-Controls-Overlay,
+                    // keine Rhythmus-Stufe.
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.l,
+                      88,
+                      AppSpacing.l,
+                      160,
+                    ),
                     child: _buildLayer(layer, mount, route),
                   ),
                 ),
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.m,
+              AppSpacing.s,
+              AppSpacing.m,
+              0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (navBanner != null)
                   Material(
                     elevation: 2,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     color: AppColors.accent,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+                        horizontal: AppSpacing.l,
+                        vertical: AppSpacing.l,
                       ),
                       child: Text(
                         navBanner,
@@ -1328,7 +1357,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   )
                 else if (route != null)
                   Material(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
                     color: theme.cardColor.withValues(alpha: 0.92),
                     child: ListTile(
                       dense: true,
@@ -1342,67 +1371,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                       ),
                     ),
                   ),
-                if (_offRouteBanner != null) ...[
-                  const SizedBox(height: 8),
-                  Material(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.orange.shade100,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _offRouteBanner!,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.orange.shade900,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              _bumpIdle();
-                              unawaited(_rejoinRoute());
-                            },
-                            child: Text(
-                              'Zurück',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Colors.orange.shade900,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                if (_liveHintText != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    _liveHintText!,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange.shade800,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-                if (_gpsStatus != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    _gpsStatus!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.orange.shade800,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                // Eine Statuszeile statt gestapelter Banner — siehe
+                // _buildStatusStrip() für die Prioritätsreihenfolge.
+                _buildStatusStrip(theme),
               ],
             ),
           ),
@@ -1438,12 +1409,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   ref.read(rideLayerProvider.notifier).state = s.first;
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.s),
               Material(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 color: theme.cardColor.withValues(alpha: 0.94),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -1462,7 +1433,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.s),
               Row(
                 children: [
                   Expanded(
@@ -1483,14 +1454,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppSpacing.s),
                   Expanded(
                     flex: 2,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: _confirmStop > 0
-                            ? Colors.red
-                            : Colors.redAccent,
+                        backgroundColor:
+                            _confirmStop > 0 ? Colors.red : Colors.redAccent,
                         minimumSize: const Size.fromHeight(56),
                       ),
                       onPressed: () async {
@@ -1507,7 +1477,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               ),
               if (_confirmStop == 0)
                 const Padding(
-                  padding: EdgeInsets.only(top: 6),
+                  padding: EdgeInsets.only(top: AppSpacing.xs),
                   child: Text(
                     'Beenden erfordert 2 Tipps',
                     textAlign: TextAlign.center,
@@ -1528,11 +1498,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.lock, size: 48, color: AppColors.accent),
-                    SizedBox(height: 12),
+                    SizedBox(height: AppSpacing.m),
                     Text('Auto-Lock',
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 4),
+                    SizedBox(height: AppSpacing.xs),
                     Text('Doppeltipp zum Aufwecken'),
                   ],
                 ),
@@ -1540,6 +1510,96 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  /// Eine Statuszeile statt gestapelter Banner. Priorität (höchste zuerst):
+  /// Reroute läuft → Route verlassen → GPS-Problem → Fahr-Hinweis. Es ist
+  /// immer nur die wichtigste Meldung sichtbar, nie mehrere gleichzeitig.
+  Widget _buildStatusStrip(ThemeData theme) {
+    if (_autoRerouteBusy) {
+      return _statusBanner(
+        text: 'Route wird neu berechnet …',
+        background: Colors.orange.shade100,
+        foreground: Colors.orange.shade900,
+      );
+    }
+    if (_offRouteBanner != null) {
+      return _statusBanner(
+        text: _offRouteBanner!,
+        background: Colors.orange.shade100,
+        foreground: Colors.orange.shade900,
+        actionLabel: 'Zurück',
+        onAction: () {
+          _bumpIdle();
+          unawaited(_rejoinRoute());
+        },
+      );
+    }
+    if (_gpsStatus != null) {
+      return _statusBanner(
+        text: _gpsStatus!,
+        background: Colors.orange.shade50,
+        foreground: Colors.orange.shade800,
+        compact: true,
+      );
+    }
+    if (_liveHintText != null) {
+      return _statusBanner(
+        text: _liveHintText!,
+        background: Colors.orange.shade50,
+        foreground: Colors.orange.shade800,
+        compact: true,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _statusBanner({
+    required String text,
+    required Color background,
+    required Color foreground,
+    String? actionLabel,
+    VoidCallback? onAction,
+    bool compact = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.s),
+      child: Material(
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        color: background,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.m,
+            vertical: compact ? AppSpacing.xs : AppSpacing.s,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontWeight: compact ? FontWeight.w600 : FontWeight.w800,
+                    color: foreground,
+                    fontSize: compact ? 13 : 15,
+                  ),
+                ),
+              ),
+              if (actionLabel != null)
+                TextButton(
+                  onPressed: onAction,
+                  child: Text(
+                    actionLabel,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: foreground,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1551,7 +1611,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     switch (layer) {
       case RideLiveLayer.map:
         return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.chip),
           child: MapLibreMap(
             key: ValueKey(_mapStyle),
             styleString: _mapStyle,
@@ -1579,7 +1639,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           label: 'Live-Daten',
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.l),
               child: Column(
                 children: [
                   _MetricRow(
@@ -1619,7 +1679,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         if (mount != MountCheck.mounted) {
           return Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.l),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1627,12 +1687,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     'Fahrwerksanalyse aus',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.s),
                   const Text(
                     'Handy am Lenker befestigen und als montiert markieren.',
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.m),
                   FilledButton(
                     onPressed: () {
                       ref.read(mountCheckProvider.notifier).state =
@@ -1647,7 +1707,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         }
         return Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.l),
             child: Column(
               children: [
                 if (_metrics != null) ...[
@@ -1676,12 +1736,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final ble = ref.read(bleCoreProvider);
     final riding = ref.read(isRidingProvider);
     if (ble.isConnected) {
-      return ble.statusDetail ?? 'CSC verbunden';
+      return ble.statusDetail ?? 'Radsensor verbunden';
     }
     if (riding) {
-      return ble.statusDetail ?? 'CSC nicht verbunden · GPS-Track aktiv';
+      return ble.statusDetail ?? 'Radsensor nicht verbunden · GPS-Track aktiv';
     }
-    return 'CSC bereit — Sensor einschalten';
+    return 'Radsensor bereit — einschalten zum Verbinden';
   }
 
   Widget _bigStat(String value, String label) {
@@ -1695,7 +1755,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+        Text(label,
+            style: const TextStyle(fontSize: 11, color: AppColors.muted)),
       ],
     );
   }
@@ -1716,7 +1777,7 @@ class _MetricRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1724,8 +1785,8 @@ class _MetricRow extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),

@@ -124,8 +124,29 @@ class RouteRepository {
     } else {
       lastElevationGainM = null;
     }
-    await _writeCache(key, profile, result);
+    // Fallback-/Näherungs-Geometrie (Live-Routing lieferte keine echte
+    // Route) nicht persistent cachen — sonst überlebt ein einmaliger
+    // Ausfall den nächsten echten Versuch (siehe _readCache-Gegenstück).
+    if (result.engine != 'fallback-line' && result.engine != 'approx') {
+      await _writeCache(key, profile, result);
+    }
     return result;
+  }
+
+  /// Löscht einen einzelnen Cache-Eintrag — für Aufrufer, die ein
+  /// zurückgegebenes Ergebnis nachträglich als unplausibel erkennen (z. B.
+  /// Discover-Quick: Distanz passt nicht zum angefragten Zeitbudget) und vor
+  /// einem Retry sicherstellen wollen, dass nicht wieder derselbe Eintrag
+  /// zurückkommt.
+  Future<void> invalidateRoute({
+    required GeoPoint from,
+    required GeoPoint to,
+    RoutingProfile profile = RoutingProfile.mtbTrail,
+    List<GeoPoint> vias = const [],
+  }) async {
+    final key = _cacheKey(from, to, profile, vias);
+    await (_db.delete(_db.routeCache)..where((t) => t.cacheKey.equals(key)))
+        .go();
   }
 
   String _cacheKey(
@@ -138,11 +159,24 @@ class RouteRepository {
     return '${profile.apiId}|${from.lng},${from.lat}|${to.lng},${to.lat}|$viaPart';
   }
 
+  /// Kein zeitloser Cache: eine Route, die heute stimmt, kann durch
+  /// Sperrungen/Bauarbeiten/Trail-Änderungen morgen falsch sein — und ein
+  /// einmal geschriebener Fallback-/Fehler-Eintrag darf nicht für immer
+  /// als „Ergebnis" durchgehen (siehe [_writeCache]: solche Engines werden
+  /// gar nicht erst gecacht, das hier ist die zweite Absicherung für
+  /// Alt-Einträge aus einer Zeit vor diesem Fix).
+  static const _cacheTtl = Duration(hours: 6);
+
   Future<RouteResult?> _readCache(String key) async {
     final row = await (_db.select(_db.routeCache)
           ..where((t) => t.cacheKey.equals(key)))
         .getSingleOrNull();
     if (row == null) return null;
+    if (DateTime.now().toUtc().difference(row.fetchedAt) > _cacheTtl) {
+      await (_db.delete(_db.routeCache)..where((t) => t.cacheKey.equals(key)))
+          .go();
+      return null;
+    }
     try {
       final data = jsonDecode(row.payloadJson) as Map<String, dynamic>;
       final coords = (data['coordinates'] as List? ?? [])
@@ -155,11 +189,17 @@ class RouteRepository {
           )
           .toList();
       if (coords.length < 2) return null;
+      final engine = data['engine'] as String?;
+      // Fallback-/Näherungs-Ergebnisse nie als Cache-Hit ausgeben — sonst
+      // klebt ein einmaliger Routing-Ausfall (Geometrie fehlte) für die
+      // gesamte TTL als scheinbares Ergebnis fest, statt beim nächsten
+      // Versuch live neu zu rechnen.
+      if (engine == 'fallback-line' || engine == 'approx') return null;
       return RouteResult(
         coordinates: coords,
         distanceM: (data['distanceM'] as num?)?.toDouble() ?? 0,
         durationS: (data['durationS'] as num?)?.toDouble() ?? 0,
-        engine: data['engine'] as String? ?? 'cache',
+        engine: engine ?? 'cache',
       );
     } catch (_) {
       return null;

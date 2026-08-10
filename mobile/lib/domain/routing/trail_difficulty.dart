@@ -37,6 +37,23 @@ String trailDifficultyLabel(TrailDifficulty d) => switch (d) {
       TrailDifficulty.open => 'offen',
     };
 
+/// Menschliche Übersetzung der Rohskala — das, was in Listen/Karten steht.
+/// Der technische Wert ([trailDifficultyLabel]) bleibt im Detail sichtbar,
+/// z. B. über [trailDifficultyFullLabel].
+String trailDifficultyFriendlyLabel(TrailDifficulty d) => switch (d) {
+      TrailDifficulty.s0 => 'Leicht',
+      TrailDifficulty.s1 => 'Mittel',
+      TrailDifficulty.s2 => 'Schwer',
+      TrailDifficulty.s3plus => 'Sehr schwer',
+      TrailDifficulty.open => 'Nicht eingestuft',
+    };
+
+/// Ein Satz, der beide Ebenen zeigt: "Mittel (S2)" bzw. "Nicht eingestuft"
+/// ohne technischen Anhang, wenn OSM keinen mtb_scale/sac_scale-Tag hat.
+String trailDifficultyFullLabel(TrailDifficulty d) => d == TrailDifficulty.open
+    ? trailDifficultyFriendlyLabel(d)
+    : '${trailDifficultyFriendlyLabel(d)} (${trailDifficultyLabel(d)})';
+
 /// Komoot/Trailforks-ähnliche Farben für die Karte.
 String trailDifficultyColor(TrailDifficulty d) => switch (d) {
       TrailDifficulty.s0 => '#4CAF50',

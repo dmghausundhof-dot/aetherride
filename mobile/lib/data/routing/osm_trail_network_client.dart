@@ -31,7 +31,8 @@ class OsmTrailSegment {
   final String? highway;
   final String? url;
 
-  String get difficultyLabel => trailDifficultyLabel(difficulty);
+  /// Menschlich zuerst ("Mittel (S2)"), Rohwert in Klammern — statt nur "S2".
+  String get difficultyLabel => trailDifficultyFullLabel(difficulty);
   String get lineColor => trailDifficultyColor(difficulty);
 }
 
@@ -79,12 +80,20 @@ class OsmTrailNetworkClient {
     required double radiusKm,
   }) async {
     final radiusM = (radiusKm.clamp(3, 18) * 1000).round();
+    // Bewusst nicht auf mtb_scale beschränkt (siehe /api/osm-trails —
+    // gleiche Query, hier nur der Direkt-Overpass-Fallback ohne Backend):
+    // sac_scale-Wanderpfade und untagged Wald-/Feldwege sind die Mehrheit
+    // realer deutscher Trails. sac_scale wird NICHT auf S0–S3+ umgemünzt
+    // (erfundene Genauigkeit) — erscheint ehrlich als "offen".
     final query = '''
 [out:json][timeout:26];
 (
   way["highway"~"path|track"]["mtb_scale"](around:$radiusM,$lat,$lon);
   way["highway"="cycleway"](around:$radiusM,$lat,$lon);
   way["highway"="path"]["bicycle"~"yes|designated"](around:$radiusM,$lat,$lon);
+  way["highway"~"path|track"]["sac_scale"](around:$radiusM,$lat,$lon);
+  way["highway"="path"]["surface"~"ground|gravel|dirt|grass|compacted|fine_gravel|earth|unpaved"]["bicycle"!="no"](around:$radiusM,$lat,$lon);
+  way["highway"="track"]["tracktype"~"grade2|grade3|grade4|grade5"]["bicycle"!="no"](around:$radiusM,$lat,$lon);
 );
 out body geom;
 ''';

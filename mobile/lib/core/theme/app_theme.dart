@@ -20,6 +20,46 @@ abstract final class AppColors {
   static const Color sunMuted = Color(0xFF3C4C46);
   static const Color sunAccent = Color(0xFFB33F14);
   static const Color sunPrimary = Color(0xFF14503A);
+
+  /// Markengrün für Überschriften/Icons auf dunklem Grund. `forest`/`trail`
+  /// sind für Text auf hellem Grund kalibriert — auf `surfaceDark`/
+  /// `scaffoldBackgroundColor` (Dark Theme) fallen sie unter 2:1 Kontrast
+  /// (WCAG-Fund UX-Review: Home-Begrüßung kaum lesbar). `forestOnDark`
+  /// liegt bei ~9:1 auf `0xFF0A1210`. Für jede grüne Textfarbe auf dunklem
+  /// Hintergrund diese statt `forest`/`trail` verwenden.
+  static const Color forestOnDark = Color(0xFF81C995);
+}
+
+/// 4-px-Raster für Abstände — ersetzt die im UX-Review gefundenen 13
+/// unkoordinierten SizedBox-Werte (2–28 px quer durch die Screens).
+/// Neue/migrierte Screens verwenden ausschließlich diese Stufen; bestehende
+/// Screens werden schrittweise umgestellt (siehe MARKET_READY_PLAN.md).
+abstract final class AppSpacing {
+  static const double xxs = 2;
+  static const double xs = 4;
+  static const double s = 8;
+  static const double m = 12;
+  static const double l = 16;
+  static const double xl = 20;
+  static const double xxl = 24;
+  static const double xxxl = 32;
+}
+
+/// Radius-Stufen — ersetzt die im UX-Review gefundenen Ad-hoc-Werte
+/// (8/10/12/14/16/20/40/999 je nach Screen für optisch gleichartige
+/// Container). Drei Stufen reichen für das gesamte UI:
+abstract final class AppRadius {
+  /// Chips, kleine Badges, Eingabefelder.
+  static const double chip = 12.0;
+
+  /// Karten, Sheet-Inhalte, Dialoge.
+  static const double card = 16.0;
+
+  /// Bottom-Sheets, große Modals.
+  static const double sheet = 20.0;
+
+  /// Volle Kapsel — Buttons, FABs, Pills.
+  static const double pill = 999.0;
 }
 
 abstract final class AppTheme {
@@ -102,15 +142,15 @@ abstract final class AppTheme {
           fillColor: AppColors.chipIdle,
           labelStyle: const TextStyle(color: AppColors.muted),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.chip),
             borderSide: const BorderSide(color: AppColors.border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.chip),
             borderSide: const BorderSide(color: AppColors.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.chip),
             borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
           ),
         ),
@@ -134,7 +174,7 @@ abstract final class AppTheme {
         cardTheme: CardThemeData(
           color: AppColors.surfaceDark,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             side: const BorderSide(color: AppColors.border),
           ),
         ),

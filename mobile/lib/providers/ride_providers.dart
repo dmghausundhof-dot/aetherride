@@ -9,7 +9,10 @@ export '../data/sync/sync_engine.dart' show SyncAuthStatus;
 final activeRouteProvider = StateProvider<ActiveRoute?>((ref) => null);
 
 /// Discover-Einstieg von Home: einmalig in DiscoverScreen konsumieren.
-enum DiscoverLaunchMode { quick, plan, tours }
+/// Discover ist der Normalzustand; `plan` öffnet zusätzlich das Planen-Panel.
+/// Früher gab es hier drei Werte für drei Tabs — „quick" und „tours" sind
+/// dasselbe geworden, seit Discover eine Liste ist.
+enum DiscoverLaunchMode { discover, plan }
 
 final discoverLaunchModeProvider =
     StateProvider<DiscoverLaunchMode?>((ref) => null);

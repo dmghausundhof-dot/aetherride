@@ -9,6 +9,7 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../shared/empty_state.dart';
 
 class ChatMessage {
   const ChatMessage({required this.role, required this.text});
@@ -49,6 +50,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     role: 'assistant',
     text: 'Frag mich zu Setup, Routen oder Teilen.',
   );
+
+  /// Statt der `_welcome`-Bubble (früher: einzige, kaum sichtbare Zeile vor
+  /// viel leerer Fläche — UX-Review „Void-Empty-States") eine echte
+  /// Leerzustand-Illustration zeigen.
+  bool get _isEmptyConversation =>
+      _historyLoaded &&
+      _messages.length == 1 &&
+      _messages.first.role == _welcome.role &&
+      _messages.first.text == _welcome.text;
 
   static const _prompts = <_SuggestedPrompt>[
     _SuggestedPrompt(
@@ -322,7 +332,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     items: const [
                       DropdownMenuItem(value: 'auto', child: Text('Auto')),
                       DropdownMenuItem(value: 'garage', child: Text('Garage')),
-                      DropdownMenuItem(value: 'range', child: Text('Reichweite')),
+                      DropdownMenuItem(
+                          value: 'range', child: Text('Reichweite')),
                       DropdownMenuItem(
                         value: 'setup_history',
                         child: Text('Setup-Historie'),
@@ -363,37 +374,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Expanded(
             child: !_historyLoaded
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scroll,
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, i) {
-                      final m = _messages[i];
-                      final isUser = m.role == 'user';
-                      return Align(
-                        alignment: isUser
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.sizeOf(context).width * 0.82,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isUser
-                                ? AppColors.accent.withValues(alpha: 0.15)
-                                : AppColors.forest.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(m.text),
+                : _isEmptyConversation
+                    ? const Center(
+                        child: EmptyStateIllustration(
+                          compact: true,
+                          icon: Icons.chat_bubble_outline,
+                          title: 'Frag mich',
+                          message: 'Setup, Routen oder Teilen — probier einen '
+                              'Vorschlag oben oder tipp direkt los.',
                         ),
-                      );
-                    },
-                  ),
+                      )
+                    : ListView.builder(
+                        controller: _scroll,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, i) {
+                          final m = _messages[i];
+                          final isUser = m.role == 'user';
+                          return Align(
+                            alignment: isUser
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.sizeOf(context).width * 0.82,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isUser
+                                    ? AppColors.accent.withValues(alpha: 0.15)
+                                    : AppColors.forest.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(m.text),
+                            ),
+                          );
+                        },
+                      ),
           ),
           SafeArea(
             top: false,
@@ -408,9 +430,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       minLines: 1,
                       maxLines: 4,
                       decoration: InputDecoration(
-                        hintText: riding
-                            ? 'Gesperrt während Ride'
-                            : 'Nachricht…',
+                        hintText:
+                            riding ? 'Gesperrt während Ride' : 'Nachricht…',
                         border: const OutlineInputBorder(),
                         isDense: true,
                       ),
