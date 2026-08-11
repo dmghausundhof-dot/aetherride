@@ -1,3 +1,16 @@
+/// Lightweight POI stop on an active nav route (seed / Discover → Ride).
+class ActiveRoutePoi {
+  const ActiveRoutePoi({
+    required this.atMin,
+    required this.title,
+    this.kind = 'poi',
+  });
+
+  final int atMin;
+  final String title;
+  final String kind;
+}
+
 /// Aktive Navigationsroute — Bridge Discover → Ride (Web-Analog).
 class ActiveRoute {
   const ActiveRoute({
@@ -9,6 +22,7 @@ class ActiveRoute {
     required this.coordinates,
     this.mtbScale,
     this.steps = const [],
+    this.poiStops = const [],
   });
 
   final String id;
@@ -21,6 +35,9 @@ class ActiveRoute {
   /// [lng, lat] pairs
   final List<List<double>> coordinates;
   final List<NavStep> steps;
+
+  /// Optional seed POIs for upcoming rail (N-07).
+  final List<ActiveRoutePoi> poiStops;
 }
 
 class NavStep {

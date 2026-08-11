@@ -33,19 +33,31 @@ enum LocationPermissionResult {
   deniedForever,
 }
 
+/// Action from Android ride FG notification (N-05): `pause` | `mute`.
+class RideNotificationAction {
+  const RideNotificationAction(this.name);
+  final String name;
+}
+
 class LocationCoreChannel {
   static const _methods = MethodChannel('com.aetherride/location_core');
   static const _events = EventChannel('com.aetherride/location_core/fixes');
+  static const _actions = EventChannel('com.aetherride/location_core/actions');
 
   StreamSubscription? _nativeSub;
+  StreamSubscription? _actionSub;
   StreamSubscription<Position>? _geoSub;
   final _controller = StreamController<LocationFix>.broadcast();
+  final _actionController =
+      StreamController<RideNotificationAction>.broadcast();
   LocationFix? _last;
   double _distanceM = 0;
   bool _native = false;
   int _fixCount = 0;
 
   Stream<LocationFix> get fixes => _controller.stream;
+  Stream<RideNotificationAction> get notificationActions =>
+      _actionController.stream;
   LocationFix? get lastFix => _last;
   double get distanceM => _distanceM;
   int get fixCount => _fixCount;
@@ -133,6 +145,15 @@ class LocationCoreChannel {
         );
         _onFix(fix);
       });
+      _actionSub?.cancel();
+      _actionSub = _actions.receiveBroadcastStream().listen((raw) {
+        if (raw is! Map) return;
+        final name = raw['action']?.toString();
+        if (name == null || name.isEmpty) return;
+        if (!_actionController.isClosed) {
+          _actionController.add(RideNotificationAction(name));
+        }
+      });
       debugPrint('location_core: native Foreground Service aktiv');
     } on MissingPluginException {
       debugPrint('location_core: Plugin fehlt — Geolocator-Fallback');
@@ -186,6 +207,8 @@ class LocationCoreChannel {
   Future<void> stopRideTracking() async {
     await _nativeSub?.cancel();
     _nativeSub = null;
+    await _actionSub?.cancel();
+    _actionSub = null;
     await _geoSub?.cancel();
     _geoSub = null;
     if (_native) {
@@ -196,8 +219,27 @@ class LocationCoreChannel {
     }
   }
 
+  /// Sync FG notification Pause/Stumm labels (Android only, N-05).
+  Future<void> updateRideNotification({
+    required bool paused,
+    required bool muted,
+    String? text,
+  }) async {
+    if (kIsWeb || !Platform.isAndroid || !_native) return;
+    try {
+      await _methods.invokeMethod<void>('updateNotification', {
+        'paused': paused,
+        'muted': muted,
+        if (text != null) 'text': text,
+      });
+    } catch (e) {
+      debugPrint('location_core: updateNotification failed ($e)');
+    }
+  }
+
   void dispose() {
     unawaited(stopRideTracking());
     _controller.close();
+    _actionController.close();
   }
 }

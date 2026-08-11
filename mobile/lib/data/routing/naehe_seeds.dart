@@ -182,6 +182,14 @@ class NaeheSeedRoute {
             distanceAlongM: st.distanceAlongM,
           ),
       ],
+      poiStops: [
+        for (final p in poiStops)
+          ActiveRoutePoi(
+            atMin: p.atMin,
+            title: p.title,
+            kind: p.kind,
+          ),
+      ],
     );
   }
 }

@@ -14,29 +14,38 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/local/ride_prefs.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
+import '../../domain/ebike/range.dart';
 import '../../domain/ride.dart';
+import '../../domain/routing/battery_preset.dart';
+import '../../domain/routing/camera_follow_smooth.dart';
+import '../../domain/routing/connectivity_chip.dart';
 import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/route_progress.dart';
-import '../../data/routing/routing_client.dart';
-import '../../domain/ebike/range.dart';
+import '../../domain/routing/upcoming_rail.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
 import '../../domain/sport/discipline_ux.dart';
-import '../../native/location_core_channel.dart';
 import '../../native/ble_core_channel.dart';
+import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
 import '../shared/empty_state.dart';
+import 'widgets/battery_preset_sheet.dart';
 import 'widgets/reroute_sheet.dart';
+import 'widgets/ride_connectivity_chip.dart';
 import 'widgets/ride_data_strip.dart';
 import 'widgets/ride_network.dart';
 import 'widgets/ride_next_turn_banner.dart';
 import 'widgets/ride_off_route_banner.dart';
+import 'widgets/ride_upcoming_rail.dart';
 
 Set<Factory<OneSequenceGestureRecognizer>> get _rideMapGestures =>
     <Factory<OneSequenceGestureRecognizer>>{
@@ -123,7 +132,21 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   /// [onCameraIdle] den Follow bei jedem GPS-Update.
   bool _programmaticCamera = false;
 
-  double _lastCameraBearing = 0;
+  double _smoothedCameraBearing = 0;
+  double _lastAppliedCameraBearing = 0;
+  double? _lastFollowLat;
+  double? _lastFollowLng;
+  DateTime? _lastFollowCameraAt;
+
+  /// N-04/N-09: default Pocket = no Keep-Screen-On.
+  RideBatteryPreset _batteryPreset = RideBatteryPreset.pocket;
+
+  /// N-03/N-08 connectivity honesty.
+  bool _networkOnline = true;
+  bool _offlineMapAvailable = false;
+  ConnectivityChipState _connectivityState = ConnectivityChipState.live;
+  Timer? _connectivityTimer;
+  StreamSubscription<RideNotificationAction>? _notifActionSub;
 
   /// Distanz entlang Active Route (Nav); Odometer bleibt [rideDistanceMProvider].
   double _alongRouteM = 0;
@@ -155,11 +178,146 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     unawaited(_tts.setLanguage('de-DE'));
     unawaited(_tts.setSpeechRate(0.5));
     _startAutoSunlight();
+    unawaited(_loadRidePrefs());
     unawaited(
       AppConfig.resolveMapStyleUrl().then((s) {
         if (mounted) setState(() => _mapStyle = s);
       }),
     );
+  }
+
+  Future<void> _loadRidePrefs() async {
+    final preset = await RidePrefs.batteryPreset();
+    final mapOk = await _probeOfflineMapAvailable();
+    if (!mounted) return;
+    setState(() {
+      _batteryPreset = preset;
+      _offlineMapAvailable = mapOk;
+    });
+  }
+
+  /// Local pack or offline-capable style override (not remote-only basemap).
+  Future<bool> _probeOfflineMapAvailable() async {
+    try {
+      final m = await OfflineMapsPrefs.read();
+      final pack = (m['activatedPackPath'] as String?)?.trim() ?? '';
+      if (pack.isNotEmpty) return true;
+      final style = (m['pmtilesUrl'] as String?)?.trim() ?? '';
+      if (style.isEmpty) return false;
+      // file:// or asset-style local paths count; pure https remote does not.
+      if (style.startsWith('file:') ||
+          style.startsWith('/') ||
+          style.contains('asset://')) {
+        return true;
+      }
+      // pmtiles:// or custom offline tile scheme.
+      if (style.startsWith('pmtiles://')) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _refreshConnectivityChip() async {
+    final online = await rideHasNetwork();
+    final route = ref.read(activeRouteProvider);
+    final hasRoute = route != null && route.coordinates.length >= 2;
+    final state = resolveConnectivityChip(
+      online: online,
+      hasRouteGeometry: hasRoute,
+      offlineMapAvailable: _offlineMapAvailable,
+    );
+    if (!mounted) return;
+    if (online != _networkOnline || state != _connectivityState) {
+      setState(() {
+        _networkOnline = online;
+        _connectivityState = state;
+      });
+    }
+  }
+
+  Future<void> _applyBatteryPreset(
+    RideBatteryPreset preset, {
+    bool persist = true,
+  }) async {
+    _batteryPreset = preset;
+    if (persist) await RidePrefs.setBatteryPreset(preset);
+    if (!ref.read(isRidingProvider)) return;
+    if (preset.keepScreenOn) {
+      await WakelockPlus.enable();
+    } else {
+      await WakelockPlus.disable();
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Ultra: brief wake on voice cue / off-route (N-09).
+  Future<void> _wakeOnCueIfNeeded() async {
+    if (_batteryPreset != RideBatteryPreset.ultra) return;
+    if (!ref.read(isRidingProvider)) return;
+    try {
+      await WakelockPlus.enable();
+      Future<void>.delayed(const Duration(seconds: 12), () async {
+        if (!mounted) return;
+        if (_batteryPreset != RideBatteryPreset.ultra) return;
+        if (!ref.read(isRidingProvider)) return;
+        await WakelockPlus.disable();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showBatteryPresetPicker() async {
+    final picked = await showBatteryPresetSheet(
+      context,
+      current: _batteryPreset,
+    );
+    if (picked == null || !mounted) return;
+    await _applyBatteryPreset(picked);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          picked == RideBatteryPreset.pocket
+              ? 'Pocket — Display darf aus (Akku sparen).'
+              : picked == RideBatteryPreset.lenker
+                  ? 'Lenker — Display an (kostet Akku).'
+                  : 'Ultra — Display nur bei Abbiegen (kostet Akku).',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _syncRideNotification() {
+    final location = ref.read(locationCoreProvider);
+    final paused = ref.read(isPausedProvider);
+    final text = paused ? 'Pause' : 'Fahrt läuft';
+    unawaited(
+      location.updateRideNotification(
+        paused: paused,
+        muted: _ttsMuted,
+        text: text,
+      ),
+    );
+  }
+
+  void _bindNotificationActions() {
+    _notifActionSub?.cancel();
+    final location = ref.read(locationCoreProvider);
+    _notifActionSub = location.notificationActions.listen((a) {
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (a.name == 'pause') {
+        final paused = ref.read(isPausedProvider);
+        ref.read(isPausedProvider.notifier).state = !paused;
+        if (paused) setState(() => _confirmStop = 0);
+        _syncRideNotification();
+        if (mounted) setState(() {});
+      } else if (a.name == 'mute') {
+        setState(() => _ttsMuted = !_ttsMuted);
+        if (_ttsMuted) unawaited(_tts.stop());
+        _syncRideNotification();
+      }
+    });
   }
 
   /// Auto-Sunlight: lux > 8000 for ~4s → enable; else reset while auto.
@@ -297,28 +455,55 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         final last = line.last;
         if (_cameraFollow) {
           if (line.length >= 2) {
-            _lastCameraBearing = _bearingDeg(
+            final measured = _bearingDeg(
               line[line.length - 2].latitude,
               line[line.length - 2].longitude,
               last.latitude,
               last.longitude,
             );
+            // N-06: low-pass heading to reduce heading-up jank.
+            _smoothedCameraBearing = _lastFollowCameraAt == null
+                ? measured
+                : smoothBearingDeg(
+                    previous: _smoothedCameraBearing,
+                    measured: measured,
+                    alpha: 0.32,
+                  );
           }
-          final bearing = _northUp ? 0.0 : _lastCameraBearing;
-          _programmaticCamera = true;
-          await c.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: last,
-                zoom: 16,
-                bearing: bearing,
-                tilt: _northUp ? 0 : 40,
-              ),
-            ),
+          final bearing = _northUp ? 0.0 : _smoothedCameraBearing;
+          final now = DateTime.now();
+          final doUpdate = shouldUpdateFollowCamera(
+            lastLat: _lastFollowLat,
+            lastLng: _lastFollowLng,
+            nextLat: last.latitude,
+            nextLng: last.longitude,
+            lastBearing: _lastAppliedCameraBearing,
+            nextBearing: bearing,
+            lastUpdateAt: _lastFollowCameraAt,
+            now: now,
           );
-          Future<void>.delayed(const Duration(milliseconds: 450), () {
-            _programmaticCamera = false;
-          });
+          if (doUpdate) {
+            _lastFollowLat = last.latitude;
+            _lastFollowLng = last.longitude;
+            _lastFollowCameraAt = now;
+            _lastAppliedCameraBearing = bearing;
+            _programmaticCamera = true;
+            await c.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: last,
+                  zoom: 16,
+                  bearing: bearing,
+                  tilt: _northUp ? 0 : 40,
+                ),
+              ),
+              // Slightly longer ease reduces 120Hz jank vs snappy snaps.
+              duration: const Duration(milliseconds: 550),
+            );
+            Future<void>.delayed(const Duration(milliseconds: 600), () {
+              _programmaticCamera = false;
+            });
+          }
         }
       } else if (route != null && route.coordinates.length >= 2) {
         final pts = [
@@ -377,6 +562,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     if (text == null) return;
     if (_lastSpokenText == text) return;
     _lastSpokenText = text;
+    unawaited(_wakeOnCueIfNeeded());
     unawaited(_tts.speak(text));
   }
 
@@ -402,6 +588,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ref.read(isRidingProvider) &&
             _lastSpokenText != text) {
           _lastSpokenText = text;
+          unawaited(_wakeOnCueIfNeeded());
           unawaited(_tts.speak(text));
         }
         return;
@@ -671,6 +858,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             _rejoinWhyLine = null;
             if (mounted) setState(() {});
             if (!_ttsMuted && ref.read(isRidingProvider)) {
+              unawaited(_wakeOnCueIfNeeded());
               unawaited(_tts.speak('Abseits der Route'));
             }
             unawaited(_onWentOffRoute());
@@ -793,12 +981,35 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       if (m != null) _considerLiveHints(m);
     });
     _bumpIdle();
-    unawaited(WakelockPlus.enable());
+    // N-04/N-09: Keep-Screen-On only for Lenker (opt-in). Default Pocket = off.
+    unawaited(_applyBatteryPreset(_batteryPreset, persist: false));
+    _bindNotificationActions();
+    _connectivityTimer?.cancel();
+    unawaited(_refreshConnectivityChip());
+    _connectivityTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      unawaited(_refreshConnectivityChip());
+    });
+    _syncRideNotification();
     setState(() {
       _confirmStop = 0;
       _lastSpokenText = null;
       _liveHintText = null;
+      _lastFollowLat = null;
+      _lastFollowLng = null;
+      _lastFollowCameraAt = null;
     });
+    // First ride: calm one-shot preset ask (battery-saving default until chosen).
+    unawaited(_maybeAskBatteryPresetOnce());
+  }
+
+  Future<void> _maybeAskBatteryPresetOnce() async {
+    if (!mounted || !ref.read(isRidingProvider)) return;
+    final chosen = await RidePrefs.batteryPresetChosen();
+    if (chosen || !mounted) return;
+    // Brief delay so map/HUD paints first.
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!mounted || !ref.read(isRidingProvider)) return;
+    await _showBatteryPresetPicker();
   }
 
   /// Nur mit AETHER_SIM_MOTION — UI-Odometer kann steigen, Persistenz filtert.
@@ -1105,6 +1316,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                         .clamp(0, double.infinity),
               ),
         ],
+        poiStops: route.poiStops,
       );
       _startUndoWindow(snapshot);
       setState(() {
@@ -1243,6 +1455,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     ref.read(rideElapsedSecProvider.notifier).state = 0;
     ref.read(rideDistanceMProvider.notifier).state = 0;
     unawaited(WakelockPlus.disable());
+    _connectivityTimer?.cancel();
+    _connectivityTimer = null;
+    await _notifActionSub?.cancel();
+    _notifActionSub = null;
     ref.invalidate(bikesProvider);
     ref.invalidate(recentRidesProvider);
     _clearUndoRejoin();
@@ -1265,6 +1481,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       _userChoseStay = false;
       _rejoinWhyLine = null;
       _cleanMode = true;
+      _lastFollowLat = null;
+      _lastFollowLng = null;
+      _lastFollowCameraAt = null;
     });
 
     if (!mounted) return;
@@ -1284,7 +1503,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _tick?.cancel();
     _idleLock?.cancel();
     _undoRejoinTimer?.cancel();
+    _connectivityTimer?.cancel();
+    _notifActionSub?.cancel();
     unawaited(_tts.stop());
+    unawaited(WakelockPlus.disable());
     // Stop CSC reconnect when leaving Ride.
     unawaited(ref.read(bleCoreProvider).disconnect());
     super.dispose();
@@ -1384,6 +1606,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     onPressed: () {
                       setState(() => _ttsMuted = !_ttsMuted);
                       if (_ttsMuted) unawaited(_tts.stop());
+                      _syncRideNotification();
                     },
                     icon: Icon(
                       _ttsMuted
@@ -1391,6 +1614,19 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                           : Icons.volume_up_outlined,
                     ),
                   ),
+                  if (riding)
+                    IconButton(
+                      tooltip: 'Display: ${_batteryPreset.titleDe}',
+                      onPressed: () => unawaited(_showBatteryPresetPicker()),
+                      icon: Icon(
+                        _batteryPreset.keepScreenOn
+                            ? Icons.battery_alert_outlined
+                            : Icons.battery_saver_outlined,
+                        color: _batteryPreset.costsBattery
+                            ? Colors.orange.shade800
+                            : null,
+                      ),
+                    ),
                   IconButton(
                     tooltip: _sunlightAuto
                         ? 'Sunlight Mode (Auto)'
@@ -1698,7 +1934,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Compact trust strip (Clean Mode): mute · north · follow.
+                // Compact trust strip (Clean Mode): mute · north · chip · battery.
                 if (_cleanMode)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.s),
@@ -1712,6 +1948,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             onPressed: () {
                               setState(() => _ttsMuted = !_ttsMuted);
                               if (_ttsMuted) unawaited(_tts.stop());
+                              _syncRideNotification();
                             },
                             icon: Icon(
                               _ttsMuted
@@ -1759,7 +1996,40 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                               ),
                             ),
                           ),
+                        const SizedBox(width: AppSpacing.xs),
+                        // N-03/N-08: honest connectivity (hide quiet Live).
+                        if (connectivityChipVisibleInClean(_connectivityState))
+                          Flexible(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: RideConnectivityChip(
+                                state: _connectivityState,
+                                compact: true,
+                              ),
+                            ),
+                          ),
                         const Spacer(),
+                        // N-04: battery / keep-screen indicator + picker.
+                        Material(
+                          color: theme.cardColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: IconButton(
+                            tooltip:
+                                'Display: ${_batteryPreset.titleDe}${_batteryPreset.costsBattery ? ' (kostet Akku)' : ''}',
+                            onPressed: () => unawaited(_showBatteryPresetPicker()),
+                            icon: Icon(
+                              _batteryPreset.keepScreenOn
+                                  ? Icons.battery_alert_outlined
+                                  : _batteryPreset.wakeOnCue
+                                      ? Icons.battery_charging_full
+                                      : Icons.battery_saver_outlined,
+                              size: 22,
+                              color: _batteryPreset.costsBattery
+                                  ? Colors.orange.shade800
+                                  : null,
+                            ),
+                          ),
+                        ),
                         Material(
                           color: theme.cardColor.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -1796,6 +2066,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                       ),
                     ),
                   ),
+                // N-07: one-line upcoming peek under next-turn.
+                if (route != null) _buildUpcomingRail(route),
                 // Status: off-route / rejoin why / GPS (one strip only).
                 _buildStatusStrip(theme),
               ],
@@ -1880,6 +2152,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                           final wasPaused = paused;
                           ref.read(isPausedProvider.notifier).state = !paused;
                           if (wasPaused) setState(() => _confirmStop = 0);
+                          _syncRideNotification();
                         },
                         child: Text(
                           paused ? 'Weiter' : 'Pause',
@@ -1921,6 +2194,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     _bumpIdle();
                     setState(() => _confirmStop = 0);
                     ref.read(isPausedProvider.notifier).state = true;
+                    _syncRideNotification();
                   },
                   child: const Text(
                     'Pause',
@@ -1966,6 +2240,55 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
       ],
     );
+  }
+
+  /// N-07: thin upcoming rail (next turn / POI / climb stub).
+  Widget _buildUpcomingRail(ActiveRoute route) {
+    String? nextNextInstr;
+    double? nextNextRemain;
+    if (route.steps.isNotEmpty) {
+      final remaining = route.steps
+          .where((s) => s.distanceAlongM > _alongRouteM + 5)
+          .toList()
+        ..sort((a, b) => a.distanceAlongM.compareTo(b.distanceAlongM));
+      if (remaining.length >= 2) {
+        final second = remaining[1];
+        nextNextInstr = second.instruction;
+        nextNextRemain = second.distanceAlongM - _alongRouteM;
+      }
+    } else if (route.coordinates.length >= 4) {
+      final cues = buildNavCues(route.coordinates);
+      final ahead = cues.where((c) => c.distanceAlongM > _alongRouteM + 5).toList();
+      if (ahead.length >= 2) {
+        nextNextInstr = ahead[1].instruction;
+        nextNextRemain = ahead[1].distanceAlongM - _alongRouteM;
+      }
+    }
+
+    final poi = nextPoiStop(
+      stops: [
+        for (final p in route.poiStops)
+          RoutePoiStop(atMin: p.atMin, title: p.title, kind: p.kind),
+      ],
+      alongRouteM: _alongRouteM,
+      totalDistanceM: route.distanceKm * 1000,
+      durationMin: route.durationMin,
+    );
+
+    // Climb stub: remaining elevation scaled by progress (honest-ish).
+    final progress = route.distanceKm > 0
+        ? (_alongRouteM / 1000 / route.distanceKm).clamp(0.0, 1.0)
+        : 0.0;
+    final remainClimb = route.elevationM * (1 - progress);
+
+    final item = buildUpcomingRail(
+      nextNextTurnInstruction: nextNextInstr,
+      nextNextTurnRemainingM: nextNextRemain,
+      nextPoi: poi,
+      remainingClimbM: remainClimb,
+    );
+    if (item == null) return const SizedBox.shrink();
+    return RideUpcomingRail(item: item);
   }
 
   /// Eine Statuszeile statt gestapelter Banner. Priorität (höchste zuerst):
