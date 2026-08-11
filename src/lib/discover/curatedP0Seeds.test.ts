@@ -30,6 +30,14 @@ assert(
   hdSixty.some((r) => r.id.includes("hd-") || r.id.includes("ma-")),
   "RN seed ids present"
 );
+assert(
+  berlinSixty.every((r) => r.loop === true),
+  "all sixty are honest loops"
+);
+assert(
+  !berlinSixty.some((r) => r.id === "seed-route-spree-commute"),
+  "linear Spree excluded from curated ~60"
+);
 
 const catalog = curatedP0CatalogSuggestions(berlin);
 assert(catalog.length >= 6, "catalog fallback ≥6 Berlin route seeds");
