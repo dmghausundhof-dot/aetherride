@@ -54,6 +54,13 @@ abstract final class AppConfig {
     defaultValue: false,
   );
 
+  /// Show Demo-Geometrie / Routing-Key debug banners in Discover.
+  /// Prod default off — set SHOW_ROUTING_DEBUG=true for local smoke.
+  static const showRoutingDebug = bool.fromEnvironment(
+    'SHOW_ROUTING_DEBUG',
+    defaultValue: false,
+  );
+
   static const outdooractiveApiKey = String.fromEnvironment(
     'OUTDOORACTIVE_API_KEY',
     defaultValue: '',

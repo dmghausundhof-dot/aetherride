@@ -274,35 +274,45 @@ class _DifficultyStatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _DifficultyDot(raw: difficultyRaw),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text.rich(
-            TextSpan(
-              children: [
+    // LayoutBuilder: Flexible/Expanded crash when maxWidth is infinite
+    // (e.g. horizontal scroll / Row without bound) — Tourenkarten sheet.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rich = Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: _difficultyDisplay(difficultyRaw),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: fontSize,
+                ),
+              ),
+              for (final s in segments)
                 TextSpan(
-                  text: _difficultyDisplay(difficultyRaw),
+                  text: '  ·  $s',
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
+                    color: AppColors.muted,
                     fontSize: fontSize,
                   ),
                 ),
-                for (final s in segments)
-                  TextSpan(
-                    text: '  ·  $s',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: fontSize,
-                    ),
-                  ),
-              ],
-            ),
-            overflow: TextOverflow.ellipsis,
+            ],
           ),
-        ),
-      ],
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+        );
+        return Row(
+          children: [
+            _DifficultyDot(raw: difficultyRaw),
+            const SizedBox(width: 6),
+            if (constraints.maxWidth.isFinite)
+              Expanded(child: rich)
+            else
+              // Unbounded: take intrinsic width; parent scroll handles overflow.
+              rich,
+          ],
+        );
+      },
     );
   }
 }
@@ -772,6 +782,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _fetchRoutingStatus() async {
+    // Prod: no Demo-Geometrie / Routing-Key chrome (Q-BAR-DIS-01).
+    if (!AppConfig.showRoutingDebug) return;
     final s = await fetchRoutingStatus();
     if (!mounted || s == null) return;
     setState(() => _routingStatusNote = s.bannerText);
@@ -3647,9 +3659,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             // Gleicher Text + gleiches Icon wie der „Losfahren"-Button auf
             // Home — ein Wort für „diese Route jetzt starten", überall.
             FilledButton.icon(
+              // Theme minimumSize: Size.fromHeight(48) ⇒ w=Infinity — breaks Row.
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+                minimumSize: const Size(0, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               onPressed: () => _startRide(),
               icon: const Icon(Icons.play_arrow, size: 18),
@@ -4882,8 +4897,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.m),
+          // ListView child: min height + stretch width (Q-BAR-DIS-02).
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 'Noch keine ~60-Min-Touren hier.',
@@ -4900,6 +4917,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
+                    minimumSize: const Size(0, 48),
                   ),
                   onPressed: _focusOrtSearch,
                   icon: const Icon(Icons.search),
@@ -4908,7 +4926,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
               const SizedBox(height: AppSpacing.s),
               const Text(
-                'Demo-Stadt',
+                'Demo-Städte',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -5142,13 +5160,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         width: double.infinity,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.m),
+          // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               InkWell(
                 onTap: () => unawaited(_openDetail(r.id, r.center)),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
                       children: [
@@ -5261,6 +5282,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.accent,
+                        minimumSize: const Size(0, 44),
                       ),
                       onPressed: _loading
                           ? null
@@ -5277,6 +5299,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   ),
                   const SizedBox(width: AppSpacing.s),
                   OutlinedButton(
+                    // Theme Size.fromHeight(48) ⇒ Infinity width crashes this Row.
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () => unawaited(_openDetail(r.id, r.center)),
                     child: const Text('Mehr'),
                   ),
@@ -5289,12 +5316,24 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   children: [
                     if (_isPinOnlyIdea(r))
                       OutlinedButton.icon(
+                        // Horizontal Row ⇒ unbounded max width; theme
+                        // Size.fromHeight(48) would assert BoxConstraints(w=Infinity).
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 36),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
                         onPressed: _loading ? null : () => _computeIdeaRoute(r),
                         icon: const Icon(Icons.route, size: 16),
                         label: const Text('Route berechnen'),
                       )
                     else
                       OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 36),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
                         onPressed: () async {
                           final routed = await _geometryForTour(r);
                           if (!mounted) return;
@@ -5321,11 +5360,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ),
                     const SizedBox(width: AppSpacing.xs),
                     OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
                       onPressed: _loading ? null : () => _hybridSnap(r),
                       child: const Text('Von hier'),
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
                       onPressed: _loading ? null : () => _adoptTourIntoPlan(r),
                       icon: const Icon(Icons.tune, size: 16),
                       label: const Text('Anpassen'),
