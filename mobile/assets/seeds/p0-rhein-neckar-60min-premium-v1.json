@@ -1,0 +1,191 @@
+[
+  {
+    "id": "seed-dach-60-rn-1-heidelberg-neckarwiese",
+    "title": "Heidelberg — Neckarwiese, Alte Brücke & Schlossblick",
+    "sport": "ebike",
+    "duration_min": 60,
+    "distance_km": 16,
+    "loop": true,
+    "season": "year_round",
+    "tip": "Philosophenweg via road from Neuenheim — never Schlangenweg stairs.",
+    "discipline_note": "E-bike helps on the Schloss climb; path is shared with joggers — easy pace by the Neckar.",
+    "surface_mix": "asphalt_promenade + short steep asphalt climb",
+    "highlight_poi": "Philosophengärtchen / Merianausblick",
+    "start_area": {
+      "city_region": "Heidelberg Bismarckplatz / Neuenheim–Altstadt, Germany",
+      "lat": 49.409,
+      "lng": 8.694,
+      "approx": true,
+      "corridor_note": "Tram/bus hub Bismarckplatz; Neckar Valley Cycle Path access in <2 min"
+    },
+    "short_pitch": "Neckar path, Alte Brücke postcard, then an e-bike climb to Schloss and Merianausblick — Heidelberg’s real after-work loop.",
+    "pois": [
+      {
+        "name": "Theodor-Heuss-Brücke / Bismarckplatz",
+        "type": "Trailhead",
+        "offset_min": 0,
+        "why_good": "Bike lanes off the bridge drop you onto the Neuenheim meadows without Altstadt cobbles."
+      },
+      {
+        "name": "Neckarwiese",
+        "type": "See",
+        "offset_min": 8,
+        "why_good": "Wide lawn + paved Neckar path between Heuss and Ernst-Walz bridges — best flat warm-up stretch."
+      },
+      {
+        "name": "Kiosk do Bairro / Café Bairro Neuenheim",
+        "type": "Café",
+        "offset_min": 12,
+        "why_good": "Coffee at the meadow kiosk or Marktplatz café without leaving the north-bank flow."
+      },
+      {
+        "name": "Philosophengärtchen / Merianausblick",
+        "type": "Aussicht",
+        "offset_min": 25,
+        "why_good": "Castle–Altstadt–Neckar panorama; paved Philosophenweg from Neuenheim only — Schlangenweg is steps."
+      },
+      {
+        "name": "Alte Brücke (Karl-Theodor-Brücke)",
+        "type": "Kultur",
+        "offset_min": 35,
+        "why_good": "1788 bridge + Brückenaffe; roll across for the classic photo, then climb or return west."
+      },
+      {
+        "name": "Heidelberger Schloss",
+        "type": "Kultur",
+        "offset_min": 48,
+        "why_good": "Steep road climb (~10–12%); e-bike friendly, terrace view over the valley before dropping back."
+      },
+      {
+        "name": "Marstallcafé / Uni-Hof",
+        "type": "Café",
+        "offset_min": 55,
+        "why_good": "Last coffee option before Bismarckplatz if you skip the Schloss climb and stay riverside."
+      }
+    ]
+  },
+  {
+    "id": "seed-dach-60-rn-2-mannheim-schloss-waldpark",
+    "title": "Mannheim — Schloss, Rheinpromenade & Waldpark",
+    "sport": "city",
+    "duration_min": 55,
+    "distance_km": 17,
+    "loop": true,
+    "season": "year_round",
+    "tip": "Stay on paved park paths — Reißinsel core NSG is no-bike.",
+    "discipline_note": "Almost flat asphalt/city; fine on any bike. Expect promenade walkers on weekends.",
+    "surface_mix": "city asphalt + park pavement",
+    "highlight_poi": "Neckar/Rhein views at Strandbad / Bellenkrappen",
+    "start_area": {
+      "city_region": "Mannheim Schloss / Lindenhof–Rheinpark, Germany",
+      "lat": 49.483,
+      "lng": 8.462,
+      "approx": true,
+      "corridor_note": "Schloss / Hauptbahnhof short hop; Rhine path via Lindenhof"
+    },
+    "short_pitch": "Flat palace-to-Rhine spin: Stephanienufer, Waldpark floodplain paths, Strandbad stop — Quadratestadt nature without leaving town.",
+    "pois": [
+      {
+        "name": "Mannheimer Schloss",
+        "type": "Kultur",
+        "offset_min": 0,
+        "why_good": "Baroque Ehrenhof is the natural start before dropping south to the Rhine."
+      },
+      {
+        "name": "Wasserturm Friedrichsplatz",
+        "type": "Kultur",
+        "offset_min": 8,
+        "why_good": "Art Nouveau city pin — clip it before the Lindenhof descent to the water."
+      },
+      {
+        "name": "Rheinpromenade / Stephanienufer",
+        "type": "Aussicht",
+        "offset_min": 18,
+        "why_good": "Tree-lined Rhine bank with ship traffic; continuous bike-friendly asphalt."
+      },
+      {
+        "name": "Waldpark Mannheim",
+        "type": "Trailhead",
+        "offset_min": 28,
+        "why_good": "Floodplain forest where promenade turns quiet — stay on signed paved paths."
+      },
+      {
+        "name": "Bellenkrappen (Reißinsel edge)",
+        "type": "See",
+        "offset_min": 38,
+        "why_good": "Old Rhine arm views; bikes stay outside the Reißinsel core reserve."
+      },
+      {
+        "name": "PURiNO Strandbad am Rhein",
+        "type": "Café",
+        "offset_min": 45,
+        "why_good": "Stilt restaurant at Strandbadweg 1 — reliable post-ride food before the city return."
+      },
+      {
+        "name": "Kurt-Schumacher-Brücke approach",
+        "type": "Trailhead",
+        "offset_min": 50,
+        "why_good": "Clear return corridor toward Schloss / Hbf without guessing Quadrate one-ways."
+      }
+    ]
+  },
+  {
+    "id": "seed-dach-60-rn-3-heidelberg-boxberg-gaisberg",
+    "title": "Heidelberg foothills — Boxberg, Bierhelderhof & Gaisberg gravel",
+    "sport": "gravel",
+    "duration_min": 70,
+    "distance_km": 15,
+    "loop": true,
+    "season": "spring_summer",
+    "tip": "Rohrbach S-Bahn start — skip full Königstuhl summit today.",
+    "discipline_note": "Compacted Forstwege, not technical MTB. Wet leaves in autumn get slick; winter ice on north slopes.",
+    "surface_mix": "~70% gravel forest road / ~30% asphalt link",
+    "highlight_poi": "Gaisbergturm & Mammutbäume",
+    "start_area": {
+      "city_region": "Heidelberg-Rohrbach / Boxberg foothills, Germany",
+      "lat": 49.38,
+      "lng": 8.69,
+      "approx": true,
+      "corridor_note": "S-Bahn Heidelberg-Kirchheim/Rohrbach on Wiesloch–HD line — best Nähe staging for Wiesloch testers"
+    },
+    "short_pitch": "Königstuhl foothills without the 700 hm sufferfest: Rohrbach S-Bahn → Boxberg gravel → Bierhelderhof → Gaisberg tower.",
+    "pois": [
+      {
+        "name": "Heidelberg-Kirchheim/Rohrbach Bahnhof",
+        "type": "Bahn",
+        "offset_min": 0,
+        "why_good": "S-Bahn on the Wiesloch line — park-and-ride / train staging that makes this loop actually near the corridor."
+      },
+      {
+        "name": "Boxberg forest roads",
+        "type": "Trailhead",
+        "offset_min": 12,
+        "why_good": "Entry to compacted Forstwege toward Kohlhof/Gaisberg — gravel feel without singletrack legality drama."
+      },
+      {
+        "name": "Bierhelderhof",
+        "type": "Café",
+        "offset_min": 30,
+        "why_good": "Farm-inn clearing ~260 m with beer garden and Hofladen — natural mid-loop reset."
+      },
+      {
+        "name": "Ehrenfriedhof Heidelberg",
+        "type": "Kultur",
+        "offset_min": 40,
+        "why_good": "Quiet hillside memorial on the Speyerer-Hof approach — landmark on the forest grid."
+      },
+      {
+        "name": "Gaisbergturm & Mammutbäume",
+        "type": "Aussicht",
+        "offset_min": 52,
+        "why_good": "376 m tower + 1870s sequoias; Rhine-plain view is the payoff before descending to Rohrbach."
+      },
+      {
+        "name": "Kohlhof junction (turnback option)",
+        "type": "Trailhead",
+        "offset_min": 58,
+        "why_good": "If legs fade, bail downhill to Rohrbach here instead of tagging the tower — still a solid 55-min loop."
+      }
+    ]
+  }
+]
