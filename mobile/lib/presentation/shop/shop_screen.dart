@@ -253,7 +253,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       label: Text(
                         store.commerceMode == 'marketplace'
                             ? 'Im Marktplatz öffnen'
-                            : 'Beispiel-Shop öffnen',
+                            : 'Shopify-Shop öffnen',
                       ),
                     ),
                   ],
@@ -348,8 +348,14 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     ref.read(userProfileStoreProvider).commerceMode ==
                             'marketplace'
                         ? 'Marktplatz im Browser'
-                        : 'Beispielkatalog im Browser',
+                        : 'Live-Shop (Shopify) im Browser',
                   ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Der vollständige Shop öffnet den Live Shopify-gestützten '
+                  'Web-Shop (ggf. Store-Passwort).',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
               ],
             ),

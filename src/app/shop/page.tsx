@@ -6,6 +6,7 @@ import {
   ExternalLink,
   ShoppingBag,
   Sparkles,
+  Store,
   Wrench,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -15,9 +16,13 @@ import {
   SHOP_BROWSE_SLOTS,
   SHOP_PRODUCTS,
   SHOP_SPORT_FILTERS,
-  getShopProduct,
+  SHOPIFY_STORE_BASE,
+  getFeaturedShopifyProducts,
+  getShopProductByFocus,
   productMatchesSport,
+  shopCollectionHref,
   shopSportFromBikeCategory,
+  shopSportFromQuery,
   type ShopProduct,
   type ShopSport,
 } from "@/lib/shop/catalog";
@@ -89,44 +94,59 @@ function ShopPageInner() {
     consents.find((c) => c.purpose === "product_recommendations")?.granted ??
     false;
 
+  const sportQuery = searchParams.get("sport");
+  const collectionUrl = sportQuery
+    ? shopCollectionHref(sportQuery)
+    : undefined;
+  const featuredBikes = useMemo(() => getFeaturedShopifyProducts(), []);
+
   useEffect(() => {
     const focus = searchParams.get("focus");
     const slot = searchParams.get("slot");
     const jobParam = searchParams.get("job");
-    const sportParam = searchParams.get("sport") as ShopSport | null;
+    const mappedSport = shopSportFromQuery(searchParams.get("sport"));
 
-    if (focus && getShopProduct(focus)) {
-      setFocusId(focus);
-      const p = getShopProduct(focus)!;
-      const browseMatch = SHOP_BROWSE_SLOTS.find(
-        (s) =>
-          s.slot === p.slot ||
-          (s.slot === "brake_pads_front" &&
-            (p.slot === "brake_pads_front" || p.slot === "brake_pads_rear")) ||
-          (s.slot === "tire_front" &&
-            (p.slot === "tire_front" || p.slot === "tire_rear"))
-      );
-      if (browseMatch && browseMatch.slot !== "all") {
-        setSlotFilter(browseMatch.slot);
+    if (focus) {
+      const p = getShopProductByFocus(focus);
+      if (p) {
+        setFocusId(p.id);
+        const browseMatch = SHOP_BROWSE_SLOTS.find(
+          (s) =>
+            s.slot === p.slot ||
+            (s.slot === "brake_pads_front" &&
+              (p.slot === "brake_pads_front" || p.slot === "brake_pads_rear")) ||
+            (s.slot === "tire_front" &&
+              (p.slot === "tire_front" || p.slot === "tire_rear"))
+        );
+        // Kompletträder (frame) bleiben bei "Alle" — Featured-Sektion highlightet
+        if (browseMatch && browseMatch.slot !== "all" && p.slot !== "frame") {
+          setSlotFilter(browseMatch.slot);
+        }
       }
     }
     if (isBrowseSlot(slot)) {
       setSlotFilter(slot);
     }
-    if (
-      sportParam &&
-      SHOP_SPORT_FILTERS.some((s) => s.id === sportParam)
-    ) {
-      setSportFilter(sportParam);
-    } else if (!sportParam && activeBike) {
+    if (mappedSport) {
+      setSportFilter(mappedSport);
+    } else if (!searchParams.get("sport") && activeBike) {
       setSportFilter(shopSportFromBikeCategory(activeBike.category));
     }
     if (jobParam === "replace" || jobParam === "browse" || jobParam === "season") {
       setJob(jobParam);
     } else if (focus || slot) {
-      setJob(slot || focus ? "replace" : "browse");
+      const focused = focus ? getShopProductByFocus(focus) : undefined;
+      // Shopify-Bikes → browse; Verschleiß-Teile → replace
+      setJob(focused?.slot === "frame" ? "browse" : slot || focus ? "replace" : "browse");
     }
   }, [searchParams, activeBike]);
+
+  useEffect(() => {
+    if (!focusId) return;
+    const el = document.getElementById(`product-${focusId}`);
+    const featuredEl = document.getElementById(`featured-${focusId}`);
+    (featuredEl ?? el)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusId]);
 
   const triggered = useMemo(() => {
     if (!activeBike || !productConsent) return [];
@@ -168,9 +188,15 @@ function ShopPageInner() {
     });
   }, [activeBike]);
 
+  const featuredIds = useMemo(
+    () => new Set(featuredBikes.map((p) => p.id)),
+    [featuredBikes]
+  );
+
   const ranked = useMemo(() => {
     let list = rankedAll.filter(
       (row) =>
+        !featuredIds.has(row.product.id) &&
         matchesSlotFilter(row.product, slotFilter) &&
         productMatchesSport(row.product, sportFilter)
     );
@@ -210,6 +236,7 @@ function ShopPageInner() {
     return list;
   }, [
     rankedAll,
+    featuredIds,
     slotFilter,
     sportFilter,
     hideIncompatible,
@@ -261,8 +288,8 @@ function ShopPageInner() {
         <div>
           <h1 className="text-2xl font-bold">Shop</h1>
           <p className="text-sm text-text-secondary">
-            Teile nach Disziplin und Kompatibilität — Beispielkatalog (kein
-            Live-Partner)
+            Featured Bikes im AetherRide Shopify-Shop · Ersatzteile im
+            Beispielkatalog
           </p>
         </div>
         <Link
@@ -278,6 +305,86 @@ function ShopPageInner() {
           )}
         </Link>
       </header>
+
+      <section className="rounded-2xl border border-accent/40 bg-accent/10 p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent">
+            <Store className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-bold">Featured · AetherRide Shop</h2>
+            <p className="mt-0.5 text-xs text-text-secondary">
+              Kompletträder mit Testpreisen. Checkout erfolgt auf dem Shopify-
+              Storefront ({SHOPIFY_STORE_BASE.replace("https://", "")}) —
+              der Store kann passwortgeschützt sein (Shopify Admin →
+              Online Store → Preferences).
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {featuredBikes.map((p) => {
+            const focused = focusId === p.id;
+            return (
+              <div
+                key={p.id}
+                id={`featured-${p.id}`}
+                className={cn(
+                  "rounded-2xl border bg-surface p-4",
+                  focused
+                    ? "border-accent ring-1 ring-accent/40"
+                    : "border-border"
+                )}
+              >
+                <div className="flex gap-3">
+                  <ProductVisual product={p} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs uppercase tracking-wide text-accent">
+                      AetherRide Shop
+                    </div>
+                    <div className="text-xs uppercase tracking-wide text-text-secondary">
+                      {p.manufacturer}
+                    </div>
+                    <h3 className="mt-0.5 font-semibold leading-snug">{p.name}</h3>
+                    <div className="mt-1 text-lg font-bold tabular-nums text-accent">
+                      {p.priceEur.toLocaleString("de-DE")} €
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-text-secondary">{p.description}</p>
+                <a
+                  href={p.affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+                >
+                  Im Shopify-Shop öffnen{" "}
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {collectionUrl ? (
+        <div className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
+          <p className="font-medium text-primary">
+            Collection für „{sportQuery}“
+          </p>
+          <p className="mt-1 text-xs text-text-secondary">
+            Passende Bikes direkt in der Shopify-Collection ansehen (Storefront
+            ggf. passwortgeschützt).
+          </p>
+          <a
+            href={collectionUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white"
+          >
+            Collection öffnen <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      ) : null}
 
       {activeBike ? (
         <div className="flex items-center justify-between gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-sm">
@@ -333,7 +440,7 @@ function ShopPageInner() {
                 rel="noreferrer"
                 className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
               >
-                Beim Beispiel-Händler ansehen{" "}
+                Beim Partner ansehen{" "}
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
@@ -500,7 +607,7 @@ function ShopPageInner() {
                     rel="noopener noreferrer"
                     className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
                   >
-                    Beispiel-Link <ExternalLink className="h-4 w-4" />
+                    Zum Händler <ExternalLink className="h-4 w-4" />
                   </a>
                 </div>
               </div>
@@ -513,7 +620,8 @@ function ShopPageInner() {
       ) : null}
 
       <p className="text-center text-xs text-text-secondary">
-        Beispielkatalog — keine Live-Käufe ·{" "}
+        Featured-Bikes: Checkout auf Shopify (ggf. Store-Passwort) · Teile:
+        Beispielkatalog ·{" "}
         <Link href="/checkout" className="text-accent">
           Merkliste öffnen
         </Link>
