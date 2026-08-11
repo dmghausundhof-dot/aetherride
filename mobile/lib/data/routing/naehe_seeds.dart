@@ -81,7 +81,6 @@ class NaeheSeedRoute {
     this.disciplineNote,
     this.corridorNote,
     this.shortPitch,
-    this.thumbnailUrl,
   });
 
   final String id;
@@ -109,9 +108,6 @@ class NaeheSeedRoute {
   final String? disciplineNote;
   final String? corridorNote;
   final String? shortPitch;
-
-  /// Hero image — asset path (`assets/…`) or https URL.
-  final String? thumbnailUrl;
 
   bool get isRoute => type == 'route';
 
@@ -206,10 +202,7 @@ class NaeheSeedRoute {
       sportTags: tags,
       centerLat: lat,
       centerLng: lng,
-      // Nähe uses is_loop; legacy/premium packs use loop / closed.
-      isLoop: m['is_loop'] == true ||
-          m['loop'] == true ||
-          m['closed'] == true,
+      isLoop: m['is_loop'] == true,
       durationBand: m['duration_band'] as String?,
       poiStops: pois,
       surfaceMix: mix,
@@ -221,7 +214,6 @@ class NaeheSeedRoute {
       disciplineNote: opt('discipline_note'),
       corridorNote: opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
-      thumbnailUrl: opt('thumbnail_url') ?? heroAssetForSeedId((m['id'] as String?) ?? ''),
     );
   }
 
@@ -266,10 +258,7 @@ class NaeheSeedRoute {
     }
 
     final duration = (m['duration_min'] as num?)?.round() ?? 0;
-    // Parity with Nähe fromJson: is_loop | loop | closed.
-    final isLoop = m['loop'] == true ||
-        m['is_loop'] == true ||
-        m['closed'] == true;
+    final isLoop = m['loop'] == true || m['is_loop'] == true;
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
@@ -295,8 +284,6 @@ class NaeheSeedRoute {
       disciplineNote: opt('discipline_note'),
       corridorNote: corridor ?? opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
-      thumbnailUrl: opt('thumbnail_url') ??
-          heroAssetForSeedId((m['id'] as String?) ?? ''),
     );
   }
 
@@ -414,27 +401,6 @@ BikeCategory? _categoryFromSportTag(String raw) {
   };
 }
 
-/// Bundled hero assets for Discover photo cards (S25 — never blank sheet).
-String? heroAssetForSeedId(String id) {
-  if (id.isEmpty) return null;
-  const map = <String, String>{
-    'seed-dach-60-rn-1-heidelberg-neckarwiese':
-        'assets/seeds/heroes/rn-heidelberg.jpg',
-    'seed-dach-60-rn-2-mannheim-schloss-waldpark':
-        'assets/seeds/heroes/rn-mannheim.jpg',
-    'seed-dach-60-rn-3-heidelberg-boxberg-gaisberg':
-        'assets/seeds/heroes/rn-boxberg.jpg',
-    'seed-loop-heidelberg-neckar-60': 'assets/seeds/heroes/rn-heidelberg.jpg',
-    'seed-loop-mannheim-rhein-60': 'assets/seeds/heroes/rn-mannheim.jpg',
-    'seed-loop-heidelberg-boxberg-gravel-60':
-        'assets/seeds/heroes/rn-boxberg.jpg',
-    'seed-loop-tempelhofer-60': 'assets/seeds/heroes/berlin-tempelhofer.jpg',
-    'seed-loop-spree-feierabend-60': 'assets/seeds/heroes/berlin-spree.jpg',
-    'seed-loop-grunewald-kurz-60': 'assets/seeds/heroes/berlin-grunewald.jpg',
-  };
-  return map[id];
-}
-
 /// Synthetischer Rundkurs (geschlossen) um [lat]/[lng] mit ~[distanceKm] Umfang.
 List<List<double>> syntheticLoopLngLat({
   required double lat,
@@ -474,10 +440,6 @@ class NaeheSeedsBundle {
   /// Base curated `p0-rhein-neckar-60min-v1.json` stays untouched (#22).
   static const rheinNeckarAssetPath =
       'assets/seeds/p0-rhein-neckar-60min-premium-v1.json';
-
-  /// Nähe-schema RN loops — loaded as fallback if Premium yields <3 loops.
-  static const rheinNeckarNaeheFallbackPath =
-      'assets/seeds/p0-rhein-neckar-60min-naehe-v1.json';
 
   final List<NaeheSeedRoute> routes;
   final String labelWithoutLocation;
@@ -521,22 +483,6 @@ class NaeheSeedsBundle {
       } catch (_) {
         // Rhein-Neckar asset optional at runtime (tests / older builds).
       }
-    }
-    // S25: Wiesloch must never see a dead empty sheet — if Premium missing
-    // or <3 loops, merge Nähe RN schema (different ids, same region).
-    final rnLoops = bundle.loops
-        .where(
-          (r) =>
-              r.id.contains('heidelberg') ||
-              r.id.contains('mannheim') ||
-              r.id.contains('-rn-'),
-        )
-        .length;
-    if (rnLoops < 3) {
-      try {
-        final fb = await rootBundle.loadString(rheinNeckarNaeheFallbackPath);
-        bundle = merge(bundle, parse(fb));
-      } catch (_) {}
     }
     return bundle;
   }

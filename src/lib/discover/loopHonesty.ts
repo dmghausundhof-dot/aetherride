@@ -1,9 +1,9 @@
 /**
- * D-60-LOOP-FILTER-01 — Rundkurs / loop filter honesty (Web + Android).
+ * D-60-LOOP-FILTER-01 — Rundkurs / loop filter honesty (Web / src).
  *
  * Rundkurs may only surface real closed routes — never fill with linear A→B.
  * Prefer explicit seed/catalog flags; optionally confirm geometry via
- * start≈end closure (≤300 m). Separate from the Discover UX desktop pack.
+ * start≈end closure (≤300 m). Flutter/mobile owned separately by Android eng.
  */
 
 /** Explicit catalog/seed flags that mean "honest loop". */

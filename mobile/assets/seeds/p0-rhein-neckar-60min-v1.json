@@ -49,8 +49,7 @@
         "why_good": "Red-sandstone castle ruin above the Altstadt; the road climb is steep but e-bike friendly and rewards with terrace views over the Neckar valley.",
         "offset_min": 48
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Mannheim — Schloss, Rheinpromenade & Waldpark",
@@ -102,8 +101,7 @@
         "why_good": "Italian riverside restaurant on stilts at Strandbadweg 1 — the classic post-ride pasta/pizza stop before spinning back to the city.",
         "offset_min": 45
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Heidelberg foothills — Boxberg, Bierhelderhof & Gaisberg gravel",
@@ -149,7 +147,6 @@
         "why_good": "Lookout tower on the 376 m Gaisberg with Rhine-plain views, next to the 1870s sequoia arboretum — the scenic high point of a ~60–75 min foothills spin.",
         "offset_min": 52
       }
-    ],
-    "is_loop": true
+    ]
   }
 ]

@@ -48,9 +48,9 @@ RouteShape? routeShapeOf(List<List<double>>? track) {
     track.last[1],
     track.last[0],
   );
-  // Lücke unter 5 % der Streckenlänge (mindestens 300 m ≈ oberes Ende der
-  // 150–300 m Spec-Bandbreite für GPS-/Trailhead-Delta) gilt als geschlossen.
-  return gapKm < math.max(0.30, lengthKm * 0.05)
+  // Lücke unter 5 % der Streckenlänge (mindestens 250 m Toleranz für
+  // GPS-Rauschen und Trailhead-Parkplätze) gilt als geschlossen.
+  return gapKm < math.max(0.25, lengthKm * 0.05)
       ? RouteShape.loop
       : RouteShape.pointToPoint;
 }

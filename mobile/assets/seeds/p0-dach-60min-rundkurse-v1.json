@@ -43,8 +43,7 @@
         "why_good": "Munich’s oldest surviving church building, last remnant of the abandoned village.",
         "offset_min": 57
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Berlin — Tempelhofer Feld & Landwehrkanal",
@@ -90,8 +89,7 @@
         "why_good": "Airlift memorial and U-Bahn hub anchoring the historic airport approach.",
         "offset_min": 48
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Vienna — Prater Hauptallee & Donauinsel Süd",
@@ -137,8 +135,7 @@
         "why_good": "Southern tip of Danube Island with Neue Donau swim spots and big-sky river views.",
         "offset_min": 53
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Innsbruck — Hungerburg–Arzler Alm Trail",
@@ -184,8 +181,7 @@
         "why_good": "Cable-car hub linking city riders to higher Nordkette options after the loop.",
         "offset_min": 62
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Cologne — Kölner Rhein-Runde",
@@ -237,8 +233,7 @@
         "why_good": "Family-friendly museum stop at the north end of Rheinauhafen before the Dom finish.",
         "offset_min": 62
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Zurich — Seefeld & Zürichhorn Lakeside",
@@ -284,8 +279,7 @@
         "why_good": "Compact modernist pavilion next to the Chinese Garden on the Seefeld shore.",
         "offset_min": 48
       }
-    ],
-    "is_loop": true
+    ]
   },
   {
     "title": "Lake Constance — Konstanz Staad–Mainau Shore",
@@ -331,7 +325,6 @@
         "why_good": "Historic Rhine bridge linking Altstadt to the Mainaustraße bike corridor.",
         "offset_min": 42
       }
-    ],
-    "is_loop": true
+    ]
   }
 ]

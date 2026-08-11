@@ -217,7 +217,7 @@ function DiscoverPageInner() {
   );
   const [filters, setFilters] = useState<RouteFilterState>(() => ({
     ...DEFAULT_ROUTE_FILTERS,
-    // D-60-LOOP-FILTER-01: ~60 lens = Rundkurs honesty (Flutter _loopOnly).
+    // D-60-LOOP-FILTER-01 (web): ~60 lens = Rundkurs honesty.
     loopOnly: (queryMinutes ?? 60) === 60,
     sport:
       sportParam &&
