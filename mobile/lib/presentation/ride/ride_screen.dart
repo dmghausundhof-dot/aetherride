@@ -744,9 +744,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         return false;
     }
 
-    // BLE is optional (CSC) — prompt, never block Freeride.
+    // Nearby devices / BLE is optional (CSC) — never block HUD / Freeride.
+    // Android 12+ "Geräte in der Nähe" deny must still let GPS ride start.
     final ble = ref.read(bleCoreProvider);
-    final bleResult = await ble.ensurePermission();
+    BlePermissionResult bleResult;
+    try {
+      bleResult = await ble.ensurePermission();
+    } catch (e) {
+      debugPrint('BLE permission: $e');
+      bleResult = BlePermissionResult.unsupported;
+    }
     if (!mounted) return false;
     if (bleResult == BlePermissionResult.adapterOff) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -760,7 +767,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Bluetooth-Berechtigung fehlt — GPS-Track läuft ohne Kadenz/Leistung.',
+            'Geräte in der Nähe / Bluetooth verweigert — GPS-Track läuft ohne Sensor.',
           ),
         ),
       );
@@ -804,7 +811,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         WheelSize.b650 => 1.935,
       };
     }
-    final cscOk = await ble.connect();
+    // Connect is best-effort; permission deny / missing sensor must not abort ride.
+    var cscOk = false;
+    try {
+      cscOk = await ble.connect();
+    } catch (e) {
+      debugPrint('BLE connect: $e');
+      cscOk = false;
+    }
     if (!cscOk && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
