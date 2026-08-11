@@ -77,6 +77,11 @@ android {
         jniLibs {
             // Prefer our packaged libc++_shared / protobuf over duplicates from plugins.
             pickFirsts += listOf("**/libc++_shared.so", "**/libprotobuf.so")
+            // Android 15+ 16 KB page-size: keep native libs uncompressed so
+            // the zip aligner can place them on 16 KB boundaries (AGP 8.5+/9).
+            // Do NOT enable useLegacyPackaging — that compresses .so and breaks
+            // 16 KB installability on devices with 16 KB pages.
+            useLegacyPackaging = false
         }
     }
 }

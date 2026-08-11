@@ -114,3 +114,11 @@ Schritt-für-Schritt-Runbook (Keystore ist bereits generiert):
 - [x] `heatmap_cells` SQL live
 - [x] Contribute Mobile + Web (Post-Ride)
 - [ ] Mehrere Test-Accounts mit Consent → Zellen erst ab k≥5 sichtbar
+
+## 16 KB page size (Android 15+ / Play)
+
+- [x] `mobile/android/app/build.gradle.kts` → `packaging.jniLibs.useLegacyPackaging = false` (uncompressed, zip-aligned)
+- [ ] Residual: MapLibre / routing_core / plugin `.so` must be **linked** with 16 KB max-page-size (`-Wl,-z,max-page-size=16384`). Packaging alone cannot fix misaligned ELF segments.
+- [ ] Verify on a release artifact: `readelf -l path/to/lib*.so | grep LOAD` → Align ≥ 0x4000
+- [ ] Device gate: install on 16 KB emulator/image (`adb shell getconf PAGE_SIZE` → 16384)
+
