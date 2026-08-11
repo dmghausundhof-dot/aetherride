@@ -120,39 +120,55 @@
     {
       "id": "seed-loop-tempelhofer-60",
       "type": "route",
-      "title": "Tempelhofer Feld Feierabend ⟲",
+      "title": "Tempelhofer Feld & Landwehrkanal ⟲",
       "thumbnail_url": null,
-      "distance_km": 12,
-      "ascent_m": 30,
-      "duration_min": 50,
+      "distance_km": 18,
+      "ascent_m": 40,
+      "duration_min": 55,
       "effort_label": "Leicht",
       "sport_tags": [
         "city",
         "road"
       ],
       "surface_mix": {
-        "asphalt": 95,
-        "gravel": 5,
+        "asphalt": 85,
+        "gravel": 15,
         "trail": 0
       },
       "is_loop": true,
       "duration_band": "60",
       "poi_stops": [
         {
-          "at_min": 15,
-          "title": "Aussicht Rollfeld Nord",
-          "kind": "viewpoint"
+          "offset_min": 7,
+          "title": "Tempelhofer Feld (runway loop)",
+          "type": "viewpoint"
         },
         {
-          "at_min": 35,
-          "title": "Café am Feld",
-          "kind": "cafe"
+          "offset_min": 17,
+          "title": "Columbia Damm entrance",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 28,
+          "title": "Allmende-Kontor",
+          "type": "culture"
+        },
+        {
+          "offset_min": 38,
+          "title": "Maybachufer / Landwehrkanal",
+          "type": "cafe"
+        },
+        {
+          "offset_min": 48,
+          "title": "Platz der Luftbrücke",
+          "type": "culture"
         }
       ],
       "center": {
-        "lat": 52.473,
-        "lng": 13.405
-      }
+        "lat": 52.484,
+        "lng": 13.389
+      },
+      "notes": "Car-free airport runways plus canal towpaths — the definitive Berlin after-work loop with skyline wind and Kreuzberg energy."
     },
     {
       "id": "seed-loop-spree-feierabend-60",
@@ -235,5 +251,5 @@
     "secondary_cta": "Region ändern"
   },
   "lens_default": "60",
-  "notes": "P0 Nähe-Peek + 60-Min Rundkurs Seeds (is_loop, duration_band, poi_stops)"
+  "notes": "P0 Nähe-Peek + 60-Min Rundkurs Seeds (is_loop, duration_band, poi_stops) | DACH Tempelhof enrich from Bike Knowledge P0"
 }
