@@ -11,9 +11,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AetherRide – Tourenapp, die dein Bike kennt",
+  title: {
+    default: "AetherRide – Touren planen. Bike verstehen.",
+    template: "%s · AetherRide",
+  },
   description:
-    "MTB, Enduro, Gravel & E-MTB: Garage, Setup, Navigation und Fahrwerks-Feedback in einer App.",
+    "Rennrad, Gravel, MTB, E-Bike & City: Touren entdecken, Desktop-Planer, Multi-Bike-Garage und Setup. Navigation in der nativen App.",
+  keywords: [
+    "Radtouren",
+    "Rennrad",
+    "Gravel",
+    "MTB",
+    "E-Bike",
+    "Route Planner",
+    "Bike Garage",
+    "AetherRide",
+  ],
+  openGraph: {
+    title: "AetherRide – Touren planen. Bike verstehen.",
+    description:
+      "Für alle Fahrradfahrer: Explore, Garage & Setup im Web. Navigation in der App.",
+    locale: "de_DE",
+    type: "website",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -25,8 +45,9 @@ export const viewport: Viewport = {
   themeColor: "#0A1210",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Web: Zoom erlauben (A11y). Native App steuert Viewport selbst.
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
 };
 

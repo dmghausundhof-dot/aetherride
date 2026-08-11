@@ -415,8 +415,22 @@ export function RouteDetail({
             onClick={onStart}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white"
           >
-            <Play className="h-4 w-4 fill-current" /> Losfahren
+            <Play className="h-4 w-4 fill-current" /> In App starten
           </button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Link
+            href={`/tours/${route.id}`}
+            className="text-xs font-medium text-accent hover:underline"
+          >
+            Öffentliche Tour-Seite →
+          </Link>
+          <Link
+            href={`/planner?tour=${encodeURIComponent(route.id)}`}
+            className="text-xs font-medium text-accent hover:underline"
+          >
+            Im Planner öffnen →
+          </Link>
         </div>
       </div>
     </div>

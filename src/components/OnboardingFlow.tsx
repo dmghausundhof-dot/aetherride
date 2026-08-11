@@ -8,12 +8,13 @@ import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { X } from "lucide-react";
 
 const SPORTS: { id: BikeCategory; label: string; blurb: string }[] = [
+  { id: "road", label: "Rennrad", blurb: "Asphalt & Radwege" },
+  { id: "gravel", label: "Gravel", blurb: "Schotter & Distanz" },
+  { id: "urban", label: "City", blurb: "Alltag & Pendeln" },
   { id: "mtb_am", label: "MTB", blurb: "Trails & All-Mountain" },
   { id: "mtb_enduro", label: "Enduro", blurb: "Steil & technisch" },
-  { id: "gravel", label: "Gravel", blurb: "Schotter & Distanz" },
   { id: "emtb", label: "E-MTB", blurb: "Trail mit Assist" },
-  { id: "road", label: "Rennrad", blurb: "Asphalt" },
-  { id: "urban", label: "City", blurb: "Alltag & Pendeln" },
+  { id: "etrekking", label: "E-Trekking", blurb: "Touren mit Assist" },
 ];
 
 /**
@@ -25,18 +26,21 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
   const markOnboardingDone = useAppStore((s) => s.markOnboardingDone);
   const [step, setStep] = useState<1 | 2>(1);
-  const [sport, setSport] = useState<BikeCategory>("mtb_am");
+  const [sport, setSport] = useState<BikeCategory>("road");
   const [weight, setWeight] = useState(78);
 
-  const finish = (next: "garage" | "ride" | "skip") => {
+  const finish = (next: "garage" | "discover" | "skip") => {
     updateRiderProfile({ riderWeightKg: weight });
     markOnboardingDone(sport);
     onDone();
     if (next === "garage") {
-      const mode = sport === "urban" || sport === "road" ? "basic" : "catalog";
+      const mode =
+        sport === "urban" || sport === "road" || sport === "etrekking"
+          ? "basic"
+          : "catalog";
       router.push(`/garage?wizard=${mode}&category=${sport}`);
-    } else if (next === "ride") {
-      router.push("/ride");
+    } else if (next === "discover") {
+      router.push("/discover");
     }
   };
 
@@ -126,10 +130,10 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
               </button>
               <button
                 type="button"
-                onClick={() => finish("ride")}
+                onClick={() => finish("discover")}
                 className="w-full rounded-xl border border-border py-3 text-sm font-medium"
               >
-                Zuerst freifahren
+                Touren entdecken
               </button>
             </>
           )}

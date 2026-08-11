@@ -14,10 +14,16 @@ import {
 assert.ok(getShopProduct("sp-sram-xx-chain"), "Kette im Katalog");
 assert.ok(getShopProduct("sp-shimano-pad-demo"), "Beläge im Katalog");
 assert.ok(
-  SHOP_PRODUCTS.every((p) => p.visualHint && p.affiliateUrl),
-  "Jedes Produkt hat visualHint + Affiliate-URL"
+  SHOP_PRODUCTS.every(
+    (p) => p.visualHint && p.affiliateUrl && p.sports?.length
+  ),
+  "Jedes Produkt hat visualHint + Affiliate-URL + sports"
 );
-assert.equal(SHOP_PRODUCTS.length >= 11, true, "Verschleißteile + Kernkatalog");
+assert.equal(SHOP_PRODUCTS.length >= 14, true, "Multi-Sport-Katalog");
+assert.ok(
+  SHOP_PRODUCTS.some((p) => p.sports.includes("road")),
+  "Road-Produkte vorhanden"
+);
 
 assert.equal(wearKindToShopSlot("chain"), "chain");
 assert.equal(wearKindToShopSlot("tires"), "tire_front");

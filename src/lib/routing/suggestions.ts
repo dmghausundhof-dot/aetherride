@@ -417,6 +417,135 @@ const SEEDS: RouteSeed[] = [
     flowy: true,
     ebikeFriendly: true,
   },
+  // —— Weitere nicht-MTB Seeds (Phase A: Multi-Sport-Balance) ——
+  {
+    id: "r-rhein-radweg",
+    name: "Rheinradweg Mannheim–Speyer",
+    categories: ["road", "etrekking", "urban"],
+    distanceKm: 46,
+    elevationM: 90,
+    durationMin: 130,
+    mtbScale: "—",
+    surface: "asphalt/bike-lane",
+    loop: false,
+    uncertainKmPct: 2,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-neckar-touring",
+    name: "Neckartal-Radweg Etappe",
+    categories: ["etrekking", "road", "gravel"],
+    distanceKm: 52,
+    elevationM: 210,
+    durationMin: 170,
+    mtbScale: "—",
+    surface: "asphalt/path",
+    loop: false,
+    uncertainKmPct: 3,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-pfalz-gravel",
+    name: "Pfälzerwald Gravel Süd",
+    categories: ["gravel", "etrekking"],
+    distanceKm: 54,
+    elevationM: 720,
+    durationMin: 190,
+    mtbScale: "—",
+    surface: "gravel/forest",
+    loop: true,
+    uncertainKmPct: 7,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-karlsruhe-urban",
+    name: "Karlsruhe Fächer-Runde",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 16,
+    elevationM: 60,
+    durationMin: 50,
+    mtbScale: "—",
+    surface: "asphalt/bike-lane",
+    loop: true,
+    uncertainKmPct: 2,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-donau-touring",
+    name: "Donauradweg Ulm–Donauwörth",
+    categories: ["etrekking", "road"],
+    distanceKm: 68,
+    elevationM: 140,
+    durationMin: 220,
+    mtbScale: "—",
+    surface: "asphalt",
+    loop: false,
+    uncertainKmPct: 2,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-muenchen-road",
+    name: "München Isar–Starnberg",
+    categories: ["road", "urban", "etrekking"],
+    distanceKm: 58,
+    elevationM: 320,
+    durationMin: 160,
+    mtbScale: "—",
+    surface: "asphalt/bike-lane",
+    loop: false,
+    uncertainKmPct: 3,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-elbe-touring",
+    name: "Elberadweg Dresden–Meißen",
+    categories: ["etrekking", "road", "urban"],
+    distanceKm: 32,
+    elevationM: 80,
+    durationMin: 100,
+    mtbScale: "—",
+    surface: "asphalt/path",
+    loop: false,
+    uncertainKmPct: 2,
+    technical: false,
+    steep: false,
+    flowy: true,
+    ebikeFriendly: true,
+  },
+  {
+    id: "r-eifel-gravel",
+    name: "Eifel Gravel Vulkane",
+    categories: ["gravel", "road", "emtb"],
+    distanceKm: 61,
+    elevationM: 890,
+    durationMin: 200,
+    mtbScale: "—",
+    surface: "gravel/asphalt",
+    loop: true,
+    uncertainKmPct: 6,
+    technical: false,
+    steep: true,
+    flowy: true,
+    ebikeFriendly: true,
+  },
 ];
 
 export function categoryForRoutingProfile(
@@ -555,8 +684,9 @@ export function listAllRouteSuggestions(
   input: SuggestInput
 ): RouteSuggestion[] {
   if (!allowDemoContent()) return [];
+  // Ohne Bike: neutrale Hint-Kategorie (road), nicht MTB-first
   const category =
-    input.bike?.category ?? input.categoryHint ?? "mtb_am";
+    input.bike?.category ?? input.categoryHint ?? "road";
   const near = input.near;
   const scored = SEEDS.map((s) => {
     const r = scoreSeed(s, input, category);
@@ -588,7 +718,7 @@ export function listAllRouteSuggestions(
 /** Top-Vorschläge für Home/Chat (max. 5, Kategorie-fokussiert). */
 export function suggestRoutes(input: SuggestInput): RouteSuggestion[] {
   const category =
-    input.bike?.category ?? input.categoryHint ?? "mtb_am";
+    input.bike?.category ?? input.categoryHint ?? "road";
   const all = listAllRouteSuggestions(input);
   const matched = all.filter((r) => {
     const seed = SEEDS.find((s) => s.id === r.id);

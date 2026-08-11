@@ -42,7 +42,9 @@ import { parseGpx } from "@/lib/import/gpx";
 import {
   DEFAULT_ROUTE_FILTERS,
   filterRouteSuggestions,
+  sportFilterFromProfile,
   type RouteFilterState,
+  type SportFilter,
 } from "@/lib/routing/routeFilters";
 import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import { RouteCard } from "@/components/discover/RouteCard";
@@ -131,6 +133,7 @@ function DiscoverPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightRouteId = searchParams.get("route");
+  const sportParam = searchParams.get("sport") as SportFilter | null;
 
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const bikes = useAppStore((s) => s.bikes);
@@ -173,7 +176,23 @@ function DiscoverPageInner() {
   const [minutes, setMinutes] = useState(
     profile.fitnessIndicators.avgRideDurationMin || 90
   );
-  const [filters, setFilters] = useState<RouteFilterState>(DEFAULT_ROUTE_FILTERS);
+  const [filters, setFilters] = useState<RouteFilterState>(() => ({
+    ...DEFAULT_ROUTE_FILTERS,
+    sport:
+      sportParam &&
+      [
+        "all",
+        "mtb",
+        "road",
+        "gravel",
+        "urban",
+        "ebike",
+        "touring",
+        "hiking",
+      ].includes(sportParam)
+        ? sportParam
+        : "all",
+  }));
   const [detailId, setDetailId] = useState<string | null>(highlightRouteId);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] =
@@ -347,6 +366,31 @@ function DiscoverPageInner() {
       setSheetMode("tours");
     }
   }, [highlightRouteId]);
+
+  // Deep-Link ?sport=road|gravel|mtb|… setzt Filter + Profil
+  useEffect(() => {
+    if (!sportParam) return;
+    const allowed: SportFilter[] = [
+      "all",
+      "mtb",
+      "road",
+      "gravel",
+      "urban",
+      "ebike",
+      "touring",
+      "hiking",
+    ];
+    if (!allowed.includes(sportParam)) return;
+    setFilters((f) => ({ ...f, sport: sportParam }));
+    if (sportParam === "road") setManualProfile("road");
+    else if (sportParam === "gravel") setManualProfile("gravel");
+    else if (sportParam === "mtb") setManualProfile("mtb_allmountain");
+    else if (sportParam === "urban") setManualProfile("urban");
+    else if (sportParam === "ebike") setManualProfile("emtb");
+    else if (sportParam === "touring") setManualProfile("ebike");
+    else if (sportParam === "hiking") setManualProfile("hiking");
+    setSheetMode("tours");
+  }, [sportParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1076,177 +1120,92 @@ function DiscoverPageInner() {
     : null;
 
   return (
-    <div className="flex min-h-[calc(100dvh-5rem)] flex-col">
-      {/* Dach */}
-      <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-5">
-        {routingNotice && (
-          <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
-            {routingNotice}
-          </p>
-        )}
-        {heatmapNote && (
-          <p className="rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 text-[11px] text-text-secondary">
-            Beliebt: {heatmapNote}
-            {!heatmapConsent && (
-              <>
-                {" "}
-                · Eigene Beiträge unter Privatsphäre
-              </>
-            )}
-          </p>
-        )}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold tracking-tight">Discover</h1>
-            <p className="text-xs text-text-secondary">
-              {activeBike
-                ? `${activeBike.name} · ${bikeCategoryLabel(activeBike.category)}`
-                : "Touren-Ideen — Bike optional für präzisere Vorschläge"}
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col lg:h-[calc(100dvh-4rem)] lg:flex-row lg:overflow-hidden">
+      {/*
+        Desktop: Side-Panel links + Vollkarte rechts (Komoot/RWGPS-Muster).
+        Mobile: Karte oben, Panel unten.
+      */}
+      <aside className="order-2 flex min-h-0 flex-col border-t border-border bg-background lg:order-1 lg:w-[min(26rem,40vw)] lg:shrink-0 lg:border-r lg:border-t-0">
+        {/* Dach */}
+        <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-4 lg:pt-5">
+          {routingNotice && (
+            <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
+              {routingNotice}
             </p>
+          )}
+          {heatmapNote && (
+            <p className="rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 text-[11px] text-text-secondary">
+              Beliebt: {heatmapNote}
+              {!heatmapConsent && (
+                <>
+                  {" "}
+                  · Eigene Beiträge unter Privatsphäre
+                </>
+              )}
+            </p>
+          )}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-bold tracking-tight">Explore</h1>
+              <p className="text-xs text-text-secondary">
+                {activeBike
+                  ? `${activeBike.name} · ${bikeCategoryLabel(activeBike.category)}`
+                  : "Alle Disziplinen — Bike optional für präzisere Vorschläge"}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <BikeChip />
+              <button
+                type="button"
+                onClick={() => {
+                  if (userPos) {
+                    setMapCenter(userPos);
+                    setDraft((d) => setStart(d, userPos, "Meine Position"));
+                  }
+                }}
+                className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
+              >
+                <Crosshair className="h-3.5 w-3.5" />
+                {userPos ? "Hier" : "Ort…"}
+              </button>
+            </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <BikeChip />
-            <button
-              type="button"
-              onClick={() => {
-                if (userPos) {
-                  setMapCenter(userPos);
-                  setDraft((d) => setStart(d, userPos, "Meine Position"));
-                }
-              }}
-              className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
-            >
-              <Crosshair className="h-3.5 w-3.5" />
-              {userPos ? "Hier" : "Ort…"}
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-1 text-[11px]">
-            <span className="text-text-secondary">Zeit</span>
-            <input
-              type="range"
-              min={45}
-              max={240}
-              step={15}
-              value={minutes}
-              onChange={(e) => setMinutes(Number(e.target.value))}
-              className="w-24"
-            />
-            <span className="font-medium tabular-nums">{minutes} min</span>
-          </label>
-          <select
-            value={activeProfile}
-            onChange={(e) =>
-              setManualProfile(e.target.value as RoutingProfile)
-            }
-            className="rounded-lg border border-border bg-surface px-2 py-1 text-[11px]"
-          >
-            {Object.values(ROUTING_PROFILES).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </header>
-
-      {/* Karte */}
-      <div className="relative min-h-[42vh] flex-1">
-        <MapView
-          className="absolute inset-0 rounded-none"
-          center={mapCenter}
-          zoom={11}
-          routes={mapLayers}
-          markers={markers}
-          interactiveSelect={pickTarget !== null}
-          onMapClick={onMapClick}
-          onRouteClick={(id) => {
-            if (id.startsWith("alt-")) {
-              const qid = id.replace("alt-", "");
-              const q = quickOptions.find((x) => x.id === qid);
-              if (q) {
-                setDraft((d) => ({
-                  ...setStart(
-                    { ...d, mode: "quick", profile: activeProfile },
-                    origin,
-                    "Hier"
-                  ),
-                  computed: q.result,
-                  label: q.label,
-                  layers: undefined,
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-1 text-[11px]">
+              <span className="text-text-secondary">Zeit</span>
+              <input
+                type="range"
+                min={45}
+                max={240}
+                step={15}
+                value={minutes}
+                onChange={(e) => setMinutes(Number(e.target.value))}
+                className="w-24"
+              />
+              <span className="font-medium tabular-nums">{minutes} min</span>
+            </label>
+            <select
+              value={activeProfile}
+              onChange={(e) => {
+                const p = e.target.value as RoutingProfile;
+                setManualProfile(p);
+                setFilters((f) => ({
+                  ...f,
+                  sport: sportFilterFromProfile(p),
                 }));
-                setSheetMode("quick");
-              }
-            }
-            if (id.startsWith("trail-")) {
-              setSelectedTrailId(id.replace("trail-", ""));
-              setShowTrails(true);
-              setSheetMode("tours");
-            }
-          }}
-          fitRoute={Boolean(draft.computed)}
-        />
-        {pickTarget && (
-          <div className="absolute left-3 right-3 top-3 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white">
-            Tippe auf die Karte für{" "}
-            {pickTarget === "start"
-              ? "Start"
-              : pickTarget === "end"
-                ? "Ziel"
-                : "Via"}
-            <button
-              type="button"
-              className="ml-2 underline"
-              onClick={() => setPickTarget(null)}
+              }}
+              className="rounded-lg border border-border bg-surface px-2 py-1 text-[11px]"
             >
-              Abbrechen
-            </button>
+              {Object.values(ROUTING_PROFILES).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
-        {elevProfile && elevProfile.points.length > 1 && (
-          <div className="pointer-events-none absolute bottom-14 left-3 right-3 rounded-xl bg-black/55 p-2">
-            <div className="pointer-events-auto max-h-24 overflow-hidden opacity-90 [&_svg]:h-16">
-              <ElevationChart elev={elevProfile} />
-            </div>
-          </div>
-        )}
-        {statsLine && (
-          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-xl bg-black/70 px-3 py-2 text-xs text-white">
-            <span className="truncate">
-              {draft.label ? `${draft.label} · ` : ""}
-              {statsLine}
-            </span>
-            <div className="flex shrink-0 gap-1.5">
-              <button
-                type="button"
-                onClick={saveCurrentDraft}
-                className="rounded-lg bg-white/15 px-2 py-1"
-                aria-label="Speichern"
-              >
-                <Bookmark className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  draft.computed &&
-                  startWithComputed(
-                    draft.label || "Geplante Route",
-                    draft.computed
-                  )
-                }
-                className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 font-semibold"
-              >
-                <Play className="h-3.5 w-3.5 fill-current" /> Los
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        </header>
 
-      {/* Sheet */}
-      <div className="shrink-0 border-t border-border bg-background">
-        <div className="grid grid-cols-3 gap-1 p-2">
+        <div className="grid shrink-0 grid-cols-3 gap-1 border-b border-border p-2">
           {(
             [
               ["quick", "Schnell", Zap],
@@ -1270,7 +1229,7 @@ function DiscoverPageInner() {
           ))}
         </div>
 
-        <div className="max-h-[38vh] overflow-y-auto px-3 pb-4">
+        <div className="max-h-[38vh] min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2 lg:max-h-none">
           {routingMsg && (
             <p className="mb-2 text-[11px] text-text-secondary">{routingMsg}</p>
           )}
@@ -1574,7 +1533,18 @@ function DiscoverPageInner() {
                 minutes={minutes}
                 onMinutes={setMinutes}
                 filters={filters}
-                onChange={setFilters}
+                onChange={(next) => {
+                  setFilters(next);
+                  // Disziplin-Chip steuert Routing-Profil (wenn nicht „Alle“)
+                  if (next.sport === "road") setManualProfile("road");
+                  else if (next.sport === "gravel") setManualProfile("gravel");
+                  else if (next.sport === "mtb") setManualProfile("mtb_allmountain");
+                  else if (next.sport === "urban") setManualProfile("urban");
+                  else if (next.sport === "ebike") setManualProfile("emtb");
+                  else if (next.sport === "touring") setManualProfile("ebike");
+                  else if (next.sport === "hiking") setManualProfile("hiking");
+                }}
+                profile={activeProfile}
               />
 
               {activeBike?.isEbike && range && (
@@ -1879,7 +1849,7 @@ function DiscoverPageInner() {
                         onClick={() => loadSavedRoute(r)}
                         className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-accent py-1.5 text-[11px] font-semibold text-white"
                       >
-                        <Play className="h-3.5 w-3.5 fill-current" /> Losfahren
+                        <Play className="h-3.5 w-3.5 fill-current" /> In App
                       </button>
                     </div>
                   </article>
@@ -1930,6 +1900,99 @@ function DiscoverPageInner() {
             </div>
           )}
         </div>
+      </aside>
+
+      {/* Karte — Desktop full height, Mobile oben */}
+      <div className="relative order-1 min-h-[42vh] flex-1 lg:order-2 lg:min-h-0">
+        <MapView
+          className="absolute inset-0 rounded-none"
+          center={mapCenter}
+          zoom={11}
+          routes={mapLayers}
+          markers={markers}
+          interactiveSelect={pickTarget !== null}
+          onMapClick={onMapClick}
+          onRouteClick={(id) => {
+            if (id.startsWith("alt-")) {
+              const qid = id.replace("alt-", "");
+              const q = quickOptions.find((x) => x.id === qid);
+              if (q) {
+                setDraft((d) => ({
+                  ...setStart(
+                    { ...d, mode: "quick", profile: activeProfile },
+                    origin,
+                    "Hier"
+                  ),
+                  computed: q.result,
+                  label: q.label,
+                  layers: undefined,
+                }));
+                setSheetMode("quick");
+              }
+            }
+            if (id.startsWith("trail-")) {
+              setSelectedTrailId(id.replace("trail-", ""));
+              setShowTrails(true);
+              setSheetMode("tours");
+            }
+          }}
+          fitRoute={Boolean(draft.computed)}
+        />
+        {pickTarget && (
+          <div className="absolute left-3 right-3 top-3 z-10 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white lg:left-auto lg:right-3 lg:max-w-sm">
+            Tippe auf die Karte für{" "}
+            {pickTarget === "start"
+              ? "Start"
+              : pickTarget === "end"
+                ? "Ziel"
+                : "Via"}
+            <button
+              type="button"
+              className="ml-2 underline"
+              onClick={() => setPickTarget(null)}
+            >
+              Abbrechen
+            </button>
+          </div>
+        )}
+        {elevProfile && elevProfile.points.length > 1 && (
+          <div className="pointer-events-none absolute bottom-14 left-3 right-3 z-10 rounded-xl bg-black/55 p-2 lg:left-auto lg:right-3 lg:w-80">
+            <div className="pointer-events-auto max-h-24 overflow-hidden opacity-90 [&_svg]:h-16">
+              <ElevationChart elev={elevProfile} />
+            </div>
+          </div>
+        )}
+        {statsLine && (
+          <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2 rounded-xl bg-black/70 px-3 py-2 text-xs text-white lg:left-auto lg:right-3 lg:max-w-md">
+            <span className="truncate">
+              {draft.label ? `${draft.label} · ` : ""}
+              {statsLine}
+            </span>
+            <div className="flex shrink-0 gap-1.5">
+              <button
+                type="button"
+                onClick={saveCurrentDraft}
+                className="rounded-lg bg-white/15 px-2 py-1"
+                aria-label="Speichern"
+              >
+                <Bookmark className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  draft.computed &&
+                  startWithComputed(
+                    draft.label || "Geplante Route",
+                    draft.computed
+                  )
+                }
+                className="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 font-semibold"
+              >
+                <Play className="h-3.5 w-3.5 fill-current" /> In App
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

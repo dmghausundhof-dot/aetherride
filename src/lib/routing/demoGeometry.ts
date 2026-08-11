@@ -30,6 +30,14 @@ const BASE: Record<string, { lat: number; lng: number }> = {
   "r-morzine-emtb": { lat: 46.18, lng: 6.71 },
   "r-provence-gravel": { lat: 43.84, lng: 5.23 },
   "r-bretagne-coast": { lat: 48.83, lng: -3.48 },
+  "r-rhein-radweg": { lat: 49.45, lng: 8.48 },
+  "r-neckar-touring": { lat: 49.35, lng: 8.95 },
+  "r-pfalz-gravel": { lat: 49.2, lng: 7.95 },
+  "r-karlsruhe-urban": { lat: 49.01, lng: 8.4 },
+  "r-donau-touring": { lat: 48.55, lng: 10.35 },
+  "r-muenchen-road": { lat: 48.05, lng: 11.4 },
+  "r-elbe-touring": { lat: 51.1, lng: 13.6 },
+  "r-eifel-gravel": { lat: 50.35, lng: 6.7 },
   default: { lat: 47.99, lng: 7.85 },
 };
 

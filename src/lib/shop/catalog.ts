@@ -5,6 +5,15 @@
 
 import type { ComponentSlot } from "@/types";
 
+/** Disziplin-Tags für Shop-Filter (Phase C) */
+export type ShopSport =
+  | "mtb"
+  | "road"
+  | "gravel"
+  | "urban"
+  | "ebike"
+  | "all";
+
 export interface ShopProduct {
   id: string;
   name: string;
@@ -18,7 +27,18 @@ export interface ShopProduct {
   merchantName: string;
   /** Kurzer visueller Hinweis für Platzhalter-Karte (ohne Asset-Pipeline) */
   visualHint: string;
+  /** Passende Disziplinen — „all“ = universell */
+  sports: ShopSport[];
 }
+
+export const SHOP_SPORT_FILTERS: { id: ShopSport; label: string }[] = [
+  { id: "all", label: "Alle" },
+  { id: "road", label: "Rennrad" },
+  { id: "gravel", label: "Gravel" },
+  { id: "mtb", label: "MTB" },
+  { id: "urban", label: "City" },
+  { id: "ebike", label: "E-Bike" },
+];
 
 /** Browse-Chips im Shop (Fahrer-Jobs, nicht Spec-IDs) */
 export const SHOP_BROWSE_SLOTS: { slot: ComponentSlot | "all"; label: string }[] =
@@ -30,7 +50,8 @@ export const SHOP_BROWSE_SLOTS: { slot: ComponentSlot | "all"; label: string }[]
     { slot: "cassette", label: "Kassette" },
     { slot: "fork", label: "Gabel" },
     { slot: "rear_shock", label: "Dämpfer" },
-    { slot: "seatpost", label: "Dropper" },
+    { slot: "seatpost", label: "Sattelstütze" },
+    { slot: "bar_tape", label: "Lenkerband" },
     { slot: "battery", label: "Akku" },
   ];
 
@@ -46,6 +67,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.bike-components.de/de/SRAM/",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "chain",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-shimano-pad-demo",
@@ -58,6 +80,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.bike-components.de/de/Shimano/",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "pads",
+    sports: ["mtb", "gravel", "ebike"],
   },
   {
     id: "sp-fox-36",
@@ -70,6 +93,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.bike-components.de/de/Fox/",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "fork",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-maxxis-assegai",
@@ -82,6 +106,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.bike-discount.de/",
     merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-maxxis-dhr",
@@ -94,6 +119,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.bike-discount.de/",
     merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-sram-cassette-xd",
@@ -106,6 +132,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.chainreactioncycles.com/",
     merchantName: "CRC (Beispielkatalog)",
     visualHint: "cassette",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-shimano-ms",
@@ -118,6 +145,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://bike.shimano.com/",
     merchantName: "Shimano Händlernetz (Beispiel)",
     visualHint: "cassette",
+    sports: ["mtb", "gravel", "ebike"],
   },
   {
     id: "sp-rs-superdeluxe",
@@ -130,6 +158,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.sram.com/en/rockshox",
     merchantName: "SRAM/RockShox Händler (Beispiel)",
     visualHint: "shock",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-fox-x2",
@@ -142,6 +171,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.ridefox.com/",
     merchantName: "Fox Händler (Beispiel)",
     visualHint: "shock",
+    sports: ["mtb", "ebike"],
   },
   {
     id: "sp-bosch-800",
@@ -154,6 +184,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://www.bosch-ebike.com/",
     merchantName: "Bosch eBike Händler (Beispiel)",
     visualHint: "battery",
+    sports: ["ebike"],
   },
   {
     id: "sp-oneup-316",
@@ -166,8 +197,107 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     affiliateUrl: "https://oneupcomponents.com/",
     merchantName: "OneUp (Beispiel)",
     visualHint: "dropper",
+    sports: ["mtb", "gravel", "ebike"],
+  },
+  // —— Road / Gravel / City (Phase C Multi-Sport) ——
+  {
+    id: "sp-conti-gp5000",
+    name: "Continental GP 5000 S TR 28-622",
+    manufacturer: "Continental",
+    slot: "tire_front",
+    componentModelId: "cm-conti-gp5000-28",
+    priceEur: 74,
+    description: "Allround-Rennradreifen tubeless-ready",
+    affiliateUrl: "https://www.bike-components.de/",
+    merchantName: "bike-components (Beispielkatalog)",
+    visualHint: "tire",
+    sports: ["road", "urban"],
+  },
+  {
+    id: "sp-schwalbe-g-one",
+    name: "Schwalbe G-One R 40-622",
+    manufacturer: "Schwalbe",
+    slot: "tire_front",
+    componentModelId: "cm-schwalbe-g-one-40",
+    priceEur: 64,
+    description: "Schneller Gravel-Reifen, gemischte Oberflächen",
+    affiliateUrl: "https://www.bike-discount.de/",
+    merchantName: "bike-discount (Beispielkatalog)",
+    visualHint: "tire",
+    sports: ["gravel", "urban"],
+  },
+  {
+    id: "sp-shimano-ultegr-chain",
+    name: "Shimano Ultegra CN-M8100 12s",
+    manufacturer: "Shimano",
+    slot: "chain",
+    componentModelId: "cm-shimano-ultegra-chain",
+    priceEur: 49,
+    description: "12-fach Kette für Road/Gravel-Gruppen",
+    affiliateUrl: "https://www.bike-components.de/de/Shimano/",
+    merchantName: "bike-components (Beispielkatalog)",
+    visualHint: "chain",
+    sports: ["road", "gravel", "urban"],
+  },
+  {
+    id: "sp-supacaz-tape",
+    name: "Supacaz Super Sticky Kush Lenkerband",
+    manufacturer: "Supacaz",
+    slot: "bar_tape",
+    componentModelId: "cm-supacaz-tape",
+    priceEur: 39,
+    description: "Lenkerband — Verschleiß und Grip erneuern",
+    affiliateUrl: "https://www.bike-components.de/",
+    merchantName: "bike-components (Beispielkatalog)",
+    visualHint: "tape",
+    sports: ["road", "gravel"],
+  },
+  {
+    id: "sp-schwalbe-marathon",
+    name: "Schwalbe Marathon 37-622",
+    manufacturer: "Schwalbe",
+    slot: "tire_rear",
+    componentModelId: "cm-schwalbe-marathon-37",
+    priceEur: 42,
+    description: "Pannenresistenter City-/Touring-Reifen",
+    affiliateUrl: "https://www.bike-discount.de/",
+    merchantName: "bike-discount (Beispielkatalog)",
+    visualHint: "tire",
+    sports: ["urban", "ebike", "road"],
   },
 ];
+
+export function productMatchesSport(
+  product: ShopProduct,
+  sport: ShopSport
+): boolean {
+  if (sport === "all") return true;
+  return product.sports.includes(sport) || product.sports.includes("all");
+}
+
+/** Bike-Kategorie → Shop-Sport-Default */
+export function shopSportFromBikeCategory(
+  category: string | undefined
+): ShopSport {
+  switch (category) {
+    case "road":
+      return "road";
+    case "gravel":
+      return "gravel";
+    case "urban":
+      return "urban";
+    case "emtb":
+    case "etrekking":
+      return "ebike";
+    case "mtb_trail":
+    case "mtb_am":
+    case "mtb_enduro":
+    case "dh":
+      return "mtb";
+    default:
+      return "all";
+  }
+}
 
 export function getShopProduct(id: string): ShopProduct | undefined {
   return SHOP_PRODUCTS.find((p) => p.id === id);

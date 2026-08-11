@@ -320,6 +320,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppColors.muted,
                   ),
             ),
+            const SizedBox(height: AppSpacing.s),
+            // Stats-Zeile: schafft das „schon seit Wochen dabei"-Gefühl, das
+            // reiner Utility-UI fehlt (UX-Review Home vs. Komoot/AllTrails —
+            // beide zeigen Fortschritt statt nur den nächsten Schritt).
+            // Bewusst nur Zählungen, kein Gesamt-km-Wert: recentRidesProvider
+            // ist auf 20 gedeckelt — eine Summe daraus als „Gesamt" zu
+            // beschriften wäre erfundene Genauigkeit (Honesty-Linie des Repos).
+            _StatsStrip(
+              bikeCount: bikes.valueOrNull?.length,
+              rideCount: ref.watch(recentRidesProvider).valueOrNull?.length,
+              onTap: () => ref.read(shellTabIndexProvider.notifier).state = 1,
+            ),
+            const SizedBox(height: AppSpacing.m),
+            // „Wohin heute?" — direkter Sprung in Discover/Planen statt Tab
+            // wechseln + dort erst den Planen-Modus suchen. Komoot/AllTrails
+            // führen Home immer mit Suche, nicht mit einem Dashboard zuerst.
+            _SearchEntry(
+              onTap: () {
+                ref.read(discoverLaunchModeProvider.notifier).state =
+                    DiscoverLaunchMode.plan;
+                ref.read(shellTabIndexProvider.notifier).state = 3;
+              },
+            ),
             const SizedBox(height: AppSpacing.m),
             if (active != null)
               Consumer(
@@ -492,6 +515,85 @@ class _SystemStatusIcon extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Zählungen statt Dashboard-Kacheln — ein ruhiger, tappable Einzeiler.
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip({
+    required this.bikeCount,
+    required this.rideCount,
+    required this.onTap,
+  });
+
+  final int? bikeCount;
+  final int? rideCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (bikeCount == null && rideCount == null) {
+      return const SizedBox.shrink();
+    }
+    final parts = <String>[
+      if (bikeCount != null)
+        '$bikeCount ${bikeCount == 1 ? 'Bike' : 'Bikes'}',
+      if (rideCount != null && rideCount! > 0)
+        '${rideCount == 20 ? '20+' : rideCount} ${rideCount == 1 ? 'Ride' : 'Rides'}',
+    ];
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.chip),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+        child: Text(
+          parts.join(' · '),
+          style: const TextStyle(
+            color: AppColors.muted,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Direkter Sprung in Discover/Planen — Komoot/AllTrails führen Home immer
+/// mit Suche. Keine echte TextField hier: ein Tap reicht, die eigentliche
+/// Eingabe passiert schon auf dem Discover-Screen (kein doppeltes UI für
+/// dieselbe Eingabe an zwei Stellen).
+class _SearchEntry extends StatelessWidget {
+  const _SearchEntry({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.chipIdle,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.l,
+            vertical: AppSpacing.m,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.search, color: AppColors.muted, size: 20),
+              SizedBox(width: AppSpacing.s),
+              Text(
+                'Wohin heute? Ort oder Adresse suchen',
+                style: TextStyle(color: AppColors.muted, fontSize: 14),
+              ),
+            ],
           ),
         ),
       ),

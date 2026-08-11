@@ -48,7 +48,7 @@ export function AddBikeWizard({
   const [error, setError] = useState<string | null>(null);
 
   const [basicCategory, setBasicCategory] = useState<BikeCategory>(
-    initialCategory ?? "mtb_am"
+    initialCategory ?? "road"
   );
   const [travelF, setTravelF] = useState(150);
   const [travelR, setTravelR] = useState(140);

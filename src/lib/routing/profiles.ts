@@ -208,9 +208,12 @@ export function profileForBikeCategory(category: string): RoutingProfile {
     case "hiking":
       return "hiking";
     default:
-      return "mtb_allmountain";
+      return "road";
   }
 }
 
-/** Neutraler Discover-Default ohne aktives Bike */
-export const DEFAULT_DISCOVER_PROFILE: RoutingProfile = "mtb_allmountain";
+/**
+ * Neutraler Discover-Default ohne aktives Bike.
+ * Road/Radweg ist die inklusivste Basis für alle Fahrradfahrer (nicht MTB-first).
+ */
+export const DEFAULT_DISCOVER_PROFILE: RoutingProfile = "road";

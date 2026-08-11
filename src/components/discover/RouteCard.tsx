@@ -1,6 +1,7 @@
 "use client";
 
-import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight, ExternalLink } from "lucide-react";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
 
@@ -73,7 +74,7 @@ export function RouteCard({
           Details <ChevronRight className="h-3.5 w-3.5" />
         </p>
       </button>
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onToggleSave}
@@ -86,12 +87,18 @@ export function RouteCard({
             <Bookmark className="h-4 w-4" />
           )}
         </button>
+        <Link
+          href={`/tours/${route.id}`}
+          className="inline-flex items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-xs font-medium text-text-secondary hover:text-foreground"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Seite
+        </Link>
         <button
           type="button"
           onClick={onStart}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+          className="flex min-w-[7rem] flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
         >
-          <Play className="h-4 w-4 fill-current" /> Losfahren
+          <Play className="h-4 w-4 fill-current" /> In App starten
         </button>
       </div>
     </article>

@@ -4,6 +4,7 @@
  */
 import {
   DEFAULT_ROUTE_FILTERS,
+  difficultyOptionsForProfile,
   filterRouteSuggestions,
 } from "./routeFilters";
 import type { RouteSuggestion } from "./suggestions";
@@ -41,13 +42,27 @@ const sample: RouteSuggestion[] = [
     matchScore: 80,
     reasons: ["a", "b", "c"],
   },
+  {
+    id: "c",
+    name: "City",
+    category: "road",
+    distanceKm: 25,
+    elevationM: 120,
+    durationMin: 70,
+    mtbScale: "—",
+    surface: "asphalt",
+    loop: true,
+    uncertainKmPct: 2,
+    matchScore: 70,
+    reasons: ["a", "b", "c"],
+  },
 ];
 
 const loops = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,
   loopOnly: true,
 });
-assert(loops.length === 1 && loops[0].id === "a", "loopOnly");
+assert(loops.length === 2, "loopOnly");
 
 const alpine = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,
@@ -60,5 +75,22 @@ const mid = filterRouteSuggestions(sample, {
   scale: "mid",
 });
 assert(mid.some((r) => r.id === "a"), "mid scale includes S1–S2");
+
+const roadSport = filterRouteSuggestions(sample, {
+  ...DEFAULT_ROUTE_FILTERS,
+  sport: "road",
+});
+assert(roadSport.length === 1 && roadSport[0].id === "c", "sport road");
+
+const mtbOpts = difficultyOptionsForProfile("mtb_allmountain");
+assert(
+  mtbOpts.some((o) => o.label.includes("S0") || o.label.includes("S1")),
+  "MTB difficulty labels"
+);
+const roadOpts = difficultyOptionsForProfile("road");
+assert(
+  roadOpts.some((o) => o.label === "Entspannt" || o.label === "Sportlich"),
+  "Road difficulty labels"
+);
 
 console.log("routeFilters.test.ts OK");

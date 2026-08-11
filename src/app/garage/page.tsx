@@ -176,9 +176,14 @@ function GaragePageInner() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 pt-6 max-w-6xl mx-auto w-full">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Garage</h1>
+    <div className="mx-auto w-full max-w-7xl p-4 pt-6 lg:p-6">
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Garage</h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Multi-Bike, Kompatibilität und Setup — Rennrad bis E-MTB.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => {
@@ -187,46 +192,23 @@ function GaragePageInner() {
           }}
           className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-medium text-white"
         >
-          <Plus className="h-4 w-4" /> Bike
+          <Plus className="h-4 w-4" /> Bike hinzufügen
         </button>
       </header>
 
-      {bikes.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {bikes.map((bike) => (
-            <button
-              key={bike.id}
-              type="button"
-              onClick={() => selectBike(bike.id)}
-              className={`flex-shrink-0 rounded-xl border px-4 py-3 text-left ${
-                selected?.id === bike.id
-                  ? "border-accent bg-accent/10"
-                  : "border-border bg-surface"
-              }`}
-            >
-              <div className="font-medium">{bike.name}</div>
-              <div className="text-xs text-text-secondary">
-                {bikeCategoryLabel(bike.category)}
-                {bike.isActive ? " · aktiv" : ""}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
       {!selected ? (
-        <section className="rounded-2xl border border-border bg-surface p-6 text-center">
+        <section className="rounded-2xl border border-border bg-surface p-6 text-center lg:p-10">
           <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
-          <p className="mt-2 text-sm text-text-secondary">
-            Katalog mit OEM-Teilen, schnelle Basis, oder Bike-Platzhalter.
-            GPX-Routen importierst du unter Discover — kein Auto-Demo-Bike.
+          <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
+            Katalog mit OEM-Teilen, schnelle Basis für Road/City, oder
+            Platzhalter. GPX und Touren unter Explore/Planner — kein Auto-Demo-Bike.
           </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {(
               [
                 ["catalog", "Katalog", "Modell wählen, Slots vorgefüllt"],
-                ["basic", "Basis", "Name + Kategorie, später ergänzen"],
-                ["import", "Platzhalter", "Bike ohne Komponenten — Track via Discover"],
+                ["basic", "Basis", "Ideal für Road, City, Trekking"],
+                ["import", "Platzhalter", "Ohne Teile — Track via Explore"],
               ] as const
             ).map(([mode, title, desc]) => (
               <button
@@ -236,16 +218,57 @@ function GaragePageInner() {
                   setWizardMode(mode);
                   setShowWizard(true);
                 }}
-                className="rounded-xl border border-border bg-surface-elevated p-3 text-left"
+                className="rounded-xl border border-border bg-surface-elevated p-4 text-left transition hover:border-accent/40"
               >
-                <div className="font-medium text-sm">{title}</div>
+                <div className="text-sm font-medium">{title}</div>
                 <div className="mt-1 text-xs text-text-secondary">{desc}</div>
               </button>
             ))}
           </div>
         </section>
       ) : (
-        <>
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-6">
+          {/* Desktop: sticky Bike-Leiste · Mobile: horizontal */}
+          <aside className="lg:sticky lg:top-20 lg:self-start">
+            <p className="mb-2 hidden text-[10px] font-semibold uppercase tracking-wide text-text-secondary lg:block">
+              Deine Bikes ({bikes.length})
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+              {bikes.map((bike) => (
+                <button
+                  key={bike.id}
+                  type="button"
+                  onClick={() => selectBike(bike.id)}
+                  className={`min-w-[9.5rem] flex-shrink-0 rounded-xl border px-3 py-3 text-left transition lg:min-w-0 lg:w-full ${
+                    selected?.id === bike.id
+                      ? "border-accent bg-accent/10"
+                      : "border-border bg-surface hover:border-border"
+                  }`}
+                >
+                  <div className="truncate font-medium">{bike.name}</div>
+                  <div className="text-xs text-text-secondary">
+                    {bikeCategoryLabel(bike.category)}
+                    {bike.isActive ? " · aktiv" : ""}
+                  </div>
+                  <div className="mt-1 text-[11px] tabular-nums text-text-secondary">
+                    {bike.totalOdometerKm.toFixed(0)} km
+                  </div>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setWizardMode("basic");
+                  setShowWizard(true);
+                }}
+                className="flex min-w-[7rem] flex-shrink-0 items-center justify-center gap-1 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent lg:min-w-0 lg:w-full"
+              >
+                <Plus className="h-3.5 w-3.5" /> Weiteres Bike
+              </button>
+            </div>
+          </aside>
+
+          <div className="min-w-0 space-y-4">
           <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-elevated p-1 text-xs sm:text-sm">
             {(
               [
@@ -259,7 +282,7 @@ function GaragePageInner() {
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`rounded-lg py-2 font-medium ${
+                className={`rounded-lg py-2.5 font-medium ${
                   tab === id ? "bg-accent text-white" : "text-text-secondary"
                 }`}
               >
@@ -269,7 +292,7 @@ function GaragePageInner() {
           </div>
 
           {tab === "overview" && (
-            <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-6">
+            <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:gap-6">
               <div className="flex flex-col gap-4">
                 <BikePhotoControl bikeId={selected.id} photoUrl={selected.photoUrl} />
                 <section className="rounded-2xl border border-border bg-surface p-4">
@@ -433,7 +456,8 @@ function GaragePageInner() {
               exportReport={exportReport}
             />
           )}
-        </>
+          </div>
+        </div>
       )}
 
       {showWizard && (

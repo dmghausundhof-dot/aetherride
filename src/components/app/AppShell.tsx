@@ -3,15 +3,21 @@
 import { usePathname } from "next/navigation";
 import { AppHeader } from "./AppHeader";
 
+/** App-Bereiche mit Desktop-Top-Nav (kein Ride-Tab, kein Mobile-Bottom-Nav). */
 const APP_PREFIXES = [
   "/garage",
   "/discover",
+  "/planner",
+  "/library",
+  "/activities",
   "/shop",
   "/profile",
   "/post-ride",
-  "/ride",
   "/checkout",
   "/chat",
+  "/privacy",
+  "/share",
+  "/u",
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -19,6 +25,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAppRoute = APP_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
+
+  // /ride ist bewusst ohne App-Chrome — eigenständige App-CTA-Seite
+  if (pathname === "/ride" || pathname.startsWith("/ride/")) {
+    return <>{children}</>;
+  }
 
   if (!isAppRoute) {
     return <>{children}</>;

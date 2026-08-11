@@ -14,8 +14,12 @@ import { useCartStore } from "@/store/useCartStore";
 import {
   SHOP_BROWSE_SLOTS,
   SHOP_PRODUCTS,
+  SHOP_SPORT_FILTERS,
   getShopProduct,
+  productMatchesSport,
+  shopSportFromBikeCategory,
   type ShopProduct,
+  type ShopSport,
 } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import {
@@ -74,6 +78,7 @@ function ShopPageInner() {
   const [hideIncompatible, setHideIncompatible] = useState(true);
   const [legalOk, setLegalOk] = useState(false);
   const [slotFilter, setSlotFilter] = useState<SlotFilter>("all");
+  const [sportFilter, setSportFilter] = useState<ShopSport>("all");
   const [job, setJob] = useState<JobId>("browse");
   const [focusId, setFocusId] = useState<string | null>(null);
   const legal = getMarketplaceLegal();
@@ -88,6 +93,7 @@ function ShopPageInner() {
     const focus = searchParams.get("focus");
     const slot = searchParams.get("slot");
     const jobParam = searchParams.get("job");
+    const sportParam = searchParams.get("sport") as ShopSport | null;
 
     if (focus && getShopProduct(focus)) {
       setFocusId(focus);
@@ -107,12 +113,20 @@ function ShopPageInner() {
     if (isBrowseSlot(slot)) {
       setSlotFilter(slot);
     }
+    if (
+      sportParam &&
+      SHOP_SPORT_FILTERS.some((s) => s.id === sportParam)
+    ) {
+      setSportFilter(sportParam);
+    } else if (!sportParam && activeBike) {
+      setSportFilter(shopSportFromBikeCategory(activeBike.category));
+    }
     if (jobParam === "replace" || jobParam === "browse" || jobParam === "season") {
       setJob(jobParam);
     } else if (focus || slot) {
       setJob(slot || focus ? "replace" : "browse");
     }
-  }, [searchParams]);
+  }, [searchParams, activeBike]);
 
   const triggered = useMemo(() => {
     if (!activeBike || !productConsent) return [];
@@ -155,8 +169,10 @@ function ShopPageInner() {
   }, [activeBike]);
 
   const ranked = useMemo(() => {
-    let list = rankedAll.filter((row) =>
-      matchesSlotFilter(row.product, slotFilter)
+    let list = rankedAll.filter(
+      (row) =>
+        matchesSlotFilter(row.product, slotFilter) &&
+        productMatchesSport(row.product, sportFilter)
     );
     if (hideIncompatible) {
       list = list.filter((row) => row.verdict !== "INCOMPATIBLE");
@@ -195,6 +211,7 @@ function ShopPageInner() {
   }, [
     rankedAll,
     slotFilter,
+    sportFilter,
     hideIncompatible,
     job,
     wearRecs,
@@ -244,7 +261,8 @@ function ShopPageInner() {
         <div>
           <h1 className="text-2xl font-bold">Shop</h1>
           <p className="text-sm text-text-secondary">
-            Passende Teile für dein Bike — Beispielkatalog (kein Live-Partner)
+            Teile nach Disziplin und Kompatibilität — Beispielkatalog (kein
+            Live-Partner)
           </p>
         </div>
         <Link
@@ -373,22 +391,50 @@ function ShopPageInner() {
         </section>
       )}
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {SHOP_BROWSE_SLOTS.map((s) => (
-          <button
-            key={s.slot}
-            type="button"
-            onClick={() => setSlotFilter(s.slot)}
-            className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-              slotFilter === s.slot
-                ? "bg-accent text-white"
-                : "bg-surface-elevated text-text-secondary"
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
+      <div>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+          Disziplin
+        </p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {SHOP_SPORT_FILTERS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSportFilter(s.id)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                sportFilter === s.id
+                  ? "bg-primary text-white"
+                  : "bg-surface-elevated text-text-secondary"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+          Kategorie
+        </p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {SHOP_BROWSE_SLOTS.map((s) => (
+            <button
+              key={s.slot}
+              type="button"
+              onClick={() => setSlotFilter(s.slot)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+                slotFilter === s.slot
+                  ? "bg-accent text-white"
+                  : "bg-surface-elevated text-text-secondary"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-text-secondary">
@@ -397,7 +443,7 @@ function ShopPageInner() {
           checked={hideIncompatible}
           onChange={(e) => setHideIncompatible(e.target.checked)}
         />
-        Inkompatible ausblenden
+        Inkompatible ausblenden (Kompat-Engine)
       </label>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
