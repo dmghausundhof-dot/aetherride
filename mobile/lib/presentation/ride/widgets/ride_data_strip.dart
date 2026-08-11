@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/nav_hud_tokens.dart';
 
-/// Bottom data strip: Speed · Rest/Dist · ETA (N-01 Clean Mode).
+/// Bottom data strip: Speed · Rest-km · ETA (N-HUD-01 / nav-hud-tokens-v1).
+/// Together with next-turn these are the only four Clean Mode HUD elements.
 class RideDataStrip extends StatelessWidget {
   const RideDataStrip({
     super.key,
@@ -11,10 +13,12 @@ class RideDataStrip extends StatelessWidget {
     required this.midLabel,
     required this.rightValue,
     required this.rightLabel,
+    this.speedCaption = NavHudTokens.labelSpeed,
     this.onTap,
   });
 
   final String speedLabel;
+  final String speedCaption;
   final String midValue;
   final String midLabel;
   final String rightValue;
@@ -38,7 +42,7 @@ class RideDataStrip extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _stat(speedLabel, 'km/h'),
+              _stat(speedLabel, speedCaption),
               _stat(midValue, midLabel),
               _stat(rightValue, rightLabel),
             ],
@@ -56,8 +60,8 @@ class RideDataStrip extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+              fontSize: NavHudTokens.statValueDp,
+              fontWeight: NavHudTokens.statValueWeight,
               fontFeatures: [FontFeature.tabularFigures()],
               height: 1.05,
             ),
@@ -65,7 +69,11 @@ class RideDataStrip extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            style: const TextStyle(
+              fontSize: NavHudTokens.statLabelDp,
+              fontWeight: NavHudTokens.statLabelWeight,
+              color: AppColors.muted,
+            ),
           ),
         ],
       ),

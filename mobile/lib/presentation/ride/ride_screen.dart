@@ -14,6 +14,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/nav_hud_tokens.dart';
 import '../../data/local/ride_prefs.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/routing_client.dart';
@@ -37,7 +38,6 @@ import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
-import '../shared/empty_state.dart';
 import 'widgets/battery_preset_sheet.dart';
 import 'widgets/reroute_sheet.dart';
 import 'widgets/ride_connectivity_chip.dart';
@@ -45,6 +45,7 @@ import 'widgets/ride_data_strip.dart';
 import 'widgets/ride_network.dart';
 import 'widgets/ride_next_turn_banner.dart';
 import 'widgets/ride_off_route_banner.dart';
+import 'widgets/ride_pre_start_chrome.dart';
 import 'widgets/ride_upcoming_rail.dart';
 
 Set<Factory<OneSequenceGestureRecognizer>> get _rideMapGestures =>
@@ -173,6 +174,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     'com.aetherride/ambient_light',
   );
 
+  /// True while Losfahren / autostart is awaiting location permission + engines.
+  /// Map stays visible — never swap back to a sensor checklist.
+  bool _starting = false;
+
   @override
   void initState() {
     super.initState();
@@ -196,7 +201,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   void _consumeRideAutostart() {
     if (ref.read(rideAutostartProvider) != true) return;
     ref.read(rideAutostartProvider.notifier).state = false;
-    if (ref.read(isRidingProvider)) return;
+    if (ref.read(isRidingProvider) || _starting) return;
     unawaited(_start());
   }
 
@@ -831,14 +836,24 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 
   Future<void> _start() async {
+    if (_starting || ref.read(isRidingProvider)) return;
+    setState(() => _starting = true);
+
     final ok = await _preflightPermissions();
-    if (!ok || !mounted) return;
+    if (!ok || !mounted) {
+      if (mounted) setState(() => _starting = false);
+      return;
+    }
 
     final sensor = ref.read(sensorCoreProvider);
     final ble = ref.read(bleCoreProvider);
     final location = ref.read(locationCoreProvider);
-    final consents = await ref.read(garageRepositoryProvider).listConsents();
-    _rawUploadConsent = consents['raw_data_upload'] == true;
+    // Consent lookup is secondary — do not block HUD paint on storage I/O.
+    unawaited(
+      ref.read(garageRepositoryProvider).listConsents().then((consents) {
+        _rawUploadConsent = consents['raw_data_upload'] == true;
+      }),
+    );
     _rideId = const Uuid().v4();
     _chunkBuf.clear();
     _chunkSeq = 0;
@@ -846,11 +861,39 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _gpsStatus = 'Warte auf GPS…';
     _lastGpsDistanceM = 0;
     _gpsStallSec = 0;
-
-    await sensor.start();
-    // Start GPS/nav immediately — BLE permission dialog must not block HUD.
-    await location.startRideTracking();
+    _startedAt = DateTime.now();
+    _spokenAnnounceKeys.clear();
+    _liveHintText = null;
+    _hardImpactStreak = 0;
+    _standSeconds = 0;
+    _prevPeakG = 0;
+    _startSoc = null;
+    _alongRouteM = 0;
+    _offRoute = false;
+    _offRouteBanner = null;
+    _userChoseStay = false;
+    _rejoinWhyLine = null;
+    _clearUndoRejoin();
+    // Heading-up default when riding with a route (N-01).
+    if (ref.read(activeRouteProvider) != null) {
+      _northUp = false;
+    }
+    _cleanMode = true;
+    _simDistanceM = 0;
+    _simMotionUsed = false;
     _usingGps = false;
+
+    // N-START-01: flip riding ASAP so map + HUD paint before sensor work.
+    // BLE / Nearby stays deferred in [_connectBleAfterHudStable].
+    ref.read(isRidingProvider.notifier).state = true;
+    ref.read(isPausedProvider.notifier).state = false;
+    ref.read(rideElapsedSecProvider.notifier).state = 0;
+    ref.read(rideDistanceMProvider.notifier).state = 0;
+    if (mounted) setState(() => _starting = false);
+
+    // GPS + IMU in parallel after HUD is visible — never await BLE here.
+    unawaited(sensor.start());
+    unawaited(location.startRideTracking());
     _locSub = location.fixes.listen((fix) {
       if (!mounted || ref.read(isPausedProvider)) return;
       _gpsFixCount += 1;
@@ -946,30 +989,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       final soc = d.batterySocPercent;
       if (soc != null) _startSoc ??= soc;
     });
-    _startedAt = DateTime.now();
-    _spokenAnnounceKeys.clear();
-    _liveHintText = null;
-    _hardImpactStreak = 0;
-    _standSeconds = 0;
-    _prevPeakG = 0;
-    _startSoc = null;
-    ref.read(isRidingProvider.notifier).state = true;
-    ref.read(isPausedProvider.notifier).state = false;
-    ref.read(rideElapsedSecProvider.notifier).state = 0;
-    ref.read(rideDistanceMProvider.notifier).state = 0;
-    _alongRouteM = 0;
-    _offRoute = false;
-    _offRouteBanner = null;
-    _userChoseStay = false;
-    _rejoinWhyLine = null;
-    _clearUndoRejoin();
-    // Heading-up default when riding with a route (N-01).
-    if (ref.read(activeRouteProvider) != null) {
-      _northUp = false;
-    }
-    _cleanMode = true;
-    _simDistanceM = 0;
-    _simMotionUsed = false;
     // Nearby Devices / BLE after HUD stable — never interrupt camera start.
     unawaited(_connectBleAfterHudStable());
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -1573,8 +1592,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
     final theme = sunlight ? AppTheme.sunlight : Theme.of(context);
 
-    // Full-screen Clean ride: no AppBar chrome (controls live in HUD strip).
-    final hideAppBar = riding && _cleanMode;
+    // Map-first: no AppBar on pre-ride or Clean HUD (N-START-01 / N-HUD-01).
+    final hideAppBar = !riding || (riding && _cleanMode);
 
     return Theme(
       data: theme,
@@ -1690,144 +1709,56 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   elapsed: elapsed,
                   distanceM: distanceM,
                 )
-              : Stack(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.l),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (route != null)
-                            Card(
-                              child: ListTile(
-                                leading: const Icon(Icons.navigation),
-                                title: Text(route.name),
-                                subtitle: Text(
-                                  '${route.distanceKm} km · ${route.elevationM.round()} hm'
-                                  '${route.steps.isNotEmpty ? ' · ${route.steps.length} Manöver' : ''}',
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.close),
-                                  onPressed: () {
-                                    ref
-                                            .read(activeRouteProvider.notifier)
-                                            .state =
-                                        null;
-                                  },
-                                ),
-                              ),
-                            )
-                          else
-                            const Text(
-                              MultiSportCopy.optionalRoute,
-                              style: TextStyle(color: AppColors.muted),
-                            ),
-                          const SizedBox(height: AppSpacing.s),
-                          Text(
-                            _cscStatusLine(),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.muted,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: () async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                final ble = ref.read(bleCoreProvider);
-                                final ok = await ble.connect();
-                                if (!mounted) return;
-                                final msg = ok
-                                    ? (ble.statusDetail ??
-                                          'Radsensor verbunden')
-                                    : (ble.statusDetail ??
-                                          'Kein Radsensor gefunden');
-                                setState(() {});
-                                messenger.showSnackBar(
-                                  SnackBar(content: Text(msg)),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.bluetooth_searching,
-                                size: 18,
-                              ),
-                              label: const Text('Radsensor suchen'),
-                            ),
-                          ),
-                          if (_showsChassisUx(ref)) ...[
-                            const SizedBox(height: AppSpacing.m),
-                            Text(
-                              'Handy am Lenker?',
-                              style: theme.textTheme.titleSmall,
-                            ),
-                            const SizedBox(height: AppSpacing.s),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor:
-                                          mount == MountCheck.mounted
-                                          ? AppColors.accent
-                                          : null,
-                                    ),
-                                    onPressed: () {
-                                      ref
-                                              .read(mountCheckProvider.notifier)
-                                              .state =
-                                          MountCheck.mounted;
-                                    },
-                                    child: const Text('Ja — Analyse an'),
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.s),
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      ref
-                                              .read(mountCheckProvider.notifier)
-                                              .state =
-                                          MountCheck.handheld;
-                                    },
-                                    child: const Text('Nein — nur Track'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const Expanded(
-                            child: Center(
-                              child: EmptyStateIllustration(
-                                compact: true,
-                                icon: Icons.pedal_bike,
-                                title: MultiSportCopy.readyTitle,
-                                message: MultiSportCopy.readyMessage,
-                              ),
-                            ),
-                          ),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              minimumSize: const Size.fromHeight(64),
-                            ),
-                            onPressed: () async {
-                              _bumpIdle();
-                              await _start();
-                            },
-                            child: Text(
-                              route != null
-                                  ? '${route.name} starten'
-                                  : MultiSportCopy.startFreeride,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              : _buildPreRideMap(route: route),
         ),
       ),
+    );
+  }
+
+  /// N-START-01: map paints first; one primary Losfahren CTA. No sensor checklist.
+  Widget _buildPreRideMap({
+    required ActiveRoute? route,
+  }) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: MapLibreMap(
+            key: ValueKey('ride-map-$_mapStyle'),
+            styleString: _mapStyle,
+            initialCameraPosition: CameraPosition(
+              target: _mapTarget(route),
+              zoom: route != null ? 12.5 : 5.8,
+            ),
+            myLocationEnabled: true,
+            trackCameraPosition: false,
+            compassEnabled: true,
+            scrollGesturesEnabled: true,
+            zoomGesturesEnabled: true,
+            rotateGesturesEnabled: true,
+            tiltGesturesEnabled: true,
+            gestureRecognizers: _rideMapGestures,
+            onMapCreated: (c) {
+              _rideMap = c;
+            },
+            onStyleLoadedCallback: () {
+              unawaited(_drawRideMap());
+            },
+          ),
+        ),
+        RidePreStartChrome(
+          routeName: route?.name,
+          starting: _starting,
+          onClearRoute: route == null
+              ? null
+              : () {
+                  ref.read(activeRouteProvider.notifier).state = null;
+                },
+          onStart: () {
+            _bumpIdle();
+            unawaited(_start());
+          },
+        ),
+      ],
     );
   }
 
@@ -1914,15 +1845,20 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         : (distanceM < 1000
               ? (distanceM / 1000).toStringAsFixed(2)
               : (distanceM / 1000).toStringAsFixed(1));
-    final midLabel = restKm != null ? 'Rest km' : 'km';
-    final rightLabel = restKm != null ? 'ETA' : 'Zeit';
+    // nav-hud-tokens-v1 Clean labels: Speed · Rest-km · ETA
+    final midLabel =
+        restKm != null ? NavHudTokens.labelRestKm : 'km';
+    final rightLabel =
+        restKm != null ? NavHudTokens.labelEta : 'Zeit';
+    final speedCaption =
+        restKm != null ? NavHudTokens.labelSpeed : 'km/h';
 
     return Stack(
       children: [
         Positioned.fill(
           child: layer == RideLiveLayer.map
               ? MapLibreMap(
-                  key: ValueKey('live-$_mapStyle'),
+                  key: ValueKey('ride-map-$_mapStyle'),
                   styleString: _mapStyle,
                   initialCameraPosition: CameraPosition(
                     target: _mapTarget(route),
@@ -1975,8 +1911,33 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Compact trust strip (Clean Mode): mute · north · chip · battery.
-                if (_cleanMode)
+                // Clean Mode = exactly 4 HUD elements (next-turn · Speed ·
+                // Rest-km · ETA). No trust-strip chrome. Re-follow only when
+                // the user panned the map; Pro chrome via data-strip tap.
+                if (_cleanMode && !_cameraFollow)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Material(
+                        color: theme.cardColor.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: IconButton(
+                          tooltip: 'Kamera folgen',
+                          onPressed: () {
+                            setState(() => _cameraFollow = true);
+                            unawaited(_drawRideMap());
+                          },
+                          icon: const Icon(
+                            Icons.my_location,
+                            size: 22,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!_cleanMode)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.s),
                     child: Row(
@@ -2037,7 +1998,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             ),
                           ),
                         const SizedBox(width: AppSpacing.xs),
-                        // N-03/N-08: honest connectivity (hide quiet Live).
                         if (connectivityChipVisibleInClean(_connectivityState))
                           Flexible(
                             child: Align(
@@ -2049,7 +2009,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             ),
                           ),
                         const Spacer(),
-                        // N-04: battery / keep-screen indicator + picker.
                         Material(
                           color: theme.cardColor.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -2069,17 +2028,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                   ? Colors.orange.shade800
                                   : null,
                             ),
-                          ),
-                        ),
-                        Material(
-                          color: theme.cardColor.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: IconButton(
-                            tooltip: 'Mehr Optionen',
-                            onPressed: () {
-                              setState(() => _cleanMode = false);
-                            },
-                            icon: const Icon(Icons.more_horiz, size: 22),
                           ),
                         ),
                       ],
@@ -2168,6 +2116,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               ],
               RideDataStrip(
                 speedLabel: speed.toStringAsFixed(0),
+                speedCaption: speedCaption,
                 midValue: midValue,
                 midLabel: midLabel,
                 rightValue: etaLabel,
@@ -2284,7 +2233,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     );
   }
 
-  /// N-07: thin upcoming rail (next turn / POI / climb stub).
+  /// N-07 / nav-hud-tokens-v1: compact line under next-turn if stop <15 min.
+  /// Does not count as a fifth Clean Mode HUD element.
   Widget _buildUpcomingRail(ActiveRoute route) {
     String? nextNextInstr;
     double? nextNextRemain;
@@ -2308,27 +2258,37 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
     }
 
+    final totalM = route.distanceKm * 1000;
     final poi = nextPoiStop(
       stops: [
         for (final p in route.poiStops)
           RoutePoiStop(atMin: p.atMin, title: p.title, kind: p.kind),
       ],
       alongRouteM: _alongRouteM,
-      totalDistanceM: route.distanceKm * 1000,
+      totalDistanceM: totalM,
       durationMin: route.durationMin,
     );
 
-    // Climb stub: remaining elevation scaled by progress (honest-ish).
-    final progress = route.distanceKm > 0
-        ? (_alongRouteM / 1000 / route.distanceKm).clamp(0.0, 1.0)
-        : 0.0;
-    final remainClimb = route.elevationM * (1 - progress);
+    final speed = _effectiveSpeedKmh;
+    final turnEta = nextNextRemain == null
+        ? null
+        : etaMinForDistanceM(nextNextRemain, speedKmh: speed);
+    final poiEta = poi == null
+        ? null
+        : poiEtaMin(
+            poi: poi,
+            alongRouteM: _alongRouteM,
+            totalDistanceM: totalM,
+            durationMin: route.durationMin,
+          );
 
     final item = buildUpcomingRail(
       nextNextTurnInstruction: nextNextInstr,
       nextNextTurnRemainingM: nextNextRemain,
+      nextNextTurnEtaMin: turnEta,
       nextPoi: poi,
-      remainingClimbM: remainClimb,
+      nextPoiEtaMin: poiEta,
+      remainingClimbM: null,
     );
     if (item == null) return const SizedBox.shrink();
     return RideUpcomingRail(item: item);
@@ -2515,18 +2475,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
         );
     }
-  }
-
-  String _cscStatusLine() {
-    final ble = ref.read(bleCoreProvider);
-    final riding = ref.read(isRidingProvider);
-    if (ble.isConnected) {
-      return ble.statusDetail ?? 'Radsensor verbunden';
-    }
-    if (riding) {
-      return ble.statusDetail ?? 'Radsensor nicht verbunden · GPS-Track aktiv';
-    }
-    return 'Radsensor bereit — einschalten zum Verbinden';
   }
 
   String _fmt(int sec) {

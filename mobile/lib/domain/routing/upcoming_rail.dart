@@ -1,4 +1,9 @@
-// Thin upcoming peek under next-turn (N-07).
+// Thin upcoming peek under next-turn (N-07 / nav-hud-tokens-v1).
+// Shown only when the next stop ETA is under [kUpcomingRailMaxEtaMin] minutes.
+// Does not count as a fifth Clean Mode HUD stat.
+
+/// Locked with nav-hud-tokens-v1 (`upcomingRailMaxEtaMin`).
+const int kUpcomingRailMaxEtaMin = 15;
 
 class UpcomingRailItem {
   const UpcomingRailItem({
@@ -43,19 +48,45 @@ RoutePoiStop? nextPoiStop({
   return best;
 }
 
-/// Build a single glance line: next turn after current, or next POI, or climb stub.
+/// Remaining minutes until [poi], or null if not computable.
+double? poiEtaMin({
+  required RoutePoiStop poi,
+  required double alongRouteM,
+  required double totalDistanceM,
+  required int durationMin,
+}) {
+  if (totalDistanceM <= 0 || durationMin <= 0) return null;
+  final progressMin = (alongRouteM / totalDistanceM) * durationMin;
+  final remain = poi.atMin - progressMin;
+  if (remain <= 0) return null;
+  return remain;
+}
+
+/// ETA minutes for a distance at [speedKmh], falling back to ~18 km/h cruise.
+double etaMinForDistanceM(double distanceM, {double speedKmh = 0}) {
+  final v = speedKmh > 3 ? speedKmh : 18.0;
+  return (distanceM / 1000) / v * 60;
+}
+
+/// Build a single glance line when the next stop is within
+/// [kUpcomingRailMaxEtaMin] minutes (nav-hud-tokens-v1).
 UpcomingRailItem? buildUpcomingRail({
   required String? nextNextTurnInstruction,
   required double? nextNextTurnRemainingM,
+  required double? nextNextTurnEtaMin,
   required RoutePoiStop? nextPoi,
+  required double? nextPoiEtaMin,
   required double? remainingClimbM,
+  int maxEtaMin = kUpcomingRailMaxEtaMin,
 }) {
-  // Prefer next turn after the current one when close enough to plan.
+  // Prefer next turn after the current one when ETA is under the token gate.
   if (nextNextTurnInstruction != null &&
       nextNextTurnInstruction.trim().isNotEmpty &&
       nextNextTurnRemainingM != null &&
       nextNextTurnRemainingM > 40 &&
-      nextNextTurnRemainingM < 2500) {
+      nextNextTurnEtaMin != null &&
+      nextNextTurnEtaMin > 0 &&
+      nextNextTurnEtaMin < maxEtaMin) {
     final dist = nextNextTurnRemainingM < 1000
         ? '${nextNextTurnRemainingM.round()} m'
         : '${(nextNextTurnRemainingM / 1000).toStringAsFixed(1)} km';
@@ -65,19 +96,17 @@ UpcomingRailItem? buildUpcomingRail({
       detail: dist,
     );
   }
-  if (nextPoi != null && nextPoi.title.trim().isNotEmpty) {
+  if (nextPoi != null &&
+      nextPoi.title.trim().isNotEmpty &&
+      nextPoiEtaMin != null &&
+      nextPoiEtaMin > 0 &&
+      nextPoiEtaMin < maxEtaMin) {
     return UpcomingRailItem(
       kind: 'poi',
       label: nextPoi.title,
-      detail: 'in ~${nextPoi.atMin} min',
+      detail: 'in ~${nextPoiEtaMin.ceil()} min',
     );
   }
-  if (remainingClimbM != null && remainingClimbM >= 25) {
-    return UpcomingRailItem(
-      kind: 'climb',
-      label: 'Anstieg',
-      detail: 'noch ~${remainingClimbM.round()} hm',
-    );
-  }
+  // Climb is not a timed "stop" — omit from Clean upcoming (token: stop <15 min).
   return null;
 }
