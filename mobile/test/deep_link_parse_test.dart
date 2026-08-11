@@ -89,4 +89,32 @@ void main() {
       );
     });
   });
+
+  group('DeepLinkParse discover loop start (D-60-05)', () {
+    test('loop id + start + lens from query', () {
+      final uri = Uri.parse(
+        'aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=1',
+      );
+      expect(DeepLinkParse.kindOf(uri), DeepLinkKind.discover);
+      expect(DeepLinkParse.loopIdOf(uri), 'seed-loop-tempelhofer-60');
+      expect(DeepLinkParse.startRideOf(uri), isTrue);
+      expect(DeepLinkParse.lensMinutesOf(uri), 60);
+    });
+
+    test('https discover path', () {
+      final uri = Uri.parse(
+        'https://aetherride.vercel.app/discover?loop=seed-loop-spree-feierabend-60&start=1',
+      );
+      expect(DeepLinkParse.kindOf(uri), DeepLinkKind.discover);
+      expect(DeepLinkParse.loopIdOf(uri), 'seed-loop-spree-feierabend-60');
+      expect(DeepLinkParse.startRideOf(uri), isTrue);
+    });
+
+    test('start absent is false', () {
+      final uri = Uri.parse(
+        'aetherride://discover?loop=seed-loop-tempelhofer-60',
+      );
+      expect(DeepLinkParse.startRideOf(uri), isFalse);
+    });
+  });
 }

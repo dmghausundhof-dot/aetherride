@@ -80,6 +80,8 @@ else
 fi
 
 echo
+LOOP="${SMOKE_LOOP_ID:-seed-loop-tempelhofer-60}"
+
 echo "Custom scheme (install + adb):"
 echo "  adb shell am start -a android.intent.action.VIEW \\"
 echo "    -d 'aetherride://ride?route=${ROUTE}' $PKG"
@@ -87,9 +89,14 @@ echo "  adb shell am start -a android.intent.action.VIEW \\"
 echo "    -d 'aetherride://tours/${ROUTE}' $PKG"
 echo "  adb shell am start -a android.intent.action.VIEW \\"
 echo "    -d 'aetherride://discover' $PKG"
+echo "  # D-60-05: 60-Min loop → ActiveRoute + Ride"
+echo "  adb shell am start -a android.intent.action.VIEW \\"
+echo "    -d 'aetherride://discover?lens=60&loop=${LOOP}&start=1' $PKG"
 echo "HTTPS App Link (needs verified assetlinks + installed app):"
 echo "  adb shell am start -a android.intent.action.VIEW \\"
 echo "    -d '${BASE}/open/ride?route=${ROUTE}'"
+echo "  adb shell am start -a android.intent.action.VIEW \\"
+echo "    -d '${BASE}/discover?lens=60&loop=${LOOP}&start=1'"
 echo
 
 if [[ "${ADB:-0}" == "1" ]]; then
@@ -103,7 +110,8 @@ if [[ "${ADB:-0}" == "1" ]]; then
       for uri in \
         "aetherride://ride?route=${ROUTE}" \
         "aetherride://tours/${ROUTE}" \
-        "aetherride://discover"; do
+        "aetherride://discover" \
+        "aetherride://discover?lens=60&loop=${LOOP}&start=1"; do
         if adb shell am start -a android.intent.action.VIEW -d "$uri" "$PKG" >/tmp/ar-adb.out 2>&1; then
           ok "adb VIEW $uri"
         else
