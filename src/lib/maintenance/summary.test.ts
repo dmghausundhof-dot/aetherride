@@ -64,8 +64,8 @@ const ok = getMaintenanceSummary(
 );
 assert(ok.status === "ok", `ok status got ${ok.status}`);
 assert(ok.dueCount === 0, "ok dueCount");
-assert(ok.headline === "Alles ok", "ok headline");
-assert(ok.detail.includes("letzte Fahrt"), "ok detail last ride");
+assert(ok.headline.startsWith("Alles ok"), "ok headline");
+assert(ok.headline.includes("letzte Fahrt"), "ok headline last ride");
 assert(ok.href.includes("tab=maintenance"), "ok href");
 
 // Due soon — 820/1000 = 82% on chain

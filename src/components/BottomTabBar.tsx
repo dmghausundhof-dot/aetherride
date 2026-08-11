@@ -85,9 +85,6 @@ export function BottomTabBar() {
                     {badgeCount > 9 ? "9+" : badgeCount}
                   </span>
                 )}
-                {showGarageBadge && dueTotal === 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-error" />
-                )}
               </span>
               <span className="text-[11px] font-medium">{tab.label}</span>
             </Link>

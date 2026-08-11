@@ -171,6 +171,7 @@ export function getMaintenanceSummary(
     };
   }
 
+  const lastRide = formatLastRide(options.lastRideAt, options.lastRideDistanceKm);
   return {
     status: "ok",
     overdueCount: 0,
@@ -180,8 +181,8 @@ export function getMaintenanceSummary(
     totalIntervals: bikeIntervals.length,
     topItem: null,
     items: [],
-    headline: "Alles ok",
-    detail: formatLastRide(options.lastRideAt, options.lastRideDistanceKm),
+    headline: `Alles ok · ${lastRide}`,
+    detail: okCount > 0 ? `${okCount} Intervalle im Blick` : "Status ansehen",
     href,
   };
 }
