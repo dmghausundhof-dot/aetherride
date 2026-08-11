@@ -27,6 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/library",
     "/garage",
     "/shop",
+    "/shop/parts",
   ].map((path) => ({
     url: `${origin}${path || "/"}`,
     lastModified: now,

@@ -76,7 +76,12 @@ export const SHOPIFY_COLLECTIONS: Record<string, string> = {
   city: "featured-light-e-city",
   "light-e": "featured-light-e-city",
   urban: "featured-light-e-city",
+  /** Consumables / soft-fit parts (Storefront Collection) */
+  parts: "featured-parts",
 };
+
+/** Live Ersatzteile-Collection (Storefront API — siehe partsCatalog) */
+export const SHOPIFY_PARTS_COLLECTION = "featured-parts";
 
 export function shopCollectionHref(sport: string): string | undefined {
   const handle = SHOPIFY_COLLECTIONS[sport];
@@ -477,7 +482,32 @@ export function shopHref(opts?: {
   job?: "replace" | "browse" | "season";
   /** gravel | city | light-e | urban | road | mtb | ebike | all */
   sport?: string;
+  /** Bike-Id für Soft-Fit auf /shop/parts */
+  bike?: string;
 }): string {
+  // Wear / slot browse → Parts listing (Collection featured-parts)
+  const toParts =
+    opts?.job === "replace" ||
+    opts?.job === "season" ||
+    (opts?.slot && opts.slot !== "frame");
+  if (toParts) {
+    const params = new URLSearchParams();
+    let slot = opts?.slot ? String(opts.slot) : undefined;
+    if (slot === "brake_pads_front" || slot === "brake_pads_rear") {
+      slot = "brake_pads";
+    }
+    if (slot === "tire_front" || slot === "tire_rear") slot = "tire";
+    if (slot) params.set("slot", slot);
+    if (opts?.bike) {
+      params.set("bike", opts.bike);
+      params.set("fit", "bike");
+    }
+    const focus = opts?.focus ?? opts?.productId;
+    if (focus && !String(focus).startsWith("sp-")) params.set("focus", focus);
+    const q = params.toString();
+    return q ? `/shop/parts?${q}` : "/shop/parts";
+  }
+
   const params = new URLSearchParams();
   const focus = opts?.focus ?? opts?.productId;
   if (focus) params.set("focus", focus);

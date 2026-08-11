@@ -19,6 +19,7 @@ import { GarageComponentsTab } from "@/components/garage/GarageComponentsTab";
 import { GarageSetupsTab } from "@/components/garage/GarageSetupsTab";
 import { GarageMaintenanceTab } from "@/components/garage/GarageMaintenanceTab";
 import { MaintenanceStatusCard } from "@/components/home/MaintenanceStatusCard";
+import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import {
   aggregateVerdict,
@@ -225,11 +226,12 @@ function GaragePageInner() {
 
       {/* T-WA-00 status card when bike exists (always free); empty handled below */}
       {selected && (
-        <div className="mb-5">
+        <div className="mb-5 space-y-3">
           <MaintenanceStatusCard
             compact
             ignoreSnooze={tab === "maintenance"}
           />
+          <GaragePartsCta bikeId={selected.id} bikeName={selected.name} />
         </div>
       )}
 

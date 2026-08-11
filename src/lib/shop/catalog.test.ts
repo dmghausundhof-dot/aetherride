@@ -111,11 +111,15 @@ assert.ok(
 assert.equal(shopHref(), "/shop");
 assert.equal(
   shopHref({ productId: "sp-sram-xx-chain", job: "replace" }),
-  "/shop?focus=sp-sram-xx-chain&job=replace"
+  "/shop/parts"
 );
 assert.equal(
   shopHref({ slot: "cassette", job: "browse" }),
-  "/shop?slot=cassette&job=browse"
+  "/shop/parts?slot=cassette"
+);
+assert.equal(
+  shopHref({ slot: "brake_pads_front", bike: "bike-1" }),
+  "/shop/parts?slot=brake_pads&bike=bike-1&fit=bike"
 );
 assert.equal(
   shopHref({ sport: "gravel" }),
@@ -124,6 +128,10 @@ assert.equal(
 assert.equal(
   shopHref({ focus: "orbea-terra-m20", sport: "gravel" }),
   "/shop?focus=orbea-terra-m20&sport=gravel"
+);
+assert.equal(
+  shopCollectionHref("parts"),
+  `${SHOPIFY_STORE_BASE}/collections/featured-parts`
 );
 
 console.log("catalog.test.ts OK", {
