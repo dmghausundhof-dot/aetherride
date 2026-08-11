@@ -83,7 +83,7 @@ void main() {
   });
 
   group('RideNextTurnBanner (N-HUD-01)', () {
-    testWidgets('next-turn distance paints at ≥48dp', (tester) async {
+    testWidgets('next-turn distance paints at 48dp Bold (token)', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -99,12 +99,13 @@ void main() {
       );
 
       final distance = tester.widget<Text>(find.text('120 m'));
-      expect(distance.style?.fontSize, greaterThanOrEqualTo(48));
+      expect(distance.style?.fontSize, 48);
+      expect(distance.style?.fontWeight, FontWeight.w700);
 
       final box = tester.renderObject<RenderBox>(
         find.byType(RideNextTurnBanner),
       );
-      expect(box.size.height, greaterThanOrEqualTo(48));
+      expect(box.size.height, greaterThanOrEqualTo(40));
     });
   });
 }

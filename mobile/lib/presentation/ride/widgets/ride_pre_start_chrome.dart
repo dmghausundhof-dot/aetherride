@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/nav_hud_tokens.dart';
 import '../../../domain/sport/discipline_ux.dart';
 
 /// Map-first pre-ride chrome (N-START-01): one primary CTA, no sensor checklist.
@@ -51,7 +52,10 @@ class RidePreStartChrome extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.card),
               child: ListTile(
                 dense: true,
-                leading: const Icon(Icons.navigation, color: AppColors.accent),
+                leading: const Icon(
+                  Icons.navigation,
+                  color: NavHudTokens.startCtaGreen,
+                ),
                 title: Text(
                   routeName!,
                   maxLines: 1,
@@ -82,9 +86,13 @@ class RidePreStartChrome extends StatelessWidget {
             child: FilledButton(
               key: const Key('ride-primary-start'),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.7),
-                minimumSize: const Size.fromHeight(64),
+                backgroundColor: NavHudTokens.startCtaGreen,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor:
+                    NavHudTokens.startCtaGreen.withValues(alpha: 0.7),
+                minimumSize: const Size.fromHeight(
+                  NavHudTokens.startCtaMinHeightDp,
+                ),
               ),
               onPressed: starting ? null : onStart,
               child: Text(

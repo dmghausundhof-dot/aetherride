@@ -14,6 +14,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/nav_hud_tokens.dart';
 import '../../data/local/ride_prefs.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/routing_client.dart';
@@ -1844,8 +1845,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         : (distanceM < 1000
               ? (distanceM / 1000).toStringAsFixed(2)
               : (distanceM / 1000).toStringAsFixed(1));
-    final midLabel = restKm != null ? 'Rest km' : 'km';
-    final rightLabel = restKm != null ? 'ETA' : 'Zeit';
+    // nav-hud-tokens-v1 Clean labels: Speed · Rest-km · ETA
+    final midLabel =
+        restKm != null ? NavHudTokens.labelRestKm : 'km';
+    final rightLabel =
+        restKm != null ? NavHudTokens.labelEta : 'Zeit';
+    final speedCaption =
+        restKm != null ? NavHudTokens.labelSpeed : 'km/h';
 
     return Stack(
       children: [
@@ -1905,8 +1911,33 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Compact trust strip (Clean Mode): mute · north · chip · battery.
-                if (_cleanMode)
+                // Clean Mode = exactly 4 HUD elements (next-turn · Speed ·
+                // Rest-km · ETA). No trust-strip chrome. Re-follow only when
+                // the user panned the map; Pro chrome via data-strip tap.
+                if (_cleanMode && !_cameraFollow)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Material(
+                        color: theme.cardColor.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: IconButton(
+                          tooltip: 'Kamera folgen',
+                          onPressed: () {
+                            setState(() => _cameraFollow = true);
+                            unawaited(_drawRideMap());
+                          },
+                          icon: const Icon(
+                            Icons.my_location,
+                            size: 22,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!_cleanMode)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.s),
                     child: Row(
@@ -1967,7 +1998,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             ),
                           ),
                         const SizedBox(width: AppSpacing.xs),
-                        // N-03/N-08: honest connectivity (hide quiet Live).
                         if (connectivityChipVisibleInClean(_connectivityState))
                           Flexible(
                             child: Align(
@@ -1979,7 +2009,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             ),
                           ),
                         const Spacer(),
-                        // N-04: battery / keep-screen indicator + picker.
                         Material(
                           color: theme.cardColor.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -1999,17 +2028,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                   ? Colors.orange.shade800
                                   : null,
                             ),
-                          ),
-                        ),
-                        Material(
-                          color: theme.cardColor.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: IconButton(
-                            tooltip: 'Mehr Optionen',
-                            onPressed: () {
-                              setState(() => _cleanMode = false);
-                            },
-                            icon: const Icon(Icons.more_horiz, size: 22),
                           ),
                         ),
                       ],
@@ -2098,6 +2116,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               ],
               RideDataStrip(
                 speedLabel: speed.toStringAsFixed(0),
+                speedCaption: speedCaption,
                 midValue: midValue,
                 midLabel: midLabel,
                 rightValue: etaLabel,
@@ -2214,7 +2233,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     );
   }
 
-  /// N-07: thin upcoming rail (next turn / POI / climb stub).
+  /// N-07 / nav-hud-tokens-v1: compact line under next-turn if stop <15 min.
+  /// Does not count as a fifth Clean Mode HUD element.
   Widget _buildUpcomingRail(ActiveRoute route) {
     String? nextNextInstr;
     double? nextNextRemain;
@@ -2238,27 +2258,37 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
     }
 
+    final totalM = route.distanceKm * 1000;
     final poi = nextPoiStop(
       stops: [
         for (final p in route.poiStops)
           RoutePoiStop(atMin: p.atMin, title: p.title, kind: p.kind),
       ],
       alongRouteM: _alongRouteM,
-      totalDistanceM: route.distanceKm * 1000,
+      totalDistanceM: totalM,
       durationMin: route.durationMin,
     );
 
-    // Climb stub: remaining elevation scaled by progress (honest-ish).
-    final progress = route.distanceKm > 0
-        ? (_alongRouteM / 1000 / route.distanceKm).clamp(0.0, 1.0)
-        : 0.0;
-    final remainClimb = route.elevationM * (1 - progress);
+    final speed = _effectiveSpeedKmh;
+    final turnEta = nextNextRemain == null
+        ? null
+        : etaMinForDistanceM(nextNextRemain, speedKmh: speed);
+    final poiEta = poi == null
+        ? null
+        : poiEtaMin(
+            poi: poi,
+            alongRouteM: _alongRouteM,
+            totalDistanceM: totalM,
+            durationMin: route.durationMin,
+          );
 
     final item = buildUpcomingRail(
       nextNextTurnInstruction: nextNextInstr,
       nextNextTurnRemainingM: nextNextRemain,
+      nextNextTurnEtaMin: turnEta,
       nextPoi: poi,
-      remainingClimbM: remainClimb,
+      nextPoiEtaMin: poiEta,
+      remainingClimbM: null,
     );
     if (item == null) return const SizedBox.shrink();
     return RideUpcomingRail(item: item);

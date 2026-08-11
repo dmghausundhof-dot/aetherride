@@ -41,12 +41,14 @@ void main() {
     });
   });
 
-  group('buildUpcomingRail', () {
-    test('prefers next turn when available', () {
+  group('buildUpcomingRail (nav-hud-tokens-v1 <15 min)', () {
+    test('prefers next turn when ETA under 15 min', () {
       final item = buildUpcomingRail(
         nextNextTurnInstruction: 'Rechts abbiegen',
         nextNextTurnRemainingM: 400,
+        nextNextTurnEtaMin: 2,
         nextPoi: const RoutePoiStop(atMin: 20, title: 'Café'),
+        nextPoiEtaMin: 14,
         remainingClimbM: 80,
       );
       expect(item?.kind, 'turn');
@@ -54,26 +56,72 @@ void main() {
       expect(item?.detail, '400 m');
     });
 
-    test('falls back to poi', () {
+    test('hides turn when ETA ≥ 15 min', () {
+      final item = buildUpcomingRail(
+        nextNextTurnInstruction: 'Rechts abbiegen',
+        nextNextTurnRemainingM: 4000,
+        nextNextTurnEtaMin: 16,
+        nextPoi: null,
+        nextPoiEtaMin: null,
+        remainingClimbM: null,
+      );
+      expect(item, isNull);
+    });
+
+    test('falls back to poi under 15 min', () {
       final item = buildUpcomingRail(
         nextNextTurnInstruction: null,
         nextNextTurnRemainingM: null,
+        nextNextTurnEtaMin: null,
         nextPoi: const RoutePoiStop(atMin: 20, title: 'Café am Feld'),
+        nextPoiEtaMin: 9,
         remainingClimbM: 80,
       );
       expect(item?.kind, 'poi');
       expect(item?.label, 'Café am Feld');
+      expect(item?.detail, 'in ~9 min');
     });
 
-    test('climb stub last', () {
+    test('hides poi when ETA ≥ 15 min', () {
       final item = buildUpcomingRail(
         nextNextTurnInstruction: null,
         nextNextTurnRemainingM: null,
+        nextNextTurnEtaMin: null,
+        nextPoi: const RoutePoiStop(atMin: 40, title: 'Café'),
+        nextPoiEtaMin: 20,
+        remainingClimbM: null,
+      );
+      expect(item, isNull);
+    });
+
+    test('climb stub omitted (not a timed stop)', () {
+      final item = buildUpcomingRail(
+        nextNextTurnInstruction: null,
+        nextNextTurnRemainingM: null,
+        nextNextTurnEtaMin: null,
         nextPoi: null,
+        nextPoiEtaMin: null,
         remainingClimbM: 120,
       );
-      expect(item?.kind, 'climb');
-      expect(item?.detail, contains('120'));
+      expect(item, isNull);
+    });
+  });
+
+  group('eta helpers', () {
+    test('etaMinForDistanceM uses cruise fallback', () {
+      // 3 km at 18 km/h → 10 min
+      expect(etaMinForDistanceM(3000), closeTo(10, 0.01));
+    });
+
+    test('poiEtaMin remaining', () {
+      final eta = poiEtaMin(
+        poi: const RoutePoiStop(atMin: 20, title: 'X'),
+        alongRouteM: 2000,
+        totalDistanceM: 10000,
+        durationMin: 60,
+      );
+      // progress 12 min → remain 8
+      expect(eta, closeTo(8, 0.01));
     });
   });
 }
