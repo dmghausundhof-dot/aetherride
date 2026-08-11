@@ -99,6 +99,36 @@ await check("sitemap", async () => {
   return { bytes: t.length };
 });
 
+await check("ops/env-check", async () => {
+  const r = await fetch(`${base}/api/ops/env-check`);
+  const j = await r.json();
+  if (!r.ok) throw new Error(JSON.stringify(j).slice(0, 200));
+  return {
+    ok: j.ok,
+    engine: j.checks?.routing?.engine,
+    supabase: j.checks?.supabasePublic,
+    stores: j.checks?.stores?.hasLinks,
+  };
+});
+
+await check("well-known assetlinks", async () => {
+  const r = await fetch(`${base}/.well-known/assetlinks.json`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const j = await r.json();
+  if (!Array.isArray(j) || !j[0]?.target?.package_name) {
+    throw new Error("invalid assetlinks");
+  }
+  return { package: j[0].target.package_name };
+});
+
+await check("well-known apple-app-site-association", async () => {
+  const r = await fetch(`${base}/.well-known/apple-app-site-association`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const j = await r.json();
+  if (!j.applinks?.details?.length) throw new Error("no applinks details");
+  return { apps: j.applinks.details.length };
+});
+
 const failed = results.filter((x) => !x.ok);
 console.log("\n---");
 console.log(

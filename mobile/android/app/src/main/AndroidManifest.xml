@@ -54,20 +54,37 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="aetherride" android:host="ride"/>
                 <data android:scheme="aetherride"/>
             </intent-filter>
-            <!-- App Links: https://…/open/ride (set autoVerify=true after assetlinks verified) -->
-            <intent-filter android:autoVerify="false">
+            <!--
+              App Links (autoVerify): hosts from manifestPlaceholders in build.gradle.kts
+              Defaults: aetherride.vercel.app + aetherride.app
+              Requires /.well-known/assetlinks.json + SHA-256 fingerprints on that host.
+            -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data
                     android:scheme="https"
-                    android:host="aetherride.app"
+                    android:host="${appLinkHost}"
                     android:pathPrefix="/open"/>
                 <data
                     android:scheme="https"
-                    android:host="www.aetherride.app"
+                    android:host="${appLinkHost}"
+                    android:pathPrefix="/ride"/>
+                <data
+                    android:scheme="https"
+                    android:host="${appLinkHostAlt}"
+                    android:pathPrefix="/open"/>
+                <data
+                    android:scheme="https"
+                    android:host="${appLinkHostAlt}"
+                    android:pathPrefix="/ride"/>
+                <data
+                    android:scheme="https"
+                    android:host="www.${appLinkHostAlt}"
                     android:pathPrefix="/open"/>
             </intent-filter>
         </activity>

@@ -55,8 +55,18 @@ for key in OUTDOORACTIVE_API_KEY OUTDOORACTIVE_PROJECT_KEY MAPILLARY_ACCESS_TOKE
 done
 echo
 
+echo "Deep Links / App Links"
+ok "Web: /open/ride + well-known assetlinks/AASA (Code)"
+ok "Android: aetherride:// + autoVerify hosts (vercel.app / aetherride.app)"
+miss "Vercel NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS"
+miss "Vercel NEXT_PUBLIC_IOS_TEAM_ID"
+miss "Device adb deep-link smoke"
+echo
+
 echo "Externe Ops (nicht lokal fakebar)"
-miss "Vercel Env (Prod) synchron"
+note "Prod smoke: npm run smoke:web:prod"
+note "Auth sync: SMOKE_EMAIL=… SMOKE_PASSWORD=… npm run smoke:sync-auth -- https://aetherride.vercel.app"
+miss "Vercel Env (Prod) synchron — GET /api/ops/env-check auf Prod"
 miss "Stripe Webhook Endpoint Prod"
 miss "Play Service Account JSON + License Tester + SKU aetherride_pro_monthly"
 miss "STRAVA_CLIENT_ID/SECRET in .env.local + Strava Redirect → /api/strava/callback"

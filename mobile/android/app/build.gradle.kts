@@ -29,6 +29,16 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // App Links hosts (must match /.well-known/assetlinks.json on that domain)
+        // Override: -PappLinkHost=your.domain.com  (primary) / appLinkHostAlt
+        val appLinkHost =
+            (project.findProperty("appLinkHost") as String?)
+                ?: "aetherride.vercel.app"
+        val appLinkHostAlt =
+            (project.findProperty("appLinkHostAlt") as String?)
+                ?: "aetherride.app"
+        manifestPlaceholders["appLinkHost"] = appLinkHost
+        manifestPlaceholders["appLinkHostAlt"] = appLinkHostAlt
         ndk {
             // Ship arm64 (devices) + x86_64 (emulator) when present under jniLibs.
             abiFilters += listOf("arm64-v8a", "x86_64")

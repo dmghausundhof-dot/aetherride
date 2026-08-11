@@ -17,7 +17,9 @@
     "routing:region:graph-only": "SKIP_TILES=1 bash scripts/routing/build-region-pack.sh",
     "routing:sync-demo": "bash scripts/routing/sync-demo-graph.sh",
     "routing:valhalla:android": "bash scripts/routing/valhalla-android-pipeline.sh arm64-v8a",
-    "smoke:web": "node scripts/smoke-web-sync-routing.mjs"
+    "smoke:web": "node scripts/smoke-web-sync-routing.mjs",
+    "smoke:web:prod": "node scripts/smoke-web-sync-routing.mjs https://aetherride.vercel.app",
+    "smoke:sync-auth": "node scripts/smoke-sync-auth.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
