@@ -108,6 +108,13 @@ export function TourActions({ tour }: { tour: PublicTour }) {
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
+        <a
+          href={`/api/tours/${encodeURIComponent(tour.id)}/gpx`}
+          className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
+          download
+        >
+          GPX
+        </a>
         <Link
           href={`/planner?tour=${encodeURIComponent(tour.id)}`}
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"

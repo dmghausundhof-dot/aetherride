@@ -20,7 +20,7 @@ export type RouteResult = {
   distanceM: number;
   durationS: number;
   geometry: GeoJSON.LineString;
-  engine: "valhalla" | "osrm" | "graphhopper" | "demo";
+  engine: "valhalla" | "osrm" | "graphhopper" | "demo" | "editorial";
   profile: RoutingProfile;
   warnings?: string[];
   /** F-NAV-003 Turn-by-Turn */
@@ -44,7 +44,8 @@ function publicOsrmAllowed(): boolean {
   return false;
 }
 
-function engine(): "valhalla" | "osrm" | "graphhopper" | "demo" {
+function engine(): "valhalla" | "osrm" | "graphhopper" | "demo" | "editorial" {
+  // editorial never selected as engine backend
   const e = (process.env.ROUTING_ENGINE || "").toLowerCase();
   if (e === "valhalla" || e === "osrm" || e === "graphhopper") return e;
   if (process.env.GRAPHHOPPER_API_KEY) return "graphhopper";
@@ -530,8 +531,12 @@ export async function computeRoute(
 }
 
 /** Welche Engine ist konfiguriert (ohne Netzwerk-Probe). */
-export function configuredRoutingEngine(): RouteResult["engine"] {
-  return engine();
+export function configuredRoutingEngine(): Exclude<
+  RouteResult["engine"],
+  "editorial"
+> {
+  const e = engine();
+  return e === "editorial" ? "demo" : e;
 }
 
 export function isLiveRoutingConfigured(): boolean {

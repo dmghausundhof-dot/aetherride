@@ -15,14 +15,23 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
-import { appDeepLink } from "@/lib/web/appLinks";
+import {
+  appDeepLink,
+  httpsAppLink,
+  hasStoreLinks,
+  rideOpenPath,
+} from "@/lib/web/appLinks";
+
 export default function RideAppBridgePage() {
   const activeRoute = useAppStore((s) => s.activeRoute);
   const clearActiveRoute = useAppStore((s) => s.clearActiveRoute);
 
   const deepLink = useMemo(() => {
-    if (!activeRoute) return appDeepLink("ride");
-    return appDeepLink(`ride?route=${encodeURIComponent(activeRoute.id)}`);
+    return appDeepLink(rideOpenPath(activeRoute?.id));
+  }, [activeRoute]);
+
+  const universalLink = useMemo(() => {
+    return httpsAppLink(rideOpenPath(activeRoute?.id));
   }, [activeRoute]);
 
   return (
@@ -110,16 +119,27 @@ export default function RideAppBridgePage() {
           <AppDownloadButtons size="lg" />
         </div>
 
-        <a
-          href={deepLink}
-          className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-foreground transition hover:bg-surface"
-        >
-          <ExternalLink className="h-4 w-4" />
-          App öffnen (Deep Link)
-        </a>
+        <div className="mt-6 flex flex-col gap-2">
+          <a
+            href={deepLink}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white transition hover:bg-accent-hover"
+          >
+            <ExternalLink className="h-4 w-4" />
+            App öffnen (Schema)
+          </a>
+          <a
+            href={universalLink}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-foreground transition hover:bg-surface"
+          >
+            Universal Link /open/ride
+          </a>
+        </div>
         <p className="mt-2 text-center text-[11px] text-text-secondary">
-          Funktioniert, sobald die App installiert ist und Universal Links /
-          App-Links konfiguriert sind.
+          Schema <code className="text-[10px]">aetherride://</code>
+          {hasStoreLinks()
+            ? " · Store-Links gesetzt"
+            : " · Store-URLs in Vercel setzen (NEXT_PUBLIC_*_STORE_URL)"}
+          . App Links: /.well-known/assetlinks.json
         </p>
 
         <div className="mt-12 grid gap-3">

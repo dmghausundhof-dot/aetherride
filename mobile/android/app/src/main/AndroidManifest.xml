@@ -49,6 +49,27 @@
                     android:scheme="io.aetherride.app"
                     android:host="strava-callback"/>
             </intent-filter>
+            <!-- Custom scheme: aetherride://ride?route=… -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="aetherride"/>
+            </intent-filter>
+            <!-- App Links: https://…/open/ride (set autoVerify=true after assetlinks verified) -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="aetherride.app"
+                    android:pathPrefix="/open"/>
+                <data
+                    android:scheme="https"
+                    android:host="www.aetherride.app"
+                    android:pathPrefix="/open"/>
+            </intent-filter>
         </activity>
         <service
             android:name=".RideLocationService"

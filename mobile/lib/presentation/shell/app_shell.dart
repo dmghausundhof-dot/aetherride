@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/deep_links.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../discover/discover_screen.dart';
@@ -22,6 +23,22 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// Tabs erst beim ersten Besuch bauen — verhindert Discover/MapLibre/GPS
   /// beim Cold-Start (ANR durch GeolocatorLocationService).
   final Set<int> _visited = {0};
+  DeepLinkHandler? _deepLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deepLinks = DeepLinkHandler(ref);
+      _deepLinks!.start();
+    });
+  }
+
+  @override
+  void dispose() {
+    _deepLinks?.dispose();
+    super.dispose();
+  }
 
   Widget _tabBody(int i, Set<int> mountedTabs) {
     if (!mountedTabs.contains(i)) return const SizedBox.shrink();

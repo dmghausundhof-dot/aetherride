@@ -360,12 +360,25 @@ class GarageRepository {
       maintenanceLogs: profileStore == null
           ? null
           : profileStore!.maintenanceLogs,
+      // v2 fields (aligned with web SyncPayload)
+      preferredSport: profileStore?.preferredSport?.name,
+      onboardingDone: profileStore?.onboardingDone,
+      rideFeedbacks: [
+        for (final r in rides)
+          if (_parseFeedbackJson(r.feedbackJson) is Map)
+            {
+              'rideId': r.id,
+              ...Map<String, dynamic>.from(
+                _parseFeedbackJson(r.feedbackJson) as Map,
+              ),
+            },
+      ],
       wishlistIds: profileStore == null ? null : profileStore!.wishlistIds,
       bikePhotos: profileStore == null
           ? null
           : profileStore!.syncableBikePhotos(),
       updatedAt: state?.localUpdatedAt,
-      payloadVersion: state?.payloadVersion ?? 1,
+      payloadVersion: 2,
     );
   }
 
@@ -533,6 +546,13 @@ class GarageRepository {
           for (final e in (payload.bikePhotos as Map).entries)
             e.key.toString(): e.value.toString(),
         });
+      }
+      if (payload.onboardingDone != null) {
+        store.onboardingDone = payload.onboardingDone!;
+      }
+      if (payload.preferredSport is String) {
+        store.preferredSport =
+            bikeCategoryFromName(payload.preferredSport as String);
       }
       await store.save();
     }

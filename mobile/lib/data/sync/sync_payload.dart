@@ -1,4 +1,4 @@
-/// Mirrors web `SyncPayload` (src/lib/sync/client.ts).
+/// Mirrors web `SyncPayload` (src/lib/sync/client.ts) — payloadVersion 2.
 class SyncPayload {
   const SyncPayload({
     this.bikes,
@@ -13,14 +13,19 @@ class SyncPayload {
     this.commerceMode,
     this.rangeCalibration,
     this.maintenanceLogs,
+    this.maintenanceIntervals,
+    this.rideFeedbacks,
+    this.recommendations,
     this.wishlistIds,
     this.bikePhotos,
     this.activeBikeId,
     this.savedRoutes,
     this.routeCollections,
+    this.preferredSport,
+    this.onboardingDone,
     this.freeTierExtraBike,
     this.updatedAt,
-    this.payloadVersion = 1,
+    this.payloadVersion = 2,
   });
 
   final dynamic bikes;
@@ -35,11 +40,16 @@ class SyncPayload {
   final dynamic commerceMode;
   final dynamic rangeCalibration;
   final dynamic maintenanceLogs;
+  final dynamic maintenanceIntervals;
+  final dynamic rideFeedbacks;
+  final dynamic recommendations;
   final dynamic wishlistIds;
   final dynamic bikePhotos;
   final String? activeBikeId;
   final dynamic savedRoutes;
   final dynamic routeCollections;
+  final dynamic preferredSport;
+  final bool? onboardingDone;
   final bool? freeTierExtraBike;
   final String? updatedAt;
   final int payloadVersion;
@@ -58,14 +68,19 @@ class SyncPayload {
       commerceMode: json['commerceMode'],
       rangeCalibration: json['rangeCalibration'],
       maintenanceLogs: json['maintenanceLogs'],
+      maintenanceIntervals: json['maintenanceIntervals'],
+      rideFeedbacks: json['rideFeedbacks'],
+      recommendations: json['recommendations'],
       wishlistIds: json['wishlistIds'],
       bikePhotos: json['bikePhotos'],
       activeBikeId: json['activeBikeId'] as String?,
       savedRoutes: json['savedRoutes'] ?? json['saved_routes'],
       routeCollections: json['routeCollections'],
+      preferredSport: json['preferredSport'],
+      onboardingDone: json['onboardingDone'] as bool?,
       freeTierExtraBike: json['freeTierExtraBike'] as bool?,
       updatedAt: json['updatedAt'] as String?,
-      payloadVersion: (json['payloadVersion'] as num?)?.toInt() ?? 1,
+      payloadVersion: (json['payloadVersion'] as num?)?.toInt() ?? 2,
     );
   }
 
@@ -83,11 +98,17 @@ class SyncPayload {
         if (commerceMode != null) 'commerceMode': commerceMode,
         if (rangeCalibration != null) 'rangeCalibration': rangeCalibration,
         if (maintenanceLogs != null) 'maintenanceLogs': maintenanceLogs,
+        if (maintenanceIntervals != null)
+          'maintenanceIntervals': maintenanceIntervals,
+        if (rideFeedbacks != null) 'rideFeedbacks': rideFeedbacks,
+        if (recommendations != null) 'recommendations': recommendations,
         if (wishlistIds != null) 'wishlistIds': wishlistIds,
         if (bikePhotos != null) 'bikePhotos': bikePhotos,
         if (activeBikeId != null) 'activeBikeId': activeBikeId,
         if (savedRoutes != null) 'savedRoutes': savedRoutes,
         if (routeCollections != null) 'routeCollections': routeCollections,
+        if (preferredSport != null) 'preferredSport': preferredSport,
+        if (onboardingDone != null) 'onboardingDone': onboardingDone,
         if (freeTierExtraBike != null) 'freeTierExtraBike': freeTierExtraBike,
         if (updatedAt != null) 'updatedAt': updatedAt,
         'payloadVersion': payloadVersion,
@@ -108,8 +129,13 @@ class SyncPayload {
     dynamic commerceMode,
     dynamic rangeCalibration,
     dynamic maintenanceLogs,
+    dynamic maintenanceIntervals,
+    dynamic rideFeedbacks,
+    dynamic recommendations,
     dynamic wishlistIds,
     dynamic bikePhotos,
+    dynamic preferredSport,
+    bool? onboardingDone,
     bool? freeTierExtraBike,
     String? activeBikeId,
     String? updatedAt,
@@ -129,11 +155,17 @@ class SyncPayload {
       commerceMode: commerceMode ?? this.commerceMode,
       rangeCalibration: rangeCalibration ?? this.rangeCalibration,
       maintenanceLogs: maintenanceLogs ?? this.maintenanceLogs,
+      maintenanceIntervals:
+          maintenanceIntervals ?? this.maintenanceIntervals,
+      rideFeedbacks: rideFeedbacks ?? this.rideFeedbacks,
+      recommendations: recommendations ?? this.recommendations,
       wishlistIds: wishlistIds ?? this.wishlistIds,
       bikePhotos: bikePhotos ?? this.bikePhotos,
       activeBikeId: activeBikeId ?? this.activeBikeId,
       savedRoutes: savedRoutes ?? this.savedRoutes,
       routeCollections: routeCollections ?? this.routeCollections,
+      preferredSport: preferredSport ?? this.preferredSport,
+      onboardingDone: onboardingDone ?? this.onboardingDone,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,
       updatedAt: updatedAt ?? this.updatedAt,
       payloadVersion: payloadVersion ?? this.payloadVersion,

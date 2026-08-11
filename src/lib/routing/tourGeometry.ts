@@ -7,6 +7,9 @@ import { computeRoute, type RouteResult } from "@/lib/routing/engine";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 import { getPublicTour, type PublicTour } from "@/lib/catalog/publicTours";
+import {
+  getTourGeometryOverride,
+} from "@/lib/catalog/tourGeometryOverrides";
 
 export type TourGeometryResult = RouteResult & {
   tourId: string;
@@ -96,6 +99,29 @@ export async function computeTourGeometry(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) {
     return { ...hit.result, cached: true };
+  }
+
+  // Redaktionelle Override-Geometrie (kuratierte Tracks)
+  const override = getTourGeometryOverride(tourId);
+  if (override?.coordinates && override.coordinates.length >= 2) {
+    const result: TourGeometryResult = {
+      tourId,
+      cached: false,
+      shape: override.shape ?? (tour.loop ? "loop" : "point_to_point"),
+      distanceM: override.distanceM ?? Math.round(tour.distanceKm * 1000),
+      durationS: override.durationS ?? Math.round(tour.durationMin * 60),
+      geometry: {
+        type: "LineString",
+        coordinates: override.coordinates,
+      },
+      engine: "editorial",
+      profile,
+      warnings: [
+        "Kuratierte Tour-Geometrie (redaktionell) — kein Live-Routing nötig.",
+      ],
+    };
+    cache.set(key, { at: Date.now(), result });
+    return result;
   }
 
   const { from, to, vias, shape } = waypointsForTour(tour);
