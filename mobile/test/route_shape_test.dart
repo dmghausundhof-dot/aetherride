@@ -65,6 +65,13 @@ void main() {
     expect(routeShapeOf(almost), RouteShape.loop);
   });
 
+  test('Trailhead-Lücke ~280 m noch Rundkurs (300 m Spec-Toleranz)', () {
+    final almost = _ring(radiusKm: 3.0);
+    // ~0.0035° lng ≈ 280–300 m near lat 48.
+    almost.last = [almost.first[0] + 0.0035, almost.first[1]];
+    expect(routeShapeOf(almost), RouteShape.loop);
+  });
+
   test('große Lücke ist keine Schleife mehr', () {
     final broken = _ring(radiusKm: 3.0);
     // Endpunkt ~5 km neben dem Start.

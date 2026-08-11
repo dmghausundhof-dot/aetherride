@@ -449,7 +449,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   bool _matchTourDuration = true;
   String? _surfaceFilter;
   String? _scaleFilter; // S0 / S1 / S2+
-  bool? _loopOnly;
+  /// Primary Lens ~60 = Rundkurse (D-60). User can turn off via chip.
+  bool? _loopOnly = true;
   int? _minElevationM;
   bool _heatmapConsent = false;
   bool _heatmapContributed = false;
@@ -539,6 +540,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Sport-aware Dauer-Default (Touring → 2–3 h, sonst ~60).
           _minutes = DurationLens.defaultMinutesForSport(sportCat);
           _matchTourDuration = _minutes > 0;
+          if (_minutes == 60) _loopOnly = true;
         });
       } else {
         final preferred = ref.read(userProfileStoreProvider).preferredSport;
@@ -547,6 +549,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             _profile = routingProfileForBike(preferred);
             _minutes = DurationLens.defaultMinutesForSport(preferred);
             _matchTourDuration = _minutes > 0;
+            if (_minutes == 60) _loopOnly = true;
           });
         }
       }
@@ -557,6 +560,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         setState(() {
           _minutes = pendingLens;
           _matchTourDuration = pendingLens > 0;
+          if (pendingLens == 60) _loopOnly = true;
         });
       }
       final pendingLoop = ref.read(discoverPendingLoopIdProvider);
@@ -1891,8 +1895,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return b.matchScore.compareTo(a.matchScore);
   }
 
-  /// Ehrlich: Geometrie schlägt Hint. Seed `is_loop` nur ohne P2P-Track.
+  /// Loop honesty (D-60-02 / Latte #3).
+  /// - Curated seeds: explicit `is_loop` / hint wins (never empty from
+  ///   synthetic-geometry false negatives; never promote linear seeds).
+  /// - Live/catalog: geometry wins when known; else honest hint.
   bool _isLoop(_RouteSuggestion r) {
+    if (r.isSeed) {
+      return r.isLoopHint == true;
+    }
     final shape = routeShapeOf(r.trackLngLat);
     if (shape == RouteShape.loop) return true;
     if (shape == RouteShape.pointToPoint) return false;
@@ -3938,6 +3948,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           onSelected: (_) => update(() {
                             _minutes = p.minutes;
                             _matchTourDuration = p.minutes > 0;
+                            // ~60 primary lens = Rundkurse (not A→B fillers).
+                            if (p.minutes == 60) _loopOnly = true;
                           }),
                         ),
                       Tooltip(
@@ -3992,8 +4004,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     group('Form', [
                       Tooltip(
                         message:
-                            'Nur Touren mit Track, deren Start und Ziel '
-                            'zusammenfallen',
+                            'Nur ehrliche Rundkurse (Seed is_loop oder '
+                            'Start≈Ziel ≤300 m). Keine A→B-Füllung.',
                         child: FilterChip(
                           label: const Text('Nur Rundkurse'),
                           selected: _loopOnly == true,
@@ -4094,6 +4106,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _minutes = m;
           // „egal“ schaltet Dauer-Filter aus; Presets schalten ihn an.
           _matchTourDuration = m > 0;
+          // ~60 primary lens = Rundkurse (Latte #3 / D-60).
+          if (m == 60) _loopOnly = true;
         });
         unawaited(_refreshQuick(limit: 3));
       },

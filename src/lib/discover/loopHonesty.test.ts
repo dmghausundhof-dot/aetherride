@@ -54,6 +54,17 @@ assert(
   "P2P geometry never passes even with lying flag"
 );
 
+// ~280 m trailhead gap still closed under 300 m Spec tolerance
+const almostClosed: [number, number][] = closed.map((p) => [...p] as [number, number]);
+almostClosed[almostClosed.length - 1] = [
+  almostClosed[0][0] + 0.0035,
+  almostClosed[0][1],
+];
+assert(
+  trackIsClosedLoop(almostClosed) === true,
+  "~280 m gap still counts as loop"
+);
+
 // --- Flag-only (no track) — seed path ---
 assert(
   isHonestLoop({ loopFlag: true, trackLngLat: null }) === true,

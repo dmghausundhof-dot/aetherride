@@ -217,6 +217,8 @@ function DiscoverPageInner() {
   );
   const [filters, setFilters] = useState<RouteFilterState>(() => ({
     ...DEFAULT_ROUTE_FILTERS,
+    // Primary lens ~60 = Rundkurs honesty (parity with Flutter _loopOnly).
+    loopOnly: (queryMinutes ?? 60) === 60,
     sport:
       sportParam &&
       [
@@ -489,6 +491,14 @@ function DiscoverPageInner() {
     requestAnimationFrame(() => {
       addrInputRef.current?.focus();
     });
+  }, []);
+
+  /** ~60 primary lens keeps Rundkurs honesty on (Flutter parity). */
+  const setMinutesLens = useCallback((m: number) => {
+    setMinutes(m);
+    if (m === 60) {
+      setFilters((f) => (f.loopOnly ? f : { ...f, loopOnly: true }));
+    }
   }, []);
 
   const applyDemoCity = useCallback(
@@ -1409,7 +1419,7 @@ function DiscoverPageInner() {
                 max={240}
                 step={15}
                 value={minutes}
-                onChange={(e) => setMinutes(Number(e.target.value))}
+                onChange={(e) => setMinutesLens(Number(e.target.value))}
                 className="w-24"
               />
               <span className="font-medium tabular-nums">{minutes} min</span>
@@ -1906,7 +1916,7 @@ function DiscoverPageInner() {
 
               <FilterChips
                 minutes={minutes}
-                onMinutes={setMinutes}
+                onMinutes={setMinutesLens}
                 filters={filters}
                 onChange={(next) => {
                   setFilters(next);

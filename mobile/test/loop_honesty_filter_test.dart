@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 bool isHonestLoop({
   required bool? isLoopHint,
   List<List<double>>? trackLngLat,
+  bool isSeed = false,
 }) {
+  // Curated seeds: explicit is_loop wins (never empty from geometry FN).
+  if (isSeed) return isLoopHint == true;
   final shape = routeShapeOf(trackLngLat);
   if (shape == RouteShape.loop) return true;
   if (shape == RouteShape.pointToPoint) return false;
@@ -15,6 +18,17 @@ bool isHonestLoop({
 
 void main() {
   test('linear seed excluded from loop filter; closed seed included', () {
+    expect(
+      isHonestLoop(isLoopHint: false, trackLngLat: null, isSeed: true),
+      isFalse,
+      reason: 'linear Spree-style seed excluded',
+    );
+    expect(
+      isHonestLoop(isLoopHint: true, trackLngLat: null, isSeed: true),
+      isTrue,
+      reason: 'curated is_loop seed included even without geometry',
+    );
+
     final linearTrack = <List<double>>[
       [13.4, 52.52],
       [13.42, 52.53],
@@ -22,14 +36,9 @@ void main() {
       [13.5, 52.55],
     ];
     expect(
-      isHonestLoop(isLoopHint: true, trackLngLat: linearTrack),
+      isHonestLoop(isLoopHint: true, trackLngLat: linearTrack, isSeed: false),
       isFalse,
-      reason: 'P2P geometry never passes even with lying hint',
-    );
-    expect(
-      isHonestLoop(isLoopHint: false, trackLngLat: null),
-      isFalse,
-      reason: 'linear Spree-style seed without track excluded',
+      reason: 'live/catalog P2P geometry never passes even with lying hint',
     );
 
     final closed = syntheticLoopLngLat(
@@ -38,19 +47,31 @@ void main() {
       distanceKm: 12,
     );
     expect(
-      isHonestLoop(isLoopHint: true, trackLngLat: closed),
+      isHonestLoop(isLoopHint: true, trackLngLat: closed, isSeed: true),
       isTrue,
       reason: 'closed seed included',
     );
     expect(
-      isHonestLoop(isLoopHint: false, trackLngLat: closed),
+      isHonestLoop(isLoopHint: false, trackLngLat: closed, isSeed: false),
       isTrue,
-      reason: 'geometry confirms loop even without hint',
+      reason: 'live geometry confirms loop even without hint',
     );
-    expect(
-      isHonestLoop(isLoopHint: true, trackLngLat: null),
-      isTrue,
-      reason: 'seed is_loop without track still honest for curated loops',
-    );
+  });
+
+  test('legacy loop flag alias parses as isLoop', () {
+    final route = NaeheSeedRoute.fromJson({
+      'id': 'seed-loop-alias',
+      'type': 'route',
+      'title': 'Alias Loop',
+      'distance_km': 16,
+      'ascent_m': 40,
+      'duration_min': 55,
+      'effort_label': 'Leicht',
+      'sport_tags': ['city'],
+      'center': {'lat': 49.4, 'lng': 8.6},
+      'loop': true, // RN premium/base schema
+      'duration_band': '60',
+    });
+    expect(route.isLoop, isTrue);
   });
 }

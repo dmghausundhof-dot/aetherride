@@ -199,6 +199,41 @@ void main() {
     expect(spree.trackLngLat, isNull);
   });
 
+  test('legacy loop / closed aliases set isLoop', () {
+    final viaLoop = NaeheSeedRoute.fromJson({
+      'id': 'a',
+      'type': 'route',
+      'title': 'RN legacy',
+      'distance_km': 16,
+      'ascent_m': 40,
+      'duration_min': 55,
+      'center': {'lat': 49.4, 'lng': 8.6},
+      'loop': true,
+    });
+    final viaClosed = NaeheSeedRoute.fromJson({
+      'id': 'b',
+      'type': 'route',
+      'title': 'Closed alias',
+      'distance_km': 12,
+      'ascent_m': 20,
+      'duration_min': 50,
+      'center': {'lat': 52.5, 'lng': 13.4},
+      'closed': true,
+    });
+    final missing = NaeheSeedRoute.fromJson({
+      'id': 'c',
+      'type': 'route',
+      'title': 'No flag',
+      'distance_km': 18,
+      'ascent_m': 40,
+      'duration_min': 55,
+      'center': {'lat': 52.5, 'lng': 13.4},
+    });
+    expect(viaLoop.isLoop, isTrue);
+    expect(viaClosed.isLoop, isTrue);
+    expect(missing.isLoop, isFalse);
+  });
+
   /// Loop honesty (Test Latte #3): Rundkurs / ~60 lens never includes linear.
   test('loops getter excludes linear; closed seeds included', () {
     final berlin = NaeheSeedsBundle.parse(berlinRaw);

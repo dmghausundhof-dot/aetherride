@@ -38,12 +38,12 @@ function haversineM(
 }
 
 /**
- * Geometry closure: start≈end within [maxGapM] (default 250 m ≈ 150–300 m band).
+ * Geometry closure: start≈end within [maxGapM] (default 300 m = upper 150–300 m band).
  * Returns null when track is too short for a reliable call.
  */
 export function trackIsClosedLoop(
   coords: [number, number][] | null | undefined,
-  maxGapM = 250
+  maxGapM = 300
 ): boolean | null {
   if (!coords || coords.length < 4) return null;
   let lengthM = 0;

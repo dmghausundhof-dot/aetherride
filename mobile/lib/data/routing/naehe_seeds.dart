@@ -202,7 +202,10 @@ class NaeheSeedRoute {
       sportTags: tags,
       centerLat: lat,
       centerLng: lng,
-      isLoop: m['is_loop'] == true,
+      // Nähe uses is_loop; legacy/premium packs use loop / closed.
+      isLoop: m['is_loop'] == true ||
+          m['loop'] == true ||
+          m['closed'] == true,
       durationBand: m['duration_band'] as String?,
       poiStops: pois,
       surfaceMix: mix,
