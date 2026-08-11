@@ -201,14 +201,14 @@ function GaragePageInner() {
           <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
             Katalog mit OEM-Teilen, schnelle Basis für Road/City, oder
-            Platzhalter. GPX und Touren unter Explore/Planner — kein Auto-Demo-Bike.
+            Platzhalter. GPX und Touren unter Touren/Planen — kein Auto-Demo-Bike.
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {(
               [
                 ["catalog", "Katalog", "Modell wählen, Slots vorgefüllt"],
                 ["basic", "Basis", "Ideal für Road, City, Trekking"],
-                ["import", "Platzhalter", "Ohne Teile — Track via Explore"],
+                ["import", "Platzhalter", "Ohne Teile — Track via Touren"],
               ] as const
             ).map(([mode, title, desc]) => (
               <button

@@ -74,7 +74,7 @@ export default async function TourPage({ params }: Props) {
             <div className="flex flex-col justify-center px-4 py-10 sm:px-6 lg:py-14">
               <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
                 <Link href="/discover" className="hover:text-accent">
-                  Explore
+                  Touren
                 </Link>
                 <span>/</span>
                 {region && (
@@ -151,7 +151,7 @@ export default async function TourPage({ params }: Props) {
               <h2 className="text-sm font-semibold">Ehrlicher Hinweis</h2>
               <p className="mt-2 text-xs leading-relaxed text-text-secondary">
                 Das ist eine redaktionelle Tour-Idee, kein Community-Track mit
-                vermessener GPS-Linie. Im Planner oder Explore wird die Route mit
+                vermessener GPS-Linie. Unter Planen oder Touren wird die Route mit
                 dem gewählten Sport-Profil berechnet. Navigation und Offline nur
                 in der nativen App. Reviews sind moderiert und enthalten keine
                 Tracks.
