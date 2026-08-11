@@ -1,4 +1,5 @@
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import { LandingHero } from "@/components/landing/LandingHero";
 import { ServiceCheckSection } from "@/components/landing/ServiceCheckSection";
 import Link from "next/link";
 import {
@@ -91,44 +92,7 @@ const steps = [
 export default function LandingPage() {
   return (
     <>
-      {/* Hero */}
-      <section className="relative flex min-h-[78vh] items-center justify-center px-4 py-16">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background to-background" />
-        <div className="relative z-10 mx-auto max-w-4xl text-center">
-          <p className="mb-4 text-sm font-medium uppercase tracking-wider text-accent">
-            Für alle Fahrradfahrer
-          </p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Touren planen.
-            <br />
-            <span className="text-accent">Bike verstehen.</span>
-            <br />
-            Besser fahren.
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-text-secondary sm:text-xl">
-            AetherRide verbindet Discover, Multi-Bike-Garage und Setup — für
-            Rennrad, Gravel, MTB, E-Bike und City. Navigation und Sensoren laufen
-            in der nativen App.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/discover"
-              className="inline-flex h-14 items-center justify-center rounded-xl bg-accent px-8 text-base font-semibold text-white transition hover:bg-accent-hover"
-            >
-              Touren entdecken
-            </Link>
-            <Link
-              href="/download"
-              className="inline-flex h-14 items-center justify-center rounded-xl border border-border bg-surface px-8 text-base font-semibold text-foreground transition hover:bg-surface-elevated"
-            >
-              App laden
-            </Link>
-          </div>
-          <p className="mt-6 text-sm text-text-secondary">
-            Website = Planung & Garage · App = Navigation & Sensoren
-          </p>
-        </div>
-      </section>
+      <LandingHero />
 
       {/* Sport picker */}
       <section className="border-t border-border bg-surface py-16 px-4">

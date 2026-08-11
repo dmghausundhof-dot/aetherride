@@ -20,9 +20,12 @@ export function LandingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-bold text-foreground">
+    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/55 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:h-16 sm:px-8 lg:px-10">
+        <Link
+          href="/"
+          className="text-[0.95rem] font-semibold tracking-tight text-foreground sm:text-base"
+        >
           Aether<span className="text-accent">Ride</span>
         </Link>
 
