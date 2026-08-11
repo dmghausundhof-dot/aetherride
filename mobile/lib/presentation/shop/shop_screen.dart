@@ -25,7 +25,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   List<ShopProduct> _products = [];
   bool _loading = true;
   String? _error;
-  String _source = 'seed';
   String _slot = 'all';
   String? _filterBikeId;
   String _fit = 'all';
