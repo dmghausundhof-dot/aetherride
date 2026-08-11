@@ -121,6 +121,43 @@ String cueBannerText(NavCue cue, int remainingM) {
   return 'In $remainingM m ${cue.instruction.toLowerCase()}';
 }
 
+/// Distanz-Zeile für großes Nav-Banner (Zahl + Einheit getrennt).
+({String distance, String instruction}) cueBannerParts(
+  NavCue cue,
+  int remainingM,
+) {
+  if (cue.instruction == 'Ziel erreicht' ||
+      cue.instruction.toLowerCase().contains('ziel')) {
+    return (distance: '✓', instruction: 'Ziel erreicht');
+  }
+  if (remainingM >= 1000) {
+    return (
+      distance: '${(remainingM / 1000).toStringAsFixed(1)} km',
+      instruction: cue.instruction,
+    );
+  }
+  return (distance: '$remainingM m', instruction: cue.instruction);
+}
+
+/// Material-Icons-Name (String) für HUD — UI mappt auf Icons.
+String navTurnIconName(String instruction) {
+  final t = instruction.toLowerCase();
+  if (t.contains('ziel') || t.contains('angekommen')) return 'flag';
+  if (t.contains('scharf links')) return 'turn_sharp_left';
+  if (t.contains('scharf rechts')) return 'turn_sharp_right';
+  if (t.contains('leicht links') || t.contains('halb links')) {
+    return 'turn_slight_left';
+  }
+  if (t.contains('leicht rechts') || t.contains('halb rechts')) {
+    return 'turn_slight_right';
+  }
+  if (t.contains('links')) return 'turn_left';
+  if (t.contains('rechts')) return 'turn_right';
+  if (t.contains('gerade') || t.contains('weiter')) return 'straight';
+  if (t.contains('wenden') || t.contains('kehre')) return 'u_turn_left';
+  return 'navigation';
+}
+
 /// Bearing-Heuristik → RouteSteps (Offline / Online ohne Manöver-Liste).
 /// [coordinates] als GeoPoint (lat/lng); intern [lng,lat] für [buildNavCues].
 List<({String id, String instruction, double distanceAlongM})>

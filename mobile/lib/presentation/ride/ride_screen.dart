@@ -814,10 +814,25 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       List<NavStep> approachSteps = const [];
       var approachDistM = 0.0;
       if (prog.crossTrackM > 25) {
+        // Rejoin-Profil: bevorzugter Sport / aktives Bike, nicht immer MTB.
+        final preferred =
+            ref.read(userProfileStoreProvider).preferredSport;
+        final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+        Bike? active;
+        for (final b in bikes) {
+          if (b.isActive) {
+            active = b;
+            break;
+          }
+        }
+        active ??= bikes.isEmpty ? null : bikes.first;
+        final rejoinProfile = routingProfileForBike(
+          active?.category ?? preferred ?? BikeCategory.mtbAm,
+        );
         final result = await ref.read(routeRepositoryProvider).planRoute(
               from: GeoPoint(lastFix.lat, lastFix.lng),
               to: GeoPoint(rejoinPt[1], rejoinPt[0]),
-              profile: RoutingProfile.mtbTrail,
+              profile: rejoinProfile,
             );
         approach = result.coordinates.map((p) => [p.lng, p.lat]).toList();
         approachDistM = result.distanceM;
@@ -1277,29 +1292,50 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     required int elapsed,
     required double distanceM,
   }) {
-    String? navBanner;
+    ({String distance, String instruction, String iconName})? navParts;
     if (route != null && route.coordinates.length >= 4) {
       if (route.steps.isNotEmpty) {
         final nxt = nextRouteStep(route.steps, _alongRouteM);
         if (nxt != null) {
-          navBanner = cueBannerText(
-            NavCue(
-              id: nxt.step.id,
-              distanceAlongM: nxt.step.distanceAlongM,
-              instruction: nxt.step.instruction,
-              bearingDeg: 0,
-            ),
-            nxt.remainingM.round(),
+          final cue = NavCue(
+            id: nxt.step.id,
+            distanceAlongM: nxt.step.distanceAlongM,
+            instruction: nxt.step.instruction,
+            bearingDeg: 0,
+          );
+          final parts = cueBannerParts(cue, nxt.remainingM.round());
+          navParts = (
+            distance: parts.distance,
+            instruction: parts.instruction,
+            iconName: navTurnIconName(nxt.step.instruction),
           );
         }
       } else {
         final cues = buildNavCues(route.coordinates);
         final nxt = nextCue(cues, _alongRouteM);
         if (nxt != null) {
-          navBanner = cueBannerText(nxt.cue, nxt.remainingM);
+          final parts = cueBannerParts(nxt.cue, nxt.remainingM);
+          navParts = (
+            distance: parts.distance,
+            instruction: parts.instruction,
+            iconName: navTurnIconName(nxt.cue.instruction),
+          );
         }
       }
     }
+
+    IconData turnIcon(String name) => switch (name) {
+          'flag' => Icons.flag,
+          'turn_left' => Icons.turn_left,
+          'turn_right' => Icons.turn_right,
+          'turn_sharp_left' => Icons.turn_sharp_left,
+          'turn_sharp_right' => Icons.turn_sharp_right,
+          'turn_slight_left' => Icons.turn_slight_left,
+          'turn_slight_right' => Icons.turn_slight_right,
+          'straight' => Icons.straight,
+          'u_turn_left' => Icons.u_turn_left,
+          _ => Icons.navigation,
+        };
 
     return Stack(
       children: [
@@ -1353,24 +1389,50 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (navBanner != null)
+                if (navParts != null)
                   Material(
-                    elevation: 2,
+                    elevation: 4,
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     color: AppColors.accent,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.l,
-                        vertical: AppSpacing.l,
+                        vertical: AppSpacing.m,
                       ),
-                      child: Text(
-                        navBanner,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 22,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            turnIcon(navParts.iconName),
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                          const SizedBox(width: AppSpacing.m),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  navParts.distance,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 28,
+                                    color: Colors.white,
+                                    height: 1.05,
+                                  ),
+                                ),
+                                Text(
+                                  navParts.instruction,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                    height: 1.15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )
@@ -1555,10 +1617,12 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
     if (_offRouteBanner != null) {
       return _statusBanner(
-        text: _offRouteBanner!,
+        text: _autoRerouteEnabled
+            ? 'Route verlassen — neu berechnen…'
+            : 'Route verlassen — tippe „Zurück auf Route“',
         background: Colors.orange.shade100,
         foreground: Colors.orange.shade900,
-        actionLabel: 'Zurück',
+        actionLabel: 'Zurück auf Route',
         onAction: () {
           _bumpIdle();
           unawaited(_rejoinRoute());

@@ -31,6 +31,7 @@ import '../../domain/bike.dart';
 import '../../domain/routing/heatmap.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/routing_status_client.dart';
+import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/route_shape.dart';
 import '../../domain/routing/trail_difficulty.dart';
 import '../../domain/routing/trail_view.dart';
@@ -1423,16 +1424,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _userPos = p;
         _start = p;
         _startAddrCtrl.text = 'Meine Position';
-        _status =
-            'Position ${p.lat.toStringAsFixed(4)}, ${p.lng.toStringAsFixed(4)}';
+        _status = 'Standort bereit · In der Nähe wird geladen…';
       });
       unawaited(_fetchOutdooractive());
       unawaited(_fetchOsmRoutes());
       unawaited(_fetchTrailNetwork());
       unawaited(_fetchTrailforks());
-      // Kamera-Recenter + Quick-Refresh laufen zentral über _syncOriginDrift()
-      // (in build() nach jedem Rebuild geprüft) — nicht hier duplizieren,
-      // sonst laufen zwei Quick-Fetches parallel.
+      unawaited(_fetchCommunityHeatmap());
+      // Explizit Near-me nach frischem GPS — Drift-Sync kann verzögern.
+      unawaited(_refreshQuick(limit: 3));
+      try {
+        await _map?.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
+        );
+      } catch (_) {}
     } catch (e) {
       if (mounted) {
         setState(
@@ -2490,6 +2495,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         await _computeIdeaRoute(suggestion);
         return;
       }
+      final coords = routed.points.map((p) => [p.lng, p.lat]).toList();
+      final navSteps = navStepsFromPolyline(
+        routed.points.map((p) => (lat: p.lat, lng: p.lng)).toList(),
+      );
       ref.read(activeRouteProvider.notifier).state = ActiveRoute(
         id: suggestion.id,
         name: suggestion.name,
@@ -2497,7 +2506,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         elevationM: suggestion.elevationM.toDouble(),
         durationMin: suggestion.durationMin,
         mtbScale: suggestion.mtbScale,
-        coordinates: routed.points.map((p) => [p.lng, p.lat]).toList(),
+        coordinates: coords,
+        steps: [
+          for (final st in navSteps)
+            NavStep(
+              id: st.id,
+              instruction: st.instruction,
+              distanceAlongM: st.distanceAlongM,
+            ),
+        ],
       );
       ref.read(shellTabIndexProvider.notifier).state = 2;
       return;
@@ -4155,13 +4172,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _sectionTitle(
         'In deiner Nähe · ${_profile.label}',
         hint: _hasRealOrigin
-            ? 'Vorschläge für ~$_minutes min · Profil ${_profile.label}'
+            ? 'Vorschläge für ~$_minutes min · Profil ${_profile.label} · Tippen = Karte, Los = Navigation'
             : 'Standort erlauben für Touren ab hier (alle Disziplinen)',
         trailing: TextButton(
           onPressed: _loading ? null : () => unawaited(_refreshQuick(limit: 3)),
           child: const Text('Neu'),
         ),
       ),
+      if (!_hasRealOrigin)
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+          child: OutlinedButton.icon(
+            onPressed: () => unawaited(_locate()),
+            icon: const Icon(Icons.my_location),
+            label: const Text('Standort für Near-me freigeben'),
+          ),
+        ),
       if (_quick.isEmpty)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s),
@@ -4181,46 +4207,82 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               color: _label == q.label ? AppColors.accent : Colors.transparent,
             ),
           ),
-          child: ListTile(
-            dense: true,
-            leading: const Icon(Icons.near_me, color: AppColors.accent),
-            title: Text(
-              q.label,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.only(left: 8, right: 4),
+                  leading:
+                      const Icon(Icons.near_me, color: AppColors.accent),
+                  title: Text(
+                    q.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${(q.result.distanceM / 1000).toStringAsFixed(1)} km · '
+                    '${(q.result.durationS / 60).round()} min · '
+                    '${q.result.engine == 'approx' ? 'Hin & zurück' : 'nur Hinweg'}'
+                    '\n${q.reason}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  isThreeLine: true,
+                  onTap: () async {
+                    setState(() {
+                      _computed = q.result;
+                      _label = q.label;
+                      _selectedTourId = null;
+                    });
+                    await _drawRoute(q.result);
+                  },
+                ),
+                Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () async {
+                        setState(() {
+                          _computed = q.result;
+                          _label = q.label;
+                        });
+                        await _drawRoute(q.result);
+                        if (!mounted) return;
+                        _openPlan(status: 'Vorschlag anpassen: ${q.label}');
+                      },
+                      icon: const Icon(Icons.tune, size: 16),
+                      label: const Text('Anpassen'),
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () async {
+                        setState(() {
+                          _computed = q.result;
+                          _label = q.label;
+                          _selectedTourId = null;
+                        });
+                        await _drawRoute(q.result);
+                        if (!mounted) return;
+                        await _startRide();
+                      },
+                      icon: const Icon(Icons.play_arrow, size: 18),
+                      label: const Text(MultiSportCopy.goRide),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            subtitle: Text(
-              '${(q.result.distanceM / 1000).toStringAsFixed(1)} km · '
-              '${(q.result.durationS / 60).round()} min · '
-              // Nur die Offline-Näherung fährt wirklich zurück
-              // ([approximateOutAndBack] hängt den Rückweg an). Live-Routing
-              // liefert den Hinweg zum Ziel — das gehört so benannt.
-              '${q.result.engine == 'approx' ? 'Hin & zurück' : 'nur Hinweg'}'
-              '\n${q.reason}',
-              style: const TextStyle(fontSize: 11, color: AppColors.muted),
-            ),
-            isThreeLine: true,
-            trailing: IconButton(
-              tooltip: 'Route anpassen',
-              icon: const Icon(Icons.tune, size: 20),
-              onPressed: () async {
-                setState(() {
-                  _computed = q.result;
-                  _label = q.label;
-                  _selectedTourId = null;
-                });
-                await _drawRoute(q.result);
-                if (!mounted) return;
-                _openPlan(status: 'Vorschlag anpassen: ${q.label}');
-              },
-            ),
-            onTap: () async {
-              setState(() {
-                _computed = q.result;
-                _label = q.label;
-                _selectedTourId = null;
-              });
-              await _drawRoute(q.result);
-            },
           ),
         ),
     ];

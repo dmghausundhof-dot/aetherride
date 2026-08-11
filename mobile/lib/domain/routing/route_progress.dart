@@ -94,10 +94,11 @@ RouteProgress projectOntoRoute({
 }
 
 /// Off-Route mit Hysterese: enter ≥ [enterM], clear ≤ [clearM].
+/// Default 35 m enter — etwas früher merken auf technischen Trails/City.
 bool updateOffRouteState({
   required bool currentlyOff,
   required double crossTrackM,
-  double enterM = 40,
+  double enterM = 35,
   double clearM = 25,
 }) {
   if (currentlyOff) {

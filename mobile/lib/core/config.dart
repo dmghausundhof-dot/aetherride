@@ -64,10 +64,10 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
-  /// Off-Route → automatischer Rejoin (Cooldown). Default aus (manueller Button bleibt).
+  /// Off-Route → automatischer Rejoin. Default an (im Ride-HUD abschaltbar).
   static const autoReroute = bool.fromEnvironment(
     'AETHER_AUTO_REROUTE',
-    defaultValue: false,
+    defaultValue: true,
   );
 
   /// Mindestabstand zwischen Auto-Reroutes (Sekunden).
