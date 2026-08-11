@@ -19,6 +19,7 @@ import {
   SHOPIFY_STORE_BASE,
   getFeaturedShopifyProducts,
   getShopProductByFocus,
+  isProductAffiliateUrl,
   productMatchesSport,
   shopCollectionHref,
   shopSportFromBikeCategory,
@@ -288,8 +289,10 @@ function ShopPageInner() {
         <div>
           <h1 className="text-2xl font-bold">Shop</h1>
           <p className="text-sm text-text-secondary">
-            Featured Bikes im AetherRide Shopify-Shop · Ersatzteile im
-            Beispielkatalog
+            Featured Bikes im AetherRide Shopify-Shop ·{" "}
+            <Link href="/shop/parts" className="text-accent">
+              Ersatzteile
+            </Link>
           </p>
         </div>
         <Link
@@ -366,23 +369,22 @@ function ShopPageInner() {
         </div>
       </section>
 
-      {collectionUrl ? (
+      {collectionUrl || sportQuery === "parts" ? (
         <div className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
           <p className="font-medium text-primary">
-            Collection für „{sportQuery}“
+            {sportQuery === "parts"
+              ? "Ersatzteile · featured-parts"
+              : `Collection für „${sportQuery}“`}
           </p>
           <p className="mt-1 text-xs text-text-secondary">
-            Passende Bikes direkt in der Shopify-Collection ansehen (Storefront
-            ggf. passwortgeschützt).
+            In-App stöbern — externe Storefront-Homepages entfallen.
           </p>
-          <a
-            href={collectionUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/shop/parts"
             className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white"
           >
-            Collection öffnen <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+            Ersatzteile öffnen
+          </Link>
         </div>
       ) : null}
 
@@ -434,15 +436,20 @@ function ShopPageInner() {
                   </div>
                 </div>
               </div>
-              <a
-                href={p.affiliateUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
-              >
-                Beim Partner ansehen{" "}
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
+              {isProductAffiliateUrl(p.affiliateUrl) ? (
+                <a
+                  href={p.affiliateUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+                >
+                  Zum Produkt <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <p className="mt-3 rounded-xl border border-dashed border-border px-3 py-2 text-center text-xs text-text-secondary">
+                  Kein Produkt-Link (Händler-Homepage entfernt)
+                </p>
+              )}
             </div>
           ))}
         </section>
@@ -601,14 +608,20 @@ function ShopPageInner() {
                   >
                     Merken
                   </button>
-                  <a
-                    href={p.affiliateUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
-                  >
-                    Zum Händler <ExternalLink className="h-4 w-4" />
-                  </a>
+                  {isProductAffiliateUrl(p.affiliateUrl) ? (
+                    <a
+                      href={p.affiliateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+                    >
+                      Zum Produkt <ExternalLink className="h-4 w-4" />
+                    </a>
+                  ) : (
+                    <span className="flex flex-[2] items-center justify-center rounded-xl border border-dashed border-border px-2 text-center text-xs text-text-secondary">
+                      Produkt-URL folgt
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -620,8 +633,11 @@ function ShopPageInner() {
       ) : null}
 
       <p className="text-center text-xs text-text-secondary">
-        Featured-Bikes: Checkout auf Shopify (ggf. Store-Passwort) · Teile:
-        Beispielkatalog ·{" "}
+        Featured-Bikes: Checkout auf Shopify ·{" "}
+        <Link href="/shop/parts" className="text-accent">
+          /shop/parts
+        </Link>{" "}
+        ·{" "}
         <Link href="/checkout" className="text-accent">
           Merkliste öffnen
         </Link>

@@ -66,6 +66,22 @@ export function shopifyProductUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/products/${handle}`;
 }
 
+/** True only for concrete product deep-links — not dealer/brand homepages. */
+export function isProductAffiliateUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  try {
+    const pathname = new URL(url).pathname;
+    return /\/products\/[^/]+/i.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+/** Ersatzteile / Verschleiß (ohne Kompletträder) — Phase A Katalog. */
+export function getFeaturedPartsProducts(): ShopProduct[] {
+  return SHOP_PRODUCTS.filter((p) => p.slot !== "frame");
+}
+
 export function shopifyCollectionUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/collections/${handle}`;
 }
@@ -76,6 +92,7 @@ export const SHOPIFY_COLLECTIONS: Record<string, string> = {
   city: "featured-light-e-city",
   "light-e": "featured-light-e-city",
   urban: "featured-light-e-city",
+  parts: "featured-parts",
 };
 
 export function shopCollectionHref(sport: string): string | undefined {
