@@ -32,8 +32,13 @@ import {
 } from "@/lib/routing/profiles";
 import {
   DEMO_ROUTING_NOTICE,
+  showRoutingDebugUi,
   type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
+import {
+  formatDistanceElevation,
+  sanitizeElevationM,
+} from "@/lib/discover/elevationGuard";
 import {
   activeRouteFromEngine,
   activeRouteFromSuggestion,
@@ -87,12 +92,18 @@ import { ElevationChart } from "@/components/discover/ElevationChart";
 import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 import {
   BERLIN_DEFAULT_CENTER,
+  DEMO_CITY_CHIPS,
   berlinLoopSuggestions,
+  berlinSixtyMinLoopSuggestions,
 } from "@/lib/discover/berlinLoops";
 
 type SheetMode = "quick" | "plan" | "tours";
 
 const FALLBACK_CENTER: [number, number] = [8.2, 48.0];
+/** Abort stuck „Berechne…“ so Quick always recovers to seeds + retry. */
+const QUICK_TIMEOUT_MS = 5000;
+/** Seeds beyond this are „not useful nearby“ → show Demo-Stadt chips. */
+const USEFUL_LOOP_RADIUS_KM = 50;
 
 function suggestionToTour(r: RouteSuggestion): BaseTour {
   return {
@@ -177,12 +188,18 @@ function DiscoverPageInner() {
   const addRouteToCollection = useAppStore((s) => s.addRouteToCollection);
   const [collectionName, setCollectionName] = useState("");
   const gpxInputRef = useRef<HTMLInputElement | null>(null);
+  const addrInputRef = useRef<HTMLInputElement | null>(null);
   const [addrQuery, setAddrQuery] = useState("");
   const [addrTarget, setAddrTarget] = useState<"start" | "end">("start");
   const [addrHits, setAddrHits] = useState<
     { label: string; lat: number; lng: number }[]
   >([]);
   const [addrBusy, setAddrBusy] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<string>(
+    queryCenter
+      ? "Standort: Deep-Link"
+      : "Standort wird ermittelt… — oder Ort tippen"
+  );
 
   const rangePro = canUseProFeature("range");
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
@@ -234,9 +251,11 @@ function DiscoverPageInner() {
   const [routingMsg, setRoutingMsg] = useState<string | null>(null);
   const [quickOptions, setQuickOptions] = useState<QuickOption[]>([]);
   const [quickBusy, setQuickBusy] = useState(false);
+  const [quickTimedOut, setQuickTimedOut] = useState(false);
   const [quickRateLimited, setQuickRateLimited] = useState(false);
   const quickAbortRef = useRef<AbortController | null>(null);
   const quickDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewTour, setPreviewTour] = useState<BaseTour | null>(null);
   const [oaTours, setOaTours] = useState<OutdooractiveTour[]>([]);
   const [oaAttr, setOaAttr] = useState<string | null>(null);
@@ -248,9 +267,7 @@ function DiscoverPageInner() {
   );
   const [showTrails, setShowTrails] = useState(true);
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
-  const [routingNotice, setRoutingNotice] = useState<string | null>(
-    DEMO_ROUTING_NOTICE
-  );
+  const [routingNotice, setRoutingNotice] = useState<string | null>(null);
   const [communityHeat, setCommunityHeat] = useState<HeatmapResult | null>(
     null
   );
@@ -303,6 +320,18 @@ function DiscoverPageInner() {
   }, [activeBike, profile, calibration, boschLive, rangePro]);
 
   const origin = userPos ?? mapCenter;
+
+  const sixtyMinLoops = useMemo(
+    () => berlinSixtyMinLoopSuggestions(origin),
+    [origin]
+  );
+  const hasUsefulNearbyLoops = useMemo(
+    () =>
+      sixtyMinLoops.some(
+        (r) => (r.distanceFromOriginKm ?? 9999) <= USEFUL_LOOP_RADIUS_KM
+      ),
+    [sixtyMinLoops]
+  );
 
   const routes = useMemo(() => {
     const catalog = listAllRouteSuggestions({
@@ -433,6 +462,8 @@ function DiscoverPageInner() {
   }, [sportParam]);
 
   useEffect(() => {
+    // Q-BAR-DIS-01: demo / unverified routing chrome only when explicitly enabled.
+    if (!showRoutingDebugUi()) return;
     let cancelled = false;
     void fetch("/api/routing/status")
       .then((r) => r.json())
@@ -451,27 +482,73 @@ function DiscoverPageInner() {
     setDraft((d) => ({ ...d, profile: activeProfile }));
   }, [activeProfile]);
 
+  const focusPlanAddress = useCallback((status: string) => {
+    setRoutingMsg(status);
+    setLocationStatus(status);
+    setSheetMode("plan");
+    setAddrTarget("start");
+    requestAnimationFrame(() => {
+      addrInputRef.current?.focus();
+    });
+  }, []);
+
+  const applyDemoCity = useCallback(
+    (name: string, lat: number, lng: number) => {
+      const center: [number, number] = [lng, lat];
+      setUserPos(null);
+      setMapCenter(center);
+      setMinutes(60);
+      setDraft((d) => setStart(d, center, name));
+      setLocationStatus(`Demo-Region: ${name}`);
+      setRoutingMsg(`Demo-Region: ${name} · 60 min`);
+      setSheetMode("quick");
+      setQuickTimedOut(false);
+    },
+    []
+  );
+
   useEffect(() => {
     let cancelled = false;
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (cancelled) return;
-          const p: [number, number] = [
-            pos.coords.longitude,
-            pos.coords.latitude,
-          ];
-          setUserPos(p);
-          // Deep-Link lat/lng wins over auto GPS for initial map center.
-          if (!queryCenter) {
-            setMapCenter(p);
-            setDraft((d) => setStart(d, p, "Meine Position"));
-          }
-        },
-        () => undefined,
-        { timeout: 8000, maximumAge: 30 * 60 * 1000 }
-      );
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      const t = setTimeout(() => {
+        if (!cancelled && !queryCenter) {
+          setLocationStatus(
+            "Standort nicht verfügbar — Demo-Stadt oder Adresse"
+          );
+        }
+      }, 0);
+      return () => {
+        cancelled = true;
+        clearTimeout(t);
+      };
     }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        const p: [number, number] = [
+          pos.coords.longitude,
+          pos.coords.latitude,
+        ];
+        setUserPos(p);
+        // Deep-Link lat/lng wins over auto GPS for initial map center.
+        if (!queryCenter) {
+          setMapCenter(p);
+          setDraft((d) => setStart(d, p, "Meine Position"));
+          setLocationStatus("Standort: GPS");
+        } else {
+          setLocationStatus("Standort: Deep-Link (GPS verfügbar)");
+        }
+      },
+      () => {
+        if (cancelled) return;
+        if (!queryCenter) {
+          setLocationStatus(
+            "Standort verweigert — Demo-Stadt wählen oder Adresse suchen"
+          );
+        }
+      },
+      { timeout: 8000, maximumAge: 30 * 60 * 1000 }
+    );
     return () => {
       cancelled = true;
     };
@@ -518,10 +595,22 @@ function DiscoverPageInner() {
   const refreshQuick = useCallback(
     async (opts?: { force?: boolean; limit?: number }) => {
       quickAbortRef.current?.abort();
+      if (quickTimeoutRef.current) clearTimeout(quickTimeoutRef.current);
       const ac = new AbortController();
       quickAbortRef.current = ac;
       setQuickBusy(true);
+      setQuickTimedOut(false);
       setRoutingMsg(null);
+      let timedOut = false;
+      quickTimeoutRef.current = setTimeout(() => {
+        timedOut = true;
+        ac.abort();
+        setQuickBusy(false);
+        setQuickTimedOut(true);
+        setRoutingMsg(
+          "Berechnung zu langsam — ~60-Min Seeds unten, oder erneut versuchen."
+        );
+      }, QUICK_TIMEOUT_MS);
       try {
         const { options, rateLimited, fromCache } = await computeQuickOptions(
           origin,
@@ -534,12 +623,13 @@ function DiscoverPageInner() {
             allowApprox: true,
           }
         );
-        if (ac.signal.aborted) return;
+        if (timedOut || ac.signal.aborted) return;
         setQuickOptions(options);
         setQuickRateLimited(rateLimited);
         if (!options.length) {
+          setQuickTimedOut(true);
           setRoutingMsg(
-            "Keine Quick-Routen — Planer nutzen oder Filter prüfen."
+            "Keine Quick-Routen — Seeds unten oder Planer nutzen."
           );
         } else {
           if (rateLimited) {
@@ -560,8 +650,19 @@ function DiscoverPageInner() {
           }));
           setPreviewTour(null);
         }
+      } catch {
+        if (!timedOut) {
+          setQuickTimedOut(true);
+          setRoutingMsg(
+            "Quick-Routing fehlgeschlagen — Seeds unten, oder erneut versuchen."
+          );
+        }
       } finally {
-        if (!ac.signal.aborted) setQuickBusy(false);
+        if (quickTimeoutRef.current) {
+          clearTimeout(quickTimeoutRef.current);
+          quickTimeoutRef.current = null;
+        }
+        if (!timedOut) setQuickBusy(false);
       }
     },
     [origin, activeProfile, minutes]
@@ -1188,7 +1289,7 @@ function DiscoverPageInner() {
       <aside className="order-2 flex min-h-0 flex-col border-t border-border bg-background lg:order-1 lg:w-[min(26rem,40vw)] lg:shrink-0 lg:border-r lg:border-t-0">
         {/* Dach */}
         <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-4 lg:pt-5">
-          {routingNotice && (
+          {showRoutingDebugUi() && routingNotice && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
               {routingNotice}
             </p>
@@ -1221,19 +1322,20 @@ function DiscoverPageInner() {
                   if (userPos) {
                     setMapCenter(userPos);
                     setDraft((d) => setStart(d, userPos, "Meine Position"));
-                    setRoutingMsg(null);
+                    setLocationStatus("Standort: GPS");
+                    setRoutingMsg("Standort: GPS — Karte zentriert");
                     return;
                   }
                   if (
                     typeof navigator === "undefined" ||
                     !navigator.geolocation
                   ) {
-                    setRoutingMsg(
-                      "Standort nicht verfügbar — unter Planen eine Adresse suchen."
+                    focusPlanAddress(
+                      "Standort nicht verfügbar — Adresse suchen oder Demo-Stadt wählen"
                     );
-                    setSheetMode("plan");
                     return;
                   }
+                  setLocationStatus("Standort wird ermittelt…");
                   setRoutingMsg("Standort wird ermittelt…");
                   navigator.geolocation.getCurrentPosition(
                     (pos) => {
@@ -1244,24 +1346,33 @@ function DiscoverPageInner() {
                       setUserPos(p);
                       setMapCenter(p);
                       setDraft((d) => setStart(d, p, "Meine Position"));
-                      setRoutingMsg(null);
+                      setLocationStatus("Standort: GPS");
+                      setRoutingMsg("Standort: GPS");
                     },
                     () => {
-                      setRoutingMsg(
-                        "Standort verweigert — unter Planen eine Adresse suchen."
+                      focusPlanAddress(
+                        "Standort verweigert — Adresse suchen oder Demo-Stadt wählen"
                       );
-                      setSheetMode("plan");
                     },
                     { timeout: 8000, maximumAge: 30 * 60 * 1000 }
                   );
                 }}
                 className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
+                aria-describedby="discover-location-status"
               >
                 <Crosshair className="h-3.5 w-3.5" />
                 {userPos ? "Hier" : "Ort…"}
               </button>
             </div>
           </div>
+          <p
+            id="discover-location-status"
+            className="text-[11px] text-text-secondary"
+            role="status"
+            aria-live="polite"
+          >
+            {locationStatus}
+          </p>
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-1 text-[11px]">
               <span className="text-text-secondary">Zeit</span>
@@ -1367,54 +1478,85 @@ function DiscoverPageInner() {
                 Vorschläge · {minutes} min · {ROUTING_PROFILES[activeProfile].label}
               </p>
               {quickBusy && (
-                <p className="text-sm text-text-secondary">Berechne…</p>
+                <p className="text-sm text-text-secondary" role="status">
+                  Berechne…
+                </p>
               )}
-              {!quickBusy && quickOptions.length === 0 && (
+              {quickTimedOut && !quickBusy && (
+                <div className="rounded-xl border border-border bg-surface-elevated p-3 text-sm text-text-secondary">
+                  <p>
+                    Live-Vorschläge nicht rechtzeitig — Seeds bleiben sichtbar.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-2 text-xs font-semibold text-accent"
+                    onClick={() => void refreshQuick({ force: true, limit: 1 })}
+                  >
+                    Erneut versuchen
+                  </button>
+                </div>
+              )}
+              {!quickBusy && !quickTimedOut && quickOptions.length === 0 && (
                 <div className="rounded-xl border border-border p-4 text-center text-sm text-text-secondary">
-                  Keine Vorschläge — Standort erlauben, Sport-Chip wählen oder{" "}
+                  Keine Live-Vorschläge — Seeds unten, Standort erlauben oder{" "}
                   <button
                     type="button"
                     className="font-medium text-accent"
-                    onClick={() => setSheetMode("plan")}
+                    onClick={() =>
+                      focusPlanAddress("Adresse suchen — Start setzen")
+                    }
                   >
                     Planen öffnen
                   </button>
                 </div>
               )}
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {quickOptions.map((q) => (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => {
-                      setDraft((d) => ({
-                        ...setStart(
-                          { ...d, mode: "quick", profile: activeProfile },
-                          origin,
-                          "Hier"
-                        ),
-                        computed: q.result,
-                        label: q.label,
-                        baseTour: undefined,
-                      }));
-                      setPreviewTour(null);
-                    }}
-                    className={`min-w-[9.5rem] shrink-0 rounded-xl border p-3 text-left ${
-                      draft.label === q.label
-                        ? "border-accent bg-accent/10"
-                        : "border-border bg-surface"
-                    }`}
-                  >
-                    <div className="text-sm font-semibold">{q.label}</div>
-                    <div className="mt-1 text-[11px] text-text-secondary">
-                      {(q.result.distanceM / 1000).toFixed(1)} km ·{" "}
-                      {Math.round(q.result.durationS / 60)} min
-                    </div>
-                    <div className="mt-1 text-[10px] text-text-secondary">
-                      {q.reason}
-                    </div>
-                  </button>
-                ))}
+                {quickOptions.map((q) => {
+                  const distKm =
+                    Math.round((q.result.distanceM / 1000) * 10) / 10;
+                  // Demo/approx engines have no reliable ascent — hide hm.
+                  const ascent =
+                    q.result.engine === "approx" ||
+                    q.result.engine?.includes("demo")
+                      ? null
+                      : sanitizeElevationM(
+                          Math.round(q.result.distanceM * 0.02),
+                          distKm
+                        );
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => {
+                        setDraft((d) => ({
+                          ...setStart(
+                            { ...d, mode: "quick", profile: activeProfile },
+                            origin,
+                            "Hier"
+                          ),
+                          computed: q.result,
+                          label: q.label,
+                          baseTour: undefined,
+                        }));
+                        setPreviewTour(null);
+                      }}
+                      className={`min-w-[9.5rem] shrink-0 rounded-xl border p-3 text-left ${
+                        draft.label === q.label
+                          ? "border-accent bg-accent/10"
+                          : "border-border bg-surface"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold">{q.label}</div>
+                      <div className="mt-1 text-[11px] text-text-secondary">
+                        {formatDistanceElevation(distKm, ascent)} ·{" "}
+                        {Math.round(q.result.durationS / 60)} min
+                      </div>
+                      <div className="mt-1 text-[10px] text-text-secondary">
+                        {q.reason}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               <div className="flex gap-2">
                 <button
@@ -1446,6 +1588,90 @@ function DiscoverPageInner() {
                   sparsam.
                 </p>
               )}
+
+              {/* Always-on ~60 Min seeds — not gated by allowDemoContent / Tours tab */}
+              <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                ~60 Min Rundkurse
+              </h3>
+              <p className="text-[11px] text-text-secondary">
+                Tempelhofer & kuratierte Feierabend-Loops — unabhängig vom
+                Live-Routing.
+              </p>
+              <div className="flex flex-col gap-2">
+                {sixtyMinLoops.map((r) => (
+                  <div key={r.id} className="space-y-1.5">
+                    <RouteCard
+                      route={r}
+                      highlighted={
+                        highlightRouteId === r.id || previewTour?.id === r.id
+                      }
+                      saved={isRouteSaved(r.id)}
+                      onOpen={() => {
+                        previewBaseTour(suggestionToTour(r));
+                        openDetail(r.id);
+                      }}
+                      onStart={() => {
+                        previewBaseTour(suggestionToTour(r));
+                        void startWithSuggestion(r);
+                      }}
+                      onToggleSave={() => toggleSave(r)}
+                    />
+                    <div className="flex gap-2 px-1">
+                      <button
+                        type="button"
+                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                        onClick={() => previewBaseTour(suggestionToTour(r))}
+                      >
+                        Vorschau
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                        onClick={() =>
+                          adoptIntoPlanMode(suggestionToTour(r))
+                        }
+                      >
+                        In Planen
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {!hasUsefulNearbyLoops && (
+                <div className="mt-2 rounded-xl border border-border bg-surface-elevated p-3">
+                  <p className="text-xs font-semibold text-foreground">
+                    Noch keine ~60-Min-Touren hier.
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-text-secondary">
+                    Wähle eine Demo-Stadt oder änder den Ort.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-2 w-full rounded-lg bg-accent py-2 text-xs font-semibold text-white"
+                    onClick={() =>
+                      focusPlanAddress("Ort ändern — Stadt oder Adresse suchen")
+                    }
+                  >
+                    Ort ändern
+                  </button>
+                  <p className="mt-2 text-[11px] font-semibold text-text-secondary">
+                    Demo-Stadt
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {DEMO_CITY_CHIPS.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => applyDemoCity(c.name, c.lat, c.lng)}
+                        className="rounded-lg border border-border bg-surface px-2.5 py-1 text-[11px] font-medium"
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1466,6 +1692,7 @@ function DiscoverPageInner() {
                   <option value="end">Ziel</option>
                 </select>
                 <input
+                  ref={addrInputRef}
                   value={addrQuery}
                   onChange={(e) => setAddrQuery(e.target.value)}
                   onKeyDown={(e) => {

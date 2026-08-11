@@ -52,6 +52,7 @@ export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[
     (s) => s.type === "route" && s.duration_min != null
   );
   return seeds.map((s) => {
+    // Keep 0 when hidden — RouteCard re-sanitizes and omits absurd hm.
     const elevation = sanitizeElevationM(s.ascent_m, s.distance_km) ?? 0;
     const center: [number, number] | undefined = s.center
       ? [s.center.lng, s.center.lat]
@@ -86,10 +87,36 @@ export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[
       reasons: [
         loop ? "Rundkurs-Seed Berlin" : "Nähe-Peek Berlin",
         s.duration_band === "60" ? "~60 Min Feierabend-Lens" : "Kuratierte Region-Seed",
-        "Fallback wenn Katalog leer",
+        "Kuratierte ~60-Min Seeds (nicht Demo-gated)",
       ],
       center,
       distanceFromOriginKm,
     } satisfies RouteSuggestion;
   });
 }
+
+/** Feierabend ~60 Min (45–75) — Quick sheet always-on section. */
+export function berlinSixtyMinLoopSuggestions(
+  near?: [number, number]
+): RouteSuggestion[] {
+  return berlinLoopSuggestions(near)
+    .filter((r) => r.durationMin >= 45 && r.durationMin <= 75)
+    .sort((a, b) => {
+      // Prefer true loops (Tempelhofer …), then shorter distance from origin.
+      if (a.loop !== b.loop) return a.loop ? -1 : 1;
+      return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
+    });
+}
+
+/** Demo-Stadt chips for empty Ort / no useful nearby loops (web Quick). */
+export const DEMO_CITY_CHIPS: { name: string; lat: number; lng: number }[] = [
+  { name: "Berlin", lat: 52.52, lng: 13.405 },
+  { name: "München", lat: 48.183, lng: 11.61 },
+  { name: "Köln", lat: 50.941, lng: 6.958 },
+  { name: "Zürich", lat: 47.366, lng: 8.541 },
+  { name: "Wien", lat: 48.218, lng: 16.392 },
+  { name: "Innsbruck", lat: 47.286, lng: 11.399 },
+  { name: "Konstanz", lat: 47.677, lng: 9.174 },
+  { name: "Heidelberg", lat: 49.409, lng: 8.694 },
+  { name: "Mannheim", lat: 49.483, lng: 8.462 },
+];

@@ -1,6 +1,10 @@
 "use client";
 
 import type { ElevationProfile } from "@/lib/routing/elevationProfile";
+import {
+  formatDistanceElevation,
+  sanitizeElevationM,
+} from "@/lib/discover/elevationGuard";
 
 export function ElevationChart({ elev }: { elev: ElevationProfile }) {
   const elevs = elev.points
@@ -9,11 +13,18 @@ export function ElevationChart({ elev }: { elev: ElevationProfile }) {
   const minE = elevs.length ? Math.min(...elevs) - 20 : 700;
   const maxE = elevs.length ? Math.max(...elevs) + 20 : 1100;
   const span = Math.max(maxE - minE, 1);
+  const climbDisplay = sanitizeElevationM(
+    elev.totalClimbM,
+    elev.totalDistKm
+  );
 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-text-secondary">
-        {elev.totalDistKm.toFixed(1)} km · {elev.totalClimbM} hm
+        {formatDistanceElevation(
+          Math.round(elev.totalDistKm * 10) / 10,
+          climbDisplay
+        )}
         {elev.gapKm > 0
           ? ` · ${elev.gapKm.toFixed(1)} km ohne Höhendaten`
           : ""}
