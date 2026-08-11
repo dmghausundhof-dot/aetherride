@@ -4,6 +4,8 @@
  */
 import assert from "node:assert/strict";
 import {
+  FEATURED_BIKE_HANDLE_CANDIDATES,
+  FEATURED_PARTS_IN_APP_HREF,
   SHOP_PRODUCTS,
   SHOPIFY_FEATURED_BIKES,
   SHOPIFY_STORE_BASE,
@@ -19,14 +21,13 @@ import {
   shopifyProductUrl,
   wearKindToShopSlot,
 } from "./catalog";
+import { isDeepProductUrl, merchantCtaUrl } from "./merchantLinks";
 
 assert.ok(getShopProduct("sp-sram-xx-chain"), "Kette im Katalog");
 assert.ok(getShopProduct("sp-shimano-pad-demo"), "Beläge im Katalog");
 assert.ok(
-  SHOP_PRODUCTS.every(
-    (p) => p.visualHint && p.affiliateUrl && p.sports?.length
-  ),
-  "Jedes Produkt hat visualHint + Affiliate-URL + sports"
+  SHOP_PRODUCTS.every((p) => p.visualHint && p.sports?.length),
+  "Jedes Produkt hat visualHint + sports"
 );
 assert.equal(SHOP_PRODUCTS.length >= 14, true, "Multi-Sport-Katalog");
 assert.ok(
@@ -34,7 +35,8 @@ assert.ok(
   "Road-Produkte vorhanden"
 );
 
-assert.equal(SHOPIFY_FEATURED_BIKES.length, 5, "5 Shopify Featured Bikes");
+assert.equal(SHOPIFY_FEATURED_BIKES.length, 5, "5 Shopify Featured Bike snapshots");
+assert.equal(FEATURED_BIKE_HANDLE_CANDIDATES.length, 5);
 assert.ok(
   SHOPIFY_FEATURED_BIKES.every(
     (p) => p.imageUrl && p.imageUrl.includes("cdn.shopify.com")
@@ -52,23 +54,43 @@ assert.ok(
   ),
   "Cube Attain has CDN imageUrl"
 );
-assert.equal(getFeaturedShopifyProducts().length, 5);
+
+// Live featured bikes only via Storefront sync (/api/shop/featured)
+assert.equal(getFeaturedShopifyProducts().length, 0, "no sync-less live featured bikes");
 assert.ok(
   SHOPIFY_FEATURED_BIKES.every(
     (p) =>
       p.merchantName === "AetherRide Shop" &&
-      p.affiliateUrl.startsWith(SHOPIFY_STORE_BASE) &&
+      p.affiliateUrl &&
       p.affiliateUrl.includes("/products/") &&
       p.slot === "frame"
   ),
-  "Featured bikes: AetherRide Shop + myshopify product URLs"
+  "Featured bike snapshots have deep Shopify product URLs (probe via API)"
 );
 assert.ok(
-  SHOP_PRODUCTS.slice(0, 5).every((p) =>
-    p.id.startsWith("sp-shopify-")
-  ),
+  SHOP_PRODUCTS.slice(0, 5).every((p) => p.id.startsWith("sp-shopify-")),
   "Featured Shopify bikes stehen am Anfang von SHOP_PRODUCTS"
 );
+
+// Merchant/dealer links must not be bare homepages; omit when unknown
+const dealerLinks = SHOP_PRODUCTS.filter(
+  (p) => !p.id.startsWith("sp-shopify-")
+).map((p) => p.affiliateUrl);
+for (const url of dealerLinks) {
+  if (!url) continue;
+  assert.ok(
+    isDeepProductUrl(url),
+    `dealer link must be deep product/search URL: ${url}`
+  );
+  assert.equal(merchantCtaUrl(url), url.trim());
+}
+assert.equal(
+  merchantCtaUrl(undefined),
+  undefined,
+  "unknown merchant → omit Zum Händler"
+);
+assert.equal(merchantCtaUrl("https://www.sram.com/"), undefined);
+assert.ok(merchantCtaUrl(shopifyProductUrl("orbea-terra-m20")));
 
 assert.equal(
   shopifyProductUrl("orbea-terra-m20"),
@@ -79,17 +101,15 @@ assert.equal(
   `${SHOPIFY_STORE_BASE}/collections/featured-gravel`
 );
 assert.equal(
-  shopCollectionHref("gravel"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-gravel`
+  shopifyCollectionUrl("featured-parts"),
+  `${SHOPIFY_STORE_BASE}/collections/featured-parts`
 );
-assert.equal(
-  shopCollectionHref("city"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-light-e-city`
-);
-assert.equal(
-  shopCollectionHref("light-e"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-light-e-city`
-);
+// In-app sport/parts hrefs — never password-gated Online Store collections
+assert.equal(shopCollectionHref("gravel"), "/shop?sport=gravel");
+assert.equal(shopCollectionHref("city"), "/shop?sport=city");
+assert.equal(shopCollectionHref("light-e"), "/shop?sport=light-e");
+assert.equal(shopCollectionHref("urban"), "/shop?sport=city");
+assert.equal(shopCollectionHref("parts"), "/shop/parts");
 
 assert.ok(getShopProduct("sp-shopify-orbea-terra-m20"));
 assert.equal(
@@ -113,11 +133,19 @@ assert.ok(
 assert.equal(shopHref(), "/shop");
 assert.equal(
   shopHref({ productId: "sp-sram-xx-chain", job: "replace" }),
-  "/shop?focus=sp-sram-xx-chain&job=replace"
+  "/shop/parts"
 );
 assert.equal(
   shopHref({ slot: "cassette", job: "browse" }),
-  "/shop?slot=cassette&job=browse"
+  "/shop/parts?slot=cassette"
+);
+assert.equal(
+  shopHref({ slot: "brake_pads_front", bike: "bike-1" }),
+  "/shop/parts?slot=brake_pads&bike=bike-1&fit=bike"
+);
+assert.equal(
+  shopHref({ job: "replace", bike: "bike-1", slot: "chain" }),
+  "/shop/parts?slot=chain&bike=bike-1&fit=bike"
 );
 assert.equal(
   shopHref({ sport: "gravel" }),
@@ -127,16 +155,9 @@ assert.equal(
   shopHref({ focus: "orbea-terra-m20", sport: "gravel" }),
   "/shop?focus=orbea-terra-m20&sport=gravel"
 );
+assert.equal(shopCollectionHref("parts"), FEATURED_PARTS_IN_APP_HREF);
+assert.equal(FEATURED_PARTS_IN_APP_HREF, "/shop/parts");
 
-console.log("catalog.test.ts OK", {
-  products: SHOP_PRODUCTS.length,
-  featured: SHOPIFY_FEATURED_BIKES.length,
-});
-
-assert.equal(
-  shopCollectionHref("parts"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-parts`
-);
 assert.ok(
   isProductAffiliateUrl(`${SHOPIFY_STORE_BASE}/products/orbea-terra-m20`),
   "Shopify product URL counts as product link"
@@ -157,4 +178,10 @@ assert.ok(
 );
 assert.ok(getFeaturedPartsProducts().length >= 8, "parts catalog non-empty");
 
-console.log("catalog.test.ts OK");
+console.log("catalog.test.ts OK", {
+  products: SHOP_PRODUCTS.length,
+  featuredSnapshots: SHOPIFY_FEATURED_BIKES.length,
+  liveFeatured: getFeaturedShopifyProducts().length,
+  candidates: FEATURED_BIKE_HANDLE_CANDIDATES.length,
+  featuredPartsSeeds: getFeaturedPartsProducts().length,
+});

@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/shop_web.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/garage/bike_photo_sync.dart';
 import '../../data/import/gpx_import.dart';
@@ -1499,9 +1501,21 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                     ),
                     const Spacer(),
                     TextButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        // S-FLOW-03/05: Garage → Web Parts with bike soft-fit
+                        final url = ShopWebLinks.parts(
+                          bikeId: widget.bikeId,
+                          fitBike: true,
+                        );
                         Navigator.pop(context);
-                        ref.read(shellTabIndexProvider.notifier).state = 4;
+                        final uri = Uri.parse(url);
+                        final ok = await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                        if (!ok && context.mounted) {
+                          ref.read(shellTabIndexProvider.notifier).state = 4;
+                        }
                       },
                       child: const Text('Shop'),
                     ),
@@ -1511,9 +1525,23 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                 for (final a in due.take(5))
                   _MaintenanceBarRow(
                     alert: a,
-                    onShop: () {
+                    onShop: () async {
+                      final slot =
+                          ShopWebLinks.partsSlotFromComponent(a.slot);
+                      final url = ShopWebLinks.parts(
+                        bikeId: widget.bikeId,
+                        slot: slot,
+                        fitBike: true,
+                      );
                       Navigator.pop(context);
-                      ref.read(shellTabIndexProvider.notifier).state = 4;
+                      final uri = Uri.parse(url);
+                      final ok = await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                      if (!ok && context.mounted) {
+                        ref.read(shellTabIndexProvider.notifier).state = 4;
+                      }
                     },
                   ),
               ],

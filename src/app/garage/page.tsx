@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   ShieldCheck,
@@ -19,6 +19,7 @@ import { GarageComponentsTab } from "@/components/garage/GarageComponentsTab";
 import { GarageSetupsTab } from "@/components/garage/GarageSetupsTab";
 import { GarageMaintenanceTab } from "@/components/garage/GarageMaintenanceTab";
 import { MaintenanceStatusCard } from "@/components/home/MaintenanceStatusCard";
+import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import {
   aggregateVerdict,
@@ -63,6 +64,7 @@ function parseWizard(raw: string | null): WizardMode | null {
 }
 
 function GaragePageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -225,11 +227,12 @@ function GaragePageInner() {
 
       {/* T-WA-00 status card when bike exists (always free); empty handled below */}
       {selected && (
-        <div className="mb-5">
+        <div className="mb-5 space-y-3">
           <MaintenanceStatusCard
             compact
             ignoreSnooze={tab === "maintenance"}
           />
+          <GaragePartsCta bikeId={selected.id} bikeName={selected.name} />
         </div>
       )}
 
@@ -376,7 +379,14 @@ function GaragePageInner() {
                       <button
                         key={a.id}
                         type="button"
-                        onClick={() => setTab("maintenance")}
+                        onClick={() => {
+                          // S-FLOW-05: wear/interval → parts soft-fit when available
+                          if (a.shopHref) {
+                            router.push(a.shopHref);
+                            return;
+                          }
+                          setTab("maintenance");
+                        }}
                         className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
                           a.severity === "overdue"
                             ? "border-error/40 bg-error/10 text-error"

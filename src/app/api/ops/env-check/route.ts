@@ -57,6 +57,11 @@ export async function GET() {
       mapillary: set("MAPILLARY_ACCESS_TOKEN"),
       strava: set("STRAVA_CLIENT_ID") && set("STRAVA_CLIENT_SECRET"),
       stadia: set("STADIA_API_KEY") || set("NEXT_PUBLIC_STADIA_API_KEY"),
+      shopifyStorefront: set("SHOPIFY_STOREFRONT_ACCESS_TOKEN"),
+      shopifyOnlineStoreLocked:
+        (process.env.SHOPIFY_ONLINE_STORE_LOCKED || "true")
+          .trim()
+          .toLowerCase() !== "false",
     },
   };
 
@@ -82,6 +87,8 @@ export async function GET() {
         "App Links: NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS",
       !checks.appLinks.iosTeamId && "Universal Links: NEXT_PUBLIC_IOS_TEAM_ID",
       !checks.stripe && "Billing: Stripe Keys + Webhook",
+      !checks.partners.shopifyStorefront &&
+        "Shop Parts: SHOPIFY_STOREFRONT_ACCESS_TOKEN (featured-parts)",
     ].filter(Boolean),
   });
 }
