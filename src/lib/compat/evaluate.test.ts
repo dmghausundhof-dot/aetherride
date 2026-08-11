@@ -187,12 +187,13 @@ assert(
 {
   assert(batch2.bikes.length === 12, "batch2 has 12 bikes");
 
-  // 01 Roadlite:ON CF — bosch_hub_line note; no mid-drive smart mapping
+  // 01 Roadlite:ON CF — bosch_hub_line note; no mid-drive smart mapping; freehub=na belt
   {
     const roadlite = batch2.bikes.find((b) => b.id === "01");
     assert(!!roadlite, "Roadlite present");
     const attrs = roadlite!.attrs as CompatAttrMap;
     assert(attrs.brake_fluid === "mineral", "Roadlite mineral");
+    assert(attrs.freehub === "na", "Roadlite freehub=na (belt)");
     assert(attrs.bosch_system === undefined, "Roadlite bosch_system omitted");
     assert(attrs.charger_family === undefined, "Roadlite charger omitted");
     assert(
@@ -218,15 +219,29 @@ assert(
         `Roadlite + ${tag} must not fire Smart/System2 charger hard gates`
       );
     }
+
+    // belt freehub=na skips cassette hard_blocks
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["freehub:microspline"],
+      });
+      assert(
+        r.result === "ok",
+        `Roadlite freehub=na skips cassette hard_block, got ${r.result}`
+      );
+    }
   }
 
-  // 07 Kalkhoff Image 5+ Excite — magura_pad_shape=7
+  // 07 Kalkhoff Image 5+ Excite — magura_pad_shape=7, freehub=na belt
   {
     const kalkhoff = batch2.bikes.find((b) => b.id === "07");
     assert(!!kalkhoff, "Kalkhoff present");
     const attrs = kalkhoff!.attrs as CompatAttrMap;
     assert(attrs.brake_fluid === "mineral", "Kalkhoff mineral");
+    assert(attrs.freehub === "na", "Kalkhoff freehub=na (belt)");
     assert(attrs.magura_pad_shape === "7", "Kalkhoff magura shape 7");
+    assert(attrs.charger_family === "bpc3400_smart", "Kalkhoff charger set");
 
     // Magura shape-8 pad → hard_block (R020 family)
     {
@@ -257,6 +272,27 @@ assert(
       assert(
         !r.matched.some((m) => m.id === "R026"),
         "shape-7 must not require_attr R026"
+      );
+    }
+
+    // R056 negative: charger_family already set → ok (no R056)
+    {
+      const r = evaluateCompat({ bikeAttrs: attrs, partTags: [] });
+      assert(
+        !r.matched.some((m) => m.id === "R056"),
+        "Kalkhoff with charger must not fire R056"
+      );
+    }
+
+    // belt freehub=na skips cassette hard_blocks
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["freehub:xd"],
+      });
+      assert(
+        r.result === "ok",
+        `Kalkhoff freehub=na skips cassette hard_block, got ${r.result}`
       );
     }
   }
@@ -311,6 +347,64 @@ assert(
       });
       assert(r.result === "ok", `Topstone + HG cassette → ok, got ${r.result}`);
     }
+
+    // R056 negative: charger_family already set → ok
+    {
+      const r = evaluateCompat({ bikeAttrs: attrs, partTags: [] });
+      assert(
+        !r.matched.some((m) => m.id === "R056"),
+        "Topstone with charger must not fire R056"
+      );
+      assert(r.result === "ok", "Topstone baseline ok");
+    }
+  }
+
+  // R056 Intent: bosch present + charger missing → require_attr charger_family
+  {
+    const r = evaluateCompat({
+      bikeAttrs: { bosch_system: "smart" },
+      partTags: [],
+    });
+    assert(
+      r.result === "require_attr",
+      `R056 positive → require_attr, got ${r.result}`
+    );
+    assert(
+      r.matched.some((m) => m.id === "R056"),
+      "expected R056"
+    );
+    assert(
+      r.missing_attrs.includes("charger_family"),
+      `missing charger_family, got ${r.missing_attrs.join(",")}`
+    );
+  }
+
+  // R056 negative: bosch + charger present → ok
+  {
+    const r = evaluateCompat({
+      bikeAttrs: {
+        bosch_system: "smart",
+        charger_family: "bpc3400_smart",
+      },
+      partTags: [],
+    });
+    assert(r.result === "ok", `R056 negative charger present → ok, got ${r.result}`);
+    assert(
+      !r.matched.some((m) => m.id === "R056"),
+      "R056 must not fire when charger_family set"
+    );
+  }
+
+  // R056 negative: bosch na/none → no require_attr
+  {
+    const r = evaluateCompat({
+      bikeAttrs: { bosch_system: "na" },
+      partTags: [],
+    });
+    assert(
+      !r.matched.some((m) => m.id === "R056"),
+      "R056 must not fire when bosch_system is na"
+    );
   }
 
   // ingest aliases / omit sanity across batch

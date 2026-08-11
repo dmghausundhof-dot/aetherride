@@ -19,6 +19,21 @@ export interface CompatWhenEitherDimension {
   values: string[];
 }
 
+/** Research when.all clause — bike attr presence / membership gates. */
+export interface CompatWhenAllClause {
+  dimension: string;
+  /** Attr key exists on bike (any value, including before not_in filters). */
+  bike_present?: boolean;
+  /** Bike value must not be in this list (fails if missing). */
+  bike_not_in?: string[];
+  /** true → bike attr absent / none / na */
+  bike_missing?: boolean;
+}
+
+export interface CompatWhenBlock {
+  all?: CompatWhenAllClause[];
+}
+
 export interface CompatRuleDef {
   id: string;
   severity: Exclude<CompatSeverity, "ok">;
@@ -34,6 +49,8 @@ export interface CompatRuleDef {
   /** require_attr target dimension/attr id */
   require_attr?: string;
   require_on?: "bike" | "part" | "either";
+  /** Structured when block (R056 Intent: when.all bike_present / bike_not_in / bike_missing). */
+  when?: CompatWhenBlock;
   when_part_tag_regex?: string;
   when_part_tag_prefixes?: string[];
   when_slot_in?: string[];

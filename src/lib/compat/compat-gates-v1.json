@@ -290,10 +290,16 @@
     {
       "id": "R056",
       "severity": "require_attr",
-      "require_attr": "bosch_system",
+      "require_attr": "charger_family",
       "require_on": "bike",
-      "when_part_tag_prefixes": ["bosch", "charger", "speed_sensor", "clamp_od"],
-      "message_de": "Bosch-Komponente: Bike-Attribut bosch_system fehlt."
+      "when": {
+        "all": [
+          { "dimension": "bosch_system", "bike_present": true },
+          { "dimension": "bosch_system", "bike_not_in": ["none", "na"] },
+          { "dimension": "charger_family", "bike_missing": true }
+        ]
+      },
+      "message_de": "Bosch-System am Bike gesetzt, aber charger_family fehlt — Ladegerät-Familie angeben."
     },
     {
       "id": "R060",

@@ -6,6 +6,7 @@ import type {
   CompatGatesRuleset,
   CompatRuleDef,
   CompatSeverity,
+  CompatWhenAllClause,
   EvaluateCompatInput,
   EvaluateCompatResult,
   MatchedCompatRule,
@@ -61,12 +62,54 @@ function partHasPrefix(tags: string[], prefixes: string[]): boolean {
   });
 }
 
+function isBikeMissing(bikeAttrs: CompatAttrMap, dimension: string): boolean {
+  const v = bikeAttrs[dimension];
+  if (v === undefined) return true;
+  if (isNaValue(v)) return true;
+  if (v === "none") return true;
+  return false;
+}
+
+function whenAllClausePass(
+  clause: CompatWhenAllClause,
+  bikeAttrs: CompatAttrMap
+): boolean {
+  const dim = clause.dimension;
+  const val = bikeAttrs[dim];
+
+  if (clause.bike_present === true) {
+    if (val === undefined) return false;
+  } else if (clause.bike_present === false) {
+    if (val !== undefined) return false;
+  }
+
+  if (clause.bike_missing === true) {
+    if (!isBikeMissing(bikeAttrs, dim)) return false;
+  } else if (clause.bike_missing === false) {
+    if (isBikeMissing(bikeAttrs, dim)) return false;
+  }
+
+  if (clause.bike_not_in?.length) {
+    if (val === undefined) return false;
+    const banned = new Set(clause.bike_not_in.map((x) => x.toLowerCase()));
+    if (banned.has(val.toLowerCase())) return false;
+  }
+
+  return true;
+}
+
 function whenGatesPass(
   rule: CompatRuleDef,
   input: EvaluateCompatInput,
   bikeAttrs: CompatAttrMap,
   partAttrs: CompatAttrMap
 ): boolean {
+  if (rule.when?.all?.length) {
+    for (const clause of rule.when.all) {
+      if (!whenAllClausePass(clause, bikeAttrs)) return false;
+    }
+  }
+
   if (rule.when_serial_present !== undefined) {
     const present = !!input.serialPresent;
     if (present !== rule.when_serial_present) return false;
