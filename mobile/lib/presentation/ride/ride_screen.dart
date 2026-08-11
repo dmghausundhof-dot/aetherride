@@ -1067,7 +1067,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     if (!online) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Offline — Karte ok, Reroute braucht Netz.'),
+          content: const Text(kOfflineRerouteToast),
           duration: Duration(seconds: 4),
         ),
       );
@@ -1199,7 +1199,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Offline — Karte ok, Reroute braucht Netz.'),
+            content: const Text(kOfflineRerouteToast),
           ),
         );
       }
