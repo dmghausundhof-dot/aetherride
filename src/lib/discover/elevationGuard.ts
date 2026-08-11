@@ -1,6 +1,6 @@
 /**
  * Guard absurd ascent values (bad OSM/catalog data).
- * Typical MTB ~20–40 hm/km; >80 hm/km is almost always garbage.
+ * Typical road/urban ~10–30 hm/km; >50 hm/km on Discover is almost always garbage.
  */
 export function sanitizeElevationM(
   ascentM: number | null | undefined,
@@ -8,8 +8,8 @@ export function sanitizeElevationM(
 ): number | null {
   if (ascentM == null || !Number.isFinite(ascentM) || ascentM < 0) return null;
   const km = distanceKm != null && distanceKm > 0 ? distanceKm : null;
-  if (km != null && ascentM / km > 80) {
-    // Hide nonsense (e.g. ~1670 hm on 16 km) rather than show garbage.
+  if (km != null && ascentM / km > 50) {
+    // Hide nonsense (e.g. 518 hm / 6.9 km ≈ 75 hm/km, or ~1670/16) rather than show garbage.
     return null;
   }
   return Math.round(ascentM);

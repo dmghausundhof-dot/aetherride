@@ -27,7 +27,8 @@ export function hasPublicRoutingHint(): boolean {
 
 /**
  * Q-BAR-DIS-01: Demo / unverified routing chrome (banners).
- * Off in production unless explicitly enabled. Geometry fallback stays silent.
+ * Fail-closed: ONLY true when NEXT_PUBLIC_SHOW_ROUTING_DEBUG === "1"
+ * (not "true", not unset). Geometry fallback stays silent.
  */
 export function showRoutingDebugUi(): boolean {
   return process.env.NEXT_PUBLIC_SHOW_ROUTING_DEBUG === "1";

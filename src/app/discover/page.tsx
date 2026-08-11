@@ -93,9 +93,12 @@ import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 import {
   BERLIN_DEFAULT_CENTER,
   DEMO_CITY_CHIPS,
-  berlinLoopSuggestions,
-  berlinSixtyMinLoopSuggestions,
 } from "@/lib/discover/berlinLoops";
+import {
+  curatedP0CatalogSuggestions,
+  curatedSixtyMinLoopSuggestions,
+} from "@/lib/discover/curatedP0Seeds";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 type SheetMode = "quick" | "plan" | "tours";
 
@@ -291,14 +294,21 @@ function DiscoverPageInner() {
         if (cancelled) return;
         if (r == null) {
           setCommunityHeat(null);
-          setHeatmapNote("Community-Heatmap offline");
+          // Debug/demo chrome — fail-closed in prod unless SHOW_ROUTING_DEBUG=1
+          setHeatmapNote(
+            showRoutingDebugUi() ? "Community-Heatmap offline" : null
+          );
           return;
         }
         setCommunityHeat(r);
         setHeatmapNote(
-          r.coldStart
-            ? r.disclaimer
-            : `${r.segments.length} Community-Segmente · ${r.disclaimer}`
+          showRoutingDebugUi()
+            ? r.coldStart
+              ? r.disclaimer
+              : `${r.segments.length} Community-Segmente · ${r.disclaimer}`
+            : r.coldStart
+              ? null
+              : `${r.segments.length} Community-Segmente`
         );
       });
     }, 400);
@@ -322,7 +332,7 @@ function DiscoverPageInner() {
   const origin = userPos ?? mapCenter;
 
   const sixtyMinLoops = useMemo(
-    () => berlinSixtyMinLoopSuggestions(origin),
+    () => curatedSixtyMinLoopSuggestions(origin),
     [origin]
   );
   const hasUsefulNearbyLoops = useMemo(
@@ -342,8 +352,8 @@ function DiscoverPageInner() {
       rangeKmHigh: range?.kmHigh,
       near: origin,
     });
-    // Display layers sanitize elevation; keep raw values for scoring/filters.
-    return catalog.length > 0 ? catalog : berlinLoopSuggestions(origin);
+    // Curated P0 Berlin/RN always available — not depend on ALLOW_DEMO_CONTENT.
+    return catalog.length > 0 ? catalog : curatedP0CatalogSuggestions(origin);
   }, [activeBike, categoryHint, profile, minutes, range, origin]);
 
   const filtered = useMemo(
@@ -372,7 +382,7 @@ function DiscoverPageInner() {
         near: origin,
       }) ??
       routes.find((r) => r.id === detailId) ??
-      berlinLoopSuggestions(origin).find((r) => r.id === detailId) ??
+      curatedP0CatalogSuggestions(origin).find((r) => r.id === detailId) ??
       null;
     return fromCatalog;
   }, [detailId, activeBike, categoryHint, profile, minutes, range, routes, origin]);
@@ -567,9 +577,20 @@ function DiscoverPageInner() {
         if (cancelled || !r.ok) return;
         const data = await r.json();
         if (data?.provider === "outdooractive") {
-          setOaTours(Array.isArray(data.tours) ? data.tours : []);
+          const tours = Array.isArray(data.tours) ? data.tours : [];
+          // Demo OA examples only when allowDemoContent; live tours always.
+          setOaTours(
+            allowDemoContent()
+              ? tours
+              : tours.filter((t: OutdooractiveTour) => t.source !== "demo")
+          );
           setOaAttr(data.attribution ?? null);
-          setOaWarning(data.warning ?? null);
+          // Unconfigured / demo warnings — fail-closed unless debug UI on.
+          setOaWarning(
+            showRoutingDebugUi() || allowDemoContent()
+              ? (data.warning ?? null)
+              : null
+          );
         }
       })
       .catch(() => undefined);
@@ -583,7 +604,16 @@ function DiscoverPageInner() {
         if (cancelled || !r.ok) return;
         const data = await r.json();
         setTfPins(Array.isArray(data.pins) ? data.pins : []);
-        setTfDisclaimer(data.disclaimer ?? null);
+        const disc = data.disclaimer ?? null;
+        // Beispiel-Pin / partnership-pending chrome only with debug or demo.
+        const isDemoChrome =
+          typeof disc === "string" &&
+          (disc.includes("Beispiel") || disc.includes("ausstehend"));
+        setTfDisclaimer(
+          !disc || !isDemoChrome || showRoutingDebugUi() || allowDemoContent()
+            ? disc
+            : null
+        );
       })
       .catch(() => undefined);
 
@@ -1589,13 +1619,13 @@ function DiscoverPageInner() {
                 </p>
               )}
 
-              {/* Always-on ~60 Min seeds — not gated by allowDemoContent / Tours tab */}
+              {/* Always-on ~60 Min seeds — curated P0 Berlin/RN, not allowDemoContent */}
               <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
                 ~60 Min Rundkurse
               </h3>
               <p className="text-[11px] text-text-secondary">
-                Tempelhofer & kuratierte Feierabend-Loops — unabhängig vom
-                Live-Routing.
+                Tempelhofer, Rhein-Neckar & kuratierte Feierabend-Loops —
+                unabhängig vom Live-Routing.
               </p>
               <div className="flex flex-col gap-2">
                 {sixtyMinLoops.map((r) => (

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "default_center": {
+    "name": "Heidelberg Bismarckplatz",
+    "lat": 49.409,
+    "lng": 8.694
+  },
+  "radius_km_p0": 35,
+  "label_without_location": "Rhein-Neckar",
+  "label_with_location": "Um dich herum",
+  "seeds": [
+    {
+      "id": "seed-loop-hd-neckarwiese-60",
+      "type": "route",
+      "title": "Heidelberg — Neckarwiese, Alte Brücke & Schlossblick",
+      "thumbnail_url": null,
+      "distance_km": 16,
+      "ascent_m": 120,
+      "duration_min": 60,
+      "effort_label": "Leicht",
+      "sport_tags": ["ebike", "city"],
+      "surface_mix": { "asphalt": 80, "gravel": 20, "trail": 0 },
+      "is_loop": true,
+      "duration_band": "60",
+      "center": { "lat": 49.409, "lng": 8.694 }
+    },
+    {
+      "id": "seed-loop-ma-schloss-rhein-60",
+      "type": "route",
+      "title": "Mannheim — Schloss, Rheinpromenade & Waldpark",
+      "thumbnail_url": null,
+      "distance_km": 17,
+      "ascent_m": 40,
+      "duration_min": 55,
+      "effort_label": "Leicht",
+      "sport_tags": ["city", "urban"],
+      "surface_mix": { "asphalt": 90, "gravel": 10, "trail": 0 },
+      "is_loop": true,
+      "duration_band": "60",
+      "center": { "lat": 49.483, "lng": 8.462 }
+    },
+    {
+      "id": "seed-loop-hd-boxberg-gravel-60",
+      "type": "route",
+      "title": "Heidelberg foothills — Boxberg, Bierhelderhof & Gaisberg gravel",
+      "thumbnail_url": null,
+      "distance_km": 15,
+      "ascent_m": 280,
+      "duration_min": 70,
+      "effort_label": "Mittel",
+      "sport_tags": ["gravel"],
+      "surface_mix": { "asphalt": 25, "gravel": 70, "trail": 5 },
+      "is_loop": true,
+      "duration_band": "60",
+      "center": { "lat": 49.38, "lng": 8.69 }
+    }
+  ],
+  "notes": "P0 Rhein-Neckar ~60-Min curated seeds (web; mirrors mobile p0-rhein-neckar-60min-v1)"
+}
