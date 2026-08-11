@@ -1,46 +1,55 @@
-# Shop Parts Wire v1 (S-PART)
+# Shop Parts Wire v1 (S-PART) + Shopify Integration Audit
 
 Collection-driven Ersatzteile — **keine** hard-coded Produkt-Snapshots.
+**Keine** stillen Links auf die Shopify-Passwort-Seite.
 
-## Routes
+## Recommendation (beste Shopify Integration)
 
-| Route | Role |
-|-------|------|
-| `/shop` | Hub: Featured Bikes + CTA → Parts |
-| `/shop/parts` | Listing aus Shopify Collection `featured-parts` |
-| `GET /api/shop/parts` | Storefront API Proxy (Token serverseitig) |
+**Prefer Storefront API in-app/web catalog** (`/shop`, `/shop/parts`, `/shop/p/[handle]`) over sending riders to the password-gated Online Store.
+
+| Path | Why |
+|------|-----|
+| **Storefront API (chosen)** | Catalog, images, prices, tags/soft-fit without `/password`. Token server-side only. Demo-ready while store stays locked. |
+| External Online Store | Hits `/password` until launch — only as explicit Owner Preview, never primary CTA. |
+| Storefront password in client | **Forbidden** — never `NEXT_PUBLIC_*`, never API payload. Optional Eng-only `SHOPIFY_STOREFRONT_PASSWORD` for server smoke scripts. |
+
+When the store goes public: set `SHOPIFY_ONLINE_STORE_LOCKED=false` and keep in-app catalog as primary; external checkout becomes secondary.
+
+## Valid link paths (fixed)
+
+| Path | Destination |
+|------|-------------|
+| `/shop` | Hub (AetherRide) |
+| `/shop/parts` | featured-parts listing (Storefront API) |
+| `/shop/parts?slot=brake_pads&fit=bike&bike=<id>` | Soft-fit filtered parts |
+| `/shop/p/<handle>` | In-app product detail (API → Storefront / featured snapshot) |
+| `/api/shop/parts` | JSON collection |
+| `/api/shop/products/<handle>` | JSON product |
+| `/api/shop/status` | `{ storefrontApiConfigured, onlineStoreLocked }` — no secrets |
+| App Shop tab → Web Parts | `{API_BASE}/shop/parts` |
+| App product tap | `{API_BASE}/shop/p/<handle>` |
+| App Shop hub button | `{API_BASE}/shop` |
+
+### Removed as primary CTAs (password wall)
+
+| Old | Now |
+|-----|-----|
+| `*.myshopify.com/products/*` | Secondary via Owner-Preview dialog only |
+| `*.myshopify.com/collections/featured-*` | In-app `/shop/parts` |
+| Silent `target=_blank` to password | `ShopifyOutboundButton` / App dialog |
 
 ## Env
 
 - `SHOPIFY_STOREFRONT_ACCESS_TOKEN` (required for live products)
-- `SHOPIFY_STORE_DOMAIN` (optional, default `dmg-haus-und-hof-shop.myshopify.com`)
+- `SHOPIFY_STORE_DOMAIN` (optional)
 - `SHOPIFY_STOREFRONT_API_VERSION` (optional, default `2025-01`)
+- `SHOPIFY_ONLINE_STORE_LOCKED` (default `true`)
+- `SHOPIFY_STOREFRONT_PASSWORD` (optional Eng smoke, server-only)
 
-**Do not** store or push the Online Store password.
+## Soft-fit filter contract
 
-## Filter contract (unchanged)
-
-Query params on `/shop/parts`:
-
-| Param | Values | Notes |
-|-------|--------|-------|
-| `slot` | `all` \| `brake_pads` \| `grips` \| `fluid` \| `chain` \| `tire` \| `cassette` \| `bar_tape` | Legacy `brake_pads_front/rear` → `brake_pads` |
-| `bike` | bike id | Garage context |
-| `fit` | `bike` \| `all` | Soft-Fit gegen aktives Bike |
-| `focus` | product handle | Scroll/highlight |
-
-### Soft-fit product tags
-
-- `slot:<key>`
-- `magura_shape:7\|8`
-- `pad:shape-7\|8`
-- `caliper:mt*` / `caliper:mt5` / `caliper:mt7`
-- `size:S\|L`
-- `shift_compat:<token>`
-
-Soft: Produkte ohne relevantes Soft-Fit-Tag bleiben sichtbar. Bei `fit=bike` werden klare Widersprüche ausgeblendet.
+Unchanged: `slot`, `bike`, `fit`, tags `magura_shape`, `pad:shape-*`, `caliper:mt*`, `size`, `shift_compat`.
 
 ## Garage CTA
 
-Label: **Passt zu deinem Bike** → `/shop/parts?bike=<id>&fit=bike`  
-Ohne Bike: skip-friendly → `/shop/parts`
+**Passt zu deinem Bike** → `/shop/parts?bike=<id>&fit=bike`

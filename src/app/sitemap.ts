@@ -28,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/garage",
     "/shop",
     "/shop/parts",
+    "/shop/p/orbea-terra-m20",
   ].map((path) => ({
     url: `${origin}${path || "/"}`,
     lastModified: now,

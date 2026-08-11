@@ -58,6 +58,10 @@ export async function GET() {
       strava: set("STRAVA_CLIENT_ID") && set("STRAVA_CLIENT_SECRET"),
       stadia: set("STADIA_API_KEY") || set("NEXT_PUBLIC_STADIA_API_KEY"),
       shopifyStorefront: set("SHOPIFY_STOREFRONT_ACCESS_TOKEN"),
+      shopifyOnlineStoreLocked:
+        (process.env.SHOPIFY_ONLINE_STORE_LOCKED || "true")
+          .trim()
+          .toLowerCase() !== "false",
     },
   };
 

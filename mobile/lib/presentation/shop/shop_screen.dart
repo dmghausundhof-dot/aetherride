@@ -2,16 +2,32 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
-import '../../data/local/app_database.dart';
-import '../../domain/compatibility/engine.dart';
-import '../../domain/compatibility/rules.dart';
-import '../../domain/component.dart';
 import '../../domain/sport/discipline_ux.dart';
-import '../../providers/app_providers.dart';
+
+class _ShopPart {
+  const _ShopPart({
+    required this.handle,
+    required this.name,
+    required this.manufacturer,
+    required this.priceEur,
+    required this.currency,
+    this.imageUrl,
+    this.chip = 'universal',
+  });
+
+  final String handle;
+  final String name;
+  final String manufacturer;
+  final double priceEur;
+  final String currency;
+  final String? imageUrl;
+  final String chip;
+}
 
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
@@ -21,13 +37,18 @@ class ShopScreen extends ConsumerStatefulWidget {
 }
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
-  ComponentSlot? _slot;
-  final _q = TextEditingController();
-  List<CatalogCacheData> _items = [];
-  bool _loading = false;
-  int _wishlistTick = 0;
+  List<_ShopPart> _parts = [];
+  bool _loading = true;
+  String? _error;
+  bool _storeLocked = true;
+  bool _apiConfigured = false;
+  String _slot = 'all';
 
-  static String get _webShopUrl => '${AppConfig.apiBaseUrl}/shop';
+  static String get _webOrigin => AppConfig.apiBaseUrl.replaceAll(RegExp(r'/$'), '');
+  static String get _webShopUrl => '$_webOrigin/shop';
+  static String get _webPartsUrl => '$_webOrigin/shop/parts';
+  static String _webProductUrl(String handle) =>
+      '$_webOrigin/shop/p/${Uri.encodeComponent(handle)}';
 
   @override
   void initState() {
@@ -35,257 +56,169 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  @override
-  void dispose() {
-    _q.dispose();
-    super.dispose();
-  }
-
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final items = await ref.read(catalogClientProvider).search(
-          slot: _slot?.apiId,
-          q: _q.text.trim().isEmpty ? null : _q.text.trim(),
-          limit: 40,
-        );
-    if (mounted) {
-      setState(() {
-        _items = items;
-        _loading = false;
-      });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final statusUri = Uri.parse('$_webOrigin/api/shop/status');
+      final partsUri = Uri.parse('$_webOrigin/api/shop/parts');
+      final results = await Future.wait([
+        http.get(statusUri).timeout(const Duration(seconds: 12)),
+        http.get(partsUri).timeout(const Duration(seconds: 20)),
+      ]);
+      final statusRes = results[0];
+      final partsRes = results[1];
+
+      var locked = true;
+      var configured = false;
+      if (statusRes.statusCode == 200) {
+        final s = jsonDecode(statusRes.body);
+        if (s is Map) {
+          locked = s['onlineStoreLocked'] != false;
+          configured = s['storefrontApiConfigured'] == true;
+        }
+      }
+
+      if (partsRes.statusCode != 200) {
+        final body = jsonDecode(partsRes.body);
+        final msg = body is Map
+            ? (body['error'] as String? ?? 'Collection nicht geladen')
+            : 'Collection nicht geladen';
+        if (mounted) {
+          setState(() {
+            _storeLocked = locked;
+            _apiConfigured = configured;
+            _parts = [];
+            _loading = false;
+            _error = msg;
+          });
+        }
+        return;
+      }
+
+      final json = jsonDecode(partsRes.body);
+      final raw = json is Map ? json['products'] : null;
+      final list = <_ShopPart>[];
+      if (raw is List) {
+        for (final e in raw) {
+          if (e is! Map) continue;
+          final handle = '${e['handle'] ?? ''}'.trim();
+          if (handle.isEmpty) continue;
+          final soft = e['softFit'];
+          final slots = soft is Map && soft['slots'] is List
+              ? (soft['slots'] as List).map((x) => '$x').toList()
+              : const <String>[];
+          final slotKey = slots.isNotEmpty
+              ? slots.first
+              : '${e['slotKey'] ?? 'other'}';
+          if (_slot != 'all' && slotKey != _slot) continue;
+          final price = (e['priceEur'] is num)
+              ? (e['priceEur'] as num).toDouble()
+              : double.tryParse('${e['priceEur']}') ?? 0;
+          list.add(
+            _ShopPart(
+              handle: handle,
+              name: '${e['name'] ?? handle}',
+              manufacturer: '${e['manufacturer'] ?? 'AetherRide'}',
+              priceEur: price,
+              currency: '${e['currencyCode'] ?? 'EUR'}',
+              imageUrl: e['imageUrl'] as String?,
+              chip: slotKey,
+            ),
+          );
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _storeLocked = locked;
+          _apiConfigured = configured;
+          _parts = list;
+          _loading = false;
+          _error = list.isEmpty
+              ? (configured
+                  ? 'Keine Treffer in featured-parts.'
+                  : 'Storefront API nicht konfiguriert — Token auf dem Server setzen.')
+              : null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error =
+              'Shop offline (${AppConfig.apiBaseUrl}). Bitte später erneut.';
+          _parts = [];
+        });
+      }
     }
   }
 
-  Future<void> _openFullShop() async {
-    final uri = Uri.parse(_webShopUrl);
+  Future<void> _openUrl(String url, {required bool warnLockedExternal}) async {
+    final uri = Uri.parse(url);
+    final isMyshopify = url.contains('myshopify.com');
+    if (isMyshopify && (_storeLocked || warnLockedExternal)) {
+      if (!mounted) return;
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Online Store gesperrt'),
+          content: const Text(
+            'Der Shopify Online Store ist passwortgeschützt (Owner Preview). '
+            'Der Link öffnet die Passwort-Seite — kein stiller Dead End.\n\n'
+            'Katalog & Soft-Fit laufen in AetherRide über die Storefront API. '
+            'Store-Passwort wird nicht in der App ausgeliefert.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Zurück'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Trotzdem öffnen'),
+            ),
+          ],
+        ),
+      );
+      if (go != true) return;
+    }
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Shop: $_webShopUrl')),
+          SnackBar(content: Text('Öffnen: $url')),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Shop im Browser: $_webShopUrl')),
+          SnackBar(content: Text('Browser: $url')),
         );
       }
     }
   }
 
-  Map<String, dynamic> _attrsFromPayload(String payloadJson) {
-    try {
-      final decoded = jsonDecode(payloadJson);
-      if (decoded is! Map) return {};
-      final raw = decoded['attributes'];
-      if (raw is Map) {
-        return Map<String, dynamic>.from(raw);
-      }
-      if (raw is List) {
-        final out = <String, dynamic>{};
-        for (final e in raw) {
-          if (e is! Map) continue;
-          final key = e['key'] as String?;
-          if (key == null) continue;
-          final val =
-              e['valueNum'] ?? e['valueEnum'] ?? e['value'] ?? e['valueStr'];
-          if (val != null) out[key] = val;
-        }
-        return out;
-      }
-    } catch (_) {}
-    return {};
-  }
-
-  String _shopVerdictLabel(CompatVerdict v) => switch (v) {
-        CompatVerdict.compatible => 'Compatible',
-        CompatVerdict.conditional => 'Conditional',
-        CompatVerdict.incompatible => 'Incompatible',
-        CompatVerdict.insufficientData => 'Insufficient',
-      };
-
-  Color _verdictColor(CompatVerdict v) => switch (v) {
-        CompatVerdict.compatible => Colors.green,
-        CompatVerdict.conditional => Colors.orange,
-        CompatVerdict.incompatible => Colors.redAccent,
-        CompatVerdict.insufficientData => AppColors.muted,
-      };
-
-  Future<CompatVerdict> _compatFor(CatalogCacheData item) async {
-    final bike = await ref.read(garageRepositoryProvider).getActiveBike();
-    if (bike == null) return CompatVerdict.insufficientData;
-    final slot = ComponentSlotLabel.fromApiId(item.slot);
-    if (slot == null) return CompatVerdict.insufficientData;
-    final installed =
-        await ref.read(componentRepositoryProvider).listInstalled(bike.id);
-    final attrs = _attrsFromPayload(item.payloadJson);
-    final candidate = BikeComponent(
-      id: 'candidate-${item.id}',
-      bikeId: bike.id,
-      slot: slot,
-      manufacturer: item.manufacturer,
-      model: item.model,
-      catalogModelId: item.id,
-      attributes: attrs,
-    );
-    final results = checkCandidateOnBike(installed, candidate);
-    if (results.isEmpty) return CompatVerdict.insufficientData;
-    return aggregateVerdict(results);
-  }
-
-  Future<void> _toggleWishlist(String id) async {
-    await ref.read(userProfileStoreProvider).toggleWishlist(id);
-    if (mounted) setState(() => _wishlistTick++);
-  }
-
-  Future<void> _showDetail(CatalogCacheData item) async {
-    final attrs = _attrsFromPayload(item.payloadJson);
-    final store = ref.read(userProfileStoreProvider);
-    final wished = store.wishlistIds.contains(item.id);
-    final verdict = await _compatFor(item);
-    if (!mounted) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        var heartOn = wished;
-        return StatefulBuilder(
-          builder: (ctx, setLocal) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                16,
-                20,
-                20 + MediaQuery.viewInsetsOf(ctx).bottom,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${item.manufacturer} ${item.model}',
-                            style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: heartOn
-                              ? 'Von Merkliste entfernen'
-                              : 'Zur Merkliste',
-                          onPressed: () async {
-                            await _toggleWishlist(item.id);
-                            setLocal(() => heartOn = !heartOn);
-                          },
-                          icon: Icon(
-                            heartOn ? Icons.favorite : Icons.favorite_border,
-                            color: heartOn ? Colors.redAccent : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Slot: ${item.slot}',
-                      style: const TextStyle(color: AppColors.muted),
-                    ),
-                    Text(
-                      'Hersteller: ${item.manufacturer}',
-                      style: const TextStyle(color: AppColors.muted),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _verdictColor(verdict).withValues(alpha: 0.5),
-                        ),
-                        color: _verdictColor(verdict).withValues(alpha: 0.12),
-                      ),
-                      child: Text(
-                        'Compat: ${_shopVerdictLabel(verdict)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: _verdictColor(verdict),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Attribute',
-                      style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    if (attrs.isEmpty)
-                      const Text(
-                        'Keine Attribute im Katalog-Payload.',
-                        style: TextStyle(color: AppColors.muted, fontSize: 13),
-                      )
-                    else
-                      ...attrs.entries.map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '${e.key}: ${e.value}',
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _openFullShop();
-                      },
-                      icon: const Icon(Icons.open_in_browser),
-                      label: Text(
-                        store.commerceMode == 'marketplace'
-                            ? 'Im Marktplatz öffnen'
-                            : 'Shopify-Shop öffnen',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  List<CatalogCacheData> get _wishlistItems {
-    // ignore: unused_local_variable — tick forces rebuild after toggle
-    final _ = _wishlistTick;
-    final ids = ref.read(userProfileStoreProvider).wishlistIds.toSet();
-    if (ids.isEmpty) return const [];
-    final byId = {for (final it in _items) it.id: it};
-    return [for (final id in ids) if (byId[id] != null) byId[id]!];
+  String _priceLabel(_ShopPart p) {
+    final v = p.priceEur.toStringAsFixed(p.priceEur == p.priceEur.roundToDouble() ? 0 : 2);
+    return '$v €';
   }
 
   @override
   Widget build(BuildContext context) {
-    final wishlist = _wishlistItems;
-    // tick forces rebuild after wishlist toggle (store is not a Listenable)
-    final wishedIds = {
-      ...ref.read(userProfileStoreProvider).wishlistIds,
-    };
-    final _ = _wishlistTick;
-
     return Scaffold(
-      appBar: AppBar(title: const Text(MultiSportCopy.partsTitle)),
+      appBar: AppBar(
+        title: const Text(MultiSportCopy.partsTitle),
+        actions: [
+          IconButton(
+            tooltip: 'Aktualisieren',
+            onPressed: _loading ? null : _load,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -302,129 +235,250 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  MultiSportCopy.partsSubtitle,
+                  'Live Collection featured-parts — Soft-Fit & Preise in AetherRide.',
                   style: TextStyle(color: AppColors.muted, fontSize: 13),
                 ),
+                if (_storeLocked) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.lock_outline, color: Colors.orange, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _apiConfigured
+                                ? 'Owner Preview: Online Store gesperrt. Katalog via Storefront API — keine Passwort-Dead-Ends in der App.'
+                                : 'Owner Preview: Store gesperrt · Storefront API fehlt auf dem Server.',
+                            style: const TextStyle(fontSize: 12, height: 1.35),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
-                DropdownButtonFormField<ComponentSlot?>(
+                DropdownButtonFormField<String>(
                   initialValue: _slot,
                   decoration: const InputDecoration(
-                    labelText: 'Slot',
+                    labelText: 'Kategorie',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Alle'),
-                    ),
-                    for (final s in coreInstallSlots)
-                      DropdownMenuItem(value: s, child: Text(s.label)),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('Alle')),
+                    DropdownMenuItem(value: 'brake_pads', child: Text('Beläge')),
+                    DropdownMenuItem(value: 'grips', child: Text('Griffe')),
+                    DropdownMenuItem(value: 'fluid', child: Text('Fluid')),
+                    DropdownMenuItem(value: 'chain', child: Text('Kette')),
+                    DropdownMenuItem(value: 'tire', child: Text('Reifen')),
+                    DropdownMenuItem(value: 'cassette', child: Text('Kassette')),
                   ],
                   onChanged: (v) {
-                    setState(() => _slot = v);
+                    setState(() => _slot = v ?? 'all');
                     _load();
                   },
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: _q,
-                  decoration: InputDecoration(
-                    labelText: 'Suche',
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.search),
-                      onPressed: _loading ? null : _load,
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () => _openUrl(
+                          '$_webPartsUrl?fit=bike',
+                          warnLockedExternal: false,
+                        ),
+                        icon: const Icon(Icons.storefront_outlined),
+                        label: const Text('Web · Parts'),
+                      ),
                     ),
-                  ),
-                  onSubmitted: (_) => _load(),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _openFullShop,
-                  icon: const Icon(Icons.open_in_browser),
-                  label: Text(
-                    ref.read(userProfileStoreProvider).commerceMode ==
-                            'marketplace'
-                        ? 'Marktplatz im Browser'
-                        : 'Live-Shop (Shopify) im Browser',
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Der vollständige Shop öffnet den Live Shopify-gestützten '
-                  'Web-Shop (ggf. Store-Passwort).',
-                  style: TextStyle(color: AppColors.muted, fontSize: 12),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openUrl(
+                          _webShopUrl,
+                          warnLockedExternal: false,
+                        ),
+                        icon: const Icon(Icons.open_in_browser),
+                        label: const Text('Shop-Hub'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          if (wishlist.isNotEmpty) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Text(
-                'Merkliste',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ),
-            SizedBox(
-              height: 52,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: wishlist.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 6),
-                itemBuilder: (context, i) {
-                  final it = wishlist[i];
-                  return ActionChip(
-                    avatar: const Icon(Icons.favorite, size: 16, color: Colors.redAccent),
-                    label: Text('${it.manufacturer} ${it.model}'),
-                    onPressed: () => _showDetail(it),
-                  );
-                },
-              ),
-            ),
-          ],
           const Divider(height: 1),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : _items.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Keine Einträge — API offline oder Cache leer.',
-                          style: TextStyle(color: AppColors.muted),
+                : _error != null && _parts.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: AppColors.muted),
+                              ),
+                              const SizedBox(height: 12),
+                              FilledButton(
+                                onPressed: _load,
+                                child: const Text('Erneut laden'),
+                              ),
+                              TextButton(
+                                onPressed: () => _openUrl(
+                                  _webPartsUrl,
+                                  warnLockedExternal: false,
+                                ),
+                                child: const Text('Im Browser öffnen'),
+                              ),
+                            ],
+                          ),
                         ),
                       )
-                    : ListView.separated(
-                        itemCount: _items.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, i) {
-                          final it = _items[i];
-                          final onList = wishedIds.contains(it.id);
-                          return ListTile(
-                            title: Text('${it.manufacturer} ${it.model}'),
-                            subtitle: Text('${it.manufacturer} · ${it.model}'),
-                            dense: true,
-                            onTap: () => _showDetail(it),
-                            trailing: IconButton(
-                              tooltip: onList
-                                  ? 'Von Merkliste entfernen'
-                                  : 'Zur Merkliste',
-                              icon: Icon(
-                                onList
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: onList ? Colors.redAccent : null,
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: 0.68,
+                          ),
+                          itemCount: _parts.length,
+                          itemBuilder: (context, i) {
+                            final p = _parts[i];
+                            return Material(
+                              color: Theme.of(context).cardColor,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.card),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                onTap: () => _openUrl(
+                                  _webProductUrl(p.handle),
+                                  warnLockedExternal: false,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          if (p.imageUrl != null &&
+                                              p.imageUrl!.isNotEmpty)
+                                            Image.network(
+                                              p.imageUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const ColoredBox(
+                                                color: AppColors.chipIdle,
+                                                child: Icon(
+                                                  Icons.image_not_supported_outlined,
+                                                  color: AppColors.muted,
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            const ColoredBox(
+                                              color: AppColors.chipIdle,
+                                              child: Icon(
+                                                Icons.pedal_bike,
+                                                color: AppColors.muted,
+                                              ),
+                                            ),
+                                          Positioned(
+                                            left: 6,
+                                            top: 6,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 3,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black54,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              child: Text(
+                                                p.chip,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        10,
+                                        8,
+                                        10,
+                                        10,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            p.manufacturer,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: AppColors.muted,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            p.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                              height: 1.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _priceLabel(p),
+                                            style: const TextStyle(
+                                              color: AppColors.accent,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              onPressed: () => _toggleWishlist(it.id),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
           ),
         ],

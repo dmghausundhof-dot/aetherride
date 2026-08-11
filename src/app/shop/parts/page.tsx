@@ -20,6 +20,7 @@ import {
 } from "@/lib/shop/softFit";
 import { PartsProductCard } from "@/components/shop/PartsProductCard";
 import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
+import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import { cn } from "@/lib/utils";
 
 type LoadState =
@@ -184,6 +185,8 @@ function PartsPageInner() {
           <RefreshCw className="h-3.5 w-3.5" /> Aktualisieren
         </button>
       </header>
+
+      <StoreLockedBanner />
 
       {contextBike ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2.5 text-sm">

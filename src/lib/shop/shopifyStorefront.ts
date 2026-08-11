@@ -236,3 +236,104 @@ export async function fetchCollectionProducts(
 export function shopifyStoreProductUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/products/${handle}`;
 }
+
+const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
+  query ProductByHandle($handle: String!) {
+    product(handle: $handle) {
+      id
+      handle
+      title
+      vendor
+      productType
+      tags
+      description
+      availableForSale
+      featuredImage {
+        url
+        altText
+      }
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      onlineStoreUrl
+    }
+  }
+`;
+
+export type ProductByHandleResult =
+  | { ok: true; product: ShopifyStorefrontProduct }
+  | {
+      ok: false;
+      configured: boolean;
+      error: string;
+      code: "not_configured" | "not_found" | "http_error" | "graphql_error";
+    };
+
+export async function fetchProductByHandle(
+  handle: string
+): Promise<ProductByHandleResult> {
+  const config = getShopifyStorefrontConfig();
+  if (!config) {
+    return {
+      ok: false,
+      configured: false,
+      error: "Shopify Storefront nicht konfiguriert.",
+      code: "not_configured",
+    };
+  }
+  try {
+    const url = `https://${config.domain}/api/${config.apiVersion}/graphql.json`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": config.token,
+      },
+      body: JSON.stringify({
+        query: PRODUCT_BY_HANDLE_QUERY,
+        variables: { handle },
+      }),
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        configured: true,
+        error: `Storefront HTTP ${res.status}`,
+        code: "http_error",
+      };
+    }
+    const json = (await res.json()) as {
+      data?: { product?: ShopifyStorefrontProduct | null };
+      errors?: { message: string }[];
+    };
+    if (json.errors?.length) {
+      return {
+        ok: false,
+        configured: true,
+        error: json.errors.map((e) => e.message).join("; "),
+        code: "graphql_error",
+      };
+    }
+    const product = json.data?.product;
+    if (!product) {
+      return {
+        ok: false,
+        configured: true,
+        error: `Produkt „${handle}“ nicht gefunden.`,
+        code: "not_found",
+      };
+    }
+    return { ok: true, product };
+  } catch (err) {
+    return {
+      ok: false,
+      configured: true,
+      error: err instanceof Error ? err.message : "Storefront-Fehler",
+      code: "graphql_error",
+    };
+  }
+}

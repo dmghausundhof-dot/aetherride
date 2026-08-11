@@ -4,7 +4,6 @@ import { Suspense, useEffect, useMemo } from "react";
 import {
   Bookmark,
   ChevronRight,
-  ExternalLink,
   ShoppingBag,
   Store,
   Wrench,
@@ -13,17 +12,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { useCartStore } from "@/store/useCartStore";
 import {
-  SHOPIFY_STORE_BASE,
   getFeaturedShopifyProducts,
   getShopProductByFocus,
-  shopCollectionHref,
+  shopifyHandleFromProductId,
 } from "@/lib/shop/catalog";
 import { shopPartsHref } from "@/lib/shop/partsCatalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
-import { ProductVisual } from "@/components/shop/ProductVisual";
+import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
+import { FeaturedBikeCard } from "@/components/shop/FeaturedBikeCard";
+import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 function ShopHubInner() {
   const router = useRouter();
@@ -38,11 +37,8 @@ function ShopHubInner() {
   const cartCount = cartItems.reduce((n, i) => n + i.quantity, 0);
 
   const sportQuery = searchParams.get("sport");
-  const collectionUrl = sportQuery
-    ? shopCollectionHref(sportQuery)
-    : undefined;
 
-  // Legacy deep-links (slot/job/focus on wear parts) → /shop/parts
+  // Legacy deep-links → in-app destinations (never myshopify password)
   useEffect(() => {
     const slot = searchParams.get("slot");
     const job = searchParams.get("job");
@@ -52,7 +48,14 @@ function ShopHubInner() {
     const focusProduct = focus ? getShopProductByFocus(focus) : undefined;
     const isBikeFocus = focusProduct?.slot === "frame";
 
-    if (isBikeFocus) return;
+    if (isBikeFocus && focusProduct) {
+      const handle =
+        shopifyHandleFromProductId(focusProduct.id) ||
+        focus ||
+        focusProduct.id;
+      router.replace(inAppProductHref(handle));
+      return;
+    }
 
     if (slot || job === "replace" || job === "season" || (focus && !isBikeFocus)) {
       const partsSlot =
@@ -86,13 +89,22 @@ function ShopHubInner() {
     }).filter((r) => r.triggerKind === "wear");
   }, [activeBike, rides, productConsent]);
 
+  const sportPartsHref =
+    sportQuery === "gravel" || sportQuery === "city" || sportQuery === "light-e"
+      ? shopPartsHref({
+          bike: activeBike?.id,
+          fit: activeBike ? "bike" : undefined,
+        })
+      : null;
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Shop</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Featured Bikes & Ersatzteile aus dem AetherRide Shopify-Shop
+            Featured Bikes & Ersatzteile — Katalog in AetherRide, nicht hinter
+            der Shopify-Passwort-Seite
           </p>
         </div>
         <Link
@@ -109,6 +121,8 @@ function ShopHubInner() {
         </Link>
       </header>
 
+      <StoreLockedBanner />
+
       <GaragePartsCta bikeId={activeBike?.id} bikeName={activeBike?.name} />
 
       <section className="rounded-2xl border border-accent/40 bg-accent/10 p-4">
@@ -119,8 +133,8 @@ function ShopHubInner() {
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold">Ersatzteile · featured-parts</h2>
             <p className="mt-0.5 text-xs text-text-secondary">
-              Live Collection (~43–48 ACTIVE) mit Soft-Fit-Tags — Beläge,
-              Griffe, Fluid und mehr. Kein Snapshot.
+              Live Collection (~43–48 ACTIVE) via Storefront API — Soft-Fit,
+              Bilder, Preise. Kein Snapshot, kein Password-Dead-End.
             </p>
           </div>
         </div>
@@ -172,66 +186,41 @@ function ShopHubInner() {
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <div className="mb-3 flex items-start gap-3">
+      <section>
+        <div className="mb-3 flex items-start gap-3 px-0.5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
             <Store className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold">Featured · Kompletträder</h2>
             <p className="mt-0.5 text-xs text-text-secondary">
-              Checkout auf dem Shopify-Storefront (
-              {SHOPIFY_STORE_BASE.replace("https://", "")}).
+              Details in AetherRide. Externer Shopify-Checkout nur mit klarer
+              Owner-Preview-Warnung (Store gesperrt).
             </p>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {featuredBikes.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-2xl border border-border bg-background p-4"
-            >
-              <div className="flex gap-3">
-                <ProductVisual product={p} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs uppercase tracking-wide text-accent">
-                    AetherRide Shop
-                  </div>
-                  <div className="text-xs uppercase tracking-wide text-text-secondary">
-                    {p.manufacturer}
-                  </div>
-                  <h3 className="mt-0.5 font-semibold leading-snug">{p.name}</h3>
-                  <div className="mt-1 text-lg font-bold tabular-nums text-accent">
-                    {p.priceEur.toLocaleString("de-DE")} €
-                  </div>
-                </div>
-              </div>
-              <a
-                href={p.affiliateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white"
-              >
-                Im Shopify-Shop öffnen <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
+            <FeaturedBikeCard key={p.id} product={p} />
           ))}
         </div>
       </section>
 
-      {collectionUrl ? (
+      {sportPartsHref && sportQuery ? (
         <div className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
           <p className="font-medium text-primary">
-            Collection für „{sportQuery}“
+            Disziplin „{sportQuery}“ — Ersatzteile in AetherRide
           </p>
-          <a
-            href={collectionUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <p className="mt-1 text-xs text-text-secondary">
+            Früher: externe Collection-URL (Passwort-Wall). Jetzt: In-App
+            featured-parts.
+          </p>
+          <Link
+            href={sportPartsHref}
             className="mt-2 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white"
           >
-            Collection öffnen <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+            Ersatzteile öffnen <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       ) : null}
 
@@ -252,9 +241,17 @@ function ShopHubInner() {
       ) : null}
 
       <p className="text-center text-xs text-text-secondary">
-        Hub: Bikes hier · Ersatzteile unter{" "}
-        <Link href="/shop/parts" className={cn("text-accent")}>
+        Gültige Pfade:{" "}
+        <Link href="/shop" className="text-accent">
+          /shop
+        </Link>
+        {" · "}
+        <Link href="/shop/parts" className="text-accent">
           /shop/parts
+        </Link>
+        {" · "}
+        <Link href="/shop/p/orbea-terra-m20" className="text-accent">
+          /shop/p/[handle]
         </Link>
       </p>
     </div>
