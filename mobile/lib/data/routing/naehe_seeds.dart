@@ -30,7 +30,7 @@ class NaeheSeedPoi {
     final type = m['type'] ?? m['kind'];
     return NaeheSeedPoi(
       atMin: (offset as num?)?.round() ?? 0,
-      title: (m['title'] as String?) ?? '',
+      title: (m['title'] as String?) ?? (m['name'] as String?) ?? '',
       kind: (type as String?) ?? 'poi',
     );
   }
@@ -211,6 +211,7 @@ BikeCategory? _categoryFromSportTag(String raw) {
     'gravel' => BikeCategory.gravel,
     'road' || 'rennrad' => BikeCategory.road,
     'city' || 'urban' => BikeCategory.urban,
+    'ebike' || 'e-bike' => BikeCategory.etrekking,
     'touring' || 'trekking' || 'etrekking' => BikeCategory.etrekking,
     'emtb' => BikeCategory.emtb,
     _ => null,
@@ -252,6 +253,10 @@ class NaeheSeedsBundle {
   static const dachAssetPath =
       'assets/seeds/p0-dach-60min-naehe-v1.json';
 
+  /// Rhein-Neckar P0 60-min loops (Heidelberg + Mannheim).
+  static const rheinNeckarAssetPath =
+      'assets/seeds/p0-rhein-neckar-60min-naehe-v1.json';
+
   final List<NaeheSeedRoute> routes;
   final String labelWithoutLocation;
   final String labelWithLocation;
@@ -269,23 +274,33 @@ class NaeheSeedsBundle {
     return null;
   }
 
-  /// Loads Berlin Nähe seeds + DACH P0 loops, concatenated and deduped by id
-  /// (Berlin wins on collision — Tempelhof enrich lives in the Berlin asset).
+  /// Loads Berlin Nähe seeds + DACH + Rhein-Neckar P0 loops, concatenated and
+  /// deduped by id (Berlin wins on collision — Tempelhof enrich lives in the
+  /// Berlin asset).
   static Future<NaeheSeedsBundle> load({
     String path = assetPath,
     String? dachPath = dachAssetPath,
+    String? rheinNeckarPath = rheinNeckarAssetPath,
   }) async {
     final raw = await rootBundle.loadString(path);
-    final berlin = parse(raw);
-    if (dachPath == null || dachPath.isEmpty) return berlin;
-    try {
-      final dachRaw = await rootBundle.loadString(dachPath);
-      final dach = parse(dachRaw);
-      return merge(berlin, dach);
-    } catch (_) {
-      // DACH asset optional at runtime (tests / older builds).
-      return berlin;
+    var bundle = parse(raw);
+    if (dachPath != null && dachPath.isNotEmpty) {
+      try {
+        final dachRaw = await rootBundle.loadString(dachPath);
+        bundle = merge(bundle, parse(dachRaw));
+      } catch (_) {
+        // DACH asset optional at runtime (tests / older builds).
+      }
     }
+    if (rheinNeckarPath != null && rheinNeckarPath.isNotEmpty) {
+      try {
+        final rnRaw = await rootBundle.loadString(rheinNeckarPath);
+        bundle = merge(bundle, parse(rnRaw));
+      } catch (_) {
+        // Rhein-Neckar asset optional at runtime (tests / older builds).
+      }
+    }
+    return bundle;
   }
 
   /// Concatenate [primary] then [extra], dropping extra routes whose id already
