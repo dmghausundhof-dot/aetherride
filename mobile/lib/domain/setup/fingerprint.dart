@@ -34,7 +34,9 @@ class SetupFingerprint {
           k.contains('front') &&
           (k.contains('pressure') || k.contains('psi')) &&
           tire == null) {
-        tire = 'Reifen ${v.valueNum.toStringAsFixed(1)} bar';
+        // Values are stored as psi (tire_*.pressure_psi). Labelling the raw
+        // number as "bar" produced absurd readings (e.g. 22 bar ≈ 319 psi).
+        tire = 'Reifen ${v.valueNum.toStringAsFixed(0)} psi';
       }
     }
     final lines = <String>[
