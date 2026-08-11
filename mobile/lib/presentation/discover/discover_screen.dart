@@ -4870,8 +4870,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.m),
+          // ListView child: min height + stretch width (Q-BAR-DIS-02).
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 'Noch keine ~60-Min-Touren hier.',
@@ -5126,13 +5128,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.m),
+        // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             InkWell(
               onTap: () => unawaited(_openDetail(r.id, r.center)),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
