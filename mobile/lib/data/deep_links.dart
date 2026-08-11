@@ -242,7 +242,9 @@ class DeepLinkHandler {
       }
       _ref.read(activeRouteProvider.notifier).state = seed.toActiveRoute();
       _ref.read(shellTabIndexProvider.notifier).state = 2;
-      debugPrint('DeepLink: seed loop $loopId → Ride');
+      // D-60-05: start=1 must auto-begin tracking (Ride listens to this).
+      _ref.read(rideAutostartProvider.notifier).state = true;
+      debugPrint('DeepLink: seed loop $loopId → Ride + autostart');
       return true;
     } catch (e) {
       debugPrint('DeepLink seed loop: $e');
