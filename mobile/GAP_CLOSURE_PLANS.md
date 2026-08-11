@@ -78,10 +78,19 @@ Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
 ## Ops erledigt
 - `ride_chunks.sql` auf Supabase-Projekt `aetherride` (krmgatsugplouzrhhozn) angewendet
   (`ride_chunk_uploads` + Bucket `ride-chunks`)
+- Deep Links / App Links Code: custom scheme + autoVerify hosts + `/open/ride` + well-known
+- `GET /api/ops/env-check` + `npm run smoke:web:prod` / `smoke:sync-auth` / `smoke:deeplink`
+- Flutter `DeepLinkParse` + Sync-Konflikt-UI (Profil) + SyncEngine 409-Strategien
+- Emulator-Cleartext nur Loopback (`network_security_config.xml`)
 
 ## Ops offen (manuell)
+- **`git push`** der Commits `4c21b4f` + `e5e8291` → Vercel redeploy (env-check live)
+- Vercel: `NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS` (Debug: `bash scripts/ops-android-auth.sh`; + Play App-Signing)
+- Vercel: `NEXT_PUBLIC_IOS_TEAM_ID` (Universal Links)
+- Device: `npm run smoke:deeplink:adb` (AVD `aether_api34` oder Hardware)
 - Play Console Produkt `aetherride_pro_monthly` + License Tester
 - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (sonst Trusted-Token-MVP)
 - Region/Valhalla-Build (`npm run routing:region` / `routing:valhalla:android`)
 - Mapillary- / Strava-Tokens in Env
 - Bosch LDI echtes Protokoll (Hardware G-1)
+- Optional Auth-Sync: `SMOKE_EMAIL` + `SMOKE_PASSWORD` → `npm run smoke:sync-auth`

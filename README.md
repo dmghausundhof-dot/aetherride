@@ -160,6 +160,18 @@ Style-Priorität: Prefs-PMTiles-Style → compile-time PMTiles → Stadia → Op
 
 Lokal abhaken: `./scripts/ops-checklist.sh`
 
+```bash
+npm run smoke:web:prod          # Routing, Geometry, Sync-401, env-check, well-known
+npm run smoke:sync-auth         # optional mit SMOKE_EMAIL + SMOKE_PASSWORD
+npm run smoke:deeplink          # App Links paths + geometry
+npm run smoke:deeplink:adb      # + adb VIEW (Gerät nötig)
+bash scripts/ops-android-auth.sh
+```
+
+- [ ] **Git push** → Vercel Prod (damit `/api/ops/env-check` live ist)  
+- [ ] Vercel: `NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS` (+ Play App-Signing-SHA)  
+- [ ] Vercel: `NEXT_PUBLIC_IOS_TEAM_ID`  
+- [ ] Device Deep-Link: `aetherride://ride?route=r-heidelberg-city`  
 - [ ] DSFA abgeschlossen  
 - [ ] A11y-Audit ohne kritische Befunde  
 - [ ] Offline-Regression Flugmodus  

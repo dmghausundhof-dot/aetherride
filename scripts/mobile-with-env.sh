@@ -21,11 +21,22 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
-add_define API_BASE_URL "${API_BASE_URL:-http://10.0.2.2:3001}"
+# Default: emulator → host Next (often :3001). Prod smoke:
+#   API_BASE_URL=https://aetherride.vercel.app ./scripts/mobile-with-env.sh run
+default_api="http://10.0.2.2:3001"
+if [[ -n "${NEXT_PUBLIC_APP_URL:-}" && -z "${API_BASE_URL:-}" ]]; then
+  # Only use public app URL when it is not localhost (device cannot reach host localhost).
+  case "${NEXT_PUBLIC_APP_URL}" in
+    http://localhost*|http://127.*|http://0.0.0.0*) ;;
+    *) default_api="${NEXT_PUBLIC_APP_URL%/}" ;;
+  esac
+fi
+add_define API_BASE_URL "${API_BASE_URL:-$default_api}"
 add_define STADIA_API_KEY "${STADIA_API_KEY:-${NEXT_PUBLIC_STADIA_API_KEY:-}}"
 add_define PMTILES_URL "${PMTILES_URL:-${NEXT_PUBLIC_PMTILES_URL:-}}"
 add_define SUPABASE_URL "${SUPABASE_URL:-${NEXT_PUBLIC_SUPABASE_URL:-}}"
 add_define SUPABASE_ANON_KEY "${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}}"
+add_define SENTRY_DSN "${SENTRY_DSN:-}"
 
 cmd="${1:-run}"
 shift || true
@@ -33,8 +44,11 @@ shift || true
 export PATH="${HOME}/flutter/bin:${PATH}"
 export JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/17.0.9-tem}"
 
+echo "mobile-with-env: API_BASE_URL dart-define → ${API_BASE_URL:-$default_api}"
+
 case "$cmd" in
   run) flutter run "${defines[@]}" "$@" ;;
   apk) flutter build apk --debug "${defines[@]}" "$@" ;;
+  release-apk) flutter build apk --release "${defines[@]}" "$@" ;;
   *) flutter "$cmd" "${defines[@]}" "$@" ;;
 esac
