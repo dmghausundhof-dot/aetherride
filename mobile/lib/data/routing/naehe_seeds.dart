@@ -266,7 +266,10 @@ class NaeheSeedRoute {
     }
 
     final duration = (m['duration_min'] as num?)?.round() ?? 0;
-    final isLoop = m['loop'] == true || m['is_loop'] == true;
+    // Parity with Nähe fromJson: is_loop | loop | closed.
+    final isLoop = m['loop'] == true ||
+        m['is_loop'] == true ||
+        m['closed'] == true;
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
