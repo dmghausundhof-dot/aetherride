@@ -8,7 +8,7 @@ import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 export const metadata: Metadata = {
   title: "Preise – Free & Pro",
   description:
-    "AetherRide Free und Pro: Explore und Planner für alle. Multi-Bike, Bracketing, Reichweite und Offline-Packs mit Pro.",
+    "AetherRide Free und Pro: Touren und Planen für alle. Multi-Bike, Bracketing, Reichweite und Offline-Packs mit Pro.",
 };
 
 const rows: {
@@ -16,7 +16,7 @@ const rows: {
   free: boolean | string;
   pro: boolean | string;
 }[] = [
-  { feature: "Explore & öffentliche Touren", free: true, pro: true },
+  { feature: "Touren & öffentliche Routen", free: true, pro: true },
   { feature: "Desktop Planner & Bibliothek", free: true, pro: true },
   { feature: "1 Bike in der Garage", free: true, pro: true },
   { feature: "Multi-Bike-Garage", free: false, pro: true },
@@ -61,7 +61,7 @@ export default function PricingPage() {
             <h2 className="text-xl font-bold">Free</h2>
             <p className="mt-1 text-3xl font-bold tabular-nums">0 €</p>
             <p className="mt-2 text-sm text-text-secondary">
-              Explore, Planner, 1 Bike, App-Navigation
+              Touren, Planen, 1 Bike, App-Navigation
             </p>
             <Link
               href="/discover"

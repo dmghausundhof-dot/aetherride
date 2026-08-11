@@ -72,7 +72,7 @@ export function TourElevationClient({ tour }: { tour: PublicTour }) {
       <ElevationChart elev={elev} />
       <p className="mt-2 text-[11px] text-text-secondary">
         {note ??
-          "Geschätztes Profil aus km/hm — kein vermessener Track. Live-Routing im Planner liefert die echte Linie."}
+          "Geschätztes Profil aus km/hm — kein vermessener Track. Live-Routing unter Planen liefert die echte Linie."}
       </p>
       <p className="mt-1 text-xs tabular-nums text-text-secondary">
         ~{tour.elevationM} hm · {tour.distanceKm} km

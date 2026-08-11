@@ -156,6 +156,71 @@ String _chipSurfaceLabel(String raw) => switch (raw) {
       _ => raw.split('/').first,
     };
 
+/// Leitet Untergrund aus Text/Typ ab (OA/OSM oft ohne surface-Feld).
+String _inferSurfaceTag({
+  required String title,
+  String? type,
+  String? difficulty,
+  RoutingProfile? profile,
+}) {
+  final blob =
+      '${title.toLowerCase()} ${type?.toLowerCase() ?? ''} ${difficulty?.toLowerCase() ?? ''}';
+  if (blob.contains('city') ||
+      blob.contains('urban') ||
+      blob.contains('stadt') ||
+      blob.contains('pendel') ||
+      blob.contains('alltag')) {
+    return 'mixed/urban';
+  }
+  if (blob.contains('road') ||
+      blob.contains('rennrad') ||
+      blob.contains('asphalt') ||
+      blob.contains('race') ||
+      blob.contains('radweg')) {
+    return 'asphalt/paved';
+  }
+  if (blob.contains('gravel') ||
+      blob.contains('schotter') ||
+      blob.contains('forst') ||
+      blob.contains('unpaved')) {
+    return 'gravel/compacted';
+  }
+  if (blob.contains('mtb') ||
+      blob.contains('trail') ||
+      blob.contains('enduro') ||
+      blob.contains('single') ||
+      blob.contains('s2') ||
+      blob.contains('s3') ||
+      blob.contains('schwer')) {
+    return 'trail/root';
+  }
+  // Fallback nach aktivem Routing-Profil
+  return switch (profile) {
+    RoutingProfile.road => 'asphalt/paved',
+    RoutingProfile.urban => 'mixed/urban',
+    RoutingProfile.gravel || RoutingProfile.ebikeTour => 'gravel/compacted',
+    RoutingProfile.mtbTrail ||
+    RoutingProfile.mtbEnduro ||
+    RoutingProfile.emtb =>
+      'trail/root',
+    _ => 'flow/compact',
+  };
+}
+
+/// Weicher Surface-Filter: Tour-Tags vs. Nutzer-Chip (nicht nur exakter Match).
+bool _surfaceMatchesFilter(String tourSurface, String filter) {
+  if (tourSurface == filter) return true;
+  // Verwandte Gruppen
+  const groups = <String, Set<String>>{
+    'asphalt/paved': {'asphalt/paved', 'mixed/urban'},
+    'mixed/urban': {'mixed/urban', 'asphalt/paved'},
+    'gravel/compacted': {'gravel/compacted', 'flow/compact'},
+    'flow/compact': {'flow/compact', 'gravel/compacted', 'trail/root'},
+    'trail/root': {'trail/root', 'flow/compact'},
+  };
+  return groups[filter]?.contains(tourSurface) ?? false;
+}
+
 /// Touren-Schwierigkeit / Beanspruchung (nicht nur MTB-S-Skala-Wording).
 String _chipScaleLabel(String code) => switch (code) {
       'S0' => 'Leicht',
@@ -1035,10 +1100,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           center = LatLng(lat, lng);
         }
         final difficulty = (m['difficulty'] as String?) ?? 'offen';
-        final surface = difficulty.toLowerCase().contains('schwer') ||
-                difficulty.toLowerCase().contains('s2')
-            ? 'trail/root'
-            : 'flow/compact';
+        final surface = _inferSurfaceTag(
+          title: title,
+          difficulty: difficulty,
+          profile: _profile,
+        );
         final track = _parseLngLatTrack(m['geometry'] ?? m['track']);
         if (track != null && track.length >= 2 && centerRaw is! List) {
           center = LatLng(track.first[1], track.first[0]);
@@ -1127,6 +1193,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final parsed = <_RouteSuggestion>[];
       for (final h in hits) {
         final isMtb = h.type.toLowerCase().contains('mtb');
+        final surface = _inferSurfaceTag(
+          title: h.title,
+          type: h.type,
+          difficulty: h.difficulty,
+          profile: _profile,
+        );
         parsed.add(
           _RouteSuggestion(
             id: h.id,
@@ -1135,7 +1207,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             elevationM: 0,
             durationMin: h.durationMin,
             mtbScale: h.difficulty ?? (isMtb ? 'S1' : 'offen'),
-            surface: isMtb ? 'trail/root' : 'flow/compact',
+            surface: surface,
             matchScore: 92,
             reasons: [
               if (h.summary != null) h.summary!,
@@ -1451,7 +1523,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         final delta = (r.durationMin - _minutes).abs();
         if (delta > 45) return false;
       }
-      if (_surfaceFilter != null && r.surface != _surfaceFilter) {
+      if (_surfaceFilter != null &&
+          !_surfaceMatchesFilter(r.surface, _surfaceFilter!)) {
         return false;
       }
       if (_scaleFilter != null) {

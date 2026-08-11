@@ -113,7 +113,7 @@ export default function LibraryPage() {
             href="/discover"
             className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium"
           >
-            Explore
+            Touren
           </Link>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function LibraryPage() {
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
             <Bookmark className="mx-auto h-8 w-8 text-text-secondary" />
             <p className="mt-3 text-sm text-text-secondary">
-              Noch nichts gespeichert. Speichere Touren aus Explore, Planner
+              Noch nichts gespeichert. Speichere Touren aus Touren, Planen
               oder öffentlichen Tour-Seiten.
             </p>
             <Link

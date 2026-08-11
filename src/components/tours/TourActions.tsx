@@ -120,14 +120,14 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
           <Route className="h-3.5 w-3.5 text-accent" />
-          Im Planner öffnen
+          Im Planer öffnen
         </Link>
         <Link
           href={`/discover?route=${encodeURIComponent(tour.id)}`}
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
           <Map className="h-3.5 w-3.5 text-accent" />
-          In Explore
+          In Touren
         </Link>
         <Link
           href="/download"

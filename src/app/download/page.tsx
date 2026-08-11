@@ -53,7 +53,7 @@ export default function DownloadPage() {
           <p className="mt-4 text-xs text-text-secondary">
             {hasStoreLinks()
               ? "Offizielle Store-Links — Navigation und Sensoren nur in der App."
-              : "Store-Links: NEXT_PUBLIC_APP_STORE_URL / NEXT_PUBLIC_PLAY_STORE_URL in Vercel. Bis dahin: Explore und Garage im Web."}
+              : "Store-Links: NEXT_PUBLIC_APP_STORE_URL / NEXT_PUBLIC_PLAY_STORE_URL in Vercel. Bis dahin: Touren und Garage im Web."}
           </p>
         </div>
 

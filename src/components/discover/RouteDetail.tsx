@@ -429,7 +429,7 @@ export function RouteDetail({
             href={`/planner?tour=${encodeURIComponent(route.id)}`}
             className="text-xs font-medium text-accent hover:underline"
           >
-            Im Planner öffnen →
+            Im Planer öffnen →
           </Link>
         </div>
       </div>

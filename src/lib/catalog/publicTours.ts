@@ -488,7 +488,7 @@ function autoDescription(t: TourInput, region: RegionDef | null): string {
     `${t.name} ist eine redaktionelle Tour-Idee für ${bikeCategoryLabel(t.primaryCategory)} in ${reg}. ` +
     `Ca. ${t.distanceKm} km und ${t.elevationM} Höhenmeter in rund ${t.durationMin} Minuten. ` +
     `Oberfläche: ${t.surface}.${diff} ` +
-    `Plane die Route im Desktop-Planner oder öffne sie in Explore — Navigation läuft in der nativen App. ` +
+    `Plane die Route unter Planen oder öffne sie unter Touren — Navigation läuft in der nativen App. ` +
     `Keine garantierte GPS-Spur: Geometrie wird beim Planen mit dem Routing-Profil berechnet.`
   );
 }

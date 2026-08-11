@@ -23,14 +23,14 @@ export const metadata: Metadata = {
     "Gravel",
     "MTB",
     "E-Bike",
-    "Route Planner",
+    "Touren planen",
     "Bike Garage",
     "AetherRide",
   ],
   openGraph: {
     title: "AetherRide – Touren planen. Bike verstehen.",
     description:
-      "Für alle Fahrradfahrer: Explore, Garage & Setup im Web. Navigation in der App.",
+      "Für alle Fahrradfahrer: Touren, Garage & Setup im Web. Navigation in der App.",
     locale: "de_DE",
     type: "website",
   },

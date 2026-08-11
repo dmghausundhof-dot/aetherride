@@ -18,18 +18,18 @@ export const GUIDES: Guide[] = [
     slug: "gravel-touren-planen",
     title: "Gravel-Touren planen: Belag, Profile und ehrliche Erwartungen",
     teaser:
-      "Warum Gravel-Routing oft „halluziniert“ und wie du im Planner mit Surface und Profilen bessere Touren baust.",
+      "Warum Gravel-Routing oft „halluziniert“ und wie du unter Planen mit Surface und Profilen bessere Touren baust.",
     category: "planning",
     readMin: 6,
     body: [
       "Gravel lebt von gemischten Oberflächen: Asphalt, Schotter, Forstwege. Viele Apps priorisieren Trails oder Straße zu stark — und schicken dich auf nicht existente Singletracks oder pure Autobahn-Alternativen.",
-      "In AetherRide wählst du im Planner das Profil „Gravel“. Das Routing bevorzugt tracks und unpaved, meidet aber harte MTB-Scales. Trotzdem: ohne Live-Engine (Demo-Modus) sind Linien Näherungen — prüfe kritische Abschnitte auf der Karte und speichere GPX.",
+      "In AetherRide wählst du unter Planen das Profil „Gravel“. Das Routing bevorzugt tracks und unpaved, meidet aber harte MTB-Scales. Trotzdem: ohne Live-Engine (Demo-Modus) sind Linien Näherungen — prüfe kritische Abschnitte auf der Karte und speichere GPX.",
       "Tipp: plane am Desktop, speichere in der Bibliothek, navigiere in der App. Für Mehrtages-Touren brich Etappen manuell (Start/Via/Ziel) und nutze flache Fernradwege als Backup.",
       "Community-Wunsch: transparente Surface-Layer und Warnungen statt stiller Umleitungen. Genau das ist unser Honesty-Ansatz — Demo klar labeln, Live-Status anzeigen.",
     ],
     relatedHrefs: [
-      { href: "/planner", label: "Planner öffnen" },
-      { href: "/discover?sport=gravel", label: "Gravel in Explore" },
+      { href: "/planner", label: "Planen öffnen" },
+      { href: "/discover?sport=gravel", label: "Gravel in Touren" },
       { href: "/regions/schwarzwald", label: "Region Schwarzwald" },
     ],
   },
@@ -42,11 +42,11 @@ export const GUIDES: Guide[] = [
     readMin: 5,
     body: [
       "Rennrad-Touren brauchen andere Filter als MTB: Asphaltanteil, Verkehr und kumulierte Höhenmeter zählen mehr als S-Skalen.",
-      "Nutze in Explore den Sport-Filter „Rennrad“ und Difficulty „Entspannt“ vs. „Sportlich“. Öffentliche Tour-Seiten zeigen Wetter und ein Höhenprofil — das Profil aus Metadaten ist eine Schätzung, bis du live routest.",
+      "Nutze unter Touren den Sport-Filter „Rennrad“ und Difficulty „Entspannt“ vs. „Sportlich“. Öffentliche Tour-Seiten zeigen Wetter und ein Höhenprofil — das Profil aus Metadaten ist eine Schätzung, bis du live routest.",
       "Bodensee-Südufer und Inn-Radweg eignen sich für lange, flache Tage. Kaiserstuhl und Alpenvorland liefern Intervalle. Speichere Varianten in der Bibliothek und starte in der App.",
     ],
     relatedHrefs: [
-      { href: "/discover?sport=road", label: "Rennrad Explore" },
+      { href: "/discover?sport=road", label: "Rennrad Touren" },
       { href: "/tours/r-bodensee-road", label: "Bodensee-Tour" },
       { href: "/tours/idea-kaiserstuhl-road", label: "Kaiserstuhl" },
     ],
@@ -62,7 +62,7 @@ export const GUIDES: Guide[] = [
       "Reichweite hängt von Gewicht, Wind, Temperatur, Höhenmetern, Reifendruck, Assist-Modus und Akkuzustand ab. Eine einzelne Kilometerzahl ist Marketing — seriöse Systeme zeigen Spannen.",
       "AetherRide Pro schätzt ein Band (kmLow–kmHigh) und kann sich über Rides kalibrieren. Bosch LDI liefert Live-SOC in der App — nicht im Browser.",
       "Plane anspruchsvolle Touren (z. B. E-MTB Alpin) mit Reserve: Ziel unter 70–80 % der oberen Spanne. Lade-Infrastruktur und Eco-Modi für den Rückweg mitdenken.",
-      "In Explore siehst du bei E-Bikes Reichweiten-Hinweise zu Tour-Ideen. Navigation und Sensoren bleiben App-only.",
+      "Unter Touren siehst du bei E-Bikes Reichweiten-Hinweise zu Tour-Ideen. Navigation und Sensoren bleiben App-only.",
     ],
     relatedHrefs: [
       { href: "/pricing", label: "Pro & Reichweite" },
@@ -114,13 +114,13 @@ export const GUIDES: Guide[] = [
     readMin: 4,
     body: [
       "Große Outdoor-Anbieter trennen klar: Web für Inspiration, SEO-Touren und Desktop-Planung; App für Offline, Turn-by-turn und Sensoren.",
-      "AetherRide folgt dem: Explore, Planner, Tour-Seiten, Garage und Bibliothek im Browser. Live-Ride, BLE und Hintergrund-GPS nur nativ.",
+      "AetherRide folgt dem: Touren, Planen, Tour-Seiten, Garage und Bibliothek im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
       "Wenn du „Losfahren“ siehst, landest du auf der App-Bridge — speichere die Tour und öffne sie auf dem Gerät.",
     ],
     relatedHrefs: [
       { href: "/download", label: "App laden" },
-      { href: "/planner", label: "Planner" },
-      { href: "/discover", label: "Explore" },
+      { href: "/planner", label: "Planen" },
+      { href: "/discover", label: "Touren" },
     ],
   },
 ];

@@ -43,7 +43,7 @@ export default function RideAppBridgePage() {
             className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Zurück zu Explore
+            Zurück zu Touren
           </Link>
           <Link href="/" className="text-sm font-bold">
             Aether<span className="text-accent">Ride</span>
@@ -106,9 +106,9 @@ export default function RideAppBridgePage() {
           </div>
         ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-5 text-sm text-text-secondary">
-            Noch keine Tour ausgewählt. Plane eine Route in{" "}
+            Noch keine Tour ausgewählt. Plane eine Route unter{" "}
             <Link href="/discover" className="font-medium text-accent">
-              Explore
+              Touren
             </Link>
             , speichere sie und starte dann in der App.
           </div>
@@ -151,7 +151,7 @@ export default function RideAppBridgePage() {
             <span>
               <span className="font-semibold">Weiter planen</span>
               <span className="block text-xs text-text-secondary">
-                Explore · Desktop-Cockpit
+                Touren · Desktop-Cockpit
               </span>
             </span>
           </Link>

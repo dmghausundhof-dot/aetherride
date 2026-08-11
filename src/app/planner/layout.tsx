@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Route Planner",
+  title: "Planen – Route für alle Disziplinen",
   description:
-    "Desktop Route Planner für Rennrad, Gravel, MTB, E-Bike und City. Start, Via, Ziel — Navigation in der App.",
+    "Desktop-Planer für Rennrad, Gravel, MTB, E-Bike und City. Start, Via, Ziel — Navigation in der App.",
 };
 
 export default function PlannerLayout({

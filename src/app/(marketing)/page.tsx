@@ -45,9 +45,9 @@ const sports = [
 const features = [
   {
     icon: Compass,
-    title: "Explore & planen",
+    title: "Touren & planen",
     description:
-      "Touren entdecken, filtern und am großen Bildschirm planen — für jede Disziplin.",
+      "Touren entdecken, filtern und am großen Bildschirm planen — MTB, Gravel, Rennrad, City, E-Bike.",
   },
   {
     icon: Smartphone,
@@ -73,7 +73,7 @@ const steps = [
   {
     n: "1",
     title: "Disziplin wählen & Tour finden",
-    body: "Explore öffnen — Rennrad, Gravel, MTB, City oder E-Bike. Filter und Karte am Desktop.",
+    body: "Touren öffnen — Rennrad, Gravel, MTB, City oder E-Bike. Filter und Karte am Desktop.",
   },
   {
     n: "2",
@@ -179,13 +179,13 @@ export default function LandingPage() {
                 href="/discover"
                 className="text-sm font-semibold text-accent hover:underline"
               >
-                Explore →
+                Touren →
               </Link>
               <Link
                 href="/planner"
                 className="text-sm font-semibold text-accent hover:underline"
               >
-                Planner →
+                Planen →
               </Link>
               <Link
                 href="/regions"
@@ -309,7 +309,7 @@ export default function LandingPage() {
                 href="/discover"
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-8 text-sm font-semibold text-white hover:bg-accent-hover"
               >
-                Explore starten
+                Touren starten
               </Link>
               <Link
                 href="/pricing"

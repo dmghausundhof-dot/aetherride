@@ -24,7 +24,7 @@ export default function RegionsIndexPage() {
           </h1>
           <p className="mt-3 max-w-2xl text-text-secondary">
             Redaktionelle Tour-Ideen nach Gebiet — Rennrad, Gravel, MTB, City und
-            Touring gleichwertig. Plane im Desktop-Planner, fahre in der App.
+            Touring gleichwertig. Plane am Desktop unter Touren/Planen, fahre in der App.
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {regions.map((r) => {
