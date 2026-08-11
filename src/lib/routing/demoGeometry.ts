@@ -53,6 +53,16 @@ const BASE: Record<string, { lat: number; lng: number }> = {
   "r-mainz-road": { lat: 50.0, lng: 8.25 },
   "r-konstanz-urban": { lat: 47.66, lng: 9.18 },
   "r-ulm-urban": { lat: 48.4, lng: 9.99 },
+  "r-starnberg-road": { lat: 47.99, lng: 11.34 },
+  "r-ammersee-gravel": { lat: 48.0, lng: 11.1 },
+  "r-garmisch-emtb": { lat: 47.49, lng: 11.1 },
+  "r-lindau-road": { lat: 47.55, lng: 9.68 },
+  "r-friedrichshafen-urban": { lat: 47.65, lng: 9.48 },
+  "r-regensburg-urban": { lat: 49.02, lng: 12.1 },
+  "r-augsburg-road": { lat: 48.37, lng: 10.9 },
+  "r-passau-touring": { lat: 48.57, lng: 13.46 },
+  "r-wuerzburg-road": { lat: 49.79, lng: 9.93 },
+  "r-dresden-urban": { lat: 51.05, lng: 13.74 },
   default: { lat: 47.99, lng: 7.85 },
 };
 

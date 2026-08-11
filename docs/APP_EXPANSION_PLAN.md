@@ -8,7 +8,7 @@ Stand: 2026-08-11 · Multi-Sport (MTB · Gravel · Rennrad · City · E-Bike)
 
 | Bereich | Heute |
 |---------|--------|
-| Öffentliche Touren (`publicTours.ts`) | ~46 redaktionelle Ideen / Pins (Multi-Sport DACH + EU) |
+| Öffentliche Touren (`publicTours.ts`) | ~56 redaktionelle Ideen / Pins (Multi-Sport DACH + EU) |
 | Live-Routen | GraphHopper/OSRM/OA/OSM je nach Env & Standort |
 | Mobile | Offline-first Garage/Ride, Touren mit Sport-Chips, Near-me |
 | Web | Touren/Planen, Near-me Hero, SEO `/tours/*` |

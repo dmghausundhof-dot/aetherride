@@ -4842,12 +4842,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ),
                         onPressed: () => _startRide(suggestion: r),
                         child: Text(
-                          r.id.startsWith('idea-') ||
-                                  r.id.startsWith('oa-') ||
-                                  r.id.startsWith('r-') ||
-                                  r.id.contains('demo')
-                              ? 'Los · Track?'
-                              : 'Los',
+                          // OSM mit Polyline = sicher; Katalog/idea lädt
+                          // Override/Live-Geometry beim Start.
+                          r.hasTrack
+                              ? 'Losfahren'
+                              : (r.id.startsWith('oa-') ||
+                                      r.id.contains('demo'))
+                                  ? 'Los · Track?'
+                                  : 'Losfahren',
                         ),
                       ),
                     ],
