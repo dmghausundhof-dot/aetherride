@@ -64,6 +64,7 @@ export function rheinNeckarLoopSuggestions(
     (s) => s.type === "route" && s.duration_min != null
   );
   return seeds.map((s) => {
+    // 0 = unknown sentinel — list/panel omit via sanitizeElevationM.
     const elevation = sanitizeElevationM(s.ascent_m, s.distance_km) ?? 0;
     const center: [number, number] | undefined = s.center
       ? [s.center.lng, s.center.lat]

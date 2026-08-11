@@ -4375,8 +4375,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
               children: [
                 Text(
-                  '${detail.distanceKm} km · ${detail.elevationM} hm · '
-                  '${detail.durationMin} min',
+                  // List↔panel parity: omit hm when unknown/0 (card uses elevationM > 0).
+                  detail.elevationM > 0
+                      ? '${detail.distanceKm} km · ${detail.elevationM} hm · '
+                          '${detail.durationMin} min'
+                      : '${detail.distanceKm} km · ${detail.durationMin} min',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),

@@ -510,7 +510,7 @@ function DiscoverPageInner() {
       setMinutes(60);
       setDraft((d) => setStart(d, center, name));
       setLocationStatus(`Demo-Region: ${name}`);
-      setRoutingMsg(`Demo-Region: ${name} · 60 min`);
+      setRoutingMsg(`Demo-Region: ${name} · 60 min Rundkurse`);
       setSheetMode("quick");
       setQuickTimedOut(false);
     },
@@ -1671,10 +1671,11 @@ function DiscoverPageInner() {
               {!hasUsefulNearbyLoops && (
                 <div className="mt-2 rounded-xl border border-border bg-surface-elevated p-3">
                   <p className="text-xs font-semibold text-foreground">
-                    Noch keine ~60-Min-Touren hier.
+                    Keine Rundkurse in der Nähe
                   </p>
                   <p className="mt-0.5 text-[11px] text-text-secondary">
-                    Wähle eine Demo-Stadt oder änder den Ort.
+                    Keine ehrlichen Loops (Start≈Ziel) hier — Demo-Stadt wählen
+                    oder Ort ändern. Keine A→B-Touren als Füllung.
                   </p>
                   <button
                     type="button"
@@ -2199,8 +2200,11 @@ function DiscoverPageInner() {
                   >
                     <h4 className="text-sm font-semibold">{r.name}</h4>
                     <p className="text-[11px] text-text-secondary">
-                      {r.distanceKm} km · {r.elevationM} hm · {r.durationMin}{" "}
-                      min
+                      {formatDistanceElevation(
+                        r.distanceKm,
+                        sanitizeElevationM(r.elevationM, r.distanceKm)
+                      )}{" "}
+                      · {r.durationMin} min
                       {r.source === "import" ? " · Import" : ""}
                       {r.geometry ? " · mit Track" : ""}
                     </p>
