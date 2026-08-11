@@ -62,10 +62,12 @@ class BikeSchema extends StatelessWidget {
     );
 
     final key = plan.assetKey;
-    final anchors = key != null
-        ? schemaHotspots[key]!
-        : hikingAnchors;
-    final layers = key != null ? schemaLayers[key]! : const <String, SchemaLayer>{};
+    // Guard map lookups — never `!` on missing asset keys (secondary cascade
+    // after layout errors previously masked the real Infinity-width crash).
+    final anchors = (key != null ? schemaHotspots[key] : null) ?? hikingAnchors;
+    final layers =
+        (key != null ? schemaLayers[key] : null) ?? const <String, SchemaLayer>{};
+    final assetPath = key != null ? schemaAssetPath[key] : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -81,14 +83,25 @@ class BikeSchema extends StatelessWidget {
             aspectRatio: schemaViewBoxW / schemaViewBoxH,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final scaleX = constraints.maxWidth / schemaViewBoxW;
-                final scaleY = constraints.maxHeight / schemaViewBoxH;
+                final maxW = constraints.maxWidth;
+                final maxH = constraints.maxHeight;
+                if (!maxW.isFinite ||
+                    !maxH.isFinite ||
+                    maxW <= 0 ||
+                    maxH <= 0) {
+                  return const SizedBox.shrink();
+                }
+                final scaleX = maxW / schemaViewBoxW;
+                final scaleY = maxH / schemaViewBoxH;
                 // Uniform scale (meet)
                 final scale = scaleX < scaleY ? scaleX : scaleY;
+                if (!scale.isFinite || scale <= 0) {
+                  return const SizedBox.shrink();
+                }
                 final drawW = schemaViewBoxW * scale;
                 final drawH = schemaViewBoxH * scale;
-                final ox = (constraints.maxWidth - drawW) / 2;
-                final oy = (constraints.maxHeight - drawH) / 2;
+                final ox = (maxW - drawW) / 2;
+                final oy = (maxH - drawH) / 2;
 
                 Offset toLocal(double cx, double cy) =>
                     Offset(ox + cx * scale, oy + cy * scale);
@@ -96,10 +109,10 @@ class BikeSchema extends StatelessWidget {
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    if (key != null)
+                    if (assetPath != null)
                       Positioned.fill(
                         child: SvgPicture.asset(
-                          schemaAssetPath[key]!,
+                          assetPath,
                           fit: BoxFit.contain,
                           semanticsLabel: '${bike.name} Schema',
                           placeholderBuilder: (context) => const Center(
@@ -119,16 +132,16 @@ class BikeSchema extends StatelessWidget {
                         child: Container(
                           alignment: Alignment.center,
                           color: const Color(0xFF0A1210),
-                          child: const Text(
-                            'Wander-Ausrüstung',
-                            style: TextStyle(color: Color(0xFFA8B5AE)),
+                          child: Text(
+                            key == null ? 'Wander-Ausrüstung' : 'Schema fehlt',
+                            style: const TextStyle(color: Color(0xFFA8B5AE)),
                           ),
                         ),
                       ),
                     // Optional geometry layers
                     if (plan.showShock && layers['rear_shock'] != null)
                       CustomPaint(
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
+                        size: Size(maxW, maxH),
                         painter: _LayerPainter(
                           layer: layers['rear_shock']!,
                           ox: ox,
@@ -138,7 +151,7 @@ class BikeSchema extends StatelessWidget {
                       ),
                     if (plan.showEbike && layers['motor'] != null)
                       CustomPaint(
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
+                        size: Size(maxW, maxH),
                         painter: _LayerPainter(
                           layer: layers['motor']!,
                           ox: ox,
@@ -148,7 +161,7 @@ class BikeSchema extends StatelessWidget {
                       ),
                     if (plan.showEbike && layers['battery'] != null)
                       CustomPaint(
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
+                        size: Size(maxW, maxH),
                         painter: _LayerPainter(
                           layer: layers['battery']!,
                           ox: ox,
@@ -157,10 +170,9 @@ class BikeSchema extends StatelessWidget {
                         ),
                       ),
                     for (final slot in plan.hotspotSlots)
-                      if (anchors.containsKey(_slotApiId(slot)))
+                      if (anchors[_slotApiId(slot)] case final a?)
                         Builder(
                           builder: (context) {
-                            final a = anchors[_slotApiId(slot)]!;
                             final center = toLocal(a.cx, a.cy);
                             final hitR =
                                 (a.hitR < schemaHitRMin ? schemaHitRMin : a.hitR) *
@@ -171,6 +183,7 @@ class BikeSchema extends StatelessWidget {
                                     ? HotspotStatus.maintenance
                                     : HotspotStatus.ok;
                             final selected = selectedSlot == slot;
+                            final select = onSelectSlot;
                             return Positioned(
                               left: center.dx - hitR,
                               top: center.dy - hitR,
@@ -185,9 +198,9 @@ class BikeSchema extends StatelessWidget {
                                       '${a.labelDe} — ${_statusLabelDe(status)}',
                                   child: GestureDetector(
                                     behavior: HitTestBehavior.opaque,
-                                    onTap: onSelectSlot == null
+                                    onTap: select == null
                                         ? null
-                                        : () => onSelectSlot!(slot),
+                                        : () => select(slot),
                                     child: Stack(
                                       alignment: Alignment.center,
                                       children: [

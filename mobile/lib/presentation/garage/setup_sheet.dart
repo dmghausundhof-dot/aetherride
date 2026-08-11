@@ -8,6 +8,29 @@ import '../../domain/setup/bracketing.dart';
 import '../../domain/setup/templates.dart';
 import '../../providers/app_providers.dart';
 
+/// Theme sets `minimumSize: Size.fromHeight(48)` (= infinite width). In a
+/// [Row] that kills layout on Android (BoxConstraints / Infinity). Always
+/// override when buttons sit side-by-side.
+const Size _kRowButtonMin = Size(0, 44);
+
+/// Opens Setup as a modal with a finite height so [DraggableScrollableSheet]
+/// never sees unbounded maxHeight (nested under bike detail sheets).
+Future<void> showSetupSheet(BuildContext context, Bike bike) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) {
+      final h = MediaQuery.sizeOf(ctx).height;
+      // Cap height: finite parent for DraggableScrollableSheet + room for IME.
+      final sheetH = (h * 0.92).clamp(320.0, h);
+      return SizedBox(
+        height: sheetH,
+        child: SetupSheet(bike: bike),
+      );
+    },
+  );
+}
+
 /// Setup-Liste, Templates, manuelle Version, Bracketing-MVP.
 class SetupSheet extends ConsumerStatefulWidget {
   const SetupSheet({super.key, required this.bike});
@@ -214,121 +237,162 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
   @override
   Widget build(BuildContext context) {
     final tpls = templatesFor(widget.bike.category);
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scroll) {
-        return ListView(
-          controller: scroll,
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-          children: [
-            Text(
-              'Setups · ${widget.bike.name}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Fahrergewicht (kg) für OEM-Tabellen',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-            Slider(
-              value: _riderWeight,
-              min: 55,
-              max: 110,
-              divisions: 55,
-              label: _riderWeight.round().toString(),
-              onChanged: (v) => setState(() => _riderWeight = v),
-            ),
-            Row(
-              children: [
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
-                  onPressed: _busy ? null : _manualVersion,
-                  child: const Text('Neue Version'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: _busy ? null : _startBracketing,
-                  child: const Text('Bracketing'),
-                ),
-              ],
-            ),
-            if (_bracketMsg != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                _bracketMsg!,
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text(
-              'Gespeicherte Versionen',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            if (_setups.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Noch keine Setups — Vorlage anwenden.',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              ),
-            for (final s in _setups)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  '${s.isCurrent ? '● ' : ''}${s.label} · v${s.version}',
-                ),
-                subtitle: Text(
-                  [
-                    s.conditions,
-                    s.createdBy,
-                    if (s.valueFor('fork.rebound') != null)
-                      'Zug ${s.valueFor('fork.rebound')!.toStringAsFixed(0)}',
-                  ].join(' · '),
-                ),
-                trailing: s.isCurrent
-                    ? const Text('aktuell', style: TextStyle(fontSize: 12))
-                    : TextButton(
-                        onPressed: () => _setCurrent(s),
-                        child: const Text('Aktiv'),
-                      ),
-              ),
-            const SizedBox(height: 16),
-            Text(
-              'Vorlagen (Ausgangspunkt)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const Text(
-              'Keine persönliche Empfehlung — OEM/Editorial-Startpunkt.',
-              style: TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-            const SizedBox(height: 8),
-            for (final tpl in tpls)
-              Card(
-                child: ListTile(
-                  title: Text(tpl.label),
-                  subtitle: Text(
-                    '${tpl.kind} · ${tpl.sourceLabel}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  trailing: TextButton(
-                    onPressed: _busy ? null : () => _applyTemplate(tpl),
-                    child: const Text('Anwenden'),
-                  ),
-                ),
-              ),
-          ],
+    // Prefer parent-bounded height (showSetupSheet wraps us); fall back to
+    // a fraction of the screen so we never multiply Infinity × initialChildSize.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final parentH = constraints.maxHeight;
+        final screenH = MediaQuery.sizeOf(context).height;
+        final boundedH = parentH.isFinite && parentH > 0
+            ? parentH
+            : (screenH * 0.92).clamp(320.0, screenH);
+        return SizedBox(
+          height: boundedH,
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 1,
+            minChildSize: 0.5,
+            maxChildSize: 1,
+            builder: (context, scroll) {
+              return _buildBody(context, scroll, tpls);
+            },
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    ScrollController scroll,
+    List<SetupTemplate> tpls,
+  ) {
+    final weight = _riderWeight.isFinite ? _riderWeight.clamp(55.0, 110.0) : 75.0;
+    return ListView(
+      controller: scroll,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+      children: [
+        Text(
+          'Setups · ${widget.bike.name}',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Fahrergewicht (kg) für OEM-Tabellen',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+        Slider(
+          value: weight,
+          min: 55,
+          max: 110,
+          divisions: 55,
+          label: weight.round().toString(),
+          onChanged: (v) => setState(() => _riderWeight = v),
+        ),
+        // S25 smoking gun: Theme Size.fromHeight(48) ⇒ w=Infinity in a Row.
+        // Same class as garage_screen Setup OutlinedButton workaround (~1315).
+        Row(
+          children: [
+            Flexible(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  minimumSize: _kRowButtonMin,
+                ),
+                onPressed: _busy ? null : _manualVersion,
+                child: const Text(
+                  'Neue Version',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: _kRowButtonMin,
+                ),
+                onPressed: _busy ? null : _startBracketing,
+                child: const Text(
+                  'Bracketing',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_bracketMsg case final msg?) ...[
+          const SizedBox(height: 8),
+          Text(
+            msg,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+        ],
+        const SizedBox(height: 16),
+        Text(
+          'Gespeicherte Versionen',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        if (_setups.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Noch keine Setups — Vorlage anwenden.',
+              style: TextStyle(color: AppColors.muted),
+            ),
+          ),
+        for (final s in _setups)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              '${s.isCurrent ? '● ' : ''}${s.label} · v${s.version}',
+            ),
+            subtitle: Text(
+              [
+                s.conditions,
+                s.createdBy,
+                if (s.valueFor('fork.rebound') case final r?)
+                  'Zug ${r.toStringAsFixed(0)}',
+              ].join(' · '),
+            ),
+            trailing: s.isCurrent
+                ? const Text('aktuell', style: TextStyle(fontSize: 12))
+                : TextButton(
+                    onPressed: () => _setCurrent(s),
+                    child: const Text('Aktiv'),
+                  ),
+          ),
+        const SizedBox(height: 16),
+        Text(
+          'Vorlagen (Ausgangspunkt)',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const Text(
+          'Keine persönliche Empfehlung — OEM/Editorial-Startpunkt.',
+          style: TextStyle(fontSize: 12, color: AppColors.muted),
+        ),
+        const SizedBox(height: 8),
+        for (final tpl in tpls)
+          Card(
+            child: ListTile(
+              title: Text(tpl.label),
+              subtitle: Text(
+                '${tpl.kind} · ${tpl.sourceLabel}',
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: TextButton(
+                onPressed: _busy ? null : () => _applyTemplate(tpl),
+                child: const Text('Anwenden'),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

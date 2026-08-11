@@ -1317,11 +1317,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                   // sonst sprengt der Button die Row (BoxConstraints-Crash).
                   style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
                   onPressed: () async {
-                    await showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => SetupSheet(bike: bike),
-                    );
+                    await showSetupSheet(context, bike);
                     ref.invalidate(currentSetupProvider(widget.bikeId));
                     await _load();
                   },
@@ -1351,11 +1347,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                         padding: const EdgeInsets.only(top: AppSpacing.s),
                         child: TextButton(
                           onPressed: () async {
-                            await showModalBottomSheet<void>(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (_) => SetupSheet(bike: bike),
-                            );
+                            await showSetupSheet(context, bike);
                             ref.invalidate(currentSetupProvider(widget.bikeId));
                             await _load();
                           },
@@ -1527,15 +1519,18 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: AppSpacing.s),
+                  // Same Theme ∞-width trap as SetupSheet / Setup OutlinedButton.
                   FilledButton.tonalIcon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                    ),
                     onPressed: () async {
-                      await showModalBottomSheet<void>(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (_) => SetupSheet(bike: bike),
-                      );
+                      await showSetupSheet(context, bike);
                       ref.invalidate(currentSetupProvider(widget.bikeId));
                       await _load();
                     },
