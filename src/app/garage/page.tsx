@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState, useEffect, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Plus,
   ShieldCheck,
   Download,
-  AlertTriangle,
 } from "lucide-react";
 import { AddBikeWizard } from "@/components/garage/AddBikeWizard";
 import { BikeSilhouette } from "@/components/garage/BikeSilhouette";
@@ -19,6 +18,7 @@ import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { GarageComponentsTab } from "@/components/garage/GarageComponentsTab";
 import { GarageSetupsTab } from "@/components/garage/GarageSetupsTab";
 import { GarageMaintenanceTab } from "@/components/garage/GarageMaintenanceTab";
+import { MaintenanceStatusCard } from "@/components/home/MaintenanceStatusCard";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import {
   aggregateVerdict,
@@ -48,6 +48,19 @@ import {
 import type { ComponentSlot, SetupCondition } from "@/types";
 
 type Tab = "overview" | "components" | "setups" | "maintenance";
+const TABS: Tab[] = ["overview", "components", "setups", "maintenance"];
+
+function parseTab(raw: string | null): Tab | null {
+  if (raw && (TABS as string[]).includes(raw)) return raw as Tab;
+  return null;
+}
+
+type WizardMode = "catalog" | "basic" | "import";
+
+function parseWizard(raw: string | null): WizardMode | null {
+  if (raw === "catalog" || raw === "basic" || raw === "import") return raw;
+  return null;
+}
 
 function GaragePageInner() {
   const searchParams = useSearchParams();
@@ -66,45 +79,59 @@ function GaragePageInner() {
   const rides = useAppStore((s) => s.rides);
   const riderWeight = useAppStore((s) => s.riderProfile.riderWeightKg);
 
-  const [selectedId, setSelectedId] = useState<string | null>(activeBikeId);
-  const initialTab = (searchParams.get("tab") as Tab | null) || "overview";
-  const [tab, setTab] = useState<Tab>(
-    ["overview", "components", "setups", "maintenance"].includes(initialTab)
-      ? initialTab
-      : "overview"
-  );
+  const tabParam = searchParams.get("tab");
+  const wizardParam = searchParams.get("wizard");
+  const categoryParam = searchParams.get("category");
+  const bikeParam = searchParams.get("bike");
 
-  const [showWizard, setShowWizard] = useState(false);
-  const [wizardMode, setWizardMode] = useState<
-    "catalog" | "basic" | "import"
-  >("catalog");
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => bikeParam || activeBikeId
+  );
+  const [tab, setTab] = useState<Tab>(
+    () => parseTab(tabParam) ?? "overview"
+  );
+  const [showWizard, setShowWizard] = useState(
+    () => parseWizard(wizardParam) != null
+  );
+  const [wizardMode, setWizardMode] = useState<WizardMode>(
+    () => parseWizard(wizardParam) ?? "catalog"
+  );
   const [wizardCategory, setWizardCategory] = useState<
     import("@/types").BikeCategory | undefined
-  >(undefined);
+  >(() =>
+    categoryParam
+      ? (categoryParam as import("@/types").BikeCategory)
+      : undefined
+  );
+
+  // Sync URL → local state when deep-link params change (React-recommended pattern)
+  const [trackedParams, setTrackedParams] = useState(
+    () => `${tabParam}|${wizardParam}|${categoryParam}|${bikeParam}`
+  );
+  const paramKey = `${tabParam}|${wizardParam}|${categoryParam}|${bikeParam}`;
+  if (paramKey !== trackedParams) {
+    setTrackedParams(paramKey);
+    const nextTab = parseTab(tabParam);
+    if (nextTab) setTab(nextTab);
+    const nextWizard = parseWizard(wizardParam);
+    if (nextWizard) {
+      setWizardMode(nextWizard);
+      setShowWizard(true);
+    }
+    if (categoryParam) {
+      setWizardCategory(categoryParam as import("@/types").BikeCategory);
+    }
+    if (bikeParam && bikes.some((b) => b.id === bikeParam)) {
+      setSelectedId(bikeParam);
+    }
+  }
+
   const [installSlot, setInstallSlot] = useState<ComponentSlot | null>(null);
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
     useState<SetupCondition>("dry");
   const [compatOpen, setCompatOpen] = useState(false);
   const [moveTargetId, setMoveTargetId] = useState<string>("");
-
-  useEffect(() => {
-    const t = searchParams.get("tab") as Tab | null;
-    if (t && ["overview", "components", "setups", "maintenance"].includes(t)) {
-      setTab(t);
-    }
-    const wizard = searchParams.get("wizard");
-    if (
-      wizard === "catalog" ||
-      wizard === "basic" ||
-      wizard === "import"
-    ) {
-      setWizardMode(wizard);
-      setShowWizard(true);
-    }
-    const cat = searchParams.get("category");
-    if (cat) setWizardCategory(cat as import("@/types").BikeCategory);
-  }, [searchParams]);
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
@@ -196,12 +223,22 @@ function GaragePageInner() {
         </button>
       </header>
 
+      {/* T-WA-00 status card when bike exists (always free); empty handled below */}
+      {selected && (
+        <div className="mb-5">
+          <MaintenanceStatusCard
+            compact
+            ignoreSnooze={tab === "maintenance"}
+          />
+        </div>
+      )}
+
       {!selected ? (
         <section className="rounded-2xl border border-border bg-surface p-6 text-center lg:p-10">
-          <h2 className="text-lg font-semibold">Lege dein erstes Bike an</h2>
+          <h2 className="text-lg font-semibold">Noch kein Rad in der Garage.</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
-            Katalog mit OEM-Teilen, schnelle Basis für Road/City, oder
-            Platzhalter. GPX und Touren unter Touren/Planen — kein Auto-Demo-Bike.
+            Bike anlegen → Service-Check in 2 Min. Katalog mit OEM-Teilen,
+            schnelle Basis für Road/City, oder Platzhalter — kein Auto-Demo-Bike.
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {(

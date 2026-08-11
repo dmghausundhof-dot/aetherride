@@ -8,6 +8,7 @@ import { AppDownloadButtons } from "./AppDownloadButtons";
 const links = [
   { href: "/discover", label: "Touren" },
   { href: "/planner", label: "Planen" },
+  { href: "/#service-check", label: "Service-Check" },
   { href: "/regions", label: "Regionen" },
   { href: "/community", label: "Community" },
   { href: "/guides", label: "Guides" },

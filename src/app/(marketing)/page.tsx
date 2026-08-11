@@ -1,4 +1,5 @@
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import { ServiceCheckSection } from "@/components/landing/ServiceCheckSection";
 import Link from "next/link";
 import {
   Bike,
@@ -292,6 +293,9 @@ export default function LandingPage() {
           </ol>
         </div>
       </section>
+
+      {/* T-WA-00b Service-Check USP + workshop waitlist */}
+      <ServiceCheckSection />
 
       {/* CTA */}
       <section className="border-t border-border bg-surface py-16 px-4">

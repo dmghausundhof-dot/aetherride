@@ -5,6 +5,7 @@ import { AppHeader } from "./AppHeader";
 
 /** App-Bereiche mit Desktop-Top-Nav (kein Ride-Tab, kein Mobile-Bottom-Nav). */
 const APP_PREFIXES = [
+  "/home",
   "/garage",
   "/discover",
   "/planner",

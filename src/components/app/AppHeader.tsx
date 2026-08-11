@@ -2,31 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import { getFleetMaintenanceDueCount } from "@/lib/maintenance/summary";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/useAppStore";
 
-/** Multi-Sport IA — gleiche Sprache wie die Flutter-App (Touren / Teile). */
+/** Multi-Sport IA — Home + gleiche Sprache wie Flutter (Touren / Teile). */
 const navItems = [
-  { href: "/discover", label: "Touren" },
-  { href: "/planner", label: "Planen" },
-  { href: "/library", label: "Bibliothek" },
-  { href: "/activities", label: "Fahrten" },
-  { href: "/garage", label: "Garage" },
-  { href: "/shop", label: "Teile" },
-  { href: "/profile", label: "Profil" },
+  { href: "/home", label: "Home", id: "home" as const },
+  { href: "/discover", label: "Touren", id: "discover" as const },
+  { href: "/planner", label: "Planen", id: "planner" as const },
+  { href: "/library", label: "Bibliothek", id: "library" as const },
+  { href: "/activities", label: "Fahrten", id: "activities" as const },
+  { href: "/garage", label: "Garage", id: "garage" as const },
+  { href: "/shop", label: "Teile", id: "shop" as const },
+  { href: "/profile", label: "Profil", id: "profile" as const },
 ];
 
 export function AppHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const bikes = useAppStore((s) => s.bikes);
+  const intervals = useAppStore((s) => s.maintenanceIntervals);
+
+  const dueTotal = useMemo(
+    () => getFleetMaintenanceDueCount(bikes, intervals).dueTotal,
+    [bikes, intervals]
+  );
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 items-center justify-between gap-3 px-4 lg:h-16 lg:max-w-none lg:px-6">
         <Link
-          href="/"
+          href="/home"
           className="text-lg font-bold text-foreground"
           onClick={() => setOpen(false)}
         >
@@ -37,18 +47,28 @@ export function AppHeader() {
           {navItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
+            const showMaintBadge = item.id === "garage" && dueTotal > 0;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm font-medium transition lg:px-4",
+                  "relative rounded-lg px-3 py-2 text-sm font-medium transition lg:px-4",
                   isActive
                     ? "bg-surface-elevated text-foreground"
                     : "text-text-secondary hover:bg-surface hover:text-foreground"
                 )}
               >
                 {item.label}
+                {showMaintBadge && (
+                  <span
+                    className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-0.5 text-[9px] font-bold text-white"
+                    aria-label={`${dueTotal} Wartungen fällig`}
+                    data-testid="garage-nav-badge"
+                  >
+                    {dueTotal > 9 ? "9+" : dueTotal}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -76,19 +96,28 @@ export function AppHeader() {
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href || pathname.startsWith(item.href + "/");
+              const showMaintBadge = item.id === "garage" && dueTotal > 0;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "rounded-lg px-3 py-3 text-sm font-medium",
+                    "flex items-center justify-between rounded-lg px-3 py-3 text-sm font-medium",
                     isActive
                       ? "bg-surface-elevated text-foreground"
                       : "text-text-secondary"
                   )}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {showMaintBadge && (
+                    <span
+                      className="flex h-5 min-w-5 items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold text-white"
+                      data-testid="garage-nav-badge-mobile"
+                    >
+                      {dueTotal > 9 ? "9+" : dueTotal}
+                    </span>
+                  )}
                 </Link>
               );
             })}
