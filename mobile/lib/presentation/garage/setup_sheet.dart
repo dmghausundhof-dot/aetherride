@@ -243,15 +243,22 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
               label: _riderWeight.round().toString(),
               onChanged: (v) => setState(() => _riderWeight = v),
             ),
-            Row(
+            // Theme minimumSize: Size.fromHeight(48) = infinite width —
+            // override or BoxConstraints Infinity crash (S25 Setup).
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    minimumSize: const Size(0, 44),
+                  ),
                   onPressed: _busy ? null : _manualVersion,
                   child: const Text('Neue Version'),
                 ),
-                const SizedBox(width: 8),
                 OutlinedButton(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
                   onPressed: _busy ? null : _startBracketing,
                   child: const Text('Bracketing'),
                 ),
