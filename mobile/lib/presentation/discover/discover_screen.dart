@@ -189,6 +189,16 @@ class _QuickOption {
   final RouteResult result;
 }
 
+/// Komoot-style Dauer: `55 Min` / `1h 10m`.
+String _fmtRideDuration(int minutes) {
+  if (minutes <= 0) return '—';
+  if (minutes < 60) return '$minutes Min';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (m == 0) return '${h}h';
+  return '${h}h ${m.toString().padLeft(2, '0')}m';
+}
+
 /// Übersetzt eine rohe Schwierigkeits-Angabe (OSM S-Skala oder Outdooractive-
 /// Klartext wie "mittel") in ein Label ohne Nachschlagen. Der Rohwert bleibt
 /// über [trailDifficultyLabel]/Tooltips im Detail abrufbar.
@@ -1732,7 +1742,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       unawaited(_fetchPublicCatalog());
       unawaited(_fetchCommunityHeatmap());
       // Explizit Near-me nach frischem GPS — Drift-Sync kann verzögern.
-      unawaited(_refreshQuick(limit: 3));
+      // Rundkurs-Lens: nahen Seed auf die Karte, nie A→B / Fernstadt.
+      if (_loopOnly == true) {
+        unawaited(_ensureLoopMapHonesty());
+      } else {
+        unawaited(_refreshQuick(limit: 3));
+      }
       try {
         await _map?.animateCamera(
           CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
@@ -1792,7 +1807,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Future.value(),
       );
       if (!_loading) {
-        unawaited(_refreshQuick(limit: 3));
+        // ~60 Rundkurs: re-pick nearest loop after GPS/origin drift (not Zurich).
+        if (_loopOnly == true) {
+          unawaited(_ensureLoopMapHonesty());
+        } else {
+          unawaited(_refreshQuick(limit: 3));
+        }
       }
     });
   }
@@ -1977,17 +1997,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   /// Prefer a curated nearby loop on the map when Rundkurs is on.
+  ///
+  /// Seeds may load before GPS (fallback origin ≈ W-Europe) and pick a distant
+  /// city like Zurich. Once a real origin exists, always re-rank by distance and
+  /// drop selections outside the Nähe radius (Komoot/AllTrails: near-me first).
   Future<void> _ensureLoopMapHonesty() async {
     if (!mounted || _loopOnly != true) return;
     _clearAbDemoOverlayForLoopFilter();
-    // If a real loop tour is already selected, keep it.
-    if (_selectedTourId != null) {
-      final sel = _tourById(_selectedTourId);
-      if (sel != null && _isLoop(sel) && sel.hasTrack) {
-        await _drawSeedLoopPreview(sel);
-        return;
-      }
-    }
+    const seedRadiusKm = 35.0;
     final o = _origin;
     final loops = _filtered.where((r) => _isLoop(r) && r.hasTrack).toList()
       ..sort((a, b) {
@@ -1996,6 +2013,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         return da.compareTo(db);
       });
     if (loops.isEmpty) {
+      // Far leftover selection (pre-GPS Zurich etc.) — clear map honesty.
+      if (_selectedTourId != null || _computed != null) {
+        if (mounted) {
+          setState(() {
+            _selectedTourId = null;
+            _computed = null;
+            _label = null;
+            _approach = null;
+            _tourLayer = null;
+          });
+        }
+      }
       if (mounted) {
         setState(() {});
         await _drawAll();
@@ -2003,6 +2032,31 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return;
     }
     final best = loops.first;
+    final bestDist = _distKm(
+      o.lat,
+      o.lng,
+      best.center.latitude,
+      best.center.longitude,
+    );
+    // Keep current only if it is still an honest nearby loop.
+    if (_selectedTourId != null) {
+      final sel = _tourById(_selectedTourId);
+      if (sel != null && _isLoop(sel) && sel.hasTrack) {
+        final selDist = _distKm(
+          o.lat,
+          o.lng,
+          sel.center.latitude,
+          sel.center.longitude,
+        );
+        final nearbyOk = !_hasRealOrigin || selDist <= seedRadiusKm;
+        final stillBest =
+            sel.id == best.id || selDist <= bestDist + 0.05;
+        if (nearbyOk && stillBest) {
+          await _drawSeedLoopPreview(sel);
+          return;
+        }
+      }
+    }
     if (mounted) {
       setState(() => _selectedTourId = best.id);
     }
@@ -3832,46 +3886,79 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _buildRideBar() {
     final r = _computed!;
+    final sel = _selectedTourId != null ? _tourById(_selectedTourId) : null;
+    final isLoop = sel != null ? _isLoop(sel) : (r.engine == 'seed-loop');
+    final title = _label ?? sel?.name ?? 'Route';
+    final km = (r.distanceM / 1000).toStringAsFixed(1);
+    final mins = (r.durationS / 60).round();
     return Material(
-      color: Colors.black.withValues(alpha: 0.78),
-      borderRadius: BorderRadius.circular(AppRadius.chip),
+      color: const Color(0xE614201C),
+      elevation: 6,
+      shadowColor: Colors.black54,
+      borderRadius: BorderRadius.circular(AppRadius.card),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.m,
-          vertical: AppSpacing.s,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.m,
+          AppSpacing.s,
+          AppSpacing.s,
+          AppSpacing.s,
         ),
         child: Row(
           children: [
+            if (isLoop)
+              const Padding(
+                padding: EdgeInsets.only(right: AppSpacing.s),
+                child: _LoopMiniMap(
+                  size: 40,
+                  stroke: AppColors.forestOnDark,
+                  fill: Color(0x332D6A4F),
+                ),
+              ),
             Expanded(
-              child: Text(
-                '${_label ?? 'Route'} · '
-                '${(r.distanceM / 1000).toStringAsFixed(1)} km · '
-                '${(r.durationS / 60).round()} min'
-                '${_elevationSummary != null ? ' · $_elevationSummary' : ''}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      if (isLoop) 'Rundkurs',
+                      '$km km',
+                      _fmtRideDuration(mins),
+                      if (_elevationSummary != null) _elevationSummary!,
+                    ].join(' · '),
+                    style: const TextStyle(
+                      color: Color(0xFFB8C9C0),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
             IconButton(
               tooltip: 'Speichern',
               onPressed: _saveCurrent,
+              visualDensity: VisualDensity.compact,
               icon: const Icon(
                 Icons.bookmark_border,
                 color: Colors.white,
                 size: 20,
               ),
             ),
-            if (_surface == _Surface.discover)
-              IconButton(
-                tooltip: 'Route anpassen',
-                onPressed: () => _openPlan(status: 'Route anpassen'),
-                icon: const Icon(Icons.tune, color: Colors.white, size: 20),
-              ),
-            // Gleicher Text + gleiches Icon wie der „Losfahren"-Button auf
-            // Home — ein Wort für „diese Route jetzt starten", überall.
             FilledButton.icon(
-              // Theme minimumSize: Size.fromHeight(48) ⇒ w=Infinity — breaks Row.
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
@@ -5348,11 +5435,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final seedLabel = _hasRealOrigin
         ? (_seedsBundle?.labelWithLocation ?? '~60 Min um dich')
         : (_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region');
-    final sources = [
-      if (_oaStatus != null) _oaStatus!,
-      if (_seedsStatus != null) _seedsStatus!,
-      if (_trailNetworkStatus != null) _trailNetworkStatus!,
-    ].join(' · ');
 
     final loopCount = list.where(_isLoop).length;
     // Soft radius for empty-ort UI only — seeds stay in the list (no hard-fail).
@@ -5388,11 +5470,39 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           child: const Text('Neu'),
         ),
       ),
-      if (sources.isNotEmpty)
+      if (!_hasRealOrigin)
+        const Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Text(
+            'Standort freigeben für Touren in deiner Nähe',
+            style: TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+        )
+      else if (showSeeds)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.xs),
           child: Text(
-            sources,
+            '${seeds.length} kuratierte Rundkurse · Nähe ≤35 km'
+            '${_seedsStatus != null ? ' · offline' : ''}',
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+        ),
+      if (_oaStatus != null &&
+          (_oaStatus!.toLowerCase().contains('offline') ||
+              _oaStatus!.toLowerCase().contains('keine')))
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Text(
+            _oaStatus!,
+            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+          ),
+        ),
+      if (_trailNetworkStatus != null &&
+          _trailNetworkStatus!.toLowerCase().contains('kein'))
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Text(
+            _trailNetworkStatus!,
             style: const TextStyle(fontSize: 11, color: AppColors.muted),
           ),
         ),
@@ -5458,14 +5568,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             );
           },
         ),
-      if (!_hasRealOrigin)
-        const Padding(
-          padding: EdgeInsets.only(bottom: AppSpacing.m),
-          child: Text(
-            'Katalog-Touren jederzeit · GPS freigeben für Near-me und OSM-Live.',
-            style: TextStyle(fontSize: 12, color: AppColors.muted),
-          ),
-        ),
       // Empty only when zero honest loops in the filtered list — never hide
       // nearby seed cards behind the ort picker while loops exist (S25).
       if (loopCount == 0 && (_minutes == 60 || _loopOnly == true))
@@ -5500,7 +5602,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _sectionTitle(
           '$seedLabel (${seeds.length})',
           hint: _hasRealOrigin
-              ? 'Region-Loops ≤35 km · offline · Losfahren startet Ride'
+              ? 'Rundkurse in deiner Nähe · Losfahren startet Ride'
               : 'Kuratierte ~60-Min Rundkurse · Berlin · DACH · Rhein-Neckar',
         ),
         for (final r in seeds) _tourListCard(r, o),
@@ -5524,10 +5626,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ];
   }
 
-  /// S25 photo hero — asset or network; painted fallback (never blank/black).
-  Widget _tourHero(_RouteSuggestion r) {
+  /// Komoot/AllTrails-style photo hero: big image, difficulty + distance,
+  /// loop mini-map inset — never blank/black.
+  Widget _tourHero(_RouteSuggestion r, GeoPoint o) {
     final url = r.thumbnailUrl;
-    const height = 132.0;
+    const height = 176.0;
+    final distKm =
+        _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude);
+    final loop = _isLoop(r);
     Widget image;
     if (url != null && url.startsWith('assets/')) {
       image = Image.asset(
@@ -5552,7 +5658,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return const SizedBox.shrink();
     }
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppRadius.card),
+      ),
       child: SizedBox(
         width: double.infinity,
         height: height,
@@ -5560,26 +5668,45 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           fit: StackFit.expand,
           children: [
             image,
-            if (_isLoop(r))
+            // Soft bottom gradient for depth (Komoot card feel).
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x00000000), Color(0x66000000)],
+                  stops: [0.55, 1.0],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 10,
+              top: 10,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HeroChip(
+                    icon: Icons.terrain,
+                    label: _difficultyDisplay(r.mtbScale),
+                    emphasize: true,
+                  ),
+                  const SizedBox(height: 6),
+                  _HeroChip(
+                    icon: Icons.place_outlined,
+                    label: '${distKm.toStringAsFixed(distKm < 10 ? 1 : 0)} km',
+                  ),
+                ],
+              ),
+            ),
+            if (loop)
               const Positioned(
-                left: 10,
-                top: 10,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Color(0xCC14201C),
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Text(
-                      '⟲ Runde',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                right: 10,
+                bottom: 10,
+                child: _LoopMiniMap(
+                  size: 56,
+                  stroke: Color(0xFF4ADE80),
+                  fill: Color(0x331B3A2F),
+                  showStart: true,
                 ),
               ),
           ],
@@ -5600,7 +5727,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
       ),
       alignment: Alignment.bottomLeft,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.m),
       child: Text(
         r.name,
         maxLines: 2,
@@ -5608,7 +5735,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w700,
-          fontSize: 14,
+          fontSize: 15,
         ),
       ),
     );
@@ -5616,313 +5743,232 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
     final loop = _isLoop(r);
-    final shape = _shapeLabel(r);
-    // Width must be finite: Expanded/Flexible in title + CTA Rows crash with
-    // BoxConstraints(w=Infinity) if a parent (e.g. AnimatedSwitcher Stack)
-    // ever passes unbounded horizontal constraints into the sheet list.
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.s),
+    final selected = _selectedTourId == r.id;
+    final pitch = r.shortPitch ?? r.tip;
+    final distKm =
+        _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.m),
+      child: Material(
+      color: selected
+          ? AppColors.accent.withValues(alpha: 0.08)
+          : AppColors.surfaceDark,
+      elevation: selected ? 2 : 0,
+      shadowColor: Colors.black45,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(
+          color: selected
+              ? AppColors.accent.withValues(alpha: 0.55)
+              : AppColors.border,
+          width: selected ? 1.4 : 1,
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: double.infinity,
-        // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (r.isSeed || r.thumbnailUrl != null) _tourHero(r),
+            if (r.isSeed || r.thumbnailUrl != null)
+              InkWell(
+                onTap: () => unawaited(_openDetail(r.id, r.center)),
+                child: _tourHero(r, o),
+              ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.m),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-              InkWell(
-                onTap: () => unawaited(_openDetail(r.id, r.center)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+                  InkWell(
+                    onTap: () => unawaited(_openDetail(r.id, r.center)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (loop) ...[
-                          const Text(
-                            '⟲',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            r.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: _selectedTourId == r.id
-                                  ? AppColors.accent
-                                  : null,
-                            ),
+                        Text(
+                          r.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            height: 1.25,
+                            color: selected ? AppColors.accent : null,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: r.isSeed
-                                    ? AppColors.accent.withValues(alpha: 0.1)
-                                    : r.isCatalog
-                                    ? AppColors.accent.withValues(alpha: 0.12)
-                                    : AppColors.forest.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.chip,
-                                ),
-                              ),
-                              child: Text(
-                                r.sourceLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: r.isCatalog || r.isSeed
-                                      ? AppColors.accent
-                                      : AppColors.forestOnDark,
-                                ),
-                              ),
+                        const SizedBox(height: AppSpacing.s),
+                        Wrap(
+                          spacing: AppSpacing.l,
+                          runSpacing: 6,
+                          children: [
+                            _StatIcon(
+                              icon: Icons.schedule,
+                              label: _fmtRideDuration(r.durationMin),
                             ),
+                            _StatIcon(
+                              icon: Icons.straighten,
+                              label:
+                                  '${r.distanceKm.toStringAsFixed(r.distanceKm < 10 ? 1 : 0)} km',
+                            ),
+                            if (r.elevationM > 0)
+                              _StatIcon(
+                                icon: Icons.trending_up,
+                                label: '${r.elevationM} m',
+                              ),
+                            if (loop)
+                              const _StatIcon(
+                                icon: Icons.loop,
+                                label: 'Rundkurs',
+                                accent: true,
+                              ),
+                          ],
+                        ),
+                        if (pitch != null && pitch.trim().isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.s),
+                          Text(
+                            pitch.trim(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.35,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                        if (r.highlightPoi case final hl?) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            '★ $hl',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.forestOnDark,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '${distKm < 1 ? '<1' : distKm.round()} km entfernt'
+                          '${r.sportLabel != null ? ' · ${r.sportLabel}' : ''}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
                           ),
                         ),
                       ],
                     ),
-                    // Card P0 (discover-seed-card-fields-v1): title · duration ·
-                    // km · ⟲ Runde · sport · tip · season chip · highlight_poi.
-                    // S25: always show ⟲ Runde for honest loops (incl. Premium).
-                    Text(
-                      [
-                        if (shape != null) shape,
-                        '~${r.durationMin} Min',
-                        '${r.distanceKm} km',
-                        if (r.sportLabel case final sport?) sport,
-                        if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
-                      ].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (r.tip case final tip?) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        tip,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.chip),
+                            ),
+                          ),
+                          onPressed: _loading
+                              ? null
+                              : () => unawaited(_startRide(suggestion: r)),
+                          icon: const Icon(Icons.play_arrow, size: 20),
+                          label: const Text(MultiSportCopy.goRide),
                         ),
                       ),
-                    ],
-                    if (r.seasonLabel != null || r.highlightPoi != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          if (r.seasonLabel case final season?)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.chip,
-                                ),
-                              ),
-                              child: Text(
-                                season,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
-                          if (r.highlightPoi case final hl?)
-                            Text(
-                              '★ $hl',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                    if (!r.isPremiumPassCard) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      _DifficultyStatsRow(
-                        difficultyRaw: r.mtbScale,
-                        segments: [
-                          _surfaceDisplay(r.surface),
-                          if (r.elevationM > 0) '↑${r.elevationM} m',
-                          if (_nearbyActivity(r.center) case final n?)
-                            'beliebt · ≥$n Ride-Nutzer',
-                        ],
-                      ),
-                    ],
-                    Text(
-                      '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
-                      '${_isPinOnlyIdea(r)
-                          ? ' · Tour-Idee'
-                          : r.hasTrack
-                          ? ' · Track'
-                          : ''}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              // Primary CTA zuerst (D-60-02): Losfahren ohne Detail-Umweg.
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        minimumSize: const Size(0, 44),
-                      ),
-                      onPressed: _loading
-                          ? null
-                          : () => unawaited(_startRide(suggestion: r)),
-                      icon: const Icon(Icons.play_arrow, size: 18),
-                      label: Text(
-                        r.hasTrack || r.isSeed
-                            ? MultiSportCopy.goRide
-                            : (r.id.startsWith('oa-') || r.id.contains('demo'))
-                            ? 'Los · Track?'
-                            : MultiSportCopy.goRide,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  OutlinedButton(
-                    // Theme Size.fromHeight(48) ⇒ Infinity width crashes this Row.
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 44),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => unawaited(_openDetail(r.id, r.center)),
-                    child: const Text('Mehr'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    if (_isPinOnlyIdea(r))
-                      OutlinedButton.icon(
-                        // Horizontal Row ⇒ unbounded max width; theme
-                        // Size.fromHeight(48) would assert BoxConstraints(w=Infinity).
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        onPressed: _loading ? null : () => _computeIdeaRoute(r),
-                        icon: const Icon(Icons.route, size: 16),
-                        label: const Text('Route berechnen'),
-                      )
-                    else
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
+                      const SizedBox(width: AppSpacing.s),
+                      IconButton.outlined(
+                        tooltip: 'Auf Karte',
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          side: const BorderSide(color: AppColors.border),
                         ),
                         onPressed: () async {
-                          final routed = await _geometryForTour(r);
-                          if (!mounted) return;
-                          if (routed.demo || routed.points.length < 2) {
-                            await _computeIdeaRoute(r);
-                            return;
+                          setState(() => _selectedTourId = r.id);
+                          if (r.hasTrack) {
+                            await _drawSeedLoopPreview(r);
+                          } else {
+                            await _openDetail(r.id, r.center);
                           }
-                          final preview = RouteResult(
-                            coordinates: routed.points,
-                            distanceM: r.distanceKm * 1000,
-                            durationS: r.durationMin * 60.0,
-                            engine: 'tour-routed',
-                          );
-                          setState(() {
-                            _computed = preview;
-                            _ideaPin = null;
-                            _selectedTourId = r.id;
-                            _label = r.name;
-                            _status = 'Live-geroutete Tour-Vorschau';
-                          });
-                          await _drawRoute(preview);
                         },
-                        child: const Text('Vorschau'),
+                        icon: const Icon(Icons.map_outlined),
                       ),
-                    const SizedBox(width: AppSpacing.xs),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
+                      PopupMenuButton<String>(
+                        tooltip: 'Mehr',
+                        onSelected: (v) async {
+                          switch (v) {
+                            case 'detail':
+                              await _openDetail(r.id, r.center);
+                            case 'preview':
+                              final routed = await _geometryForTour(r);
+                              if (!mounted) return;
+                              if (routed.demo || routed.points.length < 2) {
+                                await _computeIdeaRoute(r);
+                                return;
+                              }
+                              final preview = RouteResult(
+                                coordinates: routed.points,
+                                distanceM: r.distanceKm * 1000,
+                                durationS: r.durationMin * 60.0,
+                                engine: 'tour-routed',
+                              );
+                              setState(() {
+                                _computed = preview;
+                                _ideaPin = null;
+                                _selectedTourId = r.id;
+                                _label = r.name;
+                                _status = null;
+                              });
+                              await _drawRoute(preview);
+                            case 'fromHere':
+                              await _hybridSnap(r);
+                            case 'adapt':
+                              await _adoptTourIntoPlan(r);
+                            case 'photos':
+                              _openTrailView(near: r.center);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'detail',
+                            child: Text('Details'),
+                          ),
+                          PopupMenuItem(
+                            value: 'preview',
+                            child: Text('Route-Vorschau'),
+                          ),
+                          PopupMenuItem(
+                            value: 'fromHere',
+                            child: Text('Von hier'),
+                          ),
+                          PopupMenuItem(
+                            value: 'adapt',
+                            child: Text('Anpassen'),
+                          ),
+                          PopupMenuItem(
+                            value: 'photos',
+                            child: Text('Fotos in der Nähe'),
+                          ),
+                        ],
+                        icon: const Icon(Icons.more_horiz),
                       ),
-                      onPressed: _loading ? null : () => _hybridSnap(r),
-                      child: const Text('Von hier'),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      onPressed: _loading ? null : () => _adoptTourIntoPlan(r),
-                      icon: const Icon(Icons.tune, size: 16),
-                      label: const Text('Anpassen'),
-                    ),
-                    IconButton(
-                      tooltip: 'Umgebungsfotos',
-                      onPressed: () => _openTrailView(near: r.center),
-                      icon: const Icon(Icons.streetview, size: 20),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -5974,6 +6020,171 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
     ];
   }
+}
+
+/// Overlay chip on tour heroes (difficulty / distance) — Komoot-style.
+class _HeroChip extends StatelessWidget {
+  const _HeroChip({
+    required this.icon,
+    required this.label,
+    this.emphasize = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: emphasize ? const Color(0xE61B3A2F) : const Color(0xCC0A1210),
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: Colors.white),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact icon + label for card stats row.
+class _StatIcon extends StatelessWidget {
+  const _StatIcon({
+    required this.icon,
+    required this.label,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = accent ? AppColors.accent : AppColors.muted;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: accent ? AppColors.accent : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Mini loop preview inset (Komoot/AllTrails card map thumbnail).
+class _LoopMiniMap extends StatelessWidget {
+  const _LoopMiniMap({
+    required this.size,
+    required this.stroke,
+    required this.fill,
+    this.showStart = false,
+  });
+
+  final double size;
+  final Color stroke;
+  final Color fill;
+  final bool showStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xEE14201C),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: _LoopMiniMapPainter(
+            stroke: stroke,
+            fill: fill,
+            showStart: showStart,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoopMiniMapPainter extends CustomPainter {
+  const _LoopMiniMapPainter({
+    required this.stroke,
+    required this.fill,
+    required this.showStart,
+  });
+
+  final Color stroke;
+  final Color fill;
+  final bool showStart;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromCenter(
+      center: Offset(size.width * 0.5, size.height * 0.52),
+      width: size.width * 0.62,
+      height: size.height * 0.48,
+    );
+    final path = Path()..addOval(rect);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = fill
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = stroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4
+        ..strokeCap = StrokeCap.round,
+    );
+    if (showStart) {
+      final a = Offset(rect.center.dx, rect.top);
+      canvas.drawCircle(a, 4.5, Paint()..color = AppColors.accent);
+      canvas.drawCircle(a, 2.2, Paint()..color = Colors.white);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LoopMiniMapPainter oldDelegate) =>
+      oldDelegate.stroke != stroke ||
+      oldDelegate.fill != fill ||
+      oldDelegate.showStart != showStart;
 }
 
 class _TrailViewSheet extends StatefulWidget {
