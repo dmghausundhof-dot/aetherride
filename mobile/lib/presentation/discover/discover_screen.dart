@@ -23,6 +23,7 @@ import '../../data/routing/elevation_client.dart';
 import '../../data/routing/geocode_client.dart';
 import '../../data/routing/osm_routes_client.dart';
 import '../../data/routing/osm_trail_network_client.dart';
+import '../../data/routing/public_tours_client.dart';
 import '../../data/routing/route_collections.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
@@ -433,6 +434,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _fetchOsmRoutes();
     _fetchTrailNetwork();
     _fetchTrailforks();
+    unawaited(_fetchPublicCatalog());
     unawaited(_fetchCommunityHeatmap());
     unawaited(_fetchRoutingStatus());
     unawaited(
@@ -1172,6 +1174,75 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  /// Redaktioneller Katalog vom Backend — füllt Touren auch ohne GPS.
+  Future<void> _fetchPublicCatalog() async {
+    try {
+      final sport = catalogSportForProfile(_profile.apiId);
+      final hits = await PublicToursClient().fetchCatalog(sport: sport);
+      if (!mounted || hits.isEmpty) return;
+      final o = _originOrNull;
+      final parsed = <_RouteSuggestion>[];
+      for (final h in hits) {
+        final surface = h.surface.contains('/')
+            ? h.surface
+            : _inferSurfaceTag(
+                title: h.name,
+                difficulty: h.difficulty,
+                profile: _profile,
+              );
+        parsed.add(
+          _RouteSuggestion(
+            id: h.id,
+            name: h.name,
+            distanceKm: h.distanceKm,
+            elevationM: h.elevationM,
+            durationMin: h.durationMin,
+            mtbScale: h.difficulty,
+            surface: surface,
+            matchScore: 75,
+            reasons: [
+              if (h.summary != null && h.summary!.isNotEmpty) h.summary!,
+              'AetherRide Katalog · ${h.regionSlug}',
+              if (h.loop) 'Rundkurs-Idee',
+            ],
+            center: LatLng(h.centerLat, h.centerLng),
+            categories: h.categories,
+          ),
+        );
+      }
+      if (o != null) {
+        parsed.sort((a, b) {
+          final da =
+              _distKm(o.lat, o.lng, a.center.latitude, a.center.longitude);
+          final db =
+              _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude);
+          return da.compareTo(db);
+        });
+      }
+      if (!mounted) return;
+      setState(() {
+        final byId = <String, _RouteSuggestion>{
+          for (final t in _tours) t.id: t,
+        };
+        for (final p in parsed) {
+          final existing = byId[p.id];
+          // Katalog ergänzt; OSM/OA mit höherem Score behalten.
+          if (existing == null || existing.matchScore <= p.matchScore) {
+            byId[p.id] = p;
+          }
+        }
+        _tours = byId.values.toList();
+        final base = _oaStatus;
+        _oaStatus = base == null || base.isEmpty
+            ? 'Katalog ${parsed.length} Touren'
+            : '$base · Katalog ${parsed.length}';
+      });
+      await _drawAll();
+    } catch (_) {
+      // Katalog optional — Discover bleibt mit OA/OSM nutzbar.
+    }
+  }
+
   Future<void> _fetchOsmRoutes() async {
     try {
       if (!_hasRealOrigin) return;
@@ -1430,6 +1501,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       unawaited(_fetchOsmRoutes());
       unawaited(_fetchTrailNetwork());
       unawaited(_fetchTrailforks());
+      unawaited(_fetchPublicCatalog());
       unawaited(_fetchCommunityHeatmap());
       // Explizit Near-me nach frischem GPS — Drift-Sync kann verzögern.
       unawaited(_refreshQuick(limit: 3));
@@ -3338,6 +3410,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 if (_start != null && _end != null) unawaited(_calcAb());
               } else {
                 unawaited(_refreshQuick(limit: 3));
+                unawaited(_fetchPublicCatalog());
               }
             },
           );
@@ -3729,6 +3802,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           if (_start != null && _end != null) unawaited(_calcAb());
         } else {
           unawaited(_refreshQuick(limit: 3));
+          unawaited(_fetchPublicCatalog());
         }
       },
       itemBuilder: (_) => [

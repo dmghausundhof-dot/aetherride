@@ -1,0 +1,149 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../../core/config.dart';
+import '../../domain/bike.dart';
+import '../local/user_profile_store.dart';
+
+/// Redaktionelle Tour aus GET /api/tours/catalog.
+class PublicTourHit {
+  const PublicTourHit({
+    required this.id,
+    required this.name,
+    required this.distanceKm,
+    required this.elevationM,
+    required this.durationMin,
+    required this.difficulty,
+    required this.surface,
+    required this.loop,
+    required this.regionSlug,
+    required this.centerLng,
+    required this.centerLat,
+    required this.categories,
+    this.summary,
+  });
+
+  final String id;
+  final String name;
+  final double distanceKm;
+  final int elevationM;
+  final int durationMin;
+  final String difficulty;
+  final String surface;
+  final bool loop;
+  final String regionSlug;
+  final double centerLng;
+  final double centerLat;
+  final List<BikeCategory> categories;
+  final String? summary;
+
+  factory PublicTourHit.fromJson(Map<String, dynamic> m) {
+    final center = m['center'];
+    double lng = 0;
+    double lat = 0;
+    if (center is List && center.length >= 2) {
+      lng = (center[0] as num).toDouble();
+      lat = (center[1] as num).toDouble();
+    }
+    final cats = <BikeCategory>[];
+    final rawCats = m['categories'];
+    if (rawCats is List) {
+      for (final c in rawCats) {
+        final cat = categoryFromApi(c?.toString());
+        if (cat != null) cats.add(cat);
+      }
+    }
+    final primary = categoryFromApi(m['primaryCategory'] as String?);
+    if (primary != null && !cats.contains(primary)) cats.insert(0, primary);
+
+    return PublicTourHit(
+      id: (m['id'] as String?) ?? '',
+      name: (m['name'] as String?) ?? '',
+      distanceKm: (m['distanceKm'] as num?)?.toDouble() ?? 0,
+      elevationM: (m['elevationM'] as num?)?.round() ?? 0,
+      durationMin: (m['durationMin'] as num?)?.round() ?? 0,
+      difficulty: (m['difficulty'] as String?) ?? '—',
+      surface: (m['surface'] as String?) ?? 'flow/compact',
+      loop: m['loop'] == true,
+      regionSlug: (m['regionSlug'] as String?) ?? '',
+      centerLng: lng,
+      centerLat: lat,
+      categories: cats.isEmpty ? [BikeCategory.mtbAm] : cats,
+      summary: m['summary'] as String?,
+    );
+  }
+}
+
+class PublicToursClient {
+  PublicToursClient({http.Client? httpClient})
+      : _http = httpClient ?? http.Client();
+
+  final http.Client _http;
+
+  /// [sport]: road|gravel|mtb|urban|ebike|all
+  Future<List<PublicTourHit>> fetchCatalog({
+    String sport = 'all',
+    String? region,
+  }) async {
+    final q = <String, String>{'sport': sport};
+    if (region != null && region.isNotEmpty) q['region'] = region;
+    final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/tours/catalog')
+        .replace(queryParameters: q);
+    try {
+      final res = await _http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 20));
+      if (res.statusCode != 200) return const [];
+      final data = jsonDecode(res.body);
+      if (data is! Map) return const [];
+      final raw = data['tours'];
+      if (raw is! List) return const [];
+      final out = <PublicTourHit>[];
+      for (final item in raw) {
+        if (item is Map) {
+          final hit =
+              PublicTourHit.fromJson(Map<String, dynamic>.from(item));
+          if (hit.id.isNotEmpty && hit.name.isNotEmpty) out.add(hit);
+        }
+      }
+      return out;
+    } catch (_) {
+      return const [];
+    }
+  }
+}
+
+/// Map RoutingProfile / BikeCategory → catalog sport query.
+String catalogSportForProfile(String profileApiId) {
+  if (profileApiId.contains('road')) return 'road';
+  if (profileApiId.contains('gravel')) return 'gravel';
+  if (profileApiId.contains('urban')) return 'urban';
+  if (profileApiId.contains('ebike') || profileApiId.contains('emtb')) {
+    return 'ebike';
+  }
+  if (profileApiId.contains('mtb') || profileApiId.contains('enduro')) {
+    return 'mtb';
+  }
+  return 'all';
+}
+
+/// API uses snake_case (`mtb_am`); Dart enum is camelCase (`mtbAm`).
+BikeCategory? categoryFromApi(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  final direct = bikeCategoryFromName(raw);
+  if (direct != null) return direct;
+  return switch (raw.replaceAll('-', '_').toLowerCase()) {
+    'mtb_trail' => BikeCategory.mtbTrail,
+    'mtb_am' || 'mtb' => BikeCategory.mtbAm,
+    'mtb_enduro' || 'enduro' => BikeCategory.mtbEnduro,
+    'dh' || 'downhill' => BikeCategory.dh,
+    'gravel' => BikeCategory.gravel,
+    'road' || 'rennrad' => BikeCategory.road,
+    'urban' || 'city' => BikeCategory.urban,
+    'emtb' => BikeCategory.emtb,
+    'etrekking' || 'ebike' || 'e_trekking' => BikeCategory.etrekking,
+    'hiking' || 'wandern' => BikeCategory.hiking,
+    _ => null,
+  };
+}

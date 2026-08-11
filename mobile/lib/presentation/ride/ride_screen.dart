@@ -96,6 +96,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   /// User-Toggle (zusätzlich zu dart-define AETHER_AUTO_REROUTE).
   bool _autoRerouteEnabled = AppConfig.autoReroute;
 
+  /// Kamera folgt GPS während der Fahrt (Komoot-ähnlich).
+  bool _cameraFollow = true;
+
+  /// true = Norden oben; false = Fahrtrichtung oben.
+  bool _northUp = false;
+
+  double _lastCameraBearing = 0;
+
   /// Distanz entlang Active Route (Nav); Odometer bleibt [rideDistanceMProvider].
   double _alongRouteM = 0;
   int _gpsFixCount = 0;
@@ -192,6 +200,17 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     return null;
   }
 
+  /// Kompass-Kurs zwischen zwei Lat/Lng-Punkten (0–360°).
+  double _bearingDeg(double lat1, double lng1, double lat2, double lng2) {
+    final lat1r = lat1 * math.pi / 180;
+    final lat2r = lat2 * math.pi / 180;
+    final dLng = (lng2 - lng1) * math.pi / 180;
+    final y = math.sin(dLng) * math.cos(lat2r);
+    final x = math.cos(lat1r) * math.sin(lat2r) -
+        math.sin(lat1r) * math.cos(lat2r) * math.cos(dLng);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+  }
+
   /// DACH+FR Übersicht bis GPS — kein Stadt-Fake.
   static const _regionOverview = LatLng(47.2, 6.5);
 
@@ -254,7 +273,27 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         );
         if (gen != _rideMapDrawGen) return;
         final last = line.last;
-        await c.animateCamera(CameraUpdate.newLatLngZoom(last, 15));
+        if (_cameraFollow) {
+          if (line.length >= 2) {
+            _lastCameraBearing = _bearingDeg(
+              line[line.length - 2].latitude,
+              line[line.length - 2].longitude,
+              last.latitude,
+              last.longitude,
+            );
+          }
+          final bearing = _northUp ? 0.0 : _lastCameraBearing;
+          await c.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: last,
+                zoom: 16,
+                bearing: bearing,
+                tilt: _northUp ? 0 : 40,
+              ),
+            ),
+          );
+        }
       } else if (route != null && route.coordinates.length >= 2) {
         final pts = [
           for (final p in route.coordinates) LatLng(p[1], p[0]),
@@ -1084,6 +1123,30 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         appBar: AppBar(
           title: Text(riding ? 'Live' : 'Bereit'),
           actions: [
+            if (riding) ...[
+              IconButton(
+                tooltip: _cameraFollow ? 'Kamera-Follow an' : 'Kamera frei',
+                onPressed: () {
+                  setState(() => _cameraFollow = !_cameraFollow);
+                  if (_cameraFollow) unawaited(_drawRideMap());
+                },
+                icon: Icon(
+                  _cameraFollow ? Icons.my_location : Icons.location_searching,
+                  color: _cameraFollow ? AppColors.accent : null,
+                ),
+              ),
+              IconButton(
+                tooltip: _northUp ? 'Norden oben' : 'Fahrtrichtung oben',
+                onPressed: () {
+                  setState(() => _northUp = !_northUp);
+                  if (_cameraFollow) unawaited(_drawRideMap());
+                },
+                icon: Icon(
+                  _northUp ? Icons.explore : Icons.navigation,
+                  color: !_northUp ? AppColors.accent : null,
+                ),
+              ),
+            ],
             if (riding && route != null)
               IconButton(
                 tooltip: _autoRerouteEnabled
