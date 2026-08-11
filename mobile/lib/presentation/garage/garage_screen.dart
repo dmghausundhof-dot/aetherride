@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/shop_web.dart';
 import '../../core/theme/app_theme.dart';
@@ -1501,21 +1500,15 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                     ),
                     const Spacer(),
                     TextButton(
-                      onPressed: () async {
-                        // S-FLOW-03/05: Garage → Web Parts with bike soft-fit
-                        final url = ShopWebLinks.parts(
-                          bikeId: widget.bikeId,
-                          fitBike: true,
-                        );
+                      onPressed: () {
+                        // S-FLOW-05 / CEO: in-app Shop with bike compat filter.
                         Navigator.pop(context);
-                        final uri = Uri.parse(url);
-                        final ok = await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
+                        ref.read(shopPendingFilterProvider.notifier).state =
+                            ShopPendingFilter(
+                          bikeId: widget.bikeId,
+                          fit: 'bike',
                         );
-                        if (!ok && context.mounted) {
-                          ref.read(shellTabIndexProvider.notifier).state = 4;
-                        }
+                        ref.read(shellTabIndexProvider.notifier).state = 4;
                       },
                       child: const Text('Shop'),
                     ),
@@ -1525,23 +1518,17 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                 for (final a in due.take(5))
                   _MaintenanceBarRow(
                     alert: a,
-                    onShop: () async {
+                    onShop: () {
                       final slot =
                           ShopWebLinks.partsSlotFromComponent(a.slot);
-                      final url = ShopWebLinks.parts(
+                      Navigator.pop(context);
+                      ref.read(shopPendingFilterProvider.notifier).state =
+                          ShopPendingFilter(
                         bikeId: widget.bikeId,
                         slot: slot,
-                        fitBike: true,
+                        fit: 'bike',
                       );
-                      Navigator.pop(context);
-                      final uri = Uri.parse(url);
-                      final ok = await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                      if (!ok && context.mounted) {
-                        ref.read(shellTabIndexProvider.notifier).state = 4;
-                      }
+                      ref.read(shellTabIndexProvider.notifier).state = 4;
                     },
                   ),
               ],

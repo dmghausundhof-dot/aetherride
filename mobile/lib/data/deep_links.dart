@@ -148,16 +148,37 @@ class DeepLinkParse {
     if (raw == 'egal' || raw == 'any') return 0;
     return int.tryParse(raw);
   }
+
+  /// Shop filter: `bikeId` or `bike`.
+  static String? shopBikeIdOf(Uri uri) {
+    final q = uri.queryParameters;
+    final raw = (q['bikeId'] ?? q['bike'] ?? '').trim();
+    return raw.isEmpty ? null : raw;
+  }
+
+  /// Shop filter: `slot` (parts browse key).
+  static String? shopSlotOf(Uri uri) {
+    final raw = (uri.queryParameters['slot'] ?? '').trim();
+    return raw.isEmpty ? null : raw;
+  }
+
+  /// Shop filter: `fit=bike|all` (default all).
+  static String shopFitOf(Uri uri) {
+    final raw = (uri.queryParameters['fit'] ?? '').trim().toLowerCase();
+    if (raw == 'bike' || raw == '1' || raw == 'true') return 'bike';
+    return 'all';
+  }
 }
 
 /// Handles:
 /// - aetherride://ride?route=
 /// - aetherride://tours/{id}
 /// - aetherride://discover
-/// - aetherride://shop | aetherride://teile | aetherride://parts → Shop tab (4)
+/// - aetherride://shop?bikeId=&slot=&fit=bike → Shop tab + Soft-Fit filter
+/// - aetherride://teile | aetherride://parts → Shop tab (4)
 /// - aetherride://discover?lens=60&loop=SEED_ID&start=1  (D-60-05 → Ride)
 /// - https://aetherride.vercel.app/discover?lens=60&loop=SEED_ID&start=1
-/// - https://aetherride.vercel.app/shop|/teile|/parts
+/// - https://aetherride.vercel.app/shop?bikeId=&slot=|/teile|/parts
 /// - https://aetherride.vercel.app/open/ride?route=
 /// - https://…/ride?route=
 /// - https://…/tours/{id}
@@ -206,8 +227,8 @@ class DeepLinkHandler {
     _lastHandled = key;
 
     if (kind == DeepLinkKind.shop) {
-      // S-FLOW-01 / audit: aetherride://shop → Teile tab
-      _ref.read(shellTabIndexProvider.notifier).state = 4;
+      // S-FLOW-01/03/05: aetherride://shop?bikeId=&slot=&fit=bike → filtered Shop
+      _applyShopQuery(uri);
       return;
     }
 
@@ -233,6 +254,20 @@ class DeepLinkHandler {
     }
 
     await _loadRoute(routeId);
+  }
+
+  /// Shop deep link → tab 4 + optional Soft-Fit filter (Garage→Shop P0).
+  void _applyShopQuery(Uri uri) {
+    final bikeId = DeepLinkParse.shopBikeIdOf(uri);
+    final slot = DeepLinkParse.shopSlotOf(uri);
+    var fit = DeepLinkParse.shopFitOf(uri);
+    if (bikeId != null && fit == 'all') fit = 'bike';
+    _ref.read(shopPendingFilterProvider.notifier).state = ShopPendingFilter(
+      bikeId: bikeId,
+      slot: slot,
+      fit: fit,
+    );
+    _ref.read(shellTabIndexProvider.notifier).state = 4;
   }
 
   /// Discover-Intent: optional lens + loop + start=1 → Nav (D-60-05).

@@ -40,6 +40,20 @@ void main() {
       );
     });
 
+    test('shop deep link query bikeId/slot/fit', () {
+      final uri = Uri.parse(
+        'aetherride://shop?bikeId=bike-1&slot=brake_pads&fit=bike',
+      );
+      expect(DeepLinkParse.kindOf(uri), DeepLinkKind.shop);
+      expect(DeepLinkParse.shopBikeIdOf(uri), 'bike-1');
+      expect(DeepLinkParse.shopSlotOf(uri), 'brake_pads');
+      expect(DeepLinkParse.shopFitOf(uri), 'bike');
+      expect(
+        DeepLinkParse.shopBikeIdOf(Uri.parse('aetherride://shop?bike=b2')),
+        'b2',
+      );
+    });
+
     test('https app links', () {
       expect(
         DeepLinkParse.kindOf(

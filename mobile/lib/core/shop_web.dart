@@ -2,7 +2,7 @@ import 'config.dart';
 import '../domain/component.dart';
 
 /// Canonical Web shop URLs (S-FLOW-01 / S-FLOW-03).
-/// App Storefront grid + deep-link into Web for Soft-Fit / product detail.
+/// App shows Storefront collection in-grid; Web is the Soft-Fit bridge.
 class ShopWebLinks {
   ShopWebLinks._();
 
@@ -35,7 +35,31 @@ class ShopWebLinks {
   static String product(String handle) =>
       '$origin/shop/p/${Uri.encodeComponent(handle)}';
 
-  /// Map Garage ComponentSlot → Web parts browse slot (S-FLOW-05).
+  /// In-app deep link: aetherride://shop?bikeId=&slot=&fit=bike
+  static String appShopDeepLink({
+    String? bikeId,
+    String? slot,
+    bool fitBike = true,
+  }) {
+    final params = <String, String>{};
+    if (bikeId != null && bikeId.isNotEmpty) {
+      params['bikeId'] = bikeId;
+    }
+    if (slot != null && slot.isNotEmpty && slot != 'all') {
+      params['slot'] = slot;
+    }
+    if (fitBike && bikeId != null && bikeId.isNotEmpty) {
+      params['fit'] = 'bike';
+    }
+    if (params.isEmpty) return 'aetherride://shop';
+    return Uri(
+      scheme: 'aetherride',
+      host: 'shop',
+      queryParameters: params,
+    ).toString();
+  }
+
+  /// Map Garage ComponentSlot → Web/App parts browse slot (S-FLOW-05).
   static String? partsSlotFromComponent(ComponentSlot slot) {
     return switch (slot) {
       ComponentSlot.chain => 'chain',
@@ -43,6 +67,7 @@ class ShopWebLinks {
       ComponentSlot.grips => 'grips',
       ComponentSlot.tireFront || ComponentSlot.tireRear => 'tire',
       ComponentSlot.brakeFront || ComponentSlot.brakeRear => 'brake_pads',
+      ComponentSlot.rotorFront || ComponentSlot.rotorRear => 'brake_pads',
       _ => null,
     };
   }
