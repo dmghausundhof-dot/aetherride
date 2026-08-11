@@ -33,6 +33,7 @@ class BikeSchema extends StatelessWidget {
     this.maintenanceSlots = const {},
     this.onSelectSlot,
     this.selectedSlot,
+    this.compact = false,
   });
 
   final Bike bike;
@@ -40,6 +41,8 @@ class BikeSchema extends StatelessWidget {
   final Set<ComponentSlot> maintenanceSlots;
   final ValueChanged<ComponentSlot>? onSelectSlot;
   final ComponentSlot? selectedSlot;
+  /// Garage-list preview: denser padding, no legend.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +73,7 @@ class BikeSchema extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
       ),
-      padding: const EdgeInsets.all(AppSpacing.s),
+      padding: EdgeInsets.all(compact ? AppSpacing.xs : AppSpacing.s),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -225,16 +228,18 @@ class BikeSchema extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: AppSpacing.s),
-          const Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: [
-              _Legend(color: Color(statusColorOk), label: 'gepflegt'),
-              _Legend(color: Color(statusColorMaintenance), label: 'Wartung'),
-              _Legend(color: Color(statusColorMissing), label: 'fehlt'),
-            ],
-          ),
+          if (!compact) ...[
+            const SizedBox(height: AppSpacing.s),
+            const Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                _Legend(color: Color(statusColorOk), label: 'gepflegt'),
+                _Legend(color: Color(statusColorMaintenance), label: 'Wartung'),
+                _Legend(color: Color(statusColorMissing), label: 'fehlt'),
+              ],
+            ),
+          ],
         ],
       ),
     );

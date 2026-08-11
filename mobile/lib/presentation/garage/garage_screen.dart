@@ -126,28 +126,31 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
                   };
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.l),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Schema · ${active.name}',
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.muted,
-                                  ),
-                        ),
-                        const SizedBox(height: AppSpacing.s),
-                        GestureDetector(
-                          onTap: () => _openDetail(context, ref, active),
-                          child: BikeSchema(
+                    child: GestureDetector(
+                      onTap: () => _openDetail(context, ref, active),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Schema · ${active.name}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.muted,
+                                ),
+                          ),
+                          const SizedBox(height: AppSpacing.s),
+                          BikeSchema(
                             bike: active,
                             installedSlots: installed,
+                            compact: true,
                             onSelectSlot: (_) =>
                                 _openDetail(context, ref, active),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
