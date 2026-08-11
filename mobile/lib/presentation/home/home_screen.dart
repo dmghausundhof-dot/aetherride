@@ -226,11 +226,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: bikes.when(
                     data: (list) {
                       final name = list.isEmpty
-                          ? 'Garage öffnen'
+                          ? 'Bike anlegen'
                           : (active?.name ?? list.first.name);
                       return InkWell(
-                        onTap: () =>
-                            ref.read(shellTabIndexProvider.notifier).state = 1,
+                        onTap: () {
+                          if (list.isEmpty) {
+                            ref
+                                .read(garageOpenAddPendingProvider.notifier)
+                                .state = true;
+                          }
+                          ref.read(shellTabIndexProvider.notifier).state = 1;
+                        },
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -479,8 +485,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (bikes.valueOrNull?.isEmpty == true) ...[
               const SizedBox(height: AppSpacing.l),
               _OnboardingCards(
-                onGarage: () =>
-                    ref.read(shellTabIndexProvider.notifier).state = 1,
+                onGarage: () {
+                  ref.read(garageOpenAddPendingProvider.notifier).state = true;
+                  ref.read(shellTabIndexProvider.notifier).state = 1;
+                },
                 onShop: () =>
                     ref.read(shellTabIndexProvider.notifier).state = 4,
               ),

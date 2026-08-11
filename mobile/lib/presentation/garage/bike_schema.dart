@@ -66,7 +66,7 @@ class BikeSchema extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
       ),
@@ -99,6 +99,16 @@ class BikeSchema extends StatelessWidget {
                           schemaAssetPath[key]!,
                           fit: BoxFit.contain,
                           semanticsLabel: '${bike.name} Schema',
+                          placeholderBuilder: (context) => const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Center(
+                            child: Text(
+                              'Schema nicht geladen',
+                              style: TextStyle(color: AppColors.muted),
+                            ),
+                          ),
                         ),
                       )
                     else
