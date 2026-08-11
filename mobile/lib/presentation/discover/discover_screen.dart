@@ -85,6 +85,7 @@ class _RouteSuggestion {
       BikeCategory.mtbEnduro,
     ],
     this.trackLngLat,
+    this.sourceKind = 'other',
   });
 
   final String id;
@@ -102,7 +103,21 @@ class _RouteSuggestion {
   /// Optional echte Polyline [lng, lat] (z. B. Outdooractive).
   final List<List<double>>? trackLngLat;
 
+  /// catalog | osm | outdooractive | other
+  final String sourceKind;
+
   bool get hasTrack => trackLngLat != null && trackLngLat!.length >= 2;
+
+  bool get isCatalog => sourceKind == 'catalog';
+  bool get isLiveOsm => sourceKind == 'osm';
+  bool get isOutdooractive => sourceKind == 'outdooractive';
+
+  String get sourceLabel => switch (sourceKind) {
+        'catalog' => 'Katalog',
+        'osm' => 'OSM live',
+        'outdooractive' => 'Outdooractive',
+        _ => 'Tour',
+      };
 }
 
 class _QuickOption {
@@ -1147,6 +1162,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               BikeCategory.hiking,
             ],
             trackLngLat: track,
+            sourceKind: 'outdooractive',
           ),
         );
       }
@@ -1208,6 +1224,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ],
             center: LatLng(h.centerLat, h.centerLng),
             categories: h.categories,
+            sourceKind: 'catalog',
           ),
         );
       }
@@ -1304,6 +1321,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     BikeCategory.mtbTrail,
                   ],
             trackLngLat: h.geometry,
+            sourceKind: 'osm',
           ),
         );
       }
@@ -4598,10 +4616,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  /// Zweite Sektion derselben Liste. Legende und Netz-Schalter sind in das
-  /// Filter-Sheet gewandert — hier steht nur noch Inhalt.
+  /// Zweite Sektion: Katalog (redaktionell) und Live (OSM/OA) getrennt.
   List<Widget> _toursSection() {
     final list = _filtered;
+    final catalog = list.where((r) => r.isCatalog).toList();
+    final live = list.where((r) => !r.isCatalog).toList();
     final o = _origin;
     final sources = [
       if (_oaStatus != null) _oaStatus!,
@@ -4610,14 +4629,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
     return [
       _sectionTitle(
-        'Touren & Trails (${list.length})',
+        'Touren (${list.length})',
         hint: _hasRealOrigin
-            ? 'Nächste zuerst — ab ${o.lat.toStringAsFixed(2)}°N, ${o.lng.toStringAsFixed(2)}°E'
+            ? 'Katalog + Live · ab ${o.lat.toStringAsFixed(2)}°N'
                 '${_userPos != null ? ' (GPS)' : ''}'
-            : 'Standort oder Start setzen — Trails für DACH & Frankreich',
+            : 'Katalog ohne GPS · Live-OSM nach Standort',
         trailing: TextButton(
-          onPressed: _loading ? null : () => unawaited(_fetchTrailNetwork()),
-          child: const Text('Netz neu'),
+          onPressed: _loading
+              ? null
+              : () {
+                  unawaited(_fetchPublicCatalog());
+                  unawaited(_fetchOsmRoutes());
+                  unawaited(_fetchTrailNetwork());
+                },
+          child: const Text('Neu'),
         ),
       ),
       if (sources.isNotEmpty)
@@ -4628,8 +4653,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             style: const TextStyle(fontSize: 11, color: AppColors.muted),
           ),
         ),
-      // Heatmap-Disclaimer bleibt sichtbar, wo die Daten stehen — er gehört
-      // zur Aussage der Liste, nicht in ein Menü.
       Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.xs),
         child: _heatmapConsent
@@ -4696,11 +4719,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         const Padding(
           padding: EdgeInsets.only(bottom: AppSpacing.m),
           child: Text(
-            'Keine Beispiel-Touren — erst GPS oder Startpunkt, dann Live-Touren.',
+            'Katalog-Touren jederzeit · GPS freigeben für Near-me und OSM-Live.',
             style: TextStyle(fontSize: 12, color: AppColors.muted),
           ),
         ),
-      if (list.isEmpty && _hasRealOrigin)
+      if (list.isEmpty)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s),
           child: Row(
@@ -4709,7 +4732,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 child: Text(
                   _activeFilterCount > 0
                       ? 'Keine Tour bei diesen Filtern.'
-                      : 'Keine Tour in der Nähe — später erneut laden.',
+                      : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
                   style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
@@ -4721,145 +4744,188 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ],
           ),
         ),
-      for (final r in list)
-        Card(
-          margin: const EdgeInsets.only(bottom: AppSpacing.s),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.m),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InkWell(
-                  onTap: () => unawaited(_openDetail(r.id, r.center)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        r.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color:
-                              _selectedTourId == r.id ? AppColors.accent : null,
-                        ),
-                      ),
-                      Text(
-                        _isPinOnlyIdea(r)
-                            ? 'Tour-Idee · kein Track — „Route berechnen“'
-                            : 'Gespeicherte / geroutete Tour',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      _DifficultyStatsRow(
-                        difficultyRaw: r.mtbScale,
-                        segments: [
-                          _surfaceDisplay(r.surface),
-                          if (_shapeLabel(r) case final shape?) shape,
-                          if (_nearbyActivity(r.center) case final n?)
-                            'beliebt · ≥$n Ride-Nutzer',
-                        ],
-                      ),
-                      Text(
-                        '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt · '
-                        '${r.distanceKm} km · ${r.elevationM} hm · ${r.durationMin} min',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      if (_isPinOnlyIdea(r)) ...[
-                        FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                          ),
-                          onPressed:
-                              _loading ? null : () => _computeIdeaRoute(r),
-                          icon: const Icon(Icons.route, size: 18),
-                          label: const Text('Route berechnen & speichern'),
-                        ),
-                        const SizedBox(width: AppSpacing.s),
-                      ] else
-                        OutlinedButton(
-                          onPressed: () async {
-                            final routed = await _geometryForTour(r);
-                            if (!mounted) return;
-                            if (routed.demo || routed.points.length < 2) {
-                              await _computeIdeaRoute(r);
-                              return;
-                            }
-                            final preview = RouteResult(
-                              coordinates: routed.points,
-                              distanceM: r.distanceKm * 1000,
-                              durationS: r.durationMin * 60.0,
-                              engine: 'tour-routed',
-                            );
-                            setState(() {
-                              _computed = preview;
-                              _ideaPin = null;
-                              _selectedTourId = r.id;
-                              _label = r.name;
-                              _status = 'Live-geroutete Tour-Vorschau';
-                            });
-                            await _drawRoute(preview);
-                          },
-                          child: const Text('Vorschau'),
-                        ),
-                      if (!_isPinOnlyIdea(r))
-                        const SizedBox(width: AppSpacing.s),
-                      OutlinedButton(
-                        onPressed: _loading ? null : () => _hybridSnap(r),
-                        child: const Text('Von hier'),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      // Der zweite Einstieg ins Planen: aus der Tour heraus,
-                      // benannt nach dem, was passiert — nicht nach dem Tab,
-                      // in dem man landet.
-                      OutlinedButton.icon(
-                        onPressed:
-                            _loading ? null : () => _adoptTourIntoPlan(r),
-                        icon: const Icon(Icons.tune, size: 16),
-                        label: const Text('Anpassen'),
-                      ),
-                      IconButton(
-                        tooltip: 'Trail View',
-                        onPressed: () => _openTrailView(near: r.center),
-                        icon: const Icon(Icons.streetview, size: 20),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                        ),
-                        onPressed: () => _startRide(suggestion: r),
-                        child: Text(
-                          // OSM mit Polyline = sicher; Katalog/idea lädt
-                          // Override/Live-Geometry beim Start.
-                          r.hasTrack
-                              ? 'Losfahren'
-                              : (r.id.startsWith('oa-') ||
-                                      r.id.contains('demo'))
-                                  ? 'Los · Track?'
-                                  : 'Losfahren',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+      if (catalog.isNotEmpty) ...[
+        _sectionTitle(
+          'Katalog (${catalog.length})',
+          hint: 'Redaktionell · Multi-Sport · Geometry beim Losfahren',
         ),
+        for (final r in catalog) _tourListCard(r, o),
+      ],
+      if (live.isNotEmpty) ...[
+        _sectionTitle(
+          'Live / OSM (${live.length})',
+          hint: _hasRealOrigin
+              ? 'OpenStreetMap & Partner in der Nähe'
+              : 'Erscheint nach GPS / Startpunkt',
+        ),
+        for (final r in live) _tourListCard(r, o),
+      ],
     ];
+  }
+
+  Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.s),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.m),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () => unawaited(_openDetail(r.id, r.center)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          r.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: _selectedTourId == r.id
+                                ? AppColors.accent
+                                : null,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: r.isCatalog
+                              ? AppColors.accent.withValues(alpha: 0.12)
+                              : AppColors.forest.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.chip),
+                        ),
+                        child: Text(
+                          r.sourceLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: r.isCatalog
+                                ? AppColors.accent
+                                : AppColors.forestOnDark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    _isPinOnlyIdea(r)
+                        ? '${r.sourceLabel} · Tour-Idee — „Route berechnen“'
+                        : r.hasTrack
+                            ? '${r.sourceLabel} · Track vorhanden'
+                            : '${r.sourceLabel} · Geometrie beim Start',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _DifficultyStatsRow(
+                    difficultyRaw: r.mtbScale,
+                    segments: [
+                      _surfaceDisplay(r.surface),
+                      if (_shapeLabel(r) case final shape?) shape,
+                      if (_nearbyActivity(r.center) case final n?)
+                        'beliebt · ≥$n Ride-Nutzer',
+                    ],
+                  ),
+                  Text(
+                    '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt · '
+                    '${r.distanceKm} km · ${r.elevationM} hm · ${r.durationMin} min',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (_isPinOnlyIdea(r)) ...[
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                      ),
+                      onPressed:
+                          _loading ? null : () => _computeIdeaRoute(r),
+                      icon: const Icon(Icons.route, size: 18),
+                      label: const Text('Route berechnen & speichern'),
+                    ),
+                    const SizedBox(width: AppSpacing.s),
+                  ] else
+                    OutlinedButton(
+                      onPressed: () async {
+                        final routed = await _geometryForTour(r);
+                        if (!mounted) return;
+                        if (routed.demo || routed.points.length < 2) {
+                          await _computeIdeaRoute(r);
+                          return;
+                        }
+                        final preview = RouteResult(
+                          coordinates: routed.points,
+                          distanceM: r.distanceKm * 1000,
+                          durationS: r.durationMin * 60.0,
+                          engine: 'tour-routed',
+                        );
+                        setState(() {
+                          _computed = preview;
+                          _ideaPin = null;
+                          _selectedTourId = r.id;
+                          _label = r.name;
+                          _status = 'Live-geroutete Tour-Vorschau';
+                        });
+                        await _drawRoute(preview);
+                      },
+                      child: const Text('Vorschau'),
+                    ),
+                  if (!_isPinOnlyIdea(r))
+                    const SizedBox(width: AppSpacing.s),
+                  OutlinedButton(
+                    onPressed: _loading ? null : () => _hybridSnap(r),
+                    child: const Text('Von hier'),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  OutlinedButton.icon(
+                    onPressed:
+                        _loading ? null : () => _adoptTourIntoPlan(r),
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text('Anpassen'),
+                  ),
+                  IconButton(
+                    tooltip: 'Umgebungsfotos',
+                    onPressed: () => _openTrailView(near: r.center),
+                    icon: const Icon(Icons.streetview, size: 20),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                    ),
+                    onPressed: () => _startRide(suggestion: r),
+                    child: Text(
+                      r.hasTrack
+                          ? 'Losfahren'
+                          : (r.id.startsWith('oa-') || r.id.contains('demo'))
+                              ? 'Los · Track?'
+                              : 'Losfahren',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Widget> _savedTiles() {

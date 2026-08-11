@@ -516,6 +516,38 @@ const SPECS: Record<string, Spec> = {
     distanceM: 20000,
     durationS: 60 * 60,
   },
+  "r-innsbruck-road": {
+    lng: 11.39,
+    lat: 47.27,
+    loop: true,
+    rKm: 6.5,
+    distanceM: 48000,
+    durationS: 140 * 60,
+  },
+  "r-zillertal-gravel": {
+    lng: 11.87,
+    lat: 47.23,
+    loop: true,
+    rKm: 7.2,
+    distanceM: 55000,
+    durationS: 180 * 60,
+  },
+  "r-chamonix-emtb": {
+    lng: 6.87,
+    lat: 45.92,
+    loop: true,
+    rKm: 4.2,
+    distanceM: 32000,
+    durationS: 135 * 60,
+  },
+  "r-geneve-urban": {
+    lng: 6.15,
+    lat: 46.2,
+    loop: true,
+    rKm: 2.8,
+    distanceM: 22000,
+    durationS: 65 * 60,
+  },
 };
 
 function buildFromSpec(id: string, s: Spec): GeometryOverride {

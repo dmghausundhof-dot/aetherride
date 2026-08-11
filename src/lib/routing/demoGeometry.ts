@@ -63,6 +63,10 @@ const BASE: Record<string, { lat: number; lng: number }> = {
   "r-passau-touring": { lat: 48.57, lng: 13.46 },
   "r-wuerzburg-road": { lat: 49.79, lng: 9.93 },
   "r-dresden-urban": { lat: 51.05, lng: 13.74 },
+  "r-innsbruck-road": { lat: 47.27, lng: 11.39 },
+  "r-zillertal-gravel": { lat: 47.23, lng: 11.87 },
+  "r-chamonix-emtb": { lat: 45.92, lng: 6.87 },
+  "r-geneve-urban": { lat: 46.2, lng: 6.15 },
   default: { lat: 47.99, lng: 7.85 },
 };
 
