@@ -159,9 +159,12 @@ class DeepLinkHandler {
 
   Future<void> start() async {
     final links = AppLinks();
-    _sub = links.uriLinkStream.listen(_onUri, onError: (e) {
-      debugPrint('DeepLink stream: $e');
-    });
+    _sub = links.uriLinkStream.listen(
+      _onUri,
+      onError: (e) {
+        debugPrint('DeepLink stream: $e');
+      },
+    );
     try {
       final initial = await links.getInitialLink();
       if (initial != null) await _onUri(initial);
@@ -241,8 +244,10 @@ class DeepLinkHandler {
         return false;
       }
       _ref.read(activeRouteProvider.notifier).state = seed.toActiveRoute();
+      // Same flag as Freeride / empty ride deep-link — RideScreen consumes it.
+      _ref.read(rideAutostartProvider.notifier).state = true;
       _ref.read(shellTabIndexProvider.notifier).state = 2;
-      debugPrint('DeepLink: seed loop $loopId → Ride');
+      debugPrint('DeepLink: seed loop $loopId → Ride (autostart)');
       return true;
     } catch (e) {
       debugPrint('DeepLink seed loop: $e');
@@ -302,10 +307,7 @@ class DeepLinkHandler {
         if (geom is Map && geom['coordinates'] is List) {
           for (final c in geom['coordinates'] as List) {
             if (c is List && c.length >= 2) {
-              coords.add([
-                (c[0] as num).toDouble(),
-                (c[1] as num).toDouble(),
-              ]);
+              coords.add([(c[0] as num).toDouble(), (c[1] as num).toDouble()]);
             }
           }
         }
@@ -316,8 +318,8 @@ class DeepLinkHandler {
           name: name,
           distanceKm: ((j['distanceM'] as num?)?.toDouble() ?? 0) / 1000,
           elevationM: ((j['distanceM'] as num?)?.toDouble() ?? 0) * 0.02,
-          durationMin:
-              (((j['durationS'] as num?)?.toDouble() ?? 0) / 60).round(),
+          durationMin: (((j['durationS'] as num?)?.toDouble() ?? 0) / 60)
+              .round(),
           coordinates: coords,
         );
         debugPrint(
