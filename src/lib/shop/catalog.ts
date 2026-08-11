@@ -55,7 +55,118 @@ export const SHOP_BROWSE_SLOTS: { slot: ComponentSlot | "all"; label: string }[]
     { slot: "battery", label: "Akku" },
   ];
 
+
+/** Shopify Storefront (Phase A — deep links only, no Storefront API token) */
+export const SHOPIFY_STORE_BASE =
+  "https://dmg-haus-und-hof-shop.myshopify.com";
+
+export function shopifyProductUrl(handle: string): string {
+  return `${SHOPIFY_STORE_BASE}/products/${handle}`;
+}
+
+export function shopifyCollectionUrl(handle: string): string {
+  return `${SHOPIFY_STORE_BASE}/collections/${handle}`;
+}
+
+/** Sport-Query → Shopify Collection Handle */
+export const SHOPIFY_COLLECTIONS: Record<string, string> = {
+  gravel: "featured-gravel",
+  city: "featured-light-e-city",
+  "light-e": "featured-light-e-city",
+  urban: "featured-light-e-city",
+};
+
+export function shopCollectionHref(sport: string): string | undefined {
+  const handle = SHOPIFY_COLLECTIONS[sport];
+  return handle ? shopifyCollectionUrl(handle) : undefined;
+}
+
+/** Featured complete bikes from AetherRide Shopify (placeholder images + test prices) */
+export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
+  {
+    id: "sp-shopify-orbea-terra-m20",
+    name: "Orbea Terra M20",
+    manufacturer: "Orbea",
+    slot: "frame",
+    componentModelId: "cm-shopify-orbea-terra-m20",
+    priceEur: 2999,
+    description:
+      "Gravel-Allrounder — Testpreis. Checkout im AetherRide Shopify-Shop.",
+    affiliateUrl: shopifyProductUrl("orbea-terra-m20"),
+    merchantName: "AetherRide Shop",
+    visualHint: "bike",
+    sports: ["gravel"],
+  },
+  {
+    id: "sp-shopify-specialized-diverge-carbon",
+    name: "Specialized Diverge Carbon",
+    manufacturer: "Specialized",
+    slot: "frame",
+    componentModelId: "cm-shopify-specialized-diverge-carbon",
+    priceEur: 3499,
+    description:
+      "Carbon-Gravel — Testpreis. Checkout im AetherRide Shopify-Shop.",
+    affiliateUrl: shopifyProductUrl("specialized-diverge-carbon"),
+    merchantName: "AetherRide Shop",
+    visualHint: "bike",
+    sports: ["gravel"],
+  },
+  {
+    id: "sp-shopify-cube-attain-gtc-race",
+    name: "Cube Attain GTC Race",
+    manufacturer: "Cube",
+    slot: "frame",
+    componentModelId: "cm-shopify-cube-attain-gtc-race",
+    priceEur: 2199,
+    description:
+      "Leichtes Carbon-Rennrad — Testpreis. Checkout im AetherRide Shopify-Shop.",
+    affiliateUrl: shopifyProductUrl("cube-attain-gtc-race"),
+    merchantName: "AetherRide Shop",
+    visualHint: "bike",
+    sports: ["road", "gravel"],
+  },
+  {
+    id: "sp-shopify-canyon-ultimate-cf-sl-8",
+    name: "Canyon Ultimate CF SL 8",
+    manufacturer: "Canyon",
+    slot: "frame",
+    componentModelId: "cm-shopify-canyon-ultimate-cf-sl-8",
+    priceEur: 3999,
+    description:
+      "Rennrad Performance — Testpreis. Checkout im AetherRide Shopify-Shop.",
+    affiliateUrl: shopifyProductUrl("canyon-ultimate-cf-sl-8"),
+    merchantName: "AetherRide Shop",
+    visualHint: "bike",
+    sports: ["road"],
+  },
+  {
+    id: "sp-shopify-canyon-commuter-7-0",
+    name: "Canyon Commuter 7.0",
+    manufacturer: "Canyon",
+    slot: "frame",
+    componentModelId: "cm-shopify-canyon-commuter-7-0",
+    priceEur: 1499,
+    description:
+      "City / Light-E Pendlerbike — Testpreis. Checkout im AetherRide Shopify-Shop.",
+    affiliateUrl: shopifyProductUrl("canyon-commuter-7-0"),
+    merchantName: "AetherRide Shop",
+    visualHint: "bike",
+    sports: ["urban", "ebike"],
+  },
+];
+
+export function getFeaturedShopifyProducts(): ShopProduct[] {
+  return SHOPIFY_FEATURED_BIKES;
+}
+
+export function shopifyHandleFromProductId(id: string): string | undefined {
+  const prefix = "sp-shopify-";
+  if (!id.startsWith(prefix)) return undefined;
+  return id.slice(prefix.length);
+}
+
 export const SHOP_PRODUCTS: ShopProduct[] = [
+  ...SHOPIFY_FEATURED_BIKES,
   {
     id: "sp-sram-xx-chain",
     name: "SRAM XX Eagle Transmission Chain",
@@ -303,6 +414,15 @@ export function getShopProduct(id: string): ShopProduct | undefined {
   return SHOP_PRODUCTS.find((p) => p.id === id);
 }
 
+export function getShopProductByFocus(focus: string): ShopProduct | undefined {
+  const direct = SHOP_PRODUCTS.find((p) => p.id === focus);
+  if (direct) return direct;
+  return SHOPIFY_FEATURED_BIKES.find(
+    (p) => shopifyHandleFromProductId(p.id) === focus
+  );
+}
+
+
 export function productsForSlot(slot: ComponentSlot): ShopProduct[] {
   if (slot === "brake_pads_rear") {
     return SHOP_PRODUCTS.filter(
@@ -339,13 +459,32 @@ export function wearKindToShopSlot(
 
 export function shopHref(opts?: {
   productId?: string;
+  /** Shopify product handle or catalog id */
+  focus?: string;
   slot?: ComponentSlot | string;
   job?: "replace" | "browse" | "season";
+  /** gravel | city | light-e | urban | road | mtb | ebike | all */
+  sport?: string;
 }): string {
   const params = new URLSearchParams();
-  if (opts?.productId) params.set("focus", opts.productId);
+  const focus = opts?.focus ?? opts?.productId;
+  if (focus) params.set("focus", focus);
   if (opts?.slot) params.set("slot", opts.slot);
   if (opts?.job) params.set("job", opts.job);
+  if (opts?.sport) params.set("sport", opts.sport);
   const q = params.toString();
   return q ? `/shop?${q}` : "/shop";
+}
+
+/** Map deep-link sport query (city / light-e) onto ShopSport filter chips */
+export function shopSportFromQuery(
+  sport: string | null | undefined
+): ShopSport | null {
+  if (!sport) return null;
+  if (sport === "city") return "urban";
+  if (sport === "light-e") return "ebike";
+  if (SHOP_SPORT_FILTERS.some((s) => s.id === sport)) {
+    return sport as ShopSport;
+  }
+  return null;
 }

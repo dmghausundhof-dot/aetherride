@@ -1,5 +1,6 @@
 import {
   Battery,
+  Bike,
   CircleDot,
   Disc,
   Link2,
@@ -19,6 +20,8 @@ const HINT_STYLES: Record<string, string> = {
   shock: "from-stone-800/50 to-stone-700/20 text-stone-200",
   battery: "from-emerald-900/50 to-emerald-700/20 text-emerald-200",
   dropper: "from-teal-900/50 to-teal-700/20 text-teal-200",
+  bike: "from-indigo-900/50 to-indigo-700/20 text-indigo-200",
+  tape: "from-violet-900/50 to-violet-700/20 text-violet-200",
 };
 
 function HintIcon({ hint }: { hint: string }) {
@@ -40,6 +43,10 @@ function HintIcon({ hint }: { hint: string }) {
       return <Battery className={cls} />;
     case "dropper":
       return <MoveVertical className={cls} />;
+    case "bike":
+      return <Bike className={cls} />;
+    case "tape":
+      return <CircleDot className={cls} />;
     default:
       return <CircleDot className={cls} />;
   }
