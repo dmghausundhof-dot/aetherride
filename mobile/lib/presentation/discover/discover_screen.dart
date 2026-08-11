@@ -124,12 +124,12 @@ class _RouteSuggestion {
   bool get isSeed => sourceKind == 'seed';
 
   String get sourceLabel => switch (sourceKind) {
-        'catalog' => 'Katalog',
-        'osm' => 'OSM live',
-        'outdooractive' => 'Outdooractive',
-        'seed' => 'Region',
-        _ => 'Tour',
-      };
+    'catalog' => 'Katalog',
+    'osm' => 'OSM live',
+    'outdooractive' => 'Outdooractive',
+    'seed' => 'Region',
+    _ => 'Tour',
+  };
 }
 
 class _QuickOption {
@@ -167,23 +167,23 @@ Color _difficultyDotColor(String raw) {
 
 /// Menschliche Übersetzung der Untergrund-Tags (Multi-Sport).
 String _surfaceDisplay(String raw) => switch (raw) {
-      'trail/root' => 'Naturboden · Wurzeln',
-      'flow/compact' => 'Flow · fest verdichtet',
-      'asphalt/paved' => 'Asphalt · befestigt',
-      'gravel/compacted' => 'Schotter · verdichtet',
-      'mixed/urban' => 'Stadt · gemischt',
-      _ => raw,
-    };
+  'trail/root' => 'Naturboden · Wurzeln',
+  'flow/compact' => 'Flow · fest verdichtet',
+  'asphalt/paved' => 'Asphalt · befestigt',
+  'gravel/compacted' => 'Schotter · verdichtet',
+  'mixed/urban' => 'Stadt · gemischt',
+  _ => raw,
+};
 
 /// Kurzform für Filter-Chips (Multi-Sport).
 String _chipSurfaceLabel(String raw) => switch (raw) {
-      'trail/root' => 'Naturboden',
-      'flow/compact' => 'Flow',
-      'asphalt/paved' => 'Asphalt',
-      'gravel/compacted' => 'Schotter',
-      'mixed/urban' => 'Stadt',
-      _ => raw.split('/').first,
-    };
+  'trail/root' => 'Naturboden',
+  'flow/compact' => 'Flow',
+  'asphalt/paved' => 'Asphalt',
+  'gravel/compacted' => 'Schotter',
+  'mixed/urban' => 'Stadt',
+  _ => raw.split('/').first,
+};
 
 /// Leitet Untergrund aus Text/Typ ab (OA/OSM oft ohne surface-Feld).
 String _inferSurfaceTag({
@@ -230,8 +230,7 @@ String _inferSurfaceTag({
     RoutingProfile.gravel || RoutingProfile.ebikeTour => 'gravel/compacted',
     RoutingProfile.mtbTrail ||
     RoutingProfile.mtbEnduro ||
-    RoutingProfile.emtb =>
-      'trail/root',
+    RoutingProfile.emtb => 'trail/root',
     _ => 'flow/compact',
   };
 }
@@ -252,11 +251,11 @@ bool _surfaceMatchesFilter(String tourSurface, String filter) {
 
 /// Touren-Schwierigkeit / Beanspruchung (nicht nur MTB-S-Skala-Wording).
 String _chipScaleLabel(String code) => switch (code) {
-      'S0' => 'Leicht',
-      'S1' => 'Mittel',
-      'S2+' => 'Anspruchsvoll',
-      _ => code,
-    };
+  'S0' => 'Leicht',
+  'S1' => 'Mittel',
+  'S2+' => 'Anspruchsvoll',
+  _ => code,
+};
 
 /// Eine Zeile für Trail-Fakten: Farbpunkt + Schwierigkeit fett, weitere
 /// Angaben (Untergrund, Rundkurs/Strecke, Höhenmeter, …) gedämpft dahinter.
@@ -361,6 +360,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   _Surface _surface = _Surface.discover;
   RoutingProfile _profile = RoutingProfile.mtbTrail;
+
   /// Default-Lens ~60 Min (D-60-01); 0 = egal.
   int _minutes = 60;
   bool _loading = false;
@@ -433,6 +433,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Nur Karten-Übersicht DACH+FR bis GPS da ist — nie Tour-Origin.
   static const _regionOverview = GeoPoint(47.2, 6.5);
+
   /// Multi-Sport Oberflächen — MTB, Gravel, Road, City.
   static const _surfaceTags = [
     'asphalt/paved',
@@ -477,11 +478,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (!mounted) return;
       final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
       final active = bikes.cast<Bike?>().firstWhere(
-            (b) => b?.isActive == true,
-            orElse: () => bikes.isEmpty ? null : bikes.first,
-          );
-      final sportCat = active?.category ??
-          ref.read(userProfileStoreProvider).preferredSport;
+        (b) => b?.isActive == true,
+        orElse: () => bikes.isEmpty ? null : bikes.first,
+      );
+      final sportCat =
+          active?.category ?? ref.read(userProfileStoreProvider).preferredSport;
       if (active != null) {
         setState(() {
           _profile = routingProfileForBike(active.category);
@@ -490,8 +491,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _matchTourDuration = _minutes > 0;
         });
       } else {
-        final preferred =
-            ref.read(userProfileStoreProvider).preferredSport;
+        final preferred = ref.read(userProfileStoreProvider).preferredSport;
         if (preferred != null) {
           setState(() {
             _profile = routingProfileForBike(preferred);
@@ -618,11 +618,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     });
     try {
       final o = _origin;
-      final hits = await _geocode.search(
-        q,
-        biasLat: o.lat,
-        biasLng: o.lng,
-      );
+      final hits = await _geocode.search(q, biasLat: o.lat, biasLng: o.lng);
       if (!mounted) return;
       setState(() {
         _addrHits = hits;
@@ -635,8 +631,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (!mounted) return;
       setState(() {
         _addrBusy = false;
-        _status =
-            friendlyErrorMessage(e, context: 'Adresssuche fehlgeschlagen');
+        _status = friendlyErrorMessage(
+          e,
+          context: 'Adresssuche fehlgeschlagen',
+        );
       });
     }
   }
@@ -714,9 +712,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         await _syncMarkers();
         final map = _map;
         if (map != null) {
-          await map.animateCamera(
-            CameraUpdate.newLatLngZoom(tour.center, 12),
-          );
+          await map.animateCamera(CameraUpdate.newLatLngZoom(tour.center, 12));
         }
         return;
       }
@@ -847,7 +843,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Nächsten Trail-Einstieg zu [from] wählen; Geometrie ggf. umdrehen.
   ({List<List<double>> geometry, GeoPoint entry, GeoPoint exit})
-      _orientTrailToOrigin(OsmTrailSegment trail, GeoPoint from) {
+  _orientTrailToOrigin(OsmTrailSegment trail, GeoPoint from) {
     final first = trail.geometry.first;
     final last = trail.geometry.last;
     final dFirst = _distKm(from.lat, from.lng, first[1], first[0]);
@@ -1046,9 +1042,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Future<void> _adoptTrailAsOverlay(OsmTrailSegment trail) async {
     final oriented = _orientTrailToOrigin(trail, _origin);
-    final trailPts = [
-      for (final p in oriented.geometry) GeoPoint(p[1], p[0]),
-    ];
+    final trailPts = [for (final p in oriented.geometry) GeoPoint(p[1], p[0])];
     setState(() {
       _selectedTrailId = trail.id;
       _trailOverlay = trailPts;
@@ -1076,15 +1070,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       if (!_hasRealOrigin) return;
       final o = _origin;
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/trailforks')
-          .replace(queryParameters: {
-        'hint': 'dry_likely',
-        'lat': '${o.lat}',
-        'lon': '${o.lng}',
-      });
-      final res = await http.get(uri, headers: {
-        'Accept': 'application/json'
-      }).timeout(const Duration(seconds: 8));
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/trailforks').replace(
+        queryParameters: {
+          'hint': 'dry_likely',
+          'lat': '${o.lat}',
+          'lon': '${o.lng}',
+        },
+      );
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return;
       final data = jsonDecode(res.body);
       if (data is! Map) return;
@@ -1123,14 +1118,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       final o = _origin;
       final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/outdooractive')
-          .replace(queryParameters: {
-        'type': 'tour',
-        'lat': '${o.lat}',
-        'lon': '${o.lng}',
-      });
-      final res = await http.get(uri, headers: {
-        'Accept': 'application/json'
-      }).timeout(const Duration(seconds: 12));
+          .replace(
+            queryParameters: {
+              'type': 'tour',
+              'lat': '${o.lat}',
+              'lon': '${o.lng}',
+            },
+          );
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 12));
       if (res.statusCode < 200 || res.statusCode >= 300) {
         if (mounted) {
           setState(() => _oaStatus = 'Outdooractive offline');
@@ -1209,7 +1206,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (!mounted) return;
       if (parsed.isEmpty) {
         setState(() {
-          _oaStatus = (data['warning'] as String?) ??
+          _oaStatus =
+              (data['warning'] as String?) ??
               'Outdooractive — keine Live-Touren in der Nähe';
         });
         return;
@@ -1338,10 +1336,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       if (o != null) {
         parsed.sort((a, b) {
-          final da =
-              _distKm(o.lat, o.lng, a.center.latitude, a.center.longitude);
-          final db =
-              _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude);
+          final da = _distKm(
+            o.lat,
+            o.lng,
+            a.center.latitude,
+            a.center.longitude,
+          );
+          final db = _distKm(
+            o.lat,
+            o.lng,
+            b.center.latitude,
+            b.center.longitude,
+          );
           return da.compareTo(db);
         });
       }
@@ -1564,9 +1570,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(pin.name)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(pin.name)));
       }
     }
   }
@@ -1577,7 +1583,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (!enabled) {
         if (mounted) {
           setState(
-              () => _status = 'Ortungsdienst aus — Start tippen oder Adresse');
+            () => _status = 'Ortungsdienst aus — Start tippen oder Adresse',
+          );
         }
         return;
       }
@@ -1589,7 +1596,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           perm == LocationPermission.deniedForever) {
         if (mounted) {
           setState(
-              () => _status = 'Standort-Berechtigung fehlt — Adresse nutzen');
+            () => _status = 'Standort-Berechtigung fehlt — Adresse nutzen',
+          );
         }
         return;
       }
@@ -1611,8 +1619,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       if (pos == null) {
         if (mounted) {
-          setState(() =>
-              _status = 'Kein GPS-Fix — Karte tippen oder Adresse suchen');
+          setState(
+            () => _status = 'Kein GPS-Fix — Karte tippen oder Adresse suchen',
+          );
         }
         return;
       }
@@ -1640,7 +1649,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     } catch (e) {
       if (mounted) {
         setState(
-            () => _status = 'Position nicht verfügbar — Adresse oder Tippen');
+          () => _status = 'Position nicht verfügbar — Adresse oder Tippen',
+        );
       }
     }
   }
@@ -1685,7 +1695,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (!mounted) return;
       unawaited(
         _map?.animateCamera(
-                CameraUpdate.newLatLngZoom(LatLng(o.lat, o.lng), 12)) ??
+              CameraUpdate.newLatLngZoom(LatLng(o.lat, o.lng), 12),
+            ) ??
             Future.value(),
       );
       if (!_loading) {
@@ -1798,8 +1809,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (c != 0) return c;
     // Dann Duration-Fit (Spec: Distanz → Duration-Band).
     if (_minutes > 0) {
-      final fit = DurationLens.fitDelta(a.durationMin, _minutes)
-          .compareTo(DurationLens.fitDelta(b.durationMin, _minutes));
+      final fit = DurationLens.fitDelta(
+        a.durationMin,
+        _minutes,
+      ).compareTo(DurationLens.fitDelta(b.durationMin, _minutes));
       if (fit != 0) return fit;
     }
     // Loops leicht bevorzugen (Primary Lens = Rundkurse).
@@ -1830,7 +1843,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     const r = 6371.0;
     final dLat = (lat2 - lat1) * math.pi / 180;
     final dLng = (lng2 - lng1) * math.pi / 180;
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(lat1 * math.pi / 180) *
             math.cos(lat2 * math.pi / 180) *
             math.sin(dLng / 2) *
@@ -1857,7 +1871,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     // ohne diese Sperre würde eine ausgewählte Tour beim Herumlaufen einfach
     // durch einen Schnell-Vorschlag ersetzt.
     final previousQuickLabels = {for (final q in _quick) q.label};
-    final takeOverMap = _computed == null ||
+    final takeOverMap =
+        _computed == null ||
         _label == null ||
         previousQuickLabels.contains(_label);
     setState(() {
@@ -1878,11 +1893,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     // das ZIEL platziert wird — nicht die Dauer der berechneten Route. Die
     // echte Dauer steht auf der Karte. Vorher las sich „90 min · Norden" wie
     // eine 90-Minuten-Tour, obwohl nur der Hinweg geroutet wird.
-    final labels = [
-      'Richtung Norden',
-      'Richtung Osten',
-      'Richtung Südwest',
-    ];
+    final labels = ['Richtung Norden', 'Richtung Osten', 'Richtung Südwest'];
     final reasons = [
       'Ziel im Norden — Rückweg noch nicht enthalten',
       'Ziel im Osten — Rückweg noch nicht enthalten',
@@ -2031,7 +2042,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     } catch (e) {
       if (mounted) {
         setState(
-            () => _error = friendlyErrorMessage(e, context: 'Route berechnen'));
+          () => _error = friendlyErrorMessage(e, context: 'Route berechnen'),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -2108,7 +2120,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     } catch (e) {
       if (mounted) {
         setState(
-            () => _error = friendlyErrorMessage(e, context: 'Route berechnen'));
+          () => _error = friendlyErrorMessage(e, context: 'Route berechnen'),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -2195,9 +2208,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   ) async {
     if (tour.hasTrack) {
       return (
-        points: [
-          for (final c in tour.trackLngLat!) GeoPoint(c[1], c[0]),
-        ],
+        points: [for (final c in tour.trackLngLat!) GeoPoint(c[1], c[0])],
         demo: false,
       );
     }
@@ -2249,8 +2260,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   GeoPoint _suggestedEndNear(LatLng center, double distanceKm) {
     final legKm = (distanceKm * 0.25).clamp(3.0, 12.0);
     final dLat = legKm / 111.0;
-    final cosLat =
-        math.cos(center.latitude * math.pi / 180).abs().clamp(0.2, 1.0);
+    final cosLat = math
+        .cos(center.latitude * math.pi / 180)
+        .abs()
+        .clamp(0.2, 1.0);
     final dLng = legKm / (111.0 * cosLat);
     return GeoPoint(
       center.latitude + dLat * 0.75,
@@ -2373,15 +2386,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (gen != _drawGen) return;
       if (_heatmapConsent) {
         try {
-          final rides =
-              await ref.read(rideRepositoryProvider).listRides(limit: 40);
-          final zones =
-              await ref.read(garageRepositoryProvider).listPrivacyZones();
+          final rides = await ref
+              .read(rideRepositoryProvider)
+              .listRides(limit: 40);
+          final zones = await ref
+              .read(garageRepositoryProvider)
+              .listPrivacyZones();
           final heat = buildHeatmapFromRides(
             consentHeatmap: true,
-            rides: [
-              for (final r in rides) (id: r.id, track: r.track),
-            ],
+            rides: [for (final r in rides) (id: r.id, track: r.track)],
             privacyZones: zones,
             includeSeedFallback: false,
           );
@@ -2441,9 +2454,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (_showTrailNetwork) {
         for (final trail in _visibleTrailNetwork.take(60)) {
           if (gen != _drawGen) return;
-          final geom = [
-            for (final p in trail.geometry) LatLng(p[1], p[0]),
-          ];
+          final geom = [for (final p in trail.geometry) LatLng(p[1], p[0])];
           final selected = trail.id == _selectedTrailId;
           if (selected) {
             await _addKomootLine(
@@ -2474,9 +2485,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final others = trackTours.where((t) => t.id != _selectedTourId).take(2);
       for (final tour in [...selected, ...others]) {
         if (gen != _drawGen) return;
-        final geom = [
-          for (final p in tour.trackLngLat!) LatLng(p[1], p[0]),
-        ];
+        final geom = [for (final p in tour.trackLngLat!) LatLng(p[1], p[0])];
         final isSelected = tour.id == _selectedTourId;
         await _addKomootLine(
           c,
@@ -2526,8 +2535,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (_computed != null && _computed!.coordinates.length >= 2) {
         final eng = _computed!.engine ?? '';
         final approx = eng.contains('demo') || eng.contains('fallback');
-        final line =
-            _computed!.coordinates.map((p) => LatLng(p.lat, p.lng)).toList();
+        final line = _computed!.coordinates
+            .map((p) => LatLng(p.lat, p.lng))
+            .toList();
         await _addKomootLine(
           c,
           line,
@@ -2550,14 +2560,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         // wurde trotzdem gezeichnet (oben), nur die Kamera bleibt stehen;
         // Marker müssen unten in jedem Fall noch aktualisiert werden.
         if (_surface != _Surface.detail) {
-          final swLat =
-              line.map((e) => e.latitude).reduce((a, b) => a < b ? a : b);
-          final swLng =
-              line.map((e) => e.longitude).reduce((a, b) => a < b ? a : b);
-          final neLat =
-              line.map((e) => e.latitude).reduce((a, b) => a > b ? a : b);
-          final neLng =
-              line.map((e) => e.longitude).reduce((a, b) => a > b ? a : b);
+          final swLat = line
+              .map((e) => e.latitude)
+              .reduce((a, b) => a < b ? a : b);
+          final swLng = line
+              .map((e) => e.longitude)
+              .reduce((a, b) => a < b ? a : b);
+          final neLat = line
+              .map((e) => e.latitude)
+              .reduce((a, b) => a > b ? a : b);
+          final neLng = line
+              .map((e) => e.longitude)
+              .reduce((a, b) => a > b ? a : b);
           if ((neLat - swLat).abs() < 1e-5 && (neLng - swLng).abs() < 1e-5) {
             await c.animateCamera(
               CameraUpdate.newLatLngZoom(LatLng(swLat, swLng), 14),
@@ -2741,6 +2755,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ),
         ],
       );
+      // Losfahren = start nav (same as discover?start=1 deep-link path).
+      ref.read(rideAutostartProvider.notifier).state = true;
       ref.read(shellTabIndexProvider.notifier).state = 2;
       return;
     }
@@ -2783,6 +2799,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           )
           .toList(),
     );
+    ref.read(rideAutostartProvider.notifier).state = true;
     ref.read(shellTabIndexProvider.notifier).state = 2;
   }
 
@@ -2868,8 +2885,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         // Retry, sonst wirkt es wie eine Endlosschleife.
         return;
       }
-      final name =
-          f.name.replaceAll(RegExp(r'\.gpx$', caseSensitive: false), '');
+      final name = f.name.replaceAll(
+        RegExp(r'\.gpx$', caseSensitive: false),
+        '',
+      );
       String? content;
       try {
         if (f.path != null) {
@@ -2882,7 +2901,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
       if (content == null || content.trim().isEmpty) {
         if (await _retryGpxPick(
-            '„${f.name}“ konnte nicht gelesen werden — beschädigt oder kein gültiges GPX.')) {
+          '„${f.name}“ konnte nicht gelesen werden — beschädigt oder kein gültiges GPX.',
+        )) {
           continue;
         }
         return;
@@ -2895,7 +2915,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final parsed = parseGpx(xml, fallbackName: fallbackName);
     if (parsed == null) {
       if (await _retryGpxPick(
-          'GPX ungültig oder zu wenige Punkte — andere Datei wählen?')) {
+        'GPX ungültig oder zu wenige Punkte — andere Datei wählen?',
+      )) {
         return _importGpxDialog();
       }
       return;
@@ -2977,8 +2998,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   Text(
                     'Sammlungen',
                     style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   const Text(
@@ -2991,7 +3012,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(c.name),
                       subtitle: Text(
-                          '${c.routeIds.length} Routen · tippen zum Öffnen'),
+                        '${c.routeIds.length} Routen · tippen zum Öffnen',
+                      ),
                       onTap: () async {
                         final saved = await _routes.listSaved();
                         if (!ctx.mounted) return;
@@ -3127,7 +3149,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       if (ctx.mounted) {
                         ScaffoldMessenger.of(ctx).showSnackBar(
                           const SnackBar(
-                              content: Text('Zur Sammlung hinzugefügt')),
+                            content: Text('Zur Sammlung hinzugefügt'),
+                          ),
                         );
                       }
                     },
@@ -3238,12 +3261,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Karte füllt den Screen. Discover ist Karte + Liste — nicht
           // Kopfzeile, Kartenfenster und Schubfach übereinander.
           Positioned.fill(child: _buildMap(style)),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: _buildFloatingHeader(),
-          ),
+          Positioned(top: 0, left: 0, right: 0, child: _buildFloatingHeader()),
           // FAB und Los-Leiste stapeln in EINER bodenverankerten Spalte.
           // Getrennt positioniert bräuchte der FAB die Höhe der Leiste als
           // Konstante — die aber wächst, sobald der Routenname zweizeilig
@@ -3291,10 +3309,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: panelHeight,
-                child: _buildBottomPanel(),
-              ),
+              child: SizedBox(height: panelHeight, child: _buildBottomPanel()),
             ),
           ),
         ],
@@ -3549,9 +3564,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             showCheckmark: false,
             visualDensity: VisualDensity.compact,
             selectedColor: AppColors.accent.withValues(alpha: 0.28),
-            backgroundColor: Theme.of(context)
-                .scaffoldBackgroundColor
-                .withValues(alpha: 0.92),
+            backgroundColor: Theme.of(
+              context,
+            ).scaffoldBackgroundColor.withValues(alpha: 0.92),
             side: BorderSide(
               color: selected
                   ? AppColors.accent
@@ -3652,17 +3667,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Widget _buildBottomPanel() {
     final child = switch (_surface) {
       _Surface.plan => KeyedSubtree(
-          key: const ValueKey('panel-plan'),
-          child: _buildPlanPanel(),
-        ),
+        key: const ValueKey('panel-plan'),
+        child: _buildPlanPanel(),
+      ),
       _Surface.detail => KeyedSubtree(
-          key: ValueKey('panel-detail-$_detailId'),
-          child: _buildDetailPanel(),
-        ),
+        key: ValueKey('panel-detail-$_detailId'),
+        child: _buildDetailPanel(),
+      ),
       _Surface.discover => KeyedSubtree(
-          key: const ValueKey('panel-discover'),
-          child: _buildDiscoverPanel(),
-        ),
+        key: const ValueKey('panel-discover'),
+        child: _buildDiscoverPanel(),
+      ),
     };
     return Material(
       elevation: 10,
@@ -3677,6 +3692,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           duration: const Duration(milliseconds: 240),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
+          // Default StackFit.loose + center can leave flex children with
+          // unbounded width during the cross-fade → BoxConstraints(w=Infinity)
+          // on Tourenkarten Rows. Expand to the panel's tight size instead.
+          layoutBuilder: (currentChild, previousChildren) {
+            return Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
           transitionBuilder: (child, anim) {
             final slide = Tween<Offset>(
               begin: const Offset(0, 0.12),
@@ -3831,7 +3858,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       for (final p in DurationLens.presets)
                         FilterChip(
                           label: Text(p.label),
-                          selected: _minutes == p.minutes &&
+                          selected:
+                              _minutes == p.minutes &&
                               (p.minutes == 0
                                   ? !_matchTourDuration
                                   : _matchTourDuration),
@@ -3863,9 +3891,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           child: FilterChip(
                             label: Text(_chipSurfaceLabel(s)),
                             selected: _surfaceFilter == s,
-                            onSelected: (sel) => update(
-                              () => _surfaceFilter = sel ? s : null,
-                            ),
+                            onSelected: (sel) =>
+                                update(() => _surfaceFilter = sel ? s : null),
                           ),
                         ),
                     ]),
@@ -3892,7 +3919,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ]),
                     group('Form', [
                       Tooltip(
-                        message: 'Nur Touren mit Track, deren Start und Ziel '
+                        message:
+                            'Nur Touren mit Track, deren Start und Ziel '
                             'zusammenfallen',
                         child: FilterChip(
                           label: const Text('Nur Rundkurse'),
@@ -4101,11 +4129,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         AppSpacing.m,
         AppSpacing.m,
       ),
-      children: [
-        ..._quickSection(),
-        ..._toursSection(),
-        ..._savedTiles(),
-      ],
+      children: [..._quickSection(), ..._toursSection(), ..._savedTiles()],
     );
     return Column(
       children: [
@@ -4282,9 +4306,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 Text(
                   '${detail.distanceKm} km · ${detail.elevationM} hm · '
                   '${detail.durationMin} min',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.muted,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
                 ),
                 const SizedBox(height: AppSpacing.s),
                 _DifficultyStatsRow(
@@ -4301,17 +4325,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     _elevationSummary!,
-                    style:
-                        const TextStyle(fontSize: 12, color: AppColors.muted),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
                   ),
                 ],
                 if (_elevationSamples.length >= 2) ...[
                   const SizedBox(height: AppSpacing.s),
                   SizedBox(
+                    width: double.infinity,
                     height: 48,
                     child: CustomPaint(
                       painter: _MiniElevPainter(_elevationSamples),
-                      child: const SizedBox.expand(),
                     ),
                   ),
                 ],
@@ -4328,8 +4354,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.accent,
                     ),
-                    onPressed:
-                        _loading ? null : () => _computeIdeaRoute(detail),
+                    onPressed: _loading
+                        ? null
+                        : () => _computeIdeaRoute(detail),
                     icon: const Icon(Icons.route),
                     label: const Text('Route berechnen'),
                   ),
@@ -4367,8 +4394,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
                 const SizedBox(height: AppSpacing.s),
                 OutlinedButton(
-                  onPressed:
-                      _loading ? null : () => unawaited(_hybridSnap(detail)),
+                  onPressed: _loading
+                      ? null
+                      : () => unawaited(_hybridSnap(detail)),
                   child: const Text('Von hier starten (Hybrid)'),
                 ),
                 const SizedBox(height: AppSpacing.s),
@@ -4483,8 +4511,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ListTile(
                   dense: true,
                   contentPadding: const EdgeInsets.only(left: 8, right: 4),
-                  leading:
-                      const Icon(Icons.near_me, color: AppColors.accent),
+                  leading: const Icon(Icons.near_me, color: AppColors.accent),
                   title: Text(
                     q.label,
                     style: const TextStyle(
@@ -4568,8 +4595,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.chip),
-              border:
-                  Border.all(color: AppColors.accent.withValues(alpha: 0.35)),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.35),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4619,15 +4647,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
           const SizedBox(height: AppSpacing.s),
         ],
-        Text(
-          switch (_pick) {
-            _PickMode.via => 'Tippe Via auf die Karte — oder Adresse unten',
-            _PickMode.end => 'Tippe Ziel oder Adresse eingeben',
-            _PickMode.start => 'Tippe Start oder Adresse eingeben',
-            _ => 'Adresse suchen oder auf Karte tippen',
-          },
-          style: const TextStyle(fontSize: 12, color: AppColors.muted),
-        ),
+        Text(switch (_pick) {
+          _PickMode.via => 'Tippe Via auf die Karte — oder Adresse unten',
+          _PickMode.end => 'Tippe Ziel oder Adresse eingeben',
+          _PickMode.start => 'Tippe Start oder Adresse eingeben',
+          _ => 'Adresse suchen oder auf Karte tippen',
+        }, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
         const SizedBox(height: AppSpacing.s),
         Row(
           children: [
@@ -4727,26 +4752,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           style: const TextStyle(fontSize: 12),
         ),
         ..._vias.asMap().entries.map(
-              (e) => Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Via ${e.key + 1}: ${e.value.lat.toStringAsFixed(3)}, ${e.value.lng.toStringAsFixed(3)}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () {
-                      setState(() => _vias.removeAt(e.key));
-                      if (_start != null && _end != null) {
-                        unawaited(_calcAb());
-                      }
-                    },
-                  ),
-                ],
+          (e) => Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Via ${e.key + 1}: ${e.value.lat.toStringAsFixed(3)}, ${e.value.lng.toStringAsFixed(3)}',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
-            ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 16),
+                onPressed: () {
+                  setState(() => _vias.removeAt(e.key));
+                  if (_start != null && _end != null) {
+                    unawaited(_calcAb());
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
         Text(
           'Ziel: ${_end != null ? '${_end!.lat.toStringAsFixed(3)}, ${_end!.lng.toStringAsFixed(3)}' : '—'}',
           style: const TextStyle(fontSize: 12),
@@ -4962,7 +4987,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             : 'Touren (${list.length})$lensHint',
         hint: _hasRealOrigin
             ? 'Katalog + Live · ab ${o.lat.toStringAsFixed(2)}°N'
-                '${_userPos != null ? ' (GPS)' : ''}'
+                  '${_userPos != null ? ' (GPS)' : ''}'
             : 'Katalog + Seeds ohne GPS · Live-OSM nach Standort',
         trailing: TextButton(
           onPressed: _loading
@@ -5108,189 +5133,213 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
     final loop = _isLoop(r);
     final shape = _shapeLabel(r);
+    // Width must be finite: Expanded/Flexible in title + CTA Rows crash with
+    // BoxConstraints(w=Infinity) if a parent (e.g. AnimatedSwitcher Stack)
+    // ever passes unbounded horizontal constraints into the sheet list.
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.m),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
-              onTap: () => unawaited(_openDetail(r.id, r.center)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (loop) ...[
-                        const Text(
-                          '⟲',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.accent,
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InkWell(
+                onTap: () => unawaited(_openDetail(r.id, r.center)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (loop) ...[
+                          const Text(
+                            '⟲',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                          child: Text(
+                            r.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: _selectedTourId == r.id
+                                  ? AppColors.accent
+                                  : null,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
+                        Flexible(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: r.isSeed
+                                    ? AppColors.accent.withValues(alpha: 0.1)
+                                    : r.isCatalog
+                                    ? AppColors.accent.withValues(alpha: 0.12)
+                                    : AppColors.forest.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.chip,
+                                ),
+                              ),
+                              child: Text(
+                                r.sourceLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: r.isCatalog || r.isSeed
+                                      ? AppColors.accent
+                                      : AppColors.forestOnDark,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
-                      Expanded(
-                        child: Text(
-                          r.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: _selectedTourId == r.id
-                                ? AppColors.accent
-                                : null,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: r.isSeed
-                              ? AppColors.accent.withValues(alpha: 0.1)
-                              : r.isCatalog
-                                  ? AppColors.accent.withValues(alpha: 0.12)
-                                  : AppColors.forest.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.chip),
-                        ),
-                        child: Text(
-                          r.sourceLabel,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: r.isCatalog || r.isSeed
-                                ? AppColors.accent
-                                : AppColors.forestOnDark,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    [
-                      if (shape != null) shape,
-                      '~${r.durationMin} Min',
-                      '${r.distanceKm} km',
-                      if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
-                    ].join(' · '),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  _DifficultyStatsRow(
-                    difficultyRaw: r.mtbScale,
-                    segments: [
-                      _surfaceDisplay(r.surface),
-                      if (r.elevationM > 0) '↑${r.elevationM} m',
-                      if (_nearbyActivity(r.center) case final n?)
-                        'beliebt · ≥$n Ride-Nutzer',
-                    ],
-                  ),
-                  Text(
-                    '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
-                    '${_isPinOnlyIdea(r) ? ' · Tour-Idee' : r.hasTrack ? ' · Track' : ''}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.muted,
+                    Text(
+                      [
+                        if (shape != null) shape,
+                        '~${r.durationMin} Min',
+                        '${r.distanceKm} km',
+                        if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.xs),
+                    _DifficultyStatsRow(
+                      difficultyRaw: r.mtbScale,
+                      segments: [
+                        _surfaceDisplay(r.surface),
+                        if (r.elevationM > 0) '↑${r.elevationM} m',
+                        if (_nearbyActivity(r.center) case final n?)
+                          'beliebt · ≥$n Ride-Nutzer',
+                      ],
+                    ),
+                    Text(
+                      '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
+                      '${_isPinOnlyIdea(r)
+                          ? ' · Tour-Idee'
+                          : r.hasTrack
+                          ? ' · Track'
+                          : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            // Primary CTA zuerst (D-60-02): Losfahren ohne Detail-Umweg.
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                    ),
-                    onPressed: _loading
-                        ? null
-                        : () => unawaited(_startRide(suggestion: r)),
-                    icon: const Icon(Icons.play_arrow, size: 18),
-                    label: Text(
-                      r.hasTrack || r.isSeed
-                          ? MultiSportCopy.goRide
-                          : (r.id.startsWith('oa-') || r.id.contains('demo'))
-                              ? 'Los · Track?'
-                              : MultiSportCopy.goRide,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s),
-                OutlinedButton(
-                  onPressed: () => unawaited(_openDetail(r.id, r.center)),
-                  child: const Text('Mehr'),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+              const SizedBox(height: AppSpacing.s),
+              // Primary CTA zuerst (D-60-02): Losfahren ohne Detail-Umweg.
+              Row(
                 children: [
-                  if (_isPinOnlyIdea(r))
-                    OutlinedButton.icon(
-                      onPressed:
-                          _loading ? null : () => _computeIdeaRoute(r),
-                      icon: const Icon(Icons.route, size: 16),
-                      label: const Text('Route berechnen'),
-                    )
-                  else
-                    OutlinedButton(
-                      onPressed: () async {
-                        final routed = await _geometryForTour(r);
-                        if (!mounted) return;
-                        if (routed.demo || routed.points.length < 2) {
-                          await _computeIdeaRoute(r);
-                          return;
-                        }
-                        final preview = RouteResult(
-                          coordinates: routed.points,
-                          distanceM: r.distanceKm * 1000,
-                          durationS: r.durationMin * 60.0,
-                          engine: 'tour-routed',
-                        );
-                        setState(() {
-                          _computed = preview;
-                          _ideaPin = null;
-                          _selectedTourId = r.id;
-                          _label = r.name;
-                          _status = 'Live-geroutete Tour-Vorschau';
-                        });
-                        await _drawRoute(preview);
-                      },
-                      child: const Text('Vorschau'),
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                      ),
+                      onPressed: _loading
+                          ? null
+                          : () => unawaited(_startRide(suggestion: r)),
+                      icon: const Icon(Icons.play_arrow, size: 18),
+                      label: Text(
+                        r.hasTrack || r.isSeed
+                            ? MultiSportCopy.goRide
+                            : (r.id.startsWith('oa-') || r.id.contains('demo'))
+                            ? 'Los · Track?'
+                            : MultiSportCopy.goRide,
+                      ),
                     ),
-                  const SizedBox(width: AppSpacing.xs),
+                  ),
+                  const SizedBox(width: AppSpacing.s),
                   OutlinedButton(
-                    onPressed: _loading ? null : () => _hybridSnap(r),
-                    child: const Text('Von hier'),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  OutlinedButton.icon(
-                    onPressed:
-                        _loading ? null : () => _adoptTourIntoPlan(r),
-                    icon: const Icon(Icons.tune, size: 16),
-                    label: const Text('Anpassen'),
-                  ),
-                  IconButton(
-                    tooltip: 'Umgebungsfotos',
-                    onPressed: () => _openTrailView(near: r.center),
-                    icon: const Icon(Icons.streetview, size: 20),
+                    onPressed: () => unawaited(_openDetail(r.id, r.center)),
+                    child: const Text('Mehr'),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xs),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (_isPinOnlyIdea(r))
+                      OutlinedButton.icon(
+                        onPressed: _loading ? null : () => _computeIdeaRoute(r),
+                        icon: const Icon(Icons.route, size: 16),
+                        label: const Text('Route berechnen'),
+                      )
+                    else
+                      OutlinedButton(
+                        onPressed: () async {
+                          final routed = await _geometryForTour(r);
+                          if (!mounted) return;
+                          if (routed.demo || routed.points.length < 2) {
+                            await _computeIdeaRoute(r);
+                            return;
+                          }
+                          final preview = RouteResult(
+                            coordinates: routed.points,
+                            distanceM: r.distanceKm * 1000,
+                            durationS: r.durationMin * 60.0,
+                            engine: 'tour-routed',
+                          );
+                          setState(() {
+                            _computed = preview;
+                            _ideaPin = null;
+                            _selectedTourId = r.id;
+                            _label = r.name;
+                            _status = 'Live-geroutete Tour-Vorschau';
+                          });
+                          await _drawRoute(preview);
+                        },
+                        child: const Text('Vorschau'),
+                      ),
+                    const SizedBox(width: AppSpacing.xs),
+                    OutlinedButton(
+                      onPressed: _loading ? null : () => _hybridSnap(r),
+                      child: const Text('Von hier'),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : () => _adoptTourIntoPlan(r),
+                      icon: const Icon(Icons.tune, size: 16),
+                      label: const Text('Anpassen'),
+                    ),
+                    IconButton(
+                      tooltip: 'Umgebungsfotos',
+                      onPressed: () => _openTrailView(near: r.center),
+                      icon: const Icon(Icons.streetview, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -5304,10 +5353,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       const SizedBox(height: AppSpacing.s),
       const Text(
         'Gespeichert',
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: AppColors.muted,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.muted),
       ),
       for (final s in savedList)
         ListTile(
@@ -5436,25 +5482,24 @@ class _TrailViewSheetState extends State<_TrailViewSheet> {
                           final p = photos[i];
                           if (p.isNetworkImage) {
                             return ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.chip),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.chip,
+                              ),
                               child: Image.network(
                                 p.imageUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) =>
                                     AppConfig.allowDemoContent
-                                        ? _demoTile(p.title)
-                                        : const Center(
-                                            child: Text('Bild nicht verfügbar'),
-                                          ),
+                                    ? _demoTile(p.title)
+                                    : const Center(
+                                        child: Text('Bild nicht verfügbar'),
+                                      ),
                               ),
                             );
                           }
                           return AppConfig.allowDemoContent
                               ? _demoTile(p.title)
-                              : const Center(
-                                  child: Text('Keine Live-Fotos'),
-                                );
+                              : const Center(child: Text('Keine Live-Fotos'));
                         },
                       ),
               ),
@@ -5466,10 +5511,7 @@ class _TrailViewSheetState extends State<_TrailViewSheet> {
                 ),
                 Text(
                   photos[_page.clamp(0, photos.length - 1)].attributionHtml,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.muted,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ],
               const SizedBox(height: AppSpacing.s),
