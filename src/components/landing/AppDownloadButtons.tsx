@@ -17,18 +17,14 @@ export function AppDownloadButtons({ size = "md", className = "" }: Props) {
   const playReady = PLAY_STORE_URL !== "#";
 
   if (!hasStoreLinks()) {
+    // Documented web entry — no placeholder / “coming soon” chrome
     return (
-      <div
-        className={`flex flex-col items-center gap-2 text-center ${className}`}
-      >
-        <p className="text-xs text-text-secondary">
-          Store-Links folgen mit dem öffentlichen Release.
-        </p>
+      <div className={`flex flex-col items-center ${className}`}>
         <a
           href="/download"
-          className={`inline-flex items-center justify-center rounded-xl border border-border font-medium text-foreground ${sizeClasses}`}
+          className={`inline-flex items-center justify-center rounded-xl border border-border font-medium text-foreground transition hover:bg-surface-elevated ${sizeClasses}`}
         >
-          Mehr zur App
+          App entdecken
         </a>
       </div>
     );

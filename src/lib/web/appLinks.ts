@@ -57,6 +57,31 @@ export function hasStoreLinks(): boolean {
   return APP_STORE_URL !== "#" || PLAY_STORE_URL !== "#";
 }
 
+/**
+ * Primary „App entdecken“ target for marketing surfaces.
+ * Store URLs when configured (platform-aware); else documented web entry `/download`.
+ * Never returns a placeholder hash.
+ */
+export function appDiscoverHref(userAgent?: string): string {
+  const hasApp = APP_STORE_URL !== "#";
+  const hasPlay = PLAY_STORE_URL !== "#";
+  if (!hasApp && !hasPlay) return "/download";
+
+  const ua = (userAgent ?? "").toLowerCase();
+  const isIos = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+
+  if (isIos && hasApp) return APP_STORE_URL;
+  if (isAndroid && hasPlay) return PLAY_STORE_URL;
+  if (hasPlay) return PLAY_STORE_URL;
+  return APP_STORE_URL;
+}
+
+/** True when the discover href is an external store URL. */
+export function isExternalAppDiscoverHref(href: string): boolean {
+  return href.startsWith("http://") || href.startsWith("https://");
+}
+
 export function androidSha256Fingerprints(): string[] {
   const raw =
     process.env.NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS?.trim() ||
