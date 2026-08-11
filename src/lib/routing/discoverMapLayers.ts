@@ -101,12 +101,15 @@ export function buildDiscoverMapLayers(opts: {
   return layers;
 }
 
-/** Stub elevation from LineString (synthetic climb for UI). */
+/**
+ * @deprecated Synthetic climb from flat LineString — DO NOT use on Discover/Planner
+ * consumer UI. Prefer real/sanitized ascent (seed/API) or omit hm.
+ * Kept for debug/tests only; invents `120 + sin` elev with source "demo".
+ */
 export function elevationFromGeometry(
   geometry: GeoJSON.LineString | null | undefined
 ): ElevationProfile | null {
   if (!geometry?.coordinates?.length) return null;
-  // Gentle undulation — avoid absurd totalClimb (was ~75+ hm/km on short demos).
   const track = (geometry.coordinates as [number, number][]).map(
     ([lng, lat], i) => ({
       lng,

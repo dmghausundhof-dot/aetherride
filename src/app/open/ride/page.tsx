@@ -48,10 +48,8 @@ function OpenRideInner() {
       {tried && (
         <div className="mt-10 space-y-4">
           <p className="text-xs text-text-secondary">
-            App nicht installiert?
-            {hasStoreLinks()
-              ? " Store laden:"
-              : " Web nutzen, bis die App live ist:"}
+            App nicht installiert?{" "}
+            {hasStoreLinks() ? "Im Store laden:" : "Im Browser fortfahren:"}
           </p>
           {hasStoreLinks() ? (
             <div className="flex justify-center">
@@ -65,7 +63,6 @@ function OpenRideInner() {
               Im Browser fortfahren →
             </Link>
           )}
-          <p className="text-[10px] text-text-secondary break-all">{deep}</p>
         </div>
       )}
     </div>

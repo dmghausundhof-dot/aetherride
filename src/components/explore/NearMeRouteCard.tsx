@@ -66,11 +66,11 @@ export function NearMeRouteCard({
         j.label ||
         (mode === "loop" ? `Runde ${km} km` : `Route ${km} km`);
       const distanceKm = Math.round((result.distanceM / 1000) * 10) / 10;
-      const rawAscent =
+      // Real API ascent only — never invent hm from distance/geometry.
+      const elev =
         typeof j.elevationM === "number"
-          ? j.elevationM
-          : Math.round(result.distanceM * 0.02);
-      const elev = sanitizeElevationM(rawAscent, distanceKm);
+          ? sanitizeElevationM(j.elevationM, distanceKm)
+          : null;
       saveRoute({
         id: j.tourId || `near-${Date.now()}`,
         name,
