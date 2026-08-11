@@ -115,6 +115,7 @@ class _RouteSuggestion {
     this.shortPitch,
     this.surfaceMixLabel,
     this.poiStops = const [],
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -151,6 +152,9 @@ class _RouteSuggestion {
   final String? shortPitch;
   final String? surfaceMixLabel;
   final List<_SeedPoiStop> poiStops;
+
+  /// Hero photo (asset path or https) — S25 photo cards.
+  final String? thumbnailUrl;
 
   /// Card P0 premium chrome present (tip / season / highlight).
   bool get isPremiumPassCard =>
@@ -826,11 +830,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _fetchRoutingStatus() async {
-    // Prod: no Demo-Geometrie / Routing-Key chrome (Q-BAR-DIS-01).
-    if (!AppConfig.showRoutingDebug) return;
+    // Prod: no Demo-Geometrie / Routing-Key chrome (Q-BAR-DIS-01 / S25).
+    if (!AppConfig.showRoutingDebug || !AppConfig.allowDemoContent) {
+      if (mounted && _routingStatusNote != null) {
+        setState(() => _routingStatusNote = null);
+      }
+      return;
+    }
     final s = await fetchRoutingStatus();
     if (!mounted || s == null) return;
-    setState(() => _routingStatusNote = s.bannerText);
+    final text = s.bannerText;
+    if (_suppressDemoGeometryBanner(text)) {
+      setState(() => _routingStatusNote = null);
+      return;
+    }
+    setState(() => _routingStatusNote = text);
   }
 
   Future<void> _openOfflineMaps() async {
@@ -1331,6 +1345,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             corridorNote: s.corridorNote,
             shortPitch: s.shortPitch,
             surfaceMixLabel: s.surfaceMixLabel,
+            thumbnailUrl: s.thumbnailUrl ?? heroAssetForSeedId(s.id),
             poiStops: [
               for (final p in s.poiStops)
                 _SeedPoiStop(
@@ -1358,7 +1373,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _seedsStatus =
             'Seeds ${parsed.length} ($loops Rundkurse) · ${bundle.labelWithoutLocation}';
       });
-      await _drawAll();
+      // S25: after seeds land, replace any A→B demo overlay with a real loop.
+      if (_loopOnly == true) {
+        await _ensureLoopMapHonesty();
+      } else {
+        await _drawAll();
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _seedsStatus = 'Seeds offline');
@@ -1918,6 +1938,115 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return null;
   }
 
+  /// Quick A→B / approx / demo polyline — not a closed loop.
+  bool _isDemoOrAbOverlay(RouteResult? r) {
+    if (r == null) return false;
+    final eng = (r.engine ?? '').toLowerCase();
+    if (eng.contains('demo') ||
+        eng.contains('approx') ||
+        eng.contains('fallback')) {
+      return true;
+    }
+    // Active quick suggestion (Richtung Norden/…) without a selected tour.
+    if (_selectedTourId == null &&
+        _label != null &&
+        _quick.any((q) => q.label == _label)) {
+      return true;
+    }
+    return false;
+  }
+
+  /// S25: with Rundkurs filter, kill green A→B / Demo-Geometrie overlay.
+  void _clearAbDemoOverlayForLoopFilter() {
+    if (_loopOnly != true) return;
+    final killQuick = _quick.isNotEmpty;
+    final killComputed = _isDemoOrAbOverlay(_computed) ||
+        (_selectedTourId == null && _computed != null && killQuick);
+    if (!killComputed && !killQuick) return;
+    _quick = const [];
+    if (killComputed) {
+      _computed = null;
+      _label = null;
+      _approach = null;
+      _tourLayer = null;
+    }
+    final st = _status;
+    if (st != null && _suppressDemoGeometryBanner(st)) {
+      _status = null;
+    }
+  }
+
+  /// Prefer a curated nearby loop on the map when Rundkurs is on.
+  Future<void> _ensureLoopMapHonesty() async {
+    if (!mounted || _loopOnly != true) return;
+    _clearAbDemoOverlayForLoopFilter();
+    // If a real loop tour is already selected, keep it.
+    if (_selectedTourId != null) {
+      final sel = _tourById(_selectedTourId);
+      if (sel != null && _isLoop(sel) && sel.hasTrack) {
+        await _drawSeedLoopPreview(sel);
+        return;
+      }
+    }
+    final o = _origin;
+    final loops = _filtered.where((r) => _isLoop(r) && r.hasTrack).toList()
+      ..sort((a, b) {
+        final da = _distKm(o.lat, o.lng, a.center.latitude, a.center.longitude);
+        final db = _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude);
+        return da.compareTo(db);
+      });
+    if (loops.isEmpty) {
+      if (mounted) {
+        setState(() {});
+        await _drawAll();
+      }
+      return;
+    }
+    final best = loops.first;
+    if (mounted) {
+      setState(() => _selectedTourId = best.id);
+    }
+    await _drawSeedLoopPreview(best);
+  }
+
+  Future<void> _drawSeedLoopPreview(_RouteSuggestion r) async {
+    final track = r.trackLngLat;
+    if (track == null || track.length < 4) {
+      await _drawAll();
+      return;
+    }
+    final coords = [
+      for (final c in track) GeoPoint(c[1], c[0]),
+    ];
+    var distM = 0.0;
+    for (var i = 1; i < coords.length; i++) {
+      distM += _distKm(
+            coords[i - 1].lat,
+            coords[i - 1].lng,
+            coords[i].lat,
+            coords[i].lng,
+          ) *
+          1000;
+    }
+    final preview = RouteResult(
+      coordinates: coords,
+      distanceM: distM,
+      durationS: (r.durationMin * 60).toDouble(),
+      engine: 'seed-loop',
+      steps: const [],
+    );
+    if (!mounted) return;
+    setState(() {
+      _computed = preview;
+      _label = r.name;
+      _quick = const [];
+      _approach = null;
+      _tourLayer = null;
+      _status = null;
+    });
+    await _drawAll();
+  }
+
   double _distKm(double lat1, double lng1, double lat2, double lng2) {
     const r = 6371.0;
     final dLat = (lat2 - lat1) * math.pi / 180;
@@ -2063,6 +2192,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
     }
     if (!mounted || gen != _quickGen) return;
+    // S25: Rundkurs filter — never paint / list A→B quick as the answer.
+    if (_loopOnly == true) {
+      setState(() {
+        _quick = const [];
+        _loading = false;
+        _error = null;
+        if (usedApprox ||
+            (_status != null && _suppressDemoGeometryBanner(_status!))) {
+          _status = null;
+        }
+      });
+      await _ensureLoopMapHonesty();
+      return;
+    }
     setState(() {
       _quick = out;
       _loading = false;
@@ -3600,7 +3743,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               const SizedBox(height: AppSpacing.xs),
               _sportProfileChips(),
             ],
-            if (_routingStatusNote != null) ...[
+            // S25: never show Demo-Geometrie chrome on Rundkurs / ~60 loop path.
+            if (_routingStatusNote != null &&
+                !_suppressDemoGeometryBanner(_routingStatusNote!)) ...[
               const SizedBox(height: AppSpacing.xs),
               _mapNotePill(_routingStatusNote!),
             ],
@@ -3816,8 +3961,29 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  /// Demo-Geometrie / Näherung banners — killed on prod + Rundkurs path (S25).
+  bool _suppressDemoGeometryBanner(String text) {
+    final t = text.toLowerCase();
+    final isDemoGeom =
+        t.contains('demo-geometrie') || t.contains('demo geometrie');
+    // Prod path: never show Demo-Geometrie chrome.
+    if (isDemoGeom && !AppConfig.allowDemoContent) return true;
+    if (_loopOnly == true) {
+      return isDemoGeom ||
+          t.contains('näherung') ||
+          t.contains('naeherung') ||
+          t.contains('live-routing nicht');
+    }
+    return false;
+  }
+
   Widget _panelMessages() {
-    if (_error == null && _status == null) return const SizedBox.shrink();
+    final status = _status;
+    final hideStatus =
+        status != null && _suppressDemoGeometryBanner(status);
+    if (_error == null && (status == null || hideStatus)) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.m,
@@ -3833,9 +3999,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               _error!,
               style: const TextStyle(color: Colors.red, fontSize: 12),
             ),
-          if (_status != null)
+          if (status != null && !hideStatus)
             Text(
-              _status!,
+              status,
               style: const TextStyle(color: AppColors.muted, fontSize: 12),
             ),
         ],
@@ -4009,8 +4175,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         child: FilterChip(
                           label: const Text('Nur Rundkurse'),
                           selected: _loopOnly == true,
-                          onSelected: (sel) =>
-                              update(() => _loopOnly = sel ? true : null),
+                          onSelected: (sel) {
+                            update(() => _loopOnly = sel ? true : null);
+                            if (sel) {
+                              unawaited(_ensureLoopMapHonesty());
+                            } else {
+                              unawaited(_drawAll());
+                            }
+                          },
                         ),
                       ),
                     ]),
@@ -4215,7 +4387,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         AppSpacing.m,
         AppSpacing.m,
       ),
-      children: [..._quickSection(), ..._toursSection(), ..._savedTiles()],
+      // S25: with Rundkurs on, hide A→B Quick cards — seeds/loops first.
+      children: [
+        if (_loopOnly != true) ..._quickSection(),
+        ..._toursSection(),
+        ..._savedTiles(),
+      ],
     );
     return Column(
       children: [
@@ -4988,6 +5165,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Demo-Stadt centers from bundled Nähe seeds (Berlin + DACH + Rhein-Neckar).
   /// Chip only meaningful when ≥1 seed in 45–75 min exists for that city.
   static const _demoCities = <({String name, double lat, double lng})>[
+    (name: 'Wiesloch', lat: 49.295, lng: 8.698),
+    (name: 'Heidelberg', lat: 49.409, lng: 8.694),
+    (name: 'Mannheim', lat: 49.483, lng: 8.462),
     (name: 'Berlin', lat: 52.52, lng: 13.405),
     (name: 'München', lat: 48.183, lng: 11.61),
     (name: 'Köln', lat: 50.941, lng: 6.958),
@@ -4995,8 +5175,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     (name: 'Wien', lat: 48.218, lng: 16.392),
     (name: 'Innsbruck', lat: 47.286, lng: 11.399),
     (name: 'Konstanz', lat: 47.677, lng: 9.174),
-    (name: 'Heidelberg', lat: 49.409, lng: 8.694),
-    (name: 'Mannheim', lat: 49.483, lng: 8.462),
   ];
 
   void _focusOrtSearch() {
@@ -5044,9 +5222,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Widget _emptyOrtPicker() {
+    // S25: never a dead black sheet — always Ort / Dauer / Demo-Stadt CTAs.
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.m),
       child: Card(
+        color: AppColors.surfaceDark,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.m),
           // ListView child: min height + stretch width (Q-BAR-DIS-02).
@@ -5060,7 +5240,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Keine ehrlichen Loops (Start≈Ziel) hier — Demo-Stadt wählen oder Ort ändern. Keine A→B-Touren als Füllung.',
+                'Ort oder Dauer anpassen — oder Demo-Stadt wählen. '
+                'Keine A→B-Touren als Füllung.',
                 style: TextStyle(fontSize: 13, color: AppColors.muted),
               ),
               const SizedBox(height: AppSpacing.m),
@@ -5075,6 +5256,38 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   icon: const Icon(Icons.search),
                   label: const Text('Ort ändern'),
                 ),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              const Text(
+                'Dauer vorschlagen',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final p in DurationLens.presets)
+                    ActionChip(
+                      label: Text(p.label),
+                      onPressed: () {
+                        setState(() {
+                          _minutes = p.minutes;
+                          _matchTourDuration = p.minutes > 0;
+                          if (p.minutes == 60) {
+                            _loopOnly = true;
+                          } else if (p.minutes == 0) {
+                            _loopOnly = null;
+                          }
+                        });
+                        unawaited(_refreshQuick(limit: 3));
+                      },
+                    ),
+                ],
               ),
               const SizedBox(height: AppSpacing.s),
               const Text(
@@ -5253,20 +5466,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             style: TextStyle(fontSize: 12, color: AppColors.muted),
           ),
         ),
-      if (nearbyLoopCount == 0 && _minutes == 60)
+      // Empty only when zero honest loops in the filtered list — never hide
+      // nearby seed cards behind the ort picker while loops exist (S25).
+      if (loopCount == 0 && (_minutes == 60 || _loopOnly == true))
         _emptyOrtPicker()
-      else if (list.isEmpty || (_loopOnly == true && loopCount == 0))
+      else if (list.isEmpty)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s),
           child: Row(
             children: [
               Expanded(
                 child: Text(
-                  _loopOnly == true
-                      ? 'Keine Rundkurse in der Nähe'
-                      : _activeFilterCount > 0
-                          ? 'Keine Tour bei diesen Filtern.'
-                          : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
+                  _activeFilterCount > 0
+                      ? 'Keine Tour bei diesen Filtern.'
+                      : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
                   style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
@@ -5277,7 +5490,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
             ],
           ),
-        ),
+        )
+      else if (nearbyLoopCount == 0 &&
+          _minutes == 60 &&
+          loopCount > 0 &&
+          !showSeeds)
+        _emptyOrtPicker(),
       if (showSeeds) ...[
         _sectionTitle(
           '$seedLabel (${seeds.length})',
@@ -5306,6 +5524,96 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ];
   }
 
+  /// S25 photo hero — asset or network; painted fallback (never blank/black).
+  Widget _tourHero(_RouteSuggestion r) {
+    final url = r.thumbnailUrl;
+    const height = 132.0;
+    Widget image;
+    if (url != null && url.startsWith('assets/')) {
+      image = Image.asset(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: height,
+        errorBuilder: (_, __, ___) => _paintedHeroFallback(r, height),
+      );
+    } else if (url != null &&
+        (url.startsWith('http://') || url.startsWith('https://'))) {
+      image = Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: height,
+        errorBuilder: (_, __, ___) => _paintedHeroFallback(r, height),
+      );
+    } else if (r.isSeed) {
+      image = _paintedHeroFallback(r, height);
+    } else {
+      return const SizedBox.shrink();
+    }
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: SizedBox(
+        width: double.infinity,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            image,
+            if (_isLoop(r))
+              const Positioned(
+                left: 10,
+                top: 10,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color(0xCC14201C),
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      '⟲ Runde',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _paintedHeroFallback(_RouteSuggestion r, double height) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2D4A35), Color(0xFF1A2E24), Color(0xFF0F1A16)],
+        ),
+      ),
+      alignment: Alignment.bottomLeft,
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        r.name,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
   Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
     final loop = _isLoop(r);
     final shape = _shapeLabel(r);
@@ -5314,15 +5622,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     // ever passes unbounded horizontal constraints into the sheet list.
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
+      clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: double.infinity,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (r.isSeed || r.thumbnailUrl != null) _tourHero(r),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               InkWell(
                 onTap: () => unawaited(_openDetail(r.id, r.center)),
                 child: Column(
@@ -5392,16 +5706,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ],
                     ),
                     // Card P0 (discover-seed-card-fields-v1): title · duration ·
-                    // km · ⟲ · sport · tip · season chip · highlight_poi.
-                    // ⟲ lives in the title row above when [loop] is true.
+                    // km · ⟲ Runde · sport · tip · season chip · highlight_poi.
+                    // S25: always show ⟲ Runde for honest loops (incl. Premium).
                     Text(
                       [
-                        if (!r.isPremiumPassCard && shape != null) shape,
+                        if (shape != null) shape,
                         '~${r.durationMin} Min',
                         '${r.distanceKm} km',
                         if (r.sportLabel case final sport?) sport,
-                        if (!r.isPremiumPassCard && r.poiStopsCount > 0)
-                          '${r.poiStopsCount} Stops',
+                        if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
                       ].join(' · '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -5604,8 +5917,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

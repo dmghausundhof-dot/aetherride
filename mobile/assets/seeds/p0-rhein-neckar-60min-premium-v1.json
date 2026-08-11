@@ -63,7 +63,8 @@
         "why_good": "Last coffee option before Bismarckplatz if you skip the Schloss climb and stay riverside."
       }
     ],
-    "is_loop": true
+    "is_loop": true,
+    "thumbnail_url": "assets/seeds/heroes/rn-heidelberg.jpg"
   },
   {
     "id": "seed-dach-60-rn-2-mannheim-schloss-waldpark",
@@ -129,7 +130,8 @@
         "why_good": "Clear return corridor toward Schloss / Hbf without guessing Quadrate one-ways."
       }
     ],
-    "is_loop": true
+    "is_loop": true,
+    "thumbnail_url": "assets/seeds/heroes/rn-mannheim.jpg"
   },
   {
     "id": "seed-dach-60-rn-3-heidelberg-boxberg-gaisberg",
@@ -189,6 +191,7 @@
         "why_good": "If legs fade, bail downhill to Rohrbach here instead of tagging the tower — still a solid 55-min loop."
       }
     ],
-    "is_loop": true
+    "is_loop": true,
+    "thumbnail_url": "assets/seeds/heroes/rn-boxberg.jpg"
   }
 ]

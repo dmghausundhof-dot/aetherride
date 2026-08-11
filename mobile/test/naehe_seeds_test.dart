@@ -262,8 +262,13 @@ void main() {
     expect(sixty, isNotEmpty);
     expect(sixty.every((r) => r.isLoop), isTrue);
     expect(
-      sixty.any((r) => r.id == 'seed-loop-heidelberg-neckar-60'),
+      sixty.any(
+        (r) =>
+            r.id == 'seed-dach-60-rn-1-heidelberg-neckarwiese' ||
+            r.id == 'seed-loop-heidelberg-neckar-60',
+      ),
       isTrue,
+      reason: 'Rhein-Neckar Heidelberg loop (premium or Nähe) included',
     );
   });
 }
