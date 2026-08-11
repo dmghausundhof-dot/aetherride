@@ -18,7 +18,7 @@ export interface ElevationProfile {
   gapKm: number;
   surfaceBands: { fromKm: number; toKm: number; surface: string | null }[];
   scaleBands: { fromKm: number; toKm: number; scale: string | null }[];
-  source: "track" | "api" | "demo";
+  source: "track" | "api" | "demo" | "seed";
 }
 
 function haversineKm(

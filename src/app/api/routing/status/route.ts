@@ -5,27 +5,32 @@ import {
   isUsingPublicOsrm,
 } from "@/lib/routing/engine";
 import {
-  DEMO_ROUTING_NOTICE,
-  UNVERIFIED_ROUTING_NOTICE,
+  clientRoutingNotice,
   hasPublicRoutingHint,
+  sanitizeClientRoutingNotice,
   type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
 
 /**
  * GET /api/routing/status — konfiguriert vs. Smoke-verifiziert (kein Fake-Live).
  * Optional: ?probe=1 — leichter Network-Check (OSRM/GraphHopper/Valhalla).
+ *
+ * Client notices never mention Routing-Key / API_KEY / env var names.
+ * Configured graphhopper|osrm|valhalla → notice:null (silent).
  */
 export async function GET(req: Request) {
   const engine = configuredRoutingEngine();
   const configured = isLiveRoutingConfigured();
   const liveVerified = hasPublicRoutingHint();
   const publicOsrm = isUsingPublicOsrm();
-  let notice: string | null = null;
-  if (!configured) notice = DEMO_ROUTING_NOTICE;
-  else if (publicOsrm) {
-    notice =
-      "Live-Routing über öffentliches OSRM (Dev/Demo). Produktion: GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL setzen.";
-  } else if (!liveVerified) notice = UNVERIFIED_ROUTING_NOTICE;
+  let notice = sanitizeClientRoutingNotice(
+    clientRoutingNotice({
+      configured,
+      engine,
+      liveVerified,
+      publicOsrm,
+    })
+  );
 
   const payload: RoutingStatusPayload & {
     publicOsrm?: boolean;
@@ -55,9 +60,11 @@ export async function GET(req: Request) {
       if (payload.probe.ok && r.engine !== "demo") {
         payload.liveVerified = true;
         if (publicOsrm) {
-          payload.notice =
-            "Live-Routing OK (öffentliches OSRM). Für Produktion eigenen Engine-Key setzen.";
-        } else if (!hasPublicRoutingHint()) {
+          payload.notice = sanitizeClientRoutingNotice(
+            "Live-Routing OK (öffentliches OSRM). Für Produktion eigenen Routing-Endpunkt setzen."
+          );
+        } else {
+          // Configured live engine probe OK — keep silent.
           payload.notice = null;
         }
       }
@@ -67,8 +74,16 @@ export async function GET(req: Request) {
         ms: Date.now() - t0,
         detail: e instanceof Error ? e.message : "probe failed",
       };
+      // Probe errors may include env/key names from engine throws — never surface raw.
+      if (payload.probe.detail && SECRETISH_DETAIL.test(payload.probe.detail)) {
+        payload.probe.detail = "probe failed";
+      }
     }
   }
 
+  payload.notice = sanitizeClientRoutingNotice(payload.notice);
   return NextResponse.json(payload);
 }
+
+const SECRETISH_DETAIL =
+  /Routing[- ]?Key|API[_ ]?KEY|GRAPHHOPPER|VALHALLA|OSRM|STADIA|missing|secret/i;

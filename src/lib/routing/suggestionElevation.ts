@@ -28,7 +28,7 @@ function surfaceForSegment(surface: string, t: number): string {
 export function buildElevationForSuggestion(
   route: Pick<
     RouteSuggestion,
-    "id" | "distanceKm" | "elevationM" | "mtbScale" | "surface"
+    "id" | "distanceKm" | "elevationM" | "mtbScale" | "surface" | "source"
   >
 ): ElevationProfile {
   const n = Math.max(24, Math.min(48, Math.round(route.distanceKm * 1.2)));
@@ -104,7 +104,13 @@ export function buildElevationForSuggestion(
     gapKm: Math.round(gapKm * 100) / 100,
     surfaceBands: bandify(points, (p) => p.surface ?? null, "surface"),
     scaleBands: bandify(points, (p) => p.mtbScale ?? null, "scale"),
-    source: "demo",
+    // Curated seeds ≠ fake demo routing — label as seed for Discover chrome.
+    source:
+      route.source === "seed" || route.id.startsWith("seed-")
+        ? "seed"
+        : route.source === "catalog"
+          ? "seed"
+          : "demo",
   };
 }
 

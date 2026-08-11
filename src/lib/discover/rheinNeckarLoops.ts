@@ -1,10 +1,14 @@
 /**
  * P0 Rhein-Neckar ~60-min loop seeds — curated catalog for Discover.
  * Always available in production (not allowDemoContent-gated).
+ *
+ * source:"seed" (never "demo") — curated fail-open (#35).
+ * Loop flags: is_loop | loop | closed (#37).
  */
 import type { BikeCategory } from "@/types";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
+import { seedIsLoopFlag } from "@/lib/discover/loopHonesty";
 import raw from "@/lib/discover/rhein-neckar-loops-v1.json";
 
 type RnSeed = {
@@ -18,6 +22,8 @@ type RnSeed = {
   surface_mix?: Record<string, number> | null;
   center?: { lat: number; lng: number };
   is_loop?: boolean;
+  loop?: boolean;
+  closed?: boolean;
   duration_band?: string;
 };
 
@@ -68,7 +74,7 @@ export function rheinNeckarLoopSuggestions(
     const center: [number, number] | undefined = s.center
       ? [s.center.lng, s.center.lat]
       : undefined;
-    const loop = Boolean(s.is_loop);
+    const loop = seedIsLoopFlag(s);
     return {
       id: s.id,
       name: s.title,
@@ -89,17 +95,19 @@ export function rheinNeckarLoopSuggestions(
       center,
       distanceFromOriginKm:
         near && center ? distanceKm(near, center) : undefined,
+      source: "seed",
     } satisfies RouteSuggestion;
   });
 }
 
+/** Honest ~60 (45–75) loops only — never linear fillers (#37). */
 export function rheinNeckarSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
   return rheinNeckarLoopSuggestions(near)
+    .filter((r) => r.loop)
     .filter((r) => r.durationMin >= 45 && r.durationMin <= 75)
     .sort((a, b) => {
-      if (a.loop !== b.loop) return a.loop ? -1 : 1;
       return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
     });
 }

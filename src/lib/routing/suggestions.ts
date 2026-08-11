@@ -28,6 +28,12 @@ export interface RouteSuggestion {
   center?: [number, number];
   /** Luftlinie vom Discover-Standort (km), wenn near gesetzt */
   distanceFromOriginKm?: number;
+  /**
+   * Provenance for Discover chrome.
+   * Curated P0 fallbacks use `"seed"` (never `"demo"`) so prod fail-open
+   * does not strip them when ALLOW_DEMO_CONTENT is off.
+   */
+  source?: "seed" | "catalog" | "live";
 }
 
 interface RouteSeed {

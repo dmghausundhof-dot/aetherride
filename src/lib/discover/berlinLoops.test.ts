@@ -1,8 +1,10 @@
 /**
  * P0 Berlin ~60 Quick seeds — always available (not allowDemoContent-gated).
+ * source:"seed"; honest loops only; ≥3 in 45–75 band.
  * Run: npx tsx src/lib/discover/berlinLoops.test.ts
  */
 import {
+  berlinLoopSuggestions,
   berlinSixtyMinLoopSuggestions,
   DEMO_CITY_CHIPS,
 } from "./berlinLoops";
@@ -14,7 +16,7 @@ function assert(cond: boolean, msg: string) {
 const berlin: [number, number] = [13.405, 52.52];
 const loops = berlinSixtyMinLoopSuggestions(berlin);
 
-assert(loops.length >= 2, "at least Tempelhofer + another 45–75 loop");
+assert(loops.length >= 3, "≥3 ~45–75 honest loops for Berlin");
 assert(
   loops.some((r) => r.id.includes("tempelhofer")),
   "Tempelhofer present"
@@ -24,9 +26,23 @@ assert(
   "all in 45–75 band"
 );
 assert(
-  loops.some((r) => r.loop),
-  "includes true loops"
+  loops.every((r) => r.loop === true),
+  "all ~60 Rundkurse are honest loops"
 );
+assert(
+  loops.every((r) => r.source === "seed"),
+  "source seed (not demo)"
+);
+assert(
+  !loops.some((r) => r.id === "seed-route-spree-commute"),
+  "linear Spree commute excluded from Rundkurs lens"
+);
+
+const all = berlinLoopSuggestions(berlin);
+const spree = all.find((r) => r.id === "seed-route-spree-commute");
+assert(spree != null && spree.loop === false, "linear seed kept with loop=false");
+assert(spree?.source === "seed", "linear seed still source seed");
+
 assert(
   DEMO_CITY_CHIPS.some((c) => c.name === "Berlin") &&
     DEMO_CITY_CHIPS.some((c) => c.name === "Heidelberg") &&

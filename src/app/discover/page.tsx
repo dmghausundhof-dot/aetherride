@@ -352,8 +352,18 @@ function DiscoverPageInner() {
       rangeKmHigh: range?.kmHigh,
       near: origin,
     });
-    // Curated P0 Berlin/RN always available — not depend on ALLOW_DEMO_CONTENT.
-    return catalog.length > 0 ? catalog : curatedP0CatalogSuggestions(origin);
+    // Curated P0 Berlin/RN fail-open (#35): always merge so Discover is never
+    // blank when seeds exist — even if the idea-catalog already has rows.
+    const curated = curatedP0CatalogSuggestions(origin);
+    if (catalog.length === 0) return curated;
+    const seen = new Set(catalog.map((r) => r.id));
+    const merged = [...catalog];
+    for (const r of curated) {
+      if (seen.has(r.id)) continue;
+      seen.add(r.id);
+      merged.push(r);
+    }
+    return merged;
   }, [activeBike, categoryHint, profile, minutes, range, origin]);
 
   const filtered = useMemo(

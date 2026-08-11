@@ -18,12 +18,21 @@ class RoutingStatus {
   final String? notice;
 
   String get bannerText {
-    if (notice != null && notice!.trim().isNotEmpty) return notice!;
+    // Never surface Routing-Key / API_KEY chrome (server should already sanitize).
+    final n = notice?.trim();
+    if (n != null &&
+        n.isNotEmpty &&
+        !n.contains('Routing-Key') &&
+        !n.contains('API_KEY') &&
+        !RegExp(r'API[_ ]?KEY', caseSensitive: false).hasMatch(n)) {
+      return n;
+    }
     if (!configured) {
       return 'Routen nutzen Demo-Geometrie — Live-Routing nicht konfiguriert.';
     }
+    // Configured live engine: silent unless debug UI builds a generic line.
     if (!liveVerified) {
-      return 'Routing konfiguriert ($engine) — Live noch nicht verifiziert.';
+      return 'Live-Routing konfiguriert ($engine) — Verifikation ausstehend.';
     }
     return 'Live-Routing ($engine)';
   }

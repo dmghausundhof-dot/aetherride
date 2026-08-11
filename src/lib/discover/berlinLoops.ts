@@ -1,10 +1,14 @@
 /**
  * P0 Berlin Nähe-Peek / 60-min loop seeds — offline fallback when the
  * Discover catalog is empty (e.g. production with demo content off).
+ *
+ * source:"seed" (never "demo") — curated fail-open (#35).
+ * Loop flags: is_loop | loop | closed (#37).
  */
 import type { BikeCategory } from "@/types";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
+import { seedIsLoopFlag } from "@/lib/discover/loopHonesty";
 import raw from "@/lib/discover/berlin-loops-v1.json";
 
 type BerlinSeed = {
@@ -18,6 +22,8 @@ type BerlinSeed = {
   surface_mix?: Record<string, number> | null;
   center?: { lat: number; lng: number };
   is_loop?: boolean;
+  loop?: boolean;
+  closed?: boolean;
   duration_band?: string;
 };
 
@@ -71,7 +77,7 @@ export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[
         R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
       );
     }
-    const loop = Boolean(s.is_loop);
+    const loop = seedIsLoopFlag(s);
     return {
       id: s.id,
       name: s.title,
@@ -91,19 +97,22 @@ export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[
       ],
       center,
       distanceFromOriginKm,
+      source: "seed",
     } satisfies RouteSuggestion;
   });
 }
 
-/** Feierabend ~60 Min (45–75) — Quick sheet always-on section. */
+/**
+ * Feierabend ~60 Min (45–75) — Quick sheet always-on section.
+ * Honest loops only (#37) — linear A→B seeds excluded.
+ */
 export function berlinSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
   return berlinLoopSuggestions(near)
+    .filter((r) => r.loop)
     .filter((r) => r.durationMin >= 45 && r.durationMin <= 75)
     .sort((a, b) => {
-      // Prefer true loops (Tempelhofer …), then shorter distance from origin.
-      if (a.loop !== b.loop) return a.loop ? -1 : 1;
       return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
     });
 }

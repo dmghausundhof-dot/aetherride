@@ -5,18 +5,26 @@ import {
   isUsingPublicOsrm,
 } from "@/lib/routing/engine";
 import { hasStoreLinks, siteOrigin, ANDROID_PACKAGE } from "@/lib/web/appLinks";
+import { authorizeOpsRequest } from "@/lib/ops/opsAuth";
 
 /**
  * GET /api/ops/env-check
- * Keine Secrets — nur booleans / Status für Ops & Smoke.
+ * Keine Secrets in der Response — nur booleans / Status für Ops & Smoke.
+ * Geschützt: OPS_SECRET oder CRON_SECRET (Bearer / x-ops-secret).
+ * Ohne Secret in Prod/Vercel → 404 (nicht öffentlich).
  */
 function set(name: string): boolean {
   const v = process.env[name];
   return Boolean(v && String(v).trim().length > 0);
 }
 
-export async function GET() {
-  const supabase = set("NEXT_PUBLIC_SUPABASE_URL") && set("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+export async function GET(req: Request) {
+  if (!authorizeOpsRequest(req)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const supabase =
+    set("NEXT_PUBLIC_SUPABASE_URL") && set("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const routingLive = isLiveRoutingConfigured();
   const engine = configuredRoutingEngine();
 
@@ -45,7 +53,8 @@ export async function GET() {
     appLinks: {
       iosTeamId: set("NEXT_PUBLIC_IOS_TEAM_ID"),
       androidPackage: ANDROID_PACKAGE,
-      androidSha256: set("NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS") ||
+      androidSha256:
+        set("NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS") ||
         set("ANDROID_SHA256_FINGERPRINTS"),
     },
     legal: {
@@ -79,13 +88,13 @@ export async function GET() {
     hints: [
       !checks.supabasePublic && "NEXT_PUBLIC_SUPABASE_* setzen",
       !checks.routing.liveConfigured &&
-        "GRAPHHOPPER_API_KEY oder VALHALLA_URL/OSRM_URL setzen",
+        "Routing-Engine konfigurieren (GraphHopper / Valhalla / OSRM)",
       checks.routing.publicOsrm &&
-        "Prod: ALLOW_PUBLIC_OSRM=false + eigenen Engine-Key",
+        "Prod: öffentliches OSRM deaktivieren + eigenen Engine-Endpunkt",
       !checks.stores.hasLinks && "Store-URLs optional bis Release",
       !checks.appLinks.androidSha256 &&
-        "App Links: NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS",
-      !checks.appLinks.iosTeamId && "Universal Links: NEXT_PUBLIC_IOS_TEAM_ID",
+        "App Links: Android SHA-256 Fingerprints setzen",
+      !checks.appLinks.iosTeamId && "Universal Links: iOS Team-ID setzen",
       !checks.stripe && "Billing: Stripe Keys + Webhook",
       !checks.partners.shopifyStorefront &&
         "Shop Parts: SHOPIFY_STOREFRONT_ACCESS_TOKEN (featured-parts)",

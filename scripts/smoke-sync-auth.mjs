@@ -22,19 +22,27 @@ function log(ok, msg, extra) {
 }
 
 async function main() {
-  // 1) env-check
-  const envRes = await fetch(`${base}/api/ops/env-check`);
+  // 1) env-check (ops-protected — 404 without secret is OK)
+  const opsSecret = process.env.OPS_SECRET || process.env.CRON_SECRET || "";
+  const envRes = await fetch(`${base}/api/ops/env-check`, {
+    headers: opsSecret
+      ? { Authorization: `Bearer ${opsSecret}`, Accept: "application/json" }
+      : { Accept: "application/json" },
+  });
   const envJ = await envRes.json().catch(() => ({}));
-  if (!envRes.ok) {
+  if (envRes.status === 404 || envRes.status === 401) {
+    log(true, "env-check protected", envRes.status);
+  } else if (!envRes.ok) {
     log(false, "env-check", envRes.status);
     process.exit(1);
+  } else {
+    log(true, "env-check", {
+      ok: envJ.ok,
+      engine: envJ.checks?.routing?.engine,
+      supabase: envJ.checks?.supabasePublic,
+      hints: envJ.hints?.slice(0, 3),
+    });
   }
-  log(true, "env-check", {
-    ok: envJ.ok,
-    engine: envJ.checks?.routing?.engine,
-    supabase: envJ.checks?.supabasePublic,
-    hints: envJ.hints?.slice(0, 3),
-  });
 
   // 2) unauth sync
   const bare = await fetch(`${base}/api/sync`);

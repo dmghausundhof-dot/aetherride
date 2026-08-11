@@ -3589,7 +3589,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               const SizedBox(height: AppSpacing.xs),
               _sportProfileChips(),
             ],
-            if (_routingStatusNote != null) ...[
+            // Mirror web: routing-status chrome only with showRoutingDebug.
+            if (AppConfig.showRoutingDebug && _routingStatusNote != null) ...[
               const SizedBox(height: AppSpacing.xs),
               _mapNotePill(_routingStatusNote!),
             ],

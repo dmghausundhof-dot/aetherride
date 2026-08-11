@@ -100,8 +100,16 @@ await check("sitemap", async () => {
 });
 
 await check("ops/env-check", async () => {
-  const r = await fetch(`${base}/api/ops/env-check`);
-  const j = await r.json();
+  const secret = process.env.OPS_SECRET || process.env.CRON_SECRET || "";
+  const headers = secret
+    ? { Authorization: `Bearer ${secret}`, Accept: "application/json" }
+    : { Accept: "application/json" };
+  const r = await fetch(`${base}/api/ops/env-check`, { headers });
+  const j = await r.json().catch(() => ({}));
+  // Protected in prod: 404 without secret is OK (endpoint not public).
+  if (r.status === 404 || r.status === 401) {
+    return { protected: true, status: r.status };
+  }
   if (!r.ok) throw new Error(JSON.stringify(j).slice(0, 200));
   return {
     ok: j.ok,
