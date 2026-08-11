@@ -22,8 +22,11 @@ export interface ShopProduct {
   componentModelId: string;
   priceEur: number;
   description: string;
-  /** Partner-Händler Checkout-URL (Affiliate) */
-  affiliateUrl: string;
+  /**
+   * Partner / Shopify product URL for „Zum Händler“.
+   * Optional — omit bare homepages; only deep product URLs.
+   */
+  affiliateUrl?: string;
   merchantName: string;
   /** Kurzer visueller Hinweis für Platzhalter-Karte (ohne Asset-Pipeline) */
   visualHint: string;
@@ -89,11 +92,11 @@ export function shopCollectionHref(sport: string): string | undefined {
 }
 
 /**
- * Phase-A bike handles — currently unpublished / 404 on Shopify.
- * Never deep-link these as live product URLs (myshopify or /shop/p/…).
- * Prefer Collection `featured-parts` via Storefront API.
+ * Candidate featured-bike handles to probe via Storefront API.
+ * Only handles confirmed live are rendered — 404s are skipped (no dead cards).
+ * Prefer Collection `featured-parts` for the primary catalog.
  */
-export const UNPUBLISHED_FEATURED_BIKE_HANDLES = [
+export const FEATURED_BIKE_HANDLE_CANDIDATES = [
   "orbea-terra-m20",
   "specialized-diverge-carbon",
   "cube-attain-gtc-race",
@@ -101,18 +104,15 @@ export const UNPUBLISHED_FEATURED_BIKE_HANDLES = [
   "canyon-commuter-7-0",
 ] as const;
 
-export function isShopifyProductHandleLive(handle: string): boolean {
-  return !(UNPUBLISHED_FEATURED_BIKE_HANDLES as readonly string[]).includes(
-    handle
-  );
-}
+/** @deprecated use FEATURED_BIKE_HANDLE_CANDIDATES + Storefront sync */
+export const UNPUBLISHED_FEATURED_BIKE_HANDLES = FEATURED_BIKE_HANDLE_CANDIDATES;
 
-/** In-app collection CTA — never a 404 product URL */
+/** In-app collection CTA */
 export const FEATURED_PARTS_IN_APP_HREF = "/shop/parts";
 
 /**
- * Editorial snapshot only — handles are NOT live on Shopify.
- * affiliateUrl points to in-app collection (no dead product / bare homepage).
+ * Editorial metadata for candidate bikes.
+ * affiliateUrl = Shopify product URL (only used after Storefront confirms live).
  */
 export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
   {
@@ -122,9 +122,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-orbea-terra-m20",
     priceEur: 2799,
-    description:
-      "Gravel-Allrounder — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
-    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
+    description: "Gravel-Allrounder — AetherRide Shop.",
+    affiliateUrl: shopifyProductUrl("orbea-terra-m20"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -138,9 +137,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-specialized-diverge-carbon",
     priceEur: 3499,
-    description:
-      "Carbon-Gravel — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
-    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
+    description: "Carbon-Gravel — AetherRide Shop.",
+    affiliateUrl: shopifyProductUrl("specialized-diverge-carbon"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -154,9 +152,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-cube-attain-gtc-race",
     priceEur: 1499,
-    description:
-      "Leichtes Carbon-Rennrad — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
-    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
+    description: "Leichtes Carbon-Rennrad — AetherRide Shop.",
+    affiliateUrl: shopifyProductUrl("cube-attain-gtc-race"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -170,9 +167,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-canyon-ultimate-cf-sl-8",
     priceEur: 2499,
-    description:
-      "Rennrad Performance — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
-    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
+    description: "Rennrad Performance — AetherRide Shop.",
+    affiliateUrl: shopifyProductUrl("canyon-ultimate-cf-sl-8"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -186,9 +182,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-canyon-commuter-7-0",
     priceEur: 1299,
-    description:
-      "City / Light-E — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
-    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
+    description: "City / Light-E — AetherRide Shop.",
+    affiliateUrl: shopifyProductUrl("canyon-commuter-7-0"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -197,17 +192,17 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
   },
 ];
 
-/** Live featured bikes only — empty while Phase-A handles are unpublished */
-export function getFeaturedShopifyProducts(): ShopProduct[] {
-  return SHOPIFY_FEATURED_BIKES.filter((p) => {
-    const handle = shopifyHandleFromProductId(p.id);
-    return handle ? isShopifyProductHandleLive(handle) : false;
-  });
-}
-
-/** Editorial snapshot (may include unpublished) — do not use for live CTAs */
+/** Editorial snapshot — do not render as live CTAs without Storefront confirm */
 export function getFeaturedBikeSnapshots(): ShopProduct[] {
   return SHOPIFY_FEATURED_BIKES;
+}
+
+/**
+ * Synchronous helper — returns [] (live bikes come from /api/shop/featured).
+ * Kept for call-site compatibility.
+ */
+export function getFeaturedShopifyProducts(): ShopProduct[] {
+  return [];
 }
 
 export function shopifyHandleFromProductId(id: string): string | undefined {
@@ -226,7 +221,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-sram-xx-chain",
     priceEur: 119,
     description: "12-fach Kette — Wechselziel 0,5 % Längung (Velopit/Park Tool)",
-    affiliateUrl: "https://www.bike-components.de/de/SRAM/",
+    affiliateUrl:
+      "https://www.bike-components.de/de/s/?searchterm=SRAM+XX+Eagle+Transmission+Chain",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "chain",
     sports: ["mtb", "ebike"],
@@ -239,7 +235,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-shimano-xt-pad",
     priceEur: 29,
     description: "Ersatzbeläge — Wechsel bei < 0,5–1 mm (BIKE Magazin)",
-    affiliateUrl: "https://www.bike-components.de/de/Shimano/",
+    affiliateUrl:
+      "https://www.bike-components.de/de/s/?searchterm=Shimano+XT+Resin+Belag",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "pads",
     sports: ["mtb", "gravel", "ebike"],
@@ -252,7 +249,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-fox-36-factory-170",
     priceEur: 1249,
     description: "Enduro-Gabel 170 mm, Grip2, Boost 15×110",
-    affiliateUrl: "https://www.bike-components.de/de/Fox/",
+    affiliateUrl:
+      "https://www.bike-components.de/de/s/?searchterm=Fox+36+Factory+Grip2",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "fork",
     sports: ["mtb", "ebike"],
@@ -320,7 +318,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-rockshox-superdeluxe-23065",
     priceEur: 679,
     description: "Standard-Eyelet 230×65 — Rahmenmaß prüfen",
-    affiliateUrl: "https://www.sram.com/en/rockshox/models/super-deluxe",
+    affiliateUrl: undefined,
     merchantName: "SRAM/RockShox Händler (Beispiel)",
     visualHint: "shock",
     sports: ["mtb", "ebike"],
@@ -333,7 +331,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-fox-float-x2-20565",
     priceEur: 749,
     description: "Trunnion 205×65",
-    affiliateUrl: "https://www.ridefox.com/family.php?m=bike&family=floatx2",
+    // Family landing — not a concrete product SKU URL → omit Zum Händler
+    affiliateUrl: undefined,
     merchantName: "Fox Händler (Beispiel)",
     visualHint: "shock",
     sports: ["mtb", "ebike"],
@@ -346,8 +345,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-bosch-powertube-800",
     priceEur: 999,
     description: "Smart System Akku — nur bei passendem Motor-Interface",
-    affiliateUrl:
-      "https://www.bosch-ebike.com/de/produkte/powertube",
+    affiliateUrl: undefined,
     merchantName: "Bosch eBike Händler (Beispiel)",
     visualHint: "battery",
     sports: ["ebike"],
@@ -402,7 +400,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-shimano-ultegra-chain",
     priceEur: 49,
     description: "12-fach Kette für Road/Gravel-Gruppen",
-    affiliateUrl: "https://www.bike-components.de/de/Shimano/",
+    affiliateUrl:
+      "https://www.bike-components.de/de/s/?searchterm=Shimano+Ultegra+Kette+12",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "chain",
     sports: ["road", "gravel", "urban"],

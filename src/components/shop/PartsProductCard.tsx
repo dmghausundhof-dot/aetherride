@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RankedPartsProduct } from "@/lib/shop/partsCatalog";
+import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
 
@@ -31,6 +32,7 @@ export function PartsProductCard({
         ? "bg-warning/15 text-warning border-warning/30"
         : "bg-surface-elevated text-text-secondary border-border";
   const detailHref = inAppProductHref(p.handle);
+  const merchantUrl = merchantCtaUrl(p.affiliateUrl);
 
   return (
     <article
@@ -84,11 +86,10 @@ export function PartsProductCard({
         >
           Details <ChevronRight className="h-4 w-4" />
         </Link>
-        {p.affiliateUrl.includes("/products/") &&
-        p.affiliateUrl.includes("myshopify.com") ? (
+        {merchantUrl ? (
           <ShopifyOutboundButton
-            href={p.affiliateUrl}
-            label="Shopify Produkt (extern)"
+            href={merchantUrl}
+            label="Zum Händler"
             variant="ghost"
             className="py-2 text-xs font-medium"
           />

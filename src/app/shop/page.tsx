@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   Bookmark,
   ChevronRight,
@@ -11,18 +11,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { useCartStore } from "@/store/useCartStore";
 import {
-  getFeaturedShopifyProducts,
   getShopProductByFocus,
-  isShopifyProductHandleLive,
   shopifyHandleFromProductId,
 } from "@/lib/shop/catalog";
 import { shopPartsHref } from "@/lib/shop/partsCatalog";
+import type { LiveFeaturedBike } from "@/lib/shop/featuredSync";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { FeaturedBikeCard } from "@/components/shop/FeaturedBikeCard";
 import { FeaturedPartsPreview } from "@/components/shop/FeaturedPartsPreview";
 import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
+import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
 import Link from "next/link";
 
 function ShopHubInner() {
@@ -34,12 +34,41 @@ function ShopHubInner() {
   const consents = useAppStore((s) => s.consents);
   const cartItems = useCartStore((s) => s.items);
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
-  const liveFeaturedBikes = useMemo(() => getFeaturedShopifyProducts(), []);
   const cartCount = cartItems.reduce((n, i) => n + i.quantity, 0);
+
+  const [bikesLoad, setBikesLoad] = useState<
+    | { status: "loading" }
+    | { status: "ready"; bikes: LiveFeaturedBike[]; skipped: string[] }
+    | { status: "error" }
+  >({ status: "loading" });
 
   const sportQuery = searchParams.get("sport");
 
-  // Legacy deep-links → in-app destinations (never dead myshopify / 404 handles)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/shop/featured", { cache: "no-store" });
+        const json = (await res.json()) as {
+          bikes?: LiveFeaturedBike[];
+          skippedHandles?: string[];
+        };
+        if (cancelled) return;
+        setBikesLoad({
+          status: "ready",
+          bikes: Array.isArray(json.bikes) ? json.bikes : [],
+          skipped: Array.isArray(json.skippedHandles) ? json.skippedHandles : [],
+        });
+      } catch {
+        if (!cancelled) setBikesLoad({ status: "error" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Legacy deep-links → in-app destinations (never 404 product cards)
   useEffect(() => {
     const slot = searchParams.get("slot");
     const job = searchParams.get("job");
@@ -54,16 +83,7 @@ function ShopHubInner() {
         shopifyHandleFromProductId(focusProduct.id) ||
         focus ||
         focusProduct.id;
-      // Unpublished Phase-A bikes → collection, never /shop/p/404
-      if (!isShopifyProductHandleLive(handle)) {
-        router.replace(
-          shopPartsHref({
-            bike: bike || activeBike?.id,
-            fit: activeBike || bike ? "bike" : undefined,
-          })
-        );
-        return;
-      }
+      // Try in-app product; API will redirect to parts if handle 404
       router.replace(inAppProductHref(handle));
       return;
     }
@@ -108,14 +128,17 @@ function ShopHubInner() {
         })
       : null;
 
+  const liveBikes =
+    bikesLoad.status === "ready" ? bikesLoad.bikes : [];
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 pt-6">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Shop</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            featured-parts live in AetherRide — keine toten Produkt-Handles, kein
-            stiller Password-Dead-End
+            featured-parts live via Storefront API — nur bestätigte Handles, keine
+            404-Cards
           </p>
         </div>
         <Link
@@ -144,9 +167,10 @@ function ShopHubInner() {
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold">Ersatzteile · featured-parts</h2>
             <p className="mt-0.5 text-xs text-text-secondary">
-              Collection-driven (~43–48 ACTIVE) via Storefront API. Aliase:{" "}
+              Collection-driven. Aliase:{" "}
               <code className="text-[11px]">/teile</code>,{" "}
-              <code className="text-[11px]">/parts</code>.
+              <code className="text-[11px]">/parts</code> →{" "}
+              <code className="text-[11px]">/shop/parts</code>
             </p>
           </div>
         </div>
@@ -200,28 +224,46 @@ function ShopHubInner() {
 
       <FeaturedPartsPreview bikeId={activeBike?.id} />
 
-      {liveFeaturedBikes.length > 0 ? (
-        <section className="space-y-3">
+      <section className="space-y-3">
+        <div className="px-0.5">
           <h2 className="text-lg font-bold">Featured · Kompletträder</h2>
+          <p className="mt-0.5 text-xs text-text-secondary">
+            Nur Handles, die Storefront API als published bestätigt — 404s werden
+            nicht gerendert.
+          </p>
+        </div>
+        {bikesLoad.status === "loading" ? <PartsSkeleton count={3} /> : null}
+        {bikesLoad.status === "ready" && liveBikes.length > 0 ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {liveFeaturedBikes.map((p) => (
-              <FeaturedBikeCard key={p.id} product={p} />
+            {liveBikes.map((b) => (
+              <FeaturedBikeCard key={b.handle} bike={b} />
             ))}
           </div>
-        </section>
-      ) : (
-        <section className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
-          <h2 className="text-base font-semibold">Kompletträder</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
-            Die früheren Featured-Bike-Handles sind auf Shopify noch nicht
-            veröffentlicht (404). Wir verlinken sie nicht — bitte{" "}
-            <Link href="/shop/parts" className="text-accent underline">
-              featured-parts
-            </Link>{" "}
-            nutzen.
-          </p>
-        </section>
-      )}
+        ) : null}
+        {bikesLoad.status === "ready" && liveBikes.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+            <h3 className="text-base font-semibold">Keine Live-Bikes bestätigt</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
+              Candidate-Handles sind auf Shopify noch nicht erreichbar (oder
+              Storefront Token fehlt). Keine Dead-Cards — bitte{" "}
+              <Link href="/shop/parts" className="text-accent underline">
+                featured-parts
+              </Link>
+              .
+              {bikesLoad.skipped.length > 0 ? (
+                <span className="mt-1 block text-[11px] text-text-secondary">
+                  Übersprungen: {bikesLoad.skipped.join(", ")}
+                </span>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
+        {bikesLoad.status === "error" ? (
+          <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-text-secondary">
+            Featured Bikes konnten nicht synchronisiert werden.
+          </div>
+        ) : null}
+      </section>
 
       {sportPartsHref && sportQuery ? (
         <div className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
@@ -240,10 +282,6 @@ function ShopHubInner() {
       {!activeBike ? (
         <div className="rounded-2xl border border-border bg-surface p-4 text-center">
           <p className="text-sm font-medium">Passende Teile nach deinem Bike</p>
-          <p className="mt-1 text-xs text-text-secondary">
-            Lege ein Bike an — Soft-Fit filtert Magura-Form, Größe und
-            Schalt-Kompatibilität.
-          </p>
           <Link
             href="/garage?wizard=catalog"
             className="mt-3 inline-flex rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"

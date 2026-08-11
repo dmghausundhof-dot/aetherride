@@ -16,7 +16,7 @@ type LoadState =
       status: "ready";
       product: PartsProduct;
       onlineStoreLocked: boolean;
-      externalUrl: string;
+      externalUrl?: string;
       source: string;
       warning?: string;
     }
@@ -76,7 +76,7 @@ function ProductPageInner() {
           status: "ready",
           product: json.product,
           onlineStoreLocked: Boolean(json.onlineStoreLocked),
-          externalUrl: json.externalUrl || json.product.affiliateUrl,
+          externalUrl: json.externalUrl || undefined,
           source: json.source || "storefront",
           warning: json.warning,
         });
@@ -187,18 +187,21 @@ function ProductPageInner() {
             <p className="text-xs text-warning">{load.warning}</p>
           ) : null}
           <div className="pt-2">
-            <ShopifyOutboundButton
-              href={load.externalUrl}
-              label={
-                load.onlineStoreLocked
-                  ? "Shopify Checkout (gesperrt)"
-                  : "Zum Shopify-Checkout"
-              }
-              variant="primary"
-            />
+            {load.externalUrl ? (
+              <ShopifyOutboundButton
+                href={load.externalUrl}
+                label="Zum Händler"
+                variant="primary"
+              />
+            ) : (
+              <p className="rounded-xl border border-dashed border-border px-3 py-2.5 text-center text-xs text-text-secondary">
+                Kein tiefer Händler-Produktlink verfügbar — Katalog bleibt in
+                AetherRide.
+              </p>
+            )}
             <p className="mt-2 text-center text-[11px] text-text-secondary">
-              Quelle: {load.source === "storefront" ? "Storefront API" : "Featured Snapshot"} ·
-              In-App-Katalog ohne Passwort-Wall
+              Quelle: Storefront API
+              {load.onlineStoreLocked ? " · Online Store Owner Preview" : ""}
             </p>
           </div>
         </div>

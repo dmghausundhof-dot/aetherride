@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/store/useCartStore";
 import { SHOP_PRODUCTS, getShopProduct } from "@/lib/shop/catalog";
+import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
 import { ProductVisual } from "@/components/shop/ProductVisual";
 import { VerdictPill } from "@/components/garage/VerdictPill";
 import {
@@ -26,6 +27,9 @@ export default function CheckoutPage() {
     const fromCart = items.find((i) => i.productId === productId);
     const p = getShopProduct(productId) ?? SHOP_PRODUCTS.find((x) => x.id === productId);
     if (!p) return;
+
+    const url = merchantCtaUrl(fromCart?.affiliateUrl ?? p.affiliateUrl);
+    if (!url) return; // no bare homepage / unknown — omit Zum Händler
 
     let verdict = fromCart?.verdict;
     if (!verdict && activeBike) {
@@ -50,14 +54,10 @@ export default function CheckoutPage() {
       compatibilityMatch:
         resolved === "COMPATIBLE" || resolved === "CONDITIONAL",
       verdict: resolved,
-      affiliateUrl: fromCart?.affiliateUrl ?? p.affiliateUrl,
+      affiliateUrl: url,
       merchantName: fromCart?.merchantName ?? p.merchantName,
     });
-    window.open(
-      fromCart?.affiliateUrl ?? p.affiliateUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const total = getTotal();
@@ -101,6 +101,9 @@ export default function CheckoutPage() {
           <div className="flex flex-col gap-2">
             {items.map((item) => {
               const product = getShopProduct(item.productId);
+              const partnerUrl = merchantCtaUrl(
+                item.affiliateUrl ?? product?.affiliateUrl
+              );
               return (
                 <div
                   key={item.id}
@@ -126,13 +129,15 @@ export default function CheckoutPage() {
                       </div>
                     )}
                     <div className="mt-2 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openPartner(item.productId)}
-                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-accent py-2 text-xs font-semibold text-white"
-                      >
-                        Beim Partner <ExternalLink className="h-3.5 w-3.5" />
-                      </button>
+                      {partnerUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => openPartner(item.productId)}
+                          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-accent py-2 text-xs font-semibold text-white"
+                        >
+                          Zum Händler <ExternalLink className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
@@ -154,10 +159,11 @@ export default function CheckoutPage() {
         <section>
           <h2 className="mb-2 font-semibold">Beliebte Einstiege</h2>
           <div className="flex flex-col gap-2">
-            {SHOP_PRODUCTS.filter((p) =>
-              ["chain", "brake_pads_front", "tire_front", "cassette"].includes(
-                p.slot
-              )
+            {SHOP_PRODUCTS.filter(
+              (p) =>
+                ["chain", "brake_pads_front", "tire_front", "cassette"].includes(
+                  p.slot
+                ) && merchantCtaUrl(p.affiliateUrl)
             )
               .slice(0, 4)
               .map((p) => {
