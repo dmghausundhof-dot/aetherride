@@ -1751,6 +1751,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (_loopOnly == true && !_isLoop(r)) {
         return false;
       }
+      // Seed proximity ≥35 km (Wiesloch→HD/MA). Never use a tiny radius.
+      if (r.isSeed && _hasRealOrigin) {
+        final o = _origin;
+        final d = _distKm(
+          o.lat,
+          o.lng,
+          r.center.latitude,
+          r.center.longitude,
+        );
+        if (d > 35) return false;
+      }
       return true;
     }).toList();
 
@@ -5070,7 +5081,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _sectionTitle(
           '$seedLabel (${seeds.length})',
           hint: _hasRealOrigin
-              ? 'Fallback-Loops · offline · Losfahren startet Ride'
+              ? 'Region-Loops ≤35 km · offline · Losfahren startet Ride'
               : 'Kuratierte ~60-Min Rundkurse · Berlin · DACH · Rhein-Neckar',
         ),
         for (final r in seeds) _tourListCard(r, o),
@@ -5090,14 +5101,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               : 'Erscheint nach GPS / Startpunkt',
         ),
         for (final r in live) _tourListCard(r, o),
-      ],
-      // Seeds auch neben Live zeigen, wenn Lens ~60 und Loops fehlen.
-      if (!showSeeds && seeds.isNotEmpty && _minutes == 60) ...[
-        _sectionTitle(
-          '${_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region'} (${seeds.length})',
-          hint: 'Kuratierte ~60-Min Rundkurse',
-        ),
-        for (final r in seeds.where(_isLoop).take(6)) _tourListCard(r, o),
       ],
     ];
   }

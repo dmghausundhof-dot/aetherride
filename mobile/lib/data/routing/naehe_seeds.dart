@@ -30,7 +30,7 @@ class NaeheSeedPoi {
     final type = m['type'] ?? m['kind'];
     return NaeheSeedPoi(
       atMin: (offset as num?)?.round() ?? 0,
-      title: (m['title'] as String?) ?? '',
+      title: (m['title'] as String?) ?? (m['name'] as String?) ?? '',
       kind: (type as String?) ?? 'poi',
     );
   }
