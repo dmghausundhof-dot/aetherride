@@ -180,3 +180,23 @@ final locationCoreProvider = Provider<LocationCoreChannel>((ref) {
 
 /// Aktiver Bottom-Tab-Index (0 Home … 4 Shop).
 final shellTabIndexProvider = StateProvider<int>((ref) => 0);
+
+/// Pending Shop filter from Garage / deep link (S-FLOW-05).
+/// Query: `aetherride://shop?bikeId=&slot=&fit=bike`
+class ShopPendingFilter {
+  const ShopPendingFilter({
+    this.bikeId,
+    this.slot,
+    this.fit = 'all',
+  });
+
+  final String? bikeId;
+  final String? slot;
+  /// `bike` | `all`
+  final String fit;
+
+  bool get hasBike => bikeId != null && bikeId!.isNotEmpty;
+}
+
+final shopPendingFilterProvider =
+    StateProvider<ShopPendingFilter?>((ref) => null);

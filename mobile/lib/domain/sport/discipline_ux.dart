@@ -167,8 +167,7 @@ abstract final class MultiSportCopy {
   static const discoverMenuPrivacy = 'Heatmap & Privatsphäre';
   static const partsTitle = 'Teile & Zubehör';
   static const partsSubtitle =
-      'Live featured-parts in AetherRide — Soft-Fit & Preise, '
-      'ohne Shopify-Passwort-Dead-End.';
+      'Produkte mit Foto & Preis — tippen für Details. Für alle Bike-Typen.';
   static const weatherFallback = 'Wetter nicht verfügbar';
   static const statsRidesOne = 'Fahrt';
   static const statsRidesMany = 'Fahrten';

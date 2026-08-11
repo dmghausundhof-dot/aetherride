@@ -1,36 +1,18 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/shop_web.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/shop/shop_catalog_client.dart';
+import '../../data/shop/shop_product.dart';
+import '../../data/shop/shop_soft_fit.dart';
 import '../../domain/bike.dart';
 import '../../domain/sport/discipline_ux.dart';
 import '../../providers/app_providers.dart';
 
-class _ShopPart {
-  const _ShopPart({
-    required this.handle,
-    required this.name,
-    required this.manufacturer,
-    required this.priceEur,
-    required this.currency,
-    this.imageUrl,
-    this.chip = 'universal',
-  });
-
-  final String handle;
-  final String name;
-  final String manufacturer;
-  final double priceEur;
-  final String currency;
-  final String? imageUrl;
-  final String chip;
-}
-
+/// App Shop hub — featured-parts / Storefront collection (S-FLOW-02/03/05).
+/// Single AppBar title · real product photos · in-app PDP ≤2 taps after tab.
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
 
@@ -39,14 +21,18 @@ class ShopScreen extends ConsumerStatefulWidget {
 }
 
 class _ShopScreenState extends ConsumerState<ShopScreen> {
-  List<_ShopPart> _parts = [];
+  final _client = ShopCatalogClient();
+  List<ShopProduct> _products = [];
   bool _loading = true;
   String? _error;
-  bool _storeLocked = true;
-  bool _apiConfigured = false;
   String _slot = 'all';
+  String? _filterBikeId;
+  String _fit = 'all';
 
   String? _bikeIdFrom(List<Bike>? bikes) {
+    if (_filterBikeId != null && _filterBikeId!.isNotEmpty) {
+      return _filterBikeId;
+    }
     if (bikes == null || bikes.isEmpty) return null;
     Bike? active;
     for (final b in bikes) {
@@ -58,16 +44,47 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     return (active ?? bikes.first).id;
   }
 
-  String _webPartsBridgeUrl(String? bikeId) => ShopWebLinks.parts(
-        bikeId: bikeId,
-        slot: _slot == 'all' ? null : _slot,
-        fitBike: bikeId != null,
-      );
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consumePendingFilter();
+      _load();
+    });
+  }
+
+  void _consumePendingFilter() {
+    final pending = ref.read(shopPendingFilterProvider);
+    if (pending == null) return;
+    ref.read(shopPendingFilterProvider.notifier).state = null;
+    setState(() {
+      if (pending.slot != null && pending.slot!.isNotEmpty) {
+        _slot = normalizePartsSlot(pending.slot);
+      }
+      if (pending.bikeId != null && pending.bikeId!.isNotEmpty) {
+        _filterBikeId = pending.bikeId;
+      }
+      _fit = pending.fit == 'bike' ? 'bike' : 'all';
+    });
+  }
+
+  Future<SoftFitContext?> _softFitContext(String? bikeId) async {
+    if (bikeId == null || bikeId.isEmpty) return null;
+    final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+    Bike? bike;
+    for (final b in bikes) {
+      if (b.id == bikeId) {
+        bike = b;
+        break;
+      }
+    }
+    final installed =
+        await ref.read(componentRepositoryProvider).listInstalled(bikeId);
+    return AttrsDimMap.fromInstalled(
+      bikeId: bikeId,
+      bikeName: bike?.name ?? 'Bike',
+      installed: installed,
+    );
   }
 
   Future<void> _load() async {
@@ -76,129 +93,47 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
       _error = null;
     });
     try {
-      final statusUri = Uri.parse('${ShopWebLinks.origin}/api/shop/status');
-      final partsUri = Uri.parse('${ShopWebLinks.origin}/api/shop/parts');
-      final results = await Future.wait([
-        http.get(statusUri).timeout(const Duration(seconds: 12)),
-        http.get(partsUri).timeout(const Duration(seconds: 20)),
-      ]);
-      final statusRes = results[0];
-      final partsRes = results[1];
-
-      var locked = true;
-      var configured = false;
-      if (statusRes.statusCode == 200) {
-        final s = jsonDecode(statusRes.body);
-        if (s is Map) {
-          locked = s['onlineStoreLocked'] != false;
-          configured = s['storefrontApiConfigured'] == true;
-        }
+      final bikeId = _bikeIdFrom(ref.read(bikesProvider).valueOrNull);
+      final ctx = _fit == 'bike' ? await _softFitContext(bikeId) : null;
+      // Prefer missing-part slot when Garage opened Shop without explicit slot.
+      var slot = _slot;
+      if (slot == 'all' &&
+          ctx != null &&
+          ctx.missingSlots.isNotEmpty &&
+          _filterBikeId != null) {
+        final mapped =
+            ShopWebLinks.partsSlotFromComponent(ctx.missingSlots.first);
+        if (mapped != null) slot = mapped;
       }
-
-      if (partsRes.statusCode != 200) {
-        final body = jsonDecode(partsRes.body);
-        final msg = body is Map
-            ? (body['error'] as String? ?? 'Collection nicht geladen')
-            : 'Collection nicht geladen';
-        if (mounted) {
-          setState(() {
-            _storeLocked = locked;
-            _apiConfigured = configured;
-            _parts = [];
-            _loading = false;
-            _error = msg;
-          });
-        }
-        return;
-      }
-
-      final json = jsonDecode(partsRes.body);
-      final raw = json is Map ? json['products'] : null;
-      final list = <_ShopPart>[];
-      if (raw is List) {
-        for (final e in raw) {
-          if (e is! Map) continue;
-          final handle = '${e['handle'] ?? ''}'.trim();
-          if (handle.isEmpty) continue;
-          final soft = e['softFit'];
-          final slots = soft is Map && soft['slots'] is List
-              ? (soft['slots'] as List).map((x) => '$x').toList()
-              : const <String>[];
-          final slotKey = slots.isNotEmpty
-              ? slots.first
-              : '${e['slotKey'] ?? 'other'}';
-          if (_slot != 'all' && slotKey != _slot) continue;
-          final price = (e['priceEur'] is num)
-              ? (e['priceEur'] as num).toDouble()
-              : double.tryParse('${e['priceEur']}') ?? 0;
-          list.add(
-            _ShopPart(
-              handle: handle,
-              name: '${e['name'] ?? handle}',
-              manufacturer: '${e['manufacturer'] ?? 'AetherRide'}',
-              priceEur: price,
-              currency: '${e['currencyCode'] ?? 'EUR'}',
-              imageUrl: e['imageUrl'] as String?,
-              chip: slotKey,
-            ),
-          );
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _storeLocked = locked;
-          _apiConfigured = configured;
-          _parts = list;
-          _loading = false;
-          _error = list.isEmpty
-              ? (configured
-                  ? 'Keine Treffer in featured-parts für diesen Filter.'
-                  : 'Storefront API nicht konfiguriert — Token auf dem Server setzen.')
-              : null;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _error =
-              'Shop offline (${ShopWebLinks.origin}). Bitte später erneut.';
-          _parts = [];
-        });
-      }
+      final result = await _client.loadCollection(
+        slot: slot,
+        ctx: ctx,
+        fit: _fit,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (slot != _slot && slot != 'all') _slot = slot;
+        _products = result.products;
+        _source = result.source;
+        _loading = false;
+        _error = result.products.isEmpty
+            ? (result.error ?? 'Keine Produkte geladen.')
+            : null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final seed = featuredCollectionSeed();
+      setState(() {
+        _products = seed;
+        _source = 'seed';
+        _loading = false;
+        _error = seed.isEmpty ? 'Shop offline — bitte erneut versuchen.' : null;
+      });
     }
   }
 
-  Future<void> _openUrl(String url, {required bool warnLockedExternal}) async {
+  Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
-    final isMyshopify = url.contains('myshopify.com');
-    if (isMyshopify && (_storeLocked || warnLockedExternal)) {
-      if (!mounted) return;
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Online Store gesperrt'),
-          content: const Text(
-            'Der Shopify Online Store ist passwortgeschützt (Owner Preview). '
-            'Der Link öffnet die Passwort-Seite — kein stiller Dead End.\n\n'
-            'Katalog & Soft-Fit laufen in AetherRide über die Storefront API. '
-            'Store-Passwort wird nicht in der App ausgeliefert.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Zurück'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Trotzdem öffnen'),
-            ),
-          ],
-        ),
-      );
-      if (go != true) return;
-    }
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && mounted) {
@@ -215,19 +150,149 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     }
   }
 
-  String _priceLabel(_ShopPart p) {
+  String _priceLabel(ShopProduct p) {
     final v = p.priceEur.toStringAsFixed(
       p.priceEur == p.priceEur.roundToDouble() ? 0 : 2,
     );
     return '$v €';
   }
 
+  void _openPdp(ShopProduct product) {
+    // Tap 2: in-app PDP with real photo (no double title / no merchant chrome).
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.sheet),
+        ),
+      ),
+      builder: (ctx) {
+        final h = MediaQuery.sizeOf(ctx).height;
+        return SafeArea(
+          child: SizedBox(
+            height: h * 0.92,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.muted.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    tooltip: 'Schließen',
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: _ProductPhoto(
+                            url: product.imageUrl,
+                            handle: product.handle,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        product.manufacturer,
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.name,
+                        style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _priceLabel(product),
+                        style: const TextStyle(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
+                        ),
+                      ),
+                      if (product.description.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Text(
+                          product.description,
+                          style: const TextStyle(
+                            height: 1.4,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openUrl(ShopWebLinks.product(product.handle));
+                        },
+                        icon: const Icon(Icons.open_in_new),
+                        label: const Text('Im Shop öffnen'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Garage / deep link → filtered Shop (S-FLOW-05).
+    ref.listen<ShopPendingFilter?>(shopPendingFilterProvider, (prev, next) {
+      if (next == null) return;
+      ref.read(shopPendingFilterProvider.notifier).state = null;
+      setState(() {
+        if (next.slot != null && next.slot!.isNotEmpty) {
+          _slot = normalizePartsSlot(next.slot);
+        }
+        if (next.bikeId != null && next.bikeId!.isNotEmpty) {
+          _filterBikeId = next.bikeId;
+        }
+        _fit = next.fit == 'bike' ? 'bike' : 'all';
+      });
+      _load();
+    });
+
     final bikeId = _bikeIdFrom(ref.watch(bikesProvider).valueOrNull);
-    final partsBridge = _webPartsBridgeUrl(bikeId);
+    final partsBridge = ShopWebLinks.parts(
+      bikeId: bikeId,
+      slot: _slot == 'all' ? null : _slot,
+      fitBike: bikeId != null && _fit == 'bike',
+    );
 
     return Scaffold(
+      // Single title only — no duplicate body headline (S25 BASELINE).
       appBar: AppBar(
         title: const Text(MultiSportCopy.partsTitle),
         actions: [
@@ -242,51 +307,19 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  MultiSportCopy.partsTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  _fit == 'bike' && bikeId != null
+                      ? 'Passend zu deinem Bike — Foto & Preis, tippen für Details.'
+                      : MultiSportCopy.partsSubtitle,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  MultiSportCopy.partsSubtitle,
-                  style: TextStyle(color: AppColors.muted, fontSize: 13),
-                ),
-                if (_storeLocked) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.lock_outline, color: Colors.orange, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _apiConfigured
-                                ? 'Owner Preview: Online Store gesperrt. Katalog via Storefront API — keine Passwort-Dead-Ends in der App.'
-                                : 'Owner Preview: Store gesperrt · Storefront API fehlt auf dem Server.',
-                            style: const TextStyle(fontSize: 12, height: 1.35),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
+                  key: ValueKey(_slot),
                   initialValue: _slot,
                   decoration: const InputDecoration(
                     labelText: 'Kategorie',
@@ -295,13 +328,25 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                   ),
                   items: const [
                     DropdownMenuItem(value: 'all', child: Text('Alle')),
-                    DropdownMenuItem(value: 'brake_pads', child: Text('Beläge')),
+                    DropdownMenuItem(
+                      value: 'brake_pads',
+                      child: Text('Beläge'),
+                    ),
                     DropdownMenuItem(value: 'grips', child: Text('Griffe')),
                     DropdownMenuItem(value: 'fluid', child: Text('Fluid')),
                     DropdownMenuItem(value: 'chain', child: Text('Kette')),
                     DropdownMenuItem(value: 'tire', child: Text('Reifen')),
-                    DropdownMenuItem(value: 'cassette', child: Text('Kassette')),
-                    DropdownMenuItem(value: 'bar_tape', child: Text('Lenkerband')),
+                    DropdownMenuItem(
+                      value: 'cassette',
+                      child: Text('Kassette'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'bar_tape',
+                      child: Text('Lenkerband'),
+                    ),
+                    DropdownMenuItem(value: 'gravel', child: Text('Gravel')),
+                    DropdownMenuItem(value: 'road', child: Text('Rennrad')),
+                    DropdownMenuItem(value: 'urban', child: Text('City')),
                   ],
                   onChanged: (v) {
                     setState(() => _slot = v ?? 'all');
@@ -312,26 +357,32 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () => _openUrl(
-                          partsBridge,
-                          warnLockedExternal: false,
+                      child: FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 44),
                         ),
-                        icon: const Icon(Icons.storefront_outlined),
+                        onPressed: () {
+                          setState(() {
+                            _filterBikeId = bikeId;
+                            _fit = 'bike';
+                          });
+                          _load();
+                        },
+                        icon: const Icon(Icons.pedal_bike, size: 18),
                         label: Text(
-                          bikeId != null ? 'Web · Soft-Fit' : 'Web · Parts',
+                          _fit == 'bike' ? 'Filter: mein Bike' : 'Für mein Bike',
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _openUrl(
-                          ShopWebLinks.shopHub(),
-                          warnLockedExternal: false,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 44),
                         ),
-                        icon: const Icon(Icons.open_in_browser),
-                        label: const Text('Shop-Hub'),
+                        onPressed: () => _openUrl(partsBridge),
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        label: const Text('Im Web'),
                       ),
                     ),
                   ],
@@ -343,17 +394,15 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : _error != null && _parts.isEmpty
+                : _error != null && _products.isEmpty
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(24),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                _apiConfigured
-                                    ? Icons.inventory_2_outlined
-                                    : Icons.cloud_off_outlined,
+                              const Icon(
+                                Icons.cloud_off_outlined,
                                 size: 40,
                                 color: AppColors.muted,
                               ),
@@ -369,10 +418,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                                 child: const Text('Erneut laden'),
                               ),
                               TextButton(
-                                onPressed: () => _openUrl(
-                                  partsBridge,
-                                  warnLockedExternal: false,
-                                ),
+                                onPressed: () => _openUrl(partsBridge),
                                 child: const Text('Im Browser öffnen'),
                               ),
                             ],
@@ -382,6 +428,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     : RefreshIndicator(
                         onRefresh: _load,
                         child: GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(12),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
@@ -390,74 +437,26 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                             crossAxisSpacing: 10,
                             childAspectRatio: 0.68,
                           ),
-                          itemCount: _parts.length,
+                          itemCount: _products.length,
                           itemBuilder: (context, i) {
-                            final p = _parts[i];
+                            final p = _products[i];
                             return Material(
                               color: Theme.of(context).cardColor,
                               borderRadius:
                                   BorderRadius.circular(AppRadius.card),
                               clipBehavior: Clip.antiAlias,
                               child: InkWell(
-                                onTap: () => _openUrl(
-                                  ShopWebLinks.product(p.handle),
-                                  warnLockedExternal: false,
-                                ),
+                                // Tap 1 from Shop tab → PDP (≤3 taps total).
+                                onTap: () => _openPdp(p),
                                 child: Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     Expanded(
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          if (p.imageUrl != null &&
-                                              p.imageUrl!.isNotEmpty)
-                                            Image.network(
-                                              p.imageUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  const ColoredBox(
-                                                color: AppColors.chipIdle,
-                                                child: Icon(
-                                                  Icons.image_not_supported_outlined,
-                                                  color: AppColors.muted,
-                                                ),
-                                              ),
-                                            )
-                                          else
-                                            const ColoredBox(
-                                              color: AppColors.chipIdle,
-                                              child: Icon(
-                                                Icons.pedal_bike,
-                                                color: AppColors.muted,
-                                              ),
-                                            ),
-                                          Positioned(
-                                            left: 6,
-                                            top: 6,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 3,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black54,
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                p.chip,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                      child: _ProductPhoto(
+                                        url: p.imageUrl,
+                                        handle: p.handle,
+                                        fit: BoxFit.cover,
                                       ),
                                     ),
                                     Padding(
@@ -500,6 +499,22 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                                               fontSize: 15,
                                             ),
                                           ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            p.chip,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: p.compatVerdict == 'passt'
+                                                  ? AppColors.trail
+                                                  : AppColors.muted,
+                                              fontSize: 10,
+                                              fontWeight: p.compatVerdict ==
+                                                      'passt'
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -513,6 +528,94 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Network product photo with CDN failover — never a blank gray tile.
+class _ProductPhoto extends StatefulWidget {
+  const _ProductPhoto({
+    required this.url,
+    required this.handle,
+    this.fit = BoxFit.cover,
+  });
+
+  final String url;
+  final String handle;
+  final BoxFit fit;
+
+  @override
+  State<_ProductPhoto> createState() => _ProductPhotoState();
+}
+
+class _ProductPhotoState extends State<_ProductPhoto> {
+  late String _url;
+  int _failover = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _url = widget.url.isNotEmpty
+        ? widget.url
+        : ShopCdnImages.forHandle(widget.handle);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProductPhoto oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url || oldWidget.handle != widget.handle) {
+      _url = widget.url.isNotEmpty
+          ? widget.url
+          : ShopCdnImages.forHandle(widget.handle);
+      _failover = 0;
+    }
+  }
+
+  void _onError() {
+    if (_failover >= ShopCdnImages.pool.length) return;
+    final next = ShopCdnImages.pool[_failover % ShopCdnImages.pool.length];
+    _failover++;
+    if (next == _url && _failover < ShopCdnImages.pool.length) {
+      _onError();
+      return;
+    }
+    if (mounted) setState(() => _url = next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      _url,
+      fit: widget.fit,
+      width: double.infinity,
+      height: double.infinity,
+      gaplessPlayback: true,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const ColoredBox(
+          color: AppColors.surfaceDark,
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (_, __, ___) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _onError());
+        return const ColoredBox(
+          color: AppColors.surfaceDark,
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      },
     );
   }
 }
