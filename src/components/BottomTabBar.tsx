@@ -13,11 +13,12 @@ import { Home, Warehouse, Compass, ShoppingBag, Smartphone } from "lucide-react"
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/useCartStore";
 
+/** Multi-Sport Labels (Parität zur Flutter-App). */
 const tabs = [
   { id: "home", href: "/", label: "Home", icon: Home },
   { id: "garage", href: "/garage", label: "Garage", icon: Warehouse },
-  { id: "discover", href: "/discover", label: "Explore", icon: Compass },
-  { id: "shop", href: "/shop", label: "Shop", icon: ShoppingBag },
+  { id: "discover", href: "/discover", label: "Touren", icon: Compass },
+  { id: "shop", href: "/shop", label: "Teile", icon: ShoppingBag },
   { id: "app", href: "/download", label: "App", icon: Smartphone },
 ];
 

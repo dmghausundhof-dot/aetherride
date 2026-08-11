@@ -374,6 +374,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           );
       if (active != null) {
         setState(() => _profile = routingProfileForBike(active.category));
+      } else {
+        final preferred =
+            ref.read(userProfileStoreProvider).preferredSport;
+        if (preferred != null) {
+          setState(() => _profile = routingProfileForBike(preferred));
+        }
       }
       final launch = ref.read(discoverLaunchModeProvider);
       if (launch != null) {
@@ -3110,7 +3116,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   children: [
                     const Expanded(
                       child: Text(
-                        'Discover',
+                        MultiSportCopy.navDiscover,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -3170,12 +3176,71 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
               ),
             ),
+            if (_surface == _Surface.discover) ...[
+              const SizedBox(height: AppSpacing.xs),
+              _sportProfileChips(),
+            ],
             if (_routingStatusNote != null) ...[
               const SizedBox(height: AppSpacing.xs),
               _mapNotePill(_routingStatusNote!),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// Sport-Profile als horizontale Chips — Default aus Bike/Profil.
+  Widget _sportProfileChips() {
+    // Kern-Disziplinen zuerst (Multi-Sport), Rest im Overflow via Profil-Chip.
+    const primary = <RoutingProfile>[
+      RoutingProfile.mtbTrail,
+      RoutingProfile.gravel,
+      RoutingProfile.road,
+      RoutingProfile.urban,
+      RoutingProfile.emtb,
+      RoutingProfile.ebikeTour,
+      RoutingProfile.mtbEnduro,
+    ];
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: primary.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, i) {
+          final p = primary[i];
+          final selected = _profile == p;
+          return FilterChip(
+            label: Text(
+              p.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            selected: selected,
+            showCheckmark: false,
+            visualDensity: VisualDensity.compact,
+            selectedColor: AppColors.accent.withValues(alpha: 0.28),
+            backgroundColor: Theme.of(context)
+                .scaffoldBackgroundColor
+                .withValues(alpha: 0.92),
+            side: BorderSide(
+              color: selected
+                  ? AppColors.accent
+                  : AppColors.forest.withValues(alpha: 0.25),
+            ),
+            onSelected: (_) {
+              setState(() => _profile = p);
+              if (_surface == _Surface.plan) {
+                if (_start != null && _end != null) unawaited(_calcAb());
+              } else {
+                unawaited(_refreshQuick(limit: 3));
+              }
+            },
+          );
+        },
       ),
     );
   }
@@ -4004,10 +4069,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<Widget> _quickSection() {
     return [
       _sectionTitle(
-        'Ab hier · Zeitbudget $_minutes min',
+        'In deiner Nähe · ${_profile.label}',
         hint: _hasRealOrigin
-            ? 'Ziele für $_minutes min hin und zurück — geroutet wird der Hinweg'
-            : 'Standort setzen für Vorschläge ab hier',
+            ? 'Vorschläge für ~$_minutes min · Profil ${_profile.label}'
+            : 'Standort erlauben für Touren ab hier (alle Disziplinen)',
         trailing: TextButton(
           onPressed: _loading ? null : () => unawaited(_refreshQuick(limit: 3)),
           child: const Text('Neu'),
@@ -4019,7 +4084,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           child: Text(
             _loading
                 ? 'Vorschläge werden berechnet…'
-                : 'Keine Vorschläge — Standort setzen oder „Neu" tippen.',
+                : 'Keine Vorschläge — Standort setzen, Sport-Chip wählen oder „Neu".',
             style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
         ),
@@ -4034,7 +4099,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
           child: ListTile(
             dense: true,
-            leading: const Icon(Icons.bolt, color: AppColors.accent),
+            leading: const Icon(Icons.near_me, color: AppColors.accent),
             title: Text(
               q.label,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),

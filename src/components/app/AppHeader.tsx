@@ -7,13 +7,14 @@ import { Menu, X } from "lucide-react";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { cn } from "@/lib/utils";
 
+/** Multi-Sport IA — gleiche Sprache wie die Flutter-App (Touren / Teile). */
 const navItems = [
-  { href: "/discover", label: "Explore" },
-  { href: "/planner", label: "Planner" },
+  { href: "/discover", label: "Touren" },
+  { href: "/planner", label: "Planen" },
   { href: "/library", label: "Bibliothek" },
-  { href: "/activities", label: "Aktivitäten" },
+  { href: "/activities", label: "Fahrten" },
   { href: "/garage", label: "Garage" },
-  { href: "/shop", label: "Shop" },
+  { href: "/shop", label: "Teile" },
   { href: "/profile", label: "Profil" },
 ];
 

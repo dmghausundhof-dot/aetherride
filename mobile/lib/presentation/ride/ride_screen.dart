@@ -389,6 +389,22 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
+  /// Fahrwerk/Mount nur bei Federgabel-relevanten Sports (nicht City/Road).
+  bool _showsChassisUx(WidgetRef ref) {
+    final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+    Bike? active;
+    for (final b in bikes) {
+      if (b.isActive) {
+        active = b;
+        break;
+      }
+    }
+    active ??= bikes.isEmpty ? null : bikes.first;
+    final cat =
+        active?.category ?? ref.read(userProfileStoreProvider).preferredSport;
+    return cat?.showsChassisLayer ?? false;
+  }
+
   Future<void> _flushChunk({bool force = false}) async {
     if (!_rawUploadConsent || _rideId == null) {
       _chunkBuf.clear();
@@ -1178,40 +1194,43 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                               label: const Text('Radsensor suchen'),
                             ),
                           ),
-                          const SizedBox(height: AppSpacing.m),
-                          Text('Handy am Lenker?',
-                              style: theme.textTheme.titleSmall),
-                          const SizedBox(height: AppSpacing.s),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: mount == MountCheck.mounted
-                                        ? AppColors.accent
-                                        : null,
+                          if (_showsChassisUx(ref)) ...[
+                            const SizedBox(height: AppSpacing.m),
+                            Text('Handy am Lenker?',
+                                style: theme.textTheme.titleSmall),
+                            const SizedBox(height: AppSpacing.s),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor:
+                                          mount == MountCheck.mounted
+                                              ? AppColors.accent
+                                              : null,
+                                    ),
+                                    onPressed: () {
+                                      ref
+                                          .read(mountCheckProvider.notifier)
+                                          .state = MountCheck.mounted;
+                                    },
+                                    child: const Text('Ja — Analyse an'),
                                   ),
-                                  onPressed: () {
-                                    ref
-                                        .read(mountCheckProvider.notifier)
-                                        .state = MountCheck.mounted;
-                                  },
-                                  child: const Text('Ja — Analyse an'),
                                 ),
-                              ),
-                              const SizedBox(width: AppSpacing.s),
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    ref
-                                        .read(mountCheckProvider.notifier)
-                                        .state = MountCheck.handheld;
-                                  },
-                                  child: const Text('Nein — nur Track'),
+                                const SizedBox(width: AppSpacing.s),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () {
+                                      ref
+                                          .read(mountCheckProvider.notifier)
+                                          .state = MountCheck.handheld;
+                                    },
+                                    child: const Text('Nein — nur Track'),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          ],
                           const Expanded(
                             child: Center(
                               child: EmptyStateIllustration(
@@ -1397,17 +1416,23 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     label: Text('Daten'),
                     icon: Icon(Icons.grid_view),
                   ),
-                  ButtonSegment(
-                    value: RideLiveLayer.suspension,
-                    label: Text(
-                      MultiSportCopy.chassisLayerLabel(
-                        ref.watch(userProfileStoreProvider).preferredSport,
+                  if (_showsChassisUx(ref))
+                    ButtonSegment(
+                      value: RideLiveLayer.suspension,
+                      label: Text(
+                        MultiSportCopy.chassisLayerLabel(
+                          ref.watch(userProfileStoreProvider).preferredSport,
+                        ),
                       ),
+                      icon: const Icon(Icons.waves),
                     ),
-                    icon: const Icon(Icons.waves),
-                  ),
                 ],
-                selected: {layer},
+                selected: {
+                  // City/Road: kein Fahrwerk-Layer — zurück auf Karte.
+                  layer == RideLiveLayer.suspension && !_showsChassisUx(ref)
+                      ? RideLiveLayer.map
+                      : layer,
+                },
                 onSelectionChanged: (s) {
                   _bumpIdle();
                   ref.read(rideLayerProvider.notifier).state = s.first;

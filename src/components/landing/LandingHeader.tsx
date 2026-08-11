@@ -6,8 +6,8 @@ import { Menu, X } from "lucide-react";
 import { AppDownloadButtons } from "./AppDownloadButtons";
 
 const links = [
-  { href: "/discover", label: "Explore" },
-  { href: "/planner", label: "Planner" },
+  { href: "/discover", label: "Touren" },
+  { href: "/planner", label: "Planen" },
   { href: "/regions", label: "Regionen" },
   { href: "/community", label: "Community" },
   { href: "/guides", label: "Guides" },

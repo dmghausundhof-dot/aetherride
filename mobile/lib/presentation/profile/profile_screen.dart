@@ -17,6 +17,7 @@ import '../../data/sync/sync_engine.dart'
 import '../../domain/bike.dart';
 import '../../domain/home/greeting.dart';
 import '../../domain/rider_profile.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../providers/app_providers.dart';
 import '../auth/auth_screen.dart';
 import '../billing/upgrade_screen.dart';
@@ -359,6 +360,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onUpgrade: () => openUpgradeScreen(context),
           ),
           const SizedBox(height: AppSpacing.xl),
+          // Disziplin immer sichtbar — Kern für Multi-Sport-Defaults
+          // (Touren-Profil, Home-Copy, Fahren-Fahrwerk).
+          _SectionCard(
+            title: 'Deine Disziplin',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Steuert Touren-Vorschläge, Routing und Setup-Hinweise.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.muted.withValues(alpha: 0.95),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s),
+                Wrap(
+                  spacing: AppSpacing.s,
+                  runSpacing: AppSpacing.s,
+                  children: [
+                    for (final d in _quickDisciplines)
+                      ChoiceChip(
+                        label: Text(d.shortLabel),
+                        selected: _discipline == d,
+                        selectedColor:
+                            AppColors.accent.withValues(alpha: 0.28),
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: _discipline == d
+                              ? AppColors.accent
+                              : AppColors.chipIdleText,
+                        ),
+                        onSelected: _busy
+                            ? null
+                            : (_) => unawaited(_setDisciplineQuick(d)),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
           _SectionCard(
             title: 'Fahrerprofil',
             trailing: _editingRider
@@ -394,7 +436,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ) ??
                         75,
                     discipline: _discipline,
-                    disciplineLabel: _disciplineLabel(_discipline),
+                    disciplineLabel: _discipline.shortLabel,
                     styleLabel: _styleOptions
                         .firstWhere(
                           (s) => s.id == _style,
@@ -514,15 +556,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  String _disciplineLabel(BikeCategory c) => switch (c) {
-        BikeCategory.mtbAm => 'MTB',
-        BikeCategory.mtbEnduro => 'Enduro',
-        BikeCategory.gravel => 'Gravel',
-        BikeCategory.emtb => 'E-MTB',
-        BikeCategory.road => 'Rennrad',
-        BikeCategory.urban => 'City',
-        _ => c.name,
-      };
+  static const _quickDisciplines = <BikeCategory>[
+    BikeCategory.mtbAm,
+    BikeCategory.mtbEnduro,
+    BikeCategory.gravel,
+    BikeCategory.road,
+    BikeCategory.urban,
+    BikeCategory.emtb,
+    BikeCategory.etrekking,
+    BikeCategory.mtbTrail,
+  ];
+
+  Future<void> _setDisciplineQuick(BikeCategory d) async {
+    setState(() {
+      _discipline = d;
+      final ids = _styleOptions.map((e) => e.id).toSet();
+      if (!ids.contains(_style)) {
+        _style = _styleOptions.first.id;
+      }
+    });
+    final store = ref.read(userProfileStoreProvider);
+    store.preferredSport = d;
+    await store.setRiderProfile(
+      store.riderProfile.copyWith(style: _style, skillLevel: _skill),
+    );
+    await store.save();
+    await ref.read(garageRepositoryProvider).touchLocalSync();
+    if (mounted) {
+      ref.invalidate(riderProfileProvider);
+      _notify('Disziplin: ${d.shortLabel}');
+    }
+  }
 }
 
 /// Kopf: Avatar + Name + Sync-Status — Identität, wie bei Komoot/AllTrails.
@@ -924,21 +988,15 @@ class _RiderEditForm extends StatelessWidget {
   static const _disciplines = [
     BikeCategory.mtbAm,
     BikeCategory.mtbEnduro,
+    BikeCategory.mtbTrail,
     BikeCategory.gravel,
-    BikeCategory.emtb,
     BikeCategory.road,
     BikeCategory.urban,
+    BikeCategory.emtb,
+    BikeCategory.etrekking,
   ];
 
-  static String _label(BikeCategory c) => switch (c) {
-        BikeCategory.mtbAm => 'MTB',
-        BikeCategory.mtbEnduro => 'Enduro',
-        BikeCategory.gravel => 'Gravel',
-        BikeCategory.emtb => 'E-MTB',
-        BikeCategory.road => 'Rennrad',
-        BikeCategory.urban => 'City',
-        _ => c.name,
-      };
+  static String _label(BikeCategory c) => c.shortLabel;
 
   @override
   Widget build(BuildContext context) {

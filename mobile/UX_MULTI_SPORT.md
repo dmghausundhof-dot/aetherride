@@ -24,9 +24,15 @@ Ziel: **eine App für alle Radfahrer:innen** — MTB, Gravel, Rennrad, City, E-B
 - `lib/domain/sport/discipline_ux.dart` — Labels, Familien, Copy
 - Shell / Onboarding / Home / Ride / Discover / Shop angepasst
 
-## Offen (nächste UX-Schritte)
+## Erledigt (Folge-Schritt)
 
-- Discover: Sport-Filter-Chips als primäre Reihe (Profil-Default)
-- Ride: Mount/Fahrwerk-UI nur wenn `showsChassisLayer`
-- Profile: Disziplin prominent ändern
-- Web-Parität: gleiche Nav-Labels
+- [x] Touren: Sport-Chips (MTB/Gravel/Road/City/E-…) + Profil-Default
+- [x] Touren: „In deiner Nähe“ Near-me-Sektion
+- [x] Fahren: Mount/Fahrwerk nur bei `showsChassisLayer`
+- [x] Profil: Disziplin-Chips prominent (1-Tap speichern)
+- [x] Web: Touren / Planen / Teile / Fahrten (AppHeader, Landing, BottomTab)
+
+## Offen
+
+- Discover: Filter-Sheet Untergrund-Tags multi-sport (weniger trail/root only)
+- Web Discover: Near-me Hero-Karten Parität
