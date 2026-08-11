@@ -23,49 +23,53 @@ class RideNextTurnBanner extends StatelessWidget {
       shadowColor: Colors.black54,
       borderRadius: BorderRadius.circular(AppRadius.card),
       color: AppColors.accent,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.l,
-          AppSpacing.m,
-          AppSpacing.l,
-          AppSpacing.m,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 52),
-            const SizedBox(width: AppSpacing.m),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    distance,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 48,
-                      color: Colors.white,
-                      height: 1.0,
-                      letterSpacing: -0.5,
-                      fontFeatures: [FontFeature.tabularFigures()],
+      child: ConstrainedBox(
+        // N-HUD-01: next-turn glance target ≥48dp (distance numeral + chrome).
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.l,
+            AppSpacing.m,
+            AppSpacing.l,
+            AppSpacing.m,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 52),
+              const SizedBox(width: AppSpacing.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      distance,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 48,
+                        color: Colors.white,
+                        height: 1.0,
+                        letterSpacing: -0.5,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    instruction,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.92),
-                      height: 1.15,
+                    const SizedBox(height: 2),
+                    Text(
+                      instruction,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        height: 1.15,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

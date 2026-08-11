@@ -116,5 +116,26 @@ void main() {
       );
       expect(DeepLinkParse.startRideOf(uri), isFalse);
     });
+
+    test('start=true also enables autostart handoff', () {
+      final uri = Uri.parse(
+        'aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=true',
+      );
+      expect(DeepLinkParse.startRideOf(uri), isTrue);
+      expect(DeepLinkParse.loopIdOf(uri), 'seed-loop-tempelhofer-60');
+    });
+
+    test('Berlin demo deep-link shape for S25 adb', () {
+      // adb shell am start -a android.intent.action.VIEW \
+      //   -d 'aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=1' \
+      //   com.aetherride.aetherride_mobile
+      final uri = Uri.parse(
+        'aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=1',
+      );
+      expect(DeepLinkParse.kindOf(uri), DeepLinkKind.discover);
+      expect(DeepLinkParse.startRideOf(uri), isTrue);
+      expect(DeepLinkParse.loopIdOf(uri), 'seed-loop-tempelhofer-60');
+      expect(DeepLinkParse.lensMinutesOf(uri), 60);
+    });
   });
 }
