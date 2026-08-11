@@ -7,9 +7,11 @@ import {
   SHOP_PRODUCTS,
   SHOPIFY_FEATURED_BIKES,
   SHOPIFY_STORE_BASE,
+  getFeaturedPartsProducts,
   getFeaturedShopifyProducts,
   getShopProduct,
   getShopProductByFocus,
+  isProductAffiliateUrl,
   productsForSlot,
   shopCollectionHref,
   shopHref,
@@ -130,3 +132,29 @@ console.log("catalog.test.ts OK", {
   products: SHOP_PRODUCTS.length,
   featured: SHOPIFY_FEATURED_BIKES.length,
 });
+
+assert.equal(
+  shopCollectionHref("parts"),
+  `${SHOPIFY_STORE_BASE}/collections/featured-parts`
+);
+assert.ok(
+  isProductAffiliateUrl(`${SHOPIFY_STORE_BASE}/products/orbea-terra-m20`),
+  "Shopify product URL counts as product link"
+);
+assert.equal(
+  isProductAffiliateUrl("https://www.bike-components.de/"),
+  false,
+  "dealer homepage is not a product link"
+);
+assert.equal(
+  isProductAffiliateUrl("https://www.bike-discount.de/"),
+  false,
+  "dealer root is not a product link"
+);
+assert.ok(
+  getFeaturedPartsProducts().every((p) => p.slot !== "frame"),
+  "featured parts exclude complete bikes"
+);
+assert.ok(getFeaturedPartsProducts().length >= 8, "parts catalog non-empty");
+
+console.log("catalog.test.ts OK");
