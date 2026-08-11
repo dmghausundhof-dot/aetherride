@@ -91,7 +91,7 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     manufacturer: "Orbea",
     slot: "frame",
     componentModelId: "cm-shopify-orbea-terra-m20",
-    priceEur: 2999,
+    priceEur: 2799,
     description:
       "Gravel-Allrounder — Testpreis. Checkout im AetherRide Shopify-Shop.",
     affiliateUrl: shopifyProductUrl("orbea-terra-m20"),
@@ -123,7 +123,7 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     manufacturer: "Cube",
     slot: "frame",
     componentModelId: "cm-shopify-cube-attain-gtc-race",
-    priceEur: 2199,
+    priceEur: 1499,
     description:
       "Leichtes Carbon-Rennrad — Testpreis. Checkout im AetherRide Shopify-Shop.",
     affiliateUrl: shopifyProductUrl("cube-attain-gtc-race"),
@@ -139,7 +139,7 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     manufacturer: "Canyon",
     slot: "frame",
     componentModelId: "cm-shopify-canyon-ultimate-cf-sl-8",
-    priceEur: 3999,
+    priceEur: 2499,
     description:
       "Rennrad Performance — Testpreis. Checkout im AetherRide Shopify-Shop.",
     affiliateUrl: shopifyProductUrl("canyon-ultimate-cf-sl-8"),
@@ -155,7 +155,7 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     manufacturer: "Canyon",
     slot: "frame",
     componentModelId: "cm-shopify-canyon-commuter-7-0",
-    priceEur: 1499,
+    priceEur: 1299,
     description:
       "City / Light-E Pendlerbike — Testpreis. Checkout im AetherRide Shopify-Shop.",
     affiliateUrl: shopifyProductUrl("canyon-commuter-7-0"),
