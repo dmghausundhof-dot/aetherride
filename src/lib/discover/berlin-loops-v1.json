@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "default_center": {
+    "name": "Berlin-Mitte",
+    "lat": 52.52,
+    "lng": 13.405
+  },
+  "radius_km_p0": 35,
+  "label_without_location": "In deiner Region",
+  "label_with_location": "Um dich herum",
+  "seeds": [
+    {
+      "id": "seed-route-teufelsberg-gravel",
+      "type": "route",
+      "title": "Gravel Runde Teufelsberg",
+      "thumbnail_url": null,
+      "distance_km": 42,
+      "ascent_m": 380,
+      "duration_min": 150,
+      "effort_label": "Mittel",
+      "sport_tags": [
+        "gravel"
+      ],
+      "surface_mix": {
+        "asphalt": 35,
+        "gravel": 55,
+        "trail": 10
+      },
+      "center": {
+        "lat": 52.497,
+        "lng": 13.241
+      }
+    },
+    {
+      "id": "seed-route-spree-commute",
+      "type": "route",
+      "title": "Spree-Radweg Alltagsrunde",
+      "thumbnail_url": null,
+      "distance_km": 18,
+      "ascent_m": 40,
+      "duration_min": 55,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "city",
+        "road"
+      ],
+      "surface_mix": {
+        "asphalt": 90,
+        "gravel": 10,
+        "trail": 0
+      },
+      "center": {
+        "lat": 52.521,
+        "lng": 13.4
+      },
+      "is_loop": false,
+      "duration_band": "60"
+    },
+    {
+      "id": "seed-route-uckermark-weekend",
+      "type": "route",
+      "title": "Wochenende Richtung Uckermark",
+      "thumbnail_url": null,
+      "distance_km": 68,
+      "ascent_m": 520,
+      "duration_min": 220,
+      "effort_label": "Anspruchsvoll",
+      "sport_tags": [
+        "gravel",
+        "touring"
+      ],
+      "surface_mix": {
+        "asphalt": 25,
+        "gravel": 65,
+        "trail": 10
+      },
+      "center": {
+        "lat": 52.85,
+        "lng": 13.55
+      }
+    },
+    {
+      "id": "seed-tip-b96-traffic",
+      "type": "tip",
+      "title": "B96 oft stark befahren — Parallelweg nutzen",
+      "thumbnail_url": null,
+      "distance_km": 12,
+      "ascent_m": null,
+      "duration_min": null,
+      "effort_label": null,
+      "sport_tags": [
+        "road",
+        "city",
+        "gravel"
+      ],
+      "surface_mix": null,
+      "center": {
+        "lat": 52.54,
+        "lng": 13.36
+      }
+    },
+    {
+      "id": "seed-tip-cafe-kreuzberg",
+      "type": "tip",
+      "title": "Guter Stop: Radcafé nahe Landwehrkanal",
+      "thumbnail_url": null,
+      "distance_km": 4,
+      "ascent_m": null,
+      "duration_min": null,
+      "effort_label": null,
+      "sport_tags": [
+        "city"
+      ],
+      "surface_mix": null,
+      "center": {
+        "lat": 52.498,
+        "lng": 13.418
+      }
+    },
+    {
+      "id": "seed-loop-tempelhofer-60",
+      "type": "route",
+      "title": "Tempelhofer Feld Feierabend ⟲",
+      "thumbnail_url": null,
+      "distance_km": 12,
+      "ascent_m": 30,
+      "duration_min": 50,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "city",
+        "road"
+      ],
+      "surface_mix": {
+        "asphalt": 95,
+        "gravel": 5,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "at_min": 15,
+          "title": "Aussicht Rollfeld Nord",
+          "kind": "viewpoint"
+        },
+        {
+          "at_min": 35,
+          "title": "Café am Feld",
+          "kind": "cafe"
+        }
+      ],
+      "center": {
+        "lat": 52.473,
+        "lng": 13.405
+      }
+    },
+    {
+      "id": "seed-loop-spree-feierabend-60",
+      "type": "route",
+      "title": "Spree Feierabendrunde ⟲",
+      "thumbnail_url": null,
+      "distance_km": 16,
+      "ascent_m": 45,
+      "duration_min": 55,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "city",
+        "road"
+      ],
+      "surface_mix": {
+        "asphalt": 85,
+        "gravel": 15,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "at_min": 20,
+          "title": "Trinkbrunnen East Side",
+          "kind": "water"
+        },
+        {
+          "at_min": 40,
+          "title": "Radcafé Kreuzberg",
+          "kind": "cafe"
+        }
+      ],
+      "center": {
+        "lat": 52.51,
+        "lng": 13.43
+      }
+    },
+    {
+      "id": "seed-loop-grunewald-kurz-60",
+      "type": "route",
+      "title": "Grunewald Kurzloop ⟲",
+      "thumbnail_url": null,
+      "distance_km": 19,
+      "ascent_m": 160,
+      "duration_min": 65,
+      "effort_label": "Mittel",
+      "sport_tags": [
+        "gravel",
+        "mtb"
+      ],
+      "surface_mix": {
+        "asphalt": 20,
+        "gravel": 70,
+        "trail": 10
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "at_min": 25,
+          "title": "Teufelsberg Aussicht",
+          "kind": "viewpoint"
+        },
+        {
+          "at_min": 50,
+          "title": "Waldparkplatz Treffpunkt",
+          "kind": "meetup"
+        }
+      ],
+      "center": {
+        "lat": 52.49,
+        "lng": 13.25
+      }
+    }
+  ],
+  "empty_state": {
+    "body": "Noch keine Touren um dich herum. Plane eine — oder wechsle die Region.",
+    "primary_cta": "Route planen",
+    "secondary_cta": "Region ändern"
+  },
+  "lens_default": "60",
+  "notes": "P0 Nähe-Peek + 60-Min Rundkurs Seeds (is_loop, duration_band, poi_stops)"
+}

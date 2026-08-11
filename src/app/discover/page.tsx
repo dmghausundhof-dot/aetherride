@@ -85,6 +85,10 @@ import {
 import { trailsNear, type TrailSegment } from "@/lib/routing/trailSegments";
 import { ElevationChart } from "@/components/discover/ElevationChart";
 import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
+import {
+  BERLIN_DEFAULT_CENTER,
+  berlinLoopSuggestions,
+} from "@/lib/discover/berlinLoops";
 
 type SheetMode = "quick" | "plan" | "tours";
 
@@ -135,6 +139,24 @@ function DiscoverPageInner() {
   const searchParams = useSearchParams();
   const highlightRouteId = searchParams.get("route");
   const sportParam = searchParams.get("sport") as SportFilter | null;
+  const latParam = searchParams.get("lat");
+  const lngParam = searchParams.get("lng");
+  const minutesParam = searchParams.get("minutes");
+  const lensParam = searchParams.get("lens");
+  const queryMinutes = (() => {
+    const raw = minutesParam ?? (lensParam === "60" ? "60" : null);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 && n <= 600 ? Math.round(n) : null;
+  })();
+  const queryCenter = (() => {
+    if (!latParam || !lngParam) return null;
+    const lat = Number(latParam);
+    const lng = Number(lngParam);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    return [lng, lat] as [number, number];
+  })();
 
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const bikes = useAppStore((s) => s.bikes);
@@ -175,7 +197,7 @@ function DiscoverPageInner() {
 
   const [sheetMode, setSheetMode] = useState<SheetMode>("quick");
   const [minutes, setMinutes] = useState(
-    profile.fitnessIndicators.avgRideDurationMin || 90
+    () => queryMinutes ?? 60
   );
   const [filters, setFilters] = useState<RouteFilterState>(() => ({
     ...DEFAULT_ROUTE_FILTERS,
@@ -196,10 +218,14 @@ function DiscoverPageInner() {
   }));
   const [detailId, setDetailId] = useState<string | null>(highlightRouteId);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
-  const [mapCenter, setMapCenter] =
-    useState<[number, number]>(FALLBACK_CENTER);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(
+    () => queryCenter ?? BERLIN_DEFAULT_CENTER ?? FALLBACK_CENTER
+  );
   const [draft, setDraft] = useState<PlanDraft>(() =>
-    emptyDraft(routingProfile, FALLBACK_CENTER)
+    emptyDraft(
+      routingProfile,
+      queryCenter ?? BERLIN_DEFAULT_CENTER ?? FALLBACK_CENTER
+    )
   );
   const [pickTarget, setPickTarget] = useState<"start" | "end" | "via" | null>(
     null
@@ -279,7 +305,7 @@ function DiscoverPageInner() {
   const origin = userPos ?? mapCenter;
 
   const routes = useMemo(() => {
-    return listAllRouteSuggestions({
+    const catalog = listAllRouteSuggestions({
       bike: activeBike,
       categoryHint,
       profile,
@@ -287,6 +313,8 @@ function DiscoverPageInner() {
       rangeKmHigh: range?.kmHigh,
       near: origin,
     });
+    // Display layers sanitize elevation; keep raw values for scoring/filters.
+    return catalog.length > 0 ? catalog : berlinLoopSuggestions(origin);
   }, [activeBike, categoryHint, profile, minutes, range, origin]);
 
   const filtered = useMemo(
@@ -305,7 +333,7 @@ function DiscoverPageInner() {
 
   const detailRoute = useMemo(() => {
     if (!detailId) return null;
-    return (
+    const fromCatalog =
       getSuggestionById(detailId, {
         bike: activeBike,
         categoryHint,
@@ -315,8 +343,9 @@ function DiscoverPageInner() {
         near: origin,
       }) ??
       routes.find((r) => r.id === detailId) ??
-      null
-    );
+      berlinLoopSuggestions(origin).find((r) => r.id === detailId) ??
+      null;
+    return fromCatalog;
   }, [detailId, activeBike, categoryHint, profile, minutes, range, routes, origin]);
 
   const nearbyTrails = useMemo(
@@ -367,6 +396,16 @@ function DiscoverPageInner() {
       setSheetMode("tours");
     }
   }, [highlightRouteId]);
+
+  useEffect(() => {
+    if (queryMinutes != null) setMinutes(queryMinutes);
+  }, [queryMinutes]);
+
+  useEffect(() => {
+    if (!queryCenter) return;
+    setMapCenter(queryCenter);
+    setDraft((d) => setStart(d, queryCenter, "Deep-Link Ort"));
+  }, [queryCenter]);
 
   // Deep-Link ?sport=road|gravel|mtb|… setzt Filter + Profil
   useEffect(() => {
@@ -423,8 +462,11 @@ function DiscoverPageInner() {
             pos.coords.latitude,
           ];
           setUserPos(p);
-          setMapCenter(p);
-          setDraft((d) => setStart(d, p, "Meine Position"));
+          // Deep-Link lat/lng wins over auto GPS for initial map center.
+          if (!queryCenter) {
+            setMapCenter(p);
+            setDraft((d) => setStart(d, p, "Meine Position"));
+          }
         },
         () => undefined,
         { timeout: 8000, maximumAge: 30 * 60 * 1000 }
@@ -433,7 +475,7 @@ function DiscoverPageInner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryCenter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1179,7 +1221,39 @@ function DiscoverPageInner() {
                   if (userPos) {
                     setMapCenter(userPos);
                     setDraft((d) => setStart(d, userPos, "Meine Position"));
+                    setRoutingMsg(null);
+                    return;
                   }
+                  if (
+                    typeof navigator === "undefined" ||
+                    !navigator.geolocation
+                  ) {
+                    setRoutingMsg(
+                      "Standort nicht verfügbar — unter Planen eine Adresse suchen."
+                    );
+                    setSheetMode("plan");
+                    return;
+                  }
+                  setRoutingMsg("Standort wird ermittelt…");
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      const p: [number, number] = [
+                        pos.coords.longitude,
+                        pos.coords.latitude,
+                      ];
+                      setUserPos(p);
+                      setMapCenter(p);
+                      setDraft((d) => setStart(d, p, "Meine Position"));
+                      setRoutingMsg(null);
+                    },
+                    () => {
+                      setRoutingMsg(
+                        "Standort verweigert — unter Planen eine Adresse suchen."
+                      );
+                      setSheetMode("plan");
+                    },
+                    { timeout: 8000, maximumAge: 30 * 60 * 1000 }
+                  );
                 }}
                 className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium text-text-secondary"
               >
@@ -1617,6 +1691,13 @@ function DiscoverPageInner() {
                 {userPos ? "deiner Position" : "Kartenmitte"} (
                 {origin[1].toFixed(2)}°N, {origin[0].toFixed(2)}°E)
               </p>
+              {routes.some((r) => r.id.startsWith("seed-")) &&
+                !routes.some((r) => !r.id.startsWith("seed-")) && (
+                <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
+                  Offline-Fallback: Berlin 60-Min Rundkurse (inkl. Tempelhofer),
+                  Katalog leer.
+                </p>
+              )}
               {filtered.length === 0 ? (
                 <p className="text-sm text-text-secondary">
                   Keine Tour bei diesen Filtern — Filter lockern oder Planer öffnen.

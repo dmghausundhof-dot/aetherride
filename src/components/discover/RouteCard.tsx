@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight, ExternalLink } from "lucide-react";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
+import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
 
 export function RouteCard({
   route,
@@ -20,6 +21,7 @@ export function RouteCard({
   onStart: () => void;
   onToggleSave: () => void;
 }) {
+  const elev = sanitizeElevationM(route.elevationM, route.distanceKm);
   return (
     <article
       id={`route-${route.id}`}
@@ -38,7 +40,8 @@ export function RouteCard({
               {route.distanceFromOriginKm != null
                 ? `~${route.distanceFromOriginKm} km entfernt · `
                 : ""}
-              {route.distanceKm} km · {route.elevationM} hm · {route.durationMin}{" "}
+              {route.distanceKm} km
+              {elev != null ? ` · ${elev} hm` : ""} · {route.durationMin}{" "}
               min
               {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""}
             </p>
@@ -47,13 +50,15 @@ export function RouteCard({
             {route.matchScore}%
           </div>
         </div>
-        <div className="mt-2 text-accent">
-          <ElevationStrip
-            elevationM={route.elevationM}
-            distanceKm={route.distanceKm}
-            estimated
-          />
-        </div>
+        {elev != null && (
+          <div className="mt-2 text-accent">
+            <ElevationStrip
+              elevationM={elev}
+              distanceKm={route.distanceKm}
+              estimated
+            />
+          </div>
+        )}
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Route className="h-3 w-3" />
