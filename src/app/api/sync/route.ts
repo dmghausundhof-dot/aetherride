@@ -3,6 +3,15 @@ import { createAuthedClient } from "@/lib/supabase/authed";
 
 export async function GET(req: Request) {
   try {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return NextResponse.json(
+        { error: "supabase_not_configured" },
+        { status: 503 }
+      );
+    }
     const supabase = await createAuthedClient(req);
     const {
       data: { user },
@@ -35,6 +44,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return NextResponse.json(
+        { error: "supabase_not_configured" },
+        { status: 503 }
+      );
+    }
     const supabase = await createAuthedClient(req);
     const {
       data: { user },

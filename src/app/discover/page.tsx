@@ -84,6 +84,7 @@ import {
 } from "@/lib/routing/discoverMapLayers";
 import { trailsNear, type TrailSegment } from "@/lib/routing/trailSegments";
 import { ElevationChart } from "@/components/discover/ElevationChart";
+import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 
 type SheetMode = "quick" | "plan" | "tours";
 
@@ -1482,6 +1483,11 @@ function DiscoverPageInner() {
 
           {sheetMode === "tours" && (
             <div className="flex flex-col gap-3">
+              <NearMeRouteCard
+                center={userPos ?? mapCenter}
+                profile={activeProfile}
+                defaultKm={Math.max(12, Math.round(minutes / 4))}
+              />
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
                   Trails in der Nähe

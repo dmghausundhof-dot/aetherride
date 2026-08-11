@@ -43,6 +43,7 @@ import { activeRouteFromEngine } from "@/lib/routing/activeRoute";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import type { SavedRoute } from "@/types/route";
 import { RoutingStatusBanner } from "@/components/routing/RoutingStatusBanner";
+import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 
 const FALLBACK: [number, number] = [8.4, 48.5];
 
@@ -330,6 +331,18 @@ function PlannerInner() {
             Desktop-Planung · Navigation in der App
           </p>
           <RoutingStatusBanner />
+          <p className="text-[11px] text-text-secondary">
+            Einheitliches Explore-Modell:{" "}
+            <Link href="/discover?panel=plan" className="text-accent hover:underline">
+              Discover · Planen
+            </Link>
+            {" · "}
+            Docs: <code className="text-[10px]">docs/explore-architecture.md</code>
+          </p>
+          <NearMeRouteCard
+            center={userPos ?? mapCenter}
+            profile={profile}
+          />
           <label className="block text-[11px] text-text-secondary">
             Routing-Profil
             <select

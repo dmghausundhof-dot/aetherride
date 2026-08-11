@@ -16,7 +16,9 @@ export async function GET(
   }
 
   try {
-    const geo = await computeTourGeometry(id);
+    const forceLive =
+      new URL(_req.url).searchParams.get("forceLive") === "1";
+    const geo = await computeTourGeometry(id, undefined, { forceLive });
     const coords =
       geo?.geometry?.coordinates && geo.geometry.coordinates.length >= 2
         ? (geo.geometry.coordinates as [number, number][])
