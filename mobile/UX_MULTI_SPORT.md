@@ -37,7 +37,15 @@ Ziel: **eine App für alle Radfahrer:innen** — MTB, Gravel, Rennrad, City, E-B
 - [x] Discover Filter: Asphalt / Schotter / Flow / Naturboden / Stadt
 - [x] Web Touren: Sport-Chips, Near-me Hero, „In der Nähe“ Tab
 
+## Erledigt (Folge 3)
+
+- [x] Surface-Inference OA/OSM (asphalt/gravel/city/trail)
+- [x] Soft Surface-Filter
+- [x] Site-wide Explore→Touren / Planner→Planen Copy
+
 ## Offen
 
+- **git push** der 3 lokalen Commits (`829a88d`…`e50d3c6`)
 - Content-Dichte Touren pro Region
 - Store Screenshots multi-sport
+- Vercel `NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS`
