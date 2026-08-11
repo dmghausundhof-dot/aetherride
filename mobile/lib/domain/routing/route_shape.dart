@@ -48,9 +48,8 @@ RouteShape? routeShapeOf(List<List<double>>? track) {
     track.last[1],
     track.last[0],
   );
-  // Lücke unter 5 % der Streckenlänge (mindestens 250 m Toleranz für
-  // GPS-Rauschen und Trailhead-Parkplätze) gilt als geschlossen.
-  return gapKm < math.max(0.25, lengthKm * 0.05)
+  // D-60-LOOP-FILTER-01: start≈end ≤ ~200 m (plus 5 % length for long tours).
+  return gapKm < math.max(0.20, lengthKm * 0.05)
       ? RouteShape.loop
       : RouteShape.pointToPoint;
 }

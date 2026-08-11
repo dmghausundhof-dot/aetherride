@@ -202,7 +202,10 @@ class NaeheSeedRoute {
       sportTags: tags,
       centerLat: lat,
       centerLng: lng,
-      isLoop: m['is_loop'] == true,
+      // D-60-LOOP-FILTER-01: Nähe is_loop; legacy packs use loop / closed.
+      isLoop: m['is_loop'] == true ||
+          m['loop'] == true ||
+          m['closed'] == true,
       durationBand: m['duration_band'] as String?,
       poiStops: pois,
       surfaceMix: mix,
@@ -258,7 +261,10 @@ class NaeheSeedRoute {
     }
 
     final duration = (m['duration_min'] as num?)?.round() ?? 0;
-    final isLoop = m['loop'] == true || m['is_loop'] == true;
+    // D-60-LOOP-FILTER-01: is_loop | loop | closed.
+    final isLoop = m['loop'] == true ||
+        m['is_loop'] == true ||
+        m['closed'] == true;
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
