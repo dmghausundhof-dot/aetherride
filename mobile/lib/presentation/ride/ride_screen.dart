@@ -102,6 +102,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   /// true = Norden oben; false = Fahrtrichtung oben.
   bool _northUp = false;
 
+  /// true während/kurz nach programmatischem animateCamera — sonst pausiert
+  /// [onCameraIdle] den Follow bei jedem GPS-Update.
+  bool _programmaticCamera = false;
+
   double _lastCameraBearing = 0;
 
   /// Distanz entlang Active Route (Nav); Odometer bleibt [rideDistanceMProvider].
@@ -283,6 +287,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             );
           }
           final bearing = _northUp ? 0.0 : _lastCameraBearing;
+          _programmaticCamera = true;
           await c.animateCamera(
             CameraUpdate.newCameraPosition(
               CameraPosition(
@@ -293,6 +298,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               ),
             ),
           );
+          Future<void>.delayed(const Duration(milliseconds: 450), () {
+            _programmaticCamera = false;
+          });
         }
       } else if (route != null && route.coordinates.length >= 2) {
         final pts = [
@@ -1424,6 +1432,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   },
                   onStyleLoadedCallback: () {
                     unawaited(_drawRideMap());
+                  },
+                  // Manuelles Schieben/Zoomen: Follow pausieren (wie Komoot).
+                  onCameraIdle: () {
+                    if (_programmaticCamera) return;
+                    if (!ref.read(isRidingProvider)) return;
+                    if (!_cameraFollow) return;
+                    setState(() => _cameraFollow = false);
                   },
                 )
               : ColoredBox(
