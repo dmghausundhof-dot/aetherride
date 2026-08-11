@@ -237,6 +237,11 @@ interface AppState {
   dismissRecommendation: (id: string) => void;
   acceptRecommendation: (id: string) => void;
   seedDemoData: () => void;
+  /**
+   * Dev/QA: ensure a bike with overdue maintenance (T-WA-00 smoke).
+   * No fake production users — only local catalog seed + high odometer.
+   */
+  seedDemoMaintenanceDue: () => void;
   markOnboardingDone: (sport?: BikeCategory | null) => void;
 
   /** @deprecated use createSetupVersion */
@@ -1579,6 +1584,40 @@ export const useAppStore = create<AppState>()(
           s.label.includes("OEM")
         );
         if (dry) get().setCurrentSetup(get().bikes[0].id, dry.id);
+      },
+
+      seedDemoMaintenanceDue: () => {
+        // Reliable overdue UI for review (T-WA-00 E). Catalog bike only.
+        if (get().bikes.length === 0) {
+          get().seedDemoData();
+        }
+        const bike = get().bikes[0];
+        if (!bike) return;
+        // Chain 1000 km / fork 50 h templates → clearly overdue
+        get().updateBike(bike.id, {
+          totalOdometerKm: Math.max(bike.totalOdometerKm, 2500),
+          totalHours: Math.max(bike.totalHours, 80),
+        });
+        // Reset interval baselines so evaluateIntervalDue sees full usage
+        set((s) => ({
+          maintenanceIntervals: s.maintenanceIntervals.map((iv) =>
+            iv.bikeId === bike.id
+              ? {
+                  ...iv,
+                  lastDoneOdometerKm:
+                    iv.intervalKm != null ? 0 : iv.lastDoneOdometerKm,
+                  lastDoneHours:
+                    iv.intervalHours != null ? 0 : iv.lastDoneHours,
+                  lastDoneAt:
+                    iv.intervalDays != null
+                      ? new Date(
+                          Date.now() - 200 * 24 * 60 * 60 * 1000
+                        ).toISOString()
+                      : iv.lastDoneAt,
+                }
+              : iv
+          ),
+        }));
       },
     }),
     {
