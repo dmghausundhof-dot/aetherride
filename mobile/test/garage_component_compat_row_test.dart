@@ -94,16 +94,30 @@ void main() {
       );
       await _settle(tester);
 
-      // Bike-Kachel in der Garage-Liste öffnen (nicht Home, das denselben
-      // Bike-Namen ebenfalls anzeigt).
-      await tester.tap(
-        find
-            .descendant(
-              of: find.byType(GarageScreen),
-              matching: find.text('Konflikt-Bike'),
-            )
-            .first,
+      // Bike öffnen — Schema-Preview oder Kachel (beide unter GarageScreen).
+      final garageScrollable = find.descendant(
+        of: find.byType(GarageScreen),
+        matching: find.byType(Scrollable),
       );
+      final bikeName = find.descendant(
+        of: find.byType(GarageScreen),
+        matching: find.text('Konflikt-Bike'),
+      );
+      if (bikeName.evaluate().isEmpty) {
+        final schemaTitle = find.descendant(
+          of: find.byType(GarageScreen),
+          matching: find.textContaining('Konflikt-Bike'),
+        );
+        await tester.ensureVisible(schemaTitle.first);
+        await tester.tap(schemaTitle.first);
+      } else {
+        await tester.scrollUntilVisible(
+          bikeName.first,
+          120,
+          scrollable: garageScrollable.first,
+        );
+        await tester.tap(bikeName.first);
+      }
       await _settle(tester);
 
       // Bauteil-Zeilen liegen unterhalb des Sheet-Viewports — die Sliver-
