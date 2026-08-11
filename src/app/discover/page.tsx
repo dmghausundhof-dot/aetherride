@@ -327,17 +327,14 @@ function DiscoverPageInner() {
 
   const origin = userPos ?? mapCenter;
 
-  const sixtyMinLoops = useMemo(
-    () => curatedSixtyMinLoopSuggestions(origin),
-    [origin]
-  );
-  const hasUsefulNearbyLoops = useMemo(
-    () =>
-      sixtyMinLoops.some(
-        (r) => (r.distanceFromOriginKm ?? 9999) <= USEFUL_LOOP_RADIUS_KM
-      ),
-    [sixtyMinLoops]
-  );
+  /** Honest ~60 loops only (#35 curated P0 + loop honesty); nearby cards. */
+  const sixtyMinLoops = useMemo(() => {
+    const all = curatedSixtyMinLoopSuggestions(origin).filter((r) => r.loop);
+    return all.filter(
+      (r) => (r.distanceFromOriginKm ?? 9999) <= USEFUL_LOOP_RADIUS_KM
+    );
+  }, [origin]);
+  const hasUsefulNearbyLoops = sixtyMinLoops.length > 0;
 
   const routes = useMemo(() => {
     const catalog = listAllRouteSuggestions({
@@ -500,6 +497,8 @@ function DiscoverPageInner() {
       setUserPos(null);
       setMapCenter(center);
       setMinutes(60);
+      // Demo-Stadt = ~60 Rundkurs-Lens (parity with Flutter _applyDemoCity).
+      setFilters((f) => ({ ...f, loopOnly: true }));
       setDraft((d) => setStart(d, center, name));
       setLocationStatus(`Demo-Region: ${name}`);
       setRoutingMsg(`Demo-Region: ${name} · 60 min Rundkurse`);
@@ -1609,7 +1608,7 @@ function DiscoverPageInner() {
                 </p>
               )}
 
-              {/* Always-on ~60 Min seeds — curated P0 Berlin/RN, not allowDemoContent */}
+              {/* Always-on ~60 Min — #35 curated P0 Berlin/RN + honest loops only */}
               <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
                 ~60 Min Rundkurse
               </h3>
@@ -1617,48 +1616,48 @@ function DiscoverPageInner() {
                 Tempelhofer, Rhein-Neckar & kuratierte Feierabend-Loops —
                 unabhängig vom Live-Routing.
               </p>
-              <div className="flex flex-col gap-2">
-                {sixtyMinLoops.map((r) => (
-                  <div key={r.id} className="space-y-1.5">
-                    <RouteCard
-                      route={r}
-                      highlighted={
-                        highlightRouteId === r.id || previewTour?.id === r.id
-                      }
-                      saved={isRouteSaved(r.id)}
-                      onOpen={() => {
-                        previewBaseTour(suggestionToTour(r));
-                        openDetail(r.id);
-                      }}
-                      onStart={() => {
-                        previewBaseTour(suggestionToTour(r));
-                        void startWithSuggestion(r);
-                      }}
-                      onToggleSave={() => toggleSave(r)}
-                    />
-                    <div className="flex gap-2 px-1">
-                      <button
-                        type="button"
-                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
-                        onClick={() => previewBaseTour(suggestionToTour(r))}
-                      >
-                        Vorschau
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
-                        onClick={() =>
-                          adoptIntoPlanMode(suggestionToTour(r))
+              {hasUsefulNearbyLoops ? (
+                <div className="flex flex-col gap-2">
+                  {sixtyMinLoops.map((r) => (
+                    <div key={r.id} className="space-y-1.5">
+                      <RouteCard
+                        route={r}
+                        highlighted={
+                          highlightRouteId === r.id || previewTour?.id === r.id
                         }
-                      >
-                        In Planen
-                      </button>
+                        saved={isRouteSaved(r.id)}
+                        onOpen={() => {
+                          previewBaseTour(suggestionToTour(r));
+                          openDetail(r.id);
+                        }}
+                        onStart={() => {
+                          previewBaseTour(suggestionToTour(r));
+                          void startWithSuggestion(r);
+                        }}
+                        onToggleSave={() => toggleSave(r)}
+                      />
+                      <div className="flex gap-2 px-1">
+                        <button
+                          type="button"
+                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                          onClick={() => previewBaseTour(suggestionToTour(r))}
+                        >
+                          Vorschau
+                        </button>
+                        <button
+                          type="button"
+                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
+                          onClick={() =>
+                            adoptIntoPlanMode(suggestionToTour(r))
+                          }
+                        >
+                          In Planen
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {!hasUsefulNearbyLoops && (
+                  ))}
+                </div>
+              ) : (
                 <div className="mt-2 rounded-xl border border-border bg-surface-elevated p-3">
                   <p className="text-xs font-semibold text-foreground">
                     Keine Rundkurse in der Nähe
@@ -1947,9 +1946,29 @@ function DiscoverPageInner() {
                 </p>
               )}
               {filtered.length === 0 ? (
-                <p className="text-sm text-text-secondary">
-                  Keine Tour bei diesen Filtern — Filter lockern oder Planer öffnen.
-                </p>
+                <div className="rounded-xl border border-border bg-surface-elevated p-3">
+                  <p className="text-sm font-semibold text-foreground">
+                    {filters.loopOnly
+                      ? "Keine Rundkurse in der Nähe"
+                      : "Keine Tour bei diesen Filtern"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-secondary">
+                    {filters.loopOnly
+                      ? "Nur echte Loops (Start≈Ziel) — keine A→B-Touren als Füllung. Filter lockern oder Ort ändern."
+                      : "Filter lockern oder Planer öffnen."}
+                  </p>
+                  {filters.loopOnly && (
+                    <button
+                      type="button"
+                      className="mt-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium"
+                      onClick={() =>
+                        setFilters((f) => ({ ...f, loopOnly: false }))
+                      }
+                    >
+                      Rundkurs-Filter aus
+                    </button>
+                  )}
+                </div>
               ) : (
                 <>
                   {nearbyRoutes.map((r) => (

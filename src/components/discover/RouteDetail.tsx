@@ -194,7 +194,7 @@ export function RouteDetail({
           {formatDistanceElevation(route.distanceKm, ascentDisplay)} ·{" "}
           {route.durationMin} min
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
-          {route.loop ? "Rundkurs" : "A→B"}
+          {route.loop ? "⟲ Runde" : "A→B"}
         </p>
         <div className="mt-2 inline-flex rounded-full bg-accent/20 px-2.5 py-1 text-xs font-bold text-accent">
           {route.matchScore}% Match

@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "default_center": {
+    "name": "Rhein-Neckar",
+    "lat": 49.41,
+    "lng": 8.68
+  },
+  "radius_km_p0": 35,
+  "label_without_location": "~60 Min in deiner Region",
+  "label_with_location": "~60 Min um dich",
+  "seeds": [
+    {
+      "id": "seed-loop-heidelberg-neckar-60",
+      "type": "route",
+      "title": "Heidelberg — Neckarwiese, Alte Brücke & Schlossblick",
+      "thumbnail_url": null,
+      "distance_km": 16,
+      "ascent_m": 90,
+      "duration_min": 60,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "ebike"
+      ],
+      "surface_mix": {
+        "asphalt": 70,
+        "gravel": 25,
+        "trail": 5
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 1,
+          "title": "Theodor-Heuss-Brücke / Bismarckplatz",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 8,
+          "title": "Neckarwiese",
+          "type": "water"
+        },
+        {
+          "offset_min": 12,
+          "title": "Kiosk do Bairro / Café Bairro Neuenheim",
+          "type": "cafe"
+        },
+        {
+          "offset_min": 25,
+          "title": "Philosophengärtchen / Merianausblick",
+          "type": "viewpoint"
+        },
+        {
+          "offset_min": 35,
+          "title": "Alte Brücke (Karl-Theodor-Brücke)",
+          "type": "culture"
+        },
+        {
+          "offset_min": 48,
+          "title": "Heidelberger Schloss",
+          "type": "culture"
+        }
+      ],
+      "center": {
+        "lat": 49.409,
+        "lng": 8.694
+      },
+      "notes": "Classic Rhein-Neckar after-work loop: Neckar cycle path, Alte Brücke postcard views, and an e-bike-friendly climb toward Schloss and the Philosophenweg lookouts."
+    },
+    {
+      "id": "seed-loop-mannheim-rhein-60",
+      "type": "route",
+      "title": "Mannheim — Schloss, Rheinpromenade & Waldpark",
+      "thumbnail_url": null,
+      "distance_km": 17,
+      "ascent_m": 40,
+      "duration_min": 55,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "city"
+      ],
+      "surface_mix": {
+        "asphalt": 90,
+        "gravel": 10,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 1,
+          "title": "Mannheimer Schloss",
+          "type": "culture"
+        },
+        {
+          "offset_min": 8,
+          "title": "Wasserturm Friedrichsplatz",
+          "type": "culture"
+        },
+        {
+          "offset_min": 18,
+          "title": "Rheinpromenade / Stephanienufer",
+          "type": "viewpoint"
+        },
+        {
+          "offset_min": 28,
+          "title": "Waldpark Mannheim",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 38,
+          "title": "Bellenkrappen (Reißinsel edge)",
+          "type": "water"
+        },
+        {
+          "offset_min": 45,
+          "title": "PURiNO Strandbad am Rhein",
+          "type": "cafe"
+        }
+      ],
+      "center": {
+        "lat": 49.483,
+        "lng": 8.462
+      },
+      "notes": "Flat Quadratestadt nature spin: from the Baroque palace down Stephanienufer along the Rhine, through Waldpark floodplain paths, then back via the Strandbad."
+    },
+    {
+      "id": "seed-loop-heidelberg-boxberg-gravel-60",
+      "type": "route",
+      "title": "Heidelberg foothills — Boxberg, Bierhelderhof & Gaisberg gravel",
+      "thumbnail_url": null,
+      "distance_km": 15,
+      "ascent_m": 220,
+      "duration_min": 70,
+      "effort_label": "Mittel",
+      "sport_tags": [
+        "gravel"
+      ],
+      "surface_mix": {
+        "asphalt": 30,
+        "gravel": 60,
+        "trail": 10
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 1,
+          "title": "Heidelberg-Kirchheim/Rohrbach Bahnhof",
+          "type": "transit"
+        },
+        {
+          "offset_min": 12,
+          "title": "Boxberg forest roads",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 30,
+          "title": "Bierhelderhof",
+          "type": "cafe"
+        },
+        {
+          "offset_min": 40,
+          "title": "Ehrenfriedhof Heidelberg",
+          "type": "culture"
+        },
+        {
+          "offset_min": 52,
+          "title": "Gaisbergturm & Mammutbäume",
+          "type": "viewpoint"
+        }
+      ],
+      "center": {
+        "lat": 49.38,
+        "lng": 8.69
+      },
+      "notes": "Corridor-friendly Königstuhl foothills loop: compacted forest roads from Rohrbach–Boxberg up to Bierhelderhof and the Gaisberg viewpoints without committing to the full 700 hm summit circuit."
+    }
+  ],
+  "empty_state": {
+    "body": "Noch keine ~60-Min-Touren hier. Wähle eine Demo-Stadt oder änder den Ort.",
+    "primary_cta": "Ort ändern",
+    "secondary_cta": "Route selbst planen"
+  },
+  "lens_default": "60",
+  "notes": "P0 Rhein-Neckar 60-Min Rundkurs seeds (HD ebike, MA city, HD gravel). Curated from p0-rhein-neckar-60min-v1.json."
+}

@@ -3,6 +3,7 @@
  */
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import { isHonestLoopSuggestion } from "@/lib/discover/loopHonesty";
 
 /** Generische Schwierigkeit — Labels sportabhängig via difficultyOptionsForProfile */
 export type ScaleChip = "any" | "easy" | "mid" | "hard" | "road";
@@ -114,7 +115,8 @@ export function filterRouteSuggestions(
   filters: RouteFilterState
 ): RouteSuggestion[] {
   return routes.filter((r) => {
-    if (filters.loopOnly && !r.loop) return false;
+    // Rundkurs chip: honest loops only — never linear A→B (D-60-02).
+    if (filters.loopOnly && !isHonestLoopSuggestion(r)) return false;
     if (!categoryMatchesSport(r.category, filters.sport)) return false;
     if (!scaleMatches(r.mtbScale, filters.scale)) return false;
     if (!elevationMatches(r.elevationM, filters.elevation)) return false;

@@ -65,7 +65,7 @@ export function RouteCard({
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Route className="h-3 w-3" />
-            {route.loop ? "Rundkurs" : "A→B"}
+            {route.loop ? "⟲ Runde" : "A→B"}
           </span>
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Mountain className="h-3 w-3" />

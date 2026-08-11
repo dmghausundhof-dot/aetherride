@@ -36,15 +36,16 @@ export function curatedP0CatalogSuggestions(
   });
 }
 
-/** Quick-sheet ~60 Min (45–75) — Tempelhofer + RN Feierabend loops. */
+/** Quick-sheet ~60 Min (45–75) — honest loops only (Tempelhofer + RN). */
 export function curatedSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
   return dedupeById([
     ...berlinSixtyMinLoopSuggestions(near),
     ...rheinNeckarSixtyMinLoopSuggestions(near),
-  ]).sort((a, b) => {
-    if (a.loop !== b.loop) return a.loop ? -1 : 1;
-    return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
-  });
+  ])
+    .filter((r) => r.loop)
+    .sort((a, b) => {
+      return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
+    });
 }

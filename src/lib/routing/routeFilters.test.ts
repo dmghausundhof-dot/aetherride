@@ -63,6 +63,18 @@ const loops = filterRouteSuggestions(sample, {
   loopOnly: true,
 });
 assert(loops.length === 2, "loopOnly");
+assert(
+  loops.every((r) => r.loop === true),
+  "loopOnly keeps only honest loops"
+);
+assert(
+  !loops.some((r) => r.id === "b"),
+  "linear Enduro excluded from Rundkurs filter"
+);
+assert(
+  loops.some((r) => r.id === "a") && loops.some((r) => r.id === "c"),
+  "closed Flow + City included under Rundkurs filter"
+);
 
 const alpine = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,

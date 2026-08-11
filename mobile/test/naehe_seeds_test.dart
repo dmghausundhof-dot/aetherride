@@ -198,4 +198,37 @@ void main() {
     expect(spree!.isLoop, isFalse);
     expect(spree.trackLngLat, isNull);
   });
+
+  /// Loop honesty (Test Latte #3): Rundkurs / ~60 lens never includes linear.
+  test('loops getter excludes linear; closed seeds included', () {
+    final berlin = NaeheSeedsBundle.parse(berlinRaw);
+    final dach = NaeheSeedsBundle.parse(dachRaw);
+    final rn = NaeheSeedsBundle.parse(rnRaw);
+    final merged = NaeheSeedsBundle.merge(
+      NaeheSeedsBundle.merge(berlin, dach),
+      rn,
+    );
+    final loops = merged.loops;
+    expect(
+      loops.any((r) => r.id == 'seed-route-spree-commute'),
+      isFalse,
+      reason: 'linear Spree commute must not appear under Rundkurs',
+    );
+    expect(
+      loops.any((r) => r.id == 'seed-loop-tempelhofer-60'),
+      isTrue,
+      reason: 'closed Tempelhofer included',
+    );
+    expect(loops.every((r) => r.isLoop), isTrue);
+    // ~60 band loops used for Rundkurs lens
+    final sixty = loops
+        .where((r) => r.durationMin >= 45 && r.durationMin <= 75)
+        .toList();
+    expect(sixty, isNotEmpty);
+    expect(sixty.every((r) => r.isLoop), isTrue);
+    expect(
+      sixty.any((r) => r.id == 'seed-loop-heidelberg-neckar-60'),
+      isTrue,
+    );
+  });
 }

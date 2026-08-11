@@ -1899,11 +1899,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return r.isLoopHint == true;
   }
 
-  /// Rundkurs / Strecke — ⟲ nur bei echten Loops (D-60-02).
+  /// Rundkurs / Strecke — ⟲ nur bei echten Loops (D-60-02 / loop honesty).
   String? _shapeLabel(_RouteSuggestion r) {
-    if (_isLoop(r)) return '⟲ Rundkurs';
+    if (_isLoop(r)) return '⟲ Runde';
     final shape = routeShapeOf(r.trackLngLat);
     if (shape == RouteShape.pointToPoint) return 'Strecke';
+    // Never label linear / unknown as Runde — leave chip empty.
     return null;
   }
 
@@ -5040,12 +5041,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Noch keine ~60-Min-Touren hier.',
+                'Keine Rundkurse in der Nähe',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Wähle eine Demo-Stadt oder änder den Ort.',
+                'Keine ehrlichen Loops (Start≈Ziel) hier — Demo-Stadt wählen oder Ort ändern. Keine A→B-Touren als Füllung.',
                 style: TextStyle(fontSize: 13, color: AppColors.muted),
               ),
               const SizedBox(height: AppSpacing.m),
@@ -5106,7 +5107,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final list = _filtered;
     final catalog = list.where((r) => r.isCatalog).toList();
     final live = list.where((r) => !r.isCatalog && !r.isSeed).toList();
-    final seeds = list.where((r) => r.isSeed).toList();
+    // Seed strip for ~60 / Rundkurs: honest loops only — never fill with A→B.
+    final seedsAll = list.where((r) => r.isSeed).toList();
+    final seeds = (_minutes == 60 || _loopOnly == true)
+        ? seedsAll.where(_isLoop).toList()
+        : seedsAll;
     final o = _origin;
     final liveEmpty = live.isEmpty;
     // Seeds: ohne Standort, wenn OA/OSM/Katalog dünn, oder immer bei ~60-Lens
@@ -5236,16 +5241,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
       if (nearbyLoopCount == 0 && _minutes == 60)
         _emptyOrtPicker()
-      else if (list.isEmpty)
+      else if (list.isEmpty || (_loopOnly == true && loopCount == 0))
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s),
           child: Row(
             children: [
               Expanded(
                 child: Text(
-                  _activeFilterCount > 0
-                      ? 'Keine Tour bei diesen Filtern.'
-                      : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
+                  _loopOnly == true
+                      ? 'Keine Rundkurse in der Nähe'
+                      : _activeFilterCount > 0
+                          ? 'Keine Tour bei diesen Filtern.'
+                          : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
                   style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),

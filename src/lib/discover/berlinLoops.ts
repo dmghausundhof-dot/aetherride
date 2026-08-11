@@ -1,11 +1,24 @@
 /**
- * P0 Berlin Nähe-Peek / 60-min loop seeds — offline fallback when the
+ * P0 Nähe-Peek / 60-min loop seeds — offline fallback when the
  * Discover catalog is empty (e.g. production with demo content off).
+ *
+ * Sources: Berlin + DACH + Rhein-Neckar curated Nähe seeds.
+ * ~60 / Rundkurs lens: honest loops only (is_loop / closed), never A→B fillers.
  */
 import type { BikeCategory } from "@/types";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
-import raw from "@/lib/discover/berlin-loops-v1.json";
+import { seedIsLoopFlag } from "@/lib/discover/loopHonesty";
+import berlinRaw from "@/lib/discover/berlin-loops-v1.json";
+import dachRaw from "@/lib/discover/p0-dach-60min-naehe-v1.json";
+import rnRaw from "@/lib/discover/p0-rhein-neckar-60min-naehe-v1.json";
+
+type SeedJson = {
+  default_center: { lng: number; lat: number; name?: string };
+  label_without_location?: string;
+  label_with_location?: string;
+  seeds: BerlinSeed[];
+};
 
 type BerlinSeed = {
   id: string;
@@ -18,6 +31,8 @@ type BerlinSeed = {
   surface_mix?: Record<string, number> | null;
   center?: { lat: number; lng: number };
   is_loop?: boolean;
+  loop?: boolean;
+  closed?: boolean;
   duration_band?: string;
 };
 
@@ -42,68 +57,98 @@ const surfaceLabel = (mix: Record<string, number> | null | undefined): string =>
   return parts.join(" / ") || "mixed";
 };
 
-export const BERLIN_DEFAULT_CENTER: [number, number] = [
-  (raw as { default_center: { lng: number; lat: number } }).default_center.lng,
-  (raw as { default_center: { lng: number; lat: number } }).default_center.lat,
-];
-
-export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[] {
-  const seeds = (raw as { seeds: BerlinSeed[] }).seeds.filter(
-    (s) => s.type === "route" && s.duration_min != null
-  );
-  return seeds.map((s) => {
-    // 0 = unknown sentinel — RouteCard/Detail sanitize again and omit hm.
-    const elevation = sanitizeElevationM(s.ascent_m, s.distance_km) ?? 0;
-    const center: [number, number] | undefined = s.center
-      ? [s.center.lng, s.center.lat]
-      : undefined;
-    let distanceFromOriginKm: number | undefined;
-    if (near && center) {
-      const R = 6371;
-      const dLat = ((center[1] - near[1]) * Math.PI) / 180;
-      const dLng = ((center[0] - near[0]) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos((near[1] * Math.PI) / 180) *
-          Math.cos((center[1] * Math.PI) / 180) *
-          Math.sin(dLng / 2) ** 2;
-      distanceFromOriginKm = Math.round(
-        R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      );
-    }
-    const loop = Boolean(s.is_loop);
-    return {
-      id: s.id,
-      name: s.title,
-      category: sportToCategory(s.sport_tags),
-      distanceKm: s.distance_km,
-      elevationM: elevation,
-      durationMin: s.duration_min!,
-      mtbScale: "—",
-      surface: surfaceLabel(s.surface_mix),
-      loop,
-      uncertainKmPct: 12,
-      matchScore: s.duration_band === "60" ? 82 : 70,
-      reasons: [
-        loop ? "Rundkurs-Seed Berlin" : "Nähe-Peek Berlin",
-        s.duration_band === "60" ? "~60 Min Feierabend-Lens" : "Kuratierte Region-Seed",
-        "Kuratierte ~60-Min Seeds (nicht Demo-gated)",
-      ],
-      center,
-      distanceFromOriginKm,
-    } satisfies RouteSuggestion;
-  });
+function haversineKm(
+  lng1: number,
+  lat1: number,
+  lng2: number,
+  lat2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Feierabend ~60 Min (45–75) — Quick sheet always-on section. */
+const berlinBundle = berlinRaw as SeedJson;
+const dachBundle = dachRaw as SeedJson;
+const rnBundle = rnRaw as SeedJson;
+
+/** Merge seed lists; earlier sources win on id collision (Berlin enrich first). */
+function mergedRouteSeeds(): BerlinSeed[] {
+  const byId = new Map<string, BerlinSeed>();
+  for (const bundle of [berlinBundle, dachBundle, rnBundle]) {
+    for (const s of bundle.seeds ?? []) {
+      if (s.type !== "route" || s.duration_min == null) continue;
+      if (!byId.has(s.id)) byId.set(s.id, s);
+    }
+  }
+  return [...byId.values()];
+}
+
+export const BERLIN_DEFAULT_CENTER: [number, number] = [
+  berlinBundle.default_center.lng,
+  berlinBundle.default_center.lat,
+];
+
+function seedToSuggestion(
+  s: BerlinSeed,
+  near?: [number, number]
+): RouteSuggestion {
+  // 0 = unknown sentinel — RouteCard/Detail sanitize again and omit hm.
+  const elevation = sanitizeElevationM(s.ascent_m, s.distance_km) ?? 0;
+  const center: [number, number] | undefined = s.center
+    ? [s.center.lng, s.center.lat]
+    : undefined;
+  let distanceFromOriginKm: number | undefined;
+  if (near && center) {
+    distanceFromOriginKm = Math.round(
+      haversineKm(near[0], near[1], center[0], center[1])
+    );
+  }
+  const loop = seedIsLoopFlag(s);
+  return {
+    id: s.id,
+    name: s.title,
+    category: sportToCategory(s.sport_tags),
+    distanceKm: s.distance_km,
+    elevationM: elevation,
+    durationMin: s.duration_min!,
+    mtbScale: "—",
+    surface: surfaceLabel(s.surface_mix),
+    loop,
+    uncertainKmPct: 12,
+    matchScore: s.duration_band === "60" ? 82 : 70,
+    reasons: [
+      loop ? "Rundkurs-Seed" : "Nähe-Peek",
+      s.duration_band === "60" ? "~60 Min Feierabend-Lens" : "Kuratierte Region-Seed",
+      "Kuratierte ~60-Min Seeds (nicht Demo-gated)",
+    ],
+    center,
+    distanceFromOriginKm,
+  } satisfies RouteSuggestion;
+}
+
+/** All Nähe route seeds (Berlin + DACH + RN), including linear — for catalog fallback. */
+export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[] {
+  return mergedRouteSeeds().map((s) => seedToSuggestion(s, near));
+}
+
+/**
+ * Feierabend ~60 Min (45–75) Rundkurse — Quick sheet always-on section.
+ * Honest loops only: linear seeds (e.g. Spree commute) are excluded.
+ */
 export function berlinSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
   return berlinLoopSuggestions(near)
+    .filter((r) => r.loop)
     .filter((r) => r.durationMin >= 45 && r.durationMin <= 75)
     .sort((a, b) => {
-      // Prefer true loops (Tempelhofer …), then shorter distance from origin.
-      if (a.loop !== b.loop) return a.loop ? -1 : 1;
       return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
     });
 }
