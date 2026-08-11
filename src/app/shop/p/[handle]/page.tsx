@@ -2,12 +2,13 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
 import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
 import type { PartsProduct } from "@/lib/shop/partsCatalog";
+import { FEATURED_PARTS_IN_APP_HREF } from "@/lib/shop/catalog";
 
 type LoadState =
   | { status: "loading" }
@@ -19,7 +20,7 @@ type LoadState =
       source: string;
       warning?: string;
     }
-  | { status: "error"; error: string };
+  | { status: "error"; error: string; redirectTo?: string };
 
 function formatPrice(eur: number, currency: string): string {
   try {
@@ -33,6 +34,7 @@ function formatPrice(eur: number, currency: string): string {
 }
 
 function ProductPageInner() {
+  const router = useRouter();
   const params = useParams<{ handle: string }>();
   const handle = decodeURIComponent(params.handle || "");
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
@@ -53,12 +55,20 @@ function ProductPageInner() {
           source?: string;
           warning?: string;
           error?: string;
+          redirectTo?: string;
+          code?: string;
         };
         if (cancelled) return;
         if (!json.ok || !json.product) {
+          // Unpublished / missing → collection (never leave user on blank 404)
+          if (json.redirectTo || json.code === "unpublished_handle") {
+            router.replace(json.redirectTo || FEATURED_PARTS_IN_APP_HREF);
+            return;
+          }
           setLoad({
             status: "error",
             error: json.error || "Produkt nicht gefunden.",
+            redirectTo: json.redirectTo || FEATURED_PARTS_IN_APP_HREF,
           });
           return;
         }
@@ -72,14 +82,18 @@ function ProductPageInner() {
         });
       } catch {
         if (!cancelled) {
-          setLoad({ status: "error", error: "Netzwerkfehler." });
+          setLoad({
+            status: "error",
+            error: "Netzwerkfehler.",
+            redirectTo: FEATURED_PARTS_IN_APP_HREF,
+          });
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [handle]);
+  }, [handle, router]);
 
   if (load.status === "loading") {
     return (
@@ -102,10 +116,10 @@ function ProductPageInner() {
           <h1 className="text-lg font-semibold">Produkt nicht verfügbar</h1>
           <p className="mt-2 text-sm text-text-secondary">{load.error}</p>
           <Link
-            href="/shop/parts"
+            href={load.redirectTo || FEATURED_PARTS_IN_APP_HREF}
             className="mt-4 inline-flex rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"
           >
-            Zurück zur Collection
+            Zu featured-parts
           </Link>
         </section>
       </div>

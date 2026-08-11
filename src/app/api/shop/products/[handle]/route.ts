@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { mapStorefrontProduct } from "@/lib/shop/partsCatalog";
 import { fetchProductByHandle } from "@/lib/shop/shopifyStorefront";
 import {
-  getFeaturedShopifyProducts,
-  shopifyHandleFromProductId,
+  FEATURED_PARTS_IN_APP_HREF,
+  isShopifyProductHandleLive,
 } from "@/lib/shop/catalog";
 import { getShopStoreStatus, inAppProductHref } from "@/lib/shop/storeStatus";
 
@@ -11,8 +11,8 @@ type Params = { params: Promise<{ handle: string }> };
 
 /**
  * GET /api/shop/products/[handle]
- * Prefers Storefront API; falls back to featured-bike snapshot metadata
- * (still no myshopify checkout when store locked).
+ * Live Storefront only. Unpublished Phase-A bike handles → redirect to parts.
+ * Never returns a dead myshopify product URL as a success CTA.
  */
 export async function GET(_req: Request, { params }: Params) {
   const { handle: raw } = await params;
@@ -25,6 +25,23 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   const status = getShopStoreStatus();
+
+  // Known unpublished editorial handles — do not 404 the page; send to collection
+  if (!isShopifyProductHandleLive(handle)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        configured: status.storefrontApiConfigured,
+        code: "unpublished_handle",
+        error:
+          "Dieses Produkt ist auf Shopify noch nicht veröffentlicht. Bitte featured-parts nutzen.",
+        redirectTo: FEATURED_PARTS_IN_APP_HREF,
+        onlineStoreLocked: status.onlineStoreLocked,
+      },
+      { status: 409 }
+    );
+  }
+
   const live = await fetchProductByHandle(handle);
   if (live.ok) {
     const product = mapStorefrontProduct(live.product);
@@ -38,43 +55,6 @@ export async function GET(_req: Request, { params }: Params) {
     });
   }
 
-  // Featured bikes snapshot (Phase A) — display only
-  const featured = getFeaturedShopifyProducts().find(
-    (p) =>
-      shopifyHandleFromProductId(p.id) === handle ||
-      p.id === handle ||
-      p.id === `sp-shopify-${handle}`
-  );
-  if (featured) {
-    return NextResponse.json({
-      ok: true,
-      source: "featured_snapshot",
-      product: {
-        id: featured.id,
-        handle: shopifyHandleFromProductId(featured.id) || handle,
-        name: featured.name,
-        manufacturer: featured.manufacturer,
-        productType: "Bike",
-        description: featured.description,
-        priceEur: featured.priceEur,
-        currencyCode: "EUR",
-        imageUrl: featured.imageUrl,
-        availableForSale: true,
-        affiliateUrl: featured.affiliateUrl,
-        tags: ["slot:frame", ...(featured.sports || []).map((s) => `sport:${s}`)],
-        softFit: { slots: ["frame"], calipers: [], shiftCompat: [], raw: [] },
-        slotKey: "frame",
-      },
-      href: inAppProductHref(shopifyHandleFromProductId(featured.id) || handle),
-      onlineStoreLocked: status.onlineStoreLocked,
-      externalUrl: featured.affiliateUrl,
-      warning:
-        live.code === "not_configured"
-          ? "Storefront API nicht konfiguriert — Snapshot-Metadaten."
-          : live.error,
-    });
-  }
-
   const http =
     live.code === "not_configured" ? 503 : live.code === "not_found" ? 404 : 502;
   return NextResponse.json(
@@ -83,6 +63,8 @@ export async function GET(_req: Request, { params }: Params) {
       configured: live.configured,
       error: live.error,
       code: live.code,
+      redirectTo:
+        live.code === "not_found" ? FEATURED_PARTS_IN_APP_HREF : undefined,
       onlineStoreLocked: status.onlineStoreLocked,
     },
     { status: http }

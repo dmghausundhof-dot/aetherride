@@ -19,23 +19,31 @@ When the store goes public: set `SHOPIFY_ONLINE_STORE_LOCKED=false` and keep in-
 
 | Path | Destination |
 |------|-------------|
-| `/shop` | Hub (AetherRide) |
+| `/shop` | Hub — Collection preview (featured-parts) |
 | `/shop/parts` | featured-parts listing (Storefront API) |
+| `/teile`, `/teile/*` | redirect → `/shop/parts` |
+| `/parts`, `/parts/*` | redirect → `/shop/parts` |
 | `/shop/parts?slot=brake_pads&fit=bike&bike=<id>` | Soft-fit filtered parts |
-| `/shop/p/<handle>` | In-app product detail (API → Storefront / featured snapshot) |
+| `/shop/p/<handle>` | Live Storefront product only; unpublished → `/shop/parts` |
 | `/api/shop/parts` | JSON collection |
-| `/api/shop/products/<handle>` | JSON product |
+| `/api/shop/products/<handle>` | JSON product (409 unpublished → redirectTo parts) |
 | `/api/shop/status` | `{ storefrontApiConfigured, onlineStoreLocked }` — no secrets |
 | App Shop tab → Web Parts | `{API_BASE}/shop/parts` |
-| App product tap | `{API_BASE}/shop/p/<handle>` |
+| App product tap | `{API_BASE}/shop/p/<handle>` (live only) |
 | App Shop hub button | `{API_BASE}/shop` |
 
-### Removed as primary CTAs (password wall)
+### Unpublished Phase-A bike handles (never link as live products)
+
+`orbea-terra-m20`, `specialized-diverge-carbon`, `cube-attain-gtc-race`,
+`canyon-ultimate-cf-sl-8`, `canyon-commuter-7-0` → CTA `/shop/parts` only.
+
+### Removed as primary CTAs (password wall / 404)
 
 | Old | Now |
 |-----|-----|
-| `*.myshopify.com/products/*` | Secondary via Owner-Preview dialog only |
+| `*.myshopify.com/products/<unpublished>` | Hidden / → `/shop/parts` |
 | `*.myshopify.com/collections/featured-*` | In-app `/shop/parts` |
+| Bare merchant homepages | Deep product/search URLs |
 | Silent `target=_blank` to password | `ShopifyOutboundButton` / App dialog |
 
 ## Env

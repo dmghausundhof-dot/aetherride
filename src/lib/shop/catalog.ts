@@ -88,7 +88,32 @@ export function shopCollectionHref(sport: string): string | undefined {
   return handle ? shopifyCollectionUrl(handle) : undefined;
 }
 
-/** Featured complete bikes from AetherRide Shopify (placeholder images + test prices) */
+/**
+ * Phase-A bike handles — currently unpublished / 404 on Shopify.
+ * Never deep-link these as live product URLs (myshopify or /shop/p/…).
+ * Prefer Collection `featured-parts` via Storefront API.
+ */
+export const UNPUBLISHED_FEATURED_BIKE_HANDLES = [
+  "orbea-terra-m20",
+  "specialized-diverge-carbon",
+  "cube-attain-gtc-race",
+  "canyon-ultimate-cf-sl-8",
+  "canyon-commuter-7-0",
+] as const;
+
+export function isShopifyProductHandleLive(handle: string): boolean {
+  return !(UNPUBLISHED_FEATURED_BIKE_HANDLES as readonly string[]).includes(
+    handle
+  );
+}
+
+/** In-app collection CTA — never a 404 product URL */
+export const FEATURED_PARTS_IN_APP_HREF = "/shop/parts";
+
+/**
+ * Editorial snapshot only — handles are NOT live on Shopify.
+ * affiliateUrl points to in-app collection (no dead product / bare homepage).
+ */
 export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
   {
     id: "sp-shopify-orbea-terra-m20",
@@ -98,8 +123,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     componentModelId: "cm-shopify-orbea-terra-m20",
     priceEur: 2799,
     description:
-      "Gravel-Allrounder — Testpreis. Checkout im AetherRide Shopify-Shop.",
-    affiliateUrl: shopifyProductUrl("orbea-terra-m20"),
+      "Gravel-Allrounder — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
+    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -114,8 +139,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     componentModelId: "cm-shopify-specialized-diverge-carbon",
     priceEur: 3499,
     description:
-      "Carbon-Gravel — Testpreis. Checkout im AetherRide Shopify-Shop.",
-    affiliateUrl: shopifyProductUrl("specialized-diverge-carbon"),
+      "Carbon-Gravel — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
+    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -130,8 +155,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     componentModelId: "cm-shopify-cube-attain-gtc-race",
     priceEur: 1499,
     description:
-      "Leichtes Carbon-Rennrad — Testpreis. Checkout im AetherRide Shopify-Shop.",
-    affiliateUrl: shopifyProductUrl("cube-attain-gtc-race"),
+      "Leichtes Carbon-Rennrad — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
+    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -146,8 +171,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     componentModelId: "cm-shopify-canyon-ultimate-cf-sl-8",
     priceEur: 2499,
     description:
-      "Rennrad Performance — Testpreis. Checkout im AetherRide Shopify-Shop.",
-    affiliateUrl: shopifyProductUrl("canyon-ultimate-cf-sl-8"),
+      "Rennrad Performance — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
+    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -162,8 +187,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     componentModelId: "cm-shopify-canyon-commuter-7-0",
     priceEur: 1299,
     description:
-      "City / Light-E Pendlerbike — Testpreis. Checkout im AetherRide Shopify-Shop.",
-    affiliateUrl: shopifyProductUrl("canyon-commuter-7-0"),
+      "City / Light-E — Produkt auf Shopify noch nicht veröffentlicht. Ersatzteile über featured-parts.",
+    affiliateUrl: FEATURED_PARTS_IN_APP_HREF,
     merchantName: "AetherRide Shop",
     visualHint: "bike",
     imageUrl:
@@ -172,7 +197,16 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
   },
 ];
 
+/** Live featured bikes only — empty while Phase-A handles are unpublished */
 export function getFeaturedShopifyProducts(): ShopProduct[] {
+  return SHOPIFY_FEATURED_BIKES.filter((p) => {
+    const handle = shopifyHandleFromProductId(p.id);
+    return handle ? isShopifyProductHandleLive(handle) : false;
+  });
+}
+
+/** Editorial snapshot (may include unpublished) — do not use for live CTAs */
+export function getFeaturedBikeSnapshots(): ShopProduct[] {
   return SHOPIFY_FEATURED_BIKES;
 }
 
@@ -231,7 +265,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-maxxis-assegai-29-25",
     priceEur: 89,
     description: "Vorderreifen DD MaxxGrip",
-    affiliateUrl: "https://www.bike-discount.de/",
+    affiliateUrl:
+      "https://www.bike-discount.de/de/suche?searchparam=Maxxis+Assegai",
     merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
     sports: ["mtb", "ebike"],
@@ -244,7 +279,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-maxxis-dhr2-29-24",
     priceEur: 85,
     description: "Hinterreifen MaxxTerra DD",
-    affiliateUrl: "https://www.bike-discount.de/",
+    affiliateUrl:
+      "https://www.bike-discount.de/de/suche?searchparam=Maxxis+Minion+DHR",
     merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
     sports: ["mtb", "ebike"],
@@ -257,7 +293,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-sram-x0-cassette-xd",
     priceEur: 329,
     description: "Kassette XD — Freilauf muss XD sein",
-    affiliateUrl: "https://www.chainreactioncycles.com/",
+    affiliateUrl:
+      "https://www.chainreactioncycles.com/de/de/s/sram?q=X0+Eagle+cassette",
     merchantName: "CRC (Beispielkatalog)",
     visualHint: "cassette",
     sports: ["mtb", "ebike"],
@@ -270,7 +307,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-shimano-xt-cassette-ms",
     priceEur: 189,
     description: "Kassette Micro Spline — inkompatibel zu XD-Naben",
-    affiliateUrl: "https://bike.shimano.com/",
+    affiliateUrl: "https://bike.shimano.com/en-EU/product/component/deorext-m8100.html",
     merchantName: "Shimano Händlernetz (Beispiel)",
     visualHint: "cassette",
     sports: ["mtb", "gravel", "ebike"],
@@ -283,7 +320,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-rockshox-superdeluxe-23065",
     priceEur: 679,
     description: "Standard-Eyelet 230×65 — Rahmenmaß prüfen",
-    affiliateUrl: "https://www.sram.com/en/rockshox",
+    affiliateUrl: "https://www.sram.com/en/rockshox/models/super-deluxe",
     merchantName: "SRAM/RockShox Händler (Beispiel)",
     visualHint: "shock",
     sports: ["mtb", "ebike"],
@@ -296,7 +333,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-fox-float-x2-20565",
     priceEur: 749,
     description: "Trunnion 205×65",
-    affiliateUrl: "https://www.ridefox.com/",
+    affiliateUrl: "https://www.ridefox.com/family.php?m=bike&family=floatx2",
     merchantName: "Fox Händler (Beispiel)",
     visualHint: "shock",
     sports: ["mtb", "ebike"],
@@ -309,7 +346,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-bosch-powertube-800",
     priceEur: 999,
     description: "Smart System Akku — nur bei passendem Motor-Interface",
-    affiliateUrl: "https://www.bosch-ebike.com/",
+    affiliateUrl:
+      "https://www.bosch-ebike.com/de/produkte/powertube",
     merchantName: "Bosch eBike Händler (Beispiel)",
     visualHint: "battery",
     sports: ["ebike"],
@@ -322,7 +360,7 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-oneup-v3-dropper-31-6",
     priceEur: 289,
     description: "Dropper Ø 31,6 mm",
-    affiliateUrl: "https://oneupcomponents.com/",
+    affiliateUrl: "https://oneupcomponents.com/products/v3-dropper-post",
     merchantName: "OneUp (Beispiel)",
     visualHint: "dropper",
     sports: ["mtb", "gravel", "ebike"],
@@ -336,7 +374,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-conti-gp5000-28",
     priceEur: 74,
     description: "Allround-Rennradreifen tubeless-ready",
-    affiliateUrl: "https://www.bike-components.de/",
+    affiliateUrl:
+      "https://www.bike-components.de/de/s/?searchterm=Continental+GP+5000",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "tire",
     sports: ["road", "urban"],
@@ -349,7 +388,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-schwalbe-g-one-40",
     priceEur: 64,
     description: "Schneller Gravel-Reifen, gemischte Oberflächen",
-    affiliateUrl: "https://www.bike-discount.de/",
+    affiliateUrl:
+      "https://www.bike-discount.de/de/suche?searchparam=Schwalbe+G-One",
     merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
     sports: ["gravel", "urban"],
@@ -375,7 +415,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-supacaz-tape",
     priceEur: 39,
     description: "Lenkerband — Verschleiß und Grip erneuern",
-    affiliateUrl: "https://www.bike-components.de/",
+    affiliateUrl:
+      "https://www.bike-components.de/de/s/?searchterm=Supacaz+Super+Sticky",
     merchantName: "bike-components (Beispielkatalog)",
     visualHint: "tape",
     sports: ["road", "gravel"],
@@ -388,7 +429,8 @@ export const SHOP_PRODUCTS: ShopProduct[] = [
     componentModelId: "cm-schwalbe-marathon-37",
     priceEur: 42,
     description: "Pannenresistenter City-/Touring-Reifen",
-    affiliateUrl: "https://www.bike-discount.de/",
+    affiliateUrl:
+      "https://www.bike-discount.de/de/suche?searchparam=Schwalbe+Marathon",
     merchantName: "bike-discount (Beispielkatalog)",
     visualHint: "tire",
     sports: ["urban", "ebike", "road"],

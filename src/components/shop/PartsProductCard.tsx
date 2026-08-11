@@ -84,12 +84,15 @@ export function PartsProductCard({
         >
           Details <ChevronRight className="h-4 w-4" />
         </Link>
-        <ShopifyOutboundButton
-          href={p.affiliateUrl}
-          label="Shopify (extern)"
-          variant="ghost"
-          className="py-2 text-xs font-medium"
-        />
+        {p.affiliateUrl.includes("/products/") &&
+        p.affiliateUrl.includes("myshopify.com") ? (
+          <ShopifyOutboundButton
+            href={p.affiliateUrl}
+            label="Shopify Produkt (extern)"
+            variant="ghost"
+            className="py-2 text-xs font-medium"
+          />
+        ) : null}
       </div>
     </article>
   );

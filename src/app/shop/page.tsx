@@ -5,7 +5,6 @@ import {
   Bookmark,
   ChevronRight,
   ShoppingBag,
-  Store,
   Wrench,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +13,7 @@ import { useCartStore } from "@/store/useCartStore";
 import {
   getFeaturedShopifyProducts,
   getShopProductByFocus,
+  isShopifyProductHandleLive,
   shopifyHandleFromProductId,
 } from "@/lib/shop/catalog";
 import { shopPartsHref } from "@/lib/shop/partsCatalog";
@@ -21,6 +21,7 @@ import { allProductRecommendations } from "@/lib/shop/recommendations";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { FeaturedBikeCard } from "@/components/shop/FeaturedBikeCard";
+import { FeaturedPartsPreview } from "@/components/shop/FeaturedPartsPreview";
 import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import Link from "next/link";
 
@@ -33,12 +34,12 @@ function ShopHubInner() {
   const consents = useAppStore((s) => s.consents);
   const cartItems = useCartStore((s) => s.items);
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
-  const featuredBikes = useMemo(() => getFeaturedShopifyProducts(), []);
+  const liveFeaturedBikes = useMemo(() => getFeaturedShopifyProducts(), []);
   const cartCount = cartItems.reduce((n, i) => n + i.quantity, 0);
 
   const sportQuery = searchParams.get("sport");
 
-  // Legacy deep-links → in-app destinations (never myshopify password)
+  // Legacy deep-links → in-app destinations (never dead myshopify / 404 handles)
   useEffect(() => {
     const slot = searchParams.get("slot");
     const job = searchParams.get("job");
@@ -53,6 +54,16 @@ function ShopHubInner() {
         shopifyHandleFromProductId(focusProduct.id) ||
         focus ||
         focusProduct.id;
+      // Unpublished Phase-A bikes → collection, never /shop/p/404
+      if (!isShopifyProductHandleLive(handle)) {
+        router.replace(
+          shopPartsHref({
+            bike: bike || activeBike?.id,
+            fit: activeBike || bike ? "bike" : undefined,
+          })
+        );
+        return;
+      }
       router.replace(inAppProductHref(handle));
       return;
     }
@@ -103,8 +114,8 @@ function ShopHubInner() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Shop</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Featured Bikes & Ersatzteile — Katalog in AetherRide, nicht hinter
-            der Shopify-Passwort-Seite
+            featured-parts live in AetherRide — keine toten Produkt-Handles, kein
+            stiller Password-Dead-End
           </p>
         </div>
         <Link
@@ -133,8 +144,9 @@ function ShopHubInner() {
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold">Ersatzteile · featured-parts</h2>
             <p className="mt-0.5 text-xs text-text-secondary">
-              Live Collection (~43–48 ACTIVE) via Storefront API — Soft-Fit,
-              Bilder, Preise. Kein Snapshot, kein Password-Dead-End.
+              Collection-driven (~43–48 ACTIVE) via Storefront API. Aliase:{" "}
+              <code className="text-[11px]">/teile</code>,{" "}
+              <code className="text-[11px]">/parts</code>.
             </p>
           </div>
         </div>
@@ -186,34 +198,35 @@ function ShopHubInner() {
         </section>
       ) : null}
 
-      <section>
-        <div className="mb-3 flex items-start gap-3 px-0.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
-            <Store className="h-5 w-5" />
+      <FeaturedPartsPreview bikeId={activeBike?.id} />
+
+      {liveFeaturedBikes.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-bold">Featured · Kompletträder</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {liveFeaturedBikes.map((p) => (
+              <FeaturedBikeCard key={p.id} product={p} />
+            ))}
           </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold">Featured · Kompletträder</h2>
-            <p className="mt-0.5 text-xs text-text-secondary">
-              Details in AetherRide. Externer Shopify-Checkout nur mit klarer
-              Owner-Preview-Warnung (Store gesperrt).
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredBikes.map((p) => (
-            <FeaturedBikeCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+          <h2 className="text-base font-semibold">Kompletträder</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
+            Die früheren Featured-Bike-Handles sind auf Shopify noch nicht
+            veröffentlicht (404). Wir verlinken sie nicht — bitte{" "}
+            <Link href="/shop/parts" className="text-accent underline">
+              featured-parts
+            </Link>{" "}
+            nutzen.
+          </p>
+        </section>
+      )}
 
       {sportPartsHref && sportQuery ? (
         <div className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
           <p className="font-medium text-primary">
             Disziplin „{sportQuery}“ — Ersatzteile in AetherRide
-          </p>
-          <p className="mt-1 text-xs text-text-secondary">
-            Früher: externe Collection-URL (Passwort-Wall). Jetzt: In-App
-            featured-parts.
           </p>
           <Link
             href={sportPartsHref}
@@ -241,7 +254,6 @@ function ShopHubInner() {
       ) : null}
 
       <p className="text-center text-xs text-text-secondary">
-        Gültige Pfade:{" "}
         <Link href="/shop" className="text-accent">
           /shop
         </Link>
@@ -250,8 +262,12 @@ function ShopHubInner() {
           /shop/parts
         </Link>
         {" · "}
-        <Link href="/shop/p/orbea-terra-m20" className="text-accent">
-          /shop/p/[handle]
+        <Link href="/teile" className="text-accent">
+          /teile
+        </Link>
+        {" · "}
+        <Link href="/parts" className="text-accent">
+          /parts
         </Link>
       </p>
     </div>
