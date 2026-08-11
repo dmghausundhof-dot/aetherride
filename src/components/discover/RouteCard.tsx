@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight, ExternalLink } from "lucide-react";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
-import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
+import {
+  formatDistanceElevation,
+  sanitizeElevationM,
+} from "@/lib/discover/elevationGuard";
 
 export function RouteCard({
   route,
@@ -21,6 +24,7 @@ export function RouteCard({
   onStart: () => void;
   onToggleSave: () => void;
 }) {
+  // Same sanitize as RouteDetail header — never show 0 hm / absurd values.
   const elev = sanitizeElevationM(route.elevationM, route.distanceKm);
   return (
     <article
@@ -40,9 +44,8 @@ export function RouteCard({
               {route.distanceFromOriginKm != null
                 ? `~${route.distanceFromOriginKm} km entfernt · `
                 : ""}
-              {route.distanceKm} km
-              {elev != null ? ` · ${elev} hm` : ""} · {route.durationMin}{" "}
-              min
+              {formatDistanceElevation(route.distanceKm, elev)} ·{" "}
+              {route.durationMin} min
               {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""}
             </p>
           </div>

@@ -15,8 +15,8 @@ import {
   Smartphone,
 } from "lucide-react";
 import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
-import { ElevationChart } from "@/components/discover/ElevationChart";
 import { useAppStore } from "@/store/useAppStore";
+import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
 import {
   ROUTING_PROFILES,
   DEFAULT_DISCOVER_PROFILE,
@@ -36,9 +36,6 @@ import {
   startOf,
   type PlanDraft,
 } from "@/lib/routing/planDraft";
-import {
-  elevationFromGeometry,
-} from "@/lib/routing/discoverMapLayers";
 import { activeRouteFromEngine } from "@/lib/routing/activeRoute";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import type { SavedRoute } from "@/types/route";
@@ -244,11 +241,16 @@ function PlannerInner() {
 
   const saveCurrent = () => {
     if (!draft.computed) return;
+    const distanceKm =
+      Math.round((draft.computed.distanceM / 1000) * 10) / 10;
+    // Real/sanitized ascent only — never invent hm from geometry/distance.
+    const elevationM =
+      sanitizeElevationM(draft.baseTour?.elevationM, distanceKm) ?? 0;
     const entry: SavedRoute = {
       id: `saved-${Date.now()}`,
       name: draft.label || "Geplante Route",
-      distanceKm: Math.round((draft.computed.distanceM / 1000) * 10) / 10,
-      elevationM: Math.round(draft.computed.distanceM * 0.03),
+      distanceKm,
+      elevationM,
       durationMin: Math.round(draft.computed.durationS / 60),
       surface: draft.baseTour?.surface,
       mtbScale: draft.baseTour?.mtbScale,
@@ -304,11 +306,6 @@ function PlannerInner() {
       },
     ];
   }, [draft.computed]);
-
-  const elev = useMemo(
-    () => elevationFromGeometry(draft.computed?.geometry),
-    [draft.computed?.geometry]
-  );
 
   const stats = draft.computed
     ? `${(draft.computed.distanceM / 1000).toFixed(1)} km · ${Math.round(draft.computed.durationS / 60)} min`
@@ -512,17 +509,6 @@ function PlannerInner() {
                 >
                   <Play className="h-3.5 w-3.5 fill-current" /> In App
                 </button>
-              </div>
-            </div>
-          )}
-
-          {elev && elev.points.length > 1 && (
-            <div className="rounded-xl border border-border p-2">
-              <p className="mb-1 text-[10px] font-medium uppercase text-text-secondary">
-                Höhenprofil
-              </p>
-              <div className="max-h-28 overflow-hidden [&_svg]:h-20">
-                <ElevationChart elev={elev} />
               </div>
             </div>
           )}

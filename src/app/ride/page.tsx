@@ -18,7 +18,6 @@ import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import {
   appDeepLink,
   httpsAppLink,
-  hasStoreLinks,
   rideOpenPath,
 } from "@/lib/web/appLinks";
 
@@ -136,10 +135,8 @@ export default function RideAppBridgePage() {
         </div>
         <p className="mt-2 text-center text-[11px] text-text-secondary">
           Schema <code className="text-[10px]">aetherride://</code>
-          {hasStoreLinks()
-            ? " · Store-Links gesetzt"
-            : " · Store-URLs in Vercel setzen (NEXT_PUBLIC_*_STORE_URL)"}
-          . App Links: /.well-known/assetlinks.json
+          {" · "}
+          App Links: /.well-known/assetlinks.json
         </p>
 
         <div className="mt-12 grid gap-3">

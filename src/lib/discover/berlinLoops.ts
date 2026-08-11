@@ -52,7 +52,7 @@ export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[
     (s) => s.type === "route" && s.duration_min != null
   );
   return seeds.map((s) => {
-    // Keep 0 when hidden — RouteCard re-sanitizes and omits absurd hm.
+    // 0 = unknown sentinel — RouteCard/Detail sanitize again and omit hm.
     const elevation = sanitizeElevationM(s.ascent_m, s.distance_km) ?? 0;
     const center: [number, number] | undefined = s.center
       ? [s.center.lng, s.center.lat]

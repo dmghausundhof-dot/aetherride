@@ -3,8 +3,6 @@ import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { Smartphone, Map, WifiOff, Activity } from "lucide-react";
-import { hasStoreLinks } from "@/lib/web/appLinks";
-
 const reasons = [
   {
     icon: Map,
@@ -51,9 +49,8 @@ export default function DownloadPage() {
             <AppDownloadButtons size="lg" />
           </div>
           <p className="mt-4 text-xs text-text-secondary">
-            {hasStoreLinks()
-              ? "Offizielle Store-Links — Navigation und Sensoren nur in der App."
-              : "Store-Links: NEXT_PUBLIC_APP_STORE_URL / NEXT_PUBLIC_PLAY_STORE_URL in Vercel. Bis dahin: Touren und Garage im Web."}
+            Navigation und Sensoren nur in der App. Touren und Garage laufen im
+            Web.
           </p>
         </div>
 

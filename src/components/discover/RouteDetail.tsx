@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
-import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
+import {
+  formatDistanceElevation,
+  sanitizeElevationM,
+} from "@/lib/discover/elevationGuard";
 import { buildElevationForSuggestion } from "@/lib/routing/suggestionElevation";
 import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import {
@@ -169,6 +172,7 @@ export function RouteDetail({
     range &&
     route.distanceKm > range.kmHigh * 0.85;
 
+  // List↔panel parity: same sanitize as RouteCard (omit 0 / absurd).
   const ascentDisplay = sanitizeElevationM(route.elevationM, route.distanceKm);
 
   return (
@@ -187,7 +191,8 @@ export function RouteDetail({
           Tour-Idee — Strecke beim Planen oder Starten live berechnen
         </p>
         <p className="mt-1 text-sm tabular-nums text-text-secondary">
-          {route.distanceKm} km{ascentDisplay != null ? ` · ${ascentDisplay} hm` : ""} · {route.durationMin} min
+          {formatDistanceElevation(route.distanceKm, ascentDisplay)} ·{" "}
+          {route.durationMin} min
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
           {route.loop ? "Rundkurs" : "A→B"}
         </p>
@@ -388,7 +393,14 @@ export function RouteDetail({
         </div>
       )}
 
-      {layer === "elevation" && <ElevationChart elev={elev} />}
+      {layer === "elevation" &&
+        (ascentDisplay != null ? (
+          <ElevationChart elev={elev} />
+        ) : (
+          <p className="text-sm text-text-secondary">
+            Höhenprofil noch nicht verfügbar — keine Schätzung als Füllung.
+          </p>
+        ))}
 
       <div className="flex flex-col gap-2 pb-2">
         {onAdoptIntoPlan && (

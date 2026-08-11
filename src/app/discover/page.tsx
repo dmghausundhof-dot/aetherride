@@ -31,7 +31,7 @@ import {
   type RoutingProfile,
 } from "@/lib/routing/profiles";
 import {
-  DEMO_ROUTING_NOTICE,
+  consumerRoutingNotice,
   showRoutingDebugUi,
   type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
@@ -83,12 +83,8 @@ import {
   type PlanMode,
   type QuickOption,
 } from "@/lib/routing/planDraft";
-import {
-  buildDiscoverMapLayers,
-  elevationFromGeometry,
-} from "@/lib/routing/discoverMapLayers";
+import { buildDiscoverMapLayers } from "@/lib/routing/discoverMapLayers";
 import { trailsNear, type TrailSegment } from "@/lib/routing/trailSegments";
-import { ElevationChart } from "@/components/discover/ElevationChart";
 import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 import {
   BERLIN_DEFAULT_CENTER,
@@ -424,11 +420,6 @@ function DiscoverPageInner() {
     communityHeat,
   ]);
 
-  const elevProfile = useMemo(
-    () => elevationFromGeometry(draft.computed?.geometry),
-    [draft.computed?.geometry]
-  );
-
   useEffect(() => {
     if (highlightRouteId) {
       setDetailId(highlightRouteId);
@@ -472,16 +463,17 @@ function DiscoverPageInner() {
   }, [sportParam]);
 
   useEffect(() => {
-    // Q-BAR-DIS-01: demo / unverified routing chrome only when explicitly enabled.
+    // Q-BAR-DIS-01: Demo / UNVERIFIED / Routing-Key chrome only when debug=1.
     if (!showRoutingDebugUi()) return;
     let cancelled = false;
     void fetch("/api/routing/status")
       .then((r) => r.json())
       .then((data: RoutingStatusPayload) => {
-        if (!cancelled) setRoutingNotice(data.notice ?? null);
+        if (!cancelled) setRoutingNotice(consumerRoutingNotice(data.notice));
       })
       .catch(() => {
-        if (!cancelled) setRoutingNotice(DEMO_ROUTING_NOTICE);
+        // Never invent a consumer notice on fetch failure.
+        if (!cancelled) setRoutingNotice(null);
       });
     return () => {
       cancelled = true;
@@ -510,7 +502,7 @@ function DiscoverPageInner() {
       setMinutes(60);
       setDraft((d) => setStart(d, center, name));
       setLocationStatus(`Demo-Region: ${name}`);
-      setRoutingMsg(`Demo-Region: ${name} · 60 min`);
+      setRoutingMsg(`Demo-Region: ${name} · 60 min Rundkurse`);
       setSheetMode("quick");
       setQuickTimedOut(false);
     },
@@ -767,11 +759,16 @@ function DiscoverPageInner() {
   const saveCurrentDraft = useCallback(() => {
     if (!draft.computed) return;
     const id = `saved-${Date.now()}`;
+    const distanceKm =
+      Math.round((draft.computed.distanceM / 1000) * 10) / 10;
+    // Real/sanitized seed ascent only — never invent hm from geometry/distance.
+    const elevationM =
+      sanitizeElevationM(draft.baseTour?.elevationM, distanceKm) ?? 0;
     const entry: SavedRoute = {
       id,
       name: draft.label || draft.baseTour?.name || "Geplante Route",
-      distanceKm: Math.round((draft.computed.distanceM / 1000) * 10) / 10,
-      elevationM: Math.round(draft.computed.distanceM * 0.03),
+      distanceKm,
+      elevationM,
       durationMin: Math.round(draft.computed.durationS / 60),
       mtbScale: draft.baseTour?.mtbScale,
       surface: draft.baseTour?.surface,
@@ -1309,6 +1306,7 @@ function DiscoverPageInner() {
   const statsLine = draft.computed
     ? `${(draft.computed.distanceM / 1000).toFixed(1)} km · ${Math.round(draft.computed.durationS / 60)} min`
     : null;
+  const debugRoutingNotice = consumerRoutingNotice(routingNotice);
 
   return (
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col lg:h-[calc(100dvh-4rem)] lg:flex-row lg:overflow-hidden">
@@ -1319,9 +1317,9 @@ function DiscoverPageInner() {
       <aside className="order-2 flex min-h-0 flex-col border-t border-border bg-background lg:order-1 lg:w-[min(26rem,40vw)] lg:shrink-0 lg:border-r lg:border-t-0">
         {/* Dach */}
         <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-4 lg:pt-5">
-          {showRoutingDebugUi() && routingNotice && (
+          {debugRoutingNotice && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
-              {routingNotice}
+              {debugRoutingNotice}
             </p>
           )}
           {heatmapNote && (
@@ -1544,15 +1542,6 @@ function DiscoverPageInner() {
                 {quickOptions.map((q) => {
                   const distKm =
                     Math.round((q.result.distanceM / 1000) * 10) / 10;
-                  // Demo/approx engines have no reliable ascent — hide hm.
-                  const ascent =
-                    q.result.engine === "approx" ||
-                    q.result.engine?.includes("demo")
-                      ? null
-                      : sanitizeElevationM(
-                          Math.round(q.result.distanceM * 0.02),
-                          distKm
-                        );
                   return (
                     <button
                       key={q.id}
@@ -1578,7 +1567,8 @@ function DiscoverPageInner() {
                     >
                       <div className="text-sm font-semibold">{q.label}</div>
                       <div className="mt-1 text-[11px] text-text-secondary">
-                        {formatDistanceElevation(distKm, ascent)} ·{" "}
+                        {/* No synthetic hm from distance/geometry */}
+                        {formatDistanceElevation(distKm, null)} ·{" "}
                         {Math.round(q.result.durationS / 60)} min
                       </div>
                       <div className="mt-1 text-[10px] text-text-secondary">
@@ -1671,10 +1661,11 @@ function DiscoverPageInner() {
               {!hasUsefulNearbyLoops && (
                 <div className="mt-2 rounded-xl border border-border bg-surface-elevated p-3">
                   <p className="text-xs font-semibold text-foreground">
-                    Noch keine ~60-Min-Touren hier.
+                    Keine Rundkurse in der Nähe
                   </p>
                   <p className="mt-0.5 text-[11px] text-text-secondary">
-                    Wähle eine Demo-Stadt oder änder den Ort.
+                    Keine ehrlichen Loops (Start≈Ziel) hier — Demo-Stadt wählen
+                    oder Ort ändern. Keine A→B-Touren als Füllung.
                   </p>
                   <button
                     type="button"
@@ -2199,8 +2190,11 @@ function DiscoverPageInner() {
                   >
                     <h4 className="text-sm font-semibold">{r.name}</h4>
                     <p className="text-[11px] text-text-secondary">
-                      {r.distanceKm} km · {r.elevationM} hm · {r.durationMin}{" "}
-                      min
+                      {formatDistanceElevation(
+                        r.distanceKm,
+                        sanitizeElevationM(r.elevationM, r.distanceKm)
+                      )}{" "}
+                      · {r.durationMin} min
                       {r.source === "import" ? " · Import" : ""}
                       {r.geometry ? " · mit Track" : ""}
                     </p>
@@ -2345,13 +2339,6 @@ function DiscoverPageInner() {
             >
               Abbrechen
             </button>
-          </div>
-        )}
-        {elevProfile && elevProfile.points.length > 1 && (
-          <div className="pointer-events-none absolute bottom-14 left-3 right-3 z-10 rounded-xl bg-black/55 p-2 lg:left-auto lg:right-3 lg:w-80">
-            <div className="pointer-events-auto max-h-24 overflow-hidden opacity-90 [&_svg]:h-16">
-              <ElevationChart elev={elevProfile} />
-            </div>
           </div>
         )}
         {statsLine && (

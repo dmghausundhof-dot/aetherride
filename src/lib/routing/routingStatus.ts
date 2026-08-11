@@ -33,3 +33,16 @@ export function hasPublicRoutingHint(): boolean {
 export function showRoutingDebugUi(): boolean {
   return process.env.NEXT_PUBLIC_SHOW_ROUTING_DEBUG === "1";
 }
+
+/**
+ * Consumer UI gate for DEMO_ROUTING_NOTICE / UNVERIFIED_ROUTING_NOTICE.
+ * API may still return `notice` — Prod rider surfaces must never show it
+ * unless showRoutingDebugUi() is on.
+ */
+export function consumerRoutingNotice(
+  notice: string | null | undefined
+): string | null {
+  if (!showRoutingDebugUi()) return null;
+  const t = notice?.trim();
+  return t ? t : null;
+}

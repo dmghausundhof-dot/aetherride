@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  consumerRoutingNotice,
   showRoutingDebugUi,
   type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
@@ -15,6 +16,7 @@ export function RoutingStatusBanner({ className = "" }: { className?: string }) 
   >(null);
 
   useEffect(() => {
+    // Fail-closed: never fetch/show Routing-Key / Demo notices in Prod UI.
     if (!showRoutingDebugUi()) return;
     let cancelled = false;
     void fetch("/api/routing/status?probe=1")
@@ -38,7 +40,9 @@ export function RoutingStatusBanner({ className = "" }: { className?: string }) 
 
   if (!showRoutingDebugUi()) return null;
 
-  if (!status?.notice && status?.liveVerified && status.configured) {
+  const notice = consumerRoutingNotice(status?.notice);
+
+  if (!notice && status?.liveVerified && status.configured) {
     return (
       <p
         className={`rounded-lg border border-success/30 bg-success/10 px-2.5 py-1.5 text-[11px] text-text-secondary ${className}`}
@@ -49,15 +53,15 @@ export function RoutingStatusBanner({ className = "" }: { className?: string }) 
     );
   }
 
-  if (!status?.notice) return null;
+  if (!notice) return null;
 
   return (
     <p
       className={`rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary ${className}`}
     >
-      {status.notice}
-      {status.engine ? ` · Engine: ${status.engine}` : ""}
-      {status.probe && !status.probe.ok
+      {notice}
+      {status?.engine ? ` · Engine: ${status.engine}` : ""}
+      {status?.probe && !status.probe.ok
         ? ` · Probe: ${status.probe.detail ?? "fehlgeschlagen"}`
         : ""}
     </p>
