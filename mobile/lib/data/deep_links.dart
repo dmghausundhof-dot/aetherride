@@ -10,6 +10,7 @@ import '../core/config.dart';
 import '../domain/active_route.dart';
 import '../providers/app_providers.dart';
 import '../providers/ride_providers.dart';
+import 'routing/naehe_seeds.dart';
 
 /// Parsed intent from a deep / app link.
 enum DeepLinkKind { ride, tour, discover, ignore }
@@ -109,15 +110,46 @@ class DeepLinkParse {
     }
     return null;
   }
+
+  /// Loop / seed id from `loop=` (D-60-05).
+  static String? loopIdOf(Uri uri) {
+    final q = uri.queryParameters['loop']?.trim();
+    if (q != null && q.isNotEmpty) return q;
+    return null;
+  }
+
+  /// `start=1` / `start=true` → ActiveRoute + Ride (D-60-05).
+  static bool startRideOf(Uri uri) {
+    final s = uri.queryParameters['start']?.trim().toLowerCase();
+    return s == '1' || s == 'true' || s == 'yes';
+  }
+
+  /// Dauer-Lens aus `lens=` (z. B. 60).
+  static int? lensMinutesOf(Uri uri) {
+    final raw = uri.queryParameters['lens']?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    if (raw == 'egal' || raw == 'any') return 0;
+    return int.tryParse(raw);
+  }
 }
 
 /// Handles:
 /// - aetherride://ride?route=
 /// - aetherride://tours/{id}
 /// - aetherride://discover
+/// - aetherride://discover?lens=60&loop=SEED_ID&start=1  (D-60-05 → Ride)
+/// - https://aetherride.vercel.app/discover?lens=60&loop=SEED_ID&start=1
 /// - https://aetherride.vercel.app/open/ride?route=
 /// - https://…/ride?route=
 /// - https://…/tours/{id}
+///
+/// Android paths (Manifest intent-filters):
+/// - Custom: `aetherride://discover?loop=seed-loop-…&start=1`
+/// - App Link: `https://aetherride.vercel.app/discover?loop=…&start=1`
+/// - App Link alt: `https://aetherride.app/discover?…`
+/// adb: `adb shell am start -a android.intent.action.VIEW \
+///   -d 'aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=1' \
+///   com.aetherride.aetherride_mobile`
 class DeepLinkHandler {
   DeepLinkHandler(this._ref);
 
@@ -152,9 +184,7 @@ class DeepLinkHandler {
     _lastHandled = key;
 
     if (kind == DeepLinkKind.discover) {
-      _ref.read(shellTabIndexProvider.notifier).state = 3;
-      _ref.read(discoverLaunchModeProvider.notifier).state =
-          DiscoverLaunchMode.discover;
+      await _handleDiscover(uri);
       return;
     }
 
@@ -177,6 +207,49 @@ class DeepLinkHandler {
     await _loadRoute(routeId);
   }
 
+  /// Discover-Intent: optional lens + loop + start=1 → Nav (D-60-05).
+  Future<void> _handleDiscover(Uri uri) async {
+    final loopId = DeepLinkParse.loopIdOf(uri);
+    final start = DeepLinkParse.startRideOf(uri);
+    final lens = DeepLinkParse.lensMinutesOf(uri);
+
+    if (lens != null) {
+      _ref.read(discoverPendingLensMinutesProvider.notifier).state = lens;
+    }
+
+    if (loopId != null && loopId.isNotEmpty && start) {
+      final started = await _startSeedLoop(loopId);
+      if (started) return;
+      // Seed missing → Discover mit Highlight
+    }
+
+    _ref.read(shellTabIndexProvider.notifier).state = 3;
+    _ref.read(discoverLaunchModeProvider.notifier).state =
+        DiscoverLaunchMode.discover;
+    if (loopId != null && loopId.isNotEmpty) {
+      _ref.read(discoverPendingLoopIdProvider.notifier).state = loopId;
+    }
+  }
+
+  /// Bundled Nähe-Seeds → ActiveRoute + Ride-Tab.
+  Future<bool> _startSeedLoop(String loopId) async {
+    try {
+      final bundle = await NaeheSeedsBundle.load();
+      final seed = bundle.byId(loopId);
+      if (seed == null) {
+        debugPrint('DeepLink: seed loop not found $loopId');
+        return false;
+      }
+      _ref.read(activeRouteProvider.notifier).state = seed.toActiveRoute();
+      _ref.read(shellTabIndexProvider.notifier).state = 2;
+      debugPrint('DeepLink: seed loop $loopId → Ride');
+      return true;
+    } catch (e) {
+      debugPrint('DeepLink seed loop: $e');
+      return false;
+    }
+  }
+
   Future<void> _loadRoute(String routeId) async {
     // 1) Local saved routes
     try {
@@ -197,6 +270,19 @@ class DeepLinkHandler {
       }
     } catch (e) {
       debugPrint('DeepLink saved: $e');
+    }
+
+    // 1b) Bundled Nähe-Seeds (offline loops)
+    try {
+      final bundle = await NaeheSeedsBundle.load();
+      final seed = bundle.byId(routeId);
+      if (seed != null) {
+        _ref.read(activeRouteProvider.notifier).state = seed.toActiveRoute();
+        debugPrint('DeepLink: loaded seed route $routeId');
+        return;
+      }
+    } catch (e) {
+      debugPrint('DeepLink seed route: $e');
     }
 
     // 2) Live / editorial geometry from API

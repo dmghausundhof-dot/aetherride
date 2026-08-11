@@ -14,24 +14,38 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/local/ride_prefs.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
+import '../../domain/ebike/range.dart';
 import '../../domain/ride.dart';
+import '../../domain/routing/battery_preset.dart';
+import '../../domain/routing/camera_follow_smooth.dart';
+import '../../domain/routing/connectivity_chip.dart';
 import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/route_progress.dart';
-import '../../data/routing/routing_client.dart';
-import '../../domain/ebike/range.dart';
+import '../../domain/routing/upcoming_rail.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
 import '../../domain/sport/discipline_ux.dart';
-import '../../native/location_core_channel.dart';
 import '../../native/ble_core_channel.dart';
+import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
 import '../shared/empty_state.dart';
+import 'widgets/battery_preset_sheet.dart';
+import 'widgets/reroute_sheet.dart';
+import 'widgets/ride_connectivity_chip.dart';
+import 'widgets/ride_data_strip.dart';
+import 'widgets/ride_network.dart';
+import 'widgets/ride_next_turn_banner.dart';
+import 'widgets/ride_off_route_banner.dart';
+import 'widgets/ride_upcoming_rail.dart';
 
 Set<Factory<OneSequenceGestureRecognizer>> get _rideMapGestures =>
     <Factory<OneSequenceGestureRecognizer>>{
@@ -93,20 +107,46 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   DateTime? _lastAutoRerouteAt;
   bool _autoRerouteBusy = false;
 
+  /// User chose „Bleiben“ — no forced rejoin until they leave route again.
+  bool _userChoseStay = false;
+  bool _rerouteSheetOpen = false;
+
+  /// Snapshot for 10s Undo after successful rejoin (N-02).
+  ActiveRoute? _routeBeforeRejoin;
+  Timer? _undoRejoinTimer;
+  String? _rejoinWhyLine;
+
+  /// Clean Mode mid-ride: max ~4 chrome elements (N-01). Pro via data-strip tap.
+  bool _cleanMode = true;
+
   /// User-Toggle (zusätzlich zu dart-define AETHER_AUTO_REROUTE).
   bool _autoRerouteEnabled = AppConfig.autoReroute;
 
   /// Kamera folgt GPS während der Fahrt (Komoot-ähnlich).
   bool _cameraFollow = true;
 
-  /// true = Norden oben; false = Fahrtrichtung oben.
+  /// true = Norden oben; false = Fahrtrichtung oben (Heading-up default).
   bool _northUp = false;
 
   /// true während/kurz nach programmatischem animateCamera — sonst pausiert
   /// [onCameraIdle] den Follow bei jedem GPS-Update.
   bool _programmaticCamera = false;
 
-  double _lastCameraBearing = 0;
+  double _smoothedCameraBearing = 0;
+  double _lastAppliedCameraBearing = 0;
+  double? _lastFollowLat;
+  double? _lastFollowLng;
+  DateTime? _lastFollowCameraAt;
+
+  /// N-04/N-09: default Pocket = no Keep-Screen-On.
+  RideBatteryPreset _batteryPreset = RideBatteryPreset.pocket;
+
+  /// N-03/N-08 connectivity honesty.
+  bool _networkOnline = true;
+  bool _offlineMapAvailable = false;
+  ConnectivityChipState _connectivityState = ConnectivityChipState.live;
+  Timer? _connectivityTimer;
+  StreamSubscription<RideNotificationAction>? _notifActionSub;
 
   /// Distanz entlang Active Route (Nav); Odometer bleibt [rideDistanceMProvider].
   double _alongRouteM = 0;
@@ -138,11 +178,146 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     unawaited(_tts.setLanguage('de-DE'));
     unawaited(_tts.setSpeechRate(0.5));
     _startAutoSunlight();
+    unawaited(_loadRidePrefs());
     unawaited(
       AppConfig.resolveMapStyleUrl().then((s) {
         if (mounted) setState(() => _mapStyle = s);
       }),
     );
+  }
+
+  Future<void> _loadRidePrefs() async {
+    final preset = await RidePrefs.batteryPreset();
+    final mapOk = await _probeOfflineMapAvailable();
+    if (!mounted) return;
+    setState(() {
+      _batteryPreset = preset;
+      _offlineMapAvailable = mapOk;
+    });
+  }
+
+  /// Local pack or offline-capable style override (not remote-only basemap).
+  Future<bool> _probeOfflineMapAvailable() async {
+    try {
+      final m = await OfflineMapsPrefs.read();
+      final pack = (m['activatedPackPath'] as String?)?.trim() ?? '';
+      if (pack.isNotEmpty) return true;
+      final style = (m['pmtilesUrl'] as String?)?.trim() ?? '';
+      if (style.isEmpty) return false;
+      // file:// or asset-style local paths count; pure https remote does not.
+      if (style.startsWith('file:') ||
+          style.startsWith('/') ||
+          style.contains('asset://')) {
+        return true;
+      }
+      // pmtiles:// or custom offline tile scheme.
+      if (style.startsWith('pmtiles://')) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _refreshConnectivityChip() async {
+    final online = await rideHasNetwork();
+    final route = ref.read(activeRouteProvider);
+    final hasRoute = route != null && route.coordinates.length >= 2;
+    final state = resolveConnectivityChip(
+      online: online,
+      hasRouteGeometry: hasRoute,
+      offlineMapAvailable: _offlineMapAvailable,
+    );
+    if (!mounted) return;
+    if (online != _networkOnline || state != _connectivityState) {
+      setState(() {
+        _networkOnline = online;
+        _connectivityState = state;
+      });
+    }
+  }
+
+  Future<void> _applyBatteryPreset(
+    RideBatteryPreset preset, {
+    bool persist = true,
+  }) async {
+    _batteryPreset = preset;
+    if (persist) await RidePrefs.setBatteryPreset(preset);
+    if (!ref.read(isRidingProvider)) return;
+    if (preset.keepScreenOn) {
+      await WakelockPlus.enable();
+    } else {
+      await WakelockPlus.disable();
+    }
+    if (mounted) setState(() {});
+  }
+
+  /// Ultra: brief wake on voice cue / off-route (N-09).
+  Future<void> _wakeOnCueIfNeeded() async {
+    if (_batteryPreset != RideBatteryPreset.ultra) return;
+    if (!ref.read(isRidingProvider)) return;
+    try {
+      await WakelockPlus.enable();
+      Future<void>.delayed(const Duration(seconds: 12), () async {
+        if (!mounted) return;
+        if (_batteryPreset != RideBatteryPreset.ultra) return;
+        if (!ref.read(isRidingProvider)) return;
+        await WakelockPlus.disable();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showBatteryPresetPicker() async {
+    final picked = await showBatteryPresetSheet(
+      context,
+      current: _batteryPreset,
+    );
+    if (picked == null || !mounted) return;
+    await _applyBatteryPreset(picked);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          picked == RideBatteryPreset.pocket
+              ? 'Pocket — Display darf aus (Akku sparen).'
+              : picked == RideBatteryPreset.lenker
+                  ? 'Lenker — Display an (kostet Akku).'
+                  : 'Ultra — Display nur bei Abbiegen (kostet Akku).',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _syncRideNotification() {
+    final location = ref.read(locationCoreProvider);
+    final paused = ref.read(isPausedProvider);
+    final text = paused ? 'Pause' : 'Fahrt läuft';
+    unawaited(
+      location.updateRideNotification(
+        paused: paused,
+        muted: _ttsMuted,
+        text: text,
+      ),
+    );
+  }
+
+  void _bindNotificationActions() {
+    _notifActionSub?.cancel();
+    final location = ref.read(locationCoreProvider);
+    _notifActionSub = location.notificationActions.listen((a) {
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (a.name == 'pause') {
+        final paused = ref.read(isPausedProvider);
+        ref.read(isPausedProvider.notifier).state = !paused;
+        if (paused) setState(() => _confirmStop = 0);
+        _syncRideNotification();
+        if (mounted) setState(() {});
+      } else if (a.name == 'mute') {
+        setState(() => _ttsMuted = !_ttsMuted);
+        if (_ttsMuted) unawaited(_tts.stop());
+        _syncRideNotification();
+      }
+    });
   }
 
   /// Auto-Sunlight: lux > 8000 for ~4s → enable; else reset while auto.
@@ -234,12 +409,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           for (final p in route.coordinates) LatLng(p[1], p[0]),
         ];
         if (gen != _rideMapDrawGen) return;
+        // Thick high-contrast route ribbon (N-01) — outline + core.
         await c.addLine(
           LineOptions(
             geometry: planned,
-            lineColor: '#14241C',
-            lineWidth: 11,
-            lineOpacity: 0.9,
+            lineColor: '#0A1A12',
+            lineWidth: 18,
+            lineOpacity: 0.95,
             lineJoin: 'round',
           ),
         );
@@ -247,8 +423,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         await c.addLine(
           LineOptions(
             geometry: planned,
-            lineColor: '#00C853',
-            lineWidth: 5,
+            lineColor: '#00E676',
+            lineWidth: 10,
             lineOpacity: 1,
             lineJoin: 'round',
           ),
@@ -261,7 +437,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           LineOptions(
             geometry: line,
             lineColor: '#BF360C',
-            lineWidth: 9,
+            lineWidth: 10,
             lineOpacity: 0.85,
             lineJoin: 'round',
           ),
@@ -271,7 +447,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           LineOptions(
             geometry: line,
             lineColor: '#FF6B35',
-            lineWidth: 4.5,
+            lineWidth: 5.5,
             lineJoin: 'round',
           ),
         );
@@ -279,28 +455,55 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         final last = line.last;
         if (_cameraFollow) {
           if (line.length >= 2) {
-            _lastCameraBearing = _bearingDeg(
+            final measured = _bearingDeg(
               line[line.length - 2].latitude,
               line[line.length - 2].longitude,
               last.latitude,
               last.longitude,
             );
+            // N-06: low-pass heading to reduce heading-up jank.
+            _smoothedCameraBearing = _lastFollowCameraAt == null
+                ? measured
+                : smoothBearingDeg(
+                    previous: _smoothedCameraBearing,
+                    measured: measured,
+                    alpha: 0.32,
+                  );
           }
-          final bearing = _northUp ? 0.0 : _lastCameraBearing;
-          _programmaticCamera = true;
-          await c.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: last,
-                zoom: 16,
-                bearing: bearing,
-                tilt: _northUp ? 0 : 40,
-              ),
-            ),
+          final bearing = _northUp ? 0.0 : _smoothedCameraBearing;
+          final now = DateTime.now();
+          final doUpdate = shouldUpdateFollowCamera(
+            lastLat: _lastFollowLat,
+            lastLng: _lastFollowLng,
+            nextLat: last.latitude,
+            nextLng: last.longitude,
+            lastBearing: _lastAppliedCameraBearing,
+            nextBearing: bearing,
+            lastUpdateAt: _lastFollowCameraAt,
+            now: now,
           );
-          Future<void>.delayed(const Duration(milliseconds: 450), () {
-            _programmaticCamera = false;
-          });
+          if (doUpdate) {
+            _lastFollowLat = last.latitude;
+            _lastFollowLng = last.longitude;
+            _lastFollowCameraAt = now;
+            _lastAppliedCameraBearing = bearing;
+            _programmaticCamera = true;
+            await c.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: last,
+                  zoom: 16,
+                  bearing: bearing,
+                  tilt: _northUp ? 0 : 40,
+                ),
+              ),
+              // Slightly longer ease reduces 120Hz jank vs snappy snaps.
+              duration: const Duration(milliseconds: 550),
+            );
+            Future<void>.delayed(const Duration(milliseconds: 600), () {
+              _programmaticCamera = false;
+            });
+          }
         }
       } else if (route != null && route.coordinates.length >= 2) {
         final pts = [
@@ -359,6 +562,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     if (text == null) return;
     if (_lastSpokenText == text) return;
     _lastSpokenText = text;
+    unawaited(_wakeOnCueIfNeeded());
     unawaited(_tts.speak(text));
   }
 
@@ -384,6 +588,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ref.read(isRidingProvider) &&
             _lastSpokenText != text) {
           _lastSpokenText = text;
+          unawaited(_wakeOnCueIfNeeded());
           unawaited(_tts.speak(text));
         }
         return;
@@ -647,13 +852,21 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         );
         if (nextOff != _offRoute) {
           _offRoute = nextOff;
-          _offRouteBanner = nextOff ? 'Route verlassen' : null;
-          if (mounted) setState(() {});
-          if (nextOff && !_ttsMuted && ref.read(isRidingProvider)) {
-            unawaited(_tts.speak('Route verlassen'));
+          if (nextOff) {
+            _offRouteBanner = 'Abseits der Route.';
+            _userChoseStay = false;
+            _rejoinWhyLine = null;
+            if (mounted) setState(() {});
+            if (!_ttsMuted && ref.read(isRidingProvider)) {
+              unawaited(_wakeOnCueIfNeeded());
+              unawaited(_tts.speak('Abseits der Route'));
+            }
+            unawaited(_onWentOffRoute());
+          } else {
+            _offRouteBanner = null;
+            if (mounted) setState(() {});
           }
-          if (nextOff) unawaited(_maybeAutoReroute());
-        } else if (nextOff) {
+        } else if (nextOff && !_userChoseStay) {
           unawaited(_maybeAutoReroute());
         }
       } else {
@@ -713,6 +926,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _alongRouteM = 0;
     _offRoute = false;
     _offRouteBanner = null;
+    _userChoseStay = false;
+    _rejoinWhyLine = null;
+    _clearUndoRejoin();
+    // Heading-up default when riding with a route (N-01).
+    if (ref.read(activeRouteProvider) != null) {
+      _northUp = false;
+    }
+    _cleanMode = true;
     _simDistanceM = 0;
     _simMotionUsed = false;
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -760,12 +981,35 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       if (m != null) _considerLiveHints(m);
     });
     _bumpIdle();
-    unawaited(WakelockPlus.enable());
+    // N-04/N-09: Keep-Screen-On only for Lenker (opt-in). Default Pocket = off.
+    unawaited(_applyBatteryPreset(_batteryPreset, persist: false));
+    _bindNotificationActions();
+    _connectivityTimer?.cancel();
+    unawaited(_refreshConnectivityChip());
+    _connectivityTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      unawaited(_refreshConnectivityChip());
+    });
+    _syncRideNotification();
     setState(() {
       _confirmStop = 0;
       _lastSpokenText = null;
       _liveHintText = null;
+      _lastFollowLat = null;
+      _lastFollowLng = null;
+      _lastFollowCameraAt = null;
     });
+    // First ride: calm one-shot preset ask (battery-saving default until chosen).
+    unawaited(_maybeAskBatteryPresetOnce());
+  }
+
+  Future<void> _maybeAskBatteryPresetOnce() async {
+    if (!mounted || !ref.read(isRidingProvider)) return;
+    final chosen = await RidePrefs.batteryPresetChosen();
+    if (chosen || !mounted) return;
+    // Brief delay so map/HUD paints first.
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!mounted || !ref.read(isRidingProvider)) return;
+    await _showBatteryPresetPicker();
   }
 
   /// Nur mit AETHER_SIM_MOTION — UI-Odometer kann steigen, Persistenz filtert.
@@ -815,14 +1059,66 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     return gain;
   }
 
+  /// First reaction when leaving the route: offline toast or online sheet (N-02b).
+  Future<void> _onWentOffRoute() async {
+    if (!mounted || !ref.read(isRidingProvider)) return;
+    final online = await rideHasNetwork();
+    if (!mounted) return;
+    if (!online) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Offline — Karte ok, Reroute braucht Netz.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+    if (_userChoseStay || _rerouteSheetOpen) return;
+    await _showRerouteSheetIfNeeded();
+    if (!_userChoseStay && _autoRerouteEnabled) {
+      unawaited(_maybeAutoReroute());
+    }
+  }
+
+  Future<void> _showRerouteSheetIfNeeded() async {
+    if (!mounted || _rerouteSheetOpen || !_offRoute) return;
+    _rerouteSheetOpen = true;
+    try {
+      final action = await showRerouteSheet(context);
+      if (!mounted) return;
+      switch (action) {
+        case RerouteSheetAction.rejoin:
+          await _rejoinRoute();
+        case RerouteSheetAction.stay:
+          setState(() {
+            _userChoseStay = true;
+            _offRouteBanner = 'Abseits der Route.';
+          });
+        case RerouteSheetAction.skip:
+          await _rejoinRoute(skipAheadM: 800);
+        case null:
+          // Dismiss without forcing rejoin (same as stay for auto-reroute).
+          setState(() => _userChoseStay = true);
+      }
+    } finally {
+      _rerouteSheetOpen = false;
+    }
+  }
+
   Future<void> _maybeAutoReroute() async {
-    if (!_autoRerouteEnabled) return;
+    if (!_autoRerouteEnabled || _userChoseStay || !_offRoute) return;
     if (_autoRerouteBusy || !ref.read(isRidingProvider)) return;
     if (ref.read(isPausedProvider)) return;
+    if (_rerouteSheetOpen) return;
     final last = _lastAutoRerouteAt;
     if (last != null &&
         DateTime.now().difference(last).inSeconds <
             AppConfig.autoRerouteCooldownSec) {
+      return;
+    }
+    final online = await rideHasNetwork();
+    if (!online) {
+      // No fake replan offline (N-02b).
       return;
     }
     _autoRerouteBusy = true;
@@ -834,7 +1130,58 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
-  Future<void> _rejoinRoute() async {
+  int _segmentIndexNearAlong(List<List<double>> coords, double targetAlongM) {
+    if (coords.length < 2) return 0;
+    var along = 0.0;
+    for (var i = 1; i < coords.length; i++) {
+      along += haversineM(
+        coords[i - 1][1],
+        coords[i - 1][0],
+        coords[i][1],
+        coords[i][0],
+      );
+      if (along >= targetAlongM) {
+        return i.clamp(1, coords.length - 1);
+      }
+    }
+    return coords.length - 1;
+  }
+
+  void _clearUndoRejoin() {
+    _undoRejoinTimer?.cancel();
+    _undoRejoinTimer = null;
+    _routeBeforeRejoin = null;
+  }
+
+  void _startUndoWindow(ActiveRoute previous) {
+    _undoRejoinTimer?.cancel();
+    _routeBeforeRejoin = previous;
+    _undoRejoinTimer = Timer(const Duration(seconds: 10), () {
+      if (!mounted) return;
+      setState(() {
+        _routeBeforeRejoin = null;
+        _rejoinWhyLine = null;
+      });
+    });
+  }
+
+  void _undoRejoin() {
+    final prev = _routeBeforeRejoin;
+    if (prev == null) return;
+    ref.read(activeRouteProvider.notifier).state = prev;
+    _clearUndoRejoin();
+    setState(() {
+      _rejoinWhyLine = null;
+      _offRoute = false;
+      _offRouteBanner = null;
+      _alongRouteM = 0;
+    });
+    if (!_ttsMuted) unawaited(_tts.speak('Route wiederhergestellt'));
+    unawaited(_drawRideMap());
+  }
+
+  /// Rejoin onto planned route. [skipAheadM] > 0 skips a section (N-02b).
+  Future<void> _rejoinRoute({double skipAheadM = 0}) async {
     final route = ref.read(activeRouteProvider);
     if (route == null || route.coordinates.length < 2) return;
     final lastFix = _track.isNotEmpty ? _track.last : null;
@@ -846,21 +1193,53 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
       return;
     }
+
+    final online = await rideHasNetwork();
+    if (!online) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Offline — Karte ok, Reroute braucht Netz.'),
+          ),
+        );
+      }
+      return;
+    }
+
     final prog = projectOntoRoute(
       coordinates: route.coordinates,
       lat: lastFix.lat,
       lng: lastFix.lng,
     );
     // Rest der Originalroute ab Segment (nicht nur Endpunkt).
-    final rejoinIdx =
+    final baseIdx =
         (prog.segmentIndex + 1).clamp(1, route.coordinates.length - 1);
+    final rejoinIdx = skipAheadM > 0
+        ? _segmentIndexNearAlong(
+            route.coordinates,
+            prog.distanceAlongM + skipAheadM,
+          )
+        : baseIdx;
     final rejoinPt = route.coordinates[rejoinIdx];
     final remaining = route.coordinates.sublist(rejoinIdx);
+    // Along-distance of rejoin point for step remapping.
+    var rejoinAlongM = 0.0;
+    for (var i = 1; i <= rejoinIdx && i < route.coordinates.length; i++) {
+      rejoinAlongM += haversineM(
+        route.coordinates[i - 1][1],
+        route.coordinates[i - 1][0],
+        route.coordinates[i][1],
+        route.coordinates[i][0],
+      );
+    }
+    final stepCutoff = skipAheadM > 0 ? rejoinAlongM : prog.distanceAlongM;
+
     try {
       List<List<double>> approach = const [];
       List<NavStep> approachSteps = const [];
       var approachDistM = 0.0;
-      if (prog.crossTrackM > 25) {
+      final needApproach = prog.crossTrackM > 25 || skipAheadM > 0;
+      if (needApproach) {
         // Rejoin-Profil: bevorzugter Sport / aktives Bike, nicht immer MTB.
         final preferred =
             ref.read(userProfileStoreProvider).preferredSport;
@@ -913,6 +1292,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
 
       if (!mounted) return;
+      final snapshot = route;
+      final why = skipAheadM > 0
+          ? 'Abschnitt übersprungen — zurück zur Route.'
+          : 'Zurück zur Route.';
       ref.read(activeRouteProvider.notifier).state = ActiveRoute(
         id: '${route.id}-rejoin',
         name: '${route.name} (Rejoin)',
@@ -924,22 +1307,33 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         steps: [
           ...approachSteps,
           for (final st in route.steps)
-            if (st.distanceAlongM >= prog.distanceAlongM)
+            if (st.distanceAlongM >= stepCutoff)
               NavStep(
                 id: st.id,
                 instruction: st.instruction,
                 distanceAlongM:
-                    (st.distanceAlongM - prog.distanceAlongM + approachDistM)
+                    (st.distanceAlongM - stepCutoff + approachDistM)
                         .clamp(0, double.infinity),
               ),
         ],
+        poiStops: route.poiStops,
       );
+      _startUndoWindow(snapshot);
       setState(() {
         _offRoute = false;
         _offRouteBanner = null;
+        _userChoseStay = false;
         _alongRouteM = 0;
+        _rejoinWhyLine = why;
       });
-      if (!_ttsMuted) unawaited(_tts.speak('Route neu berechnet'));
+      if (!_ttsMuted) {
+        unawaited(
+          _tts.speak(
+            skipAheadM > 0 ? 'Abschnitt übersprungen' : 'Zurück zur Route',
+          ),
+        );
+      }
+      unawaited(_drawRideMap());
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1061,8 +1455,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     ref.read(rideElapsedSecProvider.notifier).state = 0;
     ref.read(rideDistanceMProvider.notifier).state = 0;
     unawaited(WakelockPlus.disable());
+    _connectivityTimer?.cancel();
+    _connectivityTimer = null;
+    await _notifActionSub?.cancel();
+    _notifActionSub = null;
     ref.invalidate(bikesProvider);
     ref.invalidate(recentRidesProvider);
+    _clearUndoRejoin();
     setState(() {
       _confirmStop = 0;
       _metrics = null;
@@ -1077,6 +1476,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       _chunkSeq = 0;
       _rideMap = null;
       _mapDrawSkip = 0;
+      _offRoute = false;
+      _offRouteBanner = null;
+      _userChoseStay = false;
+      _rejoinWhyLine = null;
+      _cleanMode = true;
+      _lastFollowLat = null;
+      _lastFollowLng = null;
+      _lastFollowCameraAt = null;
     });
 
     if (!mounted) return;
@@ -1095,7 +1502,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _lightSub?.cancel();
     _tick?.cancel();
     _idleLock?.cancel();
+    _undoRejoinTimer?.cancel();
+    _connectivityTimer?.cancel();
+    _notifActionSub?.cancel();
     unawaited(_tts.stop());
+    unawaited(WakelockPlus.disable());
     // Stop CSC reconnect when leaving Ride.
     unawaited(ref.read(bleCoreProvider).disconnect());
     super.dispose();
@@ -1125,84 +1536,109 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
     final theme = sunlight ? AppTheme.sunlight : Theme.of(context);
 
+    // Full-screen Clean ride: no AppBar chrome (controls live in HUD strip).
+    final hideAppBar = riding && _cleanMode;
+
     return Theme(
       data: theme,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(riding ? 'Live' : 'Bereit'),
-          actions: [
-            if (riding) ...[
-              IconButton(
-                tooltip: _cameraFollow ? 'Kamera-Follow an' : 'Kamera frei',
-                onPressed: () {
-                  setState(() => _cameraFollow = !_cameraFollow);
-                  if (_cameraFollow) unawaited(_drawRideMap());
-                },
-                icon: Icon(
-                  _cameraFollow ? Icons.my_location : Icons.location_searching,
-                  color: _cameraFollow ? AppColors.accent : null,
-                ),
-              ),
-              IconButton(
-                tooltip: _northUp ? 'Norden oben' : 'Fahrtrichtung oben',
-                onPressed: () {
-                  setState(() => _northUp = !_northUp);
-                  if (_cameraFollow) unawaited(_drawRideMap());
-                },
-                icon: Icon(
-                  _northUp ? Icons.explore : Icons.navigation,
-                  color: !_northUp ? AppColors.accent : null,
-                ),
-              ),
-            ],
-            if (riding && route != null)
-              IconButton(
-                tooltip: _autoRerouteEnabled
-                    ? 'Auto-Reroute an'
-                    : 'Auto-Reroute aus',
-                onPressed: () {
-                  setState(() => _autoRerouteEnabled = !_autoRerouteEnabled);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        _autoRerouteEnabled
-                            ? 'Auto-Reroute aktiv (Cooldown ${AppConfig.autoRerouteCooldownSec}s)'
-                            : 'Auto-Reroute aus — manueller Rejoin bleibt',
+        appBar: hideAppBar
+            ? null
+            : AppBar(
+                title: Text(riding ? 'Live' : 'Bereit'),
+                actions: [
+                  if (riding) ...[
+                    IconButton(
+                      tooltip:
+                          _cameraFollow ? 'Kamera-Follow an' : 'Kamera frei',
+                      onPressed: () {
+                        setState(() => _cameraFollow = !_cameraFollow);
+                        if (_cameraFollow) unawaited(_drawRideMap());
+                      },
+                      icon: Icon(
+                        _cameraFollow
+                            ? Icons.my_location
+                            : Icons.location_searching,
+                        color: _cameraFollow ? AppColors.accent : null,
                       ),
                     ),
-                  );
-                },
-                icon: Icon(
-                  _autoRerouteEnabled
-                      ? Icons.alt_route
-                      : Icons.alt_route_outlined,
-                  color: _autoRerouteEnabled ? AppColors.accent : null,
-                ),
+                    IconButton(
+                      tooltip:
+                          _northUp ? 'Norden oben' : 'Fahrtrichtung oben',
+                      onPressed: () {
+                        setState(() => _northUp = !_northUp);
+                        if (_cameraFollow) unawaited(_drawRideMap());
+                      },
+                      icon: Icon(
+                        _northUp ? Icons.explore : Icons.navigation,
+                        color: !_northUp ? AppColors.accent : null,
+                      ),
+                    ),
+                  ],
+                  if (riding && route != null)
+                    IconButton(
+                      tooltip: _autoRerouteEnabled
+                          ? 'Auto-Reroute an'
+                          : 'Auto-Reroute aus',
+                      onPressed: () {
+                        setState(
+                          () => _autoRerouteEnabled = !_autoRerouteEnabled,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _autoRerouteEnabled
+                                  ? 'Auto-Reroute aktiv (Cooldown ${AppConfig.autoRerouteCooldownSec}s)'
+                                  : 'Auto-Reroute aus — manueller Rejoin bleibt',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        _autoRerouteEnabled
+                            ? Icons.alt_route
+                            : Icons.alt_route_outlined,
+                        color: _autoRerouteEnabled ? AppColors.accent : null,
+                      ),
+                    ),
+                  IconButton(
+                    tooltip: _ttsMuted ? 'TTS an' : 'TTS stumm',
+                    onPressed: () {
+                      setState(() => _ttsMuted = !_ttsMuted);
+                      if (_ttsMuted) unawaited(_tts.stop());
+                      _syncRideNotification();
+                    },
+                    icon: Icon(
+                      _ttsMuted
+                          ? Icons.volume_off_outlined
+                          : Icons.volume_up_outlined,
+                    ),
+                  ),
+                  if (riding)
+                    IconButton(
+                      tooltip: 'Display: ${_batteryPreset.titleDe}',
+                      onPressed: () => unawaited(_showBatteryPresetPicker()),
+                      icon: Icon(
+                        _batteryPreset.keepScreenOn
+                            ? Icons.battery_alert_outlined
+                            : Icons.battery_saver_outlined,
+                        color: _batteryPreset.costsBattery
+                            ? Colors.orange.shade800
+                            : null,
+                      ),
+                    ),
+                  IconButton(
+                    tooltip: _sunlightAuto
+                        ? 'Sunlight Mode (Auto)'
+                        : 'Sunlight Mode (Manuell)',
+                    onPressed: _toggleSunlightManual,
+                    icon: Icon(
+                      Icons.wb_sunny_outlined,
+                      color: sunlight ? AppColors.sunAccent : null,
+                    ),
+                  ),
+                ],
               ),
-            IconButton(
-              tooltip: _ttsMuted ? 'TTS an' : 'TTS stumm',
-              onPressed: () {
-                setState(() => _ttsMuted = !_ttsMuted);
-                if (_ttsMuted) unawaited(_tts.stop());
-              },
-              icon: Icon(
-                _ttsMuted
-                    ? Icons.volume_off_outlined
-                    : Icons.volume_up_outlined,
-              ),
-            ),
-            IconButton(
-              tooltip: _sunlightAuto
-                  ? 'Sunlight Mode (Auto)'
-                  : 'Sunlight Mode (Manuell)',
-              onPressed: _toggleSunlightManual,
-              icon: Icon(
-                Icons.wb_sunny_outlined,
-                color: sunlight ? AppColors.sunAccent : null,
-              ),
-            ),
-          ],
-        ),
         body: GestureDetector(
           onTap: _bumpIdle,
           onDoubleTap: _bumpIdle,
@@ -1259,20 +1695,19 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             alignment: Alignment.centerLeft,
                             child: TextButton.icon(
                               onPressed: () async {
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
                                 final ble = ref.read(bleCoreProvider);
                                 final ok = await ble.connect();
                                 if (!mounted) return;
+                                final msg = ok
+                                    ? (ble.statusDetail ??
+                                        'Radsensor verbunden')
+                                    : (ble.statusDetail ??
+                                        'Kein Radsensor gefunden');
                                 setState(() {});
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      ok
-                                          ? (ble.statusDetail ??
-                                              'Radsensor verbunden')
-                                          : (ble.statusDetail ??
-                                              'Kein Radsensor gefunden'),
-                                    ),
-                                  ),
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text(msg)),
                                 );
                               },
                               icon: const Icon(Icons.bluetooth_searching,
@@ -1408,6 +1843,39 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           _ => Icons.navigation,
         };
 
+    // Rest km + ETA for data strip (route-aware).
+    final restKm = route != null
+        ? math.max(0.0, route.distanceKm - (_alongRouteM / 1000))
+        : null;
+    final speed = _effectiveSpeedKmh;
+    String etaLabel;
+    if (restKm != null && speed > 3) {
+      final etaMin = (restKm / speed * 60).round();
+      final etaAt = DateTime.now().add(Duration(minutes: etaMin));
+      etaLabel =
+          '${etaAt.hour.toString().padLeft(2, '0')}:${etaAt.minute.toString().padLeft(2, '0')}';
+    } else if (restKm != null && route!.durationMin > 0) {
+      final frac = route.distanceKm > 0
+          ? (_alongRouteM / 1000 / route.distanceKm).clamp(0.0, 1.0)
+          : 0.0;
+      final remainMin = (route.durationMin * (1 - frac)).round();
+      final etaAt = DateTime.now().add(Duration(minutes: remainMin));
+      etaLabel =
+          '${etaAt.hour.toString().padLeft(2, '0')}:${etaAt.minute.toString().padLeft(2, '0')}';
+    } else {
+      etaLabel = _fmt(elapsed);
+    }
+
+    final midValue = restKm != null
+        ? (restKm < 10
+            ? restKm.toStringAsFixed(1)
+            : restKm.toStringAsFixed(0))
+        : (distanceM < 1000
+            ? (distanceM / 1000).toStringAsFixed(2)
+            : (distanceM / 1000).toStringAsFixed(1));
+    final midLabel = restKm != null ? 'Rest km' : 'km';
+    final rightLabel = restKm != null ? 'ETA' : 'Zeit';
+
     return Stack(
       children: [
         Positioned.fill(
@@ -1444,8 +1912,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               : ColoredBox(
                   color: theme.scaffoldBackgroundColor,
                   child: Padding(
-                    // 88/160: Platz für Top-Bar/Bottom-Controls-Overlay,
-                    // keine Rhythmus-Stufe.
+                    // Platz für Top-Bar/Bottom-Controls-Overlay.
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.l,
                       88,
@@ -1467,52 +1934,121 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (navParts != null)
-                  Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    color: AppColors.accent,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.l,
-                        vertical: AppSpacing.m,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            turnIcon(navParts.iconName),
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                          const SizedBox(width: AppSpacing.m),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  navParts.distance,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 28,
-                                    color: Colors.white,
-                                    height: 1.05,
-                                  ),
-                                ),
-                                Text(
-                                  navParts.instruction,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    height: 1.15,
-                                  ),
-                                ),
-                              ],
+                // Compact trust strip (Clean Mode): mute · north · chip · battery.
+                if (_cleanMode)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                    child: Row(
+                      children: [
+                        Material(
+                          color: theme.cardColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: IconButton(
+                            tooltip: _ttsMuted ? 'TTS an' : 'TTS stumm',
+                            onPressed: () {
+                              setState(() => _ttsMuted = !_ttsMuted);
+                              if (_ttsMuted) unawaited(_tts.stop());
+                              _syncRideNotification();
+                            },
+                            icon: Icon(
+                              _ttsMuted
+                                  ? Icons.volume_off_outlined
+                                  : Icons.volume_up_outlined,
+                              size: 22,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Material(
+                          color: theme.cardColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: IconButton(
+                            tooltip: _northUp
+                                ? 'Norden oben'
+                                : 'Fahrtrichtung oben',
+                            onPressed: () {
+                              setState(() => _northUp = !_northUp);
+                              if (_cameraFollow) unawaited(_drawRideMap());
+                            },
+                            icon: Icon(
+                              _northUp ? Icons.explore : Icons.navigation,
+                              size: 22,
+                              color: !_northUp ? AppColors.accent : null,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        if (!_cameraFollow)
+                          Material(
+                            color: theme.cardColor.withValues(alpha: 0.9),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.pill),
+                            child: IconButton(
+                              tooltip: 'Kamera folgen',
+                              onPressed: () {
+                                setState(() => _cameraFollow = true);
+                                unawaited(_drawRideMap());
+                              },
+                              icon: const Icon(
+                                Icons.my_location,
+                                size: 22,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(width: AppSpacing.xs),
+                        // N-03/N-08: honest connectivity (hide quiet Live).
+                        if (connectivityChipVisibleInClean(_connectivityState))
+                          Flexible(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: RideConnectivityChip(
+                                state: _connectivityState,
+                                compact: true,
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        // N-04: battery / keep-screen indicator + picker.
+                        Material(
+                          color: theme.cardColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: IconButton(
+                            tooltip:
+                                'Display: ${_batteryPreset.titleDe}${_batteryPreset.costsBattery ? ' (kostet Akku)' : ''}',
+                            onPressed: () => unawaited(_showBatteryPresetPicker()),
+                            icon: Icon(
+                              _batteryPreset.keepScreenOn
+                                  ? Icons.battery_alert_outlined
+                                  : _batteryPreset.wakeOnCue
+                                      ? Icons.battery_charging_full
+                                      : Icons.battery_saver_outlined,
+                              size: 22,
+                              color: _batteryPreset.costsBattery
+                                  ? Colors.orange.shade800
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        Material(
+                          color: theme.cardColor.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: IconButton(
+                            tooltip: 'Mehr Optionen',
+                            onPressed: () {
+                              setState(() => _cleanMode = false);
+                            },
+                            icon: const Icon(Icons.more_horiz, size: 22),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                if (navParts != null)
+                  RideNextTurnBanner(
+                    distance: navParts.distance,
+                    instruction: navParts.instruction,
+                    icon: turnIcon(navParts.iconName),
                   )
                 else if (route != null)
                   Material(
@@ -1530,8 +2066,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                       ),
                     ),
                   ),
-                // Eine Statuszeile statt gestapelter Banner — siehe
-                // _buildStatusStrip() für die Prioritätsreihenfolge.
+                // N-07: one-line upcoming peek under next-turn.
+                if (route != null) _buildUpcomingRail(route),
+                // Status: off-route / rejoin why / GPS (one strip only).
                 _buildStatusStrip(theme),
               ],
             ),
@@ -1544,107 +2081,130 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SegmentedButton<RideLiveLayer>(
-                segments: [
-                  const ButtonSegment(
-                    value: RideLiveLayer.map,
-                    label: Text('Karte'),
-                    icon: Icon(Icons.map),
-                  ),
-                  const ButtonSegment(
-                    value: RideLiveLayer.data,
-                    label: Text('Daten'),
-                    icon: Icon(Icons.grid_view),
-                  ),
-                  if (_showsChassisUx(ref))
-                    ButtonSegment(
-                      value: RideLiveLayer.suspension,
-                      label: Text(
-                        MultiSportCopy.chassisLayerLabel(
-                          ref.watch(userProfileStoreProvider).preferredSport,
-                        ),
-                      ),
-                      icon: const Icon(Icons.waves),
+              // Pro / layer switcher only outside Clean Mode.
+              if (!_cleanMode) ...[
+                SegmentedButton<RideLiveLayer>(
+                  segments: [
+                    const ButtonSegment(
+                      value: RideLiveLayer.map,
+                      label: Text('Karte'),
+                      icon: Icon(Icons.map),
                     ),
-                ],
-                selected: {
-                  // City/Road: kein Fahrwerk-Layer — zurück auf Karte.
-                  layer == RideLiveLayer.suspension && !_showsChassisUx(ref)
-                      ? RideLiveLayer.map
-                      : layer,
-                },
-                onSelectionChanged: (s) {
-                  _bumpIdle();
-                  ref.read(rideLayerProvider.notifier).state = s.first;
-                },
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Material(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                color: theme.cardColor.withValues(alpha: 0.94),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _bigStat(
-                        (_effectiveSpeedKmh).toStringAsFixed(0),
-                        'km/h',
+                    const ButtonSegment(
+                      value: RideLiveLayer.data,
+                      label: Text('Daten'),
+                      icon: Icon(Icons.grid_view),
+                    ),
+                    if (_showsChassisUx(ref))
+                      ButtonSegment(
+                        value: RideLiveLayer.suspension,
+                        label: Text(
+                          MultiSportCopy.chassisLayerLabel(
+                            ref.watch(userProfileStoreProvider).preferredSport,
+                          ),
+                        ),
+                        icon: const Icon(Icons.waves),
                       ),
-                      _bigStat(
-                        distanceM < 1000
-                            ? (distanceM / 1000).toStringAsFixed(2)
-                            : (distanceM / 1000).toStringAsFixed(1),
-                        'km',
-                      ),
-                      _bigStat(_fmt(elapsed), 'Zeit'),
-                    ],
+                  ],
+                  selected: {
+                    layer == RideLiveLayer.suspension && !_showsChassisUx(ref)
+                        ? RideLiveLayer.map
+                        : layer,
+                  },
+                  onSelectionChanged: (s) {
+                    _bumpIdle();
+                    ref.read(rideLayerProvider.notifier).state = s.first;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.s),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => setState(() => _cleanMode = true),
+                    child: const Text('Clean Mode'),
                   ),
                 ),
+              ],
+              RideDataStrip(
+                speedLabel: speed.toStringAsFixed(0),
+                midValue: midValue,
+                midLabel: midLabel,
+                rightValue: etaLabel,
+                rightLabel: rightLabel,
+                onTap: () {
+                  // Pro data without polluting Clean default.
+                  _bumpIdle();
+                  setState(() => _cleanMode = !_cleanMode);
+                },
               ),
               const SizedBox(height: AppSpacing.s),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonal(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(56),
-                      ),
-                      onPressed: () {
-                        _bumpIdle();
-                        ref.read(isPausedProvider.notifier).state = !paused;
-                      },
-                      child: Text(
-                        paused ? 'Weiter' : 'Pause',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+              // Clean: Pause only. Finish after Pause → confirm (brief).
+              if (paused || !_cleanMode)
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonal(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                        ),
+                        onPressed: () {
+                          _bumpIdle();
+                          final wasPaused = paused;
+                          ref.read(isPausedProvider.notifier).state = !paused;
+                          if (wasPaused) setState(() => _confirmStop = 0);
+                          _syncRideNotification();
+                        },
+                        child: Text(
+                          paused ? 'Weiter' : 'Pause',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor:
-                            _confirmStop > 0 ? Colors.red : Colors.redAccent,
-                        minimumSize: const Size.fromHeight(56),
-                      ),
-                      onPressed: () async {
-                        _bumpIdle();
-                        await _stop();
-                      },
-                      child: Text(
-                        _confirmStop > 0 ? 'Nochmal tippen' : 'Stop',
-                        style: const TextStyle(fontSize: 16),
+                    const SizedBox(width: AppSpacing.s),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _confirmStop > 0
+                              ? Colors.red
+                              : Colors.redAccent,
+                          minimumSize: const Size.fromHeight(56),
+                        ),
+                        onPressed: () async {
+                          _bumpIdle();
+                          await _stop();
+                        },
+                        child: Text(
+                          _confirmStop > 0 ? 'Nochmal tippen' : 'Stop',
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ),
                     ),
+                  ],
+                )
+              else
+                FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
                   ),
-                ],
-              ),
-              if (_confirmStop == 0)
+                  onPressed: () {
+                    _bumpIdle();
+                    setState(() => _confirmStop = 0);
+                    ref.read(isPausedProvider.notifier).state = true;
+                    _syncRideNotification();
+                  },
+                  child: const Text(
+                    'Pause',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              if (paused && _confirmStop == 0)
                 const Padding(
                   padding: EdgeInsets.only(top: AppSpacing.xs),
                   child: Text(
@@ -1682,96 +2242,115 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     );
   }
 
+  /// N-07: thin upcoming rail (next turn / POI / climb stub).
+  Widget _buildUpcomingRail(ActiveRoute route) {
+    String? nextNextInstr;
+    double? nextNextRemain;
+    if (route.steps.isNotEmpty) {
+      final remaining = route.steps
+          .where((s) => s.distanceAlongM > _alongRouteM + 5)
+          .toList()
+        ..sort((a, b) => a.distanceAlongM.compareTo(b.distanceAlongM));
+      if (remaining.length >= 2) {
+        final second = remaining[1];
+        nextNextInstr = second.instruction;
+        nextNextRemain = second.distanceAlongM - _alongRouteM;
+      }
+    } else if (route.coordinates.length >= 4) {
+      final cues = buildNavCues(route.coordinates);
+      final ahead = cues.where((c) => c.distanceAlongM > _alongRouteM + 5).toList();
+      if (ahead.length >= 2) {
+        nextNextInstr = ahead[1].instruction;
+        nextNextRemain = ahead[1].distanceAlongM - _alongRouteM;
+      }
+    }
+
+    final poi = nextPoiStop(
+      stops: [
+        for (final p in route.poiStops)
+          RoutePoiStop(atMin: p.atMin, title: p.title, kind: p.kind),
+      ],
+      alongRouteM: _alongRouteM,
+      totalDistanceM: route.distanceKm * 1000,
+      durationMin: route.durationMin,
+    );
+
+    // Climb stub: remaining elevation scaled by progress (honest-ish).
+    final progress = route.distanceKm > 0
+        ? (_alongRouteM / 1000 / route.distanceKm).clamp(0.0, 1.0)
+        : 0.0;
+    final remainClimb = route.elevationM * (1 - progress);
+
+    final item = buildUpcomingRail(
+      nextNextTurnInstruction: nextNextInstr,
+      nextNextTurnRemainingM: nextNextRemain,
+      nextPoi: poi,
+      remainingClimbM: remainClimb,
+    );
+    if (item == null) return const SizedBox.shrink();
+    return RideUpcomingRail(item: item);
+  }
+
   /// Eine Statuszeile statt gestapelter Banner. Priorität (höchste zuerst):
-  /// Reroute läuft → Route verlassen → GPS-Problem → Fahr-Hinweis. Es ist
-  /// immer nur die wichtigste Meldung sichtbar, nie mehrere gleichzeitig.
+  /// Reroute läuft → Undo Rejoin → Abseits der Route → GPS → Hinweis.
   Widget _buildStatusStrip(ThemeData theme) {
     if (_autoRerouteBusy) {
-      return _statusBanner(
-        text: 'Route wird neu berechnet …',
+      return RideOffRouteBanner(
+        title: 'Route wird neu berechnet …',
         background: Colors.orange.shade100,
         foreground: Colors.orange.shade900,
       );
     }
-    if (_offRouteBanner != null) {
-      return _statusBanner(
-        text: _autoRerouteEnabled
-            ? 'Route verlassen — neu berechnen…'
-            : 'Route verlassen — tippe „Zurück auf Route“',
-        background: Colors.orange.shade100,
-        foreground: Colors.orange.shade900,
-        actionLabel: 'Zurück auf Route',
+    if (_routeBeforeRejoin != null && _rejoinWhyLine != null) {
+      return RideOffRouteBanner(
+        title: _rejoinWhyLine!,
+        subtitle: '10 s Rückgängig',
+        actionLabel: 'Rückgängig',
         onAction: () {
           _bumpIdle();
-          unawaited(_rejoinRoute());
+          _undoRejoin();
+        },
+        background: Colors.green.shade50,
+        foreground: Colors.green.shade900,
+      );
+    }
+    if (_offRouteBanner != null) {
+      return RideOffRouteBanner(
+        title: 'Abseits der Route.',
+        subtitle: _userChoseStay
+            ? 'Du bleibst abseits — tippe für Optionen.'
+            : (_autoRerouteEnabled
+                ? 'Neu berechnen …'
+                : 'Tippe für Optionen.'),
+        actionLabel: _userChoseStay ? 'Optionen' : 'Zurück zur Route',
+        onAction: () {
+          _bumpIdle();
+          if (_userChoseStay) {
+            setState(() => _userChoseStay = false);
+            unawaited(_showRerouteSheetIfNeeded());
+          } else {
+            unawaited(_rejoinRoute());
+          }
         },
       );
     }
     if (_gpsStatus != null) {
-      return _statusBanner(
-        text: _gpsStatus!,
+      return RideOffRouteBanner(
+        title: _gpsStatus!,
         background: Colors.orange.shade50,
         foreground: Colors.orange.shade800,
         compact: true,
       );
     }
-    if (_liveHintText != null) {
-      return _statusBanner(
-        text: _liveHintText!,
+    if (_liveHintText != null && !_cleanMode) {
+      return RideOffRouteBanner(
+        title: _liveHintText!,
         background: Colors.orange.shade50,
         foreground: Colors.orange.shade800,
         compact: true,
       );
     }
     return const SizedBox.shrink();
-  }
-
-  Widget _statusBanner({
-    required String text,
-    required Color background,
-    required Color foreground,
-    String? actionLabel,
-    VoidCallback? onAction,
-    bool compact = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.s),
-      child: Material(
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        color: background,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.m,
-            vertical: compact ? AppSpacing.xs : AppSpacing.s,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    fontWeight: compact ? FontWeight.w600 : FontWeight.w800,
-                    color: foreground,
-                    fontSize: compact ? 13 : 15,
-                  ),
-                ),
-              ),
-              if (actionLabel != null)
-                TextButton(
-                  onPressed: onAction,
-                  child: Text(
-                    actionLabel,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: foreground,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildLayer(
@@ -1913,23 +2492,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       return ble.statusDetail ?? 'Radsensor nicht verbunden · GPS-Track aktiv';
     }
     return 'Radsensor bereit — einschalten zum Verbinden';
-  }
-
-  Widget _bigStat(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            fontFeatures: [FontFeature.tabularFigures()],
-          ),
-        ),
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-      ],
-    );
   }
 
   String _fmt(int sec) {

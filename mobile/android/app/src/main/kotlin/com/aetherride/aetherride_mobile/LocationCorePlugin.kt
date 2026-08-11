@@ -9,7 +9,18 @@ import io.flutter.plugin.common.MethodChannel
 class LocationCorePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
     private lateinit var methodChannel: MethodChannel
     private lateinit var eventChannel: EventChannel
+    private lateinit var actionChannel: EventChannel
     private var appContext: Context? = null
+
+    private val actionHandler = object : EventChannel.StreamHandler {
+        override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+            RideLocationService.actionSink = events
+        }
+
+        override fun onCancel(arguments: Any?) {
+            RideLocationService.actionSink = null
+        }
+    }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         appContext = binding.applicationContext
@@ -17,13 +28,17 @@ class LocationCorePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Event
         methodChannel.setMethodCallHandler(this)
         eventChannel = EventChannel(binding.binaryMessenger, "com.aetherride/location_core/fixes")
         eventChannel.setStreamHandler(this)
+        actionChannel = EventChannel(binding.binaryMessenger, "com.aetherride/location_core/actions")
+        actionChannel.setStreamHandler(actionHandler)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
+        actionChannel.setStreamHandler(null)
         appContext?.let { RideLocationService.stop(it) }
         RideLocationService.eventSink = null
+        RideLocationService.actionSink = null
         appContext = null
     }
 
@@ -40,6 +55,13 @@ class LocationCorePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Event
             }
             "stop" -> {
                 RideLocationService.stop(ctx)
+                result.success(true)
+            }
+            "updateNotification" -> {
+                val paused = call.argument<Boolean>("paused") ?: false
+                val muted = call.argument<Boolean>("muted") ?: false
+                val text = call.argument<String>("text")
+                RideLocationService.updateUi(ctx, paused, muted, text)
                 result.success(true)
             }
             else -> result.notImplemented()

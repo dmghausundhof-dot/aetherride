@@ -17,6 +17,12 @@ enum DiscoverLaunchMode { discover, plan }
 final discoverLaunchModeProvider =
     StateProvider<DiscoverLaunchMode?>((ref) => null);
 
+/// Deep-Link: Discover mit Loop-Highlight (`?loop=<id>` ohne start=1).
+final discoverPendingLoopIdProvider = StateProvider<String?>((ref) => null);
+
+/// Deep-Link Dauer-Lens (`?lens=60`).
+final discoverPendingLensMinutesProvider = StateProvider<int?>((ref) => null);
+
 final syncAuthStatusProvider =
     StateProvider<SyncAuthStatus>((ref) => SyncAuthStatus.unknown);
 

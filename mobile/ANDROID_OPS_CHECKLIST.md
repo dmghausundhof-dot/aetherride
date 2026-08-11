@@ -13,6 +13,19 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 - [x] Cleartext nur Emulator-Loopback (`network_security_config.xml` → 10.0.2.2)
 - [x] Unit-Tests: `mobile/test/deep_link_parse_test.dart`
 - [x] Smoke: `npm run smoke:deeplink` · mit Gerät `npm run smoke:deeplink:adb`
+- [x] **D-60-05 60-Min Loop start** (Discover → ActiveRoute → Ride):  
+  Query: `lens=60&loop=<seed-id>&start=1`  
+  - Custom: `aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=1`  
+  - HTTPS: `https://aetherride.vercel.app/discover?lens=60&loop=seed-loop-tempelhofer-60&start=1`  
+  - Seed-IDs (bundled): `seed-loop-tempelhofer-60`, `seed-loop-spree-feierabend-60`, `seed-loop-grunewald-kurz-60`  
+  - Asset: `mobile/assets/seeds/naehe-peek-seeds-berlin-v1.json`  
+  - adb:
+    ```bash
+    adb shell am start -a android.intent.action.VIEW \
+      -d 'aetherride://discover?lens=60&loop=seed-loop-tempelhofer-60&start=1' \
+      com.aetherride.aetherride_mobile
+    ```
+  - Ohne `start=1`: Discover-Tab + Loop-Highlight (`discoverPendingLoopIdProvider`)
 - [ ] Vercel: `NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS` (Debug: `ops-android-auth.sh`; Play: App Signing)
 - [ ] Vercel: `NEXT_PUBLIC_IOS_TEAM_ID` für Universal Links
 - [ ] Device-Test:  

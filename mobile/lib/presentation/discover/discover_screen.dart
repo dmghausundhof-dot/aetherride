@@ -23,12 +23,14 @@ import '../../data/routing/elevation_client.dart';
 import '../../data/routing/geocode_client.dart';
 import '../../data/routing/osm_routes_client.dart';
 import '../../data/routing/osm_trail_network_client.dart';
+import '../../data/routing/naehe_seeds.dart';
 import '../../data/routing/public_tours_client.dart';
 import '../../data/routing/route_collections.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/routing_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
+import '../../domain/routing/duration_lens.dart';
 import '../../domain/routing/heatmap.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/routing_status_client.dart';
@@ -86,6 +88,8 @@ class _RouteSuggestion {
     ],
     this.trackLngLat,
     this.sourceKind = 'other',
+    this.isLoopHint,
+    this.poiStopsCount = 0,
   });
 
   final String id;
@@ -103,19 +107,27 @@ class _RouteSuggestion {
   /// Optional echte Polyline [lng, lat] (z. B. Outdooractive).
   final List<List<double>>? trackLngLat;
 
-  /// catalog | osm | outdooractive | other
+  /// catalog | osm | outdooractive | seed | other
   final String sourceKind;
+
+  /// Seed/Katalog-Hinweis „Rundkurs“ — nur wenn keine Geometrie widerspricht.
+  final bool? isLoopHint;
+
+  /// POI-Stops (Seeds) — günstig auf der Karte anzeigen.
+  final int poiStopsCount;
 
   bool get hasTrack => trackLngLat != null && trackLngLat!.length >= 2;
 
   bool get isCatalog => sourceKind == 'catalog';
   bool get isLiveOsm => sourceKind == 'osm';
   bool get isOutdooractive => sourceKind == 'outdooractive';
+  bool get isSeed => sourceKind == 'seed';
 
   String get sourceLabel => switch (sourceKind) {
         'catalog' => 'Katalog',
         'osm' => 'OSM live',
         'outdooractive' => 'Outdooractive',
+        'seed' => 'Region',
         _ => 'Tour',
       };
 }
@@ -349,7 +361,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   _Surface _surface = _Surface.discover;
   RoutingProfile _profile = RoutingProfile.mtbTrail;
-  int _minutes = 90;
+  /// Default-Lens ~60 Min (D-60-01); 0 = egal.
+  int _minutes = 60;
   bool _loading = false;
   String? _error;
   String? _status;
@@ -381,19 +394,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _trailNetworkStatus;
   TrailDifficulty? _trailScaleFilter;
 
-  /// Filtert die Tourenliste auf Nähe zum Zeitbudget [_minutes] — beide
-  /// Regler steuern dieselbe Zahl statt zwei getrennte zu synchronisieren.
-  /// Vorher gab es hier ein eigenes `_durationBucket` (60/90/120), das der
-  /// Zeit-Chip in der Kopfzeile und der Filter-Sheet-Chip gegenseitig still
-  /// überschrieben — zwei Regler, eine Bedeutung, aber ohne dass in der
-  /// jeweils anderen UI sichtbar wurde, was gerade passiert war.
-  bool _matchTourDuration = false;
+  /// Filtert die Tourenliste auf Nähe zum Zeitbudget [_minutes].
+  /// Default an: ~60-Min-Lens mit Band 45–75 (D-60-01).
+  bool _matchTourDuration = true;
   String? _surfaceFilter;
   String? _scaleFilter; // S0 / S1 / S2+
   bool? _loopOnly;
   int? _minElevationM;
   bool _heatmapConsent = false;
   bool _heatmapContributed = false;
+
+  /// Bundled Nähe-Seeds (Berlin) — Fallback ohne GPS / leeres OA·OSM.
+  NaeheSeedsBundle? _seedsBundle;
+  String? _seedsStatus;
 
   /// Community-Aggregat vom Backend (bereits k≥5-gefiltert, anonym) — zeigt
   /// als Vertrauenssignal an Tourenkarten, ohne dass der Nutzer selbst
@@ -419,7 +432,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Nur Karten-Übersicht DACH+FR bis GPS da ist — nie Tour-Origin.
   static const _regionOverview = GeoPoint(47.2, 6.5);
-  static const _quickBudgets = [45, 60, 90, 120, 150, 180, 240];
   /// Multi-Sport Oberflächen — MTB, Gravel, Road, City.
   static const _surfaceTags = [
     'asphalt/paved',
@@ -450,6 +462,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _fetchTrailNetwork();
     _fetchTrailforks();
     unawaited(_fetchPublicCatalog());
+    unawaited(_loadNaeheSeeds());
     unawaited(_fetchCommunityHeatmap());
     unawaited(_fetchRoutingStatus());
     unawaited(
@@ -466,14 +479,39 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             (b) => b?.isActive == true,
             orElse: () => bikes.isEmpty ? null : bikes.first,
           );
+      final sportCat = active?.category ??
+          ref.read(userProfileStoreProvider).preferredSport;
       if (active != null) {
-        setState(() => _profile = routingProfileForBike(active.category));
+        setState(() {
+          _profile = routingProfileForBike(active.category);
+          // Sport-aware Dauer-Default (Touring → 2–3 h, sonst ~60).
+          _minutes = DurationLens.defaultMinutesForSport(sportCat);
+          _matchTourDuration = _minutes > 0;
+        });
       } else {
         final preferred =
             ref.read(userProfileStoreProvider).preferredSport;
         if (preferred != null) {
-          setState(() => _profile = routingProfileForBike(preferred));
+          setState(() {
+            _profile = routingProfileForBike(preferred);
+            _minutes = DurationLens.defaultMinutesForSport(preferred);
+            _matchTourDuration = _minutes > 0;
+          });
         }
+      }
+      // Deep-Link: lens / loop highlight (ohne start=1; start läuft im Handler).
+      final pendingLens = ref.read(discoverPendingLensMinutesProvider);
+      if (pendingLens != null) {
+        ref.read(discoverPendingLensMinutesProvider.notifier).state = null;
+        setState(() {
+          _minutes = pendingLens;
+          _matchTourDuration = pendingLens > 0;
+        });
+      }
+      final pendingLoop = ref.read(discoverPendingLoopIdProvider);
+      if (pendingLoop != null) {
+        ref.read(discoverPendingLoopIdProvider.notifier).state = null;
+        setState(() => _selectedTourId = pendingLoop);
       }
       final launch = ref.read(discoverLaunchModeProvider);
       if (launch != null) {
@@ -1190,6 +1228,73 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  /// Bundled Nähe-Seeds (Berlin ~60-Min-Loops) — D-60-03.
+  Future<void> _loadNaeheSeeds() async {
+    try {
+      final bundle = await NaeheSeedsBundle.load();
+      if (!mounted) return;
+      final parsed = <_RouteSuggestion>[];
+      for (final s in bundle.routes) {
+        if (s.durationMin <= 0 && s.distanceKm <= 0) continue;
+        final effort = s.effortLabel;
+        final mtb = switch (effort.toLowerCase()) {
+          'leicht' => 'S0',
+          'anspruchsvoll' || 'schwer' => 'S2+',
+          _ => 'S1',
+        };
+        parsed.add(
+          _RouteSuggestion(
+            id: s.id,
+            name: s.title,
+            distanceKm: s.distanceKm,
+            elevationM: s.ascentM,
+            durationMin: s.durationMin > 0
+                ? s.durationMin
+                : (s.distanceKm * 4).round().clamp(20, 300),
+            mtbScale: mtb,
+            surface: s.surfaceTag,
+            matchScore: s.isLoop ? 70 : 55,
+            reasons: [
+              if (s.isLoop) 'Rundkurs (Seed)',
+              if (s.durationBand != null) 'Dauer-Band ~${s.durationBand}',
+              if (s.poiStops.isNotEmpty)
+                '${s.poiStops.length} Stops auf der Runde',
+              for (final p in s.poiStops.take(3))
+                '· ${p.atMin} Min  ${p.title}',
+              'Offline-Fallback · ${bundle.labelWithoutLocation}',
+            ],
+            center: LatLng(s.centerLat, s.centerLng),
+            categories: s.categories,
+            trackLngLat: s.trackLngLat,
+            sourceKind: 'seed',
+            isLoopHint: s.isLoop,
+            poiStopsCount: s.poiStops.length,
+          ),
+        );
+      }
+      setState(() {
+        _seedsBundle = bundle;
+        final byId = <String, _RouteSuggestion>{
+          for (final t in _tours) t.id: t,
+        };
+        // Seed-IDs sind kuratiert (seed-loop-…); überschreiben eigene Einträge.
+        for (final p in parsed) {
+          byId[p.id] = p;
+        }
+        _tours = byId.values.toList();
+        final loops = parsed.where((t) => t.isLoopHint == true).length;
+        _seedsStatus =
+            'Seeds ${parsed.length} ($loops Rundkurse) · ${bundle.labelWithoutLocation}';
+      });
+      await _drawAll();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _seedsStatus = 'Seeds offline');
+      }
+      debugPrint('NaeheSeeds: $e');
+    }
+  }
+
   /// Redaktioneller Katalog vom Backend — füllt Touren auch ohne GPS.
   Future<void> _fetchPublicCatalog() async {
     try {
@@ -1225,6 +1330,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             center: LatLng(h.centerLat, h.centerLng),
             categories: h.categories,
             sourceKind: 'catalog',
+            isLoopHint: h.loop ? true : null,
           ),
         );
       }
@@ -1612,12 +1718,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final cat = active?.category;
 
     final base = _tours.where((r) {
-      // Nutzt direkt das Zeitbudget von oben statt eines eigenen Werts —
-      // ändert man dort die Minuten, filtert die Liste automatisch mit,
-      // ohne dass zwei Zahlen synchron gehalten werden müssen.
-      if (_matchTourDuration) {
-        final delta = (r.durationMin - _minutes).abs();
-        if (delta > 45) return false;
+      // Dauer-Band der aktiven Lens (für ~60: 45–75 Min, D-60-01).
+      if (_matchTourDuration && _minutes > 0) {
+        if (!DurationLens.inBand(r.durationMin, _minutes)) return false;
       }
       if (_surfaceFilter != null &&
           !_surfaceMatchesFilter(r.surface, _surfaceFilter!)) {
@@ -1641,11 +1744,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (_minElevationM != null && r.elevationM < _minElevationM!) {
         return false;
       }
-      // „Nur Rundkurse" prüft die echte Geometrie. Vorher stand hier
-      // `r.distanceKm < 8` — der Filter hieß Rundkurs und filterte Distanz.
-      // Touren ohne Track haben unbekannte Form und fallen bewusst raus,
-      // statt als Rundkurs durchzugehen.
-      if (_loopOnly == true && routeShapeOf(r.trackLngLat) != RouteShape.loop) {
+      // „Nur Rundkurse": echte Geometrie ODER ehrlicher Seed/Katalog-Hint.
+      // A→B-Geometrie nie als Rundkurs durchlassen (D-60-02).
+      if (_loopOnly == true && !_isLoop(r)) {
         return false;
       }
       return true;
@@ -1653,7 +1754,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
     if (cat == null) {
       final sorted = List<_RouteSuggestion>.from(base);
-      sorted.sort(_byDistanceFromOrigin);
+      sorted.sort(_byDistanceThenDurationFit);
       return sorted;
     }
     // Nähe zuerst, innerhalb davon Kategorie-Treffer nach vorn.
@@ -1666,31 +1767,51 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         rest.add(r);
       }
     }
-    matched.sort(_byDistanceFromOrigin);
-    rest.sort(_byDistanceFromOrigin);
+    matched.sort(_byDistanceThenDurationFit);
+    rest.sort(_byDistanceThenDurationFit);
     if (matched.isEmpty) {
       final sorted = List<_RouteSuggestion>.from(base);
-      sorted.sort(_byDistanceFromOrigin);
+      sorted.sort(_byDistanceThenDurationFit);
       return sorted;
     }
     return [...matched, ...rest];
   }
 
-  int _byDistanceFromOrigin(_RouteSuggestion a, _RouteSuggestion b) {
+  int _byDistanceThenDurationFit(_RouteSuggestion a, _RouteSuggestion b) {
     final o = _origin;
     final da = _distKm(o.lat, o.lng, a.center.latitude, a.center.longitude);
     final db = _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude);
     final c = da.compareTo(db);
     if (c != 0) return c;
+    // Dann Duration-Fit (Spec: Distanz → Duration-Band).
+    if (_minutes > 0) {
+      final fit = DurationLens.fitDelta(a.durationMin, _minutes)
+          .compareTo(DurationLens.fitDelta(b.durationMin, _minutes));
+      if (fit != 0) return fit;
+    }
+    // Loops leicht bevorzugen (Primary Lens = Rundkurse).
+    final la = _isLoop(a) ? 0 : 1;
+    final lb = _isLoop(b) ? 0 : 1;
+    final lc = la.compareTo(lb);
+    if (lc != 0) return lc;
     return b.matchScore.compareTo(a.matchScore);
   }
 
-  /// Rundkurs oder Strecke — ausschließlich aus der echten Polyline, siehe
-  /// [routeShapeOf] (dort getestet). `null` = unbekannt, dann steht nichts da.
-  /// Es gab hier mal ein Feld `loop` am Vorschlag — pro Quelle hart gesetzt
-  /// (Outdooractive immer true, OSM immer false). Es ist entfernt, weil es
-  /// wie eine Eigenschaft der Tour aussah, aber nur die Quelle verriet.
-  String? _shapeLabel(_RouteSuggestion r) => routeShapeLabel(r.trackLngLat);
+  /// Ehrlich: Geometrie schlägt Hint. Seed `is_loop` nur ohne P2P-Track.
+  bool _isLoop(_RouteSuggestion r) {
+    final shape = routeShapeOf(r.trackLngLat);
+    if (shape == RouteShape.loop) return true;
+    if (shape == RouteShape.pointToPoint) return false;
+    return r.isLoopHint == true;
+  }
+
+  /// Rundkurs / Strecke — ⟲ nur bei echten Loops (D-60-02).
+  String? _shapeLabel(_RouteSuggestion r) {
+    if (_isLoop(r)) return '⟲ Rundkurs';
+    final shape = routeShapeOf(r.trackLngLat);
+    if (shape == RouteShape.pointToPoint) return 'Strecke';
+    return null;
+  }
 
   double _distKm(double lat1, double lng1, double lat2, double lng2) {
     const r = 6371.0;
@@ -3693,18 +3814,32 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.s),
-                    group('Dauer', [
-                      // Ein Schalter statt eigener Werte: das Zeitbudget wird
-                      // oben in der Kopfzeile eingestellt (Zeit-Chip), hier
-                      // wird nur bestimmt, ob die Tourenliste danach filtert.
+                    group('Dauer-Lens', [
+                      for (final p in DurationLens.presets)
+                        FilterChip(
+                          label: Text(p.label),
+                          selected: _minutes == p.minutes &&
+                              (p.minutes == 0
+                                  ? !_matchTourDuration
+                                  : _matchTourDuration),
+                          onSelected: (_) => update(() {
+                            _minutes = p.minutes;
+                            _matchTourDuration = p.minutes > 0;
+                          }),
+                        ),
                       Tooltip(
                         message:
-                            'Zeitbudget oben ändern — hier nur ein-/ausschalten',
+                            'Liste streng nach Dauer-Band filtern (für ~60: 45–75 Min)',
                         child: FilterChip(
-                          label: Text('~$_minutes min (wie oben)'),
-                          selected: _matchTourDuration,
-                          onSelected: (sel) =>
-                              update(() => _matchTourDuration = sel),
+                          label: Text(
+                            _minutes > 0
+                                ? 'Band ${DurationLens.chipLabel(_minutes)}'
+                                : 'Band aus',
+                          ),
+                          selected: _matchTourDuration && _minutes > 0,
+                          onSelected: (sel) => update(() {
+                            _matchTourDuration = sel && _minutes > 0;
+                          }),
                         ),
                       ),
                     ]),
@@ -3836,25 +3971,52 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  /// Die eine Stelle, an der das Zeitbudget geändert wird. Ändert es sich,
-  /// zieht die Tourenliste automatisch mit — sofern „~X min" im Filter-Sheet
-  /// aktiv ist, siehe [_matchTourDuration]. Kein zweiter Wert zu pflegen.
+  /// Dauer-Lens Chips: ~45 · ~60 · ~90 · 2–3 h · egal (D-60-01).
   Widget _durationChip() {
     return PopupMenuButton<int>(
-      tooltip: 'Zeitbudget',
+      tooltip: 'Dauer-Lens (~60 Min Default)',
       initialValue: _minutes,
       onSelected: (m) {
-        setState(() => _minutes = m);
+        setState(() {
+          _minutes = m;
+          // „egal“ schaltet Dauer-Filter aus; Presets schalten ihn an.
+          _matchTourDuration = m > 0;
+        });
         unawaited(_refreshQuick(limit: 3));
       },
       itemBuilder: (_) => [
-        for (final m in _quickBudgets)
-          PopupMenuItem(value: m, child: Text('$m min')),
+        for (final p in DurationLens.presets)
+          PopupMenuItem(
+            value: p.minutes,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  child: p.minutes == _minutes
+                      ? const Icon(Icons.check, size: 16)
+                      : null,
+                ),
+                Text(
+                  p.label,
+                  style: TextStyle(
+                    fontWeight: p.minutes == 60
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+                if (p.minutes == 60)
+                  const Text(
+                    '  Default',
+                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
+              ],
+            ),
+          ),
       ],
       child: _panelChip(
         icon: Icons.schedule,
-        label: '$_minutes min',
-        selected: _matchTourDuration,
+        label: DurationLens.chipLabel(_minutes),
+        selected: _matchTourDuration && _minutes > 0,
       ),
     );
   }
@@ -4265,8 +4427,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _sectionTitle(
         'In deiner Nähe · ${_profile.label}',
         hint: _hasRealOrigin
-            ? 'Vorschläge für ~$_minutes min · Profil ${_profile.label} · Tippen = Karte, Los = Navigation'
-            : 'Standort erlauben für Touren ab hier (alle Disziplinen)',
+            ? 'Vorschläge für ${DurationLens.chipLabel(_minutes)} · Profil ${_profile.label} · Tippen = Karte, Los = Navigation'
+            : 'Standort erlauben für Touren ab hier · Default-Lens ${DurationLens.chipLabel(_minutes)}',
         trailing: TextButton(
           onPressed: _loading ? null : () => unawaited(_refreshQuick(limit: 3)),
           child: const Text('Neu'),
@@ -4616,24 +4778,40 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  /// Zweite Sektion: Katalog (redaktionell) und Live (OSM/OA) getrennt.
+  /// Zweite Sektion: Katalog, Live (OSM/OA) und Seed-Fallback getrennt.
   List<Widget> _toursSection() {
     final list = _filtered;
     final catalog = list.where((r) => r.isCatalog).toList();
-    final live = list.where((r) => !r.isCatalog).toList();
+    final live = list.where((r) => !r.isCatalog && !r.isSeed).toList();
+    final seeds = list.where((r) => r.isSeed).toList();
     final o = _origin;
+    final liveEmpty = live.isEmpty;
+    // Seeds: ohne Standort oder wenn OA/OSM leer (D-60-03).
+    final showSeeds = seeds.isNotEmpty &&
+        (!_hasRealOrigin || liveEmpty || catalog.isEmpty);
+    final seedLabel = _hasRealOrigin
+        ? (_seedsBundle?.labelWithLocation ?? '~60 Min um dich')
+        : (_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region');
     final sources = [
       if (_oaStatus != null) _oaStatus!,
+      if (_seedsStatus != null) _seedsStatus!,
       if (_trailNetworkStatus != null) _trailNetworkStatus!,
     ].join(' · ');
 
+    final loopCount = list.where(_isLoop).length;
+    final lensHint = _matchTourDuration && _minutes > 0
+        ? ' · Lens ${DurationLens.chipLabel(_minutes)}'
+        : '';
+
     return [
       _sectionTitle(
-        'Touren (${list.length})',
+        loopCount > 0
+            ? 'Touren (${list.length}) · $loopCount Rundkurse$lensHint'
+            : 'Touren (${list.length})$lensHint',
         hint: _hasRealOrigin
             ? 'Katalog + Live · ab ${o.lat.toStringAsFixed(2)}°N'
                 '${_userPos != null ? ' (GPS)' : ''}'
-            : 'Katalog ohne GPS · Live-OSM nach Standort',
+            : 'Katalog + Seeds ohne GPS · Live-OSM nach Standort',
         trailing: TextButton(
           onPressed: _loading
               ? null
@@ -4641,6 +4819,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   unawaited(_fetchPublicCatalog());
                   unawaited(_fetchOsmRoutes());
                   unawaited(_fetchTrailNetwork());
+                  unawaited(_loadNaeheSeeds());
                 },
           child: const Text('Neu'),
         ),
@@ -4744,6 +4923,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ],
           ),
         ),
+      if (showSeeds) ...[
+        _sectionTitle(
+          '$seedLabel (${seeds.length})',
+          hint: _hasRealOrigin
+              ? 'Fallback-Loops · offline · Losfahren startet Ride'
+              : 'Berlin ~60-Min Rundkurse · offline nutzbar',
+        ),
+        for (final r in seeds) _tourListCard(r, o),
+      ],
       if (catalog.isNotEmpty) ...[
         _sectionTitle(
           'Katalog (${catalog.length})',
@@ -4760,10 +4948,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
         for (final r in live) _tourListCard(r, o),
       ],
+      // Seeds auch neben Live zeigen, wenn Lens ~60 und Loops fehlen.
+      if (!showSeeds && seeds.isNotEmpty && _minutes == 60) ...[
+        _sectionTitle(
+          '${_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region'} (${seeds.length})',
+          hint: 'Kuratierte ~60-Min Rundkurse',
+        ),
+        for (final r in seeds.where(_isLoop).take(6)) _tourListCard(r, o),
+      ],
     ];
   }
 
   Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
+    final loop = _isLoop(r);
+    final shape = _shapeLabel(r);
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
       child: Padding(
@@ -4778,6 +4976,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 children: [
                   Row(
                     children: [
+                      if (loop) ...[
+                        const Text(
+                          '⟲',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Expanded(
                         child: Text(
                           r.name,
@@ -4795,9 +5004,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: r.isCatalog
-                              ? AppColors.accent.withValues(alpha: 0.12)
-                              : AppColors.forest.withValues(alpha: 0.1),
+                          color: r.isSeed
+                              ? AppColors.accent.withValues(alpha: 0.1)
+                              : r.isCatalog
+                                  ? AppColors.accent.withValues(alpha: 0.12)
+                                  : AppColors.forest.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.chip),
                         ),
                         child: Text(
@@ -4805,7 +5016,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: r.isCatalog
+                            color: r.isCatalog || r.isSeed
                                 ? AppColors.accent
                                 : AppColors.forestOnDark,
                           ),
@@ -4814,14 +5025,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ],
                   ),
                   Text(
-                    _isPinOnlyIdea(r)
-                        ? '${r.sourceLabel} · Tour-Idee — „Route berechnen“'
-                        : r.hasTrack
-                            ? '${r.sourceLabel} · Track vorhanden'
-                            : '${r.sourceLabel} · Geometrie beim Start',
+                    [
+                      if (shape != null) shape,
+                      '~${r.durationMin} Min',
+                      '${r.distanceKm} km',
+                      if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
+                    ].join(' · '),
                     style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -4829,14 +5041,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     difficultyRaw: r.mtbScale,
                     segments: [
                       _surfaceDisplay(r.surface),
-                      if (_shapeLabel(r) case final shape?) shape,
+                      if (r.elevationM > 0) '↑${r.elevationM} m',
                       if (_nearbyActivity(r.center) case final n?)
                         'beliebt · ≥$n Ride-Nutzer',
                     ],
                   ),
                   Text(
-                    '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt · '
-                    '${r.distanceKm} km · ${r.elevationM} hm · ${r.durationMin} min',
+                    '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
+                    '${_isPinOnlyIdea(r) ? ' · Tour-Idee' : r.hasTrack ? ' · Track' : ''}',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.muted,
@@ -4846,22 +5058,47 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.s),
+            // Primary CTA zuerst (D-60-02): Losfahren ohne Detail-Umweg.
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                    ),
+                    onPressed: _loading
+                        ? null
+                        : () => unawaited(_startRide(suggestion: r)),
+                    icon: const Icon(Icons.play_arrow, size: 18),
+                    label: Text(
+                      r.hasTrack || r.isSeed
+                          ? MultiSportCopy.goRide
+                          : (r.id.startsWith('oa-') || r.id.contains('demo'))
+                              ? 'Los · Track?'
+                              : MultiSportCopy.goRide,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                OutlinedButton(
+                  onPressed: () => unawaited(_openDetail(r.id, r.center)),
+                  child: const Text('Mehr'),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  if (_isPinOnlyIdea(r)) ...[
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                      ),
+                  if (_isPinOnlyIdea(r))
+                    OutlinedButton.icon(
                       onPressed:
                           _loading ? null : () => _computeIdeaRoute(r),
-                      icon: const Icon(Icons.route, size: 18),
-                      label: const Text('Route berechnen & speichern'),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                  ] else
+                      icon: const Icon(Icons.route, size: 16),
+                      label: const Text('Route berechnen'),
+                    )
+                  else
                     OutlinedButton(
                       onPressed: () async {
                         final routed = await _geometryForTour(r);
@@ -4887,8 +5124,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       },
                       child: const Text('Vorschau'),
                     ),
-                  if (!_isPinOnlyIdea(r))
-                    const SizedBox(width: AppSpacing.s),
+                  const SizedBox(width: AppSpacing.xs),
                   OutlinedButton(
                     onPressed: _loading ? null : () => _hybridSnap(r),
                     child: const Text('Von hier'),
@@ -4904,20 +5140,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     tooltip: 'Umgebungsfotos',
                     onPressed: () => _openTrailView(near: r.center),
                     icon: const Icon(Icons.streetview, size: 20),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                    ),
-                    onPressed: () => _startRide(suggestion: r),
-                    child: Text(
-                      r.hasTrack
-                          ? 'Losfahren'
-                          : (r.id.startsWith('oa-') || r.id.contains('demo'))
-                              ? 'Los · Track?'
-                              : 'Losfahren',
-                    ),
                   ),
                 ],
               ),
