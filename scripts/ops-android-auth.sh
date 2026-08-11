@@ -12,16 +12,36 @@ echo
 echo "Deep links (Manifest + AppConfig):"
 echo "  io.aetherride.app://login-callback/"
 echo "  io.aetherride.app://strava-callback/"
+echo "  aetherride://ride?route=<id>"
+echo "  aetherride://tours/<id>"
+echo "  aetherride://discover"
+echo
+echo "App Links hosts (Gradle placeholders, autoVerify):"
+echo "  https://aetherride.vercel.app/open|ride|tours|discover"
+echo "  https://aetherride.app/open|ride|tours|discover"
+echo "  Override: ./gradlew … -PappLinkHost=your.domain.com"
 echo
 echo "Debug keystore fingerprints (License Tester / Supabase Google Android client):"
+DEBUG_SHA256=""
 if [[ -f "$HOME/.android/debug.keystore" ]]; then
   keytool -list -v \
     -keystore "$HOME/.android/debug.keystore" \
     -alias androiddebugkey \
     -storepass android -keypass android 2>/dev/null \
     | grep -E 'SHA1:|SHA256:' || true
+  DEBUG_SHA256=$(keytool -list -v \
+    -keystore "$HOME/.android/debug.keystore" \
+    -alias androiddebugkey \
+    -storepass android -keypass android 2>/dev/null \
+    | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ' ')
 else
   echo "  ~/.android/debug.keystore fehlt — einmal flutter run erzeugen"
+fi
+if [[ -n "${DEBUG_SHA256:-}" ]]; then
+  echo
+  echo "Vercel Env (Debug-Builds / Emulator App Links):"
+  echo "  NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS=${DEBUG_SHA256}"
+  echo "  (Play App Signing: zusätzlich Upload- + App-Signing-SHA aus Play Console)"
 fi
 echo
 echo "Supabase Dashboard (falls CLI-PATCH nicht genutzt):"

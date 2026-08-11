@@ -267,7 +267,8 @@ class SyncEngine {
     required SyncConflictStrategy strategy,
   }) async {
     if (strategy == SyncConflictStrategy.ask) {
-      rethrow;
+      // Not in a catch clause here — re-throw for UI (Profile).
+      throw e;
     }
     if (strategy == SyncConflictStrategy.preferLocal) {
       final force = local.copyWith(
@@ -291,7 +292,7 @@ class SyncEngine {
       await _flushRideChunks();
       return (merged: e.remote!, direction: 'pulled');
     }
-    rethrow;
+    throw e;
   }
 
   /// Apply user choice after [SyncConflictException] with strategy [ask].

@@ -57,10 +57,12 @@ echo
 
 echo "Deep Links / App Links"
 ok "Web: /open/ride + well-known assetlinks/AASA (Code)"
-ok "Android: aetherride:// + autoVerify hosts (vercel.app / aetherride.app)"
+ok "Android: aetherride://ride|tours|discover + autoVerify hosts"
+ok "Cleartext: network_security_config (10.0.2.2 only)"
+ok "Smoke script: npm run smoke:deeplink"
 miss "Vercel NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS"
 miss "Vercel NEXT_PUBLIC_IOS_TEAM_ID"
-miss "Device adb deep-link smoke"
+miss "Device adb deep-link smoke (npm run smoke:deeplink:adb)"
 echo
 
 echo "Externe Ops (nicht lokal fakebar)"

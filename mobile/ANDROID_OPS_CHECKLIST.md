@@ -5,11 +5,15 @@ Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`
 
 ## Deep Links / App Links (Web → App)
 
-- [x] Custom scheme `aetherride://ride?route=` (Manifest + Flutter `DeepLinkHandler`)
+- [x] Custom scheme `aetherride://ride|tours|discover` (Manifest + Flutter `DeepLinkHandler`)
 - [x] HTTPS App Links: hosts via Gradle placeholders  
-  Default: `aetherride.vercel.app` + `aetherride.app` (`autoVerify=true`)
+  Default: `aetherride.vercel.app` + `aetherride.app` (`autoVerify=true`)  
+  Paths: `/open`, `/ride`, `/tours`, `/discover`
 - [x] Web: `/open/ride`, `/.well-known/assetlinks.json`, AASA
-- [ ] Vercel: `NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS` (Upload- oder App-Signing-Zertifikat)
+- [x] Cleartext nur Emulator-Loopback (`network_security_config.xml` → 10.0.2.2)
+- [x] Unit-Tests: `mobile/test/deep_link_parse_test.dart`
+- [x] Smoke: `npm run smoke:deeplink` · mit Gerät `npm run smoke:deeplink:adb`
+- [ ] Vercel: `NEXT_PUBLIC_ANDROID_SHA256_FINGERPRINTS` (Debug: `ops-android-auth.sh`; Play: App Signing)
 - [ ] Vercel: `NEXT_PUBLIC_IOS_TEAM_ID` für Universal Links
 - [ ] Device-Test:  
   `adb shell am start -a android.intent.action.VIEW -d "aetherride://ride?route=r-heidelberg-city"`  
