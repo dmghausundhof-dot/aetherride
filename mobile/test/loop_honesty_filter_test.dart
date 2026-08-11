@@ -2,7 +2,7 @@ import 'package:aetherride_mobile/domain/routing/route_shape.dart';
 import 'package:aetherride_mobile/data/routing/naehe_seeds.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Mirror of Discover `_isLoop` / Rundkurs filter semantics (D-60-02).
+/// D-60-LOOP-FILTER-01 — mirror of Discover `_isLoop` / Rundkurs filter.
 bool isHonestLoop({
   required bool? isLoopHint,
   List<List<double>>? trackLngLat,

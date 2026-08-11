@@ -217,7 +217,7 @@ function DiscoverPageInner() {
   );
   const [filters, setFilters] = useState<RouteFilterState>(() => ({
     ...DEFAULT_ROUTE_FILTERS,
-    // Primary lens ~60 = Rundkurs honesty (parity with Flutter _loopOnly).
+    // D-60-LOOP-FILTER-01: ~60 lens = Rundkurs honesty (Flutter _loopOnly).
     loopOnly: (queryMinutes ?? 60) === 60,
     sport:
       sportParam &&
@@ -329,7 +329,7 @@ function DiscoverPageInner() {
 
   const origin = userPos ?? mapCenter;
 
-  /** Honest ~60 loops only (#35 curated P0 + loop honesty); nearby cards. */
+  /** D-60-LOOP-FILTER-01: honest ~60 loops only (#35 curated P0); nearby. */
   const sixtyMinLoops = useMemo(() => {
     const all = curatedSixtyMinLoopSuggestions(origin).filter((r) => r.loop);
     return all.filter(

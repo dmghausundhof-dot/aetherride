@@ -1850,7 +1850,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         return false;
       }
       // „Nur Rundkurse": echte Geometrie ODER ehrlicher Seed/Katalog-Hint.
-      // A→B-Geometrie nie als Rundkurs durchlassen (D-60-02).
+      // D-60-LOOP-FILTER-01: A→B-Geometrie nie als Rundkurs durchlassen.
       if (_loopOnly == true && !_isLoop(r)) {
         return false;
       }
@@ -1915,7 +1915,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return b.matchScore.compareTo(a.matchScore);
   }
 
-  /// Loop honesty (D-60-02 / Latte #3).
+  /// D-60-LOOP-FILTER-01 — loop honesty (flag + closed geometry).
   /// - Curated seeds: explicit `is_loop` / hint wins (never empty from
   ///   synthetic-geometry false negatives; never promote linear seeds).
   /// - Live/catalog: geometry wins when known; else honest hint.
@@ -1929,7 +1929,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return r.isLoopHint == true;
   }
 
-  /// Rundkurs / Strecke — ⟲ nur bei echten Loops (D-60-02 / loop honesty).
+  /// D-60-LOOP-FILTER-01 — ⟲ nur bei echten Loops.
   String? _shapeLabel(_RouteSuggestion r) {
     if (_isLoop(r)) return '⟲ Runde';
     final shape = routeShapeOf(r.trackLngLat);
@@ -4278,7 +4278,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _minutes = m;
           // „egal“ schaltet Dauer-Filter aus; Presets schalten ihn an.
           _matchTourDuration = m > 0;
-          // ~60 primary lens = Rundkurse (Latte #3 / D-60).
+          // D-60-LOOP-FILTER-01: ~60 primary lens = Rundkurse only.
           if (m == 60) _loopOnly = true;
         });
         unawaited(_refreshQuick(limit: 3));

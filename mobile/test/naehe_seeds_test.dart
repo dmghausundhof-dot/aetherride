@@ -234,7 +234,7 @@ void main() {
     expect(missing.isLoop, isFalse);
   });
 
-  /// Loop honesty (Test Latte #3): Rundkurs / ~60 lens never includes linear.
+  /// D-60-LOOP-FILTER-01: Rundkurs / ~60 lens never includes linear.
   test('loops getter excludes linear; closed seeds included', () {
     final berlin = NaeheSeedsBundle.parse(berlinRaw);
     final dach = NaeheSeedsBundle.parse(dachRaw);

@@ -115,7 +115,7 @@ export function filterRouteSuggestions(
   filters: RouteFilterState
 ): RouteSuggestion[] {
   return routes.filter((r) => {
-    // Rundkurs chip: honest loops only — never linear A→B (D-60-02).
+    // D-60-LOOP-FILTER-01: Rundkurs chip — honest loops only, never A→B.
     if (filters.loopOnly && !isHonestLoopSuggestion(r)) return false;
     if (!categoryMatchesSport(r.category, filters.sport)) return false;
     if (!scaleMatches(r.mtbScale, filters.scale)) return false;

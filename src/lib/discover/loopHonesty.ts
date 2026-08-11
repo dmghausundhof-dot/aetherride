@@ -1,9 +1,9 @@
 /**
- * Loop honesty for Discover (D-60-02 / Test Latte #3).
+ * D-60-LOOP-FILTER-01 — Rundkurs / loop filter honesty (Web + Android).
  *
- * Rundkurs / loop filter may only surface real closed routes — never fill
- * with linear A→B tours. Prefer explicit seed/catalog flags; optionally
- * confirm geometry via start≈end closure.
+ * Rundkurs may only surface real closed routes — never fill with linear A→B.
+ * Prefer explicit seed/catalog flags; optionally confirm geometry via
+ * start≈end closure (≤300 m). Separate from the Discover UX desktop pack.
  */
 
 /** Explicit catalog/seed flags that mean "honest loop". */
