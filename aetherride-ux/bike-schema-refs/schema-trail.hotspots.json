@@ -1,0 +1,99 @@
+{
+  "kind": "trail",
+  "viewBox": "0 0 1000 500",
+  "groundY": 420,
+  "axleY": 420,
+  "wheelbaseUnits": 470.5,
+  "params": {
+    "wb_mm": 1180,
+    "tire_stroke": 22,
+    "stem_len": 40,
+    "bar": "flat"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 220,
+      "cy": 420,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "fork": {
+      "cx": 267.5,
+      "cy": 289.5,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 242,
+      "cy": 365,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "handlebar": {
+      "cx": 293.0,
+      "cy": 165,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 304.0,
+      "cy": 170.0,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 375.3,
+      "cy": 195.0,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 435.6,
+      "cy": 258.5,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 445.6,
+      "cy": 123,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crank": {
+      "cx": 417.6,
+      "cy": 372,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 554.0,
+      "cy": 382,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 704.5,
+      "cy": 408,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "tire_rear": {
+      "cx": 690.5,
+      "cy": 420,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "brake_rear": {
+      "cx": 662.5,
+      "cy": 362,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "rear_shock": {
+      "cx": 462.6,
+      "cy": 215,
+      "hitR": 28,
+      "label_de": "Dämpfer"
+    }
+  }
+}

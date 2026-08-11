@@ -25,6 +25,7 @@ import '../../providers/ride_providers.dart';
 import '../billing/upgrade_screen.dart';
 import '../shared/bike_hero_banner.dart';
 import '../shared/empty_state.dart';
+import 'bike_schema.dart';
 import 'setup_sheet.dart';
 
 class GarageScreen extends ConsumerStatefulWidget {
@@ -1168,6 +1169,21 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
               ),
             ),
             BikeHeroBanner(bike: bike),
+            const SizedBox(height: AppSpacing.m),
+            BikeSchema(
+              bike: bike,
+              installedSlots: installedSlots,
+              maintenanceSlots: {
+                for (final a in due)
+                  if (a.status == DueStatus.overdue ||
+                      a.status == DueStatus.dueSoon)
+                    a.slot,
+              },
+              onSelectSlot: (slot) {
+                setState(() => _tab = _DetailTab.teile);
+                _installComponent(initialSlot: slot);
+              },
+            ),
             const SizedBox(height: AppSpacing.m),
             Row(
               children: [

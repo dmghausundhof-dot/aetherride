@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500"
+     data-schema-kind="gravel" data-viewbox="1000x500">
+  <title>AetherRide Bike Schema — gravel</title>
+  <desc>Diamond-frame side view. Shared viewBox 1000x500. Hotspot anchors in companion JSON.</desc>
+  <rect width="100%" height="100%" fill="#0A1210"/>
+  <text x="32" y="40" fill="#A8B5AE" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Schema · gravel</text>
+  <text x="32" y="68" fill="#6B7280" font-family="system-ui,sans-serif" font-size="14">viewBox 1000×500 shared · Eng recommendation C</text>
+
+  <!-- ground -->
+  <line x1="80" y1="420" x2="920" y2="420" stroke="#243830" stroke-width="4"/>
+  <!-- wheels -->
+  <circle class="tire" cx="220" cy="420" r="90" fill="none" stroke="#4B5563" stroke-width="16"/>
+  <circle class="rim" cx="220" cy="420" r="78.0" fill="none" stroke="#A8B5AE" stroke-width="4"/>
+  <circle class="tire" cx="623.8095238095239" cy="420" r="90" fill="none" stroke="#4B5563" stroke-width="16"/>
+  <circle class="rim" cx="623.8095238095239" cy="420" r="78.0" fill="none" stroke="#A8B5AE" stroke-width="4"/>
+  <!-- fork -->
+  <g id="part-fork">
+    <line x1="290" y1="160" x2="220" y2="420" stroke="#FF6B35" stroke-width="8" stroke-linecap="round"/>
+    
+  </g>
+  <!-- diamond frame -->
+  <g id="part-frame" stroke="#1A5C45" stroke-linecap="round" fill="none">
+    <line id="tube-tt" x1="290" y1="160" x2="401.6" y2="155" stroke-width="12"/>
+    <line id="tube-dt" x1="290" y1="160" x2="389.6" y2="372" stroke-width="12"/>
+    <line id="tube-st" x1="401.6" y1="155" x2="389.6" y2="372" stroke-width="12"/>
+    <line id="tube-cs" x1="389.6" y1="372" x2="623.8095238095239" y2="420" stroke-width="9"/>
+    <line id="tube-ss" x1="401.6" y1="195" x2="623.8095238095239" y2="420" stroke-width="9"/>
+  </g>
+  <line id="part-stem" x1="290" y1="160" x2="246.0" y2="138" stroke="#F0F5F2" stroke-width="7" stroke-linecap="round"/>
+  <g id="part-handlebar">
+    <line x1="236.0" y1="138" x2="286.0" y2="142" stroke="#F0F5F2" stroke-width="8" stroke-linecap="round"/>
+    <path d="M236.0 138 C218.0 150 220.0 186 238.0 196" stroke="#F0F5F2" stroke-width="7" fill="none"/>
+  </g>
+  <!-- saddle / seatpost -->
+  <line id="part-seatpost" x1="401.6" y1="155" x2="401.6" y2="137" stroke="#A8B5AE" stroke-width="8"/>
+  <ellipse id="part-saddle" cx="411.6" cy="133" rx="36" ry="11" fill="#F0F5F2"/>
+  <!-- crank -->
+  <g id="part-crank">
+    <circle cx="389.6" cy="372" r="22" fill="none" stroke="#FF6B35" stroke-width="5"/>
+    <line x1="389.6" y1="372" x2="425.6" y2="402" stroke="#F0F5F2" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <!-- chain hint -->
+  <line id="part-chain" x1="407.6" y1="378" x2="611.8095238095239" y2="410" stroke="#6B7280" stroke-width="3"/>
+
+  <g id="hotspot-dots" opacity="0.95">
+  <circle class="hotspot-dot" data-slot="tire_front" cx="220.0" cy="420.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="fork" cx="255.0" cy="282.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="brake_front" cx="242.0" cy="365.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="handlebar" cx="246.0" cy="138.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="stem" cx="268.0" cy="149.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="frame" cx="345.8" cy="192.5" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="seatpost" cx="401.6" cy="263.5" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="saddle" cx="411.6" cy="133.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="crank" cx="389.6" cy="372.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="chain" cx="506.7" cy="382.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="cassette" cx="637.8" cy="408.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="tire_rear" cx="623.8" cy="420.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="brake_rear" cx="595.8" cy="362.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  </g>
+</svg>
