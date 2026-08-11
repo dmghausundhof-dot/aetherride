@@ -6,7 +6,6 @@
 
 import type { Bike, BikeCategory, RiderProfile } from "@/types";
 import type { RoutingProfile } from "@/lib/routing/profiles";
-import { allowDemoContent } from "@/lib/config/allowDemoContent";
 import { demoCenterLngLat, haversineKm } from "@/lib/routing/demoGeometry";
 
 export interface RouteSuggestion {
@@ -679,11 +678,14 @@ function scoreSeed(
   };
 }
 
-/** Vollständiger Discover-Katalog — nach Standort-Nähe, dann Match. */
+/**
+ * Vollständiger Discover-Katalog — nach Standort-Nähe, dann Match.
+ * Kuratierte redaktionelle Seeds (wie publicTours) — immer in Prod verfügbar.
+ * Fake-Routing / Demo-Geometrie bleibt separat hinter allowDemoContent().
+ */
 export function listAllRouteSuggestions(
   input: SuggestInput
 ): RouteSuggestion[] {
-  if (!allowDemoContent()) return [];
   // Ohne Bike: neutrale Hint-Kategorie (road), nicht MTB-first
   const category =
     input.bike?.category ?? input.categoryHint ?? "road";
@@ -738,7 +740,6 @@ export function getSuggestionById(
     availableMinutes: input.availableMinutes ?? 300,
   }).find((r) => r.id === id);
   if (fromList) return fromList;
-  if (!allowDemoContent()) return null;
 
   const seed = SEEDS.find((s) => s.id === id);
   if (!seed) return null;
