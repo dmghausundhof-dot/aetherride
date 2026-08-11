@@ -9,16 +9,22 @@ import '../../domain/routing/nav_cues.dart';
 
 /// Nähe-Peek / 60-Min-Loop Seed (bundled JSON, D-60-03).
 ///
-/// Canonical POI shape (UX wire): `{ offset_min, title, type, why_good? }`.
-/// Demo Berlin seeds still ship `{ at_min, title, kind }` — both accepted.
-/// Premium Bike Knowledge uses `{ name, type, offset_min, why_good }`.
+/// Canonical POI (discover-seed-card-fields-v1):
+/// `{ id, type, title, offset_min, why_good? }`.
+/// Aliases: `name`→title, `kind`→type, `at_min`→offset_min.
+/// Premium Bike Knowledge currently ships `{ name, type, offset_min, why_good }`
+/// — missing `id` is synthesized stably at parse time (no asset mutation).
 class NaeheSeedPoi {
   const NaeheSeedPoi({
+    required this.id,
     required this.atMin,
     required this.title,
     required this.kind,
     this.whyGood,
   });
+
+  /// Stable POI id (JSON `id`, else synthesized).
+  final String id;
 
   /// Minutes from loop start (canonical JSON: `offset_min`, alias: `at_min`).
   final int atMin;
@@ -32,13 +38,21 @@ class NaeheSeedPoi {
 
   factory NaeheSeedPoi.fromJson(Map<String, dynamic> m) {
     final offset = m['offset_min'] ?? m['at_min'];
-    final type = m['type'] ?? m['kind'];
+    final atMin = (offset as num?)?.round() ?? 0;
+    final type = (m['type'] ?? m['kind'])?.toString() ?? 'poi';
+    final title =
+        (m['title'] as String?) ?? (m['name'] as String?) ?? '';
     final why = m['why_good'];
     final whyStr = why is String && why.trim().isNotEmpty ? why.trim() : null;
+    final rawId = m['id']?.toString().trim();
+    final id = (rawId != null && rawId.isNotEmpty)
+        ? rawId
+        : 'poi-$atMin-${type.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}';
     return NaeheSeedPoi(
-      atMin: (offset as num?)?.round() ?? 0,
-      title: (m['title'] as String?) ?? (m['name'] as String?) ?? '',
-      kind: (type as String?) ?? 'poi',
+      id: id,
+      atMin: atMin,
+      title: title,
+      kind: type,
       whyGood: whyStr,
     );
   }

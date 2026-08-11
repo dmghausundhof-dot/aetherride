@@ -134,7 +134,10 @@ void main() {
       expect(l.corridorNote, isNotEmpty);
       expect(l.shortPitch, isNotEmpty);
       expect(l.surfaceMixLabel, isNotEmpty);
+      // Canonical poi_stops: id / type / title / offset_min (+ why_good?).
+      expect(l.poiStops.every((p) => p.id.isNotEmpty), isTrue);
       expect(l.poiStops.every((p) => p.title.isNotEmpty), isTrue);
+      expect(l.poiStops.every((p) => p.kind.isNotEmpty), isTrue);
       expect(l.poiStops.any((p) => p.whyGood != null), isTrue);
     }
   });

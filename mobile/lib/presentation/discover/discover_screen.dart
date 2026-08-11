@@ -71,12 +71,14 @@ class _TfPin {
 
 class _SeedPoiStop {
   const _SeedPoiStop({
+    required this.id,
     required this.atMin,
     required this.title,
     required this.kind,
     this.whyGood,
   });
 
+  final String id;
   final int atMin;
   final String title;
   final String kind;
@@ -149,6 +151,10 @@ class _RouteSuggestion {
   final String? shortPitch;
   final String? surfaceMixLabel;
   final List<_SeedPoiStop> poiStops;
+
+  /// Card P0 premium chrome present (tip / season / highlight).
+  bool get isPremiumPassCard =>
+      tip != null || seasonLabel != null || highlightPoi != null;
 
   bool get hasTrack => trackLngLat != null && trackLngLat!.length >= 2;
 
@@ -1324,6 +1330,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             poiStops: [
               for (final p in s.poiStops)
                 _SeedPoiStop(
+                  id: p.id,
                   atMin: p.atMin,
                   title: p.title,
                   kind: p.kind,
@@ -4431,6 +4438,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   Text(cn, style: const TextStyle(fontSize: 13, height: 1.35)),
                   const SizedBox(height: AppSpacing.m),
                 ],
+                // Detail (discover-seed-card-fields-v1): short_pitch ·
+                // discipline_note · corridor_note · poi_stops · surface_mix.
                 if (detail.poiStops.isNotEmpty) ...[
                   const Text(
                     'Stops auf der Runde',
@@ -4439,6 +4448,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   const SizedBox(height: AppSpacing.s),
                   for (final p in detail.poiStops)
                     Padding(
+                      key: ValueKey(p.id),
                       padding: const EdgeInsets.only(bottom: AppSpacing.s),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4480,12 +4490,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   Text(mix, style: const TextStyle(fontSize: 13)),
                   const SizedBox(height: AppSpacing.m),
                 ],
-                ...detail.reasons.map(
-                  (r) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                    child: Text('· $r'),
+                if (!detail.isPremiumPassCard)
+                  ...detail.reasons.map(
+                    (r) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: Text('· $r'),
+                    ),
                   ),
-                ),
                 const SizedBox(height: AppSpacing.l),
                 if (_isPinOnlyIdea(detail)) ...[
                   FilledButton.icon(
@@ -5356,13 +5367,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ),
                       ],
                     ),
+                    // Card P0 (discover-seed-card-fields-v1): title · duration ·
+                    // km · ⟲ · sport · tip · season chip · highlight_poi.
+                    // ⟲ lives in the title row above when [loop] is true.
                     Text(
                       [
-                        if (shape != null) shape,
+                        if (!r.isPremiumPassCard && shape != null) shape,
                         '~${r.durationMin} Min',
                         '${r.distanceKm} km',
                         if (r.sportLabel case final sport?) sport,
-                        if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
+                        if (!r.isPremiumPassCard && r.poiStopsCount > 0)
+                          '${r.poiStopsCount} Stops',
                       ].join(' · '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -5423,16 +5438,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: AppSpacing.xs),
-                    _DifficultyStatsRow(
-                      difficultyRaw: r.mtbScale,
-                      segments: [
-                        _surfaceDisplay(r.surface),
-                        if (r.elevationM > 0) '↑${r.elevationM} m',
-                        if (_nearbyActivity(r.center) case final n?)
-                          'beliebt · ≥$n Ride-Nutzer',
-                      ],
-                    ),
+                    if (!r.isPremiumPassCard) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      _DifficultyStatsRow(
+                        difficultyRaw: r.mtbScale,
+                        segments: [
+                          _surfaceDisplay(r.surface),
+                          if (r.elevationM > 0) '↑${r.elevationM} m',
+                          if (_nearbyActivity(r.center) case final n?)
+                            'beliebt · ≥$n Ride-Nutzer',
+                        ],
+                      ),
+                    ],
                     Text(
                       '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
                       '${_isPinOnlyIdea(r)
