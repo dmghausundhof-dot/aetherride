@@ -6,7 +6,8 @@
     "freehub",
     "chain_speed_family",
     "bosch_system",
-    "charger_family"
+    "charger_family",
+    "magura_pad_shape"
   ],
   "aliases_applied": {
     "shimano_hg_plus_12": "hg_plus_12",
@@ -22,6 +23,8 @@
       "name": "Canyon Roadlite:ON CF",
       "category": "light_e",
       "research": "mineral/unknown/unknown/none/none",
+      "compat_notes": ["bosch_hub_line"],
+      "notes": "bosch_hub_line only — not mid-drive Bosch smart mapping; bosch_system and charger_family omitted/none so System2/Smart charger gates must not hard_block",
       "attrs": {
         "brake_fluid": "mineral"
       }
@@ -86,11 +89,12 @@
       "id": "07",
       "name": "Kalkhoff Image 5+ Excite",
       "category": "city",
-      "research": "mineral/unknown/unknown/smart_system/bpc3400_smart_4a",
+      "research": "mineral/unknown/unknown/smart_system/bpc3400_smart_4a + magura_pad_shape=7",
       "attrs": {
         "brake_fluid": "mineral",
         "bosch_system": "smart",
-        "charger_family": "bpc3400_smart"
+        "charger_family": "bpc3400_smart",
+        "magura_pad_shape": "7"
       }
     },
     {

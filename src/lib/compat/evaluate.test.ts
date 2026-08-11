@@ -183,56 +183,134 @@ assert(
   );
 }
 
-// --- Bike-Batch #2 fixture ---
+// --- Bike-Batch #2 fixture (Research-corrected) ---
 {
   assert(batch2.bikes.length === 12, "batch2 has 12 bikes");
-  const topstone = batch2.bikes.find((b) => b.id === "08");
-  assert(!!topstone, "Topstone Neo present");
-  const attrs = topstone!.attrs as CompatAttrMap;
-  assert(attrs.brake_fluid === "mineral", "Topstone mineral");
-  assert(attrs.freehub === "hg", "Topstone hg");
-  assert(attrs.bosch_system === "smart", "Topstone smart (alias)");
-  assert(attrs.charger_family === "bpc3400_smart", "Topstone bpc3400_smart");
-  assert(
-    attrs.chain_speed_family === undefined,
-    "Topstone unknown chain omitted"
-  );
 
-  // + System2 charger → hard_block
+  // 01 Roadlite:ON CF — bosch_hub_line note; no mid-drive smart mapping
   {
-    const r = evaluateCompat({
-      bikeAttrs: attrs,
-      partTags: ["charger:bcs220_system2"],
-    });
+    const roadlite = batch2.bikes.find((b) => b.id === "01");
+    assert(!!roadlite, "Roadlite present");
+    const attrs = roadlite!.attrs as CompatAttrMap;
+    assert(attrs.brake_fluid === "mineral", "Roadlite mineral");
+    assert(attrs.bosch_system === undefined, "Roadlite bosch_system omitted");
+    assert(attrs.charger_family === undefined, "Roadlite charger omitted");
     assert(
-      r.result === "hard_block",
-      `Topstone + System2 charger → hard_block, got ${r.result}`
+      (roadlite as { compat_notes?: string[] }).compat_notes?.includes(
+        "bosch_hub_line"
+      ),
+      "Roadlite compat note bosch_hub_line"
     );
-    assert(
-      r.matched.some((m) => m.id === "R050"),
-      "expected R050 smart vs system2 charger"
-    );
+
+    for (const tag of [
+      "charger:bcs220_system2",
+      "charger:bpc3400_smart",
+      "charger:other_system2",
+      "charger:other_smart",
+    ]) {
+      const r = evaluateCompat({ bikeAttrs: attrs, partTags: [tag] });
+      assert(
+        r.result !== "hard_block",
+        `Roadlite + ${tag} must NOT hard_block, got ${r.result}`
+      );
+      assert(
+        !r.matched.some((m) => ["R050", "R051", "R052"].includes(m.id)),
+        `Roadlite + ${tag} must not fire Smart/System2 charger hard gates`
+      );
+    }
   }
 
-  // + DOT fluid → hard_block
+  // 07 Kalkhoff Image 5+ Excite — magura_pad_shape=7
   {
-    const r = evaluateCompat({
-      bikeAttrs: attrs,
-      partTags: ["fluid:dot_5_1"],
-    });
-    assert(
-      r.result === "hard_block",
-      `Topstone + DOT → hard_block, got ${r.result}`
-    );
+    const kalkhoff = batch2.bikes.find((b) => b.id === "07");
+    assert(!!kalkhoff, "Kalkhoff present");
+    const attrs = kalkhoff!.attrs as CompatAttrMap;
+    assert(attrs.brake_fluid === "mineral", "Kalkhoff mineral");
+    assert(attrs.magura_pad_shape === "7", "Kalkhoff magura shape 7");
+
+    // Magura shape-8 pad → hard_block (R020 family)
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["brand:magura", "magura_shape:8"],
+      });
+      assert(
+        r.result === "hard_block",
+        `Kalkhoff + Magura shape 8 → hard_block, got ${r.result}`
+      );
+      assert(
+        r.matched.some((m) => m.id === "R020" || m.id === "R022"),
+        "expected R020/R022 family"
+      );
+    }
+
+    // Magura shape-7 pad → ok (not require_attr R026)
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["brand:magura", "magura_shape:7"],
+      });
+      assert(
+        r.result === "ok",
+        `Kalkhoff + Magura shape 7 → ok, got ${r.result}`
+      );
+      assert(
+        !r.matched.some((m) => m.id === "R026"),
+        "shape-7 must not require_attr R026"
+      );
+    }
   }
 
-  // + HG cassette → ok
+  // 08 Topstone Neo probes
   {
-    const r = evaluateCompat({
-      bikeAttrs: attrs,
-      partTags: ["freehub:hg"],
-    });
-    assert(r.result === "ok", `Topstone + HG cassette → ok, got ${r.result}`);
+    const topstone = batch2.bikes.find((b) => b.id === "08");
+    assert(!!topstone, "Topstone Neo present");
+    const attrs = topstone!.attrs as CompatAttrMap;
+    assert(attrs.brake_fluid === "mineral", "Topstone mineral");
+    assert(attrs.freehub === "hg", "Topstone hg");
+    assert(attrs.bosch_system === "smart", "Topstone smart (alias)");
+    assert(attrs.charger_family === "bpc3400_smart", "Topstone bpc3400_smart");
+    assert(
+      attrs.chain_speed_family === undefined,
+      "Topstone unknown chain omitted"
+    );
+
+    // + System2 charger → hard_block
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["charger:bcs220_system2"],
+      });
+      assert(
+        r.result === "hard_block",
+        `Topstone + System2 charger → hard_block, got ${r.result}`
+      );
+      assert(
+        r.matched.some((m) => m.id === "R050"),
+        "expected R050 smart vs system2 charger"
+      );
+    }
+
+    // + DOT fluid → hard_block
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["fluid:dot_5_1"],
+      });
+      assert(
+        r.result === "hard_block",
+        `Topstone + DOT → hard_block, got ${r.result}`
+      );
+    }
+
+    // + HG cassette → ok
+    {
+      const r = evaluateCompat({
+        bikeAttrs: attrs,
+        partTags: ["freehub:hg"],
+      });
+      assert(r.result === "ok", `Topstone + HG cassette → ok, got ${r.result}`);
+    }
   }
 
   // ingest aliases / omit sanity across batch
