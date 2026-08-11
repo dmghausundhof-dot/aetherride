@@ -17,12 +17,19 @@ export type SyncPayload = {
   commerceMode?: unknown;
   rangeCalibration?: unknown;
   savedRoutes?: unknown;
+  /** Discover-Bibliothek-Sammlungen */
+  routeCollections?: unknown;
   freeTierExtraBike?: boolean;
   maintenanceLogs?: unknown;
+  maintenanceIntervals?: unknown;
+  rideFeedbacks?: unknown;
+  recommendations?: unknown;
   wishlistIds?: unknown;
   /** bikeId → public Storage URL (kein Gerätepfad) */
   bikePhotos?: unknown;
   activeBikeId?: string | null;
+  preferredSport?: unknown;
+  onboardingDone?: boolean;
   updatedAt?: string;
   /** Schema version for Flutter/Web payload mapping */
   payloadVersion?: number;

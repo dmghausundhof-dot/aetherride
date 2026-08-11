@@ -550,7 +550,24 @@ function DiscoverPageInner() {
   }, [router]);
 
   const startWithSuggestion = useCallback(
-    (r: RouteSuggestion) => {
+    async (r: RouteSuggestion) => {
+      try {
+        const res = await fetch(
+          `/api/tours/geometry?id=${encodeURIComponent(r.id)}`
+        );
+        if (res.ok) {
+          const j = await res.json();
+          if (j?.geometry?.coordinates?.length >= 2) {
+            setActiveRoute(
+              activeRouteFromSuggestion(r, j.geometry, j.steps)
+            );
+            router.push("/ride");
+            return;
+          }
+        }
+      } catch {
+        /* pin-only */
+      }
       setActiveRoute(activeRouteFromSuggestion(r));
       router.push("/ride");
     },
@@ -1094,7 +1111,7 @@ function DiscoverPageInner() {
             radiusM: z.radiusM,
           }))}
           onBack={closeDetail}
-          onStart={() => startWithSuggestion(detailRoute)}
+          onStart={() => void startWithSuggestion(detailRoute)}
           onToggleSave={() => toggleSave(detailRoute)}
           onAdoptIntoPlan={() => {
             adoptIntoPlanMode(suggestionToTour(detailRoute));
@@ -1583,7 +1600,7 @@ function DiscoverPageInner() {
                         }}
                         onStart={() => {
                           previewBaseTour(suggestionToTour(r));
-                          startWithSuggestion(r);
+                          void startWithSuggestion(r);
                         }}
                         onToggleSave={() => toggleSave(r)}
                       />
@@ -1635,7 +1652,7 @@ function DiscoverPageInner() {
                             }}
                             onStart={() => {
                               previewBaseTour(suggestionToTour(r));
-                              startWithSuggestion(r);
+                              void startWithSuggestion(r);
                             }}
                             onToggleSave={() => toggleSave(r)}
                           />

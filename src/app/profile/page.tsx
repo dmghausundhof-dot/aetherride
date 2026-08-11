@@ -9,7 +9,7 @@ import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
-import { syncBidirectional } from "@/lib/sync/client";
+import { runWebSync } from "@/lib/sync/webSync";
 
 type AuthUser = {
   id: string;
@@ -60,110 +60,19 @@ export default function ProfilePage() {
     }
   }, [setSubscriptionTier]);
 
-  const applyRemotePayload = useCallback(
-    (remote: {
-      bikes?: unknown;
-      rides?: unknown;
-      consents?: unknown;
-      privacyZones?: unknown;
-      familyRiders?: unknown;
-      activeFamilyRiderId?: string | null;
-      riderProfile?: unknown;
-      subscriptionTier?: "free" | "pro";
-      commerceMode?: unknown;
-      rangeCalibration?: unknown;
-      savedRoutes?: unknown;
-      maintenanceLogs?: unknown;
-      activeBikeId?: string | null;
-    }) => {
-      if (remote.subscriptionTier === "pro" || remote.subscriptionTier === "free") {
-        setSubscriptionTier(remote.subscriptionTier);
-      }
-      // Full hydrate goes through persist merge on next seed; store patch for key fields
-      useAppStore.setState((s) => ({
-        ...s,
-        ...(Array.isArray(remote.bikes) && remote.bikes.length
-          ? { bikes: remote.bikes as typeof s.bikes }
-          : {}),
-        ...(Array.isArray(remote.rides)
-          ? { rides: remote.rides as typeof s.rides }
-          : {}),
-        ...(Array.isArray(remote.consents) && remote.consents.length
-          ? { consents: remote.consents as typeof s.consents }
-          : {}),
-        ...(Array.isArray(remote.privacyZones)
-          ? { privacyZones: remote.privacyZones as typeof s.privacyZones }
-          : {}),
-        ...(Array.isArray(remote.familyRiders)
-          ? { familyRiders: remote.familyRiders as typeof s.familyRiders }
-          : {}),
-        ...(remote.activeFamilyRiderId !== undefined
-          ? { activeFamilyRiderId: remote.activeFamilyRiderId }
-          : {}),
-        ...(remote.riderProfile
-          ? { riderProfile: remote.riderProfile as typeof s.riderProfile }
-          : {}),
-        ...(remote.commerceMode === "affiliate" ||
-        remote.commerceMode === "marketplace"
-          ? { commerceMode: remote.commerceMode }
-          : {}),
-        ...(remote.rangeCalibration &&
-        typeof remote.rangeCalibration === "object"
-          ? {
-              rangeCalibration:
-                remote.rangeCalibration as typeof s.rangeCalibration,
-            }
-          : {}),
-        ...(Array.isArray(remote.savedRoutes)
-          ? { savedRoutes: remote.savedRoutes as typeof s.savedRoutes }
-          : {}),
-        ...(Array.isArray(remote.maintenanceLogs)
-          ? {
-              maintenanceLogs:
-                remote.maintenanceLogs as typeof s.maintenanceLogs,
-            }
-          : {}),
-        ...(remote.activeBikeId !== undefined
-          ? { activeBikeId: remote.activeBikeId }
-          : {}),
-      }));
-    },
-    [setSubscriptionTier]
-  );
-
   useEffect(() => {
     if (!configured) return;
     void (async () => {
       await refreshMe();
       try {
-        const local = {
-          bikes: useAppStore.getState().bikes,
-          rides: useAppStore.getState().rides,
-          consents: useAppStore.getState().consents,
-          privacyZones: useAppStore.getState().privacyZones,
-          familyRiders: useAppStore.getState().familyRiders,
-          activeFamilyRiderId: useAppStore.getState().activeFamilyRiderId,
-          riderProfile: useAppStore.getState().riderProfile,
-          subscriptionTier: useAppStore.getState().subscriptionTier,
-          commerceMode: useAppStore.getState().commerceMode,
-          rangeCalibration: useAppStore.getState().rangeCalibration,
-          savedRoutes: useAppStore.getState().savedRoutes,
-          maintenanceLogs: useAppStore.getState().maintenanceLogs,
-          activeBikeId: useAppStore.getState().activeBikeId,
-          updatedAt: new Date().toISOString(),
-        };
         const me = await fetch("/api/auth/me").then((r) => r.json());
         if (!me.user) return;
-        const { merged, direction } = await syncBidirectional(local);
-        if (direction === "pulled") applyRemotePayload(merged);
-        if (direction === "pushed" && merged.subscriptionTier === "pro") {
-          setSubscriptionTier("pro");
-        }
+        await runWebSync();
       } catch {
         /* offline / no session */
       }
     })();
-  }, [configured, refreshMe, applyRemotePayload, setSubscriptionTier]);
+  }, [configured, refreshMe]);
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({
       preferences: { ...profile.preferences, [key]: value },
@@ -247,31 +156,8 @@ export default function ProfilePage() {
     setBusy(true);
     setAuthMsg(null);
     try {
-      const payload = {
-        bikes: store.bikes,
-        rides: store.rides,
-        consents: store.consents,
-        privacyZones: store.privacyZones,
-        familyRiders: store.familyRiders,
-        activeFamilyRiderId: store.activeFamilyRiderId,
-        riderProfile: store.riderProfile,
-        subscriptionTier: store.subscriptionTier,
-        commerceMode: store.commerceMode,
-        rangeCalibration: store.rangeCalibration,
-        savedRoutes: store.savedRoutes,
-        maintenanceLogs: store.maintenanceLogs,
-        activeBikeId: store.activeBikeId,
-        updatedAt: new Date().toISOString(),
-      };
-      const { merged, direction } = await syncBidirectional(payload);
-      if (direction === "pulled") applyRemotePayload(merged);
-      setAuthMsg(
-        direction === "pulled"
-          ? "Sync: Remote übernommen (LWW)."
-          : direction === "pushed"
-            ? "Sync: Lokal hochgeladen."
-            : "Sync: bereits aktuell."
-      );
+      const { message } = await runWebSync();
+      setAuthMsg(message);
     } catch (e) {
       setAuthMsg(e instanceof Error ? e.message : "Sync fehlgeschlagen");
     } finally {

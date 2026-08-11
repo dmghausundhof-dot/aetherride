@@ -42,10 +42,7 @@ import {
 import { activeRouteFromEngine } from "@/lib/routing/activeRoute";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import type { SavedRoute } from "@/types/route";
-import {
-  DEMO_ROUTING_NOTICE,
-  type RoutingStatusPayload,
-} from "@/lib/routing/routingStatus";
+import { RoutingStatusBanner } from "@/components/routing/RoutingStatusBanner";
 
 const FALLBACK: [number, number] = [8.4, 48.5];
 
@@ -75,9 +72,6 @@ function PlannerInner() {
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [routingNotice, setRoutingNotice] = useState<string | null>(
-    DEMO_ROUTING_NOTICE
-  );
   const [addrQuery, setAddrQuery] = useState("");
   const [addrTarget, setAddrTarget] = useState<"start" | "end">("start");
   const [addrHits, setAddrHits] = useState<
@@ -85,16 +79,6 @@ function PlannerInner() {
   >([]);
   const [addrBusy, setAddrBusy] = useState(false);
   const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    void fetch("/api/routing/status")
-      .then((r) => r.json())
-      .then((j: RoutingStatusPayload) => {
-        if (j?.notice) setRoutingNotice(j.notice);
-        else if (j?.liveVerified) setRoutingNotice(null);
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -345,11 +329,7 @@ function PlannerInner() {
           <p className="text-xs text-text-secondary">
             Desktop-Planung · Navigation in der App
           </p>
-          {routingNotice && (
-            <p className="rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-[11px] text-text-secondary">
-              {routingNotice}
-            </p>
-          )}
+          <RoutingStatusBanner />
           <label className="block text-[11px] text-text-secondary">
             Routing-Profil
             <select

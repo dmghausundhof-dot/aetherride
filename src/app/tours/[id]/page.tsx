@@ -14,8 +14,9 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { TourActions } from "@/components/tours/TourActions";
 import { WeatherPanel } from "@/components/tours/WeatherPanel";
 import { TourElevationClient } from "@/components/tours/TourElevationClient";
-import { TourMapPin } from "@/components/tours/TourMapPin";
+import { TourLiveMap } from "@/components/tours/TourLiveMap";
 import { TourReviews } from "@/components/community/TourReviews";
+import { profileForBikeCategory } from "@/lib/routing/profiles";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -126,7 +127,12 @@ export default async function TourPage({ params }: Props) {
               </div>
             </div>
             <div className="relative min-h-[280px] lg:min-h-[420px]">
-              <TourMapPin center={tour.center} name={tour.name} />
+              <TourLiveMap
+                tourId={tour.id}
+                center={tour.center}
+                name={tour.name}
+                profile={profileForBikeCategory(tour.primaryCategory)}
+              />
             </div>
           </div>
         </div>

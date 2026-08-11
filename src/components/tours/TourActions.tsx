@@ -60,10 +60,28 @@ export function TourActions({ tour }: { tour: PublicTour }) {
     setTimeout(() => setFlash(null), 2000);
   }, [tour.id, isRouteSaved, unsaveRoute, saveRoute, suggestion]);
 
-  const startInApp = useCallback(() => {
+  const startInApp = useCallback(async () => {
+    // Live-Geometrie laden, falls Engine verfügbar
+    try {
+      const r = await fetch(
+        `/api/tours/geometry?id=${encodeURIComponent(tour.id)}`
+      );
+      if (r.ok) {
+        const j = await r.json();
+        if (j?.geometry?.coordinates?.length >= 2) {
+          setActiveRoute(
+            activeRouteFromSuggestion(suggestion, j.geometry, j.steps)
+          );
+          router.push("/ride");
+          return;
+        }
+      }
+    } catch {
+      /* pin-only fallback */
+    }
     setActiveRoute(activeRouteFromSuggestion(suggestion));
     router.push("/ride");
-  }, [setActiveRoute, suggestion, router]);
+  }, [setActiveRoute, suggestion, router, tour.id]);
 
   return (
     <div className="flex flex-col gap-2">

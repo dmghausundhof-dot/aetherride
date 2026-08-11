@@ -27,12 +27,30 @@ export type RouteResult = {
   steps?: NavStep[];
 };
 
+/** Öffentlicher OSRM (nur mit explizitem Opt-in oder Dev-Fallback) */
+export const PUBLIC_OSRM_URL = "https://router.project-osrm.org";
+
+function publicOsrmAllowed(): boolean {
+  if (process.env.ALLOW_PUBLIC_OSRM === "1" || process.env.ALLOW_PUBLIC_OSRM === "true") {
+    return true;
+  }
+  // Dev: ohne Keys ehrliches Live-Routing statt nur Dreieck-Demo
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ALLOW_PUBLIC_OSRM !== "false"
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function engine(): "valhalla" | "osrm" | "graphhopper" | "demo" {
   const e = (process.env.ROUTING_ENGINE || "").toLowerCase();
   if (e === "valhalla" || e === "osrm" || e === "graphhopper") return e;
   if (process.env.GRAPHHOPPER_API_KEY) return "graphhopper";
   if (process.env.VALHALLA_URL) return "valhalla";
   if (process.env.OSRM_URL) return "osrm";
+  if (publicOsrmAllowed()) return "osrm";
   return "demo";
 }
 
@@ -40,7 +58,15 @@ function baseUrl(kind: "valhalla" | "osrm"): string | null {
   if (kind === "valhalla") {
     return (process.env.VALHALLA_URL || "").replace(/\/$/, "") || null;
   }
-  return (process.env.OSRM_URL || "").replace(/\/$/, "") || null;
+  const custom = (process.env.OSRM_URL || "").replace(/\/$/, "");
+  if (custom) return custom;
+  if (publicOsrmAllowed()) return PUBLIC_OSRM_URL;
+  return null;
+}
+
+/** true wenn OSRM ohne eigenen Key (project-osrm) */
+export function isUsingPublicOsrm(): boolean {
+  return engine() === "osrm" && !process.env.OSRM_URL?.trim() && publicOsrmAllowed();
 }
 
 /** Valhalla costing model per AetherRide profile.
@@ -398,13 +424,21 @@ async function routeGraphhopper(
 async function routeOsrm(
   profile: RoutingProfile,
   from: [number, number],
-  to: [number, number]
+  to: [number, number],
+  vias: [number, number][] = []
 ): Promise<RouteResult> {
   const base = baseUrl("osrm");
   if (!base) throw new Error("OSRM_URL missing");
   const p = osrmProfile(profile);
-  const url = `${base}/route/v1/${p}/${from[0]},${from[1]};${to[0]},${to[1]}?overview=full&geometries=geojson&steps=true&annotations=false`;
-  const res = await fetch(url);
+  const coords = [from, ...vias, to]
+    .map(([lng, lat]) => `${lng},${lat}`)
+    .join(";");
+  const url = `${base}/route/v1/${p}/${coords}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 25_000);
+  const res = await fetch(url, { signal: ac.signal }).finally(() =>
+    clearTimeout(timer)
+  );
   if (!res.ok) {
     throw new Error(`OSRM ${res.status}: ${await res.text()}`);
   }
@@ -413,6 +447,12 @@ async function routeOsrm(
   if (!route?.geometry) throw new Error("OSRM: no route");
   const geometry = route.geometry as GeoJSON.LineString;
   const steps = stepsFromOsrmLegs(route.legs ?? []);
+  const warnings: string[] = [];
+  if (isUsingPublicOsrm()) {
+    warnings.push(
+      "Öffentliches OSRM (project-osrm.org) — Demo/Dev. Produktion: eigener OSRM/Valhalla/GraphHopper."
+    );
+  }
   return {
     distanceM: Math.round(route.distance),
     durationS: Math.round(route.duration),
@@ -422,6 +462,7 @@ async function routeOsrm(
     steps: steps.length
       ? steps
       : stepsFromDemoGeometry(geometry.coordinates as [number, number][]),
+    warnings: warnings.length ? warnings : undefined,
   };
 }
 
@@ -467,26 +508,8 @@ export async function computeRoute(
         warnings: parts.flatMap((p) => p.warnings ?? []),
       };
     }
-    if (vias.length === 0) return await routeOsrm(profile, from, to);
-    const parts: RouteResult[] = [];
-    let prev = from;
-    for (const p of [...vias, to]) {
-      parts.push(await routeOsrm(profile, prev, p));
-      prev = p;
-    }
-    return {
-      distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
-      durationS: parts.reduce((a, p) => a + p.durationS, 0),
-      geometry: {
-        type: "LineString",
-        coordinates: parts.flatMap((p, i) =>
-          i === 0 ? p.geometry.coordinates : p.geometry.coordinates.slice(1)
-        ),
-      },
-      engine: "osrm",
-      profile,
-      steps: parts.flatMap((p) => p.steps ?? []),
-    };
+    // OSRM: multi-waypoint in one request
+    return await routeOsrm(profile, from, to, vias);
   } catch (e) {
     // Production: fail-closed — never invent geometry after a live failure.
     if (allowDemoContent()) {
@@ -512,6 +535,7 @@ export function configuredRoutingEngine(): RouteResult["engine"] {
 }
 
 export function isLiveRoutingConfigured(): boolean {
+  // public OSRM zählt als live (ehrlich gelabelt), nicht als Dreieck-Demo
   return configuredRoutingEngine() !== "demo";
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { SyncProvider } from "@/components/sync/SyncProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const onboardingDone = useAppStore((s) => s.onboardingDone);
@@ -24,9 +25,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const showOnboarding = ready && !onboardingDone;
 
   return (
-    <>
+    <SyncProvider>
       {children}
       {showOnboarding && <OnboardingFlow onDone={() => undefined} />}
-    </>
+    </SyncProvider>
   );
 }
