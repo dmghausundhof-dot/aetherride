@@ -248,6 +248,10 @@ class NaeheSeedsBundle {
   static const assetPath =
       'assets/seeds/naehe-peek-seeds-berlin-v1.json';
 
+  /// Non-Berlin DACH P0 60-min loops (Munich…Konstanz).
+  static const dachAssetPath =
+      'assets/seeds/p0-dach-60min-naehe-v1.json';
+
   final List<NaeheSeedRoute> routes;
   final String labelWithoutLocation;
   final String labelWithLocation;
@@ -265,11 +269,44 @@ class NaeheSeedsBundle {
     return null;
   }
 
+  /// Loads Berlin Nähe seeds + DACH P0 loops, concatenated and deduped by id
+  /// (Berlin wins on collision — Tempelhof enrich lives in the Berlin asset).
   static Future<NaeheSeedsBundle> load({
     String path = assetPath,
+    String? dachPath = dachAssetPath,
   }) async {
     final raw = await rootBundle.loadString(path);
-    return parse(raw);
+    final berlin = parse(raw);
+    if (dachPath == null || dachPath.isEmpty) return berlin;
+    try {
+      final dachRaw = await rootBundle.loadString(dachPath);
+      final dach = parse(dachRaw);
+      return merge(berlin, dach);
+    } catch (_) {
+      // DACH asset optional at runtime (tests / older builds).
+      return berlin;
+    }
+  }
+
+  /// Concatenate [primary] then [extra], dropping extra routes whose id already
+  /// exists in primary.
+  static NaeheSeedsBundle merge(
+    NaeheSeedsBundle primary,
+    NaeheSeedsBundle extra,
+  ) {
+    final seen = <String>{for (final r in primary.routes) r.id};
+    final routes = <NaeheSeedRoute>[
+      ...primary.routes,
+      for (final r in extra.routes)
+        if (r.id.isNotEmpty && !seen.contains(r.id)) r,
+    ];
+    return NaeheSeedsBundle(
+      routes: routes,
+      labelWithoutLocation: primary.labelWithoutLocation,
+      labelWithLocation: primary.labelWithLocation,
+      defaultCenterLat: primary.defaultCenterLat,
+      defaultCenterLng: primary.defaultCenterLng,
+    );
   }
 
   /// Pure parse (unit-testable without Flutter binding).

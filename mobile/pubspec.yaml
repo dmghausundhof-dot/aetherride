@@ -57,4 +57,5 @@ flutter:
   assets:
     - assets/routing/offline_graph.json
     - assets/seeds/naehe-peek-seeds-berlin-v1.json
+    - assets/seeds/p0-dach-60min-naehe-v1.json
     - assets/garage/silhouettes/

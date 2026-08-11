@@ -1,0 +1,337 @@
+{
+  "version": 1,
+  "default_center": {
+    "name": "DACH",
+    "lat": 48.14,
+    "lng": 11.58
+  },
+  "radius_km_p0": 500,
+  "label_without_location": "~60 Min in deiner Region",
+  "label_with_location": "~60 Min um dich",
+  "seeds": [
+    {
+      "id": "seed-loop-munich-froettmaning-60",
+      "type": "route",
+      "title": "Munich — Fröttmaninger Berg & Isar Gravel",
+      "thumbnail_url": null,
+      "distance_km": 22,
+      "ascent_m": 180,
+      "duration_min": 65,
+      "effort_label": "Mittel",
+      "sport_tags": [
+        "gravel"
+      ],
+      "surface_mix": {
+        "asphalt": 35,
+        "gravel": 55,
+        "trail": 10
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 8,
+          "title": "St. Emmeram Bridge",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 20,
+          "title": "Südliche Fröttmaninger Heide",
+          "type": "viewpoint"
+        },
+        {
+          "offset_min": 32,
+          "title": "Fröttmaninger Berg",
+          "type": "viewpoint"
+        },
+        {
+          "offset_min": 45,
+          "title": "Allianz Arena",
+          "type": "culture"
+        },
+        {
+          "offset_min": 57,
+          "title": "Heilig-Kreuz-Kirche Fröttmaning",
+          "type": "culture"
+        }
+      ],
+      "center": {
+        "lat": 48.183,
+        "lng": 11.61
+      },
+      "notes": "North-Munich classic: firm Isar gravel, open heath, and a 360° city–Alps view from an artificial hill next to the Allianz Arena."
+    },
+    {
+      "id": "seed-loop-vienna-prater-60",
+      "type": "route",
+      "title": "Vienna — Prater Hauptallee & Donauinsel Süd",
+      "thumbnail_url": null,
+      "distance_km": 20,
+      "ascent_m": 80,
+      "duration_min": 60,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "ebike"
+      ],
+      "surface_mix": {
+        "asphalt": 75,
+        "gravel": 25,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 7,
+          "title": "Prater Hauptallee",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 19,
+          "title": "Schweizerhaus",
+          "type": "cafe"
+        },
+        {
+          "offset_min": 30,
+          "title": "Lusthaus",
+          "type": "culture"
+        },
+        {
+          "offset_min": 41,
+          "title": "Wallfahrtskirche Maria Grün",
+          "type": "culture"
+        },
+        {
+          "offset_min": 53,
+          "title": "Donauinsel Südspitze",
+          "type": "water"
+        }
+      ],
+      "center": {
+        "lat": 48.218,
+        "lng": 16.392
+      },
+      "notes": "Dead-flat imperial avenue into the Green Prater, then Danube Island tip for a swim stop — perfect e-bike friendly Wien Rundkurs."
+    },
+    {
+      "id": "seed-loop-innsbruck-hungerburg-60",
+      "type": "route",
+      "title": "Innsbruck — Hungerburg–Arzler Alm Trail",
+      "thumbnail_url": null,
+      "distance_km": 12,
+      "ascent_m": 420,
+      "duration_min": 70,
+      "effort_label": "Anspruchsvoll",
+      "sport_tags": [
+        "mtb"
+      ],
+      "surface_mix": {
+        "asphalt": 15,
+        "gravel": 35,
+        "trail": 50
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 8,
+          "title": "Hungerburgbahn / Hungerburg",
+          "type": "transit"
+        },
+        {
+          "offset_min": 22,
+          "title": "Arzler Alm",
+          "type": "cafe"
+        },
+        {
+          "offset_min": 35,
+          "title": "Arzler Alm Trail entrance",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 48,
+          "title": "Hungerburg Trail",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 62,
+          "title": "Nordkettenbahn Hungerburg",
+          "type": "transit"
+        }
+      ],
+      "center": {
+        "lat": 47.286,
+        "lng": 11.399
+      },
+      "notes": "City-to-alm MTB in under 75 minutes: forest-road climb, Tyrolean hut stop, then legal flow singletrack back toward Mühlau."
+    },
+    {
+      "id": "seed-loop-cologne-rhein-60",
+      "type": "route",
+      "title": "Cologne — Kölner Rhein-Runde",
+      "thumbnail_url": null,
+      "distance_km": 21,
+      "ascent_m": 120,
+      "duration_min": 70,
+      "effort_label": "Mittel",
+      "sport_tags": [
+        "road"
+      ],
+      "surface_mix": {
+        "asphalt": 95,
+        "gravel": 5,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 8,
+          "title": "Kölner Dom",
+          "type": "culture"
+        },
+        {
+          "offset_min": 19,
+          "title": "Rheinboulevard (Deutz)",
+          "type": "viewpoint"
+        },
+        {
+          "offset_min": 30,
+          "title": "Rheinpark",
+          "type": "water"
+        },
+        {
+          "offset_min": 40,
+          "title": "Poller Wiesen",
+          "type": "viewpoint"
+        },
+        {
+          "offset_min": 51,
+          "title": "Rheinauhafen Kranhäuser",
+          "type": "culture"
+        },
+        {
+          "offset_min": 62,
+          "title": "Schokoladenmuseum",
+          "type": "culture"
+        }
+      ],
+      "center": {
+        "lat": 50.941,
+        "lng": 6.958
+      },
+      "notes": "Official ~21 km Rhine loop: Dom skyline, Rheinboulevard photo stop, Poller Wiesen picnic lawns, and Kölsch pauses on both banks."
+    },
+    {
+      "id": "seed-loop-zurich-seefeld-60",
+      "type": "route",
+      "title": "Zurich — Seefeld & Zürichhorn Lakeside",
+      "thumbnail_url": null,
+      "distance_km": 16,
+      "ascent_m": 120,
+      "duration_min": 55,
+      "effort_label": "Mittel",
+      "sport_tags": [
+        "road"
+      ],
+      "surface_mix": {
+        "asphalt": 95,
+        "gravel": 5,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 7,
+          "title": "Bürkliplatz",
+          "type": "trailhead"
+        },
+        {
+          "offset_min": 17,
+          "title": "Opernhaus Zürich / Sechseläutenplatz",
+          "type": "culture"
+        },
+        {
+          "offset_min": 28,
+          "title": "Zürichhorn",
+          "type": "water"
+        },
+        {
+          "offset_min": 38,
+          "title": "Chinagarten Zürich",
+          "type": "culture"
+        },
+        {
+          "offset_min": 48,
+          "title": "Pavillon Le Corbusier",
+          "type": "culture"
+        }
+      ],
+      "center": {
+        "lat": 47.366,
+        "lng": 8.541
+      },
+      "notes": "Smooth lakeside promenade roads from Bellevue to Zürichhorn and back via Seefeld — Alps-on-the-water views in a tidy hour."
+    },
+    {
+      "id": "seed-loop-konstanz-mainau-60",
+      "type": "route",
+      "title": "Lake Constance — Konstanz Staad–Mainau Shore",
+      "thumbnail_url": null,
+      "distance_km": 18,
+      "ascent_m": 80,
+      "duration_min": 55,
+      "effort_label": "Leicht",
+      "sport_tags": [
+        "ebike"
+      ],
+      "surface_mix": {
+        "asphalt": 75,
+        "gravel": 25,
+        "trail": 0
+      },
+      "is_loop": true,
+      "duration_band": "60",
+      "poi_stops": [
+        {
+          "offset_min": 9,
+          "title": "Fähre Konstanz–Meersburg (Staad)",
+          "type": "transit"
+        },
+        {
+          "offset_min": 18,
+          "title": "Insel Mainau (gate / causeway)",
+          "type": "culture"
+        },
+        {
+          "offset_min": 28,
+          "title": "Ruppaner Brauerei",
+          "type": "cafe"
+        },
+        {
+          "offset_min": 37,
+          "title": "Hörnle / Strandbad area",
+          "type": "water"
+        },
+        {
+          "offset_min": 46,
+          "title": "Alte Rheinbrücke Konstanz",
+          "type": "culture"
+        }
+      ],
+      "center": {
+        "lat": 47.677,
+        "lng": 9.174
+      },
+      "notes": "Bodensee classic: Altstadt to Staad ferry harbour, flower-island approaches, and lakeshore gravel/asphalt perfect for e-bikes."
+    }
+  ],
+  "empty_state": {
+    "body": "Noch keine Touren um dich herum. Plane eine — oder wechsle die Region.",
+    "primary_cta": "Route planen",
+    "secondary_cta": "Region ändern"
+  },
+  "lens_default": "60",
+  "notes": "P0 DACH 60-Min Rundkurs seeds (non-Berlin). Berlin merged into naehe-peek-seeds-berlin-v1 seed-loop-tempelhofer-60."
+}
