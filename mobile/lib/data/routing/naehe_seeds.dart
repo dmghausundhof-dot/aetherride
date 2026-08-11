@@ -81,6 +81,7 @@ class NaeheSeedRoute {
     this.disciplineNote,
     this.corridorNote,
     this.shortPitch,
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -108,6 +109,9 @@ class NaeheSeedRoute {
   final String? disciplineNote;
   final String? corridorNote;
   final String? shortPitch;
+
+  /// Optional envelope `thumbnail_url` (may be null in locked seeds).
+  final String? thumbnailUrl;
 
   bool get isRoute => type == 'route';
 
@@ -192,6 +196,8 @@ class NaeheSeedRoute {
       return t.isEmpty ? null : t;
     }
 
+    final thumb = opt('thumbnail_url') ?? opt('thumbnailUrl') ?? opt('image_url');
+
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
@@ -214,6 +220,7 @@ class NaeheSeedRoute {
       disciplineNote: opt('discipline_note'),
       corridorNote: opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
+      thumbnailUrl: thumb,
     );
   }
 
@@ -259,6 +266,7 @@ class NaeheSeedRoute {
 
     final duration = (m['duration_min'] as num?)?.round() ?? 0;
     final isLoop = m['loop'] == true || m['is_loop'] == true;
+    final thumb = opt('thumbnail_url') ?? opt('thumbnailUrl') ?? opt('image_url');
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
@@ -284,14 +292,16 @@ class NaeheSeedRoute {
       disciplineNote: opt('discipline_note'),
       corridorNote: corridor ?? opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
+      thumbnailUrl: thumb,
     );
   }
 
   List<BikeCategory> get categories {
     final out = <BikeCategory>[];
     for (final t in sportTags) {
-      final c = _categoryFromSportTag(t);
-      if (c != null && !out.contains(c)) out.add(c);
+      for (final c in _categoriesFromSportTag(t)) {
+        if (!out.contains(c)) out.add(c);
+      }
     }
     if (out.isEmpty) {
       return const [
@@ -387,17 +397,23 @@ class NaeheSeedRoute {
   }
 }
 
-BikeCategory? _categoryFromSportTag(String raw) {
+/// Sport-tag → one or more bike categories.
+/// `ebike` matches both E-Trekking and E-MTB so Wiesloch ~60 + E-MTB filter
+/// still ranks RN premium loops (web parity: ebike ↔ emtb).
+List<BikeCategory> _categoriesFromSportTag(String raw) {
   final t = raw.toLowerCase().trim();
   return switch (t) {
-    'mtb' || 'trail' || 'enduro' => BikeCategory.mtbAm,
-    'gravel' => BikeCategory.gravel,
-    'road' || 'rennrad' => BikeCategory.road,
-    'city' || 'urban' => BikeCategory.urban,
-    'ebike' || 'e-bike' => BikeCategory.etrekking,
-    'touring' || 'trekking' || 'etrekking' => BikeCategory.etrekking,
-    'emtb' => BikeCategory.emtb,
-    _ => null,
+    'mtb' || 'trail' || 'enduro' => const [BikeCategory.mtbAm],
+    'gravel' => const [BikeCategory.gravel],
+    'road' || 'rennrad' => const [BikeCategory.road],
+    'city' || 'urban' => const [BikeCategory.urban],
+    'ebike' || 'e-bike' => const [
+      BikeCategory.etrekking,
+      BikeCategory.emtb,
+    ],
+    'touring' || 'trekking' || 'etrekking' => const [BikeCategory.etrekking],
+    'emtb' => const [BikeCategory.emtb, BikeCategory.mtbAm],
+    _ => const <BikeCategory>[],
   };
 }
 

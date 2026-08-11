@@ -44,15 +44,31 @@ void main() {
                       children: [
                         for (var i = 0; i < 8; i++)
                           Card(
+                            clipBehavior: Clip.antiAlias,
                             child: SizedBox(
                               width: double.infinity,
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // D-60-CARD-01 hero plane (bounded, not gray Infinity).
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 148,
+                                    child: ColoredBox(
+                                      color: Color(0xFF2D6A4F),
+                                      child: Center(
+                                        child: Text('hero-$i'),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
                                     Row(
                                       children: [
                                         const Text('⟲'),
@@ -176,8 +192,10 @@ void main() {
                                         ],
                                       ),
                                     ),
-                                  ],
-                                ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -227,18 +245,34 @@ void main() {
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
-                        const Text('Wähle eine Demo-Stadt oder änder den Ort.'),
+                        const Text(
+                          'Ändere Ort oder Dauer, oder wähle eine Demo-Stadt.',
+                        ),
                         const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(0, 48),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 48),
+                                ),
+                                onPressed: () {},
+                                icon: const Icon(Icons.search),
+                                label: const Text('Ort ändern'),
+                              ),
                             ),
-                            onPressed: () {},
-                            icon: const Icon(Icons.search),
-                            label: const Text('Ort ändern'),
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 48),
+                                ),
+                                onPressed: () {},
+                                icon: const Icon(Icons.schedule),
+                                label: const Text('Dauer lockern'),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         const Text('Demo-Städte'),
@@ -248,6 +282,7 @@ void main() {
                           runSpacing: 6,
                           children: [
                             ActionChip(label: Text('Berlin')),
+                            ActionChip(label: Text('Wiesloch')),
                             ActionChip(label: Text('Heidelberg')),
                             ActionChip(label: Text('Mannheim')),
                             ActionChip(label: Text('München')),
@@ -276,5 +311,8 @@ void main() {
     expect(find.text('Noch keine ~60-Min-Touren hier.'), findsOneWidget);
     expect(find.text('Demo-Städte'), findsOneWidget);
     expect(find.text('Heidelberg'), findsOneWidget);
+    expect(find.text('Wiesloch'), findsOneWidget);
+    expect(find.text('Dauer lockern'), findsOneWidget);
+    expect(find.text('Ort ändern'), findsOneWidget);
   });
 }

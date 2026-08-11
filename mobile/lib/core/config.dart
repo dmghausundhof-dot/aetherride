@@ -54,12 +54,23 @@ abstract final class AppConfig {
     defaultValue: false,
   );
 
-  /// Show Demo-Geometrie / Routing-Key debug banners in Discover.
-  /// Prod default off — set SHOW_ROUTING_DEBUG=true for local smoke.
+  /// Show Demo-Geometrie / Routing-Key debug banners in Discover (D-60-CARD / Q-BAR).
+  /// Prod default off — set SHOW_DISCOVER_DEBUG_BANNERS=true for local smoke.
+  static const kShowDiscoverDebugBanners = bool.fromEnvironment(
+    'SHOW_DISCOVER_DEBUG_BANNERS',
+    defaultValue: false,
+  );
+
+  /// Legacy alias for [kShowDiscoverDebugBanners] (`SHOW_ROUTING_DEBUG`).
   static const showRoutingDebug = bool.fromEnvironment(
     'SHOW_ROUTING_DEBUG',
     defaultValue: false,
   );
+
+  /// Prod path: Demo-Geometrie / Routing-Key chrome stays off unless either
+  /// dart-define is explicitly true.
+  static bool get showDiscoverDebugBanners =>
+      kShowDiscoverDebugBanners || showRoutingDebug;
 
   static const outdooractiveApiKey = String.fromEnvironment(
     'OUTDOORACTIVE_API_KEY',

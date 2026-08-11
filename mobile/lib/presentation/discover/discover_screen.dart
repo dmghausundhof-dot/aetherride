@@ -23,6 +23,7 @@ import '../../data/routing/elevation_client.dart';
 import '../../data/routing/geocode_client.dart';
 import '../../data/routing/osm_routes_client.dart';
 import '../../data/routing/osm_trail_network_client.dart';
+import '../../data/routing/discover_card_hero.dart';
 import '../../data/routing/naehe_seeds.dart';
 import '../../data/routing/public_tours_client.dart';
 import '../../data/routing/route_collections.dart';
@@ -44,6 +45,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../profile/profile_screen.dart';
 import '../map/map_pin_image.dart';
+import 'discover_tour_hero.dart';
 import 'offline_maps_sheet.dart';
 
 /// MapLibre in Flutter braucht Eager-Gesten, sonst frisst Parent/PlatformView Zoom/Pan.
@@ -115,6 +117,7 @@ class _RouteSuggestion {
     this.shortPitch,
     this.surfaceMixLabel,
     this.poiStops = const [],
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -151,6 +154,9 @@ class _RouteSuggestion {
   final String? shortPitch;
   final String? surfaceMixLabel;
   final List<_SeedPoiStop> poiStops;
+
+  /// Optional seed/catalog hero URL (may be null — card resolves curated/static).
+  final String? thumbnailUrl;
 
   /// Card P0 premium chrome present (tip / season / highlight).
   bool get isPremiumPassCard =>
@@ -822,8 +828,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _fetchRoutingStatus() async {
-    // Prod: no Demo-Geometrie / Routing-Key chrome (Q-BAR-DIS-01).
-    if (!AppConfig.showRoutingDebug) return;
+    // Prod: no Demo-Geometrie / Routing-Key chrome (Q-BAR-DIS-01 / D-60-CARD).
+    if (!AppConfig.showDiscoverDebugBanners) return;
     final s = await fetchRoutingStatus();
     if (!mounted || s == null) return;
     setState(() => _routingStatusNote = s.bannerText);
@@ -1327,6 +1333,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             corridorNote: s.corridorNote,
             shortPitch: s.shortPitch,
             surfaceMixLabel: s.surfaceMixLabel,
+            thumbnailUrl: s.thumbnailUrl,
             poiStops: [
               for (final p in s.poiStops)
                 _SeedPoiStop(
@@ -4375,8 +4382,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
               children: [
                 Text(
-                  '${detail.distanceKm} km · ${detail.elevationM} hm · '
-                  '${detail.durationMin} min',
+                  [
+                    '${detail.distanceKm} km',
+                    // Never show fake „0 hm“ (looks like a dead rating).
+                    if (detail.elevationM > 0) '${detail.elevationM} hm',
+                    '${detail.durationMin} min',
+                  ].join(' · '),
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
@@ -4562,12 +4573,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  /// Thin progress only — never dim the sheet to a dead black slab while
+  /// seeds/catalog paint (CEO FAIL / D-60-CARD-01).
   Widget _withLoadingVeil(Widget body) {
-    if (!_loading) return body;
     return Stack(
       children: [
-        Opacity(opacity: 0.45, child: IgnorePointer(child: body)),
-        const Center(child: CircularProgressIndicator()),
+        body,
+        if (_loading)
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
       ],
     );
   }
@@ -4971,14 +4989,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Chip only meaningful when ≥1 seed in 45–75 min exists for that city.
   static const _demoCities = <({String name, double lat, double lng})>[
     (name: 'Berlin', lat: 52.52, lng: 13.405),
+    (name: 'Wiesloch', lat: 49.294, lng: 8.698),
+    (name: 'Heidelberg', lat: 49.409, lng: 8.694),
+    (name: 'Mannheim', lat: 49.483, lng: 8.462),
     (name: 'München', lat: 48.183, lng: 11.61),
     (name: 'Köln', lat: 50.941, lng: 6.958),
     (name: 'Zürich', lat: 47.366, lng: 8.541),
     (name: 'Wien', lat: 48.218, lng: 16.392),
     (name: 'Innsbruck', lat: 47.286, lng: 11.399),
     (name: 'Konstanz', lat: 47.677, lng: 9.174),
-    (name: 'Heidelberg', lat: 49.409, lng: 8.694),
-    (name: 'Mannheim', lat: 49.483, lng: 8.462),
   ];
 
   void _focusOrtSearch() {
@@ -5029,9 +5048,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.m),
       child: Card(
+        color: AppColors.surface,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.m),
           // ListView child: min height + stretch width (Q-BAR-DIS-02).
+          // Never a dead black sheet near home — always Ort / Dauer / Demo.
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -5042,21 +5063,45 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Wähle eine Demo-Stadt oder änder den Ort.',
+                'Ändere Ort oder Dauer, oder wähle eine Demo-Stadt '
+                '(z. B. Heidelberg / Berlin).',
                 style: TextStyle(fontSize: 13, color: AppColors.muted),
               ),
               const SizedBox(height: AppSpacing.m),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    minimumSize: const Size(0, 48),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        minimumSize: const Size(0, 48),
+                      ),
+                      onPressed: _focusOrtSearch,
+                      icon: const Icon(Icons.search),
+                      label: const Text('Ort ändern'),
+                    ),
                   ),
-                  onPressed: _focusOrtSearch,
-                  icon: const Icon(Icons.search),
-                  label: const Text('Ort ändern'),
-                ),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _matchTourDuration = false;
+                          _minutes = 0;
+                          _loopOnly = null;
+                          _surfaceFilter = null;
+                          _scaleFilter = null;
+                          _minElevationM = null;
+                        });
+                      },
+                      icon: const Icon(Icons.schedule),
+                      label: const Text('Dauer lockern'),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.s),
               const Text(
@@ -5231,26 +5276,24 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             style: TextStyle(fontSize: 12, color: AppColors.muted),
           ),
         ),
-      if (nearbyLoopCount == 0 && _minutes == 60)
+      // Empty Ort near home must never be a dead sheet: Ort / Dauer / Demo.
+      if (list.isEmpty || (nearbyLoopCount == 0 && _minutes == 60))
         _emptyOrtPicker()
-      else if (list.isEmpty)
+      else if (_activeFilterCount > 0 && nearbyLoopCount == 0)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s),
           child: Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
-                  _activeFilterCount > 0
-                      ? 'Keine Tour bei diesen Filtern.'
-                      : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  'Keine Tour bei diesen Filtern.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
-              if (_activeFilterCount > 0)
-                TextButton(
-                  onPressed: _resetFilters,
-                  child: const Text('Filter zurücksetzen'),
-                ),
+              TextButton(
+                onPressed: _resetFilters,
+                child: const Text('Filter zurücksetzen'),
+              ),
             ],
           ),
         ),
@@ -5285,303 +5328,331 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
     final loop = _isLoop(r);
     final shape = _shapeLabel(r);
+    final heroUrl = resolveDiscoverCardHeroUrl(
+      id: r.id,
+      lat: r.center.latitude,
+      lng: r.center.longitude,
+      thumbnailUrl: r.thumbnailUrl,
+    );
     // Width must be finite: Expanded/Flexible in title + CTA Rows crash with
     // BoxConstraints(w=Infinity) if a parent (e.g. AnimatedSwitcher Stack)
     // ever passes unbounded horizontal constraints into the sheet list.
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
+      clipBehavior: Clip.antiAlias,
+      color: AppColors.surface,
       child: SizedBox(
         width: double.infinity,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              InkWell(
-                onTap: () => unawaited(_openDetail(r.id, r.center)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // D-60-CARD-01: real hero photo / place map — not a gray slab.
+            InkWell(
+              onTap: () => unawaited(_openDetail(r.id, r.center)),
+              child: DiscoverTourCardHero(
+                imageUrl: heroUrl,
+                isLoop: loop,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              // stretch ⇒ bounded width for Expanded Rows (Tourenkarten Infinity).
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  InkWell(
+                    onTap: () => unawaited(_openDetail(r.id, r.center)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (loop) ...[
-                          const Text(
-                            '⟲',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            r.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: _selectedTourId == r.id
-                                  ? AppColors.accent
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: r.isSeed
-                                    ? AppColors.accent.withValues(alpha: 0.1)
-                                    : r.isCatalog
-                                    ? AppColors.accent.withValues(alpha: 0.12)
-                                    : AppColors.forest.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.chip,
+                        Row(
+                          children: [
+                            if (loop) ...[
+                              const Text(
+                                '⟲',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.accent,
                                 ),
                               ),
+                              const SizedBox(width: 6),
+                            ],
+                            Expanded(
                               child: Text(
-                                r.sourceLabel,
-                                maxLines: 1,
+                                r.name,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: r.isCatalog || r.isSeed
+                                  color: _selectedTourId == r.id
                                       ? AppColors.accent
-                                      : AppColors.forestOnDark,
+                                      : null,
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: r.isSeed
+                                        ? AppColors.accent.withValues(alpha: 0.1)
+                                        : r.isCatalog
+                                        ? AppColors.accent.withValues(alpha: 0.12)
+                                        : AppColors.forest.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.chip,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    r.sourceLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: r.isCatalog || r.isSeed
+                                          ? AppColors.accent
+                                          : AppColors.forestOnDark,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Card P0 (discover-seed-card-fields-v1): title · duration ·
+                        // km · ⟲ · sport · tip · season chip · highlight_poi.
+                        // ⟲ lives in the title row above when [loop] is true.
+                        Text(
+                          [
+                            if (!r.isPremiumPassCard && shape != null) shape,
+                            '~${r.durationMin} Min',
+                            '${r.distanceKm} km',
+                            if (r.sportLabel case final sport?) sport,
+                            if (!r.isPremiumPassCard && r.poiStopsCount > 0)
+                              '${r.poiStopsCount} Stops',
+                          ].join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (r.tip case final tip?) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            tip,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                        if (r.seasonLabel != null || r.highlightPoi != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              if (r.seasonLabel case final season?)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.chip,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    season,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.accent,
+                                    ),
+                                  ),
+                                ),
+                              // POI highlight — never a fake ★ rating / ★ 0.
+                              if (r.highlightPoi case final hl?)
+                                Text(
+                                  'Highlight · $hl',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                        if (!r.isPremiumPassCard) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          _DifficultyStatsRow(
+                            difficultyRaw: r.mtbScale,
+                            segments: [
+                              _surfaceDisplay(r.surface),
+                              if (r.elevationM > 0) '↑${r.elevationM} m',
+                              if (_nearbyActivity(r.center) case final n?)
+                                'beliebt · ≥$n Ride-Nutzer',
+                            ],
+                          ),
+                        ],
+                        Text(
+                          '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
+                          '${_isPinOnlyIdea(r)
+                              ? ' · Tour-Idee'
+                              : r.hasTrack
+                              ? ' · Track'
+                              : ''}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
                           ),
                         ),
                       ],
                     ),
-                    // Card P0 (discover-seed-card-fields-v1): title · duration ·
-                    // km · ⟲ · sport · tip · season chip · highlight_poi.
-                    // ⟲ lives in the title row above when [loop] is true.
-                    Text(
-                      [
-                        if (!r.isPremiumPassCard && shape != null) shape,
-                        '~${r.durationMin} Min',
-                        '${r.distanceKm} km',
-                        if (r.sportLabel case final sport?) sport,
-                        if (!r.isPremiumPassCard && r.poiStopsCount > 0)
-                          '${r.poiStopsCount} Stops',
-                      ].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (r.tip case final tip?) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        tip,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  // Primary CTA zuerst (D-60-02): Losfahren ohne Detail-Umweg.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            minimumSize: const Size(0, 44),
+                          ),
+                          // Seeds/tracks: Losfahren stays tappable while quick
+                          // routing loads — avoids a dead CTA on photo cards.
+                          onPressed: (_loading && !r.isSeed && !r.hasTrack)
+                              ? null
+                              : () => unawaited(_startRide(suggestion: r)),
+                          icon: const Icon(Icons.play_arrow, size: 18),
+                          label: Text(
+                            r.hasTrack || r.isSeed
+                                ? MultiSportCopy.goRide
+                                : (r.id.startsWith('oa-') ||
+                                      r.id.contains('demo'))
+                                ? 'Los · Track?'
+                                : MultiSportCopy.goRide,
+                          ),
                         ),
                       ),
-                    ],
-                    if (r.seasonLabel != null || r.highlightPoi != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          if (r.seasonLabel case final season?)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.chip,
-                                ),
-                              ),
-                              child: Text(
-                                season,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
-                          if (r.highlightPoi case final hl?)
-                            Text(
-                              '★ $hl',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                        ],
+                      const SizedBox(width: AppSpacing.s),
+                      OutlinedButton(
+                        // Theme Size.fromHeight(48) ⇒ Infinity width crashes this Row.
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 44),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () => unawaited(_openDetail(r.id, r.center)),
+                        child: const Text('Mehr'),
                       ),
                     ],
-                    if (!r.isPremiumPassCard) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      _DifficultyStatsRow(
-                        difficultyRaw: r.mtbScale,
-                        segments: [
-                          _surfaceDisplay(r.surface),
-                          if (r.elevationM > 0) '↑${r.elevationM} m',
-                          if (_nearbyActivity(r.center) case final n?)
-                            'beliebt · ≥$n Ride-Nutzer',
-                        ],
-                      ),
-                    ],
-                    Text(
-                      '~${_distKm(o.lat, o.lng, r.center.latitude, r.center.longitude).round()} km entfernt'
-                      '${_isPinOnlyIdea(r)
-                          ? ' · Tour-Idee'
-                          : r.hasTrack
-                          ? ' · Track'
-                          : ''}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              // Primary CTA zuerst (D-60-02): Losfahren ohne Detail-Umweg.
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        minimumSize: const Size(0, 44),
-                      ),
-                      onPressed: _loading
-                          ? null
-                          : () => unawaited(_startRide(suggestion: r)),
-                      icon: const Icon(Icons.play_arrow, size: 18),
-                      label: Text(
-                        r.hasTrack || r.isSeed
-                            ? MultiSportCopy.goRide
-                            : (r.id.startsWith('oa-') || r.id.contains('demo'))
-                            ? 'Los · Track?'
-                            : MultiSportCopy.goRide,
-                      ),
-                    ),
                   ),
-                  const SizedBox(width: AppSpacing.s),
-                  OutlinedButton(
-                    // Theme Size.fromHeight(48) ⇒ Infinity width crashes this Row.
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 44),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  const SizedBox(height: AppSpacing.xs),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        if (_isPinOnlyIdea(r))
+                          OutlinedButton.icon(
+                            // Horizontal Row ⇒ unbounded max width; theme
+                            // Size.fromHeight(48) would assert BoxConstraints(w=Infinity).
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 36),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed:
+                                _loading ? null : () => _computeIdeaRoute(r),
+                            icon: const Icon(Icons.route, size: 16),
+                            label: const Text('Route berechnen'),
+                          )
+                        else
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 36),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () async {
+                              final routed = await _geometryForTour(r);
+                              if (!mounted) return;
+                              if (routed.demo || routed.points.length < 2) {
+                                await _computeIdeaRoute(r);
+                                return;
+                              }
+                              final preview = RouteResult(
+                                coordinates: routed.points,
+                                distanceM: r.distanceKm * 1000,
+                                durationS: r.durationMin * 60.0,
+                                engine: 'tour-routed',
+                              );
+                              setState(() {
+                                _computed = preview;
+                                _ideaPin = null;
+                                _selectedTourId = r.id;
+                                _label = r.name;
+                                _status = 'Live-geroutete Tour-Vorschau';
+                              });
+                              await _drawRoute(preview);
+                            },
+                            child: const Text('Vorschau'),
+                          ),
+                        const SizedBox(width: AppSpacing.xs),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: _loading ? null : () => _hybridSnap(r),
+                          child: const Text('Von hier'),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed:
+                              _loading ? null : () => _adoptTourIntoPlan(r),
+                          icon: const Icon(Icons.tune, size: 16),
+                          label: const Text('Anpassen'),
+                        ),
+                        IconButton(
+                          tooltip: 'Umgebungsfotos',
+                          onPressed: () => _openTrailView(near: r.center),
+                          icon: const Icon(Icons.streetview, size: 20),
+                        ),
+                      ],
                     ),
-                    onPressed: () => unawaited(_openDetail(r.id, r.center)),
-                    child: const Text('Mehr'),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.xs),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    if (_isPinOnlyIdea(r))
-                      OutlinedButton.icon(
-                        // Horizontal Row ⇒ unbounded max width; theme
-                        // Size.fromHeight(48) would assert BoxConstraints(w=Infinity).
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        onPressed: _loading ? null : () => _computeIdeaRoute(r),
-                        icon: const Icon(Icons.route, size: 16),
-                        label: const Text('Route berechnen'),
-                      )
-                    else
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        onPressed: () async {
-                          final routed = await _geometryForTour(r);
-                          if (!mounted) return;
-                          if (routed.demo || routed.points.length < 2) {
-                            await _computeIdeaRoute(r);
-                            return;
-                          }
-                          final preview = RouteResult(
-                            coordinates: routed.points,
-                            distanceM: r.distanceKm * 1000,
-                            durationS: r.durationMin * 60.0,
-                            engine: 'tour-routed',
-                          );
-                          setState(() {
-                            _computed = preview;
-                            _ideaPin = null;
-                            _selectedTourId = r.id;
-                            _label = r.name;
-                            _status = 'Live-geroutete Tour-Vorschau';
-                          });
-                          await _drawRoute(preview);
-                        },
-                        child: const Text('Vorschau'),
-                      ),
-                    const SizedBox(width: AppSpacing.xs),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      onPressed: _loading ? null : () => _hybridSnap(r),
-                      child: const Text('Von hier'),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      onPressed: _loading ? null : () => _adoptTourIntoPlan(r),
-                      icon: const Icon(Icons.tune, size: 16),
-                      label: const Text('Anpassen'),
-                    ),
-                    IconButton(
-                      tooltip: 'Umgebungsfotos',
-                      onPressed: () => _openTrailView(near: r.center),
-                      icon: const Icon(Icons.streetview, size: 20),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
