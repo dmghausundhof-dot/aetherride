@@ -1,0 +1,128 @@
+{
+  "kind": "road",
+  "viewBox": "0 0 1000 500",
+  "groundY": 420,
+  "axleY": 420,
+  "bb": {
+    "x": 400,
+    "y": 372
+  },
+  "wheelbaseUnits": 384,
+  "params": {
+    "tire_stroke": 8,
+    "bar": "drop",
+    "fork_travel": false
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 220,
+      "cy": 420,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "fork": {
+      "cx": 254,
+      "cy": 289,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 242,
+      "cy": 365,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "handlebar": {
+      "cx": 232,
+      "cy": 128,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 260,
+      "cy": 143,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 365.3,
+      "cy": 227.3,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 408,
+      "cy": 262,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 418,
+      "cy": 130,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 400,
+      "cy": 372,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 502,
+      "cy": 394,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 618,
+      "cy": 408,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "tire_rear": {
+      "cx": 604,
+      "cy": 420,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "brake_rear": {
+      "cx": 576,
+      "cy": 362,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "motor": {
+      "cx": 354,
+      "cy": 354,
+      "hitR": 28,
+      "label_de": "Motor"
+    },
+    "battery": {
+      "cx": 364,
+      "cy": 275,
+      "hitR": 28,
+      "label_de": "Akku"
+    }
+  },
+  "layers": {
+    "motor": {
+      "type": "rect",
+      "x": 372,
+      "y": 334,
+      "width": 56,
+      "height": 32,
+      "rx": 6,
+      "fill": "#FF6B35"
+    },
+    "battery": {
+      "type": "rect",
+      "x": 334,
+      "y": 245,
+      "width": 44,
+      "height": 22,
+      "rx": 4,
+      "fill": "#1A5C45"
+    }
+  }
+}

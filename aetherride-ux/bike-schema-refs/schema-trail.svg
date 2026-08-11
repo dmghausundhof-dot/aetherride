@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500"
+     data-schema-kind="trail" data-viewbox="1000x500">
+  <title>AetherRide Bike Schema — trail</title>
+  <desc>Diamond-frame side view. Shared viewBox 1000x500. Hotspot anchors in companion JSON.</desc>
+  <rect width="100%" height="100%" fill="#0A1210"/>
+  <text x="32" y="40" fill="#A8B5AE" font-family="system-ui,sans-serif" font-size="22" font-weight="700">Schema · trail</text>
+  <text x="32" y="68" fill="#6B7280" font-family="system-ui,sans-serif" font-size="14">viewBox 1000×500 shared · Eng recommendation C</text>
+
+  <!-- ground -->
+  <line x1="80" y1="420" x2="920" y2="420" stroke="#243830" stroke-width="4"/>
+  <!-- wheels -->
+  <circle class="tire" cx="220" cy="420" r="90" fill="none" stroke="#4B5563" stroke-width="22"/>
+  <circle class="rim" cx="220" cy="420" r="75.0" fill="none" stroke="#A8B5AE" stroke-width="4"/>
+  <circle class="tire" cx="690.4761904761905" cy="420" r="90" fill="none" stroke="#4B5563" stroke-width="22"/>
+  <circle class="rim" cx="690.4761904761905" cy="420" r="75.0" fill="none" stroke="#A8B5AE" stroke-width="4"/>
+  <!-- fork -->
+  <g id="part-fork">
+    <line x1="315" y1="175" x2="220" y2="420" stroke="#FF6B35" stroke-width="14" stroke-linecap="round"/>
+    <line x1="315" y1="210" x2="267.5" y2="297.5" stroke="#FF8F66" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+  </g>
+  <!-- diamond frame -->
+  <g id="part-frame" stroke="#1A5C45" stroke-linecap="round" fill="none">
+    <line id="tube-tt" x1="315" y1="175" x2="435.6" y2="145" stroke-width="12"/>
+    <line id="tube-dt" x1="315" y1="175" x2="417.6" y2="372" stroke-width="12"/>
+    <line id="tube-st" x1="435.6" y1="145" x2="417.6" y2="372" stroke-width="12"/>
+    <line id="tube-cs" x1="417.6" y1="372" x2="690.4761904761905" y2="420" stroke-width="9"/>
+    <line id="tube-ss" x1="435.6" y1="185" x2="690.4761904761905" y2="420" stroke-width="9"/>
+  </g>
+  <line id="part-rear_shock" x1="437.6" y1="200" x2="487.6" y2="357" stroke="#FF6B35" stroke-width="10" stroke-linecap="round"/>
+  <line id="part-stem" x1="315" y1="175" x2="293.0" y2="165" stroke="#F0F5F2" stroke-width="7" stroke-linecap="round"/>
+  <g id="part-handlebar">
+    <line x1="238.0" y1="165" x2="348.0" y2="165" stroke="#F0F5F2" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <!-- saddle / seatpost -->
+  <line id="part-seatpost" x1="435.6" y1="145" x2="435.6" y2="127" stroke="#A8B5AE" stroke-width="8"/>
+  <ellipse id="part-saddle" cx="445.6" cy="123" rx="36" ry="11" fill="#F0F5F2"/>
+  <!-- crank -->
+  <g id="part-crank">
+    <circle cx="417.6" cy="372" r="22" fill="none" stroke="#FF6B35" stroke-width="5"/>
+    <line x1="417.6" y1="372" x2="453.6" y2="402" stroke="#F0F5F2" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <!-- chain hint -->
+  <line id="part-chain" x1="435.6" y1="378" x2="678.4761904761905" y2="410" stroke="#6B7280" stroke-width="3"/>
+
+  <g id="hotspot-dots" opacity="0.95">
+  <circle class="hotspot-dot" data-slot="tire_front" cx="220.0" cy="420.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="fork" cx="267.5" cy="289.5" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="brake_front" cx="242.0" cy="365.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="handlebar" cx="293.0" cy="165.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="stem" cx="304.0" cy="170.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="frame" cx="375.3" cy="195.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="seatpost" cx="435.6" cy="258.5" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="saddle" cx="445.6" cy="123.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="crank" cx="417.6" cy="372.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="chain" cx="554.0" cy="382.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="cassette" cx="704.5" cy="408.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="tire_rear" cx="690.5" cy="420.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="brake_rear" cx="662.5" cy="362.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  <circle class="hotspot-dot" data-slot="rear_shock" cx="462.6" cy="215.0" r="9" fill="#22C55E" stroke="#0A1210" stroke-width="2"/>
+  </g>
+</svg>

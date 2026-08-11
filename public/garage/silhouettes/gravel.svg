@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500"
+     data-schema-kind="gravel" data-viewbox="1000x500" data-bb="400,372" fill="none">
+  <title>AetherRide Bike Schema — gravel</title>
+  <desc>Diamond-frame side view. Shared viewBox 0 0 1000 500, locked BB (400,372). Status hotspots overlaid by app.</desc>
+
+  <line x1="80" y1="420" x2="920" y2="420" stroke="#243830" stroke-width="4"/>
+
+  <circle class="tire" cx="220" cy="420" r="90" fill="none" stroke="#4B5563" stroke-width="16"/>
+  <circle class="rim" cx="220" cy="420" r="78" fill="none" stroke="#A8B5AE" stroke-width="4"/>
+  <circle class="tire" cx="624" cy="420" r="90" fill="none" stroke="#4B5563" stroke-width="16"/>
+  <circle class="rim" cx="624" cy="420" r="78" fill="none" stroke="#A8B5AE" stroke-width="4"/>
+
+  <g id="part-fork">
+    <line x1="292" y1="160" x2="220" y2="420" stroke="#FF6B35" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <g id="part-frame" stroke="#1A5C45" stroke-linecap="round" fill="none">
+    <line id="tube-ht" x1="292" y1="160" x2="296" y2="188" stroke-width="14"/>
+    <line id="tube-tt" x1="292" y1="160" x2="412" y2="155" stroke-width="12"/>
+    <line id="tube-dt" x1="292" y1="160" x2="400" y2="372" stroke-width="12"/>
+    <line id="tube-st" x1="412" y1="155" x2="400" y2="372" stroke-width="12"/>
+    <line id="tube-cs" x1="400" y1="372" x2="624" y2="420" stroke-width="9"/>
+    <line id="tube-ss" x1="412" y1="195" x2="624" y2="420" stroke-width="9"/>
+  </g>
+
+  <line id="part-stem" x1="292" y1="160" x2="248" y2="138" stroke="#F0F5F2" stroke-width="7" stroke-linecap="round"/>
+
+  <g id="part-handlebar">
+    <line x1="238" y1="138" x2="288" y2="142" stroke="#F0F5F2" stroke-width="8" stroke-linecap="round"/>
+    <path d="M238 138 C220 150 222 186 240 196" stroke="#F0F5F2" stroke-width="7" fill="none"/>
+  </g>
+  <line id="part-seatpost" x1="412" y1="155" x2="412" y2="137" stroke="#A8B5AE" stroke-width="8"/>
+  <ellipse id="part-saddle" cx="422" cy="133" rx="36" ry="11" fill="#F0F5F2"/>
+
+  <g id="part-crank">
+    <circle cx="400" cy="372" r="22" fill="none" stroke="#FF6B35" stroke-width="5"/>
+    <line x1="400" y1="372" x2="436" y2="402" stroke="#F0F5F2" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <line id="part-chain" x1="418" y1="378" x2="612" y2="410" stroke="#6B7280" stroke-width="3"/>
+
+</svg>

@@ -1,0 +1,17 @@
+{
+  "recommendation": "C",
+  "viewBox": "0 0 1000 500",
+  "note": "Per-discipline SVG + hotspot JSON. Shared viewBox. No stick-polygon. Trail = MTB trail fully silhouette.",
+  "disciplines": {
+    "gravel": {
+      "svg": "schema-gravel.svg",
+      "hotspots": "schema-gravel.hotspots.json",
+      "slotCount": 13
+    },
+    "trail": {
+      "svg": "schema-trail.svg",
+      "hotspots": "schema-trail.hotspots.json",
+      "slotCount": 14
+    }
+  }
+}
