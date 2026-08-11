@@ -295,7 +295,7 @@
       "duration_band": "60",
       "poi_stops": [
         {
-          "offset_min": 9,
+          "offset_min": 8,
           "title": "Fähre Konstanz–Meersburg (Staad)",
           "type": "transit"
         },
@@ -305,17 +305,17 @@
           "type": "culture"
         },
         {
-          "offset_min": 28,
+          "offset_min": 25,
           "title": "Ruppaner Brauerei",
           "type": "cafe"
         },
         {
-          "offset_min": 37,
+          "offset_min": 32,
           "title": "Hörnle / Strandbad area",
           "type": "water"
         },
         {
-          "offset_min": 46,
+          "offset_min": 42,
           "title": "Alte Rheinbrücke Konstanz",
           "type": "culture"
         }

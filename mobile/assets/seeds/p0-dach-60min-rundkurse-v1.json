@@ -299,7 +299,7 @@
         "name": "Fähre Konstanz–Meersburg (Staad)",
         "type": "Bahn",
         "why_good": "Year-round car ferry (~15 min crossing); bikes ride free on weekends and holidays.",
-        "offset_min": 9
+        "offset_min": 8
       },
       {
         "name": "Insel Mainau (gate / causeway)",
@@ -311,19 +311,19 @@
         "name": "Ruppaner Brauerei",
         "type": "Café",
         "why_good": "Lakeside Konstanz brewery on the Bodensee-Radweg between Staad and Egg.",
-        "offset_min": 28
+        "offset_min": 25
       },
       {
         "name": "Hörnle / Strandbad area",
         "type": "See",
         "why_good": "Popular Konstanz swim and lakeshore hangout near the ferry approaches.",
-        "offset_min": 37
+        "offset_min": 32
       },
       {
         "name": "Alte Rheinbrücke Konstanz",
         "type": "Kultur",
         "why_good": "Historic Rhine bridge linking Altstadt to the Mainaustraße bike corridor.",
-        "offset_min": 46
+        "offset_min": 42
       }
     ]
   }
