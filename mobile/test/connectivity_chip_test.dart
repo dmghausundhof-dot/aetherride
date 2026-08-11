@@ -3,15 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('resolveConnectivityChip', () {
-    test('online with route → Route offline (Stage A)', () {
+    test('online with route → quiet Live (not Route offline)', () {
       final s = resolveConnectivityChip(
         online: true,
         hasRouteGeometry: true,
         offlineMapAvailable: false,
       );
-      expect(s, ConnectivityChipState.routeOffline);
-      expect(connectivityChipLabel(s), 'Route offline');
-      expect(connectivityChipVisibleInClean(s), isTrue);
+      expect(s, ConnectivityChipState.live);
+      expect(connectivityChipLabel(s), 'Live');
+      expect(connectivityChipVisibleInClean(s), isFalse);
     });
 
     test('online freeride → quiet Live', () {
@@ -21,20 +21,30 @@ void main() {
         offlineMapAvailable: false,
       );
       expect(s, ConnectivityChipState.live);
-      expect(connectivityChipLabel(s), 'Live');
       expect(connectivityChipVisibleInClean(s), isFalse);
     });
 
-    test('offline + map ok → honest reroute line', () {
+    test('offline + geometry + map → Route offline', () {
       final s = resolveConnectivityChip(
         online: false,
         hasRouteGeometry: true,
         offlineMapAvailable: true,
       );
+      expect(s, ConnectivityChipState.routeOffline);
+      expect(connectivityChipLabel(s), 'Route offline');
+      expect(connectivityChipVisibleInClean(s), isTrue);
+    });
+
+    test('offline freeride + map ok → locked chip string', () {
+      final s = resolveConnectivityChip(
+        online: false,
+        hasRouteGeometry: false,
+        offlineMapAvailable: true,
+      );
       expect(s, ConnectivityChipState.offlineMapOk);
       expect(
         connectivityChipLabel(s),
-        'Offline · Karte ok · Reroute braucht Netz',
+        'Offline · Karte ok · Reroute: Netz',
       );
     });
 
@@ -46,6 +56,13 @@ void main() {
       );
       expect(s, ConnectivityChipState.mapsMissing);
       expect(connectivityChipLabel(s), 'Karten fehlen');
+    });
+
+    test('offline toast copy is action-oriented', () {
+      expect(
+        kOfflineRerouteToast,
+        'Reroute braucht Internet. Auf der geladenen Route bleiben.',
+      );
     });
 
     test('never claims offline reroute in labels', () {

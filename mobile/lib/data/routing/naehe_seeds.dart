@@ -8,6 +8,9 @@ import '../../domain/active_route.dart';
 import '../../domain/routing/nav_cues.dart';
 
 /// Nähe-Peek / 60-Min-Loop Seed (bundled JSON, D-60-03).
+///
+/// Canonical POI shape (UX wire): `{ offset_min, title, type }`.
+/// Demo Berlin seeds still ship `{ at_min, title, kind }` — both accepted.
 class NaeheSeedPoi {
   const NaeheSeedPoi({
     required this.atMin,
@@ -15,15 +18,22 @@ class NaeheSeedPoi {
     required this.kind,
   });
 
+  /// Minutes from loop start (canonical JSON: `offset_min`, alias: `at_min`).
   final int atMin;
   final String title;
+
+  /// POI kind/type (canonical JSON: `type`, alias: `kind`).
   final String kind;
 
-  factory NaeheSeedPoi.fromJson(Map<String, dynamic> m) => NaeheSeedPoi(
-        atMin: (m['at_min'] as num?)?.round() ?? 0,
-        title: (m['title'] as String?) ?? '',
-        kind: (m['kind'] as String?) ?? 'poi',
-      );
+  factory NaeheSeedPoi.fromJson(Map<String, dynamic> m) {
+    final offset = m['offset_min'] ?? m['at_min'];
+    final type = m['type'] ?? m['kind'];
+    return NaeheSeedPoi(
+      atMin: (offset as num?)?.round() ?? 0,
+      title: (m['title'] as String?) ?? '',
+      kind: (type as String?) ?? 'poi',
+    );
+  }
 }
 
 class NaeheSeedRoute {

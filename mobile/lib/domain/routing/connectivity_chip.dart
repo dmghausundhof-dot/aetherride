@@ -1,18 +1,22 @@
 /// Mid-ride connectivity honesty (N-03 / N-08).
 ///
-/// Never claims offline reroute. Stage A = route geometry is local (TBT works
-/// without net). Map offline ≠ route offline ≠ reroute offline.
+/// Never claims offline reroute. Map offline ≠ route offline ≠ reroute offline.
+///
+/// UX lock (post-#14 review):
+/// - online → [ConnectivityChipState.live] (hidden in Clean Mode)
+/// - [ConnectivityChipState.routeOffline] only when *offline* + local route geometry
+/// - Chip string for map-ok offline: `Offline · Karte ok · Reroute: Netz`
 enum ConnectivityChipState {
-  /// Online — quiet trust; optional label „Live“.
+  /// Online — quiet trust; optional label „Live“ (hidden in Clean).
   live,
 
-  /// Stage A: active route geometry is cached locally.
+  /// Offline + Stage A: active route geometry is local (TBT ohne Netz).
   routeOffline,
 
-  /// No network; basemap/route usable; auto-replan needs net.
+  /// Offline; basemap usable; auto-replan needs net (no / freeride geometry).
   offlineMapOk,
 
-  /// No network and no usable offline basemap.
+  /// Offline and no usable offline basemap.
   mapsMissing,
 }
 
@@ -22,29 +26,32 @@ ConnectivityChipState resolveConnectivityChip({
   required bool hasRouteGeometry,
   required bool offlineMapAvailable,
 }) {
-  if (!online) {
-    if (!offlineMapAvailable) {
-      return ConnectivityChipState.mapsMissing;
-    }
-    return ConnectivityChipState.offlineMapOk;
+  if (online) {
+    return ConnectivityChipState.live;
   }
-  // Online: Stage A trust when route is in memory (always local after load).
+  if (!offlineMapAvailable) {
+    return ConnectivityChipState.mapsMissing;
+  }
   if (hasRouteGeometry) {
     return ConnectivityChipState.routeOffline;
   }
-  return ConnectivityChipState.live;
+  return ConnectivityChipState.offlineMapOk;
 }
 
-/// German UI labels — calm, honest, glanceable.
+/// German UI labels — calm, honest, glanceable (UX-locked strings).
 String connectivityChipLabel(ConnectivityChipState state) {
   return switch (state) {
     ConnectivityChipState.live => 'Live',
     ConnectivityChipState.routeOffline => 'Route offline',
     ConnectivityChipState.offlineMapOk =>
-      'Offline · Karte ok · Reroute braucht Netz',
+      'Offline · Karte ok · Reroute: Netz',
     ConnectivityChipState.mapsMissing => 'Karten fehlen',
   };
 }
+
+/// Offline toast when user tries / would auto-replan without net (UX Spec).
+const String kOfflineRerouteToast =
+    'Reroute braucht Internet. Auf der geladenen Route bleiben.';
 
 /// Whether the chip is worth showing in Clean Mode (hide quiet Live).
 bool connectivityChipVisibleInClean(ConnectivityChipState state) {
