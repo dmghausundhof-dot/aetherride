@@ -1164,11 +1164,11 @@ function DiscoverPageInner() {
           )}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold tracking-tight">Explore</h1>
+              <h1 className="text-xl font-bold tracking-tight">Touren</h1>
               <p className="text-xs text-text-secondary">
                 {activeBike
                   ? `${activeBike.name} · ${bikeCategoryLabel(activeBike.category)}`
-                  : "Alle Disziplinen — Bike optional für präzisere Vorschläge"}
+                  : "MTB · Gravel · Rennrad · City · E-Bike — Bike optional"}
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
@@ -1202,33 +1202,52 @@ function DiscoverPageInner() {
               />
               <span className="font-medium tabular-nums">{minutes} min</span>
             </label>
-            <select
-              value={activeProfile}
-              onChange={(e) => {
-                const p = e.target.value as RoutingProfile;
-                setManualProfile(p);
-                setFilters((f) => ({
-                  ...f,
-                  sport: sportFilterFromProfile(p),
-                }));
-              }}
-              className="rounded-lg border border-border bg-surface px-2 py-1 text-[11px]"
-            >
-              {Object.values(ROUTING_PROFILES).map((p) => (
-                <option key={p.id} value={p.id}>
+          </div>
+          {/* Sport-Chips — Parität zur Flutter-App */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(
+              [
+                "mtb_allmountain",
+                "gravel",
+                "road",
+                "urban",
+                "emtb",
+                "ebike",
+                "mtb_enduro",
+              ] as RoutingProfile[]
+            ).map((pid) => {
+              const p = ROUTING_PROFILES[pid];
+              const selected = activeProfile === pid;
+              return (
+                <button
+                  key={pid}
+                  type="button"
+                  onClick={() => {
+                    setManualProfile(pid);
+                    setFilters((f) => ({
+                      ...f,
+                      sport: sportFilterFromProfile(pid),
+                    }));
+                  }}
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                    selected
+                      ? "border-accent bg-accent/15 text-accent"
+                      : "border-border bg-surface text-text-secondary hover:border-accent/40"
+                  }`}
+                >
                   {p.label}
-                </option>
-              ))}
-            </select>
+                </button>
+              );
+            })}
           </div>
         </header>
 
         <div className="grid shrink-0 grid-cols-3 gap-1 border-b border-border p-2">
           {(
             [
-              ["quick", "Schnell", Zap],
+              ["quick", "In der Nähe", Zap],
               ["plan", "Planen", Navigation],
-              ["tours", "Touren", Route],
+              ["tours", "Katalog", Route],
             ] as const
           ).map(([id, label, Icon]) => (
             <button
@@ -1254,21 +1273,37 @@ function DiscoverPageInner() {
 
           {sheetMode === "quick" && (
             <div className="flex flex-col gap-2">
+              <div className="rounded-xl border border-accent/25 bg-accent/5 p-3">
+                <p className="text-xs font-semibold text-foreground">
+                  In deiner Nähe · {ROUTING_PROFILES[activeProfile].label}
+                </p>
+                <p className="mt-0.5 text-[11px] text-text-secondary">
+                  Live-Route ab Standort oder Kartenmitte — MTB, Gravel, Rennrad,
+                  City oder E-Bike.
+                </p>
+                <div className="mt-2">
+                  <NearMeRouteCard
+                    center={userPos ?? mapCenter}
+                    profile={activeProfile}
+                    defaultKm={Math.max(10, Math.round(minutes / 4))}
+                  />
+                </div>
+              </div>
               <p className="text-[11px] text-text-secondary">
-                Geroutete Optionen ab deiner Position · {minutes} min Budget
+                Vorschläge · {minutes} min · {ROUTING_PROFILES[activeProfile].label}
               </p>
               {quickBusy && (
                 <p className="text-sm text-text-secondary">Berechne…</p>
               )}
               {!quickBusy && quickOptions.length === 0 && (
                 <div className="rounded-xl border border-border p-4 text-center text-sm text-text-secondary">
-                  Keine Quick-Route —{" "}
+                  Keine Vorschläge — Standort erlauben, Sport-Chip wählen oder{" "}
                   <button
                     type="button"
                     className="font-medium text-accent"
                     onClick={() => setSheetMode("plan")}
                   >
-                    Planer öffnen
+                    Planen öffnen
                   </button>
                 </div>
               )}
@@ -1483,14 +1518,9 @@ function DiscoverPageInner() {
 
           {sheetMode === "tours" && (
             <div className="flex flex-col gap-3">
-              <NearMeRouteCard
-                center={userPos ?? mapCenter}
-                profile={activeProfile}
-                defaultKm={Math.max(12, Math.round(minutes / 4))}
-              />
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                  Trails in der Nähe
+                  Wege in der Nähe
                 </h3>
                 <label className="flex items-center gap-1.5 text-[11px] text-text-secondary">
                   <input
@@ -1503,7 +1533,8 @@ function DiscoverPageInner() {
               </div>
               {nearbyTrails.length === 0 ? (
                 <p className="text-[11px] text-text-secondary">
-                  Keine Trail-Hinweise in der Nähe — Karte verschieben oder Ort setzen.
+                  Keine OSM-Wege hier — Karte verschieben oder unter „In der Nähe“
+                  eine Live-Route bauen.
                 </p>
               ) : (
                 nearbyTrails.map((t) => (

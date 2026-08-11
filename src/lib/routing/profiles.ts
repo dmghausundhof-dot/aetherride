@@ -31,7 +31,7 @@ export interface ProfileConfig {
 export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   mtb_allmountain: {
     id: "mtb_allmountain",
-    label: "MTB Trail / All-Mountain",
+    label: "MTB",
     prefer: ["path", "track", "cycleway", "mtb:scale=0-3"],
     avoid: ["motorway", "trunk", "steps"],
     maxSurfaceRoughness: 0.75,
@@ -40,7 +40,7 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
   mtb_enduro: {
     id: "mtb_enduro",
-    label: "Enduro / DH-leaning",
+    label: "Enduro",
     prefer: ["path", "track", "mtb:scale=2-5", "mtb:scale:imba"],
     avoid: ["motorway", "trunk", "primary", "steps"],
     maxSurfaceRoughness: 0.95,
@@ -77,7 +77,7 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
   urban: {
     id: "urban",
-    label: "City / Alltag",
+    label: "City",
     prefer: [
       "cycleway",
       "residential",
@@ -92,7 +92,7 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
   ebike: {
     id: "ebike",
-    label: "E-Bike Tour",
+    label: "E-Trekking",
     prefer: ["cycleway", "track", "path", "tertiary"],
     avoid: ["motorway", "steps", "mtb:scale>=4"],
     maxSurfaceRoughness: 0.65,
@@ -111,7 +111,7 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   },
   hiking: {
     id: "hiking",
-    label: "Wandern",
+    label: "Zu Fuß",
     prefer: ["path", "footway", "track", "sac_scale=hiking|mountain_hiking"],
     avoid: ["motorway", "trunk", "primary"],
     maxSurfaceRoughness: 0.9,

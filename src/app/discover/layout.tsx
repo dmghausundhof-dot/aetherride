@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Explore – Touren & Planner",
+  title: "Touren – MTB, Gravel, Rennrad, City & E-Bike",
   description:
-    "Touren entdecken für Rennrad, Gravel, MTB, E-Bike und City. Desktop-Planer mit Karte, Filtern und Profilen.",
+    "Touren entdecken und planen für Rennrad, Gravel, MTB, E-Bike und City. Karte, Filter und Routing-Profile.",
 };
 
 export default function DiscoverLayout({

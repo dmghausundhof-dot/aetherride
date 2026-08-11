@@ -25,10 +25,10 @@ export function LandingFooter() {
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
               <Link href="/discover" className="text-text-secondary hover:text-foreground">
-                Explore
+                Touren
               </Link>
               <Link href="/planner" className="text-text-secondary hover:text-foreground">
-                Planner
+                Planen
               </Link>
               <Link href="/library" className="text-text-secondary hover:text-foreground">
                 Bibliothek
@@ -40,7 +40,7 @@ export function LandingFooter() {
                 Garage
               </Link>
               <Link href="/activities" className="text-text-secondary hover:text-foreground">
-                Aktivitäten
+                Fahrten
               </Link>
               <Link href="/community" className="text-text-secondary hover:text-foreground">
                 Community

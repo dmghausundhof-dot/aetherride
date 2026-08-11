@@ -32,7 +32,12 @@ Ziel: **eine App für alle Radfahrer:innen** — MTB, Gravel, Rennrad, City, E-B
 - [x] Profil: Disziplin-Chips prominent (1-Tap speichern)
 - [x] Web: Touren / Planen / Teile / Fahrten (AppHeader, Landing, BottomTab)
 
+## Erledigt (Folge 2)
+
+- [x] Discover Filter: Asphalt / Schotter / Flow / Naturboden / Stadt
+- [x] Web Touren: Sport-Chips, Near-me Hero, „In der Nähe“ Tab
+
 ## Offen
 
-- Discover: Filter-Sheet Untergrund-Tags multi-sport (weniger trail/root only)
-- Web Discover: Near-me Hero-Karten Parität
+- Content-Dichte Touren pro Region
+- Store Screenshots multi-sport

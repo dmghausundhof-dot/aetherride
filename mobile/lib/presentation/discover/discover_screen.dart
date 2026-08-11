@@ -136,27 +136,31 @@ Color _difficultyDotColor(String raw) {
   );
 }
 
-/// Menschliche Übersetzung der rohen Untergrund-Tags aus Discover-Quellen.
+/// Menschliche Übersetzung der Untergrund-Tags (Multi-Sport).
 String _surfaceDisplay(String raw) => switch (raw) {
       'trail/root' => 'Naturboden · Wurzeln',
       'flow/compact' => 'Flow · fest verdichtet',
+      'asphalt/paved' => 'Asphalt · befestigt',
+      'gravel/compacted' => 'Schotter · verdichtet',
+      'mixed/urban' => 'Stadt · gemischt',
       _ => raw,
     };
 
-/// Kurzform von [_surfaceDisplay] für Filter-Chips (wenig Platz) — der
-/// Rohwert bleibt per Tooltip abrufbar.
+/// Kurzform für Filter-Chips (Multi-Sport).
 String _chipSurfaceLabel(String raw) => switch (raw) {
       'trail/root' => 'Naturboden',
       'flow/compact' => 'Flow',
+      'asphalt/paved' => 'Asphalt',
+      'gravel/compacted' => 'Schotter',
+      'mixed/urban' => 'Stadt',
       _ => raw.split('/').first,
     };
 
-/// Übersetzt die dreistufige Touren-Schwierigkeit (S0/S1/S2+, unabhängig
-/// von der feineren [TrailDifficulty]-Skala des Trailnetzes) in Klartext.
+/// Touren-Schwierigkeit / Beanspruchung (nicht nur MTB-S-Skala-Wording).
 String _chipScaleLabel(String code) => switch (code) {
       'S0' => 'Leicht',
       'S1' => 'Mittel',
-      'S2+' => 'Schwer+',
+      'S2+' => 'Anspruchsvoll',
       _ => code,
     };
 
@@ -334,7 +338,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Nur Karten-Übersicht DACH+FR bis GPS da ist — nie Tour-Origin.
   static const _regionOverview = GeoPoint(47.2, 6.5);
   static const _quickBudgets = [45, 60, 90, 120, 150, 180, 240];
-  static const _surfaceTags = ['flow/compact', 'trail/root'];
+  /// Multi-Sport Oberflächen — MTB, Gravel, Road, City.
+  static const _surfaceTags = [
+    'asphalt/paved',
+    'gravel/compacted',
+    'flow/compact',
+    'trail/root',
+    'mixed/urban',
+  ];
 
   /// Mindestplatz über dem Panel, der bei geöffneter Tastatur erhalten
   /// bleiben muss — Kopfzeile plus ein Rest Karte. Ohne das würde die
@@ -3515,10 +3526,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         ),
                       ),
                     ]),
-                    group('Untergrund', [
+                    group('Untergrund (alle Disziplinen)', [
                       for (final s in _surfaceTags)
                         Tooltip(
-                          message: s,
+                          message: _surfaceDisplay(s),
                           child: FilterChip(
                             label: Text(_chipSurfaceLabel(s)),
                             selected: _surfaceFilter == s,
@@ -3528,10 +3539,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           ),
                         ),
                     ]),
-                    group('Schwierigkeit (Tour)', [
+                    group('Beanspruchung', [
                       for (final sc in ['S0', 'S1', 'S2+'])
                         Tooltip(
-                          message: 'OSM-Skala: $sc',
+                          message: 'Filter-Stufe $sc (OSM/Tour-Metadaten)',
                           child: FilterChip(
                             label: Text(_chipScaleLabel(sc)),
                             selected: _scaleFilter == sc,
