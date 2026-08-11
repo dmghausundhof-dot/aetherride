@@ -25,6 +25,21 @@ void main() {
       );
     });
 
+    test('custom scheme shop / teile / parts → shop tab', () {
+      expect(
+        DeepLinkParse.kindOf(Uri.parse('aetherride://shop')),
+        DeepLinkKind.shop,
+      );
+      expect(
+        DeepLinkParse.kindOf(Uri.parse('aetherride://teile')),
+        DeepLinkKind.shop,
+      );
+      expect(
+        DeepLinkParse.kindOf(Uri.parse('aetherride://parts')),
+        DeepLinkKind.shop,
+      );
+    });
+
     test('https app links', () {
       expect(
         DeepLinkParse.kindOf(
@@ -45,6 +60,16 @@ void main() {
           Uri.parse('https://aetherride.vercel.app/discover'),
         ),
         DeepLinkKind.discover,
+      );
+      expect(
+        DeepLinkParse.kindOf(
+          Uri.parse('https://aetherride.vercel.app/shop/parts'),
+        ),
+        DeepLinkKind.shop,
+      );
+      expect(
+        DeepLinkParse.kindOf(Uri.parse('https://aetherride.vercel.app/teile')),
+        DeepLinkKind.shop,
       );
     });
 

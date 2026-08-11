@@ -1,9 +1,14 @@
 /**
  * F-SHP-001 / F-SHP-003 — Beispielkatalog mit ComponentModel-Bezug
  * Affiliate-URLs sind Platzhalter; Kauf nur extern (Spec 0.4.4 / 8.4).
+ *
+ * Live Ersatzteile: Collection `featured-parts` via Storefront API
+ * (`partsCatalog` / `/shop/parts`). Static SHOP_PRODUCTS = soft-fit seeds +
+ * editorial bike snapshots (not primary catalog).
  */
 
 import type { ComponentSlot } from "@/types";
+import { isDeepProductUrl } from "@/lib/shop/merchantLinks";
 
 /** Disziplin-Tags für Shop-Filter (Phase C) */
 export type ShopSport =
@@ -69,11 +74,22 @@ export function shopifyProductUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/products/${handle}`;
 }
 
+/** Online Store collection URL — Owner Preview only (hits /password when locked). */
 export function shopifyCollectionUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/collections/${handle}`;
 }
 
-/** Sport-Query → Shopify Collection Handle */
+/**
+ * True for deep product / product-search URLs.
+ * Bare dealer homepages → false (S-FLOW-04 / audit dead-link purge).
+ */
+export function isProductAffiliateUrl(
+  url: string | undefined | null
+): boolean {
+  return isDeepProductUrl(url);
+}
+
+/** Sport-Query → Shopify Collection Handle (Storefront / Owner Preview) */
 export const SHOPIFY_COLLECTIONS: Record<string, string> = {
   gravel: "featured-gravel",
   city: "featured-light-e-city",
@@ -86,9 +102,20 @@ export const SHOPIFY_COLLECTIONS: Record<string, string> = {
 /** Live Ersatzteile-Collection (Storefront API — siehe partsCatalog) */
 export const SHOPIFY_PARTS_COLLECTION = "featured-parts";
 
+/**
+ * In-app collection destination — never password-gated Online Store.
+ * Use shopifyCollectionUrl() only behind Owner-Preview confirm.
+ */
 export function shopCollectionHref(sport: string): string | undefined {
-  const handle = SHOPIFY_COLLECTIONS[sport];
-  return handle ? shopifyCollectionUrl(handle) : undefined;
+  if (sport === "parts") return FEATURED_PARTS_IN_APP_HREF;
+  if (!SHOPIFY_COLLECTIONS[sport]) return undefined;
+  const q = sport === "urban" ? "city" : sport;
+  return `/shop?sport=${encodeURIComponent(q)}`;
+}
+
+/** Static seed parts (non-frame) — demo / soft-fit; live catalog = featured-parts API */
+export function getFeaturedPartsProducts(): ShopProduct[] {
+  return SHOP_PRODUCTS.filter((p) => p.slot !== "frame");
 }
 
 /**
@@ -107,7 +134,7 @@ export const FEATURED_BIKE_HANDLE_CANDIDATES = [
 /** @deprecated use FEATURED_BIKE_HANDLE_CANDIDATES + Storefront sync */
 export const UNPUBLISHED_FEATURED_BIKE_HANDLES = FEATURED_BIKE_HANDLE_CANDIDATES;
 
-/** In-app collection CTA */
+/** In-app Parts Hub (S-FLOW-01) — aliases /teile · /parts redirect here */
 export const FEATURED_PARTS_IN_APP_HREF = "/shop/parts";
 
 /**

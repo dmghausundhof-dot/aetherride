@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +36,8 @@ export function PartsProductCard({
         : "bg-surface-elevated text-text-secondary border-border";
   const detailHref = inAppProductHref(p.handle);
   const merchantUrl = merchantCtaUrl(p.affiliateUrl);
+  const [imgBroken, setImgBroken] = useState(false);
+  const showImage = Boolean(p.imageUrl) && !imgBroken;
 
   return (
     <article
@@ -43,13 +48,14 @@ export function PartsProductCard({
       )}
     >
       <Link href={detailHref} className="relative block aspect-[4/3] bg-surface-elevated">
-        {p.imageUrl ? (
+        {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- Shopify CDN
           <img
             src={p.imageUrl}
             alt={p.imageAlt || p.name}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
             loading="lazy"
+            onError={() => setImgBroken(true)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-text-secondary">

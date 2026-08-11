@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { LiveFeaturedBike } from "@/lib/shop/featuredSync";
@@ -5,18 +8,22 @@ import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
 
 /** Live bike from Storefront sync — never render for 404 handles. */
 export function FeaturedBikeCard({ bike }: { bike: LiveFeaturedBike }) {
+  const [imgBroken, setImgBroken] = useState(false);
+  const showImage = Boolean(bike.imageUrl) && !imgBroken;
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-background transition hover:border-accent/40">
       <Link
         href={bike.href}
         className="relative block aspect-[16/10] bg-surface-elevated"
       >
-        {bike.imageUrl ? (
+        {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={bike.imageUrl}
             alt={bike.name}
             className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            onError={() => setImgBroken(true)}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-text-secondary">

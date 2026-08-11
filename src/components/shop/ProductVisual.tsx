@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Battery,
   Bike,
@@ -62,28 +65,13 @@ export function ProductVisual({
   compact?: boolean;
 }) {
   const sizeCls = compact ? "h-12 w-12" : "h-16 w-16";
-
-  if (product.imageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- Shopify CDN; no next/image domain allowlist in Phase A
-      <img
-        src={product.imageUrl}
-        alt=""
-        className={cn(
-          "shrink-0 rounded-xl object-cover",
-          sizeCls,
-          className
-        )}
-        aria-hidden
-      />
-    );
-  }
+  const [imgBroken, setImgBroken] = useState(false);
 
   const style =
     HINT_STYLES[product.visualHint] ??
     "from-surface-elevated to-surface text-text-secondary";
 
-  return (
+  const fallback = (
     <div
       className={cn(
         "flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br",
@@ -96,4 +84,24 @@ export function ProductVisual({
       <HintIcon hint={product.visualHint} />
     </div>
   );
+
+  // Audit: skip broken CDN URLs — fall back to visualHint icon
+  if (product.imageUrl && !imgBroken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- Shopify CDN; no next/image domain allowlist in Phase A
+      <img
+        src={product.imageUrl}
+        alt=""
+        className={cn(
+          "shrink-0 rounded-xl object-cover",
+          sizeCls,
+          className
+        )}
+        aria-hidden
+        onError={() => setImgBroken(true)}
+      />
+    );
+  }
+
+  return fallback;
 }

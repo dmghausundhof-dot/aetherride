@@ -13,7 +13,7 @@ import '../providers/ride_providers.dart';
 import 'routing/naehe_seeds.dart';
 
 /// Parsed intent from a deep / app link.
-enum DeepLinkKind { ride, tour, discover, ignore }
+enum DeepLinkKind { ride, tour, discover, shop, ignore }
 
 /// Pure parsing helpers (unit-tested).
 class DeepLinkParse {
@@ -43,6 +43,15 @@ class DeepLinkParse {
       if (host == 'discover' || path.contains('discover')) {
         return DeepLinkKind.discover;
       }
+      // S-FLOW-01: aetherride://shop | aetherride://teile | aetherride://parts → Shop tab
+      if (host == 'shop' ||
+          host == 'teile' ||
+          host == 'parts' ||
+          path.contains('shop') ||
+          path.contains('teile') ||
+          path.contains('parts')) {
+        return DeepLinkKind.shop;
+      }
       if (host == 'tours' || pathSegmentsContain(uri, 'tours')) {
         return DeepLinkKind.tour;
       }
@@ -59,6 +68,14 @@ class DeepLinkParse {
     if (uri.scheme == 'https' || uri.scheme == 'http') {
       if (path.startsWith('/discover') || segs.contains('discover')) {
         return DeepLinkKind.discover;
+      }
+      if (path.startsWith('/shop') ||
+          path.startsWith('/teile') ||
+          path.startsWith('/parts') ||
+          segs.contains('shop') ||
+          segs.contains('teile') ||
+          segs.contains('parts')) {
+        return DeepLinkKind.shop;
       }
       if (path.startsWith('/tours') || segs.contains('tours')) {
         return DeepLinkKind.tour;
@@ -137,8 +154,10 @@ class DeepLinkParse {
 /// - aetherride://ride?route=
 /// - aetherride://tours/{id}
 /// - aetherride://discover
+/// - aetherride://shop | aetherride://teile | aetherride://parts → Shop tab (4)
 /// - aetherride://discover?lens=60&loop=SEED_ID&start=1  (D-60-05 → Ride)
 /// - https://aetherride.vercel.app/discover?lens=60&loop=SEED_ID&start=1
+/// - https://aetherride.vercel.app/shop|/teile|/parts
 /// - https://aetherride.vercel.app/open/ride?route=
 /// - https://…/ride?route=
 /// - https://…/tours/{id}
@@ -185,6 +204,12 @@ class DeepLinkHandler {
     final kind = DeepLinkParse.kindOf(uri);
     if (kind == DeepLinkKind.ignore) return;
     _lastHandled = key;
+
+    if (kind == DeepLinkKind.shop) {
+      // S-FLOW-01 / audit: aetherride://shop → Teile tab
+      _ref.read(shellTabIndexProvider.notifier).state = 4;
+      return;
+    }
 
     if (kind == DeepLinkKind.discover) {
       await _handleDiscover(uri);

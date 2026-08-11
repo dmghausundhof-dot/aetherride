@@ -23,6 +23,7 @@ External Online Store only as explicit Owner Preview while locked. Never ship st
 | `/teile`, `/teile/*` | redirect → `/shop/parts` |
 | `/parts`, `/parts/*` | redirect → `/shop/parts` |
 | App tab **Teile** | In-app Storefront grid + bridge to Web hub/parts/product |
+| `aetherride://shop` · `://teile` · `://parts` | App → Shop tab (index 4) |
 
 Pages must render designed UI (never blank 404 for `/shop` / `/shop/parts`).
 

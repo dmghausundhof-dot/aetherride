@@ -9,9 +9,11 @@ import {
   SHOP_PRODUCTS,
   SHOPIFY_FEATURED_BIKES,
   SHOPIFY_STORE_BASE,
+  getFeaturedPartsProducts,
   getFeaturedShopifyProducts,
   getShopProduct,
   getShopProductByFocus,
+  isProductAffiliateUrl,
   productsForSlot,
   shopCollectionHref,
   shopHref,
@@ -99,17 +101,15 @@ assert.equal(
   `${SHOPIFY_STORE_BASE}/collections/featured-gravel`
 );
 assert.equal(
-  shopCollectionHref("gravel"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-gravel`
+  shopifyCollectionUrl("featured-parts"),
+  `${SHOPIFY_STORE_BASE}/collections/featured-parts`
 );
-assert.equal(
-  shopCollectionHref("city"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-light-e-city`
-);
-assert.equal(
-  shopCollectionHref("light-e"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-light-e-city`
-);
+// In-app sport/parts hrefs — never password-gated Online Store collections
+assert.equal(shopCollectionHref("gravel"), "/shop?sport=gravel");
+assert.equal(shopCollectionHref("city"), "/shop?sport=city");
+assert.equal(shopCollectionHref("light-e"), "/shop?sport=light-e");
+assert.equal(shopCollectionHref("urban"), "/shop?sport=city");
+assert.equal(shopCollectionHref("parts"), "/shop/parts");
 
 assert.ok(getShopProduct("sp-shopify-orbea-terra-m20"));
 assert.equal(
@@ -155,15 +155,33 @@ assert.equal(
   shopHref({ focus: "orbea-terra-m20", sport: "gravel" }),
   "/shop?focus=orbea-terra-m20&sport=gravel"
 );
-assert.equal(
-  shopCollectionHref("parts"),
-  `${SHOPIFY_STORE_BASE}/collections/featured-parts`
-);
+assert.equal(shopCollectionHref("parts"), FEATURED_PARTS_IN_APP_HREF);
 assert.equal(FEATURED_PARTS_IN_APP_HREF, "/shop/parts");
+
+assert.ok(
+  isProductAffiliateUrl(`${SHOPIFY_STORE_BASE}/products/orbea-terra-m20`),
+  "Shopify product URL counts as product link"
+);
+assert.equal(
+  isProductAffiliateUrl("https://www.bike-components.de/"),
+  false,
+  "dealer homepage is not a product link"
+);
+assert.equal(
+  isProductAffiliateUrl("https://www.bike-discount.de/"),
+  false,
+  "dealer root is not a product link"
+);
+assert.ok(
+  getFeaturedPartsProducts().every((p) => p.slot !== "frame"),
+  "featured parts exclude complete bikes"
+);
+assert.ok(getFeaturedPartsProducts().length >= 8, "parts catalog non-empty");
 
 console.log("catalog.test.ts OK", {
   products: SHOP_PRODUCTS.length,
   featuredSnapshots: SHOPIFY_FEATURED_BIKES.length,
   liveFeatured: getFeaturedShopifyProducts().length,
   candidates: FEATURED_BIKE_HANDLE_CANDIDATES.length,
+  featuredPartsSeeds: getFeaturedPartsProducts().length,
 });
