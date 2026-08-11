@@ -1,0 +1,371 @@
+{
+  "version": "compat-gates-v1",
+  "demo_priority": true,
+  "evaluation_contract": {
+    "missing_attr_skips_hard_block_unless_require_attr": true,
+    "na_ignores_dimension": true,
+    "precedence": ["hard_block", "require_attr", "soft_warn", "ok"]
+  },
+  "dimensions": [
+    {
+      "id": "brake_fluid",
+      "values": ["mineral", "mineral_low_vis", "dot_5_1", "dot_4", "na"],
+      "shopify_tag_prefix": "fluid"
+    },
+    {
+      "id": "freehub",
+      "values": ["hg", "microspline", "xd", "xdr", "na"],
+      "shopify_tag_prefix": "freehub"
+    },
+    {
+      "id": "magura_pad_shape",
+      "values": ["7", "8", "9", "10", "13", "na"],
+      "shopify_tag_prefix": "magura_shape"
+    },
+    {
+      "id": "shimano_pad_type",
+      "values": ["D", "G", "J", "H", "N", "other", "na"],
+      "shopify_tag_prefix": "pad_type"
+    },
+    {
+      "id": "chain_speed_family",
+      "values": ["hg_plus_12", "hg_11", "eagle_12", "ttype_flattop", "other", "na"],
+      "shopify_tag_prefix": "chain_family"
+    },
+    {
+      "id": "bosch_system",
+      "values": ["smart", "system2", "na"],
+      "shopify_tag_prefix": "bosch"
+    },
+    {
+      "id": "charger_family",
+      "values": ["bpc3400_smart", "bcs220_system2", "other_smart", "other_system2", "na"],
+      "shopify_tag_prefix": "charger"
+    },
+    {
+      "id": "chainring_offset_boost",
+      "values": ["boost_3mm", "non_boost_6mm", "other", "na"],
+      "shopify_tag_prefix": "chainring_offset"
+    },
+    {
+      "id": "ergon_gp1_line",
+      "values": ["gp1_evo", "gp1_classic", "na"],
+      "shopify_tag_prefix": "line"
+    },
+    {
+      "id": "shift_compat",
+      "values": ["regular", "gripshift", "rohloff_nexus", "na"],
+      "shopify_tag_prefix": "shift_compat"
+    },
+    {
+      "id": "grip_size",
+      "values": ["S", "L", "na"],
+      "shopify_tag_prefix": "size"
+    },
+    {
+      "id": "display_clamp_od",
+      "values": ["25_4", "31_8", "35_0", "na"],
+      "shopify_tag_prefix": "clamp_od"
+    },
+    {
+      "id": "speed_sensor_family",
+      "values": ["smart_slim", "system2", "na"],
+      "shopify_tag_prefix": "speed_sensor"
+    },
+    {
+      "id": "frame_bearing_lookup",
+      "values": ["serial_required", "kit_known", "na"],
+      "shopify_tag_prefix": "bearing_lookup"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R001",
+      "severity": "hard_block",
+      "dimension": "brake_fluid",
+      "bike_values": ["mineral", "mineral_low_vis"],
+      "part_values": ["dot_5_1", "dot_4"],
+      "message_de": "Hard-Block: Mineralöl-Bremssystem und DOT-Teil sind unverträglich."
+    },
+    {
+      "id": "R002",
+      "severity": "hard_block",
+      "dimension": "brake_fluid",
+      "bike_values": ["mineral"],
+      "part_values": ["dot_5_1", "dot_4"],
+      "message_de": "Hard-Block: Bike mit Mineralöl, Teil mit DOT-Flüssigkeit."
+    },
+    {
+      "id": "R003",
+      "severity": "hard_block",
+      "dimension": "brake_fluid",
+      "bike_values": ["dot_5_1", "dot_4"],
+      "part_values": ["mineral", "mineral_low_vis"],
+      "message_de": "Hard-Block: DOT-Bremssystem und Mineralöl-Teil sind unverträglich."
+    },
+    {
+      "id": "R004",
+      "severity": "hard_block",
+      "dimension": "brake_fluid",
+      "bike_values": ["dot_5_1", "dot_4"],
+      "part_values": ["mineral"],
+      "message_de": "Hard-Block: Bike mit DOT, Teil mit Mineralöl."
+    },
+    {
+      "id": "R010",
+      "severity": "hard_block",
+      "dimension": "freehub",
+      "bike_values": ["hg"],
+      "part_values": ["microspline"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: HG-Freilauf und Micro Spline passen nicht zusammen."
+    },
+    {
+      "id": "R011",
+      "severity": "hard_block",
+      "dimension": "freehub",
+      "bike_values": ["hg"],
+      "part_values": ["xd"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: HG-Freilauf und XD passen nicht zusammen."
+    },
+    {
+      "id": "R012",
+      "severity": "hard_block",
+      "dimension": "freehub",
+      "bike_values": ["hg"],
+      "part_values": ["xdr"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: HG-Freilauf und XDR passen nicht zusammen."
+    },
+    {
+      "id": "R013",
+      "severity": "hard_block",
+      "dimension": "freehub",
+      "bike_values": ["microspline"],
+      "part_values": ["xd"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Micro Spline und XD passen nicht zusammen."
+    },
+    {
+      "id": "R014",
+      "severity": "hard_block",
+      "dimension": "freehub",
+      "bike_values": ["microspline"],
+      "part_values": ["xdr"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Micro Spline und XDR passen nicht zusammen."
+    },
+    {
+      "id": "R015",
+      "severity": "soft_warn",
+      "dimension": "freehub",
+      "bike_values": ["xdr"],
+      "part_values": ["xd"],
+      "message_de": "Hinweis: XD-Kassette auf XDR-Freilauf – Spacer/Adapter prüfen."
+    },
+    {
+      "id": "R020",
+      "severity": "hard_block",
+      "dimension": "magura_pad_shape",
+      "bike_values": ["7"],
+      "part_values": ["8"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Magura-Belagform 7 und 8 sind nicht austauschbar."
+    },
+    {
+      "id": "R021",
+      "severity": "hard_block",
+      "dimension": "magura_pad_shape",
+      "bike_values": ["7"],
+      "part_values": ["9"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Magura-Belagform 7 und 9 sind nicht austauschbar."
+    },
+    {
+      "id": "R022",
+      "severity": "hard_block",
+      "dimension": "magura_pad_shape",
+      "bike_values": ["8"],
+      "part_values": ["9"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Magura-Belagform 8 und 9 sind nicht austauschbar."
+    },
+    {
+      "id": "R023",
+      "severity": "hard_block",
+      "dimension": "magura_pad_shape",
+      "bike_values": ["7", "8", "9"],
+      "part_values": ["10"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Magura-Belagform 7/8/9 und 10 sind nicht austauschbar."
+    },
+    {
+      "id": "R026",
+      "severity": "require_attr",
+      "require_attr": "magura_pad_shape",
+      "require_on": "part",
+      "when_part_tag_regex": "magura",
+      "message_de": "Magura-Belag erkannt: Belagform (magura_shape) muss angegeben werden."
+    },
+    {
+      "id": "R030",
+      "severity": "hard_block",
+      "dimension": "shimano_pad_type",
+      "bike_values": ["D"],
+      "part_values": ["G"],
+      "message_de": "Hard-Block: Shimano-Belagtyp D und G sind nicht kompatibel."
+    },
+    {
+      "id": "R031",
+      "severity": "hard_block",
+      "dimension": "shimano_pad_type",
+      "bike_values": ["G"],
+      "part_values": ["D"],
+      "message_de": "Hard-Block: Shimano-Belagtyp G und D sind nicht kompatibel."
+    },
+    {
+      "id": "R040",
+      "severity": "hard_block",
+      "dimension": "chain_speed_family",
+      "bike_values": ["hg_plus_12"],
+      "part_values": ["eagle_12"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Shimano HG+ 12-fach und SRAM Eagle 12 sind nicht mischbar."
+    },
+    {
+      "id": "R041",
+      "severity": "hard_block",
+      "dimension": "chain_speed_family",
+      "bike_values": ["eagle_12"],
+      "part_values": ["ttype_flattop"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: SRAM Eagle und T-Type Flat Top sind nicht mischbar."
+    },
+    {
+      "id": "R050",
+      "severity": "hard_block",
+      "dimension": "charger_family",
+      "bike_values_from": "bosch_system",
+      "bike_values": ["smart"],
+      "part_values": ["bcs220_system2", "other_system2"],
+      "message_de": "Hard-Block: Bosch Smart-System und System2-Ladegerät passen nicht."
+    },
+    {
+      "id": "R051",
+      "severity": "hard_block",
+      "dimension": "charger_family",
+      "bike_values_from": "bosch_system",
+      "bike_values": ["system2"],
+      "part_values": ["bpc3400_smart", "other_smart"],
+      "message_de": "Hard-Block: Bosch System2 und Smart-Ladegerät passen nicht."
+    },
+    {
+      "id": "R052",
+      "severity": "hard_block",
+      "dimension": "bosch_system",
+      "bike_values": ["smart"],
+      "part_values": ["system2"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Bosch Smart-System und System2 sind nicht mischbar."
+    },
+    {
+      "id": "R053",
+      "severity": "hard_block",
+      "dimension": "display_clamp_od",
+      "bike_values": ["25_4"],
+      "part_values": ["31_8", "35_0"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Display-Klemmung Ø stimmt nicht überein (25,4 vs 31,8/35,0)."
+    },
+    {
+      "id": "R054",
+      "severity": "hard_block",
+      "dimension": "display_clamp_od",
+      "bike_values": ["31_8"],
+      "part_values": ["35_0"],
+      "bidirectional": true,
+      "message_de": "Hard-Block: Display-Klemmung Ø 31,8 und 35,0 passen nicht."
+    },
+    {
+      "id": "R056",
+      "severity": "require_attr",
+      "require_attr": "bosch_system",
+      "require_on": "bike",
+      "when_part_tag_prefixes": ["bosch", "charger", "speed_sensor", "clamp_od"],
+      "message_de": "Bosch-Komponente: Bike-Attribut bosch_system fehlt."
+    },
+    {
+      "id": "R060",
+      "severity": "hard_block",
+      "dimension": "chainring_offset_boost",
+      "bike_values": ["boost_3mm"],
+      "part_values": ["non_boost_6mm"],
+      "message_de": "Hard-Block: Boost 3 mm Offset und Non-Boost 6 mm sind unverträglich."
+    },
+    {
+      "id": "R061",
+      "severity": "hard_block",
+      "dimension": "chainring_offset_boost",
+      "bike_values": ["non_boost_6mm"],
+      "part_values": ["boost_3mm"],
+      "message_de": "Hard-Block: Non-Boost 6 mm und Boost 3 mm Offset sind unverträglich."
+    },
+    {
+      "id": "R070",
+      "severity": "hard_block",
+      "dimension": "shift_compat",
+      "bike_values": ["regular"],
+      "part_values": ["gripshift"],
+      "bidirectional": true,
+      "when_either_dimension": {
+        "dimension": "ergon_gp1_line",
+        "values": ["gp1_classic", "gp1_evo"]
+      },
+      "message_de": "Hard-Block: GP1 für reguläre Schaltung und Gripshift passen nicht."
+    },
+    {
+      "id": "R071",
+      "severity": "hard_block",
+      "dimension": "shift_compat",
+      "bike_values": ["regular"],
+      "part_values": ["rohloff_nexus"],
+      "bidirectional": true,
+      "when_either_dimension": {
+        "dimension": "ergon_gp1_line",
+        "values": ["gp1_classic", "gp1_evo"]
+      },
+      "message_de": "Hard-Block: GP1 für reguläre Schaltung und Rohloff/Nexus passen nicht."
+    },
+    {
+      "id": "R073",
+      "severity": "soft_warn",
+      "dimension": "ergon_gp1_line",
+      "bike_values": ["gp1_evo"],
+      "part_values": ["gp1_evo"],
+      "match_mode": "either_has",
+      "also_either_dimension": {
+        "dimension": "shift_compat",
+        "values": ["gripshift"]
+      },
+      "message_de": "Hinweis: GP1 Evo mit Gripshift – Passform/Bedienung prüfen."
+    },
+    {
+      "id": "R080",
+      "severity": "require_attr",
+      "require_attr": "frame_bearing_lookup",
+      "require_on": "bike",
+      "when_part_tag_prefixes": ["bearing_lookup"],
+      "when_slot_in": ["frame_bearing", "bearing", "frame"],
+      "message_de": "Rahmenlager: Lookup-Attribut (bearing_lookup) am Bike fehlt."
+    },
+    {
+      "id": "R081",
+      "severity": "hard_block",
+      "dimension": "frame_bearing_lookup",
+      "bike_values": ["serial_required"],
+      "when_serial_present": false,
+      "message_de": "Hard-Block: Rahmenlager erfordert Seriennummer, aber keine ist vorhanden."
+    }
+  ]
+}
