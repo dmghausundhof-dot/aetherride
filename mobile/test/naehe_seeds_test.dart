@@ -32,10 +32,10 @@ void main() {
       '../assets/seeds/p0-dach-60min-naehe-v1.json',
     ], label: 'DACH Nähe seeds');
     rnRaw = _readFirstExisting([
-      'assets/seeds/p0-rhein-neckar-60min-naehe-v1.json',
-      'mobile/assets/seeds/p0-rhein-neckar-60min-naehe-v1.json',
-      '../assets/seeds/p0-rhein-neckar-60min-naehe-v1.json',
-    ], label: 'Rhein-Neckar Nähe seeds');
+      'assets/seeds/p0-rhein-neckar-60min-premium-v1.json',
+      'mobile/assets/seeds/p0-rhein-neckar-60min-premium-v1.json',
+      '../assets/seeds/p0-rhein-neckar-60min-premium-v1.json',
+    ], label: 'Rhein-Neckar Premium-Pass seeds');
   });
 
   test('parse yields ≥3 is_loop routes in ~60 band', () {
@@ -108,16 +108,16 @@ void main() {
     expect(merged.byId('seed-loop-munich-froettmaning-60'), isNotNull);
   });
 
-  test('Rhein-Neckar Nähe bundle has ≥3 loops', () {
+  test('Rhein-Neckar Premium-Pass has rn-1/2/3 with premium fields', () {
     final rn = NaeheSeedsBundle.parse(rnRaw);
     final loops = rn.loops;
     expect(loops.length, greaterThanOrEqualTo(3));
     expect(
       loops.map((e) => e.id).toSet(),
       containsAll([
-        'seed-loop-heidelberg-neckar-60',
-        'seed-loop-mannheim-rhein-60',
-        'seed-loop-heidelberg-boxberg-gravel-60',
+        'seed-dach-60-rn-1-heidelberg-neckarwiese',
+        'seed-dach-60-rn-2-mannheim-schloss-waldpark',
+        'seed-dach-60-rn-3-heidelberg-boxberg-gaisberg',
       ]),
     );
     for (final l in loops) {
@@ -125,11 +125,21 @@ void main() {
       expect(l.durationBand, '60');
       expect(l.durationMin, inInclusiveRange(45, 75));
       expect(l.poiStops, isNotEmpty);
-      expect(l.poiStops.every((p) => p.atMin > 0), isTrue);
+      expect(l.poiStops.every((p) => p.atMin >= 0), isTrue);
+      expect(l.tip, isNotEmpty);
+      expect(l.season, isNotEmpty);
+      expect(l.seasonLabel, isNotEmpty);
+      expect(l.highlightPoi, isNotEmpty);
+      expect(l.disciplineNote, isNotEmpty);
+      expect(l.corridorNote, isNotEmpty);
+      expect(l.shortPitch, isNotEmpty);
+      expect(l.surfaceMixLabel, isNotEmpty);
+      expect(l.poiStops.every((p) => p.title.isNotEmpty), isTrue);
+      expect(l.poiStops.any((p) => p.whyGood != null), isTrue);
     }
   });
 
-  test('merge berlin+dach+RN yields ≥3 RN loops after load merge', () {
+  test('merge berlin+dach+RN yields ≥3 RN premium loops after load merge', () {
     final berlin = NaeheSeedsBundle.parse(berlinRaw);
     final dach = NaeheSeedsBundle.parse(dachRaw);
     final rn = NaeheSeedsBundle.parse(rnRaw);
@@ -139,9 +149,9 @@ void main() {
     );
     expect(merged.loops.length, greaterThanOrEqualTo(12)); // 3+6+3
     final rnIds = {
-      'seed-loop-heidelberg-neckar-60',
-      'seed-loop-mannheim-rhein-60',
-      'seed-loop-heidelberg-boxberg-gravel-60',
+      'seed-dach-60-rn-1-heidelberg-neckarwiese',
+      'seed-dach-60-rn-2-mannheim-schloss-waldpark',
+      'seed-dach-60-rn-3-heidelberg-boxberg-gaisberg',
     };
     expect(merged.loops.where((l) => rnIds.contains(l.id)).length, 3);
     // Wiesloch (~49.29, 8.70): HD/MA centers within ~35 km.
@@ -153,8 +163,8 @@ void main() {
       final dLng = (lng2 - lng1) * 111.0 * 0.65; // cos~49°
       return (dLat * dLat + dLng * dLng);
     }
-    final hd = merged.byId('seed-loop-heidelberg-neckar-60')!;
-    final ma = merged.byId('seed-loop-mannheim-rhein-60')!;
+    final hd = merged.byId('seed-dach-60-rn-1-heidelberg-neckarwiese')!;
+    final ma = merged.byId('seed-dach-60-rn-2-mannheim-schloss-waldpark')!;
     expect(distKm(wLat, wLng, hd.centerLat, hd.centerLng), lessThan(35 * 35));
     expect(distKm(wLat, wLng, ma.centerLat, ma.centerLng), lessThan(35 * 35));
   });

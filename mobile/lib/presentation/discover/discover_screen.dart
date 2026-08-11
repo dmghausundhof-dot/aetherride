@@ -69,6 +69,20 @@ class _TfPin {
   final String? conditionLabel;
 }
 
+class _SeedPoiStop {
+  const _SeedPoiStop({
+    required this.atMin,
+    required this.title,
+    required this.kind,
+    this.whyGood,
+  });
+
+  final int atMin;
+  final String title;
+  final String kind;
+  final String? whyGood;
+}
+
 class _RouteSuggestion {
   const _RouteSuggestion({
     required this.id,
@@ -90,6 +104,15 @@ class _RouteSuggestion {
     this.sourceKind = 'other',
     this.isLoopHint,
     this.poiStopsCount = 0,
+    this.sportLabel,
+    this.tip,
+    this.seasonLabel,
+    this.highlightPoi,
+    this.disciplineNote,
+    this.corridorNote,
+    this.shortPitch,
+    this.surfaceMixLabel,
+    this.poiStops = const [],
   });
 
   final String id;
@@ -115,6 +138,17 @@ class _RouteSuggestion {
 
   /// POI-Stops (Seeds) — günstig auf der Karte anzeigen.
   final int poiStopsCount;
+
+  /// Premium-Pass card/detail (seeds; discover-seed-card-fields-v1).
+  final String? sportLabel;
+  final String? tip;
+  final String? seasonLabel;
+  final String? highlightPoi;
+  final String? disciplineNote;
+  final String? corridorNote;
+  final String? shortPitch;
+  final String? surfaceMixLabel;
+  final List<_SeedPoiStop> poiStops;
 
   bool get hasTrack => trackLngLat != null && trackLngLat!.length >= 2;
 
@@ -1271,8 +1305,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               if (s.durationBand != null) 'Dauer-Band ~${s.durationBand}',
               if (s.poiStops.isNotEmpty)
                 '${s.poiStops.length} Stops auf der Runde',
-              for (final p in s.poiStops.take(3))
-                '· ${p.atMin} Min  ${p.title}',
               'Offline-Fallback · ${bundle.labelWithoutLocation}',
             ],
             center: LatLng(s.centerLat, s.centerLng),
@@ -1281,6 +1313,23 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             sourceKind: 'seed',
             isLoopHint: s.isLoop,
             poiStopsCount: s.poiStops.length,
+            sportLabel: s.sportLabel,
+            tip: s.tip,
+            seasonLabel: s.seasonLabel,
+            highlightPoi: s.highlightPoi,
+            disciplineNote: s.disciplineNote,
+            corridorNote: s.corridorNote,
+            shortPitch: s.shortPitch,
+            surfaceMixLabel: s.surfaceMixLabel,
+            poiStops: [
+              for (final p in s.poiStops)
+                _SeedPoiStop(
+                  atMin: p.atMin,
+                  title: p.title,
+                  kind: p.kind,
+                  whyGood: p.whyGood,
+                ),
+            ],
           ),
         );
       }
@@ -4357,6 +4406,80 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.m),
+                if (detail.shortPitch case final pitch?) ...[
+                  Text(
+                    pitch,
+                    style: const TextStyle(fontSize: 13, height: 1.35),
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                ],
+                if (detail.disciplineNote case final dn?) ...[
+                  const Text(
+                    'Disziplin',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(dn, style: const TextStyle(fontSize: 13, height: 1.35)),
+                  const SizedBox(height: AppSpacing.m),
+                ],
+                if (detail.corridorNote case final cn?) ...[
+                  const Text(
+                    'Korridor',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(cn, style: const TextStyle(fontSize: 13, height: 1.35)),
+                  const SizedBox(height: AppSpacing.m),
+                ],
+                if (detail.poiStops.isNotEmpty) ...[
+                  const Text(
+                    'Stops auf der Runde',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  for (final p in detail.poiStops)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '· ${p.atMin} Min  ${p.title}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            p.kind,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                          if (p.whyGood case final why?)
+                            Text(
+                              why,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.muted,
+                                height: 1.3,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.s),
+                ],
+                if (detail.surfaceMixLabel case final mix?) ...[
+                  const Text(
+                    'Untergrund',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(mix, style: const TextStyle(fontSize: 13)),
+                  const SizedBox(height: AppSpacing.m),
+                ],
                 ...detail.reasons.map(
                   (r) => Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.xs),
@@ -5238,6 +5361,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         if (shape != null) shape,
                         '~${r.durationMin} Min',
                         '${r.distanceKm} km',
+                        if (r.sportLabel case final sport?) sport,
                         if (r.poiStopsCount > 0) '${r.poiStopsCount} Stops',
                       ].join(' · '),
                       maxLines: 1,
@@ -5247,6 +5371,58 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (r.tip case final tip?) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        tip,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                    if (r.seasonLabel != null || r.highlightPoi != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          if (r.seasonLabel case final season?)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.accent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.chip,
+                                ),
+                              ),
+                              child: Text(
+                                season,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            ),
+                          if (r.highlightPoi case final hl?)
+                            Text(
+                              '★ $hl',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xs),
                     _DifficultyStatsRow(
                       difficultyRaw: r.mtbScale,

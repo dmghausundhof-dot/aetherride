@@ -9,13 +9,15 @@ import '../../domain/routing/nav_cues.dart';
 
 /// Nähe-Peek / 60-Min-Loop Seed (bundled JSON, D-60-03).
 ///
-/// Canonical POI shape (UX wire): `{ offset_min, title, type }`.
+/// Canonical POI shape (UX wire): `{ offset_min, title, type, why_good? }`.
 /// Demo Berlin seeds still ship `{ at_min, title, kind }` — both accepted.
+/// Premium Bike Knowledge uses `{ name, type, offset_min, why_good }`.
 class NaeheSeedPoi {
   const NaeheSeedPoi({
     required this.atMin,
     required this.title,
     required this.kind,
+    this.whyGood,
   });
 
   /// Minutes from loop start (canonical JSON: `offset_min`, alias: `at_min`).
@@ -25,13 +27,19 @@ class NaeheSeedPoi {
   /// POI kind/type (canonical JSON: `type`, alias: `kind`).
   final String kind;
 
+  /// Optional one-liner (Premium-Pass / Bike Knowledge).
+  final String? whyGood;
+
   factory NaeheSeedPoi.fromJson(Map<String, dynamic> m) {
     final offset = m['offset_min'] ?? m['at_min'];
     final type = m['type'] ?? m['kind'];
+    final why = m['why_good'];
+    final whyStr = why is String && why.trim().isNotEmpty ? why.trim() : null;
     return NaeheSeedPoi(
       atMin: (offset as num?)?.round() ?? 0,
       title: (m['title'] as String?) ?? (m['name'] as String?) ?? '',
       kind: (type as String?) ?? 'poi',
+      whyGood: whyStr,
     );
   }
 }
@@ -51,7 +59,14 @@ class NaeheSeedRoute {
     this.durationBand,
     this.poiStops = const [],
     this.surfaceMix,
+    this.surfaceMixText,
     this.type = 'route',
+    this.tip,
+    this.season,
+    this.highlightPoi,
+    this.disciplineNote,
+    this.corridorNote,
+    this.shortPitch,
   });
 
   final String id;
@@ -67,9 +82,62 @@ class NaeheSeedRoute {
   final String? durationBand;
   final List<NaeheSeedPoi> poiStops;
   final Map<String, dynamic>? surfaceMix;
+
+  /// Premium Bike Knowledge ships surface_mix as a free-text string.
+  final String? surfaceMixText;
   final String type;
 
+  /// Premium-Pass card/detail fields (discover-seed-card-fields-v1).
+  final String? tip;
+  final String? season;
+  final String? highlightPoi;
+  final String? disciplineNote;
+  final String? corridorNote;
+  final String? shortPitch;
+
   bool get isRoute => type == 'route';
+
+  /// Primary sport tag for card chrome (ebike / city / gravel …).
+  String? get sportLabel {
+    if (sportTags.isEmpty) return null;
+    return sportTags.first;
+  }
+
+  /// Season chip label (DE) for card chrome.
+  String? get seasonLabel {
+    final s = season?.trim();
+    if (s == null || s.isEmpty) return null;
+    return switch (s.toLowerCase()) {
+      'year_round' || 'ganzjaehrig' || 'ganzjährig' => 'Ganzjährig',
+      'spring_summer' || 'fruehling_sommer' || 'frühling–sommer' =>
+        'Frühling–Sommer',
+      'autumn' || 'herbst' => 'Herbst',
+      'winter' => 'Winter',
+      _ => s,
+    };
+  }
+
+  /// Human surface mix line for detail (map % or premium free text).
+  String? get surfaceMixLabel {
+    final text = surfaceMixText?.trim();
+    if (text != null && text.isNotEmpty) return text;
+    final mix = surfaceMix;
+    if (mix == null || mix.isEmpty) return null;
+    final parts = <String>[];
+    for (final e in mix.entries) {
+      final n = e.value is num ? (e.value as num).round() : null;
+      if (n == null || n <= 0) continue;
+      final label = switch (e.key) {
+        'asphalt' => 'Asphalt',
+        'gravel' => 'Gravel',
+        'trail' => 'Trail',
+        _ => e.key,
+      };
+      parts.add('$label $n%');
+    }
+    if (parts.isEmpty) return null;
+    return parts.join(' · ');
+  }
 
   factory NaeheSeedRoute.fromJson(Map<String, dynamic> m) {
     final center = m['center'];
@@ -96,10 +164,20 @@ class NaeheSeedRoute {
       }
     }
     Map<String, dynamic>? mix;
+    String? mixText;
     final rawMix = m['surface_mix'];
     if (rawMix is Map) {
       mix = Map<String, dynamic>.from(rawMix);
+    } else if (rawMix is String && rawMix.trim().isNotEmpty) {
+      mixText = rawMix.trim();
     }
+    String? opt(String key) {
+      final v = m[key];
+      if (v is! String) return null;
+      final t = v.trim();
+      return t.isEmpty ? null : t;
+    }
+
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
@@ -114,7 +192,84 @@ class NaeheSeedRoute {
       durationBand: m['duration_band'] as String?,
       poiStops: pois,
       surfaceMix: mix,
+      surfaceMixText: mixText,
       type: (m['type'] as String?) ?? 'route',
+      tip: opt('tip'),
+      season: opt('season'),
+      highlightPoi: opt('highlight_poi'),
+      disciplineNote: opt('discipline_note'),
+      corridorNote: opt('corridor_note'),
+      shortPitch: opt('short_pitch') ?? opt('notes'),
+    );
+  }
+
+  /// Bike Knowledge / Premium-Pass tour object (array item in
+  /// `p0-rhein-neckar-60min-premium-v1.json`). IDs stay as shipped (rn-1/2/3).
+  factory NaeheSeedRoute.fromPremiumBikeKnowledge(Map<String, dynamic> m) {
+    final start = m['start_area'];
+    double lat = 49.41;
+    double lng = 8.68;
+    String? corridor;
+    if (start is Map) {
+      final sa = Map<String, dynamic>.from(start);
+      lat = (sa['lat'] as num?)?.toDouble() ?? lat;
+      lng = (sa['lng'] as num?)?.toDouble() ?? lng;
+      final c = sa['corridor_note'];
+      if (c is String && c.trim().isNotEmpty) corridor = c.trim();
+    }
+    final sport = (m['sport'] as String?)?.trim();
+    final tags = <String>[if (sport != null && sport.isNotEmpty) sport];
+    final pois = <NaeheSeedPoi>[];
+    final rawPois = m['pois'] ?? m['poi_stops'];
+    if (rawPois is List) {
+      for (final p in rawPois) {
+        if (p is Map) {
+          pois.add(NaeheSeedPoi.fromJson(Map<String, dynamic>.from(p)));
+        }
+      }
+    }
+    Map<String, dynamic>? mix;
+    String? mixText;
+    final rawMix = m['surface_mix'];
+    if (rawMix is Map) {
+      mix = Map<String, dynamic>.from(rawMix);
+    } else if (rawMix is String && rawMix.trim().isNotEmpty) {
+      mixText = rawMix.trim();
+    }
+    String? opt(String key) {
+      final v = m[key];
+      if (v is! String) return null;
+      final t = v.trim();
+      return t.isEmpty ? null : t;
+    }
+
+    final duration = (m['duration_min'] as num?)?.round() ?? 0;
+    final isLoop = m['loop'] == true || m['is_loop'] == true;
+    return NaeheSeedRoute(
+      id: (m['id'] as String?) ?? '',
+      title: (m['title'] as String?) ?? '',
+      distanceKm: (m['distance_km'] as num?)?.toDouble() ?? 0,
+      ascentM: (m['ascent_m'] as num?)?.round() ?? 0,
+      durationMin: duration,
+      effortLabel: (m['effort_label'] as String?) ??
+          (sport == 'gravel' ? 'Mittel' : 'Leicht'),
+      sportTags: tags,
+      centerLat: lat,
+      centerLng: lng,
+      isLoop: isLoop,
+      durationBand: duration >= 45 && duration <= 75
+          ? '60'
+          : (m['duration_band'] as String?),
+      poiStops: pois,
+      surfaceMix: mix,
+      surfaceMixText: mixText,
+      type: (m['type'] as String?) ?? 'route',
+      tip: opt('tip'),
+      season: opt('season'),
+      highlightPoi: opt('highlight_poi'),
+      disciplineNote: opt('discipline_note'),
+      corridorNote: corridor ?? opt('corridor_note'),
+      shortPitch: opt('short_pitch') ?? opt('notes'),
     );
   }
 
@@ -134,8 +289,22 @@ class NaeheSeedRoute {
     return out;
   }
 
-  /// Surface-Tag aus surface_mix (größter Anteil).
+  /// Surface-Tag aus surface_mix (größter Anteil) oder Premium-Text.
   String get surfaceTag {
+    final text = surfaceMixText?.toLowerCase() ?? '';
+    if (text.isNotEmpty) {
+      if (text.contains('gravel') || text.contains('forst')) {
+        return 'gravel/compacted';
+      }
+      if (text.contains('asphalt') ||
+          text.contains('city') ||
+          text.contains('promenade') ||
+          text.contains('pavement')) {
+        return 'asphalt/paved';
+      }
+      if (text.contains('trail')) return 'trail/root';
+      return 'mixed/urban';
+    }
     final mix = surfaceMix;
     if (mix == null || mix.isEmpty) return 'mixed/urban';
     String best = 'asphalt';
@@ -253,9 +422,10 @@ class NaeheSeedsBundle {
   static const dachAssetPath =
       'assets/seeds/p0-dach-60min-naehe-v1.json';
 
-  /// Rhein-Neckar P0 60-min loops (Heidelberg + Mannheim).
+  /// Rhein-Neckar Premium-Pass (Bike Knowledge array; IDs rn-1/2/3).
+  /// Base curated `p0-rhein-neckar-60min-v1.json` stays untouched (#22).
   static const rheinNeckarAssetPath =
-      'assets/seeds/p0-rhein-neckar-60min-naehe-v1.json';
+      'assets/seeds/p0-rhein-neckar-60min-premium-v1.json';
 
   final List<NaeheSeedRoute> routes;
   final String labelWithoutLocation;
@@ -274,9 +444,9 @@ class NaeheSeedsBundle {
     return null;
   }
 
-  /// Loads Berlin Nähe seeds + DACH + Rhein-Neckar P0 loops, concatenated and
-  /// deduped by id (Berlin wins on collision — Tempelhof enrich lives in the
-  /// Berlin asset).
+  /// Loads Berlin Nähe seeds + DACH + Rhein-Neckar Premium-Pass, concatenated
+  /// and deduped by id (Berlin wins on collision — Tempelhof enrich lives in
+  /// the Berlin asset).
   static Future<NaeheSeedsBundle> load({
     String path = assetPath,
     String? dachPath = dachAssetPath,
@@ -325,8 +495,14 @@ class NaeheSeedsBundle {
   }
 
   /// Pure parse (unit-testable without Flutter binding).
+  ///
+  /// Accepts Nähe envelope `{ seeds: [...] }` **or** Premium Bike Knowledge
+  /// top-level array `[ {...tour ... }]` (Rhein-Neckar premium file).
   static NaeheSeedsBundle parse(String raw) {
     final data = jsonDecode(raw);
+    if (data is List) {
+      return _parsePremiumArray(data);
+    }
     if (data is! Map) {
       return const NaeheSeedsBundle(
         routes: [],
@@ -360,6 +536,31 @@ class NaeheSeedsBundle {
           (m['label_without_location'] as String?) ?? '~60 Min in deiner Region',
       labelWithLocation:
           (m['label_with_location'] as String?) ?? '~60 Min um dich',
+      defaultCenterLat: lat,
+      defaultCenterLng: lng,
+    );
+  }
+
+  static NaeheSeedsBundle _parsePremiumArray(List<dynamic> data) {
+    final routes = <NaeheSeedRoute>[];
+    double lat = 49.41;
+    double lng = 8.68;
+    for (final s in data) {
+      if (s is! Map) continue;
+      final route = NaeheSeedRoute.fromPremiumBikeKnowledge(
+        Map<String, dynamic>.from(s),
+      );
+      if (route.id.isEmpty || !route.isRoute) continue;
+      routes.add(route);
+    }
+    if (routes.isNotEmpty) {
+      lat = routes.first.centerLat;
+      lng = routes.first.centerLng;
+    }
+    return NaeheSeedsBundle(
+      routes: routes,
+      labelWithoutLocation: '~60 Min in deiner Region',
+      labelWithLocation: '~60 Min um dich',
       defaultCenterLat: lat,
       defaultCenterLng: lng,
     );
