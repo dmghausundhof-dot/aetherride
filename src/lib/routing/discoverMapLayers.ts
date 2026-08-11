@@ -106,11 +106,12 @@ export function elevationFromGeometry(
   geometry: GeoJSON.LineString | null | undefined
 ): ElevationProfile | null {
   if (!geometry?.coordinates?.length) return null;
+  // Gentle undulation — avoid absurd totalClimb (was ~75+ hm/km on short demos).
   const track = (geometry.coordinates as [number, number][]).map(
     ([lng, lat], i) => ({
       lng,
       lat,
-      elev: 400 + Math.sin(i / 4) * 40 + i * 1.2,
+      elev: 120 + Math.sin(i / 6) * 12,
     })
   );
   return buildElevationFromTrack(track, "demo");

@@ -7,6 +7,10 @@ import type { RoutingProfile } from "@/lib/routing/profiles";
 import { useAppStore } from "@/store/useAppStore";
 import { activeRouteFromEngine } from "@/lib/routing/activeRoute";
 import type { ClientRouteResult } from "@/lib/routing/profiles";
+import {
+  formatDistanceElevation,
+  sanitizeElevationM,
+} from "@/lib/discover/elevationGuard";
 
 /**
  * Route ab GPS oder manuellem Zentrum — Live-Engine.
@@ -61,11 +65,17 @@ export function NearMeRouteCard({
       const name =
         j.label ||
         (mode === "loop" ? `Runde ${km} km` : `Route ${km} km`);
+      const distanceKm = Math.round((result.distanceM / 1000) * 10) / 10;
+      const rawAscent =
+        typeof j.elevationM === "number"
+          ? j.elevationM
+          : Math.round(result.distanceM * 0.02);
+      const elev = sanitizeElevationM(rawAscent, distanceKm);
       saveRoute({
         id: j.tourId || `near-${Date.now()}`,
         name,
-        distanceKm: Math.round((result.distanceM / 1000) * 10) / 10,
-        elevationM: Math.round(result.distanceM * 0.02),
+        distanceKm,
+        elevationM: elev ?? 0,
         durationMin: Math.round(result.durationS / 60),
         savedAt: new Date().toISOString(),
         source: "engine",
@@ -73,7 +83,7 @@ export function NearMeRouteCard({
         loop: mode === "loop",
       });
       setMsg(
-        `${(result.distanceM / 1000).toFixed(1)} km · ${result.engine} · gespeichert`
+        `${formatDistanceElevation(distanceKm, elev)} · ${result.engine} · gespeichert`
       );
       if (andStart) {
         setActiveRoute(activeRouteFromEngine(name, result));

@@ -24,3 +24,11 @@ export function hasPublicRoutingHint(): boolean {
       process.env.NEXT_PUBLIC_ROUTING_LIVE === "true"
   );
 }
+
+/**
+ * Q-BAR-DIS-01: Demo / unverified routing chrome (banners).
+ * Off in production unless explicitly enabled. Geometry fallback stays silent.
+ */
+export function showRoutingDebugUi(): boolean {
+  return process.env.NEXT_PUBLIC_SHOW_ROUTING_DEBUG === "1";
+}
