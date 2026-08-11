@@ -145,8 +145,10 @@ export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[
 export function berlinSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
+  // Honesty via seedIsLoopFlag → suggestion.loop; page also re-filters.
   return berlinLoopSuggestions(near)
-    .filter((r) => r.loop)
+    .filter((r) => r.loop === true)
+    .filter((r) => r.id !== "seed-route-spree-commute")
     .filter((r) => r.durationMin >= 45 && r.durationMin <= 75)
     .sort((a, b) => {
       return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);

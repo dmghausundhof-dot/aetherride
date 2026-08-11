@@ -3,8 +3,14 @@
  *
  * Rundkurs may only surface real closed routes — never fill with linear A→B.
  * Prefer explicit seed/catalog flags; optionally confirm geometry via
- * start≈end closure (≤300 m). Flutter/mobile owned separately by Android eng.
+ * start≈end closure (≤200 m). Flutter/mobile owned separately by Android eng.
  */
+
+/** Known linear pads that must never appear under Rundkurs / ~60 rails. */
+const LINEAR_SEED_IDS = new Set([
+  "seed-route-spree-commute",
+  "seed-route-uckermark-weekend",
+]);
 
 /** Explicit catalog/seed flags that mean "honest loop". */
 export function seedIsLoopFlag(seed: {
@@ -15,9 +21,31 @@ export function seedIsLoopFlag(seed: {
   return seed.is_loop === true || seed.loop === true || seed.closed === true;
 }
 
-/** Suggestion/catalog field used by Discover cards + filters. */
-export function isHonestLoopSuggestion(route: { loop?: boolean }): boolean {
-  return route.loop === true;
+/**
+ * Suggestion/catalog field used by Discover cards + filters.
+ * Geometry (when present) wins; known linear seed ids never pass.
+ */
+export function isHonestLoopSuggestion(route: {
+  id?: string;
+  loop?: boolean;
+  trackLngLat?: [number, number][] | null;
+}): boolean {
+  if (route.id && LINEAR_SEED_IDS.has(route.id)) return false;
+  return isHonestLoop({
+    loopFlag: route.loop === true,
+    trackLngLat: route.trackLngLat,
+  });
+}
+
+/** Filter a list to honest loops only (Rundkurs / ~60 rails). */
+export function filterHonestLoopSuggestions<
+  T extends {
+    id?: string;
+    loop?: boolean;
+    trackLngLat?: [number, number][] | null;
+  },
+>(routes: T[]): T[] {
+  return routes.filter((r) => isHonestLoopSuggestion(r));
 }
 
 function haversineM(
@@ -38,12 +66,12 @@ function haversineM(
 }
 
 /**
- * Geometry closure: start≈end within [maxGapM] (default 300 m = upper 150–300 m band).
+ * Geometry closure: start≈end within [maxGapM] (default **200 m**).
  * Returns null when track is too short for a reliable call.
  */
 export function trackIsClosedLoop(
   coords: [number, number][] | null | undefined,
-  maxGapM = 300
+  maxGapM = 200
 ): boolean | null {
   if (!coords || coords.length < 4) return null;
   let lengthM = 0;
@@ -73,4 +101,25 @@ export function isHonestLoop(opts: {
   if (shape === true) return true;
   if (shape === false) return false;
   return opts.loopFlag === true;
+}
+
+/** True for directional out-and-back Quick pads („60 min · Norden“, …). */
+export function isOutAndBackQuickOption(q: {
+  id?: string;
+  label?: string;
+  reason?: string;
+}): boolean {
+  const id = (q.id ?? "").toLowerCase();
+  if (id.startsWith("quick-")) return true;
+  const reason = (q.reason ?? "").toLowerCase();
+  if (reason.includes("out-and-back") || reason.includes("out and back")) {
+    return true;
+  }
+  const label = (q.label ?? "").toLowerCase();
+  return (
+    label.includes("· norden") ||
+    label.includes("· osten") ||
+    label.includes("· südwest") ||
+    label.includes("· sudwest")
+  );
 }

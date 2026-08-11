@@ -94,6 +94,10 @@ import {
   curatedP0CatalogSuggestions,
   curatedSixtyMinLoopSuggestions,
 } from "@/lib/discover/curatedP0Seeds";
+import {
+  filterHonestLoopSuggestions,
+  isOutAndBackQuickOption,
+} from "@/lib/discover/loopHonesty";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 type SheetMode = "quick" | "plan" | "tours";
@@ -254,6 +258,10 @@ function DiscoverPageInner() {
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickTimedOut, setQuickTimedOut] = useState(false);
   const [quickRateLimited, setQuickRateLimited] = useState(false);
+  /** NearMe dropdown — Rundkurs suppresses out-and-back Quick pads. */
+  const [nearMeRouteMode, setNearMeRouteMode] = useState<
+    "loop" | "point_to_point"
+  >("loop");
   const quickAbortRef = useRef<AbortController | null>(null);
   const quickDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const quickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -329,14 +337,23 @@ function DiscoverPageInner() {
 
   const origin = userPos ?? mapCenter;
 
-  /** D-60-LOOP-FILTER-01: honest ~60 loops only (#35 curated P0); nearby. */
+  /**
+   * D-60-LOOP-FILTER-01: ~60 Min Rundkurse rail — same loopHonesty as filter
+   * (is_loop / never linear pads like Spree Alltagsrunde).
+   */
   const sixtyMinLoops = useMemo(() => {
-    const all = curatedSixtyMinLoopSuggestions(origin).filter((r) => r.loop);
+    const all = filterHonestLoopSuggestions(
+      curatedSixtyMinLoopSuggestions(origin)
+    );
     return all.filter(
       (r) => (r.distanceFromOriginKm ?? 9999) <= USEFUL_LOOP_RADIUS_KM
     );
   }, [origin]);
   const hasUsefulNearbyLoops = sixtyMinLoops.length > 0;
+
+  /** Rundkurs lens or NearMe Route=Rundkurs → no A→B Quick / map pads. */
+  const suppressOutAndBackQuick =
+    filters.loopOnly || nearMeRouteMode === "loop";
 
   const routes = useMemo(() => {
     const catalog = listAllRouteSuggestions({
@@ -388,10 +405,12 @@ function DiscoverPageInner() {
   );
 
   const mapLayers: MapRouteLayer[] = useMemo(() => {
+    // Rundkurs: never paint out-and-back Quick alts on the map.
+    const mapQuick = suppressOutAndBackQuick ? [] : quickOptions;
     const base = buildDiscoverMapLayers({
       draft,
-      quickOptions,
-      activeQuickId: quickOptions.find((q) => q.label === draft.label)?.id,
+      quickOptions: mapQuick,
+      activeQuickId: mapQuick.find((q) => q.label === draft.label)?.id,
       trails: nearbyTrails,
       showTrails: showTrails && sheetMode === "tours",
     });
@@ -413,6 +432,7 @@ function DiscoverPageInner() {
   }, [
     draft,
     quickOptions,
+    suppressOutAndBackQuick,
     nearbyTrails,
     showTrails,
     sheetMode,
@@ -625,6 +645,25 @@ function DiscoverPageInner() {
 
   const refreshQuick = useCallback(
     async (opts?: { force?: boolean; limit?: number }) => {
+      // D-60-LOOP-FILTER-01: Rundkurs → never pad with out-and-back Quick.
+      if (suppressOutAndBackQuick) {
+        quickAbortRef.current?.abort();
+        setQuickOptions([]);
+        setQuickBusy(false);
+        setQuickTimedOut(false);
+        setDraft((d) => {
+          if (d.mode !== "quick") return d;
+          if (
+            !d.label ||
+            isOutAndBackQuickOption({ label: d.label }) ||
+            /norden|osten|südwest|sudwest/i.test(d.label)
+          ) {
+            return { ...d, computed: null, label: "" };
+          }
+          return d;
+        });
+        return;
+      }
       quickAbortRef.current?.abort();
       if (quickTimeoutRef.current) clearTimeout(quickTimeoutRef.current);
       const ac = new AbortController();
@@ -696,11 +735,28 @@ function DiscoverPageInner() {
         if (!timedOut) setQuickBusy(false);
       }
     },
-    [origin, activeProfile, minutes]
+    [origin, activeProfile, minutes, suppressOutAndBackQuick]
   );
 
   useEffect(() => {
     if (sheetMode !== "quick") return;
+    if (suppressOutAndBackQuick) {
+      quickAbortRef.current?.abort();
+      setQuickOptions([]);
+      setQuickBusy(false);
+      setDraft((d) => {
+        if (d.mode !== "quick") return d;
+        if (
+          !d.label ||
+          isOutAndBackQuickOption({ label: d.label }) ||
+          /norden|osten|südwest|sudwest/i.test(d.label)
+        ) {
+          return { ...d, computed: null, label: "" };
+        }
+        return d;
+      });
+      return;
+    }
     if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
     quickDebounceRef.current = setTimeout(() => {
       void refreshQuick({ limit: 1 });
@@ -709,7 +765,7 @@ function DiscoverPageInner() {
       if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
       quickAbortRef.current?.abort();
     };
-  }, [sheetMode, refreshQuick]);
+  }, [sheetMode, refreshQuick, suppressOutAndBackQuick]);
 
   const openDetail = useCallback(
     (id: string) => {
@@ -1508,114 +1564,156 @@ function DiscoverPageInner() {
                     center={userPos ?? mapCenter}
                     profile={activeProfile}
                     defaultKm={Math.max(10, Math.round(minutes / 4))}
+                    routeMode={nearMeRouteMode}
+                    onRouteModeChange={setNearMeRouteMode}
+                    onLoopPreview={(result, label) => {
+                      setDraft((d) => ({
+                        ...setStart(
+                          { ...d, mode: "quick", profile: activeProfile },
+                          origin,
+                          "Hier"
+                        ),
+                        computed: result,
+                        label,
+                        baseTour: undefined,
+                      }));
+                      setPreviewTour(null);
+                      setQuickOptions([]);
+                    }}
                   />
                 </div>
               </div>
-              <p className="text-[11px] text-text-secondary">
-                Vorschläge · {minutes} min · {ROUTING_PROFILES[activeProfile].label}
-              </p>
-              {quickBusy && (
-                <p className="text-sm text-text-secondary" role="status">
-                  Berechne…
+              {suppressOutAndBackQuick ? (
+                <p className="text-[11px] text-text-secondary">
+                  Rundkurs aktiv — Live-Vorschläge nur echte Loops (unten). Keine
+                  Out-and-back-Pads (z. B. „60 min · Norden“).
                 </p>
-              )}
-              {quickTimedOut && !quickBusy && (
-                <div className="rounded-xl border border-border bg-surface-elevated p-3 text-sm text-text-secondary">
-                  <p>
-                    Live-Vorschläge nicht rechtzeitig — Seeds bleiben sichtbar.
+              ) : (
+                <>
+                  <p className="text-[11px] text-text-secondary">
+                    Vorschläge · {minutes} min ·{" "}
+                    {ROUTING_PROFILES[activeProfile].label}
                   </p>
-                  <button
-                    type="button"
-                    className="mt-2 text-xs font-semibold text-accent"
-                    onClick={() => void refreshQuick({ force: true, limit: 1 })}
-                  >
-                    Erneut versuchen
-                  </button>
-                </div>
-              )}
-              {!quickBusy && !quickTimedOut && quickOptions.length === 0 && (
-                <div className="rounded-xl border border-border p-4 text-center text-sm text-text-secondary">
-                  Keine Live-Vorschläge — Seeds unten, Standort erlauben oder{" "}
-                  <button
-                    type="button"
-                    className="font-medium text-accent"
-                    onClick={() =>
-                      focusPlanAddress("Adresse suchen — Start setzen")
-                    }
-                  >
-                    Planen öffnen
-                  </button>
-                </div>
-              )}
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {quickOptions.map((q) => {
-                  const distKm =
-                    Math.round((q.result.distanceM / 1000) * 10) / 10;
-                  return (
+                  {quickBusy && (
+                    <p className="text-sm text-text-secondary" role="status">
+                      Berechne…
+                    </p>
+                  )}
+                  {quickTimedOut && !quickBusy && (
+                    <div className="rounded-xl border border-border bg-surface-elevated p-3 text-sm text-text-secondary">
+                      <p>
+                        Live-Vorschläge nicht rechtzeitig — Seeds bleiben
+                        sichtbar.
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-2 text-xs font-semibold text-accent"
+                        onClick={() =>
+                          void refreshQuick({ force: true, limit: 1 })
+                        }
+                      >
+                        Erneut versuchen
+                      </button>
+                    </div>
+                  )}
+                  {!quickBusy &&
+                    !quickTimedOut &&
+                    quickOptions.length === 0 && (
+                      <div className="rounded-xl border border-border p-4 text-center text-sm text-text-secondary">
+                        Keine Live-Vorschläge — Seeds unten, Standort erlauben
+                        oder{" "}
+                        <button
+                          type="button"
+                          className="font-medium text-accent"
+                          onClick={() =>
+                            focusPlanAddress(
+                              "Adresse suchen — Start setzen"
+                            )
+                          }
+                        >
+                          Planen öffnen
+                        </button>
+                      </div>
+                    )}
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {quickOptions.map((q) => {
+                      const distKm =
+                        Math.round((q.result.distanceM / 1000) * 10) / 10;
+                      return (
+                        <button
+                          key={q.id}
+                          type="button"
+                          onClick={() => {
+                            setDraft((d) => ({
+                              ...setStart(
+                                {
+                                  ...d,
+                                  mode: "quick",
+                                  profile: activeProfile,
+                                },
+                                origin,
+                                "Hier"
+                              ),
+                              computed: q.result,
+                              label: q.label,
+                              baseTour: undefined,
+                            }));
+                            setPreviewTour(null);
+                          }}
+                          className={`min-w-[9.5rem] shrink-0 rounded-xl border p-3 text-left ${
+                            draft.label === q.label
+                              ? "border-accent bg-accent/10"
+                              : "border-border bg-surface"
+                          }`}
+                        >
+                          <div className="text-sm font-semibold">{q.label}</div>
+                          <div className="mt-1 text-[11px] text-text-secondary">
+                            {formatDistanceElevation(distKm, null)} ·{" "}
+                            {Math.round(q.result.durationS / 60)} min
+                          </div>
+                          <div className="mt-1 text-[10px] text-text-secondary">
+                            {q.reason}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-2">
                     <button
-                      key={q.id}
                       type="button"
-                      onClick={() => {
-                        setDraft((d) => ({
-                          ...setStart(
-                            { ...d, mode: "quick", profile: activeProfile },
-                            origin,
-                            "Hier"
-                          ),
-                          computed: q.result,
-                          label: q.label,
-                          baseTour: undefined,
-                        }));
-                        setPreviewTour(null);
-                      }}
-                      className={`min-w-[9.5rem] shrink-0 rounded-xl border p-3 text-left ${
-                        draft.label === q.label
-                          ? "border-accent bg-accent/10"
-                          : "border-border bg-surface"
-                      }`}
+                      disabled={quickBusy}
+                      onClick={() =>
+                        void refreshQuick({ force: true, limit: 1 })
+                      }
+                      className="flex-1 rounded-xl border border-border py-2 text-xs font-medium"
                     >
-                      <div className="text-sm font-semibold">{q.label}</div>
-                      <div className="mt-1 text-[11px] text-text-secondary">
-                        {/* No synthetic hm from distance/geometry */}
-                        {formatDistanceElevation(distKm, null)} ·{" "}
-                        {Math.round(q.result.durationS / 60)} min
-                      </div>
-                      <div className="mt-1 text-[10px] text-text-secondary">
-                        {q.reason}
-                      </div>
+                      Neu berechnen
                     </button>
-                  );
-                })}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={quickBusy}
-                  onClick={() => void refreshQuick({ force: true, limit: 1 })}
-                  className="flex-1 rounded-xl border border-border py-2 text-xs font-medium"
-                >
-                  Neu berechnen
-                </button>
-                {quickOptions.length < 3 && (
-                  <button
-                    type="button"
-                    disabled={quickBusy || quickRateLimited}
-                    onClick={() =>
-                      void refreshQuick({
-                        limit: Math.min(3, Math.max(1, quickOptions.length) + 1),
-                      })
-                    }
-                    className="flex-1 rounded-xl border border-border py-2 text-xs font-medium disabled:opacity-40"
-                  >
-                    Weitere Option
-                  </button>
-                )}
-              </div>
-              {quickRateLimited && (
-                <p className="text-[11px] text-warning">
-                  GraphHopper-Minutenlimit — warte kurz oder nutze den Planer
-                  sparsam.
-                </p>
+                    {quickOptions.length < 3 && (
+                      <button
+                        type="button"
+                        disabled={quickBusy || quickRateLimited}
+                        onClick={() =>
+                          void refreshQuick({
+                            limit: Math.min(
+                              3,
+                              Math.max(1, quickOptions.length) + 1
+                            ),
+                          })
+                        }
+                        className="flex-1 rounded-xl border border-border py-2 text-xs font-medium disabled:opacity-40"
+                      >
+                        Weitere Option
+                      </button>
+                    )}
+                  </div>
+                  {quickRateLimited && (
+                    <p className="text-[11px] text-warning">
+                      GraphHopper-Minutenlimit — warte kurz oder nutze den
+                      Planer sparsam.
+                    </p>
+                  )}
+                </>
               )}
 
               {/* Always-on ~60 Min — #35 curated P0 Berlin/RN + honest loops only */}

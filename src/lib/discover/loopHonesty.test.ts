@@ -3,8 +3,10 @@
  * Run: npx tsx src/lib/discover/loopHonesty.test.ts
  */
 import {
+  filterHonestLoopSuggestions,
   isHonestLoop,
   isHonestLoopSuggestion,
+  isOutAndBackQuickOption,
   seedIsLoopFlag,
   trackIsClosedLoop,
 } from "./loopHonesty";
@@ -21,6 +23,13 @@ assert(seedIsLoopFlag({ loop: true }) === true, "legacy loop true");
 assert(seedIsLoopFlag({ closed: true }) === true, "closed true");
 assert(isHonestLoopSuggestion({ loop: true }) === true, "suggestion loop");
 assert(isHonestLoopSuggestion({ loop: false }) === false, "suggestion linear");
+assert(
+  isHonestLoopSuggestion({
+    id: "seed-route-spree-commute",
+    loop: true,
+  }) === false,
+  "Spree Alltagsrunde never passes even if loop lied"
+);
 
 // --- Geometry: closed ring ---
 const closed: [number, number][] = (() => {
@@ -54,15 +63,17 @@ assert(
   "P2P geometry never passes even with lying flag"
 );
 
-// ~280 m trailhead gap still closed under 300 m Spec tolerance
-const almostClosed: [number, number][] = closed.map((p) => [...p] as [number, number]);
+// ~180 m trailhead gap still closed under 200 m Spec tolerance
+const almostClosed: [number, number][] = closed.map(
+  (p) => [...p] as [number, number]
+);
 almostClosed[almostClosed.length - 1] = [
-  almostClosed[0][0] + 0.0035,
+  almostClosed[0][0] + 0.0024,
   almostClosed[0][1],
 ];
 assert(
   trackIsClosedLoop(almostClosed) === true,
-  "~280 m gap still counts as loop"
+  "~180 m gap still counts as loop (≤200 m)"
 );
 
 // --- Flag-only (no track) — seed path ---
@@ -74,5 +85,32 @@ assert(
   isHonestLoop({ loopFlag: false, trackLngLat: null }) === false,
   "linear seed without track excluded"
 );
+
+// --- Out-and-back Quick pads ---
+assert(
+  isOutAndBackQuickOption({
+    id: "quick-n",
+    label: "60 min · Norden",
+    reason: "Out-and-back Richtung Norden",
+  }) === true,
+  "Norden out-and-back detected"
+);
+assert(
+  isOutAndBackQuickOption({
+    id: "seed-loop-tempelhofer-60",
+    label: "Tempelhofer Feld",
+    reason: "Rundkurs-Seed",
+  }) === false,
+  "honest seed not out-and-back"
+);
+
+const rail = filterHonestLoopSuggestions([
+  { id: "seed-loop-tempelhofer-60", loop: true },
+  { id: "seed-route-spree-commute", loop: false },
+  { id: "seed-route-spree-commute", loop: true },
+  { id: "linear-x", loop: false },
+]);
+assert(rail.length === 1, "~60 rail keeps only honest loop");
+assert(rail[0].id === "seed-loop-tempelhofer-60", "Tempelhofer kept");
 
 console.log("loopHonesty.test.ts OK");
