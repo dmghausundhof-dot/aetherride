@@ -4790,8 +4790,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final showSeeds = seeds.isNotEmpty &&
         (!_hasRealOrigin || liveEmpty || catalog.isEmpty);
     final seedLabel = _hasRealOrigin
-        ? (_seedsBundle?.labelWithLocation ?? 'Um dich herum')
-        : (_seedsBundle?.labelWithoutLocation ?? 'In deiner Region');
+        ? (_seedsBundle?.labelWithLocation ?? '~60 Min um dich')
+        : (_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region');
     final sources = [
       if (_oaStatus != null) _oaStatus!,
       if (_seedsStatus != null) _seedsStatus!,
@@ -4951,7 +4951,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       // Seeds auch neben Live zeigen, wenn Lens ~60 und Loops fehlen.
       if (!showSeeds && seeds.isNotEmpty && _minutes == 60) ...[
         _sectionTitle(
-          '${_seedsBundle?.labelWithoutLocation ?? 'In deiner Region'} (${seeds.length})',
+          '${_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region'} (${seeds.length})',
           hint: 'Kuratierte ~60-Min Rundkurse',
         ),
         for (final r in seeds.where(_isLoop).take(6)) _tourListCard(r, o),

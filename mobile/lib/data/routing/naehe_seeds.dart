@@ -260,8 +260,8 @@ class NaeheSeedsBundle {
     if (data is! Map) {
       return const NaeheSeedsBundle(
         routes: [],
-        labelWithoutLocation: 'In deiner Region',
-        labelWithLocation: 'Um dich herum',
+        labelWithoutLocation: '~60 Min in deiner Region',
+        labelWithLocation: '~60 Min um dich',
         defaultCenterLat: 52.52,
         defaultCenterLng: 13.405,
       );
@@ -287,9 +287,9 @@ class NaeheSeedsBundle {
     return NaeheSeedsBundle(
       routes: routes,
       labelWithoutLocation:
-          (m['label_without_location'] as String?) ?? 'In deiner Region',
+          (m['label_without_location'] as String?) ?? '~60 Min in deiner Region',
       labelWithLocation:
-          (m['label_with_location'] as String?) ?? 'Um dich herum',
+          (m['label_with_location'] as String?) ?? '~60 Min um dich',
       defaultCenterLat: lat,
       defaultCenterLng: lng,
     );

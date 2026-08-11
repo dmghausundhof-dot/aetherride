@@ -6,8 +6,8 @@
     "lng": 13.405
   },
   "radius_km_p0": 35,
-  "label_without_location": "In deiner Region",
-  "label_with_location": "Um dich herum",
+  "label_without_location": "~60 Min in deiner Region",
+  "label_with_location": "~60 Min um dich",
   "seeds": [
     {
       "id": "seed-route-teufelsberg-gravel",
