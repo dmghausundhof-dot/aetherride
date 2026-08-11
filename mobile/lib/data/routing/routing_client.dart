@@ -32,15 +32,16 @@ extension RoutingProfileApi on RoutingProfile {
         RoutingProfile.hiking => 'hiking',
       };
 
+  /// Multi-Sport UI-Labels (alle Disziplinen gleichwertig).
   String get label => switch (this) {
-        RoutingProfile.mtbTrail => 'MTB Trail',
+        RoutingProfile.mtbTrail => 'MTB',
         RoutingProfile.mtbEnduro => 'Enduro',
         RoutingProfile.gravel => 'Gravel',
         RoutingProfile.road => 'Rennrad',
-        RoutingProfile.urban => 'City / Urban',
-        RoutingProfile.ebikeTour => 'E-Bike Tour',
+        RoutingProfile.urban => 'City',
+        RoutingProfile.ebikeTour => 'E-Trekking',
         RoutingProfile.emtb => 'E-MTB',
-        RoutingProfile.hiking => 'Wandern',
+        RoutingProfile.hiking => 'Zu Fuß',
       };
 }
 

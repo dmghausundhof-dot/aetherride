@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Outdoor Design Tokens — forest + trail orange (kein Purple-Default).
+/// Outdoor Design Tokens — Naturgrün + Energie-Orange.
+/// Multi-Sport: nicht „nur Trail“, sondern Radfahren allgemein
+/// (MTB · Gravel · Road · City · E-Bike).
 abstract final class AppColors {
   static const Color forest = Color(0xFF1B3A2F);
+  /// Marken-Sekundärgrün (historisch „trail“ — Alias bleibt für Code).
   static const Color trail = Color(0xFF2D6A4F);
   static const Color accent = Color(0xFFFF6B35);
   static const Color surface = Color(0xFFF4F6F3);

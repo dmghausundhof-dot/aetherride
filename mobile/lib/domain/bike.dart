@@ -55,17 +55,18 @@ class Bike {
   final double hours;
   final bool isActive;
 
+  /// Nutzer-Labels (Multi-Sport). Siehe auch [BikeCategoryUx.shortLabel].
   String get categoryLabel => switch (category) {
         BikeCategory.mtbTrail => 'MTB Trail',
-        BikeCategory.mtbAm => 'MTB AM',
+        BikeCategory.mtbAm => 'MTB',
         BikeCategory.mtbEnduro => 'Enduro',
-        BikeCategory.dh => 'DH',
+        BikeCategory.dh => 'Downhill',
         BikeCategory.gravel => 'Gravel',
         BikeCategory.road => 'Rennrad',
-        BikeCategory.urban => 'City / Urban',
+        BikeCategory.urban => 'City',
         BikeCategory.emtb => 'E-MTB',
         BikeCategory.etrekking => 'E-Trekking',
-        BikeCategory.hiking => 'Wandern',
+        BikeCategory.hiking => 'Zu Fuß',
       };
 
   Bike copyWith({

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/deep_links.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../discover/discover_screen.dart';
@@ -92,27 +93,30 @@ class _AppShellState extends ConsumerState<AppShell> {
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            label: MultiSportCopy.navHome,
           ),
           NavigationDestination(
             icon: Icon(Icons.garage_outlined),
             selectedIcon: Icon(Icons.garage),
-            label: 'Garage',
+            label: MultiSportCopy.navGarage,
           ),
           NavigationDestination(
             icon: Icon(Icons.pedal_bike_outlined),
             selectedIcon: Icon(Icons.pedal_bike, color: AppColors.accent),
-            label: 'Ride',
+            // „Fahren“ statt engl. Ride — alle Disziplinen.
+            label: MultiSportCopy.navRide,
           ),
           NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Discover',
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            // „Touren“ statt Discover — inkl. City/Gravel/Road.
+            label: MultiSportCopy.navDiscover,
           ),
           NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
-            label: 'Shop',
+            icon: Icon(Icons.build_outlined),
+            selectedIcon: Icon(Icons.build),
+            // „Teile“ statt Shop — Kompat, kein Fake-Marketplace.
+            label: MultiSportCopy.navParts,
           ),
         ],
       ),

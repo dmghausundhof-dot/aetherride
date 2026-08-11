@@ -17,6 +17,7 @@ import '../../domain/active_route.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/setup.dart';
 import '../../domain/setup/fingerprint.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
@@ -24,7 +25,7 @@ import '../chat/chat_screen.dart';
 import '../profile/profile_screen.dart';
 import '../shared/bike_hero_banner.dart';
 
-/// Spec-naher Home-Companion: Wetter, Suggestions, Fingerprint, Wartung.
+/// Home-Companion — multi-sport (MTB, Gravel, Road, City, E-Bike).
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -207,6 +208,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       email: session?.user.email,
     );
     final greet = greetingLine(displayName: displayName);
+    final sport = active?.category ?? store.preferredSport;
+    final weatherLine = _weatherLoading
+        ? null
+        : _weather == null
+            ? null
+            : '${_weather!.tempC.toStringAsFixed(0)}° · ${_weather!.summary}';
 
     return Scaffold(
       body: SafeArea(
@@ -303,8 +310,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: AppSpacing.xl),
             Text(
               greet,
-              // forestOnDark statt forest: forest ist für Text auf hellem
-              // Grund kalibriert und fällt im Dark Theme unter 2:1 Kontrast.
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: AppColors.forestOnDark,
@@ -313,35 +318,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               _weatherLoading
                   ? 'Wetter wird geladen…'
-                  : _weather == null
-                      ? 'Wetter nicht verfügbar'
-                      : '${_weather!.tempC.toStringAsFixed(0)}° · ${_weather!.trailLabel} · ${_weather!.summary}',
+                  : MultiSportCopy.homeSubtitle(
+                      sport: sport,
+                      weatherLine: weatherLine ??
+                          (_weather == null
+                              ? MultiSportCopy.weatherFallback
+                              : null),
+                    ),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.muted,
                   ),
             ),
+            if (sport != null) ...[
+              const SizedBox(height: AppSpacing.s),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                  visualDensity: VisualDensity.compact,
+                  avatar: Icon(
+                    switch (sport.family) {
+                      SportFamily.mtb => Icons.terrain,
+                      SportFamily.gravel => Icons.route,
+                      SportFamily.road => Icons.speed,
+                      SportFamily.urban => Icons.location_city,
+                      SportFamily.ebike => Icons.electric_bike,
+                      SportFamily.other => Icons.pedal_bike,
+                    },
+                    size: 16,
+                    color: AppColors.accent,
+                  ),
+                  label: Text(
+                    sport.shortLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  side: BorderSide(
+                    color: AppColors.forest.withValues(alpha: 0.2),
+                  ),
+                  backgroundColor: AppColors.accent.withValues(alpha: 0.08),
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.s),
-            // Stats-Zeile: schafft das „schon seit Wochen dabei"-Gefühl, das
-            // reiner Utility-UI fehlt (UX-Review Home vs. Komoot/AllTrails —
-            // beide zeigen Fortschritt statt nur den nächsten Schritt).
-            // Bewusst nur Zählungen, kein Gesamt-km-Wert: recentRidesProvider
-            // ist auf 20 gedeckelt — eine Summe daraus als „Gesamt" zu
-            // beschriften wäre erfundene Genauigkeit (Honesty-Linie des Repos).
             _StatsStrip(
               bikeCount: bikes.valueOrNull?.length,
               rideCount: ref.watch(recentRidesProvider).valueOrNull?.length,
               onTap: () => ref.read(shellTabIndexProvider.notifier).state = 1,
             ),
             const SizedBox(height: AppSpacing.m),
-            // „Wohin heute?" — direkter Sprung in Discover/Planen statt Tab
-            // wechseln + dort erst den Planen-Modus suchen. Komoot/AllTrails
-            // führen Home immer mit Suche, nicht mit einem Dashboard zuerst.
             _SearchEntry(
               onTap: () {
                 ref.read(discoverLaunchModeProvider.notifier).state =
                     DiscoverLaunchMode.plan;
                 ref.read(shellTabIndexProvider.notifier).state = 3;
               },
+            ),
+            const SizedBox(height: AppSpacing.m),
+            // Zwei gleichwertige Primär-Aktionen: Touren & Fahren.
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      ref.read(discoverLaunchModeProvider.notifier).state =
+                          DiscoverLaunchMode.discover;
+                      ref.read(shellTabIndexProvider.notifier).state = 3;
+                    },
+                    icon: const Icon(Icons.map_outlined, size: 18),
+                    label: const Text(MultiSportCopy.navDiscover),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                    ),
+                    onPressed: () {
+                      final done = ref.read(onboardingDoneProvider);
+                      if (done == false) return;
+                      ref.read(shellTabIndexProvider.notifier).state = 2;
+                    },
+                    icon: const Icon(Icons.play_arrow, size: 20),
+                    label: Text(
+                      bikes.valueOrNull?.isEmpty == true
+                          ? MultiSportCopy.startFreeride
+                          : MultiSportCopy.startRide,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.m),
             if (active != null)
@@ -397,6 +465,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               saved: savedRoutes.valueOrNull,
               weather: _weather,
               weightKg: store.effectiveWeightKg,
+              sport: sport,
             ),
             // Supabase-/Sync-Hinweise stehen nicht mehr im persönlichen
             // Feed — sie hängen am Status-Icon oben (_SystemStatusIcon) und
@@ -416,32 +485,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ref.read(shellTabIndexProvider.notifier).state = 4,
               ),
             ],
-            const SizedBox(height: AppSpacing.l),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                minimumSize: const Size.fromHeight(52),
-              ),
-              onPressed: () {
-                final done = ref.read(onboardingDoneProvider);
-                if (done == false) {
-                  // Overlay ist schon sichtbar — Fokus auf Step 3.
-                  return;
-                }
-                ref.read(shellTabIndexProvider.notifier).state = 2;
-              },
-              child: Text(
-                // Gleicher deutscher Begriff wie im Ride-Screen selbst
-                // („Freifahren starten") statt des englischen „Freeride".
-                bikes.valueOrNull?.isEmpty == true
-                    ? 'Freifahren starten'
-                    : 'Ride starten',
-              ),
-            ),
             if (bikes.valueOrNull?.isEmpty == true) ...[
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Ohne Bike möglich — GPS-Track wird lokal gespeichert.',
+                'Ohne Bike möglich — GPS-Track wird lokal gespeichert. '
+                'Für City, Rennrad, Gravel oder MTB gleichermaßen.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -450,12 +498,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
             const SizedBox(height: AppSpacing.m),
-            OutlinedButton.icon(
+            TextButton.icon(
               onPressed: () => openChatScreen(context),
-              icon: const Icon(Icons.chat_bubble_outline),
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
               label: const Text('Assistent fragen'),
             ),
-            const SizedBox(height: AppSpacing.s),
             TextButton(
               onPressed: () => openAuthScreen(context),
               child: const Text('Konto & Sync'),
@@ -543,7 +590,8 @@ class _StatsStrip extends StatelessWidget {
       if (bikeCount != null)
         '$bikeCount ${bikeCount == 1 ? 'Bike' : 'Bikes'}',
       if (rideCount != null && rideCount! > 0)
-        '${rideCount == 20 ? '20+' : rideCount} ${rideCount == 1 ? 'Ride' : 'Rides'}',
+        '${rideCount == 20 ? '20+' : rideCount} '
+            '${rideCount == 1 ? MultiSportCopy.statsRidesOne : MultiSportCopy.statsRidesMany}',
     ];
     if (parts.isEmpty) return const SizedBox.shrink();
     return InkWell(
@@ -590,7 +638,7 @@ class _SearchEntry extends StatelessWidget {
               Icon(Icons.search, color: AppColors.muted, size: 20),
               SizedBox(width: AppSpacing.s),
               Text(
-                'Wohin heute? Ort oder Adresse suchen',
+                MultiSportCopy.searchHome,
                 style: TextStyle(color: AppColors.muted, fontSize: 14),
               ),
             ],
@@ -641,12 +689,14 @@ class _TipHero extends ConsumerStatefulWidget {
     required this.saved,
     this.weather,
     this.weightKg,
+    this.sport,
   });
 
   final BikeSetup? setup;
   final List<SavedRouteEntry>? saved;
   final WeatherSnapshot? weather;
   final double? weightKg;
+  final BikeCategory? sport;
 
   @override
   ConsumerState<_TipHero> createState() => _TipHeroState();
@@ -661,6 +711,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
     final saved = widget.saved;
     final weather = widget.weather;
     final weightKg = widget.weightKg;
+    final sport = widget.sport;
     final fp = SetupFingerprint.fromSetup(setup);
     // Nicht die neueste Mega-Tour als „Heute passt“ — Dauer/Distanz-Cap.
     final avgMin =
@@ -676,17 +727,17 @@ class _TipHeroState extends ConsumerState<_TipHero> {
         }
       }
     }
-    final title = route?.name ?? 'Freifahren starten';
+    final title = route?.name ?? MultiSportCopy.tipHeroTitle(sport);
     final subtitle = route == null
-        ? (saved != null && saved.isNotEmpty
-            ? 'Gespeicherte Touren zu lang — Discover öffnen oder Freifahren'
-            : 'Keine passende Tour — Discover öffnen oder Freifahren')
+        ? MultiSportCopy.tipHeroSubtitle(sport)
         : '${route.distanceKm.toStringAsFixed(1)} km · '
             '${route.elevationM.round()} hm · ${route.durationMin} min';
     final reasons = <String>[
       if (weather != null)
-        'Wetter: ${weather.trailLabel} (${weather.tempC.toStringAsFixed(0)}°)',
-      if (fp.lines.isNotEmpty) 'Dein Setup: ${fp.lines.first}',
+        'Wetter: ${weather.summary} (${weather.tempC.toStringAsFixed(0)}°)',
+      if (sport != null) 'Disziplin: ${sport.shortLabel}',
+      if (fp.lines.isNotEmpty && (sport?.showsSuspensionUx ?? false))
+        'Dein Setup: ${fp.lines.first}',
       if (route != null)
         'Gespeicherte Route: ${route.name}'
       else
@@ -705,7 +756,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'HEUTE PASST',
+            'HEUTE FAHREN',
             style: TextStyle(
               color: AppColors.accent,
               fontWeight: FontWeight.w800,
@@ -764,7 +815,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                 ),
               ),
             const Text(
-              'Quellen: Wetter · Bike-Setup · Gespeicherte Touren',
+              'Quellen: Wetter · Profil · Gespeicherte Touren',
               style: TextStyle(fontSize: 11, color: AppColors.muted),
             ),
           ],
@@ -778,7 +829,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                         DiscoverLaunchMode.discover;
                     ref.read(shellTabIndexProvider.notifier).state = 3;
                   },
-                  child: const Text('Discover'),
+                  child: const Text(MultiSportCopy.navDiscover),
                 ),
               ),
               const SizedBox(width: AppSpacing.s),
@@ -803,7 +854,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Gespeicherte Tour ohne Track — Freifahren oder Discover.',
+                            'Tour ohne Track — ohne Route fahren oder Touren öffnen.',
                           ),
                         ),
                       );
@@ -811,7 +862,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Keine gespeicherte Tour — Freifahren oder Discover öffnen.',
+                            'Keine passende Tour — ohne Route fahren oder Touren öffnen.',
                           ),
                         ),
                       );
@@ -819,7 +870,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                     ref.read(shellTabIndexProvider.notifier).state = 2;
                   },
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Losfahren'),
+                  label: const Text(MultiSportCopy.goRide),
                 ),
               ),
             ],
@@ -843,21 +894,25 @@ class _OnboardingCards extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.pedal_bike),
           title: const Text('Bike anlegen'),
-          subtitle: const Text('Garage · Katalog, Basis oder GPX'),
+          subtitle: const Text(
+            'Garage · MTB, Gravel, Rennrad, City, E-Bike …',
+          ),
           onTap: onGarage,
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.build_circle_outlined),
-          title: const Text('Basis-Setup'),
-          subtitle: const Text('Templates & Sag-Guide in der Garage'),
+          title: const Text('Setup & Wartung'),
+          subtitle: const Text(
+            'Templates, SAG (wo sinnvoll) und Service in der Garage',
+          ),
           onTap: onGarage,
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.storefront_outlined),
-          title: const Text('Teile browsen'),
-          subtitle: const Text('Shop mit Kompatibilitäts-Hinweis'),
+          leading: const Icon(Icons.build_outlined),
+          title: const Text(MultiSportCopy.partsTitle),
+          subtitle: const Text('Kompatible Teile finden'),
           onTap: onShop,
         ),
       ],

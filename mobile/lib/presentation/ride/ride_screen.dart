@@ -25,6 +25,7 @@ import '../../data/routing/routing_client.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../native/location_core_channel.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
@@ -483,7 +484,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Bluetooth aus — Freifahren auch ohne Radsensor möglich; Sensor später verbinden.',
+            'Bluetooth aus — Fahren auch ohne Sensor möglich; später verbinden.',
           ),
         ),
       );
@@ -491,7 +492,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Bluetooth-Berechtigung fehlt — Freifahren läuft ohne Kadenz/Leistung.',
+            'Bluetooth-Berechtigung fehlt — GPS-Track läuft ohne Kadenz/Leistung.',
           ),
         ),
       );
@@ -1142,7 +1143,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             )
                           else
                             const Text(
-                              'Optional: Route in Discover wählen und „Losfahren“.',
+                              MultiSportCopy.optionalRoute,
                               style: TextStyle(color: AppColors.muted),
                             ),
                           const SizedBox(height: AppSpacing.s),
@@ -1216,9 +1217,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                               child: EmptyStateIllustration(
                                 compact: true,
                                 icon: Icons.pedal_bike,
-                                title: 'Bereit zum Losfahren',
-                                message: 'GPS-Track startet sofort — Bluetooth-'
-                                    'Sensoren sind optional.',
+                                title: MultiSportCopy.readyTitle,
+                                message: MultiSportCopy.readyMessage,
                               ),
                             ),
                           ),
@@ -1234,7 +1234,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             child: Text(
                               route != null
                                   ? '${route.name} starten'
-                                  : 'Freifahren starten',
+                                  : MultiSportCopy.startFreeride,
                               style: const TextStyle(fontSize: 16),
                             ),
                           ),
@@ -1386,21 +1386,25 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SegmentedButton<RideLiveLayer>(
-                segments: const [
-                  ButtonSegment(
+                segments: [
+                  const ButtonSegment(
                     value: RideLiveLayer.map,
                     label: Text('Karte'),
                     icon: Icon(Icons.map),
                   ),
-                  ButtonSegment(
+                  const ButtonSegment(
                     value: RideLiveLayer.data,
                     label: Text('Daten'),
                     icon: Icon(Icons.grid_view),
                   ),
                   ButtonSegment(
                     value: RideLiveLayer.suspension,
-                    label: Text('Fahrwerk'),
-                    icon: Icon(Icons.waves),
+                    label: Text(
+                      MultiSportCopy.chassisLayerLabel(
+                        ref.watch(userProfileStoreProvider).preferredSport,
+                      ),
+                    ),
+                    icon: const Icon(Icons.waves),
                   ),
                 ],
                 selected: {layer},

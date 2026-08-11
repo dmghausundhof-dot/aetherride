@@ -23,7 +23,7 @@ class BikeSilhouettePainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
     final w = size.width;
     final h = size.height;
-    // Einfache MTB-Silhouette: Räder + Rahmen + Lenker.
+    // Neutrale Bike-Silhouette (alle Disziplinen): Räder + Rahmen + Lenker.
     canvas.drawCircle(Offset(w * 0.22, h * 0.72), h * 0.22, stroke);
     canvas.drawCircle(Offset(w * 0.78, h * 0.72), h * 0.22, stroke);
     final frame = Path()

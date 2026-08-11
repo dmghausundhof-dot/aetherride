@@ -10,6 +10,7 @@ import '../../data/local/app_database.dart';
 import '../../domain/compatibility/engine.dart';
 import '../../domain/compatibility/rules.dart';
 import '../../domain/component.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../providers/app_providers.dart';
 
 class ShopScreen extends ConsumerStatefulWidget {
@@ -284,7 +285,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     final _ = _wishlistTick;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shop')),
+      appBar: AppBar(title: const Text(MultiSportCopy.partsTitle)),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -294,14 +295,14 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Beispielkatalog / Cache',
+                  MultiSportCopy.partsTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Kein Live-Partner-Shop — Cache/Beispiele. Kauf nur über externe Links.',
+                  MultiSportCopy.partsSubtitle,
                   style: TextStyle(color: AppColors.muted, fontSize: 13),
                 ),
                 const SizedBox(height: 10),

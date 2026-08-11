@@ -5,35 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 
-class _SportOption {
-  const _SportOption({
-    required this.id,
-    required this.label,
-    required this.blurb,
-  });
-  final BikeCategory id;
-  final String label;
-  final String blurb;
-}
-
-const _sports = <_SportOption>[
-  _SportOption(id: BikeCategory.mtbAm, label: 'MTB', blurb: 'Trails & All-Mountain'),
-  _SportOption(
-    id: BikeCategory.mtbEnduro,
-    label: 'Enduro',
-    blurb: 'Steil & technisch',
-  ),
-  _SportOption(id: BikeCategory.gravel, label: 'Gravel', blurb: 'Schotter & Distanz'),
-  _SportOption(id: BikeCategory.emtb, label: 'E-MTB', blurb: 'Trail mit Assist'),
-  _SportOption(id: BikeCategory.road, label: 'Rennrad', blurb: 'Asphalt'),
-  _SportOption(id: BikeCategory.urban, label: 'City', blurb: 'Alltag & Pendeln'),
-];
-
-/// Einmaliges Onboarding → erster echter Freeride (GPS) oder Garage.
+/// Einmaliges Onboarding → erster echter GPS-Track oder Garage.
+/// Multi-Sport: alle Disziplinen gleichwertig (kein MTB-first Framing).
 class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
 
@@ -77,7 +55,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             _ => 'Standort erlauben — ohne GPS kein Track.',
           };
         });
-        // Onboarding bleibt abgeschlossen; User kann Ride-Tab manuell öffnen.
         if (result == LocationPermissionResult.deniedForever) {
           await location.openAppSettings();
         } else if (result == LocationPermissionResult.servicesDisabled) {
@@ -97,9 +74,20 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       return;
     }
 
-    // skip — Home bleibt
     ref.read(shellTabIndexProvider.notifier).state = 0;
   }
+
+  IconData _iconFor(String name) => switch (name) {
+        'terrain' => Icons.terrain,
+        'landscape' => Icons.landscape,
+        'route' => Icons.route,
+        'speed' => Icons.speed,
+        'location_city' => Icons.location_city,
+        'electric_bike' => Icons.electric_bike,
+        'electric_moped' => Icons.electric_moped,
+        'forest' => Icons.forest,
+        _ => Icons.pedal_bike,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -133,21 +121,22 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Willkommen',
+                                'AetherRide',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.6,
-                                  color: AppColors.accent.withValues(alpha: 0.95),
+                                  color:
+                                      AppColors.accent.withValues(alpha: 0.95),
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 _step == 1
-                                    ? 'Was fährst du?'
+                                    ? 'Wie fährst du?'
                                     : _step == 2
                                         ? 'Dein Gewicht'
-                                        : 'Erster Ride',
+                                        : 'Erste Fahrt',
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
@@ -156,10 +145,12 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                               const SizedBox(height: 6),
                               Text(
                                 _step == 1
-                                    ? 'Damit Routen und Setup zu dir passen.'
+                                    ? MultiSportCopy.appTagline
                                     : _step == 2
-                                        ? 'Für SAG & Reichweite — nur lokal, jederzeit änderbar.'
-                                        : 'GPS-Track starten — ohne Demo, ohne Fake-Daten. Bike optional.',
+                                        ? 'Für Setup, SAG & Reichweite — nur lokal, jederzeit änderbar. '
+                                            'Auch ohne Federgabel sinnvoll (z. B. City).'
+                                        : 'Echter GPS-Track — ohne Demo. Bike optional. '
+                                            'MTB, Gravel, Rennrad oder City: gleich gut.',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: AppColors.muted,
@@ -170,7 +161,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                         ),
                         IconButton(
                           tooltip: 'Überspringen',
-                          onPressed: _busy ? null : () => unawaited(_finish('skip')),
+                          onPressed:
+                              _busy ? null : () => unawaited(_finish('skip')),
                           icon: const Icon(Icons.close),
                         ),
                       ],
@@ -183,9 +175,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                         physics: const NeverScrollableScrollPhysics(),
                         mainAxisSpacing: 8,
                         crossAxisSpacing: 8,
-                        childAspectRatio: 1.55,
+                        childAspectRatio: 1.45,
                         children: [
-                          for (final s in _sports)
+                          for (final s in OnboardingSportOption.all)
                             InkWell(
                               borderRadius: BorderRadius.circular(14),
                               onTap: () => setState(() => _sport = s.id),
@@ -196,17 +188,27 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                   border: Border.all(
                                     color: _sport == s.id
                                         ? AppColors.accent
-                                        : AppColors.forest.withValues(alpha: 0.4),
+                                        : AppColors.forest
+                                            .withValues(alpha: 0.4),
                                     width: _sport == s.id ? 2 : 1,
                                   ),
                                   color: _sport == s.id
-                                      ? AppColors.accent.withValues(alpha: 0.12)
+                                      ? AppColors.accent
+                                          .withValues(alpha: 0.12)
                                       : const Color(0xFF1A2822),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
+                                    Icon(
+                                      _iconFor(s.icon),
+                                      size: 20,
+                                      color: _sport == s.id
+                                          ? AppColors.accent
+                                          : AppColors.muted,
+                                    ),
+                                    const SizedBox(height: 6),
                                     Text(
                                       s.label,
                                       style: const TextStyle(
@@ -242,7 +244,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                         onChanged: (v) => setState(() => _weight = v),
                       ),
                       Text(
-                        'Sport: ${_sports.firstWhere((s) => s.id == _sport).label}',
+                        'Disziplin: ${_sport.shortLabel}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.muted,
@@ -250,8 +252,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       ),
                     ] else ...[
                       const Text(
-                        'Standort erlaubt den echten GPS-Track. '
-                        'Bluetooth-Sensoren (CSC) sind optional.',
+                        'Standort für den GPS-Track. Bluetooth-Sensoren '
+                        '(Geschwindigkeit/Kadenz) sind optional — für alle '
+                        'Bike-Typen.',
                         style: TextStyle(fontSize: 13, color: AppColors.muted),
                       ),
                       if (_status != null) ...[
@@ -282,7 +285,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 3),
-                        child: const Text('Weiter zum Ride'),
+                        child: const Text('Weiter zur Fahrt'),
                       )
                     else ...[
                       FilledButton(
@@ -296,9 +299,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                             ? const SizedBox(
                                 height: 22,
                                 width: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
-                            : const Text('Ersten Ride starten'),
+                            : const Text(MultiSportCopy.startRide),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton(
@@ -308,7 +313,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       ),
                     ],
                     TextButton(
-                      onPressed: _busy ? null : () => unawaited(_finish('skip')),
+                      onPressed:
+                          _busy ? null : () => unawaited(_finish('skip')),
                       child: const Text('Später einrichten'),
                     ),
                   ],

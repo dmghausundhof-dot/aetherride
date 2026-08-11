@@ -35,6 +35,7 @@ import '../../domain/routing/route_shape.dart';
 import '../../domain/routing/trail_difficulty.dart';
 import '../../domain/routing/trail_view.dart';
 import '../../domain/saved_route.dart';
+import '../../domain/sport/discipline_ux.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../profile/profile_screen.dart';
@@ -819,7 +820,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     unawaited(_approachTrail(trail));
                   },
                   icon: const Icon(Icons.navigation),
-                  label: const Text('Zum Trailhead anfahren'),
+                  label: const Text('Zum Startpunkt anfahren'),
                 ),
                 const SizedBox(height: AppSpacing.s),
                 OutlinedButton.icon(
@@ -828,7 +829,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     unawaited(_adoptTrailAsOverlay(trail));
                   },
                   icon: const Icon(Icons.timeline),
-                  label: const Text('Trail auf Route legen'),
+                  label: const Text('Auf Route legen'),
                 ),
                 if (trail.url != null) ...[
                   const SizedBox(height: AppSpacing.s),
@@ -3148,19 +3149,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       itemBuilder: (_) => const [
                         PopupMenuItem(
                           value: 'collections',
-                          child: Text('Sammlungen'),
+                          child: Text(MultiSportCopy.discoverMenuCollections),
                         ),
                         PopupMenuItem(
                           value: 'trailview',
-                          child: Text('Trail View'),
+                          // Nicht „Trail“-only — Mapillary für alle Oberflächen.
+                          child: Text(MultiSportCopy.discoverMenuPhotos),
                         ),
                         PopupMenuItem(
                           value: 'offline',
-                          child: Text('Offline-Karten'),
+                          child: Text(MultiSportCopy.discoverMenuOffline),
                         ),
                         PopupMenuItem(
                           value: 'privacy',
-                          child: Text('Heatmap & Privatsphäre'),
+                          child: Text(MultiSportCopy.discoverMenuPrivacy),
                         ),
                       ],
                     ),
@@ -4395,7 +4397,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   '${sel.difficultyLabel} · ${sel.lengthKm.toStringAsFixed(1)} km',
                 ),
                 trailing: IconButton(
-                  tooltip: 'Zum Trailhead',
+                  tooltip: 'Zum Startpunkt',
                   icon: const Icon(Icons.navigation),
                   onPressed: () => unawaited(_approachTrail(sel!)),
                 ),
