@@ -169,8 +169,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   DateTime? _brightSince;
   static const _sunlightLux = 8000.0;
   static const _sunlightHold = Duration(seconds: 4);
-  static const _ambientLightChannel =
-      EventChannel('com.aetherride/ambient_light');
+  static const _ambientLightChannel = EventChannel(
+    'com.aetherride/ambient_light',
+  );
 
   @override
   void initState() {
@@ -184,6 +185,19 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         if (mounted) setState(() => _mapStyle = s);
       }),
     );
+    // Deep-link may set rideAutostart before this State mounts — ref.listen
+    // only fires on *changes*, so consume a pending true on the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _consumeRideAutostart();
+    });
+  }
+
+  void _consumeRideAutostart() {
+    if (ref.read(rideAutostartProvider) != true) return;
+    ref.read(rideAutostartProvider.notifier).state = false;
+    if (ref.read(isRidingProvider)) return;
+    unawaited(_start());
   }
 
   Future<void> _loadRidePrefs() async {
@@ -280,8 +294,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           picked == RideBatteryPreset.pocket
               ? 'Pocket — Display darf aus (Akku sparen).'
               : picked == RideBatteryPreset.lenker
-                  ? 'Lenker — Display an (kostet Akku).'
-                  : 'Ultra — Display nur bei Abbiegen (kostet Akku).',
+              ? 'Lenker — Display an (kostet Akku).'
+              : 'Ultra — Display nur bei Abbiegen (kostet Akku).',
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -326,17 +340,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _lightSub?.cancel();
     try {
       _lightSub = _ambientLightChannel
-          .receiveBroadcastStream(
-        SensorInterval.normalInterval.inMicroseconds,
-      )
+          .receiveBroadcastStream(SensorInterval.normalInterval.inMicroseconds)
           .map((raw) {
-        final lux = raw is num
-            ? raw.toDouble()
-            : (raw is List && raw.isNotEmpty)
+            final lux = raw is num
+                ? raw.toDouble()
+                : (raw is List && raw.isNotEmpty)
                 ? (raw.first as num).toDouble()
                 : 0.0;
-        return AmbientLightEvent(lux);
-      }).listen(_onAmbientLight, onError: (_) {});
+            return AmbientLightEvent(lux);
+          })
+          .listen(_onAmbientLight, onError: (_) {});
     } catch (_) {
       // No light sensor — manual toggle only.
     }
@@ -385,7 +398,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final lat2r = lat2 * math.pi / 180;
     final dLng = (lng2 - lng1) * math.pi / 180;
     final y = math.sin(dLng) * math.cos(lat2r);
-    final x = math.cos(lat1r) * math.sin(lat2r) -
+    final x =
+        math.cos(lat1r) * math.sin(lat2r) -
         math.sin(lat1r) * math.cos(lat2r) * math.cos(dLng);
     return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
   }
@@ -405,9 +419,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       if (gen != _rideMapDrawGen) return;
       final route = ref.read(activeRouteProvider);
       if (route != null && route.coordinates.length >= 2) {
-        final planned = [
-          for (final p in route.coordinates) LatLng(p[1], p[0]),
-        ];
+        final planned = [for (final p in route.coordinates) LatLng(p[1], p[0])];
         if (gen != _rideMapDrawGen) return;
         // Thick high-contrast route ribbon (N-01) — outline + core.
         await c.addLine(
@@ -506,17 +518,19 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           }
         }
       } else if (route != null && route.coordinates.length >= 2) {
-        final pts = [
-          for (final p in route.coordinates) LatLng(p[1], p[0]),
-        ];
-        final swLat =
-            pts.map((e) => e.latitude).reduce((a, b) => a < b ? a : b);
-        final swLng =
-            pts.map((e) => e.longitude).reduce((a, b) => a < b ? a : b);
-        final neLat =
-            pts.map((e) => e.latitude).reduce((a, b) => a > b ? a : b);
-        final neLng =
-            pts.map((e) => e.longitude).reduce((a, b) => a > b ? a : b);
+        final pts = [for (final p in route.coordinates) LatLng(p[1], p[0])];
+        final swLat = pts
+            .map((e) => e.latitude)
+            .reduce((a, b) => a < b ? a : b);
+        final swLng = pts
+            .map((e) => e.longitude)
+            .reduce((a, b) => a < b ? a : b);
+        final neLat = pts
+            .map((e) => e.latitude)
+            .reduce((a, b) => a > b ? a : b);
+        final neLng = pts
+            .map((e) => e.longitude)
+            .reduce((a, b) => a > b ? a : b);
         if (gen != _rideMapDrawGen) return;
         if ((neLat - swLat).abs() < 1e-5 && (neLng - swLng).abs() < 1e-5) {
           await c.animateCamera(
@@ -669,11 +683,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final seq = _chunkSeq++;
     final rideId = _rideId!;
     try {
-      await ref.read(rideChunkRepositoryProvider).appendChunk(
-            rideId: rideId,
-            seq: seq,
-            blocks: blocks,
-          );
+      await ref
+          .read(rideChunkRepositoryProvider)
+          .appendChunk(rideId: rideId, seq: seq, blocks: blocks);
     } catch (_) {
       // Keep ride UI light — chunk write failures are non-fatal.
     }
@@ -744,28 +756,78 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         return false;
     }
 
-    // BLE is optional (CSC) — prompt, never block Freeride.
-    final ble = ref.read(bleCoreProvider);
-    final bleResult = await ble.ensurePermission();
-    if (!mounted) return false;
-    if (bleResult == BlePermissionResult.adapterOff) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Bluetooth aus — Fahren auch ohne Sensor möglich; später verbinden.',
-          ),
-        ),
-      );
-    } else if (bleResult == BlePermissionResult.denied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Bluetooth-Berechtigung fehlt — GPS-Track läuft ohne Kadenz/Leistung.',
-          ),
-        ),
-      );
-    }
+    // BLE / Nearby Devices is optional — never gate start on it.
+    // Permission + connect run in [_connectBleAfterHudStable] after the
+    // nav HUD has painted, so the system dialog cannot freeze start.
     return true;
+  }
+
+  /// Defer Nearby/BLE until HUD + camera are up. Denial is non-fatal.
+  Future<void> _connectBleAfterHudStable() async {
+    // Let the first ride frames paint (map / next-turn) before any dialog.
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted || !ref.read(isRidingProvider)) return;
+
+    final ble = ref.read(bleCoreProvider);
+    try {
+      final bleResult = await ble.ensurePermission();
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (bleResult == BlePermissionResult.adapterOff) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Bluetooth aus — Fahren auch ohne Sensor möglich; später verbinden.',
+            ),
+          ),
+        );
+        return;
+      }
+      if (bleResult == BlePermissionResult.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Nearby/Bluetooth verweigert — GPS-Navigation läuft ohne Sensor.',
+            ),
+          ),
+        );
+        return;
+      }
+      if (bleResult == BlePermissionResult.unsupported) return;
+
+      final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+      Bike? active;
+      for (final b in bikes) {
+        if (b.isActive) {
+          active = b;
+          break;
+        }
+      }
+      active ??= bikes.isEmpty ? null : bikes.first;
+      final wheel = active?.wheelSize;
+      if (wheel != null) {
+        ble.wheelCircumferenceM = switch (wheel) {
+          WheelSize.w275 => 2.070,
+          WheelSize.w29 => 2.105,
+          WheelSize.c700 => 2.130,
+          WheelSize.b650 => 1.935,
+        };
+      }
+
+      final cscOk = await ble.connect();
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (!cscOk) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ble.statusDetail ??
+                  'Kein Radsensor gefunden — GPS-Track läuft weiter.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('ride: deferred BLE connect failed ($e) — continue without');
+    }
   }
 
   Future<void> _start() async {
@@ -786,35 +848,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _gpsStallSec = 0;
 
     await sensor.start();
-    final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
-    Bike? active;
-    for (final b in bikes) {
-      if (b.isActive) {
-        active = b;
-        break;
-      }
-    }
-    active ??= bikes.isEmpty ? null : bikes.first;
-    final wheel = active?.wheelSize;
-    if (wheel != null) {
-      ble.wheelCircumferenceM = switch (wheel) {
-        WheelSize.w275 => 2.070,
-        WheelSize.w29 => 2.105,
-        WheelSize.c700 => 2.130,
-        WheelSize.b650 => 1.935,
-      };
-    }
-    final cscOk = await ble.connect();
-    if (!cscOk && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ble.statusDetail ??
-                'Kein Radsensor gefunden — GPS-Track läuft weiter.',
-          ),
-        ),
-      );
-    }
+    // Start GPS/nav immediately — BLE permission dialog must not block HUD.
     await location.startRideTracking();
     _usingGps = false;
     _locSub = location.fixes.listen((fix) {
@@ -936,12 +970,15 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _cleanMode = true;
     _simDistanceM = 0;
     _simMotionUsed = false;
+    // Nearby Devices / BLE after HUD stable — never interrupt camera start.
+    unawaited(_connectBleAfterHudStable());
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted || ref.read(isPausedProvider)) return;
       final start = _startedAt;
       if (start != null) {
-        ref.read(rideElapsedSecProvider.notifier).state =
-            DateTime.now().difference(start).inSeconds;
+        ref.read(rideElapsedSecProvider.notifier).state = DateTime.now()
+            .difference(start)
+            .inSeconds;
       }
       if (!_usingGps) {
         if (_allowGpsStallSim) {
@@ -972,7 +1009,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           }
           if (_gpsStallSec >= 5 && _allowGpsStallSim) {
             _tickSimMotion(
-                elevFallback: _track.isNotEmpty ? _track.last.elev : 280);
+              elevFallback: _track.isNotEmpty ? _track.last.elev : 280,
+            );
           }
         }
       }
@@ -1198,9 +1236,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     if (!online) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: const Text(kOfflineRerouteToast),
-          ),
+          const SnackBar(content: const Text(kOfflineRerouteToast)),
         );
       }
       return;
@@ -1212,8 +1248,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       lng: lastFix.lng,
     );
     // Rest der Originalroute ab Segment (nicht nur Endpunkt).
-    final baseIdx =
-        (prog.segmentIndex + 1).clamp(1, route.coordinates.length - 1);
+    final baseIdx = (prog.segmentIndex + 1).clamp(
+      1,
+      route.coordinates.length - 1,
+    );
     final rejoinIdx = skipAheadM > 0
         ? _segmentIndexNearAlong(
             route.coordinates,
@@ -1241,8 +1279,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       final needApproach = prog.crossTrackM > 25 || skipAheadM > 0;
       if (needApproach) {
         // Rejoin-Profil: bevorzugter Sport / aktives Bike, nicht immer MTB.
-        final preferred =
-            ref.read(userProfileStoreProvider).preferredSport;
+        final preferred = ref.read(userProfileStoreProvider).preferredSport;
         final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
         Bike? active;
         for (final b in bikes) {
@@ -1255,7 +1292,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         final rejoinProfile = routingProfileForBike(
           active?.category ?? preferred ?? BikeCategory.mtbAm,
         );
-        final result = await ref.read(routeRepositoryProvider).planRoute(
+        final result = await ref
+            .read(routeRepositoryProvider)
+            .planRoute(
               from: GeoPoint(lastFix.lat, lastFix.lng),
               to: GeoPoint(rejoinPt[1], rejoinPt[0]),
               profile: rejoinProfile,
@@ -1273,10 +1312,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             .toList();
       }
 
-      final merged = <List<double>>[
-        ...approach,
-        ...remaining,
-      ];
+      final merged = <List<double>>[...approach, ...remaining];
       if (merged.length < 2) {
         throw StateError('Keine brauchbare Rejoin-Geometrie');
       }
@@ -1311,9 +1347,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               NavStep(
                 id: st.id,
                 instruction: st.instruction,
-                distanceAlongM:
-                    (st.distanceAlongM - stepCutoff + approachDistM)
-                        .clamp(0, double.infinity),
+                distanceAlongM: (st.distanceAlongM - stepCutoff + approachDistM)
+                    .clamp(0, double.infinity),
               ),
         ],
         poiStops: route.poiStops,
@@ -1336,9 +1371,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       unawaited(_drawRideMap());
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Rejoin fehlgeschlagen: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Rejoin fehlgeschlagen: $e')));
       }
     }
   }
@@ -1399,31 +1434,34 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         ? 'route'
         : (elevFromTrack > 0 ? 'gps_track' : 'none');
 
-    final record = await ref.read(rideRepositoryProvider).endRide(
-      id: _rideId,
-      bikeId: bikeId,
-      startedAt: started,
-      endedAt: ended,
-      distanceKm: distanceM / 1000,
-      movingTimeSec: elapsed,
-      name: route?.name ?? 'Ride',
-      routeId: route?.id,
-      elevationM: elevHonest,
-      track: track,
-      summary: {
-        'peakG': _peakG,
-        'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
-        'usingGps': _usingGps,
-        'gpsStallSim': _simMotionUsed,
-        'simDistanceM': _simDistanceM,
-        'trackPoints': track.length,
-        'elevationSource': elevSource,
-        if (_ldi?.batterySocPercent != null) 'soc': _ldi!.batterySocPercent,
-      },
-    );
+    final record = await ref
+        .read(rideRepositoryProvider)
+        .endRide(
+          id: _rideId,
+          bikeId: bikeId,
+          startedAt: started,
+          endedAt: ended,
+          distanceKm: distanceM / 1000,
+          movingTimeSec: elapsed,
+          name: route?.name ?? 'Ride',
+          routeId: route?.id,
+          elevationM: elevHonest,
+          track: track,
+          summary: {
+            'peakG': _peakG,
+            'avgFlow': _flowN == 0 ? null : _flowSum / _flowN,
+            'usingGps': _usingGps,
+            'gpsStallSim': _simMotionUsed,
+            'simDistanceM': _simDistanceM,
+            'trackPoints': track.length,
+            'elevationSource': elevSource,
+            if (_ldi?.batterySocPercent != null) 'soc': _ldi!.batterySocPercent,
+          },
+        );
 
     // E-Bike Reichweiten-Kalibrierung wenn genug Distanz + SOC-Delta
-    final isEbike = bike?.category == BikeCategory.emtb ||
+    final isEbike =
+        bike?.category == BikeCategory.emtb ||
         bike?.category == BikeCategory.etrekking;
     if (isEbike && distanceM >= 2000) {
       final endSoc = _ldi?.batterySocPercent;
@@ -1437,7 +1475,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
       final store = ref.read(userProfileStoreProvider);
       await store.load();
-      final prev = store.rangeCalibration ??
+      final prev =
+          store.rangeCalibration ??
           defaultCalibration(category: bike!.category);
       final next = calibrateFromRide(
         prev: prev,
@@ -1516,11 +1555,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   Widget build(BuildContext context) {
     ref.listen<bool>(rideAutostartProvider, (prev, next) {
       if (next != true) return;
-      ref.read(rideAutostartProvider.notifier).state = false;
-      if (ref.read(isRidingProvider)) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        unawaited(_start());
+        _consumeRideAutostart();
       });
     });
 
@@ -1549,8 +1586,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 actions: [
                   if (riding) ...[
                     IconButton(
-                      tooltip:
-                          _cameraFollow ? 'Kamera-Follow an' : 'Kamera frei',
+                      tooltip: _cameraFollow
+                          ? 'Kamera-Follow an'
+                          : 'Kamera frei',
                       onPressed: () {
                         setState(() => _cameraFollow = !_cameraFollow);
                         if (_cameraFollow) unawaited(_drawRideMap());
@@ -1563,8 +1601,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                       ),
                     ),
                     IconButton(
-                      tooltip:
-                          _northUp ? 'Norden oben' : 'Fahrtrichtung oben',
+                      tooltip: _northUp ? 'Norden oben' : 'Fahrtrichtung oben',
                       onPressed: () {
                         setState(() => _northUp = !_northUp);
                         if (_cameraFollow) unawaited(_drawRideMap());
@@ -1673,8 +1710,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                   icon: const Icon(Icons.close),
                                   onPressed: () {
                                     ref
-                                        .read(activeRouteProvider.notifier)
-                                        .state = null;
+                                            .read(activeRouteProvider.notifier)
+                                            .state =
+                                        null;
                                   },
                                 ),
                               ),
@@ -1695,30 +1733,33 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                             alignment: Alignment.centerLeft,
                             child: TextButton.icon(
                               onPressed: () async {
-                                final messenger =
-                                    ScaffoldMessenger.of(context);
+                                final messenger = ScaffoldMessenger.of(context);
                                 final ble = ref.read(bleCoreProvider);
                                 final ok = await ble.connect();
                                 if (!mounted) return;
                                 final msg = ok
                                     ? (ble.statusDetail ??
-                                        'Radsensor verbunden')
+                                          'Radsensor verbunden')
                                     : (ble.statusDetail ??
-                                        'Kein Radsensor gefunden');
+                                          'Kein Radsensor gefunden');
                                 setState(() {});
                                 messenger.showSnackBar(
                                   SnackBar(content: Text(msg)),
                                 );
                               },
-                              icon: const Icon(Icons.bluetooth_searching,
-                                  size: 18),
+                              icon: const Icon(
+                                Icons.bluetooth_searching,
+                                size: 18,
+                              ),
                               label: const Text('Radsensor suchen'),
                             ),
                           ),
                           if (_showsChassisUx(ref)) ...[
                             const SizedBox(height: AppSpacing.m),
-                            Text('Handy am Lenker?',
-                                style: theme.textTheme.titleSmall),
+                            Text(
+                              'Handy am Lenker?',
+                              style: theme.textTheme.titleSmall,
+                            ),
                             const SizedBox(height: AppSpacing.s),
                             Row(
                               children: [
@@ -1727,13 +1768,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor:
                                           mount == MountCheck.mounted
-                                              ? AppColors.accent
-                                              : null,
+                                          ? AppColors.accent
+                                          : null,
                                     ),
                                     onPressed: () {
                                       ref
-                                          .read(mountCheckProvider.notifier)
-                                          .state = MountCheck.mounted;
+                                              .read(mountCheckProvider.notifier)
+                                              .state =
+                                          MountCheck.mounted;
                                     },
                                     child: const Text('Ja — Analyse an'),
                                   ),
@@ -1743,8 +1785,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                                   child: OutlinedButton(
                                     onPressed: () {
                                       ref
-                                          .read(mountCheckProvider.notifier)
-                                          .state = MountCheck.handheld;
+                                              .read(mountCheckProvider.notifier)
+                                              .state =
+                                          MountCheck.handheld;
                                     },
                                     child: const Text('Nein — nur Track'),
                                   ),
@@ -1831,17 +1874,17 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
 
     IconData turnIcon(String name) => switch (name) {
-          'flag' => Icons.flag,
-          'turn_left' => Icons.turn_left,
-          'turn_right' => Icons.turn_right,
-          'turn_sharp_left' => Icons.turn_sharp_left,
-          'turn_sharp_right' => Icons.turn_sharp_right,
-          'turn_slight_left' => Icons.turn_slight_left,
-          'turn_slight_right' => Icons.turn_slight_right,
-          'straight' => Icons.straight,
-          'u_turn_left' => Icons.u_turn_left,
-          _ => Icons.navigation,
-        };
+      'flag' => Icons.flag,
+      'turn_left' => Icons.turn_left,
+      'turn_right' => Icons.turn_right,
+      'turn_sharp_left' => Icons.turn_sharp_left,
+      'turn_sharp_right' => Icons.turn_sharp_right,
+      'turn_slight_left' => Icons.turn_slight_left,
+      'turn_slight_right' => Icons.turn_slight_right,
+      'straight' => Icons.straight,
+      'u_turn_left' => Icons.u_turn_left,
+      _ => Icons.navigation,
+    };
 
     // Rest km + ETA for data strip (route-aware).
     final restKm = route != null
@@ -1867,12 +1910,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
 
     final midValue = restKm != null
-        ? (restKm < 10
-            ? restKm.toStringAsFixed(1)
-            : restKm.toStringAsFixed(0))
+        ? (restKm < 10 ? restKm.toStringAsFixed(1) : restKm.toStringAsFixed(0))
         : (distanceM < 1000
-            ? (distanceM / 1000).toStringAsFixed(2)
-            : (distanceM / 1000).toStringAsFixed(1));
+              ? (distanceM / 1000).toStringAsFixed(2)
+              : (distanceM / 1000).toStringAsFixed(1));
     final midLabel = restKm != null ? 'Rest km' : 'km';
     final rightLabel = restKm != null ? 'ETA' : 'Zeit';
 
@@ -1981,8 +2022,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                         if (!_cameraFollow)
                           Material(
                             color: theme.cardColor.withValues(alpha: 0.9),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.pill),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                             child: IconButton(
                               tooltip: 'Kamera folgen',
                               onPressed: () {
@@ -2016,13 +2056,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                           child: IconButton(
                             tooltip:
                                 'Display: ${_batteryPreset.titleDe}${_batteryPreset.costsBattery ? ' (kostet Akku)' : ''}',
-                            onPressed: () => unawaited(_showBatteryPresetPicker()),
+                            onPressed: () =>
+                                unawaited(_showBatteryPresetPicker()),
                             icon: Icon(
                               _batteryPreset.keepScreenOn
                                   ? Icons.battery_alert_outlined
                                   : _batteryPreset.wakeOnCue
-                                      ? Icons.battery_charging_full
-                                      : Icons.battery_saver_outlined,
+                                  ? Icons.battery_charging_full
+                                  : Icons.battery_saver_outlined,
                               size: 22,
                               color: _batteryPreset.costsBattery
                                   ? Colors.orange.shade800
@@ -2198,10 +2239,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   },
                   child: const Text(
                     'Pause',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               if (paused && _confirmStop == 0)
@@ -2228,9 +2266,13 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   children: [
                     Icon(Icons.lock, size: 48, color: AppColors.accent),
                     SizedBox(height: AppSpacing.m),
-                    Text('Auto-Lock',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w600)),
+                    Text(
+                      'Auto-Lock',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     SizedBox(height: AppSpacing.xs),
                     Text('Doppeltipp zum Aufwecken'),
                   ],
@@ -2247,10 +2289,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     String? nextNextInstr;
     double? nextNextRemain;
     if (route.steps.isNotEmpty) {
-      final remaining = route.steps
-          .where((s) => s.distanceAlongM > _alongRouteM + 5)
-          .toList()
-        ..sort((a, b) => a.distanceAlongM.compareTo(b.distanceAlongM));
+      final remaining =
+          route.steps.where((s) => s.distanceAlongM > _alongRouteM + 5).toList()
+            ..sort((a, b) => a.distanceAlongM.compareTo(b.distanceAlongM));
       if (remaining.length >= 2) {
         final second = remaining[1];
         nextNextInstr = second.instruction;
@@ -2258,7 +2299,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       }
     } else if (route.coordinates.length >= 4) {
       final cues = buildNavCues(route.coordinates);
-      final ahead = cues.where((c) => c.distanceAlongM > _alongRouteM + 5).toList();
+      final ahead = cues
+          .where((c) => c.distanceAlongM > _alongRouteM + 5)
+          .toList();
       if (ahead.length >= 2) {
         nextNextInstr = ahead[1].instruction;
         nextNextRemain = ahead[1].distanceAlongM - _alongRouteM;
@@ -2319,9 +2362,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         title: 'Abseits der Route.',
         subtitle: _userChoseStay
             ? 'Du bleibst abseits — tippe für Optionen.'
-            : (_autoRerouteEnabled
-                ? 'Neu berechnen …'
-                : 'Tippe für Optionen.'),
+            : (_autoRerouteEnabled ? 'Neu berechnen …' : 'Tippe für Optionen.'),
         actionLabel: _userChoseStay ? 'Optionen' : 'Zurück zur Route',
         onAction: () {
           _bumpIdle();
@@ -2400,10 +2441,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     'Distanz',
                     '${(ref.read(rideDistanceMProvider) / 1000).toStringAsFixed(2)} km',
                   ),
-                  _MetricRow(
-                    'Zeit',
-                    _fmt(ref.read(rideElapsedSecProvider)),
-                  ),
+                  _MetricRow('Zeit', _fmt(ref.read(rideElapsedSecProvider))),
                   if (_ldi?.batterySocPercent != null)
                     _MetricRow(
                       'SoC',
@@ -2461,10 +2499,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               children: [
                 if (_metrics != null) ...[
-                  _MetricRow(
-                    'G-Peak',
-                    _metrics!.gForcePeak.toStringAsFixed(2),
-                  ),
+                  _MetricRow('G-Peak', _metrics!.gForcePeak.toStringAsFixed(2)),
                   _MetricRow(
                     'Lean °',
                     _metrics!.leanAngleDeg.toStringAsFixed(1),

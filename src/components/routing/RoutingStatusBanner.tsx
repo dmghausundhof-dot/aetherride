@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { RoutingStatusPayload } from "@/lib/routing/routingStatus";
+import {
+  showRoutingDebugUi,
+  type RoutingStatusPayload,
+} from "@/lib/routing/routingStatus";
 
 export function RoutingStatusBanner({ className = "" }: { className?: string }) {
   const [status, setStatus] = useState<
@@ -12,6 +15,7 @@ export function RoutingStatusBanner({ className = "" }: { className?: string }) 
   >(null);
 
   useEffect(() => {
+    if (!showRoutingDebugUi()) return;
     let cancelled = false;
     void fetch("/api/routing/status?probe=1")
       .then((r) => r.json())
@@ -31,6 +35,8 @@ export function RoutingStatusBanner({ className = "" }: { className?: string }) 
       cancelled = true;
     };
   }, []);
+
+  if (!showRoutingDebugUi()) return null;
 
   if (!status?.notice && status?.liveVerified && status.configured) {
     return (

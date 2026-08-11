@@ -24,3 +24,9 @@ export function hasPublicRoutingHint(): boolean {
       process.env.NEXT_PUBLIC_ROUTING_LIVE === "true"
   );
 }
+
+/** Demo / unverified routing chrome — off in Prod unless explicitly enabled. */
+export function showRoutingDebugUi(): boolean {
+  return process.env.NEXT_PUBLIC_SHOW_ROUTING_DEBUG === "1";
+}
+

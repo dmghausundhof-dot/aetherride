@@ -32,6 +32,7 @@ import {
 } from "@/lib/routing/profiles";
 import {
   DEMO_ROUTING_NOTICE,
+  showRoutingDebugUi,
   type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
 import {
@@ -248,9 +249,7 @@ function DiscoverPageInner() {
   );
   const [showTrails, setShowTrails] = useState(true);
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
-  const [routingNotice, setRoutingNotice] = useState<string | null>(
-    DEMO_ROUTING_NOTICE
-  );
+  const [routingNotice, setRoutingNotice] = useState<string | null>(null);
   const [communityHeat, setCommunityHeat] = useState<HeatmapResult | null>(
     null
   );
@@ -433,6 +432,8 @@ function DiscoverPageInner() {
   }, [sportParam]);
 
   useEffect(() => {
+    // Q-BAR-DIS-01: demo / unverified routing chrome only when explicitly enabled.
+    if (!showRoutingDebugUi()) return;
     let cancelled = false;
     void fetch("/api/routing/status")
       .then((r) => r.json())
@@ -1188,7 +1189,7 @@ function DiscoverPageInner() {
       <aside className="order-2 flex min-h-0 flex-col border-t border-border bg-background lg:order-1 lg:w-[min(26rem,40vw)] lg:shrink-0 lg:border-r lg:border-t-0">
         {/* Dach */}
         <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-4 lg:pt-5">
-          {routingNotice && (
+          {showRoutingDebugUi() && routingNotice && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
               {routingNotice}
             </p>
