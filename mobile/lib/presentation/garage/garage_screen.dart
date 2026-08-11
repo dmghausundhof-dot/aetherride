@@ -1557,7 +1557,9 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                           ),
                     ),
                   ),
+                  // Theme Size.fromHeight(48) = infinite width in Row.
                   FilledButton.tonalIcon(
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
                     onPressed: () async {
                       await showModalBottomSheet<void>(
                         context: context,
