@@ -15,7 +15,7 @@ import { isHonestLoop } from "@/lib/discover/loopHonesty";
 
 /**
  * Route ab GPS oder manuellem Zentrum — Live-Engine.
- * Rundkurs mode: reject engine results that are not closed (≤200 m).
+ * Rundkurs mode: reject engine results that are not closed (≤300 m).
  */
 export function NearMeRouteCard({
   center,

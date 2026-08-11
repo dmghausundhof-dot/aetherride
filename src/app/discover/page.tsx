@@ -381,7 +381,7 @@ function DiscoverPageInner() {
 
   /**
    * D-60-LOOP-FILTER-01: ~60 Min Rundkurse rail — same loopHonesty as filter
-   * (is_loop / start≈end ≤200 m; never Spree Alltagsrunde / A→B badge).
+   * (is_loop / start≈end ≤300 m; never Spree Alltagsrunde / A→B badge).
    */
   const sixtyMinLoops = useMemo(() => {
     const curated = curatedSixtyMinLoopSuggestions(origin);

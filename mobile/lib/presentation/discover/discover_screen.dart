@@ -449,8 +449,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   bool _matchTourDuration = true;
   String? _surfaceFilter;
   String? _scaleFilter; // S0 / S1 / S2+
-  /// D-60-LOOP-FILTER-01: ~60 primary lens defaults to Rundkurs-only.
-  bool? _loopOnly = true;
+  bool? _loopOnly;
   int? _minElevationM;
   bool _heatmapConsent = false;
   bool _heatmapContributed = false;
@@ -540,7 +539,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Sport-aware Dauer-Default (Touring → 2–3 h, sonst ~60).
           _minutes = DurationLens.defaultMinutesForSport(sportCat);
           _matchTourDuration = _minutes > 0;
-          if (_minutes == 60) _loopOnly = true;
         });
       } else {
         final preferred = ref.read(userProfileStoreProvider).preferredSport;
@@ -549,7 +547,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             _profile = routingProfileForBike(preferred);
             _minutes = DurationLens.defaultMinutesForSport(preferred);
             _matchTourDuration = _minutes > 0;
-            if (_minutes == 60) _loopOnly = true;
           });
         }
       }
@@ -560,7 +557,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         setState(() {
           _minutes = pendingLens;
           _matchTourDuration = pendingLens > 0;
-          if (pendingLens == 60) _loopOnly = true;
         });
       }
       final pendingLoop = ref.read(discoverPendingLoopIdProvider);
@@ -1829,7 +1825,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (_minElevationM != null && r.elevationM < _minElevationM!) {
         return false;
       }
-      // D-60-LOOP-FILTER-01: only real loops — never pad with linear A→B.
+      // „Nur Rundkurse": echte Geometrie ODER ehrlicher Seed/Katalog-Hint.
+      // A→B-Geometrie nie als Rundkurs durchlassen (D-60-02).
       if (_loopOnly == true && !_isLoop(r)) {
         return false;
       }
@@ -1894,8 +1891,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return b.matchScore.compareTo(a.matchScore);
   }
 
-  /// D-60-LOOP-FILTER-01: `is_loop` OR start≈end ≤~200 m (`routeShapeOf`).
-  /// Point-to-point geometry never passes even if a seed flag lied.
+  /// Ehrlich: Geometrie schlägt Hint. Seed `is_loop` nur ohne P2P-Track.
   bool _isLoop(_RouteSuggestion r) {
     final shape = routeShapeOf(r.trackLngLat);
     if (shape == RouteShape.loop) return true;
@@ -1903,9 +1899,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     return r.isLoopHint == true;
   }
 
-  /// ⟲ nur bei echten Loops (D-60-LOOP-FILTER-01).
+  /// Rundkurs / Strecke — ⟲ nur bei echten Loops (D-60-02).
   String? _shapeLabel(_RouteSuggestion r) {
-    if (_isLoop(r)) return '⟲ Runde';
+    if (_isLoop(r)) return '⟲ Rundkurs';
     final shape = routeShapeOf(r.trackLngLat);
     if (shape == RouteShape.pointToPoint) return 'Strecke';
     return null;
@@ -3941,7 +3937,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           onSelected: (_) => update(() {
                             _minutes = p.minutes;
                             _matchTourDuration = p.minutes > 0;
-                            if (p.minutes == 60) _loopOnly = true;
                           }),
                         ),
                       Tooltip(
@@ -3996,8 +3991,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     group('Form', [
                       Tooltip(
                         message:
-                            'D-60-LOOP-FILTER-01: is_loop oder Start≈Ziel '
-                            '≤~200 m. Keine A→B-Füllung.',
+                            'Nur Touren mit Track, deren Start und Ziel '
+                            'zusammenfallen',
                         child: FilterChip(
                           label: const Text('Nur Rundkurse'),
                           selected: _loopOnly == true,
@@ -4098,7 +4093,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _minutes = m;
           // „egal“ schaltet Dauer-Filter aus; Presets schalten ihn an.
           _matchTourDuration = m > 0;
-          if (m == 60) _loopOnly = true;
         });
         unawaited(_refreshQuick(limit: 3));
       },
@@ -4206,12 +4200,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         AppSpacing.m,
         AppSpacing.m,
       ),
-      // D-60-LOOP-FILTER-01: with Rundkurs on, hide A→B Quick pads.
-      children: [
-        if (_loopOnly != true) ..._quickSection(),
-        ..._toursSection(),
-        ..._savedTiles(),
-      ],
+      children: [..._quickSection(), ..._toursSection(), ..._savedTiles()],
     );
     return Column(
       children: [
@@ -5051,13 +5040,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Keine Rundkurse in der Nähe',
+                'Noch keine ~60-Min-Touren hier.',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Ehrlicher Leerstand — keine A→B-Füllung. '
-                'Demo-Stadt wählen oder Ort ändern.',
+                'Wähle eine Demo-Stadt oder änder den Ort.',
                 style: TextStyle(fontSize: 13, color: AppColors.muted),
               ),
               const SizedBox(height: AppSpacing.m),
@@ -5246,8 +5234,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             style: TextStyle(fontSize: 12, color: AppColors.muted),
           ),
         ),
-      if (nearbyLoopCount == 0 &&
-          (_minutes == 60 || _loopOnly == true))
+      if (nearbyLoopCount == 0 && _minutes == 60)
         _emptyOrtPicker()
       else if (list.isEmpty)
         Padding(
@@ -5256,11 +5243,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             children: [
               Expanded(
                 child: Text(
-                  _loopOnly == true
-                      ? 'Keine Rundkurse in der Nähe'
-                      : _activeFilterCount > 0
-                          ? 'Keine Tour bei diesen Filtern.'
-                          : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
+                  _activeFilterCount > 0
+                      ? 'Keine Tour bei diesen Filtern.'
+                      : 'Keine Touren — „Neu“ tippen oder Filter lockern.',
                   style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),

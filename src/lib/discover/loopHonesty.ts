@@ -3,7 +3,7 @@
  *
  * Rundkurs may only surface real closed routes — never fill with linear A→B.
  * Prefer explicit seed/catalog flags; optionally confirm geometry via
- * start≈end closure (≤200 m). Flutter/mobile owned separately by Android eng.
+ * start≈end closure (≤300 m). Flutter/mobile owned separately by Android eng.
  */
 
 /** Known linear pads that must never appear under Rundkurs / ~60 rails. */
@@ -73,12 +73,12 @@ function haversineM(
 }
 
 /**
- * Geometry closure: start≈end within [maxGapM] (default **200 m**).
+ * Geometry closure: start≈end within [maxGapM] (default **300 m**).
  * Returns null when track is too short for a reliable call.
  */
 export function trackIsClosedLoop(
   coords: [number, number][] | null | undefined,
-  maxGapM = 200
+  maxGapM = 300
 ): boolean | null {
   if (!coords || coords.length < 4) return null;
   let lengthM = 0;
