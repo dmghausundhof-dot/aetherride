@@ -114,11 +114,11 @@ body {
   min-width: 48px;
 }
 
-/* Landing hero motion (L-HERO-02) */
+/* Landing hero motion (L-HERO-02) — calm, not loud */
 @keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -128,7 +128,7 @@ body {
 
 @keyframes hero-ken {
   from {
-    transform: scale(1.06);
+    transform: scale(1.035);
   }
   to {
     transform: scale(1);
@@ -147,7 +147,7 @@ body {
 @keyframes trust-sheet-in {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -156,19 +156,19 @@ body {
 }
 
 .animate-hero-rise {
-  animation: hero-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hero-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-hero-ken {
-  animation: hero-ken 8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hero-ken 14s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-hero-fade {
-  animation: hero-fade 280ms ease-out both;
+  animation: hero-fade 360ms ease-out both;
 }
 
 .animate-trust-sheet {
-  animation: trust-sheet-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: trust-sheet-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -9,6 +9,7 @@ type TrustSheetProps = {
 
 /**
  * L-TRUST-01 — Fairness Trust-Sheet (locked copy 1:1).
+ * Calm dismiss — no PRO / urgency chrome.
  */
 export function TrustSheet({ open, onClose }: TrustSheetProps) {
   const titleId = useId();
@@ -40,34 +41,34 @@ export function TrustSheet({ open, onClose }: TrustSheetProps) {
       <button
         type="button"
         aria-label="Schließen"
-        className="absolute inset-0 bg-black/55 backdrop-blur-[2px] animate-hero-fade"
+        className="absolute inset-0 bg-background/55 backdrop-blur-[1px] animate-hero-fade"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 m-0 w-full max-w-md rounded-t-2xl border border-border bg-surface px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 shadow-2xl shadow-black/40 animate-trust-sheet sm:m-4 sm:rounded-2xl"
+        className="relative z-10 m-0 w-full max-w-[22rem] rounded-t-2xl border border-border/70 bg-surface px-7 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-6 shadow-xl shadow-black/25 animate-trust-sheet sm:m-4 sm:rounded-2xl sm:px-8 sm:pt-8"
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" />
+        <div className="mx-auto mb-5 h-0.5 w-8 rounded-full bg-border/80 sm:hidden" />
         <h2
           id={titleId}
-          className="text-xl font-bold tracking-tight text-foreground sm:text-2xl"
+          className="text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-[1.35rem]"
         >
           Fair von Anfang an.
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-text-secondary sm:text-base">
+        <p className="mt-3.5 text-sm leading-relaxed text-text-secondary sm:text-[0.95rem] sm:leading-[1.55]">
           Sync, Navigation und Export bleiben frei — ohne Überraschungen mitten
           in der Tour.
         </p>
-        <p className="mt-4 inline-flex items-center rounded-lg border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+        <p className="mt-5 inline-flex items-center text-xs font-medium tracking-[0.01em] text-foreground/80">
           Offline ✓ frei
         </p>
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-accent text-sm font-semibold text-white transition hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg border border-foreground/20 bg-foreground/[0.06] text-sm font-medium text-foreground transition hover:bg-foreground/[0.1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Verstanden
         </button>
