@@ -1,0 +1,152 @@
+[
+  {
+    "title": "Heidelberg — Neckarwiese, Alte Brücke & Schlossblick",
+    "sport": "ebike",
+    "duration_min": 60,
+    "distance_km": 16,
+    "loop": true,
+    "start_area": {
+      "city_region": "Heidelberg Bismarckplatz / Neuenheim–Altstadt, Germany",
+      "lat": 49.409,
+      "lng": 8.694,
+      "approx": true
+    },
+    "short_pitch": "Classic Rhein-Neckar after-work loop: Neckar cycle path, Alte Brücke postcard views, and an e-bike-friendly climb toward Schloss and the Philosophenweg lookouts.",
+    "pois": [
+      {
+        "name": "Theodor-Heuss-Brücke / Bismarckplatz",
+        "type": "Trailhead",
+        "why_good": "Central Neckar crossing with bike lanes that drops you straight onto the Neuenheim river meadows.",
+        "offset_min": 0
+      },
+      {
+        "name": "Neckarwiese",
+        "type": "See",
+        "why_good": "Heidelberg’s big riverside lawn between Theodor-Heuss- and Ernst-Walz-Brücke, with a paved Neckar Valley Cycle Path along the bank.",
+        "offset_min": 8
+      },
+      {
+        "name": "Kiosk do Bairro / Café Bairro Neuenheim",
+        "type": "Café",
+        "why_good": "Neighborhood café stop at the Neckarwiese playground kiosk (and parent café on Neuenheimer Marktplatz) for coffee right on the loop.",
+        "offset_min": 12
+      },
+      {
+        "name": "Philosophengärtchen / Merianausblick",
+        "type": "Aussicht",
+        "why_good": "The iconic castle–Altstadt–Neckar panorama opposite the Old Town; reach via the paved Philosophenweg approach from Neuenheim (avoid the stepped Schlangenweg).",
+        "offset_min": 25
+      },
+      {
+        "name": "Alte Brücke (Karl-Theodor-Brücke)",
+        "type": "Kultur",
+        "why_good": "1788 sandstone Neckar bridge linking Neuenheim and the Altstadt — Heidelberg’s most photogenic river crossing for bikes.",
+        "offset_min": 35
+      },
+      {
+        "name": "Heidelberger Schloss",
+        "type": "Kultur",
+        "why_good": "Red-sandstone castle ruin above the Altstadt; the road climb is steep but e-bike friendly and rewards with terrace views over the Neckar valley.",
+        "offset_min": 48
+      }
+    ]
+  },
+  {
+    "title": "Mannheim — Schloss, Rheinpromenade & Waldpark",
+    "sport": "city",
+    "duration_min": 55,
+    "distance_km": 17,
+    "loop": true,
+    "start_area": {
+      "city_region": "Mannheim Schloss / Lindenhof–Rheinpark, Germany",
+      "lat": 49.483,
+      "lng": 8.462,
+      "approx": true
+    },
+    "short_pitch": "Flat Quadratestadt nature spin: from the Baroque palace down Stephanienufer along the Rhine, through Waldpark floodplain paths, then back via the Strandbad.",
+    "pois": [
+      {
+        "name": "Mannheimer Schloss",
+        "type": "Kultur",
+        "why_good": "One of Europe’s largest Baroque palaces; the Ehrenhof is the official start of Mannheim’s Rhine–Waldpark bike outing.",
+        "offset_min": 0
+      },
+      {
+        "name": "Wasserturm Friedrichsplatz",
+        "type": "Kultur",
+        "why_good": "Mannheim’s Art Nouveau landmark and city pin — easy to clip onto the loop before dropping toward the Rhine.",
+        "offset_min": 8
+      },
+      {
+        "name": "Rheinpromenade / Stephanienufer",
+        "type": "Aussicht",
+        "why_good": "Tree-lined Rhine bank through Lindenhof with ship traffic views and continuous bike-friendly promenade asphalt.",
+        "offset_min": 18
+      },
+      {
+        "name": "Waldpark Mannheim",
+        "type": "Trailhead",
+        "why_good": "Mannheim’s green lung of floodplain forest and meadow paths where the promenade turns into quiet park riding.",
+        "offset_min": 28
+      },
+      {
+        "name": "Bellenkrappen (Reißinsel edge)",
+        "type": "See",
+        "why_good": "Calm Old Rhine arm beside the Reißinsel nature reserve — ride the paved park paths along the water (bikes stay outside the core NSG).",
+        "offset_min": 38
+      },
+      {
+        "name": "PURiNO Strandbad am Rhein",
+        "type": "Café",
+        "why_good": "Italian riverside restaurant on stilts at Strandbadweg 1 — the classic post-ride pasta/pizza stop before spinning back to the city.",
+        "offset_min": 45
+      }
+    ]
+  },
+  {
+    "title": "Heidelberg foothills — Boxberg, Bierhelderhof & Gaisberg gravel",
+    "sport": "gravel",
+    "duration_min": 70,
+    "distance_km": 15,
+    "loop": true,
+    "start_area": {
+      "city_region": "Heidelberg-Rohrbach / Boxberg foothills, Germany",
+      "lat": 49.38,
+      "lng": 8.69,
+      "approx": true
+    },
+    "short_pitch": "Corridor-friendly Königstuhl foothills loop: compacted forest roads from Rohrbach–Boxberg up to Bierhelderhof and the Gaisberg viewpoints without committing to the full 700 hm summit circuit.",
+    "pois": [
+      {
+        "name": "Heidelberg-Kirchheim/Rohrbach Bahnhof",
+        "type": "Bahn",
+        "why_good": "Rhine-Neckar S-Bahn stop on the Wiesloch–Heidelberg line — ideal Discover staging for riders arriving from the corridor.",
+        "offset_min": 0
+      },
+      {
+        "name": "Boxberg forest roads",
+        "type": "Trailhead",
+        "why_good": "Entry into the Königstuhl massif’s gravel Forstwege above Rohrbach, used by local gravel and MTB loops toward Kohlhof and Gaisberg.",
+        "offset_min": 12
+      },
+      {
+        "name": "Bierhelderhof",
+        "type": "Café",
+        "why_good": "Historic farm-inn on a clearing at ~260 m with beer garden, Hofladen, and a natural mid-loop pause above Rohrbach.",
+        "offset_min": 30
+      },
+      {
+        "name": "Ehrenfriedhof Heidelberg",
+        "type": "Kultur",
+        "why_good": "Hillside memorial cemetery on the Speyerer Hof / Gaisberg approach, a quiet landmark on the forest-road network.",
+        "offset_min": 40
+      },
+      {
+        "name": "Gaisbergturm & Mammutbäume",
+        "type": "Aussicht",
+        "why_good": "Lookout tower on the 376 m Gaisberg with Rhine-plain views, next to the 1870s sequoia arboretum — the scenic high point of a ~60–75 min foothills spin.",
+        "offset_min": 52
+      }
+    ]
+  }
+]

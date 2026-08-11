@@ -422,6 +422,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String _mapStyle = AppConfig.mapStyleUrl;
   final _geocode = GeocodeClient();
   final _startAddrCtrl = TextEditingController();
+  final _startAddrFocus = FocusNode();
   final _endAddrCtrl = TextEditingController();
   List<GeocodeHit> _addrHits = const [];
   bool _addrBusy = false;
@@ -532,6 +533,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   void dispose() {
     _addrDebounce?.cancel();
     _startAddrCtrl.dispose();
+    _startAddrFocus.dispose();
     _endAddrCtrl.dispose();
     super.dispose();
   }
@@ -4624,6 +4626,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 textField: true,
                 child: TextField(
                   controller: _startAddrCtrl,
+                  focusNode: _startAddrFocus,
                   autofillHints: const [AutofillHints.addressCity],
                   decoration: const InputDecoration(
                     labelText: 'Start-Adresse',
@@ -4778,6 +4781,135 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+
+  /// Demo-Stadt centers from bundled Nähe seeds (Berlin + DACH + Rhein-Neckar).
+  /// Chip only meaningful when ≥1 seed in 45–75 min exists for that city.
+  static const _demoCities = <({String name, double lat, double lng})>[
+    (name: 'Berlin', lat: 52.52, lng: 13.405),
+    (name: 'München', lat: 48.183, lng: 11.61),
+    (name: 'Köln', lat: 50.941, lng: 6.958),
+    (name: 'Zürich', lat: 47.366, lng: 8.541),
+    (name: 'Wien', lat: 48.218, lng: 16.392),
+    (name: 'Innsbruck', lat: 47.286, lng: 11.399),
+    (name: 'Konstanz', lat: 47.677, lng: 9.174),
+    (name: 'Heidelberg', lat: 49.409, lng: 8.694),
+    (name: 'Mannheim', lat: 49.483, lng: 8.462),
+  ];
+
+  void _focusOrtSearch() {
+    _openPlan(
+      status: 'Ort ändern — Stadt oder Adresse suchen',
+      pick: _PickMode.start,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _startAddrFocus.requestFocus();
+    });
+  }
+
+  Future<void> _applyDemoCity(String name, double lat, double lng) async {
+    setState(() {
+      // Demo-Ort schlägt GPS, sonst bliebe _userPos die echte Position.
+      _userPos = null;
+      _start = GeoPoint(lat, lng);
+      _startAddrCtrl.text = name;
+      _minutes = 60;
+      _matchTourDuration = true;
+      _loopOnly = true;
+      _status = 'Demo-Region: $name';
+      _surface = _Surface.discover;
+      _detailId = null;
+      _pick = _PickMode.none;
+    });
+    if (_seedsBundle == null) {
+      await _loadNaeheSeeds();
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Demo-Region: $name')),
+    );
+    try {
+      await _map?.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 12),
+      );
+    } catch (_) {}
+    unawaited(_fetchOutdooractive());
+    unawaited(_fetchOsmRoutes());
+    unawaited(_fetchPublicCatalog());
+    unawaited(_refreshQuick(limit: 3));
+    await _drawAll();
+  }
+
+  Widget _emptyOrtPicker() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.m),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Noch keine ~60-Min-Touren hier.',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Wähle eine Demo-Stadt oder änder den Ort.',
+                style: TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+              const SizedBox(height: AppSpacing.m),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                  ),
+                  onPressed: _focusOrtSearch,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Ort ändern'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s),
+              const Text(
+                'Demo-Stadt',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final c in _demoCities)
+                    ActionChip(
+                      label: Text(c.name),
+                      onPressed: () => unawaited(
+                        _applyDemoCity(c.name, c.lat, c.lng),
+                      ),
+                    ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => _openPlan(
+                    status: 'Route selbst planen — Start & Ziel setzen',
+                    pick: _PickMode.start,
+                  ),
+                  child: const Text('Route selbst planen'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Zweite Sektion: Katalog, Live (OSM/OA) und Seed-Fallback getrennt.
   List<Widget> _toursSection() {
     final list = _filtered;
@@ -4786,9 +4918,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final seeds = list.where((r) => r.isSeed).toList();
     final o = _origin;
     final liveEmpty = live.isEmpty;
-    // Seeds: ohne Standort oder wenn OA/OSM leer (D-60-03).
+    // Seeds: ohne Standort, wenn OA/OSM/Katalog dünn, oder immer bei ~60-Lens
+    // (nicht hinter einem einzelnen Live-Hiking-Hit verstecken — D-60 / RN P0).
     final showSeeds = seeds.isNotEmpty &&
-        (!_hasRealOrigin || liveEmpty || catalog.isEmpty);
+        (!_hasRealOrigin || liveEmpty || catalog.isEmpty || _minutes == 60);
     final seedLabel = _hasRealOrigin
         ? (_seedsBundle?.labelWithLocation ?? '~60 Min um dich')
         : (_seedsBundle?.labelWithoutLocation ?? '~60 Min in deiner Region');
@@ -4799,6 +4932,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ].join(' · ');
 
     final loopCount = list.where(_isLoop).length;
+    // Soft radius for empty-ort UI only — seeds stay in the list (no hard-fail).
+    // ≥35 km so Wiesloch still sees HD/MA Rhein-Neckar centers.
+    const seedRadiusKm = 35.0;
+    final nearbyLoopCount = list.where((r) {
+      if (!_isLoop(r)) return false;
+      return _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude) <=
+          seedRadiusKm;
+    }).length;
     final lensHint = _matchTourDuration && _minutes > 0
         ? ' · Lens ${DurationLens.chipLabel(_minutes)}'
         : '';
@@ -4902,7 +5043,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             style: TextStyle(fontSize: 12, color: AppColors.muted),
           ),
         ),
-      if (list.isEmpty)
+      if (nearbyLoopCount == 0 && _minutes == 60)
+        _emptyOrtPicker()
+      else if (list.isEmpty)
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s),
           child: Row(
@@ -4928,7 +5071,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           '$seedLabel (${seeds.length})',
           hint: _hasRealOrigin
               ? 'Fallback-Loops · offline · Losfahren startet Ride'
-              : 'Berlin ~60-Min Rundkurse · offline nutzbar',
+              : 'Kuratierte ~60-Min Rundkurse · Berlin · DACH · Rhein-Neckar',
         ),
         for (final r in seeds) _tourListCard(r, o),
       ],
