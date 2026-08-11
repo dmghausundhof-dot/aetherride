@@ -1,0 +1,152 @@
+{
+  "version": "bike-batch-2-attrs-dimmap",
+  "source": "Research Bike-Batch #2 deliverable — attrs dim-map (normalized evaluate attrs)",
+  "dim_order": [
+    "brake_fluid",
+    "freehub",
+    "chain_speed_family",
+    "bosch_system",
+    "charger_family"
+  ],
+  "aliases_applied": {
+    "shimano_hg_plus_12": "hg_plus_12",
+    "sram_eagle_12": "eagle_12",
+    "smart_system": "smart",
+    "bpc3400_smart_4a": "bpc3400_smart",
+    "31.8": "31_8"
+  },
+  "omit_on_ingest": ["unknown", "none"],
+  "bikes": [
+    {
+      "id": "01",
+      "name": "Canyon Roadlite:ON CF",
+      "category": "light_e",
+      "research": "mineral/unknown/unknown/none/none",
+      "attrs": {
+        "brake_fluid": "mineral"
+      }
+    },
+    {
+      "id": "02",
+      "name": "Specialized Turbo Creo 2",
+      "category": "light_e",
+      "research": "dot_5_1/xd/sram_eagle_12/none/none",
+      "attrs": {
+        "brake_fluid": "dot_5_1",
+        "freehub": "xd",
+        "chain_speed_family": "eagle_12"
+      }
+    },
+    {
+      "id": "03",
+      "name": "Orbea Gain",
+      "category": "light_e",
+      "research": "mineral/hg/shimano_hg_plus_12/none/none",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "chain_speed_family": "hg_plus_12"
+      }
+    },
+    {
+      "id": "04",
+      "name": "Scott Addict RC eRIDE",
+      "category": "light_e",
+      "research": "mineral/hg/shimano_hg_plus_12/none/none",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "chain_speed_family": "hg_plus_12"
+      }
+    },
+    {
+      "id": "05",
+      "name": "Cervélo Rouvida",
+      "category": "light_e",
+      "research": "dot_5_1/xdr/shimano_hg_plus_12/none/none",
+      "attrs": {
+        "brake_fluid": "dot_5_1",
+        "freehub": "xdr",
+        "chain_speed_family": "hg_plus_12"
+      }
+    },
+    {
+      "id": "06",
+      "name": "Canyon Precede:ON",
+      "category": "city",
+      "research": "mineral/hg/unknown/smart_system/bpc3400_smart_4a",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "bosch_system": "smart",
+        "charger_family": "bpc3400_smart"
+      }
+    },
+    {
+      "id": "07",
+      "name": "Kalkhoff Image 5+ Excite",
+      "category": "city",
+      "research": "mineral/unknown/unknown/smart_system/bpc3400_smart_4a",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "bosch_system": "smart",
+        "charger_family": "bpc3400_smart"
+      }
+    },
+    {
+      "id": "08",
+      "name": "Cannondale Topstone Neo",
+      "category": "light_e",
+      "research": "mineral/hg/unknown/smart_system/bpc3400_smart_4a",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "bosch_system": "smart",
+        "charger_family": "bpc3400_smart"
+      }
+    },
+    {
+      "id": "09",
+      "name": "Focus Atlas",
+      "category": "gravel",
+      "research": "mineral/hg/shimano_hg_plus_12/none/none",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "chain_speed_family": "hg_plus_12"
+      }
+    },
+    {
+      "id": "10",
+      "name": "Merida Silex",
+      "category": "gravel",
+      "research": "mineral/hg/shimano_hg_plus_12/none/none",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "chain_speed_family": "hg_plus_12"
+      }
+    },
+    {
+      "id": "11",
+      "name": "Rose Reveal",
+      "category": "road",
+      "research": "dot_5_1/xdr/unknown/none/none",
+      "attrs": {
+        "brake_fluid": "dot_5_1",
+        "freehub": "xdr"
+      }
+    },
+    {
+      "id": "12",
+      "name": "Cannondale Synapse",
+      "category": "road",
+      "research": "mineral/hg/shimano_hg_plus_12/none/none",
+      "attrs": {
+        "brake_fluid": "mineral",
+        "freehub": "hg",
+        "chain_speed_family": "hg_plus_12"
+      }
+    }
+  ]
+}

@@ -2,8 +2,10 @@
  * Compat Gates v1 + Bike Entity flatten — run:
  *   npx tsx src/lib/compat/evaluate.test.ts
  */
+import batch2 from "./bike-batch2-attrs-dimmap.json";
 import { evaluateCompat } from "./evaluate";
 import { flattenBikeModelToAttrs, normalizeCompatValue } from "./bikeEntity";
+import type { CompatAttrMap } from "./types";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -181,4 +183,74 @@ assert(
   );
 }
 
-console.log("OK: compat gates v1 + bike entity flatten tests passed");
+// --- Bike-Batch #2 fixture ---
+{
+  assert(batch2.bikes.length === 12, "batch2 has 12 bikes");
+  const topstone = batch2.bikes.find((b) => b.id === "08");
+  assert(!!topstone, "Topstone Neo present");
+  const attrs = topstone!.attrs as CompatAttrMap;
+  assert(attrs.brake_fluid === "mineral", "Topstone mineral");
+  assert(attrs.freehub === "hg", "Topstone hg");
+  assert(attrs.bosch_system === "smart", "Topstone smart (alias)");
+  assert(attrs.charger_family === "bpc3400_smart", "Topstone bpc3400_smart");
+  assert(
+    attrs.chain_speed_family === undefined,
+    "Topstone unknown chain omitted"
+  );
+
+  // + System2 charger → hard_block
+  {
+    const r = evaluateCompat({
+      bikeAttrs: attrs,
+      partTags: ["charger:bcs220_system2"],
+    });
+    assert(
+      r.result === "hard_block",
+      `Topstone + System2 charger → hard_block, got ${r.result}`
+    );
+    assert(
+      r.matched.some((m) => m.id === "R050"),
+      "expected R050 smart vs system2 charger"
+    );
+  }
+
+  // + DOT fluid → hard_block
+  {
+    const r = evaluateCompat({
+      bikeAttrs: attrs,
+      partTags: ["fluid:dot_5_1"],
+    });
+    assert(
+      r.result === "hard_block",
+      `Topstone + DOT → hard_block, got ${r.result}`
+    );
+  }
+
+  // + HG cassette → ok
+  {
+    const r = evaluateCompat({
+      bikeAttrs: attrs,
+      partTags: ["freehub:hg"],
+    });
+    assert(r.result === "ok", `Topstone + HG cassette → ok, got ${r.result}`);
+  }
+
+  // ingest aliases / omit sanity across batch
+  for (const bike of batch2.bikes) {
+    const a = bike.attrs as CompatAttrMap;
+    for (const [k, v] of Object.entries(a)) {
+      assert(v !== "unknown" && v !== "none", `${bike.id} ${k} not omitted`);
+      assert(
+        v !== "shimano_hg_plus_12" &&
+          v !== "sram_eagle_12" &&
+          v !== "smart_system" &&
+          v !== "bpc3400_smart_4a",
+        `${bike.id} ${k} alias not applied: ${v}`
+      );
+    }
+  }
+}
+
+console.log(
+  "OK: compat gates v1 + bike entity flatten + batch2 tests passed"
+);
