@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
+import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
 import { buildElevationForSuggestion } from "@/lib/routing/suggestionElevation";
 import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import {
@@ -168,6 +169,8 @@ export function RouteDetail({
     range &&
     route.distanceKm > range.kmHigh * 0.85;
 
+  const ascentDisplay = sanitizeElevationM(route.elevationM, route.distanceKm);
+
   return (
     <div className="flex flex-col gap-4">
       <button
@@ -184,7 +187,7 @@ export function RouteDetail({
           Tour-Idee — Strecke beim Planen oder Starten live berechnen
         </p>
         <p className="mt-1 text-sm tabular-nums text-text-secondary">
-          {route.distanceKm} km · {route.elevationM} hm · {route.durationMin} min
+          {route.distanceKm} km{ascentDisplay != null ? ` · ${ascentDisplay} hm` : ""} · {route.durationMin} min
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
           {route.loop ? "Rundkurs" : "A→B"}
         </p>
