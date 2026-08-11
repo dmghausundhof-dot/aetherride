@@ -1202,8 +1202,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             matchScore: 75,
             reasons: [
               if (h.summary != null && h.summary!.isNotEmpty) h.summary!,
-              'AetherRide Katalog · ${h.regionSlug}',
+              'Katalog · ${h.regionSlug} · redaktionell',
               if (h.loop) 'Rundkurs-Idee',
+              'Losfahren lädt Live-/Override-Geometrie',
             ],
             center: LatLng(h.centerLat, h.centerLng),
             categories: h.categories,

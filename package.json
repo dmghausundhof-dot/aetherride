@@ -21,7 +21,9 @@
     "smoke:web:prod": "node scripts/smoke-web-sync-routing.mjs https://aetherride.vercel.app",
     "smoke:sync-auth": "node scripts/smoke-sync-auth.mjs",
     "smoke:deeplink": "bash scripts/smoke-deeplink-android.sh",
-    "smoke:deeplink:adb": "ADB=1 bash scripts/smoke-deeplink-android.sh"
+    "smoke:deeplink:adb": "ADB=1 bash scripts/smoke-deeplink-android.sh",
+    "smoke:tours": "node scripts/smoke-tours-catalog.mjs",
+    "smoke:tours:prod": "node scripts/smoke-tours-catalog.mjs https://aetherride.vercel.app"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
