@@ -9,7 +9,12 @@ import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
 import {
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
-import { runWebSync } from "@/lib/sync/webSync";
+import {
+  runWebSync,
+  resolveSyncConflict,
+  type SyncConflictState,
+} from "@/lib/sync/webSync";
+import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
 
 type AuthUser = {
   id: string;
@@ -37,6 +42,9 @@ export default function ProfilePage() {
   const [password, setPassword] = useState("");
   const [authMsg, setAuthMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [syncConflict, setSyncConflict] = useState<SyncConflictState | null>(
+    null
+  );
   const configured = isSupabaseConfigured();
 
   const refreshMe = useCallback(async () => {
@@ -155,11 +163,35 @@ export default function ProfilePage() {
   const syncNow = async () => {
     setBusy(true);
     setAuthMsg(null);
+    setSyncConflict(null);
     try {
-      const { message } = await runWebSync();
-      setAuthMsg(message);
+      const result = await runWebSync();
+      if (result.ok) {
+        setAuthMsg(result.message);
+      } else if (result.conflict) {
+        setSyncConflict(result.conflictState);
+        setAuthMsg(result.message);
+      } else {
+        setAuthMsg(result.message);
+      }
     } catch (e) {
       setAuthMsg(e instanceof Error ? e.message : "Sync fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resolveConflict = async (choice: "keep_remote" | "keep_local") => {
+    if (!syncConflict) return;
+    setBusy(true);
+    try {
+      const result = await resolveSyncConflict(choice, syncConflict);
+      if (result.ok) {
+        setSyncConflict(null);
+        setAuthMsg(result.message);
+      } else {
+        setAuthMsg(result.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -317,6 +349,17 @@ export default function ProfilePage() {
                 <Trash2 className="h-3.5 w-3.5" /> Konto löschen
               </button>
             </div>
+            {syncConflict && (
+              <div className="mt-3">
+                <SyncConflictPanel
+                  conflict={syncConflict}
+                  busy={busy}
+                  onKeepRemote={() => void resolveConflict("keep_remote")}
+                  onKeepLocal={() => void resolveConflict("keep_local")}
+                  onDismiss={() => setSyncConflict(null)}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-2">

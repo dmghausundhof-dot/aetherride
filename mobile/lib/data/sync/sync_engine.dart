@@ -197,8 +197,12 @@ class SyncEngine {
     return data['updatedAt'] as String? ?? DateTime.now().toIso8601String();
   }
 
-  /// LWW bidirectional — mirrors web `syncBidirectional`.
-  Future<({SyncPayload merged, String direction})> syncNow() async {
+  /// How to handle 409 when pushing a newer local snapshot.
+  /// [preferRemote] (default): take cloud. [preferLocal]: force push.
+  /// [ask]: rethrow [SyncConflictException] for UI.
+  Future<({SyncPayload merged, String direction})> syncNow({
+    SyncConflictStrategy onConflict = SyncConflictStrategy.preferRemote,
+  }) async {
     await _flushBikePhotos();
     final local = await _garage.buildSyncPayload();
     final remote = await pullNow();
@@ -244,20 +248,65 @@ class SyncEngine {
         await _flushRideChunks();
         return (merged: merged, direction: 'pushed');
       } on SyncConflictException catch (e) {
-        if (e.remote != null) {
-          await _garage.applyRemotePayload(e.remote!);
-          await _record('pulled', e.remoteUpdatedAt);
-          _onSynced?.call(e.remote!);
-          await _flushRideChunks();
-          return (merged: e.remote!, direction: 'pulled');
-        }
-        rethrow;
+        return _resolvePushConflict(
+          e,
+          local: local,
+          strategy: onConflict,
+        );
       }
     }
 
     await _record('noop', remote.updatedAt ?? local.updatedAt);
     await _flushRideChunks();
     return (merged: local, direction: 'noop');
+  }
+
+  Future<({SyncPayload merged, String direction})> _resolvePushConflict(
+    SyncConflictException e, {
+    required SyncPayload local,
+    required SyncConflictStrategy strategy,
+  }) async {
+    if (strategy == SyncConflictStrategy.ask) {
+      rethrow;
+    }
+    if (strategy == SyncConflictStrategy.preferLocal) {
+      final force = local.copyWith(
+        updatedAt: DateTime.now().toUtc().toIso8601String(),
+      );
+      final updatedAt = await pushNow(
+        force,
+        clientUpdatedAt: DateTime.now().toUtc().toIso8601String(),
+      );
+      final merged = force.copyWith(updatedAt: updatedAt);
+      await _record('pushed_force', updatedAt);
+      _onSynced?.call(merged);
+      await _flushRideChunks();
+      return (merged: merged, direction: 'pushed');
+    }
+    // preferRemote
+    if (e.remote != null) {
+      await _garage.applyRemotePayload(e.remote!);
+      await _record('pulled', e.remoteUpdatedAt);
+      _onSynced?.call(e.remote!);
+      await _flushRideChunks();
+      return (merged: e.remote!, direction: 'pulled');
+    }
+    rethrow;
+  }
+
+  /// Apply user choice after [SyncConflictException] with strategy [ask].
+  Future<({SyncPayload merged, String direction})> resolveConflict({
+    required SyncConflictException conflict,
+    required bool keepLocal,
+  }) async {
+    final local = await _garage.buildSyncPayload();
+    return _resolvePushConflict(
+      conflict,
+      local: local,
+      strategy: keepLocal
+          ? SyncConflictStrategy.preferLocal
+          : SyncConflictStrategy.preferRemote,
+    );
   }
 
   Future<void> _flushBikePhotos() async {
@@ -295,8 +344,14 @@ class SyncEngine {
   }
 }
 
+enum SyncConflictStrategy { preferRemote, preferLocal, ask }
+
 class SyncConflictException implements Exception {
   SyncConflictException({this.remote, this.remoteUpdatedAt});
   final SyncPayload? remote;
   final String? remoteUpdatedAt;
+
+  @override
+  String toString() =>
+      'SyncConflictException(remoteUpdatedAt: $remoteUpdatedAt)';
 }

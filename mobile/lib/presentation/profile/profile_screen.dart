@@ -12,6 +12,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/sync/sync_engine.dart'
+    show SyncConflictException, SyncConflictStrategy;
 import '../../domain/bike.dart';
 import '../../domain/home/greeting.dart';
 import '../../domain/rider_profile.dart';
@@ -163,8 +165,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _sync() async {
     setState(() => _busy = true);
     try {
-      await ref.read(syncEngineProvider).syncNow();
-      _notify('Sync OK');
+      final engine = ref.read(syncEngineProvider);
+      try {
+        final r = await engine.syncNow(onConflict: SyncConflictStrategy.ask);
+        _notify(
+          r.direction == 'pulled'
+              ? 'Sync: Cloud übernommen'
+              : r.direction == 'pushed'
+                  ? 'Sync: Gerät hochgeladen'
+                  : 'Sync: aktuell',
+        );
+      } on SyncConflictException catch (c) {
+        if (!mounted) return;
+        final choice = await showDialog<String>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Sync-Konflikt'),
+            content: Text(
+              'Cloud und dieses Gerät unterscheiden sich.\n'
+              'Cloud: ${c.remoteUpdatedAt ?? "—"}\n\n'
+              'Welche Version soll gelten?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'remote'),
+                child: const Text('Cloud behalten'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'local'),
+                child: const Text('Gerät erzwingen'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Abbrechen'),
+              ),
+            ],
+          ),
+        );
+        if (choice == 'remote' || choice == 'local') {
+          final r = await engine.resolveConflict(
+            conflict: c,
+            keepLocal: choice == 'local',
+          );
+          _notify(
+            r.direction == 'pulled'
+                ? 'Konflikt: Cloud behalten'
+                : 'Konflikt: Gerät erzwungen',
+          );
+        } else {
+          _notify('Sync abgebrochen');
+        }
+      }
     } catch (e) {
       _notify('$e');
     } finally {

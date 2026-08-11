@@ -17,7 +17,6 @@ export type SyncPayload = {
   commerceMode?: unknown;
   rangeCalibration?: unknown;
   savedRoutes?: unknown;
-  /** Discover-Bibliothek-Sammlungen */
   routeCollections?: unknown;
   freeTierExtraBike?: boolean;
   maintenanceLogs?: unknown;
@@ -25,13 +24,11 @@ export type SyncPayload = {
   rideFeedbacks?: unknown;
   recommendations?: unknown;
   wishlistIds?: unknown;
-  /** bikeId → public Storage URL (kein Gerätepfad) */
   bikePhotos?: unknown;
   activeBikeId?: string | null;
   preferredSport?: unknown;
   onboardingDone?: boolean;
   updatedAt?: string;
-  /** Schema version for Flutter/Web payload mapping */
   payloadVersion?: number;
 };
 
@@ -39,6 +36,22 @@ export type PullResult = {
   payload: SyncPayload | null;
   updatedAt: string | null;
 };
+
+export class SyncConflictError extends Error {
+  remote?: SyncPayload;
+  remoteUpdatedAt?: string;
+
+  constructor(
+    message: string,
+    remote?: SyncPayload,
+    remoteUpdatedAt?: string
+  ) {
+    super(message);
+    this.name = "SyncConflictError";
+    this.remote = remote;
+    this.remoteUpdatedAt = remoteUpdatedAt;
+  }
+}
 
 export async function pullSync(): Promise<PullResult> {
   const res = await fetch("/api/sync", { method: "GET" });
@@ -53,31 +66,38 @@ export async function pullSync(): Promise<PullResult> {
 
 export async function pushSync(
   payload: SyncPayload,
-  clientUpdatedAt?: string | null
+  clientUpdatedAt?: string | null,
+  opts?: { force?: boolean }
 ): Promise<{ updatedAt: string }> {
+  const stamp = new Date().toISOString();
+  const bodyPayload = opts?.force
+    ? { ...payload, updatedAt: stamp }
+    : payload;
+  // force: clientUpdatedAt = now → Server akzeptiert (remoteMs > clientMs schlägt fehl)
+  const clientAt = opts?.force
+    ? stamp
+    : (clientUpdatedAt ?? payload.updatedAt ?? null);
+
   const res = await fetch("/api/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      payload,
-      clientUpdatedAt: clientUpdatedAt ?? payload.updatedAt ?? null,
+      payload: bodyPayload,
+      clientUpdatedAt: clientAt,
     }),
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 409) {
-    const err = new Error("sync_conflict") as Error & {
-      remote?: SyncPayload;
-      remoteUpdatedAt?: string;
-    };
-    err.remote = data.payload;
-    err.remoteUpdatedAt = data.remoteUpdatedAt;
-    throw err;
+    throw new SyncConflictError(
+      "sync_conflict",
+      data.payload as SyncPayload | undefined,
+      data.remoteUpdatedAt as string | undefined
+    );
   }
   if (!res.ok) throw new Error(data.error || `Sync push failed: ${res.status}`);
-  return { updatedAt: data.updatedAt || new Date().toISOString() };
+  return { updatedAt: data.updatedAt || stamp };
 }
 
-/** Pull then push if local is newer or remote empty — LWW. */
 export async function syncBidirectional(local: SyncPayload): Promise<{
   merged: SyncPayload;
   direction: "pulled" | "pushed" | "noop";
@@ -112,11 +132,16 @@ export async function syncBidirectional(local: SyncPayload): Promise<{
   }
 
   if (localAt > remoteAt) {
-    const { updatedAt } = await pushSync(local, remote.updatedAt);
-    return {
-      merged: { ...local, updatedAt },
-      direction: "pushed",
-    };
+    try {
+      const { updatedAt } = await pushSync(local, remote.updatedAt);
+      return {
+        merged: { ...local, updatedAt },
+        direction: "pushed",
+      };
+    } catch (e) {
+      if (e instanceof SyncConflictError) throw e;
+      throw e;
+    }
   }
 
   return {

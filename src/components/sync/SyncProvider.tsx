@@ -10,6 +10,16 @@ import { useAppStore } from "@/store/useAppStore";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { runWebSync } from "@/lib/sync/webSync";
 
+/** Background sync: bei Konflikt still Remote behalten (kein UI-Modal hier). */
+async function backgroundSync() {
+  const r = await runWebSync();
+  if (!r.ok && r.conflict) {
+    // Prefer cloud for silent background to avoid overwriting other device
+    const { resolveSyncConflict } = await import("@/lib/sync/webSync");
+    await resolveSyncConflict("keep_remote", r.conflictState);
+  }
+}
+
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const hydrated = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -24,7 +34,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         try {
           const me = await fetch("/api/auth/me").then((r) => r.json());
           if (!me?.user) return;
-          await runWebSync();
+          await backgroundSync();
         } catch {
           /* offline / no session */
         }
@@ -36,7 +46,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         try {
           const me = await fetch("/api/auth/me").then((r) => r.json());
           if (!me?.user) return;
-          await runWebSync();
+          await backgroundSync();
         } catch {
           /* ignore */
         }
@@ -69,7 +79,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           try {
             const me = await fetch("/api/auth/me").then((r) => r.json());
             if (!me?.user) return;
-            await runWebSync();
+            await backgroundSync();
           } catch {
             /* silent */
           }
