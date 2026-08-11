@@ -61,13 +61,16 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
       body: bikes.when(
         data: (list) {
           if (list.isEmpty) {
+            // G-SETUP-01/02 — Empty always shows primary CTA → Basis-Wizard
             return Center(
               child: EmptyStateIllustration(
-                title: 'Deine Garage',
+                title: 'Noch kein Bike in der Garage',
                 message:
-                    'Lege dein erstes Bike an — Katalog, Basisdaten oder GPX-Import.\n'
-                    'Kein Demo-Bike wird automatisch erzeugt.',
-                actionLabel: 'Erstes Bike anlegen',
+                    'Leg dein Rad an — danach erscheinen Schema und Setup '
+                    'direkt in der Garage (Wartung & Teile starten hier).',
+                actionLabel: 'Bike anlegen',
+                actionIcon: Icons.pedal_bike,
+                icon: Icons.pedal_bike_outlined,
                 onAction: () => _openAddBike(context, ref),
               ),
             );
@@ -109,6 +112,46 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
                 _BikeSwitcher(bikes: sorted),
               ],
               const SizedBox(height: AppSpacing.l),
+              Builder(
+                builder: (context) {
+                  final active = sorted.firstWhere(
+                    (b) => b.isActive,
+                    orElse: () => sorted.first,
+                  );
+                  final compsAsync =
+                      ref.watch(bikeComponentsProvider(active.id));
+                  final installed = <ComponentSlot>{
+                    for (final c in compsAsync.valueOrNull ?? const <BikeComponent>[])
+                      c.slot,
+                  };
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.l),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Schema · ${active.name}',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.muted,
+                                  ),
+                        ),
+                        const SizedBox(height: AppSpacing.s),
+                        GestureDetector(
+                          onTap: () => _openDetail(context, ref, active),
+                          child: BikeSchema(
+                            bike: active,
+                            installedSlots: installed,
+                            onSelectSlot: (_) =>
+                                _openDetail(context, ref, active),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
               ...List.generate(sorted.length, (i) {
                 return Padding(
                   padding: EdgeInsets.only(
@@ -213,13 +256,33 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
     final initialCategory = ref.read(garageAddCategoryProvider) ??
         ref.read(userProfileStoreProvider).preferredSport;
     ref.read(garageAddCategoryProvider.notifier).state = null;
-    final created = await showModalBottomSheet<bool>(
+    final createdId = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _AddBikeSheet(initialCategory: initialCategory),
     );
-    if (created == true) {
-      ref.invalidate(bikesProvider);
+    ref.invalidate(bikesProvider);
+    if (createdId != null && createdId.isNotEmpty && context.mounted) {
+      final list = await ref.read(garageRepositoryProvider).listBikes();
+      Bike? created;
+      for (final b in list) {
+        if (b.id == createdId) {
+          created = b;
+          break;
+        }
+      }
+      if (created == null) {
+        for (final b in list) {
+          if (b.isActive) {
+            created = b;
+            break;
+          }
+        }
+      }
+      created ??= list.isEmpty ? null : list.first;
+      if (created != null && context.mounted) {
+        await _openDetail(context, ref, created);
+      }
     }
   }
 
@@ -691,6 +754,24 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
       }
 
       if (!mounted) return;
+
+      // G-SETUP: every new bike gets a baseline setup so Setup UI is never empty
+      final existingSetups =
+          await ref.read(setupRepositoryProvider).listForBike(bike.id);
+      if (existingSetups.isEmpty) {
+        final createdBy = switch (_mode) {
+          _AddBikeMode.catalog => 'catalog',
+          _AddBikeMode.basic => 'basic',
+          _AddBikeMode.importMode => 'import',
+        };
+        await ref.read(setupRepositoryProvider).createVersion(
+              bikeId: bike.id,
+              label: 'Basis-Setup',
+              values: BikeSetup.defaultValues(),
+              createdBy: createdBy,
+            );
+      }
+
       if (existing.isNotEmpty && tier != 'pro') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -718,7 +799,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           ),
         );
       }
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(bike.id);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1262,7 +1343,23 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                     ref.watch(currentSetupProvider(widget.bikeId));
                 return setupAsync.when(
                   data: (setup) {
-                    if (setup == null) return const SizedBox.shrink();
+                    if (setup == null) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.s),
+                        child: TextButton(
+                          onPressed: () async {
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => SetupSheet(bike: bike),
+                            );
+                            ref.invalidate(currentSetupProvider(widget.bikeId));
+                            await _load();
+                          },
+                          child: const Text('Setup anlegen'),
+                        ),
+                      );
+                    }
                     final rebound = setup.valueFor('fork.rebound');
                     return Padding(
                       padding: const EdgeInsets.only(top: AppSpacing.s),
@@ -1302,7 +1399,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: _TabChip(
-                    label: 'Sag & km',
+                    label: 'Setup',
                     active: _tab == _DetailTab.setup,
                     onTap: () => setState(() => _tab = _DetailTab.setup),
                   ),
@@ -1419,11 +1516,30 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
               ],
             ],
             if (_tab == _DetailTab.setup) ...[
-              Text(
-                'Sag-Guide & Kilometerstand',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Setup · Sag & km',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: () async {
+                      await showModalBottomSheet<void>(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => SetupSheet(bike: bike),
+                      );
+                      ref.invalidate(currentSetupProvider(widget.bikeId));
+                      await _load();
+                    },
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: const Text('Setup öffnen'),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.s),
               _SagAndOdometerCard(bike: bike, onUpdated: _load),
