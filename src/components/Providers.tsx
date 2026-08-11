@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { SyncProvider } from "@/components/sync/SyncProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const onboardingDone = useAppStore((s) => s.onboardingDone);
   const [ready, setReady] = useState(false);
 
@@ -21,8 +23,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Marketing `/` must stay clean on true-cold visits — never mount the
+  // first-visit sheet there. App routes (/discover, /home, …) may still show it.
+  const isMarketingLanding = pathname === "/";
   // Kein Auto-Demo-Bike/Ride — leere Garage nach Freeride/Skip bleibt leer.
-  const showOnboarding = ready && !onboardingDone;
+  const showOnboarding = ready && !onboardingDone && !isMarketingLanding;
 
   return (
     <SyncProvider>
