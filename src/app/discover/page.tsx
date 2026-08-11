@@ -97,6 +97,7 @@ import {
 import {
   filterHonestLoopSuggestions,
   isOutAndBackQuickOption,
+  sanitizeDraftForRundkurs,
 } from "@/lib/discover/loopHonesty";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
@@ -337,23 +338,9 @@ function DiscoverPageInner() {
 
   const origin = userPos ?? mapCenter;
 
-  /**
-   * D-60-LOOP-FILTER-01: ~60 Min Rundkurse rail — same loopHonesty as filter
-   * (is_loop / never linear pads like Spree Alltagsrunde).
-   */
-  const sixtyMinLoops = useMemo(() => {
-    const all = filterHonestLoopSuggestions(
-      curatedSixtyMinLoopSuggestions(origin)
-    );
-    return all.filter(
-      (r) => (r.distanceFromOriginKm ?? 9999) <= USEFUL_LOOP_RADIUS_KM
-    );
-  }, [origin]);
-  const hasUsefulNearbyLoops = sixtyMinLoops.length > 0;
-
-  /** Rundkurs lens or NearMe Route=Rundkurs → no A→B Quick / map pads. */
-  const suppressOutAndBackQuick =
-    filters.loopOnly || nearMeRouteMode === "loop";
+  /** Rundkurs lens or NearMe Route=Rundkurs → honesty on ALL sources. */
+  const rundkursActive = filters.loopOnly || nearMeRouteMode === "loop";
+  const suppressOutAndBackQuick = rundkursActive;
 
   const routes = useMemo(() => {
     const catalog = listAllRouteSuggestions({
@@ -365,13 +352,55 @@ function DiscoverPageInner() {
       near: origin,
     });
     // Curated P0 Berlin/RN always available — not depend on ALLOW_DEMO_CONTENT.
-    return catalog.length > 0 ? catalog : curatedP0CatalogSuggestions(origin);
-  }, [activeBike, categoryHint, profile, minutes, range, origin]);
+    const base =
+      catalog.length > 0 ? catalog : curatedP0CatalogSuggestions(origin);
+    // Wire loopHonesty into catalog/seed source when Rundkurs is active.
+    return rundkursActive ? filterHonestLoopSuggestions(base) : base;
+  }, [
+    activeBike,
+    categoryHint,
+    profile,
+    minutes,
+    range,
+    origin,
+    rundkursActive,
+  ]);
+
+  const honestyFilters = useMemo(
+    () => ({
+      ...filters,
+      loopOnly: rundkursActive ? true : filters.loopOnly,
+    }),
+    [filters, rundkursActive]
+  );
 
   const filtered = useMemo(
-    () => filterRouteSuggestions(routes, filters),
-    [routes, filters]
+    () => filterRouteSuggestions(routes, honestyFilters),
+    [routes, honestyFilters]
   );
+
+  /**
+   * D-60-LOOP-FILTER-01: ~60 Min Rundkurse rail — same loopHonesty as filter
+   * (is_loop / start≈end ≤200 m; never Spree Alltagsrunde / A→B badge).
+   */
+  const sixtyMinLoops = useMemo(() => {
+    const curated = curatedSixtyMinLoopSuggestions(origin);
+    const fromCatalog = routes.filter(
+      (r) => r.durationMin >= 45 && r.durationMin <= 75
+    );
+    const byId = new Map<string, (typeof curated)[number]>();
+    for (const r of [...curated, ...fromCatalog]) {
+      if (!byId.has(r.id)) byId.set(r.id, r);
+    }
+    return filterHonestLoopSuggestions([...byId.values()])
+      .filter((r) => r.loop === true)
+      .filter((r) => (r.distanceFromOriginKm ?? 9999) <= USEFUL_LOOP_RADIUS_KM)
+      .sort(
+        (a, b) =>
+          (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999)
+      );
+  }, [origin, routes]);
+  const hasUsefulNearbyLoops = sixtyMinLoops.length > 0;
 
   const nearbyRoutes = useMemo(
     () => filtered.filter((r) => (r.distanceFromOriginKm ?? 9999) <= 120),
@@ -405,14 +434,18 @@ function DiscoverPageInner() {
   );
 
   const mapLayers: MapRouteLayer[] = useMemo(() => {
-    // Rundkurs: never paint out-and-back Quick alts on the map.
+    // Rundkurs: never paint out-and-back Quick / non-closed A→B on the map.
+    const mapDraft = rundkursActive
+      ? sanitizeDraftForRundkurs(draft)
+      : draft;
     const mapQuick = suppressOutAndBackQuick ? [] : quickOptions;
     const base = buildDiscoverMapLayers({
-      draft,
+      draft: mapDraft,
       quickOptions: mapQuick,
-      activeQuickId: mapQuick.find((q) => q.label === draft.label)?.id,
+      activeQuickId: mapQuick.find((q) => q.label === mapDraft.label)?.id,
       trails: nearbyTrails,
       showTrails: showTrails && sheetMode === "tours",
+      rundkursOnly: rundkursActive,
     });
     const heat: MapRouteLayer[] = (communityHeat?.segments ?? [])
       .filter((s) => s.visible && s.coordinates.length >= 2)
@@ -433,6 +466,7 @@ function DiscoverPageInner() {
     draft,
     quickOptions,
     suppressOutAndBackQuick,
+    rundkursActive,
     nearbyTrails,
     showTrails,
     sheetMode,
@@ -651,17 +685,7 @@ function DiscoverPageInner() {
         setQuickOptions([]);
         setQuickBusy(false);
         setQuickTimedOut(false);
-        setDraft((d) => {
-          if (d.mode !== "quick") return d;
-          if (
-            !d.label ||
-            isOutAndBackQuickOption({ label: d.label }) ||
-            /norden|osten|südwest|sudwest/i.test(d.label)
-          ) {
-            return { ...d, computed: null, label: "" };
-          }
-          return d;
-        });
+        setDraft((d) => sanitizeDraftForRundkurs(d));
         return;
       }
       quickAbortRef.current?.abort();
@@ -691,16 +715,20 @@ function DiscoverPageInner() {
             force: opts?.force,
             signal: ac.signal,
             allowApprox: true,
+            allowOutAndBack: !suppressOutAndBackQuick,
           }
         );
         if (timedOut || ac.signal.aborted) return;
-        setQuickOptions(options);
+        // Defense: never keep out-and-back cards even if caller raced.
+        const next = options.filter((q) => !isOutAndBackQuickOption(q));
+        setQuickOptions(next);
         setQuickRateLimited(rateLimited);
-        if (!options.length) {
+        if (!next.length) {
           setQuickTimedOut(true);
           setRoutingMsg(
             "Keine Quick-Routen — Seeds unten oder Planer nutzen."
           );
+          setDraft((d) => sanitizeDraftForRundkurs({ ...d, mode: "quick" }));
         } else {
           if (rateLimited) {
             setRoutingMsg(
@@ -715,8 +743,8 @@ function DiscoverPageInner() {
               origin,
               "Hier"
             ),
-            computed: options[0].result,
-            label: options[0].label,
+            computed: next[0].result,
+            label: next[0].label,
           }));
           setPreviewTour(null);
         }
@@ -738,23 +766,19 @@ function DiscoverPageInner() {
     [origin, activeProfile, minutes, suppressOutAndBackQuick]
   );
 
+  // NearMe Route=Rundkurs keeps Discover loop filter on (all list sources).
+  useEffect(() => {
+    if (nearMeRouteMode !== "loop") return;
+    setFilters((f) => (f.loopOnly ? f : { ...f, loopOnly: true }));
+  }, [nearMeRouteMode]);
+
   useEffect(() => {
     if (sheetMode !== "quick") return;
     if (suppressOutAndBackQuick) {
       quickAbortRef.current?.abort();
       setQuickOptions([]);
       setQuickBusy(false);
-      setDraft((d) => {
-        if (d.mode !== "quick") return d;
-        if (
-          !d.label ||
-          isOutAndBackQuickOption({ label: d.label }) ||
-          /norden|osten|südwest|sudwest/i.test(d.label)
-        ) {
-          return { ...d, computed: null, label: "" };
-        }
-        return d;
-      });
+      setDraft((d) => sanitizeDraftForRundkurs(d));
       return;
     }
     if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
@@ -1729,7 +1753,8 @@ function DiscoverPageInner() {
                   {sixtyMinLoops.map((r) => (
                     <div key={r.id} className="space-y-1.5">
                       <RouteCard
-                        route={r}
+                        // Belt: never render A→B under this rail title.
+                        route={{ ...r, loop: true }}
                         highlighted={
                           highlightRouteId === r.id || previewTour?.id === r.id
                         }
@@ -2449,7 +2474,10 @@ function DiscoverPageInner() {
               setSheetMode("tours");
             }
           }}
-          fitRoute={Boolean(draft.computed)}
+          fitRoute={Boolean(
+            (rundkursActive ? sanitizeDraftForRundkurs(draft) : draft)
+              .computed
+          )}
         />
         {pickTarget && (
           <div className="absolute left-3 right-3 top-3 z-10 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white lg:left-auto lg:right-3 lg:max-w-sm">

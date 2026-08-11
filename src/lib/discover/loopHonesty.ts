@@ -12,6 +12,10 @@ const LINEAR_SEED_IDS = new Set([
   "seed-route-uckermark-weekend",
 ]);
 
+/** Title patterns that are never honest loops (Test Agent / Prod fails). */
+const LINEAR_NAME_RE =
+  /alltagsrunde|spree-radweg\s*alltag|out-and-back|a\s*→\s*b|a\s*->\s*b/i;
+
 /** Explicit catalog/seed flags that mean "honest loop". */
 export function seedIsLoopFlag(seed: {
   is_loop?: boolean;
@@ -23,14 +27,16 @@ export function seedIsLoopFlag(seed: {
 
 /**
  * Suggestion/catalog field used by Discover cards + filters.
- * Geometry (when present) wins; known linear seed ids never pass.
+ * Geometry (when present) wins; known linear seed ids / titles never pass.
  */
 export function isHonestLoopSuggestion(route: {
   id?: string;
+  name?: string;
   loop?: boolean;
   trackLngLat?: [number, number][] | null;
 }): boolean {
   if (route.id && LINEAR_SEED_IDS.has(route.id)) return false;
+  if (route.name && LINEAR_NAME_RE.test(route.name)) return false;
   return isHonestLoop({
     loopFlag: route.loop === true,
     trackLngLat: route.trackLngLat,
@@ -41,6 +47,7 @@ export function isHonestLoopSuggestion(route: {
 export function filterHonestLoopSuggestions<
   T extends {
     id?: string;
+    name?: string;
     loop?: boolean;
     trackLngLat?: [number, number][] | null;
   },
@@ -117,9 +124,46 @@ export function isOutAndBackQuickOption(q: {
   }
   const label = (q.label ?? "").toLowerCase();
   return (
+    /\d+\s*min\s*·\s*(norden|osten|südwest|sudwest|süden|westen)/i.test(
+      q.label ?? ""
+    ) ||
     label.includes("· norden") ||
     label.includes("· osten") ||
     label.includes("· südwest") ||
     label.includes("· sudwest")
   );
+}
+
+/**
+ * Under Rundkurs: strip out-and-back / non-closed computed geometry from a
+ * plan draft so the map cannot paint A→B as the primary suggestion.
+ */
+export function sanitizeDraftForRundkurs<
+  T extends {
+    mode?: string;
+    label?: string;
+    computed?: {
+      geometry?: { coordinates?: [number, number][] | number[][] } | null;
+      engine?: string;
+    } | null;
+  },
+>(draft: T): T {
+  const label = draft.label ?? "";
+  if (isOutAndBackQuickOption({ label })) {
+    return { ...draft, computed: null, label: "" };
+  }
+  const coords = draft.computed?.geometry?.coordinates as
+    | [number, number][]
+    | undefined;
+  if (!coords || coords.length < 4) {
+    // Quick mode without honest loop geometry → clear (no A→B pad).
+    if (draft.mode === "quick") {
+      return { ...draft, computed: null, label: "" };
+    }
+    return draft;
+  }
+  if (!isHonestLoop({ loopFlag: true, trackLngLat: coords })) {
+    return { ...draft, computed: null, label: "" };
+  }
+  return draft;
 }

@@ -7,6 +7,7 @@ import {
   isHonestLoop,
   isHonestLoopSuggestion,
   isOutAndBackQuickOption,
+  sanitizeDraftForRundkurs,
   seedIsLoopFlag,
   trackIsClosedLoop,
 } from "./loopHonesty";
@@ -29,6 +30,14 @@ assert(
     loop: true,
   }) === false,
   "Spree Alltagsrunde never passes even if loop lied"
+);
+assert(
+  isHonestLoopSuggestion({
+    id: "other",
+    name: "Spree-Radweg Alltagsrunde",
+    loop: true,
+  }) === false,
+  "Alltagsrunde title never passes"
 );
 
 // --- Geometry: closed ring ---
@@ -112,5 +121,21 @@ const rail = filterHonestLoopSuggestions([
 ]);
 assert(rail.length === 1, "~60 rail keeps only honest loop");
 assert(rail[0].id === "seed-loop-tempelhofer-60", "Tempelhofer kept");
+
+const cleared = sanitizeDraftForRundkurs({
+  mode: "quick",
+  label: "60 min · Norden",
+  computed: {
+    geometry: {
+      coordinates: [
+        [13.4, 52.52],
+        [13.41, 52.53],
+        [13.42, 52.54],
+        [13.43, 52.55],
+      ],
+    },
+  },
+});
+assert(cleared.computed == null && cleared.label === "", "sanitize Norden draft");
 
 console.log("loopHonesty.test.ts OK");
