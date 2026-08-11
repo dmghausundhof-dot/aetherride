@@ -33,6 +33,23 @@ assert.ok(
 );
 
 assert.equal(SHOPIFY_FEATURED_BIKES.length, 5, "5 Shopify Featured Bikes");
+assert.ok(
+  SHOPIFY_FEATURED_BIKES.every(
+    (p) => p.imageUrl && p.imageUrl.includes("cdn.shopify.com")
+  ),
+  "all 5 featured bikes have imageUrl"
+);
+assert.ok(
+  getShopProduct("sp-shopify-orbea-terra-m20")?.imageUrl?.includes(
+    "photo-1485965120184-e220f721d03e.jpg"
+  )
+);
+assert.ok(
+  getShopProduct("sp-shopify-cube-attain-gtc-race")?.imageUrl?.includes(
+    "24d45399-5a57-45a2-a6ac-da88f92d7199"
+  ),
+  "Cube Attain has CDN imageUrl"
+);
 assert.equal(getFeaturedShopifyProducts().length, 5);
 assert.ok(
   SHOPIFY_FEATURED_BIKES.every(

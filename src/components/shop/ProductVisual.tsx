@@ -61,6 +61,24 @@ export function ProductVisual({
   className?: string;
   compact?: boolean;
 }) {
+  const sizeCls = compact ? "h-12 w-12" : "h-16 w-16";
+
+  if (product.imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- Shopify CDN; no next/image domain allowlist in Phase A
+      <img
+        src={product.imageUrl}
+        alt=""
+        className={cn(
+          "shrink-0 rounded-xl object-cover",
+          sizeCls,
+          className
+        )}
+        aria-hidden
+      />
+    );
+  }
+
   const style =
     HINT_STYLES[product.visualHint] ??
     "from-surface-elevated to-surface text-text-secondary";
@@ -70,7 +88,7 @@ export function ProductVisual({
       className={cn(
         "flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br",
         style,
-        compact ? "h-12 w-12" : "h-16 w-16",
+        sizeCls,
         className
       )}
       aria-hidden

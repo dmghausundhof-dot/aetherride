@@ -27,6 +27,8 @@ export interface ShopProduct {
   merchantName: string;
   /** Kurzer visueller Hinweis für Platzhalter-Karte (ohne Asset-Pipeline) */
   visualHint: string;
+  /** Optional CDN product image (Shopify files); falls back to visualHint icon */
+  imageUrl?: string;
   /** Passende Disziplinen — „all“ = universell */
   sports: ShopSport[];
 }
@@ -95,6 +97,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     affiliateUrl: shopifyProductUrl("orbea-terra-m20"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
+    imageUrl:
+      "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1485965120184-e220f721d03e.jpg?v=1786479558",
     sports: ["gravel"],
   },
   {
@@ -109,6 +113,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     affiliateUrl: shopifyProductUrl("specialized-diverge-carbon"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
+    imageUrl:
+      "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1571068316344-75bc76f77890.jpg?v=1786479566",
     sports: ["gravel"],
   },
   {
@@ -123,6 +129,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     affiliateUrl: shopifyProductUrl("cube-attain-gtc-race"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
+    imageUrl:
+      "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1485965120184-e220f721d03e_24d45399-5a57-45a2-a6ac-da88f92d7199.jpg?v=1786479867",
     sports: ["road", "gravel"],
   },
   {
@@ -137,6 +145,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     affiliateUrl: shopifyProductUrl("canyon-ultimate-cf-sl-8"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
+    imageUrl:
+      "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1532298229144-0ec0c57515c7.jpg?v=1786479572",
     sports: ["road"],
   },
   {
@@ -151,6 +161,8 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     affiliateUrl: shopifyProductUrl("canyon-commuter-7-0"),
     merchantName: "AetherRide Shop",
     visualHint: "bike",
+    imageUrl:
+      "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1507035895480-2b3156c31fc8.jpg?v=1786479574",
     sports: ["urban", "ebike"],
   },
 ];
