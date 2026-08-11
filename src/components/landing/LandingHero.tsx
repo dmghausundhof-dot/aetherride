@@ -29,40 +29,40 @@ export function LandingHero() {
 
   return (
     <section className="relative isolate min-h-[100svh] overflow-hidden">
-      {/* One strong full-bleed visual — real ride still */}
+      {/* One strong full-bleed visual — real EU-everyday ride still */}
       <div className="absolute inset-0">
         <Image
-          src="/landing/hero-trail.jpg"
+          src="/landing/hero-everyday.jpg"
           alt=""
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[68%_42%] sm:object-[72%_40%] animate-hero-ken"
+          className="object-cover object-[78%_48%] sm:object-[82%_46%] animate-hero-ken"
         />
-        {/* Soft readability only — photo stays the subject */}
+        {/* Light wash only — keep the still calm & readable, not crushed */}
         <div
-          className="absolute inset-0 bg-[linear-gradient(105deg,rgba(10,18,16,0.88)_0%,rgba(10,18,16,0.62)_38%,rgba(10,18,16,0.22)_62%,rgba(10,18,16,0.08)_100%)]"
+          className="absolute inset-0 bg-[linear-gradient(112deg,rgba(10,18,16,0.78)_0%,rgba(10,18,16,0.42)_34%,rgba(10,18,16,0.14)_58%,rgba(10,18,16,0.02)_78%,transparent_100%)]"
           aria-hidden
         />
         <div
-          className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-t from-background via-background/50 to-transparent"
+          className="absolute inset-x-0 bottom-0 h-[22%] bg-gradient-to-t from-background via-background/35 to-transparent"
           aria-hidden
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-20 pt-32 sm:justify-center sm:px-8 sm:pb-24 sm:pt-28 lg:px-10">
-        <div className="max-w-[22rem] animate-hero-rise sm:max-w-md lg:max-w-lg">
-          <p className="mb-8 text-[0.95rem] font-medium tracking-[0.04em] text-foreground/90 sm:mb-10 sm:text-base">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-20 pt-32 sm:justify-center sm:px-8 sm:pb-28 sm:pt-28 lg:px-10">
+        <div className="max-w-[22rem] animate-hero-rise sm:max-w-md lg:max-w-[32rem]">
+          <p className="mb-8 text-[0.95rem] font-medium tracking-[0.06em] text-foreground/85 sm:mb-11 sm:text-base">
             Aether<span className="text-accent">Ride</span>
           </p>
 
-          <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground sm:text-5xl md:text-[3.35rem] md:leading-[1.05]">
+          <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(10,18,16,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">
             Touren &amp; Wartung —
             <br />
             ohne Abo-Falle.
           </h1>
 
-          <p className="mt-7 max-w-sm text-[0.95rem] leading-[1.55] text-text-secondary sm:mt-8 sm:text-lg sm:leading-relaxed">
+          <p className="mt-7 max-w-sm text-[0.95rem] leading-[1.55] text-text-secondary sm:mt-8 sm:max-w-md sm:text-lg sm:leading-relaxed">
             Alltag und Abenteuer. Fair von Anfang an — ohne Lock-in.
           </p>
 
