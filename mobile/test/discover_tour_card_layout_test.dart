@@ -66,14 +66,14 @@ void main() {
                                           ),
                                         ),
                                         const SizedBox(width: 6),
-                                        Flexible(
+                                        const Flexible(
                                           child: Align(
                                             alignment: Alignment.centerRight,
                                             child: Text(
                                               'Region · Seed',
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w700,
                                               ),
@@ -243,10 +243,10 @@ void main() {
                         const SizedBox(height: 8),
                         const Text('Demo-Städte'),
                         const SizedBox(height: 6),
-                        Wrap(
+                        const Wrap(
                           spacing: 6,
                           runSpacing: 6,
-                          children: const [
+                          children: [
                             ActionChip(label: Text('Berlin')),
                             ActionChip(label: Text('Heidelberg')),
                             ActionChip(label: Text('Mannheim')),
