@@ -3,6 +3,8 @@
 Collection-driven Ersatzteile — **keine** hard-coded Produkt-Snapshots.
 **Keine** stillen Links auf die Shopify-Passwort-Seite.
 
+Unified Web+App flow tickets: see `shop-flow-web-app-v1.md` (S-FLOW-01…05).
+
 ## Recommendation (beste Shopify Integration)
 
 **Prefer Storefront API in-app/web catalog** (`/shop`, `/shop/parts`, `/shop/p/[handle]`) over sending riders to the password-gated Online Store.

@@ -47,6 +47,11 @@ export function buildMaintenanceAlerts(input: {
       reasoning: `Fortschritt ${due.progressPct}%. Quelle: ${interval.sourceLabel}`,
       sourceLabel: interval.sourceLabel,
       href: "/garage?tab=maintenance",
+      shopHref: shopHref({
+        slot: wearKindToShopSlot(interval.slot),
+        job: "replace",
+        bike: input.bike.id,
+      }),
     });
   }
 
@@ -63,9 +68,12 @@ export function buildMaintenanceAlerts(input: {
       reasoning: w.reasoning,
       sourceLabel: w.sourceLabel,
       href: "/garage?tab=maintenance",
-      shopHref: slot
-        ? shopHref({ slot, job: "replace" })
-        : shopHref({ job: "replace" }),
+      // S-FLOW-05: wear → parts with bike soft-fit (never bare /shop)
+      shopHref: shopHref({
+        slot: slot ?? undefined,
+        job: "replace",
+        bike: input.bike.id,
+      }),
     });
   }
 

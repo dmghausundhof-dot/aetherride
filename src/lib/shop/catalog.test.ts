@@ -144,6 +144,10 @@ assert.equal(
   "/shop/parts?slot=brake_pads&bike=bike-1&fit=bike"
 );
 assert.equal(
+  shopHref({ job: "replace", bike: "bike-1", slot: "chain" }),
+  "/shop/parts?slot=chain&bike=bike-1&fit=bike"
+);
+assert.equal(
   shopHref({ sport: "gravel" }),
   "/shop?sport=gravel"
 );

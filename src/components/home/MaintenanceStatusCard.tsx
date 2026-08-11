@@ -27,6 +27,7 @@ import {
   subscribeMaintenanceCardSnooze,
 } from "@/lib/home/maintenanceCardSnooze";
 import { useAppStore } from "@/store/useAppStore";
+import { shopPartsHref } from "@/lib/shop/partsCatalog";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -219,6 +220,16 @@ export function MaintenanceStatusCard({
           {ctaLabel}
           <ChevronRight className="h-4 w-4" />
         </Link>
+        {(summary.status === "overdue" || summary.status === "due_soon") &&
+        bike ? (
+          <Link
+            href={shopPartsHref({ bike: bike.id, fit: "bike" })}
+            className="inline-flex items-center justify-center rounded-xl border border-accent/40 bg-accent/10 px-3 py-2.5 text-xs font-semibold text-accent"
+            data-testid="maintenance-parts-cta"
+          >
+            Passende Teile
+          </Link>
+        ) : null}
         {summary.status !== "empty" && !ignoreSnooze && (
           <button
             type="button"

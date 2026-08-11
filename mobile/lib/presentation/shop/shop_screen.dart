@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/config.dart';
+import '../../core/shop_web.dart';
 import '../../core/theme/app_theme.dart';
+import '../../domain/bike.dart';
 import '../../domain/sport/discipline_ux.dart';
+import '../../providers/app_providers.dart';
 
 class _ShopPart {
   const _ShopPart({
@@ -44,11 +46,23 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   bool _apiConfigured = false;
   String _slot = 'all';
 
-  static String get _webOrigin => AppConfig.apiBaseUrl.replaceAll(RegExp(r'/$'), '');
-  static String get _webShopUrl => '$_webOrigin/shop';
-  static String get _webPartsUrl => '$_webOrigin/shop/parts';
-  static String _webProductUrl(String handle) =>
-      '$_webOrigin/shop/p/${Uri.encodeComponent(handle)}';
+  String? _bikeIdFrom(List<Bike>? bikes) {
+    if (bikes == null || bikes.isEmpty) return null;
+    Bike? active;
+    for (final b in bikes) {
+      if (b.isActive) {
+        active = b;
+        break;
+      }
+    }
+    return (active ?? bikes.first).id;
+  }
+
+  String _webPartsBridgeUrl(String? bikeId) => ShopWebLinks.parts(
+        bikeId: bikeId,
+        slot: _slot == 'all' ? null : _slot,
+        fitBike: bikeId != null,
+      );
 
   @override
   void initState() {
@@ -62,8 +76,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
       _error = null;
     });
     try {
-      final statusUri = Uri.parse('$_webOrigin/api/shop/status');
-      final partsUri = Uri.parse('$_webOrigin/api/shop/parts');
+      final statusUri = Uri.parse('${ShopWebLinks.origin}/api/shop/status');
+      final partsUri = Uri.parse('${ShopWebLinks.origin}/api/shop/parts');
       final results = await Future.wait([
         http.get(statusUri).timeout(const Duration(seconds: 12)),
         http.get(partsUri).timeout(const Duration(seconds: 20)),
@@ -139,7 +153,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           _loading = false;
           _error = list.isEmpty
               ? (configured
-                  ? 'Keine Treffer in featured-parts.'
+                  ? 'Keine Treffer in featured-parts für diesen Filter.'
                   : 'Storefront API nicht konfiguriert — Token auf dem Server setzen.')
               : null;
         });
@@ -149,7 +163,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         setState(() {
           _loading = false;
           _error =
-              'Shop offline (${AppConfig.apiBaseUrl}). Bitte später erneut.';
+              'Shop offline (${ShopWebLinks.origin}). Bitte später erneut.';
           _parts = [];
         });
       }
@@ -202,12 +216,17 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
   }
 
   String _priceLabel(_ShopPart p) {
-    final v = p.priceEur.toStringAsFixed(p.priceEur == p.priceEur.roundToDouble() ? 0 : 2);
+    final v = p.priceEur.toStringAsFixed(
+      p.priceEur == p.priceEur.roundToDouble() ? 0 : 2,
+    );
     return '$v €';
   }
 
   @override
   Widget build(BuildContext context) {
+    final bikeId = _bikeIdFrom(ref.watch(bikesProvider).valueOrNull);
+    final partsBridge = _webPartsBridgeUrl(bikeId);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(MultiSportCopy.partsTitle),
@@ -235,7 +254,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Live Collection featured-parts — Soft-Fit & Preise in AetherRide.',
+                  MultiSportCopy.partsSubtitle,
                   style: TextStyle(color: AppColors.muted, fontSize: 13),
                 ),
                 if (_storeLocked) ...[
@@ -282,6 +301,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     DropdownMenuItem(value: 'chain', child: Text('Kette')),
                     DropdownMenuItem(value: 'tire', child: Text('Reifen')),
                     DropdownMenuItem(value: 'cassette', child: Text('Kassette')),
+                    DropdownMenuItem(value: 'bar_tape', child: Text('Lenkerband')),
                   ],
                   onChanged: (v) {
                     setState(() => _slot = v ?? 'all');
@@ -294,18 +314,20 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: () => _openUrl(
-                          '$_webPartsUrl?fit=bike',
+                          partsBridge,
                           warnLockedExternal: false,
                         ),
                         icon: const Icon(Icons.storefront_outlined),
-                        label: const Text('Web · Parts'),
+                        label: Text(
+                          bikeId != null ? 'Web · Soft-Fit' : 'Web · Parts',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => _openUrl(
-                          _webShopUrl,
+                          ShopWebLinks.shopHub(),
                           warnLockedExternal: false,
                         ),
                         icon: const Icon(Icons.open_in_browser),
@@ -328,6 +350,14 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              Icon(
+                                _apiConfigured
+                                    ? Icons.inventory_2_outlined
+                                    : Icons.cloud_off_outlined,
+                                size: 40,
+                                color: AppColors.muted,
+                              ),
+                              const SizedBox(height: 12),
                               Text(
                                 _error!,
                                 textAlign: TextAlign.center,
@@ -340,7 +370,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                               ),
                               TextButton(
                                 onPressed: () => _openUrl(
-                                  _webPartsUrl,
+                                  partsBridge,
                                   warnLockedExternal: false,
                                 ),
                                 child: const Text('Im Browser öffnen'),
@@ -370,7 +400,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                               clipBehavior: Clip.antiAlias,
                               child: InkWell(
                                 onTap: () => _openUrl(
-                                  _webProductUrl(p.handle),
+                                  ShopWebLinks.product(p.handle),
                                   warnLockedExternal: false,
                                 ),
                                 child: Column(

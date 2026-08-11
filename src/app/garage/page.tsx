@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   ShieldCheck,
@@ -64,6 +64,7 @@ function parseWizard(raw: string | null): WizardMode | null {
 }
 
 function GaragePageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -378,7 +379,14 @@ function GaragePageInner() {
                       <button
                         key={a.id}
                         type="button"
-                        onClick={() => setTab("maintenance")}
+                        onClick={() => {
+                          // S-FLOW-05: wear/interval → parts soft-fit when available
+                          if (a.shopHref) {
+                            router.push(a.shopHref);
+                            return;
+                          }
+                          setTab("maintenance");
+                        }}
                         className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
                           a.severity === "overdue"
                             ? "border-error/40 bg-error/10 text-error"
