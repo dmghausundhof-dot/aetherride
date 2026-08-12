@@ -191,6 +191,9 @@ export async function requestRoute(
 /** Map bike category → routing profile */
 export function profileForBikeCategory(category: string): RoutingProfile {
   switch (category) {
+    case "mtb_trail":
+    case "mtb_am":
+      return "mtb_allmountain";
     case "mtb_enduro":
     case "dh":
       return "mtb_enduro";

@@ -134,6 +134,7 @@ interface AppState {
   addBikeBasic: (input: {
     name: string;
     category: BikeCategory;
+    isEbike?: boolean;
     travelFrontMm?: number;
     travelRearMm?: number;
     wheelSizeFront?: WheelSize;
@@ -655,7 +656,9 @@ export const useAppStore = create<AppState>()(
           travelRearMm: input.travelRearMm,
           wheelSizeFront: input.wheelSizeFront,
           wheelSizeRear: input.wheelSizeRear,
-          isEbike: input.category === "emtb" || input.category === "etrekking",
+          isEbike:
+            input.isEbike ??
+            (input.category === "emtb" || input.category === "etrekking"),
           totalOdometerKm: 0,
           totalHours: 0,
         });

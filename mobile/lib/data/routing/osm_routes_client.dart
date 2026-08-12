@@ -17,6 +17,7 @@ class OsmRouteHit {
     required this.center,
     required this.geometry,
     this.difficulty,
+    this.elevationM,
     this.summary,
     this.url,
   });
@@ -29,6 +30,9 @@ class OsmRouteHit {
   final LatLng center;
   final List<List<double>> geometry;
   final String? difficulty;
+
+  /// Optional — API schema has it; Overpass rarely fills it.
+  final int? elevationM;
   final String? summary;
   final String? url;
 }
@@ -169,7 +173,7 @@ out body geom;
         );
       }
       hits.sort((a, b) => a.lengthKm.compareTo(b.lengthKm));
-      return hits.take(24).toList();
+      return hits.take(36).toList();
     } catch (_) {
       return const [];
     }
@@ -215,6 +219,7 @@ out body geom;
           center: center,
           geometry: geometry,
           difficulty: m['difficulty'] as String?,
+          elevationM: (m['elevationM'] as num?)?.round(),
           summary: m['summary'] as String?,
           url: m['url'] as String?,
         ),

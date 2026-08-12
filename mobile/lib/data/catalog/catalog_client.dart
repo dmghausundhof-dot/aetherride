@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -13,8 +14,62 @@ class CatalogClient {
   final AppDatabase _db;
   final http.Client _http;
 
+  /// Pseudo-Zeile in `catalogCache` für den gesamten Bike-Katalog —
+  /// „Bike anlegen" öffnet damit sofort statt auf die API zu warten.
+  static const _bikesCacheId = '__bikes-catalog-v2__';
+  static const _bikesCacheTtl = Duration(hours: 24);
+  static const _bikesTimeout = Duration(seconds: 10);
+
   /// OEM-Bike-Katalog (Hersteller → Modelle).
+  ///
+  /// Die ungefilterte Vollliste (der „Bike anlegen"-Fall) kommt aus dem
+  /// lokalen Cache und wird bei Bedarf im Hintergrund aufgefrischt —
+  /// vorher wartete jeder Sheet-Open auf die volle API-Antwort.
   Future<List<CatalogManufacturer>> fetchBikes({
+    String? q,
+    String? manufacturer,
+    String? category,
+    bool forceRefresh = false,
+  }) async {
+    final hasFilter = (q != null && q.isNotEmpty) ||
+        (manufacturer != null && manufacturer.isNotEmpty) ||
+        (category != null && category.isNotEmpty);
+    if (!hasFilter && !forceRefresh) {
+      final cached = await _readBikesCache();
+      if (cached != null) {
+        if (cached.stale) {
+          unawaited(
+            _fetchBikesRemote().then(_storeBikesCache).catchError((_) {}),
+          );
+        }
+        return cached.list;
+      }
+    }
+    final List<CatalogManufacturer> list;
+    try {
+      list = await _fetchBikesRemote(
+        q: q,
+        manufacturer: manufacturer,
+        category: category,
+      );
+    } catch (e) {
+      // API down (z. B. Gerät offline): lieber den ggf. veralteten Cache
+      // liefern als hart fehlschlagen — relevant für forceRefresh.
+      if (!hasFilter) {
+        final cached = await _readBikesCache();
+        if (cached != null) return cached.list;
+      }
+      throw StateError(
+        'Bike-Katalog nicht erreichbar (${AppConfig.apiBaseUrl}): $e',
+      );
+    }
+    if (!hasFilter) {
+      await _storeBikesCache(list);
+    }
+    return list;
+  }
+
+  Future<List<CatalogManufacturer>> _fetchBikesRemote({
     String? q,
     String? manufacturer,
     String? category,
@@ -27,7 +82,9 @@ class CatalogClient {
         if (category != null && category.isNotEmpty) 'category': category,
       },
     );
-    final res = await _http.get(uri, headers: {'Accept': 'application/json'});
+    final res = await _http
+        .get(uri, headers: {'Accept': 'application/json'})
+        .timeout(_bikesTimeout);
     if (res.statusCode != 200) {
       throw StateError('Katalog-Bikes HTTP ${res.statusCode}');
     }
@@ -39,6 +96,42 @@ class CatalogClient {
         if (e is Map)
           CatalogManufacturer.fromJson(Map<String, dynamic>.from(e)),
     ];
+  }
+
+  Future<({List<CatalogManufacturer> list, bool stale})?>
+      _readBikesCache() async {
+    final row = await (_db.select(_db.catalogCache)
+          ..where((t) => t.id.equals(_bikesCacheId)))
+        .getSingleOrNull();
+    if (row == null) return null;
+    try {
+      final decoded = jsonDecode(row.payloadJson);
+      if (decoded is! List) return null;
+      final list = [
+        for (final e in decoded)
+          if (e is Map)
+            CatalogManufacturer.fromJson(Map<String, dynamic>.from(e)),
+      ];
+      if (list.isEmpty) return null;
+      final age = DateTime.now().toUtc().difference(row.fetchedAt);
+      return (list: list, stale: age > _bikesCacheTtl);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _storeBikesCache(List<CatalogManufacturer> list) async {
+    if (list.isEmpty) return;
+    await _db.into(_db.catalogCache).insertOnConflictUpdate(
+          CatalogCacheCompanion.insert(
+            id: _bikesCacheId,
+            slot: '__bikes__',
+            manufacturer: '',
+            model: '',
+            payloadJson: jsonEncode([for (final m in list) m.toJson()]),
+            fetchedAt: DateTime.now().toUtc(),
+          ),
+        );
   }
 
   Future<List<CatalogCacheData>> search({

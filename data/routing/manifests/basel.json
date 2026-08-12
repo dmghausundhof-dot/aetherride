@@ -1,0 +1,24 @@
+{
+  "id": "basel",
+  "name": "Basel / Dreiländereck",
+  "bbox": [
+    7.5,
+    47.5,
+    7.7,
+    47.6
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "basel.tar.zst",
+    "packGz": "basel.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

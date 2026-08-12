@@ -21,6 +21,7 @@ class SyncPayload {
     this.activeBikeId,
     this.savedRoutes,
     this.routeCollections,
+    this.savedRouteMeta,
     this.preferredSport,
     this.onboardingDone,
     this.freeTierExtraBike,
@@ -48,6 +49,7 @@ class SyncPayload {
   final String? activeBikeId;
   final dynamic savedRoutes;
   final dynamic routeCollections;
+  final dynamic savedRouteMeta;
   final dynamic preferredSport;
   final bool? onboardingDone;
   final bool? freeTierExtraBike;
@@ -76,6 +78,7 @@ class SyncPayload {
       activeBikeId: json['activeBikeId'] as String?,
       savedRoutes: json['savedRoutes'] ?? json['saved_routes'],
       routeCollections: json['routeCollections'],
+      savedRouteMeta: json['savedRouteMeta'],
       preferredSport: json['preferredSport'],
       onboardingDone: json['onboardingDone'] as bool?,
       freeTierExtraBike: json['freeTierExtraBike'] as bool?,
@@ -107,6 +110,7 @@ class SyncPayload {
         if (activeBikeId != null) 'activeBikeId': activeBikeId,
         if (savedRoutes != null) 'savedRoutes': savedRoutes,
         if (routeCollections != null) 'routeCollections': routeCollections,
+        if (savedRouteMeta != null) 'savedRouteMeta': savedRouteMeta,
         if (preferredSport != null) 'preferredSport': preferredSport,
         if (onboardingDone != null) 'onboardingDone': onboardingDone,
         if (freeTierExtraBike != null) 'freeTierExtraBike': freeTierExtraBike,
@@ -125,6 +129,7 @@ class SyncPayload {
     dynamic riderProfile,
     dynamic savedRoutes,
     dynamic routeCollections,
+    dynamic savedRouteMeta,
     String? subscriptionTier,
     dynamic commerceMode,
     dynamic rangeCalibration,
@@ -164,6 +169,7 @@ class SyncPayload {
       activeBikeId: activeBikeId ?? this.activeBikeId,
       savedRoutes: savedRoutes ?? this.savedRoutes,
       routeCollections: routeCollections ?? this.routeCollections,
+      savedRouteMeta: savedRouteMeta ?? this.savedRouteMeta,
       preferredSport: preferredSport ?? this.preferredSport,
       onboardingDone: onboardingDone ?? this.onboardingDone,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,

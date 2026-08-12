@@ -43,7 +43,9 @@ const sportToCategory = (tags: string[] | undefined): BikeCategory => {
   if (t.has("road")) return "road";
   if (t.has("city") || t.has("urban")) return "urban";
   if (t.has("touring")) return "etrekking";
-  if (t.has("ebike")) return "emtb";
+  if (t.has("emtb")) return "emtb";
+  // City/Touring-E-Bike — nicht als E-MTB soft-boosten (Mobile-Parität).
+  if (t.has("ebike")) return "etrekking";
   return "urban";
 };
 

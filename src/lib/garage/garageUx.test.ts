@@ -4,6 +4,7 @@
 import { estimateAirPsi } from "../setup/sagGuide";
 import { setupConditionLabel } from "../setup/conditionLabels";
 import { weeklyRideKm, verdictSummaryDe } from "./readiness";
+import { resolveGaragePrimaryAction } from "./primaryCta";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -36,5 +37,26 @@ assert(
 );
 
 assert(verdictSummaryDe("COMPATIBLE") === "Kompatibel", "verdict");
+
+assert(
+  resolveGaragePrimaryAction({ isActive: true, dueCount: 1, partsCount: 0 }) ===
+    "viewMaintenance",
+  "cta maintenance"
+);
+assert(
+  resolveGaragePrimaryAction({ isActive: false, dueCount: 0, partsCount: 0 }) ===
+    "addPart",
+  "cta add part"
+);
+assert(
+  resolveGaragePrimaryAction({ isActive: false, dueCount: 0, partsCount: 2 }) ===
+    "setActive",
+  "cta set active"
+);
+assert(
+  resolveGaragePrimaryAction({ isActive: true, dueCount: 0, partsCount: 2 }) ===
+    "openSetup",
+  "cta setup"
+);
 
 console.log("garageUx.test.ts OK");

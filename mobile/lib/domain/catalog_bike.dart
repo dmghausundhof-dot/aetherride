@@ -25,6 +25,12 @@ class CatalogManufacturer {
       ],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'bikes': [for (final b in bikes) b.toJson()],
+      };
 }
 
 class CatalogBikeVariant {
@@ -106,7 +112,43 @@ class CatalogBikeVariant {
       sourceUrl: m['sourceUrl'] as String? ?? m['source_url'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'year': year,
+        'category': _categoryApiId(category),
+        'frameSizeOptions': frameSizeOptions,
+        'wheelSizeFront': _wheelApiId(wheelSizeFront),
+        'wheelSizeRear': _wheelApiId(wheelSizeRear),
+        'isEbike': isEbike,
+        'oemComponents': oemComponents,
+        if (travelFrontMm != null) 'travelFrontMm': travelFrontMm,
+        if (travelRearMm != null) 'travelRearMm': travelRearMm,
+        if (weightKgApprox != null) 'weightKgApprox': weightKgApprox,
+        if (sourceUrl != null) 'sourceUrl': sourceUrl,
+      };
 }
+
+String _categoryApiId(BikeCategory c) => switch (c) {
+      BikeCategory.mtbTrail => 'mtb_trail',
+      BikeCategory.mtbAm => 'mtb_am',
+      BikeCategory.mtbEnduro => 'mtb_enduro',
+      BikeCategory.dh => 'dh',
+      BikeCategory.gravel => 'gravel',
+      BikeCategory.road => 'road',
+      BikeCategory.urban => 'urban',
+      BikeCategory.emtb => 'emtb',
+      BikeCategory.etrekking => 'etrekking',
+      BikeCategory.hiking => 'hiking',
+    };
+
+String _wheelApiId(WheelSize w) => switch (w) {
+      WheelSize.w275 => '27.5',
+      WheelSize.w29 => '29',
+      WheelSize.c700 => '700c',
+      WheelSize.b650 => '650b',
+    };
 
 BikeCategory bikeCategoryFromApi(String raw) {
   final n = raw.trim().toLowerCase().replaceAll('-', '_');

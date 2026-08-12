@@ -1,0 +1,24 @@
+{
+  "id": "hamburg",
+  "name": "Hamburg & Umland",
+  "bbox": [
+    9.7,
+    53.4,
+    10.3,
+    53.7
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "hamburg.tar.zst",
+    "packGz": "hamburg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -11,6 +11,7 @@ import '../data/local/ride_repository.dart';
 import '../data/local/setup_repository.dart';
 import '../data/local/user_profile_store.dart';
 import '../data/routing/route_repository.dart';
+import '../data/sensor/bike_ble_store.dart';
 import '../data/sync/sync_engine.dart';
 import '../data/weather/weather_client.dart';
 import '../domain/bike.dart';
@@ -170,6 +171,11 @@ final bleCoreProvider = Provider<BleCoreChannel>((ref) {
   final channel = BleCoreChannel();
   ref.onDispose(channel.dispose);
   return channel;
+});
+
+/// Gekoppelte BLE-Sensoren je Bike (Garage „Sensor koppeln" → Ride connect).
+final bikeBleStoreProvider = Provider<BikeBleStore>((ref) {
+  return BikeBleStore();
 });
 
 final locationCoreProvider = Provider<LocationCoreChannel>((ref) {

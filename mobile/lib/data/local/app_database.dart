@@ -23,6 +23,9 @@ class Bikes extends Table {
   RealColumn get odometerKm => real().withDefault(const Constant(0.0))();
   RealColumn get hours => real().withDefault(const Constant(0.0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
+  /// Explizites Assist-Flag (Web-Parität). Ermöglicht E-City/E-Gravel/E-Road
+  /// ohne Kategorie-Kollaps auf `etrekking`.
+  BoolColumn get isEbike => boolean().withDefault(const Constant(false))();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
@@ -193,7 +196,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -236,6 +239,14 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(bikes, bikes.frameSize);
             await m.addColumn(bikes, bikes.travelFrontMm);
             await m.addColumn(bikes, bikes.travelRearMm);
+          }
+          if (from < 8) {
+            await m.addColumn(bikes, bikes.isEbike);
+            // Legacy: kanonische E-Kategorien → Flag nachziehen.
+            await customStatement(
+              "UPDATE bikes SET is_ebike = 1 "
+              "WHERE category IN ('emtb', 'etrekking')",
+            );
           }
         },
       );

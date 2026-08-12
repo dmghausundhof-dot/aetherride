@@ -1,8 +1,24 @@
 import 'package:aetherride_mobile/domain/sport/discipline_ux.dart';
+import 'package:aetherride_mobile/l10n/app_localizations.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_next_turn_banner.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_pre_start_chrome.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+Widget _wrap(Widget child) {
+  return MaterialApp(
+    locale: const Locale('de'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(body: child),
+  );
+}
 
 void main() {
   group('RidePreStartChrome (N-START-01)', () {
@@ -25,20 +41,18 @@ void main() {
         (tester) async {
       var started = false;
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 390,
-              height: 720,
-              child: Stack(
-                children: [
-                  const ColoredBox(color: Color(0xFF1A2A22)),
-                  RidePreStartChrome(
-                    routeName: 'Tempelhofer 60',
-                    onStart: () => started = true,
-                  ),
-                ],
-              ),
+        _wrap(
+          SizedBox(
+            width: 390,
+            height: 720,
+            child: Stack(
+              children: [
+                const ColoredBox(color: Color(0xFF1A2A22)),
+                RidePreStartChrome(
+                  routeName: 'Tempelhofer 60',
+                  onStart: () => started = true,
+                ),
+              ],
             ),
           ),
         ),
@@ -63,13 +77,11 @@ void main() {
 
     testWidgets('starting state disables CTA and shows Startet…', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: RidePreStartChrome(
-              routeName: 'Spree',
-              starting: true,
-              onStart: () {},
-            ),
+        _wrap(
+          RidePreStartChrome(
+            routeName: 'Spree',
+            starting: true,
+            onStart: () {},
           ),
         ),
       );

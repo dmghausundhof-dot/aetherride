@@ -39,7 +39,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late TextEditingController _weightCtrl;
   String _style = 'flow';
   int _skill = 3;
-  BikeCategory _discipline = BikeCategory.mtbAm;
+  BikeCategory _discipline = BikeCategory.urban;
 
   /// Fahrerdaten sind standardmäßig eine Zusammenfassung (View), kein
   /// Dauer-Formular — wie Komoot/AllTrails „Profil bearbeiten" als
@@ -109,7 +109,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _weightCtrl.text = store.riderProfile.riderWeightKg.toStringAsFixed(0);
       _style = style;
       _skill = store.riderProfile.skillLevel;
-      _discipline = store.preferredSport ?? BikeCategory.mtbAm;
+      _discipline = store.preferredSport ?? BikeCategory.urban;
     });
   }
 
@@ -557,14 +557,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   static const _quickDisciplines = <BikeCategory>[
-    BikeCategory.mtbAm,
-    BikeCategory.mtbEnduro,
+    BikeCategory.urban,
+    BikeCategory.etrekking,
     BikeCategory.gravel,
     BikeCategory.road,
-    BikeCategory.urban,
     BikeCategory.emtb,
-    BikeCategory.etrekking,
     BikeCategory.mtbTrail,
+    BikeCategory.mtbAm,
+    BikeCategory.mtbEnduro,
   ];
 
   Future<void> _setDisciplineQuick(BikeCategory d) async {
@@ -986,14 +986,14 @@ class _RiderEditForm extends StatelessWidget {
   final VoidCallback onSave;
 
   static const _disciplines = [
-    BikeCategory.mtbAm,
-    BikeCategory.mtbEnduro,
-    BikeCategory.mtbTrail,
+    BikeCategory.urban,
+    BikeCategory.etrekking,
     BikeCategory.gravel,
     BikeCategory.road,
-    BikeCategory.urban,
     BikeCategory.emtb,
-    BikeCategory.etrekking,
+    BikeCategory.mtbTrail,
+    BikeCategory.mtbAm,
+    BikeCategory.mtbEnduro,
   ];
 
   static String _label(BikeCategory c) => c.shortLabel;

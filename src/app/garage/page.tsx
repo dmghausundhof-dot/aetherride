@@ -8,7 +8,7 @@ import {
   Download,
 } from "lucide-react";
 import { AddBikeWizard } from "@/components/garage/AddBikeWizard";
-import { BikeSilhouette } from "@/components/garage/BikeSilhouette";
+import { BikeSchema } from "@/components/garage/BikeSchema";
 import { InstallComponentSheet } from "@/components/garage/InstallComponentSheet";
 import { VerdictPill } from "@/components/garage/VerdictPill";
 import { SagGuideForBike } from "@/components/garage/SagGuidePanel";
@@ -31,16 +31,15 @@ import {
 } from "@/lib/setup/conditionLabels";
 import {
   buildMaintenanceAlerts,
-  bikeReadyStatus,
 } from "@/lib/home/maintenanceAlerts";
 import {
-  readinessLabel,
   verdictSummaryDe,
 } from "@/lib/garage/readiness";
 import {
   buildServiceReport,
   downloadServiceReport,
 } from "@/lib/garage/serviceReport";
+import type { GaragePrimaryAction } from "@/lib/garage/primaryCta";
 import {
   getActiveComponents,
   getMissingSlots,
@@ -171,11 +170,40 @@ function GaragePageInner() {
         : [],
     [selected, rides, maintenanceIntervals]
   );
-  const ready = bikeReadyStatus(alerts);
   const currentSetup = selected?.setups.find((s) => s.isCurrent);
   const costSum = logs
     .filter((l) => l.costEur != null)
     .reduce((s, l) => s + (l.costEur ?? 0), 0);
+
+  const maintenanceSlots = selected
+    ? intervals
+        .filter((i) => {
+          const d = evaluateIntervalDue(
+            i,
+            selected.totalOdometerKm,
+            selected.totalHours
+          );
+          return d.status !== "ok";
+        })
+        .map((i) => i.slot)
+    : [];
+
+  const onPrimaryAction = (action: GaragePrimaryAction) => {
+    if (!selected) return;
+    if (action === "viewMaintenance") {
+      setTab("maintenance");
+      return;
+    }
+    if (action === "addPart") {
+      setTab("components");
+      return;
+    }
+    if (action === "setActive") {
+      setActiveBike(selected.id);
+      return;
+    }
+    setTab("setups");
+  };
 
   const selectBike = (id: string) => {
     setSelectedId(id);
@@ -225,13 +253,15 @@ function GaragePageInner() {
         </button>
       </header>
 
-      {/* T-WA-00 status card when bike exists (always free); empty handled below */}
+      {/* Wartungs-Status: auf Übersicht übernimmt BikeSchema — sonst Doppelung */}
       {selected && (
         <div className="mb-5 space-y-3">
-          <MaintenanceStatusCard
-            compact
-            ignoreSnooze={tab === "maintenance"}
-          />
+          {tab !== "overview" && (
+            <MaintenanceStatusCard
+              compact
+              ignoreSnooze={tab === "maintenance"}
+            />
+          )}
           <GaragePartsCta bikeId={selected.id} bikeName={selected.name} />
         </div>
       )}
@@ -314,7 +344,7 @@ function GaragePageInner() {
               [
                 ["overview", "Übersicht"],
                 ["components", "Teile"],
-                ["setups", "Setups"],
+                ["setups", "Setup"],
                 ["maintenance", "Wartung"],
               ] as const
             ).map(([id, label]) => (
@@ -335,44 +365,26 @@ function GaragePageInner() {
             <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:gap-6">
               <div className="flex flex-col gap-4">
                 <BikePhotoControl bikeId={selected.id} photoUrl={selected.photoUrl} />
-                <section className="rounded-2xl border border-border bg-surface p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-semibold">{selected.name}</h2>
-                      <p className="text-sm text-text-secondary">
-                        {bikeCategoryLabel(selected.category)}
-                        {selected.year ? ` · ${selected.year}` : ""}
-                        {selected.frameSize ? ` · ${selected.frameSize}` : ""}
-                        {selected.travelFrontMm
-                          ? ` · ${selected.travelFrontMm}/${selected.travelRearMm ?? "–"} mm`
-                          : ""}
-                      </p>
+                <BikeSchema
+                  bike={selected}
+                  maintenanceSlots={maintenanceSlots}
+                  onPrimaryAction={onPrimaryAction}
+                />
+                {/* Stunden / Kosten — km steht schon in BikeSchema */}
+                <div className="grid grid-cols-2 gap-2 text-center text-sm">
+                  <div className="rounded-xl border border-border bg-surface p-2">
+                    <div className="tabular-nums text-lg font-bold">
+                      {selected.totalHours.toFixed(1)}
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        ready === "ready"
-                          ? "bg-success/15 text-success"
-                          : "bg-warning/15 text-warning"
-                      }`}
-                    >
-                      {readinessLabel(ready)}
-                    </span>
+                    <div className="text-[10px] text-text-secondary">Stunden</div>
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-                    <div className="rounded-xl bg-surface-elevated p-2">
-                      <div className="tabular-nums text-lg font-bold">{selected.totalOdometerKm.toFixed(0)}</div>
-                      <div className="text-[10px] text-text-secondary">km</div>
+                  <div className="rounded-xl border border-border bg-surface p-2">
+                    <div className="tabular-nums text-lg font-bold">
+                      {costSum > 0 ? `${costSum.toFixed(0)}€` : "—"}
                     </div>
-                    <div className="rounded-xl bg-surface-elevated p-2">
-                      <div className="tabular-nums text-lg font-bold">{selected.totalHours.toFixed(1)}</div>
-                      <div className="text-[10px] text-text-secondary">Stunden</div>
-                    </div>
-                    <div className="rounded-xl bg-surface-elevated p-2">
-                      <div className="tabular-nums text-lg font-bold">{costSum > 0 ? `${costSum.toFixed(0)}€` : "—"}</div>
-                      <div className="text-[10px] text-text-secondary">Kosten</div>
-                    </div>
+                    <div className="text-[10px] text-text-secondary">Kosten</div>
                   </div>
-                </section>
+                </div>
                 {alerts.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {alerts.map((a) => (
@@ -380,7 +392,6 @@ function GaragePageInner() {
                         key={a.id}
                         type="button"
                         onClick={() => {
-                          // S-FLOW-05: wear/interval → parts soft-fit when available
                           if (a.shopHref) {
                             router.push(a.shopHref);
                             return;
@@ -402,39 +413,40 @@ function GaragePageInner() {
                   <section className="rounded-2xl border border-border bg-surface p-4">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-semibold">Aktives Setup</h3>
-                      <button type="button" className="text-xs font-medium text-accent" onClick={() => setTab("setups")}>
-                        Wechseln
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-accent"
+                        onClick={() => setTab("setups")}
+                      >
+                        Zum Setup
                       </button>
                     </div>
-                    <p className="mt-1 text-sm">„{currentSetup.label}“ · {setupConditionLabel(currentSetup.conditions)}</p>
-                    <div className="mt-2"><SetupFingerprint setup={currentSetup} /></div>
+                    <p className="mt-1 text-sm">
+                      „{currentSetup.label}“ · {setupConditionLabel(currentSetup.conditions)}
+                    </p>
+                    <div className="mt-2">
+                      <SetupFingerprint setup={currentSetup} />
+                    </div>
                   </section>
                 )}
               </div>
 
               <div className="flex flex-col gap-4">
-                <BikeSilhouette
-                  bike={selected}
-                  maintenanceSlots={intervals
-                    .filter((i) => {
-                      const d = evaluateIntervalDue(i, selected.totalOdometerKm, selected.totalHours);
-                      return d.status !== "ok";
-                    })
-                    .map((i) => i.slot)}
-                  onSelectSlot={(slot) => {
-                    setTab("components");
-                    setInstallSlot(slot);
-                  }}
-                />
                 <section className="rounded-2xl border border-border bg-surface p-4">
-                  <button type="button" className="flex w-full items-center justify-between gap-2 text-left" onClick={() => setCompatOpen((v) => !v)}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 text-left"
+                    onClick={() => setCompatOpen((v) => !v)}
+                  >
                     <h3 className="flex items-center gap-2 font-semibold">
                       <ShieldCheck className="h-4 w-4 text-accent" />
-                      Kompatibilität
+                      Passgenauigkeit
                     </h3>
                     <VerdictPill verdict={overallVerdict} />
                   </button>
-                  <p className="mt-2 text-xs text-text-secondary">{verdictSummaryDe(overallVerdict)} · regelbasiert, kein ML.</p>
+                  <p className="mt-2 text-xs text-text-secondary">
+                    {verdictSummaryDe(overallVerdict)} · regelbasiert, kein ML.
+                  </p>
                   {compatOpen && (
                     <div className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
                       {compat.slice(0, 12).map((r) => (
@@ -452,12 +464,30 @@ function GaragePageInner() {
                     </div>
                   )}
                 </section>
-                <SagGuideForBike bike={selected} defaultWeightKg={riderWeight} />
-                <OdometerImportPanel bikeId={selected.id} odometerKm={selected.totalOdometerKm} hours={selected.totalHours} />
-                <button type="button" onClick={exportReport} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface py-3 text-sm font-medium">
-                  <Download className="h-4 w-4 text-accent" />
-                  Service-Report exportieren
-                </button>
+                <details className="rounded-2xl border border-border bg-surface p-4">
+                  <summary className="cursor-pointer list-none font-semibold">
+                    Technische Tiefe
+                    <span className="mt-0.5 block text-xs font-normal text-text-secondary">
+                      SAG, Kilometerstand, Service-Report
+                    </span>
+                  </summary>
+                  <div className="mt-3 flex flex-col gap-4">
+                    <SagGuideForBike bike={selected} defaultWeightKg={riderWeight} />
+                    <OdometerImportPanel
+                      bikeId={selected.id}
+                      odometerKm={selected.totalOdometerKm}
+                      hours={selected.totalHours}
+                    />
+                    <button
+                      type="button"
+                      onClick={exportReport}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated py-3 text-sm font-medium"
+                    >
+                      <Download className="h-4 w-4 text-accent" />
+                      Service-Report exportieren
+                    </button>
+                  </div>
+                </details>
               </div>
             </div>
           )}

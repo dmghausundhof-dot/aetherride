@@ -15,9 +15,12 @@ import '../../domain/home/greeting.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../domain/active_route.dart';
 import '../../domain/saved_route.dart';
+import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/setup.dart';
 import '../../domain/setup/fingerprint.dart';
 import '../../domain/sport/discipline_ux.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
@@ -181,6 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bikes = ref.watch(bikesProvider);
     final session = ref.watch(authSessionProvider).valueOrNull;
     final savedRoutes = ref.watch(savedRoutesProvider);
@@ -269,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       );
                     },
                     loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('Fehler: $e'),
+                    error: (e, _) => Text(l10n.errorPrefix('$e')),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
@@ -283,15 +287,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Chat',
+                  tooltip: l10n.chat,
                   onPressed: () => openChatScreen(context),
                   icon: const Icon(Icons.chat_bubble_outline),
                 ),
                 Semantics(
                   button: true,
-                  label: 'Profil',
+                  label: l10n.profile,
                   child: Tooltip(
-                    message: 'Profil',
+                    message: l10n.profile,
                     child: InkWell(
                       onTap: () => openProfileScreen(context),
                       borderRadius: BorderRadius.circular(24),
@@ -323,13 +327,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             Text(
               _weatherLoading
-                  ? 'Wetter wird geladen…'
-                  : MultiSportCopy.homeSubtitle(
+                  ? l10n.weatherLoading
+                  : l10n.homeSubtitle(
                       sport: sport,
                       weatherLine: weatherLine ??
-                          (_weather == null
-                              ? MultiSportCopy.weatherFallback
-                              : null),
+                          (_weather == null ? l10n.weatherFallback : null),
                     ),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.muted,
@@ -393,7 +395,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.read(shellTabIndexProvider.notifier).state = 3;
                     },
                     icon: const Icon(Icons.map_outlined, size: 18),
-                    label: const Text(MultiSportCopy.navDiscover),
+                    label: Text(l10n.navDiscover),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
@@ -410,8 +412,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: const Icon(Icons.play_arrow, size: 20),
                     label: Text(
                       bikes.valueOrNull?.isEmpty == true
-                          ? MultiSportCopy.startFreeride
-                          : MultiSportCopy.startRide,
+                          ? l10n.startFreeride
+                          : l10n.startRide,
                     ),
                   ),
                 ),
@@ -477,8 +479,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // Feed — sie hängen am Status-Icon oben (_SystemStatusIcon) und
             // öffnen von dort ein Detail-Sheet (_openSystemStatusSheet).
             if (active != null &&
-                (active.category == BikeCategory.emtb ||
-                    active.category == BikeCategory.etrekking)) ...[
+                active.hasElectricAssist) ...[
               const SizedBox(height: AppSpacing.m),
               _RangeCard(bike: active, setup: setupAsync.valueOrNull),
             ],
@@ -594,12 +595,13 @@ class _StatsStrip extends StatelessWidget {
     if (bikeCount == null && rideCount == null) {
       return const SizedBox.shrink();
     }
+    final l10n = AppLocalizations.of(context);
     final parts = <String>[
       if (bikeCount != null)
         '$bikeCount ${bikeCount == 1 ? 'Bike' : 'Bikes'}',
       if (rideCount != null && rideCount! > 0)
         '${rideCount == 20 ? '20+' : rideCount} '
-            '${rideCount == 1 ? MultiSportCopy.statsRidesOne : MultiSportCopy.statsRidesMany}',
+            '${rideCount == 1 ? l10n.statsRidesOne : l10n.statsRidesMany}',
     ];
     if (parts.isEmpty) return const SizedBox.shrink();
     return InkWell(
@@ -630,24 +632,25 @@ class _SearchEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: AppColors.chipIdle,
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.l,
             vertical: AppSpacing.m,
           ),
           child: Row(
             children: [
-              Icon(Icons.search, color: AppColors.muted, size: 20),
-              SizedBox(width: AppSpacing.s),
+              const Icon(Icons.search, color: AppColors.muted, size: 20),
+              const SizedBox(width: AppSpacing.s),
               Text(
-                MultiSportCopy.searchHome,
-                style: TextStyle(color: AppColors.muted, fontSize: 14),
+                l10n.searchHome,
+                style: const TextStyle(color: AppColors.muted, fontSize: 14),
               ),
             ],
           ),
@@ -735,9 +738,10 @@ class _TipHeroState extends ConsumerState<_TipHero> {
         }
       }
     }
-    final title = route?.name ?? MultiSportCopy.tipHeroTitle(sport);
+    final l10n = AppLocalizations.of(context);
+    final title = route?.name ?? l10n.tipHeroTitleFor(sport);
     final subtitle = route == null
-        ? MultiSportCopy.tipHeroSubtitle(sport)
+        ? l10n.tipHeroSubtitleFor(sport)
         : '${route.distanceKm.toStringAsFixed(1)} km · '
             '${route.elevationM.round()} hm · ${route.durationMin} min';
     final reasons = <String>[
@@ -837,7 +841,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                         DiscoverLaunchMode.discover;
                     ref.read(shellTabIndexProvider.notifier).state = 3;
                   },
-                  child: const Text(MultiSportCopy.navDiscover),
+                  child: Text(l10n.navDiscover),
                 ),
               ),
               const SizedBox(width: AppSpacing.s),
@@ -857,6 +861,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                         elevationM: r.elevationM,
                         durationMin: r.durationMin,
                         coordinates: r.coordinates,
+                        isLoop: navGeometryIsLoop(r.coordinates),
                       );
                     } else if (r != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -878,7 +883,7 @@ class _TipHeroState extends ConsumerState<_TipHero> {
                     ref.read(shellTabIndexProvider.notifier).state = 2;
                   },
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text(MultiSportCopy.goRide),
+                  label: Text(l10n.goRide),
                 ),
               ),
             ],
@@ -896,12 +901,13 @@ class _OnboardingCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.pedal_bike),
-          title: const Text('Bike anlegen'),
+          title: Text(l10n.garageAddBike),
           subtitle: const Text(
             'Garage · MTB, Gravel, Rennrad, City, E-Bike …',
           ),
@@ -919,7 +925,7 @@ class _OnboardingCards extends StatelessWidget {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.build_outlined),
-          title: const Text(MultiSportCopy.partsTitle),
+          title: Text(l10n.partsTitle),
           subtitle: const Text('Kompatible Teile finden'),
           onTap: onShop,
         ),
@@ -943,7 +949,7 @@ class _RangeCard extends ConsumerWidget {
       calibration: store.rangeCalibration,
       tirePressurePsi: tirePsi,
       riderWeightKg: store.effectiveWeightKg,
-      bikeWeightKg: bike.category == BikeCategory.emtb ? 24 : 22,
+      bikeWeightKg: bike.hasElectricAssist ? 24 : 22,
     );
     return Container(
       padding: const EdgeInsets.all(14),

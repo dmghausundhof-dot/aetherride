@@ -33,6 +33,8 @@ import '../../domain/routing/upcoming_rail.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
 import '../../domain/sport/discipline_ux.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
@@ -1371,6 +1373,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               ),
         ],
         poiStops: route.poiStops,
+        // Rejoin splice is typically open (approach + remainder).
+        isLoop: false,
       );
       _startUndoWindow(snapshot);
       setState(() {
@@ -1462,7 +1466,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           endedAt: ended,
           distanceKm: distanceM / 1000,
           movingTimeSec: elapsed,
-          name: route?.name ?? 'Ride',
+          name: route?.name ?? 'Freeride',
           routeId: route?.id,
           elevationM: elevHonest,
           track: track,
@@ -1479,9 +1483,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         );
 
     // E-Bike Reichweiten-Kalibrierung wenn genug Distanz + SOC-Delta
-    final isEbike =
-        bike?.category == BikeCategory.emtb ||
-        bike?.category == BikeCategory.etrekking;
+    final isEbike = bike?.hasElectricAssist == true;
     if (isEbike && distanceM >= 2000) {
       final endSoc = _ldi?.batterySocPercent;
       final startSoc = _startSoc;
@@ -2051,7 +2053,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       subtitle: Text(
-                        '${route.distanceKm} km · ${route.elevationM.round()} hm',
+                        [
+                          if (route.isLoop) 'Rundkurs',
+                          '${route.distanceKm} km',
+                          '${route.elevationM.round()} hm',
+                        ].join(' · '),
                       ),
                     ),
                   ),
@@ -2074,21 +2080,21 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               if (!_cleanMode) ...[
                 SegmentedButton<RideLiveLayer>(
                   segments: [
-                    const ButtonSegment(
+                    ButtonSegment(
                       value: RideLiveLayer.map,
-                      label: Text('Karte'),
-                      icon: Icon(Icons.map),
+                      label: Text(AppLocalizations.of(context).rideMap),
+                      icon: const Icon(Icons.map),
                     ),
-                    const ButtonSegment(
+                    ButtonSegment(
                       value: RideLiveLayer.data,
-                      label: Text('Daten'),
-                      icon: Icon(Icons.grid_view),
+                      label: Text(AppLocalizations.of(context).rideData),
+                      icon: const Icon(Icons.grid_view),
                     ),
                     if (_showsChassisUx(ref))
                       ButtonSegment(
                         value: RideLiveLayer.suspension,
                         label: Text(
-                          MultiSportCopy.chassisLayerLabel(
+                          AppLocalizations.of(context).chassisLayerLabelFor(
                             ref.watch(userProfileStoreProvider).preferredSport,
                           ),
                         ),
@@ -2387,7 +2393,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         );
       case RideLiveLayer.data:
         return Semantics(
-          label: 'Live-Daten',
+          label: AppLocalizations.of(context).rideLiveData,
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.l),

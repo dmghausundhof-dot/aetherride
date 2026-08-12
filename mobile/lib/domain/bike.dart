@@ -15,6 +15,15 @@ enum BikeCategory {
 
 enum WheelSize { w275, w29, c700, b650 }
 
+extension WheelSizeLabel on WheelSize {
+  String get label => switch (this) {
+        WheelSize.w275 => '27.5"',
+        WheelSize.w29 => '29"',
+        WheelSize.c700 => '700c',
+        WheelSize.b650 => '650b',
+      };
+}
+
 enum CompatibilityVerdict {
   compatible,
   conditional,
@@ -38,6 +47,7 @@ class Bike {
     this.odometerKm = 0,
     this.hours = 0,
     this.isActive = false,
+    this.isEbike = false,
   });
 
   final String id;
@@ -55,19 +65,46 @@ class Bike {
   final double hours;
   final bool isActive;
 
-  /// Nutzer-Labels (Multi-Sport). Siehe auch [BikeCategoryUx.shortLabel].
-  String get categoryLabel => switch (category) {
-        BikeCategory.mtbTrail => 'MTB Trail',
-        BikeCategory.mtbAm => 'MTB',
-        BikeCategory.mtbEnduro => 'Enduro',
-        BikeCategory.dh => 'Downhill',
-        BikeCategory.gravel => 'Gravel',
-        BikeCategory.road => 'Rennrad',
-        BikeCategory.urban => 'City',
-        BikeCategory.emtb => 'E-MTB',
+  /// Explizites Assist-Flag (Web-Parität). Legacy: auch über Kategorie.
+  final bool isEbike;
+
+  /// true bei Flag oder kanonischer E-Kategorie (`emtb` / `etrekking`).
+  bool get hasElectricAssist =>
+      isEbike ||
+      category == BikeCategory.emtb ||
+      category == BikeCategory.etrekking;
+
+  /// Nutzer-Labels (Multi-Sport). E-Untertypen via [isEbike].
+  /// Siehe auch [BikeCategoryUx.shortLabel].
+  String get categoryLabel {
+    if (hasElectricAssist) {
+      return switch (category) {
+        BikeCategory.emtb ||
+        BikeCategory.mtbTrail ||
+        BikeCategory.mtbAm ||
+        BikeCategory.mtbEnduro ||
+        BikeCategory.dh =>
+          'E-MTB',
         BikeCategory.etrekking => 'E-Trekking',
+        BikeCategory.gravel => 'E-Gravel',
+        BikeCategory.urban => 'E-City',
+        BikeCategory.road => 'E-Road',
         BikeCategory.hiking => 'Zu Fuß',
       };
+    }
+    return switch (category) {
+      BikeCategory.mtbTrail => 'MTB Trail',
+      BikeCategory.mtbAm => 'MTB',
+      BikeCategory.mtbEnduro => 'Enduro',
+      BikeCategory.dh => 'Downhill',
+      BikeCategory.gravel => 'Gravel',
+      BikeCategory.road => 'Rennrad',
+      BikeCategory.urban => 'City',
+      BikeCategory.emtb => 'E-MTB',
+      BikeCategory.etrekking => 'E-Trekking',
+      BikeCategory.hiking => 'Zu Fuß',
+    };
+  }
 
   Bike copyWith({
     String? name,
@@ -83,6 +120,7 @@ class Bike {
     double? odometerKm,
     double? hours,
     bool? isActive,
+    bool? isEbike,
   }) {
     return Bike(
       id: id,
@@ -99,6 +137,7 @@ class Bike {
       odometerKm: odometerKm ?? this.odometerKm,
       hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,
+      isEbike: isEbike ?? this.isEbike,
     );
   }
 }

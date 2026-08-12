@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/shop_web.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
-import '../../domain/sport/discipline_ux.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 
 class _ShopPart {
@@ -229,7 +229,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(MultiSportCopy.partsTitle),
+        title: Text(AppLocalizations.of(context).partsTitle),
         actions: [
           IconButton(
             tooltip: 'Aktualisieren',
@@ -247,15 +247,15 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  MultiSportCopy.partsTitle,
+                  AppLocalizations.of(context).partsTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  MultiSportCopy.partsSubtitle,
-                  style: TextStyle(color: AppColors.muted, fontSize: 13),
+                Text(
+                  AppLocalizations.of(context).partsSubtitle,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
                 ),
                 if (_storeLocked) ...[
                   const SizedBox(height: 10),

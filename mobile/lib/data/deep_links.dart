@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../core/config.dart';
 import '../domain/active_route.dart';
+import '../domain/routing/tour_nav_geometry.dart';
 import '../providers/app_providers.dart';
 import '../providers/ride_providers.dart';
 import 'routing/naehe_seeds.dart';
@@ -293,6 +294,7 @@ class DeepLinkHandler {
             elevationM: s.elevationM,
             durationMin: s.durationMin,
             coordinates: s.coordinates,
+            isLoop: navGeometryIsLoop(s.coordinates),
           );
           debugPrint('DeepLink: loaded saved route $routeId');
           return;
@@ -346,6 +348,7 @@ class DeepLinkHandler {
           durationMin: (((j['durationS'] as num?)?.toDouble() ?? 0) / 60)
               .round(),
           coordinates: coords,
+          isLoop: navGeometryIsLoop(coords),
         );
         debugPrint(
           'DeepLink: geometry $routeId pts=${coords.length} engine=${j['engine']}',

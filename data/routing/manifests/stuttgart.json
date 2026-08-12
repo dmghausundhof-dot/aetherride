@@ -1,0 +1,24 @@
+{
+  "id": "stuttgart",
+  "name": "Stuttgart / Mittlerer Neckar",
+  "bbox": [
+    9.0,
+    48.6,
+    9.4,
+    48.9
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "stuttgart.tar.zst",
+    "packGz": "stuttgart.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

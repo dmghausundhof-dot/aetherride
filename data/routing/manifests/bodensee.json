@@ -1,0 +1,24 @@
+{
+  "id": "bodensee",
+  "name": "Bodensee",
+  "bbox": [
+    8.9,
+    47.5,
+    9.8,
+    47.9
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bodensee.tar.zst",
+    "packGz": "bodensee.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

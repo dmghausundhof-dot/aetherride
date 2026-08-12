@@ -12,6 +12,7 @@ import '../../domain/privacy/track_trim.dart';
 import '../../domain/rider_profile.dart';
 import '../../domain/setup.dart';
 import '../routing/route_collections.dart';
+import '../routing/saved_route_meta_store.dart';
 import '../sync/sync_payload.dart';
 import 'app_database.dart';
 import 'setup_repository.dart';
@@ -62,6 +63,7 @@ class GarageRepository {
     String? frameSize,
     int? travelFrontMm,
     int? travelRearMm,
+    bool isEbike = false,
     bool makeActive = true,
   }) async {
     final existing = await listBikes();
@@ -77,6 +79,9 @@ class GarageRepository {
       freeTierExtraBike = true;
     }
     final id = _uuid.v4();
+    final electric = isEbike ||
+        category == BikeCategory.emtb ||
+        category == BikeCategory.etrekking;
     final bike = Bike(
       id: id,
       name: name.trim().isEmpty ? 'Mein Bike' : name.trim(),
@@ -90,6 +95,7 @@ class GarageRepository {
       travelFrontMm: travelFrontMm,
       travelRearMm: travelRearMm,
       isActive: makeActive || existing.isEmpty,
+      isEbike: electric,
     );
     await upsert(bike);
     if (bike.isActive) await setActiveBike(id);
@@ -138,6 +144,7 @@ class GarageRepository {
             odometerKm: Value(bike.odometerKm),
             hours: Value(bike.hours),
             isActive: Value(bike.isActive),
+            isEbike: Value(bike.hasElectricAssist),
             updatedAt: DateTime.now().toUtc(),
           ),
         );
@@ -250,6 +257,7 @@ class GarageRepository {
         .getSingleOrNull();
     final active = bikes.where((b) => b.isActive).map((b) => b.id).firstOrNull;
     final colFrag = await RouteCollectionsStore.syncPayload();
+    final metaFrag = await SavedRouteMetaStore.syncPayload();
 
     return SyncPayload(
       bikes: bikes
@@ -269,6 +277,9 @@ class GarageRepository {
               'odometerKm': b.odometerKm,
               'hours': b.hours,
               'isActive': b.isActive,
+              'isEbike': b.isEbike ||
+                  b.category == 'emtb' ||
+                  b.category == 'etrekking',
               'components': [
                 for (final c in components.where((c) => c.bikeId == b.id))
                   {
@@ -347,6 +358,7 @@ class GarageRepository {
           },
       ],
       routeCollections: colFrag[RouteCollectionsStore.syncField],
+      savedRouteMeta: metaFrag[SavedRouteMetaStore.syncField],
       subscriptionTier: subscriptionTier,
       freeTierExtraBike: freeTierExtraBike ? true : null,
       activeBikeId: active,
@@ -564,11 +576,16 @@ class GarageRepository {
           final m = Map<String, dynamic>.from(raw);
           final id = m['id'] as String?;
           if (id == null) continue;
+          final catName = (m['category'] as String?) ?? 'mtbAm';
+          final syncIsEbike = m['isEbike'] == true ||
+              m['is_ebike'] == true ||
+              catName == 'emtb' ||
+              catName == 'etrekking';
           await _db.into(_db.bikes).insertOnConflictUpdate(
                 BikesCompanion.insert(
                   id: id,
                   name: (m['name'] as String?) ?? 'Bike',
-                  category: (m['category'] as String?) ?? 'mtbAm',
+                  category: catName,
                   brand: Value(m['brand'] as String?),
                   model: Value(m['model'] as String?),
                   year: Value((m['year'] as num?)?.toInt()),
@@ -580,6 +597,7 @@ class GarageRepository {
                   odometerKm: Value((m['odometerKm'] as num?)?.toDouble() ?? 0),
                   hours: Value((m['hours'] as num?)?.toDouble() ?? 0),
                   isActive: Value(m['isActive'] == true),
+                  isEbike: Value(syncIsEbike),
                   updatedAt: DateTime.now().toUtc(),
                 ),
               );
@@ -695,6 +713,7 @@ class GarageRepository {
       await _applyPrivacyZones(payload.privacyZones);
       await _applySavedRoutes(payload.savedRoutes);
       await RouteCollectionsStore.applyFromSync(payload.routeCollections);
+      await SavedRouteMetaStore.applySync(payload.savedRouteMeta);
 
       if (payload.activeBikeId is String) {
         final aid = payload.activeBikeId as String;
@@ -813,13 +832,14 @@ class GarageRepository {
   }
 
   Bike _toDomain(BikeRow row) {
+    final category = BikeCategory.values.firstWhere(
+      (c) => c.name == row.category,
+      orElse: () => BikeCategory.mtbAm,
+    );
     return Bike(
       id: row.id,
       name: row.name,
-      category: BikeCategory.values.firstWhere(
-        (c) => c.name == row.category,
-        orElse: () => BikeCategory.mtbAm,
-      ),
+      category: category,
       brand: row.brand,
       model: row.model,
       year: row.year,
@@ -836,6 +856,9 @@ class GarageRepository {
       odometerKm: row.odometerKm,
       hours: row.hours,
       isActive: row.isActive,
+      isEbike: row.isEbike ||
+          category == BikeCategory.emtb ||
+          category == BikeCategory.etrekking,
     );
   }
 }

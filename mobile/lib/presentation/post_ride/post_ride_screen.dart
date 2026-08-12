@@ -13,11 +13,16 @@ import '../../data/export/fit.dart';
 import '../../data/export/gpx.dart';
 import '../../data/export/strava_client.dart';
 import '../../data/routing/heatmap_client.dart';
+import '../../data/routing/ride_to_saved.dart';
+import '../../data/weather/weather_client.dart';
 import '../../domain/ebike/assist_log.dart';
 import '../../domain/post_ride/analyze.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/ride.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import 'post_ride_photos.dart';
+import 'post_ride_track_map.dart';
 
 class PostRideScreen extends ConsumerStatefulWidget {
   const PostRideScreen({super.key, required this.rideId});
@@ -39,10 +44,16 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   PostRideAnalysis? _analysis;
   bool _acceptedSuggestion = false;
   AssistRideSummary? _assist;
-  double _replayProgress = 0;
   bool _stravaConfigured = false;
   bool _stravaConnected = false;
   String? _stravaHint;
+
+  WeatherSnapshot? _weatherStart;
+  WeatherSnapshot? _weatherEnd;
+  bool _weatherLoading = false;
+  List<String> _photoPaths = [];
+  bool _savingAsTour = false;
+  bool _savedAsTour = false;
 
   @override
   void initState() {
@@ -81,6 +92,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     setState(() {
       _ride = ride;
       _bikeName = bike?.name;
+      _photoPaths = _photosFromSummary(ride?.summary);
       if (ride != null) {
         _analysis = analyzePostRide(ride: ride, bikeName: bike?.name);
         _assist = buildEstimatedAssistLog(
@@ -102,6 +114,151 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     });
     if (ride != null) {
       unawaited(_postRideSideEffects(ride));
+      unawaited(_loadWeather(ride));
+    }
+  }
+
+  List<String> _photosFromSummary(Map<String, dynamic>? summary) {
+    final raw = summary?['photoPaths'];
+    if (raw is! List) return [];
+    return [
+      for (final e in raw)
+        if (e is String && e.isNotEmpty) e,
+    ];
+  }
+
+  Future<void> _loadWeather(RideRecord ride) async {
+    final cachedStart = _weatherFromSummary(ride.summary, 'weatherStart');
+    final cachedEnd = _weatherFromSummary(ride.summary, 'weatherEnd');
+    if (cachedStart != null || cachedEnd != null) {
+      if (!mounted) return;
+      setState(() {
+        _weatherStart = cachedStart;
+        _weatherEnd = cachedEnd ?? cachedStart;
+        _weatherLoading = false;
+      });
+      return;
+    }
+
+    final pts = _latLngFromTrack(ride.track);
+    if (pts.isEmpty) return;
+
+    setState(() => _weatherLoading = true);
+    final client = ref.read(weatherClientProvider);
+    try {
+      final start = await client.fetch(lat: pts.first.$1, lon: pts.first.$2);
+      WeatherSnapshot? end;
+      if (pts.length > 1) {
+        final last = pts.last;
+        final first = pts.first;
+        final moved = (last.$1 - first.$1).abs() > 0.02 ||
+            (last.$2 - first.$2).abs() > 0.02;
+        end = moved
+            ? await client.fetch(lat: last.$1, lon: last.$2)
+            : start;
+      } else {
+        end = start;
+      }
+      if (!mounted) return;
+      setState(() {
+        _weatherStart = start;
+        _weatherEnd = end;
+        _weatherLoading = false;
+      });
+      if (start != null) {
+        unawaited(
+          ref.read(rideRepositoryProvider).mergeSummary(widget.rideId, {
+            'weatherStart': _weatherToJson(start),
+            if (end != null) 'weatherEnd': _weatherToJson(end),
+          }),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _weatherLoading = false);
+    }
+  }
+
+  WeatherSnapshot? _weatherFromSummary(
+    Map<String, dynamic> summary,
+    String key,
+  ) {
+    final raw = summary[key];
+    if (raw is! Map) return null;
+    final m = Map<String, dynamic>.from(raw);
+    final temp = (m['tempC'] as num?)?.toDouble();
+    if (temp == null) return null;
+    return WeatherSnapshot(
+      tempC: temp,
+      precipMm: (m['precipMm'] as num?)?.toDouble() ?? 0,
+      trailHint: (m['trailHint'] as String?) ?? 'dry_likely',
+      summary: (m['summary'] as String?) ?? 'Open-Meteo',
+    );
+  }
+
+  Map<String, dynamic> _weatherToJson(WeatherSnapshot w) => {
+        'tempC': w.tempC,
+        'precipMm': w.precipMm,
+        'trailHint': w.trailHint,
+        'summary': w.summary,
+      };
+
+  List<(double, double)> _latLngFromTrack(List<Map<String, dynamic>> track) {
+    final out = <(double, double)>[];
+    for (final p in track) {
+      final lat = (p['lat'] as num?)?.toDouble();
+      final lng = (p['lng'] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+      out.add((lat, lng));
+    }
+    return out;
+  }
+
+  Future<void> _onPhotosChanged(List<String> paths) async {
+    setState(() => _photoPaths = paths);
+    final ride = _ride;
+    if (ride == null) return;
+    await ref.read(rideRepositoryProvider).mergeSummary(widget.rideId, {
+      'photoPaths': paths,
+    });
+    final updated = await ref.read(rideRepositoryProvider).getById(widget.rideId);
+    if (mounted && updated != null) {
+      setState(() => _ride = updated);
+    }
+  }
+
+  Future<void> _saveAsTour() async {
+    final l10n = AppLocalizations.of(context);
+    final ride = _ride;
+    if (ride == null) return;
+    if (ride.track.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.postRideSaveAsTourNeedTrack)),
+      );
+      return;
+    }
+    if (_savingAsTour || _savedAsTour) return;
+    setState(() => _savingAsTour = true);
+    try {
+      await saveRideAsTour(
+        routes: ref.read(routeRepositoryProvider),
+        ride: ride,
+        photoPaths: _photoPaths,
+      );
+      ref.invalidate(savedRoutesProvider);
+      if (!mounted) return;
+      setState(() {
+        _savingAsTour = false;
+        _savedAsTour = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.postRideSaveAsTourDone)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _savingAsTour = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
     }
   }
 
@@ -204,7 +361,6 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
         .submitFeedback(widget.rideId, feedback);
     _reanalyze(feedback);
     if (!mounted) return;
-    // Kurz Analyse zeigen, dann zurück
     await Future<void>.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -263,14 +419,37 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     }
   }
 
+  String _fmtDistance(double km) =>
+      km < 1 ? '${km.toStringAsFixed(2)} km' : '${km.toStringAsFixed(1)} km';
+
+  String _fmtDuration(int sec) {
+    if (sec < 60) return '$sec s';
+    final m = sec ~/ 60;
+    if (m < 60) return '$m min';
+    final h = m ~/ 60;
+    final rem = m % 60;
+    return '${h}h ${rem.toString().padLeft(2, '0')}m';
+  }
+
+  String? _fmtPaceKmh(RideRecord ride) {
+    if (ride.movingTimeSec <= 0 || ride.distanceKm <= 0) return null;
+    final kmh = ride.distanceKm / (ride.movingTimeSec / 3600);
+    return '${kmh.toStringAsFixed(1)} km/h';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final ride = _ride;
     final analysis = _analysis;
     final track = ride?.track ?? const <Map<String, dynamic>>[];
+    final isFreeride = ride != null &&
+        (ride.routeId == null || ride.routeId!.isEmpty);
+    final pace = ride == null ? null : _fmtPaceKmh(ride);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Post-Ride'),
+        title: Text(l10n.postRideTitle),
         actions: [
           if (ride != null)
             IconButton(
@@ -285,18 +464,48 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                Text(
-                  ride.name ?? 'Ride',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ride.name ??
+                            (isFreeride ? l10n.postRideFreeride : 'Ride'),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
+                    ),
+                    if (isFreeride)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          l10n.postRideFreeride,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '${ride.distanceKm < 1 ? ride.distanceKm.toStringAsFixed(2) : ride.distanceKm.toStringAsFixed(1)} km · '
-                  '${ride.movingTimeSec < 60 ? '${ride.movingTimeSec} s' : '${(ride.movingTimeSec / 60).round()} min'} · '
-                  '${ride.elevationM.round()} hm',
-                  style: const TextStyle(color: AppColors.muted),
+                const SizedBox(height: AppSpacing.m),
+                _StatsRow(
+                  distance: _fmtDistance(ride.distanceKm),
+                  duration: _fmtDuration(ride.movingTimeSec),
+                  pace: pace,
+                  elevation: '${ride.elevationM.round()} hm',
+                  distanceLabel: l10n.postRideStatDistance,
+                  durationLabel: l10n.postRideStatDuration,
+                  paceLabel: l10n.postRideStatPace,
+                  elevationLabel: l10n.postRideStatElevation,
                 ),
                 if (ride.summary['gpsStallSim'] == true) ...[
                   const SizedBox(height: 10),
@@ -332,54 +541,67 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.l),
                 Text(
-                  'Track-Replay',
+                  l10n.postRideTrackMap,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 180,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.muted.withValues(alpha: 0.35),
-                      ),
+                const SizedBox(height: AppSpacing.s),
+                if (track.length >= 2)
+                  PostRideTrackMap(track: track)
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      l10n.postRideNoTrack,
+                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CustomPaint(
-                        painter: _TrackReplayPainter(
-                          track: track,
-                          progress: _replayProgress,
+                  ),
+                const SizedBox(height: AppSpacing.l),
+                _WeatherCard(
+                  loading: _weatherLoading,
+                  start: _weatherStart,
+                  end: _weatherEnd,
+                  title: l10n.postRideWeatherTitle,
+                  startLabel: l10n.postRideWeatherStart,
+                  endLabel: l10n.postRideWeatherEnd,
+                  unavailable: l10n.postRideWeatherUnavailable,
+                ),
+                const SizedBox(height: AppSpacing.l),
+                PostRidePhotosSection(
+                  photoPaths: _photoPaths,
+                  onChanged: (paths) => unawaited(_onPhotosChanged(paths)),
+                ),
+                const SizedBox(height: AppSpacing.l),
+                FilledButton.icon(
+                  onPressed: (_savingAsTour || _savedAsTour)
+                      ? null
+                      : () => unawaited(_saveAsTour()),
+                  icon: _savingAsTour
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          _savedAsTour ? Icons.check : Icons.bookmark_add_outlined,
                         ),
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
+                  label: Text(
+                    _savedAsTour
+                        ? l10n.postRideSaveAsTourDone
+                        : l10n.postRideSaveAsTour,
                   ),
                 ),
-                if (track.length >= 2) ...[
-                  Slider(
-                    value: _replayProgress,
-                    onChanged: (v) => setState(() => _replayProgress = v),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    l10n.postRideSaveAsTourHint,
+                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
                   ),
-                  Text(
-                    'Position ${(100 * _replayProgress).round()} %',
-                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                  ),
-                ] else
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Kein GPS-Track — Replay zeigt Platzhalter.',
-                      style: TextStyle(fontSize: 12, color: AppColors.muted),
-                    ),
-                  ),
-                const SizedBox(height: 12),
+                ),
+                const SizedBox(height: AppSpacing.l),
                 Row(
                   children: [
                     Expanded(
@@ -658,6 +880,196 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   }
 }
 
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({
+    required this.distance,
+    required this.duration,
+    required this.pace,
+    required this.elevation,
+    required this.distanceLabel,
+    required this.durationLabel,
+    required this.paceLabel,
+    required this.elevationLabel,
+  });
+
+  final String distance;
+  final String duration;
+  final String? pace;
+  final String elevation;
+  final String distanceLabel;
+  final String durationLabel;
+  final String paceLabel;
+  final String elevationLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <({String label, String value})>[
+      (label: distanceLabel, value: distance),
+      (label: durationLabel, value: duration),
+      if (pace != null) (label: paceLabel, value: pace!),
+      (label: elevationLabel, value: elevation),
+    ];
+    return Row(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(width: AppSpacing.s),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+                border: Border.all(
+                  color: AppColors.muted.withValues(alpha: 0.28),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    items[i].value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    items[i].label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _WeatherCard extends StatelessWidget {
+  const _WeatherCard({
+    required this.loading,
+    required this.start,
+    required this.end,
+    required this.title,
+    required this.startLabel,
+    required this.endLabel,
+    required this.unavailable,
+  });
+
+  final bool loading;
+  final WeatherSnapshot? start;
+  final WeatherSnapshot? end;
+  final String title;
+  final String startLabel;
+  final String endLabel;
+  final String unavailable;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: LinearProgressIndicator(minHeight: 3),
+          )
+        else if (start == null && end == null)
+          Text(
+            unavailable,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          )
+        else ...[
+          Builder(
+            builder: (context) {
+              final showEnd = end != null &&
+                  start != null &&
+                  (end!.tempC != start!.tempC ||
+                      end!.summary != start!.summary ||
+                      end!.trailHint != start!.trailHint);
+              return Row(
+                children: [
+                  if (start != null)
+                    Expanded(
+                      child: _WeatherTile(label: startLabel, w: start!),
+                    ),
+                  if (showEnd) ...[
+                    const SizedBox(width: AppSpacing.s),
+                    Expanded(
+                      child: _WeatherTile(label: endLabel, w: end!),
+                    ),
+                  ] else if (end != null && start == null)
+                    Expanded(
+                      child: _WeatherTile(label: endLabel, w: end!),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _WeatherTile extends StatelessWidget {
+  const _WeatherTile({required this.label, required this.w});
+
+  final String label;
+  final WeatherSnapshot w;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        border: Border.all(color: AppColors.muted.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${w.tempC.toStringAsFixed(0)}° · ${w.summary}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${w.trailLabel} · ${w.precipMm.toStringAsFixed(1)} mm',
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 List<String> _evidenceLines(String reasoning) {
   return reasoning
       .split(' · ')
@@ -831,76 +1243,3 @@ const _labelStyle = TextStyle(
   fontWeight: FontWeight.w600,
   fontSize: 13,
 );
-
-class _TrackReplayPainter extends CustomPainter {
-  _TrackReplayPainter({required this.track, required this.progress});
-
-  final List<Map<String, dynamic>> track;
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final pts = <Offset>[];
-    for (final p in track) {
-      final lat = (p['lat'] as num?)?.toDouble();
-      final lng = (p['lng'] as num?)?.toDouble();
-      if (lat == null || lng == null) continue;
-      pts.add(Offset(lng, lat));
-    }
-    if (pts.length < 2) {
-      final paint = Paint()
-        ..color = AppColors.muted.withValues(alpha: 0.35)
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(24, 40, size.width - 48, size.height - 80),
-          const Radius.circular(40),
-        ),
-        paint,
-      );
-      return;
-    }
-
-    double minX = pts.first.dx, maxX = pts.first.dx;
-    double minY = pts.first.dy, maxY = pts.first.dy;
-    for (final o in pts) {
-      minX = math.min(minX, o.dx);
-      maxX = math.max(maxX, o.dx);
-      minY = math.min(minY, o.dy);
-      maxY = math.max(maxY, o.dy);
-    }
-    final dx = (maxX - minX).abs() < 1e-9 ? 1e-5 : maxX - minX;
-    final dy = (maxY - minY).abs() < 1e-9 ? 1e-5 : maxY - minY;
-    final pad = 16.0;
-    Offset map(Offset o) {
-      final x = pad + (o.dx - minX) / dx * (size.width - 2 * pad);
-      final y = size.height - pad - (o.dy - minY) / dy * (size.height - 2 * pad);
-      return Offset(x, y);
-    }
-
-    final path = Path()..moveTo(map(pts.first).dx, map(pts.first).dy);
-    for (var i = 1; i < pts.length; i++) {
-      final m = map(pts[i]);
-      path.lineTo(m.dx, m.dy);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.trail.withValues(alpha: 0.85)
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-    final idx =
-        ((pts.length - 1) * progress.clamp(0.0, 1.0)).round().clamp(0, pts.length - 1);
-    final cursor = map(pts[idx]);
-    canvas.drawCircle(cursor, 6, Paint()..color = AppColors.accent);
-  }
-
-  @override
-  bool shouldRepaint(covariant _TrackReplayPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.track != track;
-}
-

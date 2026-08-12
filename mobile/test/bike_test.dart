@@ -13,4 +13,24 @@ void main() {
     expect(next.name, 'Enduro');
     expect(next.category, BikeCategory.mtbAm);
   });
+
+  test('Bike categoryLabel hält E-Untertypen mit isEbike', () {
+    expect(
+      const Bike(
+        id: '1',
+        name: 'E-City',
+        category: BikeCategory.urban,
+        isEbike: true,
+      ).categoryLabel,
+      'E-City',
+    );
+    expect(
+      const Bike(
+        id: '2',
+        name: 'City',
+        category: BikeCategory.urban,
+      ).categoryLabel,
+      'City',
+    );
+  });
 }

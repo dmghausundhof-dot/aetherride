@@ -6,6 +6,7 @@ import {
   DEFAULT_ROUTE_FILTERS,
   difficultyOptionsForProfile,
   filterRouteSuggestions,
+  parseSurfaceKey,
 } from "./routeFilters";
 import type { RouteSuggestion } from "./suggestions";
 
@@ -87,16 +88,46 @@ const mid = filterRouteSuggestions(sample, {
   scale: "mid",
 });
 assert(mid.some((r) => r.id === "a"), "mid scale includes S1–S2");
+assert(mid.some((r) => r.id === "c"), "mid keeps unrated road/city");
 
 const roadSport = filterRouteSuggestions(sample, {
   ...DEFAULT_ROUTE_FILTERS,
   sport: "road",
 });
-assert(roadSport.length === 1 && roadSport[0].id === "c", "sport road");
+assert(roadSport.length === 3, "sport is soft preference, not exclusive");
+assert(roadSport[0].id === "c", "road preference sorts matching first");
+
+const ebikeSport = filterRouteSuggestions(sample, {
+  ...DEFAULT_ROUTE_FILTERS,
+  sport: "ebike",
+});
+assert(ebikeSport.length === 3, "ebike sport is soft preference");
+assert(
+  ebikeSport[0].category === "mtb_trail" ||
+    ebikeSport[0].category === "mtb_enduro",
+  "ebike preference soft-boosts MTB family (E-MTB parity)"
+);
+
+const asphalt = filterRouteSuggestions(sample, {
+  ...DEFAULT_ROUTE_FILTERS,
+  surfaceQuery: "asphalt",
+});
+assert(asphalt.length === 1 && asphalt[0].id === "c", "asphalt surface key");
+
+assert(parseSurfaceKey("asphalt/bike-lane") === "asphalt", "catalog asphalt");
+assert(parseSurfaceKey("gravel/asphalt") === "gravel", "catalog gravel");
+assert(parseSurfaceKey("trail/forest") === "trail", "catalog trail");
+assert(parseSurfaceKey("flow/compact") === "gravel", "legacy flow→gravel");
+
+const near = filterRouteSuggestions(sample, {
+  ...DEFAULT_ROUTE_FILTERS,
+  maxDistanceKm: 22,
+});
+assert(near.length === 1 && near[0].id === "a", "distance max");
 
 const mtbOpts = difficultyOptionsForProfile("mtb_allmountain");
 assert(
-  mtbOpts.some((o) => o.label.includes("S0") || o.label.includes("S1")),
+  mtbOpts.some((o) => o.label === "Leicht" || o.label.includes("S0")),
   "MTB difficulty labels"
 );
 const roadOpts = difficultyOptionsForProfile("road");

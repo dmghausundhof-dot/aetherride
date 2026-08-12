@@ -1,0 +1,24 @@
+{
+  "id": "wien",
+  "name": "Wien & Wienerwald",
+  "bbox": [
+    16.1,
+    48.1,
+    16.6,
+    48.4
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "wien.tar.zst",
+    "packGz": "wien.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "berlin",
+  "name": "Berlin & Brandenburg",
+  "bbox": [
+    13.1,
+    52.3,
+    13.7,
+    52.7
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "berlin.tar.zst",
+    "packGz": "berlin.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

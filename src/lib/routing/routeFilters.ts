@@ -1,15 +1,17 @@
 /**
- * Discover-Filter — sportabhängig (Schwierigkeit/Belag), nicht MTB-only.
+ * Discover-Filter — sportneutral (alle Fahrradfahrer), API-/Katalog-Felder.
+ * Semantik angeglichen an Mobile `TourFilters` (tour_filters.dart).
  */
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { isHonestLoopSuggestion } from "@/lib/discover/loopHonesty";
 
-/** Generische Schwierigkeit — Labels sportabhängig via difficultyOptionsForProfile */
-export type ScaleChip = "any" | "easy" | "mid" | "hard" | "road";
+/** Generische Beanspruchung — Labels sportabhängig via difficultyOptionsForProfile */
+export type ScaleChip = "any" | "easy" | "mid" | "hard";
 export type ElevationChip = "any" | "flat" | "hilly" | "alpine";
+export type SurfaceKey = "asphalt" | "gravel" | "trail" | "mixed";
 
-/** Sport-Familie für Katalog-Filter (unabhängig vom Routing-Profil) */
+/** Sport-Familie: weiche Präferenz (Sortierung), kein Hard-Exclude */
 export type SportFilter =
   | "all"
   | "mtb"
@@ -24,8 +26,11 @@ export interface RouteFilterState {
   loopOnly: boolean;
   scale: ScaleChip;
   elevation: ElevationChip;
-  surfaceQuery: string | null;
+  /** Kanonischer Surface-Key (nicht Substring) */
+  surfaceQuery: SurfaceKey | null;
   sport: SportFilter;
+  /** Max. Distanz in km; null = egal */
+  maxDistanceKm: number | null;
 }
 
 export const DEFAULT_ROUTE_FILTERS: RouteFilterState = {
@@ -34,6 +39,7 @@ export const DEFAULT_ROUTE_FILTERS: RouteFilterState = {
   elevation: "any",
   surfaceQuery: null,
   sport: "all",
+  maxDistanceKm: null,
 };
 
 export const SPORT_FILTER_OPTIONS: { id: SportFilter; label: string }[] = [
@@ -46,6 +52,74 @@ export const SPORT_FILTER_OPTIONS: { id: SportFilter; label: string }[] = [
   { id: "touring", label: "Touring" },
   { id: "hiking", label: "Wandern" },
 ];
+
+export const DISTANCE_MAX_OPTIONS: { id: number | null; label: string }[] = [
+  { id: null, label: "Distanz" },
+  { id: 20, label: "≤ 20 km" },
+  { id: 40, label: "≤ 40 km" },
+  { id: 70, label: "≤ 70 km" },
+];
+
+/** Normalisiert Katalog-/Seed-Oberflächen auf kanonische Keys. */
+export function parseSurfaceKey(raw: string | null | undefined): SurfaceKey | null {
+  if (!raw) return null;
+  const t = raw.trim().toLowerCase();
+  if (!t || t === "—" || t === "-") return null;
+  if (
+    t.includes("trail") ||
+    t.includes("root") ||
+    t.includes("alpine") ||
+    t.includes("single") ||
+    t.includes("naturboden")
+  ) {
+    return "trail";
+  }
+  if (
+    t.includes("gravel") ||
+    t.includes("schotter") ||
+    t.includes("forst") ||
+    t.includes("unpaved") ||
+    t.includes("compact") ||
+    t === "flow/compact" ||
+    t.startsWith("flow")
+  ) {
+    return "gravel";
+  }
+  if (
+    t.includes("urban") ||
+    t.includes("mixed") ||
+    t.includes("stadt") ||
+    t.includes("gemischt")
+  ) {
+    return "mixed";
+  }
+  if (
+    t.includes("asphalt") ||
+    t.includes("paved") ||
+    t.includes("bike-lane") ||
+    t.includes("bike_lane") ||
+    t.includes("radweg") ||
+    t.includes("pavement") ||
+    t === "path" ||
+    t.endsWith("/path")
+  ) {
+    return "asphalt";
+  }
+  return "mixed";
+}
+
+function surfaceMatches(tourSurface: string, filter: SurfaceKey): boolean {
+  const key = parseSurfaceKey(tourSurface);
+  if (!key) return filter === "mixed";
+  if (key === filter) return true;
+  const soft: Record<SurfaceKey, Set<SurfaceKey>> = {
+    asphalt: new Set(["asphalt", "mixed"]),
+    mixed: new Set(["mixed", "asphalt"]),
+    gravel: new Set(["gravel", "trail"]),
+    trail: new Set(["trail", "gravel"]),
+  };
+  return soft[filter]?.has(key) ?? false;
+}
 
 function categoryMatchesSport(
   category: RouteSuggestion["category"],
@@ -68,7 +142,15 @@ function categoryMatchesSport(
     case "urban":
       return category === "urban";
     case "ebike":
-      return category === "emtb" || category === "etrekking";
+      // E-MTB-Fahrer sollen MTB-Trails weich bevorzugt sehen (Mobile-Parität).
+      return (
+        category === "emtb" ||
+        category === "etrekking" ||
+        category === "mtb_trail" ||
+        category === "mtb_am" ||
+        category === "mtb_enduro" ||
+        category === "dh"
+      );
     case "touring":
       return category === "etrekking" || category === "gravel" || category === "road";
     case "hiking":
@@ -78,29 +160,30 @@ function categoryMatchesSport(
   }
 }
 
-function isMtbScale(mtbScale: string): boolean {
-  return /S\d/i.test(mtbScale);
-}
-
+/** Beanspruchung — unklassifiziert (—) matcht easy+mid (Road/City/Katalog). */
 function scaleMatches(mtbScale: string, chip: ScaleChip): boolean {
   if (chip === "any") return true;
-  // „Straße/Gravel“-Chip: alles ohne technische Singletrail-Skala
-  if (chip === "road") {
-    return !isMtbScale(mtbScale) || mtbScale === "—" || mtbScale.startsWith("T");
+  const t = mtbScale.trim().toLowerCase();
+  if (!t || t === "—" || t === "-" || t === "offen" || t === "open") {
+    return chip === "easy" || chip === "mid";
+  }
+  if (/anspruch|schwer|hard|difficult|rau/.test(t)) return chip === "hard";
+  if (/leicht|easy|entspannt|flach/.test(t)) return chip === "easy";
+  if (/mittel|medium|sportlich|gemischt/.test(t)) {
+    return chip === "mid" || chip === "easy";
   }
 
   const nums = [...mtbScale.matchAll(/S(\d)/gi)].map((m) => Number(m[1]));
   if (nums.length === 0) {
-    // Keine S-Skala: Rennrad/Gravel/City — easy+mid ok, hard nur mit T3+ o.ä.
     if (chip === "easy") return true;
     if (chip === "mid") return !/^T[34]/i.test(mtbScale);
-    if (chip === "hard") return /^T[34]/i.test(mtbScale) || /S[3-5]/i.test(mtbScale);
+    if (chip === "hard") return /^T[34]/i.test(mtbScale);
     return true;
   }
   const max = Math.max(...nums);
   if (chip === "easy") return max <= 1;
   if (chip === "mid") return max >= 1 && max <= 2;
-  return max >= 3;
+  return max >= 2;
 }
 
 function elevationMatches(hm: number, chip: ElevationChip): boolean {
@@ -114,21 +197,37 @@ export function filterRouteSuggestions(
   routes: RouteSuggestion[],
   filters: RouteFilterState
 ): RouteSuggestion[] {
-  return routes.filter((r) => {
+  const hard = routes.filter((r) => {
     // D-60-LOOP-FILTER-01: Rundkurs chip — honest loops only, never A→B.
     if (filters.loopOnly && !isHonestLoopSuggestion(r)) return false;
-    if (!categoryMatchesSport(r.category, filters.sport)) return false;
     if (!scaleMatches(r.mtbScale, filters.scale)) return false;
     if (!elevationMatches(r.elevationM, filters.elevation)) return false;
+    if (
+      filters.maxDistanceKm != null &&
+      filters.maxDistanceKm > 0 &&
+      r.distanceKm > filters.maxDistanceKm + 0.05
+    ) {
+      return false;
+    }
     if (filters.surfaceQuery) {
-      const q = filters.surfaceQuery.toLowerCase();
-      if (!r.surface.toLowerCase().includes(q)) return false;
+      if (!surfaceMatches(r.surface, filters.surfaceQuery)) return false;
     }
     return true;
   });
+
+  // Sport: weiche Präferenz — Treffer nach vorn, Rest bleibt sichtbar.
+  if (filters.sport === "all") return hard;
+  const matched: RouteSuggestion[] = [];
+  const rest: RouteSuggestion[] = [];
+  for (const r of hard) {
+    if (categoryMatchesSport(r.category, filters.sport)) matched.push(r);
+    else rest.push(r);
+  }
+  if (matched.length === 0) return hard;
+  return [...matched, ...rest];
 }
 
-/** Schwierigkeits-Chips abhängig vom aktiven Routing-Profil */
+/** Schwierigkeits-Chips — Labels sportabhängig, Keys einheitlich easy/mid/hard */
 export function difficultyOptionsForProfile(
   profile: RoutingProfile
 ): { id: ScaleChip; label: string }[] {
@@ -140,9 +239,9 @@ export function difficultyOptionsForProfile(
   if (mtbLike) {
     return [
       { id: "any", label: "Alle" },
-      { id: "easy", label: "S0–S1" },
-      { id: "mid", label: "S1–S2" },
-      { id: "hard", label: "S3+" },
+      { id: "easy", label: "Leicht" },
+      { id: "mid", label: "Mittel" },
+      { id: "hard", label: "Anspruchsvoll" },
     ];
   }
   if (profile === "hiking") {
@@ -159,7 +258,6 @@ export function difficultyOptionsForProfile(
       { id: "easy", label: "Leicht" },
       { id: "mid", label: "Gemischt" },
       { id: "hard", label: "Rau" },
-      { id: "road", label: "Viel Asphalt" },
     ];
   }
   if (profile === "urban" || profile === "road" || profile === "ebike") {
@@ -167,14 +265,14 @@ export function difficultyOptionsForProfile(
       { id: "any", label: "Alle" },
       { id: "easy", label: "Entspannt" },
       { id: "mid", label: "Sportlich" },
-      { id: "road", label: "Straße/Radweg" },
+      { id: "hard", label: "Anspruchsvoll" },
     ];
   }
   return [
     { id: "any", label: "Alle" },
     { id: "easy", label: "Leicht" },
     { id: "mid", label: "Mittel" },
-    { id: "hard", label: "Schwer" },
+    { id: "hard", label: "Anspruchsvoll" },
   ];
 }
 
@@ -183,8 +281,7 @@ export const SCALE_OPTIONS: { id: ScaleChip; label: string }[] = [
   { id: "any", label: "Alle" },
   { id: "easy", label: "Leicht" },
   { id: "mid", label: "Mittel" },
-  { id: "hard", label: "Schwer" },
-  { id: "road", label: "Straße/Radweg" },
+  { id: "hard", label: "Anspruchsvoll" },
 ];
 
 export const ELEVATION_OPTIONS: { id: ElevationChip; label: string }[] = [
@@ -194,16 +291,15 @@ export const ELEVATION_OPTIONS: { id: ElevationChip; label: string }[] = [
   { id: "alpine", label: "1100+ hm" },
 ];
 
-export const SURFACE_OPTIONS = [
+export const SURFACE_OPTIONS: { id: SurfaceKey | null; label: string }[] = [
   { id: null, label: "Belag" },
   { id: "asphalt", label: "Asphalt" },
-  { id: "gravel", label: "Gravel" },
+  { id: "gravel", label: "Schotter" },
   { id: "trail", label: "Trail" },
-  { id: "bike-lane", label: "Radweg" },
-  { id: "path", label: "Weg" },
-] as const;
+  { id: "mixed", label: "Gemischt" },
+];
 
-/** Sport-Filter aus Routing-Profil ableiten (UI-Sync) */
+/** Sport-Filter aus Routing-Profil ableiten (UI-Sync / Default-Präferenz) */
 export function sportFilterFromProfile(profile: RoutingProfile): SportFilter {
   switch (profile) {
     case "mtb_allmountain":
@@ -218,7 +314,8 @@ export function sportFilterFromProfile(profile: RoutingProfile): SportFilter {
     case "ebike":
       return "touring";
     case "emtb":
-      return "ebike";
+      // E-MTB → MTB-Familie (Trails bevorzugt), nicht nur emtb/etrekking-Bucket.
+      return "mtb";
     case "hiking":
       return "hiking";
     default:

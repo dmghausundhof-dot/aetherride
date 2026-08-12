@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/deep_links.dart';
-import '../../domain/sport/discipline_ux.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../discover/discover_screen.dart';
@@ -61,6 +61,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final index = ref.watch(shellTabIndexProvider);
     final onboardingDone = ref.watch(onboardingDoneProvider);
     final riding = ref.watch(isRidingProvider);
@@ -93,35 +94,32 @@ class _AppShellState extends ConsumerState<AppShell> {
                 setState(() => _visited.add(i));
                 ref.read(shellTabIndexProvider.notifier).state = i;
               },
-              destinations: const [
+              destinations: [
                 NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home),
-                  label: MultiSportCopy.navHome,
+                  icon: const Icon(Icons.home_outlined),
+                  selectedIcon: const Icon(Icons.home),
+                  label: l10n.navHome,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.garage_outlined),
-                  selectedIcon: Icon(Icons.garage),
-                  label: MultiSportCopy.navGarage,
+                  icon: const Icon(Icons.garage_outlined),
+                  selectedIcon: const Icon(Icons.garage),
+                  label: l10n.navGarage,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.pedal_bike_outlined),
+                  icon: const Icon(Icons.pedal_bike_outlined),
                   selectedIcon:
-                      Icon(Icons.pedal_bike, color: AppColors.accent),
-                  // „Fahren“ statt engl. Ride — alle Disziplinen.
-                  label: MultiSportCopy.navRide,
+                      const Icon(Icons.pedal_bike, color: AppColors.accent),
+                  label: l10n.navRide,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.map_outlined),
-                  selectedIcon: Icon(Icons.map),
-                  // „Touren“ statt Discover — inkl. City/Gravel/Road.
-                  label: MultiSportCopy.navDiscover,
+                  icon: const Icon(Icons.map_outlined),
+                  selectedIcon: const Icon(Icons.map),
+                  label: l10n.navDiscover,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.build_outlined),
-                  selectedIcon: Icon(Icons.build),
-                  // „Teile“ statt Shop — Kompat, kein Fake-Marketplace.
-                  label: MultiSportCopy.navParts,
+                  icon: const Icon(Icons.build_outlined),
+                  selectedIcon: const Icon(Icons.build),
+                  label: l10n.navParts,
                 ),
               ],
             ),

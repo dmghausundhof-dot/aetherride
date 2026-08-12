@@ -109,7 +109,25 @@ async function manifestBasenames(dir: string): Promise<string[]> {
  */
 export async function listKnownPackIds(): Promise<string[]> {
   const skip = new Set(["valhalla-build"]);
-  const candidates = new Set<string>(["schwarzwald-nord"]);
+  const candidates = new Set<string>([
+    "schwarzwald-nord",
+    "rhein-neckar",
+    "bodensee",
+    "stuttgart",
+    "muenchen",
+    "nuernberg",
+    "frankfurt-rhein-main",
+    "koeln-rhein",
+    "hamburg",
+    "berlin",
+    "dresden-elbland",
+    "wien",
+    "salzburg",
+    "innsbruck",
+    "zuerich",
+    "bern",
+    "basel",
+  ]);
   for (const id of await dirNames(path.join(ROOT, "public", "offline"))) {
     if (!skip.has(id)) candidates.add(id);
   }

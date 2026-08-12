@@ -50,6 +50,9 @@ export JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/17.0.9-tem}"
 cd mobile
 flutter pub get
 
+# Ohne API_BASE_URL nutzen auch Debug-Builds die Produktions-API
+# (https://aetherride.vercel.app) — richtig für physische Geräte.
+# Emulator + lokales Next.js (npm run dev): Override auf 10.0.2.2 setzen.
 flutter run \
   --dart-define=SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
   --dart-define=API_BASE_URL=http://10.0.2.2:3001 \

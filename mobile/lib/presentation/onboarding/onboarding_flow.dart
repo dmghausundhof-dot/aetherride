@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
 import '../../domain/sport/discipline_ux.dart';
+import '../../l10n/app_localizations.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -145,7 +146,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                               const SizedBox(height: 6),
                               Text(
                                 _step == 1
-                                    ? MultiSportCopy.appTagline
+                                    ? AppLocalizations.of(context).appTagline
                                     : _step == 2
                                         ? 'Für Setup, SAG & Reichweite — nur lokal, jederzeit änderbar. '
                                             'Auch ohne Federgabel sinnvoll (z. B. City).'
@@ -303,7 +304,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(MultiSportCopy.startRide),
+                            : Text(AppLocalizations.of(context).startRide),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton(

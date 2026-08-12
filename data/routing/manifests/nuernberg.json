@@ -1,0 +1,24 @@
+{
+  "id": "nuernberg",
+  "name": "Nürnberg / Franken",
+  "bbox": [
+    10.9,
+    49.3,
+    11.3,
+    49.6
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "nuernberg.tar.zst",
+    "packGz": "nuernberg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

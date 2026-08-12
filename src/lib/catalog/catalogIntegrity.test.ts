@@ -11,11 +11,11 @@ function assert(cond: boolean, msg: string) {
 }
 
 const stats = catalogStats();
-assert(stats.manufacturers >= 30, `Erwarte ≥30 Hersteller, got ${stats.manufacturers}`);
-assert(stats.bikes >= 38, `Erwarte ≥38 Bikes, got ${stats.bikes}`);
+assert(stats.manufacturers >= 45, `Erwarte ≥45 Hersteller, got ${stats.manufacturers}`);
+assert(stats.bikes >= 65, `Erwarte ≥65 Bikes, got ${stats.bikes}`);
 assert(
-  COMPONENT_CATALOG.length >= 140,
-  `Erwarte ≥140 kuratierte OEM-Komponenten, got ${COMPONENT_CATALOG.length}`
+  COMPONENT_CATALOG.length >= 170,
+  `Erwarte ≥170 kuratierte OEM-Komponenten, got ${COMPONENT_CATALOG.length}`
 );
 assert(
   !COMPONENT_CATALOG.some(

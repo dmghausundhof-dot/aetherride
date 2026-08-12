@@ -1,0 +1,24 @@
+{
+  "id": "dresden-elbland",
+  "name": "Dresden / Elbland",
+  "bbox": [
+    13.6,
+    50.9,
+    14.0,
+    51.2
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "dresden-elbland.tar.zst",
+    "packGz": "dresden-elbland.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

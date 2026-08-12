@@ -1,0 +1,24 @@
+{
+  "id": "rhein-neckar",
+  "name": "Rhein-Neckar / Heidelberg",
+  "bbox": [
+    8.2,
+    49.2,
+    9.0,
+    49.6
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "rhein-neckar.tar.zst",
+    "packGz": "rhein-neckar.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

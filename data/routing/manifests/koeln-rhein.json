@@ -1,0 +1,24 @@
+{
+  "id": "koeln-rhein",
+  "name": "Köln / Rheinland",
+  "bbox": [
+    6.7,
+    50.8,
+    7.2,
+    51.1
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "koeln-rhein.tar.zst",
+    "packGz": "koeln-rhein.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/nav_hud_tokens.dart';
 import '../../../domain/sport/discipline_ux.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Map-first pre-ride chrome (N-START-01): one primary CTA, no sensor checklist.
 ///
@@ -28,17 +29,18 @@ class RidePreStartChrome extends StatelessWidget {
   /// Optional dismiss for the loaded route chip.
   final VoidCallback? onClearRoute;
 
-  /// Primary CTA label — one green action (Discover + Ride parity).
+  /// Primary CTA label — DE-Fallback für Unit-Tests ohne Locale-Binding.
   static String primaryLabel({required bool hasRoute}) =>
       hasRoute ? MultiSportCopy.goRide : MultiSportCopy.startFreeride;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final hasRoute = routeName != null && routeName!.isNotEmpty;
     final label = starting
-        ? 'Startet…'
-        : primaryLabel(hasRoute: hasRoute);
+        ? l10n.starting
+        : (hasRoute ? l10n.goRide : l10n.startFreeride);
 
     return Stack(
       children: [
@@ -62,15 +64,15 @@ class RidePreStartChrome extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                subtitle: const Text(
-                  'Karte bereit — Sensor optional nach Start',
+                subtitle: Text(
+                  l10n.rideMapReady,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: onClearRoute == null
                     ? null
                     : IconButton(
-                        tooltip: 'Route entfernen',
+                        tooltip: l10n.rideClearRoute,
                         icon: const Icon(Icons.close),
                         onPressed: starting ? null : onClearRoute,
                       ),

@@ -164,7 +164,8 @@ out body geom;
     }
 
     routes.sort((a, b) => (a.lengthKm ?? 99) - (b.lengthKm ?? 99));
-    const limited = routes.slice(0, 24);
+    // Cap: genug DACH-Vielfalt, ohne Discover/Warm zu fluten.
+    const limited = routes.slice(0, 36);
 
     return NextResponse.json({
       provider: "osm_overpass",

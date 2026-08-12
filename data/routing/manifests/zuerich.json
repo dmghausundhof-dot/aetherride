@@ -1,0 +1,24 @@
+{
+  "id": "zuerich",
+  "name": "Zürich & Umland",
+  "bbox": [
+    8.4,
+    47.3,
+    8.7,
+    47.5
+  ],
+  "builtAt": "2026-08-12T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "zuerich.tar.zst",
+    "packGz": "zuerich.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}
