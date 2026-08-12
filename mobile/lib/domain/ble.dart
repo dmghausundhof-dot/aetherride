@@ -6,6 +6,7 @@ class BoschLiveData {
     required this.speedKmh,
     this.batterySocPercent,
     this.riderPowerW,
+    this.assistMode,
     required this.cadenceRpm,
     required this.odometerKm,
     required this.lightStatus,
@@ -21,6 +22,8 @@ class BoschLiveData {
   final double? batterySocPercent;
   /// null = kein Power-Meter / kein LDI-Power.
   final double? riderPowerW;
+  /// null = kein LDI-Assist (nie aus CSC/Kadenz ableiten).
+  final String? assistMode;
   final double cadenceRpm;
   final double odometerKm;
   final bool lightStatus;
@@ -41,6 +44,11 @@ class BoschLiveData {
           : null,
       riderPowerW:
           map.containsKey('riderPowerW') ? dOpt(map['riderPowerW']) : null,
+      assistMode: () {
+        final v = map['assistMode'] ?? map['assist_mode'];
+        if (v is String && v.trim().isNotEmpty) return v.trim();
+        return null;
+      }(),
       cadenceRpm: d(map['cadenceRpm']),
       odometerKm: d(map['odometerKm']),
       lightStatus: b(map['lightStatus']),

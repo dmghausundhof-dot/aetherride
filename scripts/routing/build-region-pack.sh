@@ -8,6 +8,10 @@
 # Usage:
 #   ./scripts/routing/build-region-pack.sh data/routing/regions/schwarzwald-nord.json
 #   SKIP_TILES=1 ./scripts/routing/build-region-pack.sh ...
+#   # Graph-only wrapper (same as SKIP_TILES=1):
+#   ./scripts/routing/build-graph-only-pack.sh data/routing/regions/rhein-neckar.json
+#
+# Full packs need Docker + time; do not commit large dist/ binaries without OK.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REGION_FILE="${1:-$ROOT/data/routing/regions/schwarzwald-nord.json}"

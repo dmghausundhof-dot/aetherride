@@ -6,8 +6,8 @@
 class DiscoverBrowseSheetSnaps {
   DiscoverBrowseSheetSnaps._();
 
-  /// Collapsed — maximale Karte, Filter-Bar noch greifbar.
-  static const double peek = 0.20;
+  /// Collapsed — Karte dominant, Peek = eine Tourkarte (Komoot).
+  static const double peek = 0.28;
 
   /// Medium — Tourenkarten + Primärfilter, Map bleibt sichtbar.
   static const double half = 0.42;

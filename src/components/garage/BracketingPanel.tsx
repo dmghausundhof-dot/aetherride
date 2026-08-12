@@ -144,11 +144,11 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           </div>
           <div className="text-xs text-text-secondary">
             {active.referenceSegmentLabel} · {active.runs.length} Durchgänge ·{" "}
-            {active.status === "active"
+            {active.status === "open"
               ? "läuft"
-              : active.status === "done"
+              : active.status === "evaluated"
                 ? "fertig"
-                : active.status}
+                : "bereit"}
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {Array.from(

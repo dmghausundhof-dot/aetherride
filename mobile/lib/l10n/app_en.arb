@@ -87,11 +87,21 @@
   "adaptTourTitle": "Edit tour",
   "adaptTourHint": "Change start, end or stops — then compute the route.",
   "planRouteTitle": "Plan route",
+  "planRouteCta": "+ Plan",
+  "discoverSearchHint": "Place or tour",
+  "filterAroundKm": "within {km} km",
+  "@filterAroundKm": {
+    "placeholders": {
+      "km": { "type": "int" }
+    }
+  },
+  "mapToggleFab": "Map",
+  "communityWriteReview": "Write a review",
   "discoverModeExplore": "Explore",
   "discoverModeNavigate": "Navigate",
   "discoverModeMine": "Mine",
   "navigateTitle": "Navigate",
-  "navigateSubtitle": "Set start & destination — compute route, then ride",
+  "navigateSubtitle": "Tap destination or type an address",
   "navigateStartLabel": "Start",
   "navigateEndLabel": "Destination",
   "navigateStartHint": "Address, place, or tap map",

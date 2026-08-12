@@ -65,6 +65,10 @@
     ],
     "is_loop": true,
     "thumbnail_url": "assets/seeds/heroes/rn-heidelberg.jpg",
+    "photo_urls": [
+      "assets/seeds/heroes/rn-heidelberg.jpg",
+      "assets/seeds/heroes/rn-boxberg.jpg"
+    ],
     "geometry": [
       [
         8.69485,
@@ -608,6 +612,10 @@
     ],
     "is_loop": true,
     "thumbnail_url": "assets/seeds/heroes/rn-mannheim.jpg",
+    "photo_urls": [
+      "assets/seeds/heroes/rn-mannheim.jpg",
+      "assets/seeds/heroes/rn-heidelberg.jpg"
+    ],
     "geometry": [
       [
         8.48281,
@@ -1093,6 +1101,10 @@
     ],
     "is_loop": true,
     "thumbnail_url": "assets/seeds/heroes/rn-boxberg.jpg",
+    "photo_urls": [
+      "assets/seeds/heroes/rn-boxberg.jpg",
+      "assets/seeds/heroes/rn-heidelberg.jpg"
+    ],
     "geometry": [
       [
         8.67899,

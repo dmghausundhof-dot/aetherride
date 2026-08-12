@@ -40,7 +40,21 @@
 
 ---
 
-## MCP-Vorbereitung (KI-Interaktion)
+## MCP (KI)
+
+Read-only Server: `tools/mcp-aetherride/server.mjs`
+
+Tools: `search_bikes`, `identify_bike`, `list_tours`, `geocode`.
+
+Projekt-Config: `.cursor/mcp.json` (API-Base `https://aetherride.vercel.app`).
+
+```bash
+node tools/mcp-aetherride/server.mjs
+```
+
+Bike per Text/Foto: `POST /api/catalog/identify` `{ q, imageBase64 }` — Katalog-Fuzzy immer, Vision wenn `XAI_API_KEY`.
+
+---
 
 ### Zweck
 

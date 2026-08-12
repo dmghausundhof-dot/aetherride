@@ -1,0 +1,27 @@
+{
+  "id": "stuttgart",
+  "name": "Stuttgart / Mittlerer Neckar",
+  "bbox": [
+    9.0,
+    48.6,
+    9.4,
+    48.9
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/stuttgart-regbez-latest.osm.pbf",
+    "note": "Regierungsbezirk Stuttgart, auf bbox clippen."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/stuttgart",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "stuttgart.tar.zst"
+  }
+}

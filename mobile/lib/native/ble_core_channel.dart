@@ -42,7 +42,6 @@ class BleCoreChannel {
   bool _wantConnection = false;
   Timer? _stubTimer;
   Timer? _reconnectTimer;
-  double _soc = 87;
   double _odo = 1247.4;
   double _speed = 0;
   double _cadence = 0;
@@ -62,6 +61,13 @@ class BleCoreChannel {
   bool get isCscOnly => _cscOnly;
   String? get statusDetail => _statusDetail;
   String? get lastRemoteId => _lastRemoteId;
+
+  /// Platform-Name des verbundenen CSC-/LDI-Geräts (Garage-Speicher / HUD).
+  String? get connectedDeviceName {
+    final n = _device?.platformName.trim();
+    if (n == null || n.isEmpty) return null;
+    return n;
+  }
 
   /// Request Android 12+ BLE runtime permissions via a short probe scan.
   Future<BlePermissionResult> ensurePermission() async {
@@ -454,13 +460,12 @@ class BleCoreChannel {
   void _startStub() {
     _stubTimer?.cancel();
     _stubTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      _soc = (_soc - 0.01).clamp(5, 100);
       _odo += 0.01;
       _emit(
         BoschLiveData(
           speedKmh: 22.4,
-          batterySocPercent: _soc,
-          riderPowerW: 180,
+          batterySocPercent: null,
+          riderPowerW: null,
           cadenceRpm: 78,
           odometerKm: _odo,
           lightStatus: false,

@@ -1,0 +1,27 @@
+{
+  "id": "innsbruck",
+  "name": "Innsbruck / Tirol",
+  "bbox": [
+    11.2,
+    47.2,
+    11.5,
+    47.4
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT-Landextract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/innsbruck",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "innsbruck.tar.zst"
+  }
+}

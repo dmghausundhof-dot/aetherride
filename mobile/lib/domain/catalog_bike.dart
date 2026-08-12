@@ -179,3 +179,42 @@ WheelSize wheelSizeFromApi(String? raw) {
     _ => WheelSize.w29,
   };
 }
+
+/// Treffer von POST /api/catalog/identify (Text oder Foto).
+class CatalogBikeHit {
+  const CatalogBikeHit({
+    required this.id,
+    required this.manufacturerId,
+    required this.manufacturerName,
+    required this.name,
+    required this.year,
+    required this.category,
+    required this.isEbike,
+    required this.score,
+  });
+
+  final String id;
+  final String manufacturerId;
+  final String manufacturerName;
+  final String name;
+  final int year;
+  final BikeCategory category;
+  final bool isEbike;
+  final double score;
+
+  factory CatalogBikeHit.fromJson(Map<String, dynamic> m) {
+    return CatalogBikeHit(
+      id: (m['id'] as String?) ?? '',
+      manufacturerId: (m['manufacturerId'] as String?) ?? '',
+      manufacturerName: (m['manufacturerName'] as String?) ?? '',
+      name: (m['name'] as String?) ?? '',
+      year: (m['year'] as num?)?.toInt() ?? 0,
+      category: bikeCategoryFromApi((m['category'] as String?) ?? 'mtb_am'),
+      isEbike: m['isEbike'] == true,
+      score: (m['score'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  String get label =>
+      '$manufacturerName $name${year > 0 ? ' ($year)' : ''}';
+}

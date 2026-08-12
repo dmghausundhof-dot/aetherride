@@ -1,0 +1,22 @@
+{
+  "id": "rhein-neckar",
+  "name": "Rhein-Neckar / Heidelberg",
+  "bbox": [8.2, 49.2, 9.0, 49.6],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/karlsruhe-regbez-latest.osm.pbf",
+    "note": "Regierungsbezirk Karlsruhe (~clipped to bbox). Prefer Overpass for graph-only demo packs."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/rhein-neckar",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "rhein-neckar.tar.zst"
+  }
+}

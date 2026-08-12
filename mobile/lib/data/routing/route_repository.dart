@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/routing/engine_steps_along.dart';
 import '../../domain/saved_route.dart';
 import '../local/app_database.dart';
 import 'elevation_client.dart';
@@ -103,6 +104,7 @@ class RouteRepository {
     RoutingProfile profile = RoutingProfile.mtbTrail,
     List<GeoPoint> vias = const [],
     bool preferOffline = false,
+    bool fetchElevation = true,
   }) async {
     final key = _cacheKey(from, to, profile, vias);
     final cached = await _readCache(key);
@@ -118,7 +120,7 @@ class RouteRepository {
       vias: vias,
       preferOffline: preferOffline,
     );
-    if (!preferOffline) {
+    if (fetchElevation && !preferOffline) {
       final elev = await _elevation.fetchForTrack(result.coordinates);
       lastElevationGainM = elev?.gainM;
     } else {
@@ -131,6 +133,33 @@ class RouteRepository {
       await _writeCache(key, profile, result);
     }
     return result;
+  }
+
+  /// Turn-by-turn entlang eines bestehenden Tracks: Engine-Steps, Track bleibt.
+  Future<RouteResult> planNavAlongTrack({
+    required List<GeoPoint> track,
+    RoutingProfile profile = RoutingProfile.mtbTrail,
+  }) async {
+    final samples = sampleTrackWaypoints(track, maxPoints: 8);
+    if (samples.length < 2) {
+      return RouteResult(
+        coordinates: track,
+        distanceM: 0,
+        durationS: 0,
+        engine: 'none',
+        steps: const [],
+      );
+    }
+    return planRoute(
+      from: samples.first,
+      to: samples.last,
+      vias: samples.length > 2
+          ? samples.sublist(1, samples.length - 1)
+          : const [],
+      profile: profile,
+      preferOffline: false,
+      fetchElevation: false,
+    );
   }
 
   /// Löscht einen einzelnen Cache-Eintrag — für Aufrufer, die ein

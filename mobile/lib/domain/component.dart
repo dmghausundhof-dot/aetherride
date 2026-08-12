@@ -94,6 +94,70 @@ extension ComponentSlotLabel on ComponentSlot {
   }
 }
 
+/// Grobe Gruppen für die Garage — 25 Einzelzeilen sind zu viel auf einmal.
+enum ComponentGroup {
+  suspension,
+  wheels,
+  cockpit,
+  drivetrain,
+  brakes,
+  power,
+  other,
+}
+
+extension ComponentGroupLabel on ComponentGroup {
+  String get label => switch (this) {
+        ComponentGroup.suspension => 'Fahrwerk',
+        ComponentGroup.wheels => 'Laufräder',
+        ComponentGroup.cockpit => 'Cockpit',
+        ComponentGroup.drivetrain => 'Antrieb',
+        ComponentGroup.brakes => 'Bremsen',
+        ComponentGroup.power => 'E-Bike',
+        ComponentGroup.other => 'Weiteres',
+      };
+}
+
+extension ComponentSlotGroup on ComponentSlot {
+  ComponentGroup get group => switch (this) {
+        ComponentSlot.frame ||
+        ComponentSlot.fork ||
+        ComponentSlot.rearShock =>
+          ComponentGroup.suspension,
+        ComponentSlot.frontHub ||
+        ComponentSlot.rearHub ||
+        ComponentSlot.frontRim ||
+        ComponentSlot.rearRim ||
+        ComponentSlot.tireFront ||
+        ComponentSlot.tireRear =>
+          ComponentGroup.wheels,
+        ComponentSlot.headset ||
+        ComponentSlot.stem ||
+        ComponentSlot.handlebar ||
+        ComponentSlot.grips ||
+        ComponentSlot.seatpost ||
+        ComponentSlot.saddle =>
+          ComponentGroup.cockpit,
+        ComponentSlot.cassette ||
+        ComponentSlot.chain ||
+        ComponentSlot.crankset ||
+        ComponentSlot.bottomBracket ||
+        ComponentSlot.frontDerailleur ||
+        ComponentSlot.rearDerailleur ||
+        ComponentSlot.shifter =>
+          ComponentGroup.drivetrain,
+        ComponentSlot.brakeFront ||
+        ComponentSlot.brakeRear ||
+        ComponentSlot.rotorFront ||
+        ComponentSlot.rotorRear =>
+          ComponentGroup.brakes,
+        ComponentSlot.motor ||
+        ComponentSlot.battery ||
+        ComponentSlot.display =>
+          ComponentGroup.power,
+        ComponentSlot.other => ComponentGroup.other,
+      };
+}
+
 const coreInstallSlots = <ComponentSlot>[
   ComponentSlot.frame,
   ComponentSlot.fork,

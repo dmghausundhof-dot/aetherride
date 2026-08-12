@@ -1,0 +1,27 @@
+{
+  "id": "nuernberg",
+  "name": "Nürnberg / Franken",
+  "bbox": [
+    10.9,
+    49.3,
+    11.3,
+    49.6
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/bayern/mittelfranken-latest.osm.pbf",
+    "note": "Mittelfranken, auf bbox clippen."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/nuernberg",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "nuernberg.tar.zst"
+  }
+}

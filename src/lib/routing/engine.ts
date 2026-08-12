@@ -318,6 +318,8 @@ async function routeValhalla(
 function stepsFromGraphhopper(
   instructions: Array<{
     text?: string;
+    street_name?: string;
+    streetName?: string;
     distance?: number;
     time?: number;
     interval?: [number, number];
@@ -340,6 +342,9 @@ function stepsFromGraphhopper(
     else if (Math.abs(sign) === 3) type = "uturn";
     else if (i === 0) type = "start";
     const text = ins.text || "Weiter";
+    const streetRaw = (ins.street_name || ins.streetName || "").trim();
+    const fromText = text.match(/\b(?:auf|onto)\s+(.+?)\.?$/i)?.[1]?.trim();
+    const street = streetRaw || fromText || undefined;
     steps.push({
       id: `gh-${i}`,
       type,
@@ -351,6 +356,7 @@ function stepsFromGraphhopper(
         ? { lng: coord[0], lat: coord[1] }
         : undefined,
       engineType: sign,
+      streetName: street,
     });
     along += lengthM;
   }

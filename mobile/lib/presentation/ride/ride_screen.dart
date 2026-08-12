@@ -18,6 +18,7 @@ import '../../core/theme/nav_hud_tokens.dart';
 import '../../data/local/ride_prefs.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/routing_client.dart';
+import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
@@ -29,6 +30,7 @@ import '../../domain/routing/connectivity_chip.dart';
 import '../../domain/routing/nav_announce.dart';
 import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/route_progress.dart';
+import '../../domain/routing/street_from_instruction.dart';
 import '../../domain/routing/upcoming_rail.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
@@ -579,6 +581,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       remainingM: remainingM.toDouble(),
       speedKmh: speed,
       spoken: _spokenAnnounceKeys,
+      street: extractStreetNameFromInstruction(cue.instruction),
     );
     if (text == null) return;
     if (_lastSpokenText == text) return;
@@ -603,6 +606,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           remainingM: nxt.remainingM,
           speedKmh: speed,
           spoken: _spokenAnnounceKeys,
+          street: nxt.step.streetName ??
+              extractStreetNameFromInstruction(nxt.step.instruction),
         );
         if (text != null &&
             !_ttsMuted &&
@@ -820,7 +825,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         };
       }
 
-      final cscOk = await ble.connect();
+      // Garage-Kopplung: gespeicherte deviceId des aktiven Bikes bevorzugen.
+      String? preferredId;
+      final bikeId = active?.id;
+      if (bikeId != null && bikeId.isNotEmpty) {
+        final saved =
+            await ref.read(bikeBleStoreProvider).deviceForBike(bikeId);
+        preferredId = saved?.deviceId;
+      }
+
+      final cscOk = await ble.connect(deviceId: preferredId);
       if (!mounted || !ref.read(isRidingProvider)) return;
       if (!cscOk) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -831,6 +845,21 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ),
           ),
         );
+        return;
+      }
+
+      final remoteId = ble.lastRemoteId;
+      if (bikeId != null &&
+          bikeId.isNotEmpty &&
+          remoteId != null &&
+          remoteId.isNotEmpty) {
+        await ref.read(bikeBleStoreProvider).saveForBike(
+              bikeId,
+              BikeBleDevice(
+                deviceId: remoteId,
+                name: ble.connectedDeviceName,
+              ),
+            );
       }
     } catch (e) {
       debugPrint('ride: deferred BLE connect failed ($e) — continue without');
@@ -1133,10 +1162,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       return;
     }
     if (_userChoseStay || _rerouteSheetOpen) return;
-    await _showRerouteSheetIfNeeded();
-    if (!_userChoseStay && _autoRerouteEnabled) {
+    if (_autoRerouteEnabled) {
       unawaited(_maybeAutoReroute());
+      return;
     }
+    await _showRerouteSheetIfNeeded();
   }
 
   Future<void> _showRerouteSheetIfNeeded() async {
@@ -1328,6 +1358,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 id: st.id,
                 instruction: st.instruction,
                 distanceAlongM: st.distanceAlongM,
+                streetName: st.streetName,
               ),
             )
             .toList();
@@ -1370,6 +1401,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 instruction: st.instruction,
                 distanceAlongM: (st.distanceAlongM - stepCutoff + approachDistM)
                     .clamp(0, double.infinity),
+                streetName: st.streetName,
               ),
         ],
         poiStops: route.poiStops,
@@ -1774,7 +1806,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     required int elapsed,
     required double distanceM,
   }) {
-    ({String distance, String instruction, String iconName})? navParts;
+    ({String distance, String instruction, String iconName, String? street})?
+        navParts;
     if (route != null && route.coordinates.length >= 4) {
       if (route.steps.isNotEmpty) {
         final nxt = nextRouteStep(route.steps, _alongRouteM);
@@ -1786,10 +1819,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             bearingDeg: 0,
           );
           final parts = cueBannerParts(cue, nxt.remainingM.round());
+          final street = nxt.step.streetName?.trim().isNotEmpty == true
+              ? nxt.step.streetName!.trim()
+              : extractStreetNameFromInstruction(nxt.step.instruction);
           navParts = (
             distance: parts.distance,
             instruction: parts.instruction,
             iconName: navTurnIconName(nxt.step.instruction),
+            street: street,
           );
         }
       } else {
@@ -1801,6 +1838,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             distance: parts.distance,
             instruction: parts.instruction,
             iconName: navTurnIconName(nxt.cue.instruction),
+            street: extractStreetNameFromInstruction(nxt.cue.instruction),
           );
         }
       }
@@ -2040,6 +2078,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     distance: navParts.distance,
                     instruction: navParts.instruction,
                     icon: turnIcon(navParts.iconName),
+                    street: navParts.street,
+                    maneuver: maneuverLabelFromInstruction(
+                      navParts.instruction,
+                    ),
                   )
                 else if (route != null)
                   Material(
@@ -2250,7 +2292,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ..sort((a, b) => a.distanceAlongM.compareTo(b.distanceAlongM));
       if (remaining.length >= 2) {
         final second = remaining[1];
-        nextNextInstr = second.instruction;
+        final street = second.streetName?.trim().isNotEmpty == true
+            ? second.streetName!.trim()
+            : extractStreetNameFromInstruction(second.instruction);
+        nextNextInstr = street ?? second.instruction;
         nextNextRemain = second.distanceAlongM - _alongRouteM;
       }
     } else if (route.coordinates.length >= 4) {
@@ -2392,6 +2437,9 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
         );
       case RideLiveLayer.data:
+        final bleConnected = ref.read(bleCoreProvider).isConnected;
+        final bleSpeed = _ldi?.speedKmh;
+        final bleCadence = _ldi?.cadenceRpm;
         return Semantics(
           label: AppLocalizations.of(context).rideLiveData,
           child: Card(
@@ -2403,6 +2451,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                     'Tempo',
                     '${_effectiveSpeedKmh.toStringAsFixed(1)} km/h',
                   ),
+                  if (bleConnected && bleSpeed != null && bleSpeed > 0.3)
+                    _MetricRow(
+                      'Sensor-Tempo',
+                      '${bleSpeed.toStringAsFixed(1)} km/h',
+                    ),
                   _MetricRow(
                     'Distanz',
                     '${(ref.read(rideDistanceMProvider) / 1000).toStringAsFixed(2)} km',
@@ -2418,11 +2471,21 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                       'Leistung',
                       '${_ldi!.riderPowerW!.toStringAsFixed(0)} W',
                     ),
+                  if (_ldi?.assistMode != null &&
+                      _ldi!.assistMode!.trim().isNotEmpty)
+                    _MetricRow('Assist', _ldi!.assistMode!),
                   _MetricRow(
                     'Kadenz',
-                    _ldi != null && _ldi!.cadenceRpm > 0
-                        ? '${_ldi!.cadenceRpm.toStringAsFixed(0)} rpm'
+                    bleConnected && bleCadence != null && bleCadence > 0
+                        ? '${bleCadence.toStringAsFixed(0)} rpm'
                         : '—',
+                  ),
+                  _MetricRow(
+                    'Radsensor',
+                    bleConnected
+                        ? (ref.read(bleCoreProvider).connectedDeviceName ??
+                            'Verbunden')
+                        : 'Nicht verbunden',
                   ),
                 ],
               ),

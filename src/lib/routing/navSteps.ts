@@ -28,6 +28,8 @@ export interface NavStep {
   coordinate?: { lat: number; lng: number };
   /** Roh-Typ der Engine (Debug) */
   engineType?: string | number;
+  /** Straßenname, falls die Engine ihn separat liefert */
+  streetName?: string;
 }
 
 /** Spec: Ansagen 400 / 150 / 30 m; bei v>25 km/h zeitbasiert */
@@ -92,9 +94,8 @@ export function valhallaTypeToNav(type: number): NavStepType {
 export function localizeValhallaInstruction(
   raw: string,
   type: number
-): { de: string; en: string } {
+): { de: string; en: string; street?: string } {
   const en = raw?.trim() || "Continue";
-  // Valhalla liefert oft EN; kurze DE-Mappings für Kernfälle
   const lower = en.toLowerCase();
   let de = en;
   if (type === 4 || type === 5 || type === 6 || lower.includes("destination")) {
@@ -115,7 +116,16 @@ export function localizeValhallaInstruction(
   else if (lower.includes("continue") || lower.includes("straight"))
     de = "Geradeaus";
   else if (lower.startsWith("go ") || type === 0) de = "Losfahren";
-  return { de, en };
+  const street = en.match(/\b(?:onto|on)\s+(.+)$/i)?.[1]?.trim();
+  if (
+    street &&
+    de !== "Ziel erreicht" &&
+    de !== "Losfahren" &&
+    !de.toLowerCase().includes(street.toLowerCase())
+  ) {
+    de = `${de} auf ${street}`;
+  }
+  return { de, en, street: street || undefined };
 }
 
 export function stepsFromValhallaLeg(
@@ -142,7 +152,7 @@ export function stepsFromValhallaLeg(
     const lengthM = unitsKilometers
       ? Math.round((m.length ?? 0) * 1000)
       : Math.round(m.length ?? 0);
-    const { de, en } = localizeValhallaInstruction(
+    const { de, en, street } = localizeValhallaInstruction(
       m.instruction ?? "",
       typeNum
     );
@@ -159,6 +169,7 @@ export function stepsFromValhallaLeg(
         ? { lng: coord[0], lat: coord[1] }
         : undefined,
       engineType: typeNum,
+      streetName: street,
     });
   }
   return steps;
@@ -240,6 +251,7 @@ export function stepsFromOsrmLegs(
           ? { lng: loc[0], lat: loc[1] }
           : undefined,
         engineType: `${s.maneuver?.type ?? ""}:${s.maneuver?.modifier ?? ""}`,
+        streetName: name || undefined,
       });
       along += s.distance ?? 0;
     }

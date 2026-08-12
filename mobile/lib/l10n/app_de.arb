@@ -108,11 +108,21 @@
   "adaptTourTitle": "Tour anpassen",
   "adaptTourHint": "Start, Ziel oder Stopp ändern — dann Route berechnen.",
   "planRouteTitle": "Route planen",
+  "planRouteCta": "+ Planen",
+  "discoverSearchHint": "Ort oder Tour",
+  "filterAroundKm": "in {km} km",
+  "@filterAroundKm": {
+    "placeholders": {
+      "km": { "type": "int" }
+    }
+  },
+  "mapToggleFab": "Karte",
+  "communityWriteReview": "Bewertung schreiben",
   "discoverModeExplore": "Entdecken",
   "discoverModeNavigate": "Navigieren",
   "discoverModeMine": "Meine",
   "navigateTitle": "Navigieren",
-  "navigateSubtitle": "Start & Ziel setzen — Route berechnen, dann Losfahren",
+  "navigateSubtitle": "Ziel tippen oder Adresse — dann berechnen",
   "navigateStartLabel": "Start",
   "navigateEndLabel": "Ziel",
   "navigateStartHint": "Adresse, Ort oder Tippen",

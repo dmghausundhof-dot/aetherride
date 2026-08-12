@@ -134,6 +134,66 @@ class CatalogClient {
         );
   }
 
+  /// Text- oder Foto-Suche gegen den OEM-Katalog.
+  Future<List<CatalogBikeHit>> identify({
+    String? q,
+    String? imageBase64,
+  }) async {
+    final query = (q ?? '').trim();
+    if (query.length >= 2 && (imageBase64 == null || imageBase64.isEmpty)) {
+      try {
+        final remote = await fetchBikes(q: query);
+        final local = <CatalogBikeHit>[];
+        for (final m in remote) {
+          for (final b in m.bikes) {
+            local.add(
+              CatalogBikeHit(
+                id: b.id,
+                manufacturerId: m.id,
+                manufacturerName: m.name,
+                name: b.name,
+                year: b.year,
+                category: b.category,
+                isEbike: b.isEbike,
+                score: 8,
+              ),
+            );
+          }
+        }
+        if (local.isNotEmpty) return local.take(8).toList();
+      } catch (_) {}
+    }
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/catalog/identify');
+      final res = await _http
+          .post(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              if (query.isNotEmpty) 'q': query,
+              if (imageBase64 != null && imageBase64.isNotEmpty)
+                'imageBase64': imageBase64,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+      if (res.statusCode != 200) return const [];
+      final data = jsonDecode(res.body);
+      if (data is! Map) return const [];
+      final raw = data['matches'];
+      if (raw is! List) return const [];
+      return [
+        for (final e in raw)
+          if (e is Map)
+            CatalogBikeHit.fromJson(Map<String, dynamic>.from(e)),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<List<CatalogCacheData>> search({
     String? slot,
     String? q,

@@ -47,6 +47,7 @@ const osrm = stepsFromOsrmLegs([
   },
 ]);
 assert.ok(osrm.some((s) => s.instruction.includes("Links")));
+assert.equal(osrm.find((s) => s.streetName)?.streetName, "Trail");
 
 const cues = resolveNavCues({ steps });
 assert.ok(cues.length >= 1);

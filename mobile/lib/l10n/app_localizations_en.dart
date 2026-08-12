@@ -256,6 +256,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planRouteTitle => 'Plan route';
 
   @override
+  String get planRouteCta => '+ Plan';
+
+  @override
+  String get discoverSearchHint => 'Place or tour';
+
+  @override
+  String filterAroundKm(int km) {
+    return 'within $km km';
+  }
+
+  @override
+  String get mapToggleFab => 'Map';
+
+  @override
+  String get communityWriteReview => 'Write a review';
+
+  @override
   String get discoverModeExplore => 'Explore';
 
   @override
@@ -268,8 +285,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigateTitle => 'Navigate';
 
   @override
-  String get navigateSubtitle =>
-      'Set start & destination — compute route, then ride';
+  String get navigateSubtitle => 'Tap destination or type an address';
 
   @override
   String get navigateStartLabel => 'Start';

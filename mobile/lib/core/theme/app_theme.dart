@@ -86,7 +86,8 @@ abstract final class AppTheme {
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.accent,
             foregroundColor: AppColors.onAccent,
-            minimumSize: const Size.fromHeight(48),
+            // fromHeight(48) = infinite width → crash in Rows (Garage-Detail).
+            minimumSize: const Size(0, 48),
           ),
         ),
         navigationBarTheme: NavigationBarThemeData(
@@ -127,14 +128,14 @@ abstract final class AppTheme {
             foregroundColor: AppColors.onAccent,
             disabledBackgroundColor: Color(0xFF3A2A22),
             disabledForegroundColor: Color(0xFFB0A090),
-            minimumSize: const Size.fromHeight(48),
+            minimumSize: const Size(0, 48),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFFE8EEEA),
             side: const BorderSide(color: AppColors.border),
-            minimumSize: const Size.fromHeight(48),
+            minimumSize: const Size(0, 48),
           ),
         ),
         textButtonTheme: TextButtonThemeData(

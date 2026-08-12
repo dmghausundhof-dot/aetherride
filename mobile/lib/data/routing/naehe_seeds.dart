@@ -83,6 +83,7 @@ class NaeheSeedRoute {
     this.corridorNote,
     this.shortPitch,
     this.thumbnailUrl,
+    this.photoUrls = const [],
     this.bakedGeometry,
     this.geometryEngine,
   });
@@ -115,6 +116,9 @@ class NaeheSeedRoute {
 
   /// Hero image — asset path (`assets/…`) or https URL.
   final String? thumbnailUrl;
+
+  /// Extra curated photos (assets/https) — never fake "user" community shots.
+  final List<String> photoUrls;
 
   /// Pre-baked street loop [[lng, lat],…] from seed JSON (`geometry`).
   final List<List<double>>? bakedGeometry;
@@ -239,6 +243,7 @@ class NaeheSeedRoute {
       corridorNote: opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
       thumbnailUrl: opt('thumbnail_url') ?? heroAssetForSeedId((m['id'] as String?) ?? ''),
+      photoUrls: parseSeedPhotoUrls(m),
       bakedGeometry: baked,
       geometryEngine: opt('geometry_engine'),
     );
@@ -319,6 +324,7 @@ class NaeheSeedRoute {
       shortPitch: opt('short_pitch') ?? opt('notes'),
       thumbnailUrl: opt('thumbnail_url') ??
           heroAssetForSeedId((m['id'] as String?) ?? ''),
+      photoUrls: parseSeedPhotoUrls(m),
       bakedGeometry: baked,
       geometryEngine: opt('geometry_engine'),
     );
@@ -431,6 +437,28 @@ BikeCategory? _categoryFromSportTag(String raw) {
   };
 }
 
+const _kHeroForest = 'assets/seeds/heroes/forest.jpg';
+const _kHeroLake = 'assets/seeds/heroes/lake.jpg';
+const _kHeroAlps = 'assets/seeds/heroes/alps.jpg';
+const _kHeroGravel = 'assets/seeds/heroes/gravel.jpg';
+const _kHeroRiver = 'assets/seeds/heroes/river.jpg';
+const _kHeroCoast = 'assets/seeds/heroes/coast.jpg';
+
+const kTourHeroAssetPool = <String>[
+  _kHeroGravel,
+  _kHeroAlps,
+  _kHeroLake,
+  _kHeroForest,
+  _kHeroRiver,
+  _kHeroCoast,
+  'assets/seeds/heroes/rn-heidelberg.jpg',
+  'assets/seeds/heroes/rn-mannheim.jpg',
+  'assets/seeds/heroes/rn-boxberg.jpg',
+  'assets/seeds/heroes/berlin-tempelhofer.jpg',
+  'assets/seeds/heroes/berlin-spree.jpg',
+  'assets/seeds/heroes/berlin-grunewald.jpg',
+];
+
 /// Bundled hero assets for Discover photo cards (S25 — never blank sheet).
 String? heroAssetForSeedId(String id) {
   if (id.isEmpty) return null;
@@ -448,13 +476,95 @@ String? heroAssetForSeedId(String id) {
     'seed-loop-tempelhofer-60': 'assets/seeds/heroes/berlin-tempelhofer.jpg',
     'seed-loop-spree-feierabend-60': 'assets/seeds/heroes/berlin-spree.jpg',
     'seed-loop-grunewald-kurz-60': 'assets/seeds/heroes/berlin-grunewald.jpg',
-    // Karlsruhe / Hardtwald (Wiesloch-Nähe ≤35 km) — reuse RN heroes.
     'seed-loop-karlsruhe-hardtwald-60':
         'assets/seeds/heroes/rn-heidelberg.jpg',
     'seed-loop-karlsruhe-hardt-mtb-60':
         'assets/seeds/heroes/rn-boxberg.jpg',
   };
-  return map[id];
+  final mapped = map[id];
+  if (mapped != null) return mapped;
+
+  final tokens = id
+      .toLowerCase()
+      .split(RegExp(r'[^a-z0-9äöüß]+'))
+      .where((t) => t.isNotEmpty)
+      .toSet();
+  bool has(String t) => tokens.contains(t);
+  bool hasAffix(String needle) =>
+      tokens.any((t) => t != 'seed' && (t == needle || t.endsWith(needle)));
+
+  if (has('mtb') ||
+      has('emtb') ||
+      has('trail') ||
+      has('forest') ||
+      hasAffix('wald')) {
+    return _kHeroForest;
+  }
+  if (has('hafen') ||
+      has('lake') ||
+      has('weiher') ||
+      has('teich') ||
+      has('ufer') ||
+      hasAffix('see')) {
+    return _kHeroLake;
+  }
+  if (has('alpen') ||
+      has('alp') ||
+      has('alps') ||
+      has('gipfel') ||
+      has('pass') ||
+      has('berg')) {
+    return _kHeroAlps;
+  }
+  if (has('gravel')) return _kHeroGravel;
+  if (has('rhein') ||
+      has('neckar') ||
+      has('fluss') ||
+      has('river') ||
+      has('spree') ||
+      has('donau') ||
+      has('elbland') ||
+      has('kanal')) {
+    return _kHeroRiver;
+  }
+  if (has('kueste') ||
+      has('küste') ||
+      has('nordsee') ||
+      has('ostsee') ||
+      has('coast') ||
+      has('strand')) {
+    return _kHeroCoast;
+  }
+
+  return kTourHeroAssetPool[id.hashCode.abs() % kTourHeroAssetPool.length];
+}
+
+/// `photo_urls` / `photos` from seed JSON — assets or https only.
+List<String> parseSeedPhotoUrls(Map<String, dynamic> m) {
+  final out = <String>[];
+  void add(Object? raw) {
+    if (raw is! String) return;
+    final t = raw.trim();
+    if (t.isEmpty) return;
+    if (!(t.startsWith('assets/') ||
+        t.startsWith('http://') ||
+        t.startsWith('https://'))) {
+      return;
+    }
+    if (!out.contains(t)) out.add(t);
+  }
+
+  final list = m['photo_urls'] ?? m['photos'];
+  if (list is List) {
+    for (final e in list) {
+      if (e is String) {
+        add(e);
+      } else if (e is Map) {
+        add(e['url'] ?? e['src'] ?? e['image']);
+      }
+    }
+  }
+  return out;
 }
 
 /// Parse GeoJSON-ähnliche Seed-Geometrie → [[lng, lat], …].

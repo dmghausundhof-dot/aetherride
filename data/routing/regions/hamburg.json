@@ -1,0 +1,27 @@
+{
+  "id": "hamburg",
+  "name": "Hamburg & Umland",
+  "bbox": [
+    9.7,
+    53.4,
+    10.3,
+    53.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/hamburg-latest.osm.pbf",
+    "note": "Hamburg-Extract, auf bbox clippen."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/hamburg",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "hamburg.tar.zst"
+  }
+}

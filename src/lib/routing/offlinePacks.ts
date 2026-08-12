@@ -25,7 +25,6 @@ function candidates(id: string, file?: string): string[] {
     : "manifest.json";
   return [
     path.join(ROOT, "public", "offline", safeId, safeFile),
-    path.join(ROOT, "data", "routing", "dist", safeId, safeFile),
     path.join(ROOT, "data", "routing", "manifests", `${safeId}.json`),
   ];
 }
@@ -57,10 +56,10 @@ export async function readOfflineManifest(
       ),
     ]);
     if (!alt) return null;
-    const raw = await readFile(alt, "utf8");
+    const raw = await readFile(/* turbopackIgnore: true */ alt, "utf8");
     return JSON.parse(raw) as OfflinePackManifest;
   }
-  const raw = await readFile(p, "utf8");
+  const raw = await readFile(/* turbopackIgnore: true */ p, "utf8");
   return JSON.parse(raw) as OfflinePackManifest;
 }
 
@@ -70,7 +69,7 @@ export async function readOfflinePackFile(
 ): Promise<{ bytes: Buffer; contentType: string } | null> {
   const p = await firstExisting(candidates(id, file));
   if (!p) return null;
-  const bytes = await readFile(p);
+  const bytes = await readFile(/* turbopackIgnore: true */ p);
   const lower = file.toLowerCase();
   let contentType = "application/octet-stream";
   if (lower.endsWith(".json")) contentType = "application/json";
@@ -104,8 +103,8 @@ async function manifestBasenames(dir: string): Promise<string[]> {
 }
 
 /**
- * Scans public/offline, data/routing/dist and manifests/.
- * Only IDs with a readable manifest are listed (no empty 404 traps).
+ * Scans public/offline and manifests/. Dist-Artefakte bleiben Ops/CDN,
+ * nicht im Serverless-Trace.
  */
 export async function listKnownPackIds(): Promise<string[]> {
   const skip = new Set(["valhalla-build"]);
@@ -129,9 +128,6 @@ export async function listKnownPackIds(): Promise<string[]> {
     "basel",
   ]);
   for (const id of await dirNames(path.join(ROOT, "public", "offline"))) {
-    if (!skip.has(id)) candidates.add(id);
-  }
-  for (const id of await dirNames(path.join(ROOT, "data", "routing", "dist"))) {
     if (!skip.has(id)) candidates.add(id);
   }
   for (const id of await manifestBasenames(

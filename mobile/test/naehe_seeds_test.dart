@@ -327,4 +327,43 @@ void main() {
     expect(spree!.isLoop, isFalse);
     expect(spree.trackLngLat, isNull);
   });
+
+  test('heroAssetForSeedId keeps explicit RN/Berlin maps', () {
+    expect(
+      heroAssetForSeedId('seed-loop-tempelhofer-60'),
+      'assets/seeds/heroes/berlin-tempelhofer.jpg',
+    );
+    expect(
+      heroAssetForSeedId('seed-loop-heidelberg-neckar-60'),
+      'assets/seeds/heroes/rn-heidelberg.jpg',
+    );
+  });
+
+  test('heroAssetForSeedId keywords do not match see inside seed', () {
+    expect(heroAssetForSeedId(''), isNull);
+    expect(
+      heroAssetForSeedId('seed-loop-innsbruck-alpen-60'),
+      'assets/seeds/heroes/alps.jpg',
+    );
+    expect(
+      heroAssetForSeedId('seed-loop-bodensee-hafen-60'),
+      'assets/seeds/heroes/lake.jpg',
+    );
+    expect(
+      heroAssetForSeedId('seed-loop-freiburg-mtb-trail-60'),
+      'assets/seeds/heroes/forest.jpg',
+    );
+    final generic = heroAssetForSeedId('seed-loop-somewhere-60');
+    expect(generic, isNotNull);
+    expect(kTourHeroAssetPool, contains(generic));
+    // Substring "see" in "seed" must not force every tour onto the lake hero.
+    final hashed = [
+      for (var i = 0; i < 24; i++) heroAssetForSeedId('seed-loop-$i'),
+    ];
+    expect(hashed.toSet().length, greaterThan(1));
+    expect(
+      hashed.every((e) => e == 'assets/seeds/heroes/lake.jpg'),
+      isFalse,
+    );
+  });
 }

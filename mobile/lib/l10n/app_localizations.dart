@@ -560,6 +560,36 @@ abstract class AppLocalizations {
   /// **'Route planen'**
   String get planRouteTitle;
 
+  /// No description provided for @planRouteCta.
+  ///
+  /// In de, this message translates to:
+  /// **'+ Planen'**
+  String get planRouteCta;
+
+  /// No description provided for @discoverSearchHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort oder Tour'**
+  String get discoverSearchHint;
+
+  /// No description provided for @filterAroundKm.
+  ///
+  /// In de, this message translates to:
+  /// **'in {km} km'**
+  String filterAroundKm(int km);
+
+  /// No description provided for @mapToggleFab.
+  ///
+  /// In de, this message translates to:
+  /// **'Karte'**
+  String get mapToggleFab;
+
+  /// No description provided for @communityWriteReview.
+  ///
+  /// In de, this message translates to:
+  /// **'Bewertung schreiben'**
+  String get communityWriteReview;
+
   /// No description provided for @discoverModeExplore.
   ///
   /// In de, this message translates to:
@@ -587,7 +617,7 @@ abstract class AppLocalizations {
   /// No description provided for @navigateSubtitle.
   ///
   /// In de, this message translates to:
-  /// **'Start & Ziel setzen — Route berechnen, dann Losfahren'**
+  /// **'Ziel tippen oder Adresse — dann berechnen'**
   String get navigateSubtitle;
 
   /// No description provided for @navigateStartLabel.

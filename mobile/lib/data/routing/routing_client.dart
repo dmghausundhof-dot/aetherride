@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/nav_cues.dart';
+import '../../domain/routing/street_from_instruction.dart';
 import '../../native/routing_core_ffi.dart';
 import 'offline_tiles.dart';
 
@@ -87,11 +88,17 @@ class RouteStep {
     required this.id,
     required this.instruction,
     required this.distanceAlongM,
+    this.streetName,
+    this.lat,
+    this.lng,
   });
 
   final String id;
   final String instruction;
   final double distanceAlongM;
+  final String? streetName;
+  final double? lat;
+  final double? lng;
 }
 
 List<RouteStep> stepsFromCoordinates(List<GeoPoint> coords) {
@@ -239,11 +246,28 @@ class RoutingClient {
     if (rawSteps is List) {
       for (final s in rawSteps) {
         if (s is! Map) continue;
+        final instruction = '${s['instruction'] ?? 'Weiter'}';
+        final streetRaw = s['streetName'] ?? s['street'] ?? s['name'];
+        final streetFromField =
+            streetRaw is String && streetRaw.trim().isNotEmpty
+                ? streetRaw.trim()
+                : null;
+        final coord = s['coordinate'];
+        double? lat;
+        double? lng;
+        if (coord is Map) {
+          lat = (coord['lat'] as num?)?.toDouble();
+          lng = (coord['lng'] as num? ?? coord['lon'] as num?)?.toDouble();
+        }
         steps.add(
           RouteStep(
             id: '${s['id']}',
-            instruction: '${s['instruction'] ?? 'Weiter'}',
+            instruction: instruction,
             distanceAlongM: (s['distanceAlongM'] as num?)?.toDouble() ?? 0,
+            streetName: streetFromField ??
+                extractStreetNameFromInstruction(instruction),
+            lat: lat,
+            lng: lng,
           ),
         );
       }

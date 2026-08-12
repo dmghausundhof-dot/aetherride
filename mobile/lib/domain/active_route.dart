@@ -49,11 +49,15 @@ class NavStep {
     required this.id,
     required this.instruction,
     required this.distanceAlongM,
+    this.streetName,
   });
 
   final String id;
   final String instruction;
   final double distanceAlongM;
+
+  /// Optional street / road name for glanceable HUD (OSRM `name`, parse, …).
+  final String? streetName;
 }
 
 enum RideLiveLayer { map, data, suspension }

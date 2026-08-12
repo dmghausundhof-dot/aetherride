@@ -27,6 +27,7 @@ String? pickAnnounce({
   required double remainingM,
   required double speedKmh,
   required Set<String> spoken,
+  String? street,
 }) {
   final tiers = announceDistancesForSpeed(speedKmh)
     ..sort((a, b) => b.compareTo(a));
@@ -37,7 +38,14 @@ String? pickAnnounce({
       if (spoken.contains(key)) continue;
       spoken.add(key);
       if (isArrive) return instruction;
-      return '$instruction in ${remainingM.round()} Metern';
+      final streetBit = (street != null && street.trim().isNotEmpty)
+          ? ' auf ${street.trim()}'
+          : '';
+      final maneuver = instruction.contains(' auf ') ||
+              instruction.contains(' onto ')
+          ? instruction
+          : '$instruction$streetBit';
+      return '$maneuver in ${remainingM.round()} Metern';
     }
   }
   return null;

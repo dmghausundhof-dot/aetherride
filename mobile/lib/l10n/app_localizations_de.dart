@@ -262,6 +262,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get planRouteTitle => 'Route planen';
 
   @override
+  String get planRouteCta => '+ Planen';
+
+  @override
+  String get discoverSearchHint => 'Ort oder Tour';
+
+  @override
+  String filterAroundKm(int km) {
+    return 'in $km km';
+  }
+
+  @override
+  String get mapToggleFab => 'Karte';
+
+  @override
+  String get communityWriteReview => 'Bewertung schreiben';
+
+  @override
   String get discoverModeExplore => 'Entdecken';
 
   @override
@@ -274,8 +291,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navigateTitle => 'Navigieren';
 
   @override
-  String get navigateSubtitle =>
-      'Start & Ziel setzen — Route berechnen, dann Losfahren';
+  String get navigateSubtitle => 'Ziel tippen oder Adresse — dann berechnen';
 
   @override
   String get navigateStartLabel => 'Start';

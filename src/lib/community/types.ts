@@ -1,5 +1,9 @@
 /**
  * Community light (Phase D) — Privacy-first, moderiert.
+ *
+ * Cloud: apply `supabase/tour_community.sql` then wire
+ * `GET/POST /api/community/tour` (currently stub). Mobile keeps a local
+ * `TourCommunityStore` so the app never depends on cloud availability.
  */
 
 export type ModerationStatus = "approved" | "pending" | "rejected" | "hidden";
