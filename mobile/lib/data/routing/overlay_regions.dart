@@ -1,0 +1,155 @@
+/// DACH overlay-pack bboxes — generated from data/routing/dach-regions.json.
+/// [west, south, east, north]
+/// Do not edit by hand — run: node scripts/sync-dach-region-packs.mjs
+class OverlayRegion {
+  const OverlayRegion({
+    required this.id,
+    required this.name,
+    required this.bbox,
+  });
+
+  final String id;
+  final String name;
+  final List<double> bbox;
+
+  bool contains(double lng, double lat) =>
+      lng >= bbox[0] && lat >= bbox[1] && lng <= bbox[2] && lat <= bbox[3];
+}
+
+class OverlayPackRef {
+  const OverlayPackRef({required this.id, required this.name});
+  final String id;
+  final String name;
+}
+
+const kOverlayRegions = <OverlayRegion>[
+  OverlayRegion(id: 'rhein-neckar', name: 'Rhein-Neckar / Heidelberg', bbox: [8.2, 49.2, 9, 49.6]),
+  OverlayRegion(id: 'schwarzwald-nord', name: 'Schwarzwald Süd', bbox: [7.7, 47.8, 8.2, 48.15]),
+  OverlayRegion(id: 'bodensee', name: 'Bodensee', bbox: [8.9, 47.5, 9.8, 47.9]),
+  OverlayRegion(id: 'stuttgart', name: 'Stuttgart / Mittlerer Neckar', bbox: [9, 48.6, 9.4, 48.9]),
+  OverlayRegion(id: 'muenchen', name: 'München & Umland', bbox: [11.3, 48, 11.8, 48.3]),
+  OverlayRegion(id: 'nuernberg', name: 'Nürnberg / Franken', bbox: [10.9, 49.3, 11.3, 49.6]),
+  OverlayRegion(id: 'frankfurt-rhein-main', name: 'Frankfurt Rhein-Main', bbox: [8.4, 49.9, 9.1, 50.3]),
+  OverlayRegion(id: 'koeln-rhein', name: 'Köln / Rheinland', bbox: [6.7, 50.8, 7.2, 51.1]),
+  OverlayRegion(id: 'hamburg', name: 'Hamburg & Umland', bbox: [9.7, 53.4, 10.3, 53.7]),
+  OverlayRegion(id: 'berlin', name: 'Berlin & Brandenburg', bbox: [13.1, 52.3, 13.7, 52.7]),
+  OverlayRegion(id: 'dresden-elbland', name: 'Dresden / Elbland', bbox: [13.6, 50.9, 14, 51.2]),
+  OverlayRegion(id: 'wien', name: 'Wien & Wienerwald', bbox: [16.1, 48.1, 16.6, 48.4]),
+  OverlayRegion(id: 'salzburg', name: 'Salzburg', bbox: [12.9, 47.7, 13.2, 47.9]),
+  OverlayRegion(id: 'innsbruck', name: 'Innsbruck / Tirol', bbox: [11.2, 47.2, 11.5, 47.4]),
+  OverlayRegion(id: 'zuerich', name: 'Zürich & Umland', bbox: [8.4, 47.3, 8.7, 47.5]),
+  OverlayRegion(id: 'bern', name: 'Bern / Mittelland', bbox: [7.3, 46.9, 7.6, 47.1]),
+  OverlayRegion(id: 'basel', name: 'Basel / Dreiländereck', bbox: [7.5, 47.5, 7.7, 47.6]),
+  OverlayRegion(id: 'ruhrgebiet', name: 'Ruhrgebiet', bbox: [6.8, 51.3, 7.65, 51.7]),
+  OverlayRegion(id: 'duesseldorf', name: 'Düsseldorf / Niederrhein', bbox: [6.6, 51.1, 6.95, 51.35]),
+  OverlayRegion(id: 'hannover', name: 'Hannover / Leine', bbox: [9.5, 52.25, 10.05, 52.55]),
+  OverlayRegion(id: 'leipzig', name: 'Leipzig / Neuseenland', bbox: [12.2, 51.2, 12.55, 51.45]),
+  OverlayRegion(id: 'freiburg', name: 'Freiburg / Schauinsland', bbox: [7.75, 47.95, 8.05, 48.08]),
+  OverlayRegion(id: 'karlsruhe', name: 'Karlsruhe / Hardt', bbox: [8.3, 48.95, 8.55, 49.1]),
+  OverlayRegion(id: 'augsburg', name: 'Augsburg / Lech', bbox: [10.8, 48.3, 11, 48.45]),
+  OverlayRegion(id: 'kiel', name: 'Kiel / Förde', bbox: [9.95, 54.25, 10.2, 54.4]),
+  OverlayRegion(id: 'rostock', name: 'Rostock / Warnow', bbox: [12, 54.05, 12.25, 54.22]),
+  OverlayRegion(id: 'kassel', name: 'Kassel / Bergpark', bbox: [9.4, 51.25, 9.6, 51.4]),
+  OverlayRegion(id: 'trier-mosel', name: 'Trier / Mosel', bbox: [6.5, 49.7, 6.85, 49.85]),
+  OverlayRegion(id: 'pfalz', name: 'Pfälzerwald', bbox: [7.7, 49.1, 8.3, 49.5]),
+  OverlayRegion(id: 'sauerland', name: 'Sauerland', bbox: [7.8, 51.1, 8.7, 51.5]),
+  OverlayRegion(id: 'eifel-trails', name: 'Eifel', bbox: [6.2, 50.1, 7.2, 50.7]),
+  OverlayRegion(id: 'harz', name: 'Harz', bbox: [10.3, 51.5, 11.35, 51.95]),
+  OverlayRegion(id: 'thueringer-wald', name: 'Thüringer Wald', bbox: [10.4, 50.4, 11.4, 50.85]),
+  OverlayRegion(id: 'bayerischer-wald', name: 'Bayerischer Wald', bbox: [12.5, 48.7, 13.9, 49.3]),
+  OverlayRegion(id: 'allgaeu', name: 'Allgäu', bbox: [10, 47.4, 10.65, 47.8]),
+  OverlayRegion(id: 'chiemgau', name: 'Chiemgau', bbox: [12.2, 47.7, 12.85, 47.95]),
+  OverlayRegion(id: 'saarbruecken', name: 'Saarbrücken', bbox: [6.9, 49.2, 7.1, 49.3]),
+  OverlayRegion(id: 'muenster', name: 'Münsterland', bbox: [7.5, 51.88, 7.75, 52.05]),
+  OverlayRegion(id: 'aachen', name: 'Aachen / Dreiländereck', bbox: [6, 50.72, 6.2, 50.85]),
+  OverlayRegion(id: 'luebeck', name: 'Lübeck / Trave', bbox: [10.6, 53.82, 10.8, 53.95]),
+  OverlayRegion(id: 'bremen', name: 'Bremen / Weser', bbox: [8.7, 53, 8.95, 53.18]),
+  OverlayRegion(id: 'magdeburg', name: 'Magdeburg / Elbe', bbox: [11.55, 52.05, 11.7, 52.2]),
+  OverlayRegion(id: 'erfurt', name: 'Erfurt', bbox: [10.98, 50.94, 11.12, 51.05]),
+  OverlayRegion(id: 'koblenz', name: 'Koblenz / Rhein-Mosel', bbox: [7.5, 50.3, 7.7, 50.42]),
+  OverlayRegion(id: 'graz', name: 'Graz / Murtal', bbox: [15.35, 47.02, 15.52, 47.12]),
+  OverlayRegion(id: 'linz', name: 'Linz / Donau', bbox: [14.22, 48.25, 14.4, 48.35]),
+  OverlayRegion(id: 'klagenfurt', name: 'Klagenfurt / Wörthersee', bbox: [14.2, 46.55, 14.4, 46.7]),
+  OverlayRegion(id: 'bregenz', name: 'Bregenz / Vorarlberg', bbox: [9.6, 47.45, 9.85, 47.55]),
+  OverlayRegion(id: 'kitzbuehel', name: 'Kitzbühel / Wilder Kaiser', bbox: [12.2, 47.38, 12.5, 47.55]),
+  OverlayRegion(id: 'genf', name: 'Genf / Lac Léman', bbox: [6.05, 46.15, 6.25, 46.28]),
+  OverlayRegion(id: 'lausanne', name: 'Lausanne / Lavaux', bbox: [6.55, 46.5, 6.75, 46.6]),
+  OverlayRegion(id: 'luzern', name: 'Luzern / Vierwaldstättersee', bbox: [8.22, 47.02, 8.38, 47.1]),
+  OverlayRegion(id: 'st-gallen', name: 'St. Gallen / Appenzell', bbox: [9.3, 47.38, 9.5, 47.48]),
+  OverlayRegion(id: 'lugano', name: 'Lugano / Tessin', bbox: [8.9, 45.95, 9.05, 46.05]),
+  OverlayRegion(id: 'interlaken', name: 'Interlaken / Berner Oberland', bbox: [7.8, 46.65, 8, 46.72]),
+  OverlayRegion(id: 'chur', name: 'Chur / Graubünden', bbox: [9.48, 46.82, 9.58, 46.88]),
+];
+
+const kOverlayPackCatalog = <OverlayPackRef>[
+  OverlayPackRef(id: 'rhein-neckar', name: 'Rhein-Neckar / Heidelberg'),
+  OverlayPackRef(id: 'schwarzwald-nord', name: 'Schwarzwald Süd'),
+  OverlayPackRef(id: 'bodensee', name: 'Bodensee'),
+  OverlayPackRef(id: 'stuttgart', name: 'Stuttgart / Mittlerer Neckar'),
+  OverlayPackRef(id: 'muenchen', name: 'München & Umland'),
+  OverlayPackRef(id: 'nuernberg', name: 'Nürnberg / Franken'),
+  OverlayPackRef(id: 'frankfurt-rhein-main', name: 'Frankfurt Rhein-Main'),
+  OverlayPackRef(id: 'koeln-rhein', name: 'Köln / Rheinland'),
+  OverlayPackRef(id: 'hamburg', name: 'Hamburg & Umland'),
+  OverlayPackRef(id: 'berlin', name: 'Berlin & Brandenburg'),
+  OverlayPackRef(id: 'dresden-elbland', name: 'Dresden / Elbland'),
+  OverlayPackRef(id: 'wien', name: 'Wien & Wienerwald'),
+  OverlayPackRef(id: 'salzburg', name: 'Salzburg'),
+  OverlayPackRef(id: 'innsbruck', name: 'Innsbruck / Tirol'),
+  OverlayPackRef(id: 'zuerich', name: 'Zürich & Umland'),
+  OverlayPackRef(id: 'bern', name: 'Bern / Mittelland'),
+  OverlayPackRef(id: 'basel', name: 'Basel / Dreiländereck'),
+  OverlayPackRef(id: 'ruhrgebiet', name: 'Ruhrgebiet'),
+  OverlayPackRef(id: 'duesseldorf', name: 'Düsseldorf / Niederrhein'),
+  OverlayPackRef(id: 'hannover', name: 'Hannover / Leine'),
+  OverlayPackRef(id: 'leipzig', name: 'Leipzig / Neuseenland'),
+  OverlayPackRef(id: 'freiburg', name: 'Freiburg / Schauinsland'),
+  OverlayPackRef(id: 'karlsruhe', name: 'Karlsruhe / Hardt'),
+  OverlayPackRef(id: 'augsburg', name: 'Augsburg / Lech'),
+  OverlayPackRef(id: 'kiel', name: 'Kiel / Förde'),
+  OverlayPackRef(id: 'rostock', name: 'Rostock / Warnow'),
+  OverlayPackRef(id: 'kassel', name: 'Kassel / Bergpark'),
+  OverlayPackRef(id: 'trier-mosel', name: 'Trier / Mosel'),
+  OverlayPackRef(id: 'pfalz', name: 'Pfälzerwald'),
+  OverlayPackRef(id: 'sauerland', name: 'Sauerland'),
+  OverlayPackRef(id: 'eifel-trails', name: 'Eifel'),
+  OverlayPackRef(id: 'harz', name: 'Harz'),
+  OverlayPackRef(id: 'thueringer-wald', name: 'Thüringer Wald'),
+  OverlayPackRef(id: 'bayerischer-wald', name: 'Bayerischer Wald'),
+  OverlayPackRef(id: 'allgaeu', name: 'Allgäu'),
+  OverlayPackRef(id: 'chiemgau', name: 'Chiemgau'),
+  OverlayPackRef(id: 'saarbruecken', name: 'Saarbrücken'),
+  OverlayPackRef(id: 'muenster', name: 'Münsterland'),
+  OverlayPackRef(id: 'aachen', name: 'Aachen / Dreiländereck'),
+  OverlayPackRef(id: 'luebeck', name: 'Lübeck / Trave'),
+  OverlayPackRef(id: 'bremen', name: 'Bremen / Weser'),
+  OverlayPackRef(id: 'magdeburg', name: 'Magdeburg / Elbe'),
+  OverlayPackRef(id: 'erfurt', name: 'Erfurt'),
+  OverlayPackRef(id: 'koblenz', name: 'Koblenz / Rhein-Mosel'),
+  OverlayPackRef(id: 'graz', name: 'Graz / Murtal'),
+  OverlayPackRef(id: 'linz', name: 'Linz / Donau'),
+  OverlayPackRef(id: 'klagenfurt', name: 'Klagenfurt / Wörthersee'),
+  OverlayPackRef(id: 'bregenz', name: 'Bregenz / Vorarlberg'),
+  OverlayPackRef(id: 'kitzbuehel', name: 'Kitzbühel / Wilder Kaiser'),
+  OverlayPackRef(id: 'genf', name: 'Genf / Lac Léman'),
+  OverlayPackRef(id: 'lausanne', name: 'Lausanne / Lavaux'),
+  OverlayPackRef(id: 'luzern', name: 'Luzern / Vierwaldstättersee'),
+  OverlayPackRef(id: 'st-gallen', name: 'St. Gallen / Appenzell'),
+  OverlayPackRef(id: 'lugano', name: 'Lugano / Tessin'),
+  OverlayPackRef(id: 'interlaken', name: 'Interlaken / Berner Oberland'),
+  OverlayPackRef(id: 'chur', name: 'Chur / Graubünden'),
+];
+
+OverlayRegion? overlayRegionForPoint(double lng, double lat) {
+  final hits = [
+    for (final r in kOverlayRegions)
+      if (r.contains(lng, lat)) r,
+  ];
+  if (hits.isEmpty) return null;
+  hits.sort((a, b) {
+    final aa = (a.bbox[2] - a.bbox[0]) * (a.bbox[3] - a.bbox[1]);
+    final bb = (b.bbox[2] - b.bbox[0]) * (b.bbox[3] - b.bbox[1]);
+    return aa.compareTo(bb);
+  });
+  return hits.first;
+}

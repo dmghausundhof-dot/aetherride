@@ -53,6 +53,16 @@ const TOOLS = [
       required: ["q"],
     },
   },
+  {
+    name: "tour_community",
+    description:
+      "Approved public reviews and photos for a tour (moderated community).",
+    inputSchema: {
+      type: "object",
+      properties: { tourId: { type: "string" } },
+      required: ["tourId"],
+    },
+  },
 ];
 
 async function callTool(name, args = {}) {
@@ -86,6 +96,13 @@ async function callTool(name, args = {}) {
     const q = String(args.q || "").trim();
     const res = await fetch(
       `${BASE}/api/geocode?q=${encodeURIComponent(q)}`
+    );
+    return await res.json();
+  }
+  if (name === "tour_community") {
+    const tourId = String(args.tourId || "").trim();
+    const res = await fetch(
+      `${BASE}/api/community/tour?tourId=${encodeURIComponent(tourId)}`
     );
     return await res.json();
   }

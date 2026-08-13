@@ -1,0 +1,24 @@
+{
+  "id": "genf",
+  "name": "Genf / Lac Léman",
+  "bbox": [
+    6.05,
+    46.15,
+    6.25,
+    46.28
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "genf.tar.zst",
+    "packGz": "genf.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

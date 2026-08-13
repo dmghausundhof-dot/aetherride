@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
+import '../../domain/component.dart';
+import '../../domain/garage/werkstatt_setup.dart';
 import '../../domain/setup.dart';
 import '../../domain/setup/bracketing.dart';
 import '../../domain/setup/templates.dart';
@@ -37,6 +39,22 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant SetupPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bike.id != widget.bike.id) {
+      _compareMsg = null;
+      _load();
+    }
+  }
+
+  WerkstattSetupPlan get _plan {
+    final comps =
+        ref.read(bikeComponentsProvider(widget.bike.id)).valueOrNull ??
+            const <BikeComponent>[];
+    return planWerkstattSetup(bike: widget.bike, components: comps);
   }
 
   Future<void> _load() async {
@@ -85,15 +103,18 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
 
   Future<void> _manualVersion() async {
     final l10n = AppLocalizations.of(context);
+    final plan = _plan;
+    final key = plan.primaryAdjusterKey;
     final current = await ref
         .read(setupRepositoryProvider)
         .getCurrent(widget.bike.id);
+    final fallback = defaultSetupValuesFor(plan);
     final base = Map<String, double>.from(
       current?.adjusterMap ??
-          {for (final v in BikeSetup.defaultValues()) v.adjusterKey: v.valueNum},
+          {for (final v in fallback) v.adjusterKey: v.valueNum},
     );
-    final rebound = base['fork.rebound'] ?? 8;
-    final ctrl = TextEditingController(text: rebound.toStringAsFixed(0));
+    final seed = base[key] ?? (plan.hasSuspension ? 8.0 : 36.0);
+    final ctrl = TextEditingController(text: seed.toStringAsFixed(0));
     final labelCtrl = TextEditingController(
       text: l10n.setupNewVersionDefaultName(_setups.length + 1),
     );
@@ -117,7 +138,9 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
               controller: ctrl,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: l10n.setupForkReboundLabel,
+                labelText: plan.hasSuspension
+                    ? l10n.setupForkReboundLabel
+                    : l10n.setupTirePressureLabel,
               ),
             ),
           ],
@@ -135,8 +158,8 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
       ),
     );
     if (!mounted || ok != true) return;
-    final next = double.tryParse(ctrl.text) ?? rebound;
-    base['fork.rebound'] = next.clamp(0, 14);
+    final next = double.tryParse(ctrl.text) ?? seed;
+    base[key] = plan.hasSuspension ? next.clamp(0, 14) : next.clamp(15, 130);
     final values = [
       for (final e in base.entries)
         SetupValue(
@@ -158,23 +181,38 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
 
   Future<void> _startCompare() async {
     final l10n = AppLocalizations.of(context);
+    final plan = _plan;
+    final key = plan.primaryAdjusterKey;
     setState(() => _busy = true);
     final current =
         await ref.read(setupRepositoryProvider).getCurrent(widget.bike.id);
-    final rebound = current?.valueFor('fork.rebound') ?? 8;
+    final fallback = defaultSetupValuesFor(plan);
+    final fromCurrent = current?.valueFor(key);
+    final fromFallback = fallback
+        .where((v) => v.adjusterKey == key)
+        .map((v) => v.valueNum);
+    final seed = fromCurrent ??
+        (fromFallback.isEmpty
+            ? (plan.hasSuspension ? 8.0 : 36.0)
+            : fromFallback.first);
     final series = createBlindPair(
-      adjusterKey: 'fork.rebound',
-      currentValue: rebound,
+      adjusterKey: key,
+      currentValue: seed,
     );
-    final a = series.rangeFrom.clamp(0, 14);
-    final b = series.rangeTo.clamp(0, 14);
+    final a = plan.hasSuspension
+        ? series.rangeFrom.clamp(0, 14)
+        : series.rangeFrom.clamp(15, 130);
+    final b = plan.hasSuspension
+        ? series.rangeTo.clamp(0, 14)
+        : series.rangeTo.clamp(15, 130);
+    final baseValues = current?.values ?? fallback;
 
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
           label: l10n.setupCompareVariantA,
           values: [
-            for (final v in (current?.values ?? BikeSetup.defaultValues()))
-              v.adjusterKey == 'fork.rebound'
+            for (final v in baseValues)
+              v.adjusterKey == key
                   ? SetupValue(
                       adjusterKey: v.adjusterKey,
                       valueNum: a.toDouble(),
@@ -189,8 +227,8 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           bikeId: widget.bike.id,
           label: l10n.setupCompareVariantB,
           values: [
-            for (final v in (current?.values ?? BikeSetup.defaultValues()))
-              v.adjusterKey == 'fork.rebound'
+            for (final v in baseValues)
+              v.adjusterKey == key
                   ? SetupValue(
                       adjusterKey: v.adjusterKey,
                       valueNum: b.toDouble(),
@@ -216,7 +254,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
 
     final eval = evaluateBracketingSeries(
       BracketingSeries(
-        adjusterKey: 'fork.rebound',
+        adjusterKey: key,
         rangeFrom: a.toDouble(),
         rangeTo: b.toDouble(),
         step: (b - a).abs() < 1e-6 ? 2.0 : (b - a).abs().toDouble(),
@@ -255,6 +293,8 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
+    ref.watch(bikeComponentsProvider(widget.bike.id));
+    final plan = _plan;
     final tpls = templatesFor(widget.bike.category);
 
     return Column(
@@ -292,7 +332,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           children: [
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppColors.forestOnDark,
                 minimumSize: const Size(0, 44),
               ),
               onPressed: _busy ? null : _manualVersion,
@@ -309,7 +349,9 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          l10n.setupCompareHint,
+          plan.hasSuspension
+              ? l10n.setupCompareHint
+              : l10n.setupCompareHintTires,
           style: const TextStyle(fontSize: 12, color: AppColors.muted),
         ),
         if (_compareMsg != null) ...[
@@ -403,9 +445,19 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
                                   l10n.setupVersionMeta(s.version),
                                   _formatDate(s.createdAt, locale),
                                   _createdByLabel(l10n, s.createdBy),
-                                  if (s.valueFor('fork.rebound') != null)
+                                  if (plan.hasSuspension &&
+                                      s.valueFor('fork.rebound') != null)
                                     l10n.setupForkReboundValue(
                                       s.valueFor('fork.rebound')!
+                                          .toStringAsFixed(0),
+                                    )
+                                  else if (s.valueFor(
+                                        'tire_front.pressure_psi',
+                                      ) !=
+                                      null)
+                                    l10n.setupTirePressureValue(
+                                      s
+                                          .valueFor('tire_front.pressure_psi')!
                                           .toStringAsFixed(0),
                                     ),
                                 ].join(' · '),
@@ -441,7 +493,13 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           style: const TextStyle(fontSize: 12, color: AppColors.muted),
         ),
         const SizedBox(height: AppSpacing.s),
-        for (final tpl in tpls)
+        if (tpls.isEmpty)
+          Text(
+            l10n.setupEmpty,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          )
+        else
+          for (final tpl in tpls)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.s),
             child: Container(

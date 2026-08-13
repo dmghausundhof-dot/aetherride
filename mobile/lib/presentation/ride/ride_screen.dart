@@ -22,6 +22,7 @@ import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
+import '../../domain/ble/bike_ble_kind.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/ride.dart';
 import '../../domain/routing/battery_preset.dart';
@@ -42,6 +43,9 @@ import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../post_ride/post_ride_screen.dart';
+import '../shared/status_bar_scrim.dart';
+import '../home/hof_watch_card.dart';
+import '../shell/shell_tabs.dart';
 import 'widgets/battery_preset_sheet.dart';
 import 'widgets/reroute_sheet.dart';
 import 'widgets/ride_connectivity_chip.dart';
@@ -67,10 +71,10 @@ class RideScreen extends ConsumerStatefulWidget {
   const RideScreen({super.key});
 
   @override
-  ConsumerState<RideScreen> createState() => _RideScreenState();
+  ConsumerState<RideScreen> createState() => RideScreenState();
 }
 
-class _RideScreenState extends ConsumerState<RideScreen> {
+class RideScreenState extends ConsumerState<RideScreen> {
   FusedMetrics? _metrics;
   BoschLiveData? _ldi;
   double _gpsSpeedKmh = 0;
@@ -207,6 +211,18 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     ref.read(rideAutostartProvider.notifier).state = false;
     if (ref.read(isRidingProvider) || _starting) return;
     unawaited(_start());
+  }
+
+  /// System-back: Stop-Bestätigung während der Fahrt, sonst HUD → Karte.
+  bool handleSystemBack() {
+    if (!mounted) return false;
+    if (_starting) return true;
+    if (ref.read(isRidingProvider)) {
+      unawaited(_stop());
+      return true;
+    }
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+    return true;
   }
 
   Future<void> _loadRidePrefs() async {
@@ -827,14 +843,19 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
       // Garage-Kopplung: gespeicherte deviceId des aktiven Bikes bevorzugen.
       String? preferredId;
+      BikeBleKind? kindHint;
       final bikeId = active?.id;
       if (bikeId != null && bikeId.isNotEmpty) {
         final saved =
             await ref.read(bikeBleStoreProvider).deviceForBike(bikeId);
         preferredId = saved?.deviceId;
+        kindHint = bikeBleKindFromStorage(saved?.kind);
       }
 
-      final cscOk = await ble.connect(deviceId: preferredId);
+      final cscOk = await ble.connect(
+        deviceId: preferredId,
+        kindHint: kindHint,
+      );
       if (!mounted || !ref.read(isRidingProvider)) return;
       if (!cscOk) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -845,11 +866,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             ),
           ),
         );
-        return;
       }
 
       final remoteId = ble.lastRemoteId;
-      if (bikeId != null &&
+      if (cscOk &&
+          bikeId != null &&
           bikeId.isNotEmpty &&
           remoteId != null &&
           remoteId.isNotEmpty) {
@@ -858,8 +879,29 @@ class _RideScreenState extends ConsumerState<RideScreen> {
               BikeBleDevice(
                 deviceId: remoteId,
                 name: ble.connectedDeviceName,
+                kind: ble.connectedKind == null
+                    ? null
+                    : bikeBleKindToStorage(ble.connectedKind!),
               ),
             );
+      }
+
+      final savedWatch = await ref.read(bikeBleStoreProvider).savedWatch();
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (savedWatch != null) {
+        final watchOk = await ble.connectWatch(deviceId: savedWatch.deviceId);
+        if (!mounted || !ref.read(isRidingProvider)) return;
+        if (watchOk) {
+          final watchId = ble.lastWatchRemoteId;
+          if (watchId != null && watchId.isNotEmpty) {
+            await ref.read(bikeBleStoreProvider).saveWatch(
+                  BikeBleDevice(
+                    deviceId: watchId,
+                    name: ble.connectedWatchName ?? savedWatch.name,
+                  ),
+                );
+          }
+        }
       }
     } catch (e) {
       debugPrint('ride: deferred BLE connect failed ($e) — continue without');
@@ -872,7 +914,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
     final ok = await _preflightPermissions();
     if (!ok || !mounted) {
-      if (mounted) setState(() => _starting = false);
+      if (mounted) {
+        setState(() => _starting = false);
+        ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+      }
       return;
     }
 
@@ -889,7 +934,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _chunkBuf.clear();
     _chunkSeq = 0;
     _gpsFixCount = 0;
-    _gpsStatus = 'Warte auf GPS…';
+    _gpsStatus = 'Kein GPS — Track bleibt leer. Kein erfundener Verlauf.';
     _lastGpsDistanceM = 0;
     _gpsStallSec = 0;
     _startedAt = DateTime.now();
@@ -1034,7 +1079,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         if (_allowGpsStallSim) {
           _tickSimMotion(elevFallback: 280);
         } else {
-          _gpsStatus = 'Warte auf GPS — Track erst mit Fix';
+          _gpsStatus = 'Kein GPS — Track bleibt leer. Kein erfundener Verlauf.';
           if (mounted && ref.read(rideElapsedSecProvider) % 3 == 0) {
             setState(() {});
           }
@@ -1553,6 +1598,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     _notifActionSub = null;
     ref.invalidate(bikesProvider);
     ref.invalidate(recentRidesProvider);
+    ref.invalidate(rideStatsProvider);
     _clearUndoRejoin();
     setState(() {
       _confirmStop = 0;
@@ -1584,6 +1630,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         builder: (_) => PostRideScreen(rideId: record.id),
       ),
     );
+    if (!mounted) return;
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.hof;
   }
 
   @override
@@ -1635,7 +1683,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         appBar: hideAppBar
             ? null
             : AppBar(
-                title: Text(riding ? 'Live' : 'Bereit'),
+                title: Text(riding ? 'Live-Fahrt' : 'Bereit'),
                 actions: [
                   if (riding) ...[
                     IconButton(
@@ -1779,6 +1827,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             },
           ),
         ),
+        const StatusBarScrim(),
         RidePreStartChrome(
           routeName: route?.name,
           starting: _starting,
@@ -1940,6 +1989,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   ),
                 ),
         ),
+        const StatusBarScrim(),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -2120,6 +2170,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
             children: [
               // Pro / layer switcher only outside Clean Mode.
               if (!_cleanMode) ...[
+                const HofWatchCard(compact: true),
+                const SizedBox(height: AppSpacing.s),
                 SegmentedButton<RideLiveLayer>(
                   segments: [
                     ButtonSegment(
@@ -2158,7 +2210,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => setState(() => _cleanMode = true),
-                    child: const Text('Clean Mode'),
+                    child: const Text('Ruhige Anzeige'),
                   ),
                 ),
               ],
@@ -2437,7 +2489,8 @@ class _RideScreenState extends ConsumerState<RideScreen> {
           ),
         );
       case RideLiveLayer.data:
-        final bleConnected = ref.read(bleCoreProvider).isConnected;
+        final ble = ref.read(bleCoreProvider);
+        final bleConnected = ble.isConnected;
         final bleSpeed = _ldi?.speedKmh;
         final bleCadence = _ldi?.cadenceRpm;
         return Semantics(
@@ -2474,6 +2527,11 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   if (_ldi?.assistMode != null &&
                       _ldi!.assistMode!.trim().isNotEmpty)
                     _MetricRow('Assist', _ldi!.assistMode!),
+                  if (_ldi?.heartRateBpm != null)
+                    _MetricRow(
+                      'Puls',
+                      '${_ldi!.heartRateBpm!.toStringAsFixed(0)} bpm',
+                    ),
                   _MetricRow(
                     'Kadenz',
                     bleConnected && bleCadence != null && bleCadence > 0
@@ -2483,10 +2541,17 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                   _MetricRow(
                     'Radsensor',
                     bleConnected
-                        ? (ref.read(bleCoreProvider).connectedDeviceName ??
-                            'Verbunden')
+                        ? (ble.connectedDeviceName ?? 'Verbunden')
                         : 'Nicht verbunden',
                   ),
+                  if (ble.isWatchConnected)
+                    _MetricRow(
+                      'Smartwatch',
+                      [
+                        ble.connectedWatchName ?? 'Verbunden',
+                        if (_ldi?.heartRateBpm != null) 'Puls',
+                      ].join(' · '),
+                    ),
                 ],
               ),
             ),

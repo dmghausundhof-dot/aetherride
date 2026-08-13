@@ -2,9 +2,8 @@
  * F-SHP-001 / F-SHP-003 — Beispielkatalog mit ComponentModel-Bezug
  * Affiliate-URLs sind Platzhalter; Kauf nur extern (Spec 0.4.4 / 8.4).
  *
- * Live Ersatzteile: Collection `featured-parts` via Storefront API
- * (`partsCatalog` / `/shop/parts`). Static SHOP_PRODUCTS = soft-fit seeds +
- * editorial bike snapshots (not primary catalog).
+ * Live Ersatzteile: Shopify Collection `featured-parts` (Gateway, kein In-App-Katalog).
+ * Static SHOP_PRODUCTS = soft-fit seeds + editorial snapshots.
  */
 
 import type { ComponentSlot } from "@/types";
@@ -66,9 +65,21 @@ export const SHOP_BROWSE_SLOTS: { slot: ComponentSlot | "all"; label: string }[]
   ];
 
 
-/** Shopify Storefront (Phase A — deep links only, no Storefront API token) */
-export const SHOPIFY_STORE_BASE =
-  "https://dmg-haus-und-hof-shop.myshopify.com";
+/** Shopify Storefront — öffentliche URL (kein Secret). */
+function shopifyStorefrontOrigin(): string {
+  const raw = (
+    process.env.SHOPIFY_STOREFRONT_URL ||
+    process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_URL ||
+    process.env.SHOPIFY_STORE_DOMAIN ||
+    "dmg-haus-und-hof-shop.myshopify.com"
+  )
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+  return `https://${raw}`;
+}
+
+export const SHOPIFY_STORE_BASE = shopifyStorefrontOrigin();
 
 export function shopifyProductUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/products/${handle}`;
@@ -97,6 +108,7 @@ export const SHOPIFY_COLLECTIONS: Record<string, string> = {
   urban: "featured-light-e-city",
   /** Consumables / soft-fit parts (Storefront Collection) */
   parts: "featured-parts",
+  merch: "merchandise",
 };
 
 /** Live Ersatzteile-Collection (Storefront API — siehe partsCatalog) */
@@ -107,7 +119,7 @@ export const SHOPIFY_PARTS_COLLECTION = "featured-parts";
  * Use shopifyCollectionUrl() only behind Owner-Preview confirm.
  */
 export function shopCollectionHref(sport: string): string | undefined {
-  if (sport === "parts") return FEATURED_PARTS_IN_APP_HREF;
+  if (sport === "parts") return `${FEATURED_PARTS_IN_APP_HREF}?door=parts`;
   if (!SHOPIFY_COLLECTIONS[sport]) return undefined;
   const q = sport === "urban" ? "city" : sport;
   return `/shop?sport=${encodeURIComponent(q)}`;
@@ -134,8 +146,8 @@ export const FEATURED_BIKE_HANDLE_CANDIDATES = [
 /** @deprecated use FEATURED_BIKE_HANDLE_CANDIDATES + Storefront sync */
 export const UNPUBLISHED_FEATURED_BIKE_HANDLES = FEATURED_BIKE_HANDLE_CANDIDATES;
 
-/** In-app Parts Hub (S-FLOW-01) — aliases /teile · /parts redirect here */
-export const FEATURED_PARTS_IN_APP_HREF = "/shop/parts";
+/** Shop gateway — no in-app catalog. Aliases /teile · /parts · /shop/parts land here. */
+export const FEATURED_PARTS_IN_APP_HREF = "/shop";
 
 /**
  * Editorial metadata for candidate bikes.
@@ -550,16 +562,17 @@ export function shopHref(opts?: {
   job?: "replace" | "browse" | "season";
   /** gravel | city | light-e | urban | road | mtb | ebike | all */
   sport?: string;
-  /** Bike-Id für Soft-Fit auf /shop/parts */
+  /** Bike-Id für Soft-Fit an der Shop-Tür */
   bike?: string;
 }): string {
-  // Wear / slot browse → Parts listing (Collection featured-parts)
+  // Wear / slot → Shop-Gateway, Tür „Für dein Rad“
   const toParts =
     opts?.job === "replace" ||
     opts?.job === "season" ||
     (opts?.slot && opts.slot !== "frame");
   if (toParts) {
     const params = new URLSearchParams();
+    params.set("door", "parts");
     let slot = opts?.slot ? String(opts.slot) : undefined;
     if (slot === "brake_pads_front" || slot === "brake_pads_rear") {
       slot = "brake_pads";
@@ -573,7 +586,7 @@ export function shopHref(opts?: {
     const focus = opts?.focus ?? opts?.productId;
     if (focus && !String(focus).startsWith("sp-")) params.set("focus", focus);
     const q = params.toString();
-    return q ? `/shop/parts?${q}` : "/shop/parts";
+    return `/shop?${q}`;
   }
 
   const params = new URLSearchParams();

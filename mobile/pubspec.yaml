@@ -42,6 +42,7 @@ dependencies:
   wakelock_plus: ^1.7.0
   permission_handler: ^11.3.1
   flutter_svg: ^2.0.17
+  sentry_flutter: ^9.6.0
 
 dev_dependencies:
   flutter_test:
@@ -60,6 +61,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/routing/offline_graph.json
+    - assets/routing/bike-overlay-sample.geojson
     - assets/seeds/naehe-peek-seeds-berlin-v1.json
     - assets/seeds/p0-dach-60min-naehe-v1.json
     - assets/seeds/p0-rhein-neckar-60min-naehe-v1.json

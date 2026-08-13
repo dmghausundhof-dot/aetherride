@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../../data/deep_links.dart';
+import '../../domain/home/hof_title.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -12,6 +12,9 @@ import '../home/home_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../ride/ride_screen.dart';
 import '../shop/shop_screen.dart';
+import 'hof_threshold_nav.dart';
+import 'shell_back.dart';
+import 'shell_tabs.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -25,6 +28,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// beim Cold-Start (ANR durch GeolocatorLocationService).
   final Set<int> _visited = {0};
   DeepLinkHandler? _deepLinks;
+  final _discoverKey = GlobalKey<DiscoverScreenState>();
+  final _rideKey = GlobalKey<RideScreenState>();
+  final _onboardingKey = GlobalKey<OnboardingFlowState>();
 
   @override
   void initState() {
@@ -44,15 +50,15 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget _tabBody(int i, Set<int> mountedTabs) {
     if (!mountedTabs.contains(i)) return const SizedBox.shrink();
     switch (i) {
-      case 0:
+      case ShellTabs.hof:
         return const HomeScreen();
-      case 1:
+      case ShellTabs.werkstatt:
         return const GarageScreen();
-      case 2:
-        return const RideScreen();
-      case 3:
-        return const DiscoverScreen();
-      case 4:
+      case ShellTabs.ride:
+        return RideScreen(key: _rideKey);
+      case ShellTabs.karte:
+        return DiscoverScreen(key: _discoverKey);
+      case ShellTabs.shop:
         return const ShopScreen();
       default:
         return const SizedBox.shrink();
@@ -62,11 +68,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final index = ref.watch(shellTabIndexProvider);
+    final index = ShellTabs.stackIndex(ref.watch(shellTabIndexProvider));
     final onboardingDone = ref.watch(onboardingDoneProvider);
     final riding = ref.watch(isRidingProvider);
-    // Aktiven Tab sofort einblenden — sonst ein Frame lang leerer Slot
-    // (Nav schon gewechselt → wirkt wie „Reiter springen“).
     final mountedTabs = {..._visited, index};
     if (!_visited.contains(index)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,54 +79,121 @@ class _AppShellState extends ConsumerState<AppShell> {
       });
     }
 
-    // Full-screen ride: keep bottom nav out of the way (N-01).
-    return Scaffold(
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: index,
-            children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
-          ),
-          if (onboardingDone == false) const OnboardingFlow(),
-        ],
-      ),
-      bottomNavigationBar: riding
-          ? null
-          : NavigationBar(
-              selectedIndex: index.clamp(0, 4),
-              onDestinationSelected: (i) {
-                setState(() => _visited.add(i));
-                ref.read(shellTabIndexProvider.notifier).state = i;
-              },
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: l10n.navHome,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.garage_outlined),
-                  selectedIcon: const Icon(Icons.garage),
-                  label: l10n.navGarage,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.pedal_bike_outlined),
-                  selectedIcon:
-                      const Icon(Icons.pedal_bike, color: AppColors.accent),
-                  label: l10n.navRide,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.map_outlined),
-                  selectedIcon: const Icon(Icons.map),
-                  label: l10n.navDiscover,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.build_outlined),
-                  selectedIcon: const Icon(Icons.build),
-                  label: l10n.navParts,
-                ),
-              ],
-            ),
+    final locale = Localizations.localeOf(context);
+    final homeLabel = hofTitleFor(
+      countryCode: locale.countryCode,
+      languageCode: locale.languageCode,
     );
+
+    final hideNav = riding || index == ShellTabs.ride;
+    final onboardingOpen = onboardingDone == false;
+    final dueCount = ref.watch(fleetDueCountProvider).valueOrNull ?? 0;
+    final tabHasInnerBack = switch (index) {
+      ShellTabs.karte => _discoverKey.currentState?.hasInnerBack ?? false,
+      ShellTabs.ride => true,
+      _ => false,
+    };
+    final allowSystemPop = ShellBack.allowSystemPop(
+      tabIndex: index,
+      onboardingOpen: onboardingOpen,
+      tabHasInnerBack: tabHasInnerBack,
+    );
+
+    return PopScope(
+      canPop: allowSystemPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _onSystemBack(
+          index: index,
+          onboardingOpen: onboardingOpen,
+        );
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: index,
+              children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
+            ),
+            if (onboardingOpen) OnboardingFlow(key: _onboardingKey),
+          ],
+        ),
+        bottomNavigationBar: hideNav
+            ? null
+            : HofThresholdNav(
+                key: const Key('hof-threshold-nav'),
+                selectedIndex: ShellTabs.navIndex(index),
+                onDestinationSelected: (nav) {
+                  final stack = ShellTabs.stackFromNav(nav);
+                  setState(() => _visited.add(stack));
+                  ref.read(shellTabIndexProvider.notifier).state = stack;
+                },
+                destinations: [
+                  HofThresholdDestination(
+                    icon: Icons.home_outlined,
+                    selectedIcon: Icons.home,
+                    label: homeLabel.isEmpty ? 'Hof' : homeLabel,
+                  ),
+                  HofThresholdDestination(
+                    icon: Icons.map_outlined,
+                    selectedIcon: Icons.map,
+                    label: l10n.navKarte,
+                  ),
+                  HofThresholdDestination(
+                    icon: Icons.handyman_outlined,
+                    selectedIcon: Icons.handyman,
+                    label: l10n.navWorkshop,
+                    showBadge: dueCount > 0,
+                  ),
+                  HofThresholdDestination(
+                    icon: Icons.storefront_outlined,
+                    selectedIcon: Icons.storefront,
+                    label: l10n.navShop,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  void _onSystemBack({
+    required int index,
+    required bool onboardingOpen,
+  }) {
+    final decision = ShellBack.resolve(
+      tabIndex: index,
+      onboardingOpen: onboardingOpen,
+      tabHasInnerBack: switch (index) {
+        ShellTabs.karte =>
+          _discoverKey.currentState?.hasInnerBack ?? false,
+        ShellTabs.ride => true,
+        _ => false,
+      },
+    );
+    switch (decision) {
+      case ShellBackDecision.systemPop:
+        return;
+      case ShellBackDecision.inner:
+        if (onboardingOpen) {
+          _onboardingKey.currentState?.handleSystemBack();
+          return;
+        }
+        if (index == ShellTabs.ride) {
+          if (_rideKey.currentState?.handleSystemBack() != true) {
+            ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+          }
+          return;
+        }
+        if (index == ShellTabs.karte) {
+          if (_discoverKey.currentState?.handleSystemBack() != true) {
+            setState(() => _visited.add(ShellTabs.hof));
+            ref.read(shellTabIndexProvider.notifier).state = ShellTabs.hof;
+          }
+        }
+        return;
+      case ShellBackDecision.goHof:
+        setState(() => _visited.add(ShellTabs.hof));
+        ref.read(shellTabIndexProvider.notifier).state = ShellTabs.hof;
+    }
   }
 }

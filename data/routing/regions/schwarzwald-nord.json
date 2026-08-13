@@ -1,10 +1,15 @@
 {
   "id": "schwarzwald-nord",
-  "name": "Schwarzwald Süd (Freiburg–Todtnau–Titisee)",
-  "bbox": [7.70, 47.80, 8.20, 48.15],
+  "name": "Schwarzwald Süd",
+  "bbox": [
+    7.7,
+    47.8,
+    8.2,
+    48.15
+  ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/freiburg-regbez-latest.osm.pbf",
-    "note": "Regierungsbezirk Freiburg (~150MB), clipped to bbox for Valhalla tiles"
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

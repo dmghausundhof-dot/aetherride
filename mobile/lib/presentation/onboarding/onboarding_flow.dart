@@ -17,12 +17,12 @@ class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
 
   @override
-  ConsumerState<OnboardingFlow> createState() => _OnboardingFlowState();
+  ConsumerState<OnboardingFlow> createState() => OnboardingFlowState();
 }
 
-class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
+class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _step = 1;
-  BikeCategory _sport = BikeCategory.mtbAm;
+    BikeCategory _sport = BikeCategory.urban;
   double _weight = 78;
   bool _busy = false;
   String? _status;
@@ -76,6 +76,16 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
 
     ref.read(shellTabIndexProvider.notifier).state = 0;
+  }
+
+  /// System-back: vorheriger Schritt; auf Schritt 1 bleibt das Overlay.
+  bool handleSystemBack() {
+    if (!mounted) return true;
+    if (_busy) return true;
+    if (_step > 1) {
+      setState(() => _step -= 1);
+    }
+    return true;
   }
 
   IconData _iconFor(String name) => switch (name) {
@@ -273,7 +283,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     if (_step == 1)
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.forestOnDark,
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 2),
@@ -282,7 +292,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     else if (_step == 2)
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.forestOnDark,
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 3),
@@ -291,7 +301,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     else ...[
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.forestOnDark,
                           minimumSize: const Size.fromHeight(52),
                         ),
                         onPressed:
@@ -310,7 +320,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       OutlinedButton(
                         onPressed:
                             _busy ? null : () => unawaited(_finish('garage')),
-                        child: const Text('Zuerst Bike anlegen'),
+                        child: const Text('Zuerst Rad abstellen'),
                       ),
                     ],
                     TextButton(

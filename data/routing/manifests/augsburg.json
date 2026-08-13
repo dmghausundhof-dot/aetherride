@@ -1,0 +1,24 @@
+{
+  "id": "augsburg",
+  "name": "Augsburg / Lech",
+  "bbox": [
+    10.8,
+    48.3,
+    11,
+    48.45
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "augsburg.tar.zst",
+    "packGz": "augsburg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

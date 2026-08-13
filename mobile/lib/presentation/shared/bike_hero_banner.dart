@@ -16,13 +16,27 @@ import '../../providers/app_providers.dart';
 /// (Bike-Detail), statt zweier unterschiedlicher Darstellungen für dasselbe
 /// Bike (UX-Review Punkt „Home und Garage sprechen nicht dieselbe Sprache").
 class BikeHeroBanner extends ConsumerWidget {
-  const BikeHeroBanner({super.key, required this.bike, this.onTap});
+  const BikeHeroBanner({
+    super.key,
+    required this.bike,
+    this.onTap,
+    this.showPhotoPicker = true,
+    this.showActiveBadge = true,
+    this.showCaption = true,
+    this.photoHeight = 140,
+  });
 
   final Bike bike;
 
   /// Optional — z. B. Navigation zur Garage, wenn das Banner auf Home sitzt.
   /// `null` auf der Garage-Detailseite selbst (dort schon am Ziel).
   final VoidCallback? onTap;
+
+  /// Home-Bewohner: Foto bleibt, Kamera und AKTIV-Badge gehören in die Werkstatt.
+  final bool showPhotoPicker;
+  final bool showActiveBadge;
+  final bool showCaption;
+  final double photoHeight;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,7 +59,7 @@ class BikeHeroBanner extends ConsumerWidget {
               Stack(
                 children: [
                   Container(
-                    height: 140,
+                    height: photoHeight,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -59,7 +73,7 @@ class BikeHeroBanner extends ConsumerWidget {
                     ),
                     child: _heroPhoto(photo),
                   ),
-                  if (bike.isActive)
+                  if (showActiveBadge && bike.isActive)
                     Positioned(
                       top: 10,
                       left: 10,
@@ -83,58 +97,60 @@ class BikeHeroBanner extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Material(
-                      color: Colors.black.withValues(alpha: 0.32),
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => _pickPhoto(context, ref),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.photo_camera_outlined,
-                            size: 16,
-                            color: Colors.white,
+                  if (showPhotoPicker)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Material(
+                        color: Colors.black.withValues(alpha: 0.32),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => _pickPhoto(context, ref),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.photo_camera_outlined,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.m,
-                  AppSpacing.s,
-                  AppSpacing.m,
-                  AppSpacing.m,
+              if (showCaption)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.m,
+                    AppSpacing.s,
+                    AppSpacing.m,
+                    AppSpacing.m,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bike.name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          bike.categoryLabel,
+                          if (bike.brand != null) bike.brand!,
+                          if (bike.model != null) bike.model!,
+                          if (bike.year != null) '${bike.year}',
+                        ].join(' · '),
+                        style: const TextStyle(
+                            color: AppColors.muted, fontSize: 12.5),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      bike.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        bike.categoryLabel,
-                        if (bike.brand != null) bike.brand!,
-                        if (bike.model != null) bike.model!,
-                        if (bike.year != null) '${bike.year}',
-                      ].join(' · '),
-                      style:
-                          const TextStyle(color: AppColors.muted, fontSize: 12.5),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

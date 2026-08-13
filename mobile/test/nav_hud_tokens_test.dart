@@ -1,5 +1,6 @@
 import 'package:aetherride_mobile/core/theme/nav_hud_tokens.dart';
 import 'package:aetherride_mobile/domain/routing/upcoming_rail.dart';
+import 'package:aetherride_mobile/l10n/app_localizations.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_data_strip.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_next_turn_banner.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_pre_start_chrome.dart';
@@ -115,6 +116,9 @@ void main() {
     testWidgets('primary Losfahren CTA is green', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: RidePreStartChrome(
               routeName: 'Tempelhofer 60',

@@ -47,7 +47,7 @@ export function AppDownloadButtons({ size = "md", className = "" }: Props) {
       {playReady ? (
         <a
           href={PLAY_STORE_URL}
-          className={`inline-flex items-center justify-center gap-2 rounded-xl bg-accent font-medium text-white transition hover:bg-accent-hover ${sizeClasses}`}
+          className={`inline-flex items-center justify-center gap-2 rounded-xl border border-border font-medium text-foreground transition hover:bg-surface-elevated ${sizeClasses}`}
           aria-label="Bei Google Play laden"
           rel="noopener noreferrer"
         >

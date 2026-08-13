@@ -99,6 +99,15 @@ await check("sitemap", async () => {
   return { bytes: t.length };
 });
 
+await check("coverage live=0 Wien", async () => {
+  const r = await fetch(`${base}/api/coverage?lat=48.208&lng=16.373&live=0`);
+  const j = await r.json();
+  if (!r.ok) throw new Error(JSON.stringify(j).slice(0, 200));
+  const first = (j.seeds ?? [])[0]?.id ?? "";
+  if (/heidelberg/i.test(first)) throw new Error(`Wien ranked Heidelberg: ${first}`);
+  return { honesty: j.honesty, first, google: j.google?.configured };
+});
+
 await check("ops/env-check", async () => {
   const r = await fetch(`${base}/api/ops/env-check`);
   const j = await r.json();
@@ -108,6 +117,7 @@ await check("ops/env-check", async () => {
     engine: j.checks?.routing?.engine,
     supabase: j.checks?.supabasePublic,
     stores: j.checks?.stores?.hasLinks,
+    googleMaps: j.checks?.partners?.googleMaps,
   };
 });
 

@@ -92,7 +92,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           (id: 'flow', label: 'Flow'),
           (id: 'aggressive', label: 'Aggressiv'),
           (id: 'efficient', label: 'Effizient'),
-          (id: 'explorative', label: 'Explorativ'),
+          (id: 'explorative', label: 'Entdeckend'),
         ];
     }
   }
@@ -808,7 +808,7 @@ class _SubscriptionCard extends StatelessWidget {
           FilledButton(
             onPressed: onUpgrade,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.forestOnDark,
               minimumSize: const Size.fromHeight(44),
             ),
             child: const Text('Pro upgraden'),

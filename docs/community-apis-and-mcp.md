@@ -8,11 +8,12 @@
 |-----|------|------------------|------|
 | **Sync snapshot** | `GET/POST /api/sync` | Bikes, Rides, savedRoutes, collections (LWW pro User) | Supabase JWT |
 | **Heatmap cells** | `GET/POST /api/heatmap` | Aggregierte Popularität (k≥5, Consent) | Contribute: auth+consent |
+| **Coverage** | `GET /api/coverage?lat&lng&bike` | GPS-first Seeds + OSM Trails/Routen + Wetter + Google Places | public |
 | **OSM routes** | `GET /api/osm-routes?lat&lon` | Öffentliche relation-Geometrien (bicycle/mtb/hiking) | public |
-| **OSM trails** | `GET /api/osm-trails` | Trail-Segmente | public |
+| **OSM trails** | `GET /api/osm-trails` | Trail-Segmente (auch `west/south/east/north` Viewport) | public |
 | **Outdooractive** | `GET /api/outdooractive` | Enrichment-Touren (wenn Key) | API key |
 | **Trailforks** | `GET /api/trailforks` | MTB conditions (hint) | optional |
-| **Geocode** | `GET /api/geocode` | Ortssuche → Near-me | public Photon |
+| **Geocode** | `GET /api/geocode` | Photon, Google Geocoding Fallback | public |
 | **Route engine** | `GET/POST /api/route` | Live routing | public (rate limit) |
 | **Tour geometry** | `GET /api/tours/geometry` | Catalog + near GPS | public |
 | **Tour GPX** | `GET /api/tours/:id/gpx` | Export | public |
@@ -24,8 +25,9 @@
 ### Was fehlt für echte Community (Backend)
 
 - Tabelle `tour_reviews` (tour_id, user_id, rating, body, status, moderated_at)
-- Tabelle `shared_collections` (short_id, payload, owner)
-- Tabelle `public_profiles` (handle unique, user_id, bio)
+- AI/Human-Moderation: `POST /api/community/moderate` + Queue `/community/moderation`
+- Tabelle `public_profiles` (handle unique, opt-in)
+- Tabelle `shared_collections` (short_id, payload, owner) — noch offen
 - RLS: read approved only; write own pending
 - Optional: moderate via service role / admin UI
 
@@ -44,7 +46,7 @@
 
 Read-only Server: `tools/mcp-aetherride/server.mjs`
 
-Tools: `search_bikes`, `identify_bike`, `list_tours`, `geocode`.
+Tools: `search_bikes`, `identify_bike`, `list_tours`, `geocode`, `tour_community`.
 
 Projekt-Config: `.cursor/mcp.json` (API-Base `https://aetherride.vercel.app`).
 

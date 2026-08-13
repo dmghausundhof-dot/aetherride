@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { loadFeaturedParts } from "@/lib/shop/partsCatalog";
+import { loadShopShelves } from "@/lib/shop/shopCatalog";
 import { FEATURED_PARTS_COLLECTION } from "@/lib/shop/shopifyStorefront";
 
 /**
  * GET /api/shop/parts
- * Live featured-parts Collection via Storefront API.
- * No demo snapshot — Production zeigt Produkte sobald Credentials gesetzt sind.
+ * Werkstatt-Regal (garage-fit) + Merchandise (ungefiltert) aus Storefront.
  */
 export async function GET() {
-  const result = await loadFeaturedParts();
+  const result = await loadShopShelves();
 
   if (!result.ok) {
     const status =
@@ -23,6 +22,7 @@ export async function GET() {
         configured: result.configured,
         collectionHandle: result.collectionHandle || FEATURED_PARTS_COLLECTION,
         products: [],
+        merch: [],
         error: result.error,
         code: result.code,
       },
@@ -36,9 +36,12 @@ export async function GET() {
       configured: true,
       collectionHandle: result.collectionHandle,
       collectionTitle: result.collectionTitle,
+      merchCollectionHandle: result.merchCollectionHandle,
       source: result.source,
-      count: result.products.length,
-      products: result.products,
+      count: result.parts.length,
+      merchCount: result.merch.length,
+      products: result.parts,
+      merch: result.merch,
     },
     {
       headers: {

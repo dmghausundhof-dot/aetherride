@@ -9,7 +9,7 @@
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
-    "note": "NRW-Landextract (~groß), zwingend auf bbox clippen."
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

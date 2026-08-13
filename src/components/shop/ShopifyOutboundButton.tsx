@@ -92,13 +92,12 @@ export function ShopifyOutboundButton({
               Online Store gesperrt
             </h2>
             <p className="mt-2 text-sm text-text-secondary">
-              Der Shopify Online Store ist passwortgeschützt (Owner Preview).
-              Der Link führt zur Passwort-Seite — kein stiller Dead End, aber
-              kein öffentlicher Checkout.
+              Der Shopify-Shop ist passwortgeschützt (Inhaber-Vorschau). Der Link
+              führt zur Passwort-Seite — kein stiller Dead End, aber kein
+              öffentlicher Checkout.
             </p>
             <p className="mt-2 text-xs text-text-secondary">
-              Produktkatalog nutze in AetherRide (Storefront API). Store-Passwort
-              wird nicht in der App ausgeliefert.
+              Kein In-App-Katalog. Store-Passwort wird nicht ausgeliefert.
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <a

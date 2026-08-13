@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:aetherride_mobile/data/routing/naehe_seeds.dart';
 import 'package:aetherride_mobile/domain/routing/route_shape.dart';
+import 'package:aetherride_mobile/domain/routing/tour_coverage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _readFirstExisting(List<String> candidates, {required String label}) {
@@ -343,14 +344,14 @@ void main() {
     expect(heroAssetForSeedId(''), isNull);
     expect(
       heroAssetForSeedId('seed-loop-innsbruck-alpen-60'),
-      'assets/seeds/heroes/alps.jpg',
+      'assets/seeds/heroes/wm-innsbruck.jpg',
     );
     expect(
       heroAssetForSeedId('seed-loop-bodensee-hafen-60'),
-      'assets/seeds/heroes/lake.jpg',
+      'assets/seeds/heroes/wm-bodensee.jpg',
     );
     expect(
-      heroAssetForSeedId('seed-loop-freiburg-mtb-trail-60'),
+      heroAssetForSeedId('seed-loop-somewhere-mtb-trail-60'),
       'assets/seeds/heroes/forest.jpg',
     );
     final generic = heroAssetForSeedId('seed-loop-somewhere-60');
@@ -365,5 +366,41 @@ void main() {
       hashed.every((e) => e == 'assets/seeds/heroes/lake.jpg'),
       isFalse,
     );
+  });
+
+  test('GPS Wien/München/Zürich/Hamburg do not rank Heidelberg first', () {
+    final berlin = NaeheSeedsBundle.parse(berlinRaw);
+    final dach = NaeheSeedsBundle.parse(dachRaw);
+    final merged = NaeheSeedsBundle.merge(berlin, dach);
+    double distKm(double lat, double lng, NaeheSeedRoute r) {
+      final dLat = (r.centerLat - lat) * 111.0;
+      final dLng = (r.centerLng - lng) * 111.0 * 0.7;
+      return math.sqrt(dLat * dLat + dLng * dLng);
+    }
+
+    bool looksHd(NaeheSeedRoute r) {
+      final t = '${r.id} ${r.title}'.toLowerCase();
+      return t.contains('heidelberg') || t.contains('neckarwiese');
+    }
+
+    for (final city in [
+      (name: 'Wien', lat: 48.208, lng: 16.373, needles: ['wien', 'vienna']),
+      (name: 'München', lat: 48.137, lng: 11.575, needles: ['munich', 'muenchen']),
+      (name: 'Zürich', lat: 47.376, lng: 8.541, needles: ['zurich', 'zuerich']),
+      (name: 'Hamburg', lat: 53.551, lng: 9.993, needles: ['hamburg']),
+    ]) {
+      final picked = TourCoverage.pickNearbyThenFill(
+        items: merged.loops,
+        distanceKm: (r) => distKm(city.lat, city.lng, r),
+      );
+      expect(picked, isNotEmpty, reason: city.name);
+      expect(looksHd(picked.first), isFalse, reason: '${city.name} first=${picked.first.id}');
+      final id = picked.first.id.toLowerCase();
+      expect(
+        city.needles.any(id.contains),
+        isTrue,
+        reason: '${city.name} first=${picked.first.id}',
+      );
+    }
   });
 }

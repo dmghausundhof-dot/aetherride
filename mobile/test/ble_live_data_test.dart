@@ -17,6 +17,7 @@ void main() {
     expect(d.batterySocPercent, isNull);
     expect(d.riderPowerW, isNull);
     expect(d.assistMode, isNull);
+    expect(d.heartRateBpm, isNull);
   });
 
   test('LDI map keeps SoC and assist when native sends them', () {
@@ -25,6 +26,7 @@ void main() {
       'batterySocPercent': 64,
       'riderPowerW': 140,
       'assistMode': 'Tour',
+      'heartRateBpm': 132,
       'cadenceRpm': 70,
       'odometerKm': 3,
       'lightStatus': true,
@@ -37,5 +39,6 @@ void main() {
     expect(d.batterySocPercent, 64);
     expect(d.riderPowerW, 140);
     expect(d.assistMode, 'Tour');
+    expect(d.heartRateBpm, 132);
   });
 }

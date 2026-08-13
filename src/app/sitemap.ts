@@ -17,17 +17,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPages: MetadataRoute.Sitemap = [
     "",
+    "/home",
     "/discover",
-    "/planner",
     "/regions",
     "/guides",
     "/community",
     "/pricing",
     "/download",
-    "/library",
     "/garage",
     "/shop",
-    "/shop/parts",
+    "/legal/impressum",
   ].map((path) => ({
     url: `${origin}${path || "/"}`,
     lastModified: now,

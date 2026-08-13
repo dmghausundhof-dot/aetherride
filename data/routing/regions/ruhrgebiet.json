@@ -1,0 +1,27 @@
+{
+  "id": "ruhrgebiet",
+  "name": "Ruhrgebiet",
+  "bbox": [
+    6.8,
+    51.3,
+    7.65,
+    51.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ruhrgebiet",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ruhrgebiet.tar.zst"
+  }
+}

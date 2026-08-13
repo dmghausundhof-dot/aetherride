@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Bike, ComponentSlot } from "@/types";
 import { getActiveComponents } from "@/store/useAppStore";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { catalogGeometryForSize } from "@/lib/catalog/bikes";
 import { cn } from "@/lib/utils";
 import {
   resolveGaragePrimaryAction,
@@ -71,6 +72,21 @@ export function BikeSchema({
       "Federweg",
       `${bike.travelFrontMm}/${bike.travelRearMm ?? "–"} mm`,
     ]);
+  }
+  const geo = catalogGeometryForSize(bike.catalogBikeId ?? "", bike.frameSize);
+  if (geo) {
+    techRows.push(["Reach", `${geo.reachMm} mm`]);
+    techRows.push(["Stack", `${geo.stackMm} mm`]);
+    if (geo.headAngleDeg != null) {
+      techRows.push(["Lenkwinkel", `${geo.headAngleDeg}°`]);
+    }
+    if (geo.chainstayMm != null) {
+      techRows.push(["Kettenstrebe", `${geo.chainstayMm} mm`]);
+    }
+    if (geo.wheelbaseMm != null) {
+      techRows.push(["Radstand", `${geo.wheelbaseMm} mm`]);
+    }
+    if (geo.setting) techRows.push(["Geo-Setting", geo.setting]);
   }
   if (bike.totalHours > 0) {
     techRows.push(["Stunden", bike.totalHours.toFixed(1)]);

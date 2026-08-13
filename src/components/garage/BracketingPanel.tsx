@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Bike, BracketingParameter } from "@/types";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 const PARAMS: { id: BracketingParameter; label: string }[] = [
   { id: "fork.rebound", label: "Gabel Zugstufe" },
@@ -159,16 +160,33 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
               },
               (_, i) => active.rangeFrom + i * active.step
             ).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => addDemoRuns(active.id, v)}
-                className="rounded-lg bg-muted px-2 py-1 text-xs"
-              >
-                +2 Fahrten @ {v}
-              </button>
+              <p key={v} className="rounded-lg bg-muted px-2 py-1 text-xs">
+                Variante {v}
+              </p>
             ))}
           </div>
+          {allowDemoContent() && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {Array.from(
+                {
+                  length:
+                    Math.floor(
+                      (active.rangeTo - active.rangeFrom) / active.step
+                    ) + 1,
+                },
+                (_, i) => active.rangeFrom + i * active.step
+              ).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => addDemoRuns(active.id, v)}
+                  className="rounded-lg border border-dashed border-border px-2 py-1 text-xs text-text-secondary"
+                >
+                  Demo: +2 Fahrten @ {v}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => evaluateBracketing(active.id)}

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -77,8 +78,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       tool: 'setup_history',
     ),
     _SuggestedPrompt(
-      label: 'Rides',
-      query: 'Zusammenfassung meiner letzten Rides',
+      label: 'Fahrten',
+      query: 'Zusammenfassung meiner letzten Fahrten',
       tool: 'ride_stats',
     ),
     _SuggestedPrompt(
@@ -87,7 +88,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       tool: 'route_search',
     ),
     _SuggestedPrompt(
-      label: 'Shop',
+      label: 'Laden',
       query: 'Brauche ich bald neue Verschleißteile?',
       tool: 'product_search',
     ),
@@ -272,7 +273,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final blocked = riding || _busy;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(title: const Text('Assistent')),
       body: Column(
         children: [
           if (riding)
@@ -317,11 +318,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
+                  if (kDebugMode)
+                    DropdownButtonFormField<String>(
                     initialValue: _tool,
                     isDense: true,
                     decoration: const InputDecoration(
-                      labelText: 'Tool',
+                      labelText: 'Werkzeug (Entwickler)',
                       border: OutlineInputBorder(),
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(
@@ -331,7 +333,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                     items: const [
                       DropdownMenuItem(value: 'auto', child: Text('Auto')),
-                      DropdownMenuItem(value: 'garage', child: Text('Garage')),
+                      DropdownMenuItem(value: 'garage', child: Text('Werkstatt')),
                       DropdownMenuItem(
                           value: 'range', child: Text('Reichweite')),
                       DropdownMenuItem(
@@ -340,7 +342,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
                       DropdownMenuItem(
                         value: 'ride_stats',
-                        child: Text('Ride-Stats'),
+                        child: Text('Fahrten'),
                       ),
                       DropdownMenuItem(
                         value: 'route_search',
@@ -348,7 +350,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
                       DropdownMenuItem(
                         value: 'product_search',
-                        child: Text('Shop'),
+                        child: Text('Laden'),
                       ),
                     ],
                     onChanged: blocked
@@ -441,7 +443,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   const SizedBox(width: 8),
                   IconButton.filled(
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.accent,
+                      backgroundColor: AppColors.forestOnDark,
+                      foregroundColor: AppColors.hofGround,
                     ),
                     onPressed: blocked ? null : () => _send(),
                     icon: _busy

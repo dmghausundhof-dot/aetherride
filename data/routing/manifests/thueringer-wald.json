@@ -1,0 +1,24 @@
+{
+  "id": "thueringer-wald",
+  "name": "Thüringer Wald",
+  "bbox": [
+    10.4,
+    50.4,
+    11.4,
+    50.85
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "thueringer-wald.tar.zst",
+    "packGz": "thueringer-wald.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

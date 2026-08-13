@@ -33,6 +33,65 @@ class CatalogManufacturer {
       };
 }
 
+class FrameSizeGeometry {
+  const FrameSizeGeometry({
+    required this.size,
+    required this.reachMm,
+    required this.stackMm,
+    this.wheelbaseMm,
+    this.chainstayMm,
+    this.headAngleDeg,
+    this.seatAngleEffectiveDeg,
+    this.setting,
+    this.sourceUrl,
+  });
+
+  final String size;
+  final double reachMm;
+  final double stackMm;
+  final double? wheelbaseMm;
+  final double? chainstayMm;
+  final double? headAngleDeg;
+  final double? seatAngleEffectiveDeg;
+  final String? setting;
+  final String? sourceUrl;
+
+  factory FrameSizeGeometry.fromJson(Map<String, dynamic> m) {
+    return FrameSizeGeometry(
+      size: (m['size'] as String?) ?? '',
+      reachMm: (m['reachMm'] as num?)?.toDouble() ??
+          (m['reach_mm'] as num?)?.toDouble() ??
+          0,
+      stackMm: (m['stackMm'] as num?)?.toDouble() ??
+          (m['stack_mm'] as num?)?.toDouble() ??
+          0,
+      wheelbaseMm: (m['wheelbaseMm'] as num?)?.toDouble() ??
+          (m['wheelbase_mm'] as num?)?.toDouble(),
+      chainstayMm: (m['chainstayMm'] as num?)?.toDouble() ??
+          (m['chainstay_mm'] as num?)?.toDouble(),
+      headAngleDeg: (m['headAngleDeg'] as num?)?.toDouble() ??
+          (m['head_angle_deg'] as num?)?.toDouble(),
+      seatAngleEffectiveDeg: (m['seatAngleEffectiveDeg'] as num?)?.toDouble() ??
+          (m['seat_angle_effective_deg'] as num?)?.toDouble(),
+      setting: m['setting'] as String?,
+      sourceUrl: m['sourceUrl'] as String? ?? m['source_url'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'size': size,
+        'reachMm': reachMm,
+        'stackMm': stackMm,
+        if (wheelbaseMm != null) 'wheelbaseMm': wheelbaseMm,
+        if (chainstayMm != null) 'chainstayMm': chainstayMm,
+        if (headAngleDeg != null) 'headAngleDeg': headAngleDeg,
+        if (seatAngleEffectiveDeg != null)
+          'seatAngleEffectiveDeg': seatAngleEffectiveDeg,
+        if (setting != null) 'setting': setting,
+        if (sourceUrl != null) 'sourceUrl': sourceUrl,
+      };
+}
+
 class CatalogBikeVariant {
   const CatalogBikeVariant({
     required this.id,
@@ -48,6 +107,7 @@ class CatalogBikeVariant {
     this.travelRearMm,
     this.weightKgApprox,
     this.sourceUrl,
+    this.geometryBySize = const [],
   });
 
   final String id;
@@ -63,6 +123,15 @@ class CatalogBikeVariant {
   final int? travelRearMm;
   final double? weightKgApprox;
   final String? sourceUrl;
+  final List<FrameSizeGeometry> geometryBySize;
+
+  FrameSizeGeometry? geometryForSize(String? size) {
+    if (size == null || size.isEmpty) return null;
+    for (final row in geometryBySize) {
+      if (row.size == size) return row;
+    }
+    return null;
+  }
 
   factory CatalogBikeVariant.fromJson(Map<String, dynamic> m) {
     final oemRaw = m['oemComponents'] ?? m['oem_components'];
@@ -85,6 +154,7 @@ class CatalogBikeVariant {
     }
 
     final sizes = m['frameSizeOptions'] ?? m['frame_size_options'];
+    final geoRaw = m['geometryBySize'] ?? m['geometry_by_size'];
     return CatalogBikeVariant(
       id: (m['id'] as String?) ?? '',
       name: (m['name'] as String?) ?? '',
@@ -110,6 +180,12 @@ class CatalogBikeVariant {
       weightKgApprox: (m['weightKgApprox'] as num?)?.toDouble() ??
           (m['weight_kg_approx'] as num?)?.toDouble(),
       sourceUrl: m['sourceUrl'] as String? ?? m['source_url'] as String?,
+      geometryBySize: [
+        if (geoRaw is List)
+          for (final e in geoRaw)
+            if (e is Map)
+              FrameSizeGeometry.fromJson(Map<String, dynamic>.from(e)),
+      ],
     );
   }
 
@@ -127,6 +203,8 @@ class CatalogBikeVariant {
         if (travelRearMm != null) 'travelRearMm': travelRearMm,
         if (weightKgApprox != null) 'weightKgApprox': weightKgApprox,
         if (sourceUrl != null) 'sourceUrl': sourceUrl,
+        if (geometryBySize.isNotEmpty)
+          'geometryBySize': [for (final g in geometryBySize) g.toJson()],
       };
 }
 

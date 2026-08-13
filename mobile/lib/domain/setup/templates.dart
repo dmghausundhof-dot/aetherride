@@ -204,6 +204,47 @@ final List<SetupTemplate> setupTemplates = [
       'tire_rear.pressure_psi': 28,
     },
   ),
+  SetupTemplate(
+    id: 'tpl-gravel-base',
+    label: 'Gravel Basisdruck',
+    conditions: 'general',
+    kind: 'editorial_preset',
+    disclaimer:
+        'Grobe Startdrücke für 40–45 mm Gravelreifen — am Rad nachmessen.',
+    sourceLabel: 'Industriepraxis Gravel',
+    categories: [BikeCategory.gravel],
+    resolve: (w, _) => {
+      'tire_front.pressure_psi': w > 80 ? 40 : 36,
+      'tire_rear.pressure_psi': w > 80 ? 42 : 38,
+    },
+  ),
+  SetupTemplate(
+    id: 'tpl-road-tires',
+    label: 'Rennrad Basisdruck',
+    conditions: 'general',
+    kind: 'editorial_preset',
+    disclaimer:
+        'Grober Startdruck für 700c — Reifenbreite und Schlauchlos beachten.',
+    sourceLabel: 'Industriepraxis Rennrad',
+    categories: [BikeCategory.road],
+    resolve: (w, _) => {
+      'tire_front.pressure_psi': w > 80 ? 80 : 72,
+      'tire_rear.pressure_psi': w > 80 ? 85 : 76,
+    },
+  ),
+  SetupTemplate(
+    id: 'tpl-urban-tires',
+    label: 'City / Trekking Basisdruck',
+    conditions: 'general',
+    kind: 'editorial_preset',
+    disclaimer: 'Grober Startdruck — am Reifen nachmessen, kein OEM-Wert.',
+    sourceLabel: 'Industriepraxis City',
+    categories: [BikeCategory.urban, BikeCategory.etrekking],
+    resolve: (w, _) => {
+      'tire_front.pressure_psi': w > 85 ? 50 : 45,
+      'tire_rear.pressure_psi': w > 85 ? 55 : 50,
+    },
+  ),
 ];
 
 List<SetupTemplate> templatesFor(BikeCategory category) =>

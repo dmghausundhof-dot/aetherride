@@ -1,0 +1,24 @@
+{
+  "id": "magdeburg",
+  "name": "Magdeburg / Elbe",
+  "bbox": [
+    11.55,
+    52.05,
+    11.7,
+    52.2
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "magdeburg.tar.zst",
+    "packGz": "magdeburg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

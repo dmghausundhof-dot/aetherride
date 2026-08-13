@@ -31,6 +31,173 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navParts => 'Teile';
 
   @override
+  String get navKarte => 'Karte';
+
+  @override
+  String get navWorkshop => 'Werkstatt';
+
+  @override
+  String get navShop => 'Laden';
+
+  @override
+  String get hofJustRide => 'Einfach fahren';
+
+  @override
+  String get hofShowTours => 'Touren anzeigen';
+
+  @override
+  String get hofMapChoiceHint =>
+      'Ohne Touren losfahren, oder Touren auf der Karte zeigen.';
+
+  @override
+  String get werkstattPartsShelf => 'Shop';
+
+  @override
+  String get werkstattForYourBike => 'Für dein Rad';
+
+  @override
+  String get werkstattMerch => 'Merchandise';
+
+  @override
+  String get werkstattShopParts => 'Ersatzteile im Shop';
+
+  @override
+  String get shopGatewayKicker => 'Über den Hof';
+
+  @override
+  String get shopGatewayTitle => 'Der Laden';
+
+  @override
+  String get shopGatewayHint =>
+      'Hier wohnt das Rad nicht. Ehrliche Teile und Merch im Shopify-Shop — Kauf und Kasse dort, nicht in der App.';
+
+  @override
+  String get shopZumShop => 'Zum Shop';
+
+  @override
+  String shopForYourBikeHint(String name) {
+    return 'Ersatzteile passend zu $name — Kategorie und Laufrad. Keine erfundenen SKUs.';
+  }
+
+  @override
+  String get shopForYourBikeEmpty =>
+      'Stell ein Rad in der Werkstatt ab — dann öffnen wir die passenden Teile im Shop.';
+
+  @override
+  String get shopMerchHint =>
+      'Kleidung und Kleinzeug. Unabhängig vom Rad, nie nach Fit gefiltert.';
+
+  @override
+  String get shopNotConnected => 'Shop nicht verbunden';
+
+  @override
+  String get shopNotConnectedHint =>
+      'Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann führt dieser Tab in den Laden.';
+
+  @override
+  String get shopOpenFailed => 'Shop konnte nicht geöffnet werden.';
+
+  @override
+  String get shopPasswordWall =>
+      'Der Online-Store ist noch passwortgeschützt. Shopify-Admin: Online Store → Preferences → Password protection aus.';
+
+  @override
+  String get garageSetupTabHintTires =>
+      'Luftdruck grob nach Gewicht und Reifen — am Rad nachmessen, keine OEM-Tabelle.';
+
+  @override
+  String get werkstattSetupTires => 'Reifen / Druck grob';
+
+  @override
+  String get werkstattSetupSuspension =>
+      'Fahrwerk — SAG und Luft nach Federweg';
+
+  @override
+  String get werkstattSetupSuspensionUnknown =>
+      'Fahrwerk — Federweg nicht eingetragen';
+
+  @override
+  String get werkstattSetupDropper => 'Vario-Stütze (eingetragen)';
+
+  @override
+  String werkstattSetupWheel(String size) {
+    return 'Laufrad $size';
+  }
+
+  @override
+  String get werkstattSetupCockpit => 'Cockpit — Lenker und Vorbau';
+
+  @override
+  String get werkstattSetupBagsCockpit => 'Taschen / Cockpit';
+
+  @override
+  String get werkstattSetupLightsRack =>
+      'Licht und Gepäckträger — nur wenn eingetragen';
+
+  @override
+  String get werkstattSetupDrivetrain => 'Schaltung';
+
+  @override
+  String get werkstattBatteryHonest => 'Akku nur mit echtem Sensor';
+
+  @override
+  String get werkstattBatteryHonestHint =>
+      'Kein Prozent ohne gekoppelten Sensor. Bosch LDI bleibt G-1.';
+
+  @override
+  String get werkstattSensorEbike =>
+      'Radsensor (CSC) — Tempo und Trittfrequenz. Akku-Stand nur mit echtem Sensor.';
+
+  @override
+  String get werkstattSensorAnalog =>
+      'Radsensor — Tempo und Trittfrequenz am Rad.';
+
+  @override
+  String get hofYourWatch => 'Deine Uhr';
+
+  @override
+  String get hofWatchHint =>
+      'Fitnesstracking am Fahrer — nicht am Rad. Puls nur mit echtem Sensor. Apple Watch oft ohne Standard-BLE.';
+
+  @override
+  String get hofWatchPair => 'Uhr koppeln';
+
+  @override
+  String get hofWatchReconnect => 'Neu koppeln';
+
+  @override
+  String get hofWatchRemove => 'Entfernen';
+
+  @override
+  String get hofWatchConnect => 'Uhr verbinden';
+
+  @override
+  String get hofYou => 'Du';
+
+  @override
+  String get hofYouSheetHint =>
+      'Du und deine Uhr. Der Radsensor bleibt am Rad in der Werkstatt.';
+
+  @override
+  String get werkstattWatchEbike =>
+      'Smartwatch — Puls neben CSC. Kein erfundener SoC.';
+
+  @override
+  String get werkstattWatchAnalog => 'Smartwatch / Fitnesstracking';
+
+  @override
+  String get setupTirePressureLabel => 'Vorderreifen (psi)';
+
+  @override
+  String get setupCompareHintTires =>
+      'Legt zwei verdeckte Reifendrücke an. Nach ein paar Fahrten siehst du, welcher sich besser anfühlt.';
+
+  @override
+  String setupTirePressureValue(String value) {
+    return 'Reifen $value psi';
+  }
+
+  @override
   String get searchHome => 'Wohin willst du? Ort, Tour oder Adresse';
 
   @override
@@ -109,6 +276,104 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chat => 'Chat';
+
+  @override
+  String get hofRideOut => 'Rausfahren';
+
+  @override
+  String get hofOpenBike => 'Rad öffnen';
+
+  @override
+  String get hofParkBike => 'Rad abstellen';
+
+  @override
+  String get hofRideWithoutBike => 'Ohne Rad fahren';
+
+  @override
+  String get hofRideOutAgain => 'Noch mal raus';
+
+  @override
+  String get hofAtGate => 'vor dem Tor';
+
+  @override
+  String get hofEmptyStand => 'Leerer Stand';
+
+  @override
+  String get hofSkyUnknown => 'Himmel unbekannt';
+
+  @override
+  String get hofNoHonestLoop => 'Kein ehrlicher Trail-Rundkurs';
+
+  @override
+  String get hofNotYetOut => 'noch nicht draußen';
+
+  @override
+  String get hofJustBack => 'gerade reingekommen';
+
+  @override
+  String get hofLastRideNoGps => 'ohne GPS-Track — kein erfundener Verlauf';
+
+  @override
+  String get hofGpsUnknown => 'Kein Standort — Himmel und Tor warten auf GPS.';
+
+  @override
+  String get rideGpsUnavailable =>
+      'Kein GPS — Track bleibt leer. Kein erfundener Verlauf.';
+
+  @override
+  String get hofAtHof => 'am Hof';
+
+  @override
+  String get hofSinceOneDay => 'seit 1 Tag';
+
+  @override
+  String hofSinceDays(int days) {
+    return 'seit $days Tagen';
+  }
+
+  @override
+  String get hofNoBikeHere => 'Kein Rad steht hier';
+
+  @override
+  String hofBringForward(String name) {
+    return '$name nach vorn';
+  }
+
+  @override
+  String hofCareInWorkshop(String label) {
+    return '$label — in der Werkstatt';
+  }
+
+  @override
+  String get hofSensorAwake => 'Sensor wach';
+
+  @override
+  String get hofOpenTours => 'Touren öffnen';
+
+  @override
+  String hofSkyDry(String temp) {
+    return '$temp° · eher trocken';
+  }
+
+  @override
+  String hofSkyDamp(String temp) {
+    return '$temp° · feucht möglich';
+  }
+
+  @override
+  String hofSkyWet(String temp) {
+    return '$temp° · Regen · Trails eher nass';
+  }
+
+  @override
+  String hofLoopDuration(int minutes) {
+    return '⟲ $minutes min';
+  }
+
+  @override
+  String hofCommunityNotes(int count) {
+    return '$count Stimmen zu dieser Runde';
+  }
 
   @override
   String get homeSubtitleMtb => 'Trails, Touren & dein Setup';
@@ -510,17 +775,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get garageTitle => 'Garage';
 
   @override
-  String get garageFabBike => 'Bike';
+  String get garageFabBike => 'Rad abstellen';
 
   @override
-  String get garageEmptyTitle => 'Noch kein Bike in der Garage';
+  String get garageEmptyTitle => 'Die Box ist leer';
 
   @override
   String get garageEmptyMessage =>
-      'Leg dein Rad an — Typ, Status und Teile siehst du danach auf einen Blick.';
+      'Rad abstellen — ehrlich, ohne Demo-Kilometer. Dann siehst du, ob es bereit ist.';
 
   @override
-  String get garageAddBike => 'Bike anlegen';
+  String get garageAddBike => 'Rad abstellen';
 
   @override
   String get garageStatBike => 'RAD';

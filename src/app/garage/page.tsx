@@ -1,56 +1,31 @@
 "use client";
 
-import { useMemo, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Plus,
-  ShieldCheck,
-  Download,
-} from "lucide-react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Bluetooth, Plus } from "lucide-react";
 import { AddBikeWizard } from "@/components/garage/AddBikeWizard";
-import { BikeSchema } from "@/components/garage/BikeSchema";
 import { InstallComponentSheet } from "@/components/garage/InstallComponentSheet";
-import { VerdictPill } from "@/components/garage/VerdictPill";
-import { SagGuideForBike } from "@/components/garage/SagGuidePanel";
-import { BikePhotoControl } from "@/components/garage/BikePhotoControl";
-import { OdometerImportPanel } from "@/components/garage/OdometerImportPanel";
-import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { GarageComponentsTab } from "@/components/garage/GarageComponentsTab";
 import { GarageSetupsTab } from "@/components/garage/GarageSetupsTab";
 import { GarageMaintenanceTab } from "@/components/garage/GarageMaintenanceTab";
-import { MaintenanceStatusCard } from "@/components/home/MaintenanceStatusCard";
-import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
+import { DieBoxSurface } from "@/components/garage/DieBoxSurface";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import {
-  aggregateVerdict,
-  checkBikeCompatibility,
-} from "@/lib/compatibility/engine";
-import { evaluateIntervalDue } from "@/lib/maintenance/intervals";
-import {
-  setupConditionLabel,
-} from "@/lib/setup/conditionLabels";
-import {
-  buildMaintenanceAlerts,
-} from "@/lib/home/maintenanceAlerts";
-import {
-  verdictSummaryDe,
-} from "@/lib/garage/readiness";
-import {
-  buildServiceReport,
-  downloadServiceReport,
-} from "@/lib/garage/serviceReport";
-import type { GaragePrimaryAction } from "@/lib/garage/primaryCta";
+import { buildServiceReport, downloadServiceReport } from "@/lib/garage/serviceReport";
 import {
   getActiveComponents,
   getMissingSlots,
   useAppStore,
 } from "@/store/useAppStore";
+import { HofPageHeader } from "@/components/hof/HofPageHeader";
+import { HOF_COPY } from "@/lib/home/hofCopy";
 import type { ComponentSlot, SetupCondition } from "@/types";
 
-type Tab = "overview" | "components" | "setups" | "maintenance";
-const TABS: Tab[] = ["overview", "components", "setups", "maintenance"];
+type Tab = "components" | "setups" | "maintenance";
+const TABS: Tab[] = ["components", "setups", "maintenance"];
 
 function parseTab(raw: string | null): Tab | null {
+  if (raw === "overview") return "components";
   if (raw && (TABS as string[]).includes(raw)) return raw as Tab;
   return null;
 }
@@ -63,7 +38,6 @@ function parseWizard(raw: string | null): WizardMode | null {
 }
 
 function GaragePageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -78,7 +52,6 @@ function GaragePageInner() {
   const markIntervalDone = useAppStore((s) => s.markIntervalDone);
   const applySetupTemplate = useAppStore((s) => s.applySetupTemplate);
   const rides = useAppStore((s) => s.rides);
-  const riderWeight = useAppStore((s) => s.riderProfile.riderWeightKg);
 
   const tabParam = searchParams.get("tab");
   const wizardParam = searchParams.get("wizard");
@@ -89,7 +62,7 @@ function GaragePageInner() {
     () => bikeParam || activeBikeId
   );
   const [tab, setTab] = useState<Tab>(
-    () => parseTab(tabParam) ?? "overview"
+    () => parseTab(tabParam) ?? "components"
   );
   const [showWizard, setShowWizard] = useState(
     () => parseWizard(wizardParam) != null
@@ -131,19 +104,10 @@ function GaragePageInner() {
   const [setupLabel, setSetupLabel] = useState("");
   const [setupCondition, setSetupCondition] =
     useState<SetupCondition>("dry");
-  const [compatOpen, setCompatOpen] = useState(false);
   const [moveTargetId, setMoveTargetId] = useState<string>("");
 
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
-
-  const compat = useMemo(
-    () => (selected ? checkBikeCompatibility(selected) : []),
-    [selected]
-  );
-  const overallVerdict = compat.length
-    ? aggregateVerdict(compat)
-    : ("INSUFFICIENT_DATA" as const);
 
   const activeComponents = selected ? getActiveComponents(selected) : [];
   const missing = selected ? getMissingSlots(selected) : [];
@@ -157,53 +121,6 @@ function GaragePageInner() {
   const logs = selected
     ? maintenanceLogs.filter((l) => l.bikeId === selected.id)
     : [];
-
-  const alerts = useMemo(
-    () =>
-      selected
-        ? buildMaintenanceAlerts({
-            bike: selected,
-            rides,
-            intervals: maintenanceIntervals,
-            max: 3,
-          })
-        : [],
-    [selected, rides, maintenanceIntervals]
-  );
-  const currentSetup = selected?.setups.find((s) => s.isCurrent);
-  const costSum = logs
-    .filter((l) => l.costEur != null)
-    .reduce((s, l) => s + (l.costEur ?? 0), 0);
-
-  const maintenanceSlots = selected
-    ? intervals
-        .filter((i) => {
-          const d = evaluateIntervalDue(
-            i,
-            selected.totalOdometerKm,
-            selected.totalHours
-          );
-          return d.status !== "ok";
-        })
-        .map((i) => i.slot)
-    : [];
-
-  const onPrimaryAction = (action: GaragePrimaryAction) => {
-    if (!selected) return;
-    if (action === "viewMaintenance") {
-      setTab("maintenance");
-      return;
-    }
-    if (action === "addPart") {
-      setTab("components");
-      return;
-    }
-    if (action === "setActive") {
-      setActiveBike(selected.id);
-      return;
-    }
-    setTab("setups");
-  };
 
   const selectBike = (id: string) => {
     setSelectedId(id);
@@ -233,45 +150,49 @@ function GaragePageInner() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl p-4 pt-6 lg:p-6">
+    <div className="mx-auto w-full max-w-5xl p-4 pt-6 lg:p-6 lg:px-10">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Garage</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Multi-Bike, Kompatibilität und Setup — Rennrad bis E-MTB.
-          </p>
+        <HofPageHeader
+          kicker={HOF_COPY.workshopKicker}
+          title={HOF_COPY.workshopTitle}
+          hint={HOF_COPY.workshopHint}
+        />
+        <div className="flex items-center gap-1 pr-[max(0.75rem,env(safe-area-inset-right,0px))]">
+          {selected ? (
+            <Link
+              href="/download"
+              title={HOF_COPY.workshopCscBar}
+              aria-label={HOF_COPY.workshopCscBar}
+              className="rounded-full p-2 text-text-secondary hover:bg-surface-elevated hover:text-chrome"
+            >
+              <Bluetooth className="h-[22px] w-[22px]" strokeWidth={1.75} />
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              setWizardMode("catalog");
+              setShowWizard(true);
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-chrome hover:border-chrome"
+          >
+            <Plus className="h-4 w-4" /> {HOF_COPY.workshopAdd}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setWizardMode("catalog");
-            setShowWizard(true);
-          }}
-          className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-medium text-white"
-        >
-          <Plus className="h-4 w-4" /> Bike hinzufügen
-        </button>
       </header>
 
       {/* Wartungs-Status: auf Übersicht übernimmt BikeSchema — sonst Doppelung */}
       {selected && (
-        <div className="mb-5 space-y-3">
-          {tab !== "overview" && (
-            <MaintenanceStatusCard
-              compact
-              ignoreSnooze={tab === "maintenance"}
-            />
-          )}
-          <GaragePartsCta bikeId={selected.id} bikeName={selected.name} />
-        </div>
+        <p className="mb-5 text-[11px] text-text-secondary">
+          {HOF_COPY.workshopNoWatch}
+        </p>
       )}
 
       {!selected ? (
         <section className="rounded-2xl border border-border bg-surface p-6 text-center lg:p-10">
-          <h2 className="text-lg font-semibold">Noch kein Rad in der Garage.</h2>
+          <h2 className="text-lg font-semibold">{HOF_COPY.workshopEmpty}</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
-            Bike anlegen → Service-Check in 2 Min. Katalog mit OEM-Teilen,
-            schnelle Basis für Road/City, oder Platzhalter — kein Auto-Demo-Bike.
+            {HOF_COPY.workshopEmptyHint}
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {(
@@ -288,7 +209,7 @@ function GaragePageInner() {
                   setWizardMode(mode);
                   setShowWizard(true);
                 }}
-                className="rounded-xl border border-border bg-surface-elevated p-4 text-left transition hover:border-accent/40"
+                className="rounded-xl border border-border bg-surface-elevated p-4 text-left transition hover:border-chrome/40"
               >
                 <div className="text-sm font-medium">{title}</div>
                 <div className="mt-1 text-xs text-text-secondary">{desc}</div>
@@ -301,7 +222,7 @@ function GaragePageInner() {
           {/* Desktop: sticky Bike-Leiste · Mobile: horizontal */}
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <p className="mb-2 hidden text-[10px] font-semibold uppercase tracking-wide text-text-secondary lg:block">
-              Deine Bikes ({bikes.length})
+              {HOF_COPY.workshopBikes} ({bikes.length})
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
               {bikes.map((bike) => (
@@ -311,7 +232,7 @@ function GaragePageInner() {
                   onClick={() => selectBike(bike.id)}
                   className={`min-w-[9.5rem] flex-shrink-0 rounded-xl border px-3 py-3 text-left transition lg:min-w-0 lg:w-full ${
                     selected?.id === bike.id
-                      ? "border-accent bg-accent/10"
+                      ? "border-chrome bg-chrome/10"
                       : "border-border bg-surface hover:border-border"
                   }`}
                 >
@@ -319,9 +240,6 @@ function GaragePageInner() {
                   <div className="text-xs text-text-secondary">
                     {bikeCategoryLabel(bike.category)}
                     {bike.isActive ? " · aktiv" : ""}
-                  </div>
-                  <div className="mt-1 text-[11px] tabular-nums text-text-secondary">
-                    {bike.totalOdometerKm.toFixed(0)} km
                   </div>
                 </button>
               ))}
@@ -331,21 +249,32 @@ function GaragePageInner() {
                   setWizardMode("basic");
                   setShowWizard(true);
                 }}
-                className="flex min-w-[7rem] flex-shrink-0 items-center justify-center gap-1 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-text-secondary hover:border-accent/40 hover:text-accent lg:min-w-0 lg:w-full"
+                className="flex min-w-[7rem] flex-shrink-0 items-center justify-center gap-1 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-text-secondary hover:border-chrome/40 hover:text-chrome lg:min-w-0 lg:w-full"
               >
-                <Plus className="h-3.5 w-3.5" /> Weiteres Bike
+                <Plus className="h-3.5 w-3.5" /> {HOF_COPY.workshopAddAnother}
               </button>
             </div>
           </aside>
 
           <div className="min-w-0 space-y-4">
-          <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-elevated p-1 text-xs sm:text-sm">
+          <DieBoxSurface
+            bike={selected}
+            onInstallSlot={(slot) => setInstallSlot(slot)}
+          />
+          <details className="rounded-2xl border border-border bg-surface p-4">
+            <summary className="cursor-pointer list-none font-semibold">
+              {HOF_COPY.workshopMore}
+              <span className="mt-0.5 block text-xs font-normal text-text-secondary">
+                Teile, Setup-Versionen, Wartung — hinter der Box
+              </span>
+            </summary>
+            <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-elevated p-1 text-xs sm:text-sm">
             {(
               [
-                ["overview", "Übersicht"],
-                ["components", "Teile"],
-                ["setups", "Setup"],
-                ["maintenance", "Wartung"],
+                ["components", HOF_COPY.workshopTabParts],
+                ["setups", HOF_COPY.workshopTabSetups],
+                ["maintenance", HOF_COPY.workshopTabCare],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -353,144 +282,13 @@ function GaragePageInner() {
                 type="button"
                 onClick={() => setTab(id)}
                 className={`rounded-lg py-2.5 font-medium ${
-                  tab === id ? "bg-accent text-white" : "text-text-secondary"
+                  tab === id ? "bg-chrome/20 text-chrome" : "text-text-secondary"
                 }`}
               >
                 {label}
               </button>
             ))}
           </div>
-
-          {tab === "overview" && (
-            <div className="flex flex-col gap-4 xl:grid xl:grid-cols-2 xl:gap-6">
-              <div className="flex flex-col gap-4">
-                <BikePhotoControl bikeId={selected.id} photoUrl={selected.photoUrl} />
-                <BikeSchema
-                  bike={selected}
-                  maintenanceSlots={maintenanceSlots}
-                  onPrimaryAction={onPrimaryAction}
-                />
-                {/* Stunden / Kosten — km steht schon in BikeSchema */}
-                <div className="grid grid-cols-2 gap-2 text-center text-sm">
-                  <div className="rounded-xl border border-border bg-surface p-2">
-                    <div className="tabular-nums text-lg font-bold">
-                      {selected.totalHours.toFixed(1)}
-                    </div>
-                    <div className="text-[10px] text-text-secondary">Stunden</div>
-                  </div>
-                  <div className="rounded-xl border border-border bg-surface p-2">
-                    <div className="tabular-nums text-lg font-bold">
-                      {costSum > 0 ? `${costSum.toFixed(0)}€` : "—"}
-                    </div>
-                    <div className="text-[10px] text-text-secondary">Kosten</div>
-                  </div>
-                </div>
-                {alerts.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {alerts.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => {
-                          if (a.shopHref) {
-                            router.push(a.shopHref);
-                            return;
-                          }
-                          setTab("maintenance");
-                        }}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                          a.severity === "overdue"
-                            ? "border-error/40 bg-error/10 text-error"
-                            : "border-warning/40 bg-warning/10 text-warning"
-                        }`}
-                      >
-                        {a.title}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {currentSetup && (
-                  <section className="rounded-2xl border border-border bg-surface p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold">Aktives Setup</h3>
-                      <button
-                        type="button"
-                        className="text-xs font-medium text-accent"
-                        onClick={() => setTab("setups")}
-                      >
-                        Zum Setup
-                      </button>
-                    </div>
-                    <p className="mt-1 text-sm">
-                      „{currentSetup.label}“ · {setupConditionLabel(currentSetup.conditions)}
-                    </p>
-                    <div className="mt-2">
-                      <SetupFingerprint setup={currentSetup} />
-                    </div>
-                  </section>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <section className="rounded-2xl border border-border bg-surface p-4">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-2 text-left"
-                    onClick={() => setCompatOpen((v) => !v)}
-                  >
-                    <h3 className="flex items-center gap-2 font-semibold">
-                      <ShieldCheck className="h-4 w-4 text-accent" />
-                      Passgenauigkeit
-                    </h3>
-                    <VerdictPill verdict={overallVerdict} />
-                  </button>
-                  <p className="mt-2 text-xs text-text-secondary">
-                    {verdictSummaryDe(overallVerdict)} · regelbasiert, kein ML.
-                  </p>
-                  {compatOpen && (
-                    <div className="mt-3 flex max-h-56 flex-col gap-2 overflow-y-auto">
-                      {compat.slice(0, 12).map((r) => (
-                        <details
-                          key={r.ruleCode}
-                          className="rounded-xl border border-border bg-surface-elevated p-2 text-xs"
-                        >
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
-                            <span className="font-medium">{r.title}</span>
-                            <VerdictPill verdict={r.verdict} />
-                          </summary>
-                          <p className="mt-2 text-text-secondary">{r.explainDe}</p>
-                        </details>
-                      ))}
-                    </div>
-                  )}
-                </section>
-                <details className="rounded-2xl border border-border bg-surface p-4">
-                  <summary className="cursor-pointer list-none font-semibold">
-                    Technische Tiefe
-                    <span className="mt-0.5 block text-xs font-normal text-text-secondary">
-                      SAG, Kilometerstand, Service-Report
-                    </span>
-                  </summary>
-                  <div className="mt-3 flex flex-col gap-4">
-                    <SagGuideForBike bike={selected} defaultWeightKg={riderWeight} />
-                    <OdometerImportPanel
-                      bikeId={selected.id}
-                      odometerKm={selected.totalOdometerKm}
-                      hours={selected.totalHours}
-                    />
-                    <button
-                      type="button"
-                      onClick={exportReport}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-elevated py-3 text-sm font-medium"
-                    >
-                      <Download className="h-4 w-4 text-accent" />
-                      Service-Report exportieren
-                    </button>
-                  </div>
-                </details>
-              </div>
-            </div>
-          )}
 
           {tab === "components" && (
             <GarageComponentsTab
@@ -528,11 +326,13 @@ function GaragePageInner() {
               rides={rides}
               intervals={intervals}
               logs={logs}
-              costSum={costSum}
+              costSum={logs.reduce((s, l) => s + (l.costEur ?? 0), 0)}
               markIntervalDone={markIntervalDone}
               exportReport={exportReport}
             />
           )}
+            </div>
+          </details>
           </div>
         </div>
       )}
@@ -549,7 +349,7 @@ function GaragePageInner() {
 
 export default function GaragePage() {
   return (
-    <Suspense fallback={<div className="p-6 text-center">Garage wird geladen…</div>}>
+    <Suspense fallback={<div className="p-6 text-center text-sm text-text-secondary">{HOF_COPY.workshopLoading}</div>}>
       <GaragePageInner />
     </Suspense>
   );

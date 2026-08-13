@@ -25,13 +25,13 @@ export default function CommunityPage() {
             Community
           </h1>
           <p className="mt-3 max-w-2xl text-text-secondary">
-            Kontrolliert und ehrlich: Events und Clubs als Orientierung,
-            Tour-Reviews mit Moderation, Sammlungen teilen ohne Social-Feed-Spam.
+            Kontrolliert und ehrlich: Stimmen an der Tour, keine Feed-Religion
+            auf dem Hof. Reviews mit Moderation, Sammlungen teilen ohne Spam.
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-              <Shield className="h-5 w-5 text-accent" />
+              <Shield className="h-5 w-5 text-chrome" />
               <p className="mt-2 font-medium">Privacy-first</p>
               <p className="mt-1 text-xs text-text-secondary">
                 Keine Tracks in Reviews. Public Profile nur mit Opt-in.

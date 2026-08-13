@@ -10,9 +10,8 @@ final activeRouteProvider = StateProvider<ActiveRoute?>((ref) => null);
 
 /// Discover-Einstieg von Home: einmalig in DiscoverScreen konsumieren.
 /// Discover ist der Normalzustand; `plan` öffnet zusätzlich das Planen-Panel.
-/// Früher gab es hier drei Werte für drei Tabs — „quick" und „tours" sind
-/// dasselbe geworden, seit Discover eine Liste ist.
-enum DiscoverLaunchMode { discover, plan }
+/// `rideOut` ist Rausfahren: Karte mit Wahl Einfach fahren / Touren anzeigen.
+enum DiscoverLaunchMode { discover, plan, rideOut }
 
 final discoverLaunchModeProvider =
     StateProvider<DiscoverLaunchMode?>((ref) => null);
@@ -38,6 +37,12 @@ final rideAutostartProvider = StateProvider<bool>((ref) => false);
 
 /// Garage: Add-Sheet öffnen, sobald der Tab gemountet ist.
 final garageOpenAddPendingProvider = StateProvider<bool>((ref) => false);
+
+/// Garage: Bike-Detail öffnen (Hof „Rad öffnen“).
+final garagePendingBikeIdProvider = StateProvider<String?>((ref) => null);
+
+/// Shop: Bike für Garage-Fit, einmalig aus der Werkstatt setzen.
+final shopPendingBikeIdProvider = StateProvider<String?>((ref) => null);
 
 /// Kategorie-Vorbefüllung für Garage-Add aus Onboarding.
 final garageAddCategoryProvider = StateProvider<BikeCategory?>((ref) => null);

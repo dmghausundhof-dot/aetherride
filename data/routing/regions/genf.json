@@ -1,0 +1,27 @@
+{
+  "id": "genf",
+  "name": "Genf / Lac Léman",
+  "bbox": [
+    6.05,
+    46.15,
+    6.25,
+    46.28
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/genf",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "genf.tar.zst"
+  }
+}

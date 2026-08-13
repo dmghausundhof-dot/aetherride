@@ -1,0 +1,24 @@
+{
+  "id": "leipzig",
+  "name": "Leipzig / Neuseenland",
+  "bbox": [
+    12.2,
+    51.2,
+    12.55,
+    51.45
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "leipzig.tar.zst",
+    "packGz": "leipzig.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { listCatalogManufacturers } from "@/lib/catalog/bikes";
+import { listCatalogManufacturers, catalogGeometryForSize } from "@/lib/catalog/bikes";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import {
   EBIKE_CATEGORIES,
@@ -13,6 +13,7 @@ import {
   type BikeAssistMode,
 } from "@/lib/garage/bikeAssist";
 import { useAppStore } from "@/store/useAppStore";
+import { notifyGarageBikeShopify, garageBikeInputFromBike } from "@/lib/shop/notifyGarageBikeShopify";
 import type { BikeCategory, WheelSize } from "@/types";
 import { X } from "lucide-react";
 
@@ -30,6 +31,7 @@ export function AddBikeWizard({
   const addBikeFromCatalog = useAppStore((s) => s.addBikeFromCatalog);
   const addBikeBasic = useAppStore((s) => s.addBikeBasic);
   const addBikeFromImport = useAppStore((s) => s.addBikeFromImport);
+  const installComponent = useAppStore((s) => s.installComponent);
   const bikes = useAppStore((s) => s.bikes);
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const manufacturers = useMemo(() => listCatalogManufacturers(), []);
@@ -40,6 +42,7 @@ export function AddBikeWizard({
   const [bikeId, setBikeId] = useState(mfr?.bikes[0]?.id ?? "");
   const catBike = mfr?.bikes.find((b) => b.id === bikeId);
   const [size, setSize] = useState(catBike?.frameSizeOptions[0] ?? "L");
+  const geo = catalogGeometryForSize(catBike?.id ?? "", size);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -50,14 +53,30 @@ export function AddBikeWizard({
   const [basicCategory, setBasicCategory] = useState<BikeCategory>(
     seedCategory
   );
-  const [travelF, setTravelF] = useState(150);
-  const [travelR, setTravelR] = useState(140);
-  const [wheel, setWheel] = useState<WheelSize>("29");
+  const [travelF, setTravelF] = useState<number | "">("");
+  const [travelR, setTravelR] = useState<number | "">("");
+  const [wheel, setWheel] = useState<WheelSize>(
+    seedCategory === "gravel" ? "650b" : seedCategory === "urban" || seedCategory === "road" || seedCategory === "etrekking" ? "700c" : "29"
+  );
+  const [hasLight, setHasLight] = useState(false);
+  const [hasLock, setHasLock] = useState(false);
+  const [hasRack, setHasRack] = useState(false);
+  const [hasBags, setHasBags] = useState(false);
   const [importNote, setImportNote] = useState("");
 
   const freeBlocked = subscriptionTier === "free" && bikes.length >= 1;
   const subtypeOptions =
     assistMode === "ebike" ? EBIKE_CATEGORIES : MUSCLE_CATEGORIES;
+
+  const showTravel =
+    basicCategory === "mtb_trail" ||
+    basicCategory === "mtb_am" ||
+    basicCategory === "mtb_enduro" ||
+    basicCategory === "dh" ||
+    basicCategory === "emtb";
+  const showCity =
+    basicCategory === "urban" || basicCategory === "etrekking";
+  const showBags = basicCategory === "gravel";
 
   const onAssistChange = (next: BikeAssistMode) => {
     setAssistMode(next);
@@ -67,32 +86,51 @@ export function AddBikeWizard({
   const submit = () => {
     setError(null);
     if (freeBlocked) {
-      setError("Free-Tier: nur 1 Bike. Pro unter Profil freischalten.");
+      setError("Im Free-Tarif nur ein Rad. Pro unter Profil freischalten.");
       return;
     }
     try {
+      let createdId: string | undefined;
       if (mode === "catalog" && bikeId) {
-        addBikeFromCatalog({
+        createdId = addBikeFromCatalog({
           catalogBikeId: bikeId,
           frameSize: size,
           name: name || undefined,
         });
       } else if (mode === "basic") {
-        addBikeBasic({
-          name: name || "Mein Bike",
+        createdId = addBikeBasic({
+          name: name || "Mein Rad",
           category: basicCategory,
           isEbike: persistIsEbike(basicCategory, assistMode),
-          travelFrontMm: travelF,
-          travelRearMm: travelR,
+          travelFrontMm: showTravel && travelF !== "" ? Number(travelF) : undefined,
+          travelRearMm: showTravel && travelR !== "" ? Number(travelR) : undefined,
           wheelSizeFront: wheel,
           wheelSizeRear: wheel,
           frameSize: size,
         });
+        if (createdId) {
+          if (showCity && hasLight) {
+            installComponent({ bikeId: createdId, slot: "light", freeText: "Licht" });
+          }
+          if (showCity && hasLock) {
+            installComponent({ bikeId: createdId, slot: "lock", freeText: "Schloss" });
+          }
+          if (showCity && hasRack) {
+            installComponent({ bikeId: createdId, slot: "rack", freeText: "Gepäckträger" });
+          }
+          if (showBags && hasBags) {
+            installComponent({ bikeId: createdId, slot: "bags", freeText: "Taschen" });
+          }
+        }
       } else {
-        addBikeFromImport({
+        createdId = addBikeFromImport({
           name: name || "Import-Bike",
           note: importNote || "GPX/FIT-Platzhalter ohne Komponenten",
         });
+      }
+      if (createdId) {
+        const created = useAppStore.getState().bikes.find((b) => b.id === createdId);
+        if (created) notifyGarageBikeShopify(garageBikeInputFromBike(created));
       }
       onClose();
     } catch (e) {
@@ -104,7 +142,7 @@ export function AddBikeWizard({
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-4 sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Bike anlegen</h2>
+          <h2 className="text-lg font-bold">Rad abstellen</h2>
           <button
             type="button"
             onClick={onClose}
@@ -117,7 +155,8 @@ export function AddBikeWizard({
 
         {freeBlocked && (
           <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-            Free: bereits 1 Bike. Multi-Bike ist Pro — unter Profil freischalten.
+            Im Free-Tarif bereits ein Rad. Weitere Räder sind Pro — unter Profil
+            freischalten.
           </div>
         )}
         {error && (
@@ -234,7 +273,7 @@ export function AddBikeWizard({
                     catBike.travelFrontMm != null &&
                     (catBike.travelFrontMm > 0 ||
                       (catBike.travelRearMm ?? 0) > 0)
-                      ? `Federweg ${catBike.travelFrontMm}/${catBike.travelRearMm} mm`
+                      ? `Federweg ${catBike.travelFrontMm}/${catBike.travelRearMm ?? "–"} mm`
                       : null,
                     `Laufrad ${catBike.wheelSizeFront}`,
                     catBike.isEbike ? "E-Bike" : null,
@@ -245,6 +284,12 @@ export function AddBikeWizard({
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
+                {geo && (
+                    <div className="mt-1 tabular-nums">
+                      Reach {geo.reachMm} mm · Stack {geo.stackMm} mm
+                      {geo.setting ? ` · ${geo.setting}` : ""}
+                    </div>
+                  )}
                 {Object.keys(catBike.oemComponents).length > 0 && (
                   <div className="mt-1">
                     {Object.keys(catBike.oemComponents).length} Serienteile
@@ -298,26 +343,58 @@ export function AddBikeWizard({
                 ))}
               </select>
             </label>
+            {showTravel && (
             <div className="grid grid-cols-2 gap-2">
               <label className="text-sm">
-                Federweg vorn
+                Federweg vorn (mm)
                 <input
                   type="number"
                   value={travelF}
-                  onChange={(e) => setTravelF(Number(e.target.value))}
+                  onChange={(e) =>
+                    setTravelF(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  placeholder="nur wenn am Rad"
                   className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
                 />
               </label>
               <label className="text-sm">
-                Federweg hinten
+                Federweg hinten (mm)
                 <input
                   type="number"
                   value={travelR}
-                  onChange={(e) => setTravelR(Number(e.target.value))}
+                  onChange={(e) =>
+                    setTravelR(e.target.value === "" ? "" : Number(e.target.value))
+                  }
                   className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
                 />
               </label>
             </div>
+            )}
+            {showCity && (
+              <fieldset className="space-y-1 text-sm">
+                <legend className="mb-1 text-text-secondary">
+                  Am Rad — nur anhaken wenn wirklich da
+                </legend>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={hasLight} onChange={(e) => setHasLight(e.target.checked)} />
+                  Licht
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={hasLock} onChange={(e) => setHasLock(e.target.checked)} />
+                  Schloss
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={hasRack} onChange={(e) => setHasRack(e.target.checked)} />
+                  Gepäckträger
+                </label>
+              </fieldset>
+            )}
+            {showBags && (
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={hasBags} onChange={(e) => setHasBags(e.target.checked)} />
+                Taschen am Rad
+              </label>
+            )}
             <label className="text-sm">
               Laufradgröße
               <select
@@ -345,8 +422,8 @@ export function AddBikeWizard({
               className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
             />
             <span className="mt-1 block text-xs text-text-secondary">
-              GPX/FIT-Routen importierst du unter Discover (gespeicherte Route).
-              Hier entsteht nur ein Bike-Platzhalter ohne Komponenten — kein
+              GPX/FIT-Routen importierst du unter Karte → Gespeichert.
+              Hier entsteht nur ein Rad-Platzhalter ohne Komponenten — kein
               Track-Import.
             </span>
           </label>
@@ -355,9 +432,9 @@ export function AddBikeWizard({
         <button
           type="button"
           onClick={submit}
-          className="mt-5 w-full rounded-xl bg-accent py-3 font-semibold text-white"
+          className="mt-5 w-full rounded-xl bg-chrome py-3 font-semibold text-background"
         >
-          Bike erstellen
+          Rad abstellen
         </button>
       </div>
     </div>

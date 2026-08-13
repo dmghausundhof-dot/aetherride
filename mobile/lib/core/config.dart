@@ -131,6 +131,30 @@ abstract final class AppConfig {
 
   static bool get isCrashReportingConfigured => sentryDsn.trim().isNotEmpty;
 
+  /// Öffentliche Shopify-Storefront (Custom Tabs). Kein Secret.
+  /// Override: `--dart-define=SHOPIFY_STOREFRONT_URL=https://…`
+  static const shopifyStorefrontUrl = String.fromEnvironment(
+    'SHOPIFY_STOREFRONT_URL',
+    defaultValue: 'https://dmg-haus-und-hof-shop.myshopify.com',
+  );
+
+  static const shopifyPartsCollection = String.fromEnvironment(
+    'SHOPIFY_PARTS_COLLECTION',
+    defaultValue: 'featured-parts',
+  );
+
+  static const shopifyMerchCollection = String.fromEnvironment(
+    'SHOPIFY_MERCH_COLLECTION',
+    defaultValue: 'merchandise',
+  );
+
+  /// Online Store password wall. Default true until the shop is public.
+  /// `--dart-define=SHOPIFY_ONLINE_STORE_LOCKED=false` after Admin unlock.
+  static const shopifyOnlineStoreLocked = bool.fromEnvironment(
+    'SHOPIFY_ONLINE_STORE_LOCKED',
+    defaultValue: true,
+  );
+
   /// Legal pages on the API/web origin.
   static String get privacyPolicyUrl => '$apiBaseUrl/legal/datenschutz';
   static String get impressumUrl => '$apiBaseUrl/legal/impressum';
@@ -169,6 +193,5 @@ abstract final class AppConfig {
   }
 
   static bool get usingFreeBasemap =>
-      stadiaApiKey.isEmpty &&
-      pmtilesUrl.trim().isEmpty;
+      stadiaApiKey.isEmpty && pmtilesUrl.trim().isEmpty;
 }

@@ -1,0 +1,24 @@
+{
+  "id": "freiburg",
+  "name": "Freiburg / Schauinsland",
+  "bbox": [
+    7.75,
+    47.95,
+    8.05,
+    48.08
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "freiburg.tar.zst",
+    "packGz": "freiburg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

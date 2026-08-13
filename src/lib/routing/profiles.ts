@@ -2,7 +2,8 @@
  * Sportartspezifische Routing-Profile
  *
  * Produktion:
- * - Self-hosted OSRM oder Valhalla (VALHALLA_URL / OSRM_URL / ROUTING_ENGINE)
+ * - OpenRouteService (OPENROUTESERVICE_API_KEY) für DACH cycling-* Profile
+ * - oder GraphHopper / Valhalla / OSRM (ROUTING_ENGINE)
  * - OSM Tags: highway, surface, mtb:scale, trail_visibility, sac_scale, …
  * - Offline: PMTiles (NEXT_PUBLIC_PMTILES_URL) + Graph-Service / Valhalla FFI
  */

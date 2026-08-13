@@ -9,6 +9,11 @@ import {
 } from "./partsCatalog";
 import type { ShopifyStorefrontProduct } from "./shopifyStorefront";
 import type { SoftFitContext } from "./softFit";
+import {
+  matchGarageFit,
+  parseGarageFitConstraint,
+  type GarageBikeProfile,
+} from "./garageFit";
 
 const sample: ShopifyStorefrontProduct = {
   id: "gid://shopify/Product/1",
@@ -82,10 +87,114 @@ const filtered = filterAndRankParts([mapped, mismatch], {
 assert.equal(filtered.length, 1);
 assert.equal(filtered[0].product.handle, "magura-8p-pads");
 
-assert.equal(shopPartsHref(), "/shop/parts");
+assert.equal(shopPartsHref(), "/shop?door=parts");
 assert.equal(
   shopPartsHref({ bike: "b1", fit: "bike", slot: "brake_pads" }),
-  "/shop/parts?slot=brake_pads&bike=b1&fit=bike"
+  "/shop?slot=brake_pads&bike=b1&fit=bike&door=parts"
+);
+
+const gravelBike: GarageBikeProfile = {
+  id: "grizl",
+  name: "Canyon Grizl",
+  brand: "Canyon",
+  model: "Grizl",
+  category: "gravel",
+  categoryLabel: "Gravel",
+  wheelSizes: ["700c"],
+  isEbike: false,
+  drivetrain: ["shimano"],
+  families: ["gravel"],
+};
+const mtbBike: GarageBikeProfile = {
+  id: "spectral",
+  name: "Canyon Spectral",
+  brand: "Canyon",
+  model: "Spectral",
+  category: "mtb_enduro",
+  categoryLabel: "Enduro",
+  wheelSizes: ["29"],
+  isEbike: false,
+  drivetrain: ["sram"],
+  families: ["mtb"],
+};
+
+const gOne = mapStorefrontProduct({
+  ...sample,
+  id: "gid://shopify/Product/10",
+  handle: "schwalbe-g-one",
+  title: "Schwalbe G-One R 40-622",
+  vendor: "Schwalbe",
+  productType: "Tire",
+  tags: ["slot:tire", "category:gravel", "wheel:700c"],
+});
+const assegai = mapStorefrontProduct({
+  ...sample,
+  id: "gid://shopify/Product/11",
+  handle: "maxxis-assegai",
+  title: "Maxxis Assegai 29×2.5",
+  vendor: "Maxxis",
+  productType: "Tire",
+  tags: ["slot:tire", "category:mtb", "wheel:29"],
+});
+
+const emptyCtx: SoftFitContext = {
+  bikeId: "grizl",
+  bikeName: "Canyon Grizl",
+  maguraShape: undefined,
+  calipers: [],
+  size: undefined,
+  shiftCompat: ["shimano"],
+  installedSlots: [],
+};
+
+const garageRanked = filterAndRankParts([gOne, assegai], {
+  slot: "all",
+  fit: "bike",
+  bikes: [
+    { profile: gravelBike, softCtx: emptyCtx },
+    {
+      profile: mtbBike,
+      softCtx: { ...emptyCtx, bikeId: "spectral", shiftCompat: ["sram"] },
+    },
+  ],
+  selectedBikeId: "all",
+});
+assert.equal(garageRanked.length, 2, "Union: Gravel- und MTB-Reifen je ein Treffer");
+assert.ok(garageRanked.some((r) => r.product.handle === "schwalbe-g-one"));
+assert.ok(garageRanked.some((r) => r.product.handle === "maxxis-assegai"));
+assert.match(garageRanked.find((r) => r.product.handle === "schwalbe-g-one")?.fitLabel ?? "", /Grizl/);
+
+const onlyGravel = filterAndRankParts([gOne, assegai], {
+  slot: "all",
+  fit: "bike",
+  bikes: [{ profile: gravelBike, softCtx: emptyCtx }],
+  selectedBikeId: "grizl",
+});
+assert.equal(onlyGravel.length, 1);
+assert.equal(onlyGravel[0].product.handle, "schwalbe-g-one");
+
+assert.equal(matchGarageFit(parseGarageFitConstraint({ tags: [] }), []).kind, "universal");
+
+const merchTee = mapStorefrontProduct({
+  ...sample,
+  id: "gid://shopify/Product/99",
+  handle: "aetherride-tee",
+  title: "AetherRide Gravel Tee",
+  vendor: "AetherRide",
+  productType: "T-Shirt",
+  tags: ["merch", "category:gravel"],
+});
+const mixedShelf = filterAndRankParts([gOne, merchTee], {
+  slot: "all",
+  fit: "bike",
+  bikes: [{ profile: gravelBike, softCtx: emptyCtx }],
+  selectedBikeId: "grizl",
+});
+assert.equal(mixedShelf.length, 1);
+assert.equal(mixedShelf[0].product.handle, "schwalbe-g-one");
+assert.ok(
+  !mixedShelf.some((r) => r.product.handle === "aetherride-tee"),
+  "Merch nicht über Garage-Fit filtern / nicht im Teile-Regal"
 );
 
 console.log("partsCatalog.test.ts OK");

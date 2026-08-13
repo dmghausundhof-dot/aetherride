@@ -8,6 +8,69 @@
   "navRide": "Fahren",
   "navDiscover": "Touren",
   "navParts": "Teile",
+  "navKarte": "Karte",
+  "navWorkshop": "Werkstatt",
+  "navShop": "Laden",
+  "hofJustRide": "Einfach fahren",
+  "hofShowTours": "Touren anzeigen",
+  "hofMapChoiceHint": "Ohne Touren losfahren, oder Touren auf der Karte zeigen.",
+  "werkstattPartsShelf": "Shop",
+  "werkstattForYourBike": "Für dein Rad",
+  "werkstattMerch": "Merchandise",
+  "werkstattShopParts": "Ersatzteile im Shop",
+  "shopGatewayKicker": "Über den Hof",
+  "shopGatewayTitle": "Der Laden",
+  "shopGatewayHint": "Hier wohnt das Rad nicht. Ehrliche Teile und Merch im Shopify-Shop — Kauf und Kasse dort, nicht in der App.",
+  "shopZumShop": "Zum Shop",
+  "shopForYourBikeHint": "Ersatzteile passend zu {name} — Kategorie und Laufrad. Keine erfundenen SKUs.",
+  "@shopForYourBikeHint": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "shopForYourBikeEmpty": "Stell ein Rad in der Werkstatt ab — dann öffnen wir die passenden Teile im Shop.",
+  "shopMerchHint": "Kleidung und Kleinzeug. Unabhängig vom Rad, nie nach Fit gefiltert.",
+  "shopNotConnected": "Shop nicht verbunden",
+  "shopNotConnectedHint": "Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann führt dieser Tab in den Laden.",
+  "shopOpenFailed": "Shop konnte nicht geöffnet werden.",
+  "shopPasswordWall": "Der Online-Store ist noch passwortgeschützt. Shopify-Admin: Online Store → Preferences → Password protection aus.",
+  "garageSetupTabHintTires": "Luftdruck grob nach Gewicht und Reifen — am Rad nachmessen, keine OEM-Tabelle.",
+  "werkstattSetupTires": "Reifen / Druck grob",
+  "werkstattSetupSuspension": "Fahrwerk — SAG und Luft nach Federweg",
+  "werkstattSetupSuspensionUnknown": "Fahrwerk — Federweg nicht eingetragen",
+  "werkstattSetupDropper": "Vario-Stütze (eingetragen)",
+  "werkstattSetupWheel": "Laufrad {size}",
+  "@werkstattSetupWheel": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "werkstattSetupCockpit": "Cockpit — Lenker und Vorbau",
+  "werkstattSetupBagsCockpit": "Taschen / Cockpit",
+  "werkstattSetupLightsRack": "Licht und Gepäckträger — nur wenn eingetragen",
+  "werkstattSetupDrivetrain": "Schaltung",
+  "werkstattBatteryHonest": "Akku nur mit echtem Sensor",
+  "werkstattBatteryHonestHint": "Kein Prozent ohne gekoppelten Sensor. Bosch LDI bleibt G-1.",
+  "werkstattSensorEbike": "Radsensor (CSC) — Tempo und Trittfrequenz. Akku-Stand nur mit echtem Sensor.",
+  "werkstattSensorAnalog": "Radsensor — Tempo und Trittfrequenz am Rad.",
+  "hofYourWatch": "Deine Uhr",
+  "hofWatchHint": "Fitnesstracking am Fahrer — nicht am Rad. Puls nur mit echtem Sensor. Apple Watch oft ohne Standard-BLE.",
+  "hofWatchPair": "Uhr koppeln",
+  "hofWatchReconnect": "Neu koppeln",
+  "hofWatchRemove": "Entfernen",
+  "hofWatchConnect": "Uhr verbinden",
+  "hofYou": "Du",
+  "hofYouSheetHint": "Du und deine Uhr. Der Radsensor bleibt am Rad in der Werkstatt.",
+  "werkstattWatchEbike": "Smartwatch — Puls neben CSC. Kein erfundener SoC.",
+  "werkstattWatchAnalog": "Smartwatch / Fitnesstracking",
+  "setupTirePressureLabel": "Vorderreifen (psi)",
+  "setupCompareHintTires": "Legt zwei verdeckte Reifendrücke an. Nach ein paar Fahrten siehst du, welcher sich besser anfühlt.",
+  "setupTirePressureValue": "Reifen {value} psi",
+  "@setupTirePressureValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
 
   "searchHome": "Wohin willst du? Ort, Tour oder Adresse",
   "startRide": "Fahrt starten",
@@ -42,6 +105,75 @@
   "statsRidesMany": "Fahrten",
   "profile": "Profil",
   "chat": "Chat",
+
+  "hofRideOut": "Rausfahren",
+  "hofOpenBike": "Rad öffnen",
+  "hofParkBike": "Rad abstellen",
+  "hofRideWithoutBike": "Ohne Rad fahren",
+  "hofRideOutAgain": "Noch mal raus",
+  "hofAtGate": "vor dem Tor",
+  "hofEmptyStand": "Leerer Stand",
+  "hofSkyUnknown": "Himmel unbekannt",
+  "hofNoHonestLoop": "Kein ehrlicher Trail-Rundkurs",
+  "hofNotYetOut": "noch nicht draußen",
+  "hofJustBack": "gerade reingekommen",
+  "hofLastRideNoGps": "ohne GPS-Track — kein erfundener Verlauf",
+  "hofGpsUnknown": "Kein Standort — Himmel und Tor warten auf GPS.",
+  "rideGpsUnavailable": "Kein GPS — Track bleibt leer. Kein erfundener Verlauf.",
+  "hofAtHof": "am Hof",
+  "hofSinceOneDay": "seit 1 Tag",
+  "hofSinceDays": "seit {days} Tagen",
+  "@hofSinceDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "hofNoBikeHere": "Kein Rad steht hier",
+  "hofBringForward": "{name} nach vorn",
+  "@hofBringForward": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "hofCareInWorkshop": "{label} — in der Werkstatt",
+  "@hofCareInWorkshop": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "hofSensorAwake": "Sensor wach",
+  "hofOpenTours": "Touren öffnen",
+  "hofSkyDry": "{temp}° · eher trocken",
+  "@hofSkyDry": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofSkyDamp": "{temp}° · feucht möglich",
+  "@hofSkyDamp": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofSkyWet": "{temp}° · Regen · Trails eher nass",
+  "@hofSkyWet": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofLoopDuration": "⟲ {minutes} min",
+  "@hofLoopDuration": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "hofCommunityNotes": "{count} Stimmen zu dieser Runde",
+  "@hofCommunityNotes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
 
   "homeSubtitleMtb": "Trails, Touren & dein Setup",
   "homeSubtitleGravel": "Schotter, Distanz & Navigation",
@@ -201,10 +333,10 @@
   "duration2to3h": "2–3 h",
 
   "garageTitle": "Garage",
-  "garageFabBike": "Bike",
-  "garageEmptyTitle": "Noch kein Bike in der Garage",
-  "garageEmptyMessage": "Leg dein Rad an — Typ, Status und Teile siehst du danach auf einen Blick.",
-  "garageAddBike": "Bike anlegen",
+  "garageFabBike": "Rad abstellen",
+  "garageEmptyTitle": "Die Box ist leer",
+  "garageEmptyMessage": "Rad abstellen — ehrlich, ohne Demo-Kilometer. Dann siehst du, ob es bereit ist.",
+  "garageAddBike": "Rad abstellen",
   "garageStatBike": "RAD",
   "garageStatBikes": "RÄDER",
   "garageStatKmTotal": "KM GESAMT",

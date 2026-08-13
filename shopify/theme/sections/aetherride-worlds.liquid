@@ -1,0 +1,202 @@
+<div class="ar-worlds color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width ar-worlds__inner">
+    <p class="ar-worlds__kicker">
+      {%- if section.settings.kicker != blank -%}
+        {{ section.settings.kicker }}
+      {%- else -%}
+        {{ 'aetherride.worlds.kicker' | t }}
+      {%- endif -%}
+    </p>
+    <h2 class="ar-worlds__title">
+      {%- if section.settings.title != blank -%}
+        {{ section.settings.title }}
+      {%- else -%}
+        {{ 'aetherride.worlds.title' | t }}
+      {%- endif -%}
+    </h2>
+    <p class="ar-worlds__lede">
+      {%- if section.settings.lede != blank -%}
+        {{ section.settings.lede }}
+      {%- else -%}
+        {{ 'aetherride.worlds.lede' | t }}
+      {%- endif -%}
+    </p>
+    <div class="ar-worlds__grid">
+      {%- liquid
+        assign parts = section.settings.parts_collection
+        assign merch = section.settings.merch_collection
+        assign parts_url = '/collections/featured-parts'
+        assign merch_url = '/collections/merchandise'
+        if parts != blank
+          assign parts_url = parts.url
+        endif
+        if merch != blank
+          assign merch_url = merch.url
+        endif
+      -%}
+      <a
+        class="ar-worlds__card"
+        href="{{ parts_url }}"
+      >
+        <span class="ar-worlds__label">{{ 'aetherride.worlds.parts_kicker' | t }}</span>
+        <span class="ar-worlds__name">{{ 'aetherride.worlds.parts_title' | t }}</span>
+        <span class="ar-worlds__hint">{{ 'aetherride.worlds.parts_hint' | t }}</span>
+        <span class="ar-worlds__cta">{{ 'aetherride.worlds.parts_cta' | t }}</span>
+      </a>
+      <a
+        class="ar-worlds__card"
+        href="{{ merch_url }}"
+      >
+        <span class="ar-worlds__label">{{ 'aetherride.worlds.merch_kicker' | t }}</span>
+        <span class="ar-worlds__name">{{ 'aetherride.worlds.merch_title' | t }}</span>
+        <span class="ar-worlds__hint">{{ 'aetherride.worlds.merch_hint' | t }}</span>
+        <span class="ar-worlds__cta">{{ 'aetherride.worlds.merch_cta' | t }}</span>
+      </a>
+    </div>
+    <p class="ar-worlds__honesty">{{ 'aetherride.worlds.honesty' | t }}</p>
+  </div>
+</div>
+
+{% stylesheet %}
+.ar-worlds {
+  padding: 28px 0 36px;
+}
+.ar-worlds__inner {
+  max-width: 72rem;
+}
+.ar-worlds__kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #81c995;
+}
+.ar-worlds__title {
+  margin: 0.4rem 0 0;
+  font-size: 1.85rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+.ar-worlds__lede {
+  margin: 0.75rem 0 0;
+  max-width: 38rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  opacity: 0.82;
+}
+.ar-worlds__grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+@media screen and (min-width: 750px) {
+  .ar-worlds__grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+.ar-worlds__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 11.5rem;
+  padding: 1.1rem 1.15rem 1.2rem;
+  border: 1px solid rgba(232, 238, 234, 0.16);
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(20, 32, 28, 0.72);
+}
+.ar-worlds__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #81c995;
+}
+.ar-worlds__name {
+  margin-top: 0.45rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.ar-worlds__hint {
+  margin-top: 0.4rem;
+  flex: 1;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  opacity: 0.78;
+}
+.ar-worlds__cta {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid #81c995;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #81c995;
+}
+.ar-worlds__honesty {
+  margin: 1.35rem 0 0;
+  max-width: 40rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Zwei Welten",
+  "tag": "section",
+  "class": "section",
+  "enabled_on": {
+    "templates": ["index"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Farbschema",
+      "default": "scheme-1"
+    },
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "Kicker",
+      "default": "Über den Hof"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Titel",
+      "default": "Der Laden"
+    },
+    {
+      "type": "textarea",
+      "id": "lede",
+      "label": "Text",
+      "default": "Zwei Welten: Ersatzteile für dein Rad, und Merchandise ohne Fit-Filter. Keine erfundenen SKUs, keine Fake-Bewertungen."
+    },
+    {
+      "type": "collection",
+      "id": "parts_collection",
+      "label": "Für dein Rad"
+    },
+    {
+      "type": "collection",
+      "id": "merch_collection",
+      "label": "Merchandise"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Zwei Welten"
+    }
+  ]
+}
+{% endschema %}

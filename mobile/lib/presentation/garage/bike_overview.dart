@@ -63,7 +63,7 @@ class BikeOverviewCard extends StatelessWidget {
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: bike.isActive ? AppColors.accent : AppColors.border,
+          color: bike.isActive ? AppColors.forestOnDark : AppColors.border,
           width: bike.isActive ? 1.5 : 1,
         ),
       ),
@@ -137,7 +137,6 @@ class BikeOverviewCard extends StatelessWidget {
               Text(
                 [
                   '${bike.odometerKm.toStringAsFixed(0)} km',
-                  if (partsCount > 0) l10n.garagePartsCount(partsCount),
                   if (bike.frameSize != null && bike.frameSize!.isNotEmpty)
                     bike.frameSize!,
                 ].join(' · '),
@@ -153,7 +152,6 @@ class BikeOverviewCard extends StatelessWidget {
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
                     minimumSize: const Size(0, 44),
                   ),
                   onPressed: onPrimaryAction,

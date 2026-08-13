@@ -64,8 +64,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       if (!mounted) return;
       setState(() {
         _message = mode == 'trusted_token_mvp'
-            ? 'Pro gesetzt (Trusted-Token-MVP — ohne Google Play Service Account). Sync OK.'
-            : 'Pro aktiv (Play). Sync OK.';
+            ? (kDebugMode
+                ? 'Pro gesetzt (Trusted-Token-MVP — ohne Google Play Service Account). Sync OK.'
+                : 'Pro aktiv. Sync läuft.')
+            : 'Pro aktiv. Sync läuft.';
       });
     } catch (e) {
       if (mounted) setState(() => _message = 'Play: $e');
@@ -258,7 +260,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           ),
           const SizedBox(height: 24),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+            style: FilledButton.styleFrom(),
             onPressed: _busy ? null : () => _stripeCheckout('month'),
             child: const Text('Stripe — monatlich'),
           ),
@@ -280,11 +282,12 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
               child: const Text('Play-Käufe wiederherstellen'),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Hinweis: Ohne GOOGLE_PLAY_SERVICE_ACCOUNT_JSON prüft der Server '
-              'nur den Trusted-Token (MVP) — kein Publisher-API-Verify.',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
-            ),
+            if (kDebugMode)
+              const Text(
+                'Hinweis: Ohne GOOGLE_PLAY_SERVICE_ACCOUNT_JSON prüft der Server '
+                'nur den Trusted-Token (MVP) — kein Publisher-API-Verify.',
+                style: TextStyle(color: AppColors.muted, fontSize: 12),
+              ),
           ],
           const SizedBox(height: 16),
           OutlinedButton(

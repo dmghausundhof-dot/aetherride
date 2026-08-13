@@ -1,0 +1,24 @@
+{
+  "id": "lugano",
+  "name": "Lugano / Tessin",
+  "bbox": [
+    8.9,
+    45.95,
+    9.05,
+    46.05
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "lugano.tar.zst",
+    "packGz": "lugano.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -9,7 +9,7 @@
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/germany/hamburg-latest.osm.pbf",
-    "note": "Hamburg-Extract, auf bbox clippen."
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

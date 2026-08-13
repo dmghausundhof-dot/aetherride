@@ -77,7 +77,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Future<void> _submit() async {
     if (!AppConfig.isSupabaseConfigured) {
-      setState(() => _message = 'Supabase nicht konfiguriert (SUPABASE_ANON_KEY).');
+      setState(() => _message = 'Cloud-Sync ist gerade nicht verfügbar.');
       return;
     }
     final email = _email.text.trim();
@@ -307,7 +307,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
               icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Chat öffnen'),
+              label: const Text('Assistent öffnen'),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
@@ -343,7 +343,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+              style: FilledButton.styleFrom(),
               onPressed: _busy ? null : _submit,
               child: Text(_busy
                   ? '…'
@@ -406,7 +406,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
               icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Chat öffnen'),
+              label: const Text('Assistent öffnen'),
             ),
           ],
           if (_message != null) ...[

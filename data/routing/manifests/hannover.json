@@ -1,0 +1,24 @@
+{
+  "id": "hannover",
+  "name": "Hannover / Leine",
+  "bbox": [
+    9.5,
+    52.25,
+    10.05,
+    52.55
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "hannover.tar.zst",
+    "packGz": "hannover.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

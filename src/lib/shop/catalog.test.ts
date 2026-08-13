@@ -109,7 +109,7 @@ assert.equal(shopCollectionHref("gravel"), "/shop?sport=gravel");
 assert.equal(shopCollectionHref("city"), "/shop?sport=city");
 assert.equal(shopCollectionHref("light-e"), "/shop?sport=light-e");
 assert.equal(shopCollectionHref("urban"), "/shop?sport=city");
-assert.equal(shopCollectionHref("parts"), "/shop/parts");
+assert.equal(shopCollectionHref("parts"), "/shop?door=parts");
 
 assert.ok(getShopProduct("sp-shopify-orbea-terra-m20"));
 assert.equal(
@@ -133,19 +133,19 @@ assert.ok(
 assert.equal(shopHref(), "/shop");
 assert.equal(
   shopHref({ productId: "sp-sram-xx-chain", job: "replace" }),
-  "/shop/parts"
+  "/shop?door=parts"
 );
 assert.equal(
   shopHref({ slot: "cassette", job: "browse" }),
-  "/shop/parts?slot=cassette"
+  "/shop?door=parts&slot=cassette"
 );
 assert.equal(
   shopHref({ slot: "brake_pads_front", bike: "bike-1" }),
-  "/shop/parts?slot=brake_pads&bike=bike-1&fit=bike"
+  "/shop?door=parts&slot=brake_pads&bike=bike-1&fit=bike"
 );
 assert.equal(
   shopHref({ job: "replace", bike: "bike-1", slot: "chain" }),
-  "/shop/parts?slot=chain&bike=bike-1&fit=bike"
+  "/shop?door=parts&slot=chain&bike=bike-1&fit=bike"
 );
 assert.equal(
   shopHref({ sport: "gravel" }),
@@ -155,8 +155,8 @@ assert.equal(
   shopHref({ focus: "orbea-terra-m20", sport: "gravel" }),
   "/shop?focus=orbea-terra-m20&sport=gravel"
 );
-assert.equal(shopCollectionHref("parts"), FEATURED_PARTS_IN_APP_HREF);
-assert.equal(FEATURED_PARTS_IN_APP_HREF, "/shop/parts");
+assert.equal(shopCollectionHref("parts"), "/shop?door=parts");
+assert.equal(FEATURED_PARTS_IN_APP_HREF, "/shop");
 
 assert.ok(
   isProductAffiliateUrl(`${SHOPIFY_STORE_BASE}/products/orbea-terra-m20`),

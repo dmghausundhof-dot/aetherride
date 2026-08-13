@@ -207,7 +207,7 @@ class DeepLinkHandler {
     _lastHandled = key;
 
     if (kind == DeepLinkKind.shop) {
-      // S-FLOW-01 / audit: aetherride://shop → Teile tab
+      // S-FLOW-01 / audit: aetherride://shop → Shop-Tab
       _ref.read(shellTabIndexProvider.notifier).state = 4;
       return;
     }

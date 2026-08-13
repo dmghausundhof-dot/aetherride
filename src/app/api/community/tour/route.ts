@@ -4,6 +4,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAuthedClient } from "@/lib/supabase/authed";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { moderateContent } from "@/lib/community/moderate";
+import { persistModeration } from "@/lib/community/persistModeration";
 
 export const dynamic = "force-dynamic";
 
@@ -50,14 +53,70 @@ async function signTourPhotoUrls(
   );
 }
 
+function parseIdList(raw: string | null): string[] {
+  if (!raw) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(",")) {
+    const id = part.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= 40) break;
+  }
+  return out;
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const tourId = url.searchParams.get("tourId");
-  if (!tourId) {
+  const batchIds = parseIdList(url.searchParams.get("ids"));
+  const tourId =
+    url.searchParams.get("tourId") || url.searchParams.get("id") || "";
+  if (batchIds.length === 0 && !tourId) {
     return NextResponse.json({ error: "tourId required" }, { status: 400 });
   }
   const client = sb();
-  if (client) {
+  if (client && batchIds.length > 0) {
+    const [{ data: reviews, error: rErr }, { data: photos, error: pErr }] =
+      await Promise.all([
+        client
+          .from("tour_reviews")
+          .select("tour_id")
+          .in("tour_id", batchIds)
+          .eq("status", "approved"),
+        client
+          .from("tour_photos")
+          .select("tour_id")
+          .in("tour_id", batchIds)
+          .eq("status", "approved"),
+      ]);
+    if (!rErr && !pErr) {
+      const counts: Record<string, { reviewCount: number; photoCount: number }> =
+        {};
+      for (const id of batchIds) {
+        counts[id] = { reviewCount: 0, photoCount: 0 };
+      }
+      for (const row of reviews ?? []) {
+        const id = String((row as { tour_id?: string }).tour_id || "");
+        if (!id || !counts[id]) continue;
+        counts[id].reviewCount += 1;
+      }
+      for (const row of photos ?? []) {
+        const id = String((row as { tour_id?: string }).tour_id || "");
+        if (!id || !counts[id]) continue;
+        counts[id].photoCount += 1;
+      }
+      return NextResponse.json({ ids: batchIds, counts, stub: false });
+    }
+    return NextResponse.json({
+      ids: batchIds,
+      counts: Object.fromEntries(
+        batchIds.map((id) => [id, { reviewCount: 0, photoCount: 0 }])
+      ),
+      stub: true,
+    });
+  }
+  if (client && tourId) {
     const [{ data: reviews, error: rErr }, { data: photos, error: pErr }] =
       await Promise.all([
         client
@@ -83,14 +142,18 @@ export async function GET(req: Request) {
         tourId,
         reviews: reviews ?? [],
         photos: signed,
+        reviewCount: (reviews ?? []).length,
+        photoCount: signed.length,
         stub: false,
       });
     }
   }
   return NextResponse.json({
-    tourId,
+    tourId: tourId || batchIds[0] || "",
     reviews: [],
     photos: [],
+    reviewCount: 0,
+    photoCount: 0,
     stub: true,
   });
 }
@@ -109,6 +172,7 @@ export async function POST(req: Request) {
       rating?: number;
       body?: string;
       authorLabel?: string;
+      photos?: { storagePath?: string; caption?: string }[];
     };
     const tourId = String(body.tourId || "").trim();
     const rating = Number(body.rating);
@@ -128,13 +192,87 @@ export async function POST(req: Request) {
       })
       .select("id")
       .maybeSingle();
-    if (error) {
+    if (error || !data?.id) {
       return NextResponse.json(
-        { error: "insert_failed", note: error.message },
+        { error: "insert_failed", note: error?.message },
         { status: 501 }
       );
     }
-    return NextResponse.json({ ok: true, id: data?.id, status: "pending" });
+
+    const reviewMod = await moderateContent({
+      kind: "review",
+      text,
+      rating: Math.round(rating),
+    });
+    try {
+      await persistModeration({
+        kind: "review",
+        id: data.id,
+        result: reviewMod,
+      });
+    } catch (e) {
+      console.error("[community/tour] persist review", e);
+    }
+
+    const photoRows: { id: string; status: string }[] = [];
+    const incoming = Array.isArray(body.photos) ? body.photos.slice(0, 4) : [];
+    for (const p of incoming) {
+      const storagePath = String(p.storagePath || "").trim();
+      if (!storagePath) continue;
+      if (!storagePath.startsWith(`${user.id}/`)) {
+        continue;
+      }
+      const { data: photo, error: pErr } = await supabase
+        .from("tour_photos")
+        .insert({
+          tour_id: tourId,
+          author_id: user.id,
+          storage_path: storagePath.slice(0, 500),
+          caption: String(p.caption || "").slice(0, 200),
+          status: "pending",
+          review_id: data.id,
+        })
+        .select("id, storage_path, caption")
+        .maybeSingle();
+      if (pErr || !photo?.id) continue;
+      let imageUrl: string | null = null;
+      try {
+        const admin = createAdminClient();
+        const { data: signed } = await admin.storage
+          .from("tour-photos")
+          .createSignedUrl(photo.storage_path, 300);
+        imageUrl = signed?.signedUrl ?? null;
+      } catch {
+        imageUrl = null;
+      }
+      const photoMod = await moderateContent({
+        kind: "photo",
+        text: String(photo.caption || ""),
+        imageUrl,
+      });
+      try {
+        await persistModeration({
+          kind: "photo",
+          id: photo.id,
+          result: photoMod,
+        });
+      } catch (e) {
+        console.error("[community/tour] persist photo", e);
+      }
+      photoRows.push({ id: photo.id, status: photoMod.action });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      id: data.id,
+      status: reviewMod.action,
+      moderation: {
+        source: reviewMod.source,
+        confidence: reviewMod.confidence,
+        labels: reviewMod.labels,
+      },
+      photos: photoRows,
+    });
   } catch {
     return NextResponse.json(
       {

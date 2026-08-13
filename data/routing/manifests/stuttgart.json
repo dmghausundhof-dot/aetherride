@@ -2,12 +2,12 @@
   "id": "stuttgart",
   "name": "Stuttgart / Mittlerer Neckar",
   "bbox": [
-    9.0,
+    9,
     48.6,
     9.4,
     48.9
   ],
-  "builtAt": "2026-08-12T00:00:00Z",
+  "builtAt": "2026-08-13T00:00:00Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false

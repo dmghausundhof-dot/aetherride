@@ -140,6 +140,294 @@ abstract class AppLocalizations {
   /// **'Teile'**
   String get navParts;
 
+  /// No description provided for @navKarte.
+  ///
+  /// In de, this message translates to:
+  /// **'Karte'**
+  String get navKarte;
+
+  /// No description provided for @navWorkshop.
+  ///
+  /// In de, this message translates to:
+  /// **'Werkstatt'**
+  String get navWorkshop;
+
+  /// No description provided for @navShop.
+  ///
+  /// In de, this message translates to:
+  /// **'Laden'**
+  String get navShop;
+
+  /// No description provided for @hofJustRide.
+  ///
+  /// In de, this message translates to:
+  /// **'Einfach fahren'**
+  String get hofJustRide;
+
+  /// No description provided for @hofShowTours.
+  ///
+  /// In de, this message translates to:
+  /// **'Touren anzeigen'**
+  String get hofShowTours;
+
+  /// No description provided for @hofMapChoiceHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Touren losfahren, oder Touren auf der Karte zeigen.'**
+  String get hofMapChoiceHint;
+
+  /// No description provided for @werkstattPartsShelf.
+  ///
+  /// In de, this message translates to:
+  /// **'Shop'**
+  String get werkstattPartsShelf;
+
+  /// No description provided for @werkstattForYourBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Für dein Rad'**
+  String get werkstattForYourBike;
+
+  /// No description provided for @werkstattMerch.
+  ///
+  /// In de, this message translates to:
+  /// **'Merchandise'**
+  String get werkstattMerch;
+
+  /// No description provided for @werkstattShopParts.
+  ///
+  /// In de, this message translates to:
+  /// **'Ersatzteile im Shop'**
+  String get werkstattShopParts;
+
+  /// No description provided for @shopGatewayKicker.
+  ///
+  /// In de, this message translates to:
+  /// **'Über den Hof'**
+  String get shopGatewayKicker;
+
+  /// No description provided for @shopGatewayTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Laden'**
+  String get shopGatewayTitle;
+
+  /// No description provided for @shopGatewayHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier wohnt das Rad nicht. Ehrliche Teile und Merch im Shopify-Shop — Kauf und Kasse dort, nicht in der App.'**
+  String get shopGatewayHint;
+
+  /// No description provided for @shopZumShop.
+  ///
+  /// In de, this message translates to:
+  /// **'Zum Shop'**
+  String get shopZumShop;
+
+  /// No description provided for @shopForYourBikeHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ersatzteile passend zu {name} — Kategorie und Laufrad. Keine erfundenen SKUs.'**
+  String shopForYourBikeHint(String name);
+
+  /// No description provided for @shopForYourBikeEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Stell ein Rad in der Werkstatt ab — dann öffnen wir die passenden Teile im Shop.'**
+  String get shopForYourBikeEmpty;
+
+  /// No description provided for @shopMerchHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Kleidung und Kleinzeug. Unabhängig vom Rad, nie nach Fit gefiltert.'**
+  String get shopMerchHint;
+
+  /// No description provided for @shopNotConnected.
+  ///
+  /// In de, this message translates to:
+  /// **'Shop nicht verbunden'**
+  String get shopNotConnected;
+
+  /// No description provided for @shopNotConnectedHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann führt dieser Tab in den Laden.'**
+  String get shopNotConnectedHint;
+
+  /// No description provided for @shopOpenFailed.
+  ///
+  /// In de, this message translates to:
+  /// **'Shop konnte nicht geöffnet werden.'**
+  String get shopOpenFailed;
+
+  /// No description provided for @shopPasswordWall.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Online-Store ist noch passwortgeschützt. Shopify-Admin: Online Store → Preferences → Password protection aus.'**
+  String get shopPasswordWall;
+
+  /// No description provided for @garageSetupTabHintTires.
+  ///
+  /// In de, this message translates to:
+  /// **'Luftdruck grob nach Gewicht und Reifen — am Rad nachmessen, keine OEM-Tabelle.'**
+  String get garageSetupTabHintTires;
+
+  /// No description provided for @werkstattSetupTires.
+  ///
+  /// In de, this message translates to:
+  /// **'Reifen / Druck grob'**
+  String get werkstattSetupTires;
+
+  /// No description provided for @werkstattSetupSuspension.
+  ///
+  /// In de, this message translates to:
+  /// **'Fahrwerk — SAG und Luft nach Federweg'**
+  String get werkstattSetupSuspension;
+
+  /// No description provided for @werkstattSetupSuspensionUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Fahrwerk — Federweg nicht eingetragen'**
+  String get werkstattSetupSuspensionUnknown;
+
+  /// No description provided for @werkstattSetupDropper.
+  ///
+  /// In de, this message translates to:
+  /// **'Vario-Stütze (eingetragen)'**
+  String get werkstattSetupDropper;
+
+  /// No description provided for @werkstattSetupWheel.
+  ///
+  /// In de, this message translates to:
+  /// **'Laufrad {size}'**
+  String werkstattSetupWheel(String size);
+
+  /// No description provided for @werkstattSetupCockpit.
+  ///
+  /// In de, this message translates to:
+  /// **'Cockpit — Lenker und Vorbau'**
+  String get werkstattSetupCockpit;
+
+  /// No description provided for @werkstattSetupBagsCockpit.
+  ///
+  /// In de, this message translates to:
+  /// **'Taschen / Cockpit'**
+  String get werkstattSetupBagsCockpit;
+
+  /// No description provided for @werkstattSetupLightsRack.
+  ///
+  /// In de, this message translates to:
+  /// **'Licht und Gepäckträger — nur wenn eingetragen'**
+  String get werkstattSetupLightsRack;
+
+  /// No description provided for @werkstattSetupDrivetrain.
+  ///
+  /// In de, this message translates to:
+  /// **'Schaltung'**
+  String get werkstattSetupDrivetrain;
+
+  /// No description provided for @werkstattBatteryHonest.
+  ///
+  /// In de, this message translates to:
+  /// **'Akku nur mit echtem Sensor'**
+  String get werkstattBatteryHonest;
+
+  /// No description provided for @werkstattBatteryHonestHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Prozent ohne gekoppelten Sensor. Bosch LDI bleibt G-1.'**
+  String get werkstattBatteryHonestHint;
+
+  /// No description provided for @werkstattSensorEbike.
+  ///
+  /// In de, this message translates to:
+  /// **'Radsensor (CSC) — Tempo und Trittfrequenz. Akku-Stand nur mit echtem Sensor.'**
+  String get werkstattSensorEbike;
+
+  /// No description provided for @werkstattSensorAnalog.
+  ///
+  /// In de, this message translates to:
+  /// **'Radsensor — Tempo und Trittfrequenz am Rad.'**
+  String get werkstattSensorAnalog;
+
+  /// No description provided for @hofYourWatch.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Uhr'**
+  String get hofYourWatch;
+
+  /// No description provided for @hofWatchHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Fitnesstracking am Fahrer — nicht am Rad. Puls nur mit echtem Sensor. Apple Watch oft ohne Standard-BLE.'**
+  String get hofWatchHint;
+
+  /// No description provided for @hofWatchPair.
+  ///
+  /// In de, this message translates to:
+  /// **'Uhr koppeln'**
+  String get hofWatchPair;
+
+  /// No description provided for @hofWatchReconnect.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu koppeln'**
+  String get hofWatchReconnect;
+
+  /// No description provided for @hofWatchRemove.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen'**
+  String get hofWatchRemove;
+
+  /// No description provided for @hofWatchConnect.
+  ///
+  /// In de, this message translates to:
+  /// **'Uhr verbinden'**
+  String get hofWatchConnect;
+
+  /// No description provided for @hofYou.
+  ///
+  /// In de, this message translates to:
+  /// **'Du'**
+  String get hofYou;
+
+  /// No description provided for @hofYouSheetHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Du und deine Uhr. Der Radsensor bleibt am Rad in der Werkstatt.'**
+  String get hofYouSheetHint;
+
+  /// No description provided for @werkstattWatchEbike.
+  ///
+  /// In de, this message translates to:
+  /// **'Smartwatch — Puls neben CSC. Kein erfundener SoC.'**
+  String get werkstattWatchEbike;
+
+  /// No description provided for @werkstattWatchAnalog.
+  ///
+  /// In de, this message translates to:
+  /// **'Smartwatch / Fitnesstracking'**
+  String get werkstattWatchAnalog;
+
+  /// No description provided for @setupTirePressureLabel.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorderreifen (psi)'**
+  String get setupTirePressureLabel;
+
+  /// No description provided for @setupCompareHintTires.
+  ///
+  /// In de, this message translates to:
+  /// **'Legt zwei verdeckte Reifendrücke an. Nach ein paar Fahrten siehst du, welcher sich besser anfühlt.'**
+  String get setupCompareHintTires;
+
+  /// No description provided for @setupTirePressureValue.
+  ///
+  /// In de, this message translates to:
+  /// **'Reifen {value} psi'**
+  String setupTirePressureValue(String value);
+
   /// No description provided for @searchHome.
   ///
   /// In de, this message translates to:
@@ -289,6 +577,168 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Chat'**
   String get chat;
+
+  /// No description provided for @hofRideOut.
+  ///
+  /// In de, this message translates to:
+  /// **'Rausfahren'**
+  String get hofRideOut;
+
+  /// No description provided for @hofOpenBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad öffnen'**
+  String get hofOpenBike;
+
+  /// No description provided for @hofParkBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad abstellen'**
+  String get hofParkBike;
+
+  /// No description provided for @hofRideWithoutBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Rad fahren'**
+  String get hofRideWithoutBike;
+
+  /// No description provided for @hofRideOutAgain.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch mal raus'**
+  String get hofRideOutAgain;
+
+  /// No description provided for @hofAtGate.
+  ///
+  /// In de, this message translates to:
+  /// **'vor dem Tor'**
+  String get hofAtGate;
+
+  /// No description provided for @hofEmptyStand.
+  ///
+  /// In de, this message translates to:
+  /// **'Leerer Stand'**
+  String get hofEmptyStand;
+
+  /// No description provided for @hofSkyUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Himmel unbekannt'**
+  String get hofSkyUnknown;
+
+  /// No description provided for @hofNoHonestLoop.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein ehrlicher Trail-Rundkurs'**
+  String get hofNoHonestLoop;
+
+  /// No description provided for @hofNotYetOut.
+  ///
+  /// In de, this message translates to:
+  /// **'noch nicht draußen'**
+  String get hofNotYetOut;
+
+  /// No description provided for @hofJustBack.
+  ///
+  /// In de, this message translates to:
+  /// **'gerade reingekommen'**
+  String get hofJustBack;
+
+  /// No description provided for @hofLastRideNoGps.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne GPS-Track — kein erfundener Verlauf'**
+  String get hofLastRideNoGps;
+
+  /// No description provided for @hofGpsUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Standort — Himmel und Tor warten auf GPS.'**
+  String get hofGpsUnknown;
+
+  /// No description provided for @rideGpsUnavailable.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein GPS — Track bleibt leer. Kein erfundener Verlauf.'**
+  String get rideGpsUnavailable;
+
+  /// No description provided for @hofAtHof.
+  ///
+  /// In de, this message translates to:
+  /// **'am Hof'**
+  String get hofAtHof;
+
+  /// No description provided for @hofSinceOneDay.
+  ///
+  /// In de, this message translates to:
+  /// **'seit 1 Tag'**
+  String get hofSinceOneDay;
+
+  /// No description provided for @hofSinceDays.
+  ///
+  /// In de, this message translates to:
+  /// **'seit {days} Tagen'**
+  String hofSinceDays(int days);
+
+  /// No description provided for @hofNoBikeHere.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Rad steht hier'**
+  String get hofNoBikeHere;
+
+  /// No description provided for @hofBringForward.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} nach vorn'**
+  String hofBringForward(String name);
+
+  /// No description provided for @hofCareInWorkshop.
+  ///
+  /// In de, this message translates to:
+  /// **'{label} — in der Werkstatt'**
+  String hofCareInWorkshop(String label);
+
+  /// No description provided for @hofSensorAwake.
+  ///
+  /// In de, this message translates to:
+  /// **'Sensor wach'**
+  String get hofSensorAwake;
+
+  /// No description provided for @hofOpenTours.
+  ///
+  /// In de, this message translates to:
+  /// **'Touren öffnen'**
+  String get hofOpenTours;
+
+  /// No description provided for @hofSkyDry.
+  ///
+  /// In de, this message translates to:
+  /// **'{temp}° · eher trocken'**
+  String hofSkyDry(String temp);
+
+  /// No description provided for @hofSkyDamp.
+  ///
+  /// In de, this message translates to:
+  /// **'{temp}° · feucht möglich'**
+  String hofSkyDamp(String temp);
+
+  /// No description provided for @hofSkyWet.
+  ///
+  /// In de, this message translates to:
+  /// **'{temp}° · Regen · Trails eher nass'**
+  String hofSkyWet(String temp);
+
+  /// No description provided for @hofLoopDuration.
+  ///
+  /// In de, this message translates to:
+  /// **'⟲ {minutes} min'**
+  String hofLoopDuration(int minutes);
+
+  /// No description provided for @hofCommunityNotes.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} Stimmen zu dieser Runde'**
+  String hofCommunityNotes(int count);
 
   /// No description provided for @homeSubtitleMtb.
   ///
@@ -1049,25 +1499,25 @@ abstract class AppLocalizations {
   /// No description provided for @garageFabBike.
   ///
   /// In de, this message translates to:
-  /// **'Bike'**
+  /// **'Rad abstellen'**
   String get garageFabBike;
 
   /// No description provided for @garageEmptyTitle.
   ///
   /// In de, this message translates to:
-  /// **'Noch kein Bike in der Garage'**
+  /// **'Die Box ist leer'**
   String get garageEmptyTitle;
 
   /// No description provided for @garageEmptyMessage.
   ///
   /// In de, this message translates to:
-  /// **'Leg dein Rad an — Typ, Status und Teile siehst du danach auf einen Blick.'**
+  /// **'Rad abstellen — ehrlich, ohne Demo-Kilometer. Dann siehst du, ob es bereit ist.'**
   String get garageEmptyMessage;
 
   /// No description provided for @garageAddBike.
   ///
   /// In de, this message translates to:
-  /// **'Bike anlegen'**
+  /// **'Rad abstellen'**
   String get garageAddBike;
 
   /// No description provided for @garageStatBike.

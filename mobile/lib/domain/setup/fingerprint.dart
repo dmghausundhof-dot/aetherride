@@ -40,10 +40,10 @@ class SetupFingerprint {
       }
     }
     final lines = <String>[
+      if (tire != null) tire,
       if (sag != null) sag,
       if (fork != null) fork,
-      if (tire != null) tire,
-      if (sag == null && fork == null) setup.label,
+      if (sag == null && fork == null && tire == null) setup.label,
     ];
     return SetupFingerprint(
       lines: lines.isEmpty ? [setup.label] : lines,

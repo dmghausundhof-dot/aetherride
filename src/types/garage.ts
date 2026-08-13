@@ -111,6 +111,10 @@ export type ComponentSlot =
   | "motor"
   | "battery"
   | "display"
+  | "light"
+  | "lock"
+  | "rack"
+  | "bags"
   | "hiking_shoes"
   | "hiking_pack"
   | "hiking_poles";
@@ -164,6 +168,20 @@ export interface ComponentModel {
   safetyCritical: boolean;
 }
 
+/** Reach/Stack je Rahmengröße — nur Hersteller-Geometrietabellen, nichts raten. */
+export interface FrameSizeGeometry {
+  size: string;
+  reachMm: number;
+  stackMm: number;
+  wheelbaseMm?: number;
+  chainstayMm?: number;
+  headAngleDeg?: number;
+  seatAngleEffectiveDeg?: number;
+  /** z. B. "high", "180mm_fork", "29_low", "headset_steep" */
+  setting?: string;
+  sourceUrl: string;
+}
+
 export interface CatalogBikeVariant {
   id: string;
   name: string;
@@ -179,6 +197,8 @@ export interface CatalogBikeVariant {
   /** Slot → ComponentModel-ID der OEM-Ausstattung */
   oemComponents: Partial<Record<ComponentSlot, string>>;
   frameAttributes: TypedAttribute[];
+  /** Leer, wenn der Hersteller keine Reach/Stack-Tabelle veröffentlicht. */
+  geometryBySize?: FrameSizeGeometry[];
   sourceUrl: string;
 }
 
@@ -415,6 +435,11 @@ export const SLOT_GROUPS: { id: string; label: string; slots: ComponentSlot[] }[
     id: "ebike",
     label: "E-Bike",
     slots: ["motor", "battery", "display"],
+  },
+  {
+    id: "everyday",
+    label: "Alltag",
+    slots: ["light", "lock", "rack", "bags"],
   },
   {
     id: "hiking",

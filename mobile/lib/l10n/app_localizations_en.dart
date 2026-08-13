@@ -31,6 +31,171 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navParts => 'Parts';
 
   @override
+  String get navKarte => 'Map';
+
+  @override
+  String get navWorkshop => 'Workshop';
+
+  @override
+  String get navShop => 'Shop';
+
+  @override
+  String get hofJustRide => 'Just ride';
+
+  @override
+  String get hofShowTours => 'Show tours';
+
+  @override
+  String get hofMapChoiceHint =>
+      'Ride without a route, or show tours on the map.';
+
+  @override
+  String get werkstattPartsShelf => 'Shop';
+
+  @override
+  String get werkstattForYourBike => 'For your bike';
+
+  @override
+  String get werkstattMerch => 'Merchandise';
+
+  @override
+  String get werkstattShopParts => 'Spare parts in the shop';
+
+  @override
+  String get shopGatewayKicker => 'Across the yard';
+
+  @override
+  String get shopGatewayTitle => 'The shop';
+
+  @override
+  String get shopGatewayHint =>
+      'The bike does not live here. Honest parts and merch in the Shopify store — checkout there, not in the app.';
+
+  @override
+  String get shopZumShop => 'Open shop';
+
+  @override
+  String shopForYourBikeHint(String name) {
+    return 'Parts that fit $name — category and wheel size. No invented SKUs.';
+  }
+
+  @override
+  String get shopForYourBikeEmpty =>
+      'Park a bike in the workshop — then we open matching parts in the shop.';
+
+  @override
+  String get shopMerchHint =>
+      'Apparel and small goods. Never filtered by bike fit.';
+
+  @override
+  String get shopNotConnected => 'Shop not connected';
+
+  @override
+  String get shopNotConnectedHint =>
+      'No storefront URL. Set SHOPIFY_STOREFRONT_URL, then this tab opens the store.';
+
+  @override
+  String get shopOpenFailed => 'Could not open the shop.';
+
+  @override
+  String get shopPasswordWall =>
+      'The online store is still password-protected. Shopify admin: Online Store → Preferences → turn Password protection off.';
+
+  @override
+  String get garageSetupTabHintTires =>
+      'Rough tire pressure by weight — measure on the bike, not an OEM chart.';
+
+  @override
+  String get werkstattSetupTires => 'Tires / rough pressure';
+
+  @override
+  String get werkstattSetupSuspension => 'Suspension — sag and air from travel';
+
+  @override
+  String get werkstattSetupSuspensionUnknown =>
+      'Suspension — travel not logged';
+
+  @override
+  String get werkstattSetupDropper => 'Dropper (logged)';
+
+  @override
+  String werkstattSetupWheel(String size) {
+    return 'Wheels $size';
+  }
+
+  @override
+  String get werkstattSetupCockpit => 'Cockpit — bar and stem';
+
+  @override
+  String get werkstattSetupBagsCockpit => 'Bags / cockpit';
+
+  @override
+  String get werkstattSetupLightsRack => 'Lights and rack — only if logged';
+
+  @override
+  String get werkstattSetupDrivetrain => 'Drivetrain';
+
+  @override
+  String get werkstattBatteryHonest => 'Battery only with a real sensor';
+
+  @override
+  String get werkstattBatteryHonestHint =>
+      'No percentage without a paired sensor. Bosch LDI stays G-1.';
+
+  @override
+  String get werkstattSensorEbike =>
+      'Wheel sensor (CSC) — speed and cadence. Battery only with a real sensor.';
+
+  @override
+  String get werkstattSensorAnalog =>
+      'Wheel sensor — speed and cadence on the bike.';
+
+  @override
+  String get hofYourWatch => 'Your watch';
+
+  @override
+  String get hofWatchHint =>
+      'Fitness tracking on the rider — not the bike. Heart rate only from a real sensor. Apple Watch often lacks standard BLE HR.';
+
+  @override
+  String get hofWatchPair => 'Pair watch';
+
+  @override
+  String get hofWatchReconnect => 'Pair again';
+
+  @override
+  String get hofWatchRemove => 'Remove';
+
+  @override
+  String get hofWatchConnect => 'Connect watch';
+
+  @override
+  String get hofYou => 'You';
+
+  @override
+  String get hofYouSheetHint =>
+      'You and your watch. The wheel sensor stays on the bike in the workshop.';
+
+  @override
+  String get werkstattWatchEbike =>
+      'Watch — heart rate next to CSC. No invented SoC.';
+
+  @override
+  String get werkstattWatchAnalog => 'Smartwatch / fitness tracking';
+
+  @override
+  String get setupTirePressureLabel => 'Front tire (psi)';
+
+  @override
+  String get setupCompareHintTires =>
+      'Creates two blind tire pressures. After a few rides you’ll see which feels better.';
+
+  @override
+  String setupTirePressureValue(String value) {
+    return 'Tires $value psi';
+  }
+
+  @override
   String get searchHome => 'Where to? Place, tour or address';
 
   @override
@@ -109,6 +274,104 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chat => 'Chat';
+
+  @override
+  String get hofRideOut => 'Ride out';
+
+  @override
+  String get hofOpenBike => 'Open bike';
+
+  @override
+  String get hofParkBike => 'Park the bike';
+
+  @override
+  String get hofRideWithoutBike => 'Ride without a bike';
+
+  @override
+  String get hofRideOutAgain => 'Ride out again';
+
+  @override
+  String get hofAtGate => 'at the gate';
+
+  @override
+  String get hofEmptyStand => 'Empty stand';
+
+  @override
+  String get hofSkyUnknown => 'Sky unknown';
+
+  @override
+  String get hofNoHonestLoop => 'No honest trail loop';
+
+  @override
+  String get hofNotYetOut => 'not out yet';
+
+  @override
+  String get hofJustBack => 'just back';
+
+  @override
+  String get hofLastRideNoGps => 'no GPS track — nothing invented';
+
+  @override
+  String get hofGpsUnknown => 'No location — sky and gate wait for GPS.';
+
+  @override
+  String get rideGpsUnavailable =>
+      'No GPS — track stays empty. Nothing invented.';
+
+  @override
+  String get hofAtHof => 'at the stand';
+
+  @override
+  String get hofSinceOneDay => '1 day';
+
+  @override
+  String hofSinceDays(int days) {
+    return '$days days';
+  }
+
+  @override
+  String get hofNoBikeHere => 'No bike here';
+
+  @override
+  String hofBringForward(String name) {
+    return 'Bring $name forward';
+  }
+
+  @override
+  String hofCareInWorkshop(String label) {
+    return '$label — in the workshop';
+  }
+
+  @override
+  String get hofSensorAwake => 'Sensor awake';
+
+  @override
+  String get hofOpenTours => 'Open tours';
+
+  @override
+  String hofSkyDry(String temp) {
+    return '$temp° · rather dry';
+  }
+
+  @override
+  String hofSkyDamp(String temp) {
+    return '$temp° · damp possible';
+  }
+
+  @override
+  String hofSkyWet(String temp) {
+    return '$temp° · rain · trails likely wet';
+  }
+
+  @override
+  String hofLoopDuration(int minutes) {
+    return '⟲ $minutes min';
+  }
+
+  @override
+  String hofCommunityNotes(int count) {
+    return '$count notes on this loop';
+  }
 
   @override
   String get homeSubtitleMtb => 'Trails, tours & your setup';
@@ -504,17 +767,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get garageTitle => 'Garage';
 
   @override
-  String get garageFabBike => 'Bike';
+  String get garageFabBike => 'Park a bike';
 
   @override
-  String get garageEmptyTitle => 'No bike in the garage yet';
+  String get garageEmptyTitle => 'The stall is empty';
 
   @override
   String get garageEmptyMessage =>
-      'Add your bike — type, status and parts show up right in the garage.';
+      'Park your bike — honestly, no demo kilometres. Then you see if it is ready.';
 
   @override
-  String get garageAddBike => 'Add bike';
+  String get garageAddBike => 'Park a bike';
 
   @override
   String get garageStatBike => 'BIKE';

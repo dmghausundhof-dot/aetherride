@@ -1,0 +1,27 @@
+{
+  "id": "leipzig",
+  "name": "Leipzig / Neuseenland",
+  "bbox": [
+    12.2,
+    51.2,
+    12.55,
+    51.45
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/leipzig",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "leipzig.tar.zst"
+  }
+}

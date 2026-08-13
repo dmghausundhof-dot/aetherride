@@ -77,7 +77,7 @@ export default function ChatPage() {
     {
       id: "sys",
       role: "assistant",
-      text: "Frag nach Garage, Setup, Reichweite, Routen oder Teilen. Zahlen kommen aus deinen App-Daten — nicht aus dem Chat-Modell. Für die meisten Entscheidungen reichen Home und Post-Ride.",
+      text: "Frag nach Garage, Setup, Reichweite, Routen oder Teilen. Zahlen kommen aus deinen App-Daten — nicht aus dem Chat-Modell. Für die meisten Entscheidungen reichen der Hof und die Auswertung nach der Fahrt.",
     },
   ]);
 
@@ -117,7 +117,7 @@ export default function ChatPage() {
       if (res.status === 429) {
         text = `${text}\n\nLimit erreicht (${data.quota?.tier || "free"}). ${
           data.quota?.tier === "free"
-            ? "Upgrade auf Pro für mehr KI-Antworten."
+            ? "Pro unter Profil freischalten für mehr Antworten."
             : "Morgen wieder verfügbar."
         }`;
       }
@@ -153,15 +153,15 @@ export default function ChatPage() {
       <header>
         <Link
           href="/profile"
-          className="mb-2 inline-flex items-center gap-1 text-sm text-accent"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-chrome"
         >
           <ArrowLeft className="h-4 w-4" /> Profil
         </Link>
         <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <MessageSquare className="h-6 w-6 text-accent" /> Mehr fragen
+          <MessageSquare className="h-6 w-6 text-chrome" /> Mehr fragen
         </h1>
         <p className="text-sm text-text-secondary">
-          KI-Coach zu Bike, Setup und Touren
+          Power-User. Kein Feed auf dem Hof.
         </p>
         {quota && (
           <p className="mt-1 text-xs text-text-secondary">
@@ -231,7 +231,7 @@ export default function ChatPage() {
               type="button"
               onClick={() => setTool(t)}
               className={`rounded-full px-2 py-1 ${
-                tool === t ? "bg-accent text-white" : "bg-surface-elevated"
+                tool === t ? "bg-chrome/20 text-chrome" : "bg-surface-elevated"
               }`}
             >
               {t}
@@ -288,18 +288,18 @@ export default function ChatPage() {
           type="button"
           disabled={isRiding || busy}
           onClick={() => void send()}
-          className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          className="rounded-xl bg-chrome px-4 py-2 text-sm font-semibold text-background disabled:opacity-40"
         >
           {busy ? "…" : "Senden"}
         </button>
       </div>
 
       <p className="text-center text-xs text-text-secondary">
-        <Link href="/" className="text-accent">
-          Zurück zu Home
+        <Link href="/home" className="text-chrome">
+          Zum Hof
         </Link>
         {" · "}
-        Free 5/Tag · Pro 50/Tag
+        Free: 5/Tag · Pro: 50/Tag
       </p>
     </div>
   );

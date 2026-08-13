@@ -25,18 +25,18 @@ export default function GuidesIndexPage() {
             Guides
           </h1>
           <p className="mt-3 text-text-secondary">
-            Redaktionelle Artikel für alle Fahrradfahrer — Planung, Garage und
-            App-Trennung. Keine Affiliate-Clickbait-Versprechen.
+            Ratgeber für Rennrad, Gravel, MTB und E-Bike. Hof, Karte, Werkstatt
+            — ehrlich erklärt, kein Affiliate-Clickbait.
           </p>
           <ul className="mt-10 space-y-4">
             {guides.map((g) => (
               <li key={g.slug}>
                 <Link
                   href={`/guides/${g.slug}`}
-                  className="block rounded-2xl border border-border bg-surface p-5 transition hover:border-accent/40"
+                  className="block rounded-2xl border border-border bg-surface p-5 transition hover:border-chrome/40"
                 >
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-secondary">
-                    <span className="font-medium uppercase tracking-wide text-accent">
+                    <span className="font-medium uppercase tracking-wide text-chrome">
                       {GUIDE_CATEGORY_LABEL[g.category]}
                     </span>
                     <span>·</span>

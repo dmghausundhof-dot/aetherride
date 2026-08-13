@@ -16,7 +16,7 @@ export default function LegalDatenschutzPage() {
           <h2 className="text-base font-semibold text-foreground">Verantwortlich</h2>
           <p>
             Angaben zum Verantwortlichen stehen im{" "}
-            <a className="text-accent" href="/legal/impressum">
+            <a className="text-chrome" href="/legal/impressum">
               Impressum
             </a>
             .
@@ -24,7 +24,7 @@ export default function LegalDatenschutzPage() {
               <>
                 {" "}
                 Kontakt Datenschutz:{" "}
-                <a className="text-accent" href={`mailto:${email}`}>
+                <a className="text-chrome" href={`mailto:${email}`}>
                   {email}
                 </a>
                 .

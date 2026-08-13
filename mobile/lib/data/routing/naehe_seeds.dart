@@ -457,6 +457,11 @@ const kTourHeroAssetPool = <String>[
   'assets/seeds/heroes/berlin-tempelhofer.jpg',
   'assets/seeds/heroes/berlin-spree.jpg',
   'assets/seeds/heroes/berlin-grunewald.jpg',
+  'assets/seeds/heroes/wm-heidelberg.jpg',
+  'assets/seeds/heroes/wm-karlsruhe.jpg',
+  'assets/seeds/heroes/wm-freiburg.jpg',
+  'assets/seeds/heroes/wm-muenchen.jpg',
+  'assets/seeds/heroes/wm-bodensee.jpg',
 ];
 
 /// Bundled hero assets for Discover photo cards (S25 — never blank sheet).
@@ -477,9 +482,18 @@ String? heroAssetForSeedId(String id) {
     'seed-loop-spree-feierabend-60': 'assets/seeds/heroes/berlin-spree.jpg',
     'seed-loop-grunewald-kurz-60': 'assets/seeds/heroes/berlin-grunewald.jpg',
     'seed-loop-karlsruhe-hardtwald-60':
-        'assets/seeds/heroes/rn-heidelberg.jpg',
+        'assets/seeds/heroes/wm-karlsruhe.jpg',
     'seed-loop-karlsruhe-hardt-mtb-60':
-        'assets/seeds/heroes/rn-boxberg.jpg',
+        'assets/seeds/heroes/wm-karlsruhe.jpg',
+    'seed-loop-freiburg': 'assets/seeds/heroes/wm-freiburg.jpg',
+    'seed-loop-muenchen': 'assets/seeds/heroes/wm-muenchen.jpg',
+    'seed-loop-koeln': 'assets/seeds/heroes/wm-koeln.jpg',
+    'seed-loop-stuttgart': 'assets/seeds/heroes/wm-stuttgart.jpg',
+    'seed-loop-bodensee': 'assets/seeds/heroes/wm-bodensee.jpg',
+    'seed-loop-innsbruck': 'assets/seeds/heroes/wm-innsbruck.jpg',
+    'seed-loop-salzburg': 'assets/seeds/heroes/wm-salzburg.jpg',
+    'seed-loop-wien': 'assets/seeds/heroes/wm-wien.jpg',
+    'seed-loop-hamburg': 'assets/seeds/heroes/wm-hamburg.jpg',
   };
   final mapped = map[id];
   if (mapped != null) return mapped;
@@ -492,6 +506,32 @@ String? heroAssetForSeedId(String id) {
   bool has(String t) => tokens.contains(t);
   bool hasAffix(String needle) =>
       tokens.any((t) => t != 'seed' && (t == needle || t.endsWith(needle)));
+
+  if (has('karlsruhe') || has('hardt')) {
+    return 'assets/seeds/heroes/wm-karlsruhe.jpg';
+  }
+  if (has('freiburg')) return 'assets/seeds/heroes/wm-freiburg.jpg';
+  if (has('muenchen') || has('munich')) {
+    return 'assets/seeds/heroes/wm-muenchen.jpg';
+  }
+  if (has('koeln') || has('cologne')) return 'assets/seeds/heroes/wm-koeln.jpg';
+  if (has('stuttgart')) return 'assets/seeds/heroes/wm-stuttgart.jpg';
+  if (has('bodensee') || has('lindau') || has('konstanz')) {
+    return 'assets/seeds/heroes/wm-bodensee.jpg';
+  }
+  if (has('innsbruck')) return 'assets/seeds/heroes/wm-innsbruck.jpg';
+  if (has('salzburg')) return 'assets/seeds/heroes/wm-salzburg.jpg';
+  if (has('wien') || has('vienna')) return 'assets/seeds/heroes/wm-wien.jpg';
+  if (has('hamburg') || has('alster')) {
+    return 'assets/seeds/heroes/wm-hamburg.jpg';
+  }
+  if (has('heidelberg')) return 'assets/seeds/heroes/wm-heidelberg.jpg';
+  if (has('mannheim')) return 'assets/seeds/heroes/wm-mannheim.jpg';
+  if (has('tempelhofer') || has('tempelhof')) {
+    return 'assets/seeds/heroes/wm-tempelhofer.jpg';
+  }
+  if (has('grunewald')) return 'assets/seeds/heroes/wm-grunewald.jpg';
+  if (has('berlin')) return 'assets/seeds/heroes/wm-spree.jpg';
 
   if (has('mtb') ||
       has('emtb') ||

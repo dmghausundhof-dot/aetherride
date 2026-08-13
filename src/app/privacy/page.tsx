@@ -22,6 +22,8 @@ import {
   type ConsentPurpose,
 } from "@/lib/privacy/consents";
 import Link from "next/link";
+import { HOF_COPY } from "@/lib/home/hofCopy";
+import { HofPageHeader } from "@/components/hof/HofPageHeader";
 
 export default function PrivacyExportPage() {
   const rides = useAppStore((s) => s.rides);
@@ -170,15 +172,16 @@ export default function PrivacyExportPage() {
   return (
     <div className="flex flex-col gap-5 p-4 pt-6">
       <header>
-        <h1 className="text-2xl font-bold">Daten & Privatsphäre</h1>
-        <p className="text-sm text-text-secondary">
-          Export · Privatbereiche · Familie
-        </p>
+        <HofPageHeader
+          kicker={HOF_COPY.privacyKicker}
+          title={HOF_COPY.privacyTitle}
+          hint={HOF_COPY.privacyHint}
+        />
       </header>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Download className="h-4 w-4 text-accent" /> Export (Art. 20)
+          <Download className="h-4 w-4 text-chrome" /> Export (Art. 20)
         </h3>
         <div className="flex flex-col gap-2">
           <button
@@ -328,7 +331,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Shield className="h-4 w-4 text-accent" /> Einwilligungen
+          <Shield className="h-4 w-4 text-chrome" /> Einwilligungen
         </h3>
         {consents.map((c) => (
           <label
@@ -361,7 +364,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <MapIcon className="h-4 w-4 text-accent" /> Privatsphärenzonen
+          <MapIcon className="h-4 w-4 text-chrome" /> Privatsphärenzonen
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
           Tracks werden in diesen Radien für Heatmap/Export gekappt (Strava-Lehre).
@@ -393,7 +396,7 @@ export default function PrivacyExportPage() {
               radiusM: 150,
             })
           }
-          className="mt-1 text-sm text-accent"
+          className="mt-1 text-sm text-chrome"
         >
           + Beispiel-Zone „Arbeit“
         </button>
@@ -401,7 +404,7 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Users className="h-4 w-4 text-accent" /> Familien-Garage
+          <Users className="h-4 w-4 text-chrome" /> Familien-Garage
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
           Ein Bike, mehrere Fahrer mit eigenen Setups.
@@ -449,7 +452,7 @@ export default function PrivacyExportPage() {
         </div>
       </section>
 
-      <Link href="/profile" className="text-center text-sm text-accent">
+      <Link href="/profile" className="text-center text-sm text-chrome">
         ← Profil
       </Link>
     </div>

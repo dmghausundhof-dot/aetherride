@@ -2,14 +2,14 @@
   "id": "stuttgart",
   "name": "Stuttgart / Mittlerer Neckar",
   "bbox": [
-    9.0,
+    9,
     48.6,
     9.4,
     48.9
   ],
   "osm": {
-    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/stuttgart-regbez-latest.osm.pbf",
-    "note": "Regierungsbezirk Stuttgart, auf bbox clippen."
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

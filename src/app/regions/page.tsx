@@ -23,8 +23,8 @@ export default function RegionsIndexPage() {
             Regionen
           </h1>
           <p className="mt-3 max-w-2xl text-text-secondary">
-            Redaktionelle Tour-Ideen nach Gebiet — Rennrad, Gravel, MTB, City und
-            Touring gleichwertig. Plane am Desktop unter Touren/Planen, fahre in der App.
+            Redaktionelle Tour-Ideen nach Gebiet. Die Stunde vor dem Tor kommt
+            aus echten Nähe-Seeds — Hamburg Alster, nicht pauschal Alpen.
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {regions.map((r) => {
@@ -33,7 +33,7 @@ export default function RegionsIndexPage() {
                 <Link
                   key={r.slug}
                   href={`/regions/${r.slug}`}
-                  className="rounded-2xl border border-border bg-surface p-6 transition hover:border-accent/40"
+                  className="rounded-2xl border border-border bg-surface p-6 transition hover:border-chrome/40"
                 >
                   <p className="text-[11px] font-medium uppercase tracking-wide text-text-secondary">
                     {r.country}

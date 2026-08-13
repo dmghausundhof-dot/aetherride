@@ -34,7 +34,7 @@ void main() {
     expect(find.text('E-MTB'), findsOneWidget);
     expect(find.text('Alles in Ordnung'), findsOneWidget);
     expect(find.textContaining('120 km'), findsOneWidget);
-    expect(find.textContaining('2 Teile'), findsOneWidget);
+    expect(find.textContaining('2 Teile'), findsNothing);
   });
 
   testWidgets('BikeOverviewCard zeigt Primär-CTA', (tester) async {

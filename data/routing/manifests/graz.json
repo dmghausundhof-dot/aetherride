@@ -1,0 +1,24 @@
+{
+  "id": "graz",
+  "name": "Graz / Murtal",
+  "bbox": [
+    15.35,
+    47.02,
+    15.52,
+    47.12
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "graz.tar.zst",
+    "packGz": "graz.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

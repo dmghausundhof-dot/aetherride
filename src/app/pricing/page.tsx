@@ -16,17 +16,17 @@ const rows: {
   free: boolean | string;
   pro: boolean | string;
 }[] = [
-  { feature: "Touren & öffentliche Routen", free: true, pro: true },
-  { feature: "Desktop Planner & Bibliothek", free: true, pro: true },
-  { feature: "1 Bike in der Garage", free: true, pro: true },
-  { feature: "Multi-Bike-Garage", free: false, pro: true },
+  { feature: "Karte & öffentliche Routen", free: true, pro: true },
+  { feature: "Planen auf der Karte", free: true, pro: true },
+  { feature: "1 Rad in der Werkstatt", free: true, pro: true },
+  { feature: "Mehrere Räder", free: false, pro: true },
   { feature: "Kompatibilität & Setup-Basis", free: true, pro: true },
   { feature: "Bracketing-Auswertung", free: false, pro: true },
   { feature: "E-Bike-Reichweite (Spanne)", free: false, pro: true },
   { feature: "Erweiterte Offline-Packs", free: false, pro: true },
   { feature: "KI-Chat (höheres Limit)", free: "5/Tag", pro: "50/Tag" },
   { feature: "App-Navigation & Sensoren", free: true, pro: true },
-  { feature: "Shop mit Kompat-Urteil", free: true, pro: true },
+  { feature: "Shop-Gateway (Shopify)", free: true, pro: true },
 ];
 
 function Cell({ value }: { value: boolean | string }) {
@@ -64,14 +64,14 @@ export default function PricingPage() {
               Touren, Planen, 1 Bike, App-Navigation
             </p>
             <Link
-              href="/discover"
+              href="/home"
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-border py-3 text-sm font-semibold"
             >
-              Kostenlos starten
+              Zum Hof
             </Link>
           </div>
-          <div className="rounded-2xl border border-accent/50 bg-accent/10 p-6 text-left ring-1 ring-accent/30">
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+          <div className="rounded-2xl border border-chrome/40 bg-chrome/10 p-6 text-left">
+            <p className="text-xs font-semibold uppercase tracking-wide text-chrome">
               Empfohlen
             </p>
             <h2 className="mt-1 text-xl font-bold">Pro</h2>
@@ -86,7 +86,7 @@ export default function PricingPage() {
             </p>
             <Link
               href="/profile"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-accent py-3 text-sm font-semibold text-white hover:bg-accent-hover"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-chrome py-3 text-sm font-semibold text-background"
             >
               Pro freischalten
             </Link>
@@ -131,11 +131,11 @@ export default function PricingPage() {
           </div>
           <p className="mt-6 text-xs text-text-secondary">
             Details zu Daten und Abo:{" "}
-            <Link href="/legal/datenschutz" className="text-accent hover:underline">
+            <Link href="/legal/datenschutz" className="text-chrome hover:underline">
               Datenschutz
             </Link>
             {" · "}
-            <Link href="/guides/web-vs-app" className="text-accent hover:underline">
+            <Link href="/guides/web-vs-app" className="text-chrome hover:underline">
               Web vs. App
             </Link>
           </p>

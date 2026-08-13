@@ -29,7 +29,7 @@ const reasons = [
 export const metadata = {
   title: "App laden – AetherRide",
   description:
-    "AetherRide für Android und iOS: Navigation, Offline und Sensoren. Die Website bleibt dein Planungs-Cockpit.",
+    "AetherRide für Android und iOS: Navigation, Offline und Sensoren. Der Hof bleibt im Browser.",
 };
 
 export default function DownloadPage() {
@@ -42,15 +42,15 @@ export default function DownloadPage() {
             Die App für unterwegs
           </h1>
           <p className="mt-4 text-lg text-text-secondary">
-            Planen und Garage laufen im Browser. Fahren, navigieren und Sensoren
-            — nur in der nativen App.
+            Der Hof, die Karte und die Werkstatt laufen im Browser. Rausfahren
+            mit HUD, Uhr koppeln und Sensoren — nur in der nativen App.
           </p>
           <div className="mt-10 flex justify-center">
             <AppDownloadButtons size="lg" />
           </div>
           <p className="mt-4 text-xs text-text-secondary">
-            Navigation und Sensoren nur in der App. Touren und Garage laufen im
-            Web.
+            Navigation und Sensoren nur in der App. Hof, Karte und Werkstatt
+            laufen im Web.
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export default function DownloadPage() {
               key={r.title}
               className="rounded-2xl border border-border bg-surface p-6 text-left"
             >
-              <r.icon className="h-6 w-6 text-accent" />
+              <r.icon className="h-6 w-6 text-chrome" />
               <h2 className="mt-3 font-semibold">{r.title}</h2>
               <p className="mt-1 text-sm text-text-secondary">{r.body}</p>
             </div>
@@ -70,9 +70,9 @@ export default function DownloadPage() {
         <div className="mx-auto mt-12 max-w-xl text-center">
           <Link
             href="/discover"
-            className="text-sm font-semibold text-accent hover:underline"
+            className="text-sm font-semibold text-chrome hover:underline"
           >
-            Zuerst Touren im Web planen →
+            Zuerst die Karte im Web öffnen →
           </Link>
         </div>
       </main>

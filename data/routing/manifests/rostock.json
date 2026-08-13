@@ -1,0 +1,24 @@
+{
+  "id": "rostock",
+  "name": "Rostock / Warnow",
+  "bbox": [
+    12,
+    54.05,
+    12.25,
+    54.22
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "rostock.tar.zst",
+    "packGz": "rostock.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

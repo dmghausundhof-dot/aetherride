@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Activity, Bike, ChevronRight, Smartphone } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
+import { HOF_COPY } from "@/lib/home/hofCopy";
 
 export default function ActivitiesPage() {
   const rides = useAppStore((s) => s.rides);
@@ -22,39 +23,38 @@ export default function ActivitiesPage() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Aktivitäten</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{HOF_COPY.activitiesTitle}</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Rides aus der App analysieren — Aufzeichnung nur nativ.
+            {HOF_COPY.activitiesHint}
           </p>
         </div>
         <Link
           href="/download"
           className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium"
         >
-          <Smartphone className="h-3.5 w-3.5 text-accent" /> App laden
+          <Smartphone className="h-3.5 w-3.5 text-chrome" /> App laden
         </Link>
       </header>
 
       {sorted.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center">
           <Activity className="mx-auto h-10 w-10 text-text-secondary" />
-          <h2 className="mt-4 font-semibold">Noch keine Fahrten</h2>
+          <h2 className="mt-4 font-semibold">{HOF_COPY.activitiesEmpty}</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-text-secondary">
-            Nimm Rides in der App auf und sync dein Konto — hier erscheinen
-            Stats, Karte und Setup-Hinweise.
+            {HOF_COPY.activitiesEmptyHint}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/download"
-              className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white"
+              className="rounded-xl bg-chrome px-4 py-2.5 text-sm font-semibold text-background"
             >
               App öffnen
             </Link>
             <Link
-              href="/planner"
+              href="/discover"
               className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium"
             >
-              Tour planen
+              Zur Karte
             </Link>
           </div>
         </div>
@@ -66,9 +66,9 @@ export default function ActivitiesPage() {
               <li key={ride.id}>
                 <Link
                   href={`/activities/${ride.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-accent/40"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-chrome/40"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/25 text-accent">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/25 text-chrome">
                     <Bike className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">

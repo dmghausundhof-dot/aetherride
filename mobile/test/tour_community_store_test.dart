@@ -45,4 +45,44 @@ void main() {
     expect(parsed.reviews, isEmpty);
     expect(parsed.photoUrls, isEmpty);
   });
+
+  test('parseCloudPayload skips reviews without a real 1–5 rating', () {
+    final parsed = TourCommunityStore.parseCloudPayload(
+      {
+        'reviews': [
+          {'id': 'ok', 'rating': 5, 'body': 'Top', 'author_label': 'A'},
+          {'id': 'no-rating', 'body': 'ohne Sterne'},
+          {'id': 'bad', 'rating': 9, 'body': 'fake'},
+        ],
+        'photos': <Object>[],
+      },
+      't1',
+    );
+    expect(parsed.reviews, hasLength(1));
+    expect(parsed.reviews.single.rating, 5);
+  });
+
+  test('TourCommunityCounts never invents an average', () {
+    final empty = TourCommunityCounts.fromPayload({
+      'reviews': <Object>[],
+      'photos': <Object>[],
+      'stub': false,
+    });
+    expect(empty.hasCommunity, isFalse);
+    expect(empty.averageRating, isNull);
+    expect(TourCommunityCounts.emptyCopy, contains('erste'));
+
+    final live = TourCommunityCounts.fromPayload({
+      'reviewCount': 2,
+      'photoCount': 3,
+      'reviews': [
+        {'rating': 5},
+        {'rating': 3},
+      ],
+    });
+    expect(live.reviewCount, 2);
+    expect(live.photoCount, 3);
+    expect(live.averageRating, 4);
+    expect(live.hasCommunity, isTrue);
+  });
 }

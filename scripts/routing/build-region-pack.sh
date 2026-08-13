@@ -2,12 +2,13 @@
 # Build regional Valhalla tile extract + offline_graph from same OSM coverage.
 # Requires: docker (gis-ops valhalla + iboates/osmium)
 #
-# Prefer small Overpass extract for demo bboxes (USE_OVERPASS=1, default).
-# Set USE_GEOFABRIK=1 for full Land PBF + osmium clip.
+# Prefer Geofabrik PBF + osmium (GRAPH_SOURCE=geofabrik, default).
+# Overpass is flaky on large DACH bboxes: GRAPH_SOURCE=overpass
 #
 # Usage:
 #   ./scripts/routing/build-region-pack.sh data/routing/regions/schwarzwald-nord.json
 #   SKIP_TILES=1 ./scripts/routing/build-region-pack.sh ...
+#   GRAPH_SOURCE=overpass ./scripts/routing/build-region-pack.sh ...
 #   # Graph-only wrapper (same as SKIP_TILES=1):
 #   ./scripts/routing/build-graph-only-pack.sh data/routing/regions/rhein-neckar.json
 #
@@ -22,8 +23,17 @@ mkdir -p "$OUT" "$CUSTOM_FILES"
 
 echo "==> Region $REGION_ID → $OUT"
 
-echo "==> offline_graph (Overpass / OSM)"
-node "$ROOT/scripts/routing/osm-to-offline-graph.mjs" "$REGION_FILE" --out "$OUT/offline_graph.json"
+GRAPH_SOURCE="${GRAPH_SOURCE:-geofabrik}"
+if [[ "$GRAPH_SOURCE" == "geofabrik" ]]; then
+  echo "==> offline_graph via Geofabrik PBF (no Overpass)"
+  "$ROOT/scripts/routing/prepare-pbf-geojson.sh" "$REGION_FILE"
+  NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}" \
+    node "$ROOT/scripts/routing/osm-to-offline-graph.mjs" "$REGION_FILE" \
+    --geojson "$OUT/highways.geojson" --out "$OUT/offline_graph.json"
+else
+  echo "==> offline_graph (Overpass / OSM)"
+  node "$ROOT/scripts/routing/osm-to-offline-graph.mjs" "$REGION_FILE" --out "$OUT/offline_graph.json"
+fi
 
 PBF_URL="$(python3 -c "import json;print(json.load(open('$REGION_FILE'))['osm']['geofabrik'])")"
 BBOX="$(python3 -c "import json;b=json.load(open('$REGION_FILE'))['bbox'];print(f\"{b[0]},{b[1]},{b[2]},{b[3]}\")")"
@@ -41,14 +51,16 @@ else
         echo "==> Download Geofabrik extract"
         curl -L --fail -o "$PBF_FULL" "$PBF_URL"
       fi
-      if command -v osmium >/dev/null 2>&1; then
-        echo "==> Clip PBF to bbox $BBOX"
-        osmium extract -b "$BBOX" "$PBF_FULL" -o "$PBF_CLIP" --overwrite
+      # `command -v osmium` matches a bash function — use type -P for the real binary.
+      HOST_OSMIUM="$(type -P osmium 2>/dev/null || true)"
+      if [[ -n "$HOST_OSMIUM" ]]; then
+        echo "==> Clip PBF to bbox $BBOX ($HOST_OSMIUM)"
+        "$HOST_OSMIUM" extract -b "$BBOX" "$PBF_FULL" -o "$PBF_CLIP" --overwrite
       else
         echo "==> Clip PBF via docker iboates/osmium"
         docker pull iboates/osmium:latest
         # entrypoint is already `osmium`
-        docker run --rm -v "$CUSTOM_FILES:/data" iboates/osmium:latest \
+        docker run --rm -u "$(id -u):$(id -g)" -v "$CUSTOM_FILES:/data" iboates/osmium:latest \
           extract -b "$BBOX" /data/$(basename "$PBF_FULL") -o /data/$(basename "$PBF_CLIP") --overwrite
       fi
     else
@@ -209,16 +221,36 @@ manifests.mkdir(parents=True, exist_ok=True)
 print(json.dumps(manifest, indent=2))
 PY
 
-# Dev serve convenience: symlink/copy into public/offline/<id>/
+# Dev serve: copy small artifacts into public/offline/<id>/.
+# public/offline is gitignored, but skip huge graphs so a local Vercel upload
+# cannot ship tens of MB. Full binaries stay in gitignored dist/.
 PUBLIC_OFFLINE="$ROOT/public/offline/$REGION_ID"
 mkdir -p "$PUBLIC_OFFLINE"
+MAX_PUBLIC_BYTES=$((1 * 1024 * 1024))
+copy_public() {
+  local src="$1"
+  local dest="$2"
+  local sz
+  sz=$(wc -c < "$src")
+  if [[ "$sz" -gt "$MAX_PUBLIC_BYTES" ]]; then
+    echo "==> skip public copy $(basename "$src") ($sz bytes) — dist/ only"
+    rm -f "$dest"
+    return
+  fi
+  cp -f "$src" "$dest"
+}
 for f in offline_graph.json valhalla.json manifest.json; do
   if [[ -f "$OUT/$f" ]]; then
-    cp -f "$OUT/$f" "$PUBLIC_OFFLINE/$f"
+    copy_public "$OUT/$f" "$PUBLIC_OFFLINE/$f"
   fi
 done
 for f in "$OUT"/*.tar.gz "$OUT"/*.tar.zst; do
-  [[ -f "$f" ]] && cp -f "$f" "$PUBLIC_OFFLINE/$(basename "$f")"
+  [[ -f "$f" ]] && copy_public "$f" "$PUBLIC_OFFLINE/$(basename "$f")"
 done
+
+if [[ "${SKIP_OVERLAY:-}" != "1" ]]; then
+  echo "==> bike overlay (PMTiles) — SKIP_OVERLAY=1 to skip"
+  "$ROOT/scripts/routing/build-bike-overlay.sh" "$REGION_FILE" || echo "==> overlay build failed (non-fatal)" >&2
+fi
 
 echo "==> Done: $OUT (public mirror: $PUBLIC_OFFLINE)"

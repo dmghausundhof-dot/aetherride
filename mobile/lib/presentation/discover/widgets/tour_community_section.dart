@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../../core/config.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../data/community/tour_community_store.dart';
@@ -25,6 +28,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
   final _bodyCtrl = TextEditingController();
   final _nameCtrl = TextEditingController(text: 'Du');
   List<TourCommunityReview> _reviews = const [];
+  List<String> _cloudPhotos = const [];
   double? _avg;
   int _rating = 4;
   bool _loading = true;
@@ -55,13 +59,15 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
 
   Future<void> _reload() async {
     setState(() => _loading = true);
-    final list = await _store.mergeCloud(widget.tourId);
+    final bundle = await _store.mergeCloudBundle(widget.tourId);
+    final list = bundle.reviews;
     final avg = list.isEmpty
         ? null
         : list.fold<int>(0, (a, r) => a + r.rating) / list.length;
     if (!mounted) return;
     setState(() {
       _reviews = list;
+      _cloudPhotos = bundle.photoUrls;
       _avg = avg;
       _loading = false;
     });
@@ -103,8 +109,12 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
       await _reload();
       if (mounted) {
         final msg = switch (cloud) {
+          CloudSubmitResult.approved =>
+            'Gespeichert — veröffentlicht (AI-Freigabe)',
+          CloudSubmitResult.rejected =>
+            'Lokal gespeichert — Cloud hat den Text abgelehnt',
           CloudSubmitResult.pending =>
-            'Gespeichert — lokal und zur Freigabe gesendet',
+            'Gespeichert — lokal und in Prüfung (AI/Mensch)',
           CloudSubmitResult.localOnly =>
             'Gespeichert — lokal (Cloud nach Login)',
           CloudSubmitResult.failed =>
@@ -132,7 +142,8 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
             ),
             if (_avg != null)
               Text(
-                '★ ${_avg!.toStringAsFixed(1)} · ${_reviews.length}',
+                '★ ${_avg!.toStringAsFixed(1)} · ${_reviews.length}'
+                '${_cloudPhotos.isNotEmpty ? ' · ${_cloudPhotos.length} Fotos' : ''}',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -143,18 +154,38 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Sterne, Kommentar und Fotos — wie bei Komoot. Andere sehen Cloud-Reviews, sobald sie freigegeben sind.',
+          'Sterne, Kommentar und Fotos — Cloud nach Freigabe. Keine erfundenen Bewertungen.',
           style: TextStyle(fontSize: 12, color: AppColors.muted),
         ),
-        const SizedBox(height: AppSpacing.m),
+        const SizedBox(height: AppSpacing.s),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              final url =
+                  '${AppConfig.productionApiBaseUrl}/tours/${Uri.encodeComponent(widget.tourId)}';
+              unawaited(
+                SharePlus.instance.share(
+                  ShareParams(
+                    text: 'Tour auf AetherRide: $url',
+                    subject: 'Tour teilen',
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.ios_share, size: 16),
+            label: const Text('Teilen'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
         if (_loading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.m),
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           )
-        else if (_reviews.isEmpty)
+        else if (_reviews.isEmpty && _cloudPhotos.isEmpty)
           const Text(
-            'Noch keine Bewertungen — sei die/der Erste.',
+            TourCommunityCounts.emptyCopy,
             style: TextStyle(fontSize: 13, color: AppColors.muted),
           )
         else
@@ -170,10 +201,25 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
           ],
         const SizedBox(height: AppSpacing.m),
         if (!_compose)
-          OutlinedButton.icon(
-            onPressed: () => setState(() => _compose = true),
-            icon: const Icon(Icons.star_outline, size: 18),
-            label: const Text('Bewertung schreiben'),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => _compose = true),
+                  icon: const Icon(Icons.star_outline, size: 18),
+                  label: const Text('Bewertung schreiben'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _compose = true);
+                  unawaited(_pickPhoto());
+                },
+                icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                label: const Text('Foto'),
+              ),
+            ],
           )
         else ...[
           const Text(

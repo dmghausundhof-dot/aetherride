@@ -1,0 +1,27 @@
+{
+  "id": "saarbruecken",
+  "name": "Saarbrücken",
+  "bbox": [
+    6.9,
+    49.2,
+    7.1,
+    49.3
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/saarbruecken",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "saarbruecken.tar.zst"
+  }
+}

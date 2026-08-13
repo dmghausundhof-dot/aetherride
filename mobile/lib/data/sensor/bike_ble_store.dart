@@ -8,21 +8,29 @@ import 'package:path_provider/path_provider.dart';
 /// verbindet automatisch). JSON-Datei statt Drift-Migration — das Mapping ist
 /// klein, gerätelokal und unkritisch.
 class BikeBleDevice {
-  const BikeBleDevice({required this.deviceId, this.name});
+  const BikeBleDevice({required this.deviceId, this.name, this.kind});
 
   final String deviceId;
   final String? name;
+  /// `bosch` | `shimano` | `yamaha` | `csc` | `power` | `otherDrive`
+  final String? kind;
 
   Map<String, dynamic> toJson() => {
         'deviceId': deviceId,
         if (name != null) 'name': name,
+        if (kind != null) 'kind': kind,
       };
 
   static BikeBleDevice? fromJson(Object? raw) {
     if (raw is! Map) return null;
     final id = raw['deviceId'];
     if (id is! String || id.isEmpty) return null;
-    return BikeBleDevice(deviceId: id, name: raw['name'] as String?);
+    final kind = raw['kind'];
+    return BikeBleDevice(
+      deviceId: id,
+      name: raw['name'] as String?,
+      kind: kind is String && kind.isNotEmpty ? kind : null,
+    );
   }
 }
 
@@ -82,5 +90,36 @@ class BikeBleStore {
     final map = Map<String, BikeBleDevice>.from(await _load());
     map.remove(bikeId);
     await _save(map);
+  }
+
+  /// Rider-level smartwatch / HR strap — not a bike part, separate file
+  /// so pairing a watch never overwrites the CSC mapping or the bike record.
+  Future<File> _watchFile() async {
+    final dir = await _dirProvider();
+    return File(p.join(dir.path, 'watch_ble_device.json'));
+  }
+
+  Future<BikeBleDevice?> savedWatch() async {
+    try {
+      final f = await _watchFile();
+      if (!await f.exists()) return null;
+      return BikeBleDevice.fromJson(jsonDecode(await f.readAsString()));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveWatch(BikeBleDevice device) async {
+    try {
+      final f = await _watchFile();
+      await f.writeAsString(jsonEncode(device.toJson()));
+    } catch (_) {}
+  }
+
+  Future<void> removeWatch() async {
+    try {
+      final f = await _watchFile();
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
   }
 }

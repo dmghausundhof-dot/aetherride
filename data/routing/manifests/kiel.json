@@ -1,0 +1,24 @@
+{
+  "id": "kiel",
+  "name": "Kiel / Förde",
+  "bbox": [
+    9.95,
+    54.25,
+    10.2,
+    54.4
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "kiel.tar.zst",
+    "packGz": "kiel.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

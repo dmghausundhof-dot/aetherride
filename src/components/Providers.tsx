@@ -23,11 +23,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Marketing `/` must stay clean on true-cold visits — never mount the
-  // first-visit sheet there. App routes (/discover, /home, …) may still show it.
-  const isMarketingLanding = pathname === "/";
-  // Kein Auto-Demo-Bike/Ride — leere Garage nach Freeride/Skip bleibt leer.
-  const showOnboarding = ready && !onboardingDone && !isMarketingLanding;
+  // Marketing, Legal und Checkout bleiben lesbar — Overlay nur auf Kernflows.
+  const hideOnboarding =
+    pathname === "/" ||
+    pathname.startsWith("/legal") ||
+    pathname === "/privacy" ||
+    pathname.startsWith("/privacy/") ||
+    pathname === "/checkout" ||
+    pathname.startsWith("/checkout/") ||
+    pathname === "/pricing" ||
+    pathname === "/download";
+  const showOnboarding = ready && !onboardingDone && !hideOnboarding;
 
   return (
     <SyncProvider>

@@ -32,11 +32,12 @@ const HIGHWAYS = new Set([
 ]);
 
 function parseArgs(argv) {
-  const out = { region: null, input: null, outPath: null };
+  const out = { region: null, input: null, outPath: null, geojson: null };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--input") out.input = argv[++i];
     else if (a === "--out") out.outPath = argv[++i];
+    else if (a === "--geojson") out.geojson = argv[++i];
     else if (!a.startsWith("-")) out.region = a;
   }
   return out;
@@ -57,6 +58,90 @@ function haversineM(lat1, lng1, lat2, lng2) {
     Math.sin(dp / 2) ** 2 +
     Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/** Avoid Math.min(...arr) — spreading 80k+ coords exceeds V8 argument limits. */
+function bboxOf(nodes) {
+  if (!nodes.length) return [0, 0, 0, 0];
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+  for (const n of nodes) {
+    if (n.lng < minLng) minLng = n.lng;
+    if (n.lat < minLat) minLat = n.lat;
+    if (n.lng > maxLng) maxLng = n.lng;
+    if (n.lat > maxLat) maxLat = n.lat;
+  }
+  return [minLng, minLat, maxLng, maxLat];
+}
+
+function trimConnected(nodes, edges, maxNodes, maxEdges, seedLat, seedLng) {
+  if (nodes.length <= maxNodes && edges.length <= maxEdges) {
+    return { nodes, edges };
+  }
+  const adj = new Map();
+  for (const e of edges) {
+    if (!adj.has(e.from)) adj.set(e.from, []);
+    if (!adj.has(e.to)) adj.set(e.to, []);
+    adj.get(e.from).push(e.to);
+    adj.get(e.to).push(e.from);
+  }
+  const clat =
+    seedLat ?? nodes.reduce((s, n) => s + n.lat, 0) / nodes.length;
+  const clng =
+    seedLng ?? nodes.reduce((s, n) => s + n.lng, 0) / nodes.length;
+  const ranked = [...nodes].sort(
+    (a, b) =>
+      (a.lat - clat) ** 2 +
+      (a.lng - clng) ** 2 -
+      ((b.lat - clat) ** 2 + (b.lng - clng) ** 2)
+  );
+
+  const keep = new Set();
+  const MIN_COMPONENT = 64;
+
+  function component(seed) {
+    const out = [];
+    const seen = new Set([seed]);
+    const q = [seed];
+    let qi = 0;
+    while (qi < q.length) {
+      const cur = q[qi++];
+      out.push(cur);
+      for (const nxt of adj.get(cur) || []) {
+        if (seen.has(nxt) || keep.has(nxt)) continue;
+        seen.add(nxt);
+        q.push(nxt);
+      }
+    }
+    return out;
+  }
+
+  for (const n of ranked) {
+    if (keep.size >= maxNodes) break;
+    if (keep.has(n.id)) continue;
+    const comp = component(n.id);
+    if (comp.length < MIN_COMPONENT && keep.size > 0) continue;
+    for (const id of comp) {
+      keep.add(id);
+      if (keep.size >= maxNodes) break;
+    }
+  }
+
+  if (keep.size === 0) {
+    for (const n of ranked) {
+      keep.add(n.id);
+      if (keep.size >= maxNodes) break;
+    }
+  }
+
+  return {
+    nodes: nodes.filter((n) => keep.has(n.id)),
+    edges: edges
+      .filter((e) => keep.has(e.from) && keep.has(e.to))
+      .slice(0, maxEdges),
+  };
 }
 
 function mtbScale(tags) {
@@ -84,20 +169,30 @@ out skel qt;
 `;
   const endpoints = [
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
   ];
   let lastErr;
   for (const url of endpoints) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        body: query,
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
-      if (!res.ok) throw new Error(`${url} ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      lastErr = err;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: `data=${encodeURIComponent(query)}`,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          signal: AbortSignal.timeout(180_000),
+        });
+        if (res.status === 429 || res.status === 504) {
+          lastErr = new Error(`${url} ${res.status}`);
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+          continue;
+        }
+        if (!res.ok) throw new Error(`${url} ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
     }
   }
   throw lastErr;
@@ -153,56 +248,13 @@ function buildGraph(osm, opts = {}) {
   });
 
   if (nodes.length > maxNodes || edges.length > maxEdges) {
-    // Keep a spatially central connected subgraph (BFS), not "first N edges".
-    const adj = new Map();
-    for (const e of edges) {
-      if (!adj.has(e.from)) adj.set(e.from, []);
-      if (!adj.has(e.to)) adj.set(e.to, []);
-      adj.get(e.from).push(e.to);
-      adj.get(e.to).push(e.from);
-    }
-    const clat = nodes.reduce((s, n) => s + n.lat, 0) / nodes.length;
-    const clng = nodes.reduce((s, n) => s + n.lng, 0) / nodes.length;
-    let seed = nodes[0].id;
-    let best = Infinity;
-    for (const n of nodes) {
-      const d = (n.lat - clat) ** 2 + (n.lng - clng) ** 2;
-      if (d < best) {
-        best = d;
-        seed = n.id;
-      }
-    }
-    const keep = new Set();
-    const q = [seed];
-    keep.add(seed);
-    while (q.length && keep.size < maxNodes) {
-      const cur = q.shift();
-      for (const nxt of adj.get(cur) || []) {
-        if (keep.has(nxt)) continue;
-        keep.add(nxt);
-        q.push(nxt);
-        if (keep.size >= maxNodes) break;
-      }
-    }
-    nodes = nodes.filter((n) => keep.has(n.id));
-    const filtered = edges
-      .filter((e) => keep.has(e.from) && keep.has(e.to))
-      .slice(0, maxEdges);
+    const trimmed = trimConnected(nodes, edges, maxNodes, maxEdges);
+    nodes = trimmed.nodes;
     edges.length = 0;
-    edges.push(...filtered);
+    edges.push(...trimmed.edges);
   }
 
-  const lats = nodes.map((n) => n.lat);
-  const lngs = nodes.map((n) => n.lng);
-  const bbox =
-    nodes.length > 0
-      ? [
-          Math.min(...lngs),
-          Math.min(...lats),
-          Math.max(...lngs),
-          Math.max(...lats),
-        ]
-      : [0, 0, 0, 0];
+  const bbox = bboxOf(nodes);
 
   return {
     version: 1,
@@ -210,6 +262,87 @@ function buildGraph(osm, opts = {}) {
     bbox,
     nodes,
     edges,
+  };
+}
+
+function nodeId(lat, lng) {
+  return `n${Math.round(lat * 1e7)}_${Math.round(lng * 1e7)}`;
+}
+
+/** GeoJSON from osmium export (LineString highways) → same graph shape. */
+function buildGraphFromGeojson(fc, opts = {}) {
+  const maxNodes = opts.maxNodes ?? 25000;
+  const maxEdges = opts.maxEdges ?? 40000;
+  const features = Array.isArray(fc?.features) ? fc.features : [];
+  const nodeMap = new Map();
+  const edges = [];
+
+  for (const f of features) {
+    const tags = f.properties || {};
+    const hw = tags.highway;
+    if (!HIGHWAYS.has(hw)) continue;
+    const g = f.geometry;
+    if (!g || (g.type !== "LineString" && g.type !== "MultiLineString")) continue;
+    const lines =
+      g.type === "LineString" ? [g.coordinates] : g.coordinates || [];
+    for (const coords of lines) {
+      if (!Array.isArray(coords) || coords.length < 2) continue;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const a = coords[i];
+        const b = coords[i + 1];
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length < 2 || b.length < 2) {
+          continue;
+        }
+        const lng1 = Number(a[0]);
+        const lat1 = Number(a[1]);
+        const lng2 = Number(b[0]);
+        const lat2 = Number(b[1]);
+        if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) continue;
+        const length_m = haversineM(lat1, lng1, lat2, lng2);
+        if (length_m < 1 || length_m > 5000) continue;
+        const from = nodeId(lat1, lng1);
+        const to = nodeId(lat2, lng2);
+        if (from === to) continue;
+        nodeMap.set(from, { id: from, lat: lat1, lng: lng1 });
+        nodeMap.set(to, { id: to, lat: lat2, lng: lng2 });
+        edges.push({
+          from,
+          to,
+          length_m: Math.round(length_m * 10) / 10,
+          highway: hw,
+          mtb_scale: mtbScale(tags),
+          surface: surface(tags),
+          bidirectional: tags.oneway !== "yes" && tags.oneway !== "1",
+        });
+      }
+    }
+  }
+
+  console.error(
+    `geojson features=${features.length} collected nodes=${nodeMap.size} edges=${edges.length}`
+  );
+  let nodes = [...nodeMap.values()];
+  let keptEdges = edges;
+  if (nodes.length > maxNodes || keptEdges.length > maxEdges) {
+    const trimmed = trimConnected(
+      nodes,
+      keptEdges,
+      maxNodes,
+      maxEdges,
+      opts.seedLat,
+      opts.seedLng
+    );
+    nodes = trimmed.nodes;
+    keptEdges = trimmed.edges;
+  }
+  console.error(`trimmed nodes=${nodes.length} edges=${keptEdges.length}`);
+
+  return {
+    version: 1,
+    source: "osm-geofabrik",
+    bbox: bboxOf(nodes),
+    nodes,
+    edges: keptEdges,
   };
 }
 
@@ -224,20 +357,27 @@ async function main() {
   }
 
   let osm;
-  if (args.input) {
+  let graph;
+  const graphOpts = {
+    maxNodes: region.graph?.maxNodes ?? 20000,
+    maxEdges: region.graph?.maxEdges ?? 35000,
+    seedLat: (region.bbox[1] + region.bbox[3]) / 2,
+    seedLng: (region.bbox[0] + region.bbox[2]) / 2,
+  };
+  if (args.geojson) {
+    const fc = JSON.parse(fs.readFileSync(args.geojson, "utf8"));
+    graph = buildGraphFromGeojson(fc, graphOpts);
+  } else if (args.input) {
     osm = JSON.parse(fs.readFileSync(args.input, "utf8"));
+    graph = buildGraph(osm, graphOpts);
   } else if (fs.existsSync("/tmp/overpass.json")) {
-    // reuse recent fetch if present and bbox matches roughly
     osm = JSON.parse(fs.readFileSync("/tmp/overpass.json", "utf8"));
+    graph = buildGraph(osm, graphOpts);
   } else {
     console.error("Fetching Overpass for", region.id, region.bbox);
     osm = await fetchOverpass(region.bbox);
+    graph = buildGraph(osm, graphOpts);
   }
-
-  const graph = buildGraph(osm, {
-    maxNodes: region.graph?.maxNodes ?? 20000,
-    maxEdges: region.graph?.maxEdges ?? 35000,
-  });
 
   const outPath =
     args.outPath ||

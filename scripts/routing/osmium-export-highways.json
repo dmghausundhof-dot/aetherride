@@ -1,0 +1,17 @@
+{
+  "attributes": {
+    "type": true,
+    "id": true
+  },
+  "linear_tags": [
+    "highway",
+    "surface",
+    "tracktype",
+    "mtb:scale",
+    "mtb:scale:imba",
+    "oneway"
+  ],
+  "area_tags": false,
+  "exclude_tags": [],
+  "include_ids": true
+}

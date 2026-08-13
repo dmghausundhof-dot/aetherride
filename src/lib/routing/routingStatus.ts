@@ -5,7 +5,7 @@
 
 export type RoutingStatusPayload = {
   configured: boolean;
-  engine: "valhalla" | "osrm" | "graphhopper" | "demo";
+  engine: "valhalla" | "osrm" | "graphhopper" | "openrouteservice" | "demo";
   /** Nur true nach manuellem Smoke (NEXT_PUBLIC_ROUTING_LIVE). */
   liveVerified: boolean;
   notice: string | null;

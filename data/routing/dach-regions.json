@@ -1,0 +1,896 @@
+{
+  "version": 1,
+  "note": "Single source of truth for DACH overlay + offline pack stubs. Packs keep historic bboxes. Envelopes fill holes so every in-DACH GPS has a named region. Live routing is OpenRouteService/GraphHopper — packs are optional.",
+  "regions": [
+    {
+      "id": "rhein-neckar",
+      "name": "Rhein-Neckar / Heidelberg",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [8.2, 49.2, 9.0, 49.6],
+      "center": [8.68, 49.41],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+      "sports": ["road", "urban", "gravel"]
+    },
+    {
+      "id": "schwarzwald-nord",
+      "name": "Schwarzwald Süd",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [7.7, 47.8, 8.2, 48.15],
+      "center": [7.95, 47.98],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/freiburg-regbez-latest.osm.pbf",
+      "sports": ["mtb", "gravel", "ebike"]
+    },
+    {
+      "id": "bodensee",
+      "name": "Bodensee",
+      "country": "DE/AT/CH",
+      "kind": "pack",
+      "bbox": [8.9, 47.5, 9.8, 47.9],
+      "center": [9.2, 47.66],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+      "sports": ["road", "touring", "urban"]
+    },
+    {
+      "id": "stuttgart",
+      "name": "Stuttgart / Mittlerer Neckar",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [9.0, 48.6, 9.4, 48.9],
+      "center": [9.18, 48.78],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "muenchen",
+      "name": "München & Umland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [11.3, 48.0, 11.8, 48.3],
+      "center": [11.58, 48.14],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern/oberbayern-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "nuernberg",
+      "name": "Nürnberg / Franken",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.9, 49.3, 11.3, 49.6],
+      "center": [11.08, 49.45],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "frankfurt-rhein-main",
+      "name": "Frankfurt Rhein-Main",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [8.4, 49.9, 9.1, 50.3],
+      "center": [8.68, 50.11],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "koeln-rhein",
+      "name": "Köln / Rheinland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.7, 50.8, 7.2, 51.1],
+      "center": [6.96, 50.94],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "hamburg",
+      "name": "Hamburg & Umland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [9.7, 53.4, 10.3, 53.7],
+      "center": [9.99, 53.55],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/hamburg-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "berlin",
+      "name": "Berlin & Brandenburg",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [13.1, 52.3, 13.7, 52.7],
+      "center": [13.41, 52.52],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/brandenburg-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "dresden-elbland",
+      "name": "Dresden / Elbland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [13.6, 50.9, 14.0, 51.2],
+      "center": [13.74, 51.05],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-latest.osm.pbf",
+      "sports": ["road", "touring", "urban"]
+    },
+    {
+      "id": "wien",
+      "name": "Wien & Wienerwald",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [16.1, 48.1, 16.6, 48.4],
+      "center": [16.37, 48.21],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["urban", "road", "mtb"]
+    },
+    {
+      "id": "salzburg",
+      "name": "Salzburg",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [12.9, 47.7, 13.2, 47.9],
+      "center": [13.05, 47.8],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["road", "mtb", "gravel"]
+    },
+    {
+      "id": "innsbruck",
+      "name": "Innsbruck / Tirol",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [11.2, 47.2, 11.5, 47.4],
+      "center": [11.4, 47.27],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "road", "ebike"]
+    },
+    {
+      "id": "zuerich",
+      "name": "Zürich & Umland",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [8.4, 47.3, 8.7, 47.5],
+      "center": [8.54, 47.38],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "bern",
+      "name": "Bern / Mittelland",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [7.3, 46.9, 7.6, 47.1],
+      "center": [7.45, 46.95],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "basel",
+      "name": "Basel / Dreiländereck",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [7.5, 47.5, 7.7, 47.6],
+      "center": [7.59, 47.56],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "ruhrgebiet",
+      "name": "Ruhrgebiet",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.8, 51.3, 7.65, 51.7],
+      "center": [7.2, 51.48],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "duesseldorf",
+      "name": "Düsseldorf / Niederrhein",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.6, 51.1, 6.95, 51.35],
+      "center": [6.78, 51.23],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "hannover",
+      "name": "Hannover / Leine",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [9.5, 52.25, 10.05, 52.55],
+      "center": [9.73, 52.37],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/niedersachsen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "leipzig",
+      "name": "Leipzig / Neuseenland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [12.2, 51.2, 12.55, 51.45],
+      "center": [12.37, 51.34],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "freiburg",
+      "name": "Freiburg / Schauinsland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [7.75, 47.95, 8.05, 48.08],
+      "center": [7.85, 47.99],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/freiburg-regbez-latest.osm.pbf",
+      "sports": ["mtb", "urban", "gravel"]
+    },
+    {
+      "id": "karlsruhe",
+      "name": "Karlsruhe / Hardt",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [8.3, 48.95, 8.55, 49.1],
+      "center": [8.4, 49.01],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "augsburg",
+      "name": "Augsburg / Lech",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.8, 48.3, 11.0, 48.45],
+      "center": [10.9, 48.37],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "kiel",
+      "name": "Kiel / Förde",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [9.95, 54.25, 10.2, 54.4],
+      "center": [10.14, 54.32],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/schleswig-holstein-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "rostock",
+      "name": "Rostock / Warnow",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [12.0, 54.05, 12.25, 54.22],
+      "center": [12.14, 54.09],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/mecklenburg-vorpommern-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "kassel",
+      "name": "Kassel / Bergpark",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [9.4, 51.25, 9.6, 51.4],
+      "center": [9.49, 51.31],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf",
+      "sports": ["urban", "gravel"]
+    },
+    {
+      "id": "trier-mosel",
+      "name": "Trier / Mosel",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.5, 49.7, 6.85, 49.85],
+      "center": [6.64, 49.75],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+      "sports": ["road", "touring"]
+    },
+    {
+      "id": "pfalz",
+      "name": "Pfälzerwald",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [7.7, 49.1, 8.3, 49.5],
+      "center": [7.95, 49.3],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+      "sports": ["gravel", "mtb", "road"]
+    },
+    {
+      "id": "sauerland",
+      "name": "Sauerland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [7.8, 51.1, 8.7, 51.5],
+      "center": [8.25, 51.3],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["mtb", "gravel", "ebike"]
+    },
+    {
+      "id": "eifel-trails",
+      "name": "Eifel",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.2, 50.1, 7.2, 50.7],
+      "center": [6.7, 50.35],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+      "sports": ["gravel", "road", "ebike"]
+    },
+    {
+      "id": "harz",
+      "name": "Harz",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.3, 51.5, 11.35, 51.95],
+      "center": [10.8, 51.72],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-anhalt-latest.osm.pbf",
+      "sports": ["gravel", "mtb", "ebike"]
+    },
+    {
+      "id": "thueringer-wald",
+      "name": "Thüringer Wald",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.4, 50.4, 11.4, 50.85],
+      "center": [10.9, 50.62],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/thueringen-latest.osm.pbf",
+      "sports": ["mtb", "gravel", "ebike"]
+    },
+    {
+      "id": "bayerischer-wald",
+      "name": "Bayerischer Wald",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [12.5, 48.7, 13.9, 49.3],
+      "center": [13.2, 49.0],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf",
+      "sports": ["mtb", "gravel", "ebike"]
+    },
+    {
+      "id": "allgaeu",
+      "name": "Allgäu",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.0, 47.4, 10.65, 47.8],
+      "center": [10.32, 47.6],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf",
+      "sports": ["mtb", "road", "ebike"]
+    },
+    {
+      "id": "chiemgau",
+      "name": "Chiemgau",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [12.2, 47.7, 12.85, 47.95],
+      "center": [12.5, 47.85],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern/oberbayern-latest.osm.pbf",
+      "sports": ["gravel", "road", "mtb"]
+    },
+    {
+      "id": "saarbruecken",
+      "name": "Saarbrücken",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.9, 49.2, 7.1, 49.3],
+      "center": [7.0, 49.23],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "muenster",
+      "name": "Münsterland",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [7.5, 51.88, 7.75, 52.05],
+      "center": [7.63, 51.96],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["road", "urban"]
+    },
+    {
+      "id": "aachen",
+      "name": "Aachen / Dreiländereck",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [6.0, 50.72, 6.2, 50.85],
+      "center": [6.08, 50.78],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "luebeck",
+      "name": "Lübeck / Trave",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.6, 53.82, 10.8, 53.95],
+      "center": [10.69, 53.87],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/schleswig-holstein-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "bremen",
+      "name": "Bremen / Weser",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [8.7, 53.0, 8.95, 53.18],
+      "center": [8.81, 53.08],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bremen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "magdeburg",
+      "name": "Magdeburg / Elbe",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [11.55, 52.05, 11.7, 52.2],
+      "center": [11.63, 52.12],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-anhalt-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "erfurt",
+      "name": "Erfurt",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [10.98, 50.94, 11.12, 51.05],
+      "center": [11.03, 50.98],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/thueringen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "koblenz",
+      "name": "Koblenz / Rhein-Mosel",
+      "country": "DE",
+      "kind": "pack",
+      "bbox": [7.5, 50.3, 7.7, 50.42],
+      "center": [7.59, 50.36],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+      "sports": ["road", "touring"]
+    },
+    {
+      "id": "graz",
+      "name": "Graz / Murtal",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [15.35, 47.02, 15.52, 47.12],
+      "center": [15.44, 47.07],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["urban", "mtb", "road"]
+    },
+    {
+      "id": "linz",
+      "name": "Linz / Donau",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [14.22, 48.25, 14.4, 48.35],
+      "center": [14.29, 48.31],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "klagenfurt",
+      "name": "Klagenfurt / Wörthersee",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [14.2, 46.55, 14.4, 46.7],
+      "center": [14.31, 46.62],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["road", "mtb"]
+    },
+    {
+      "id": "bregenz",
+      "name": "Bregenz / Vorarlberg",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [9.6, 47.45, 9.85, 47.55],
+      "center": [9.75, 47.5],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["road", "mtb"]
+    },
+    {
+      "id": "kitzbuehel",
+      "name": "Kitzbühel / Wilder Kaiser",
+      "country": "AT",
+      "kind": "pack",
+      "bbox": [12.2, 47.38, 12.5, 47.55],
+      "center": [12.39, 47.45],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "ebike"]
+    },
+    {
+      "id": "genf",
+      "name": "Genf / Lac Léman",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [6.05, 46.15, 6.25, 46.28],
+      "center": [6.15, 46.2],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "lausanne",
+      "name": "Lausanne / Lavaux",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [6.55, 46.5, 6.75, 46.6],
+      "center": [6.63, 46.52],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["road", "urban"]
+    },
+    {
+      "id": "luzern",
+      "name": "Luzern / Vierwaldstättersee",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [8.22, 47.02, 8.38, 47.1],
+      "center": [8.31, 47.05],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road", "mtb"]
+    },
+    {
+      "id": "st-gallen",
+      "name": "St. Gallen / Appenzell",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [9.3, 47.38, 9.5, 47.48],
+      "center": [9.38, 47.42],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "gravel"]
+    },
+    {
+      "id": "lugano",
+      "name": "Lugano / Tessin",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [8.9, 45.95, 9.05, 46.05],
+      "center": [8.95, 46.0],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["road", "mtb"]
+    },
+    {
+      "id": "interlaken",
+      "name": "Interlaken / Berner Oberland",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [7.8, 46.65, 8.0, 46.72],
+      "center": [7.86, 46.69],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["mtb", "road", "ebike"]
+    },
+    {
+      "id": "chur",
+      "name": "Chur / Graubünden",
+      "country": "CH",
+      "kind": "pack",
+      "bbox": [9.48, 46.82, 9.58, 46.88],
+      "center": [9.53, 46.85],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "de-schleswig-holstein",
+      "name": "Schleswig-Holstein",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [8.3, 53.3, 11.4, 55.1],
+      "center": [9.9, 54.2],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/schleswig-holstein-latest.osm.pbf",
+      "sports": ["road", "touring"]
+    },
+    {
+      "id": "de-niedersachsen",
+      "name": "Niedersachsen",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [6.6, 51.3, 11.65, 53.9],
+      "center": [9.8, 52.6],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/niedersachsen-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "de-mecklenburg-vorpommern",
+      "name": "Mecklenburg-Vorpommern",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [10.5, 53.05, 14.5, 54.7],
+      "center": [12.5, 53.8],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/mecklenburg-vorpommern-latest.osm.pbf",
+      "sports": ["road", "touring"]
+    },
+    {
+      "id": "de-brandenburg",
+      "name": "Brandenburg",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [11.2, 51.3, 15.05, 53.6],
+      "center": [13.4, 52.4],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/brandenburg-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "de-sachsen-anhalt",
+      "name": "Sachsen-Anhalt",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [10.5, 50.9, 13.25, 53.05],
+      "center": [11.7, 51.9],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-anhalt-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "de-sachsen",
+      "name": "Sachsen",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [11.85, 50.17, 15.05, 51.7],
+      "center": [13.4, 51.05],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-latest.osm.pbf",
+      "sports": ["road", "touring"]
+    },
+    {
+      "id": "de-thueringen",
+      "name": "Thüringen",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [9.85, 50.2, 12.65, 51.65],
+      "center": [11.0, 50.98],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/thueringen-latest.osm.pbf",
+      "sports": ["gravel", "road"]
+    },
+    {
+      "id": "de-hessen",
+      "name": "Hessen",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [7.75, 49.35, 10.3, 51.7],
+      "center": [9.0, 50.5],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/hessen-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "de-nrw",
+      "name": "Nordrhein-Westfalen",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [5.86, 50.3, 9.5, 52.55],
+      "center": [7.5, 51.5],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "de-rlp",
+      "name": "Rheinland-Pfalz",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [6.1, 48.95, 8.55, 50.95],
+      "center": [7.3, 49.9],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "de-saarland",
+      "name": "Saarland",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [6.3, 49.1, 7.4, 49.65],
+      "center": [6.9, 49.35],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf",
+      "sports": ["road", "urban"]
+    },
+    {
+      "id": "de-baden-wuerttemberg",
+      "name": "Baden-Württemberg",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [7.5, 47.53, 10.5, 49.8],
+      "center": [9.0, 48.6],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+      "sports": ["road", "gravel", "mtb"]
+    },
+    {
+      "id": "de-bayern",
+      "name": "Bayern",
+      "country": "DE",
+      "kind": "envelope",
+      "bbox": [8.97, 47.27, 13.84, 50.57],
+      "center": [11.5, 48.8],
+      "geofabrik": "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf",
+      "sports": ["road", "gravel", "mtb"]
+    },
+    {
+      "id": "at-vorarlberg",
+      "name": "Vorarlberg",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [9.53, 46.85, 10.3, 47.6],
+      "center": [9.75, 47.25],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "at-tirol",
+      "name": "Tirol",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [10.1, 46.62, 12.95, 47.78],
+      "center": [11.4, 47.27],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "road", "ebike"]
+    },
+    {
+      "id": "at-salzburg",
+      "name": "Land Salzburg",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [12.05, 46.9, 13.85, 48.05],
+      "center": [13.05, 47.5],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "at-oberoesterreich",
+      "name": "Oberösterreich",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [12.75, 47.45, 15.0, 48.78],
+      "center": [14.0, 48.1],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "at-niederoesterreich",
+      "name": "Niederösterreich",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [14.4, 47.4, 17.17, 49.02],
+      "center": [15.7, 48.2],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["road", "gravel"]
+    },
+    {
+      "id": "at-steiermark",
+      "name": "Steiermark",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [13.55, 46.6, 16.25, 47.85],
+      "center": [15.0, 47.2],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "at-kaernten",
+      "name": "Kärnten",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [12.65, 46.37, 15.1, 47.15],
+      "center": [14.0, 46.7],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "at-burgenland",
+      "name": "Burgenland",
+      "country": "AT",
+      "kind": "envelope",
+      "bbox": [14.65, 46.82, 17.17, 48.12],
+      "center": [16.3, 47.5],
+      "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+      "sports": ["road", "touring"]
+    },
+    {
+      "id": "ch-genfersee",
+      "name": "Genfersee / Romandie",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [5.96, 46.08, 7.25, 46.62],
+      "center": [6.6, 46.35],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["road", "urban"]
+    },
+    {
+      "id": "ch-jura",
+      "name": "Jura / Westschweiz",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [6.5, 46.5, 7.55, 47.55],
+      "center": [7.0, 47.0],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["gravel", "road"]
+    },
+    {
+      "id": "ch-mittelland",
+      "name": "Schweizer Mittelland",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [6.85, 46.72, 8.05, 47.35],
+      "center": [7.45, 47.0],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["road", "urban"]
+    },
+    {
+      "id": "ch-nordwest",
+      "name": "Nordwestschweiz",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [7.3, 47.28, 8.25, 47.65],
+      "center": [7.7, 47.5],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road"]
+    },
+    {
+      "id": "ch-zuerichsee",
+      "name": "Zürichsee / Zürcher Oberland",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [8.25, 47.18, 9.05, 47.65],
+      "center": [8.65, 47.35],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["urban", "road", "gravel"]
+    },
+    {
+      "id": "ch-ostschweiz",
+      "name": "Ostschweiz",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [8.75, 46.88, 10.49, 47.81],
+      "center": [9.4, 47.3],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["gravel", "mtb"]
+    },
+    {
+      "id": "ch-zentralschweiz",
+      "name": "Zentralschweiz",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [7.95, 46.58, 8.95, 47.22],
+      "center": [8.4, 46.9],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "ch-tessin",
+      "name": "Tessin",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [8.38, 45.82, 9.35, 46.55],
+      "center": [8.9, 46.15],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["road", "mtb"]
+    },
+    {
+      "id": "ch-graubuenden",
+      "name": "Graubünden",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [8.65, 46.12, 10.49, 47.08],
+      "center": [9.5, 46.7],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "ch-wallis",
+      "name": "Wallis",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [6.75, 45.85, 8.55, 46.65],
+      "center": [7.6, 46.2],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["mtb", "road"]
+    },
+    {
+      "id": "ch-berner-oberland",
+      "name": "Berner Oberland",
+      "country": "CH",
+      "kind": "envelope",
+      "bbox": [7.3, 46.3, 8.45, 46.88],
+      "center": [7.85, 46.6],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["mtb", "ebike"]
+    },
+    {
+      "id": "li-liechtenstein",
+      "name": "Liechtenstein",
+      "country": "LI",
+      "kind": "envelope",
+      "bbox": [9.47, 47.04, 9.64, 47.27],
+      "center": [9.55, 47.16],
+      "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+      "sports": ["road", "mtb"]
+    }
+  ]
+}

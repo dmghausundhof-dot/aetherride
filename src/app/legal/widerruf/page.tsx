@@ -13,7 +13,7 @@ und hier über NEXT_PUBLIC_LEGAL_WITHDRAWAL hinterlegen.`;
     <div className="mx-auto flex max-w-lg flex-col gap-4 p-4 pt-8">
       <h1 className="text-2xl font-bold">Widerruf</h1>
       <p className="whitespace-pre-wrap text-sm text-text-secondary">{text}</p>
-      <a href="/legal/impressum" className="text-sm text-accent">
+      <a href="/legal/impressum" className="text-sm text-chrome">
         Zum Impressum
       </a>
     </div>

@@ -159,6 +159,7 @@ export function berlinSixtyMinLoopSuggestions(
 
 /** Demo-Stadt chips for empty Ort / no useful nearby loops (web Quick). */
 export const DEMO_CITY_CHIPS: { name: string; lat: number; lng: number }[] = [
+  { name: "Hamburg", lat: 53.551, lng: 9.993 },
   { name: "Berlin", lat: 52.52, lng: 13.405 },
   { name: "München", lat: 48.183, lng: 11.61 },
   { name: "Köln", lat: 50.941, lng: 6.958 },

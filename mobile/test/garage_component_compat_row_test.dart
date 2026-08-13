@@ -87,8 +87,8 @@ void main() {
       await tester.tap(
         find
             .descendant(
-              of: find.byType(NavigationBar),
-              matching: find.text('Garage'),
+              of: find.byKey(const Key('hof-threshold-nav')),
+              matching: find.text('Werkstatt'),
             )
             .first,
       );

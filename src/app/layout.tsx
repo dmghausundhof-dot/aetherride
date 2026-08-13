@@ -12,25 +12,25 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "AetherRide – Touren planen. Bike verstehen.",
+    default: "AetherRide – Der Hof",
     template: "%s · AetherRide",
   },
   description:
-    "Rennrad, Gravel, MTB, E-Bike & City: Touren entdecken, Desktop-Planer, Multi-Bike-Garage und Setup. Navigation in der nativen App.",
+    "Das Rad wohnt hier. Karte, Werkstatt und Shop — Rausfahren in der App.",
   keywords: [
+    "Der Hof",
     "Radtouren",
     "Rennrad",
     "Gravel",
     "MTB",
     "E-Bike",
-    "Touren planen",
-    "Bike Garage",
+    "Werkstatt",
     "AetherRide",
   ],
   openGraph: {
-    title: "AetherRide – Touren planen. Bike verstehen.",
+    title: "AetherRide – Der Hof",
     description:
-      "Für alle Fahrradfahrer: Touren, Garage & Setup im Web. Navigation in der App.",
+      "Das Rad wohnt hier. Eine Stunde vor dem Tor. Rausfahren.",
     locale: "de_DE",
     type: "website",
   },

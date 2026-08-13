@@ -46,13 +46,30 @@ export function ShareCollectionButton({
         : undefined,
       createdAt: new Date().toISOString(),
     };
-    const token = encodeSharePayload(payload);
-    if (token.length > 1800) {
-      setErr("Sammlung zu groß für URL-Share — weniger Touren wählen.");
-      return;
+    let path = "";
+    try {
+      const res = await fetch("/api/community/collections", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { path?: string; id?: string };
+        path = data.path || (data.id ? `/share/c/${data.id}` : "");
+      }
+    } catch {
+      /* fall back to URL token */
     }
-    setToken(collectionId, token);
-    const path = shareCollectionPath(token);
+    if (!path) {
+      const token = encodeSharePayload(payload);
+      if (token.length > 1800) {
+        setErr("Sammlung zu groß für URL-Share — weniger Touren wählen.");
+        return;
+      }
+      setToken(collectionId, token);
+      path = shareCollectionPath(token);
+    }
     const full =
       typeof window !== "undefined"
         ? `${window.location.origin}${path}`

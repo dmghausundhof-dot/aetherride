@@ -4,12 +4,12 @@
   "bbox": [
     13.6,
     50.9,
-    14.0,
+    14,
     51.2
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-latest.osm.pbf",
-    "note": "Sachsen-Landextract, auf bbox clippen."
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

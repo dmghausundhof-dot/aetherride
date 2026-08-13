@@ -9,7 +9,7 @@
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
-    "note": "AT-Landextract, auf bbox clippen. Graph-only via Overpass."
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

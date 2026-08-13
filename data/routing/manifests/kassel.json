@@ -1,0 +1,24 @@
+{
+  "id": "kassel",
+  "name": "Kassel / Bergpark",
+  "bbox": [
+    9.4,
+    51.25,
+    9.6,
+    51.4
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "kassel.tar.zst",
+    "packGz": "kassel.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * Server-side routing against Valhalla or OSRM (Env-configured).
+ * Server-side routing: OpenRouteService, GraphHopper, Valhalla, OSRM.
  * Spec F-NAV-001 — sportartspezifische Profile.
  * Spec F-NAV-003 — Maneuver/Steps in RouteResult.
  */
@@ -15,16 +15,32 @@ import {
   type NavStep,
 } from "@/lib/routing/navSteps";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
+import {
+  fetchOrsRoute,
+  isOrsConfigured,
+  orsPreferredForGraphhopperBasic,
+  type OrsExtras,
+} from "@/lib/routing/openRouteService";
+
+export type RoutingEngineKind =
+  | "valhalla"
+  | "osrm"
+  | "graphhopper"
+  | "openrouteservice"
+  | "demo"
+  | "editorial";
 
 export type RouteResult = {
   distanceM: number;
   durationS: number;
   geometry: GeoJSON.LineString;
-  engine: "valhalla" | "osrm" | "graphhopper" | "demo" | "editorial";
+  engine: RoutingEngineKind;
   profile: RoutingProfile;
   warnings?: string[];
   /** F-NAV-003 Turn-by-Turn */
   steps?: NavStep[];
+  /** OpenRouteService extra_info (surface/steepness) — honesty, not S-scale */
+  orsExtras?: OrsExtras;
 };
 
 /** Öffentlicher OSRM (nur mit explizitem Opt-in oder Dev-Fallback) */
@@ -44,15 +60,44 @@ function publicOsrmAllowed(): boolean {
   return false;
 }
 
-function engine(): "valhalla" | "osrm" | "graphhopper" | "demo" | "editorial" {
+function engine(): RoutingEngineKind {
   // editorial never selected as engine backend
   const e = (process.env.ROUTING_ENGINE || "").toLowerCase();
+  if (e === "openrouteservice" || e === "ors") return "openrouteservice";
   if (e === "valhalla" || e === "osrm" || e === "graphhopper") return e;
+  // Both keys + no explicit engine: GraphHopper stays primary; ORS hybrid
+  // via engineForProfile (gravel/mtb/enduro). Set ROUTING_ENGINE=openrouteservice
+  // to use ORS for every DACH profile.
   if (process.env.GRAPHHOPPER_API_KEY) return "graphhopper";
+  if (isOrsConfigured()) return "openrouteservice";
   if (process.env.VALHALLA_URL) return "valhalla";
   if (process.env.OSRM_URL) return "osrm";
   if (publicOsrmAllowed()) return "osrm";
   return "demo";
+}
+
+/**
+ * Per-request engine. Explicit ROUTING_ENGINE wins.
+ * If GraphHopper is primary but Basic (no extended profiles) and ORS is
+ * configured, mtb/gravel/enduro go to OpenRouteService — that is the DACH
+ * cycling engine GraphHopper Basic cannot express.
+ */
+function engineForProfile(profile: RoutingProfile): RoutingEngineKind {
+  const primary = engine();
+  const explicit = (process.env.ROUTING_ENGINE || "").toLowerCase();
+  if (explicit === "openrouteservice" || explicit === "ors") {
+    return "openrouteservice";
+  }
+  if (
+    primary === "graphhopper" &&
+    isOrsConfigured() &&
+    process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES !== "1" &&
+    process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES !== "true" &&
+    orsPreferredForGraphhopperBasic(profile)
+  ) {
+    return "openrouteservice";
+  }
+  return primary;
 }
 
 function baseUrl(kind: "valhalla" | "osrm"): string | null {
@@ -262,7 +307,7 @@ function demoRoute(
     profile,
     steps: stepsFromDemoGeometry(coords),
     warnings: [
-      "Kein ROUTING_ENGINE konfiguriert — Demo-Geometrie. Setze GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL.",
+      "Kein ROUTING_ENGINE konfiguriert — Demo-Geometrie. Setze OPENROUTESERVICE_API_KEY, GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL.",
     ],
   };
 }
@@ -473,6 +518,33 @@ async function routeOsrm(
   };
 }
 
+async function routeOpenRouteService(
+  profile: RoutingProfile,
+  points: [number, number][]
+): Promise<RouteResult> {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 22_000);
+  try {
+    const r = await fetchOrsRoute({
+      profile,
+      points,
+      signal: ac.signal,
+    });
+    return {
+      distanceM: r.distanceM,
+      durationS: r.durationS,
+      geometry: r.geometry,
+      engine: "openrouteservice",
+      profile,
+      steps: r.steps,
+      orsExtras: r.extras,
+      warnings: r.warnings.length ? r.warnings : undefined,
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function computeRoute(
   profile: RoutingProfile,
   from: [number, number],
@@ -480,15 +552,37 @@ export async function computeRoute(
   vias: [number, number][] = []
 ): Promise<RouteResult> {
   const points = [from, ...vias, to];
-  const kind = engine();
+  const kind = engineForProfile(profile);
   if (kind === "demo") {
     if (allowDemoContent()) return demoRoute(profile, from, to);
     throw new Error(
-      "Kein Live-Routing konfiguriert — setze GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL.",
+      "Kein Live-Routing konfiguriert — setze OPENROUTESERVICE_API_KEY, GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL.",
     );
   }
 
   try {
+    if (kind === "openrouteservice") {
+      try {
+        return await routeOpenRouteService(profile, points);
+      } catch (orsErr) {
+        const explicit = (process.env.ROUTING_ENGINE || "").toLowerCase();
+        const orsForced =
+          explicit === "openrouteservice" || explicit === "ors";
+        if (!orsForced && process.env.GRAPHHOPPER_API_KEY?.trim()) {
+          const gh = await routeGraphhopper(profile, points);
+          const msg =
+            orsErr instanceof Error ? orsErr.message : "ORS fehlgeschlagen";
+          return {
+            ...gh,
+            warnings: [
+              `OpenRouteService Fallback → GraphHopper. ${msg}`,
+              ...(gh.warnings ?? []),
+            ],
+          };
+        }
+        throw orsErr;
+      }
+    }
     if (kind === "graphhopper") return await routeGraphhopper(profile, points);
     if (kind === "valhalla") {
       if (vias.length === 0) return await routeValhalla(profile, from, to);
@@ -542,6 +636,13 @@ export function configuredRoutingEngine(): Exclude<
   "editorial"
 > {
   const e = engine();
+  return e === "editorial" ? "demo" : e;
+}
+
+export function configuredEngineForProfile(
+  profile: RoutingProfile
+): Exclude<RouteResult["engine"], "editorial"> {
+  const e = engineForProfile(profile);
   return e === "editorial" ? "demo" : e;
 }
 

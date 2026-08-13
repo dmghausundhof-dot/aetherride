@@ -1,0 +1,24 @@
+{
+  "id": "st-gallen",
+  "name": "St. Gallen / Appenzell",
+  "bbox": [
+    9.3,
+    47.38,
+    9.5,
+    47.48
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "st-gallen.tar.zst",
+    "packGz": "st-gallen.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

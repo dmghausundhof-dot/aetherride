@@ -11,11 +11,11 @@ function assert(cond: boolean, msg: string) {
 }
 
 const stats = catalogStats();
-assert(stats.manufacturers >= 45, `Erwarte ≥45 Hersteller, got ${stats.manufacturers}`);
-assert(stats.bikes >= 65, `Erwarte ≥65 Bikes, got ${stats.bikes}`);
+assert(stats.manufacturers >= 54, `Erwarte ≥54 Hersteller, got ${stats.manufacturers}`);
+assert(stats.bikes >= 99, `Erwarte ≥99 Bikes, got ${stats.bikes}`);
 assert(
-  COMPONENT_CATALOG.length >= 170,
-  `Erwarte ≥170 kuratierte OEM-Komponenten, got ${COMPONENT_CATALOG.length}`
+  COMPONENT_CATALOG.length >= 250,
+  `Erwarte ≥250 kuratierte OEM-Komponenten, got ${COMPONENT_CATALOG.length}`
 );
 assert(
   !COMPONENT_CATALOG.some(
@@ -102,6 +102,25 @@ for (const mfr of BIKE_CATALOG) {
 }
 assert(seatMismatches === 0, `Seatpost-Mismatch:\n${seatIssues.join("\n")}`);
 
+/** Reach/Stack nur für Katalog-Größen, mit Quelle */
+let geoIssues = 0;
+const geoList: string[] = [];
+for (const mfr of BIKE_CATALOG) {
+  for (const bike of mfr.bikes) {
+    for (const row of bike.geometryBySize ?? []) {
+      if (!bike.frameSizeOptions.includes(row.size)) {
+        geoIssues += 1;
+        geoList.push(`${bike.id}: Geometrie-Größe ${row.size} nicht in frameSizeOptions`);
+      }
+      if (!(row.reachMm > 0) || !(row.stackMm > 0) || !row.sourceUrl) {
+        geoIssues += 1;
+        geoList.push(`${bike.id} ${row.size}: Reach/Stack/sourceUrl unvollständig`);
+      }
+    }
+  }
+}
+assert(geoIssues === 0, `Geometrie-Fehler:\n${geoList.join("\n")}`);
+
 console.log(
   JSON.stringify(
     {
@@ -110,6 +129,10 @@ console.log(
       bikes: stats.bikes,
       oemRefs: stats.oemRefs,
       components: COMPONENT_CATALOG.length,
+      geometryBikes: BIKE_CATALOG.reduce(
+        (n, m) => n + m.bikes.filter((b) => (b.geometryBySize?.length ?? 0) > 0).length,
+        0
+      ),
     },
     null,
     2

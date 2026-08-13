@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { Protocol } from "pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type {
+  BikeOverlayClass,
+  BikeOverlayFamily,
+} from "@/lib/routing/bikeOverlayClass";
+import {
+  addBikeOverlayLayers,
+  applyBikeOverlayVisibility,
+} from "@/lib/routing/bikeOverlayMap";
 
 export type MapMarker = {
   id: string;
@@ -55,8 +63,14 @@ interface MapViewProps {
   interactiveSelect?: boolean;
   onMapClick?: (lngLat: [number, number]) => void;
   onRouteClick?: (routeId: string) => void;
+  onMarkerClick?: (id: string) => void;
   onMapReady?: (map: maplibregl.Map) => void;
   fitRoute?: boolean;
+  bikeOverlayUrl?: string | null;
+  bikeOverlayKind?: "pmtiles" | "geojson";
+  bikeOverlayFamily?: BikeOverlayFamily;
+  bikeOverlayVisible?: boolean;
+  bikeOverlayExtraOn?: BikeOverlayClass[];
 }
 
 let pmtilesRegistered = false;
@@ -212,8 +226,14 @@ export function MapView({
   interactiveSelect = false,
   onMapClick,
   onRouteClick,
+  onMarkerClick,
   onMapReady,
   fitRoute = false,
+  bikeOverlayUrl = null,
+  bikeOverlayKind = "pmtiles",
+  bikeOverlayFamily = "road",
+  bikeOverlayVisible = true,
+  bikeOverlayExtraOn = [],
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -221,6 +241,7 @@ export function MapView({
   const layerIdsRef = useRef<Set<string>>(new Set());
   const onClickRef = useRef(onMapClick);
   const onRouteClickRef = useRef(onRouteClick);
+  const onMarkerClickRef = useRef(onMarkerClick);
   const [ready, setReady] = useState(false);
   const [tileSource, setTileSource] = useState<"stadia" | "pmtiles" | "osm">(
     "osm"
@@ -230,6 +251,7 @@ export function MapView({
 
   onClickRef.current = onMapClick;
   onRouteClickRef.current = onRouteClick;
+  onMarkerClickRef.current = onMarkerClick;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -334,6 +356,56 @@ export function MapView({
     if (!map || !ready) return;
     map.setCenter(center);
   }, [center, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !bikeOverlayUrl) return;
+    const apply = () => {
+      try {
+        addBikeOverlayLayers(map, {
+          url: bikeOverlayUrl,
+          kind: bikeOverlayKind,
+          family: bikeOverlayFamily,
+          visible: bikeOverlayVisible,
+          extraOn: bikeOverlayExtraOn,
+        });
+      } catch (err) {
+        console.warn("[MapView] bike overlay", err);
+      }
+    };
+    apply();
+    map.on("style.load", apply);
+    return () => {
+      map.off("style.load", apply);
+    };
+  }, [
+    ready,
+    bikeOverlayUrl,
+    bikeOverlayKind,
+    bikeOverlayFamily,
+    bikeOverlayVisible,
+    bikeOverlayExtraOn,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !bikeOverlayUrl) return;
+    try {
+      applyBikeOverlayVisibility(map, {
+        family: bikeOverlayFamily,
+        visible: bikeOverlayVisible,
+        extraOn: bikeOverlayExtraOn,
+      });
+    } catch {
+      /* source not ready yet */
+    }
+  }, [
+    ready,
+    bikeOverlayUrl,
+    bikeOverlayFamily,
+    bikeOverlayVisible,
+    bikeOverlayExtraOn,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -474,6 +546,11 @@ export function MapView({
         lab.style.marginTop = "2px";
         el.appendChild(lab);
       }
+      el.style.cursor = "pointer";
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        onMarkerClickRef.current?.(m.id);
+      });
       return new maplibregl.Marker({ element: el })
         .setLngLat(m.lngLat)
         .addTo(map);

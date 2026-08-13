@@ -1,10 +1,15 @@
 {
   "id": "bodensee",
   "name": "Bodensee",
-  "bbox": [8.9, 47.5, 9.8, 47.9],
+  "bbox": [
+    8.9,
+    47.5,
+    9.8,
+    47.9
+  ],
   "osm": {
-    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/tuebingen-regbez-latest.osm.pbf",
-    "note": "Approximate covering extract; clip to bbox for tiles. Graph-only via Overpass is preferred for demos."
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+    "note": "DE/AT/CH extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

@@ -1,0 +1,27 @@
+{
+  "id": "st-gallen",
+  "name": "St. Gallen / Appenzell",
+  "bbox": [
+    9.3,
+    47.38,
+    9.5,
+    47.48
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/st-gallen",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "st-gallen.tar.zst"
+  }
+}

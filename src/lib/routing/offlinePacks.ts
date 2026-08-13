@@ -7,12 +7,23 @@ export type OfflinePackManifest = {
   name: string;
   bbox?: number[];
   builtAt?: string;
-  engines?: { offline_graph?: boolean; valhalla_tiles?: boolean };
+  engines?: {
+    offline_graph?: boolean;
+    valhalla_tiles?: boolean;
+    bike_overlay?: boolean;
+  };
   files?: Record<
     string,
     { bytes?: number; sha256?: string; sha256_16?: string; file_count?: number }
   >;
   cdn?: { baseUrl?: string; pack?: string; packGz?: string };
+  overlay?: {
+    layer?: string;
+    pmtiles?: string | null;
+    geojson?: string | null;
+    sourceLayer?: string;
+    property?: string;
+  };
 };
 
 const ROOT = process.cwd();
@@ -23,10 +34,14 @@ function candidates(id: string, file?: string): string[] {
   const safeFile = file
     ? file.replace(/\.\./g, "").replace(/^\/+/, "")
     : "manifest.json";
-  return [
+  const paths = [
     path.join(ROOT, "public", "offline", safeId, safeFile),
-    path.join(ROOT, "data", "routing", "manifests", `${safeId}.json`),
+    path.join(ROOT, "data", "routing", "dist", safeId, safeFile),
   ];
+  if (safeFile === "manifest.json") {
+    paths.push(path.join(ROOT, "data", "routing", "manifests", `${safeId}.json`));
+  }
+  return paths;
 }
 
 async function firstExisting(paths: string[]): Promise<string | null> {
@@ -72,7 +87,9 @@ export async function readOfflinePackFile(
   const bytes = await readFile(/* turbopackIgnore: true */ p);
   const lower = file.toLowerCase();
   let contentType = "application/octet-stream";
-  if (lower.endsWith(".json")) contentType = "application/json";
+  if (lower.endsWith(".json") || lower.endsWith(".geojson"))
+    contentType = "application/json";
+  else if (lower.endsWith(".pmtiles")) contentType = "application/vnd.pmtiles";
   else if (lower.endsWith(".tar.gz") || lower.endsWith(".tgz"))
     contentType = "application/gzip";
   else if (lower.endsWith(".tar.zst")) contentType = "application/zstd";
@@ -108,25 +125,7 @@ async function manifestBasenames(dir: string): Promise<string[]> {
  */
 export async function listKnownPackIds(): Promise<string[]> {
   const skip = new Set(["valhalla-build"]);
-  const candidates = new Set<string>([
-    "schwarzwald-nord",
-    "rhein-neckar",
-    "bodensee",
-    "stuttgart",
-    "muenchen",
-    "nuernberg",
-    "frankfurt-rhein-main",
-    "koeln-rhein",
-    "hamburg",
-    "berlin",
-    "dresden-elbland",
-    "wien",
-    "salzburg",
-    "innsbruck",
-    "zuerich",
-    "bern",
-    "basel",
-  ]);
+  const candidates = new Set<string>();
   for (const id of await dirNames(path.join(ROOT, "public", "offline"))) {
     if (!skip.has(id)) candidates.add(id);
   }

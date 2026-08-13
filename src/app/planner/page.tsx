@@ -300,7 +300,7 @@ function PlannerInner() {
         id: "plan",
         role: "tour",
         geometry: draft.computed.geometry,
-        color: "#FF6B35",
+        color: "#81C995",
         width: 5,
         opacity: 0.9,
       },
@@ -312,26 +312,31 @@ function PlannerInner() {
     : null;
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:h-[calc(100dvh-4rem)] lg:flex-row">
+    <div className="flex h-[calc(100dvh-var(--hof-header-h)-var(--hof-tab-h))] flex-col lg:h-[calc(100dvh-var(--hof-header-h))] lg:flex-row">
       <aside className="order-2 flex max-h-[48vh] min-h-0 w-full flex-col border-t border-border bg-background lg:order-1 lg:max-h-none lg:w-[min(24rem,36vw)] lg:border-r lg:border-t-0">
         <header className="shrink-0 space-y-2 border-b border-border px-4 py-4">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg font-bold">Planner</h1>
+            <div>
+              <p className="text-[11px] font-bold tracking-wide text-chrome">
+                Karte
+              </p>
+              <h1 className="text-lg font-bold">Planen</h1>
+            </div>
             <Link
-              href="/library"
-              className="text-xs font-medium text-accent hover:underline"
+              href="/discover"
+              className="text-xs font-medium text-chrome hover:underline"
             >
-              Bibliothek
+              Karte
             </Link>
           </div>
           <p className="text-xs text-text-secondary">
-            Desktop-Planung · Navigation in der App
+            Dieselbe Tür wie die Karte. Navigation startet in der App.
           </p>
           <RoutingStatusBanner />
           <p className="text-[11px] text-text-secondary">
             Einheitliches Explore-Modell:{" "}
-            <Link href="/discover?panel=plan" className="text-accent hover:underline">
-              Discover · Planen
+            <Link href="/discover?panel=plan" className="text-chrome hover:underline">
+              Karte · Planen
             </Link>
             {" · "}
             Docs: <code className="text-[10px]">docs/explore-architecture.md</code>
@@ -420,7 +425,7 @@ function PlannerInner() {
                 onClick={() => setPickTarget(id)}
                 className={`rounded-xl border px-2 py-2 text-[11px] font-medium ${
                   pickTarget === id
-                    ? "border-accent bg-accent/10 text-accent"
+                    ? "border-chrome bg-chrome/10 text-chrome"
                     : "border-border"
                 }`}
               >
@@ -438,7 +443,7 @@ function PlannerInner() {
               );
               setMapCenter(userPos);
             }}
-            className="flex items-center gap-1.5 text-[11px] font-medium text-accent"
+            className="flex items-center gap-1.5 text-[11px] font-medium text-chrome"
           >
             <Crosshair className="h-3.5 w-3.5" /> Start = meine Position
           </button>
@@ -472,7 +477,7 @@ function PlannerInner() {
             type="button"
             disabled={busy || !startOf(draft) || !endOf(draft)}
             onClick={() => void runRoute()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-semibold text-background disabled:opacity-40"
           >
             <Navigation className="h-4 w-4" />
             {busy ? "Berechne…" : "Route berechnen"}
@@ -483,7 +488,7 @@ function PlannerInner() {
           )}
 
           {stats && (
-            <div className="rounded-xl border border-accent/30 bg-accent/10 p-3">
+            <div className="rounded-xl border border-chrome/30 bg-chrome/10 p-3">
               <p className="text-sm font-semibold tabular-nums">{stats}</p>
               {draft.label && (
                 <p className="text-xs text-text-secondary">{draft.label}</p>
@@ -514,7 +519,7 @@ function PlannerInner() {
           )}
 
           <p className="flex items-start gap-2 rounded-lg border border-border bg-surface px-2 py-2 text-[11px] text-text-secondary">
-            <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+            <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chrome" />
             Live-Navigation und Offline nur in der nativen App.
           </p>
         </div>

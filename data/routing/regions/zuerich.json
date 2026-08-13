@@ -9,7 +9,7 @@
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
-    "note": "CH-Landextract, auf bbox clippen. Graph-only via Overpass."
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

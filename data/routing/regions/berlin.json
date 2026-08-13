@@ -9,7 +9,7 @@
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/germany/brandenburg-latest.osm.pbf",
-    "note": "Brandenburg-Extract, auf bbox clippen. Graph-only via Overpass."
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
   },
   "graph": {
     "maxNodes": 80000,

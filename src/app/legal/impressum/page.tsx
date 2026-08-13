@@ -11,7 +11,7 @@ export default function LegalImpressumPage() {
       {email && (
         <p className="text-sm">
           Kontakt:{" "}
-          <a className="text-accent" href={`mailto:${email}`}>
+          <a className="text-chrome" href={`mailto:${email}`}>
             {email}
           </a>
         </p>

@@ -4,10 +4,10 @@
   "bbox": [
     13.6,
     50.9,
-    14.0,
+    14,
     51.2
   ],
-  "builtAt": "2026-08-12T00:00:00Z",
+  "builtAt": "2026-08-13T00:00:00Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false

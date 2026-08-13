@@ -19,14 +19,14 @@ export function ServiceCheckSection() {
     >
       <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
         <div>
-          <p className="text-sm font-medium uppercase tracking-wider text-accent">
+          <p className="text-sm font-medium uppercase tracking-wider text-chrome">
             Service-Check
           </p>
           <h2
             id="service-check-heading"
             className="mt-2 text-2xl font-bold sm:text-3xl"
           >
-            Dein Bike sagt dir, was fällig ist.
+            Dein Rad sagt dir, was fällig ist.
           </h2>
           <p className="mt-4 text-text-secondary">
             AetherRide rechnet Wartungsintervalle aus deinem Kilometerstand und
@@ -36,7 +36,7 @@ export function ServiceCheckSection() {
           <ul className="mt-5 space-y-2 text-sm text-text-secondary">
             <li className="flex gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-              Status auf Home &amp; in der Garage — immer kostenlos
+              Status in der Werkstatt — immer kostenlos
             </li>
             <li className="flex gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
@@ -44,21 +44,21 @@ export function ServiceCheckSection() {
             </li>
             <li className="flex gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-              Deep-Link: gleicher Status wie in der App-Garage
+              Deep-Link: gleicher Status wie in der App-Werkstatt
             </li>
           </ul>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/home#wartung"
-              className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-6 text-sm font-semibold text-white hover:bg-accent-hover"
+              href="/garage"
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-chrome/40 bg-chrome/10 px-6 text-sm font-semibold text-chrome hover:border-chrome"
             >
-              Service-Check öffnen
+              Zur Werkstatt
             </Link>
             <Link
               href="/garage?tab=maintenance"
               className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-6 text-sm font-semibold hover:bg-background"
             >
-              Zur Garage · Wartung
+              Zur Werkstatt · Wartung
             </Link>
           </div>
         </div>
@@ -86,11 +86,11 @@ export function ServiceCheckSection() {
               <div className="h-full w-[82%] rounded-full bg-warning" />
             </div>
             <p className="mt-2 text-[11px] text-text-secondary">
-              Demo-Darstellung — echte Werte kommen aus deinem Bike in der Garage.
+              Demo-Darstellung — echte Werte kommen aus deinem Bike in der Werkstatt.
             </p>
             <Link
-              href="/home#wartung"
-              className="mt-4 flex w-full items-center justify-center rounded-xl bg-accent py-2.5 text-sm font-semibold text-white hover:bg-accent-hover"
+              href="/garage?tab=maintenance"
+              className="mt-4 flex w-full items-center justify-center rounded-xl border border-chrome/40 bg-chrome/10 py-2.5 text-sm font-semibold text-chrome hover:border-chrome"
             >
               Eigenen Status ansehen
             </Link>

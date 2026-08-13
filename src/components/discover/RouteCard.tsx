@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight, ExternalLink } from "lucide-react";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
+import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import {
   formatDistanceElevation,
   sanitizeElevationM,
@@ -63,6 +64,7 @@ export function RouteCard({
           </div>
         )}
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+          <TourCommunityChip tourId={route.id} />
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Route className="h-3 w-3" />
             {route.loop ? "⟲ Runde" : "A→B"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Bookmark, Map } from "lucide-react";
@@ -8,6 +8,7 @@ import { decodeSharePayload } from "@/lib/community/shareCodec";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import { useAppStore } from "@/store/useAppStore";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
+import type { SharedCollectionPayload } from "@/lib/community/types";
 
 export default function SharedCollectionPage() {
   const params = useParams();
@@ -15,10 +16,43 @@ export default function SharedCollectionPage() {
   const saveRoute = useAppStore((s) => s.saveRoute);
   const createRouteCollection = useAppStore((s) => s.createRouteCollection);
   const addRouteToCollection = useAppStore((s) => s.addRouteToCollection);
+  const [remote, setRemote] = useState<SharedCollectionPayload | null>(null);
+  const [remoteDone, setRemoteDone] = useState(false);
 
-  const payload = useMemo(() => decodeSharePayload(token), [token]);
+  const encoded = useMemo(() => decodeSharePayload(token), [token]);
+  const isShort = /^[a-zA-Z0-9]{6,12}$/.test(token);
+
+  useEffect(() => {
+    if (!isShort || encoded) {
+      setRemoteDone(true);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/community/collections?id=${encodeURIComponent(token)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.payload) setRemote(data.payload as SharedCollectionPayload);
+        setRemoteDone(true);
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteDone(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, isShort, encoded]);
+
+  const payload = encoded || remote;
 
   if (!payload) {
+    if (isShort && !encoded && !remoteDone) {
+      return (
+        <div className="mx-auto max-w-lg px-4 py-20 text-center text-sm text-text-secondary">
+          Sammlung wird geladen …
+        </div>
+      );
+    }
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
         <h1 className="text-xl font-bold">Link ungültig</h1>

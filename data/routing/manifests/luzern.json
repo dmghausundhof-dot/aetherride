@@ -1,0 +1,24 @@
+{
+  "id": "luzern",
+  "name": "Luzern / Vierwaldstättersee",
+  "bbox": [
+    8.22,
+    47.02,
+    8.38,
+    47.1
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "luzern.tar.zst",
+    "packGz": "luzern.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

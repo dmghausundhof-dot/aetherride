@@ -8,6 +8,69 @@
   "navRide": "Ride",
   "navDiscover": "Tours",
   "navParts": "Parts",
+  "navKarte": "Map",
+  "navWorkshop": "Workshop",
+  "navShop": "Shop",
+  "hofJustRide": "Just ride",
+  "hofShowTours": "Show tours",
+  "hofMapChoiceHint": "Ride without a route, or show tours on the map.",
+  "werkstattPartsShelf": "Shop",
+  "werkstattForYourBike": "For your bike",
+  "werkstattMerch": "Merchandise",
+  "werkstattShopParts": "Spare parts in the shop",
+  "shopGatewayKicker": "Across the yard",
+  "shopGatewayTitle": "The shop",
+  "shopGatewayHint": "The bike does not live here. Honest parts and merch in the Shopify store — checkout there, not in the app.",
+  "shopZumShop": "Open shop",
+  "shopForYourBikeHint": "Parts that fit {name} — category and wheel size. No invented SKUs.",
+  "@shopForYourBikeHint": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "shopForYourBikeEmpty": "Park a bike in the workshop — then we open matching parts in the shop.",
+  "shopMerchHint": "Apparel and small goods. Never filtered by bike fit.",
+  "shopNotConnected": "Shop not connected",
+  "shopNotConnectedHint": "No storefront URL. Set SHOPIFY_STOREFRONT_URL, then this tab opens the store.",
+  "shopOpenFailed": "Could not open the shop.",
+  "shopPasswordWall": "The online store is still password-protected. Shopify admin: Online Store → Preferences → turn Password protection off.",
+  "garageSetupTabHintTires": "Rough tire pressure by weight — measure on the bike, not an OEM chart.",
+  "werkstattSetupTires": "Tires / rough pressure",
+  "werkstattSetupSuspension": "Suspension — sag and air from travel",
+  "werkstattSetupSuspensionUnknown": "Suspension — travel not logged",
+  "werkstattSetupDropper": "Dropper (logged)",
+  "werkstattSetupWheel": "Wheels {size}",
+  "@werkstattSetupWheel": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "werkstattSetupCockpit": "Cockpit — bar and stem",
+  "werkstattSetupBagsCockpit": "Bags / cockpit",
+  "werkstattSetupLightsRack": "Lights and rack — only if logged",
+  "werkstattSetupDrivetrain": "Drivetrain",
+  "werkstattBatteryHonest": "Battery only with a real sensor",
+  "werkstattBatteryHonestHint": "No percentage without a paired sensor. Bosch LDI stays G-1.",
+  "werkstattSensorEbike": "Wheel sensor (CSC) — speed and cadence. Battery only with a real sensor.",
+  "werkstattSensorAnalog": "Wheel sensor — speed and cadence on the bike.",
+  "hofYourWatch": "Your watch",
+  "hofWatchHint": "Fitness tracking on the rider — not the bike. Heart rate only from a real sensor. Apple Watch often lacks standard BLE HR.",
+  "hofWatchPair": "Pair watch",
+  "hofWatchReconnect": "Pair again",
+  "hofWatchRemove": "Remove",
+  "hofWatchConnect": "Connect watch",
+  "hofYou": "You",
+  "hofYouSheetHint": "You and your watch. The wheel sensor stays on the bike in the workshop.",
+  "werkstattWatchEbike": "Watch — heart rate next to CSC. No invented SoC.",
+  "werkstattWatchAnalog": "Smartwatch / fitness tracking",
+  "setupTirePressureLabel": "Front tire (psi)",
+  "setupCompareHintTires": "Creates two blind tire pressures. After a few rides you’ll see which feels better.",
+  "setupTirePressureValue": "Tires {value} psi",
+  "@setupTirePressureValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
 
   "searchHome": "Where to? Place, tour or address",
   "startRide": "Start ride",
@@ -37,6 +100,75 @@
   "statsRidesMany": "rides",
   "profile": "Profile",
   "chat": "Chat",
+
+  "hofRideOut": "Ride out",
+  "hofOpenBike": "Open bike",
+  "hofParkBike": "Park the bike",
+  "hofRideWithoutBike": "Ride without a bike",
+  "hofRideOutAgain": "Ride out again",
+  "hofAtGate": "at the gate",
+  "hofEmptyStand": "Empty stand",
+  "hofSkyUnknown": "Sky unknown",
+  "hofNoHonestLoop": "No honest trail loop",
+  "hofNotYetOut": "not out yet",
+  "hofJustBack": "just back",
+  "hofLastRideNoGps": "no GPS track — nothing invented",
+  "hofGpsUnknown": "No location — sky and gate wait for GPS.",
+  "rideGpsUnavailable": "No GPS — track stays empty. Nothing invented.",
+  "hofAtHof": "at the stand",
+  "hofSinceOneDay": "1 day",
+  "hofSinceDays": "{days} days",
+  "@hofSinceDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "hofNoBikeHere": "No bike here",
+  "hofBringForward": "Bring {name} forward",
+  "@hofBringForward": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "hofCareInWorkshop": "{label} — in the workshop",
+  "@hofCareInWorkshop": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "hofSensorAwake": "Sensor awake",
+  "hofOpenTours": "Open tours",
+  "hofSkyDry": "{temp}° · rather dry",
+  "@hofSkyDry": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofSkyDamp": "{temp}° · damp possible",
+  "@hofSkyDamp": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofSkyWet": "{temp}° · rain · trails likely wet",
+  "@hofSkyWet": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofLoopDuration": "⟲ {minutes} min",
+  "@hofLoopDuration": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "hofCommunityNotes": "{count} notes on this loop",
+  "@hofCommunityNotes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
 
   "homeSubtitleMtb": "Trails, tours & your setup",
   "homeSubtitleGravel": "Gravel, distance & navigation",
@@ -180,10 +312,10 @@
   "duration2to3h": "2–3 h",
 
   "garageTitle": "Garage",
-  "garageFabBike": "Bike",
-  "garageEmptyTitle": "No bike in the garage yet",
-  "garageEmptyMessage": "Add your bike — type, status and parts show up right in the garage.",
-  "garageAddBike": "Add bike",
+  "garageFabBike": "Park a bike",
+  "garageEmptyTitle": "The stall is empty",
+  "garageEmptyMessage": "Park your bike — honestly, no demo kilometres. Then you see if it is ready.",
+  "garageAddBike": "Park a bike",
   "garageStatBike": "BIKE",
   "garageStatBikes": "BIKES",
   "garageStatKmTotal": "KM TOTAL",

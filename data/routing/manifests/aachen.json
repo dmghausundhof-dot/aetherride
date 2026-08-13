@@ -1,0 +1,24 @@
+{
+  "id": "aachen",
+  "name": "Aachen / Dreiländereck",
+  "bbox": [
+    6,
+    50.72,
+    6.2,
+    50.85
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "aachen.tar.zst",
+    "packGz": "aachen.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

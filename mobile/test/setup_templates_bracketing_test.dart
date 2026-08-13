@@ -12,6 +12,15 @@ void main() {
     expect(values.any((v) => v.adjusterKey == 'fork.air_pressure_psi'), isTrue);
   });
 
+  test('road and gravel templates are tires only, no Fox fork', () {
+    expect(templatesFor(BikeCategory.road), isNotEmpty);
+    expect(templatesFor(BikeCategory.gravel), isNotEmpty);
+    expect(templatesFor(BikeCategory.urban), isNotEmpty);
+    final road = templatesFor(BikeCategory.road).first.toValues(75, BikeCategory.road);
+    expect(road.any((v) => v.adjusterKey.startsWith('fork.')), isFalse);
+    expect(road.any((v) => v.adjusterKey.contains('tire')), isTrue);
+  });
+
   test('bracketing evaluates missing runs', () {
     final series = createBlindPair(
       adjusterKey: 'fork.rebound',

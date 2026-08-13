@@ -20,11 +20,13 @@ const nextConfig: NextConfig = {
       { source: "/touren", destination: "/discover", permanent: false },
       { source: "/touren/:path*", destination: "/discover", permanent: false },
       { source: "/tours", destination: "/discover", permanent: false },
-      // Shop Parts aliases (Test Agent P0)
-      { source: "/teile", destination: "/shop/parts", permanent: false },
-      { source: "/teile/:path*", destination: "/shop/parts", permanent: false },
-      { source: "/parts", destination: "/shop/parts", permanent: false },
-      { source: "/parts/:path*", destination: "/shop/parts", permanent: false },
+      // Shop is a gateway — no in-app catalog world
+      { source: "/teile", destination: "/shop", permanent: false },
+      { source: "/teile/:path*", destination: "/shop", permanent: false },
+      { source: "/parts", destination: "/shop", permanent: false },
+      { source: "/parts/:path*", destination: "/shop", permanent: false },
+      { source: "/shop/parts", destination: "/shop", permanent: false },
+      { source: "/shop/parts/:path*", destination: "/shop", permanent: false },
     ];
   },
 };

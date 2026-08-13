@@ -1,0 +1,24 @@
+{
+  "id": "linz",
+  "name": "Linz / Donau",
+  "bbox": [
+    14.22,
+    48.25,
+    14.4,
+    48.35
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "linz.tar.zst",
+    "packGz": "linz.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

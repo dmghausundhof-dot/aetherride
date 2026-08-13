@@ -1,0 +1,24 @@
+{
+  "id": "muenster",
+  "name": "Münsterland",
+  "bbox": [
+    7.5,
+    51.88,
+    7.75,
+    52.05
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "muenster.tar.zst",
+    "packGz": "muenster.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

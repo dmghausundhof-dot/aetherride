@@ -34,7 +34,7 @@ export default function RideAppBridgePage() {
   }, [activeRoute]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
+    <div className="hof-safe-page flex min-h-dvh flex-col bg-background">
       <header className="border-b border-border px-4 py-4">
         <div className="mx-auto flex max-w-lg items-center justify-between">
           <Link
@@ -42,21 +42,21 @@ export default function RideAppBridgePage() {
             className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Zurück zu Touren
+            Zurück zur Karte
           </Link>
           <Link href="/" className="text-sm font-bold">
-            Aether<span className="text-accent">Ride</span>
+            Aether<span className="text-chrome">Ride</span>
           </Link>
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-10">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-chrome/15 text-chrome">
           <Smartphone className="h-7 w-7" />
         </div>
 
         <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">
-          Navigation läuft in der App
+          Die Straße ist die App
         </h1>
         <p className="mt-3 text-text-secondary">
           Live-GPS, Offline-Karten, Sensoren und Hintergrund-Aufzeichnung sind
@@ -66,7 +66,7 @@ export default function RideAppBridgePage() {
         {activeRoute ? (
           <div className="mt-8 rounded-2xl border border-border bg-surface p-5">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/30 text-accent">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/30 text-chrome">
                 <Navigation className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -90,10 +90,9 @@ export default function RideAppBridgePage() {
                 )}
               </div>
             </div>
-            <p className="mt-4 text-xs text-text-secondary">
-              Die Route ist in deinem Browser-Konto / Store gemerkt. Nach dem
-              Login in der App erscheint sie unter Discover bzw. als aktive
-              Tour (Sync).
+      <p className="mt-4 text-xs text-text-secondary">
+              Die Route ist in deinem Browser gemerkt. Nach dem Login in der App
+              erscheint sie unter Karte bzw. als aktive Tour (Sync).
             </p>
             <button
               type="button"
@@ -106,8 +105,8 @@ export default function RideAppBridgePage() {
         ) : (
           <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-5 text-sm text-text-secondary">
             Noch keine Tour ausgewählt. Plane eine Route unter{" "}
-            <Link href="/discover" className="font-medium text-accent">
-              Touren
+            <Link href="/discover" className="font-medium text-chrome">
+              Karte
             </Link>
             , speichere sie und starte dann in der App.
           </div>
@@ -118,45 +117,45 @@ export default function RideAppBridgePage() {
           <AppDownloadButtons size="lg" />
         </div>
 
-        <div className="mt-6 flex flex-col gap-2">
-          <a
-            href={deepLink}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white transition hover:bg-accent-hover"
-          >
-            <ExternalLink className="h-4 w-4" />
-            App öffnen (Schema)
-          </a>
-          <a
-            href={universalLink}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-foreground transition hover:bg-surface"
-          >
-            Universal Link /open/ride
-          </a>
-        </div>
-        <p className="mt-2 text-center text-[11px] text-text-secondary">
-          Schema <code className="text-[10px]">aetherride://</code>
-          {" · "}
-          App Links: /.well-known/assetlinks.json
-        </p>
+        <details className="mt-6 rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+          <summary className="cursor-pointer font-medium text-text-secondary">
+            App direkt öffnen
+          </summary>
+          <div className="mt-3 flex flex-col gap-2">
+            <a
+              href={deepLink}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-chrome py-3 text-sm font-semibold text-background transition hover:bg-chrome/90"
+            >
+              <ExternalLink className="h-4 w-4" />
+              In der App öffnen
+            </a>
+            <a
+              href={universalLink}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-foreground transition hover:bg-surface"
+            >
+              Web-Link zur App
+            </a>
+          </div>
+        </details>
 
         <div className="mt-12 grid gap-3">
           <Link
             href="/discover"
-            className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:border-accent/40"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:border-chrome/40"
           >
-            <MapIcon className="h-5 w-5 text-accent" />
+            <MapIcon className="h-5 w-5 text-chrome" />
             <span>
-              <span className="font-semibold">Weiter planen</span>
+              <span className="font-semibold">Weiter auf der Karte</span>
               <span className="block text-xs text-text-secondary">
-                Touren · Desktop-Cockpit
+                OSM · Rundkurse · Planen
               </span>
             </span>
           </Link>
           <Link
             href="/download"
-            className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:border-accent/40"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:border-chrome/40"
           >
-            <Smartphone className="h-5 w-5 text-accent" />
+            <Smartphone className="h-5 w-5 text-chrome" />
             <span>
               <span className="font-semibold">Warum die App?</span>
               <span className="block text-xs text-text-secondary">

@@ -16,6 +16,7 @@ import { WeatherPanel } from "@/components/tours/WeatherPanel";
 import { TourElevationClient } from "@/components/tours/TourElevationClient";
 import { TourLiveMap } from "@/components/tours/TourLiveMap";
 import { TourReviews } from "@/components/community/TourReviews";
+import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 
 type Props = { params: Promise<{ id: string }> };
@@ -73,15 +74,15 @@ export default async function TourPage({ params }: Props) {
           <div className="mx-auto grid max-w-6xl gap-0 lg:grid-cols-2">
             <div className="flex flex-col justify-center px-4 py-10 sm:px-6 lg:py-14">
               <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
-                <Link href="/discover" className="hover:text-accent">
-                  Touren
+                <Link href="/discover" className="hover:text-chrome">
+                  Karte
                 </Link>
                 <span>/</span>
                 {region && (
                   <>
                     <Link
                       href={`/regions/${region.slug}`}
-                      className="hover:text-accent"
+                      className="hover:text-chrome"
                     >
                       {region.name}
                     </Link>
@@ -90,7 +91,10 @@ export default async function TourPage({ params }: Props) {
                 )}
                 <span className="text-foreground">{tour.name}</span>
               </div>
-              <p className="mt-4 text-xs font-medium uppercase tracking-wide text-accent">
+              <p className="mt-4 text-[11px] font-bold tracking-wide text-chrome">
+                Vor dem Tor
+              </p>
+              <p className="mt-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
                 {bikeCategoryLabel(tour.primaryCategory)}
                 {tour.loop ? " · Rundkurs" : " · Etappe"}
               </p>
@@ -124,6 +128,9 @@ export default async function TourPage({ params }: Props) {
               </div>
               <div className="mt-8">
                 <TourActions tour={tour} />
+              </div>
+              <div className="mt-4">
+                <TourCommunityChip tourId={tour.id} />
               </div>
             </div>
             <div className="relative min-h-[280px] lg:min-h-[420px]">
@@ -169,7 +176,7 @@ export default async function TourPage({ params }: Props) {
                 </p>
                 <Link
                   href={`/regions/${region.slug}`}
-                  className="mt-3 inline-block text-xs font-semibold text-accent hover:underline"
+                  className="mt-3 inline-block text-xs font-semibold text-chrome hover:underline"
                 >
                   Alle Touren in {region.name} →
                 </Link>
@@ -200,15 +207,18 @@ export default async function TourPage({ params }: Props) {
                   <Link
                     key={r.id}
                     href={`/tours/${r.id}`}
-                    className="rounded-2xl border border-border bg-background p-4 transition hover:border-accent/40"
+                    className="rounded-2xl border border-border bg-background p-4 transition hover:border-chrome/40"
                   >
-                    <p className="text-[11px] uppercase tracking-wide text-accent">
+                    <p className="text-[11px] uppercase tracking-wide text-chrome">
                       {bikeCategoryLabel(r.primaryCategory)}
                     </p>
                     <h3 className="mt-1 font-semibold">{r.name}</h3>
                     <p className="mt-1 text-xs text-text-secondary">
                       {r.distanceKm} km · {r.elevationM} hm
                     </p>
+                    <div className="mt-2">
+                      <TourCommunityChip tourId={r.id} />
+                    </div>
                   </Link>
                 ))}
               </div>

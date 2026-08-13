@@ -1,0 +1,24 @@
+{
+  "id": "bregenz",
+  "name": "Bregenz / Vorarlberg",
+  "bbox": [
+    9.6,
+    47.45,
+    9.85,
+    47.55
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bregenz.tar.zst",
+    "packGz": "bregenz.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

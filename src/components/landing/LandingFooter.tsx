@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { AppDownloadButtons } from "./AppDownloadButtons";
+import { HOF_NAV } from "@/lib/nav/hofNav";
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-border bg-surface py-12">
+    <footer className="border-t border-border bg-surface py-12 pb-[calc(3rem+var(--safe-bottom))]">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
           <div>
             <div className="text-lg font-bold">
-              Aether<span className="text-accent">Ride</span>
+              Aether<span className="text-chrome">Ride</span>
             </div>
             <p className="mt-1 text-sm text-text-secondary">
-              Touren planen. Bike verstehen. Für alle Fahrradfahrer.
+              Das Rad wohnt hier. Du kommst zurück.
             </p>
           </div>
 
@@ -21,29 +22,30 @@ export function LandingFooter() {
         <div className="mt-10 grid gap-8 sm:grid-cols-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Produkt
+              Der Hof
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
-              <Link href="/discover" className="text-text-secondary hover:text-foreground">
-                Touren
+              {HOF_NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-text-secondary hover:text-foreground"
+                >
+                  {item.id === "hof" ? "Der Hof" : item.label}
+                </Link>
+              ))}
+              <Link href="/download" className="text-text-secondary hover:text-foreground">
+                App laden
               </Link>
-              <Link href="/planner" className="text-text-secondary hover:text-foreground">
-                Planen
-              </Link>
-              <Link href="/library" className="text-text-secondary hover:text-foreground">
-                Bibliothek
-              </Link>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              Mehr
+            </p>
+            <div className="mt-3 flex flex-col gap-2 text-sm">
               <Link href="/regions" className="text-text-secondary hover:text-foreground">
                 Regionen
-              </Link>
-              <Link href="/garage" className="text-text-secondary hover:text-foreground">
-                Garage
-              </Link>
-              <Link href="/activities" className="text-text-secondary hover:text-foreground">
-                Fahrten
-              </Link>
-              <Link href="/community" className="text-text-secondary hover:text-foreground">
-                Community
               </Link>
               <Link href="/guides" className="text-text-secondary hover:text-foreground">
                 Guides
@@ -52,26 +54,7 @@ export function LandingFooter() {
                 Preise
               </Link>
               <Link href="/download" className="text-text-secondary hover:text-foreground">
-                App laden
-              </Link>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Disziplinen
-            </p>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-text-secondary">
-              <Link href="/discover?sport=road" className="hover:text-foreground">
-                Rennrad
-              </Link>
-              <Link href="/discover?sport=gravel" className="hover:text-foreground">
-                Gravel
-              </Link>
-              <Link href="/discover?sport=mtb" className="hover:text-foreground">
-                Mountainbike
-              </Link>
-              <Link href="/discover?sport=urban" className="hover:text-foreground">
-                City
+                App
               </Link>
             </div>
           </div>
@@ -90,7 +73,7 @@ export function LandingFooter() {
                 Widerruf
               </Link>
               <Link href="/privacy" className="text-text-secondary hover:text-foreground">
-                Privacy
+                Daten & Privatsphäre
               </Link>
             </div>
           </div>
@@ -98,7 +81,7 @@ export function LandingFooter() {
 
         <p className="mt-10 text-center text-xs text-text-secondary">
           © {new Date().getFullYear()} AetherRide. Offline-First · DSGVO · Web
-          plant, App fährt.
+          ist der Hof, die App fährt.
         </p>
       </div>
     </footer>

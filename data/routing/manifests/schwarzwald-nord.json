@@ -1,38 +1,24 @@
 {
   "id": "schwarzwald-nord",
-  "name": "Nordschwarzwald (Freiburg–Todtnau Demo)",
-  "bbox": [7.84, 47.94, 7.93, 48.0],
-  "builtAt": "2026-08-07T07:54:55Z",
+  "name": "Schwarzwald Süd",
+  "bbox": [
+    7.7,
+    47.8,
+    8.2,
+    48.15
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": true
+    "valhalla_tiles": false
   },
-  "files": {
-    "offline_graph.json": {
-      "bytes": 1740619,
-      "sha256_16": "dc6006725ea0d3bf"
-    },
-    "valhalla.json": {
-      "bytes": 7630,
-      "sha256_16": "4b7bced250a42f51"
-    },
-    "valhalla_tiles.tar": {
-      "bytes": 2324480,
-      "sha256_16": "f089d8f314cff8c6"
-    },
-    "tiles/": {
-      "file_count": 5
-    }
-  },
+  "files": {},
   "cdn": {
     "baseUrl": "",
     "pack": "schwarzwald-nord.tar.zst",
     "packGz": "schwarzwald-nord.tar.gz"
   },
-  "source": "overpass+osmium+valhalla-docker",
   "shipped": {
-    "flutter_asset": "mobile/assets/routing/offline_graph.json",
-    "build_tiles": "scripts/routing/build-region-pack.sh",
-    "note": "Re-run npm run routing:region to refresh full sha256 + tar archives"
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

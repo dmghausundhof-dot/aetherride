@@ -16,6 +16,7 @@ import '../data/sync/sync_engine.dart';
 import '../data/weather/weather_client.dart';
 import '../domain/bike.dart';
 import '../domain/component.dart';
+import '../domain/maintenance/intervals.dart';
 import '../domain/ride.dart';
 import '../domain/rider_profile.dart';
 import '../domain/saved_route.dart';
@@ -100,6 +101,18 @@ final bikeComponentsProvider =
   return ref.watch(componentRepositoryProvider).listInstalled(bikeId);
 });
 
+/// Fällige Wartungen über die ganze Flotte — Badge auf der Werkstatt-Tür.
+final fleetDueCountProvider = FutureProvider<int>((ref) async {
+  final bikes = await ref.watch(bikesProvider.future);
+  final repo = ref.watch(componentRepositoryProvider);
+  var n = 0;
+  for (final bike in bikes) {
+    final comps = await repo.listInstalled(bike.id);
+    n += listDueMaintenance(bike: bike, components: comps).length;
+  }
+  return n;
+});
+
 final setupRepositoryProvider = Provider<SetupRepository>((ref) {
   return SetupRepository(ref.watch(appDatabaseProvider));
 });
@@ -173,7 +186,7 @@ final bleCoreProvider = Provider<BleCoreChannel>((ref) {
   return channel;
 });
 
-/// Gekoppelte BLE-Sensoren je Bike (Garage „Sensor koppeln" → Ride connect).
+/// Gekoppelte BLE-Sensoren je Bike plus rider-level Smartwatch.
 final bikeBleStoreProvider = Provider<BikeBleStore>((ref) {
   return BikeBleStore();
 });

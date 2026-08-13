@@ -1,0 +1,24 @@
+{
+  "id": "chiemgau",
+  "name": "Chiemgau",
+  "bbox": [
+    12.2,
+    47.7,
+    12.85,
+    47.95
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "chiemgau.tar.zst",
+    "packGz": "chiemgau.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

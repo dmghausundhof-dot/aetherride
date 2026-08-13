@@ -30,6 +30,10 @@ enum ComponentSlot {
   motor,
   battery,
   display,
+  light,
+  lock,
+  rack,
+  bags,
   other,
 }
 
@@ -64,6 +68,10 @@ extension ComponentSlotLabel on ComponentSlot {
         ComponentSlot.motor => 'Motor',
         ComponentSlot.battery => 'Akku',
         ComponentSlot.display => 'Display',
+        ComponentSlot.light => 'Licht',
+        ComponentSlot.lock => 'Schloss',
+        ComponentSlot.rack => 'Gepäckträger',
+        ComponentSlot.bags => 'Taschen',
         ComponentSlot.other => 'Sonstiges',
       };
 
@@ -154,7 +162,12 @@ extension ComponentSlotGroup on ComponentSlot {
         ComponentSlot.battery ||
         ComponentSlot.display =>
           ComponentGroup.power,
-        ComponentSlot.other => ComponentGroup.other,
+        ComponentSlot.light ||
+        ComponentSlot.lock ||
+        ComponentSlot.rack ||
+        ComponentSlot.bags ||
+        ComponentSlot.other =>
+          ComponentGroup.other,
       };
 }
 

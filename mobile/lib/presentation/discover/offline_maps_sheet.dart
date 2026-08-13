@@ -15,27 +15,14 @@ import '../../core/theme/app_theme.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_tiles.dart';
 import '../../data/routing/map_style_url.dart';
+import '../../data/routing/bike_overlay.dart';
+
+import '../../data/routing/overlay_regions.dart';
 
 /// Fallback-Regionen (Komoot-ähnlich: DACH breit, nicht nur Schwarzwald).
 /// Download nutzt API-Manifest; fehlt das Pack, greift Bundle-Fallback.
-const _kFallbackRegions = [
-  (id: 'rhein-neckar', name: 'Rhein-Neckar / Heidelberg'),
-  (id: 'schwarzwald-nord', name: 'Schwarzwald Nord'),
-  (id: 'bodensee', name: 'Bodensee'),
-  (id: 'stuttgart', name: 'Stuttgart / Mittlerer Neckar'),
-  (id: 'muenchen', name: 'München & Umland'),
-  (id: 'nuernberg', name: 'Nürnberg / Franken'),
-  (id: 'frankfurt-rhein-main', name: 'Frankfurt Rhein-Main'),
-  (id: 'koeln-rhein', name: 'Köln / Rheinland'),
-  (id: 'hamburg', name: 'Hamburg & Umland'),
-  (id: 'berlin', name: 'Berlin & Brandenburg'),
-  (id: 'dresden-elbland', name: 'Dresden / Elbland'),
-  (id: 'wien', name: 'Wien & Wienerwald'),
-  (id: 'salzburg', name: 'Salzburg'),
-  (id: 'innsbruck', name: 'Innsbruck / Tirol'),
-  (id: 'zuerich', name: 'Zürich & Umland'),
-  (id: 'bern', name: 'Bern / Mittelland'),
-  (id: 'basel', name: 'Basel / Dreiländereck'),
+final _kFallbackRegions = [
+  for (final r in kOverlayPackCatalog) (id: r.id, name: r.name),
 ];
 
 /// Offline-Karten: Region-Packs zuerst (wie Komoot/AllTrails), Style optional.
@@ -324,6 +311,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         activatedPackPath: regionDir.path,
         engineHint: hint,
       );
+      await downloadBikeOverlayIntoPack(regionDir, region.id);
       OfflineTilesStore.instance.clearCache();
       final status = await OfflineTilesStore.instance.valhallaLinkStatus();
       if (!mounted) return;
@@ -652,7 +640,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                         const SizedBox(height: 8),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accent,
+                            backgroundColor: AppColors.forestOnDark,
                           ),
                           onPressed: _busy ? null : _saveStyleUrl,
                           child: const Text('Style speichern'),

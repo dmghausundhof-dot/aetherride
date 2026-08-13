@@ -24,7 +24,7 @@ export function BikeChip({
         className={`inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-xs font-medium text-accent ${className}`}
       >
         <Bike className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">Bike anlegen</span>
+        <span className="truncate">Rad abstellen</span>
       </Link>
     );
   }
@@ -33,7 +33,7 @@ export function BikeChip({
     <Link
       href={href}
       className={`inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent ${className}`}
-      aria-label={`Aktives Bike: ${bike.name}`}
+      aria-label={`Aktives Rad: ${bike.name}`}
     >
       <Bike className="h-3.5 w-3.5 shrink-0" />
       <span className="truncate">{bike.name}</span>

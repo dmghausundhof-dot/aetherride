@@ -469,7 +469,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     Expanded(
                       child: Text(
                         ride.name ??
-                            (isFreeride ? l10n.postRideFreeride : 'Ride'),
+                            (isFreeride ? l10n.postRideFreeride : 'Fahrt'),
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
@@ -739,7 +739,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                             const SizedBox(height: 8),
                             FilledButton(
                               style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.accent,
+                                backgroundColor: AppColors.forestOnDark,
                               ),
                               onPressed: _acceptedSuggestion || _saving
                                   ? null
@@ -865,7 +865,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                 const SizedBox(height: 28),
                 FilledButton(
                   style:
-                      FilledButton.styleFrom(backgroundColor: AppColors.accent),
+                      FilledButton.styleFrom(),
                   onPressed: _saving ? null : () => _submit(),
                   child: const Text('Feedback speichern'),
                 ),

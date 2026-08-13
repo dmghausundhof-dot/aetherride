@@ -1,0 +1,24 @@
+{
+  "id": "duesseldorf",
+  "name": "Düsseldorf / Niederrhein",
+  "bbox": [
+    6.6,
+    51.1,
+    6.95,
+    51.35
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "duesseldorf.tar.zst",
+    "packGz": "duesseldorf.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

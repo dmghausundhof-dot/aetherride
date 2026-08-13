@@ -29,6 +29,19 @@ export async function POST(req: Request) {
     const step = Math.max(1, Math.floor(pts.length / 80));
     const sample = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
 
+    const { fetchGoogleElevation, isGoogleConfigured } = await import(
+      "@/lib/coverage/google"
+    );
+    if (isGoogleConfigured()) {
+      const g = await fetchGoogleElevation({ points: sample });
+      if (g.ok && g.points.length >= 2) {
+        return NextResponse.json({
+          ...buildElevationFromTrack(g.points, "api"),
+          provider: "google_elevation",
+        });
+      }
+    }
+
     const res = await fetch("https://api.open-elevation.com/api/v1/lookup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,7 +65,10 @@ export async function POST(req: Request) {
       elev: results[i]?.elevation ?? null,
     }));
 
-    return NextResponse.json(buildElevationFromTrack(enriched, "api"));
+    return NextResponse.json({
+      ...buildElevationFromTrack(enriched, "api"),
+      provider: "open-elevation",
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "elevation failed" },

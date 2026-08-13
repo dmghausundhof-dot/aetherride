@@ -12,6 +12,10 @@
 #   ./scripts/routing/build-graph-only-pack.sh data/routing/regions/rhein-neckar.json
 #   ./scripts/routing/build-graph-only-pack.sh   # defaults to rhein-neckar
 #
+# Bike overlay (PMTiles, no Valhalla):
+#   ./scripts/routing/build-bike-overlay.sh data/routing/regions/rhein-neckar.json
+#   SKIP_OVERLAY=1 ./scripts/routing/build-graph-only-pack.sh …  # skip overlay
+#
 # Do not commit large binaries under data/routing/dist/ without agreement.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -23,6 +27,10 @@ if [[ ! -f "$REGION_FILE" ]]; then
   exit 1
 fi
 
+# Graph-only (this wrapper, Geofabrik PBF by default — Overpass is flaky on large bboxes):
+#   ./scripts/routing/build-graph-only-pack.sh data/routing/regions/rhein-neckar.json
+#   GRAPH_SOURCE=overpass ./scripts/routing/build-graph-only-pack.sh …
 echo "==> Graph-only pack (SKIP_TILES=1) for $REGION_FILE"
 export SKIP_TILES=1
+export GRAPH_SOURCE="${GRAPH_SOURCE:-geofabrik}"
 exec "$ROOT/scripts/routing/build-region-pack.sh" "$REGION_FILE"

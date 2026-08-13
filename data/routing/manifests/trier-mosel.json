@@ -1,0 +1,24 @@
+{
+  "id": "trier-mosel",
+  "name": "Trier / Mosel",
+  "bbox": [
+    6.5,
+    49.7,
+    6.85,
+    49.85
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "trier-mosel.tar.zst",
+    "packGz": "trier-mosel.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}
