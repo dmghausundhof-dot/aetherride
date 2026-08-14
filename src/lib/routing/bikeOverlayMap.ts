@@ -211,7 +211,7 @@ export function addBikeOverlayLayers(
           ["linear"],
           ["zoom"],
           10,
-          layer.width * 0.5,
+          layer.width * 0.85,
           14,
           layer.width,
         ],
@@ -265,7 +265,7 @@ export function applyBikeOverlayVisibility(
       ["linear"],
       ["zoom"],
       10,
-      width * 0.5,
+      width * 0.85,
       14,
       width,
     ]);

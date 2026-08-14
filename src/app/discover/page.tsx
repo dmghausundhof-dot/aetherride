@@ -2632,7 +2632,7 @@ function DiscoverPageInner() {
         <MapView
           className="absolute inset-0 rounded-none"
           center={mapCenter}
-          zoom={11}
+          zoom={13}
           routes={mapLayers}
           markers={markers}
           interactiveSelect={pickTarget !== null}
