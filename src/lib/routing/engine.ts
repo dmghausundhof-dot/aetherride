@@ -5,8 +5,11 @@
  */
 
 import {
-  ROUTING_PROFILES,
+  buildValhallaCosting,
+  getProfile,
+  isRideProfileId,
   type RoutingProfile,
+  type ValhallaCosting,
 } from "@/lib/routing/profiles";
 import {
   stepsFromDemoGeometry,
@@ -115,108 +118,22 @@ export function isUsingPublicOsrm(): boolean {
   return engine() === "osrm" && !process.env.OSRM_URL?.trim() && publicOsrmAllowed();
 }
 
-/** Valhalla costing model per AetherRide profile.
- * Keep in sync with `mobile/packages/routing_core/native/src/profiles.rs`
- * and `data/routing/valhalla-costing.json`.
- */
-export function valhallaCosting(profile: RoutingProfile): {
-  costing: string;
-  costing_options?: Record<string, Record<string, string | number | boolean>>;
-} {
-  switch (profile) {
-    case "hiking":
-      return {
-        costing: "pedestrian",
-        costing_options: {
-          pedestrian: { walking_speed: 4.5, use_hills: 0.6 },
+/** Valhalla costing — RideProfile SSOT in `profiles.ts` (urban bleibt Legacy). */
+export function valhallaCosting(profile: RoutingProfile): ValhallaCosting {
+  if (profile === "urban") {
+    return {
+      costing: "bicycle",
+      costing_options: {
+        bicycle: {
+          bicycle_type: "hybrid",
+          use_roads: 0.75,
+          use_hills: 0.15,
+          avoid_bad_surfaces: 0.7,
         },
-      };
-    case "road":
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "road",
-            use_roads: 0.9,
-            use_hills: 0.2,
-            avoid_bad_surfaces: 0.8,
-          },
-        },
-      };
-    case "gravel":
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "hybrid",
-            use_roads: 0.4,
-            use_hills: 0.4,
-            avoid_bad_surfaces: 0.3,
-          },
-        },
-      };
-    case "ebike":
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "hybrid",
-            use_roads: 0.5,
-            use_hills: 0.85,
-            avoid_bad_surfaces: 0.4,
-          },
-        },
-      };
-    case "urban":
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "hybrid",
-            use_roads: 0.75,
-            use_hills: 0.15,
-            avoid_bad_surfaces: 0.7,
-          },
-        },
-      };
-    case "emtb":
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "mountain",
-            use_roads: 0.2,
-            use_hills: 0.95,
-            avoid_bad_surfaces: 0.1,
-          },
-        },
-      };
-    case "mtb_enduro":
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "mountain",
-            use_roads: 0.1,
-            use_hills: 0.9,
-            avoid_bad_surfaces: 0.05,
-          },
-        },
-      };
-    case "mtb_allmountain":
-    default:
-      return {
-        costing: "bicycle",
-        costing_options: {
-          bicycle: {
-            bicycle_type: "mountain",
-            use_roads: 0.25,
-            use_hills: 0.75,
-            avoid_bad_surfaces: 0.15,
-          },
-        },
-      };
+      },
+    };
   }
+  return buildValhallaCosting(profile);
 }
 
 /** OSRM profile name */
@@ -242,6 +159,7 @@ export function graphhopperProfile(profile: RoutingProfile): string {
         return "racingbike";
       case "mtb_allmountain":
       case "mtb_enduro":
+      case "downhill":
       case "emtb":
         return "mtb";
       case "gravel":
@@ -298,10 +216,12 @@ function demoRoute(
   const coords: [number, number][] = [from, mid, to];
   const dist =
     Math.hypot(tlng - flng, tlat - flat) * 111_000 * 1.15;
-  const cfg = ROUTING_PROFILES[profile];
+  const speedMps = isRideProfileId(profile)
+    ? getProfile(profile).defaultSpeedKmh / 3.6
+    : 5.0;
   return {
     distanceM: Math.round(dist),
-    durationS: Math.round(dist / (cfg.id === "hiking" ? 1.2 : 4.5)),
+    durationS: Math.round(dist / speedMps),
     geometry: { type: "LineString", coordinates: coords },
     engine: "demo",
     profile,
@@ -453,7 +373,10 @@ async function routeGraphhopper(
   const warnings: string[] = [];
   if (
     process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES !== "1" &&
-    (profile.startsWith("mtb") || profile === "emtb" || profile === "hiking")
+    (profile.startsWith("mtb") ||
+      profile === "downhill" ||
+      profile === "emtb" ||
+      profile === "hiking")
   ) {
     warnings.push(
       `GraphHopper-Account: Profil „${ghProfile}“ (Basic). Für mtb/hike GRAPHHOPPER_ALLOW_EXTENDED_PROFILES=1 nach Plan-Upgrade.`

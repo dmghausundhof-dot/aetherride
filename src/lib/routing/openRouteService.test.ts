@@ -16,6 +16,7 @@ assert.equal(orsProfileFor("road"), "cycling-road");
 assert.equal(orsProfileFor("gravel"), "cycling-regular");
 assert.equal(orsProfileFor("urban"), "cycling-regular");
 assert.equal(orsProfileFor("mtb_enduro"), "cycling-mountain");
+assert.equal(orsProfileFor("downhill"), "cycling-mountain");
 assert.equal(orsProfileFor("mtb_allmountain"), "cycling-mountain");
 assert.equal(orsProfileFor("emtb"), "cycling-mountain");
 assert.equal(orsProfileFor("ebike"), "cycling-electric");
@@ -23,6 +24,7 @@ assert.equal(orsProfileFor("hiking"), "foot-hiking");
 
 assert.equal(orsPreferredForGraphhopperBasic("gravel"), true);
 assert.equal(orsPreferredForGraphhopperBasic("mtb_enduro"), true);
+assert.equal(orsPreferredForGraphhopperBasic("downhill"), true);
 assert.equal(orsPreferredForGraphhopperBasic("road"), false);
 assert.equal(orsPreferredForGraphhopperBasic("urban"), false);
 

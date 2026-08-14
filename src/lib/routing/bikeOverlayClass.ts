@@ -198,6 +198,7 @@ export function overlayFamilyForBike(
   if (
     c.includes("mtb") ||
     c === "dh" ||
+    c === "downhill" ||
     c === "emtb" ||
     c === "mtb_trail" ||
     c === "mtb_am" ||

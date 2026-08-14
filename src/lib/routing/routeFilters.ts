@@ -234,6 +234,7 @@ export function difficultyOptionsForProfile(
   const mtbLike =
     profile === "mtb_allmountain" ||
     profile === "mtb_enduro" ||
+    profile === "downhill" ||
     profile === "emtb";
 
   if (mtbLike) {
@@ -304,6 +305,7 @@ export function sportFilterFromProfile(profile: RoutingProfile): SportFilter {
   switch (profile) {
     case "mtb_allmountain":
     case "mtb_enduro":
+    case "downhill":
       return "mtb";
     case "gravel":
       return "gravel";

@@ -3,6 +3,12 @@ import {
   BIKE_OVERLAY_COLORS,
   overlayClassesForFamily,
 } from "./bikeOverlayClass";
+import {
+  getProfile,
+  overlayScaleLabels,
+  prefersUnratedTrails,
+  type RideProfileId,
+} from "./profiles";
 
 export const BIKE_OVERLAY_SOURCE_ID = "bike-overlay";
 export const BIKE_OVERLAY_SOURCE_LAYER = "bike";
@@ -34,6 +40,7 @@ const MTB_COLOR: unknown = [
 
 type LinePaint = {
   id: string;
+  cls: Exclude<BikeOverlayClass, "hidden">;
   filter: unknown[];
   color: unknown;
   width: number;
@@ -43,12 +50,14 @@ type LinePaint = {
 const LAYER_PAINT: LinePaint[] = [
   {
     id: BIKE_OVERLAY_LAYER_IDS.mtb,
+    cls: "mtb",
     filter: ["==", ["get", "bike_class"], "mtb"],
     color: MTB_COLOR,
     width: 2.4,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.mtb_unrated,
+    cls: "mtb_unrated",
     filter: ["==", ["get", "bike_class"], "mtb_unrated"],
     color: BIKE_OVERLAY_COLORS.unrated,
     width: 1.6,
@@ -56,18 +65,21 @@ const LAYER_PAINT: LinePaint[] = [
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.gravel,
+    cls: "gravel",
     filter: ["==", ["get", "bike_class"], "gravel"],
     color: BIKE_OVERLAY_COLORS.gravel,
     width: 2,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.road,
+    cls: "road",
     filter: ["==", ["get", "bike_class"], "road"],
     color: BIKE_OVERLAY_COLORS.road,
     width: 2.2,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.urban,
+    cls: "urban",
     filter: ["==", ["get", "bike_class"], "urban"],
     color: BIKE_OVERLAY_COLORS.urban,
     width: 1.8,
@@ -76,12 +88,75 @@ const LAYER_PAINT: LinePaint[] = [
 
 export type BikeOverlayMapLike = {
   getSource: (id: string) => unknown;
-  addSource: (id: string, spec: object) => void;
+  addSource: (id: string, spec: unknown) => void;
   getLayer: (id: string) => unknown;
   addLayer: (spec: object) => void;
   setLayoutProperty: (id: string, key: string, value: unknown) => void;
   setPaintProperty: (id: string, key: string, value: unknown) => void;
+  setFilter: (id: string, filter: unknown) => void;
 };
+
+export type BikeOverlayApplyOpts = {
+  family: BikeOverlayFamily;
+  visible: boolean;
+  extraOn?: BikeOverlayClass[];
+  /** RideProfile SSOT — filtert MTB nach S-Skala und hebt Matches hervor. */
+  rideProfileId?: RideProfileId | null;
+};
+
+/**
+ * MapLibre-Filter je Overlay-Klasse.
+ * `false` = Layer ausblenden (z. B. Downhill ohne S0 / ohne Unrated).
+ */
+export function bikeOverlayLayerFilter(
+  cls: Exclude<BikeOverlayClass, "hidden">,
+  rideProfileId?: RideProfileId | null
+): unknown[] | false {
+  const classFilter: unknown[] = ["==", ["get", "bike_class"], cls];
+  if (!rideProfileId) return classFilter;
+
+  if (cls === "mtb") {
+    const labels = overlayScaleLabels(rideProfileId);
+    if (labels.length === 0) return false;
+    return [
+      "all",
+      classFilter,
+      ["in", ["get", "mtb_scale"], ["literal", labels]],
+    ];
+  }
+
+  if (cls === "mtb_unrated") {
+    return prefersUnratedTrails(rideProfileId) ? classFilter : false;
+  }
+
+  return classFilter;
+}
+
+export function overlayClassesOn(opts: BikeOverlayApplyOpts): Set<string> {
+  const on = new Set<string>(overlayClassesForFamily(opts.family));
+  for (const extra of opts.extraOn ?? []) {
+    if (extra !== "hidden") on.add(extra);
+  }
+  if (!opts.rideProfileId) return on;
+
+  const p = getProfile(opts.rideProfileId);
+  const labels = overlayScaleLabels(opts.rideProfileId);
+  if (labels.length > 0) on.add("mtb");
+  if (prefersUnratedTrails(opts.rideProfileId)) on.add("mtb_unrated");
+  else on.delete("mtb_unrated");
+
+  if (p.category === "road") {
+    on.add("road");
+    if (!(opts.extraOn ?? []).includes("mtb")) on.delete("mtb");
+    if (!(opts.extraOn ?? []).includes("mtb_unrated")) on.delete("mtb_unrated");
+  }
+  if (p.category === "gravel") on.add("gravel");
+  if (p.category === "hike") {
+    on.add("mtb");
+    on.add("mtb_unrated");
+  }
+  return on;
+}
 
 export function addBikeOverlayLayers(
   map: BikeOverlayMapLike,
@@ -90,8 +165,8 @@ export function addBikeOverlayLayers(
     kind: "pmtiles" | "geojson";
     family: BikeOverlayFamily;
     visible: boolean;
-    /** Extra classes the user toggled on. */
     extraOn?: BikeOverlayClass[];
+    rideProfileId?: RideProfileId | null;
   }
 ) {
   if (!map.getSource(BIKE_OVERLAY_SOURCE_ID)) {
@@ -150,30 +225,50 @@ export function addBikeOverlayLayers(
     family: opts.family,
     visible: opts.visible,
     extraOn: opts.extraOn,
+    rideProfileId: opts.rideProfileId,
   });
 }
 
 export function applyBikeOverlayVisibility(
   map: BikeOverlayMapLike,
-  opts: {
-    family: BikeOverlayFamily;
-    visible: boolean;
-    extraOn?: BikeOverlayClass[];
-  }
+  opts: BikeOverlayApplyOpts
 ) {
-  const on = new Set<string>(overlayClassesForFamily(opts.family));
-  for (const extra of opts.extraOn ?? []) {
-    if (extra !== "hidden") on.add(extra);
-  }
-  for (const [cls, layerId] of Object.entries(BIKE_OVERLAY_LAYER_IDS)) {
-    if (!map.getLayer(layerId)) continue;
-    if (!opts.visible) {
-      map.setLayoutProperty(layerId, "visibility", "none");
+  const on = overlayClassesOn(opts);
+  const highlightMtb = Boolean(
+    opts.rideProfileId && overlayScaleLabels(opts.rideProfileId).length > 0
+  );
+
+  for (const layer of LAYER_PAINT) {
+    if (!map.getLayer(layer.id)) continue;
+    const filter = bikeOverlayLayerFilter(layer.cls, opts.rideProfileId);
+    const extraForced = (opts.extraOn ?? []).includes(layer.cls);
+    const resolvedFilter =
+      filter === false && extraForced
+        ? (["==", ["get", "bike_class"], layer.cls] as unknown[])
+        : filter;
+    const hide =
+      !opts.visible || resolvedFilter === false || !on.has(layer.cls);
+
+    if (hide) {
+      map.setLayoutProperty(layer.id, "visibility", "none");
       continue;
     }
-    const active = on.has(cls);
-    map.setLayoutProperty(layerId, "visibility", "visible");
-    map.setPaintProperty(layerId, "line-opacity", active ? 0.88 : 0.16);
+
+    map.setFilter(layer.id, resolvedFilter);
+    map.setLayoutProperty(layer.id, "visibility", "visible");
+    const active = on.has(layer.cls);
+    const highlighted = active && (layer.cls !== "mtb" || highlightMtb);
+    map.setPaintProperty(layer.id, "line-opacity", highlighted ? 0.92 : 0.14);
+    const width = highlighted && layer.cls === "mtb" ? layer.width * 1.25 : layer.width;
+    map.setPaintProperty(layer.id, "line-width", [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      10,
+      width * 0.5,
+      14,
+      width,
+    ]);
   }
 }
 

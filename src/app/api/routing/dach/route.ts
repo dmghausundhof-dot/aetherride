@@ -9,17 +9,11 @@ import {
   isLiveRoutingConfigured,
 } from "@/lib/routing/engine";
 import { isOrsConfigured, orsProfileFor } from "@/lib/routing/openRouteService";
-import type { RoutingProfile } from "@/lib/routing/profiles";
+import { listProfiles, type RoutingProfile } from "@/lib/routing/profiles";
 
 const PROFILES: RoutingProfile[] = [
-  "road",
-  "gravel",
-  "mtb_enduro",
-  "mtb_allmountain",
+  ...listProfiles().map((p) => p.id),
   "urban",
-  "ebike",
-  "emtb",
-  "hiking",
 ];
 
 /**

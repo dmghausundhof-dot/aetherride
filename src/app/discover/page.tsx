@@ -29,6 +29,8 @@ import {
   profileForBikeCategory,
   ROUTING_PROFILES,
   DEFAULT_DISCOVER_PROFILE,
+  isRideProfileId,
+  profileLabel,
   type ClientRouteResult,
   type RoutingProfile,
 } from "@/lib/routing/profiles";
@@ -344,6 +346,7 @@ function DiscoverPageInner() {
 
   const activeProfile = manualProfile ?? routingProfile;
   const categoryHint = categoryForRoutingProfile(activeProfile);
+  const rideProfileId = isRideProfileId(activeProfile) ? activeProfile : null;
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -516,6 +519,7 @@ function DiscoverPageInner() {
       trails: nearbyTrails,
       showTrails: showTrails && sheetMode === "tours",
       rundkursOnly: rundkursActive,
+      rideProfileId,
     });
     const heat: MapRouteLayer[] = (communityHeat?.segments ?? [])
       .filter((s) => s.visible && s.coordinates.length >= 2)
@@ -541,6 +545,7 @@ function DiscoverPageInner() {
     showTrails,
     sheetMode,
     communityHeat,
+    rideProfileId,
   ]);
 
   useEffect(() => {
@@ -1682,12 +1687,13 @@ function DiscoverPageInner() {
             {(
               [
                 "mtb_allmountain",
+                "mtb_enduro",
+                "downhill",
                 "gravel",
                 "road",
                 "urban",
                 "emtb",
                 "ebike",
-                "mtb_enduro",
               ] as RoutingProfile[]
             ).map((pid) => {
               const p = ROUTING_PROFILES[pid];
@@ -1749,7 +1755,7 @@ function DiscoverPageInner() {
             <div className="flex flex-col gap-2">
               <div className="rounded-xl border border-chrome/25 bg-chrome/5 p-3">
                 <p className="text-xs font-semibold text-foreground">
-                  In deiner Nähe · {ROUTING_PROFILES[activeProfile].label}
+                  In deiner Nähe · {profileLabel(activeProfile)}
                 </p>
                 <p className="mt-0.5 text-[11px] text-text-secondary">
                   Live-Route ab Standort oder Kartenmitte — MTB, Gravel, Rennrad,
@@ -1788,7 +1794,7 @@ function DiscoverPageInner() {
                 <>
                   <p className="text-[11px] text-text-secondary">
                     Vorschläge · {minutes} min ·{" "}
-                    {ROUTING_PROFILES[activeProfile].label}
+                    {profileLabel(activeProfile)}
                   </p>
                   {quickBusy && (
                     <p className="text-sm text-text-secondary" role="status">
@@ -2636,6 +2642,7 @@ function DiscoverPageInner() {
           bikeOverlayFamily={bikeOverlayFamily}
           bikeOverlayVisible={bikeOverlayOn}
           bikeOverlayExtraOn={bikeOverlayExtra}
+          bikeOverlayRideProfileId={rideProfileId}
           onMapClick={onMapClick}
           onMarkerClick={(id) => {
             if (!id.startsWith("tour-")) return;
@@ -2683,6 +2690,7 @@ function DiscoverPageInner() {
               family={bikeOverlayFamily}
               visible={bikeOverlayOn}
               extraOn={bikeOverlayExtra}
+              rideProfileId={rideProfileId}
               onToggleVisible={() => setBikeOverlayOn((v) => !v)}
               onToggleClass={(cls) => {
                 setBikeOverlayOn(true);

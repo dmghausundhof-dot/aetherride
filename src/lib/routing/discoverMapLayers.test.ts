@@ -8,6 +8,8 @@ import { buildDiscoverMapLayers } from "./discoverMapLayers";
 import { emptyDraft, type PlanDraft } from "./planDraft";
 import { SEED_TRAILS } from "./trailSegments";
 import type { ClientRouteResult } from "./profiles";
+import { getProfile } from "./profiles";
+import type { TrailSegment } from "./trailSegments";
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -146,10 +148,66 @@ async function testAttachAppendPersistsLayers() {
   assert(savedLayers.approach != null, "saved layers must include approach");
 }
 
+function testRideProfileFiltersAndHighlightsTrails() {
+  const s0: TrailSegment = {
+    id: "s0-only",
+    name: "Green",
+    difficulty: "S0",
+    provider: "seed",
+    center: [8.4, 48.6],
+    geometry: line([
+      [8.4, 48.6],
+      [8.41, 48.61],
+    ]),
+  };
+  const s3: TrailSegment = {
+    id: "s3-only",
+    name: "DH Line",
+    difficulty: "S3",
+    provider: "seed",
+    center: [8.4, 48.6],
+    geometry: line([
+      [8.42, 48.6],
+      [8.43, 48.61],
+    ]),
+  };
+  const draft = emptyDraft("downhill", [8.4, 48.6]);
+  const dh = buildDiscoverMapLayers({
+    draft,
+    quickOptions: [],
+    trails: [s0, s3],
+    showTrails: true,
+    rideProfileId: "downhill",
+  });
+  assert(
+    !dh.some((l) => l.id === "trail-s0-only"),
+    "Downhill hides S0 seed trails"
+  );
+  const highlighted = dh.find((l) => l.id === "trail-s3-only");
+  assert(highlighted != null, "Downhill keeps S3 seed trails");
+  assert(
+    highlighted.color === getProfile("downhill").trailHighlightColor,
+    "S3 trail uses DH highlight color"
+  );
+
+  const road = buildDiscoverMapLayers({
+    draft: emptyDraft("road", [8.4, 48.6]),
+    quickOptions: [],
+    trails: [s0, s3],
+    showTrails: true,
+    rideProfileId: "road",
+  });
+  assert(
+    !road.some((l) => l.id.startsWith("trail-")),
+    "Road hides MTB seed trails"
+  );
+}
+
 async function main() {
   testLayersActiveAndAlt();
   testHybridParts();
   await testAttachAppendPersistsLayers();
+  testRideProfileFiltersAndHighlightsTrails();
   console.log("discoverMapLayers.test.ts: ok");
 }
 

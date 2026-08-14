@@ -11,7 +11,9 @@ import type {
 import {
   addBikeOverlayLayers,
   applyBikeOverlayVisibility,
+  type BikeOverlayMapLike,
 } from "@/lib/routing/bikeOverlayMap";
+import type { RideProfileId } from "@/lib/routing/profiles";
 
 export type MapMarker = {
   id: string;
@@ -71,6 +73,7 @@ interface MapViewProps {
   bikeOverlayFamily?: BikeOverlayFamily;
   bikeOverlayVisible?: boolean;
   bikeOverlayExtraOn?: BikeOverlayClass[];
+  bikeOverlayRideProfileId?: RideProfileId | null;
 }
 
 let pmtilesRegistered = false;
@@ -234,6 +237,7 @@ export function MapView({
   bikeOverlayFamily = "road",
   bikeOverlayVisible = true,
   bikeOverlayExtraOn = [],
+  bikeOverlayRideProfileId = null,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -360,14 +364,16 @@ export function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !bikeOverlayUrl) return;
+    const overlayMap = map as unknown as BikeOverlayMapLike;
     const apply = () => {
       try {
-        addBikeOverlayLayers(map, {
+        addBikeOverlayLayers(overlayMap, {
           url: bikeOverlayUrl,
           kind: bikeOverlayKind,
           family: bikeOverlayFamily,
           visible: bikeOverlayVisible,
           extraOn: bikeOverlayExtraOn,
+          rideProfileId: bikeOverlayRideProfileId,
         });
       } catch (err) {
         console.warn("[MapView] bike overlay", err);
@@ -385,16 +391,18 @@ export function MapView({
     bikeOverlayFamily,
     bikeOverlayVisible,
     bikeOverlayExtraOn,
+    bikeOverlayRideProfileId,
   ]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !bikeOverlayUrl) return;
     try {
-      applyBikeOverlayVisibility(map, {
+      applyBikeOverlayVisibility(map as unknown as BikeOverlayMapLike, {
         family: bikeOverlayFamily,
         visible: bikeOverlayVisible,
         extraOn: bikeOverlayExtraOn,
+        rideProfileId: bikeOverlayRideProfileId,
       });
     } catch {
       /* source not ready yet */
@@ -405,6 +413,7 @@ export function MapView({
     bikeOverlayFamily,
     bikeOverlayVisible,
     bikeOverlayExtraOn,
+    bikeOverlayRideProfileId,
   ]);
 
   useEffect(() => {

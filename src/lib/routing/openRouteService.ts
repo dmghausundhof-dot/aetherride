@@ -79,6 +79,7 @@ export function orsProfileFor(profile: RoutingProfile): OrsProfile {
       return "cycling-road";
     case "mtb_allmountain":
     case "mtb_enduro":
+    case "downhill":
     case "emtb":
       return "cycling-mountain";
     case "ebike":
@@ -103,6 +104,7 @@ export function orsPreferredForGraphhopperBasic(
     profile === "gravel" ||
     profile === "mtb_allmountain" ||
     profile === "mtb_enduro" ||
+    profile === "downhill" ||
     profile === "emtb"
   );
 }

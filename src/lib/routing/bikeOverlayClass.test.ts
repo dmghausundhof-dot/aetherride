@@ -117,6 +117,8 @@ function testFamilyDefaults() {
     "urban",
   ]);
   assert.equal(overlayFamilyForBike("emtb"), "mtb");
+  assert.equal(overlayFamilyForBike("downhill"), "mtb");
+  assert.equal(overlayFamilyForBike("dh"), "mtb");
 }
 
 testParseScale();
