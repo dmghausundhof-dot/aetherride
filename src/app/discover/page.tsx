@@ -234,10 +234,6 @@ function DiscoverPageInner() {
     [activeBike]
   );
 
-  const bikeOverlayFamily = overlayFamilyForBike(
-    activeBike?.category ?? routingProfile
-  );
-
   const [sheetMode, setSheetMode] = useState<SheetMode>("quick");
   const [rideOutChoice, setRideOutChoice] = useState(
     () => modeParam === "rideOut"
@@ -347,6 +343,9 @@ function DiscoverPageInner() {
   const activeProfile = manualProfile ?? routingProfile;
   const categoryHint = categoryForRoutingProfile(activeProfile);
   const rideProfileId = isRideProfileId(activeProfile) ? activeProfile : null;
+  // Overlay-Familie folgt dem Sport-Chip, nicht dem Garage-Bike — sonst bleibt
+  // Downhill auf Family „road“, wenn kein MTB in der Garage liegt.
+  const bikeOverlayFamily = overlayFamilyForBike(activeProfile);
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??

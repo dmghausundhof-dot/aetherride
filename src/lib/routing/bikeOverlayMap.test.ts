@@ -3,6 +3,7 @@
  * Ausführen: npx tsx src/lib/routing/bikeOverlayMap.test.ts
  */
 import assert from "node:assert/strict";
+import { overlayFamilyForBike } from "./bikeOverlayClass";
 import {
   bikeOverlayLayerFilter,
   overlayClassesOn,
@@ -43,6 +44,26 @@ function testAllmountainKeepsS0AndOpen() {
   assert.ok(on.has("mtb_unrated"));
 }
 
+function testOverlayFamilyFollowsRideProfile() {
+  assert.equal(overlayFamilyForBike("downhill"), "mtb");
+  assert.equal(overlayFamilyForBike("road"), "road");
+  const dh = overlayClassesOn({
+    family: overlayFamilyForBike("downhill"),
+    visible: true,
+    rideProfileId: "downhill",
+  });
+  assert.ok(dh.has("mtb"));
+  assert.ok(!dh.has("mtb_unrated"));
+  assert.ok(!dh.has("road"));
+  const road = overlayClassesOn({
+    family: overlayFamilyForBike("road"),
+    visible: true,
+    rideProfileId: "road",
+  });
+  assert.ok(road.has("road"));
+  assert.ok(!road.has("mtb"));
+}
+
 function testRoadHidesMtb() {
   assert.equal(bikeOverlayLayerFilter("mtb", "road"), false);
   const on = overlayClassesOn({
@@ -71,6 +92,7 @@ function testGravelKeepsS0S1() {
 
 testDownhillFiltersS1ToS3();
 testAllmountainKeepsS0AndOpen();
+testOverlayFamilyFollowsRideProfile();
 testRoadHidesMtb();
 testGravelKeepsS0S1();
 console.log("bikeOverlayMap.test.ts OK");
