@@ -75,7 +75,13 @@ class BleCoreChannel {
   BluetoothDevice? _watchDevice;
   final List<BluetoothDevice> _auxDevices = [];
   final Map<String, BikeBleKind> _scanKindById = {};
+  /// ScanResult devices keep Samsung's RANDOM vs PUBLIC address type.
+  final Map<String, BluetoothDevice> _scanDevices = {};
   BikeBleKind? _kindHint;
+  bool _preferScanDevice = true;
+  bool _rideReconnect = false;
+  int _reconnectAttempts = 0;
+  void Function(String status)? _onProgress;
   String? _lastRemoteId;
   String? _lastWatchRemoteId;
   String? _hrSourceId;
@@ -179,8 +185,14 @@ class BleCoreChannel {
     String? deviceId,
     bool scanIfMissing = true,
     BikeBleKind? kindHint,
+    bool tryLdi = true,
+    bool preferScanDevice = true,
+    void Function(String status)? onProgress,
   }) async {
     _wantConnection = true;
+    _rideReconnect = scanIfMissing;
+    _preferScanDevice = preferScanDevice;
+    _onProgress = onProgress;
     _statusDetail = null;
     _kindHint = kindHint;
     await _loadLastRemoteId();
@@ -199,7 +211,17 @@ class BleCoreChannel {
       }
     } catch (e) {
       debugPrint('ble_core standard BLE: $e');
-      _statusDetail = 'Radsensor-Suche fehlgeschlagen';
+      _statusDetail ??= 'Radsensor-Suche fehlgeschlagen';
+    } finally {
+      _onProgress = null;
+    }
+
+    if (!tryLdi) {
+      debugPrint(
+        'ble_core connect: standard BLE failed, skip LDI '
+        '(kind=${kindHint?.name} id=$deviceId status=$_statusDetail)',
+      );
+      return false;
     }
 
     try {
@@ -383,9 +405,28 @@ class BleCoreChannel {
 
     if (preferredId != null && preferredId.isNotEmpty) {
       try {
-        await _attachSensorDevice(BluetoothDevice.fromId(preferredId));
+        debugPrint('ble_core preferred attach $preferredId hint=${_kindHint?.name}');
+        final device = _deviceForAttach(preferredId);
+        final attempts = scanIfMissing ? 2 : 3;
+        final attached = await _attachSensorDevice(
+          device,
+          gattAttempts: attempts,
+        );
+        if (attached && _device != null && !scanIfMissing) {
+          return true;
+        }
+        if (!scanIfMissing) {
+          if (_device == null) {
+            _statusDetail ??= 'Gerät nicht verbunden';
+          }
+          return _device != null;
+        }
       } catch (e) {
         debugPrint('ble_core preferred reconnect: $e');
+        if (!scanIfMissing) {
+          _statusDetail ??= bleGattStatusHint(_codeFromError(e));
+          return _device != null;
+        }
       }
     }
 
@@ -464,7 +505,7 @@ class BleCoreChannel {
     // Bosch/Shimano brauchen eine bewusste Wahl in der Werkstatt.
     for (final hit in ranked) {
       if (bikeBleKindIsDrive(hit.kind)) continue;
-      await _attachSensorDevice(BluetoothDevice.fromId(hit.deviceId));
+      await _attachSensorDevice(_deviceForAttach(hit.deviceId));
       if (_device != null) return true;
     }
 
@@ -486,13 +527,15 @@ class BleCoreChannel {
       advertisedServiceUuids: uuids,
     );
     if (kind == null) return null;
-    _scanKindById[r.device.remoteId.str] = kind;
+    final id = r.device.remoteId.str;
+    _scanKindById[id] = kind;
+    _scanDevices[id] = r.device;
     return BikeBleScanHit(
-      deviceId: r.device.remoteId.str,
+      deviceId: id,
       name: name,
       kind: kind,
       rssi: r.rssi,
-      caps: bikeBleCapsFromUuids(uuids),
+      caps: bikeBleCapsFromUuids(uuids, platformName: name),
       connectable: r.advertisementData.connectable,
     );
   }
@@ -585,16 +628,90 @@ class BleCoreChannel {
     return _auxDevices.any((d) => d.remoteId.str == id);
   }
 
-  Future<bool> _attachSensorDevice(BluetoothDevice device) async {
+  BluetoothDevice _deviceForAttach(String id, {bool? preferScanDevice}) {
+    final prefer = preferScanDevice ?? _preferScanDevice;
+    if (prefer) {
+      final scanned = _scanDevices[id];
+      if (scanned != null) return scanned;
+    }
+    return BluetoothDevice.fromId(id);
+  }
+
+  int? _mtuForDevice(String id) {
+    final kind = _kindHint ?? _scanKindById[id] ?? _connectedKind;
+    if (kind != null && bikeBleKindIsDrive(kind)) return null;
+    return 512;
+  }
+
+  void _progress(String message) {
+    _statusDetail = message;
+    _onProgress?.call(message);
+    debugPrint('ble_core: $message');
+  }
+
+  int? _codeFromError(Object error) {
+    if (error is FlutterBluePlusException) return error.code;
+    return parseGattErrorCode(error);
+  }
+
+  Future<void> _closeGattQuietly(BluetoothDevice device) async {
+    try {
+      await device.disconnect();
+    } catch (_) {}
+  }
+
+  Future<bool> _ensureGattConnected(
+    BluetoothDevice device, {
+    required int attempts,
+  }) async {
+    if (!device.isDisconnected) return true;
+    final mtu = _mtuForDevice(device.remoteId.str);
+    final max = attempts.clamp(1, 3);
+    int? lastCode;
+    for (var i = 0; i < max; i++) {
+      if (i > 0) {
+        _progress('Verbinde … Retry ${i + 1}/$max');
+        await _closeGattQuietly(device);
+        await Future<void>.delayed(
+          Duration(milliseconds: i == 1 ? 1500 : 3000),
+        );
+      } else if (max > 1) {
+        _progress('Verbinde … Versuch 1/$max');
+      }
+      try {
+        await device.connect(
+          timeout: const Duration(seconds: 14),
+          autoConnect: false,
+          mtu: mtu,
+        );
+        return true;
+      } catch (e) {
+        lastCode = _codeFromError(e);
+        debugPrint('ble_core gatt attempt ${i + 1}/$max code=$lastCode $e');
+        final transient = isTransientGattError(lastCode);
+        if (!transient || i == max - 1) {
+          _statusDetail = bleGattStatusHint(lastCode);
+          await _closeGattQuietly(device);
+          return false;
+        }
+      }
+    }
+    _statusDetail = bleGattStatusHint(lastCode);
+    return false;
+  }
+
+  Future<bool> _attachSensorDevice(
+    BluetoothDevice device, {
+    int gattAttempts = 1,
+  }) async {
     final id = device.remoteId.str;
     if (_alreadyAttached(id)) return true;
     try {
-      if (device.isDisconnected) {
-        await device.connect(
-          timeout: const Duration(seconds: 12),
-          autoConnect: false,
-        );
-      }
+      final opened = await _ensureGattConnected(
+        device,
+        attempts: gattAttempts,
+      );
+      if (!opened) return false;
       final services = await device.discoverServices();
       BluetoothCharacteristic? measurement;
       for (final s in services) {
@@ -664,6 +781,9 @@ class BleCoreChannel {
           _device = device;
           _connectedKind = resolvedKind;
           _lastRemoteId = id;
+          _reconnectAttempts = 0;
+          _reconnectTimer?.cancel();
+          _reconnectTimer = null;
           await _saveLastRemoteId(id);
         } else if (_device!.remoteId.str != id) {
           _auxDevices.add(device);
@@ -679,7 +799,8 @@ class BleCoreChannel {
       return true;
     } catch (e) {
       debugPrint('ble_core attach: $e');
-      _statusDetail = 'Sensor-Verbindung fehlgeschlagen';
+      _statusDetail ??= bleGattStatusHint(_codeFromError(e));
+      await _closeGattQuietly(device);
       return false;
     }
   }
@@ -878,23 +999,37 @@ class BleCoreChannel {
 
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 3), () async {
+    final max = _rideReconnect
+        ? kBleReconnectMaxDuringRide
+        : kBleReconnectMaxOutsideRide;
+    if (_reconnectAttempts >= max) {
+      _statusDetail =
+          'Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, '
+          'in der Werkstatt erneut koppeln.';
+      debugPrint('ble_core reconnect: gave up after $_reconnectAttempts');
+      return;
+    }
+    final delay = bleReconnectDelay(_reconnectAttempts);
+    final attempt = _reconnectAttempts + 1;
+    _reconnectAttempts++;
+    _reconnectTimer = Timer(delay, () async {
       if (!_wantConnection || _device != null) return;
       final id = _lastRemoteId;
       if (id == null) return;
-      _statusDetail = 'Radsensor verbindet erneut …';
+      _statusDetail = 'Verbinde erneut … ($attempt/$max)';
       try {
-        final ok = await _attachSensorDevice(BluetoothDevice.fromId(id));
-        if (!ok && _wantConnection && _device == null) {
-          _reconnectTimer =
-              Timer(const Duration(seconds: 8), _scheduleReconnect);
+        final ok = await _attachSensorDevice(
+          _deviceForAttach(id),
+          gattAttempts: 1,
+        );
+        if (ok) {
+          _reconnectAttempts = 0;
+          return;
         }
+        if (_wantConnection && _device == null) _scheduleReconnect();
       } catch (e) {
         debugPrint('ble_core reconnect: $e');
-        if (_wantConnection && _device == null) {
-          _reconnectTimer =
-              Timer(const Duration(seconds: 8), _scheduleReconnect);
-        }
+        if (_wantConnection && _device == null) _scheduleReconnect();
       }
     });
   }
@@ -972,6 +1107,7 @@ class BleCoreChannel {
     _wantConnection = false;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _reconnectAttempts = 0;
     await _cscSub?.cancel();
     _cscSub = null;
     await _batterySub?.cancel();
@@ -1036,6 +1172,7 @@ class BleCoreChannel {
     _wantConnection = false;
     _wantWatchConnection = false;
     _watchSim = false;
+    _reconnectAttempts = 0;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _watchReconnectTimer?.cancel();

@@ -45,10 +45,17 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
   bool _busy = false;
   String? _error;
   String? _pairingId;
+  String? _pairStatus;
+  BikeBleScanHit? _rememberHit;
+  bool _guideOpen = false;
+  late final BleCoreChannel _ble;
+  late final BikeBleStore _store;
 
   @override
   void initState() {
     super.initState();
+    _ble = ref.read(bleCoreProvider);
+    _store = ref.read(bikeBleStoreProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_start());
     });
@@ -57,15 +64,17 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
   @override
   void dispose() {
     unawaited(_sub?.cancel());
-    unawaited(ref.read(bleCoreProvider).stopBikeScan());
+    unawaited(_ble.stopBikeScan());
     super.dispose();
   }
 
   Future<void> _start() async {
-    final ble = ref.read(bleCoreProvider);
+    if (!mounted) return;
+    final ble = _ble;
     setState(() {
       _busy = true;
       _error = null;
+      _rememberHit = null;
       _hits = const [];
     });
     try {
@@ -98,7 +107,9 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
         if (!mounted) return;
         setState(() => _hits = hits);
       });
-      await ble.startBikeScan();
+      await ble.startBikeScan(
+        timeout: Duration(seconds: widget.isEbike ? 20 : 14),
+      );
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -106,67 +117,107 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
       });
     } catch (e) {
       debugPrint('ble pair sheet: $e');
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _scanning = false;
-          _error = 'Suche fehlgeschlagen';
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _scanning = false;
+        _error = 'Suche fehlgeschlagen';
+      });
     }
   }
 
   Future<void> _pair(BikeBleScanHit hit) async {
     if (_pairingId != null) return;
-    final ble = ref.read(bleCoreProvider);
+    debugPrint(
+      'ble pair: tap ${hit.displayName} kind=${hit.kind.name} id=${hit.deviceId}',
+    );
+    final ble = _ble;
+    final store = _store;
+    final bikeId = widget.bikeId;
     setState(() {
       _pairingId = hit.deviceId;
+      _pairStatus = 'Verbinde …';
       _error = null;
+      _rememberHit = null;
     });
     try {
       await ble.stopBikeScan();
-      if (mounted) setState(() => _scanning = false);
+      if (!mounted) return;
+      setState(() => _scanning = false);
+      // Samsung GATT 133 if connect is issued in the same tick as stopScan.
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
+      if (!mounted) return;
       final ok = await ble.connect(
         deviceId: hit.deviceId,
         scanIfMissing: false,
         kindHint: hit.kind,
+        tryLdi: false,
+        preferScanDevice: true,
+        onProgress: (s) {
+          if (!mounted) return;
+          setState(() => _pairStatus = s);
+        },
       );
-      if (!mounted) return;
-      if (!ok) {
-        setState(() {
-          _pairingId = null;
-          _error = ble.statusDetail ?? 'Verbindung fehlgeschlagen';
-        });
-        unawaited(_start());
+      debugPrint(
+        'ble pair: connect ok=$ok '
+        'status=${ble.statusDetail} last=${ble.lastRemoteId}',
+      );
+      if (blePairSheetSuccess(connected: ok)) {
+        final id = blePairDeviceId(
+          lastRemoteId: ble.lastRemoteId,
+          scanDeviceId: hit.deviceId,
+        );
+        await store.saveForBike(
+          bikeId,
+          BikeBleDevice(
+            deviceId: id,
+            name: ble.connectedDeviceName ?? hit.displayName,
+            kind: bikeBleKindToStorage(ble.connectedKind ?? hit.kind),
+          ),
+        );
+        if (!mounted) return;
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        Navigator.of(context).pop(true);
         return;
       }
-      final id = ble.lastRemoteId;
-      if (id == null || id.isEmpty) {
-        setState(() {
-          _pairingId = null;
-          _error = 'Verbunden, aber ohne Geräte-ID';
-        });
-        return;
-      }
-      await ref.read(bikeBleStoreProvider).saveForBike(
-            widget.bikeId,
-            BikeBleDevice(
-              deviceId: id,
-              name: ble.connectedDeviceName ?? hit.displayName,
-              kind: bikeBleKindToStorage(ble.connectedKind ?? hit.kind),
-            ),
-          );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      setState(() {
+        _pairingId = null;
+        _pairStatus = null;
+        _error = ble.statusDetail ?? 'Verbindung fehlgeschlagen';
+        _rememberHit =
+            blePairAccepted(connected: false, kind: hit.kind) ? hit : null;
+      });
     } catch (e) {
       debugPrint('ble pair: $e');
-      if (mounted) {
-        setState(() {
-          _pairingId = null;
-          _error = 'Kopplung fehlgeschlagen';
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _pairingId = null;
+        _pairStatus = null;
+        _error = 'Kopplung fehlgeschlagen';
+        _rememberHit =
+            blePairAccepted(connected: false, kind: hit.kind) ? hit : null;
+      });
     }
+  }
+
+  Future<void> _rememberWithoutGatt(BikeBleScanHit hit) async {
+    final ble = _ble;
+    final id = blePairDeviceId(
+      lastRemoteId: ble.lastRemoteId,
+      scanDeviceId: hit.deviceId,
+    );
+    await _store.saveForBike(
+      widget.bikeId,
+      BikeBleDevice(
+        deviceId: id,
+        name: ble.connectedDeviceName ?? hit.displayName,
+        kind: bikeBleKindToStorage(ble.connectedKind ?? hit.kind),
+      ),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -196,17 +247,32 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                widget.isEbike
-                    ? 'Display am Rad einschalten. Bosch Smart System erscheint oft als „SMART SYSTEM EBIKE“, Shimano als SC-E… / STEPS.'
-                    : 'Radsensor am Rad, nicht am Fahrer. CSC und Powermeter erscheinen hier.',
+                bikeBlePairLead(isEbike: widget.isEbike),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.muted,
                       height: 1.35,
                     ),
               ),
+              const SizedBox(height: AppSpacing.s),
+              _HowToConnect(
+                isEbike: widget.isEbike,
+                open: _hits.isEmpty || _guideOpen,
+                toggleable: _hits.isNotEmpty,
+                onToggle: () => setState(() => _guideOpen = !_guideOpen),
+              ),
               const SizedBox(height: AppSpacing.m),
-              if (_scanning || _busy)
+              if (_scanning || _busy || _pairingId != null)
                 const LinearProgressIndicator(minHeight: 2),
+              if (_pairStatus != null) ...[
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  _pairStatus!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.s),
                 Text(
@@ -214,6 +280,19 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
                   style: const TextStyle(
                     color: Color(0xFFFF8A80),
                     fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+              if (_rememberHit != null) ...[
+                const SizedBox(height: AppSpacing.s),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: _pairingId != null
+                        ? null
+                        : () => unawaited(_rememberWithoutGatt(_rememberHit!)),
+                    child: const Text('Trotzdem merken'),
                   ),
                 ),
               ],
@@ -225,29 +304,37 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
                         children: [
                           if (drives.isNotEmpty) ...[
                             const _SectionLabel('Antrieb'),
-                            for (final h in drives) _HitTile(
-                              hit: h,
-                              pairing: _pairingId == h.deviceId,
-                              enabled: _pairingId == null,
-                              onTap: () => unawaited(_pair(h)),
-                            ),
+                            for (final h in drives)
+                              _HitTile(
+                                hit: h,
+                                pairing: _pairingId == h.deviceId,
+                                pairingLabel: _pairingId == h.deviceId
+                                    ? _pairStatus
+                                    : null,
+                                enabled: _pairingId == null,
+                                onTap: () => unawaited(_pair(h)),
+                              ),
                             const SizedBox(height: AppSpacing.m),
                           ],
                           if (sensors.isNotEmpty) ...[
                             const _SectionLabel('Sensoren'),
-                            for (final h in sensors) _HitTile(
-                              hit: h,
-                              pairing: _pairingId == h.deviceId,
-                              enabled: _pairingId == null,
-                              onTap: () => unawaited(_pair(h)),
-                            ),
+                            for (final h in sensors)
+                              _HitTile(
+                                hit: h,
+                                pairing: _pairingId == h.deviceId,
+                                pairingLabel: _pairingId == h.deviceId
+                                    ? _pairStatus
+                                    : null,
+                                enabled: _pairingId == null,
+                                onTap: () => unawaited(_pair(h)),
+                              ),
                           ],
                         ],
                       ),
               ),
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Bosch-LDI und Shimano E-TUBE sind herstellereigen. Wir erkennen das System. Akku nur bei echtem Battery-GATT (0x180F) — kein erfundenes SoC.',
+                'Akku und Assist nur bei echtem GATT — nichts erfinden.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.muted,
                       height: 1.35,
@@ -273,6 +360,128 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HowToConnect extends StatelessWidget {
+  const _HowToConnect({
+    required this.isEbike,
+    required this.open,
+    required this.toggleable,
+    required this.onToggle,
+  });
+
+  final bool isEbike;
+  final bool open;
+  final bool toggleable;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = bikeBleConnectNotes(isEbike: isEbike);
+    return Material(
+      color: AppColors.chipIdle,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: toggleable ? onToggle : null,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.m,
+                vertical: AppSpacing.s,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bluetooth,
+                    size: 16,
+                    color: AppColors.forestOnDark.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  const Expanded(
+                    child: Text(
+                      'So verbindest du',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  if (toggleable)
+                    Icon(
+                      open
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 18,
+                      color: AppColors.muted,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (open) ...[
+            const Divider(height: 1, color: AppColors.border),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.m,
+                AppSpacing.s,
+                AppSpacing.m,
+                AppSpacing.m,
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < notes.length; i++) ...[
+                    if (i > 0) const SizedBox(height: AppSpacing.s),
+                    _ConnectNoteRow(note: notes[i]),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectNoteRow extends StatelessWidget {
+  const _ConnectNoteRow({required this.note});
+
+  final BikeBleConnectNote note;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            note.brand,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+              color: AppColors.forestOnDark,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            note.line,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppColors.muted,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -331,7 +540,7 @@ class _EmptyScan extends StatelessWidget {
             const SizedBox(height: AppSpacing.s),
             Text(
               isEbike
-                  ? 'Rad einschalten, Display wecken, Handy nah halten. Flow/E-TUBE parallel schließen — viele Systeme erlauben nur eine BLE-Verbindung.'
+                  ? 'Display wecken, Flow oder E-TUBE zu, Handy nah halten.'
                   : 'Sensor in die Nähe legen und am Rad aktivieren (Magnet/Kurbel).',
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -353,12 +562,14 @@ class _HitTile extends StatelessWidget {
     required this.pairing,
     required this.enabled,
     required this.onTap,
+    this.pairingLabel,
   });
 
   final BikeBleScanHit hit;
   final bool pairing;
   final bool enabled;
   final VoidCallback onTap;
+  final String? pairingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -412,6 +623,29 @@ class _HitTile extends StatelessWidget {
                           color: AppColors.muted,
                         ),
                       ),
+                      if (bikeBleKindIsDrive(hit.kind) ||
+                          hit.kind == BikeBleKind.csc ||
+                          hit.kind == BikeBleKind.power) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          bikeBleConnectTip(hit.kind),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.muted,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                      if (pairing && pairingLabel != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          pairingLabel!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

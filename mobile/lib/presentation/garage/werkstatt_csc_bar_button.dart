@@ -10,9 +10,14 @@ import 'ble_pair_sheet.dart';
 
 /// Discreet Werkstatt-bar control for the bike CSC. Never a hero CTA.
 class WerkstattCscBarButton extends ConsumerStatefulWidget {
-  const WerkstattCscBarButton({super.key, required this.bikeId});
+  const WerkstattCscBarButton({
+    super.key,
+    required this.bikeId,
+    this.isEbike = false,
+  });
 
   final String bikeId;
+  final bool isEbike;
 
   @override
   ConsumerState<WerkstattCscBarButton> createState() =>
@@ -48,16 +53,18 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
       final ok = await showBlePairSheet(
         context,
         bikeId: widget.bikeId,
+        isEbike: widget.isEbike,
       );
       await _reload();
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
+        final name = ble.connectedDeviceName ?? _saved?.name;
         messenger?.showSnackBar(
           SnackBar(
             content: Text(
-              ble.connectedDeviceName != null
-                  ? 'Gekoppelt: ${ble.connectedDeviceName}'
+              name != null && name.isNotEmpty
+                  ? 'Gekoppelt: $name'
                   : 'Gerät gekoppelt',
             ),
           ),

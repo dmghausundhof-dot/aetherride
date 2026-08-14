@@ -51,6 +51,65 @@ String bikeBleKindHint(BikeBleKind kind) => switch (kind) {
         'E-Antrieb erkannt. Kein erfundenes SoC.',
     };
 
+/// One-line action on a scan row — how to connect, not capability legal copy.
+String bikeBleConnectTip(BikeBleKind kind) => switch (kind) {
+      BikeBleKind.bosch =>
+        'Flow komplett schließen · 10–20 cm am Display',
+      BikeBleKind.shimano =>
+        'E-TUBE schließen · in 15 s nach Power/Taster tippen',
+      BikeBleKind.yamaha =>
+        'e-Sync schließen · Tempo über CSC-Sensor',
+      BikeBleKind.otherDrive =>
+        'Hersteller-App schließen · Display an, nah halten',
+      BikeBleKind.csc => 'Sensor am Rad wecken, nah halten',
+      BikeBleKind.power => 'Powermeter einschalten, nah halten',
+    };
+
+String bikeBlePairLead({required bool isEbike}) => isEbike
+    ? 'Display an, Hersteller-App zu, Handy nah — dann antippen.'
+    : 'Sensor am Rad wecken, nicht die Uhr am Handgelenk.';
+
+class BikeBleConnectNote {
+  const BikeBleConnectNote({required this.brand, required this.line});
+
+  final String brand;
+  final String line;
+}
+
+/// Compact pairing notes for the sheet. Ebike: makers first, sensor last.
+List<BikeBleConnectNote> bikeBleConnectNotes({required bool isEbike}) {
+  if (!isEbike) {
+    return const [
+      BikeBleConnectNote(
+        brand: 'Sensor',
+        line: 'Magnet oder Kurbel, nah an den Sensor — nicht die Uhr.',
+      ),
+    ];
+  }
+  return const [
+    BikeBleConnectNote(
+      brand: 'Bosch',
+      line: 'Flow komplett schließen (nicht nur Hintergrund). Display an, 10–20 cm.',
+    ),
+    BikeBleConnectNote(
+      brand: 'Shimano',
+      line: 'E-TUBE schließen. Nach Power oder Taster oft nur 15 s — dann tippen.',
+    ),
+    BikeBleConnectNote(
+      brand: 'Yamaha / TQ',
+      line: 'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über CSC-Sensor.',
+    ),
+    BikeBleConnectNote(
+      brand: 'Fazua',
+      line: 'Remote an — CSC und Power wie ein normaler Sensor.',
+    ),
+    BikeBleConnectNote(
+      brand: 'Andere',
+      line: 'RideControl / Mission Control schließen. Ein Phone, Display an.',
+    ),
+  ];
+}
+
 /// Robert Bosch GmbH 16-bit member service UUIDs (Bluetooth SIG Assigned Numbers).
 const kBoschMemberServiceNeedles = <String>['fe02', 'fde8'];
 
@@ -68,21 +127,49 @@ const kBoschNameHints = <String>[
 ];
 
 const kShimanoNameHints = <String>[
+  'shimano steps',
   'shimano',
+  'steps e',
   'steps',
   'e-tube',
   'etube',
+  'sc-e6100',
+  'sc-e7000',
+  'sc-e8000',
+  'sc-em800',
+  'sc-en600',
   'sc-e',
   'sc-en',
   'sc-em',
-  'ep8',
-  'ep801',
-  'ep6',
+  'du-e8000',
+  'du-ep800',
+  'du-ep801',
+  'du-ep600',
   'du-e',
+  'ep801',
+  'ep8',
+  'ep6',
+  'ew-en100',
+  'ew-en101',
   'ew-en',
+  'sm-btr1',
+  'sm-btr2',
   'sm-btr',
   'sw-e',
 ];
+
+/// Android GATT_CONN_FAILED_ESTABLISHMENT — often Flow/E-TUBE already holding the link.
+const kGattConnFailedEstablishment = 133;
+
+/// Android GATT_CONNECTION_TIMEOUT (0x93). Distinct from supervision timeout 8.
+const kGattConnectionTimeout = 147;
+
+/// flutter_blue_plus [FbpErrorCode.timeout] — our connect() deadline fired.
+const kFbpConnectTimeoutCode = 1;
+
+const kBleReconnectDelaysSec = [5, 15, 30];
+const kBleReconnectMaxOutsideRide = 4;
+const kBleReconnectMaxDuringRide = 8;
 
 const kYamahaNameHints = <String>[
   'yamaha',
@@ -234,13 +321,19 @@ bool nameLooksLikeNotBike(String platformName) {
   return kNotBikeNameHints.any(n.contains);
 }
 
-Set<BikeBleCap> bikeBleCapsFromUuids(Iterable<String> uuids) {
+Set<BikeBleCap> bikeBleCapsFromUuids(
+  Iterable<String> uuids, {
+  String platformName = '',
+}) {
   return {
     if (advertisesCsc(uuids)) BikeBleCap.csc,
     if (advertisesPower(uuids)) BikeBleCap.power,
     if (advertisesBattery(uuids)) BikeBleCap.battery,
     if (advertisesHeartRateService(uuids)) BikeBleCap.heartRate,
-    if (advertisesBoschEbike(uuids)) BikeBleCap.proprietaryDrive,
+    if (advertisesBoschEbike(uuids) ||
+        nameLooksLikeBosch(platformName) ||
+        nameLooksLikeShimano(platformName))
+      BikeBleCap.proprietaryDrive,
   };
 }
 
@@ -320,3 +413,56 @@ bool bikeBleKindIsDrive(BikeBleKind kind) => switch (kind) {
         true,
       BikeBleKind.csc || BikeBleKind.power => false,
     };
+
+/// Identität darf gemerkt werden (Drive ohne GATT, opt-in „Trotzdem merken“).
+/// Das Pair-Sheet poppt damit NICHT — dafür [blePairSheetSuccess] / `ok`.
+bool blePairAccepted({
+  required bool connected,
+  required BikeBleKind kind,
+}) {
+  if (connected) return true;
+  return bikeBleKindIsDrive(kind);
+}
+
+/// CSC/Power brauchen GATT. Drive darf Identität ohne GATT merken (nicht default).
+bool blePairGattRequired(BikeBleKind kind) => !bikeBleKindIsDrive(kind);
+
+/// Pair-Sheet schließt nur bei echter GATT-Verbindung.
+bool blePairSheetSuccess({required bool connected}) => connected;
+
+bool isTransientGattError(int? code) {
+  if (code == null) return false;
+  return code == kGattConnFailedEstablishment ||
+      code == kGattConnectionTimeout ||
+      code == kFbpConnectTimeoutCode;
+}
+
+String bleGattStatusHint(int? code) {
+  if (code == kGattConnFailedEstablishment) {
+    return 'Verbindung abgelehnt — Bosch Flow / Shimano E-TUBE schließen, '
+        'Display an, nah halten.';
+  }
+  if (code == kGattConnectionTimeout || code == kFbpConnectTimeoutCode) {
+    return 'Timeout — Display wecken, 15s-Fenster (Shimano), näher rangehen.';
+  }
+  return 'Verbindung fehlgeschlagen';
+}
+
+int? parseGattErrorCode(Object error) {
+  if (error is int) return error;
+  final m = RegExp(r'(?:android-code|fbp-code|code):\s*(-?\d+)').firstMatch('$error');
+  return m == null ? null : int.tryParse(m.group(1)!);
+}
+
+Duration bleReconnectDelay(int attemptIndex) {
+  final i = attemptIndex.clamp(0, kBleReconnectDelaysSec.length - 1);
+  return Duration(seconds: kBleReconnectDelaysSec[i]);
+}
+
+String blePairDeviceId({
+  String? lastRemoteId,
+  required String scanDeviceId,
+}) {
+  if (lastRemoteId != null && lastRemoteId.isNotEmpty) return lastRemoteId;
+  return scanDeviceId;
+}

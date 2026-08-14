@@ -115,7 +115,11 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
         title: Text(l10n.navWorkshop),
         actionsPadding: const EdgeInsets.only(right: AppSpacing.m),
         actions: [
-          if (focused != null) WerkstattCscBarButton(bikeId: focused.id),
+          if (focused != null)
+            WerkstattCscBarButton(
+              bikeId: focused.id,
+              isEbike: focused.isEbike,
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -664,11 +668,12 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
   late BikeAssistMode _assistMode;
   WheelSize _wheel = WheelSize.c700;
   bool _busy = false;
-  _AddBikeMode _mode = _AddBikeMode.catalog;
+  _AddBikeMode _mode = _AddBikeMode.basic;
   bool _hasLight = false;
   bool _hasLock = false;
   bool _hasRack = false;
   bool _hasBags = false;
+  bool _includeOemKit = false;
   final _travelFront = TextEditingController();
   final _travelRear = TextEditingController();
 
@@ -691,10 +696,6 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
     _category = widget.initialCategory ?? BikeCategory.urban;
     _assistMode = BikeAssistUx.modeFor(category: _category);
     _wheel = _defaultWheel(_category);
-    // Urban/Road → Basis; Trail-Sports → Katalog (Web-Parität).
-    if (_category == BikeCategory.urban || _category == BikeCategory.road) {
-      _mode = _AddBikeMode.basic;
-    }
     _loadCatalog();
   }
 
@@ -759,7 +760,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
       setState(() {
         _catalogLoading = false;
         _catalogError =
-            'Katalog offline — du kannst dein Bike unter „Selbst“ oder „GPX“ anlegen.';
+            'Katalog offline — du kannst dein Bike unter „Mein Rad“ oder „GPX“ anlegen.';
         if (_mode == _AddBikeMode.catalog) _mode = _AddBikeMode.basic;
       });
     }
@@ -956,6 +957,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           makeActive: true,
         );
 
+        if (_includeOemKit) {
         final catalog = ref.read(catalogClientProvider);
         final components = ref.read(componentRepositoryProvider);
         // Modell-Lookups parallel (vorher seriell: 25–30 HTTP-Roundtrips —
@@ -988,10 +990,11 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           );
           oemInstalled += 1;
         }
+        }
 
         await ref.read(setupRepositoryProvider).createVersion(
               bikeId: bike.id,
-              label: 'Serien-Setup',
+              label: _includeOemKit ? 'Serien-Setup' : 'Katalog-Identität',
               values: BikeSetup.defaultValues(),
               createdBy: 'catalog',
             );
@@ -1097,9 +1100,11 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              oemMissed == 0
-                  ? '${bike.name}: $oemInstalled Serienteile übernommen.'
-                  : '${bike.name}: $oemInstalled Serienteile, $oemMissed übersprungen.',
+              _includeOemKit
+                  ? (oemMissed == 0
+                      ? '${bike.name}: $oemInstalled Serienteile übernommen.'
+                      : '${bike.name}: $oemInstalled Serienteile, $oemMissed übersprungen.')
+                  : '${bike.name} abgestellt — Teile selbst anlegen, Kit war aus.',
             ),
           ),
         );
@@ -1231,10 +1236,21 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
             style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
           ),
           if (cat.oemComponents.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              '${cat.oemComponents.length} Serienteile kommen mit',
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _includeOemKit,
+              onChanged: (v) =>
+                  setState(() => _includeOemKit = v ?? false),
+              title: Text(
+                'Serienteile übernehmen (${cat.oemComponents.length})',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text(
+                'Sonst nur Identität. Katalog bleibt Suche.',
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
             ),
           ],
           const SizedBox(height: AppSpacing.m),
@@ -1277,7 +1293,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
     if (_manufacturers.isEmpty) {
       return const [
         Text(
-          'Katalog nicht geladen — wechsle auf „Selbst“ oder versuch es später.',
+          'Katalog nicht geladen — wechsle auf „Mein Rad“ oder versuch es später.',
         ),
       ];
     }
@@ -1641,9 +1657,9 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
             child: Row(
               children: [
-                _modeChip(_AddBikeMode.catalog, 'Katalog'),
+                _modeChip(_AddBikeMode.basic, 'Mein Rad'),
                 const SizedBox(width: 8),
-                _modeChip(_AddBikeMode.basic, 'Selbst'),
+                _modeChip(_AddBikeMode.catalog, 'Katalog'),
                 const SizedBox(width: 8),
                 _modeChip(_AddBikeMode.importMode, 'GPX'),
               ],
@@ -1857,7 +1873,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
         title: Text(bike.name),
         actionsPadding: const EdgeInsets.only(right: AppSpacing.m),
         actions: [
-          WerkstattCscBarButton(bikeId: bike.id),
+          WerkstattCscBarButton(bikeId: bike.id, isEbike: bike.isEbike),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (v) {
@@ -4172,9 +4188,10 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
+        final name = ble.connectedDeviceName ?? _saved?.name;
         setState(() {
-          _status = ble.connectedDeviceName != null
-              ? 'Gekoppelt: ${ble.connectedDeviceName}'
+          _status = name != null && name.isNotEmpty
+              ? 'Gekoppelt: $name'
               : 'Gerät gekoppelt';
         });
       } else {
