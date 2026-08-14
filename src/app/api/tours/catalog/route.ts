@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
   if (sport && sport !== "all") {
     tours = tours.filter((t) => {
-      if (sport === "mtb")
+      if (sport === "mtb" || sport === "downhill" || sport === "enduro")
         return t.categories.some((c) =>
           ["mtb_trail", "mtb_am", "mtb_enduro", "dh", "emtb"].includes(c)
         );

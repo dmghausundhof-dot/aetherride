@@ -6,6 +6,7 @@ import {
 import {
   getProfile,
   overlayScaleLabels,
+  overlayScaleMatchValues,
   prefersUnratedTrails,
   type RideProfileId,
 } from "./profiles";
@@ -116,12 +117,16 @@ export function bikeOverlayLayerFilter(
   if (!rideProfileId) return classFilter;
 
   if (cls === "mtb") {
-    const labels = overlayScaleLabels(rideProfileId);
-    if (labels.length === 0) return false;
+    const values = overlayScaleMatchValues(rideProfileId);
+    if (values.length === 0) return false;
     return [
       "all",
       classFilter,
-      ["in", ["get", "mtb_scale"], ["literal", labels]],
+      [
+        "in",
+        ["to-string", ["coalesce", ["get", "mtb_scale"], ""]],
+        ["literal", values],
+      ],
     ];
   }
 

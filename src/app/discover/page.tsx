@@ -2220,11 +2220,22 @@ function DiscoverPageInner() {
                 filters={filters}
                 onChange={(next) => {
                   setFilters(next);
-                  // Disziplin-Chip steuert Routing-Profil (wenn nicht „Alle“)
+                  // Nur bei Disziplin-Wechsel Profil setzen — sonst überschreibt
+                  // z. B. „Leicht“ ein aktives Downhill mit Allmountain.
+                  if (next.sport === filters.sport) return;
                   if (next.sport === "road") setManualProfile("road");
                   else if (next.sport === "gravel") setManualProfile("gravel");
-                  else if (next.sport === "mtb") setManualProfile("mtb_allmountain");
-                  else if (next.sport === "urban") setManualProfile("urban");
+                  else if (next.sport === "mtb") {
+                    if (
+                      activeProfile === "downhill" ||
+                      activeProfile === "mtb_enduro" ||
+                      activeProfile === "mtb_allmountain" ||
+                      activeProfile === "emtb"
+                    ) {
+                      return;
+                    }
+                    setManualProfile("mtb_allmountain");
+                  } else if (next.sport === "urban") setManualProfile("urban");
                   else if (next.sport === "ebike") setManualProfile("emtb");
                   else if (next.sport === "touring") setManualProfile("ebike");
                   else if (next.sport === "hiking") setManualProfile("hiking");

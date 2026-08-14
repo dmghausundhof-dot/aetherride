@@ -483,6 +483,23 @@ export function overlayScaleLabels(profileId: RideProfileId): string[] {
     .map((d) => OVERLAY_SCALE_LABEL[d]);
 }
 
+/**
+ * Alle mtb_scale-Werte, die Overlay/OSM/API für ein Profil matchen
+ * (S1, s1, 1, S3+, 3–6 …) — SSOT für MapLibre-Filter.
+ */
+export function overlayScaleMatchValues(profileId: RideProfileId): string[] {
+  const diffs = getProfile(profileId).preferredDifficulties.filter(
+    (d): d is Exclude<TrailDifficulty, "open"> => d !== "open"
+  );
+  const values = new Set<string>();
+  for (const d of diffs) {
+    for (const v of TILE_VALUES[d]) {
+      if (v) values.add(v);
+    }
+  }
+  return [...values];
+}
+
 export function prefersUnratedTrails(profileId: RideProfileId): boolean {
   return getProfile(profileId).preferredDifficulties.includes("open");
 }

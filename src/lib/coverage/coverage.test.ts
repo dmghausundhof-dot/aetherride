@@ -3,7 +3,7 @@
  * Run: npx tsx src/lib/coverage/coverage.test.ts
  */
 import assert from "node:assert/strict";
-import { assembleCoverageLocal } from "./assemble";
+import { assembleCoverageLocal, parseBikeClass } from "./assemble";
 import { seedLooksLikeHeidelberg } from "./seeds";
 import { overlayRegionForPoint } from "./regions";
 import { pointInDach } from "./dach";
@@ -117,6 +117,15 @@ async function main() {
   assert.equal(mocked.places[0].kind, "bike_shop");
   assert.equal(mocked.places[0].source, "google_places");
   assert.ok(mocked.places[0].mapsUrl.includes("http"));
+
+  assert.equal(parseBikeClass("downhill"), "mtb");
+  assert.equal(parseBikeClass("dh"), "mtb");
+  assert.equal(parseBikeClass("mtb_enduro"), "mtb");
+  assert.equal(parseBikeClass("gravel"), "gravel");
+  assert.equal(parseBikeClass("ebike"), "gravel");
+  assert.equal(parseBikeClass("urban"), "urban");
+  assert.equal(parseBikeClass("road"), "road");
+  assert.equal(parseBikeClass("unknown"), "road");
 
   console.log("coverage.test.ts OK");
 }

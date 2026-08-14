@@ -13,6 +13,7 @@ import {
   listBikeProfiles,
   listProfiles,
   overlayScaleLabels,
+  overlayScaleMatchValues,
   prefersUnratedTrails,
   trailFilterExpression,
   type RideProfileId,
@@ -79,6 +80,13 @@ assert.deepEqual(overlayScaleLabels("downhill"), ["S1", "S2", "S3"]);
 assert.equal(prefersUnratedTrails("downhill"), false);
 assert.equal(prefersUnratedTrails("mtb_allmountain"), true);
 assert.deepEqual(overlayScaleLabels("road"), []);
+const dhScaleValues = overlayScaleMatchValues("downhill");
+assert.ok(dhScaleValues.includes("S1"));
+assert.ok(dhScaleValues.includes("S3"));
+assert.ok(dhScaleValues.includes("S3+"));
+assert.ok(dhScaleValues.includes("3"));
+assert.ok(!dhScaleValues.includes("S0"));
+assert.ok(!dhScaleValues.includes("0"));
 
 assert.deepEqual(difficultiesFromTrailLabel("S1–S2"), ["s1", "s2"]);
 assert.equal(isLabeledTrailSuitable("downhill", "S2"), true);

@@ -48,7 +48,7 @@ export const SPORT_FILTER_OPTIONS: { id: SportFilter; label: string }[] = [
   { id: "gravel", label: "Gravel" },
   { id: "mtb", label: "MTB" },
   { id: "urban", label: "City" },
-  { id: "ebike", label: "E-Bike" },
+      { id: "ebike", label: "E-MTB" },
   { id: "touring", label: "Touring" },
   { id: "hiking", label: "Wandern" },
 ];

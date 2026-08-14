@@ -16,6 +16,7 @@ function testDownhillFiltersS1ToS3() {
   assert.ok(json.includes("S1"), "DH includes S1");
   assert.ok(json.includes("S2"), "DH includes S2");
   assert.ok(json.includes("S3"), "DH includes S3");
+  assert.ok(json.includes("S3+"), "DH matches OSM/API S3+");
   assert.ok(!json.includes('"S0"'), "DH excludes S0");
 
   assert.equal(bikeOverlayLayerFilter("mtb_unrated", "downhill"), false);

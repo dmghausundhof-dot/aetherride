@@ -64,8 +64,29 @@ function cacheKey(
 
 export function parseBikeClass(raw: string | null): CoverageBikeClass {
   const t = (raw ?? "").trim().toLowerCase();
-  if (t === "mtb" || t === "emtb" || t === "trail") return "mtb";
-  if (t === "gravel" || t === "ebike" || t === "etrekking") return "gravel";
+  if (
+    t === "mtb" ||
+    t === "emtb" ||
+    t === "trail" ||
+    t === "downhill" ||
+    t === "dh" ||
+    t === "enduro" ||
+    t === "mtb_enduro" ||
+    t === "mtb_allmountain" ||
+    t === "mtb_am" ||
+    t === "mtb_trail" ||
+    t === "hiking"
+  ) {
+    return "mtb";
+  }
+  if (
+    t === "gravel" ||
+    t === "ebike" ||
+    t === "etrekking" ||
+    t === "ebike_tour"
+  ) {
+    return "gravel";
+  }
   if (t === "urban" || t === "city") return "urban";
   return "road";
 }
