@@ -1,0 +1,27 @@
+{
+  "id": "bodensee",
+  "name": "Bodensee",
+  "bbox": [
+    8.9,
+    47.5,
+    9.8,
+    47.9
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg-latest.osm.pbf",
+    "note": "DE/AT/CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/bodensee",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bodensee.tar.zst"
+  }
+}

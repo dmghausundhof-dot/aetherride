@@ -1,0 +1,37 @@
+{
+  "id": "eifel-trails",
+  "name": "Eifel",
+  "bbox": [
+    6.2,
+    50.1,
+    7.2,
+    50.7
+  ],
+  "builtAt": "2026-08-15T05:25:02Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17541796,
+      "sha256": "ac225165a1b9f99cd5685172adf975a9c6a8f5775f340e791b6ea9d834529fe1",
+      "sha256_16": "ac225165a1b9f99c"
+    },
+    "eifel-trails.tar.gz": {
+      "bytes": 2492039,
+      "sha256": "373abdd7f9e7faafda81a991913d29e26dd4d3ee0c43204f1f50d9c350b2a375",
+      "sha256_16": "373abdd7f9e7faaf"
+    },
+    "eifel-trails.tar.zst": {
+      "bytes": 2702072,
+      "sha256": "d3e34ed0f01d3f62875a913f5a1b4811b42e695b4910b4c862d06b8431fa1780",
+      "sha256_16": "d3e34ed0f01d3f62"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/eifel-trails",
+    "pack": "eifel-trails.tar.zst",
+    "packGz": "eifel-trails.tar.gz"
+  }
+}

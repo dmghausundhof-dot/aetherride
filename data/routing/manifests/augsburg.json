@@ -1,0 +1,37 @@
+{
+  "id": "augsburg",
+  "name": "Augsburg / Lech",
+  "bbox": [
+    10.8,
+    48.3,
+    11,
+    48.45
+  ],
+  "builtAt": "2026-08-15T05:20:27Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18973102,
+      "sha256": "da825058ec5a892e7a0a23091fd89a1fb3df3e7e6aa529ffde1820febe082172",
+      "sha256_16": "da825058ec5a892e"
+    },
+    "augsburg.tar.gz": {
+      "bytes": 2596908,
+      "sha256": "67f849dbacf0c9008b9aa7306555926c0336e46b7c63bdce6d466ac7caf78ff3",
+      "sha256_16": "67f849dbacf0c900"
+    },
+    "augsburg.tar.zst": {
+      "bytes": 2806260,
+      "sha256": "6c4a9e30983bca6b952540fc1c56ff1b820fe5c81a930ec63d0bdab2c1934d9b",
+      "sha256_16": "6c4a9e30983bca6b"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/augsburg",
+    "pack": "augsburg.tar.zst",
+    "packGz": "augsburg.tar.gz"
+  }
+}

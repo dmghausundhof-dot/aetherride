@@ -1,0 +1,27 @@
+{
+  "id": "trier-mosel",
+  "name": "Trier / Mosel",
+  "bbox": [
+    6.5,
+    49.7,
+    6.85,
+    49.85
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/trier-mosel",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "trier-mosel.tar.zst"
+  }
+}

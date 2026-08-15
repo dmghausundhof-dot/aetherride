@@ -1,0 +1,27 @@
+{
+  "id": "chambery",
+  "name": "Chambéry / Lac du Bourget",
+  "bbox": [
+    5.8,
+    45.48,
+    6.05,
+    45.68
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/chambery",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "chambery.tar.zst"
+  }
+}

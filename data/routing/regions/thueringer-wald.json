@@ -1,0 +1,27 @@
+{
+  "id": "thueringer-wald",
+  "name": "Thüringer Wald",
+  "bbox": [
+    10.4,
+    50.4,
+    11.4,
+    50.85
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/thueringen-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/thueringer-wald",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "thueringer-wald.tar.zst"
+  }
+}

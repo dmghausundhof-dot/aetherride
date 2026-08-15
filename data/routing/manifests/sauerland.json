@@ -1,0 +1,37 @@
+{
+  "id": "sauerland",
+  "name": "Sauerland",
+  "bbox": [
+    7.8,
+    51.1,
+    8.7,
+    51.5
+  ],
+  "builtAt": "2026-08-15T04:44:51Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17262014,
+      "sha256": "3a73f32d1d5f971dc761be10ae00707a33ee4f12f354bf0626f3eef03ca85418",
+      "sha256_16": "3a73f32d1d5f971d"
+    },
+    "sauerland.tar.gz": {
+      "bytes": 2397264,
+      "sha256": "7b84614ddf135c7a2572b462bfa80407c58c84bb463fcf0cc6a29f4b5559be40",
+      "sha256_16": "7b84614ddf135c7a"
+    },
+    "sauerland.tar.zst": {
+      "bytes": 2620744,
+      "sha256": "0309e6aec74bf23f005258fa0915342cfba8d4d9f50ba5e2cd7b398290e26b2e",
+      "sha256_16": "0309e6aec74bf23f"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/sauerland",
+    "pack": "sauerland.tar.zst",
+    "packGz": "sauerland.tar.gz"
+  }
+}

@@ -56,6 +56,19 @@ const distReady: OfflinePackManifest = {
 assert.equal(manifestHasFileEntries(stub), false);
 assert.equal(manifestHasFileEntries(distReady), true);
 assert.equal(catalogStatus(stub, false), "stub");
+assert.equal(
+  catalogStatus(
+    {
+      ...stub,
+      cdn: {
+        baseUrl:
+          "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/frankfurt-rhein-main",
+      },
+    },
+    false
+  ),
+  "ready"
+);
 assert.equal(catalogStatus(distReady, false), "stub");
 assert.equal(catalogStatus(distReady, true), "ready");
 assert.equal(
@@ -170,6 +183,11 @@ const merged = mergeCatalogPreferReady(
 );
 assert.equal(merged[0]!.downloadable, true);
 assert.equal(merged[0]!.bytes, 2595914);
+assert.ok(
+  applyPackCdn("aachen", stub).cdn?.baseUrl?.includes(
+    "/storage/v1/object/public/offline-packs/aachen"
+  )
+);
 
 try {
   const distRaw = JSON.parse(

@@ -1,0 +1,37 @@
+{
+  "id": "pfalz",
+  "name": "Pf\u00e4lzerwald",
+  "bbox": [
+    7.7,
+    49.1,
+    8.3,
+    49.5
+  ],
+  "builtAt": "2026-08-15T05:25:23Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17547012,
+      "sha256": "5bf0226ea7d334af2c8357e8168a3347a24f03148df0fa0dbbfd516aeda7338b",
+      "sha256_16": "5bf0226ea7d334af"
+    },
+    "pfalz.tar.gz": {
+      "bytes": 2545561,
+      "sha256": "45b059e83ccb10d1b237e68c3746f9f13ec3cdc38bdb4e319d778b1b233b46e0",
+      "sha256_16": "45b059e83ccb10d1"
+    },
+    "pfalz.tar.zst": {
+      "bytes": 2759505,
+      "sha256": "64d437278f7e0c91a856eb8db534ad018f0817f3b36de0e517e3f4c859d3fdfa",
+      "sha256_16": "64d437278f7e0c91"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/pfalz",
+    "pack": "pfalz.tar.zst",
+    "packGz": "pfalz.tar.gz"
+  }
+}

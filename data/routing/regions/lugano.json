@@ -1,0 +1,27 @@
+{
+  "id": "lugano",
+  "name": "Lugano / Tessin",
+  "bbox": [
+    8.9,
+    45.95,
+    9.05,
+    46.05
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/lugano",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "lugano.tar.zst"
+  }
+}

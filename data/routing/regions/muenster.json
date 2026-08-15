@@ -1,0 +1,27 @@
+{
+  "id": "muenster",
+  "name": "Münsterland",
+  "bbox": [
+    7.5,
+    51.88,
+    7.75,
+    52.05
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/muenster",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "muenster.tar.zst"
+  }
+}

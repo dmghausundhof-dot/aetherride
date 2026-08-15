@@ -1,0 +1,37 @@
+{
+  "id": "saarbruecken",
+  "name": "Saarbr\u00fccken",
+  "bbox": [
+    6.9,
+    49.2,
+    7.1,
+    49.3
+  ],
+  "builtAt": "2026-08-15T06:26:01Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18087687,
+      "sha256": "fccd274ade511191b23187b40e1332830a634f090eea65d9192b6278e31097a4",
+      "sha256_16": "fccd274ade511191"
+    },
+    "saarbruecken.tar.gz": {
+      "bytes": 2572366,
+      "sha256": "0d2c73d22c57a0bdb8b25fc93fc3281a7c4617972da6887a1b1b64b6f3a65aae",
+      "sha256_16": "0d2c73d22c57a0bd"
+    },
+    "saarbruecken.tar.zst": {
+      "bytes": 2775837,
+      "sha256": "d8e71d1ef8f8512bce85c18a80a2143e587bb96b17c4c69638d608d7ae44b52d",
+      "sha256_16": "d8e71d1ef8f8512b"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/saarbruecken",
+    "pack": "saarbruecken.tar.zst",
+    "packGz": "saarbruecken.tar.gz"
+  }
+}

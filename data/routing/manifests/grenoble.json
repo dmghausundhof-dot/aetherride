@@ -1,0 +1,24 @@
+{
+  "id": "grenoble",
+  "name": "Grenoble / Isère",
+  "bbox": [
+    5.58,
+    45.08,
+    5.9,
+    45.32
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "grenoble.tar.zst",
+    "packGz": "grenoble.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

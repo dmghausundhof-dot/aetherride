@@ -1,0 +1,27 @@
+{
+  "id": "bordeaux",
+  "name": "Bordeaux / Garonne",
+  "bbox": [
+    -0.72,
+    44.72,
+    -0.4,
+    44.95
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/aquitaine-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/bordeaux",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bordeaux.tar.zst"
+  }
+}

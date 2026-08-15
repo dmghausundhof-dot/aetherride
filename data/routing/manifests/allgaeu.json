@@ -1,0 +1,37 @@
+{
+  "id": "allgaeu",
+  "name": "Allg\u00e4u",
+  "bbox": [
+    10,
+    47.4,
+    10.65,
+    47.8
+  ],
+  "builtAt": "2026-08-15T05:20:14Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17866897,
+      "sha256": "020f0d9c44e4c4c71debf95bd75105c411d4bb0be0edb3d9273b2e055f7bcfa8",
+      "sha256_16": "020f0d9c44e4c4c7"
+    },
+    "allgaeu.tar.gz": {
+      "bytes": 2491253,
+      "sha256": "284e1b01eb471a57931000021583bf414908a9b63b0a357e50df955e6fd15208",
+      "sha256_16": "284e1b01eb471a57"
+    },
+    "allgaeu.tar.zst": {
+      "bytes": 2704339,
+      "sha256": "cf9d9ab326a998bb5fc050f79057795a23c64cc63784ffdcc13369ab01f77756",
+      "sha256_16": "cf9d9ab326a998bb"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/allgaeu",
+    "pack": "allgaeu.tar.zst",
+    "packGz": "allgaeu.tar.gz"
+  }
+}

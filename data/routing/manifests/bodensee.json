@@ -1,0 +1,37 @@
+{
+  "id": "bodensee",
+  "name": "Bodensee",
+  "bbox": [
+    8.9,
+    47.5,
+    9.8,
+    47.9
+  ],
+  "builtAt": "2026-08-15T05:01:08Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17939384,
+      "sha256": "ddfad3fb07c26b0d3be43b6cb37ee9094680513674973aba5c6a25a043eb1eea",
+      "sha256_16": "ddfad3fb07c26b0d"
+    },
+    "bodensee.tar.gz": {
+      "bytes": 2556077,
+      "sha256": "837d68c332e0c97a60f65842aaf099bc21f9117692cc36701fee9291a5377d10",
+      "sha256_16": "837d68c332e0c97a"
+    },
+    "bodensee.tar.zst": {
+      "bytes": 2758065,
+      "sha256": "7f9ca66281b0f315a7fe7be02f6edae8cd1d0fbac8098b18c3c91e85fda2227a",
+      "sha256_16": "7f9ca66281b0f315"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bodensee",
+    "pack": "bodensee.tar.zst",
+    "packGz": "bodensee.tar.gz"
+  }
+}

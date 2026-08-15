@@ -1,0 +1,37 @@
+{
+  "id": "harz",
+  "name": "Harz",
+  "bbox": [
+    10.3,
+    51.5,
+    11.35,
+    51.95
+  ],
+  "builtAt": "2026-08-15T05:49:16Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17776024,
+      "sha256": "72bb4be40ea2dca6f5d68048c959e7fab74892497e315c94e9c52e78d478c3ca",
+      "sha256_16": "72bb4be40ea2dca6"
+    },
+    "harz.tar.gz": {
+      "bytes": 2511955,
+      "sha256": "138b512b80ec85b3b010191e24180393df68fff0e54fb26ccc8973de2e59b147",
+      "sha256_16": "138b512b80ec85b3"
+    },
+    "harz.tar.zst": {
+      "bytes": 2734467,
+      "sha256": "cc6b7e740d2de33f558a89f4eef962b9a777a8b827719cccc493fc345602ed18",
+      "sha256_16": "cc6b7e740d2de33f"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/harz",
+    "pack": "harz.tar.zst",
+    "packGz": "harz.tar.gz"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "hamburg",
+  "name": "Hamburg & Umland",
+  "bbox": [
+    9.7,
+    53.4,
+    10.3,
+    53.7
+  ],
+  "builtAt": "2026-08-15T06:11:29Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19204766,
+      "sha256": "be87eeff4a5dc8645adf1bdb28cac1551110a3868c913ed306282a423a5774cb",
+      "sha256_16": "be87eeff4a5dc864"
+    },
+    "hamburg.tar.gz": {
+      "bytes": 2655609,
+      "sha256": "c48bda09ee10e1184c541cb44dc66da0eae644e127fd3fef0e963e1985b4de5c",
+      "sha256_16": "c48bda09ee10e118"
+    },
+    "hamburg.tar.zst": {
+      "bytes": 2879465,
+      "sha256": "32d3593b78dbb98e32ac6b9f67058f06c302b0c25e4acffb9e394cbfcade0d6f",
+      "sha256_16": "32d3593b78dbb98e"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/hamburg",
+    "pack": "hamburg.tar.zst",
+    "packGz": "hamburg.tar.gz"
+  }
+}

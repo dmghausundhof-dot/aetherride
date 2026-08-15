@@ -1,0 +1,27 @@
+{
+  "id": "basel",
+  "name": "Basel / Dreiländereck",
+  "bbox": [
+    7.5,
+    47.5,
+    7.7,
+    47.6
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/basel",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "basel.tar.zst"
+  }
+}

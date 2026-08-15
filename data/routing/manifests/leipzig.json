@@ -1,0 +1,37 @@
+{
+  "id": "leipzig",
+  "name": "Leipzig / Neuseenland",
+  "bbox": [
+    12.2,
+    51.2,
+    12.55,
+    51.45
+  ],
+  "builtAt": "2026-08-15T05:55:07Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19190651,
+      "sha256": "d3b9c86fa55381e8f6b99108f1b5807dc88e5d28b045822c61c8cbafdb2fbc07",
+      "sha256_16": "d3b9c86fa55381e8"
+    },
+    "leipzig.tar.gz": {
+      "bytes": 2681784,
+      "sha256": "faa0d1e6c1e74622a4ffec57e33153b42bc0903de74460f31ad45186179e6ae8",
+      "sha256_16": "faa0d1e6c1e74622"
+    },
+    "leipzig.tar.zst": {
+      "bytes": 2865906,
+      "sha256": "dd9f1775e56756ef6cd1efb8a608d45baa9eeb8db36750ba9fae290fd05f4691",
+      "sha256_16": "dd9f1775e56756ef"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/leipzig",
+    "pack": "leipzig.tar.zst",
+    "packGz": "leipzig.tar.gz"
+  }
+}

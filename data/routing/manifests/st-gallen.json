@@ -1,0 +1,37 @@
+{
+  "id": "st-gallen",
+  "name": "St. Gallen / Appenzell",
+  "bbox": [
+    9.3,
+    47.38,
+    9.5,
+    47.48
+  ],
+  "builtAt": "2026-08-14T21:19:52Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18060454,
+      "sha256": "f166d31fab50879c4d4a47cd2905e0d009b1b687269539b1e8b5ec04b34d104b",
+      "sha256_16": "f166d31fab50879c"
+    },
+    "st-gallen.tar.gz": {
+      "bytes": 2455601,
+      "sha256": "d0eadfc6dc785b2fc946ef5e3ea36b97551fe6399b82ebe71149826c18278c87",
+      "sha256_16": "d0eadfc6dc785b2f"
+    },
+    "st-gallen.tar.zst": {
+      "bytes": 2641649,
+      "sha256": "56cefcae94dd85838476527d77ef32bccacd0f3cdbdfbdda6e44c3ea8923854d",
+      "sha256_16": "56cefcae94dd8583"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/st-gallen",
+    "pack": "st-gallen.tar.zst",
+    "packGz": "st-gallen.tar.gz"
+  }
+}

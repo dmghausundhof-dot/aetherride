@@ -1,0 +1,37 @@
+{
+  "id": "thueringer-wald",
+  "name": "Th\u00fcringer Wald",
+  "bbox": [
+    10.4,
+    50.4,
+    11.4,
+    50.85
+  ],
+  "builtAt": "2026-08-15T06:01:34Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18013790,
+      "sha256": "7ef23c682e96d5a59065820949fe2b5cd128305cfad12459fa11f8445f2755a1",
+      "sha256_16": "7ef23c682e96d5a5"
+    },
+    "thueringer-wald.tar.gz": {
+      "bytes": 2573655,
+      "sha256": "ce69bdd373b12566372db95717a9b83a4b1a18d1f91e7d9c9bfaed5459758395",
+      "sha256_16": "ce69bdd373b12566"
+    },
+    "thueringer-wald.tar.zst": {
+      "bytes": 2794134,
+      "sha256": "0a0d3d7fe9bb8602214cfb7fb2eb41b7118034cc413281de4f50c45f3648a0db",
+      "sha256_16": "0a0d3d7fe9bb8602"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/thueringer-wald",
+    "pack": "thueringer-wald.tar.zst",
+    "packGz": "thueringer-wald.tar.gz"
+  }
+}

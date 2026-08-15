@@ -1,0 +1,37 @@
+{
+  "id": "bern",
+  "name": "Bern / Mittelland",
+  "bbox": [
+    7.3,
+    46.9,
+    7.6,
+    47.1
+  ],
+  "builtAt": "2026-08-14T21:18:23Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17752488,
+      "sha256": "be2b2dfcf0d7c16ae7012407e7d225d8ca125d610625846c810f8bed3166c5b5",
+      "sha256_16": "be2b2dfcf0d7c16a"
+    },
+    "bern.tar.gz": {
+      "bytes": 2493575,
+      "sha256": "c0adcf5849935b256cf2da88fa32c656517b5ad9cd9130b49e0111993eddce6d",
+      "sha256_16": "c0adcf5849935b25"
+    },
+    "bern.tar.zst": {
+      "bytes": 2754816,
+      "sha256": "8f3a2c923bd2f5ecd20b87be7fc5075746cc389e4de51791e03204760d3c0346",
+      "sha256_16": "8f3a2c923bd2f5ec"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bern",
+    "pack": "bern.tar.zst",
+    "packGz": "bern.tar.gz"
+  }
+}

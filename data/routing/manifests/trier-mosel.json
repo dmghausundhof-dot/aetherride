@@ -1,0 +1,37 @@
+{
+  "id": "trier-mosel",
+  "name": "Trier / Mosel",
+  "bbox": [
+    6.5,
+    49.7,
+    6.85,
+    49.85
+  ],
+  "builtAt": "2026-08-15T05:25:31Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18157242,
+      "sha256": "1f91c2a8bb748d7fc9a97e23090b86397b03d2a5aa55197ecbd52fc31acdaee2",
+      "sha256_16": "1f91c2a8bb748d7f"
+    },
+    "trier-mosel.tar.gz": {
+      "bytes": 2526133,
+      "sha256": "cc87097cce694192ca57d199020302c9d2a3ab9cf84177ad99154318a121662d",
+      "sha256_16": "cc87097cce694192"
+    },
+    "trier-mosel.tar.zst": {
+      "bytes": 2701347,
+      "sha256": "26f7a6931faae70829368045ad13590d3eb53e17d819abb876d50fc42ac849dd",
+      "sha256_16": "26f7a6931faae708"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/trier-mosel",
+    "pack": "trier-mosel.tar.zst",
+    "packGz": "trier-mosel.tar.gz"
+  }
+}

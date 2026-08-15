@@ -1,0 +1,37 @@
+{
+  "id": "genf",
+  "name": "Genf / Lac L\u00e9man",
+  "bbox": [
+    6.05,
+    46.15,
+    6.25,
+    46.28
+  ],
+  "builtAt": "2026-08-14T21:18:50Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18935960,
+      "sha256": "7a8327b5b93fe51dc5135d7eed65ef639a1e229d5937ef6ba6b4c4af7ba9e74d",
+      "sha256_16": "7a8327b5b93fe51d"
+    },
+    "genf.tar.gz": {
+      "bytes": 2545607,
+      "sha256": "9e3115eac78923af83494f57b396a0c112d6d748db3b1c36b0ee2baac98b0c8e",
+      "sha256_16": "9e3115eac78923af"
+    },
+    "genf.tar.zst": {
+      "bytes": 2762748,
+      "sha256": "937f1d04192ab34e641112b2a6f86c7a91b5c225c10a41adfae74b8e76d0f2bd",
+      "sha256_16": "937f1d04192ab34e"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/genf",
+    "pack": "genf.tar.zst",
+    "packGz": "genf.tar.gz"
+  }
+}

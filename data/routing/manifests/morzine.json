@@ -1,0 +1,37 @@
+{
+  "id": "morzine",
+  "name": "Morzine / Portes du Soleil",
+  "bbox": [
+    6.6,
+    46.05,
+    6.9,
+    46.28
+  ],
+  "builtAt": "2026-08-15T10:56:08Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17049923,
+      "sha256": "3e984dae1a5919e221b361d4cf7d127bee7a7d5a37255397485bf1aee4ce99d9",
+      "sha256_16": "3e984dae1a5919e2"
+    },
+    "morzine.tar.gz": {
+      "bytes": 2261705,
+      "sha256": "2572ef0c76cf4e94f4079f28dff82e524cefa485d76797c2d27984f63f817f46",
+      "sha256_16": "2572ef0c76cf4e94"
+    },
+    "morzine.tar.zst": {
+      "bytes": 2491857,
+      "sha256": "bc1297cc7935251cd1a5effd02a0cfdfb548cf4a175b393dd719a887f565e520",
+      "sha256_16": "bc1297cc7935251c"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/morzine",
+    "pack": "morzine.tar.zst",
+    "packGz": "morzine.tar.gz"
+  }
+}

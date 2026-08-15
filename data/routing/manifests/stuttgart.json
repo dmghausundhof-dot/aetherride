@@ -1,0 +1,37 @@
+{
+  "id": "stuttgart",
+  "name": "Stuttgart / Mittlerer Neckar",
+  "bbox": [
+    9,
+    48.6,
+    9.4,
+    48.9
+  ],
+  "builtAt": "2026-08-15T05:01:37Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18241157,
+      "sha256": "b6b926b323893b36e00409646742dd9502bf7bdf228c871f2eadc01b985162b3",
+      "sha256_16": "b6b926b323893b36"
+    },
+    "stuttgart.tar.gz": {
+      "bytes": 2570434,
+      "sha256": "071db7cb538a57f14e707c684ab8fa9f7f57e9b5e1592ddd2b0b56947fff046a",
+      "sha256_16": "071db7cb538a57f1"
+    },
+    "stuttgart.tar.zst": {
+      "bytes": 2741050,
+      "sha256": "61e6ece9c9018ccd5a730e98b843baf0bf682dc9f1140b4107b777d6009920ce",
+      "sha256_16": "61e6ece9c9018ccd"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/stuttgart",
+    "pack": "stuttgart.tar.zst",
+    "packGz": "stuttgart.tar.gz"
+  }
+}

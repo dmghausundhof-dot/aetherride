@@ -1,0 +1,37 @@
+{
+  "id": "ruhrgebiet",
+  "name": "Ruhrgebiet",
+  "bbox": [
+    6.8,
+    51.3,
+    7.65,
+    51.7
+  ],
+  "builtAt": "2026-08-15T04:44:31Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18629307,
+      "sha256": "54ef5c6cf1ecfefb7acb1b715a192443f694cdd1bfe56d5307b5762b44f2a3ba",
+      "sha256_16": "54ef5c6cf1ecfefb"
+    },
+    "ruhrgebiet.tar.gz": {
+      "bytes": 2594541,
+      "sha256": "82c1eb181cf2313cfeaafafe678a94f94b44673d249de961c6397306116bd1f5",
+      "sha256_16": "82c1eb181cf2313c"
+    },
+    "ruhrgebiet.tar.zst": {
+      "bytes": 2813614,
+      "sha256": "9c4830be91cb11d39433353d9f2a6f77cdcccd32b872765dac373229d8fb99cf",
+      "sha256_16": "9c4830be91cb11d3"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/ruhrgebiet",
+    "pack": "ruhrgebiet.tar.zst",
+    "packGz": "ruhrgebiet.tar.gz"
+  }
+}

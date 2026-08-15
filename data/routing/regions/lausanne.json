@@ -1,0 +1,27 @@
+{
+  "id": "lausanne",
+  "name": "Lausanne / Lavaux",
+  "bbox": [
+    6.55,
+    46.5,
+    6.75,
+    46.6
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/lausanne",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "lausanne.tar.zst"
+  }
+}

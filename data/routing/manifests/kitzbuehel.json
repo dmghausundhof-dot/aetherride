@@ -1,0 +1,37 @@
+{
+  "id": "kitzbuehel",
+  "name": "Kitzb\u00fchel / Wilder Kaiser",
+  "bbox": [
+    12.2,
+    47.38,
+    12.5,
+    47.55
+  ],
+  "builtAt": "2026-08-14T23:05:40Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17563875,
+      "sha256": "6ce4aae788a9f2ae4ae950b3a1760fdef67b26e207f0e3c139fc1e0ecbadcc0c",
+      "sha256_16": "6ce4aae788a9f2ae"
+    },
+    "kitzbuehel.tar.gz": {
+      "bytes": 2362605,
+      "sha256": "dd360c7233323095d6e88ecc1977a81c6d8658d4fb49fff69e8958b96e27523a",
+      "sha256_16": "dd360c7233323095"
+    },
+    "kitzbuehel.tar.zst": {
+      "bytes": 2597985,
+      "sha256": "0cfd54bf7a4fa16aaeb592f2fddafe164d3a5fa94f635a2483d1076a27896ff5",
+      "sha256_16": "0cfd54bf7a4fa16a"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/kitzbuehel",
+    "pack": "kitzbuehel.tar.zst",
+    "packGz": "kitzbuehel.tar.gz"
+  }
+}

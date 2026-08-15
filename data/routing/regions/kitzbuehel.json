@@ -1,0 +1,27 @@
+{
+  "id": "kitzbuehel",
+  "name": "Kitzbühel / Wilder Kaiser",
+  "bbox": [
+    12.2,
+    47.38,
+    12.5,
+    47.55
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/kitzbuehel",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "kitzbuehel.tar.zst"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "kassel",
+  "name": "Kassel / Bergpark",
+  "bbox": [
+    9.4,
+    51.25,
+    9.6,
+    51.4
+  ],
+  "builtAt": "2026-08-15T05:46:08Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18754351,
+      "sha256": "5b9b5400fdb49ec2870928d26285a28537985b1abde9aef9c64c2ee85c45d387",
+      "sha256_16": "5b9b5400fdb49ec2"
+    },
+    "kassel.tar.gz": {
+      "bytes": 2647954,
+      "sha256": "2b10443fca4fa97ba6c8a4111f2c30734774a6338b5fb150ebf1e997f38aca81",
+      "sha256_16": "2b10443fca4fa97b"
+    },
+    "kassel.tar.zst": {
+      "bytes": 2840201,
+      "sha256": "555a9608fb1c32f9d06e0fc5b18d66830489dc26862bd1f28649017d2956da7e",
+      "sha256_16": "555a9608fb1c32f9"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/kassel",
+    "pack": "kassel.tar.zst",
+    "packGz": "kassel.tar.gz"
+  }
+}

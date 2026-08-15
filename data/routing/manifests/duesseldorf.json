@@ -1,0 +1,37 @@
+{
+  "id": "duesseldorf",
+  "name": "D\u00fcsseldorf / Niederrhein",
+  "bbox": [
+    6.6,
+    51.1,
+    6.95,
+    51.35
+  ],
+  "builtAt": "2026-08-15T04:43:23Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18551151,
+      "sha256": "c247222812938f6e1d392fadd91af029b0db1eed643039ee91b4726048736ef5",
+      "sha256_16": "c247222812938f6e"
+    },
+    "duesseldorf.tar.gz": {
+      "bytes": 2567598,
+      "sha256": "85c721448c14e5f866f2cc09645811dfb52fc2e6e6d6811b15d3f28c2ab1948f",
+      "sha256_16": "85c721448c14e5f8"
+    },
+    "duesseldorf.tar.zst": {
+      "bytes": 2763261,
+      "sha256": "e23c50a8298ba5ab96a755cb05c213dfd5f4184284a5903db7e0ca15e8c8b104",
+      "sha256_16": "e23c50a8298ba5ab"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/duesseldorf",
+    "pack": "duesseldorf.tar.zst",
+    "packGz": "duesseldorf.tar.gz"
+  }
+}

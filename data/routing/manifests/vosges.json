@@ -1,0 +1,37 @@
+{
+  "id": "vosges",
+  "name": "Vogesen / Ballon d'Alsace",
+  "bbox": [
+    6.6,
+    47.7,
+    7.2,
+    48.25
+  ],
+  "builtAt": "2026-08-15T10:43:09Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17167750,
+      "sha256": "979554f7be2b617501a753d851354a137067d46e9029fedcd82921f1d75dd6b3",
+      "sha256_16": "979554f7be2b6175"
+    },
+    "vosges.tar.gz": {
+      "bytes": 2428634,
+      "sha256": "e61ff628bf19fdac54a88b11797f8f5259689e24f78575419ee709ea2e4ca5ac",
+      "sha256_16": "e61ff628bf19fdac"
+    },
+    "vosges.tar.zst": {
+      "bytes": 2712008,
+      "sha256": "8904c945d9c40fe2dbdccc31ddd8d99c16a4af5fceb1dda4bc5f97f13f381b57",
+      "sha256_16": "8904c945d9c40fe2"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/vosges",
+    "pack": "vosges.tar.zst",
+    "packGz": "vosges.tar.gz"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "hannover",
+  "name": "Hannover / Leine",
+  "bbox": [
+    9.5,
+    52.25,
+    10.05,
+    52.55
+  ],
+  "builtAt": "2026-08-15T06:23:25Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19205442,
+      "sha256": "5cedfdef572061679e0dd8c669eb64643e9639417c4b13c4299b45f68fb57d54",
+      "sha256_16": "5cedfdef57206167"
+    },
+    "hannover.tar.gz": {
+      "bytes": 2657004,
+      "sha256": "1268264f624c8f52653b1b69dbbd3dbdc9ca9abbfe0b4cbe7b342a9ed77a2b0d",
+      "sha256_16": "1268264f624c8f52"
+    },
+    "hannover.tar.zst": {
+      "bytes": 2880298,
+      "sha256": "fff1f79c8a28dd92ffd1812554791279ae14794cf46bf17e9dba4a846debb3ed",
+      "sha256_16": "fff1f79c8a28dd92"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/hannover",
+    "pack": "hannover.tar.zst",
+    "packGz": "hannover.tar.gz"
+  }
+}

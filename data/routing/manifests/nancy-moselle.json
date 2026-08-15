@@ -1,0 +1,37 @@
+{
+  "id": "nancy-moselle",
+  "name": "Nancy / Moselle",
+  "bbox": [
+    6.05,
+    48.6,
+    6.3,
+    48.78
+  ],
+  "builtAt": "2026-08-15T11:05:03Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18380795,
+      "sha256": "04c6c92b455ab30c7c80e389a3977057556e4875732701e78b5ab18c1cd88d2b",
+      "sha256_16": "04c6c92b455ab30c"
+    },
+    "nancy-moselle.tar.gz": {
+      "bytes": 2486842,
+      "sha256": "a489b8aa6ee401a01a8628f8c875b7d20258f68cfba9f36b79a3ad885408d471",
+      "sha256_16": "a489b8aa6ee401a0"
+    },
+    "nancy-moselle.tar.zst": {
+      "bytes": 2690375,
+      "sha256": "23526506cdbda42ed3073cedc05f34f7d2837d2cb0075b87bbc452469aca1b60",
+      "sha256_16": "23526506cdbda42e"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nancy-moselle",
+    "pack": "nancy-moselle.tar.zst",
+    "packGz": "nancy-moselle.tar.gz"
+  }
+}

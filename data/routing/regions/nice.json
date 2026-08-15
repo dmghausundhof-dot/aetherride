@@ -1,0 +1,27 @@
+{
+  "id": "nice",
+  "name": "Nizza / Promenade des Anglais",
+  "bbox": [
+    7.1,
+    43.62,
+    7.4,
+    43.78
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/provence-alpes-cote-d-azur-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/nice",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "nice.tar.zst"
+  }
+}

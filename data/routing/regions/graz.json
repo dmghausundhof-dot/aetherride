@@ -1,0 +1,27 @@
+{
+  "id": "graz",
+  "name": "Graz / Murtal",
+  "bbox": [
+    15.35,
+    47.02,
+    15.52,
+    47.12
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/graz",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "graz.tar.zst"
+  }
+}

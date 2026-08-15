@@ -1,0 +1,37 @@
+{
+  "id": "innsbruck",
+  "name": "Innsbruck / Tirol",
+  "bbox": [
+    11.2,
+    47.2,
+    11.5,
+    47.4
+  ],
+  "builtAt": "2026-08-14T23:05:26Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18097489,
+      "sha256": "b525b2b0468e4723d1e7aee2a6b7a1809f897381ae5a54886d879036e2892e4b",
+      "sha256_16": "b525b2b0468e4723"
+    },
+    "innsbruck.tar.gz": {
+      "bytes": 2448901,
+      "sha256": "a7139e323218798a91b27687425eb876f31d90c00d96bd770269497dece9e535",
+      "sha256_16": "a7139e323218798a"
+    },
+    "innsbruck.tar.zst": {
+      "bytes": 2652184,
+      "sha256": "dc0a8fc89ee77a050e02217b8e46866975d7b237437401741c81eb37d35d4cb1",
+      "sha256_16": "dc0a8fc89ee77a05"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/innsbruck",
+    "pack": "innsbruck.tar.zst",
+    "packGz": "innsbruck.tar.gz"
+  }
+}

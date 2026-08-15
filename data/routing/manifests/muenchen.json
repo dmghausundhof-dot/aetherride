@@ -1,0 +1,37 @@
+{
+  "id": "muenchen",
+  "name": "M\u00fcnchen & Umland",
+  "bbox": [
+    11.3,
+    48,
+    11.8,
+    48.3
+  ],
+  "builtAt": "2026-08-15T05:37:21Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19847207,
+      "sha256": "ef8bf3f083803c813bb2f1b4d3dd8f25bcf37f0dfbcfa3181c147dbc9eaed076",
+      "sha256_16": "ef8bf3f083803c81"
+    },
+    "muenchen.tar.gz": {
+      "bytes": 2695876,
+      "sha256": "c8018f96b9416431b9ecff209e01162e8c9de739ee2941b35edc13926fd4c8d5",
+      "sha256_16": "c8018f96b9416431"
+    },
+    "muenchen.tar.zst": {
+      "bytes": 2845544,
+      "sha256": "d384dd75cb3e32e732f51f8c11fabf6ce16c964cf89e752799f0e67777589f05",
+      "sha256_16": "d384dd75cb3e32e7"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/muenchen",
+    "pack": "muenchen.tar.zst",
+    "packGz": "muenchen.tar.gz"
+  }
+}

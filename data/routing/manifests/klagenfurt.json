@@ -1,0 +1,37 @@
+{
+  "id": "klagenfurt",
+  "name": "Klagenfurt / W\u00f6rthersee",
+  "bbox": [
+    14.2,
+    46.55,
+    14.4,
+    46.7
+  ],
+  "builtAt": "2026-08-14T23:05:54Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18491682,
+      "sha256": "9d38ea95a525e006a0c55552b42fbbb3c78e9ecead4ad31df07cea8f0de7eb36",
+      "sha256_16": "9d38ea95a525e006"
+    },
+    "klagenfurt.tar.gz": {
+      "bytes": 2541985,
+      "sha256": "e5a058075cc2096d16aa7ea276b93c4697811b65ce4cad900f64e6119f9b4499",
+      "sha256_16": "e5a058075cc2096d"
+    },
+    "klagenfurt.tar.zst": {
+      "bytes": 2746669,
+      "sha256": "394e4a606432c5fc7e0e7bed403df60a137830f5d2dfaf6700d9fcc43ba8e603",
+      "sha256_16": "394e4a606432c5fc"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/klagenfurt",
+    "pack": "klagenfurt.tar.zst",
+    "packGz": "klagenfurt.tar.gz"
+  }
+}

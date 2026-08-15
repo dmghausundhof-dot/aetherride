@@ -1,0 +1,37 @@
+{
+  "id": "jura-fr",
+  "name": "Jura / Pontarlier",
+  "bbox": [
+    6.1,
+    46.7,
+    6.45,
+    47.1
+  ],
+  "builtAt": "2026-08-15T10:59:57Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17970501,
+      "sha256": "525b37c5eb1a7b399f2e5ccfef8a5495b738af51e55f2e57daab159f35c2c95f",
+      "sha256_16": "525b37c5eb1a7b39"
+    },
+    "jura-fr.tar.gz": {
+      "bytes": 2498502,
+      "sha256": "bedcd4d4b071e20018b27229964ebb40dc5c89f5cee9ae5ce852d099c6955025",
+      "sha256_16": "bedcd4d4b071e200"
+    },
+    "jura-fr.tar.zst": {
+      "bytes": 2722117,
+      "sha256": "70b08b29edeb8fb835d8b802c9462b0177be3d7e9b62699a88bdf9973dabf6a2",
+      "sha256_16": "70b08b29edeb8fb8"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/jura-fr",
+    "pack": "jura-fr.tar.zst",
+    "packGz": "jura-fr.tar.gz"
+  }
+}

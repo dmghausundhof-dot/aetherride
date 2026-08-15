@@ -1,0 +1,37 @@
+{
+  "id": "koblenz",
+  "name": "Koblenz / Rhein-Mosel",
+  "bbox": [
+    7.5,
+    50.3,
+    7.7,
+    50.42
+  ],
+  "builtAt": "2026-08-15T05:25:10Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18186967,
+      "sha256": "2923f86477855540adee26d5a6d3d5ec1af9a399a4232877f352c0fbbb8680ae",
+      "sha256_16": "2923f86477855540"
+    },
+    "koblenz.tar.gz": {
+      "bytes": 2502186,
+      "sha256": "b311a0abb8014a95c6b756fcf91882b35b38f1e7b0d53ea1674d7f37ecbcabdd",
+      "sha256_16": "b311a0abb8014a95"
+    },
+    "koblenz.tar.zst": {
+      "bytes": 2673372,
+      "sha256": "0f0d791b2e2fe1810da6d067e9178d75a3f2a09c0d67905e90d62ffb892ec725",
+      "sha256_16": "0f0d791b2e2fe181"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/koblenz",
+    "pack": "koblenz.tar.zst",
+    "packGz": "koblenz.tar.gz"
+  }
+}

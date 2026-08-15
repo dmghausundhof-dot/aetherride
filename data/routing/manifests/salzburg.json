@@ -1,0 +1,37 @@
+{
+  "id": "salzburg",
+  "name": "Salzburg",
+  "bbox": [
+    12.9,
+    47.7,
+    13.2,
+    47.9
+  ],
+  "builtAt": "2026-08-14T23:06:24Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18787592,
+      "sha256": "20185c28588834afd9f9d7a6c0787e4bd00ea3e0a9b95780a21fdd6a559e7d6b",
+      "sha256_16": "20185c28588834af"
+    },
+    "salzburg.tar.gz": {
+      "bytes": 2546162,
+      "sha256": "996ef18b38ae773981dbfeb92970a4e8fd783bdb7ff194f467acc016755a455f",
+      "sha256_16": "996ef18b38ae7739"
+    },
+    "salzburg.tar.zst": {
+      "bytes": 2756246,
+      "sha256": "be84686f3218eef007126a9e1494184a9fad533638507a25f15b111e7f8939cb",
+      "sha256_16": "be84686f3218eef0"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/salzburg",
+    "pack": "salzburg.tar.zst",
+    "packGz": "salzburg.tar.gz"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "bayerischer-wald",
+  "name": "Bayerischer Wald",
+  "bbox": [
+    12.5,
+    48.7,
+    13.9,
+    49.3
+  ],
+  "builtAt": "2026-08-15T05:20:46Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17795326,
+      "sha256": "9125380f9dbe957258559417bbd318bcd36351a2362ec14a75f07bcf661161bf",
+      "sha256_16": "9125380f9dbe9572"
+    },
+    "bayerischer-wald.tar.gz": {
+      "bytes": 2556393,
+      "sha256": "3f260b3883971efe362980679a0fe2cff0ca10db2876be2808958aebc7382014",
+      "sha256_16": "3f260b3883971efe"
+    },
+    "bayerischer-wald.tar.zst": {
+      "bytes": 2824054,
+      "sha256": "b07c8edebdb67f374b4bb88534832e9d9db83d480f367f45f3110a73ffa232cd",
+      "sha256_16": "b07c8edebdb67f37"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bayerischer-wald",
+    "pack": "bayerischer-wald.tar.zst",
+    "packGz": "bayerischer-wald.tar.gz"
+  }
+}
