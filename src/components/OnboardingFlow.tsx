@@ -10,7 +10,7 @@ import { X } from "lucide-react";
 const SPORTS: { id: BikeCategory; label: string; blurb: string }[] = [
   { id: "road", label: "Rennrad", blurb: "Asphalt & Radwege" },
   { id: "gravel", label: "Gravel", blurb: "Schotter & Distanz" },
-  { id: "urban", label: "City", blurb: "Alltag & Pendeln" },
+  { id: "urban", label: "Stadt", blurb: "Alltag & Pendeln" },
   { id: "mtb_am", label: "MTB", blurb: "Trails & All-Mountain" },
   { id: "mtb_enduro", label: "Enduro", blurb: "Steil & technisch" },
   { id: "emtb", label: "E-MTB", blurb: "Trail mit Assist" },
@@ -126,7 +126,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
                 onClick={() => finish("garage")}
                 className="w-full rounded-xl bg-accent py-3 font-semibold text-white"
               >
-                Bike anlegen
+                Rad abstellen
               </button>
               <button
                 type="button"

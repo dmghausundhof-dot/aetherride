@@ -227,8 +227,8 @@ CompatVerdict _worse(CompatVerdict a, CompatVerdict b) {
 }
 
 String verdictLabel(CompatVerdict v) => switch (v) {
-      CompatVerdict.compatible => 'Kompatibel',
-      CompatVerdict.conditional => 'Bedingt',
-      CompatVerdict.incompatible => 'Inkompatibel',
-      CompatVerdict.insufficientData => 'Daten fehlen',
+      CompatVerdict.compatible => 'Passt zusammen',
+      CompatVerdict.conditional => 'Bitte prüfen',
+      CompatVerdict.incompatible => 'Passt nicht',
+      CompatVerdict.insufficientData => 'Infos fehlen',
     };

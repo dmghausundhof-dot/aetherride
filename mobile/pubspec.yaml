@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   drift: ^2.22.1
@@ -39,6 +42,7 @@ dependencies:
   wakelock_plus: ^1.7.0
   permission_handler: ^11.3.1
   flutter_svg: ^2.0.17
+  sentry_flutter: ^9.6.0
 
 dev_dependencies:
   flutter_test:
@@ -53,12 +57,16 @@ dev_dependencies:
   riverpod_lint: ^2.6.3
 
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/routing/offline_graph.json
+    - assets/routing/bike-overlay-sample.geojson
     - assets/seeds/naehe-peek-seeds-berlin-v1.json
     - assets/seeds/p0-dach-60min-naehe-v1.json
     - assets/seeds/p0-rhein-neckar-60min-naehe-v1.json
     - assets/seeds/p0-rhein-neckar-60min-v1.json
     - assets/seeds/p0-rhein-neckar-60min-premium-v1.json
+    - assets/seeds/p0-france-60min-naehe-v1.json
+    - assets/seeds/heroes/
     - assets/garage/silhouettes/

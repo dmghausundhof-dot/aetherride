@@ -118,6 +118,20 @@ class RideRepository {
     await _garage.touchLocalSync();
   }
 
+  /// Merges keys into [RideRecord.summary] (weather snapshot, photo paths, …).
+  Future<void> mergeSummary(
+    String rideId,
+    Map<String, dynamic> patch,
+  ) async {
+    final ride = await getById(rideId);
+    if (ride == null) return;
+    final next = <String, dynamic>{...ride.summary, ...patch};
+    await (_db.update(_db.rides)..where((t) => t.id.equals(rideId))).write(
+      RidesCompanion(summaryJson: Value(jsonEncode(next))),
+    );
+    await _garage.touchLocalSync();
+  }
+
   RideRecord _toDomain(Ride row) {
     Map<String, dynamic> summary = {};
     try {

@@ -1,0 +1,62 @@
+/**
+ * DACH overlay completeness — named region for every probe city.
+ * Run: npx tsx src/lib/coverage/dachCoverage.test.ts
+ */
+import assert from "node:assert/strict";
+import { overlayRegionForPoint } from "./regions";
+import {
+  DACH_COMPLETENESS_PROBES,
+  DACH_ENVELOPE_REGIONS,
+  DACH_PACK_REGIONS,
+  dachCoverageStats,
+  dachRegionForPoint,
+  overlayHintFromRegistry,
+} from "./dachRegions";
+import { pointInDach } from "./dach";
+
+const stats = dachCoverageStats();
+assert.equal(stats.missingProbes.length, 0, `unnamed probes: ${stats.missingProbes.join(",")}`);
+assert.ok(stats.packs >= 17, `expected ≥17 packs, got ${stats.packs}`);
+assert.ok(stats.envelopes >= 16, `expected DE/AT/CH envelopes, got ${stats.envelopes}`);
+assert.equal(stats.probesNamed, stats.probesTotal);
+
+assert.equal(overlayRegionForPoint(16.373, 48.208)?.id, "wien");
+assert.equal(overlayRegionForPoint(11.575, 48.137)?.id, "muenchen");
+assert.equal(overlayRegionForPoint(8.541, 47.376)?.id, "zuerich");
+assert.equal(overlayRegionForPoint(9.993, 53.551)?.id, "hamburg");
+
+const leipzig = overlayHintFromRegistry(12.37, 51.34);
+assert.ok(leipzig.regionId, "Leipzig must be named");
+assert.ok(
+  leipzig.mode === "region_pack" || leipzig.mode === "dach_live",
+  `Leipzig mode ${leipzig.mode}`
+);
+
+const graz = overlayHintFromRegistry(15.44, 47.07);
+assert.ok(graz.regionId, "Graz must be named");
+
+const genf = overlayHintFromRegistry(6.15, 46.2);
+assert.ok(genf.regionId, "Genf must be named");
+
+const ocean = overlayHintFromRegistry(-30, 0);
+assert.equal(ocean.mode, "live_osm");
+assert.equal(ocean.regionId, null);
+
+assert.equal(pointInDach(51.34, 12.37), true);
+
+for (const p of DACH_COMPLETENESS_PROBES) {
+  const hit = dachRegionForPoint(p.lng, p.lat);
+  assert.ok(hit, `no region for ${p.id}`);
+  assert.ok(pointInDach(p.lat, p.lng), `${p.id} should be in DACH`);
+}
+
+const ids = new Set(DACH_PACK_REGIONS.map((r) => r.id));
+assert.ok(ids.has("berlin"));
+assert.ok(ids.has("graz"));
+assert.ok(ids.has("leipzig"));
+assert.ok(DACH_ENVELOPE_REGIONS.some((r) => r.id === "de-bayern"));
+assert.ok(DACH_ENVELOPE_REGIONS.some((r) => r.id === "ch-tessin"));
+
+console.log(
+  `dachCoverage.test.ts OK — ${stats.packs} packs, ${stats.envelopes} envelopes, ${stats.probesNamed} probes`
+);

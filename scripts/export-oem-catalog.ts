@@ -57,6 +57,7 @@ const manufacturers = BIKE_CATALOG.map((m) => ({
     isEbike: b.isEbike,
     weightKgApprox: b.weightKgApprox ?? null,
     sourceUrl: b.sourceUrl,
+    geometryBySize: b.geometryBySize ?? [],
     oem_components: Object.entries(b.oemComponents ?? {}).map(([slot, modelId]) => ({
       slot,
       component_model_id: modelId,

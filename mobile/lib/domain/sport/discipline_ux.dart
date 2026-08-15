@@ -139,7 +139,9 @@ class OnboardingSportOption {
   ];
 }
 
-/// App-weite UX-Texte (Multi-Sport, DE).
+/// DE-Fallback-Kopien (Multi-Sport) für Tests / domain ohne [BuildContext].
+///
+/// UI soll [AppLocalizations] (+ `l10n_ext.dart`) nutzen — Locale `de`/`en`.
 abstract final class MultiSportCopy {
   static const appTagline =
       'Für MTB, Gravel, Rennrad, City & E-Bike — eine App fürs Rad.';
@@ -173,7 +175,7 @@ abstract final class MultiSportCopy {
   static const statsRidesOne = 'Fahrt';
   static const statsRidesMany = 'Fahrten';
 
-  /// Untertitel unter der Begrüßung — sportabhängig.
+  /// Untertitel unter der Begrüßung — sportabhängig (DE-Fallback).
   static String homeSubtitle({
     BikeCategory? sport,
     String? weatherLine,
@@ -190,7 +192,7 @@ abstract final class MultiSportCopy {
     return '$weatherLine · $base';
   }
 
-  /// Tip-Hero-Titel je Sport.
+  /// Tip-Hero-Titel je Sport (DE-Fallback).
   static String tipHeroTitle(BikeCategory? sport) => switch (sport?.family) {
         SportFamily.mtb => 'Heute raus aufs Rad',
         SportFamily.gravel => 'Heute Schotter oder Mix',
@@ -209,7 +211,7 @@ abstract final class MultiSportCopy {
         _ => 'MTB, Gravel, Rennrad oder City — alles hier.',
       };
 
-  /// Layer-Label: Fahrwerk nur wenn relevant, sonst „Sensorik“.
+  /// Layer-Label: Fahrwerk nur wenn relevant, sonst „Sensorik“ (DE-Fallback).
   static String chassisLayerLabel(BikeCategory? sport) =>
       (sport?.showsChassisLayer ?? true) ? 'Fahrwerk' : 'Sensorik';
 }

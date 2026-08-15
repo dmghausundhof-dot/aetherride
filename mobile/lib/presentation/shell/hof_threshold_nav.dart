@@ -1,0 +1,157 @@
+import 'package:flutter/material.dart';
+
+import '../../core/theme/app_theme.dart';
+
+/// Schwelle zum Hof — ruhiger Boden, Haarlinie, ruhiger Aktiv-Akzent.
+/// Orange bleibt **Rausfahren**; die Nav konkurriert nicht damit.
+class HofThresholdNav extends StatelessWidget {
+  const HofThresholdNav({
+    super.key,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.destinations,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final List<HofThresholdDestination> destinations;
+
+  @override
+  Widget build(BuildContext context) {
+    final index = selectedIndex.clamp(0, destinations.length - 1);
+    final ground = Theme.of(context).scaffoldBackgroundColor;
+    return Material(
+      color: ground,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          border: Border(
+            top: BorderSide(color: AppColors.border, width: 1),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                for (var i = 0; i < destinations.length; i++)
+                  Expanded(
+                    child: _HofThresholdTab(
+                      destination: destinations[i],
+                      selected: i == index,
+                      onTap: () => onDestinationSelected(i),
+                      semanticIndex: i + 1,
+                      semanticCount: destinations.length,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class HofThresholdDestination {
+  const HofThresholdDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    this.showBadge = false,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool showBadge;
+}
+
+class _HofThresholdTab extends StatelessWidget {
+  const _HofThresholdTab({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+    required this.semanticIndex,
+    required this.semanticCount,
+  });
+
+  final HofThresholdDestination destination;
+  final bool selected;
+  final VoidCallback onTap;
+  final int semanticIndex;
+  final int semanticCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.forestOnDark : AppColors.muted;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${destination.label}, Tab $semanticIndex von $semanticCount',
+      child: InkWell(
+        onTap: onTap,
+        splashColor: AppColors.forest.withValues(alpha: 0.10),
+        highlightColor: AppColors.forest.withValues(alpha: 0.06),
+        child: ExcludeSemantics(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    selected ? destination.selectedIcon : destination.icon,
+                    size: 22,
+                    color: color,
+                  ),
+                  if (destination.showBadge)
+                    Positioned(
+                      right: -3,
+                      top: -2,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                width: selected ? 14 : 0,
+                height: 1.5,
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.forestOnDark : Colors.transparent,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                destination.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.1,
+                  letterSpacing: 0.2,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

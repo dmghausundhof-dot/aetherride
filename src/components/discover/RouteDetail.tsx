@@ -34,6 +34,8 @@ import {
 import { MapView, type MapRouteLayer } from "@/components/MapView";
 import { ElevationChart } from "@/components/discover/ElevationChart";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
+import { TourReviews } from "@/components/community/TourReviews";
+import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import type { RangeEstimate } from "@/lib/ebike/range";
 
 type DetailLayer = "overview" | "heat" | "trail" | "elevation";
@@ -186,7 +188,10 @@ export function RouteDetail({
       </button>
 
       <header>
-        <h2 className="text-xl font-bold">{route.name}</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-xl font-bold">{route.name}</h2>
+          <TourCommunityChip tourId={route.id} />
+        </div>
         <p className="mt-1 text-xs text-text-secondary">
           Tour-Idee — Strecke beim Planen oder Starten live berechnen
         </p>
@@ -194,7 +199,7 @@ export function RouteDetail({
           {formatDistanceElevation(route.distanceKm, ascentDisplay)} ·{" "}
           {route.durationMin} min
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
-          {route.loop ? "Rundkurs" : "A→B"}
+          {route.loop ? "⟲ Runde" : "A→B"}
         </p>
         <div className="mt-2 inline-flex rounded-full bg-accent/20 px-2.5 py-1 text-xs font-bold text-accent">
           {route.matchScore}% Match
@@ -274,6 +279,12 @@ export function RouteDetail({
                   <p className="mt-1 text-xs text-text-secondary">
                     Zeigt die Spanne gegen die Touranforderung.
                   </p>
+                  <Link
+                    href="/profile"
+                    className="mt-2 inline-block text-xs font-semibold text-chrome hover:underline"
+                  >
+                    Pro unter Profil freischalten →
+                  </Link>
                 </>
               )}
               {route.rangeNote && (
@@ -282,8 +293,11 @@ export function RouteDetail({
             </div>
           )}
           <p className="text-[11px] text-text-secondary">
-            Offline-Pakete gibt es derzeit nur in der Mobile-App (API vorhanden,
-            Web-Download noch nicht).
+            Offline-Karten lädst du in der App. Hier vormerken geht über{" "}
+            <Link href="/library" className="text-chrome hover:underline">
+              Gespeichert
+            </Link>
+            .
           </p>
         </div>
       )}
@@ -448,6 +462,7 @@ export function RouteDetail({
           </Link>
         </div>
       </div>
+      <TourReviews tourId={route.id} />
     </div>
   );
 }

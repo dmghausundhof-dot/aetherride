@@ -1,77 +1,101 @@
 import Link from "next/link";
 import { AppDownloadButtons } from "./AppDownloadButtons";
+import { HOF_NAV } from "@/lib/nav/hofNav";
+import { MARKETING_NAV } from "@/lib/nav/marketingNav";
+import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
+import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-border bg-surface py-12">
+    <footer className="border-t border-border bg-surface py-12 pb-[calc(3rem+var(--safe-bottom))]">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
           <div>
-            <div className="text-lg font-bold">
-              Aether<span className="text-accent">Ride</span>
-            </div>
-            <p className="mt-1 text-sm text-text-secondary">
-              Touren planen. Bike verstehen. Für alle Fahrradfahrer.
+            <FlowLineWordmark />
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary">
+              {FLOWLINE_TAGLINE_DOTS}
+            </p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Das Rad wohnt hier. Du kommst zurück.
             </p>
           </div>
 
           <AppDownloadButtons size="md" />
         </div>
 
-        <div className="mt-10 grid gap-8 sm:grid-cols-3">
+        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Produkt
+              Website
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
-              <Link href="/discover" className="text-text-secondary hover:text-foreground">
-                Touren
-              </Link>
-              <Link href="/planner" className="text-text-secondary hover:text-foreground">
-                Planen
-              </Link>
-              <Link href="/library" className="text-text-secondary hover:text-foreground">
-                Bibliothek
-              </Link>
-              <Link href="/regions" className="text-text-secondary hover:text-foreground">
-                Regionen
-              </Link>
-              <Link href="/garage" className="text-text-secondary hover:text-foreground">
-                Garage
-              </Link>
-              <Link href="/activities" className="text-text-secondary hover:text-foreground">
-                Fahrten
-              </Link>
-              <Link href="/community" className="text-text-secondary hover:text-foreground">
-                Community
-              </Link>
-              <Link href="/guides" className="text-text-secondary hover:text-foreground">
-                Guides
-              </Link>
-              <Link href="/pricing" className="text-text-secondary hover:text-foreground">
-                Preise
-              </Link>
-              <Link href="/download" className="text-text-secondary hover:text-foreground">
-                App laden
+              {MARKETING_NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-text-secondary hover:text-foreground"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <Link
+                href="/anmelden"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Anmelden
               </Link>
             </div>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Disziplinen
+              Der Hof
             </p>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-text-secondary">
-              <Link href="/discover?sport=road" className="hover:text-foreground">
-                Rennrad
+            <div className="mt-3 flex flex-col gap-2 text-sm">
+              {HOF_NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-text-secondary hover:text-foreground"
+                >
+                  {item.id === "hof" ? "Der Hof" : item.label}
+                </Link>
+              ))}
+              <Link
+                href="/planner"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Planen
               </Link>
-              <Link href="/discover?sport=gravel" className="hover:text-foreground">
-                Gravel
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              Mehr
+            </p>
+            <div className="mt-3 flex flex-col gap-2 text-sm">
+              <Link
+                href="/produkt"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Screens & Abläufe
               </Link>
-              <Link href="/discover?sport=mtb" className="hover:text-foreground">
-                Mountainbike
+              <Link
+                href="/guides/web-vs-app"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Web vs. App
               </Link>
-              <Link href="/discover?sport=urban" className="hover:text-foreground">
-                City
+              <Link
+                href="/activities"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Was reinkam
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Daten & Privatsphäre
               </Link>
             </div>
           </div>
@@ -80,25 +104,43 @@ export function LandingFooter() {
               Rechtliches
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
-              <Link href="/legal/impressum" className="text-text-secondary hover:text-foreground">
+              <Link
+                href="/legal/impressum"
+                className="text-text-secondary hover:text-foreground"
+              >
                 Impressum
               </Link>
-              <Link href="/legal/datenschutz" className="text-text-secondary hover:text-foreground">
+              <Link
+                href="/legal/datenschutz"
+                className="text-text-secondary hover:text-foreground"
+              >
                 Datenschutz
               </Link>
-              <Link href="/legal/widerruf" className="text-text-secondary hover:text-foreground">
+              <Link
+                href="/legal/agb"
+                className="text-text-secondary hover:text-foreground"
+              >
+                AGB
+              </Link>
+              <Link
+                href="/legal/widerruf"
+                className="text-text-secondary hover:text-foreground"
+              >
                 Widerruf
               </Link>
-              <Link href="/privacy" className="text-text-secondary hover:text-foreground">
-                Privacy
-              </Link>
+              <a
+                href="mailto:hello@aetherride.app"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Kontakt
+              </a>
             </div>
           </div>
         </div>
 
         <p className="mt-10 text-center text-xs text-text-secondary">
-          © {new Date().getFullYear()} AetherRide. Offline-First · DSGVO · Web
-          plant, App fährt.
+          © {new Date().getFullYear()} FlowLine. Offline-First · DSGVO · Web
+          ist der Hof, die App fährt.
         </p>
       </div>
     </footer>

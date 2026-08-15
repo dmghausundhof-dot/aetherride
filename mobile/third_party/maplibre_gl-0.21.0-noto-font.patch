@@ -1,0 +1,23 @@
+--- /home/luka/.pub-cache/hosted/pub.dev/maplibre_gl-0.21.0/lib/src/annotation_manager.dart.bak-noto	2026-08-06 23:55:15.256064646 +0200
++++ /home/luka/.pub-cache/hosted/pub.dev/maplibre_gl-0.21.0/lib/src/annotation_manager.dart	2026-08-12 02:16:07.506350373 +0200
+@@ -296,17 +296,14 @@
+           iconHaloBlur: [Expressions.get, 'iconHaloBlur'],
+           // note that web does not support setting this in a fully data driven
+           // way this is a upstream issue
++          // OpenFreeMap/Liberty: Open Sans fehlt → Glyph-404 verwirft Symbole.
++          // text-font darf nicht data-driven (`get`) sein — nur Literale.
+           textFont: kIsWeb
+               ? null
+               : [
+-                  Expressions.caseExpression,
+-                  [Expressions.has, 'fontNames'],
+-                  [Expressions.get, 'fontNames'],
+-                  [
+                     Expressions.literal,
+-                    ["Open Sans Regular", "Arial Unicode MS Regular"]
++                    ["Noto Sans Regular"],
+                   ],
+-                ],
+           textField: [Expressions.get, 'textField'],
+           textSize: [Expressions.get, 'textSize'],
+           textMaxWidth: [Expressions.get, 'textMaxWidth'],

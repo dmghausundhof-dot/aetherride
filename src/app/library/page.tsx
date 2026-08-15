@@ -18,6 +18,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { parseGpx } from "@/lib/import/gpx";
 import { OfflinePacksPanel } from "@/components/discover/OfflinePacksPanel";
 import { ShareCollectionButton } from "@/components/community/ShareCollectionButton";
+import { AddRouteForm } from "@/components/library/AddRouteForm";
 import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
 import type { SavedRoute } from "@/types/route";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
@@ -96,24 +97,23 @@ export default function LibraryPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Bibliothek</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Gespeichert</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Gespeicherte Touren, GPX und Sammlungen — Sync mit der App über dein
-            Konto.
+            Hinter der Karte — lokale Touren und Sammlungen, kein fünfter Tab.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/planner"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white"
+            href="/discover?sheet=plan"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-chrome px-3 py-2 text-sm font-semibold text-background"
           >
-            <Route className="h-4 w-4" /> Planner
+            <Route className="h-4 w-4" /> Planen
           </Link>
           <Link
             href="/discover"
             className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium"
           >
-            Touren
+            Karte
           </Link>
         </div>
       </div>
@@ -149,13 +149,16 @@ export default function LibraryPage() {
             </button>
           </div>
         </div>
+        <div className="mb-3">
+          <AddRouteForm />
+        </div>
 
         {savedRoutes.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
             <Bookmark className="mx-auto h-8 w-8 text-text-secondary" />
             <p className="mt-3 text-sm text-text-secondary">
-              Noch nichts gespeichert. Speichere Touren aus Touren, Planen
-              oder öffentlichen Tour-Seiten.
+              Noch nichts gespeichert. Route hinzufügen, Touren speichern oder
+              GPX importieren.
             </p>
             <Link
               href="/regions"
@@ -212,7 +215,7 @@ export default function LibraryPage() {
                       href={`/planner`}
                       className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium"
                     >
-                      Planner
+                      Planen
                     </Link>
                     <button
                       type="button"

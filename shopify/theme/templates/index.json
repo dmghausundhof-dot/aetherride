@@ -1,0 +1,76 @@
+{
+  "sections": {
+    "worlds": {
+      "type": "aetherride-worlds",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "kicker": "Über den Hof",
+        "title": "Der Laden",
+        "lede": "Zwei Welten: Ersatzteile für dein Rad, und Merchandise ohne Fit-Filter. Keine erfundenen SKUs, keine Fake-Bewertungen.",
+        "parts_collection": "featured-parts",
+        "merch_collection": "merchandise"
+      }
+    },
+    "featured_parts": {
+      "type": "featured-collection",
+      "settings": {
+        "title": "Für dein Rad",
+        "heading_size": "h2",
+        "description": "<p>Verbrauch und Teile. Garage-Fit über Tags — keine erfundenen SKUs.</p>",
+        "show_description": true,
+        "description_style": "body",
+        "collection": "featured-parts",
+        "products_to_show": 8,
+        "columns_desktop": 4,
+        "color_scheme": "scheme-1",
+        "full_width": false,
+        "show_view_all": true,
+        "view_all_style": "outline",
+        "enable_desktop_slider": false,
+        "swipe_on_mobile": true,
+        "image_ratio": "adapt",
+        "image_shape": "default",
+        "show_secondary_image": false,
+        "show_vendor": true,
+        "show_rating": false,
+        "quick_add": "none",
+        "columns_mobile": "2",
+        "padding_top": 28,
+        "padding_bottom": 12
+      }
+    },
+    "featured_merch": {
+      "type": "featured-collection",
+      "settings": {
+        "title": "Merchandise",
+        "heading_size": "h2",
+        "description": "<p>Unabhängig vom Rad — nie nach Fit gefiltert.</p>",
+        "show_description": true,
+        "description_style": "body",
+        "collection": "merchandise",
+        "products_to_show": 8,
+        "columns_desktop": 4,
+        "color_scheme": "scheme-1",
+        "full_width": false,
+        "show_view_all": true,
+        "view_all_style": "outline",
+        "enable_desktop_slider": false,
+        "swipe_on_mobile": true,
+        "image_ratio": "adapt",
+        "image_shape": "default",
+        "show_secondary_image": false,
+        "show_vendor": false,
+        "show_rating": false,
+        "quick_add": "none",
+        "columns_mobile": "2",
+        "padding_top": 12,
+        "padding_bottom": 36
+      }
+    }
+  },
+  "order": [
+    "worlds",
+    "featured_parts",
+    "featured_merch"
+  ]
+}

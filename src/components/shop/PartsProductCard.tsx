@@ -23,9 +23,11 @@ function formatPrice(eur: number, currency: string): string {
 export function PartsProductCard({
   row,
   focused,
+  hideFit,
 }: {
   row: RankedPartsProduct;
   focused?: boolean;
+  hideFit?: boolean;
 }) {
   const { product: p, verdict, chip } = row;
   const chipTone =
@@ -62,6 +64,7 @@ export function PartsProductCard({
             Kein Bild
           </div>
         )}
+        {!hideFit ? (
         <span
           className={cn(
             "absolute left-2 top-2 rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize backdrop-blur-sm",
@@ -70,6 +73,7 @@ export function PartsProductCard({
         >
           {chip}
         </span>
+        ) : null}
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="text-[11px] font-medium uppercase tracking-wide text-text-secondary">
@@ -81,6 +85,9 @@ export function PartsProductCard({
         <div className="text-lg font-bold tabular-nums text-accent">
           {formatPrice(p.priceEur, p.currencyCode)}
         </div>
+        {!hideFit && row.fitLabel ? (
+          <p className="text-xs font-medium text-success">{row.fitLabel}</p>
+        ) : null}
         {p.description ? (
           <p className="line-clamp-2 text-xs text-text-secondary">
             {p.description}

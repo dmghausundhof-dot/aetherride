@@ -17,22 +17,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPages: MetadataRoute.Sitemap = [
     "",
+    "/produkt",
+    "/home",
     "/discover",
-    "/planner",
     "/regions",
     "/guides",
     "/community",
     "/pricing",
     "/download",
-    "/library",
+    "/anmelden",
     "/garage",
     "/shop",
-    "/shop/parts",
+    "/legal/impressum",
+    "/legal/datenschutz",
+    "/legal/agb",
+    "/legal/widerruf",
   ].map((path) => ({
     url: `${origin}${path || "/"}`,
     lastModified: now,
     changeFrequency: path === "" || path === "/discover" ? "daily" : "weekly",
-    priority: path === "" ? 1 : path === "/discover" ? 0.9 : 0.7,
+    priority:
+      path === ""
+        ? 1
+        : path === "/discover" || path === "/produkt"
+          ? 0.9
+          : 0.7,
   }));
 
   const tours = listPublicTourIds().map((id) => ({

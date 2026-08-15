@@ -3,6 +3,17 @@ import type { PlanDraft, QuickOption } from "@/lib/routing/planDraft";
 import type { TrailSegment } from "@/lib/routing/trailSegments";
 import { buildElevationFromTrack } from "@/lib/routing/elevationProfile";
 import type { ElevationProfile } from "@/lib/routing/elevationProfile";
+import {
+  isHonestLoop,
+  isOutAndBackQuickOption,
+  sanitizeDraftForRundkurs,
+} from "@/lib/discover/loopHonesty";
+import {
+  getProfile,
+  isLabeledTrailSuitable,
+  isRideProfileId,
+  type RideProfileId,
+} from "@/lib/routing/profiles";
 
 /** Build MapView layers from draft + quick alts + trail overlay */
 export function buildDiscoverMapLayers(opts: {
@@ -11,16 +22,46 @@ export function buildDiscoverMapLayers(opts: {
   activeQuickId?: string | null;
   trails: TrailSegment[];
   showTrails: boolean;
+  /** D-60-LOOP-FILTER-01: strip out-and-back / non-closed from map. */
+  rundkursOnly?: boolean;
+  /** Filtert/highlighted Seed-Trails nach RideProfile (S0–S3+). */
+  rideProfileId?: RideProfileId | null;
 }): MapRouteLayer[] {
-  const { draft, quickOptions, activeQuickId, trails, showTrails } = opts;
+  const {
+    quickOptions: rawQuick,
+    activeQuickId,
+    trails,
+    showTrails,
+    rundkursOnly = false,
+    rideProfileId = null,
+  } = opts;
+  const draft = rundkursOnly
+    ? sanitizeDraftForRundkurs(opts.draft)
+    : opts.draft;
+  const quickOptions = rundkursOnly
+    ? rawQuick.filter((q) => !isOutAndBackQuickOption(q))
+    : rawQuick;
   const layers: MapRouteLayer[] = [];
+  const ride =
+    rideProfileId && isRideProfileId(rideProfileId)
+      ? getProfile(rideProfileId)
+      : null;
 
   if (showTrails) {
     for (const t of trails) {
+      if (
+        ride &&
+        !isLabeledTrailSuitable(ride.id, t.difficulty)
+      ) {
+        continue;
+      }
       layers.push({
         id: `trail-${t.id}`,
         geometry: t.geometry,
         role: "trail",
+        color: ride?.trailHighlightColor,
+        width: ride ? 3.4 : undefined,
+        opacity: ride ? 0.9 : undefined,
       });
     }
   }
@@ -30,6 +71,13 @@ export function buildDiscoverMapLayers(opts: {
       activeQuickId === q.id ||
       (draft.mode === "quick" && draft.label === q.label);
     if (isActive) continue;
+    if (rundkursOnly) {
+      const coords = (q.result.geometry?.coordinates ?? []) as [
+        number,
+        number,
+      ][];
+      if (!isHonestLoop({ loopFlag: true, trackLngLat: coords })) continue;
+    }
     layers.push({
       id: `alt-${q.id}`,
       geometry: q.result.geometry,
@@ -61,6 +109,9 @@ export function buildDiscoverMapLayers(opts: {
       id: "attached-trail",
       geometry: draft.layers.trail,
       role: "trail",
+      color: ride?.trailHighlightColor,
+      width: ride ? 3.4 : undefined,
+      opacity: ride ? 0.9 : undefined,
     });
   }
 

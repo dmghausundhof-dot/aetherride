@@ -51,7 +51,7 @@ Future<RerouteSheetAction?> showRerouteSheet(BuildContext context) {
               const SizedBox(height: AppSpacing.l),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: AppColors.forestOnDark,
                   minimumSize: const Size.fromHeight(52),
                 ),
                 onPressed: () =>

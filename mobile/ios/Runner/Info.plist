@@ -61,6 +61,10 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>AetherRide koppelt E-Bike-Antriebe (Bosch, Shimano) und Radsensoren für Tempo, Kadenz und optionalen Akku-Stand.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>AetherRide koppelt E-Bike-Antriebe und Radsensoren über Bluetooth.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>AetherRide nutzt den Standort für Navigation und Ride-Tracking.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

@@ -33,7 +33,7 @@ function OpenRideInner() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-12 text-center">
-      <h1 className="text-2xl font-bold">AetherRide öffnen</h1>
+      <h1 className="text-2xl font-bold">FlowLine öffnen</h1>
       <p className="mt-3 text-sm text-text-secondary">
         {routeId
           ? "Geplante Tour wird an die App übergeben…"

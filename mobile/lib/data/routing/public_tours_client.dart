@@ -22,6 +22,7 @@ class PublicTourHit {
     required this.centerLat,
     required this.categories,
     this.summary,
+    this.tags = const [],
   });
 
   final String id;
@@ -37,6 +38,9 @@ class PublicTourHit {
   final double centerLat;
   final List<BikeCategory> categories;
   final String? summary;
+
+  /// Redaktionelle Tags aus `/api/tours/catalog` (trail, region, …).
+  final List<String> tags;
 
   factory PublicTourHit.fromJson(Map<String, dynamic> m) {
     final center = m['center'];
@@ -57,6 +61,15 @@ class PublicTourHit {
     final primary = categoryFromApi(m['primaryCategory'] as String?);
     if (primary != null && !cats.contains(primary)) cats.insert(0, primary);
 
+    final tags = <String>[];
+    final rawTags = m['tags'];
+    if (rawTags is List) {
+      for (final t in rawTags) {
+        final s = t?.toString().trim();
+        if (s != null && s.isNotEmpty && !tags.contains(s)) tags.add(s);
+      }
+    }
+
     return PublicTourHit(
       id: (m['id'] as String?) ?? '',
       name: (m['name'] as String?) ?? '',
@@ -64,13 +77,14 @@ class PublicTourHit {
       elevationM: (m['elevationM'] as num?)?.round() ?? 0,
       durationMin: (m['durationMin'] as num?)?.round() ?? 0,
       difficulty: (m['difficulty'] as String?) ?? '—',
-      surface: (m['surface'] as String?) ?? 'flow/compact',
+      surface: (m['surface'] as String?) ?? 'mixed/urban',
       loop: m['loop'] == true,
       regionSlug: (m['regionSlug'] as String?) ?? '',
       centerLng: lng,
       centerLat: lat,
       categories: cats.isEmpty ? [BikeCategory.mtbAm] : cats,
       summary: m['summary'] as String?,
+      tags: tags,
     );
   }
 }

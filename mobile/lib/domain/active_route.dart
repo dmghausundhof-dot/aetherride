@@ -23,6 +23,7 @@ class ActiveRoute {
     this.mtbScale,
     this.steps = const [],
     this.poiStops = const [],
+    this.isLoop = false,
   });
 
   final String id;
@@ -38,6 +39,9 @@ class ActiveRoute {
 
   /// Optional seed POIs for upcoming rail (N-07).
   final List<ActiveRoutePoi> poiStops;
+
+  /// True when [coordinates] form a closed loop (Start≈Ziel) at handoff.
+  final bool isLoop;
 }
 
 class NavStep {
@@ -45,11 +49,15 @@ class NavStep {
     required this.id,
     required this.instruction,
     required this.distanceAlongM,
+    this.streetName,
   });
 
   final String id;
   final String instruction;
   final double distanceAlongM;
+
+  /// Optional street / road name for glanceable HUD (OSRM `name`, parse, …).
+  final String? streetName;
 }
 
 enum RideLiveLayer { map, data, suspension }

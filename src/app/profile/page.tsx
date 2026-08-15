@@ -14,7 +14,10 @@ import {
   resolveSyncConflict,
   type SyncConflictState,
 } from "@/lib/sync/webSync";
+import { HofPageHeader } from "@/components/hof/HofPageHeader";
+import { HOF_COPY } from "@/lib/home/hofCopy";
 import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
+import { AuthCard } from "@/components/auth/AuthCard";
 
 type AuthUser = {
   id: string;
@@ -31,15 +34,12 @@ export default function ProfilePage() {
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const setSubscriptionTier = useAppStore((s) => s.setSubscriptionTier);
-  const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
   const rangeCalibration = useAppStore((s) => s.rangeCalibration);
   const [advanced, setAdvanced] = useState(false);
   const store = useAppStore();
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [authMsg, setAuthMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [syncConflict, setSyncConflict] = useState<SyncConflictState | null>(
@@ -87,77 +87,11 @@ export default function ProfilePage() {
     });
   };
 
-  const login = async () => {
-    setBusy(true);
-    setAuthMsg(null);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login fehlgeschlagen");
-      await refreshMe();
-      setAuthMsg("Angemeldet.");
-    } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const register = async () => {
-    setBusy(true);
-    setAuthMsg(null);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Registrierung fehlgeschlagen");
-      if (data.needsConfirmation) {
-        setAuthMsg("Bitte E-Mail bestätigen (Supabase), dann anmelden.");
-      } else {
-        await refreshMe();
-        setAuthMsg("Konto erstellt und angemeldet.");
-      }
-    } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const logout = async () => {
     setBusy(true);
     await fetch("/api/auth/logout", { method: "POST" });
     setAuthUser(null);
     setBusy(false);
-  };
-
-  const oauth = async (provider: "google" | "apple") => {
-    setBusy(true);
-    setAuthMsg(null);
-    try {
-      const res = await fetch("/api/auth/oauth/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "OAuth nicht verfügbar");
-      if (data.url) window.location.href = data.url;
-    } catch (e) {
-      setAuthMsg(
-        e instanceof Error
-          ? e.message
-          : "OAuth: Provider in Supabase aktivieren"
-      );
-      setBusy(false);
-    }
   };
 
   const syncNow = async () => {
@@ -297,26 +231,20 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 p-4 pt-6">
-      <header className="flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-xl font-bold text-white">
-          AR
-        </div>
-        <div>
-          <h1 className="text-xl font-bold">Rider Profil</h1>
-          <p className="text-sm text-text-secondary">
-            Fahrstil und Terrain — jederzeit korrigierbar
-          </p>
-        </div>
-      </header>
+    <div className="mx-auto flex max-w-2xl flex-col gap-5 px-5 pb-10 pt-6 lg:max-w-3xl lg:px-10">
+      <HofPageHeader
+        kicker={HOF_COPY.profileKicker}
+        title={HOF_COPY.profileTitle}
+        hint={HOF_COPY.profileHint}
+      />
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <LogIn className="h-4 w-4 text-accent" /> Konto
+          <LogIn className="h-4 w-4 text-chrome" /> Konto
         </h3>
         {!configured ? (
           <p className="text-xs text-text-secondary">
-            Supabase Env fehlt — lokale Nutzung ohne Sync.
+            {HOF_COPY.profileLocalOnly}
           </p>
         ) : authUser ? (
           <div className="space-y-2 text-sm">
@@ -362,58 +290,10 @@ export default function ProfilePage() {
             )}
           </div>
         ) : (
-          <div className="space-y-2">
-            <input
-              type="email"
-              placeholder="E-Mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
-            />
-            <input
-              type="password"
-              placeholder="Passwort (min. 8)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void login()}
-                className="rounded-xl bg-accent py-2 text-sm font-medium text-white"
-              >
-                Anmelden
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void register()}
-                className="rounded-xl bg-surface-elevated py-2 text-sm font-medium"
-              >
-                Registrieren
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void oauth("google")}
-                className="rounded-xl border border-border py-2 text-xs"
-              >
-                Google
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void oauth("apple")}
-                className="rounded-xl border border-border py-2 text-xs"
-              >
-                Apple
-              </button>
-            </div>
-          </div>
+          <AuthCard
+            variant="embedded"
+            onAuthed={refreshMe}
+          />
         )}
         {authMsg && (
           <p className="mt-2 text-xs text-text-secondary">{authMsg}</p>
@@ -424,12 +304,11 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Crown className="h-4 w-4 text-accent" /> Abo
+          <Crown className="h-4 w-4 text-chrome" /> Abo
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
-          Free: 1 Bike, Basis. Pro: Multi-Bike, Bracketing, Reichweite.
-          Offline-Packs unter Discover herunterladen; Aktivierung in der
-          Mobile-App. KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
+          Free: 1 Rad, Basis. Pro: mehrere Räder, Varianten-Vergleich, Reichweite.
+          Offline-Karten in der App. KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
         </p>
         <p className="mb-3 text-sm font-medium">
           Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}
@@ -441,7 +320,7 @@ export default function ProfilePage() {
               type="button"
               disabled={busy || subscriptionTier === "pro"}
               onClick={() => void startBilling("month")}
-              className="rounded-xl bg-accent py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-xl bg-chrome py-2 text-sm font-medium text-background disabled:opacity-40"
             >
               Pro 6,99 €/Mo
             </button>
@@ -449,7 +328,7 @@ export default function ProfilePage() {
               type="button"
               disabled={busy || subscriptionTier === "pro"}
               onClick={() => void startBilling("year")}
-              className="rounded-xl bg-accent py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-xl bg-chrome py-2 text-sm font-medium text-background disabled:opacity-40"
             >
               Pro 59,99 €/Jahr
             </button>
@@ -473,10 +352,10 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold">
-          <User className="h-4 w-4 text-accent" /> Fahrstil
+          <User className="h-4 w-4 text-chrome" /> Fahrstil
         </h3>
         <label className="mb-3 block text-sm">
-          Style
+          Fahrstil
           <select
             value={profile.style}
             onChange={(e) =>
@@ -489,14 +368,14 @@ export default function ProfilePage() {
             <option value="aggressive">Aggressiv</option>
             <option value="flow">Flow</option>
             <option value="efficient">Effizient</option>
-            <option value="explorative">Explorativ</option>
+            <option value="explorative">Entdeckend</option>
           </select>
           <p className="mt-1 text-[11px] text-text-secondary">
             {explanations.style}
           </p>
         </label>
         <label className="mb-3 block text-sm">
-          Skill Level ({profile.skillLevel}/5)
+          Erfahrungsstufe ({profile.skillLevel}/5)
           <input
             type="range"
             min={1}
@@ -589,7 +468,7 @@ export default function ProfilePage() {
             ["brakeIntensityBeforeCorners", "Bremsintensität vor Kurven"],
             ["timeOver04gLateralPct", "% Zeit > 0,4 g Quer"],
             ["impactsPerHour", "Impacts / Stunde"],
-            ["jumpsPerRide", "Sprünge / Ride"],
+            ["jumpsPerRide", "Sprünge / Fahrt"],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="mb-2 block text-sm">
@@ -622,7 +501,7 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold">
-          <Sparkles className="h-4 w-4 text-accent" /> Präferenzen
+          <Sparkles className="h-4 w-4 text-chrome" /> Präferenzen
         </h3>
         {(
           [
@@ -664,10 +543,10 @@ export default function ProfilePage() {
             }
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           >
-            <option value="eco">eco</option>
-            <option value="tour">tour</option>
-            <option value="sport">sport</option>
-            <option value="turbo">turbo</option>
+            <option value="eco">Eco</option>
+            <option value="tour">Tour</option>
+            <option value="sport">Sport</option>
+            <option value="turbo">Turbo</option>
           </select>
           <p className="mt-1 text-[11px] text-text-secondary">
             {explanations.eBikeAssistPreference}
@@ -687,23 +566,70 @@ export default function ProfilePage() {
         </section>
       )}
 
-      <section className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <div className="text-2xl font-bold tabular-nums">{bikes.length}</div>
-          <div className="text-xs text-text-secondary">Bikes</div>
-        </div>
-        <div className="rounded-xl border border-border bg-surface p-3 text-center">
-          <div className="text-2xl font-bold tabular-nums">{rides.length}</div>
-          <div className="text-xs text-text-secondary">Rides</div>
-        </div>
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="font-semibold">{HOF_COPY.profileBikesAtStand}</h3>
+        {bikes.length === 0 ? (
+          <p className="mt-2 text-sm text-text-secondary">
+            {HOF_COPY.noBikeHere} · {HOF_COPY.profileNoKpi}
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-sm">
+            {bikes.map((b) => (
+              <li key={b.id} className="text-text-secondary">
+                {b.name}
+                {b.isActive ? " · vorn" : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link
+          href="/home"
+          className="mt-3 inline-block text-sm font-semibold text-chrome hover:underline"
+        >
+          {HOF_COPY.profileArrive} →
+        </Link>
       </section>
 
-      <Link href="/privacy" className="text-center text-sm text-accent">
-        Datenexport · Privatsphäre · Familie →
-      </Link>
-      <Link href="/chat" className="text-center text-sm text-accent">
-        Mehr fragen (KI-Chat, Power-User) →
-      </Link>
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h3 className="font-semibold">Mehr</h3>
+        <p className="mt-1 text-xs text-text-secondary">
+          Kein fünfter Tab — diese Türen hängen am Profil.
+        </p>
+        <ul className="mt-3 space-y-2 text-sm">
+          <li>
+            <Link href="/activities" className="font-semibold text-chrome hover:underline">
+              Was reinkam
+            </Link>
+            <span className="block text-xs text-text-secondary">
+              Fahrten aus der App
+            </span>
+          </li>
+          <li>
+            <Link href="/library" className="font-semibold text-chrome hover:underline">
+              Platz
+            </Link>
+            <span className="block text-xs text-text-secondary">
+              Touren, Stimmen und Gruppen
+            </span>
+          </li>
+          <li>
+            <Link href="/chat" className="font-semibold text-chrome hover:underline">
+              Assistent
+            </Link>
+            <span className="block text-xs text-text-secondary">
+              {HOF_COPY.chatHint}
+            </span>
+          </li>
+          <li>
+            <Link href="/privacy" className="font-semibold text-chrome hover:underline">
+              Daten, Privatsphäre, Familie
+            </Link>
+            <span className="block text-xs text-text-secondary">
+              Export, Zonen, Familien-Garage
+            </span>
+          </li>
+        </ul>
+      </section>
     </div>
   );
 }

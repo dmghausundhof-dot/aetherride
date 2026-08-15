@@ -1,0 +1,10 @@
+{
+  "name": "mcp-aetherride",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mcp-aetherride": "./server.mjs"
+  },
+  "description": "Read-only MCP server for AetherRide catalog, tours, geocode"
+}

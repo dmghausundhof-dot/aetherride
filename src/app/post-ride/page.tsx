@@ -14,6 +14,7 @@ import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { RideMetricBars } from "@/components/RideMetricBars";
 import { contributeHeatmapTrack } from "@/lib/heatmap/client";
+import { HOF_COPY } from "@/lib/home/hofCopy";
 
 function PostRideContent() {
   const searchParams = useSearchParams();
@@ -105,7 +106,7 @@ function PostRideContent() {
     return (
       <div className="p-6 text-center">
         <p className="text-text-secondary">Kein Ride gefunden</p>
-        <Link href="/" className="mt-4 inline-block text-accent">
+        <Link href="/" className="mt-4 inline-block text-chrome">
           Zurück
         </Link>
       </div>
@@ -195,7 +196,7 @@ function PostRideContent() {
           {heatmapNote}
           <button
             type="button"
-            className="ml-2 text-accent underline"
+            className="ml-2 text-chrome underline"
             onClick={() => setHeatmapNote(null)}
           >
             OK
@@ -212,7 +213,10 @@ function PostRideContent() {
           <ArrowLeft className="h-6 w-6" aria-hidden />
         </button>
         <div>
-          <h1 className="text-xl font-bold">Post-Ride Analyse</h1>
+          <p className="text-[11px] font-bold tracking-wide text-chrome">
+            {HOF_COPY.postRideKicker}
+          </p>
+          <h1 className="text-xl font-extrabold">{HOF_COPY.postRideTitle}</h1>
           <p className="text-sm text-text-secondary">
             {new Date(ride.startTime).toLocaleString("de-DE")}
           </p>
@@ -221,7 +225,7 @@ function PostRideContent() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <div className="mb-3 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-accent" />
+          <TrendingUp className="h-5 w-5 text-chrome" />
           <h2 className="font-semibold">Was passiert ist</h2>
         </div>
         {bike && (
@@ -244,7 +248,7 @@ function PostRideContent() {
           />
         )}
         {ride.notes && (
-          <p className="mb-3 text-xs text-accent">{ride.notes}</p>
+          <p className="mb-3 text-xs text-chrome">{ride.notes}</p>
         )}
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -266,7 +270,7 @@ function PostRideContent() {
             <div className="text-xs text-text-secondary">Höhenmeter</div>
           </div>
           <div>
-            <div className="text-2xl font-bold tabular-nums text-accent">
+            <div className="text-2xl font-bold tabular-nums text-chrome">
               {ride.summaryMetrics.flowScore}
             </div>
             <div className="text-xs text-text-secondary">Flow Score</div>
@@ -284,7 +288,7 @@ function PostRideContent() {
       {analysis && analysis.observations.length > 0 && (
         <section className="rounded-2xl border border-border bg-surface p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-accent" />
+            <Lightbulb className="h-5 w-5 text-chrome" />
             <h2 className="font-semibold">Was aufgefallen ist</h2>
           </div>
           <ul className="space-y-2 text-sm">
@@ -324,12 +328,12 @@ function PostRideContent() {
 
       {ride.motorData && (
         <section className="rounded-2xl border border-primary/30 bg-primary/15 p-4">
-          <h3 className="mb-1 font-semibold text-accent">
-            Bosch Motor-Daten (Simulation)
+          <h3 className="mb-1 font-semibold text-chrome">
+            E-Bike-Livedaten (Simulation)
           </h3>
           <p className="mb-3 text-[11px] text-text-secondary">
-            Web-Demo-Werte — kein echtes Bosch LDI. Echtes BLE nur in der
-            Mobile-App.
+            Web-Demo-Werte — keine echten E-Bike-Livedaten. Echte Kopplung nur
+            in der App.
           </p>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
@@ -389,7 +393,7 @@ function PostRideContent() {
                 type="button"
                 onClick={() => setOverall(n)}
                 className={`flex-1 rounded-xl py-2 text-sm font-semibold ${
-                  overall === n ? "bg-accent text-white" : "bg-surface-elevated"
+                  overall === n ? "bg-chrome text-background" : "bg-surface-elevated"
                 }`}
               >
                 {n}
@@ -471,7 +475,7 @@ function PostRideContent() {
                   skipped: false,
                 })
               }
-              className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+              className="flex-1 rounded-xl bg-chrome py-2.5 text-sm font-medium text-background"
             >
               Speichern
             </button>
@@ -498,9 +502,9 @@ function PostRideContent() {
       )}
 
       {displaySetup && (
-        <section className="rounded-2xl border border-accent/40 bg-surface p-4">
+        <section className="rounded-2xl border border-chrome/40 bg-surface p-4">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <Wrench className="h-5 w-5 text-accent" />
+            <Wrench className="h-5 w-5 text-chrome" />
             <h3 className="font-semibold">Was du ändern kannst</h3>
             {displaySetup.confidence && (
               <ConfidenceBadge confidence={displaySetup.confidence} />
@@ -527,7 +531,7 @@ function PostRideContent() {
               <button
                 type="button"
                 onClick={() => acceptRecommendation(displaySetup.id!)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-medium text-white"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-medium text-background"
               >
                 <Check className="h-4 w-4" /> Übernehmen
               </button>
@@ -555,7 +559,7 @@ function PostRideContent() {
             <button
               type="button"
               onClick={() => acceptRecommendation(otherRec.id)}
-              className="flex-1 rounded-xl bg-accent py-2 text-sm font-medium text-white"
+              className="flex-1 rounded-xl bg-chrome py-2 text-sm font-medium text-background"
             >
               Übernehmen
             </button>
@@ -572,7 +576,7 @@ function PostRideContent() {
 
       <p className="text-center text-xs text-text-secondary">
         Tiefe Fragen?{" "}
-        <Link href="/chat" className="text-accent">
+        <Link href="/chat" className="text-chrome">
           Mehr fragen (KI)
         </Link>
       </p>

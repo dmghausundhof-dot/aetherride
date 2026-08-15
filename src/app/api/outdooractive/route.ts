@@ -20,7 +20,8 @@ export async function GET(req: Request) {
     const la = Number(lat);
     const lo = Number(lon);
     if (Number.isFinite(la) && Number.isFinite(lo)) {
-      const d = 0.85;
+      // ~±130 km — mehr DACH-Treffer um den Standort, ohne EU-weit zu spammen.
+      const d = 1.2;
       bbox = `${lo - d},${la - d},${lo + d},${la + d}`;
     }
   }
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
   }
 
   const base = `https://api-oa.com/api/v2/project/${project}`;
-  const listParams = new URLSearchParams({ type, key, limit: "30" });
+  const listParams = new URLSearchParams({ type, key, limit: "60" });
   if (q) listParams.set("q", q);
 
   try {
@@ -68,7 +69,7 @@ export async function GET(req: Request) {
     const ids = (listJson.answer?.contents ?? [])
       .map((c) => c.id)
       .filter((id): id is string | number => id != null && `${id}`.length > 0)
-      .slice(0, 24);
+      .slice(0, 48);
 
     if (ids.length === 0) {
       return NextResponse.json({
@@ -132,7 +133,7 @@ export async function GET(req: Request) {
           .filter((x): x is { t: OutdooractiveTour; dist: number } => x != null)
           .sort((a, b) => a.dist - b.dist)
           .map((x) => x.t)
-          .slice(0, 16);
+          .slice(0, 24);
       }
     }
 

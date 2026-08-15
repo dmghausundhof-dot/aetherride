@@ -35,7 +35,7 @@ export const REGIONS: RegionDef[] = [
     country: "DE",
     teaser: "Höhenmeter, Forstwege und klassische Tourenregion.",
     description:
-      "Gravel West, Kaltenbronn, Schauinsland und lange E-Bike-Touren — die Hausberge der AetherRide-Demo-Region.",
+      "Gravel West, Kaltenbronn, Schauinsland und lange E-Bike-Touren — Hausberge um Freiburg und Baden-Baden.",
     center: [8.15, 48.1],
     zoom: 9,
     sports: ["gravel", "mtb", "ebike", "road"],
@@ -116,6 +116,83 @@ export const REGIONS: RegionDef[] = [
     center: [6.4, 46.0],
     zoom: 8,
     sports: ["road", "mtb", "ebike"],
+  },
+  {
+    slug: "berlin-brandenburg",
+    name: "Berlin & Brandenburg",
+    country: "DE",
+    teaser: "Spree, Havelseen und urbane Radwege.",
+    description:
+      "Stadt-Loops, Mauerweg-Ideen und Gravel in Brandenburg — GPS-first, nicht pauschal Alpen.",
+    center: [13.4, 52.5],
+    zoom: 9,
+    sports: ["urban", "road", "gravel"],
+  },
+  {
+    slug: "norddeutschland",
+    name: "Norddeutschland",
+    country: "DE",
+    teaser: "Alster, Förde, Elbe und flache Touren.",
+    description:
+      "Hamburg, Kiel, Lübeck, Bremen und Mecklenburg — Wind, Deiche, Alltagsradwege.",
+    center: [10.0, 53.6],
+    zoom: 7,
+    sports: ["road", "urban", "touring"],
+  },
+  {
+    slug: "nrw",
+    name: "Nordrhein-Westfalen",
+    country: "DE",
+    teaser: "Rhein, Ruhr, Sauerland.",
+    description:
+      "Köln und Düsseldorf urban, Ruhrgebiet-Alltag, Sauerland-Trails und Eifel-Gravel.",
+    center: [7.2, 51.2],
+    zoom: 8,
+    sports: ["urban", "road", "mtb", "gravel"],
+  },
+  {
+    slug: "hessen-thueringen",
+    name: "Hessen & Thüringen",
+    country: "DE",
+    teaser: "Rhein-Main, Rhön und Thüringer Wald.",
+    description:
+      "Frankfurt urban, Kassel, Erfurt und Wald-Gravel — Mitte Deutschlands.",
+    center: [10.0, 50.7],
+    zoom: 8,
+    sports: ["urban", "gravel", "mtb"],
+  },
+  {
+    slug: "osten",
+    name: "Sachsen, Anhalt, Lausitz",
+    country: "DE",
+    teaser: "Elbe, Neuseenland, Harz.",
+    description:
+      "Dresden-Elbland, Leipzig, Magdeburg und Harz-Höhen — kuratierte Nähe plus OSM.",
+    center: [13.0, 51.4],
+    zoom: 8,
+    sports: ["road", "touring", "gravel"],
+  },
+  {
+    slug: "oesterreich",
+    name: "Österreich",
+    country: "AT",
+    teaser: "Wienerwald, Tirol, Salzburg, Steiermark.",
+    description:
+      "Wien urban, Innsbruck-Trails, Salzburg, Graz und Kärnten — alpine Profile ehrlich gelabelt.",
+    center: [13.5, 47.5],
+    zoom: 7,
+    sports: ["mtb", "road", "ebike", "gravel"],
+  },
+  {
+    slug: "schweiz",
+    name: "Schweiz",
+    country: "CH",
+    teaser: "Mittelland, Alpen, Tessin.",
+    description:
+      "Zürich, Bern, Basel, Léman, Graubünden und Tessin — SchweizMobil-Namen plus OSM-Tracks.",
+    center: [8.2, 46.8],
+    zoom: 7,
+    sports: ["road", "mtb", "gravel", "urban"],
   },
 ];
 

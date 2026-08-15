@@ -10,6 +10,7 @@ export type {
   BracketingSeries,
   CatalogBikeVariant,
   CatalogManufacturer,
+  FrameSizeGeometry,
   CompatibilityResult,
   CompatibilityVerdict,
   ComponentModel,

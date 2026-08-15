@@ -4,6 +4,7 @@
  * Fake routing / demo geometry stays fail-closed separately.
  */
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
+import { filterHonestLoopSuggestions } from "@/lib/discover/loopHonesty";
 import { berlinLoopSuggestions, berlinSixtyMinLoopSuggestions } from "./berlinLoops";
 import {
   rheinNeckarLoopSuggestions,
@@ -36,15 +37,16 @@ export function curatedP0CatalogSuggestions(
   });
 }
 
-/** Quick-sheet ~60 Min (45–75) — Tempelhofer + RN Feierabend loops. */
+/** Quick-sheet ~60 Min (45–75) — honest loops only (Tempelhofer + RN). */
 export function curatedSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
-  return dedupeById([
-    ...berlinSixtyMinLoopSuggestions(near),
-    ...rheinNeckarSixtyMinLoopSuggestions(near),
-  ]).sort((a, b) => {
-    if (a.loop !== b.loop) return a.loop ? -1 : 1;
+  return filterHonestLoopSuggestions(
+    dedupeById([
+      ...berlinSixtyMinLoopSuggestions(near),
+      ...rheinNeckarSixtyMinLoopSuggestions(near),
+    ])
+  ).sort((a, b) => {
     return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
   });
 }

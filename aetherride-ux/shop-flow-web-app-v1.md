@@ -60,6 +60,7 @@ Same collection, same soft-fit query contract on Web; App lists Storefront JSON 
 - Web Garage / Home wear alerts → `/shop/parts?slot=…&bike=…&fit=bike`.
 - App Garage maintenance Shop → same Web URL pattern with bike (+ mapped slot when possible).
 - Tags contract unchanged (see S-PART): `slot:*`, `magura_shape`, `pad:shape-*`, `caliper:mt*`, `size`, `shift_compat`.
+- Garage-Fit: Kategorie, Laufrad, E-Bike, Schaltung — Union über alle Garage-Bikes, Chip filtert auf ein Rad. Ohne Bike: alle Teile + Hinweis.
 
 ---
 

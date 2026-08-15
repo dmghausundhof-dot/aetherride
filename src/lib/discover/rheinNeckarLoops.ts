@@ -28,7 +28,9 @@ const sportToCategory = (tags: string[] | undefined): BikeCategory => {
   if (t.has("road")) return "road";
   if (t.has("city") || t.has("urban")) return "urban";
   if (t.has("touring")) return "etrekking";
-  if (t.has("ebike")) return "emtb";
+  if (t.has("emtb")) return "emtb";
+  // City/Touring-E-Bike — nicht als E-MTB soft-boosten (Mobile-Parität).
+  if (t.has("ebike")) return "etrekking";
   return "urban";
 };
 
@@ -94,13 +96,14 @@ export function rheinNeckarLoopSuggestions(
   });
 }
 
+/** Honest ~60 Rundkurse only — never linear A→B under this lens. */
 export function rheinNeckarSixtyMinLoopSuggestions(
   near?: [number, number]
 ): RouteSuggestion[] {
   return rheinNeckarLoopSuggestions(near)
+    .filter((r) => r.loop)
     .filter((r) => r.durationMin >= 45 && r.durationMin <= 75)
     .sort((a, b) => {
-      if (a.loop !== b.loop) return a.loop ? -1 : 1;
       return (a.distanceFromOriginKm ?? 999) - (b.distanceFromOriginKm ?? 999);
     });
 }

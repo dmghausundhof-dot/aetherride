@@ -29,6 +29,33 @@ void main() {
     expect(again, isNull);
   });
 
+  test('pickAnnounce hängt Straßenname an, ohne ihn zu verdoppeln', () {
+    final spoken = <String>{};
+    final withStreet = pickAnnounce(
+      stepId: 's2',
+      instruction: 'Rechts abbiegen',
+      isArrive: false,
+      remainingM: 145,
+      speedKmh: 18,
+      spoken: spoken,
+      street: 'Hauptstraße',
+    );
+    expect(withStreet, contains('auf Hauptstraße'));
+    expect(withStreet, contains('Metern'));
+
+    final alreadyNamed = pickAnnounce(
+      stepId: 's3',
+      instruction: 'Links abbiegen auf Neckarstaden',
+      isArrive: false,
+      remainingM: 145,
+      speedKmh: 18,
+      spoken: <String>{},
+      street: 'Neckarstaden',
+    );
+    expect(alreadyNamed, isNot(contains('auf Neckarstaden auf')));
+    expect(alreadyNamed, contains('Links abbiegen auf Neckarstaden'));
+  });
+
   test('hintsFromMetrics stand and impact streak', () {
     final hints = hintsFromMetrics(
       speedKmh: 1,

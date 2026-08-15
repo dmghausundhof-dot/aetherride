@@ -310,8 +310,17 @@ export async function computeQuickOptions(
     force?: boolean;
     /** Bei Limit geometrische Näherung statt leerer Liste */
     allowApprox?: boolean;
+    /**
+     * D-60-LOOP-FILTER-01: when false, never return out-and-back pads
+     * („60 min · Norden“). Used when Route=Rundkurs / loopOnly.
+     */
+    allowOutAndBack?: boolean;
   }
 ): Promise<ComputeQuickOptionsResult> {
+  // Rundkurs honesty: out-and-back Quick is never a valid primary suggestion.
+  if (opts?.allowOutAndBack === false) {
+    return { options: [], rateLimited: false, fromCache: false };
+  }
   const limit = Math.max(1, Math.min(3, opts?.limit ?? 1));
   const gapMs = opts?.gapMs ?? 1200;
   const allowApprox = opts?.allowApprox ?? true;

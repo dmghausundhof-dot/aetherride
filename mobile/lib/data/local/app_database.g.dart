@@ -94,6 +94,16 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _isEbikeMeta =
+      const VerificationMeta('isEbike');
+  @override
+  late final GeneratedColumn<bool> isEbike = GeneratedColumn<bool>(
+      'is_ebike', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_ebike" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _updatedAtMeta =
       const VerificationMeta('updatedAt');
   @override
@@ -116,6 +126,7 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
         odometerKm,
         hours,
         isActive,
+        isEbike,
         updatedAt
       ];
   @override
@@ -197,6 +208,10 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
     }
+    if (data.containsKey('is_ebike')) {
+      context.handle(_isEbikeMeta,
+          isEbike.isAcceptableOrUnknown(data['is_ebike']!, _isEbikeMeta));
+    }
     if (data.containsKey('updated_at')) {
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
@@ -240,6 +255,8 @@ class $BikesTable extends Bikes with TableInfo<$BikesTable, BikeRow> {
           .read(DriftSqlType.double, data['${effectivePrefix}hours'])!,
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      isEbike: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_ebike'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
     );
@@ -266,6 +283,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
   final double odometerKm;
   final double hours;
   final bool isActive;
+  final bool isEbike;
   final DateTime updatedAt;
   const BikeRow(
       {required this.id,
@@ -282,6 +300,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       required this.odometerKm,
       required this.hours,
       required this.isActive,
+      required this.isEbike,
       required this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -316,6 +335,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
     map['odometer_km'] = Variable<double>(odometerKm);
     map['hours'] = Variable<double>(hours);
     map['is_active'] = Variable<bool>(isActive);
+    map['is_ebike'] = Variable<bool>(isEbike);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -348,6 +368,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       odometerKm: Value(odometerKm),
       hours: Value(hours),
       isActive: Value(isActive),
+      isEbike: Value(isEbike),
       updatedAt: Value(updatedAt),
     );
   }
@@ -370,6 +391,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       odometerKm: serializer.fromJson<double>(json['odometerKm']),
       hours: serializer.fromJson<double>(json['hours']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      isEbike: serializer.fromJson<bool>(json['isEbike']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -391,6 +413,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       'odometerKm': serializer.toJson<double>(odometerKm),
       'hours': serializer.toJson<double>(hours),
       'isActive': serializer.toJson<bool>(isActive),
+      'isEbike': serializer.toJson<bool>(isEbike),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -410,6 +433,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           double? odometerKm,
           double? hours,
           bool? isActive,
+          bool? isEbike,
           DateTime? updatedAt}) =>
       BikeRow(
         id: id ?? this.id,
@@ -429,6 +453,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
         odometerKm: odometerKm ?? this.odometerKm,
         hours: hours ?? this.hours,
         isActive: isActive ?? this.isActive,
+        isEbike: isEbike ?? this.isEbike,
         updatedAt: updatedAt ?? this.updatedAt,
       );
   BikeRow copyWithCompanion(BikesCompanion data) {
@@ -454,6 +479,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           data.odometerKm.present ? data.odometerKm.value : this.odometerKm,
       hours: data.hours.present ? data.hours.value : this.hours,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      isEbike: data.isEbike.present ? data.isEbike.value : this.isEbike,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -475,6 +501,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           ..write('odometerKm: $odometerKm, ')
           ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
+          ..write('isEbike: $isEbike, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -496,6 +523,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
       odometerKm,
       hours,
       isActive,
+      isEbike,
       updatedAt);
   @override
   bool operator ==(Object other) =>
@@ -515,6 +543,7 @@ class BikeRow extends DataClass implements Insertable<BikeRow> {
           other.odometerKm == this.odometerKm &&
           other.hours == this.hours &&
           other.isActive == this.isActive &&
+          other.isEbike == this.isEbike &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -533,6 +562,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
   final Value<double> odometerKm;
   final Value<double> hours;
   final Value<bool> isActive;
+  final Value<bool> isEbike;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const BikesCompanion({
@@ -550,6 +580,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.odometerKm = const Value.absent(),
     this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.isEbike = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -568,6 +599,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     this.odometerKm = const Value.absent(),
     this.hours = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.isEbike = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -589,6 +621,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     Expression<double>? odometerKm,
     Expression<double>? hours,
     Expression<bool>? isActive,
+    Expression<bool>? isEbike,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -607,6 +640,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       if (odometerKm != null) 'odometer_km': odometerKm,
       if (hours != null) 'hours': hours,
       if (isActive != null) 'is_active': isActive,
+      if (isEbike != null) 'is_ebike': isEbike,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -627,6 +661,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       Value<double>? odometerKm,
       Value<double>? hours,
       Value<bool>? isActive,
+      Value<bool>? isEbike,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
     return BikesCompanion(
@@ -644,6 +679,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
       odometerKm: odometerKm ?? this.odometerKm,
       hours: hours ?? this.hours,
       isActive: isActive ?? this.isActive,
+      isEbike: isEbike ?? this.isEbike,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -694,6 +730,9 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (isEbike.present) {
+      map['is_ebike'] = Variable<bool>(isEbike.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -720,6 +759,7 @@ class BikesCompanion extends UpdateCompanion<BikeRow> {
           ..write('odometerKm: $odometerKm, ')
           ..write('hours: $hours, ')
           ..write('isActive: $isActive, ')
+          ..write('isEbike: $isEbike, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -5119,6 +5159,7 @@ typedef $$BikesTableCreateCompanionBuilder = BikesCompanion Function({
   Value<double> odometerKm,
   Value<double> hours,
   Value<bool> isActive,
+  Value<bool> isEbike,
   required DateTime updatedAt,
   Value<int> rowid,
 });
@@ -5137,6 +5178,7 @@ typedef $$BikesTableUpdateCompanionBuilder = BikesCompanion Function({
   Value<double> odometerKm,
   Value<double> hours,
   Value<bool> isActive,
+  Value<bool> isEbike,
   Value<DateTime> updatedAt,
   Value<int> rowid,
 });
@@ -5190,6 +5232,9 @@ class $$BikesTableFilterComposer extends Composer<_$AppDatabase, $BikesTable> {
 
   ColumnFilters<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isEbike => $composableBuilder(
+      column: $table.isEbike, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
@@ -5249,6 +5294,9 @@ class $$BikesTableOrderingComposer
   ColumnOrderings<bool> get isActive => $composableBuilder(
       column: $table.isActive, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isEbike => $composableBuilder(
+      column: $table.isEbike, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 }
@@ -5304,6 +5352,9 @@ class $$BikesTableAnnotationComposer
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
+  GeneratedColumn<bool> get isEbike =>
+      $composableBuilder(column: $table.isEbike, builder: (column) => column);
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
@@ -5345,6 +5396,7 @@ class $$BikesTableTableManager extends RootTableManager<
             Value<double> odometerKm = const Value.absent(),
             Value<double> hours = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<bool> isEbike = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -5363,6 +5415,7 @@ class $$BikesTableTableManager extends RootTableManager<
             odometerKm: odometerKm,
             hours: hours,
             isActive: isActive,
+            isEbike: isEbike,
             updatedAt: updatedAt,
             rowid: rowid,
           ),
@@ -5381,6 +5434,7 @@ class $$BikesTableTableManager extends RootTableManager<
             Value<double> odometerKm = const Value.absent(),
             Value<double> hours = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<bool> isEbike = const Value.absent(),
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -5399,6 +5453,7 @@ class $$BikesTableTableManager extends RootTableManager<
             odometerKm: odometerKm,
             hours: hours,
             isActive: isActive,
+            isEbike: isEbike,
             updatedAt: updatedAt,
             rowid: rowid,
           ),

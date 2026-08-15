@@ -53,7 +53,7 @@ const forkInterval: MaintenanceInterval = {
 // Empty
 const empty = getMaintenanceSummary(null, []);
 assert(empty.status === "empty", "empty status");
-assert(empty.headline.includes("Garage"), "empty headline");
+assert(empty.headline.includes("Werkstatt"), "empty headline");
 assert(empty.href.includes("wizard"), "empty href wizard");
 
 // Ok — low km

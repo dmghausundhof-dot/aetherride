@@ -3,11 +3,13 @@
 import type { ReactNode } from "react";
 import {
   DEFAULT_ROUTE_FILTERS,
+  DISTANCE_MAX_OPTIONS,
   ELEVATION_OPTIONS,
   SPORT_FILTER_OPTIONS,
   SURFACE_OPTIONS,
   difficultyOptionsForProfile,
   type RouteFilterState,
+  type SurfaceKey,
 } from "@/lib/routing/routeFilters";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 
@@ -49,7 +51,7 @@ export function FilterChips({
 
       <div className="flex flex-wrap gap-1.5">
         <span className="w-full text-[10px] font-medium uppercase tracking-wide text-text-secondary">
-          Disziplin
+          Disziplin (Präferenz)
         </span>
         {SPORT_FILTER_OPTIONS.map((o) => (
           <Chip
@@ -101,6 +103,21 @@ export function FilterChips({
             {o.label}
           </Chip>
         ))}
+        {DISTANCE_MAX_OPTIONS.filter((o) => o.id != null).map((o) => (
+          <Chip
+            key={o.id!}
+            active={filters.maxDistanceKm === o.id}
+            onClick={() =>
+              onChange({
+                ...filters,
+                maxDistanceKm:
+                  filters.maxDistanceKm === o.id ? null : o.id,
+              })
+            }
+          >
+            {o.label}
+          </Chip>
+        ))}
         {SURFACE_OPTIONS.filter((o) => o.id != null).map((o) => (
           <Chip
             key={o.id!}
@@ -109,7 +126,9 @@ export function FilterChips({
               onChange({
                 ...filters,
                 surfaceQuery:
-                  filters.surfaceQuery === o.id ? null : (o.id as string),
+                  filters.surfaceQuery === o.id
+                    ? null
+                    : (o.id as SurfaceKey),
               })
             }
           >
@@ -120,6 +139,7 @@ export function FilterChips({
           filters.scale !== "any" ||
           filters.elevation !== "any" ||
           filters.surfaceQuery ||
+          filters.maxDistanceKm != null ||
           filters.sport !== "all") && (
           <button
             type="button"

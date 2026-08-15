@@ -48,6 +48,27 @@ export async function GET(req: Request) {
     });
 
     if (!res.ok) {
+      const { fetchGoogleGeocode } = await import("@/lib/coverage/google");
+      const g = await fetchGoogleGeocode({
+        q,
+        lat: Number(biasLat),
+        lng: Number(biasLon),
+        limit,
+      });
+      if (g.hits.length > 0) {
+        return NextResponse.json({
+          hits: g.hits.map((h) => ({
+            label: h.label,
+            lat: h.lat,
+            lng: h.lng,
+            kind: h.kind,
+          })),
+          attribution: "Powered by Google",
+          query: q,
+          provider: "google_geocoding",
+          warning: `Photon ${res.status}`,
+        });
+      }
       return NextResponse.json(
         {
           hits: [],
@@ -91,10 +112,42 @@ export async function GET(req: Request) {
       });
     }
 
+    if (hits.length > 0) {
+      return NextResponse.json({
+        hits,
+        attribution: "© OpenStreetMap contributors · Photon (Komoot)",
+        query: q,
+        provider: "photon",
+      });
+    }
+
+    const { fetchGoogleGeocode } = await import("@/lib/coverage/google");
+    const g = await fetchGoogleGeocode({
+      q,
+      lat: Number(biasLat),
+      lng: Number(biasLon),
+      limit,
+    });
+    if (g.hits.length > 0) {
+      return NextResponse.json({
+        hits: g.hits.map((h) => ({
+          label: h.label,
+          lat: h.lat,
+          lng: h.lng,
+          kind: h.kind,
+        })),
+        attribution: "Powered by Google",
+        query: q,
+        provider: "google_geocoding",
+      });
+    }
+
     return NextResponse.json({
-      hits,
+      hits: [],
       attribution: "© OpenStreetMap contributors · Photon (Komoot)",
       query: q,
+      provider: "photon",
+      warning: g.warning,
     });
   } catch (e) {
     return NextResponse.json(

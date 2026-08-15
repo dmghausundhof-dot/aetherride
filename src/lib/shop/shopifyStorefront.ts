@@ -7,6 +7,7 @@
 import { SHOPIFY_STORE_BASE } from "@/lib/shop/catalog";
 
 export const FEATURED_PARTS_COLLECTION = "featured-parts";
+export const MERCHANDISE_COLLECTION = "merchandise";
 
 export type ShopifyMoney = {
   amount: string;
@@ -122,6 +123,10 @@ type GqlCollectionResponse = {
         edges: { node: ShopifyStorefrontProduct }[];
       };
     } | null;
+    products?: {
+      pageInfo: { hasNextPage: boolean; endCursor?: string | null };
+      edges: { node: ShopifyStorefrontProduct }[];
+    };
   };
   errors?: { message: string }[];
 };
@@ -235,6 +240,109 @@ export async function fetchCollectionProducts(
 
 export function shopifyStoreProductUrl(handle: string): string {
   return `${SHOPIFY_STORE_BASE}/products/${handle}`;
+}
+
+const PRODUCTS_BY_QUERY = /* GraphQL */ `
+  query ShopProducts($query: String!, $first: Int!, $after: String) {
+    products(first: $first, after: $after, query: $query) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      edges {
+        node {
+          id
+          handle
+          title
+          vendor
+          productType
+          tags
+          description
+          availableForSale
+          featuredImage {
+            url
+            altText
+          }
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          onlineStoreUrl
+        }
+      }
+    }
+  }
+`;
+
+export type ProductsQueryResult =
+  | {
+      ok: true;
+      configured: true;
+      products: ShopifyStorefrontProduct[];
+    }
+  | {
+      ok: false;
+      configured: boolean;
+      products: [];
+      error: string;
+      code: "not_configured" | "http_error" | "graphql_error";
+    };
+
+/** Storefront product search (z. B. tag:merch). */
+export async function fetchProductsByQuery(
+  query: string,
+  opts?: { pageSize?: number; maxPages?: number }
+): Promise<ProductsQueryResult> {
+  const config = getShopifyStorefrontConfig();
+  if (!config) {
+    return {
+      ok: false,
+      configured: false,
+      products: [],
+      error: "Shopify Storefront nicht konfiguriert (SHOPIFY_STOREFRONT_ACCESS_TOKEN).",
+      code: "not_configured",
+    };
+  }
+  const pageSize = opts?.pageSize ?? 50;
+  const maxPages = opts?.maxPages ?? 3;
+  const products: ShopifyStorefrontProduct[] = [];
+  let after: string | null = null;
+  try {
+    for (let page = 0; page < maxPages; page++) {
+      const json = await storefrontFetch(config, PRODUCTS_BY_QUERY, {
+        query,
+        first: pageSize,
+        after,
+      });
+      if (json.errors?.length) {
+        return {
+          ok: false,
+          configured: true,
+          products: [],
+          error: json.errors.map((e) => e.message).join("; "),
+          code: "graphql_error",
+        };
+      }
+      const conn = json.data?.products;
+      if (!conn) break;
+      for (const edge of conn.edges) products.push(edge.node);
+      if (!conn.pageInfo.hasNextPage) break;
+      after = conn.pageInfo.endCursor ?? null;
+      if (!after) break;
+    }
+    return { ok: true, configured: true, products };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Storefront-Fehler";
+    return {
+      ok: false,
+      configured: true,
+      products: [],
+      error: message,
+      code: message.startsWith("Storefront HTTP") ? "http_error" : "graphql_error",
+    };
+  }
 }
 
 const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `

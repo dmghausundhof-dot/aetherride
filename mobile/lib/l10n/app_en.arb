@@ -1,0 +1,519 @@
+{
+  "@@locale": "en",
+  "appTitle": "AetherRide",
+  "appTagline": "For MTB, gravel, road, city & e-bike — one app for the ride.",
+
+  "navHome": "Home",
+  "navGarage": "Garage",
+  "navRide": "Ride",
+  "navDiscover": "Tours",
+  "navParts": "Parts",
+  "navKarte": "Map",
+  "navWorkshop": "Workshop",
+  "navShop": "Shop",
+  "hofJustRide": "Just ride",
+  "hofShowTours": "Show tours",
+  "hofMapChoiceHint": "Ride without a route, or show tours on the map.",
+  "werkstattPartsShelf": "Shop",
+  "werkstattForYourBike": "For your bike",
+  "werkstattMerch": "Merchandise",
+  "werkstattShopParts": "Spare parts in the shop",
+  "shopGatewayKicker": "Across the yard",
+  "shopGatewayTitle": "The shop",
+  "shopGatewayHint": "The bike does not live here. Honest parts and merch in the Shopify store — checkout there, not in the app.",
+  "shopZumShop": "Open shop",
+  "shopForYourBikeHint": "Parts that fit {name} — category and wheel size. No invented SKUs.",
+  "@shopForYourBikeHint": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "shopForYourBikeEmpty": "Park a bike in the workshop — then we open matching parts in the shop.",
+  "shopMerchHint": "Apparel and small goods. Never filtered by bike fit.",
+  "shopNotConnected": "Shop not connected",
+  "shopNotConnectedHint": "No storefront URL. Set SHOPIFY_STOREFRONT_URL, then this tab opens the store.",
+  "shopOpenFailed": "Could not open the shop.",
+  "shopPasswordWall": "The online store is still password-protected. Shopify admin: Online Store → Preferences → turn Password protection off.",
+  "garageSetupTabHintTires": "Rough tire pressure by weight — measure on the bike, not an OEM chart.",
+  "werkstattSetupTires": "Tires / rough pressure",
+  "werkstattSetupSuspension": "Suspension — sag and air from travel",
+  "werkstattSetupSuspensionUnknown": "Suspension — travel not logged",
+  "werkstattSetupDropper": "Dropper (logged)",
+  "werkstattSetupWheel": "Wheels {size}",
+  "@werkstattSetupWheel": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "werkstattSetupCockpit": "Cockpit — bar and stem",
+  "werkstattSetupBagsCockpit": "Bags / cockpit",
+  "werkstattSetupLightsRack": "Lights and rack — only if logged",
+  "werkstattSetupDrivetrain": "Drivetrain",
+  "werkstattBatteryHonest": "Battery only with a real sensor",
+  "werkstattBatteryHonestHint": "No percentage without a paired sensor. Bosch LDI stays G-1.",
+  "werkstattSensorEbike": "Wheel sensor (CSC) — speed and cadence. Battery only with a real sensor.",
+  "werkstattSensorAnalog": "Wheel sensor — speed and cadence on the bike.",
+  "hofYourWatch": "Your watch",
+  "hofWatchHint": "Fitness tracking on the rider — not the bike. Heart rate only from a real sensor. Apple Watch often lacks standard BLE HR.",
+  "hofWatchPair": "Pair watch",
+  "hofWatchReconnect": "Connect",
+  "hofWatchRemove": "Remove",
+  "hofWatchConnect": "Connect watch",
+  "hofYou": "You",
+  "hofYouSheetHint": "You and your watch. The wheel sensor stays on the bike in the workshop.",
+  "werkstattWatchEbike": "Watch — heart rate next to CSC. No invented SoC.",
+  "werkstattWatchAnalog": "Smartwatch / fitness tracking",
+  "setupTirePressureLabel": "Front tire (psi)",
+  "setupCompareHintTires": "Creates two blind tire pressures. After a few rides you’ll see which feels better.",
+  "setupTirePressureValue": "Tires {value} psi",
+  "@setupTirePressureValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+
+  "searchHome": "Where to? Place, tour or address",
+  "startRide": "Start ride",
+  "startFreeride": "Ride without a route",
+  "startWithRoute": "Ride route",
+  "goRide": "Let's ride",
+  "readyTitle": "Ready to ride",
+  "readyMessage": "GPS tracking starts right away. Sensors and route are optional — trail, pavement or city.",
+  "optionalRoute": "Optional: pick a route under Tours and tap “Let's ride”.",
+  "starting": "Starting…",
+  "cancel": "Cancel",
+  "save": "Save",
+  "reset": "Reset",
+  "errorPrefix": "Error: {error}",
+
+  "discoverMenuPhotos": "Nearby photos",
+  "discoverMenuOffline": "Offline maps",
+  "discoverMenuCollections": "Collections",
+  "discoverMenuPrivacy": "Heatmap & privacy",
+
+  "partsTitle": "Parts & gear",
+  "partsSubtitle": "Live featured parts in AetherRide — soft-fit & prices, no Shopify password dead-end.",
+
+  "weatherFallback": "Weather unavailable",
+  "weatherLoading": "Loading weather…",
+  "statsRidesOne": "ride",
+  "statsRidesMany": "rides",
+  "profile": "Profile",
+  "chat": "Chat",
+
+  "hofRideOut": "Ride out",
+  "hofOpenBike": "Open bike",
+  "hofParkBike": "Park the bike",
+  "hofRideWithoutBike": "Ride without a bike",
+  "hofRideOutAgain": "Ride out again",
+  "hofAtGate": "at the gate",
+  "hofEmptyStand": "Empty stand",
+  "hofSkyUnknown": "Sky unknown",
+  "hofNoHonestLoop": "No honest trail loop",
+  "hofNotYetOut": "not out yet",
+  "hofJustBack": "just back",
+  "hofLastRideNoGps": "no GPS track — nothing invented",
+  "hofGpsUnknown": "No location — sky and gate wait for GPS.",
+  "rideGpsUnavailable": "No GPS — track stays empty. Nothing invented.",
+  "hofAtHof": "at the stand",
+  "hofSinceOneDay": "1 day",
+  "hofSinceDays": "{days} days",
+  "@hofSinceDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "hofNoBikeHere": "No bike here",
+  "hofBringForward": "Bring {name} forward",
+  "@hofBringForward": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "hofCareInWorkshop": "{label} — in the workshop",
+  "@hofCareInWorkshop": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "hofSensorAwake": "Sensor awake",
+  "hofOpenTours": "Open tours",
+  "hofSkyDry": "{temp}° · rather dry",
+  "@hofSkyDry": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofSkyDamp": "{temp}° · damp possible",
+  "@hofSkyDamp": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofSkyWet": "{temp}° · rain · trails likely wet",
+  "@hofSkyWet": {
+    "placeholders": {
+      "temp": { "type": "String" }
+    }
+  },
+  "hofLoopDuration": "⟲ {minutes} min",
+  "@hofLoopDuration": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "hofCommunityNotes": "{count} notes on this loop",
+  "@hofCommunityNotes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+
+  "homeSubtitleMtb": "Trails, tours & your setup",
+  "homeSubtitleGravel": "Gravel, distance & navigation",
+  "homeSubtitleRoad": "Pavement, pace & training",
+  "homeSubtitleUrban": "Commute, city & everyday",
+  "homeSubtitleEbike": "Assist, range & tours",
+  "homeSubtitleDefault": "Any way you ride — your bike, your route",
+  "homeSubtitleWithWeather": "{weather} · {base}",
+
+  "tipHeroTitleMtb": "Get out on the bike today",
+  "tipHeroTitleGravel": "Gravel or mixed today",
+  "tipHeroTitleRoad": "Pavement miles today",
+  "tipHeroTitleUrban": "Through the city today",
+  "tipHeroTitleEbike": "Ride with assist today",
+  "tipHeroTitleDefault": "A ride fits today",
+
+  "tipHeroSubtitleMtb": "Pick a route or freeride — track stays local.",
+  "tipHeroSubtitleGravel": "Plan a distance or start without a route.",
+  "tipHeroSubtitleRoad": "Build a loop or log free training.",
+  "tipHeroSubtitleUrban": "Track a commute or save a short loop.",
+  "tipHeroSubtitleEbike": "Plan a tour and keep range in view.",
+  "tipHeroSubtitleDefault": "MTB, gravel, road or city — all here.",
+
+  "chassisLayer": "Suspension",
+  "sensorLayer": "Sensors",
+
+  "filter": "Filter",
+  "filterReset": "Reset",
+  "filterResetFilters": "Reset filters",
+  "filterDurationLens": "Duration",
+  "filterSurfaceGroup": "Surface",
+  "filterExertion": "Difficulty",
+  "filterDistance": "Distance",
+  "filterElevation": "Elevation",
+  "filterForm": "Shape",
+  "filterTrailNetwork": "Trail network (map)",
+  "filterLoopsOnly": "Loop",
+  "filterLoopsOnlyTooltip": "Honest loops only (start≈end). No A→B fillers.",
+  "filterNetworkOn": "Network on",
+  "filterNetworkOff": "Network off",
+  "filterOsmScaleTooltip": "OSM scale: {code}",
+  "filterShowTours": "Show {count} tours",
+  "filterNoTours": "No tours match these filters.",
+  "filterNoToursHint": "No tours — tap “New” or loosen filters.",
+  "loopLabel": "Loop",
+  "computeRoute": "Compute route",
+  "adaptTour": "Edit",
+  "adaptTourTitle": "Edit tour",
+  "adaptTourHint": "Change start, end or stops — then compute the route.",
+  "planRouteTitle": "Plan route",
+  "planRouteCta": "+ Plan",
+  "discoverSearchHint": "Place or tour",
+  "filterAroundKm": "within {km} km",
+  "@filterAroundKm": {
+    "placeholders": {
+      "km": { "type": "int" }
+    }
+  },
+  "mapToggleFab": "Map",
+  "communityWriteReview": "Write a review",
+  "discoverModeExplore": "Explore",
+  "discoverModeNavigate": "Navigate",
+  "discoverModeMine": "Mine",
+  "navigateTitle": "Navigate",
+  "navigateSubtitle": "Tap destination or type an address",
+  "navigateStartLabel": "Start",
+  "navigateEndLabel": "Destination",
+  "navigateStartHint": "Address, place, or tap map",
+  "navigateEndHint": "Where to?",
+  "navigateMyLocation": "My location",
+  "navigateSwap": "Swap start and destination",
+  "navigatePickStart": "Tap start on map",
+  "navigatePickEnd": "Tap destination on map",
+  "navigateAddVia": "Via",
+  "navigateNeedStartEnd": "Set start and destination",
+  "navigateComputeNeedBoth": "Compute route (need start & destination)",
+  "navigateBackToExplore": "Back to Explore",
+  "mineSheetHint": "Your recordings, imports and saved routes",
+  "mineEmptyCtaNavigate": "Plan A to B",
+  "gpxImportAction": "Import GPX",
+  "exploreOpenNavigate": "A→B navigate",
+  "sheetDragHandleMine": "Drag my-routes sheet",
+  "sheetDragHandleNavigate": "Drag navigation sheet",
+  "browseMap": "Map",
+  "browseList": "List",
+  "quickFilter1h": "1 hr",
+  "sheetDragHandle": "Drag tours sheet",
+  "sheetPeekHint": "Pull up — tours & filters",
+  "rideBarCollapseHint": "Swipe down to collapse",
+  "rideBarExpandHint": "Open",
+  "rideBarStart": "Start",
+  "rideBarRoute": "Route",
+  "rideBarPointToPoint": "Route",
+  "emptyToursTitle": "No tours found",
+  "emptyToursFiltersBody": "Reset filters to see nearby tours again.",
+  "emptyToursNearbyBody": "Change place or duration — or reset filters. No A→B fillers.",
+  "showOnMap": "Show on map",
+  "tourDetails": "Details",
+  "moreFilters": "More filters",
+  "moreActions": "More actions",
+
+  "filterSurfaceAsphalt": "Pavement",
+  "filterSurfaceGravel": "Gravel",
+  "filterSurfaceTrail": "Trail",
+  "filterSurfaceMixed": "Mixed",
+  "filterSurfaceAsphaltHint": "Pavement · bike lane · paved",
+  "filterSurfaceGravelHint": "Gravel · forest · compacted",
+  "filterSurfaceTrailHint": "Natural · singletrack · roots",
+  "filterSurfaceMixedHint": "Urban · mixed surface",
+  "filterSurfaceAsphaltFull": "Pavement · paved",
+  "filterSurfaceGravelFull": "Gravel · compacted",
+  "filterSurfaceTrailFull": "Natural · trail",
+  "filterSurfaceMixedFull": "Urban · mixed",
+
+  "filterEffortEasy": "Easy",
+  "filterEffortMid": "Moderate",
+  "filterEffortHard": "Challenging",
+  "filterEffortEasyHint": "S0 / relaxed / low tech",
+  "filterEffortMidHint": "S1–S2 / sporty / mixed",
+  "filterEffortHardHint": "S2+ / hard / technical",
+
+  "filterElevFlat": "< 400 m",
+  "filterElevHilly": "400–1100 m",
+  "filterElevAlpine": "1100+ m",
+  "filterDistMax20": "≤ 20 km",
+  "filterDistMax40": "≤ 40 km",
+  "filterDistMax70": "≤ 70 km",
+
+  "filterScaleEasy": "Easy",
+  "filterScaleMedium": "Moderate",
+  "filterScaleHard": "Challenging",
+
+  "trailDiffEasy": "Easy",
+  "trailDiffMedium": "Moderate",
+  "trailDiffHard": "Hard",
+  "trailDiffVeryHard": "Very hard",
+  "trailDiffUnrated": "Unrated",
+  "trailDiffOpen": "open",
+
+  "durationAny": "any",
+  "duration2to3h": "2–3 h",
+
+  "garageTitle": "Garage",
+  "garageFabBike": "Park a bike",
+  "garageEmptyTitle": "The stall is empty",
+  "garageEmptyMessage": "Park your bike — honestly, no demo kilometres. Then you see if it is ready.",
+  "garageAddBike": "Park a bike",
+  "garageStatBike": "BIKE",
+  "garageStatBikes": "BIKES",
+  "garageStatKmTotal": "KM TOTAL",
+  "garageQuickSwitch": "Quick switch",
+  "garageLastRides": "Recent rides",
+  "garageNoRidesTitle": "No rides yet",
+  "garageNoRidesMessage": "Your first saved ride will show up here.",
+  "garageActive": "Active",
+  "garageActiveBike": "Active bike · {name}",
+  "@garageActiveBike": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "garageEbikeBadge": "E-bike",
+  "garageMaintOk": "All good",
+  "garageMaintDue": "{count} due for service",
+  "@garageMaintDue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garageMaintOverdue": "{count} overdue",
+  "@garageMaintOverdue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garagePartsCount": "{count} parts",
+  "@garagePartsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garageParts": "Parts",
+  "garageMaintenance": "Maintenance",
+  "garageSetup": "Setup",
+  "garageInstall": "Add part",
+  "garageOtherBikes": "Other bikes",
+  "garageTechDetails": "Technical details",
+  "garageTechHint": "Travel, frame, setup basics — for enthusiasts",
+  "garageCtaMaintenance": "View maintenance",
+  "garageCtaAddPart": "Add part",
+  "garageCtaSetActive": "Set as active",
+  "garageCtaOpenSetup": "Go to setup",
+  "garageHours": "Hours",
+  "garageTravel": "Travel",
+  "garageFrameSize": "Frame size",
+  "garageWheelSize": "Wheel size",
+  "garageBrandModel": "Model",
+  "garageCompatFits": "Fits {count}",
+  "@garageCompatFits": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garageCompatCheck": "Check {count}",
+  "@garageCompatCheck": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garageCompatNoFit": "No fit {count}",
+  "@garageCompatNoFit": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garagePartsEmpty": "No parts logged yet. Tap “Add part” — then we remind you about service and show whether parts fit together.",
+  "garageMaintEmpty": "All good — nothing due for service.",
+  "garageSetupTabTitle": "Your setup",
+  "garageSetupTabHint": "SAG = how far the suspension sinks with your weight (often ~25–30%).",
+  "garageYourParts": "Your parts",
+  "garageMissingSlots": "Not logged yet (optional)",
+  "garageActiveBadge": "Active bike",
+  "garageStatKm": "KM",
+  "garageStatHours": "HRS",
+  "garageStatMaint": "SERVICE",
+
+  "setupVersionsTitle": "Versions & compare",
+  "setupVersionsHint": "Each change saves a new version. You can switch back anytime.",
+  "setupRiderWeightLabel": "Rider weight (kg) for templates",
+  "setupNewVersionCta": "New version",
+  "setupCompareCta": "Try two variants",
+  "setupCompareHint": "Creates two blind variants (e.g. rebound). After a few rides you’ll see which feels better.",
+  "setupSavedVersions": "Saved versions",
+  "setupEmpty": "No versions yet — start from a template or save your settings.",
+  "setupActiveBadge": "Active",
+  "setupVersionMeta": "Version {version}",
+  "@setupVersionMeta": {
+    "placeholders": {
+      "version": { "type": "int" }
+    }
+  },
+  "setupUseVersion": "Use",
+  "setupForkReboundValue": "Rebound {value}",
+  "@setupForkReboundValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "setupSourceTemplate": "Template",
+  "setupSourceBaseline": "Baseline",
+  "setupSourceManual": "Manual",
+  "setupTemplatesTitle": "Starter templates",
+  "setupTemplatesHint": "Starting point — not a personal recommendation.",
+  "setupApplyTemplate": "Apply",
+  "setupNewVersionTitle": "New setup version",
+  "setupNewVersionHint": "Give it a name you’ll recognize — e.g. “Dry trail”.",
+  "setupVersionNameLabel": "Name",
+  "setupForkReboundLabel": "Fork rebound (clicks)",
+  "setupCancel": "Cancel",
+  "setupSave": "Save",
+  "setupNewVersionDefaultName": "Version {n}",
+  "@setupNewVersionDefaultName": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "setupManualFallback": "Manual",
+  "setupTemplateAppliedLabel": "{label} (template)",
+  "@setupTemplateAppliedLabel": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "setupTemplateAppliedSnack": "Template applied — {disclaimer}",
+  "@setupTemplateAppliedSnack": {
+    "placeholders": {
+      "disclaimer": { "type": "String" }
+    }
+  },
+  "setupCompareVariantA": "Test variant A",
+  "setupCompareVariantB": "Test variant B",
+  "setupCompareResultFromRides": "Variants created · result from {count} rides: {summary}",
+  "@setupCompareResultFromRides": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "summary": { "type": "String" }
+    }
+  },
+  "setupCompareResultDemo": "Variants created · little ride feedback yet — sample result: {summary}",
+  "@setupCompareResultDemo": {
+    "placeholders": {
+      "summary": { "type": "String" }
+    }
+  },
+
+  "rideMap": "Map",
+  "rideData": "Data",
+  "rideLiveData": "Live data",
+  "rideMapReady": "Map ready — sensor optional after start",
+  "rideClearRoute": "Remove route",
+
+  "postRideTitle": "Activity",
+  "postRideFreeride": "Freeride",
+  "postRideTrackMap": "Ridden track",
+  "postRideNoTrack": "No GPS track — map has nothing to show.",
+  "postRideStatDistance": "Distance",
+  "postRideStatDuration": "Duration",
+  "postRideStatPace": "Pace",
+  "postRideStatElevation": "Elevation",
+  "postRideWeatherTitle": "Weather",
+  "postRideWeatherStart": "Start",
+  "postRideWeatherEnd": "End",
+  "postRideWeatherUnavailable": "Weather unavailable",
+  "postRidePhotosTitle": "Photos",
+  "postRidePhotosHint": "Add photos to this ride — stored locally.",
+  "postRidePhotoCamera": "Camera",
+  "postRidePhotoGallery": "Gallery",
+  "postRidePhotosShare": "Share",
+  "postRidePhotosShareText": "My AetherRide ride",
+  "postRidePhotosEmpty": "No photos to share yet",
+  "postRidePhotosMax": "Maximum {count} photos",
+  "@postRidePhotosMax": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "postRideCommunityStub": "Community feed coming soon — photos stay local; share via the system share sheet.",
+
+  "postRideSaveAsTour": "Save as tour",
+  "postRideSaveAsTourDone": "Saved to My routes",
+  "postRideSaveAsTourNeedTrack": "A GPS track is required to save.",
+  "postRideSaveAsTourHint": "Saves the track as your own route — visible under Tours.",
+
+  "myRoutesTitle": "My routes",
+  "myRoutesEmpty": "No routes yet — import GPX or record a ride.",
+  "myRoutesSourceImport": "Import",
+  "myRoutesSourceRecorded": "Recorded",
+  "myRoutesSourceEngine": "Planned",
+  "myRoutesShowOnMap": "Own on map",
+  "myRoutesHideOnMap": "Hide own",
+  "myRouteNotesTitle": "Comments",
+  "myRouteNotesHint": "Local notes on this route. Public community comments come with an account.",
+  "myRouteNotesEmpty": "No comments yet.",
+  "myRouteNotesPlaceholder": "Write a comment…",
+  "myRouteNotesAdd": "Send",
+  "myRouteDetailPhotos": "Photos",
+  "myRouteOpenDetail": "Details"
+}

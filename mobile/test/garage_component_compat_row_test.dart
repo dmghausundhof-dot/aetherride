@@ -87,14 +87,14 @@ void main() {
       await tester.tap(
         find
             .descendant(
-              of: find.byType(NavigationBar),
-              matching: find.text('Garage'),
+              of: find.byKey(const Key('hof-threshold-nav')),
+              matching: find.text('Werkstatt'),
             )
             .first,
       );
       await _settle(tester);
 
-      // Bike öffnen — Schema-Preview oder Kachel (beide unter GarageScreen).
+      // Bike öffnen — Übersichtskarte oder Kachel (beide unter GarageScreen).
       final garageScrollable = find.descendant(
         of: find.byType(GarageScreen),
         matching: find.byType(Scrollable),
@@ -104,12 +104,12 @@ void main() {
         matching: find.text('Konflikt-Bike'),
       );
       if (bikeName.evaluate().isEmpty) {
-        final schemaTitle = find.descendant(
+        final overviewTitle = find.descendant(
           of: find.byType(GarageScreen),
           matching: find.textContaining('Konflikt-Bike'),
         );
-        await tester.ensureVisible(schemaTitle.first);
-        await tester.tap(schemaTitle.first);
+        await tester.ensureVisible(overviewTitle.first);
+        await tester.tap(overviewTitle.first);
       } else {
         await tester.scrollUntilVisible(
           bikeName.first,
@@ -139,7 +139,7 @@ void main() {
       expect(find.text('SRAM XO Eagle'), findsOneWidget);
       expect(find.text('Nabe hinten'), findsOneWidget);
       expect(find.text('DT Swiss 350'), findsOneWidget);
-      expect(find.textContaining('Konflikt'), findsWidgets);
+      expect(find.textContaining('Passt nicht'), findsWidgets);
 
       // Tap auf die Zeile öffnet die Evidence (Regelbegründung) statt einer
       // zweiten, unabhängigen Liste.

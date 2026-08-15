@@ -54,8 +54,9 @@ export function requiredSlotsForCategory(category: BikeCategory): ComponentSlot[
   }
 
   if (category === "gravel" || category === "road") {
+    slots = slots.filter((s) => s !== "grips");
     slots = [...slots, ...gravelRoad];
-    // Gravel/Road oft ohne Gabel-Fahrwerk im klassischen Sinn – Slot bleibt, kann Free-Text sein
+    // Dropbar: Lenkerband statt Griffe. 1x-Gravel lässt front_derailleur leer (N/A).
   }
 
   if (category === "emtb" || category === "etrekking") {
@@ -106,6 +107,10 @@ export function slotLabel(slot: ComponentSlot): string {
     motor: "Motor",
     battery: "Akku",
     display: "Display/Remote",
+    light: "Licht",
+    lock: "Schloss",
+    rack: "Gepäckträger",
+    bags: "Taschen",
     hiking_shoes: "Schuhe",
     hiking_pack: "Rucksack",
     hiking_poles: "Stöcke",

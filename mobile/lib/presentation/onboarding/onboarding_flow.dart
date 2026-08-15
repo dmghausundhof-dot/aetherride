@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
 import '../../domain/sport/discipline_ux.dart';
+import '../../l10n/app_localizations.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -16,12 +17,12 @@ class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
 
   @override
-  ConsumerState<OnboardingFlow> createState() => _OnboardingFlowState();
+  ConsumerState<OnboardingFlow> createState() => OnboardingFlowState();
 }
 
-class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
+class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _step = 1;
-  BikeCategory _sport = BikeCategory.mtbAm;
+    BikeCategory _sport = BikeCategory.urban;
   double _weight = 78;
   bool _busy = false;
   String? _status;
@@ -75,6 +76,16 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
 
     ref.read(shellTabIndexProvider.notifier).state = 0;
+  }
+
+  /// System-back: vorheriger Schritt; auf Schritt 1 bleibt das Overlay.
+  bool handleSystemBack() {
+    if (!mounted) return true;
+    if (_busy) return true;
+    if (_step > 1) {
+      setState(() => _step -= 1);
+    }
+    return true;
   }
 
   IconData _iconFor(String name) => switch (name) {
@@ -145,7 +156,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                               const SizedBox(height: 6),
                               Text(
                                 _step == 1
-                                    ? MultiSportCopy.appTagline
+                                    ? AppLocalizations.of(context).appTagline
                                     : _step == 2
                                         ? 'Für Setup, SAG & Reichweite — nur lokal, jederzeit änderbar. '
                                             'Auch ohne Federgabel sinnvoll (z. B. City).'
@@ -272,7 +283,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     if (_step == 1)
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.forestOnDark,
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 2),
@@ -281,7 +292,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     else if (_step == 2)
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.forestOnDark,
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 3),
@@ -290,7 +301,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     else ...[
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.forestOnDark,
                           minimumSize: const Size.fromHeight(52),
                         ),
                         onPressed:
@@ -303,13 +314,13 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(MultiSportCopy.startRide),
+                            : Text(AppLocalizations.of(context).startRide),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton(
                         onPressed:
                             _busy ? null : () => unawaited(_finish('garage')),
-                        child: const Text('Zuerst Bike anlegen'),
+                        child: const Text('Zuerst Rad abstellen'),
                       ),
                     ],
                     TextButton(

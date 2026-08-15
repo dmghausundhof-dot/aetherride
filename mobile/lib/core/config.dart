@@ -12,24 +12,27 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
-  /// Compile-time override. Empty → debug emulator / release production host.
+  /// Compile-time override. Empty → production host (Debug und Release).
   static const _apiBaseUrlDefine = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: '',
   );
 
-  /// Production Next.js origin (Play / TestFlight release builds).
+  /// Production Next.js origin — Default für alle Builds ohne Override.
   static const productionApiBaseUrl = 'https://aetherride.vercel.app';
 
-  /// Emulator → host loopback when developing against local Next.js.
-  static const debugApiBaseUrl = 'http://10.0.2.2:3001';
+  /// Android-Emulator → Host-Loopback für lokale Next.js-Entwicklung.
+  /// Bewusst KEIN Debug-Default: auf physischen Geräten ist 10.0.2.2 nicht
+  /// erreichbar (Katalog/Routen/Touren liefen dort in Timeouts). Für den
+  /// Emulator explizit `--dart-define=API_BASE_URL=http://10.0.2.2:3001`
+  /// setzen (siehe mobile/README.md „Start").
+  static const emulatorApiBaseUrl = 'http://10.0.2.2:3001';
 
   /// Next.js API origin for sync / route / catalog.
   static String get apiBaseUrl {
     final fromEnv = _apiBaseUrlDefine.trim();
     if (fromEnv.isNotEmpty) return fromEnv;
-    if (kReleaseMode) return productionApiBaseUrl;
-    return debugApiBaseUrl;
+    return productionApiBaseUrl;
   }
 
   static const pmtilesUrl = String.fromEnvironment(
@@ -128,6 +131,30 @@ abstract final class AppConfig {
 
   static bool get isCrashReportingConfigured => sentryDsn.trim().isNotEmpty;
 
+  /// Öffentliche Shopify-Storefront (Custom Tabs). Kein Secret.
+  /// Override: `--dart-define=SHOPIFY_STOREFRONT_URL=https://…`
+  static const shopifyStorefrontUrl = String.fromEnvironment(
+    'SHOPIFY_STOREFRONT_URL',
+    defaultValue: 'https://dmg-haus-und-hof-shop.myshopify.com',
+  );
+
+  static const shopifyPartsCollection = String.fromEnvironment(
+    'SHOPIFY_PARTS_COLLECTION',
+    defaultValue: 'featured-parts',
+  );
+
+  static const shopifyMerchCollection = String.fromEnvironment(
+    'SHOPIFY_MERCH_COLLECTION',
+    defaultValue: 'merchandise',
+  );
+
+  /// Online Store password wall. Default true until the shop is public.
+  /// `--dart-define=SHOPIFY_ONLINE_STORE_LOCKED=false` after Admin unlock.
+  static const shopifyOnlineStoreLocked = bool.fromEnvironment(
+    'SHOPIFY_ONLINE_STORE_LOCKED',
+    defaultValue: true,
+  );
+
   /// Legal pages on the API/web origin.
   static String get privacyPolicyUrl => '$apiBaseUrl/legal/datenschutz';
   static String get impressumUrl => '$apiBaseUrl/legal/impressum';
@@ -166,6 +193,5 @@ abstract final class AppConfig {
   }
 
   static bool get usingFreeBasemap =>
-      stadiaApiKey.isEmpty &&
-      pmtilesUrl.trim().isEmpty;
+      stadiaApiKey.isEmpty && pmtilesUrl.trim().isEmpty;
 }

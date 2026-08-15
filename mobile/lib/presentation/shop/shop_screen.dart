@@ -1,517 +1,259 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/shop_web.dart';
+import '../../core/config.dart';
+import '../../core/shop_launcher.dart';
+import '../../core/shopify_storefront.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
-import '../../domain/sport/discipline_ux.dart';
+import '../../domain/shop/garage_fit.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/ride_providers.dart';
+import '../shell/shell_tabs.dart';
 
-class _ShopPart {
-  const _ShopPart({
-    required this.handle,
-    required this.name,
-    required this.manufacturer,
-    required this.priceEur,
-    required this.currency,
-    this.imageUrl,
-    this.chip = 'universal',
-  });
-
-  final String handle;
-  final String name;
-  final String manufacturer;
-  final double priceEur;
-  final String currency;
-  final String? imageUrl;
-  final String chip;
-}
-
-class ShopScreen extends ConsumerStatefulWidget {
+/// Shop-Tab: Gateway zum Shopify-Shop. Kein In-App-Katalog, kein Warenkorb.
+class ShopScreen extends ConsumerWidget {
   const ShopScreen({super.key});
 
-  @override
-  ConsumerState<ShopScreen> createState() => _ShopScreenState();
-}
-
-class _ShopScreenState extends ConsumerState<ShopScreen> {
-  List<_ShopPart> _parts = [];
-  bool _loading = true;
-  String? _error;
-  bool _storeLocked = true;
-  bool _apiConfigured = false;
-  String _slot = 'all';
-
-  String? _bikeIdFrom(List<Bike>? bikes) {
-    if (bikes == null || bikes.isEmpty) return null;
-    Bike? active;
-    for (final b in bikes) {
-      if (b.isActive) {
-        active = b;
-        break;
+  Bike? _rideBike(WidgetRef ref, List<Bike>? bikes) {
+    if (bikes == null) return null;
+    final rideable =
+        bikes.where((b) => isRideableGarageBike(b.category)).toList();
+    if (rideable.isEmpty) return null;
+    final pending = ref.watch(shopPendingBikeIdProvider);
+    if (pending != null) {
+      for (final b in rideable) {
+        if (b.id == pending) return b;
       }
     }
-    return (active ?? bikes.first).id;
+    for (final b in rideable) {
+      if (b.isActive) return b;
+    }
+    return rideable.first;
   }
 
-  String _webPartsBridgeUrl(String? bikeId) => ShopWebLinks.parts(
-        bikeId: bikeId,
-        slot: _slot == 'all' ? null : _slot,
-        fitBike: bikeId != null,
-      );
+  Future<void> _open(
+      BuildContext context, AppLocalizations l10n, Uri? uri) async {
+    final ok = await openShopifyStorefront(uri);
+    if (ok || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.shopOpenFailed)),
+    );
+  }
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final bike = _rideBike(ref, ref.watch(bikesProvider).valueOrNull);
+    final connected = ShopifyStorefront.isConfigured;
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final statusUri = Uri.parse('${ShopWebLinks.origin}/api/shop/status');
-      final partsUri = Uri.parse('${ShopWebLinks.origin}/api/shop/parts');
-      final results = await Future.wait([
-        http.get(statusUri).timeout(const Duration(seconds: 12)),
-        http.get(partsUri).timeout(const Duration(seconds: 20)),
-      ]);
-      final statusRes = results[0];
-      final partsRes = results[1];
-
-      var locked = true;
-      var configured = false;
-      if (statusRes.statusCode == 200) {
-        final s = jsonDecode(statusRes.body);
-        if (s is Map) {
-          locked = s['onlineStoreLocked'] != false;
-          configured = s['storefrontApiConfigured'] == true;
-        }
-      }
-
-      if (partsRes.statusCode != 200) {
-        final body = jsonDecode(partsRes.body);
-        final msg = body is Map
-            ? (body['error'] as String? ?? 'Collection nicht geladen')
-            : 'Collection nicht geladen';
-        if (mounted) {
-          setState(() {
-            _storeLocked = locked;
-            _apiConfigured = configured;
-            _parts = [];
-            _loading = false;
-            _error = msg;
-          });
-        }
-        return;
-      }
-
-      final json = jsonDecode(partsRes.body);
-      final raw = json is Map ? json['products'] : null;
-      final list = <_ShopPart>[];
-      if (raw is List) {
-        for (final e in raw) {
-          if (e is! Map) continue;
-          final handle = '${e['handle'] ?? ''}'.trim();
-          if (handle.isEmpty) continue;
-          final soft = e['softFit'];
-          final slots = soft is Map && soft['slots'] is List
-              ? (soft['slots'] as List).map((x) => '$x').toList()
-              : const <String>[];
-          final slotKey = slots.isNotEmpty
-              ? slots.first
-              : '${e['slotKey'] ?? 'other'}';
-          if (_slot != 'all' && slotKey != _slot) continue;
-          final price = (e['priceEur'] is num)
-              ? (e['priceEur'] as num).toDouble()
-              : double.tryParse('${e['priceEur']}') ?? 0;
-          list.add(
-            _ShopPart(
-              handle: handle,
-              name: '${e['name'] ?? handle}',
-              manufacturer: '${e['manufacturer'] ?? 'AetherRide'}',
-              priceEur: price,
-              currency: '${e['currencyCode'] ?? 'EUR'}',
-              imageUrl: e['imageUrl'] as String?,
-              chip: slotKey,
-            ),
-          );
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _storeLocked = locked;
-          _apiConfigured = configured;
-          _parts = list;
-          _loading = false;
-          _error = list.isEmpty
-              ? (configured
-                  ? 'Keine Treffer in featured-parts für diesen Filter.'
-                  : 'Storefront API nicht konfiguriert — Token auf dem Server setzen.')
-              : null;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _error =
-              'Shop offline (${ShopWebLinks.origin}). Bitte später erneut.';
-          _parts = [];
-        });
-      }
-    }
-  }
-
-  Future<void> _openUrl(String url, {required bool warnLockedExternal}) async {
-    final uri = Uri.parse(url);
-    final isMyshopify = url.contains('myshopify.com');
-    if (isMyshopify && (_storeLocked || warnLockedExternal)) {
-      if (!mounted) return;
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Online Store gesperrt'),
-          content: const Text(
-            'Der Shopify Online Store ist passwortgeschützt (Owner Preview). '
-            'Der Link öffnet die Passwort-Seite — kein stiller Dead End.\n\n'
-            'Katalog & Soft-Fit laufen in AetherRide über die Storefront API. '
-            'Store-Passwort wird nicht in der App ausgeliefert.',
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.navShop)),
+      body: SafeArea(
+        child: ListView(
+          key: const Key('shop-gateway'),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.l,
+            AppSpacing.l,
+            AppSpacing.l,
+            AppSpacing.xxxl,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Zurück'),
+          children: [
+            Text(
+              l10n.shopGatewayKicker,
+              style: const TextStyle(
+                color: AppColors.forestOnDark,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Trotzdem öffnen'),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.shopGatewayTitle,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              l10n.shopGatewayHint,
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 15,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (AppConfig.shopifyOnlineStoreLocked) ...[
+              const SizedBox(height: AppSpacing.m),
+              Text(
+                l10n.shopPasswordWall,
+                key: const Key('shop-password-wall'),
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 13,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            if (!connected) ...[
+              Text(
+                l10n.shopNotConnected,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                l10n.shopNotConnectedHint,
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+            ] else
+              FilledButton(
+                key: const Key('shop-go'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.forestOnDark,
+                  foregroundColor: const Color(0xFF0A1210),
+                  minimumSize: const Size(0, 52),
+                ),
+                onPressed: () =>
+                    _open(context, l10n, ShopifyStorefront.homeUri()),
+                child: Text(
+                  l10n.shopZumShop,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.xxl),
+            if (bike == null)
+              _ShopDoor(
+                icon: Icons.pedal_bike_outlined,
+                title: l10n.werkstattForYourBike,
+                hint: l10n.shopForYourBikeEmpty,
+                actionLabel: l10n.hofParkBike,
+                onTap: () {
+                  ref.read(garageOpenAddPendingProvider.notifier).state = true;
+                  ref.read(shellTabIndexProvider.notifier).state =
+                      ShellTabs.werkstatt;
+                },
+              )
+            else
+              _ShopDoor(
+                key: const Key('shop-parts'),
+                icon: Icons.pedal_bike_outlined,
+                title: l10n.werkstattForYourBike,
+                hint: l10n.shopForYourBikeHint(bike.name),
+                onTap: connected
+                    ? () => _open(
+                          context,
+                          l10n,
+                          ShopifyStorefront.partsFitUri(bike: bike),
+                        )
+                    : null,
+              ),
+            const SizedBox(height: AppSpacing.m),
+            _ShopDoor(
+              key: const Key('shop-merch'),
+              icon: Icons.checkroom_outlined,
+              title: l10n.werkstattMerch,
+              hint: l10n.shopMerchHint,
+              onTap: connected
+                  ? () => _open(context, l10n, ShopifyStorefront.merchUri())
+                  : null,
             ),
           ],
         ),
-      );
-      if (go != true) return;
-    }
-    try {
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Öffnen: $url')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Browser: $url')),
-        );
-      }
-    }
-  }
-
-  String _priceLabel(_ShopPart p) {
-    final v = p.priceEur.toStringAsFixed(
-      p.priceEur == p.priceEur.roundToDouble() ? 0 : 2,
+      ),
     );
-    return '$v €';
   }
+}
+
+class _ShopDoor extends StatelessWidget {
+  const _ShopDoor({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.hint,
+    this.actionLabel,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String hint;
+  final String? actionLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final bikeId = _bikeIdFrom(ref.watch(bikesProvider).valueOrNull);
-    final partsBridge = _webPartsBridgeUrl(bikeId);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(MultiSportCopy.partsTitle),
-        actions: [
-          IconButton(
-            tooltip: 'Aktualisieren',
-            onPressed: _loading ? null : _load,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
+    return Material(
+      color: AppColors.surfaceDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: const BorderSide(color: AppColors.border),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  MultiSportCopy.partsTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  MultiSportCopy.partsSubtitle,
-                  style: TextStyle(color: AppColors.muted, fontSize: 13),
-                ),
-                if (_storeLocked) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.lock_outline, color: Colors.orange, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _apiConfigured
-                                ? 'Owner Preview: Online Store gesperrt. Katalog via Storefront API — keine Passwort-Dead-Ends in der App.'
-                                : 'Owner Preview: Store gesperrt · Storefront API fehlt auf dem Server.',
-                            style: const TextStyle(fontSize: 12, height: 1.35),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  initialValue: _slot,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategorie',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('Alle')),
-                    DropdownMenuItem(value: 'brake_pads', child: Text('Beläge')),
-                    DropdownMenuItem(value: 'grips', child: Text('Griffe')),
-                    DropdownMenuItem(value: 'fluid', child: Text('Fluid')),
-                    DropdownMenuItem(value: 'chain', child: Text('Kette')),
-                    DropdownMenuItem(value: 'tire', child: Text('Reifen')),
-                    DropdownMenuItem(value: 'cassette', child: Text('Kassette')),
-                    DropdownMenuItem(value: 'bar_tape', child: Text('Lenkerband')),
-                  ],
-                  onChanged: (v) {
-                    setState(() => _slot = v ?? 'all');
-                    _load();
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: AppColors.forest.withValues(alpha: 0.10),
+        highlightColor: AppColors.forest.withValues(alpha: 0.06),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: AppColors.forestOnDark, size: 22),
+              const SizedBox(width: AppSpacing.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () => _openUrl(
-                          partsBridge,
-                          warnLockedExternal: false,
-                        ),
-                        icon: const Icon(Icons.storefront_outlined),
-                        label: Text(
-                          bikeId != null ? 'Web · Soft-Fit' : 'Web · Parts',
-                        ),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _openUrl(
-                          ShopWebLinks.shopHub(),
-                          warnLockedExternal: false,
-                        ),
-                        icon: const Icon(Icons.open_in_browser),
-                        label: const Text('Shop-Hub'),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      hint,
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 13,
+                        height: 1.35,
                       ),
                     ),
+                    if (actionLabel != null) ...[
+                      const SizedBox(height: AppSpacing.s),
+                      Text(
+                        actionLabel!,
+                        style: const TextStyle(
+                          color: AppColors.forestOnDark,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ],
-            ),
+              ),
+              Icon(
+                actionLabel != null ? Icons.arrow_forward : Icons.north_east,
+                size: 16,
+                color: AppColors.muted,
+              ),
+            ],
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null && _parts.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _apiConfigured
-                                    ? Icons.inventory_2_outlined
-                                    : Icons.cloud_off_outlined,
-                                size: 40,
-                                color: AppColors.muted,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                _error!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: AppColors.muted),
-                              ),
-                              const SizedBox(height: 12),
-                              FilledButton(
-                                onPressed: _load,
-                                child: const Text('Erneut laden'),
-                              ),
-                              TextButton(
-                                onPressed: () => _openUrl(
-                                  partsBridge,
-                                  warnLockedExternal: false,
-                                ),
-                                child: const Text('Im Browser öffnen'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 0.68,
-                          ),
-                          itemCount: _parts.length,
-                          itemBuilder: (context, i) {
-                            final p = _parts[i];
-                            return Material(
-                              color: Theme.of(context).cardColor,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.card),
-                              clipBehavior: Clip.antiAlias,
-                              child: InkWell(
-                                onTap: () => _openUrl(
-                                  ShopWebLinks.product(p.handle),
-                                  warnLockedExternal: false,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          if (p.imageUrl != null &&
-                                              p.imageUrl!.isNotEmpty)
-                                            Image.network(
-                                              p.imageUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  const ColoredBox(
-                                                color: AppColors.chipIdle,
-                                                child: Icon(
-                                                  Icons.image_not_supported_outlined,
-                                                  color: AppColors.muted,
-                                                ),
-                                              ),
-                                            )
-                                          else
-                                            const ColoredBox(
-                                              color: AppColors.chipIdle,
-                                              child: Icon(
-                                                Icons.pedal_bike,
-                                                color: AppColors.muted,
-                                              ),
-                                            ),
-                                          Positioned(
-                                            left: 6,
-                                            top: 6,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 3,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black54,
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                p.chip,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        10,
-                                        8,
-                                        10,
-                                        10,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            p.manufacturer,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: AppColors.muted,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          Text(
-                                            p.name,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 13,
-                                              height: 1.2,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _priceLabel(p),
-                                            style: const TextStyle(
-                                              color: AppColors.accent,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-          ),
-        ],
+        ),
       ),
     );
   }

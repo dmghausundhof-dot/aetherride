@@ -24,11 +24,10 @@ Version 1.0 · Spec-konform · Offline-First · Outdoor Design System
 - Vorbereitet für PostgreSQL + TimescaleDB (Time-Series Sensor/Ride) + pgvector.
 - Orders-Persistenz + Cart-System.
 
-### 4. Echter Shop-Checkout
-- Warenkorb (Zustand + localStorage)
-- Checkout mit Lieferadresse
-- Bestellbestätigung + API-Anbindung
-- Kompatibilitäts-Badges aus der Garage
+### 4. Shop als Tür zu Shopify
+- Kein In-App-Warenkorb — Kasse nur bei Shopify
+- Gateway-Seite „Der Laden“ mit ehrlicher Inhaber-Vorschau, falls der Store gesperrt ist
+- Passende Teile aus der Werkstatt, Merch unabhängig vom Rad
 
 ### 5. Garage & Setup P0 (Spec F-GAR / F-SET)
 - Katalog-/Basis-/Import-Anlage mit OEM-Vorbefüllung
@@ -79,7 +78,7 @@ npm run dev
 ```
 src/
 ├── app/                 # Next.js App Router (Screens + API)
-├── components/          # UI (BottomTabBar, MapView, …)
+├── components/          # UI (HofThresholdNav, MapView, …)
 ├── lib/
 │   ├── sensor/          # SensorFusionEngine + WebSimulator
 │   ├── ble/             # Bosch LDI Client Contract
@@ -99,7 +98,7 @@ cd mobile
 flutter pub get && flutter run
 ```
 
-Tabs: Home · Garage · Ride · Discover · Shop. Native Stubs: `sensor_core`, `ble_core`, `location_core` (+ READMEs für map/routing/dsp). Details: [`mobile/README.md`](mobile/README.md).
+Tabs: Der Hof · Karte · Werkstatt · Laden. Ride-HUD nur in der App.
 
 ## Produktionsschicht (Supabase · Stripe · Grok)
 

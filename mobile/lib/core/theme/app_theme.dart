@@ -31,6 +31,9 @@ abstract final class AppColors {
   /// liegt bei ~9:1 auf `0xFF0A1210`. Für jede grüne Textfarbe auf dunklem
   /// Hintergrund diese statt `forest`/`trail` verwenden.
   static const Color forestOnDark = Color(0xFF81C995);
+
+  /// Dunkler Hof-Grund — Splash, Statusleisten-Scrim, Scaffold.
+  static const Color hofGround = Color(0xFF0A1210);
 }
 
 /// 4-px-Raster für Abstände — ersetzt die im UX-Review gefundenen 13
@@ -84,19 +87,20 @@ abstract final class AppTheme {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: AppColors.onAccent,
-            minimumSize: const Size.fromHeight(48),
+            backgroundColor: AppColors.forestOnDark,
+            foregroundColor: AppColors.hofGround,
+            // fromHeight(48) = infinite width → crash in Rows (Garage-Detail).
+            minimumSize: const Size(0, 48),
           ),
         ),
         navigationBarTheme: NavigationBarThemeData(
-          indicatorColor: AppColors.accent.withValues(alpha: 0.2),
+          indicatorColor: AppColors.forestOnDark.withValues(alpha: 0.2),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.accent,
+                color: AppColors.forestOnDark,
               );
             }
             return const TextStyle(fontSize: 11, color: AppColors.muted);
@@ -115,7 +119,7 @@ abstract final class AppTheme {
           onSecondary: Colors.white,
           onSurface: Color(0xFFE8EEEA),
         ),
-        scaffoldBackgroundColor: const Color(0xFF0A1210),
+        scaffoldBackgroundColor: AppColors.hofGround,
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.surfaceDark,
           foregroundColor: Color(0xFFE8EEEA),
@@ -123,18 +127,18 @@ abstract final class AppTheme {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            foregroundColor: AppColors.onAccent,
-            disabledBackgroundColor: Color(0xFF3A2A22),
-            disabledForegroundColor: Color(0xFFB0A090),
-            minimumSize: const Size.fromHeight(48),
+            backgroundColor: AppColors.forestOnDark,
+            foregroundColor: AppColors.hofGround,
+            disabledBackgroundColor: const Color(0xFF1A2822),
+            disabledForegroundColor: AppColors.muted,
+            minimumSize: const Size(0, 48),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFFE8EEEA),
             side: const BorderSide(color: AppColors.border),
-            minimumSize: const Size.fromHeight(48),
+            minimumSize: const Size(0, 48),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
@@ -154,7 +158,7 @@ abstract final class AppTheme {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.chip),
-            borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+            borderSide: const BorderSide(color: AppColors.forestOnDark, width: 1.5),
           ),
         ),
         dropdownMenuTheme: const DropdownMenuThemeData(
@@ -162,13 +166,13 @@ abstract final class AppTheme {
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: AppColors.surfaceDark,
-          indicatorColor: AppColors.accent.withValues(alpha: 0.2),
+          indicatorColor: AppColors.forestOnDark.withValues(alpha: 0.2),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.accent,
+                color: AppColors.forestOnDark,
               );
             }
             return const TextStyle(fontSize: 11, color: AppColors.muted);
@@ -182,18 +186,20 @@ abstract final class AppTheme {
           ),
         ),
         sliderTheme: SliderThemeData(
-          activeTrackColor: AppColors.accent,
-          thumbColor: AppColors.accent,
+          activeTrackColor: AppColors.forestOnDark,
+          thumbColor: AppColors.forestOnDark,
           inactiveTrackColor: AppColors.border,
         ),
         segmentedButtonTheme: SegmentedButtonThemeData(
           style: ButtonStyle(
             foregroundColor: WidgetStateProperty.resolveWith((s) {
-              if (s.contains(WidgetState.selected)) return AppColors.onAccent;
+              if (s.contains(WidgetState.selected)) return AppColors.hofGround;
               return const Color(0xFFE8EEEA);
             }),
             backgroundColor: WidgetStateProperty.resolveWith((s) {
-              if (s.contains(WidgetState.selected)) return AppColors.accent;
+              if (s.contains(WidgetState.selected)) {
+                return AppColors.forestOnDark;
+              }
               return AppColors.chipIdle;
             }),
           ),
@@ -220,9 +226,18 @@ abstract final class AppTheme {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.sunAccent,
+            backgroundColor: AppColors.sunPrimary,
             foregroundColor: Colors.white,
           ),
         ),
+      );
+
+  /// Einziges Orange im Chrome: Hof **Rausfahren** (und Einfach fahren).
+  static ButtonStyle rideOutCta({double height = 52}) => FilledButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.onAccent,
+        disabledBackgroundColor: const Color(0xFF3A2A22),
+        disabledForegroundColor: const Color(0xFFB0A090),
+        minimumSize: Size(0, height),
       );
 }

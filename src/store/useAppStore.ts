@@ -134,6 +134,7 @@ interface AppState {
   addBikeBasic: (input: {
     name: string;
     category: BikeCategory;
+    isEbike?: boolean;
     travelFrontMm?: number;
     travelRearMm?: number;
     wheelSizeFront?: WheelSize;
@@ -545,7 +546,7 @@ export const useAppStore = create<AppState>()(
           get().bikes.length >= 1
         ) {
           throw new Error(
-            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten."
+            "Im Free-Tarif nur ein Rad. Für mehrere Räder Pro freischalten."
           );
         }
         const found = findCatalogBike(catalogBikeId);
@@ -639,7 +640,7 @@ export const useAppStore = create<AppState>()(
           get().bikes.length >= 1
         ) {
           throw new Error(
-            "Free-Tier: nur 1 Bike. Für Multi-Bike Pro freischalten."
+            "Im Free-Tarif nur ein Rad. Für mehrere Räder Pro freischalten."
           );
         }
         const id = uuidv4();
@@ -655,7 +656,9 @@ export const useAppStore = create<AppState>()(
           travelRearMm: input.travelRearMm,
           wheelSizeFront: input.wheelSizeFront,
           wheelSizeRear: input.wheelSizeRear,
-          isEbike: input.category === "emtb" || input.category === "etrekking",
+          isEbike:
+            input.isEbike ??
+            (input.category === "emtb" || input.category === "etrekking"),
           totalOdometerKm: 0,
           totalHours: 0,
         });

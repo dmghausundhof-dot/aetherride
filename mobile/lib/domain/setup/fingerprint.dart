@@ -34,14 +34,16 @@ class SetupFingerprint {
           k.contains('front') &&
           (k.contains('pressure') || k.contains('psi')) &&
           tire == null) {
-        tire = 'Reifen ${v.valueNum.toStringAsFixed(1)} bar';
+        // Setup-Werte sind psi; Anzeige in bar (22 psi ≠ 22 bar).
+        final bar = v.valueNum / 14.5037738;
+        tire = 'Reifen ${bar.toStringAsFixed(1)} bar';
       }
     }
     final lines = <String>[
+      if (tire != null) tire,
       if (sag != null) sag,
       if (fork != null) fork,
-      if (tire != null) tire,
-      if (sag == null && fork == null) setup.label,
+      if (sag == null && fork == null && tire == null) setup.label,
     ];
     return SetupFingerprint(
       lines: lines.isEmpty ? [setup.label] : lines,

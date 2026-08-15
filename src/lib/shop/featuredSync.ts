@@ -22,6 +22,7 @@ import {
 } from "@/lib/shop/shopifyStorefront";
 import { getShopStoreStatus } from "@/lib/shop/storeStatus";
 import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
+import { isPartsProduct } from "@/lib/shop/shopShelf";
 
 export type LiveFeaturedBike = {
   handle: string;
@@ -125,7 +126,16 @@ export async function syncFeaturedCatalog(): Promise<FeaturedSyncResult> {
     configured: true,
     onlineStoreLocked: status.onlineStoreLocked,
     collectionHandle: partsResult.collectionHandle,
-    parts: partsResult.products.map(mapStorefrontProduct),
+    parts: partsResult.products
+      .map(mapStorefrontProduct)
+      .filter((p) =>
+        isPartsProduct({
+          tags: p.tags,
+          productType: p.productType,
+          handle: p.handle,
+          title: p.name,
+        })
+      ),
     bikes,
     skippedHandles,
   };

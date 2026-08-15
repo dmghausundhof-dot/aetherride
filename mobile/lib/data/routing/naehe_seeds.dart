@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../../domain/bike.dart';
 import '../../domain/active_route.dart';
 import '../../domain/routing/nav_cues.dart';
+import '../../domain/routing/tour_filters.dart';
 
 /// Nähe-Peek / 60-Min-Loop Seed (bundled JSON, D-60-03).
 ///
@@ -81,6 +82,10 @@ class NaeheSeedRoute {
     this.disciplineNote,
     this.corridorNote,
     this.shortPitch,
+    this.thumbnailUrl,
+    this.photoUrls = const [],
+    this.bakedGeometry,
+    this.geometryEngine,
   });
 
   final String id;
@@ -108,6 +113,22 @@ class NaeheSeedRoute {
   final String? disciplineNote;
   final String? corridorNote;
   final String? shortPitch;
+
+  /// Hero image — asset path (`assets/…`) or https URL.
+  final String? thumbnailUrl;
+
+  /// Extra curated photos (assets/https) — never fake "user" community shots.
+  final List<String> photoUrls;
+
+  /// Pre-baked street loop [[lng, lat],…] from seed JSON (`geometry`).
+  final List<List<double>>? bakedGeometry;
+
+  /// e.g. `osrm-cycling-prebake-v1` when [bakedGeometry] was offline-routed.
+  final String? geometryEngine;
+
+  /// True when JSON shipped a usable polyline (not synthetic circle).
+  bool get hasBakedGeometry =>
+      bakedGeometry != null && bakedGeometry!.length >= 4;
 
   bool get isRoute => type == 'route';
 
@@ -192,6 +213,10 @@ class NaeheSeedRoute {
       return t.isEmpty ? null : t;
     }
 
+    final baked = parseSeedGeometryLngLat(
+      m['geometry'] ?? m['track'] ?? m['coordinates'],
+    );
+
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
@@ -202,7 +227,10 @@ class NaeheSeedRoute {
       sportTags: tags,
       centerLat: lat,
       centerLng: lng,
-      isLoop: m['is_loop'] == true,
+      // Nähe uses is_loop; legacy/premium packs use loop / closed.
+      isLoop: m['is_loop'] == true ||
+          m['loop'] == true ||
+          m['closed'] == true,
       durationBand: m['duration_band'] as String?,
       poiStops: pois,
       surfaceMix: mix,
@@ -214,6 +242,10 @@ class NaeheSeedRoute {
       disciplineNote: opt('discipline_note'),
       corridorNote: opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
+      thumbnailUrl: opt('thumbnail_url') ?? heroAssetForSeedId((m['id'] as String?) ?? ''),
+      photoUrls: parseSeedPhotoUrls(m),
+      bakedGeometry: baked,
+      geometryEngine: opt('geometry_engine'),
     );
   }
 
@@ -258,7 +290,13 @@ class NaeheSeedRoute {
     }
 
     final duration = (m['duration_min'] as num?)?.round() ?? 0;
-    final isLoop = m['loop'] == true || m['is_loop'] == true;
+    // Parity with Nähe fromJson: is_loop | loop | closed.
+    final isLoop = m['loop'] == true ||
+        m['is_loop'] == true ||
+        m['closed'] == true;
+    final baked = parseSeedGeometryLngLat(
+      m['geometry'] ?? m['track'] ?? m['coordinates'],
+    );
     return NaeheSeedRoute(
       id: (m['id'] as String?) ?? '',
       title: (m['title'] as String?) ?? '',
@@ -284,6 +322,11 @@ class NaeheSeedRoute {
       disciplineNote: opt('discipline_note'),
       corridorNote: corridor ?? opt('corridor_note'),
       shortPitch: opt('short_pitch') ?? opt('notes'),
+      thumbnailUrl: opt('thumbnail_url') ??
+          heroAssetForSeedId((m['id'] as String?) ?? ''),
+      photoUrls: parseSeedPhotoUrls(m),
+      bakedGeometry: baked,
+      geometryEngine: opt('geometry_engine'),
     );
   }
 
@@ -304,23 +347,16 @@ class NaeheSeedRoute {
   }
 
   /// Surface-Tag aus surface_mix (größter Anteil) oder Premium-Text.
+  /// Kanonisch via [TourFilters] — gleiches Mapping wie Discover-Filter.
   String get surfaceTag {
-    final text = surfaceMixText?.toLowerCase() ?? '';
-    if (text.isNotEmpty) {
-      if (text.contains('gravel') || text.contains('forst')) {
-        return 'gravel/compacted';
-      }
-      if (text.contains('asphalt') ||
-          text.contains('city') ||
-          text.contains('promenade') ||
-          text.contains('pavement')) {
-        return 'asphalt/paved';
-      }
-      if (text.contains('trail')) return 'trail/root';
-      return 'mixed/urban';
+    final text = surfaceMixText?.trim();
+    if (text != null && text.isNotEmpty) {
+      return TourFilters.normalizeStoredSurface(text);
     }
     final mix = surfaceMix;
-    if (mix == null || mix.isEmpty) return 'mixed/urban';
+    if (mix == null || mix.isEmpty) {
+      return TourFilters.canonicalSurfaceTag(TourSurfaceKey.mixed);
+    }
     String best = 'asphalt';
     num bestV = -1;
     mix.forEach((k, v) {
@@ -330,21 +366,20 @@ class NaeheSeedRoute {
         best = k;
       }
     });
-    return switch (best) {
-      'asphalt' => 'asphalt/paved',
-      'gravel' => 'gravel/compacted',
-      'trail' => 'trail/root',
-      _ => 'mixed/urban',
-    };
+    return TourFilters.normalizeStoredSurface(best);
   }
 
-  /// Geschlossene Näherungs-Polyline [[lng,lat],…] für offline Losfahren.
+  /// Geschlossene Polyline [[lng,lat],…] — bevorzugt gebackene Straßen-
+  /// Geometrie aus dem Seed-JSON; sonst organische Offline-Näherung
+  /// (kein perfekter Kreis).
   List<List<double>>? get trackLngLat {
+    if (hasBakedGeometry) return bakedGeometry;
     if (!isLoop || distanceKm < 1) return null;
-    return syntheticLoopLngLat(
+    return organicLoopLngLat(
       lat: centerLat,
       lng: centerLng,
       distanceKm: distanceKm,
+      seedKey: id,
     );
   }
 
@@ -383,6 +418,7 @@ class NaeheSeedRoute {
             kind: p.kind,
           ),
       ],
+      isLoop: isLoop,
     );
   }
 }
@@ -401,7 +437,227 @@ BikeCategory? _categoryFromSportTag(String raw) {
   };
 }
 
+const _kHeroForest = 'assets/seeds/heroes/forest.jpg';
+const _kHeroLake = 'assets/seeds/heroes/lake.jpg';
+const _kHeroAlps = 'assets/seeds/heroes/alps.jpg';
+const _kHeroGravel = 'assets/seeds/heroes/gravel.jpg';
+const _kHeroRiver = 'assets/seeds/heroes/river.jpg';
+const _kHeroCoast = 'assets/seeds/heroes/coast.jpg';
+
+const kTourHeroAssetPool = <String>[
+  _kHeroGravel,
+  _kHeroAlps,
+  _kHeroLake,
+  _kHeroForest,
+  _kHeroRiver,
+  _kHeroCoast,
+  'assets/seeds/heroes/rn-heidelberg.jpg',
+  'assets/seeds/heroes/rn-mannheim.jpg',
+  'assets/seeds/heroes/rn-boxberg.jpg',
+  'assets/seeds/heroes/berlin-tempelhofer.jpg',
+  'assets/seeds/heroes/berlin-spree.jpg',
+  'assets/seeds/heroes/berlin-grunewald.jpg',
+  'assets/seeds/heroes/wm-heidelberg.jpg',
+  'assets/seeds/heroes/wm-karlsruhe.jpg',
+  'assets/seeds/heroes/wm-freiburg.jpg',
+  'assets/seeds/heroes/wm-muenchen.jpg',
+  'assets/seeds/heroes/wm-bodensee.jpg',
+];
+
+/// Bundled hero assets for Discover photo cards (S25 — never blank sheet).
+String? heroAssetForSeedId(String id) {
+  if (id.isEmpty) return null;
+  const map = <String, String>{
+    'seed-dach-60-rn-1-heidelberg-neckarwiese':
+        'assets/seeds/heroes/rn-heidelberg.jpg',
+    'seed-dach-60-rn-2-mannheim-schloss-waldpark':
+        'assets/seeds/heroes/rn-mannheim.jpg',
+    'seed-dach-60-rn-3-heidelberg-boxberg-gaisberg':
+        'assets/seeds/heroes/rn-boxberg.jpg',
+    'seed-loop-heidelberg-neckar-60': 'assets/seeds/heroes/rn-heidelberg.jpg',
+    'seed-loop-mannheim-rhein-60': 'assets/seeds/heroes/rn-mannheim.jpg',
+    'seed-loop-heidelberg-boxberg-gravel-60':
+        'assets/seeds/heroes/rn-boxberg.jpg',
+    'seed-loop-tempelhofer-60': 'assets/seeds/heroes/berlin-tempelhofer.jpg',
+    'seed-loop-spree-feierabend-60': 'assets/seeds/heroes/berlin-spree.jpg',
+    'seed-loop-grunewald-kurz-60': 'assets/seeds/heroes/berlin-grunewald.jpg',
+    'seed-loop-karlsruhe-hardtwald-60':
+        'assets/seeds/heroes/wm-karlsruhe.jpg',
+    'seed-loop-karlsruhe-hardt-mtb-60':
+        'assets/seeds/heroes/wm-karlsruhe.jpg',
+    'seed-loop-freiburg': 'assets/seeds/heroes/wm-freiburg.jpg',
+    'seed-loop-muenchen': 'assets/seeds/heroes/wm-muenchen.jpg',
+    'seed-loop-koeln': 'assets/seeds/heroes/wm-koeln.jpg',
+    'seed-loop-stuttgart': 'assets/seeds/heroes/wm-stuttgart.jpg',
+    'seed-loop-bodensee': 'assets/seeds/heroes/wm-bodensee.jpg',
+    'seed-loop-innsbruck': 'assets/seeds/heroes/wm-innsbruck.jpg',
+    'seed-loop-salzburg': 'assets/seeds/heroes/wm-salzburg.jpg',
+    'seed-loop-wien': 'assets/seeds/heroes/wm-wien.jpg',
+    'seed-loop-hamburg': 'assets/seeds/heroes/wm-hamburg.jpg',
+  };
+  final mapped = map[id];
+  if (mapped != null) return mapped;
+
+  final tokens = id
+      .toLowerCase()
+      .split(RegExp(r'[^a-z0-9äöüß]+'))
+      .where((t) => t.isNotEmpty)
+      .toSet();
+  bool has(String t) => tokens.contains(t);
+  bool hasAffix(String needle) =>
+      tokens.any((t) => t != 'seed' && (t == needle || t.endsWith(needle)));
+
+  if (has('karlsruhe') || has('hardt')) {
+    return 'assets/seeds/heroes/wm-karlsruhe.jpg';
+  }
+  if (has('freiburg')) return 'assets/seeds/heroes/wm-freiburg.jpg';
+  if (has('muenchen') || has('munich')) {
+    return 'assets/seeds/heroes/wm-muenchen.jpg';
+  }
+  if (has('koeln') || has('cologne')) return 'assets/seeds/heroes/wm-koeln.jpg';
+  if (has('stuttgart')) return 'assets/seeds/heroes/wm-stuttgart.jpg';
+  if (has('bodensee') || has('lindau') || has('konstanz')) {
+    return 'assets/seeds/heroes/wm-bodensee.jpg';
+  }
+  if (has('innsbruck')) return 'assets/seeds/heroes/wm-innsbruck.jpg';
+  if (has('salzburg')) return 'assets/seeds/heroes/wm-salzburg.jpg';
+  if (has('wien') || has('vienna')) return 'assets/seeds/heroes/wm-wien.jpg';
+  if (has('hamburg') || has('alster')) {
+    return 'assets/seeds/heroes/wm-hamburg.jpg';
+  }
+  if (has('heidelberg')) return 'assets/seeds/heroes/wm-heidelberg.jpg';
+  if (has('mannheim')) return 'assets/seeds/heroes/wm-mannheim.jpg';
+  if (has('tempelhofer') || has('tempelhof')) {
+    return 'assets/seeds/heroes/wm-tempelhofer.jpg';
+  }
+  if (has('grunewald')) return 'assets/seeds/heroes/wm-grunewald.jpg';
+  if (has('berlin')) return 'assets/seeds/heroes/wm-spree.jpg';
+
+  if (has('mtb') ||
+      has('emtb') ||
+      has('trail') ||
+      has('forest') ||
+      hasAffix('wald')) {
+    return _kHeroForest;
+  }
+  if (has('hafen') ||
+      has('lake') ||
+      has('weiher') ||
+      has('teich') ||
+      has('ufer') ||
+      hasAffix('see')) {
+    return _kHeroLake;
+  }
+  if (has('alpen') ||
+      has('alp') ||
+      has('alps') ||
+      has('gipfel') ||
+      has('pass') ||
+      has('berg')) {
+    return _kHeroAlps;
+  }
+  if (has('gravel')) return _kHeroGravel;
+  if (has('rhein') ||
+      has('neckar') ||
+      has('fluss') ||
+      has('river') ||
+      has('spree') ||
+      has('donau') ||
+      has('elbland') ||
+      has('kanal')) {
+    return _kHeroRiver;
+  }
+  if (has('kueste') ||
+      has('küste') ||
+      has('nordsee') ||
+      has('ostsee') ||
+      has('coast') ||
+      has('strand')) {
+    return _kHeroCoast;
+  }
+
+  return kTourHeroAssetPool[id.hashCode.abs() % kTourHeroAssetPool.length];
+}
+
+/// `photo_urls` / `photos` from seed JSON — assets or https only.
+List<String> parseSeedPhotoUrls(Map<String, dynamic> m) {
+  final out = <String>[];
+  void add(Object? raw) {
+    if (raw is! String) return;
+    final t = raw.trim();
+    if (t.isEmpty) return;
+    if (!(t.startsWith('assets/') ||
+        t.startsWith('http://') ||
+        t.startsWith('https://'))) {
+      return;
+    }
+    if (!out.contains(t)) out.add(t);
+  }
+
+  final list = m['photo_urls'] ?? m['photos'];
+  if (list is List) {
+    for (final e in list) {
+      if (e is String) {
+        add(e);
+      } else if (e is Map) {
+        add(e['url'] ?? e['src'] ?? e['image']);
+      }
+    }
+  }
+  return out;
+}
+
+/// Parse GeoJSON-ähnliche Seed-Geometrie → [[lng, lat], …].
+List<List<double>>? parseSeedGeometryLngLat(dynamic raw) {
+  if (raw == null) return null;
+  List? coords;
+  if (raw is Map) {
+    final g = raw['coordinates'] ?? raw['geometry'];
+    if (g is Map) {
+      coords = g['coordinates'] as List?;
+    } else if (g is List) {
+      coords = g;
+    }
+  } else if (raw is List) {
+    coords = raw;
+  }
+  if (coords == null || coords.length < 4) return null;
+  final out = <List<double>>[];
+  for (final c in coords) {
+    if (c is List && c.length >= 2) {
+      final a = (c[0] as num).toDouble();
+      final b = (c[1] as num).toDouble();
+      // GeoJSON: [lng, lat]. Swap only when clearly [lat, lng].
+      if (a.abs() <= 90 &&
+          b.abs() <= 180 &&
+          a.abs() > b.abs() &&
+          b.abs() <= 90) {
+        out.add([b, a]);
+      } else {
+        out.add([a, b]);
+      }
+    } else if (c is Map) {
+      final lat = (c['lat'] as num?)?.toDouble();
+      final lng =
+          (c['lng'] as num?)?.toDouble() ?? (c['lon'] as num?)?.toDouble();
+      if (lat != null && lng != null) out.add([lng, lat]);
+    }
+  }
+  if (out.length < 4) return null;
+  // Close if nearly closed but not exact.
+  final first = out.first;
+  final last = out.last;
+  final dLat = (first[1] - last[1]).abs();
+  final dLng = (first[0] - last[0]).abs();
+  if (dLat > 1e-5 || dLng > 1e-5) {
+    out.add([first[0], first[1]]);
+  }
+  return out;
+}
+
 /// Synthetischer Rundkurs (geschlossen) um [lat]/[lng] mit ~[distanceKm] Umfang.
+///
+/// Legacy helper — prefer [organicLoopLngLat] / baked seed `geometry`.
 List<List<double>> syntheticLoopLngLat({
   required double lat,
   required double lng,
@@ -420,6 +676,43 @@ List<List<double>> syntheticLoopLngLat({
   return out;
 }
 
+/// Offline-Fallback: unregelmäßiger geschlossener Korridor (kein perfekter
+/// Kreis). Optisch näher an echten Park-/Ufer-Loops wenn kein Bake/Routing.
+List<List<double>> organicLoopLngLat({
+  required double lat,
+  required double lng,
+  required double distanceKm,
+  String seedKey = '',
+  int points = 48,
+}) {
+  final radiusKm = math.max(0.8, distanceKm / (2 * math.pi));
+  var h = 0;
+  for (final cu in seedKey.codeUnits) {
+    h = (h * 31 + cu) & 0xffff;
+  }
+  final phase = (h % 12) * math.pi / 12;
+  final rx = radiusKm * (1.08 + (h % 5) * 0.02);
+  final ry = radiusKm * (0.86 + (h % 7) * 0.02);
+  final cosLat = math.cos(lat * math.pi / 180).abs().clamp(0.2, 1.0);
+  final dLat = ry / 111.0;
+  final dLng = rx / (111.0 * cosLat);
+  final out = <List<double>>[];
+  for (var i = 0; i <= points; i++) {
+    final t = i / points;
+    final a = phase + 2 * math.pi * t;
+    // Harmonics break the circular silhouette.
+    final wobble = 0.78 +
+        0.16 * math.sin(3 * a + phase) +
+        0.10 * math.cos(5 * a - phase * 0.5) +
+        0.06 * math.sin(2 * a + (h % 7));
+    out.add([
+      lng + dLng * math.cos(a) * wobble,
+      lat + dLat * math.sin(a) * wobble,
+    ]);
+  }
+  return out;
+}
+
 class NaeheSeedsBundle {
   const NaeheSeedsBundle({
     required this.routes,
@@ -432,7 +725,7 @@ class NaeheSeedsBundle {
   static const assetPath =
       'assets/seeds/naehe-peek-seeds-berlin-v1.json';
 
-  /// Non-Berlin DACH P0 60-min loops (Munich…Konstanz).
+  /// Non-Berlin DACH P0 60-min loops + MTB trails (DE/AT/CH Städte & Regionen).
   static const dachAssetPath =
       'assets/seeds/p0-dach-60min-naehe-v1.json';
 
@@ -440,6 +733,14 @@ class NaeheSeedsBundle {
   /// Base curated `p0-rhein-neckar-60min-v1.json` stays untouched (#22).
   static const rheinNeckarAssetPath =
       'assets/seeds/p0-rhein-neckar-60min-premium-v1.json';
+
+  /// Nähe-schema RN loops — loaded as fallback if Premium yields <3 loops.
+  static const rheinNeckarNaeheFallbackPath =
+      'assets/seeds/p0-rhein-neckar-60min-naehe-v1.json';
+
+  /// France ~60-Min Rundkurse (Paris, Lyon, Strasbourg, Bordeaux, Nice, …).
+  static const franceAssetPath =
+      'assets/seeds/p0-france-60min-naehe-v1.json';
 
   final List<NaeheSeedRoute> routes;
   final String labelWithoutLocation;
@@ -465,6 +766,7 @@ class NaeheSeedsBundle {
     String path = assetPath,
     String? dachPath = dachAssetPath,
     String? rheinNeckarPath = rheinNeckarAssetPath,
+    String? francePath = franceAssetPath,
   }) async {
     final raw = await rootBundle.loadString(path);
     var bundle = parse(raw);
@@ -483,6 +785,30 @@ class NaeheSeedsBundle {
       } catch (_) {
         // Rhein-Neckar asset optional at runtime (tests / older builds).
       }
+    }
+    if (francePath != null && francePath.isNotEmpty) {
+      try {
+        final frRaw = await rootBundle.loadString(francePath);
+        bundle = merge(bundle, parse(frRaw));
+      } catch (_) {
+        // France asset optional at runtime (tests / older builds).
+      }
+    }
+    // S25: Wiesloch must never see a dead empty sheet — if Premium missing
+    // or <3 loops, merge Nähe RN schema (different ids, same region).
+    final rnLoops = bundle.loops
+        .where(
+          (r) =>
+              r.id.contains('heidelberg') ||
+              r.id.contains('mannheim') ||
+              r.id.contains('-rn-'),
+        )
+        .length;
+    if (rnLoops < 3) {
+      try {
+        final fb = await rootBundle.loadString(rheinNeckarNaeheFallbackPath);
+        bundle = merge(bundle, parse(fb));
+      } catch (_) {}
     }
     return bundle;
   }

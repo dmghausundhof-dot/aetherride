@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Bike, BracketingParameter } from "@/types";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
 const PARAMS: { id: BracketingParameter; label: string }[] = [
   { id: "fork.rebound", label: "Gabel Zugstufe" },
@@ -31,6 +32,8 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
   const [segment, setSegment] = useState("Heimtrail Abfahrt");
 
   const active = seriesList[0];
+  const paramLabel =
+    PARAMS.find((p) => p.id === active?.parameter)?.label ?? active?.parameter;
 
   const create = () => {
     if (!pro) return;
@@ -45,7 +48,6 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
   };
 
   const addDemoRuns = (seriesId: string, value: number) => {
-    // Zwei Durchgänge pro Config – mit realistischer Streuung
     for (let i = 0; i < 2; i++) {
       addBracketingRun(seriesId, {
         configValue: value,
@@ -61,20 +63,20 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
-      <h3 className="mb-1 font-semibold">Bracketing</h3>
+      <h3 className="mb-1 font-semibold">Zwei Varianten testen</h3>
       <p className="mb-3 text-xs text-text-secondary">
-        Nur ein Parameter pro Serie. Effekt gilt erst bei klarer Differenz und
-        mind. zwei vergleichbaren Rides.
+        Nur eine Einstellung pro Vergleich. Nach ein paar vergleichbaren Fahrten
+        siehst du, welche Variante sich besser anfühlt.
       </p>
       {!pro && (
         <div className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-          Bracketing ist Pro. Unter Profil freischalten.
+          Vergleichen ist Pro. Unter Profil freischalten.
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <label className="col-span-2">
-          Parameter
+          Was vergleichen?
           <select
             value={parameter}
             disabled={!pro}
@@ -109,7 +111,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           />
         </label>
         <label>
-          Schritt
+          Schrittweite
           <input
             type="number"
             value={step}
@@ -118,7 +120,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
           />
         </label>
         <label>
-          Segment
+          Vergleichsstrecke
           <input
             value={segment}
             onChange={(e) => setSegment(e.target.value)}
@@ -130,20 +132,24 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
       <button
         type="button"
         onClick={create}
-        className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white"
+        disabled={!pro}
+        className="mt-3 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white disabled:opacity-50"
       >
-        Serie starten
+        Vergleich starten
       </button>
 
       {active && (
         <div className="mt-4 rounded-xl bg-surface-elevated p-3 text-sm">
           <div className="font-medium">
-            {active.parameter} · {active.rangeFrom}→{active.rangeTo} /{" "}
-            {active.step}
+            {paramLabel} · {active.rangeFrom}→{active.rangeTo}
           </div>
           <div className="text-xs text-text-secondary">
-            {active.referenceSegmentLabel} · {active.runs.length} Runs ·{" "}
-            {active.status}
+            {active.referenceSegmentLabel} · {active.runs.length} Durchgänge ·{" "}
+            {active.status === "open"
+              ? "läuft"
+              : active.status === "evaluated"
+                ? "fertig"
+                : "bereit"}
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {Array.from(
@@ -154,16 +160,33 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
               },
               (_, i) => active.rangeFrom + i * active.step
             ).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => addDemoRuns(active.id, v)}
-                className="rounded-lg bg-muted px-2 py-1 text-xs"
-              >
-                +2 Runs @ {v}
-              </button>
+              <p key={v} className="rounded-lg bg-muted px-2 py-1 text-xs">
+                Variante {v}
+              </p>
             ))}
           </div>
+          {allowDemoContent() && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {Array.from(
+                {
+                  length:
+                    Math.floor(
+                      (active.rangeTo - active.rangeFrom) / active.step
+                    ) + 1,
+                },
+                (_, i) => active.rangeFrom + i * active.step
+              ).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => addDemoRuns(active.id, v)}
+                  className="rounded-lg border border-dashed border-border px-2 py-1 text-xs text-text-secondary"
+                >
+                  Demo: +2 Fahrten @ {v}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => evaluateBracketing(active.id)}
@@ -176,7 +199,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
               {active.resultSummary}
               {active.provenBestValue !== undefined &&
                 ` · Beste: ${active.provenBestValue} ${active.unit}`}
-              {active.noProvenDifference && " · kein belegbarer Unterschied"}
+              {active.noProvenDifference && " · kein klarer Unterschied"}
             </p>
           )}
         </div>

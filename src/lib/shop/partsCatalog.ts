@@ -10,6 +10,10 @@ import {
   type ShopifyStorefrontProduct,
 } from "@/lib/shop/shopifyStorefront";
 import {
+  evaluatePartAgainstGarage,
+  type GarageFitBikeInput,
+} from "@/lib/shop/garageFit";
+import {
   normalizePartsSlot,
   parseSoftFitTags,
   productMatchesSlotFilter,
@@ -20,6 +24,7 @@ import {
   type SoftFitTags,
   type SoftFitVerdict,
 } from "@/lib/shop/softFit";
+import { isPartsProduct } from "@/lib/shop/shopShelf";
 
 export type PartsProduct = {
   id: string;
@@ -110,7 +115,16 @@ export async function loadFeaturedParts(): Promise<PartsCatalogResult> {
     configured: true,
     collectionHandle: result.collectionHandle,
     collectionTitle: result.collectionTitle,
-    products: result.products.map(mapStorefrontProduct),
+    products: result.products
+      .map(mapStorefrontProduct)
+      .filter((p) =>
+        isPartsProduct({
+          tags: p.tags,
+          productType: p.productType,
+          handle: p.handle,
+          title: p.name,
+        })
+      ),
     source: "storefront",
   };
 }
@@ -118,7 +132,11 @@ export async function loadFeaturedParts(): Promise<PartsCatalogResult> {
 export type PartsFilterInput = {
   slot?: string | null;
   fit?: "bike" | "all" | null;
+  /** Legacy: einzelnes Bike (Soft-Fit). Wird zu `bikes` ergänzt, wenn gesetzt. */
   ctx?: SoftFitContext | null;
+  /** Garage-Bikes inkl. Soft-Fit-Kontext — Union, optional auf ein Rad eingeschränkt. */
+  bikes?: GarageFitBikeInput[];
+  selectedBikeId?: string | null;
   /** hide unavailable */
   availableOnly?: boolean;
 };
@@ -127,6 +145,9 @@ export type RankedPartsProduct = {
   product: PartsProduct;
   verdict: SoftFitVerdict;
   chip: string;
+  /** z. B. "passt zu Canyon Grizl · 700c · Gravel" */
+  fitLabel?: string | null;
+  matchedBikeIds?: string[];
 };
 
 export function filterAndRankParts(
@@ -136,31 +157,77 @@ export function filterAndRankParts(
   const slot = normalizePartsSlot(input.slot);
   const fitMode = input.fit === "bike" ? "bike" : "all";
   const ctx = input.ctx ?? null;
+  const bikes = input.bikes ?? [];
+  const useGarage = bikes.length > 0;
 
   const list = products.filter((p) => {
+    if (!isPartsProduct({ tags: p.tags, productType: p.productType, handle: p.handle, title: p.name })) {
+      return false;
+    }
     if (input.availableOnly && !p.availableForSale) return false;
     if (!productMatchesSlotFilter(p.softFit, p.productType, slot)) return false;
+    if (useGarage) {
+      const ev = evaluatePartAgainstGarage({
+        tags: p.tags,
+        title: p.name,
+        productType: p.productType,
+        slotKey: p.slotKey,
+        description: p.description,
+        softFit: p.softFit,
+        bikes,
+        selectedBikeId: input.selectedBikeId,
+        fitMode,
+      });
+      return ev.visible;
+    }
     if (!productMatchesSoftFitFilter(p.softFit, ctx, fitMode)) return false;
     return true;
   });
 
   const ranked = list.map((product) => {
-    const verdict = softFitVerdict(product.softFit, ctx);
     const slotLabel =
       product.softFit.slots[0] ||
       (product.slotKey !== "other" ? product.slotKey : undefined);
+
+    if (useGarage) {
+      const ev = evaluatePartAgainstGarage({
+        tags: product.tags,
+        title: product.name,
+        productType: product.productType,
+        slotKey: product.slotKey,
+        description: product.description,
+        softFit: product.softFit,
+        bikes,
+        selectedBikeId: input.selectedBikeId,
+        fitMode,
+      });
+      return {
+        product,
+        verdict: ev.verdict,
+        chip: softFitChipLabel(ev.verdict, slotLabel),
+        fitLabel: ev.garage.label,
+        matchedBikeIds: ev.garage.matchedBikes.map((b) => b.id),
+      };
+    }
+
+    const verdict = softFitVerdict(product.softFit, ctx);
     return {
       product,
       verdict,
       chip: softFitChipLabel(verdict, slotLabel),
+      fitLabel: null,
+      matchedBikeIds: ctx ? [ctx.bikeId] : [],
     };
   });
 
-  // Prefer "passt" when bike fit active
-  if (fitMode === "bike" && ctx) {
-    const rank = (v: SoftFitVerdict) =>
-      v === "passt" ? 0 : v === "universal" ? 1 : 2;
-    ranked.sort((a, b) => rank(a.verdict) - rank(b.verdict));
+  if (fitMode === "bike" && (useGarage || ctx)) {
+    const rank = (row: RankedPartsProduct) => {
+      if (row.fitLabel) return 0;
+      if (row.verdict === "passt") return 1;
+      if (row.verdict === "universal") return 2;
+      return 3;
+    };
+    ranked.sort((a, b) => rank(a) - rank(b));
   }
 
   return ranked;
@@ -177,6 +244,7 @@ export function shopPartsHref(opts?: {
   if (opts?.bike) params.set("bike", opts.bike);
   if (opts?.fit) params.set("fit", opts.fit);
   if (opts?.focus) params.set("focus", opts.focus);
+  params.set("door", "parts");
   const q = params.toString();
-  return q ? `/shop/parts?${q}` : "/shop/parts";
+  return `/shop?${q}`;
 }

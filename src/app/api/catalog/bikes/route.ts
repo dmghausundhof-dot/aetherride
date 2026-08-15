@@ -80,6 +80,7 @@ function serializeManufacturers(
           isEbike: b.isEbike,
           weightKgApprox: b.weightKgApprox ?? null,
           oemComponents: b.oemComponents ?? {},
+          geometryBySize: b.geometryBySize ?? [],
           sourceUrl: b.sourceUrl,
         })),
     }))
@@ -156,6 +157,7 @@ export async function GET(req: Request) {
           isEbike: cat?.isEbike ?? false,
           weightKgApprox: cat?.weightKgApprox ?? null,
           oemComponents: oem,
+          geometryBySize: cat?.geometryBySize ?? [],
           sourceUrl: cat?.sourceUrl ?? "",
         });
       }

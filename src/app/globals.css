@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* AetherRide Design System - Dark Mode Default */
+  /* AetherRide Design System - Dark Mode Default
+     Orange = Rausfahren only. Mint = active chrome. Steel hairline. */
+  /* Keep in sync with src/lib/hof/tokens.ts and Flutter AppColors. */
   --background: #0A1210;
-  --foreground: #F0F5F2;
+  --foreground: #E8EEEA;
   --surface: #14201C;
   --surface-elevated: #1A2A24;
   --primary: #1A5C45;
   --primary-dark: #0D3B2E;
   --accent: #FF6B35;
   --accent-hover: #FF8555;
-  --text-secondary: #A8B5AE;
-  --border: #243830;
+  --chrome: #81C995;
+  --text-secondary: #9AABA2;
+  --border: #2A3D34;
   --success: #22C55E;
   --warning: #EAB308;
   --error: #EF4444;
@@ -27,6 +30,7 @@
   --color-primary-dark: var(--primary-dark);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-chrome: var(--chrome);
   --color-text-secondary: var(--text-secondary);
   --color-border: var(--border);
   --color-success: var(--success);
@@ -43,6 +47,51 @@
 
 html {
   color-scheme: dark;
+}
+
+/* Notch / punch-hole / home indicator.
+   Chrome paints under the cutout (viewport-fit=cover). Content insets.
+   On desktop env() is 0 — no fake hole. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --hof-header-bar: 3.5rem;
+  --hof-tab-bar: 3.5rem;
+  --hof-header-h: calc(var(--hof-header-bar) + var(--safe-top));
+  --hof-tab-h: calc(var(--hof-tab-bar) + var(--safe-bottom));
+}
+
+@media (min-width: 768px) {
+  :root {
+    --hof-tab-h: 0px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --hof-header-bar: 4rem;
+  }
+}
+
+.hof-safe-header {
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.hof-safe-tab {
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.hof-safe-page {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 body {
@@ -77,6 +126,7 @@ body {
   --primary-dark: #0d3b2e;
   --accent: #b33f14;
   --accent-hover: #8f3210;
+  --chrome: #14503a;
   --text-secondary: #3c4c46;
   --border: #c9d6d0;
   --success: #15803d;

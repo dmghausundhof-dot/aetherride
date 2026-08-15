@@ -15,13 +15,17 @@ import '../../core/theme/app_theme.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_tiles.dart';
 import '../../data/routing/map_style_url.dart';
+import '../../data/routing/bike_overlay.dart';
 
-/// Fallback catalog when API has no list endpoint.
-const _kFallbackRegions = [
-  (id: 'schwarzwald-nord', name: 'Schwarzwald Nord'),
+import '../../data/routing/overlay_regions.dart';
+
+/// Fallback-Regionen (Komoot-ähnlich: DACH breit, nicht nur Schwarzwald).
+/// Download nutzt API-Manifest; fehlt das Pack, greift Bundle-Fallback.
+final _kFallbackRegions = [
+  for (final r in kOverlayPackCatalog) (id: r.id, name: r.name),
 ];
 
-/// Offline-Karten: PMTiles-URL + Region-Packs (Manifest + SHA-256).
+/// Offline-Karten: Region-Packs zuerst (wie Komoot/AllTrails), Style optional.
 class OfflineMapsSheet extends StatefulWidget {
   const OfflineMapsSheet({super.key});
 
@@ -60,7 +64,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         if (mounted) {
           setState(
             () => _catalogNote =
-                'Katalog HTTP ${res.statusCode} — Fallback Schwarzwald',
+                'Katalog online nicht erreichbar — DACH-Regionen lokal',
           );
         }
         return;
@@ -77,9 +81,14 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       if (!mounted) return;
       if (packs.isEmpty) {
         setState(
-          () => _catalogNote = 'Katalog leer — Fallback Schwarzwald',
+          () => _catalogNote = 'Keine Remote-Packs — DACH-Fallback aktiv',
         );
         return;
+      }
+      // Merge: API zuerst, dann Fallback-IDs die fehlen.
+      final seen = {for (final p in packs) p.id};
+      for (final f in _kFallbackRegions) {
+        if (!seen.contains(f.id)) packs.add(f);
       }
       setState(() {
         _regions = packs;
@@ -89,7 +98,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       if (mounted) {
         setState(
           () => _catalogNote =
-              'Katalog nicht erreichbar — Fallback Schwarzwald',
+              'Offline — DACH-Regionen aus App-Katalog',
         );
       }
     }
@@ -302,6 +311,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         activatedPackPath: regionDir.path,
         engineHint: hint,
       );
+      await downloadBikeOverlayIntoPack(regionDir, region.id);
       OfflineTilesStore.instance.clearCache();
       final status = await OfflineTilesStore.instance.valhallaLinkStatus();
       if (!mounted) return;
@@ -411,16 +421,15 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     Navigator.of(context).pop(true);
   }
 
+  bool _isActive(({String id, String name}) r) {
+    if (_regionPref == r.name) return true;
+    return _activatedPath?.contains('/${r.id}') ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    final activeStyleHint = _urlCtrl.text.trim().isNotEmpty &&
-            isStyleJsonUrl(_urlCtrl.text)
-        ? _urlCtrl.text.trim()
-        : (AppConfig.pmtilesUrl.isNotEmpty &&
-                isStyleJsonUrl(AppConfig.pmtilesUrl)
-            ? AppConfig.pmtilesUrl
-            : AppConfig.mapStyleUrl);
+    final hasPack = _activatedPath != null;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottom),
@@ -435,87 +444,92 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Offline-Karten & Routing',
+                    'Offline-Karten',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                   ),
-                  Text(
-                    'API: ${AppConfig.apiBaseUrl}',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 11),
-                  ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Emulator: Host-API unter 10.0.2.2 (Default). '
-                    'Smoke: bash scripts/smoke-offline-pack.sh --push',
-                    style: TextStyle(color: AppColors.muted, fontSize: 11),
+                    'Region laden — danach Touren & Navigation ohne Netz '
+                    '(wie bei Komoot / AllTrails).',
+                    style: TextStyle(color: AppColors.muted, fontSize: 13),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Basemap (Kartenstil)',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Nur MapLibre-Style-JSON. Roh-.pmtiles-Dateien werden '
-                    'abgelehnt — Style muss pmtiles://-Sources referenzieren.',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Aktiv (Resolver): $activeStyleHint',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 11),
-                  ),
-                  if (AppConfig.usingFreeBasemap) ...[
+                  if (kDebugMode) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'Aktuell Standard-Kartenstil (OpenFreeMap). '
-                      'Optional Stadia oder eigener Style-JSON.',
-                      style: TextStyle(
-                        color: AppColors.accent.withValues(alpha: 0.95),
-                        fontSize: 12,
+                      'API ${AppConfig.apiBaseUrl}',
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 11,
                       ),
                     ),
-                    if (kDebugMode)
-                      Text(
-                        'Debug: scripts/mobile-with-env.sh + .env.local',
-                        style: TextStyle(
-                          color: AppColors.muted.withValues(alpha: 0.95),
-                          fontSize: 11,
-                        ),
-                      ),
                   ],
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _urlCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Style-JSON-URL',
-                      hintText: 'https://…/styles/outdoors.json',
-                      border: OutlineInputBorder(),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceDark,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          hasPack
+                              ? Icons.check_circle_outline
+                              : Icons.cloud_download_outlined,
+                          color: hasPack
+                              ? AppColors.forestOnDark
+                              : AppColors.muted,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hasPack
+                                    ? (_regionPref ?? 'Region aktiv')
+                                    : 'Keine Region aktiv',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                hasPack
+                                    ? 'Offline-Routing für diese Region bereit.'
+                                    : 'Wähle unten eine DACH-Region zum Laden.',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                              if (kDebugMode && _valhallaStatus != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Engine: $_valhallaStatus'
+                                  '${_engineHint != null ? ' · $_engineHint' : ''}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                    ),
-                    onPressed: _busy ? null : _saveStyleUrl,
-                    child: const Text('Style speichern'),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
                   Text(
-                    'Routing-Pack (Offline-Navigation)',
+                    'Regionen',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Lädt offline_graph.json (+ optional Valhalla-Daten). '
-                    'Volle Valhalla-Qualität braucht gelinktes libvalhalla.',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12),
                   ),
                   if (_catalogNote != null) ...[
                     const SizedBox(height: 6),
@@ -527,56 +541,113 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                       ),
                     ),
                   ],
-                  if (_valhallaStatus != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'Engine: $_valhallaStatus',
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                  if (_engineHint != null)
-                    Text(
-                      'Pack-Hinweis: $_engineHint',
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _regionPref == null
-                        ? 'Noch keine Region aktiv — Bundle-Graph als Fallback.'
-                        : 'Aktiv: $_regionPref'
-                            '${_activatedPath != null ? '\n$_activatedPath' : ''}',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 13),
-                  ),
                   if (_progress != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _progress!,
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                    const SizedBox(height: 10),
+                    Text(_progress!, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(height: 6),
                     const LinearProgressIndicator(),
                   ],
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   for (final r in _regions)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: OutlinedButton.icon(
-                        onPressed:
-                            _busy ? null : () => _downloadAndActivate(r),
-                        icon: const Icon(Icons.download_outlined),
-                        label: Text('${r.name} laden & aktivieren'),
+                      child: Material(
+                        color: AppColors.surfaceDark,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _busy ? null : () => _downloadAndActivate(r),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _isActive(r)
+                                      ? Icons.check_circle
+                                      : Icons.download_outlined,
+                                  color: _isActive(r)
+                                      ? AppColors.forestOnDark
+                                      : AppColors.muted,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        r.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        _isActive(r)
+                                            ? 'Aktiv — tippen zum Aktualisieren'
+                                            : 'Tippen zum Laden',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.muted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  if (_activatedPath != null)
+                  if (hasPack)
                     TextButton(
                       onPressed: _busy ? null : _clearActivatedPack,
-                      child: const Text('Region-Pack zurücksetzen'),
+                      child: const Text('Region entfernen'),
                     ),
+                  const SizedBox(height: 8),
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: Colors.transparent,
+                    ),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      childrenPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Kartenstil (optional)',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: const Text(
+                        'Nur nötig für eigenen MapLibre-Style',
+                        style: TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      children: [
+                        TextField(
+                          controller: _urlCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Style-JSON-URL',
+                            hintText: 'https://…/styles/outdoors.json',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.forestOnDark,
+                          ),
+                          onPressed: _busy ? null : _saveStyleUrl,
+                          child: const Text('Style speichern'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

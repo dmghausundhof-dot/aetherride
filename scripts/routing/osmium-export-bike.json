@@ -1,0 +1,24 @@
+{
+  "attributes": {
+    "type": true,
+    "id": true
+  },
+  "linear_tags": [
+    "highway",
+    "surface",
+    "tracktype",
+    "bicycle",
+    "mtb",
+    "mtb:scale",
+    "mtb:scale:imba",
+    "cycleway",
+    "cycleway:left",
+    "cycleway:right",
+    "cycleway:both",
+    "name",
+    "name:de"
+  ],
+  "area_tags": false,
+  "exclude_tags": [],
+  "include_ids": true
+}

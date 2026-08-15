@@ -1,5 +1,5 @@
 {
-  "_comment": "Mirror of src/lib/routing/engine.ts valhallaCosting — keep in sync with mobile/packages/routing_core/native/src/profiles.rs",
+  "_comment": "Mirror of src/lib/routing/profiles.ts buildValhallaCosting — keep in sync with mobile/packages/routing_core/native/src/profiles.rs",
   "profiles": {
     "hiking": {
       "costing": "pedestrian",
@@ -68,6 +68,17 @@
           "use_roads": 0.25,
           "use_hills": 0.75,
           "avoid_bad_surfaces": 0.15
+        }
+      }
+    },
+    "downhill": {
+      "costing": "bicycle",
+      "costing_options": {
+        "bicycle": {
+          "bicycle_type": "mountain",
+          "use_roads": 0.05,
+          "use_hills": 1.0,
+          "avoid_bad_surfaces": 0.0
         }
       }
     }

@@ -28,11 +28,14 @@ export async function GET() {
     stripe: set("STRIPE_SECRET_KEY") && set("STRIPE_WEBHOOK_SECRET"),
     stripePublishable: set("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"),
     xai: set("XAI_API_KEY"),
+    communityModeration: set("COMMUNITY_MODERATION_SECRET"),
     routing: {
       engine,
       liveConfigured: routingLive,
       publicOsrm: isUsingPublicOsrm(),
       graphhopperKey: set("GRAPHHOPPER_API_KEY"),
+      openrouteserviceKey:
+        set("OPENROUTESERVICE_API_KEY") || set("ORS_API_KEY"),
       valhallaUrl: set("VALHALLA_URL"),
       osrmUrl: set("OSRM_URL"),
       routingLiveFlag: set("NEXT_PUBLIC_ROUTING_LIVE"),
@@ -54,10 +57,14 @@ export async function GET() {
     },
     partners: {
       outdooractive: set("OUTDOORACTIVE_API_KEY"),
+      googleMaps: set("GOOGLE_MAPS_API_KEY") || set("GOOGLE_PLACES_API_KEY"),
       mapillary: set("MAPILLARY_ACCESS_TOKEN"),
       strava: set("STRAVA_CLIENT_ID") && set("STRAVA_CLIENT_SECRET"),
       stadia: set("STADIA_API_KEY") || set("NEXT_PUBLIC_STADIA_API_KEY"),
       shopifyStorefront: set("SHOPIFY_STOREFRONT_ACCESS_TOKEN"),
+      shopifyAdmin: set("SHOPIFY_ADMIN_ACCESS_TOKEN") ||
+        set("SHOPIFY_ADMIN_API_TOKEN") ||
+        set("SHOPIFY_ADMIN_TOKEN"),
       shopifyOnlineStoreLocked:
         (process.env.SHOPIFY_ONLINE_STORE_LOCKED || "true")
           .trim()
@@ -79,7 +86,7 @@ export async function GET() {
     hints: [
       !checks.supabasePublic && "NEXT_PUBLIC_SUPABASE_* setzen",
       !checks.routing.liveConfigured &&
-        "GRAPHHOPPER_API_KEY oder VALHALLA_URL/OSRM_URL setzen",
+        "OPENROUTESERVICE_API_KEY, GRAPHHOPPER_API_KEY oder VALHALLA_URL/OSRM_URL setzen",
       checks.routing.publicOsrm &&
         "Prod: ALLOW_PUBLIC_OSRM=false + eigenen Engine-Key",
       !checks.stores.hasLinks && "Store-URLs optional bis Release",
@@ -89,6 +96,8 @@ export async function GET() {
       !checks.stripe && "Billing: Stripe Keys + Webhook",
       !checks.partners.shopifyStorefront &&
         "Shop Parts: SHOPIFY_STOREFRONT_ACCESS_TOKEN (featured-parts)",
+      !checks.partners.shopifyAdmin &&
+        "Garage→Shopify: SHOPIFY_ADMIN_ACCESS_TOKEN (sonst: Shop nicht verbunden)",
     ].filter(Boolean),
   });
 }

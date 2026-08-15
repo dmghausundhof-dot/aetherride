@@ -1,0 +1,104 @@
+/**
+ * RideProfile SSOT — Akzeptanzkriterien.
+ * Ausführen: npx tsx src/lib/routing/profiles.test.ts
+ */
+import assert from "node:assert/strict";
+import {
+  RIDE_PROFILES,
+  buildValhallaCosting,
+  difficultiesFromTrailLabel,
+  getProfile,
+  isLabeledTrailSuitable,
+  isTrailSuitable,
+  listBikeProfiles,
+  listProfiles,
+  overlayScaleLabels,
+  overlayScaleMatchValues,
+  prefersUnratedTrails,
+  trailFilterExpression,
+  type RideProfileId,
+} from "./profiles";
+
+const dh = getProfile("downhill");
+assert.equal(dh.id, "downhill");
+assert.equal(dh.label, "Downhill");
+assert.equal(dh.shortLabel, "DH");
+assert.equal(dh.category, "mtb");
+assert.equal(dh.costing, "bicycle");
+assert.deepEqual(dh.preferredDifficulties, ["s1", "s2", "s3plus"]);
+assert.equal(dh.maxMtbScale, 6);
+assert.equal(dh.bicycleOptions?.use_hills, 1.0);
+assert.ok((dh.bicycleOptions?.use_roads ?? 1) <= 0.05);
+
+assert.equal(isTrailSuitable("downhill", { mtb_scale: 2 }), true);
+assert.equal(isTrailSuitable("downhill", { mtb_scale: "S2" }), true);
+assert.equal(isTrailSuitable("downhill", { mtb_scale: 0 }), false);
+assert.equal(isTrailSuitable("road", { mtb_scale: 2 }), false);
+assert.equal(isTrailSuitable("mtb_enduro", { mtb_scale: 3 }), true);
+assert.equal(isTrailSuitable("mtb_allmountain", { mtb_scale: 0 }), true);
+assert.equal(isTrailSuitable("gravel", { mtb_scale: 3 }), false);
+
+const costing = buildValhallaCosting("downhill");
+assert.equal(costing.costing, "bicycle");
+assert.equal(costing.costing_options.bicycle?.bicycle_type, "mountain");
+assert.equal(costing.costing_options.bicycle?.use_hills, 1.0);
+assert.equal(costing.costing_options.bicycle?.use_roads, 0.05);
+
+const hikeCosting = buildValhallaCosting("hiking");
+assert.equal(hikeCosting.costing, "pedestrian");
+assert.equal(hikeCosting.costing_options.pedestrian?.walking_speed, 4.5);
+
+const ids: RideProfileId[] = [
+  "mtb_allmountain",
+  "mtb_enduro",
+  "gravel",
+  "road",
+  "ebike",
+  "emtb",
+  "downhill",
+  "hiking",
+];
+assert.equal(listProfiles().length, 8);
+assert.deepEqual(
+  listProfiles()
+    .map((p) => p.id)
+    .sort(),
+  [...ids].sort()
+);
+assert.equal(listBikeProfiles().length, 7);
+assert.ok(!listBikeProfiles().some((p) => p.id === "hiking"));
+for (const id of ids) {
+  const p = RIDE_PROFILES[id];
+  assert.equal(p.id, id);
+  assert.ok(p.label.length > 0);
+  assert.ok(p.routeColor.startsWith("#"));
+  const c = buildValhallaCosting(id);
+  assert.ok(c.costing === "bicycle" || c.costing === "pedestrian");
+}
+
+assert.deepEqual(overlayScaleLabels("downhill"), ["S1", "S2", "S3"]);
+assert.equal(prefersUnratedTrails("downhill"), false);
+assert.equal(prefersUnratedTrails("mtb_allmountain"), true);
+assert.deepEqual(overlayScaleLabels("road"), []);
+const dhScaleValues = overlayScaleMatchValues("downhill");
+assert.ok(dhScaleValues.includes("S1"));
+assert.ok(dhScaleValues.includes("S3"));
+assert.ok(dhScaleValues.includes("S3+"));
+assert.ok(dhScaleValues.includes("3"));
+assert.ok(!dhScaleValues.includes("S0"));
+assert.ok(!dhScaleValues.includes("0"));
+
+assert.deepEqual(difficultiesFromTrailLabel("S1–S2"), ["s1", "s2"]);
+assert.equal(isLabeledTrailSuitable("downhill", "S2"), true);
+assert.equal(isLabeledTrailSuitable("downhill", "S0"), false);
+assert.equal(isLabeledTrailSuitable("road", "S1"), false);
+
+const dhFilter = trailFilterExpression("downhill");
+assert.ok(Array.isArray(dhFilter));
+assert.ok(dhFilter.length > 0);
+
+assert.equal(getProfile("downhill").edgeFactor("path", 2, "dirt"), 0.7);
+assert.equal(getProfile("downhill").edgeFactor("motorway", 2, "asphalt"), null);
+assert.equal(getProfile("road").acceptsHighway("path"), false);
+
+console.log("profiles.test.ts OK");

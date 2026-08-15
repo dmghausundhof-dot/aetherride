@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:aetherride_mobile/data/routing/naehe_seeds.dart';
 import 'package:aetherride_mobile/domain/routing/route_shape.dart';
+import 'package:aetherride_mobile/domain/routing/tour_coverage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _readFirstExisting(List<String> candidates, {required String label}) {
@@ -96,6 +98,67 @@ void main() {
     }
   });
 
+  test('DACH covers broad regions plus MTB trail loops', () {
+    final dach = NaeheSeedsBundle.parse(dachRaw);
+    final ids = dach.loops.map((e) => e.id).toSet();
+    expect(dach.loops.length, greaterThanOrEqualTo(120));
+    expect(
+      ids,
+      containsAll([
+        // Bundesländer / Kantone Ergänzungen
+        'seed-loop-freiburg-dreisam-60',
+        'seed-loop-hannover-eilenriede-60',
+        'seed-loop-mainz-rhein-60',
+        'seed-loop-erfurt-gera-60',
+        'seed-loop-linz-donau-60',
+        'seed-loop-geneva-lac-60',
+        'seed-loop-lucerne-see-60',
+        // Erweiterte Lücken (Nord/Ost/West + AT/CH)
+        'seed-loop-bremen-weser-60',
+        'seed-loop-kiel-foerde-60',
+        'seed-loop-potsdam-havel-60',
+        'seed-loop-karlsruhe-hardtwald-60',
+        'seed-loop-muenster-promenade-60',
+        'seed-loop-klagenfurt-woerthersee-60',
+        'seed-loop-lausanne-lac-60',
+        'seed-loop-st-gallen-saentisblick-60',
+        // MTB / Trail Nähe
+        'seed-loop-munich-perlach-mtb-60',
+        'seed-loop-vienna-wienerwald-mtb-60',
+        'seed-loop-zurich-uetliberg-mtb-60',
+        'seed-loop-freiburg-schwarzwald-mtb-60',
+        'seed-loop-innsbruck-hungerburg-60',
+        'seed-loop-karlsruhe-hardt-mtb-60',
+        'seed-loop-muenster-hiltrup-mtb-60',
+        // BW densify 2026-08
+        'seed-loop-ulm-donau-60',
+        'seed-loop-tuebingen-neckar-60',
+        'seed-loop-heilbronn-neckar-60',
+        'seed-loop-baiersbronn-mtb-60',
+        'seed-loop-titisee-feldberg-mtb-60',
+        'seed-loop-loerrach-dinkelberg-60',
+        // Weitere DACH
+        'seed-loop-wuerzburg-main-60',
+        'seed-loop-lugano-see-60',
+        'seed-loop-villach-drau-60',
+        'seed-loop-innsbruck-nordkette-mtb-60',
+      ]),
+    );
+    final mtb = dach.loops
+        .where((l) => l.sportTags.any((t) => t.toLowerCase() == 'mtb'))
+        .toList();
+    expect(mtb.length, greaterThanOrEqualTo(17));
+    for (final l in mtb) {
+      // Trail chip (soft-match gravel) — primary surface should be trail/root.
+      expect(
+        l.surfaceTag,
+        contains('trail'),
+        reason: '${l.id} surfaceTag=${l.surfaceTag}',
+      );
+      expect(l.hasBakedGeometry, isTrue, reason: l.id);
+    }
+  });
+
   test('merge berlin+dach dedupes by id and keeps Tempelhof enrich', () {
     final berlin = NaeheSeedsBundle.parse(berlinRaw);
     final dach = NaeheSeedsBundle.parse(dachRaw);
@@ -182,6 +245,73 @@ void main() {
     expect(routeShapeOf(track), RouteShape.loop);
   });
 
+  test('organic loop is closed and not a perfect circle', () {
+    final track = organicLoopLngLat(
+      lat: 52.473,
+      lng: 13.405,
+      distanceKm: 12,
+      seedKey: 'seed-loop-tempelhofer-60',
+    );
+    expect(track.length, greaterThan(8));
+    expect(routeShapeOf(track), RouteShape.loop);
+    // Radii from center vary — not a synthetic circle.
+    final midLat = 52.473;
+    final midLng = 13.405;
+    final radii = <double>[];
+    for (final p in track.take(track.length - 1)) {
+      final dLat = (p[1] - midLat) * 111.0;
+      final dLng = (p[0] - midLng) * 111.0 * 0.6;
+      radii.add(math.sqrt(dLat * dLat + dLng * dLng));
+    }
+    final minR = radii.reduce(math.min);
+    final maxR = radii.reduce(math.max);
+    expect(maxR / minR, greaterThan(1.08));
+  });
+
+  test('baked geometry preferred over synthetic for DACH/Berlin/France loops', () {
+    String? franceRaw;
+    for (final p in [
+      'assets/seeds/p0-france-60min-naehe-v1.json',
+      'mobile/assets/seeds/p0-france-60min-naehe-v1.json',
+      '../assets/seeds/p0-france-60min-naehe-v1.json',
+    ]) {
+      final f = File(p);
+      if (f.existsSync()) {
+        franceRaw = f.readAsStringSync();
+        break;
+      }
+    }
+    expect(franceRaw, isNotNull, reason: 'France seed asset required');
+    final berlin = NaeheSeedsBundle.parse(berlinRaw);
+    final dach = NaeheSeedsBundle.parse(dachRaw);
+    final france = NaeheSeedsBundle.parse(franceRaw!);
+    for (final bundle in [berlin, dach, france]) {
+      for (final loop in bundle.loops) {
+        expect(
+          loop.hasBakedGeometry,
+          isTrue,
+          reason: '${loop.id} should ship street geometry',
+        );
+        expect(loop.trackLngLat!.length, greaterThanOrEqualTo(4));
+        expect(loop.geometryEngine, contains('osrm'));
+        expect(routeShapeOf(loop.trackLngLat), RouteShape.loop);
+      }
+    }
+  });
+
+  test('parseSeedGeometryLngLat accepts GeoJSON lng/lat pairs', () {
+    final g = parseSeedGeometryLngLat([
+      [13.4, 52.47],
+      [13.41, 52.48],
+      [13.39, 52.49],
+      [13.38, 52.47],
+      [13.4, 52.47],
+    ]);
+    expect(g, isNotNull);
+    expect(g!.length, greaterThanOrEqualTo(4));
+    expect(g.first[0], closeTo(13.4, 1e-6));
+  });
+
   test('seed toActiveRoute has coordinates', () {
     final bundle = NaeheSeedsBundle.parse(berlinRaw);
     final seed = bundle.byId('seed-loop-tempelhofer-60')!;
@@ -197,5 +327,80 @@ void main() {
     expect(spree, isNotNull);
     expect(spree!.isLoop, isFalse);
     expect(spree.trackLngLat, isNull);
+  });
+
+  test('heroAssetForSeedId keeps explicit RN/Berlin maps', () {
+    expect(
+      heroAssetForSeedId('seed-loop-tempelhofer-60'),
+      'assets/seeds/heroes/berlin-tempelhofer.jpg',
+    );
+    expect(
+      heroAssetForSeedId('seed-loop-heidelberg-neckar-60'),
+      'assets/seeds/heroes/rn-heidelberg.jpg',
+    );
+  });
+
+  test('heroAssetForSeedId keywords do not match see inside seed', () {
+    expect(heroAssetForSeedId(''), isNull);
+    expect(
+      heroAssetForSeedId('seed-loop-innsbruck-alpen-60'),
+      'assets/seeds/heroes/wm-innsbruck.jpg',
+    );
+    expect(
+      heroAssetForSeedId('seed-loop-bodensee-hafen-60'),
+      'assets/seeds/heroes/wm-bodensee.jpg',
+    );
+    expect(
+      heroAssetForSeedId('seed-loop-somewhere-mtb-trail-60'),
+      'assets/seeds/heroes/forest.jpg',
+    );
+    final generic = heroAssetForSeedId('seed-loop-somewhere-60');
+    expect(generic, isNotNull);
+    expect(kTourHeroAssetPool, contains(generic));
+    // Substring "see" in "seed" must not force every tour onto the lake hero.
+    final hashed = [
+      for (var i = 0; i < 24; i++) heroAssetForSeedId('seed-loop-$i'),
+    ];
+    expect(hashed.toSet().length, greaterThan(1));
+    expect(
+      hashed.every((e) => e == 'assets/seeds/heroes/lake.jpg'),
+      isFalse,
+    );
+  });
+
+  test('GPS Wien/München/Zürich/Hamburg do not rank Heidelberg first', () {
+    final berlin = NaeheSeedsBundle.parse(berlinRaw);
+    final dach = NaeheSeedsBundle.parse(dachRaw);
+    final merged = NaeheSeedsBundle.merge(berlin, dach);
+    double distKm(double lat, double lng, NaeheSeedRoute r) {
+      final dLat = (r.centerLat - lat) * 111.0;
+      final dLng = (r.centerLng - lng) * 111.0 * 0.7;
+      return math.sqrt(dLat * dLat + dLng * dLng);
+    }
+
+    bool looksHd(NaeheSeedRoute r) {
+      final t = '${r.id} ${r.title}'.toLowerCase();
+      return t.contains('heidelberg') || t.contains('neckarwiese');
+    }
+
+    for (final city in [
+      (name: 'Wien', lat: 48.208, lng: 16.373, needles: ['wien', 'vienna']),
+      (name: 'München', lat: 48.137, lng: 11.575, needles: ['munich', 'muenchen']),
+      (name: 'Zürich', lat: 47.376, lng: 8.541, needles: ['zurich', 'zuerich']),
+      (name: 'Hamburg', lat: 53.551, lng: 9.993, needles: ['hamburg']),
+    ]) {
+      final picked = TourCoverage.pickNearbyThenFill(
+        items: merged.loops,
+        distanceKm: (r) => distKm(city.lat, city.lng, r),
+      );
+      expect(picked, isNotEmpty, reason: city.name);
+      expect(looksHd(picked.first), isFalse, reason: '${city.name} first=${picked.first.id}');
+      final id = picked.first.id.toLowerCase();
+      expect(
+        city.needles.any(id.contains),
+        isTrue,
+        reason: '${city.name} first=${picked.first.id}',
+      );
+    }
   });
 }

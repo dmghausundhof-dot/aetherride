@@ -5,18 +5,25 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 
-import '../../core/shop_web.dart';
+import '../../core/shop_launcher.dart';
+import '../../core/shopify_storefront.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../data/garage/bike_photo_sync.dart';
 import '../../data/import/gpx_import.dart';
 import '../../data/local/app_database.dart';
+import '../../data/sensor/bike_ble_store.dart';
+import '../../data/shop/garage_bike_shopify.dart';
 import '../../domain/bike.dart';
+import '../../domain/bike_assist.dart';
 import '../../domain/catalog_bike.dart';
 import '../../domain/compatibility/engine.dart';
 import '../../domain/compatibility/rules.dart';
 import '../../domain/component.dart';
+import '../../domain/garage/die_box.dart';
+import '../../domain/garage/werkstatt_setup.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/setup.dart';
@@ -25,10 +32,34 @@ import '../../domain/setup/sag_guide.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../billing/upgrade_screen.dart';
-import '../shared/bike_hero_banner.dart';
 import '../shared/empty_state.dart';
-import 'bike_schema.dart';
+import '../shell/shell_tabs.dart';
+import 'bike_overview.dart';
+import 'ble_pair_sheet.dart';
+import 'die_box_surface.dart';
 import 'setup_sheet.dart';
+import 'werkstatt_csc_bar_button.dart';
+
+Future<void> _openShopForBike(
+  WidgetRef ref,
+  Bike bike, {
+  String? slot,
+}) async {
+  ref.read(shopPendingBikeIdProvider.notifier).state = bike.id;
+  var comps = const <BikeComponent>[];
+  try {
+    comps = await ref.read(componentRepositoryProvider).listInstalled(bike.id);
+  } catch (_) {}
+  final uri = ShopifyStorefront.partsFitUri(
+    bike: bike,
+    components: comps,
+    slot: slot,
+  );
+  final ok = await openShopifyStorefront(uri);
+  if (!ok) {
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.shop;
+  }
+}
 
 class GarageScreen extends ConsumerStatefulWidget {
   const GarageScreen({super.key});
@@ -50,27 +81,62 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
       });
     }
 
-    final bikes = ref.watch(bikesProvider);
+    final pendingBikeId = ref.watch(garagePendingBikeIdProvider);
+    if (pendingBikeId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final id = ref.read(garagePendingBikeIdProvider);
+        if (id == null) return;
+        ref.read(garagePendingBikeIdProvider.notifier).state = null;
+        final list = ref.read(bikesProvider).valueOrNull;
+        if (list == null) return;
+        Bike? match;
+        for (final b in list) {
+          if (b.id == id) {
+            match = b;
+            break;
+          }
+        }
+        if (match != null) {
+          unawaited(_openDetail(context, ref, match));
+        }
+      });
+    }
 
+    final bikes = ref.watch(bikesProvider);
+    final garageList = bikes.valueOrNull ?? const <Bike>[];
+    final focused = garageList.isEmpty
+        ? null
+        : garageList.firstWhere((b) => b.isActive, orElse: () => garageList.first);
+
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Garage')),
+      appBar: AppBar(
+        title: Text(l10n.navWorkshop),
+        actionsPadding: const EdgeInsets.only(right: AppSpacing.m),
+        actions: [
+          if (focused != null)
+            WerkstattCscBarButton(
+              bikeId: focused.id,
+              isEbike: focused.isEbike,
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddBike(context, ref),
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.forestOnDark,
+        foregroundColor: AppColors.hofGround,
         icon: const Icon(Icons.add),
-        label: const Text('Bike'),
+        label: Text(l10n.garageAddBike),
       ),
       body: bikes.when(
         data: (list) {
           if (list.isEmpty) {
-            // G-SETUP-01/02 — Empty always shows primary CTA → Basis-Wizard
             return Center(
               child: EmptyStateIllustration(
-                title: 'Noch kein Bike in der Garage',
-                message:
-                    'Leg dein Rad an — danach erscheinen Schema und Setup '
-                    'direkt in der Garage (Wartung & Teile starten hier).',
-                actionLabel: 'Bike anlegen',
+                title: l10n.garageEmptyTitle,
+                message: l10n.garageEmptyMessage,
+                actionLabel: l10n.garageAddBike,
                 actionIcon: Icons.pedal_bike,
                 icon: Icons.pedal_bike_outlined,
                 onAction: () => _openAddBike(context, ref),
@@ -82,7 +148,6 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
               if (a.isActive == b.isActive) return 0;
               return a.isActive ? -1 : 1;
             });
-          final totalKm = sorted.fold<double>(0, (s, b) => s + b.odometerKm);
           return ListView(
             // Bottom 88px: Platz für den FAB, keine Rhythmus-Stufe.
             padding: const EdgeInsets.fromLTRB(
@@ -92,28 +157,17 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
               88,
             ),
             children: [
-              Row(
-                children: [
-                  _StatChip(
-                    value: '${sorted.length}',
-                    label: sorted.length == 1 ? 'BIKE' : 'BIKES',
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  _StatChip(value: totalKm.toStringAsFixed(0), label: 'KM GESAMT'),
-                ],
-              ),
               if (sorted.length > 1) ...[
-                const SizedBox(height: AppSpacing.l),
                 Text(
-                  'Schnellwechsel',
+                  l10n.garageQuickSwitch,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: AppColors.muted,
                       ),
                 ),
                 const SizedBox(height: AppSpacing.s),
                 _BikeSwitcher(bikes: sorted),
+                const SizedBox(height: AppSpacing.l),
               ],
-              const SizedBox(height: AppSpacing.l),
               Builder(
                 builder: (context) {
                   final active = sorted.firstWhere(
@@ -122,102 +176,84 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
                   );
                   final compsAsync =
                       ref.watch(bikeComponentsProvider(active.id));
-                  final installed = <ComponentSlot>{
-                    for (final c in compsAsync.valueOrNull ?? const <BikeComponent>[])
-                      c.slot,
-                  };
+                  final comps =
+                      compsAsync.valueOrNull ?? const <BikeComponent>[];
+                  final due = listDueMaintenance(
+                    bike: active,
+                    components: comps,
+                  );
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.l),
-                    child: GestureDetector(
-                      onTap: () => _openDetail(context, ref, active),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Schema · ${active.name}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.muted,
-                                ),
-                          ),
-                          const SizedBox(height: AppSpacing.s),
-                          BikeSchema(
-                            bike: active,
-                            installedSlots: installed,
-                            compact: true,
-                            onSelectSlot: (_) =>
-                                _openDetail(context, ref, active),
-                          ),
-                        ],
+                    child: DieBoxSurface(
+                      bike: active,
+                      components: comps,
+                      due: due,
+                      compact: true,
+                      onOpenDetail: () => _openDetail(context, ref, active),
+                      onInstallSlot: (slot) => _installOnBike(
+                        context,
+                        ref,
+                        active,
+                        slot,
+                      ),
+                      onEditComponent: (c) => _installOnBike(
+                        context,
+                        ref,
+                        active,
+                        c.slot,
+                        existing: c,
+                      ),
+                      shopChild: OutlinedButton.icon(
+                        key: const Key('werkstatt-shop-parts'),
+                        onPressed: () =>
+                            unawaited(_openShopForBike(ref, active)),
+                        icon: const Icon(Icons.storefront_outlined),
+                        label: Text(l10n.werkstattShopParts),
+                      ),
+                      sensorChild: _BleSensorTile(
+                        bikeId: active.id,
+                        isEbike: active.hasElectricAssist,
                       ),
                     ),
                   );
                 },
               ),
-              ...List.generate(sorted.length, (i) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    bottom: i == sorted.length - 1 ? 0 : AppSpacing.s,
-                  ),
-                  child: _BikeTile(
-                    bike: sorted[i],
-                    onTap: () => _openDetail(context, ref, sorted[i]),
-                  ),
+              // Hero-Bike nur in der Overview-Card — Tiles für alle anderen.
+              ...() {
+                final overviewBike = sorted.firstWhere(
+                  (b) => b.isActive,
+                  orElse: () => sorted.first,
                 );
-              }),
+                final others =
+                    sorted.where((b) => b.id != overviewBike.id).toList();
+                if (others.isEmpty) return <Widget>[];
+                return [
+                  Text(
+                    l10n.garageOtherBikes,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: AppColors.muted,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  ...List.generate(others.length, (i) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: i == others.length - 1 ? 0 : AppSpacing.s,
+                      ),
+                      child: _BikeTile(
+                        bike: others[i],
+                        onTap: () => _openDetail(context, ref, others[i]),
+                      ),
+                    );
+                  }),
+                ];
+              }(),
               const SizedBox(height: AppSpacing.xl),
-              Text(
-                'Letzte Rides',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.muted,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Consumer(
-                builder: (context, ref, _) {
-                  final rides = ref.watch(recentRidesProvider);
-                  return rides.when(
-                    data: (items) {
-                      if (items.isEmpty) {
-                        return const EmptyStateIllustration(
-                          compact: true,
-                          title: 'Noch keine Rides',
-                          message:
-                              'Dein erster gespeicherter Ride erscheint hier.',
-                        );
-                      }
-                      return Column(
-                        children: [
-                          for (final r in items.take(5))
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(r.name ?? 'Ride'),
-                              subtitle: Text(
-                                '${r.distanceKm.toStringAsFixed(1)} km · '
-                                '${(r.movingTimeSec / 60).round()} min',
-                              ),
-                              trailing: r.feedback != null
-                                  ? const Icon(Icons.check_circle_outline,
-                                      size: 18)
-                                  : null,
-                            ),
-                        ],
-                      );
-                    },
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('$e'),
-                  );
-                },
-              ),
             ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Fehler: $e')),
+        error: (e, _) => Center(child: Text(l10n.errorPrefix('$e'))),
       ),
     );
   }
@@ -231,10 +267,10 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
       final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Free: 1 Bike'),
+          title: const Text('Free: ein Rad'),
           content: const Text(
-            'Im Free-Tarif ist ein Bike vorgesehen. Du kannst lokal trotzdem '
-            'weitere anlegen — Sync-Limits gelten server-seitig nach Login.',
+            'Im Free-Tarif ist ein Rad vorgesehen. Du kannst lokal trotzdem '
+            'weitere anlegen — Sync-Limits gelten nach dem Anmelden.',
           ),
           actions: [
             TextButton(
@@ -246,7 +282,7 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
                 Navigator.pop(ctx, false);
                 openUpgradeScreen(context);
               },
-              child: const Text('Upgrade'),
+              child: const Text('Pro freischalten'),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
@@ -264,7 +300,18 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
     final createdId = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _AddBikeSheet(initialCategory: initialCategory),
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final h = MediaQuery.sizeOf(ctx).height * 0.92;
+        return SizedBox(
+          height: h,
+          child: _AddBikeSheet(initialCategory: initialCategory),
+        );
+      },
     );
     ref.invalidate(bikesProvider);
     if (createdId != null && createdId.isNotEmpty && context.mounted) {
@@ -294,14 +341,133 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
   Future<void> _openDetail(
     BuildContext context,
     WidgetRef ref,
-    Bike bike,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _BikeDetailSheet(bikeId: bike.id),
+    Bike bike, {
+    _DetailTab initialTab = _DetailTab.box,
+  }) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => _BikeDetailSheet(
+          bikeId: bike.id,
+          initialTab: initialTab,
+        ),
+      ),
     );
     ref.invalidate(bikesProvider);
+  }
+
+  Future<void> _installOnBike(
+    BuildContext context,
+    WidgetRef ref,
+    Bike bike,
+    ComponentSlot slot, {
+    BikeComponent? existing,
+  }) async {
+    final plan = planWerkstattSetup(
+      bike: bike,
+      components:
+          await ref.read(componentRepositoryProvider).listInstalled(bike.id),
+    );
+    if (!context.mounted) return;
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _InstallComponentSheet(
+        bikeId: bike.id,
+        existing: existing,
+        initialSlot: slot,
+        allowedSlots: addableSlotsFor(plan),
+      ),
+    );
+    ref.invalidate(bikesProvider);
+    ref.invalidate(bikeComponentsProvider(bike.id));
+  }
+}
+
+class _PartsGlance extends StatelessWidget {
+  const _PartsGlance({
+    required this.components,
+    required this.onSeeAll,
+    this.emphasisSlots = const [],
+  });
+
+  final List<BikeComponent> components;
+  final VoidCallback onSeeAll;
+  final List<ComponentSlot> emphasisSlots;
+
+  static const _fallbackPriority = <ComponentSlot>[
+    ComponentSlot.fork,
+    ComponentSlot.rearShock,
+    ComponentSlot.tireFront,
+    ComponentSlot.tireRear,
+    ComponentSlot.rearDerailleur,
+    ComponentSlot.brakeFront,
+    ComponentSlot.motor,
+    ComponentSlot.battery,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final bySlot = {for (final c in components) c.slot: c};
+    final priority =
+        emphasisSlots.isNotEmpty ? emphasisSlots : _fallbackPriority;
+    final shown = <BikeComponent>[
+      for (final s in priority)
+        if (bySlot[s] != null) bySlot[s]!,
+    ];
+    if (shown.isEmpty) {
+      shown.addAll(components.take(6));
+    }
+    return Material(
+      color: AppColors.surfaceDark,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        onTap: onSeeAll,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Deine Teile',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  Text(
+                    'alle ${components.length}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final c in shown.take(8))
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      label: Text(
+                        '${c.slot.label}: ${c.displayName}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      labelStyle: const TextStyle(fontSize: 11.5),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -386,8 +552,8 @@ class _BikeTile extends ConsumerWidget {
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.pill),
                               ),
-                              child: const Text(
-                                'Aktiv',
+                              child: Text(
+                                AppLocalizations.of(context).garageActive,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -499,9 +665,17 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
   final _model = TextEditingController();
   final _importNote = TextEditingController();
   late BikeCategory _category;
-  WheelSize _wheel = WheelSize.w29;
+  late BikeAssistMode _assistMode;
+  WheelSize _wheel = WheelSize.c700;
   bool _busy = false;
-  _AddBikeMode _mode = _AddBikeMode.catalog;
+  _AddBikeMode _mode = _AddBikeMode.basic;
+  bool _hasLight = false;
+  bool _hasLock = false;
+  bool _hasRack = false;
+  bool _hasBags = false;
+  bool _includeOemKit = false;
+  final _travelFront = TextEditingController();
+  final _travelRear = TextEditingController();
 
   List<CatalogManufacturer> _manufacturers = const [];
   String? _mfrId;
@@ -511,17 +685,51 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
   bool _catalogLoading = true;
   GpxTrack? _pickedGpx;
   String? _gpxFileLabel;
+  final _findCtrl = TextEditingController();
+  List<CatalogBikeHit> _findHits = const [];
+  bool _findBusy = false;
+  bool _showCatalogBrowse = false;
 
   @override
   void initState() {
     super.initState();
-    _category = widget.initialCategory ?? BikeCategory.mtbAm;
-    // Urban/Road → Basis; Trail-Sports → Katalog (Web-Parität).
-    if (_category == BikeCategory.urban || _category == BikeCategory.road) {
-      _mode = _AddBikeMode.basic;
-    }
+    _category = widget.initialCategory ?? BikeCategory.urban;
+    _assistMode = BikeAssistUx.modeFor(category: _category);
+    _wheel = _defaultWheel(_category);
     _loadCatalog();
   }
+
+  void _setAssistMode(BikeAssistMode mode) {
+    setState(() {
+      _assistMode = mode;
+      _category = BikeAssistUx.coerceCategory(_category, mode);
+      _wheel = _defaultWheel(_category);
+    });
+  }
+
+  WheelSize _defaultWheel(BikeCategory c) => switch (c) {
+        BikeCategory.urban ||
+        BikeCategory.road ||
+        BikeCategory.etrekking =>
+          WheelSize.c700,
+        BikeCategory.gravel => WheelSize.b650,
+        _ => WheelSize.w29,
+      };
+
+  bool get _showTravel => switch (_category) {
+        BikeCategory.mtbTrail ||
+        BikeCategory.mtbAm ||
+        BikeCategory.mtbEnduro ||
+        BikeCategory.dh ||
+        BikeCategory.emtb =>
+          true,
+        _ => false,
+      };
+
+  bool get _showCityAccessories =>
+      _category == BikeCategory.urban || _category == BikeCategory.etrekking;
+
+  bool get _showBags => _category == BikeCategory.gravel;
 
   @override
   void dispose() {
@@ -529,6 +737,9 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
     _brand.dispose();
     _model.dispose();
     _importNote.dispose();
+    _findCtrl.dispose();
+    _travelFront.dispose();
+    _travelRear.dispose();
     super.dispose();
   }
 
@@ -542,20 +753,14 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
       if (!mounted) return;
       setState(() {
         _manufacturers = list;
-        _mfrId = list.isNotEmpty ? list.first.id : null;
-        final bikes =
-            list.isNotEmpty ? list.first.bikes : const <CatalogBikeVariant>[];
-        _bikeId = bikes.isNotEmpty ? bikes.first.id : null;
-        _frameSize = bikes.isNotEmpty && bikes.first.frameSizeOptions.isNotEmpty
-            ? bikes.first.frameSizeOptions.first
-            : 'L';
         _catalogLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _catalogLoading = false;
-        _catalogError = 'Katalog nicht erreichbar — Basis/Import nutzen.';
+        _catalogError =
+            'Katalog offline — du kannst dein Bike unter „Mein Rad“ oder „GPX“ anlegen.';
         if (_mode == _AddBikeMode.catalog) _mode = _AddBikeMode.basic;
       });
     }
@@ -578,6 +783,76 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
       if (b.id == id) return b;
     }
     return null;
+  }
+
+  void _applyHit(CatalogBikeHit hit) {
+    CatalogManufacturer? mfr;
+    for (final m in _manufacturers) {
+      if (m.id == hit.manufacturerId) {
+        mfr = m;
+        break;
+      }
+    }
+    setState(() {
+      if (mfr != null) {
+        _mfrId = mfr.id;
+      } else {
+        _mfrId = hit.manufacturerId;
+      }
+      _bikeId = hit.id;
+      final bike = _catBike;
+      _frameSize = bike != null && bike.frameSizeOptions.isNotEmpty
+          ? bike.frameSizeOptions.first
+          : 'L';
+      _findHits = const [];
+      _showCatalogBrowse = false;
+      if (_name.text.trim().isEmpty) {
+        _name.text = '${hit.manufacturerName} ${hit.name}';
+      }
+    });
+  }
+
+  Future<void> _runFind({String? imageBase64}) async {
+    final q = _findCtrl.text.trim();
+    if (q.length < 2 && (imageBase64 == null || imageBase64.isEmpty)) return;
+    setState(() => _findBusy = true);
+    try {
+      final hits = await ref.read(catalogClientProvider).identify(
+            q: q,
+            imageBase64: imageBase64,
+          );
+      if (!mounted) return;
+      setState(() => _findHits = hits);
+      if (hits.length == 1) _applyHit(hits.first);
+      if (hits.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kein Treffer — Liste nutzen oder anders suchen.'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Suche gerade nicht möglich — Liste nutzen.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _findBusy = false);
+    }
+  }
+
+  Future<void> _pickBikePhoto(ImageSource source) async {
+    final x = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 1024,
+      imageQuality: 70,
+    );
+    if (x == null) return;
+    final bytes = await x.readAsBytes();
+    await _runFind(imageBase64: base64Encode(bytes));
   }
 
   Map<String, dynamic> _attrsFromPayload(String? payloadJson) {
@@ -664,13 +939,13 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
         if (mfr == null || cat == null) {
           throw StateError('Bitte Hersteller und Modell wählen');
         }
+        final resolved = BikeAssistUx.resolveCatalogPersist(cat);
         bike = await garage.addBikeBasic(
           name: _name.text.trim().isEmpty
               ? '${mfr.name} ${cat.name}'
               : _name.text.trim(),
-          category: cat.isEbike && cat.category != BikeCategory.emtb
-              ? BikeCategory.emtb
-              : cat.category,
+          category: resolved.category,
+          isEbike: resolved.isEbike,
           brand: mfr.name,
           model: cat.name,
           year: cat.year > 0 ? cat.year : null,
@@ -682,49 +957,85 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           makeActive: true,
         );
 
+        if (_includeOemKit) {
         final catalog = ref.read(catalogClientProvider);
         final components = ref.read(componentRepositoryProvider);
+        // Modell-Lookups parallel (vorher seriell: 25–30 HTTP-Roundtrips —
+        // „Bike anlegen dauert ewig"). Installs danach seriell in die DB.
+        final slotEntries = <({ComponentSlot slot, String modelId})>[];
         for (final e in cat.oemComponents.entries) {
           final slot = ComponentSlotLabel.fromApiId(e.key);
           if (slot == null || slot == ComponentSlot.other) {
             oemMissed += 1;
             continue;
           }
-          final model = await catalog.getModel(e.value);
+          slotEntries.add((slot: slot, modelId: e.value));
+        }
+        final models = await Future.wait([
+          for (final e in slotEntries)
+            catalog.getModel(e.modelId).catchError((_) => null),
+        ]);
+        for (var i = 0; i < slotEntries.length; i++) {
+          final e = slotEntries[i];
+          final model = models[i];
           if (model == null) oemMissed += 1;
           final attrs = _attrsFromPayload(model?.payloadJson);
           await components.install(
             bikeId: bike.id,
-            slot: slot,
+            slot: e.slot,
             manufacturer: model?.manufacturer,
-            model: model?.model ?? e.value,
-            catalogModelId: e.value,
+            model: model?.model ?? e.modelId,
+            catalogModelId: e.modelId,
             attributes: attrs,
           );
           oemInstalled += 1;
         }
+        }
 
         await ref.read(setupRepositoryProvider).createVersion(
               bikeId: bike.id,
-              label: 'OEM Basis-Setup',
+              label: _includeOemKit ? 'Serien-Setup' : 'Katalog-Identität',
               values: BikeSetup.defaultValues(),
               createdBy: 'catalog',
             );
       } else if (_mode == _AddBikeMode.basic) {
+        final persisted = BikeAssistUx.persistCategory(_category, _assistMode);
         bike = await garage.addBikeBasic(
           name: _name.text,
-          category: _category,
+          category: persisted,
+          isEbike: BikeAssistUx.persistIsEbike(_category, _assistMode),
           brand: _brand.text,
           model: _model.text,
           wheelSize: _wheel,
+          travelFrontMm: _showTravel ? int.tryParse(_travelFront.text) : null,
+          travelRearMm: _showTravel ? int.tryParse(_travelRear.text) : null,
           makeActive: true,
         );
+        final components = ref.read(componentRepositoryProvider);
+        Future<void> stub(ComponentSlot slot, String label) async {
+          await components.install(
+            bikeId: bike.id,
+            slot: slot,
+            model: label,
+          );
+        }
+        if (_showCityAccessories) {
+          if (_hasLight) await stub(ComponentSlot.light, 'Licht');
+          if (_hasLock) await stub(ComponentSlot.lock, 'Schloss');
+          if (_hasRack) await stub(ComponentSlot.rack, 'Gepäckträger');
+        }
+        if (_showBags && _hasBags) {
+          await stub(ComponentSlot.bags, 'Taschen');
+        }
       } else {
         final gpx = _pickedGpx;
         if (gpx != null) {
+          final persisted =
+              BikeAssistUx.persistCategory(_category, _assistMode);
           bike = await garage.addBikeBasic(
             name: _name.text.trim().isEmpty ? gpx.name : _name.text.trim(),
-            category: _category,
+            category: persisted,
+            isEbike: BikeAssistUx.persistIsEbike(_category, _assistMode),
             makeActive: true,
           );
           await ref.read(routeRepositoryProvider).saveEntry(
@@ -789,9 +1100,11 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              oemMissed == 0
-                  ? '${bike.name}: $oemInstalled OEM-Komponenten.'
-                  : '${bike.name}: $oemInstalled OEM, $oemMissed Slots/Modelle übersprungen.',
+              _includeOemKit
+                  ? (oemMissed == 0
+                      ? '${bike.name}: $oemInstalled Serienteile übernommen.'
+                      : '${bike.name}: $oemInstalled Serienteile, $oemMissed übersprungen.')
+                  : '${bike.name} abgestellt — Teile selbst anlegen, Kit war aus.',
             ),
           ),
         );
@@ -804,6 +1117,10 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           ),
         );
       }
+      final comps =
+          await ref.read(componentRepositoryProvider).listInstalled(bike.id);
+      unawaited(notifyGarageBikeShopify(bike, components: comps));
+      if (!mounted) return;
       Navigator.of(context).pop(bike.id);
     } catch (e) {
       if (!mounted) return;
@@ -820,21 +1137,20 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _mode = mode),
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? AppColors.accent : AppColors.chipIdle,
-            borderRadius: BorderRadius.circular(AppRadius.chip),
-            border: Border.all(
-              color: selected ? AppColors.accent : AppColors.border,
-            ),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           child: Text(
             label,
             style: TextStyle(
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
               color: selected ? AppColors.onAccent : AppColors.chipIdleText,
             ),
           ),
@@ -843,256 +1159,573 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
     );
   }
 
+  bool get _canSave {
+    if (_busy) return false;
+    return switch (_mode) {
+      _AddBikeMode.catalog => _catBike != null,
+      _AddBikeMode.basic => true,
+      _AddBikeMode.importMode => true,
+    };
+  }
+
+  Widget _sizeChips(CatalogBikeVariant cat) {
+    if (cat.frameSizeOptions.isEmpty) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final s in cat.frameSizeOptions)
+          ChoiceChip(
+            label: Text(s),
+            selected: _frameSize == s,
+            onSelected: (_) => setState(() => _frameSize = s),
+            color: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return AppColors.accent;
+              }
+              return AppColors.chipIdle;
+            }),
+            labelStyle: TextStyle(
+              color:
+                  _frameSize == s ? AppColors.onAccent : AppColors.chipIdleText,
+              fontWeight: FontWeight.w600,
+            ),
+            side: BorderSide(
+              color: _frameSize == s ? AppColors.accent : AppColors.border,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _selectedBikeCard(CatalogBikeVariant cat) {
+    final mfr = _mfr?.name ?? '';
+    final geo = cat.geometryForSize(_frameSize);
+    final label = Bike(
+      id: '',
+      name: '',
+      category: cat.category,
+      isEbike: cat.isEbike,
+    ).categoryLabel;
+    final meta = [
+      if (cat.year > 0) '${cat.year}',
+      label,
+      cat.wheelSizeFront.label,
+      if (cat.travelFrontMm != null &&
+          (cat.travelFrontMm! > 0 || (cat.travelRearMm ?? 0) > 0))
+        '${cat.travelFrontMm}/${cat.travelRearMm} mm',
+      if (cat.isEbike) 'E-Bike',
+    ].join(' · ');
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: AppColors.chipIdle,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$mfr ${cat.name}'.trim(),
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            meta,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+          ),
+          if (cat.oemComponents.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _includeOemKit,
+              onChanged: (v) =>
+                  setState(() => _includeOemKit = v ?? false),
+              title: Text(
+                'Serienteile übernehmen (${cat.oemComponents.length})',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text(
+                'Sonst nur Identität. Katalog bleibt Suche.',
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.m),
+          const Text(
+            'Rahmengröße',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          ),
+          const SizedBox(height: AppSpacing.s),
+          _sizeChips(cat),
+          if (geo != null) ...[
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              'Reach ${geo.reachMm.toStringAsFixed(0)} mm · Stack ${geo.stackMm.toStringAsFixed(0)} mm',
+              style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.m),
+          TextField(
+            controller: _name,
+            decoration: const InputDecoration(
+              labelText: 'Spitzname (optional)',
+              hintText: 'z. B. Trail-Bike',
+              isDense: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _catalogBody(CatalogBikeVariant? cat) {
+    if (_catalogLoading) {
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+    if (_manufacturers.isEmpty) {
+      return const [
+        Text(
+          'Katalog nicht geladen — wechsle auf „Mein Rad“ oder versuch es später.',
+        ),
+      ];
+    }
+    return [
+      TextField(
+        controller: _findCtrl,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => unawaited(_runFind()),
+        decoration: InputDecoration(
+          hintText: 'Focus SAM, Canyon Grizl, Stevens …',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
+          suffixIcon: SizedBox(
+            width: _findBusy ? 40 : 88,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (_findBusy)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 12),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else ...[
+                  IconButton(
+                    tooltip: 'Foto',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        unawaited(_pickBikePhoto(ImageSource.camera)),
+                    icon: const Icon(Icons.photo_camera_outlined, size: 20),
+                  ),
+                  IconButton(
+                    tooltip: 'Galerie',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        unawaited(_pickBikePhoto(ImageSource.gallery)),
+                    icon: const Icon(Icons.photo_outlined, size: 20),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          filled: true,
+          fillColor: AppColors.chipIdle.withValues(alpha: 0.55),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            borderSide: BorderSide.none,
+          ),
+          isDense: true,
+        ),
+      ),
+      if (_findHits.isNotEmpty) ...[
+        const SizedBox(height: AppSpacing.s),
+        for (final h in _findHits.take(6))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Material(
+              color: AppColors.chipIdle,
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+              child: ListTile(
+                dense: true,
+                title: Text(h.label,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700)),
+                subtitle: h.isEbike
+                    ? const Text('E-Bike', style: TextStyle(fontSize: 12))
+                    : null,
+                trailing: const Icon(Icons.chevron_right, size: 18),
+                onTap: () => _applyHit(h),
+              ),
+            ),
+          ),
+      ],
+      if (cat != null) ...[
+        const SizedBox(height: AppSpacing.m),
+        _selectedBikeCard(cat),
+      ] else if (_findHits.isEmpty) ...[
+        const SizedBox(height: AppSpacing.xl),
+        const Text(
+          'Suche nach Marke und Modell, mach ein Foto oder wähle aus der Liste.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.muted,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
+        ),
+      ],
+      const SizedBox(height: AppSpacing.s),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () =>
+              setState(() => _showCatalogBrowse = !_showCatalogBrowse),
+          child: Text(
+            _showCatalogBrowse ? 'Liste ausblenden' : 'Aus Liste wählen',
+          ),
+        ),
+      ),
+      if (_showCatalogBrowse) ...[
+        _searchableCatalogField<CatalogManufacturer>(
+          key: ValueKey('mfr-ac-$_mfrId'),
+          fieldLabel: 'Hersteller',
+          currentText: _mfr?.name ?? '',
+          options: _manufacturers,
+          labelOf: (m) => m.name,
+          onSelected: (m) {
+            setState(() {
+              _mfrId = m.id;
+              _bikeId = m.bikes.isNotEmpty ? m.bikes.first.id : null;
+              _frameSize = m.bikes.isNotEmpty &&
+                      m.bikes.first.frameSizeOptions.isNotEmpty
+                  ? m.bikes.first.frameSizeOptions.first
+                  : 'L';
+            });
+          },
+        ),
+        const SizedBox(height: AppSpacing.s),
+        _searchableCatalogField<CatalogBikeVariant>(
+          key: ValueKey('bike-ac-$_mfrId-$_bikeId'),
+          fieldLabel: 'Modell',
+          currentText: cat == null ? '' : '${cat.name} (${cat.year})',
+          options: _mfr?.bikes ?? const <CatalogBikeVariant>[],
+          labelOf: (b) => '${b.name} (${b.year})',
+          onSelected: (b) {
+            setState(() {
+              _bikeId = b.id;
+              _frameSize = b.frameSizeOptions.isNotEmpty
+                  ? b.frameSizeOptions.first
+                  : 'L';
+            });
+          },
+        ),
+      ],
+    ];
+  }
+
+  List<Widget> _basicBody() {
+    return [
+      TextField(
+        controller: _name,
+        decoration: const InputDecoration(
+          labelText: 'Name',
+          hintText: 'z. B. Alltagsrad',
+        ),
+        textInputAction: TextInputAction.next,
+      ),
+      const SizedBox(height: AppSpacing.m),
+      _AssistModeSegmented(
+        selected: _assistMode,
+        onSelect: _setAssistMode,
+      ),
+      const SizedBox(height: AppSpacing.m),
+      _CategoryGridPicker(
+        selected: _category,
+        assistMode: _assistMode,
+        onSelect: (c) => setState(() {
+          _category = c;
+          _wheel = _defaultWheel(c);
+        }),
+      ),
+      const SizedBox(height: AppSpacing.m),
+      _WheelSizeChips(
+        selected: _wheel,
+        onSelect: (w) => setState(() => _wheel = w),
+      ),
+      if (_showTravel) ...[
+        const SizedBox(height: AppSpacing.m),
+        TextField(
+          controller: _travelFront,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Federweg vorn (mm)',
+            hintText: 'Nur wenn am Rad steht',
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        TextField(
+          controller: _travelRear,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Federweg hinten (mm)',
+            isDense: true,
+          ),
+        ),
+      ],
+      if (_showCityAccessories) ...[
+        const SizedBox(height: AppSpacing.m),
+        Text(
+          'Am Rad — nur anhaken wenn wirklich da',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.muted,
+              ),
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          value: _hasLight,
+          onChanged: (v) => setState(() => _hasLight = v ?? false),
+          title: const Text('Licht'),
+          activeColor: AppColors.forestOnDark,
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          value: _hasLock,
+          onChanged: (v) => setState(() => _hasLock = v ?? false),
+          title: const Text('Schloss'),
+          activeColor: AppColors.forestOnDark,
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          value: _hasRack,
+          onChanged: (v) => setState(() => _hasRack = v ?? false),
+          title: const Text('Gepäckträger'),
+          activeColor: AppColors.forestOnDark,
+        ),
+      ],
+      if (_showBags) ...[
+        const SizedBox(height: AppSpacing.s),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          value: _hasBags,
+          onChanged: (v) => setState(() => _hasBags = v ?? false),
+          title: const Text('Taschen am Rad'),
+          activeColor: AppColors.forestOnDark,
+        ),
+      ],
+      const SizedBox(height: AppSpacing.m),
+      TextField(
+        controller: _brand,
+        decoration: const InputDecoration(
+          labelText: 'Marke (optional)',
+          isDense: true,
+        ),
+      ),
+      const SizedBox(height: AppSpacing.s),
+      TextField(
+        controller: _model,
+        decoration: const InputDecoration(
+          labelText: 'Modell (optional)',
+          isDense: true,
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _gpxBody() {
+    return [
+      Material(
+        color: AppColors.chipIdle,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: BorderSide(
+            color: _pickedGpx == null ? AppColors.border : AppColors.accent,
+            width: 1.2,
+          ),
+        ),
+        child: InkWell(
+          onTap: _busy ? null : _pickGpx,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.xl,
+              horizontal: AppSpacing.m,
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.upload_file,
+                  size: 32,
+                  color:
+                      _pickedGpx == null ? AppColors.muted : AppColors.accent,
+                ),
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  _gpxFileLabel == null ? 'GPX-Datei wählen' : _gpxFileLabel!,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                if (_pickedGpx != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_pickedGpx!.distanceKm.toStringAsFixed(1)} km · '
+                    '${_pickedGpx!.elevationM.round()} hm',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.m),
+      TextField(
+        controller: _name,
+        decoration: const InputDecoration(
+          labelText: 'Name (optional)',
+          isDense: true,
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final cat = _catBike;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.l,
-        AppSpacing.xl,
-        AppSpacing.xl + bottom,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Bike anlegen',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            const SizedBox(height: AppSpacing.m),
-            Row(
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.l,
+              0,
+              AppSpacing.s,
+              AppSpacing.s,
+            ),
+            child: Row(
               children: [
-                _modeChip(_AddBikeMode.catalog, 'Katalog'),
-                const SizedBox(width: AppSpacing.s),
-                _modeChip(_AddBikeMode.basic, 'Basis'),
-                const SizedBox(width: AppSpacing.s),
-                _modeChip(_AddBikeMode.importMode, 'Import'),
+                Expanded(
+                  child: Text(
+                    'Rad abstellen',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Schließen',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
               ],
             ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              switch (_mode) {
-                _AddBikeMode.catalog =>
-                  'OEM-Ausstattung wird vollständig vorbefüllt.',
-                _AddBikeMode.basic =>
-                  'Kategorie + Laufrad — Komponenten später ergänzen.',
-                _AddBikeMode.importMode =>
-                  'GPX wählen → Bike + gespeicherte Route. Ohne Datei nur Notiz-Platzhalter.',
-              },
-              style: Theme.of(context).textTheme.bodySmall,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
+            child: Row(
+              children: [
+                _modeChip(_AddBikeMode.basic, 'Mein Rad'),
+                const SizedBox(width: 8),
+                _modeChip(_AddBikeMode.catalog, 'Katalog'),
+                const SizedBox(width: 8),
+                _modeChip(_AddBikeMode.importMode, 'GPX'),
+              ],
             ),
-            if (_catalogError != null) ...[
-              const SizedBox(height: AppSpacing.s),
-              Text(
+          ),
+          if (_catalogError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.l,
+                AppSpacing.s,
+                AppSpacing.l,
+                0,
+              ),
+              child: Text(
                 _catalogError!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-            ],
-            const SizedBox(height: AppSpacing.m),
-            TextField(
-              controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'Optional',
-              ),
-              textInputAction: TextInputAction.next,
             ),
-            if (_mode == _AddBikeMode.catalog) ...[
-              const SizedBox(height: AppSpacing.s),
-              if (_catalogLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_manufacturers.isEmpty)
-                const Text('Kein OEM-Katalog geladen.')
-              else ...[
-                _searchableCatalogField<CatalogManufacturer>(
-                  key: ValueKey('mfr-ac-$_mfrId'),
-                  fieldLabel: 'Hersteller',
-                  currentText: _mfr?.name ?? '',
-                  options: _manufacturers,
-                  labelOf: (m) => m.name,
-                  onSelected: (m) {
-                    setState(() {
-                      _mfrId = m.id;
-                      _bikeId = m.bikes.isNotEmpty ? m.bikes.first.id : null;
-                      _frameSize = m.bikes.isNotEmpty &&
-                              m.bikes.first.frameSizeOptions.isNotEmpty
-                          ? m.bikes.first.frameSizeOptions.first
-                          : 'L';
-                    });
-                  },
-                ),
-                const SizedBox(height: AppSpacing.s),
-                _searchableCatalogField<CatalogBikeVariant>(
-                  key: ValueKey('bike-ac-$_mfrId-$_bikeId'),
-                  fieldLabel: 'Modell / Jahr',
-                  currentText: cat == null
-                      ? ''
-                      : '${cat.name} (${cat.year}) · '
-                          '${Bike(id: '', name: '', category: cat.category).categoryLabel}',
-                  options: _mfr?.bikes ?? const <CatalogBikeVariant>[],
-                  labelOf: (b) =>
-                      '${b.name} (${b.year}) · '
-                      '${Bike(id: '', name: '', category: b.category).categoryLabel}',
-                  onSelected: (b) {
-                    setState(() {
-                      _bikeId = b.id;
-                      _frameSize = b.frameSizeOptions.isNotEmpty
-                          ? b.frameSizeOptions.first
-                          : 'L';
-                    });
-                  },
-                ),
-                if ((cat?.frameSizeOptions ?? const []).isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.m),
-                  Text(
-                    'Rahmengröße',
-                    style: Theme.of(context).textTheme.labelLarge,
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.l,
+                AppSpacing.m,
+                AppSpacing.l,
+                AppSpacing.l + bottom,
+              ),
+              children: [
+                if (_mode == _AddBikeMode.catalog) ..._catalogBody(cat),
+                if (_mode == _AddBikeMode.basic) ..._basicBody(),
+                if (_mode == _AddBikeMode.importMode) ..._gpxBody(),
+              ],
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.l,
+                AppSpacing.s,
+                AppSpacing.l,
+                AppSpacing.m,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 48),
                   ),
-                  const SizedBox(height: AppSpacing.s),
-                  Wrap(
-                    spacing: AppSpacing.s,
-                    runSpacing: AppSpacing.s,
-                    children: [
-                      for (final s in cat!.frameSizeOptions)
-                        ChoiceChip(
-                          label: Text(s),
-                          selected: _frameSize == s,
-                          onSelected: (_) => setState(() => _frameSize = s),
-                          selectedColor: AppColors.accent,
-                          labelStyle: TextStyle(
-                            color: _frameSize == s
-                                ? Colors.white
-                                : AppColors.chipIdleText,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          backgroundColor: AppColors.chipIdle,
-                          side: BorderSide(
-                            color: _frameSize == s
-                                ? AppColors.accent
-                                : AppColors.border,
-                          ),
+                  onPressed: _canSave ? _save : null,
+                  child: _busy
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          _mode == _AddBikeMode.importMode
+                              ? 'Importieren'
+                              : 'Rad anlegen',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
-                    ],
-                  ),
-                ],
-                if (cat != null) ...[
-                  const SizedBox(height: AppSpacing.s),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.m),
-                    decoration: BoxDecoration(
-                      color: AppColors.sunSurface,
-                      borderRadius: BorderRadius.circular(AppRadius.chip),
-                    ),
-                    child: Text(
-                      [
-                        if (cat.travelFrontMm != null)
-                          '${cat.travelFrontMm}/${cat.travelRearMm} mm',
-                        switch (cat.wheelSizeFront) {
-                          WheelSize.w29 => '29"',
-                          WheelSize.w275 => '27.5"',
-                          WheelSize.c700 => '700c',
-                          WheelSize.b650 => '650b',
-                        },
-                        if (cat.isEbike) 'E-Bike',
-                        '${cat.oemComponents.length} OEM-Komponenten',
-                      ].join(' · '),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ],
-            ],
-            if (_mode == _AddBikeMode.basic) ...[
-              const SizedBox(height: AppSpacing.m),
-              Text('Kategorie', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: AppSpacing.s),
-              _CategoryGridPicker(
-                selected: _category,
-                onSelect: (c) => setState(() => _category = c),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              Text(
-                'Laufradgröße',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              const SizedBox(height: AppSpacing.s),
-              _WheelSizeChips(
-                selected: _wheel,
-                onSelect: (w) => setState(() => _wheel = w),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: _brand,
-                decoration:
-                    const InputDecoration(labelText: 'Marke (optional)'),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              TextField(
-                controller: _model,
-                decoration:
-                    const InputDecoration(labelText: 'Modell (optional)'),
-              ),
-            ],
-            if (_mode == _AddBikeMode.importMode) ...[
-              const SizedBox(height: AppSpacing.m),
-              Text('Kategorie', style: Theme.of(context).textTheme.labelLarge),
-              const SizedBox(height: AppSpacing.s),
-              _CategoryGridPicker(
-                selected: _category,
-                onSelect: (c) => setState(() => _category = c),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : _pickGpx,
-                icon: const Icon(Icons.upload_file),
-                label: Text(
-                  _gpxFileLabel == null
-                      ? 'GPX-Datei wählen'
-                      : 'GPX: $_gpxFileLabel',
                 ),
               ),
-              if (_pickedGpx != null) ...[
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  '${_pickedGpx!.distanceKm.toStringAsFixed(1)} km · '
-                  '${_pickedGpx!.elevationM.round()} hm · '
-                  '${_pickedGpx!.points.length} Punkte',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s),
-              TextField(
-                controller: _importNote,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Notiz (optional)',
-                  hintText: 'z. B. Quelle oder fehlende Komponenten',
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.l),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
-              onPressed: _busy ? null : _save,
-              child: _busy
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Speichern'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1107,12 +1740,16 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
 final List<ComponentSlot> _trackableSlots =
     ComponentSlot.values.where((s) => s != ComponentSlot.other).toList();
 
-enum _DetailTab { teile, wartung, setup }
+enum _DetailTab { box, teile, wartung, setup }
 
 class _BikeDetailSheet extends ConsumerStatefulWidget {
-  const _BikeDetailSheet({required this.bikeId});
+  const _BikeDetailSheet({
+    required this.bikeId,
+    this.initialTab = _DetailTab.box,
+  });
 
   final String bikeId;
+  final _DetailTab initialTab;
 
   @override
   ConsumerState<_BikeDetailSheet> createState() => _BikeDetailSheetState();
@@ -1123,16 +1760,16 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
   List<BikeComponent> _components = [];
   List<CompatibilityResult> _compat = [];
   bool _busy = false;
-  // Segmente statt einer 1300-Zeilen-Liste — bleibt eine einzige ListView
-  // innerhalb des DraggableScrollableSheet (kein TabBarView nötig, das
-  // dort eine eigene Höhenlogik bräuchte); Tabs blenden nur um, was gebaut
-  // wird.
-  _DetailTab _tab = _DetailTab.teile;
+  // Segmente in einer ListView (kein TabBarView / kein BottomSheet —
+  // verschachteltes Sheet war auf S25 leer).
+  late _DetailTab _tab = widget.initialTab;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_load());
+    });
   }
 
   Future<void> _load() async {
@@ -1155,14 +1792,14 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
     setState(() => _busy = true);
     await ref.read(garageRepositoryProvider).setActiveBike(widget.bikeId);
     await _load();
-    setState(() => _busy = false);
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _delete() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Bike löschen?'),
+        title: const Text('Rad löschen?'),
         content: const Text(
           'Komponenten und Setups dieses Bikes entfallen lokal.',
         ),
@@ -1187,6 +1824,10 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
     BikeComponent? existing,
     ComponentSlot? initialSlot,
   }) async {
+    final bike = _bike;
+    final plan = bike == null
+        ? null
+        : planWerkstattSetup(bike: bike, components: _components);
     final installed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -1194,6 +1835,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
         bikeId: widget.bikeId,
         existing: existing,
         initialSlot: initialSlot,
+        allowedSlots: plan == null ? null : addableSlotsFor(plan),
       ),
     );
     if (installed == true) await _load();
@@ -1203,16 +1845,18 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
   Widget build(BuildContext context) {
     final bike = _bike;
     if (bike == null) {
-      return const SizedBox(
-        height: 160,
-        child: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     final due = listDueMaintenance(bike: bike, components: _components);
+    final plan = planWerkstattSetup(bike: bike, components: _components);
     final bySlot = _groupCompatBySlot(_compat);
     final installedSlots = _components.map((c) => c.slot).toSet();
-    final missingSlots =
-        _trackableSlots.where((s) => !installedSlots.contains(s)).toList();
+    final missingSlots = addableSlotsFor(plan)
+        .where((s) => !installedSlots.contains(s))
+        .toList();
     final okCount =
         _compat.where((r) => r.verdict == CompatVerdict.compatible).length;
     final warnCount = _compat
@@ -1222,364 +1866,285 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
         .length;
     final badCount =
         _compat.where((r) => r.verdict == CompatVerdict.incompatible).length;
-    final maintOverdue = due.any((a) => a.status == DueStatus.overdue);
-    final maintColor = due.isEmpty
-        ? AppColors.forestOnDark
-        : (maintOverdue ? Colors.redAccent : Colors.orange);
-    final maintValue = due.isEmpty ? 'OK' : '${due.length}';
+    final l10n = AppLocalizations.of(context);
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.82,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scroll) {
-        return ListView(
-          controller: scroll,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.l,
-            AppSpacing.l,
-            AppSpacing.l,
-            AppSpacing.xxl,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(bike.name),
+        actionsPadding: const EdgeInsets.only(right: AppSpacing.m),
+        actions: [
+          WerkstattCscBarButton(bikeId: bike.id, isEbike: bike.isEbike),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (v) {
+              if (v == 'delete') unawaited(_delete());
+            },
+            itemBuilder: (ctx) => const [
+              PopupMenuItem(value: 'delete', child: Text('Rad löschen')),
+            ],
           ),
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.l,
+          AppSpacing.s,
+          AppSpacing.l,
+          AppSpacing.xxl,
+        ),
+        children: [
+          DieBoxSurface(
+            bike: bike,
+            components: _components,
+            due: due,
+            onInstallSlot: (slot) => _installComponent(initialSlot: slot),
+            onEditComponent: (c) => _installComponent(existing: c),
+            shopChild: OutlinedButton.icon(
+              key: const Key('werkstatt-shop-parts-detail'),
+              onPressed: () {
+                Navigator.pop(context);
+                unawaited(_openShopForBike(ref, bike));
+              },
+              icon: const Icon(Icons.storefront_outlined),
+              label: Text(l10n.werkstattShopParts),
+            ),
+            sensorChild: _BleSensorTile(
+              bikeId: bike.id,
+              isEbike: bike.hasElectricAssist,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.l),
+          BikeTechDetailsPanel(bike: bike),
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              initiallyExpanded: widget.initialTab != _DetailTab.box,
+              tilePadding: EdgeInsets.zero,
+              title: const Text(
+                'Mehr am Rad',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: const Text(
+                'Teile, Wartung, Setup-Versionen — hinter der Box',
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+              onExpansionChanged: (open) {
+                if (open && _tab == _DetailTab.box) {
+                  setState(() => _tab = _DetailTab.teile);
+                }
+              },
+              children: [
+          Row(
+            children: [
+              Expanded(
+                child: _TabChip(
+                  label: l10n.garageParts,
+                  badge: _components.length,
+                  active: _tab == _DetailTab.teile,
+                  onTap: () => setState(() => _tab = _DetailTab.teile),
                 ),
               ),
-            ),
-            BikeHeroBanner(bike: bike),
-            const SizedBox(height: AppSpacing.m),
-            BikeSchema(
-              bike: bike,
-              installedSlots: installedSlots,
-              maintenanceSlots: {
-                for (final a in due)
-                  if (a.status == DueStatus.overdue ||
-                      a.status == DueStatus.dueSoon)
-                    a.slot,
-              },
-              onSelectSlot: (slot) {
-                setState(() => _tab = _DetailTab.teile);
-                _installComponent(initialSlot: slot);
-              },
-            ),
-            const SizedBox(height: AppSpacing.m),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: _TabChip(
+                  label: l10n.garageMaintenance,
+                  badge: due.length,
+                  active: _tab == _DetailTab.wartung,
+                  onTap: () => setState(() => _tab = _DetailTab.wartung),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: _TabChip(
+                  label: l10n.garageSetup,
+                  active: _tab == _DetailTab.setup,
+                  onTap: () => setState(() => _tab = _DetailTab.setup),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.l),
+          if (_tab == _DetailTab.teile) ...[
             Row(
               children: [
-                _StatChip(value: bike.odometerKm.toStringAsFixed(0), label: 'KM'),
-                const SizedBox(width: AppSpacing.s),
-                _StatChip(value: bike.hours.toStringAsFixed(1), label: 'STD.'),
-                const SizedBox(width: AppSpacing.s),
-                _StatChip(value: maintValue, label: 'WARTUNG', color: maintColor),
+                Text(
+                  l10n.garageYourParts,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _installComponent,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.garageInstall),
+                ),
               ],
             ),
-            const SizedBox(height: AppSpacing.m),
-            Row(
-              children: [
-                if (!bike.isActive)
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                      ),
-                      onPressed: _busy ? null : _setActive,
-                      child: const Text('Als aktiv setzen'),
+            if (_compat.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xxs),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _CompatBadge(
+                    label: l10n.garageCompatFits(okCount),
+                    color: const Color(0xFF4CAF50),
+                  ),
+                  _CompatBadge(
+                    label: l10n.garageCompatCheck(warnCount),
+                    color: Colors.orange,
+                  ),
+                  _CompatBadge(
+                    label: l10n.garageCompatNoFit(badCount),
+                    color: Colors.redAccent,
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppSpacing.s),
+            if (_components.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+                child: Text(
+                  l10n.garagePartsEmpty,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                ),
+              )
+            else ...[
+              for (final g in ComponentGroup.values)
+                if (_components.any((c) => c.slot.group == g))
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: Colors.transparent,
                     ),
-                  )
-                else
-                  Expanded(
-                    child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.s + 2),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.accent),
-                        borderRadius: BorderRadius.circular(AppRadius.chip),
-                      ),
-                      child: const Text(
-                        'Aktives Bike',
-                        style: TextStyle(
+                    child: ExpansionTile(
+                      initiallyExpanded: plan.emphasisSlots.any(
+                            (s) => s.group == g,
+                          ) ||
+                          g == ComponentGroup.wheels,
+                      tilePadding: EdgeInsets.zero,
+                      childrenPadding: EdgeInsets.zero,
+                      title: Text(
+                        '${g.label} · ${_components.where((c) => c.slot.group == g).length}',
+                        style: const TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.accent,
                         ),
                       ),
+                      children: [
+                        for (final c in _components.where(
+                          (c) => c.slot.group == g,
+                        ))
+                          _ComponentRow(
+                            component: c,
+                            findings: bySlot[c.slot] ?? const [],
+                            onRemove: () async {
+                              await ref
+                                  .read(componentRepositoryProvider)
+                                  .remove(c.id);
+                              await _load();
+                            },
+                            onEdit: () => _installComponent(existing: c),
+                            onTapFindings: (findings) =>
+                                _openSlotFindings(context, c, findings),
+                          ),
+                      ],
                     ),
                   ),
-                const SizedBox(width: AppSpacing.s),
-                OutlinedButton.icon(
-                  // Theme setzt minimumSize: Size.fromHeight(48) (= unendliche
-                  // Breite) für volle Block-Buttons — hier lokal überschreiben,
-                  // sonst sprengt der Button die Row (BoxConstraints-Crash).
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
-                  onPressed: () async {
-                    await showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => SetupSheet(bike: bike),
-                    );
-                    ref.invalidate(currentSetupProvider(widget.bikeId));
-                    await _load();
-                  },
-                  icon: const Icon(Icons.tune, size: 18),
-                  label: const Text('Setup'),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (v) {
-                    if (v == 'delete') unawaited(_delete());
-                  },
-                  itemBuilder: (ctx) => const [
-                    PopupMenuItem(value: 'delete', child: Text('Bike löschen')),
-                  ],
-                ),
-              ],
-            ),
-            Builder(
-              builder: (context) {
-                final setupAsync =
-                    ref.watch(currentSetupProvider(widget.bikeId));
-                return setupAsync.when(
-                  data: (setup) {
-                    if (setup == null) {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: AppSpacing.s),
-                        child: TextButton(
-                          onPressed: () async {
-                            await showModalBottomSheet<void>(
-                              context: context,
-                              isScrollControlled: true,
-                              builder: (_) => SetupSheet(bike: bike),
-                            );
-                            ref.invalidate(currentSetupProvider(widget.bikeId));
-                            await _load();
-                          },
-                          child: const Text('Setup anlegen'),
-                        ),
-                      );
-                    }
-                    final rebound = setup.valueFor('fork.rebound');
-                    return Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.s),
-                      child: Text(
-                        'Setup v${setup.version}: ${setup.label}'
-                        '${rebound != null ? ' · Gabel Zug ${rebound.toStringAsFixed(0)}' : ''}',
-                        style:
-                            const TextStyle(fontSize: 12, color: AppColors.muted),
+              if (missingSlots.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  l10n.garageMissingSlots,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.muted,
+                        fontWeight: FontWeight.w700,
                       ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.l),
-            Row(
-              children: [
-                Expanded(
-                  child: _TabChip(
-                    label: 'Teile',
-                    badge: _components.length,
-                    active: _tab == _DetailTab.teile,
-                    onTap: () => setState(() => _tab = _DetailTab.teile),
-                  ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: _TabChip(
-                    label: 'Wartung',
-                    badge: due.length,
-                    active: _tab == _DetailTab.wartung,
-                    onTap: () => setState(() => _tab = _DetailTab.wartung),
+                const SizedBox(height: AppSpacing.xs),
+                for (final s in missingSlots)
+                  _GhostSlotRow(
+                    slot: s,
+                    onTap: () => _installComponent(initialSlot: s),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: _TabChip(
-                    label: 'Setup',
-                    active: _tab == _DetailTab.setup,
-                    onTap: () => setState(() => _tab = _DetailTab.setup),
-                  ),
-                ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.l),
-            if (_tab == _DetailTab.teile) ...[
+            ],
+          ],
+          if (_tab == _DetailTab.wartung) ...[
+            if (due.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+                child: Text(
+                  l10n.garageMaintEmpty,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                ),
+              )
+            else ...[
               Row(
                 children: [
                   Text(
-                    'Teile & Kompatibilität',
+                    l10n.garageMaintenance,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                   ),
                   const Spacer(),
-                  TextButton.icon(
-                    onPressed: _installComponent,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Installieren'),
-                  ),
-                ],
-              ),
-              if (_compat.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xxs),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _CompatBadge(label: 'OK $okCount', color: const Color(0xFF4CAF50)),
-                    _CompatBadge(label: 'Prüfen $warnCount', color: Colors.orange),
-                    _CompatBadge(label: 'Konflikt $badCount', color: Colors.redAccent),
-                  ],
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s),
-              if (_components.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s),
-                  child: Text(
-                    'Noch keine Teile — installieren für Kompat-Urteile & Wartungs-Reminder.',
-                    style: TextStyle(color: AppColors.muted, fontSize: 13),
-                  ),
-                )
-              else ...[
-                for (final c in _components)
-                  _ComponentRow(
-                    component: c,
-                    findings: bySlot[c.slot] ?? const [],
-                    onRemove: () async {
-                      await ref.read(componentRepositoryProvider).remove(c.id);
-                      await _load();
-                    },
-                    onEdit: () => _installComponent(existing: c),
-                    onTapFindings: (findings) =>
-                        _openSlotFindings(context, c, findings),
-                  ),
-                if (missingSlots.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.s),
-                  Text(
-                    'Nicht erfasst (optional)',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppColors.muted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  for (final s in missingSlots)
-                    _GhostSlotRow(
-                      slot: s,
-                      onTap: () => _installComponent(initialSlot: s),
-                    ),
-                ],
-              ],
-            ],
-            if (_tab == _DetailTab.wartung) ...[
-              if (due.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s),
-                  child: Text(
-                    'Alles im grünen Bereich — keine Wartung fällig.',
-                    style: TextStyle(color: AppColors.muted, fontSize: 13),
-                  ),
-                )
-              else ...[
-                Row(
-                  children: [
-                    Text(
-                      'Wartung',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () async {
-                        // S-FLOW-03/05: Garage → Web Parts with bike soft-fit
-                        final url = ShopWebLinks.parts(
-                          bikeId: widget.bikeId,
-                          fitBike: true,
-                        );
-                        Navigator.pop(context);
-                        final uri = Uri.parse(url);
-                        final ok = await launchUrl(
-                          uri,
-                          mode: LaunchMode.externalApplication,
-                        );
-                        if (!ok && context.mounted) {
-                          ref.read(shellTabIndexProvider.notifier).state = 4;
-                        }
-                      },
-                      child: const Text('Shop'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                for (final a in due.take(5))
-                  _MaintenanceBarRow(
-                    alert: a,
-                    onShop: () async {
-                      final slot =
-                          ShopWebLinks.partsSlotFromComponent(a.slot);
-                      final url = ShopWebLinks.parts(
-                        bikeId: widget.bikeId,
-                        slot: slot,
-                        fitBike: true,
-                      );
-                      Navigator.pop(context);
-                      final uri = Uri.parse(url);
-                      final ok = await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                      if (!ok && context.mounted) {
-                        ref.read(shellTabIndexProvider.notifier).state = 4;
-                      }
-                    },
-                  ),
-              ],
-            ],
-            if (_tab == _DetailTab.setup) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Setup · Sag & km',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ),
-                  // Theme Size.fromHeight(48) = infinite width in Row.
-                  FilledButton.tonalIcon(
-                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
+                  TextButton(
                     onPressed: () async {
-                      await showModalBottomSheet<void>(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (_) => SetupSheet(bike: bike),
-                      );
-                      ref.invalidate(currentSetupProvider(widget.bikeId));
-                      await _load();
+                      final bike = _bike;
+                      if (bike == null) return;
+                      Navigator.pop(context);
+                      await _openShopForBike(ref, bike);
                     },
-                    icon: const Icon(Icons.tune, size: 18),
-                    label: const Text('Setup öffnen'),
+                    child: const Text('Shop'),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.s),
-              _SagAndOdometerCard(bike: bike, onUpdated: _load),
+              const SizedBox(height: AppSpacing.xs),
+              for (final a in due.take(5))
+                _MaintenanceBarRow(
+                  alert: a,
+                  onShop: () async {
+                    final bike = _bike;
+                    if (bike == null) return;
+                    final slot = ShopifyStorefront.slotFromComponent(a.slot);
+                    Navigator.pop(context);
+                    await _openShopForBike(ref, bike, slot: slot);
+                  },
+                ),
             ],
           ],
-        );
-      },
+          if (_tab == _DetailTab.setup) ...[
+            Text(
+              l10n.garageSetupTabTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              plan.hasSuspension
+                  ? l10n.garageSetupTabHint
+                  : l10n.garageSetupTabHintTires,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            _SagAndOdometerCard(
+              bike: bike,
+              components: _components,
+              onUpdated: _load,
+            ),
+            const SizedBox(height: AppSpacing.l),
+            SetupPanel(
+              bike: bike,
+              onChanged: () => unawaited(_load()),
+            ),
+          ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1693,7 +2258,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Evidence',
+                'Passgenauigkeit',
                 style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -1710,14 +2275,14 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
               Text(r.title,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: AppSpacing.s),
-              Text('Verdict: ${verdictLabel(r.verdict)}'),
+              Text('Status: ${verdictLabel(r.verdict)}'),
               Text(
                 'Schwere: ${r.severity == RuleSeverity.safetyCritical ? 'sicherheitskritisch' : 'funktional'}',
                 style: const TextStyle(color: AppColors.muted, fontSize: 13),
               ),
               const SizedBox(height: AppSpacing.m),
               Text(
-                'Begründung',
+                'Einfach erklärt',
                 style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -1736,7 +2301,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
               if (r.missingAttributes.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.m),
                 Text(
-                  'Fehlende Attribute',
+                  'Noch fehlende Infos',
                   style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -1767,6 +2332,7 @@ class _InstallComponentSheet extends ConsumerStatefulWidget {
     required this.bikeId,
     this.existing,
     this.initialSlot,
+    this.allowedSlots,
   });
 
   final String bikeId;
@@ -1780,6 +2346,9 @@ class _InstallComponentSheet extends ConsumerStatefulWidget {
   /// Gesetzt beim Antippen eines „Nicht erfasst"-Slots — startet das Sheet
   /// direkt auf diesem Slot statt auf der Default-Kassette.
   final ComponentSlot? initialSlot;
+
+  /// Kind-relevante Slots — nie der volle 25er-Geisterkatalog.
+  final List<ComponentSlot>? allowedSlots;
 
   @override
   ConsumerState<_InstallComponentSheet> createState() =>
@@ -1818,6 +2387,11 @@ class _InstallComponentSheetState
         ..remove('_compat_placeholder');
     } else if (widget.initialSlot != null) {
       _slot = widget.initialSlot!;
+    } else {
+      final allowed = widget.allowedSlots;
+      if (allowed != null && allowed.isNotEmpty) {
+        _slot = allowed.first;
+      }
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _searchCatalog());
   }
@@ -1884,7 +2458,8 @@ class _InstallComponentSheetState
 
   Future<void> _save() async {
     setState(() => _busy = true);
-    final attrs = Map<String, dynamic>.from(_catalogAttrs)..addAll(_manualAttrs);
+    final attrs = Map<String, dynamic>.from(_catalogAttrs)
+      ..addAll(_manualAttrs);
     if (_attrKey.text.trim().isNotEmpty && _attrVal.text.trim().isNotEmpty) {
       final raw = _attrVal.text.trim();
       attrs[_attrKey.text.trim()] = num.tryParse(raw) ?? raw;
@@ -1963,6 +2538,7 @@ class _InstallComponentSheetState
             const SizedBox(height: AppSpacing.s),
             _SlotGridPicker(
               selected: _slot,
+              slots: widget.allowedSlots,
               onSelect: (v) {
                 setState(() {
                   _slot = v;
@@ -2009,7 +2585,8 @@ class _InstallComponentSheetState
                     return ListTile(
                       dense: true,
                       selected: selected,
-                      leading: Icon(_slotIcon(_slot), size: 18, color: AppColors.muted),
+                      leading: Icon(_slotIcon(_slot),
+                          size: 18, color: AppColors.muted),
                       title: Text(
                         '${h.manufacturer} ${h.model}',
                         style: const TextStyle(fontSize: 13),
@@ -2126,7 +2703,6 @@ class _InstallComponentSheetState
             ),
             const SizedBox(height: AppSpacing.s),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
               onPressed: _busy ? null : _save,
               child: Text(_isEdit ? 'Speichern' : 'Installieren'),
             ),
@@ -2167,25 +2743,22 @@ class _CompatBadge extends StatelessWidget {
 }
 
 class _SagAndOdometerCard extends ConsumerWidget {
-  const _SagAndOdometerCard({required this.bike, required this.onUpdated});
+  const _SagAndOdometerCard({
+    required this.bike,
+    required this.onUpdated,
+    this.components = const [],
+  });
 
   final Bike bike;
+  final List<BikeComponent> components;
   final Future<void> Function() onUpdated;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final store = ref.watch(userProfileStoreProvider);
     final weight = store.effectiveWeightKg;
-    final fork = estimateAirPsi(
-      riderWeightKg: weight,
-      category: bike.category,
-      end: 'fork',
-    );
-    final shock = estimateAirPsi(
-      riderWeightKg: weight,
-      category: bike.category,
-      end: 'shock',
-    );
+    final plan = planWerkstattSetup(bike: bike, components: components);
     final setupAsync = ref.watch(currentSetupProvider(bike.id));
     final fp = SetupFingerprint.fromSetup(setupAsync.valueOrNull);
 
@@ -2200,43 +2773,80 @@ class _SagAndOdometerCard extends ConsumerWidget {
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
-        Text(
-          'Sag-Guide (Fahrer ${weight.toStringAsFixed(0)} kg)',
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        Text(
-          'Gabel: ${fork.psiTarget} psi '
-          '(${fork.psiMin}–${fork.psiMax}) · SAG ${fork.sag.target.toStringAsFixed(0)}%',
-          style: const TextStyle(fontSize: 13),
-        ),
-        Text(
-          'Dämpfer: ${shock.psiTarget} psi '
-          '(${shock.psiMin}–${shock.psiMax}) · SAG ${shock.sag.target.toStringAsFixed(0)}%',
-          style: const TextStyle(fontSize: 13),
-        ),
-        Text(
-          fork.note,
-          style: const TextStyle(fontSize: 11, color: AppColors.muted),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        TextButton(
-          onPressed: () {
-            showDialog<void>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('SAG messen'),
-                content: Text(sagMeasureSteps('fork').join('\n\n')),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          },
-          child: const Text('Messschritte anzeigen'),
-        ),
+        if (plan.hasSuspension) ...[
+          Text(
+            'Federungs-Richtwerte (Fahrer ${weight.toStringAsFixed(0)} kg)',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Builder(
+            builder: (context) {
+              final fork = estimateAirPsi(
+                riderWeightKg: weight,
+                category: bike.category,
+                end: 'fork',
+                travelMm: bike.travelFrontMm?.toDouble(),
+              );
+              return Text(
+                'Gabel: ${fork.psiTarget} psi '
+                '(${fork.psiMin}–${fork.psiMax}) · SAG ${fork.sag.target.toStringAsFixed(0)}%',
+                style: const TextStyle(fontSize: 13),
+              );
+            },
+          ),
+          if (plan.hasRearShock)
+            Builder(
+              builder: (context) {
+                final shock = estimateAirPsi(
+                  riderWeightKg: weight,
+                  category: bike.category,
+                  end: 'shock',
+                  travelMm: bike.travelRearMm?.toDouble(),
+                );
+                return Text(
+                  'Dämpfer: ${shock.psiTarget} psi '
+                  '(${shock.psiMin}–${shock.psiMax}) · SAG ${shock.sag.target.toStringAsFixed(0)}%',
+                  style: const TextStyle(fontSize: 13),
+                );
+              },
+            ),
+          const Text(
+            'Richtwert zum Einstieg — am Bike messen, dann feinjustieren.',
+            style: TextStyle(fontSize: 11, color: AppColors.muted),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          TextButton(
+            onPressed: () {
+              showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('SAG messen'),
+                  content: Text(sagMeasureSteps('fork').join('\n\n')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Text('Messschritte anzeigen'),
+          ),
+        ] else ...[
+          Text(
+            l10n.werkstattSetupTires,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            l10n.garageSetupTabHintTires,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
+          if (plan.wheelLabel != null)
+            Text(
+              l10n.werkstattSetupWheel(plan.wheelLabel!),
+              style: const TextStyle(fontSize: 13),
+            ),
+        ],
         const SizedBox(height: AppSpacing.m),
         _NumberEditRow(
           label: 'Kilometerstand',
@@ -2419,10 +3029,13 @@ class _NumberEditRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                Text(label,
+                    style:
+                        const TextStyle(fontSize: 11, color: AppColors.muted)),
                 Text(
                   '${value.toStringAsFixed(decimals)} $unit',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -2437,7 +3050,8 @@ class _NumberEditRow extends StatelessWidget {
   }
 
   Future<void> _edit(BuildContext context) async {
-    final controller = TextEditingController(text: value.toStringAsFixed(decimals));
+    final controller =
+        TextEditingController(text: value.toStringAsFixed(decimals));
     final result = await showDialog<double>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2555,7 +3169,8 @@ class _ComponentRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
-                child: Icon(_slotIcon(component.slot), size: 16, color: AppColors.muted),
+                child: Icon(_slotIcon(component.slot),
+                    size: 16, color: AppColors.muted),
               ),
               const SizedBox(width: AppSpacing.s),
               Expanded(
@@ -2565,11 +3180,13 @@ class _ComponentRow extends StatelessWidget {
                   children: [
                     Text(
                       component.slot.label,
-                      style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                      style:
+                          const TextStyle(fontSize: 11, color: AppColors.muted),
                     ),
                     Text(
                       component.displayName,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -2595,7 +3212,8 @@ class _ComponentRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 2),
-                const Icon(Icons.chevron_right, size: 16, color: AppColors.muted),
+                const Icon(Icons.chevron_right,
+                    size: 16, color: AppColors.muted),
               ],
               SizedBox(
                 width: 30,
@@ -2603,7 +3221,8 @@ class _ComponentRow extends StatelessWidget {
                 child: PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
                   tooltip: 'Optionen',
-                  icon: const Icon(Icons.more_vert, size: 18, color: AppColors.muted),
+                  icon: const Icon(Icons.more_vert,
+                      size: 18, color: AppColors.muted),
                   onSelected: (v) async {
                     if (v == 'edit') {
                       onEdit();
@@ -2654,7 +3273,8 @@ class _TabChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: active ? AppColors.accent : AppColors.chipIdle,
           borderRadius: BorderRadius.circular(AppRadius.chip),
-          border: Border.all(color: active ? AppColors.accent : AppColors.border),
+          border:
+              Border.all(color: active ? AppColors.accent : AppColors.border),
         ),
         child: Text(
           badge != null && badge! > 0 ? '$label ($badge)' : label,
@@ -2714,7 +3334,8 @@ class _GhostSlotRow extends StatelessWidget {
                 children: [
                   Text(
                     slot.label,
-                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    style:
+                        const TextStyle(fontSize: 11, color: AppColors.muted),
                   ),
                   const Text(
                     'Nicht erfasst',
@@ -2727,7 +3348,8 @@ class _GhostSlotRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.add_circle_outline, size: 18, color: AppColors.muted),
+            const Icon(Icons.add_circle_outline,
+                size: 18, color: AppColors.muted),
           ],
         ),
       ),
@@ -2764,7 +3386,8 @@ class _MaintenanceBarRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   alert.label,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700),
                 ),
               ),
               Text(
@@ -2838,15 +3461,89 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-/// Icon-Grid statt Text-Dropdown für die Kategoriewahl beim Anlegen.
-class _CategoryGridPicker extends StatelessWidget {
-  const _CategoryGridPicker({required this.selected, required this.onSelect});
+/// Segmented Muskel / E-Bike — steuert die sichtbaren Untertypen.
+class _AssistModeSegmented extends StatelessWidget {
+  const _AssistModeSegmented({
+    required this.selected,
+    required this.onSelect,
+  });
 
-  final BikeCategory selected;
-  final ValueChanged<BikeCategory> onSelect;
+  final BikeAssistMode selected;
+  final ValueChanged<BikeAssistMode> onSelect;
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final mode in BikeAssistMode.values) ...[
+          if (mode != BikeAssistMode.values.first)
+            const SizedBox(width: AppSpacing.s),
+          Expanded(
+            child: InkWell(
+              onTap: () => onSelect(mode),
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+                decoration: BoxDecoration(
+                  color:
+                      selected == mode ? AppColors.accent : AppColors.chipIdle,
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                  border: Border.all(
+                    color:
+                        selected == mode ? AppColors.accent : AppColors.border,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      mode == BikeAssistMode.ebike
+                          ? Icons.electric_bike
+                          : Icons.pedal_bike,
+                      size: 18,
+                      color: selected == mode
+                          ? AppColors.onAccent
+                          : AppColors.muted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      mode == BikeAssistMode.ebike ? 'E-Bike' : 'Muskel',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: selected == mode
+                            ? AppColors.onAccent
+                            : AppColors.chipIdleText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Icon-Grid statt Text-Dropdown für die Kategoriewahl beim Anlegen.
+class _CategoryGridPicker extends StatelessWidget {
+  const _CategoryGridPicker({
+    required this.selected,
+    required this.onSelect,
+    this.assistMode = BikeAssistMode.muscle,
+  });
+
+  final BikeCategory selected;
+  final ValueChanged<BikeCategory> onSelect;
+  final BikeAssistMode assistMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final cats = assistMode == BikeAssistMode.ebike
+        ? BikeAssistUx.ebikeCategories
+        : BikeAssistUx.muscleCategories;
     return GridView.count(
       crossAxisCount: 3,
       shrinkWrap: true,
@@ -2855,9 +3552,10 @@ class _CategoryGridPicker extends StatelessWidget {
       crossAxisSpacing: AppSpacing.s,
       childAspectRatio: 1.15,
       children: [
-        for (final c in BikeCategory.values)
+        for (final c in cats)
           _CategoryTile(
             category: c,
+            label: BikeAssistUx.subtypeLabel(c, assistMode),
             selected: c == selected,
             onTap: () => onSelect(c),
           ),
@@ -2871,15 +3569,16 @@ class _CategoryTile extends StatelessWidget {
     required this.category,
     required this.selected,
     required this.onTap,
+    required this.label,
   });
 
   final BikeCategory category;
   final bool selected;
   final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final label = Bike(id: '', name: '', category: category).categoryLabel;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.chip),
@@ -2956,6 +3655,7 @@ Widget _searchableCatalogField<T extends Object>({
         alignment: Alignment.topLeft,
         child: Material(
           color: AppColors.chipIdle,
+          surfaceTintColor: Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.chip),
           elevation: 4,
           child: ConstrainedBox(
@@ -2968,9 +3668,14 @@ Widget _searchableCatalogField<T extends Object>({
                 final o = opts.elementAt(i);
                 return ListTile(
                   dense: true,
+                  textColor: AppColors.chipIdleText,
+                  iconColor: AppColors.muted,
                   title: Text(
                     labelOf(o),
-                    style: const TextStyle(fontSize: 13, color: AppColors.chipIdleText),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.chipIdleText,
+                    ),
                   ),
                   onTap: () => onSelectedCb(o),
                 );
@@ -3007,12 +3712,18 @@ class _WheelSizeChips extends StatelessWidget {
             label: Text(e.value),
             selected: selected == e.key,
             onSelected: (_) => onSelect(e.key),
-            selectedColor: AppColors.accent,
+            color: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return AppColors.accent;
+              }
+              return AppColors.chipIdle;
+            }),
             labelStyle: TextStyle(
-              color: selected == e.key ? Colors.white : AppColors.chipIdleText,
+              color: selected == e.key
+                  ? AppColors.onAccent
+                  : AppColors.chipIdleText,
               fontWeight: FontWeight.w600,
             ),
-            backgroundColor: AppColors.chipIdle,
             side: BorderSide(
               color: selected == e.key ? AppColors.accent : AppColors.border,
             ),
@@ -3054,10 +3765,10 @@ Color _verdictColor(CompatVerdict v) => switch (v) {
     };
 
 String _verdictShort(CompatVerdict v) => switch (v) {
-      CompatVerdict.compatible => 'OK',
+      CompatVerdict.compatible => 'Passt',
       CompatVerdict.conditional => 'Prüfen',
-      CompatVerdict.incompatible => 'Konflikt',
-      CompatVerdict.insufficientData => 'Daten?',
+      CompatVerdict.incompatible => 'Passt nicht',
+      CompatVerdict.insufficientData => 'Unklar',
     };
 
 IconData _slotIcon(ComponentSlot slot) => switch (slot) {
@@ -3071,7 +3782,9 @@ IconData _slotIcon(ComponentSlot slot) => switch (slot) {
       ComponentSlot.seatpost => Icons.chair_alt_outlined,
       ComponentSlot.saddle => Icons.event_seat_outlined,
       ComponentSlot.frontHub || ComponentSlot.rearHub => Icons.trip_origin,
-      ComponentSlot.frontRim || ComponentSlot.rearRim => Icons.panorama_fish_eye,
+      ComponentSlot.frontRim ||
+      ComponentSlot.rearRim =>
+        Icons.panorama_fish_eye,
       ComponentSlot.tireFront || ComponentSlot.tireRear => Icons.tire_repair,
       ComponentSlot.cassette => Icons.settings,
       ComponentSlot.chain => Icons.link,
@@ -3084,10 +3797,16 @@ IconData _slotIcon(ComponentSlot slot) => switch (slot) {
       ComponentSlot.brakeFront ||
       ComponentSlot.brakeRear =>
         Icons.stop_circle_outlined,
-      ComponentSlot.rotorFront || ComponentSlot.rotorRear => Icons.album_outlined,
+      ComponentSlot.rotorFront ||
+      ComponentSlot.rotorRear =>
+        Icons.album_outlined,
       ComponentSlot.motor => Icons.electric_bolt,
       ComponentSlot.battery => Icons.battery_full,
       ComponentSlot.display => Icons.speed,
+      ComponentSlot.light => Icons.lightbulb_outline,
+      ComponentSlot.lock => Icons.lock_outline,
+      ComponentSlot.rack => Icons.luggage_outlined,
+      ComponentSlot.bags => Icons.shopping_bag_outlined,
       ComponentSlot.other => Icons.more_horiz,
     };
 
@@ -3151,11 +3870,11 @@ class _BikeSwitcherPill extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
           decoration: BoxDecoration(
             color: bike.isActive
-                ? AppColors.accent.withValues(alpha: 0.14)
+                ? AppColors.forestOnDark.withValues(alpha: 0.14)
                 : AppColors.chipIdle,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
-              color: bike.isActive ? AppColors.accent : AppColors.border,
+              color: bike.isActive ? AppColors.forestOnDark : AppColors.border,
             ),
           ),
           child: Row(
@@ -3171,7 +3890,8 @@ class _BikeSwitcherPill extends ConsumerWidget {
                         : FileImage(File(photo))),
                 child: hasPhoto
                     ? null
-                    : const Icon(Icons.pedal_bike, size: 13, color: AppColors.muted),
+                    : const Icon(Icons.pedal_bike,
+                        size: 13, color: AppColors.muted),
               ),
               const SizedBox(width: 8),
               Text(
@@ -3179,7 +3899,8 @@ class _BikeSwitcherPill extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: bike.isActive ? AppColors.chipIdleText : AppColors.muted,
+                  color:
+                      bike.isActive ? AppColors.chipIdleText : AppColors.muted,
                 ),
               ),
             ],
@@ -3192,13 +3913,19 @@ class _BikeSwitcherPill extends ConsumerWidget {
 
 /// Icon-Grid statt 15-Punkte-Dropdown für die Slot-Wahl beim Installieren.
 class _SlotGridPicker extends StatelessWidget {
-  const _SlotGridPicker({required this.selected, required this.onSelect});
+  const _SlotGridPicker({
+    required this.selected,
+    required this.onSelect,
+    this.slots,
+  });
 
   final ComponentSlot selected;
   final ValueChanged<ComponentSlot> onSelect;
+  final List<ComponentSlot>? slots;
 
   @override
   Widget build(BuildContext context) {
+    final list = slots ?? _trackableSlots;
     return GridView.count(
       crossAxisCount: 4,
       shrinkWrap: true,
@@ -3207,7 +3934,7 @@ class _SlotGridPicker extends StatelessWidget {
       crossAxisSpacing: AppSpacing.s,
       childAspectRatio: 0.95,
       children: [
-        for (final s in _trackableSlots)
+        for (final s in list)
           _SlotTile(
             slot: s,
             selected: s == selected,
@@ -3237,21 +3964,22 @@ class _SlotTile extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.accent.withValues(alpha: 0.14)
+              ? AppColors.forestOnDark.withValues(alpha: 0.14)
               : AppColors.chipIdle,
           borderRadius: BorderRadius.circular(AppRadius.chip),
           border: Border.all(
-            color: selected ? AppColors.accent : AppColors.border,
+            color: selected ? AppColors.forestOnDark : AppColors.border,
           ),
         ),
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: 2),
+        padding:
+            const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: 2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               _slotIcon(slot),
               size: 18,
-              color: selected ? AppColors.accent : AppColors.muted,
+              color: selected ? AppColors.forestOnDark : AppColors.muted,
             ),
             const SizedBox(height: 3),
             Text(
@@ -3413,3 +4141,147 @@ const Map<String, List<String>> _knownAttrOptions = {
   ],
   'axle_front': ['15x100', '15x110_boost', '9x100_qr', '20x110'],
 };
+
+/// Garage: CSC-/Radsensor an aktives Bike koppeln (speichert in [BikeBleStore]).
+class _BleSensorTile extends ConsumerStatefulWidget {
+  const _BleSensorTile({
+    required this.bikeId,
+    this.isEbike = false,
+  });
+
+  final String bikeId;
+  final bool isEbike;
+
+  @override
+  ConsumerState<_BleSensorTile> createState() => _BleSensorTileState();
+}
+
+class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
+  BikeBleDevice? _saved;
+  bool _busy = false;
+  String? _status;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_reload());
+  }
+
+  Future<void> _reload() async {
+    final d = await ref.read(bikeBleStoreProvider).deviceForBike(widget.bikeId);
+    if (mounted) setState(() => _saved = d);
+  }
+
+  Future<void> _pair() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _status = 'Suche Geräte …';
+    });
+    try {
+      final ok = await showBlePairSheet(
+        context,
+        bikeId: widget.bikeId,
+        isEbike: widget.isEbike,
+      );
+      await _reload();
+      if (!mounted) return;
+      if (ok) {
+        final ble = ref.read(bleCoreProvider);
+        final name = ble.connectedDeviceName ?? _saved?.name;
+        setState(() {
+          _status = name != null && name.isNotEmpty
+              ? 'Gekoppelt: $name'
+              : 'Gerät gekoppelt';
+        });
+      } else {
+        setState(() => _status = null);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Kopplung fehlgeschlagen');
+      debugPrint('garage ble pair: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _unlink() async {
+    await ref.read(bikeBleStoreProvider).removeForBike(widget.bikeId);
+    try {
+      await ref.read(bleCoreProvider).disconnectCsc();
+    } catch (_) {}
+    await _reload();
+    if (mounted) setState(() => _status = 'Sensor entfernt');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _saved?.name?.trim();
+    final line = _saved == null
+        ? 'Bluetooth nicht verbunden'
+        : (name != null && name.isNotEmpty ? name : 'Gerät gekoppelt');
+    final hint = widget.isEbike
+        ? 'Bosch, Shimano STEPS oder CSC. Display einschalten.'
+        : 'Sensor am Rad, nicht am Fahrer.';
+
+    return InkWell(
+      onTap: _busy ? null : () => unawaited(_pair()),
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+        child: Row(
+          children: [
+            Icon(
+              Icons.bluetooth,
+              size: 18,
+              color: _saved != null ? AppColors.forestOnDark : AppColors.muted,
+            ),
+            const SizedBox(width: AppSpacing.s),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    line,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (_saved == null)
+                    Text(
+                      hint,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  if (_status != null)
+                    Text(
+                      _status!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (_busy)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (_saved != null)
+              TextButton(
+                onPressed: () => unawaited(_unlink()),
+                child: const Text('Entfernen'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

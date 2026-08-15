@@ -1,0 +1,33 @@
+{% doc %}
+Returns 1 when the product is an internal garage-fit hook, not for sale.
+@param {product} [product] - Product to inspect
+@example
+{% render 'aetherride-garage-hook', product: product %}
+{% enddoc %}
+{%- liquid
+  assign hide = false
+  if product != blank
+    if product.tags contains 'garage-bike'
+      assign hide = true
+    endif
+    if product.tags contains 'garage_bike'
+      assign hide = true
+    endif
+    if product.tags contains 'aetherride-garage'
+      assign hide = true
+    endif
+    if product.tags contains 'garage-hook'
+      assign hide = true
+    endif
+    if product.type == 'Garage Bike'
+      assign hide = true
+    endif
+    if product.type == 'Garage-Bike'
+      assign hide = true
+    endif
+    if product.handle contains 'ar-garage-'
+      assign hide = true
+    endif
+  endif
+-%}
+{%- if hide -%}1{%- endif -%}

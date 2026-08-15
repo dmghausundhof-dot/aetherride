@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Touren – MTB, Gravel, Rennrad, City & E-Bike",
+    title: "Karte – OSM, Rundkurse, Nähe",
   description:
-    "Touren entdecken und planen für Rennrad, Gravel, MTB, E-Bike und City. Karte, Filter und Routing-Profile.",
+    "Vor dem Tor: OpenStreetMap, ~60-Min-Rundkurse. Kein Google-Layer. Rausfahren landet hier.",
 };
 
 export default function DiscoverLayout({

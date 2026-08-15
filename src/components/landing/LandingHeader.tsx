@@ -3,57 +3,69 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { AppDownloadButtons } from "./AppDownloadButtons";
-
-const links = [
-  { href: "/discover", label: "Touren" },
-  { href: "/planner", label: "Planen" },
-  { href: "/#service-check", label: "Service-Check" },
-  { href: "/regions", label: "Regionen" },
-  { href: "/community", label: "Community" },
-  { href: "/guides", label: "Guides" },
-  { href: "/pricing", label: "Preise" },
-  { href: "/download", label: "App" },
-];
+import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
+import {
+  MARKETING_NAV,
+  isMarketingNavActive,
+} from "@/lib/nav/marketingNav";
+import { HOF_COPY } from "@/lib/home/hofCopy";
+import { usePathname } from "next/navigation";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/55 backdrop-blur-md">
+    <header className="hof-safe-header sticky top-0 z-50 border-b border-border/40 bg-background/55 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:h-16 sm:px-8 lg:px-10">
         <Link
           href="/"
           className="text-[0.95rem] font-semibold tracking-tight text-foreground sm:text-base"
         >
-          Aether<span className="text-accent">Ride</span>
+          <FlowLineWordmark
+            className="text-[0.95rem] font-semibold tracking-tight text-foreground sm:text-base"
+            markClassName="h-5 w-5"
+          />
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-sm text-text-secondary hover:text-foreground"
-            >
-              {l.label}
-            </Link>
-          ))}
+        <nav
+          className="hidden items-center gap-6 lg:flex"
+          aria-label="Website"
+        >
+          {MARKETING_NAV.map((item) => {
+            const active = isMarketingNavActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={
+                  active
+                    ? "text-sm font-semibold text-chrome"
+                    : "text-sm text-text-secondary hover:text-foreground"
+                }
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-3">
           <Link
-            href="/profile"
-            className="hidden text-sm text-text-secondary hover:text-foreground sm:block"
+            href="/anmelden"
+            className="hidden text-sm text-text-secondary hover:text-chrome sm:block"
           >
-            Anmelden
+            {HOF_COPY.profileArrive}
           </Link>
-          <div className="hidden sm:block">
-            <AppDownloadButtons size="md" />
-          </div>
+          <Link
+            href="/home"
+            className="hidden h-9 items-center rounded-lg bg-chrome px-3.5 text-sm font-semibold text-background hover:bg-chrome/90 sm:inline-flex"
+          >
+            Zum Hof
+          </Link>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border lg:hidden"
             aria-label={open ? "Menü schließen" : "Menü öffnen"}
             onClick={() => setOpen((v) => !v)}
           >
@@ -63,29 +75,33 @@ export function LandingHeader() {
       </div>
 
       {open && (
-        <div className="border-t border-border px-4 py-3 md:hidden">
-          <nav className="flex flex-col gap-1">
-            {links.map((l) => (
+        <div className="border-t border-border px-4 py-3 lg:hidden">
+          <nav className="flex flex-col gap-1" aria-label="Website">
+            {MARKETING_NAV.map((item) => (
               <Link
-                key={l.href}
-                href={l.href}
+                key={item.href}
+                href={item.href}
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 text-sm text-text-secondary"
               >
-                {l.label}
+                {item.label}
               </Link>
             ))}
             <Link
-              href="/profile"
+              href="/anmelden"
               onClick={() => setOpen(false)}
               className="rounded-lg px-3 py-3 text-sm text-text-secondary"
             >
-              Anmelden
+              {HOF_COPY.profileArrive}
+            </Link>
+            <Link
+              href="/home"
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-3 text-sm font-semibold text-chrome"
+            >
+              Zum Hof
             </Link>
           </nav>
-          <div className="mt-3">
-            <AppDownloadButtons size="md" />
-          </div>
         </div>
       )}
     </header>

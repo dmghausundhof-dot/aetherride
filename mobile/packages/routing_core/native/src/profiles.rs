@@ -1,5 +1,5 @@
-//! Spec F-NAV-001 — seven profiles + Valhalla costing mirrored from
-//! `src/lib/routing/engine.ts` / `profiles.ts` (keep in sync).
+//! Spec F-NAV-001 — eight profiles + Valhalla costing mirrored from
+//! `src/lib/routing/profiles.ts` (keep in sync with valhalla-costing.json).
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Profile {
@@ -9,6 +9,7 @@ pub enum Profile {
     Road,
     Ebike,
     Emtb,
+    Downhill,
     Hiking,
 }
 
@@ -21,6 +22,7 @@ impl Profile {
             "road" => Some(Self::Road),
             "ebike" => Some(Self::Ebike),
             "emtb" => Some(Self::Emtb),
+            "downhill" | "dh" => Some(Self::Downhill),
             "hiking" => Some(Self::Hiking),
             _ => None,
         }
@@ -35,6 +37,7 @@ impl Profile {
             Self::Road => "road",
             Self::Ebike => "ebike",
             Self::Emtb => "emtb",
+            Self::Downhill => "downhill",
             Self::Hiking => "hiking",
         }
     }
@@ -49,10 +52,11 @@ impl Profile {
             Self::Emtb => 4.5,
             Self::MtbAllmountain => 3.5,
             Self::MtbEnduro => 3.0,
+            Self::Downhill => 3.2,
         }
     }
 
-    /// Valhalla costing name + options — identical to server `valhallaCosting`.
+    /// Valhalla costing name + options — identical to `buildValhallaCosting`.
     pub fn valhalla_costing_json(self) -> serde_json::Value {
         match self {
             Self::Hiking => serde_json::json!({
@@ -87,6 +91,12 @@ impl Profile {
                 "costing": "bicycle",
                 "costing_options": { "bicycle": {
                     "bicycle_type": "mountain", "use_roads": 0.1, "use_hills": 0.9, "avoid_bad_surfaces": 0.05
+                }}
+            }),
+            Self::Downhill => serde_json::json!({
+                "costing": "bicycle",
+                "costing_options": { "bicycle": {
+                    "bicycle_type": "mountain", "use_roads": 0.05, "use_hills": 1.0, "avoid_bad_surfaces": 0.0
                 }}
             }),
             Self::MtbAllmountain => serde_json::json!({
@@ -154,6 +164,21 @@ impl Profile {
                     Some(1.4)
                 }
             }
+            Self::Downhill => {
+                if matches!(highway, "motorway" | "trunk" | "primary" | "secondary" | "steps") {
+                    return None;
+                }
+                let s = mtb_scale.unwrap_or(0);
+                if s >= 3 {
+                    Some(0.55)
+                } else if s >= 1 {
+                    Some(0.7)
+                } else if highway == "path" || highway == "track" {
+                    Some(1.15)
+                } else {
+                    Some(2.2)
+                }
+            }
             Self::MtbAllmountain | Self::Emtb => {
                 if matches!(highway, "motorway" | "trunk" | "steps") {
                     return None;
@@ -210,7 +235,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_seven_parse() {
+    fn all_eight_parse() {
         for id in [
             "mtb_allmountain",
             "mtb_enduro",
@@ -218,10 +243,12 @@ mod tests {
             "road",
             "ebike",
             "emtb",
+            "downhill",
             "hiking",
         ] {
             assert!(Profile::parse(id).is_some());
         }
+        assert_eq!(Profile::parse("dh"), Some(Profile::Downhill));
     }
 
     #[test]
@@ -230,5 +257,17 @@ mod tests {
         assert_eq!(j["costing"], "bicycle");
         let h = Profile::Hiking.valhalla_costing_json();
         assert_eq!(h["costing"], "pedestrian");
+        let d = Profile::Downhill.valhalla_costing_json();
+        assert_eq!(d["costing"], "bicycle");
+        assert_eq!(d["costing_options"]["bicycle"]["use_hills"], 1.0);
+        assert_eq!(d["costing_options"]["bicycle"]["use_roads"], 0.05);
+    }
+
+    #[test]
+    fn downhill_prefers_technical_trails() {
+        let p = Profile::Downhill;
+        assert!(p.edge_factor("motorway", None, "asphalt").is_none());
+        assert_eq!(p.edge_factor("path", Some(2), "dirt"), Some(0.7));
+        assert_eq!(p.edge_factor("path", Some(3), "dirt"), Some(0.55));
     }
 }

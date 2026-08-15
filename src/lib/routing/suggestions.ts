@@ -553,6 +553,8 @@ export function categoryForRoutingProfile(
   switch (profile) {
     case "mtb_enduro":
       return "mtb_enduro";
+    case "downhill":
+      return "dh";
     case "gravel":
       return "gravel";
     case "road":

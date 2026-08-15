@@ -1,8 +1,16 @@
-import Link from "next/link";
-import { ShoppingBag, ChevronRight } from "lucide-react";
-import { shopPartsHref } from "@/lib/shop/partsCatalog";
+"use client";
 
-/** Garage CTA → Parts with bike soft-fit context (skip-friendly without bike). */
+import { ShoppingBag, ChevronRight } from "lucide-react";
+import {
+  SHOPIFY_PARTS_COLLECTION,
+  shopifyCollectionUrl,
+} from "@/lib/shop/catalog";
+import { shopifyPartsFitUrl } from "@/lib/shop/shopifyGateway";
+import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { useAppStore } from "@/store/useAppStore";
+import { HOF_COPY } from "@/lib/home/hofCopy";
+
+/** Werkstatt → Shopify-Fit-Collection, kein In-App-Katalog. */
 export function GaragePartsCta({
   bikeId,
   bikeName,
@@ -12,33 +20,38 @@ export function GaragePartsCta({
   bikeName?: string | null;
   className?: string;
 }) {
-  const href = bikeId
-    ? shopPartsHref({ bike: bikeId, fit: "bike" })
-    : shopPartsHref();
+  const bikes = useAppStore((s) => s.bikes);
+  const bike = bikeId ? bikes.find((b) => b.id === bikeId) : undefined;
+  const href = bike
+    ? shopifyPartsFitUrl(bike)
+    : shopifyCollectionUrl(SHOPIFY_PARTS_COLLECTION);
 
   return (
-    <Link
-      href={href}
+    <div
       className={
-        className ??
-        "group flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-4 transition hover:border-accent/70"
+        className ?? "rounded-2xl border border-border bg-surface p-4"
       }
       data-testid="garage-parts-cta"
     >
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent">
-        <ShoppingBag className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="font-semibold text-accent">
-          {bikeId ? "Passt zu deinem Bike" : "Ersatzteile entdecken"}
+      <div className="mb-3 flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-chrome/15 text-chrome">
+          <ShoppingBag className="h-5 w-5" />
         </div>
-        <p className="mt-0.5 text-xs text-text-secondary">
-          {bikeId
-            ? `Soft-Fit für ${bikeName ?? "dein Rad"} — Beläge, Griffe, Fluid & mehr.`
-            : "Collection featured-parts — ohne Bike einfach stöbern."}
-        </p>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold">{HOF_COPY.shopForYourBike}</div>
+          <p className="mt-0.5 text-xs text-text-secondary">
+            {bikeName
+              ? HOF_COPY.shopForYourBikeHint(bikeName)
+              : HOF_COPY.shopHint}
+          </p>
+        </div>
+        <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-text-secondary" />
       </div>
-      <ChevronRight className="h-5 w-5 shrink-0 text-accent transition group-hover:translate-x-0.5" />
-    </Link>
+      <ShopifyOutboundButton
+        href={href}
+        label={HOF_COPY.shopGo}
+        variant="ghost"
+      />
+    </div>
   );
 }

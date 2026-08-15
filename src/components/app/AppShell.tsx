@@ -2,8 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import { AppHeader } from "./AppHeader";
+import { HofThresholdNav } from "./HofThresholdNav";
 
-/** App-Bereiche mit Desktop-Top-Nav (kein Ride-Tab, kein Mobile-Bottom-Nav). */
+/** App-Bereiche mit Hof-Chrome (kein Ride-Tab). */
 const APP_PREFIXES = [
   "/home",
   "/garage",
@@ -39,7 +40,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-[var(--hof-tab-h)] md:pb-0">
+        {children}
+      </main>
+      <HofThresholdNav />
     </div>
   );
 }

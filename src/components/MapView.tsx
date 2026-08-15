@@ -4,6 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { Protocol } from "pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type {
+  BikeOverlayClass,
+  BikeOverlayFamily,
+} from "@/lib/routing/bikeOverlayClass";
+import {
+  addBikeOverlayLayers,
+  applyBikeOverlayVisibility,
+  BIKE_OVERLAY_SOURCE_ID,
+  type BikeOverlayMapLike,
+} from "@/lib/routing/bikeOverlayMap";
+import type { RideProfileId } from "@/lib/routing/profiles";
 
 export type MapMarker = {
   id: string;
@@ -55,8 +66,15 @@ interface MapViewProps {
   interactiveSelect?: boolean;
   onMapClick?: (lngLat: [number, number]) => void;
   onRouteClick?: (routeId: string) => void;
+  onMarkerClick?: (id: string) => void;
   onMapReady?: (map: maplibregl.Map) => void;
   fitRoute?: boolean;
+  bikeOverlayUrl?: string | null;
+  bikeOverlayKind?: "pmtiles" | "geojson";
+  bikeOverlayFamily?: BikeOverlayFamily;
+  bikeOverlayVisible?: boolean;
+  bikeOverlayExtraOn?: BikeOverlayClass[];
+  bikeOverlayRideProfileId?: RideProfileId | null;
 }
 
 let pmtilesRegistered = false;
@@ -212,8 +230,15 @@ export function MapView({
   interactiveSelect = false,
   onMapClick,
   onRouteClick,
+  onMarkerClick,
   onMapReady,
   fitRoute = false,
+  bikeOverlayUrl = null,
+  bikeOverlayKind = "pmtiles",
+  bikeOverlayFamily = "road",
+  bikeOverlayVisible = true,
+  bikeOverlayExtraOn = [],
+  bikeOverlayRideProfileId = null,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -221,6 +246,7 @@ export function MapView({
   const layerIdsRef = useRef<Set<string>>(new Set());
   const onClickRef = useRef(onMapClick);
   const onRouteClickRef = useRef(onRouteClick);
+  const onMarkerClickRef = useRef(onMarkerClick);
   const [ready, setReady] = useState(false);
   const [tileSource, setTileSource] = useState<"stadia" | "pmtiles" | "osm">(
     "osm"
@@ -230,6 +256,7 @@ export function MapView({
 
   onClickRef.current = onMapClick;
   onRouteClickRef.current = onRouteClick;
+  onMarkerClickRef.current = onMarkerClick;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -255,17 +282,37 @@ export function MapView({
       "bottom-right"
     );
 
+    let lastW = 0;
+    let lastH = 0;
+    let resizeRaf = 0;
     const doResize = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w < 2 || h < 2) return;
+      if (w === lastW && h === lastH) return;
+      lastW = w;
+      lastH = h;
       try {
         map.resize();
       } catch {
         /* ignore */
       }
     };
+    const scheduleResize = () => {
+      if (resizeRaf) return;
+      resizeRaf = window.requestAnimationFrame(() => {
+        resizeRaf = 0;
+        doResize();
+      });
+    };
 
     map.on("load", () => {
       setReady(true);
       setMapError(null);
+      lastW = 0;
+      lastH = 0;
       doResize();
       // second resize after layout settles (desktop flex/absolute)
       window.setTimeout(doResize, 100);
@@ -293,33 +340,44 @@ export function MapView({
     });
 
     map.on("error", (e) => {
-      const msg = e?.error?.message || String(e?.error || "Kartenfehler");
+      const err = e as { error?: { message?: string }; sourceId?: string };
+      const msg = err?.error?.message || String(err?.error || "Kartenfehler");
+      const sourceId = err?.sourceId ?? "";
       console.warn("[MapView]", msg);
-      // Style/tile auth failures → fall back to OSM once
-      if (!fallbackTried.current) {
-        fallbackTried.current = true;
-        setMapError(
-          "Kartenanbieter nicht erreichbar – wechsle auf OpenStreetMap-Fallback."
-        );
-        setTileSource("osm");
-        try {
-          map.setStyle(osmRasterStyle());
-        } catch (err) {
-          console.warn("[MapView] setStyle fallback failed", err);
-        }
+      if (sourceId === BIKE_OVERLAY_SOURCE_ID || msg.includes("bike-overlay")) {
+        return;
+      }
+      // Already on OSM, or overlay-only errors: don't wipe layers with setStyle.
+      if (fallbackTried.current || initial.source === "osm") return;
+      fallbackTried.current = true;
+      setMapError(
+        "Kartenanbieter nicht erreichbar – wechsle auf OpenStreetMap-Fallback."
+      );
+      setTileSource("osm");
+      try {
+        map.setStyle(osmRasterStyle());
+      } catch (setErr) {
+        console.warn("[MapView] setStyle fallback failed", setErr);
       }
     });
 
-    // Observe container size (Discover absolute layout)
+    // Observe container size (Discover absolute layout). Guard against
+    // map.resize() ↔ ResizeObserver loops that freeze the tab.
     const ro =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => doResize())
+        ? new ResizeObserver(() => scheduleResize())
         : null;
-    if (containerRef.current && ro) ro.observe(containerRef.current);
+    if (containerRef.current && ro) {
+      ro.observe(containerRef.current);
+      if (containerRef.current.parentElement) {
+        ro.observe(containerRef.current.parentElement);
+      }
+    }
 
     mapRef.current = map;
 
     return () => {
+      if (resizeRaf) window.cancelAnimationFrame(resizeRaf);
       ro?.disconnect();
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
@@ -334,6 +392,61 @@ export function MapView({
     if (!map || !ready) return;
     map.setCenter(center);
   }, [center, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !bikeOverlayUrl) return;
+    const overlayMap = map as unknown as BikeOverlayMapLike;
+    const apply = () => {
+      try {
+        addBikeOverlayLayers(overlayMap, {
+          url: bikeOverlayUrl,
+          kind: bikeOverlayKind,
+          family: bikeOverlayFamily,
+          visible: bikeOverlayVisible,
+          extraOn: bikeOverlayExtraOn,
+          rideProfileId: bikeOverlayRideProfileId,
+        });
+      } catch (err) {
+        console.warn("[MapView] bike overlay", err);
+      }
+    };
+    apply();
+    map.on("style.load", apply);
+    return () => {
+      map.off("style.load", apply);
+    };
+  }, [
+    ready,
+    bikeOverlayUrl,
+    bikeOverlayKind,
+    bikeOverlayFamily,
+    bikeOverlayVisible,
+    bikeOverlayExtraOn,
+    bikeOverlayRideProfileId,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !bikeOverlayUrl) return;
+    try {
+      applyBikeOverlayVisibility(map as unknown as BikeOverlayMapLike, {
+        family: bikeOverlayFamily,
+        visible: bikeOverlayVisible,
+        extraOn: bikeOverlayExtraOn,
+        rideProfileId: bikeOverlayRideProfileId,
+      });
+    } catch {
+      /* source not ready yet */
+    }
+  }, [
+    ready,
+    bikeOverlayUrl,
+    bikeOverlayFamily,
+    bikeOverlayVisible,
+    bikeOverlayExtraOn,
+    bikeOverlayRideProfileId,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -474,6 +587,11 @@ export function MapView({
         lab.style.marginTop = "2px";
         el.appendChild(lab);
       }
+      el.style.cursor = "pointer";
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        onMarkerClickRef.current?.(m.id);
+      });
       return new maplibregl.Marker({ element: el })
         .setLngLat(m.lngLat)
         .addTo(map);
@@ -487,16 +605,20 @@ export function MapView({
         ? "PMTiles · Offline-fähig"
         : "OSM-Raster · Fallback";
 
+  // Don't combine `relative` + caller's `absolute` on the same node — Tailwind
+  // source order can keep `relative`, so the map never fills Discover's pane.
+  const fillsParent = /\babsolute\b/.test(className);
+
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-[#e8eee9] ${className}`}
-      style={{
-        minHeight: className?.includes("absolute")
-          ? "min(55vh, 520px)"
-          : undefined,
-      }}
+      className={`${
+        fillsParent
+          ? "overflow-hidden bg-[#e8eee9]"
+          : "relative overflow-hidden rounded-2xl bg-[#e8eee9]"
+      } ${className}`}
+      style={fillsParent ? { minHeight: 0 } : { minHeight: "min(55vh, 520px)" }}
     >
-      <div ref={containerRef} className="h-full w-full min-h-[280px]" />
+      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-surface/90 text-sm text-text-secondary">
           Karte wird geladen…

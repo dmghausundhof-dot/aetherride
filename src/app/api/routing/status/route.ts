@@ -11,24 +11,28 @@ import {
   type RoutingStatusPayload,
 } from "@/lib/routing/routingStatus";
 
+import { isOrsConfigured } from "@/lib/routing/openRouteService";
+
 /**
  * GET /api/routing/status — konfiguriert vs. Smoke-verifiziert (kein Fake-Live).
- * Optional: ?probe=1 — leichter Network-Check (OSRM/GraphHopper/Valhalla).
+ * Optional: ?probe=1 — leichter Network-Check (ORS/GraphHopper/Valhalla/OSRM).
  */
 export async function GET(req: Request) {
   const engine = configuredRoutingEngine();
   const configured = isLiveRoutingConfigured();
   const liveVerified = hasPublicRoutingHint();
   const publicOsrm = isUsingPublicOsrm();
+  const ors = isOrsConfigured();
   let notice: string | null = null;
   if (!configured) notice = DEMO_ROUTING_NOTICE;
   else if (publicOsrm) {
     notice =
-      "Live-Routing über öffentliches OSRM (Dev/Demo). Produktion: GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL setzen.";
+      "Live-Routing über öffentliches OSRM (Dev/Demo). Produktion: OPENROUTESERVICE_API_KEY, GRAPHHOPPER_API_KEY, VALHALLA_URL oder OSRM_URL setzen.";
   } else if (!liveVerified) notice = UNVERIFIED_ROUTING_NOTICE;
 
   const payload: RoutingStatusPayload & {
     publicOsrm?: boolean;
+    openrouteservice?: boolean;
     probe?: { ok: boolean; ms?: number; detail?: string };
   } = {
     configured,
@@ -36,6 +40,7 @@ export async function GET(req: Request) {
     liveVerified: liveVerified || (configured && publicOsrm),
     notice,
     publicOsrm,
+    openrouteservice: ors,
   };
 
   const url = new URL(req.url);

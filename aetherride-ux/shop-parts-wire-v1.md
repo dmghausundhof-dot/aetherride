@@ -56,9 +56,20 @@ When the store goes public: set `SHOPIFY_ONLINE_STORE_LOCKED=false` and keep in-
 - `SHOPIFY_ONLINE_STORE_LOCKED` (default `true`)
 - `SHOPIFY_STOREFRONT_PASSWORD` (optional Eng smoke, server-only)
 
-## Soft-fit filter contract
+## Soft-fit + Garage-Fit filter contract
 
-Unchanged: `slot`, `bike`, `fit`, tags `magura_shape`, `pad:shape-*`, `caliper:mt*`, `size`, `shift_compat`.
+Unchanged soft-fit tags: `slot`, `bike`, `fit`, tags `magura_shape`, `pad:shape-*`, `caliper:mt*`, `size`, `shift_compat`.
+
+Garage-Fit (Teileshop passt zur Garage) — nur echte Felder, keine OEM-SKUs:
+
+| Quelle | Felder |
+|--------|--------|
+| Bike | Kategorie, Laufradgröße, E-Bike-Flag, Schaltungsfamilie aus verbauten Teilen |
+| Produkt | Tags `category:` / `sport:` / `wheel:` / `ebike` / `shift_compat:` plus Titel-Heuristik (z. B. `29×`, `40-622`) |
+
+- Leere Garage → alle Teile + Banner „Bike anlegen“
+- Mit Bikes → default `fit=bike` (Union), Chip pro Bike, Toggle „Nur passende Teile“
+- Label nur bei nachgewiesenem Match: `passt zu Canyon Grizl · 700c · Gravel`
 
 ## Garage CTA
 

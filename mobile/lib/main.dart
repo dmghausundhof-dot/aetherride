@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config.dart';
 import 'core/crash_reporting.dart';
+import 'presentation/shared/hof_splash.dart';
 import 'providers/app_providers.dart';
 import 'providers/ride_providers.dart';
 
@@ -27,10 +28,15 @@ class _Bootstrap extends ConsumerStatefulWidget {
 }
 
 class _BootstrapState extends ConsumerState<_Bootstrap> {
+  bool _ready = false;
+
   @override
   void initState() {
     super.initState();
     unawaited(_boot());
+    Future<void>.delayed(const Duration(milliseconds: 700), () {
+      if (mounted && !_ready) setState(() => _ready = true);
+    });
   }
 
   Future<void> _boot() async {
@@ -55,8 +61,17 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
       debugPrint('Bootstrap: $e');
       ref.read(onboardingDoneProvider.notifier).state = false;
     }
+    if (mounted) setState(() => _ready = true);
   }
 
   @override
-  Widget build(BuildContext context) => const AetherRideApp();
+  Widget build(BuildContext context) {
+    if (!_ready) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: HofSplash(),
+      );
+    }
+    return const AetherRideApp();
+  }
 }

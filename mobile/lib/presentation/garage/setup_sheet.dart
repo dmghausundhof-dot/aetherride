@@ -1,33 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
+import '../../domain/component.dart';
+import '../../domain/garage/werkstatt_setup.dart';
 import '../../domain/setup.dart';
 import '../../domain/setup/bracketing.dart';
 import '../../domain/setup/templates.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 
-/// Setup-Liste, Templates, manuelle Version, Bracketing-MVP.
-class SetupSheet extends ConsumerStatefulWidget {
-  const SetupSheet({super.key, required this.bike});
+/// Setup-Versionen, Vorlagen und A/B-Vergleich — einbettbar im Garage-Tab.
+///
+/// Kein zweites Sheet mehr nötig: Inhalte leben im Setup-Tab.
+class SetupPanel extends ConsumerStatefulWidget {
+  const SetupPanel({
+    super.key,
+    required this.bike,
+    this.onChanged,
+  });
 
   final Bike bike;
+  final VoidCallback? onChanged;
 
   @override
-  ConsumerState<SetupSheet> createState() => _SetupSheetState();
+  ConsumerState<SetupPanel> createState() => _SetupPanelState();
 }
 
-class _SetupSheetState extends ConsumerState<SetupSheet> {
+class _SetupPanelState extends ConsumerState<SetupPanel> {
   List<BikeSetup> _setups = [];
   bool _busy = false;
   double _riderWeight = 75;
-  String? _bracketMsg;
+  String? _compareMsg;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant SetupPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bike.id != widget.bike.id) {
+      _compareMsg = null;
+      _load();
+    }
+  }
+
+  WerkstattSetupPlan get _plan {
+    final comps =
+        ref.read(bikeComponentsProvider(widget.bike.id)).valueOrNull ??
+            const <BikeComponent>[];
+    return planWerkstattSetup(bike: widget.bike, components: comps);
   }
 
   Future<void> _load() async {
@@ -43,58 +70,77 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
     }
   }
 
+  void _notify() {
+    ref.invalidate(currentSetupProvider(widget.bike.id));
+    widget.onChanged?.call();
+  }
+
   Future<void> _applyTemplate(SetupTemplate tpl) async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: '${tpl.label} (Vorlage)',
+          label: l10n.setupTemplateAppliedLabel(tpl.label),
           values: tpl.toValues(_riderWeight, widget.bike.category),
           conditions: tpl.conditions,
           createdBy: 'template',
         );
-    ref.invalidate(currentSetupProvider(widget.bike.id));
     await _load();
+    _notify();
     if (mounted) {
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vorlage übernommen — ${tpl.disclaimer}')),
+        SnackBar(content: Text(l10n.setupTemplateAppliedSnack(tpl.disclaimer))),
       );
     }
   }
 
   Future<void> _setCurrent(BikeSetup s) async {
     await ref.read(setupRepositoryProvider).setCurrent(widget.bike.id, s.id);
-    ref.invalidate(currentSetupProvider(widget.bike.id));
     await _load();
+    _notify();
   }
 
   Future<void> _manualVersion() async {
+    final l10n = AppLocalizations.of(context);
+    final plan = _plan;
+    final key = plan.primaryAdjusterKey;
     final current = await ref
         .read(setupRepositoryProvider)
         .getCurrent(widget.bike.id);
+    final fallback = defaultSetupValuesFor(plan);
     final base = Map<String, double>.from(
       current?.adjusterMap ??
-          {for (final v in BikeSetup.defaultValues()) v.adjusterKey: v.valueNum},
+          {for (final v in fallback) v.adjusterKey: v.valueNum},
     );
-    final rebound = base['fork.rebound'] ?? 8;
-    final ctrl = TextEditingController(text: rebound.toStringAsFixed(0));
-    final labelCtrl = TextEditingController(text: 'Manuell v${(_setups.length + 1)}');
+    final seed = base[key] ?? (plan.hasSuspension ? 8.0 : 36.0);
+    final ctrl = TextEditingController(text: seed.toStringAsFixed(0));
+    final labelCtrl = TextEditingController(
+      text: l10n.setupNewVersionDefaultName(_setups.length + 1),
+    );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Neue Setup-Version'),
+        title: Text(l10n.setupNewVersionTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Text(
+              l10n.setupNewVersionHint,
+              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
+            const SizedBox(height: AppSpacing.s),
             TextField(
               controller: labelCtrl,
-              decoration: const InputDecoration(labelText: 'Label'),
+              decoration: InputDecoration(labelText: l10n.setupVersionNameLabel),
             ),
             TextField(
               controller: ctrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Gabel Zugstufe (Klicks)',
+              decoration: InputDecoration(
+                labelText: plan.hasSuspension
+                    ? l10n.setupForkReboundLabel
+                    : l10n.setupTirePressureLabel,
               ),
             ),
           ],
@@ -102,18 +148,18 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
+            child: Text(l10n.setupCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Speichern'),
+            child: Text(l10n.setupSave),
           ),
         ],
       ),
     );
-    if (ok != true) return;
-    final next = double.tryParse(ctrl.text) ?? rebound;
-    base['fork.rebound'] = next.clamp(0, 14);
+    if (!mounted || ok != true) return;
+    final next = double.tryParse(ctrl.text) ?? seed;
+    base[key] = plan.hasSuspension ? next.clamp(0, 14) : next.clamp(15, 130);
     final values = [
       for (final e in base.entries)
         SetupValue(
@@ -122,34 +168,51 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
           unit: e.key.contains('pressure') ? 'psi' : 'clicks',
         ),
     ];
+    final name = labelCtrl.text.trim();
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: labelCtrl.text.trim().isEmpty ? 'Manuell' : labelCtrl.text.trim(),
+          label: name.isEmpty ? l10n.setupManualFallback : name,
           values: values,
           parentSetupId: current?.id,
         );
-    ref.invalidate(currentSetupProvider(widget.bike.id));
     await _load();
+    _notify();
   }
 
-  Future<void> _startBracketing() async {
+  Future<void> _startCompare() async {
+    final l10n = AppLocalizations.of(context);
+    final plan = _plan;
+    final key = plan.primaryAdjusterKey;
+    setState(() => _busy = true);
     final current =
         await ref.read(setupRepositoryProvider).getCurrent(widget.bike.id);
-    final rebound = current?.valueFor('fork.rebound') ?? 8;
+    final fallback = defaultSetupValuesFor(plan);
+    final fromCurrent = current?.valueFor(key);
+    final fromFallback = fallback
+        .where((v) => v.adjusterKey == key)
+        .map((v) => v.valueNum);
+    final seed = fromCurrent ??
+        (fromFallback.isEmpty
+            ? (plan.hasSuspension ? 8.0 : 36.0)
+            : fromFallback.first);
     final series = createBlindPair(
-      adjusterKey: 'fork.rebound',
-      currentValue: rebound,
+      adjusterKey: key,
+      currentValue: seed,
     );
-    final a = series.rangeFrom.clamp(0, 14);
-    final b = series.rangeTo.clamp(0, 14);
+    final a = plan.hasSuspension
+        ? series.rangeFrom.clamp(0, 14)
+        : series.rangeFrom.clamp(15, 130);
+    final b = plan.hasSuspension
+        ? series.rangeTo.clamp(0, 14)
+        : series.rangeTo.clamp(15, 130);
+    final baseValues = current?.values ?? fallback;
 
-    // Zwei Blind-Varianten als Setup-Versionen anlegen (Labels A/B ohne Werte)
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: 'Bracketing A (blind)',
+          label: l10n.setupCompareVariantA,
           values: [
-            for (final v in (current?.values ?? BikeSetup.defaultValues()))
-              v.adjusterKey == 'fork.rebound'
+            for (final v in baseValues)
+              v.adjusterKey == key
                   ? SetupValue(
                       adjusterKey: v.adjusterKey,
                       valueNum: a.toDouble(),
@@ -162,10 +225,10 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
         );
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: 'Bracketing B (blind)',
+          label: l10n.setupCompareVariantB,
           values: [
-            for (final v in (current?.values ?? BikeSetup.defaultValues()))
-              v.adjusterKey == 'fork.rebound'
+            for (final v in baseValues)
+              v.adjusterKey == key
                   ? SetupValue(
                       adjusterKey: v.adjusterKey,
                       valueNum: b.toDouble(),
@@ -177,7 +240,6 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
           parentSetupId: current?.id,
         );
 
-    // Auswertung: bevorzugt echte Ride-Metriken, sonst synthetischer Fallback
     final rides = await ref.read(rideRepositoryProvider).listRides(limit: 40);
     var runs = runsFromRides(
       rides: rides,
@@ -192,7 +254,7 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
 
     final eval = evaluateBracketingSeries(
       BracketingSeries(
-        adjusterKey: 'fork.rebound',
+        adjusterKey: key,
         rangeFrom: a.toDouble(),
         rangeTo: b.toDouble(),
         step: (b - a).abs() < 1e-6 ? 2.0 : (b - a).abs().toDouble(),
@@ -200,20 +262,296 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
       ),
     );
 
-    ref.invalidate(currentSetupProvider(widget.bike.id));
     await _load();
+    _notify();
     if (mounted) {
+      final rideFeedback = rides
+          .where((r) => r.bikeId == widget.bike.id && r.feedback != null)
+          .length;
       setState(() {
-        _bracketMsg = fromRides
-            ? 'Blind A/B angelegt · Auswertung aus ${rides.where((r) => r.bikeId == widget.bike.id && r.feedback != null).length} Rides: ${eval.summary}'
-            : 'Blind A/B angelegt · noch zu wenig Ride-Feedback — Demo-Auswertung: ${eval.summary}';
+        _busy = false;
+        _compareMsg = fromRides
+            ? l10n.setupCompareResultFromRides(rideFeedback, eval.summary)
+            : l10n.setupCompareResultDemo(eval.summary);
       });
     }
   }
 
+  String _formatDate(DateTime dt, String locale) {
+    return DateFormat.yMMMd(locale).format(dt.toLocal());
+  }
+
+  String _createdByLabel(AppLocalizations l10n, String createdBy) {
+    return switch (createdBy) {
+      'template' => l10n.setupSourceTemplate,
+      'system' || 'baseline' => l10n.setupSourceBaseline,
+      _ => l10n.setupSourceManual,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    ref.watch(bikeComponentsProvider(widget.bike.id));
+    final plan = _plan;
     final tpls = templatesFor(widget.bike.category);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.setupVersionsTitle,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          l10n.setupVersionsHint,
+          style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        Text(
+          l10n.setupRiderWeightLabel,
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+        Slider(
+          value: _riderWeight,
+          min: 55,
+          max: 110,
+          divisions: 55,
+          label: _riderWeight.round().toString(),
+          onChanged: (v) => setState(() => _riderWeight = v),
+        ),
+        // Theme minimumSize: Size.fromHeight(48) = infinite width —
+        // override or BoxConstraints Infinity crash (S25 Setup).
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.forestOnDark,
+                minimumSize: const Size(0, 44),
+              ),
+              onPressed: _busy ? null : _manualVersion,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.setupNewVersionCta),
+            ),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
+              onPressed: _busy ? null : _startCompare,
+              icon: const Icon(Icons.compare_arrows, size: 18),
+              label: Text(l10n.setupCompareCta),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          plan.hasSuspension
+              ? l10n.setupCompareHint
+              : l10n.setupCompareHintTires,
+          style: const TextStyle(fontSize: 12, color: AppColors.muted),
+        ),
+        if (_compareMsg != null) ...[
+          const SizedBox(height: AppSpacing.s),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            decoration: BoxDecoration(
+              color: AppColors.chipIdle,
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Text(
+              _compareMsg!,
+              style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.l),
+        Text(
+          l10n.setupSavedVersions,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        if (_setups.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+            child: Text(
+              l10n.setupEmpty,
+              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+            ),
+          )
+        else
+          for (final s in _setups)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.s),
+              child: Material(
+                color: s.isCurrent
+                    ? AppColors.accent.withValues(alpha: 0.12)
+                    : AppColors.chipIdle,
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                  onTap: s.isCurrent ? null : () => _setCurrent(s),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      s.label,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  if (s.isCurrent)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.s,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accent,
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.pill,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        l10n.setupActiveBadge,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.onAccent,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.xxs),
+                              Text(
+                                [
+                                  l10n.setupVersionMeta(s.version),
+                                  _formatDate(s.createdAt, locale),
+                                  _createdByLabel(l10n, s.createdBy),
+                                  if (plan.hasSuspension &&
+                                      s.valueFor('fork.rebound') != null)
+                                    l10n.setupForkReboundValue(
+                                      s.valueFor('fork.rebound')!
+                                          .toStringAsFixed(0),
+                                    )
+                                  else if (s.valueFor(
+                                        'tire_front.pressure_psi',
+                                      ) !=
+                                      null)
+                                    l10n.setupTirePressureValue(
+                                      s
+                                          .valueFor('tire_front.pressure_psi')!
+                                          .toStringAsFixed(0),
+                                    ),
+                                ].join(' · '),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!s.isCurrent)
+                          TextButton(
+                            onPressed: () => _setCurrent(s),
+                            child: Text(l10n.setupUseVersion),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        const SizedBox(height: AppSpacing.l),
+        Text(
+          l10n.setupTemplatesTitle,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          l10n.setupTemplatesHint,
+          style: const TextStyle(fontSize: 12, color: AppColors.muted),
+        ),
+        const SizedBox(height: AppSpacing.s),
+        if (tpls.isEmpty)
+          Text(
+            l10n.setupEmpty,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          )
+        else
+          for (final tpl in tpls)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.s),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              decoration: BoxDecoration(
+                color: AppColors.chipIdle,
+                borderRadius: BorderRadius.circular(AppRadius.chip),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tpl.label,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tpl.sourceLabel,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _busy ? null : () => _applyTemplate(tpl),
+                    child: Text(l10n.setupApplyTemplate),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// @Deprecated Prefer [SetupPanel] embedded in the Setup tab.
+@Deprecated('Use SetupPanel in the garage Setup tab')
+class SetupSheet extends StatelessWidget {
+  const SetupSheet({super.key, required this.bike});
+
+  final Bike bike;
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.85,
@@ -224,115 +562,7 @@ class _SetupSheetState extends ConsumerState<SetupSheet> {
           controller: scroll,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           children: [
-            Text(
-              'Setups · ${widget.bike.name}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Fahrergewicht (kg) für OEM-Tabellen',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-            Slider(
-              value: _riderWeight,
-              min: 55,
-              max: 110,
-              divisions: 55,
-              label: _riderWeight.round().toString(),
-              onChanged: (v) => setState(() => _riderWeight = v),
-            ),
-            // Theme minimumSize: Size.fromHeight(48) = infinite width —
-            // override or BoxConstraints Infinity crash (S25 Setup).
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.accent,
-                    minimumSize: const Size(0, 44),
-                  ),
-                  onPressed: _busy ? null : _manualVersion,
-                  child: const Text('Neue Version'),
-                ),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
-                  onPressed: _busy ? null : _startBracketing,
-                  child: const Text('Bracketing'),
-                ),
-              ],
-            ),
-            if (_bracketMsg != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                _bracketMsg!,
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Text(
-              'Gespeicherte Versionen',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            if (_setups.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Noch keine Setups — Vorlage anwenden.',
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              ),
-            for (final s in _setups)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  '${s.isCurrent ? '● ' : ''}${s.label} · v${s.version}',
-                ),
-                subtitle: Text(
-                  [
-                    s.conditions,
-                    s.createdBy,
-                    if (s.valueFor('fork.rebound') != null)
-                      'Zug ${s.valueFor('fork.rebound')!.toStringAsFixed(0)}',
-                  ].join(' · '),
-                ),
-                trailing: s.isCurrent
-                    ? const Text('aktuell', style: TextStyle(fontSize: 12))
-                    : TextButton(
-                        onPressed: () => _setCurrent(s),
-                        child: const Text('Aktiv'),
-                      ),
-              ),
-            const SizedBox(height: 16),
-            Text(
-              'Vorlagen (Ausgangspunkt)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-            const Text(
-              'Keine persönliche Empfehlung — OEM/Editorial-Startpunkt.',
-              style: TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-            const SizedBox(height: 8),
-            for (final tpl in tpls)
-              Card(
-                child: ListTile(
-                  title: Text(tpl.label),
-                  subtitle: Text(
-                    '${tpl.kind} · ${tpl.sourceLabel}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  trailing: TextButton(
-                    onPressed: _busy ? null : () => _applyTemplate(tpl),
-                    child: const Text('Anwenden'),
-                  ),
-                ),
-              ),
+            SetupPanel(bike: bike),
           ],
         );
       },

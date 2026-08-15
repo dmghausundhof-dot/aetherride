@@ -53,17 +53,17 @@ export function StoreLockedBanner({ className }: { className?: string }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-warning">
-          Owner Preview · Online Store gesperrt
+          Inhaber-Vorschau · Online Store gesperrt
         </p>
         <p className="mt-0.5 text-xs text-text-secondary">
           {status.messageDe ||
-            `${status.storeDomain} ist passwortgeschützt. Katalog & Soft-Fit laufen in AetherRide — externe Shopify-Links enden auf der Passwort-Seite.`}
+            `${status.storeDomain} ist passwortgeschützt. Der Link führt zur Passwort-Seite — kein stiller Dead End.`}
         </p>
         <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-text-secondary">
           <Shield className="h-3 w-3" />
           {status.storefrontApiConfigured
-            ? "Storefront API verbunden — In-App-Katalog aktiv"
-            : "Storefront API fehlt — Token in Env setzen"}
+            ? "Kein In-App-Katalog. Kasse nur bei Shopify."
+            : "Storefront-URL fehlt — Tür bleibt ehrlich zu."}
         </p>
       </div>
     </div>

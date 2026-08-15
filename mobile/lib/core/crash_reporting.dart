@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'config.dart';
 
-/// Crash-Reporting-Scaffold.
-/// Sentry wird erst eingebunden, wenn `SENTRY_DSN` gesetzt ist *und* das
-/// Plugin build-kompatibel ist. Aktuell: lokale Error-Hooks (kein Extra-Plugin).
+/// Crash reporting. `SENTRY_DSN` empty → local hooks only, no events.
 Future<void> runWithCrashReporting(Future<void> Function() appRunner) async {
+  final dsn = AppConfig.sentryDsn.trim();
+
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     debugPrint('FlutterError: ${details.exceptionAsString()}');
@@ -15,11 +15,20 @@ Future<void> runWithCrashReporting(Future<void> Function() appRunner) async {
     debugPrint('Uncaught: $error\n$stack');
     return true;
   };
-  if (AppConfig.isCrashReportingConfigured) {
-    debugPrint(
-      'SENTRY_DSN gesetzt — Plugin-Build aktuell deaktiviert; '
-      'Fehler werden lokal geloggt.',
-    );
+
+  if (dsn.isEmpty) {
+    await appRunner();
+    return;
   }
-  await appRunner();
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = dsn;
+      options.environment = kReleaseMode ? 'release' : 'debug';
+      options.sendDefaultPii = false;
+      options.enableUserInteractionTracing = false;
+      options.captureFailedRequests = false;
+    },
+    appRunner: appRunner,
+  );
 }

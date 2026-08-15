@@ -4,31 +4,46 @@ import { useState } from "react";
 import { Navigation, Play, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import type { ClientRouteResult } from "@/lib/routing/profiles";
 import { useAppStore } from "@/store/useAppStore";
 import { activeRouteFromEngine } from "@/lib/routing/activeRoute";
-import type { ClientRouteResult } from "@/lib/routing/profiles";
 import {
   formatDistanceElevation,
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
+import { isHonestLoop } from "@/lib/discover/loopHonesty";
 
 /**
  * Route ab GPS oder manuellem Zentrum — Live-Engine.
+ * Rundkurs mode: reject engine results that are not closed (≤300 m).
  */
 export function NearMeRouteCard({
   center,
   profile,
   defaultKm = 25,
+  routeMode: controlledMode,
+  onRouteModeChange,
+  onLoopPreview,
 }: {
   center: [number, number] | null;
   profile: RoutingProfile;
   defaultKm?: number;
+  routeMode?: "loop" | "point_to_point";
+  onRouteModeChange?: (mode: "loop" | "point_to_point") => void;
+  onLoopPreview?: (result: ClientRouteResult, label: string) => void;
 }) {
   const router = useRouter();
   const setActiveRoute = useAppStore((s) => s.setActiveRoute);
   const saveRoute = useAppStore((s) => s.saveRoute);
   const [km, setKm] = useState(defaultKm);
-  const [mode, setMode] = useState<"loop" | "point_to_point">("loop");
+  const [uncontrolledMode, setUncontrolledMode] = useState<
+    "loop" | "point_to_point"
+  >("loop");
+  const mode = controlledMode ?? uncontrolledMode;
+  const setMode = (m: "loop" | "point_to_point") => {
+    onRouteModeChange?.(m);
+    if (controlledMode === undefined) setUncontrolledMode(m);
+  };
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<ClientRouteResult | null>(null);
@@ -61,6 +76,17 @@ export function NearMeRouteCard({
         steps: j.steps,
         warnings: j.warnings,
       };
+      const coords = (result.geometry?.coordinates ?? []) as [number, number][];
+      if (
+        mode === "loop" &&
+        !isHonestLoop({ loopFlag: true, trackLngLat: coords })
+      ) {
+        setPreview(null);
+        setMsg(
+          "Keine echte Runde — Engine lieferte A→B (Start≠Ziel). Bitte erneut oder Seeds nutzen."
+        );
+        return;
+      }
       setPreview(result);
       const name =
         j.label ||
@@ -71,6 +97,9 @@ export function NearMeRouteCard({
         typeof j.elevationM === "number"
           ? sanitizeElevationM(j.elevationM, distanceKm)
           : null;
+      const isLoop =
+        mode === "loop" &&
+        isHonestLoop({ loopFlag: true, trackLngLat: coords });
       saveRoute({
         id: j.tourId || `near-${Date.now()}`,
         name,
@@ -80,11 +109,14 @@ export function NearMeRouteCard({
         savedAt: new Date().toISOString(),
         source: "engine",
         geometry: result.geometry,
-        loop: mode === "loop",
+        loop: isLoop,
       });
       setMsg(
         `${formatDistanceElevation(distanceKm, elev)} · ${result.engine} · gespeichert`
       );
+      if (isLoop) {
+        onLoopPreview?.(result, name);
+      }
       if (andStart) {
         setActiveRoute(activeRouteFromEngine(name, result));
         router.push("/ride");

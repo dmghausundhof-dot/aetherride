@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -582,11 +583,12 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
             label: const Text('JSON-Vollexport'),
           ),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _busy ? null : _exportStravaStub,
-            icon: const Icon(Icons.upload_outlined),
-            label: const Text('Strava-Payload (Stub — lokal)'),
-          ),
+          if (kDebugMode)
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _exportStravaStub,
+              icon: const Icon(Icons.upload_outlined),
+              label: const Text('Strava-Payload (lokal, Entwickler)'),
+            ),
           if (_stravaConfigured) ...[
             const SizedBox(height: 8),
             if (!_stravaConnected && _stravaAuthorizeUrl != null)
@@ -615,8 +617,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
                 ? (_stravaConnected
                     ? 'Live-Upload nutzt gespeicherte OAuth-Tokens (Server).'
                     : 'OAuth öffnet den Browser; nach Freigabe App fortsetzen.')
-                : 'Ohne STRAVA_CLIENT_ID/SECRET kein Netzwerk-Upload. '
-                    'GPX/FIT/JSON sind die ehrlichen Exportwege.',
+                : 'Strava ist nicht eingerichtet. GPX, FIT und JSON sind die Exportwege.',
             style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
           if (_message != null) ...[
