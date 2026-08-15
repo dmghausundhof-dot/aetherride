@@ -161,7 +161,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hofWatchPair => 'Pair watch';
 
   @override
-  String get hofWatchReconnect => 'Pair again';
+  String get hofWatchReconnect => 'Connect';
 
   @override
   String get hofWatchRemove => 'Remove';

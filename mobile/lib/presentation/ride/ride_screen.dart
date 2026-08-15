@@ -889,7 +889,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
       final savedWatch = await ref.read(bikeBleStoreProvider).savedWatch();
       if (!mounted || !ref.read(isRidingProvider)) return;
       if (savedWatch != null) {
-        final watchOk = await ble.connectWatch(deviceId: savedWatch.deviceId);
+        final watchOk = await ble.connectWatch(
+          deviceId: savedWatch.deviceId,
+          scanIfMissing: true,
+        );
         if (!mounted || !ref.read(isRidingProvider)) return;
         if (watchOk) {
           final watchId = ble.lastWatchRemoteId;
@@ -1498,7 +1501,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     _tick?.cancel();
     _idleLock?.cancel();
     await ref.read(sensorCoreProvider).stop();
-    await ref.read(bleCoreProvider).disconnect();
+    await ref.read(bleCoreProvider).disconnectBikeKeepWatch();
     await ref.read(locationCoreProvider).stopRideTracking();
 
     final started = _startedAt ?? DateTime.now();
@@ -1648,7 +1651,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     unawaited(_tts.stop());
     unawaited(WakelockPlus.disable());
     // Stop CSC reconnect when leaving Ride.
-    unawaited(ref.read(bleCoreProvider).disconnect());
+    unawaited(ref.read(bleCoreProvider).disconnectBikeKeepWatch());
     super.dispose();
   }
 
@@ -2549,7 +2552,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
                       'Smartwatch',
                       [
                         ble.connectedWatchName ?? 'Verbunden',
-                        if (_ldi?.heartRateBpm != null) 'Puls',
+                        if (_ldi?.heartRateBpm != null)
+                          '${_ldi!.heartRateBpm!.round()} bpm'
+                        else
+                          'Puls wartet',
                       ].join(' · '),
                     ),
                 ],

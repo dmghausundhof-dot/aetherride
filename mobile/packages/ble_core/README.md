@@ -14,7 +14,7 @@ Dart-Contract: `lib/native/ble_core_channel.dart`
 - **Pairing-UI**: Werkstatt → Sheet mit Live-Liste (Antrieb vs. Sensor). User wählt; Ride-Start verbindet das gespeicherte Gerät.
 - **CSC / Standard BLE** (0x1816): live via `flutter_blue_plus` — speed/cadence.
 - **Heart Rate (0x180D) / Cycling Power (0x1818) / Battery (0x180F)**: nur echte GATT-Werte. Nie synthetisiert.
-- **Smartwatch / Fitnesstracking**: Der Hof pairs HR 0x180D on the rider (`ble_last_watch_id.txt`); CSC stays per-bike in Werkstatt and is never overwritten. Optional RSC 0x1814 parser exists but is not shown as cycling cadence.
+- **Smartwatch / HR-Gurt**: Der Hof öffnet einen Picker (`watch_pair_sheet.dart`). Offener Scan (kein `withServices: 0x180D`-Filter — viele Uhren lassen 180D in Ads weg). Kopplung nur mit echtem Heart-Rate-Notify 0x180D. Apple Watch ohne 180D ist blockiert. Uhr-Akku (0x180F) nie als Rad-SoC. Ride-Ende trennt nur Rad (`disconnectBikeKeepWatch`), nicht die Uhr. Speicher: `watch_ble_device.json` + `ble_last_watch_id.txt`. CSC bleibt am Rad in der Werkstatt.
 - **Bosch LDI (G-1)**: Android shell `BoschLdiPlugin` — `connect` returns `false` until official spec/NDA + hardware. Scan erkennt „SMART SYSTEM EBIKE“ / Kiox / Nyon und die UUID `eaa2-11e9-…`; proprietäre Notifications werden nicht geparst.
 - **Shimano STEPS**: Erkennung über Display-Namen (SC-E…, EP8, E-TUBE). Kein inoffizielles E-TUBE-Protokoll.
 - LDI Dart stub telemetry only when `kDebugMode` **and** `--dart-define=AETHER_LDI_SIM=true`. Release never starts the stub.

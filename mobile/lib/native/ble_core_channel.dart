@@ -45,27 +45,34 @@ class BleCoreChannel {
   StreamSubscription<List<int>>? _hrSub;
   StreamSubscription<List<int>>? _powerSub;
   StreamSubscription<List<int>>? _batterySub;
+  StreamSubscription<List<int>>? _watchBatterySub;
   StreamSubscription<BluetoothConnectionState>? _connSub;
   StreamSubscription<BluetoothConnectionState>? _watchConnSub;
   StreamSubscription<List<ScanResult>>? _bikeScanSub;
+  StreamSubscription<List<ScanResult>>? _watchScanSub;
   final _controller = StreamController<BoschLiveData>.broadcast();
   final _bikeScanController = StreamController<List<BikeBleScanHit>>.broadcast();
+  final _watchScanController =
+      StreamController<List<WatchBleScanHit>>.broadcast();
   bool _ldiConnected = false;
   bool _cscOnly = false;
   bool _wantConnection = false;
   bool _wantWatchConnection = false;
   bool _watchSim = false;
   bool _bikeScanActive = false;
+  bool _watchScanActive = false;
   Timer? _stubTimer;
   Timer? _reconnectTimer;
   Timer? _watchReconnectTimer;
   Timer? _bikeScanTimeout;
+  Timer? _watchScanTimeout;
   double _odo = 1247.4;
   double _speed = 0;
   double _cadence = 0;
   double? _hrBpm;
   double? _powerW;
   double? _socPercent;
+  double? _watchBatteryPercent;
   BikeBleKind? _connectedKind;
   int? _prevWheelRevs;
   int? _prevWheelEventTime;
@@ -80,7 +87,9 @@ class BleCoreChannel {
   BikeBleKind? _kindHint;
   bool _preferScanDevice = true;
   bool _rideReconnect = false;
+  bool _rideWatchReconnect = false;
   int _reconnectAttempts = 0;
+  int _watchReconnectAttempts = 0;
   void Function(String status)? _onProgress;
   String? _lastRemoteId;
   String? _lastWatchRemoteId;
@@ -93,10 +102,17 @@ class BleCoreChannel {
 
   Stream<BoschLiveData> get liveData => _controller.stream;
   Stream<List<BikeBleScanHit>> get bikeScanHits => _bikeScanController.stream;
+  Stream<List<WatchBleScanHit>> get watchScanHits =>
+      _watchScanController.stream;
   bool get isBikeScanning => _bikeScanActive;
+  bool get isWatchScanning => _watchScanActive;
   bool get isConnected => _device != null || _ldiConnected;
   bool get isCscOnly => _cscOnly;
   bool get isWatchConnected => _watchDevice != null || _watchSim;
+  /// Live BPM from 0x180D — never invented.
+  double? get heartRateBpm => _hrBpm;
+  /// Watch/strap battery if 0x180F on the watch. Never copied into bike SoC.
+  double? get watchBatteryPercent => _watchBatteryPercent;
   BikeBleKind? get connectedKind => _connectedKind;
   String? get statusDetail => _statusDetail;
   String? get watchStatusDetail => _watchStatusDetail;
@@ -256,8 +272,13 @@ class BleCoreChannel {
 
   /// Pair / reconnect a smartwatch or HR strap via Heart Rate 0x180D.
   /// Does not disconnect CSC / power. Does not invent BPM.
-  Future<bool> connectWatch({String? deviceId, bool scanIfMissing = true}) async {
+  /// Does not auto-grab the first scan hit — the Hof picker chooses [deviceId].
+  Future<bool> connectWatch({
+    String? deviceId,
+    bool scanIfMissing = true,
+  }) async {
     _wantWatchConnection = true;
+    _rideWatchReconnect = scanIfMissing;
     _watchSim = false;
     await _loadLastWatchRemoteId();
     final preferred = deviceId ?? _lastWatchRemoteId;
@@ -272,7 +293,10 @@ class BleCoreChannel {
 
       if (preferred != null && preferred.isNotEmpty) {
         try {
-          final ok = await _attachWatchDevice(BluetoothDevice.fromId(preferred));
+          final ok = await _attachWatchDevice(
+            _deviceForAttach(preferred),
+            gattAttempts: 3,
+          );
           if (ok) return true;
         } catch (e) {
           debugPrint('ble_core watch preferred reconnect: $e');
@@ -282,88 +306,77 @@ class BleCoreChannel {
       try {
         final system = await FlutterBluePlus.systemDevices([_hrServiceGuid]);
         for (final d in system) {
-          if (await _attachWatchDevice(d)) return true;
+          if (preferred != null &&
+              preferred.isNotEmpty &&
+              d.remoteId.str != preferred) {
+            continue;
+          }
+          if (preferred == null) continue;
+          if (await _attachWatchDevice(d, gattAttempts: 2)) return true;
         }
       } catch (_) {}
 
       try {
         for (final d in FlutterBluePlus.connectedDevices) {
-          if (_isKnownWatchId(d.remoteId.str) ||
-              nameLooksLikeWatch(d.platformName)) {
-            if (await _attachWatchDevice(d)) return true;
+          if (preferred != null && d.remoteId.str == preferred) {
+            if (await _attachWatchDevice(d, gattAttempts: 2)) return true;
           }
         }
       } catch (_) {}
 
       if (!scanIfMissing) {
-        _watchStatusDetail ??= 'Keine Uhr verbunden';
+        _watchStatusDetail ??= preferred == null
+            ? 'Uhr in der Liste wählen'
+            : 'Uhr nicht verbunden';
         return _watchDevice != null;
       }
 
-      final found = <String, _WatchScanHit>{};
-      final sub = FlutterBluePlus.scanResults.listen((results) {
-        for (final r in results) {
-          if (_isWatchScanHit(r)) {
-            found[r.device.remoteId.str] = _WatchScanHit(r);
-          }
-        }
-      });
-
-      try {
-        await FlutterBluePlus.startScan(
-          withServices: [_hrServiceGuid],
-          timeout: const Duration(seconds: 8),
-        );
-      } catch (_) {
-        await FlutterBluePlus.startScan(timeout: const Duration(seconds: 8));
-      }
-
-      final deadline = DateTime.now().add(const Duration(seconds: 8));
-      while (found.isEmpty && DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-      }
-      final rest = deadline.difference(DateTime.now());
-      if (rest > Duration.zero) {
-        await Future<void>.delayed(rest);
-      }
-      await FlutterBluePlus.stopScan();
-      await sub.cancel();
-
-      for (final r in FlutterBluePlus.lastScanResults) {
-        if (_isWatchScanHit(r)) {
-          found[r.device.remoteId.str] = _WatchScanHit(r);
-        }
-      }
-
-      if (found.isEmpty) {
+      if (preferred == null || preferred.isEmpty) {
         if (_maybeWatchSim()) return true;
-        _watchStatusDetail = 'Keine Uhr mit Standard-Puls-Service in Reichweite';
+        _watchStatusDetail = 'Uhr in der Liste wählen';
         return false;
       }
 
-      final ranked = found.values.toList()
-        ..sort((a, b) => b.score(preferred).compareTo(a.score(preferred)));
-
-      var sawWatchWithoutHr = false;
-      for (final hit in ranked) {
-        final ok = await _attachWatchDevice(hit.device);
+      final scanned = await _scanForWatchId(preferred);
+      if (scanned != null) {
+        final ok = await _attachWatchDevice(scanned, gattAttempts: 3);
         if (ok) return true;
-        if (_watchStatusDetail ==
-            'Uhr gefunden, aber ohne Standard-Puls-Service') {
-          sawWatchWithoutHr = true;
-        }
       }
 
       if (_maybeWatchSim()) return true;
-      _watchStatusDetail = sawWatchWithoutHr
-          ? 'Uhr gefunden, aber ohne Standard-Puls-Service'
-          : 'Keine Uhr mit Standard-Puls-Service in Reichweite';
+      _watchStatusDetail ??=
+          'Keine Uhr mit Standard-Puls-Service in Reichweite';
       return false;
     } catch (e) {
       debugPrint('ble_core watch: $e');
       _watchStatusDetail = 'Uhr-Suche fehlgeschlagen';
       return false;
     }
+  }
+
+  Future<BluetoothDevice?> _scanForWatchId(String id) async {
+    await stopWatchScan();
+    await stopBikeScan();
+    BluetoothDevice? match;
+    final sub = FlutterBluePlus.scanResults.listen((results) {
+      for (final r in results) {
+        _scanDevices[r.device.remoteId.str] = r.device;
+        if (r.device.remoteId.str == id) match = r.device;
+      }
+    });
+    try {
+      await _startOpenScan(timeout: const Duration(seconds: 10));
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
+      while (match == null && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+    } finally {
+      try {
+        await FlutterBluePlus.stopScan();
+      } catch (_) {}
+      await sub.cancel();
+    }
+    return match ?? _scanDevices[id];
   }
 
   bool _maybeWatchSim() {
@@ -377,22 +390,10 @@ class BleCoreChannel {
     return false;
   }
 
-  bool _isKnownWatchId(String id) {
-    return id == _lastWatchRemoteId || id == _watchDevice?.remoteId.str;
-  }
-
   String _scanName(ScanResult r) {
     final adv = r.advertisementData.advName.trim();
     if (adv.isNotEmpty) return adv;
     return r.device.platformName.trim();
-  }
-
-  bool _isWatchScanHit(ScanResult r) {
-    return isWatchCandidate(
-      platformName: _scanName(r),
-      advertisedServiceUuids:
-          r.advertisementData.serviceUuids.map((x) => x.toString()),
-    );
   }
 
   Future<bool> _connectStandardBle({
@@ -556,6 +557,7 @@ class BleCoreChannel {
     Duration timeout = const Duration(seconds: 14),
   }) async {
     await stopBikeScan();
+    await stopWatchScan();
     _bikeScanActive = true;
     if (!_bikeScanController.isClosed) {
       _bikeScanController.add(const []);
@@ -604,6 +606,87 @@ class BleCoreChannel {
     _bikeScanActive = false;
     await _bikeScanSub?.cancel();
     _bikeScanSub = null;
+    try {
+      await FlutterBluePlus.stopScan();
+    } catch (_) {}
+  }
+
+  WatchBleScanHit? _watchHitFromScan(ScanResult r) {
+    final name = _scanName(r);
+    final uuids =
+        r.advertisementData.serviceUuids.map((x) => x.toString()).toList();
+    if (!isWatchCandidate(
+      platformName: name,
+      advertisedServiceUuids: uuids,
+    )) {
+      return null;
+    }
+    final id = r.device.remoteId.str;
+    _scanDevices[id] = r.device;
+    return WatchBleScanHit(
+      deviceId: id,
+      name: name,
+      rssi: r.rssi,
+      hasHrService: advertisesHeartRateService(uuids),
+      honesty: watchHonestyForName(name),
+      connectable: r.advertisementData.connectable,
+    );
+  }
+
+  /// Live watch / HR scan: open scan (many watches omit 0x180D in ads).
+  Future<void> startWatchScan({
+    Duration timeout = const Duration(seconds: 16),
+  }) async {
+    await stopWatchScan();
+    await stopBikeScan();
+    _watchScanActive = true;
+    if (!_watchScanController.isClosed) {
+      _watchScanController.add(const []);
+    }
+    final found = <String, WatchBleScanHit>{};
+    void emit() {
+      final list = found.values.toList()
+        ..sort((a, b) {
+          final hr = (b.hasHrService ? 1 : 0).compareTo(a.hasHrService ? 1 : 0);
+          if (hr != 0) return hr;
+          return b.rssi.compareTo(a.rssi);
+        });
+      if (!_watchScanController.isClosed) _watchScanController.add(list);
+    }
+
+    _watchScanSub = FlutterBluePlus.scanResults.listen((results) {
+      for (final r in results) {
+        final hit = _watchHitFromScan(r);
+        if (hit != null) found[hit.deviceId] = hit;
+      }
+      emit();
+    });
+
+    try {
+      await _startOpenScan(timeout: timeout);
+    } catch (e) {
+      debugPrint('ble_core watch scan: $e');
+      _watchScanActive = false;
+      rethrow;
+    }
+
+    for (final r in FlutterBluePlus.lastScanResults) {
+      final hit = _watchHitFromScan(r);
+      if (hit != null) found[hit.deviceId] = hit;
+    }
+    emit();
+
+    _watchScanTimeout = Timer(timeout, () {
+      unawaited(stopWatchScan());
+    });
+  }
+
+  Future<void> stopWatchScan() async {
+    _watchScanTimeout?.cancel();
+    _watchScanTimeout = null;
+    _watchScanActive = false;
+    await _watchScanSub?.cancel();
+    _watchScanSub = null;
     try {
       await FlutterBluePlus.stopScan();
     } catch (_) {}
@@ -663,9 +746,10 @@ class BleCoreChannel {
   Future<bool> _ensureGattConnected(
     BluetoothDevice device, {
     required int attempts,
+    bool skipMtu = false,
   }) async {
     if (!device.isDisconnected) return true;
-    final mtu = _mtuForDevice(device.remoteId.str);
+    final mtu = skipMtu ? null : _mtuForDevice(device.remoteId.str);
     final max = attempts.clamp(1, 3);
     int? lastCode;
     for (var i = 0; i < max; i++) {
@@ -805,16 +889,24 @@ class BleCoreChannel {
     }
   }
 
-  Future<bool> _attachWatchDevice(BluetoothDevice device) async {
+  Future<bool> _attachWatchDevice(
+    BluetoothDevice device, {
+    int gattAttempts = 1,
+  }) async {
     final id = device.remoteId.str;
     if (_watchDevice?.remoteId.str == id && _hrSub != null) return true;
     if (_device?.remoteId.str == id) {
       // Same physical box as CSC: subscribe HR there, still record as watch id.
       final services = await device.discoverServices();
-      final gotHr = await _subscribeOptionalGatt(services, sourceId: id);
+      final gotHr = await _subscribeOptionalGatt(
+        services,
+        sourceId: id,
+        bindBikeBattery: false,
+      );
       if (gotHr && _hrSub != null) {
         _watchDevice = device;
         _lastWatchRemoteId = id;
+        _watchReconnectAttempts = 0;
         await _saveLastWatchRemoteId(id);
         _refreshWatchStatus();
         _ensureLiveTicker();
@@ -831,25 +923,32 @@ class BleCoreChannel {
       return true;
     }
     try {
-      if (device.isDisconnected) {
-        await device.connect(
-          timeout: const Duration(seconds: 12),
-          autoConnect: false,
-        );
+      final opened = await _ensureGattConnected(
+        device,
+        attempts: gattAttempts,
+        skipMtu: true,
+      );
+      if (!opened) {
+        _watchStatusDetail = _statusDetail ?? 'Uhr-Verbindung fehlgeschlagen';
+        return false;
       }
       final services = await device.discoverServices();
-      final gotHr = await _subscribeOptionalGatt(services, sourceId: id);
+      final gotHr = await _subscribeOptionalGatt(
+        services,
+        sourceId: id,
+        bindBikeBattery: false,
+      );
       final hasHrService = services.any(
         (s) => s.uuid.toString().toLowerCase().contains('180d'),
       );
       if (!gotHr || _hrSub == null) {
         if (hasHrService || nameLooksLikeWatch(device.platformName)) {
           _watchStatusDetail = 'Uhr gefunden, aber ohne Standard-Puls-Service';
+        } else {
+          _watchStatusDetail ??= 'Kein Heart Rate 0x180D auf diesem Gerät';
         }
         if (_watchDevice?.remoteId.str != id && _device?.remoteId.str != id) {
-          try {
-            await device.disconnect();
-          } catch (_) {}
+          await _closeGattQuietly(device);
         }
         return false;
       }
@@ -863,6 +962,9 @@ class BleCoreChannel {
             if (_hrSourceId == id) {
               _hrBpm = null;
             }
+            _watchBatteryPercent = null;
+            unawaited(_watchBatterySub?.cancel());
+            _watchBatterySub = null;
             if (_wantWatchConnection) _scheduleWatchReconnect();
           }
         } else if (state == BluetoothConnectionState.connected) {
@@ -871,6 +973,9 @@ class BleCoreChannel {
       });
       _watchDevice = device;
       _lastWatchRemoteId = id;
+      _watchReconnectAttempts = 0;
+      _watchReconnectTimer?.cancel();
+      _watchReconnectTimer = null;
       await _saveLastWatchRemoteId(id);
       _refreshWatchStatus();
       _ensureLiveTicker();
@@ -920,12 +1025,20 @@ class BleCoreChannel {
     if (watch == null) return;
     final n = watch.platformName.trim();
     final who = n.isEmpty ? 'Uhr' : n;
-    _watchStatusDetail = _hrSub != null ? '$who · Puls' : '$who verbunden';
+    final bits = <String>[
+      if (_hrSub != null && _hrBpm != null) '${_hrBpm!.round()} bpm',
+      if (_hrSub != null && _hrBpm == null) 'Puls',
+      if (_watchBatteryPercent != null)
+        'Uhr-Akku ${_watchBatteryPercent!.round()} %',
+    ];
+    _watchStatusDetail =
+        bits.isEmpty ? '$who verbunden' : '$who · ${bits.join(' · ')}';
   }
 
   Future<bool> _subscribeOptionalGatt(
     List<BluetoothService> services, {
     required String sourceId,
+    bool bindBikeBattery = true,
   }) async {
     var got = false;
     for (final s in services) {
@@ -951,7 +1064,8 @@ class BleCoreChannel {
             debugPrint('ble_core HR notify: $e');
           }
         }
-        if (su.contains('1818') &&
+        if (bindBikeBattery &&
+            su.contains('1818') &&
             cu.contains('2a63') &&
             c.properties.notify &&
             _powerSub == null) {
@@ -968,24 +1082,44 @@ class BleCoreChannel {
             debugPrint('ble_core power notify: $e');
           }
         }
-        if (su.contains('180f') &&
-            cu.contains('2a19') &&
-            _batterySub == null) {
+        if (su.contains('180f') && cu.contains('2a19')) {
           try {
-            if (c.properties.notify) {
-              await c.setNotifyValue(true);
-              _batterySub = c.lastValueStream.listen((bytes) {
-                final pct = parseBatteryLevelPercent(bytes);
-                if (pct != null) _socPercent = pct.toDouble();
-              });
-              got = true;
-            }
-            if (c.properties.read) {
-              final bytes = await c.read();
-              final pct = parseBatteryLevelPercent(bytes);
-              if (pct != null) {
-                _socPercent = pct.toDouble();
+            if (bindBikeBattery && _batterySub == null) {
+              if (c.properties.notify) {
+                await c.setNotifyValue(true);
+                _batterySub = c.lastValueStream.listen((bytes) {
+                  final pct = parseBatteryLevelPercent(bytes);
+                  if (pct != null) _socPercent = pct.toDouble();
+                });
                 got = true;
+              }
+              if (c.properties.read) {
+                final bytes = await c.read();
+                final pct = parseBatteryLevelPercent(bytes);
+                if (pct != null) {
+                  _socPercent = pct.toDouble();
+                  got = true;
+                }
+              }
+            } else if (!bindBikeBattery && _watchBatterySub == null) {
+              if (c.properties.notify) {
+                await c.setNotifyValue(true);
+                _watchBatterySub = c.lastValueStream.listen((bytes) {
+                  final pct = parseBatteryLevelPercent(bytes);
+                  if (pct != null) {
+                    _watchBatteryPercent = pct.toDouble();
+                    _refreshWatchStatus();
+                  }
+                });
+                got = true;
+              }
+              if (c.properties.read) {
+                final bytes = await c.read();
+                final pct = parseBatteryLevelPercent(bytes);
+                if (pct != null) {
+                  _watchBatteryPercent = pct.toDouble();
+                  got = true;
+                }
               }
             }
           } catch (e) {
@@ -1036,22 +1170,41 @@ class BleCoreChannel {
 
   void _scheduleWatchReconnect() {
     _watchReconnectTimer?.cancel();
-    _watchReconnectTimer = Timer(const Duration(seconds: 3), () async {
+    final max = _rideWatchReconnect
+        ? kBleReconnectMaxDuringRide
+        : kBleReconnectMaxOutsideRide;
+    if (_watchReconnectAttempts >= max) {
+      _watchStatusDetail =
+          'Uhr getrennt — Broadcast prüfen, in der Nähe erneut koppeln.';
+      debugPrint(
+        'ble_core watch reconnect: gave up after $_watchReconnectAttempts',
+      );
+      return;
+    }
+    final delay = bleReconnectDelay(_watchReconnectAttempts);
+    final attempt = _watchReconnectAttempts + 1;
+    _watchReconnectAttempts++;
+    _watchReconnectTimer = Timer(delay, () async {
       if (!_wantWatchConnection || _watchDevice != null) return;
       final id = _lastWatchRemoteId;
       if (id == null) return;
-      _watchStatusDetail = 'Uhr verbindet erneut …';
+      _watchStatusDetail = 'Uhr verbindet erneut … ($attempt/$max)';
       try {
-        final ok = await _attachWatchDevice(BluetoothDevice.fromId(id));
-        if (!ok && _wantWatchConnection && _watchDevice == null) {
-          _watchReconnectTimer =
-              Timer(const Duration(seconds: 8), _scheduleWatchReconnect);
+        final ok = await _attachWatchDevice(
+          _deviceForAttach(id),
+          gattAttempts: 1,
+        );
+        if (ok) {
+          _watchReconnectAttempts = 0;
+          return;
+        }
+        if (_wantWatchConnection && _watchDevice == null) {
+          _scheduleWatchReconnect();
         }
       } catch (e) {
         debugPrint('ble_core watch reconnect: $e');
         if (_wantWatchConnection && _watchDevice == null) {
-          _watchReconnectTimer =
-              Timer(const Duration(seconds: 8), _scheduleWatchReconnect);
+          _scheduleWatchReconnect();
         }
       }
     });
@@ -1138,13 +1291,77 @@ class BleCoreChannel {
     _refreshStatus();
   }
 
+  /// End of ride: drop CSC/power/drive, keep rider watch / HR.
+  Future<void> disconnectBikeKeepWatch() async {
+    await stopBikeScan();
+    _wantConnection = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempts = 0;
+    await _cscSub?.cancel();
+    _cscSub = null;
+    await _powerSub?.cancel();
+    _powerSub = null;
+    await _batterySub?.cancel();
+    _batterySub = null;
+    await _connSub?.cancel();
+    _connSub = null;
+    final watchId = _watchDevice?.remoteId.str;
+    if (_device != null &&
+        (watchId == null || _device!.remoteId.str != watchId)) {
+      try {
+        await _device?.disconnect();
+      } catch (_) {}
+    }
+    _device = null;
+    try {
+      await _method.invokeMethod<void>('disconnect');
+    } on MissingPluginException {
+      // LDI G-1: native plugin may be absent.
+    }
+    for (final d in List<BluetoothDevice>.from(_auxDevices)) {
+      if (watchId != null && d.remoteId.str == watchId) continue;
+      try {
+        await d.disconnect();
+      } catch (_) {}
+    }
+    _auxDevices.removeWhere(
+      (d) => watchId == null || d.remoteId.str != watchId,
+    );
+    _connectedKind = null;
+    _socPercent = null;
+    _powerW = null;
+    _rideWatchReconnect = false;
+    _prevWheelRevs = null;
+    _prevWheelEventTime = null;
+    _prevCrankRevs = null;
+    _prevCrankEventTime = null;
+    _speed = 0;
+    _cadence = 0;
+    _statusDetail = null;
+    _ldiConnected = false;
+    if (_watchDevice == null) {
+      _stubTimer?.cancel();
+      _stubTimer = null;
+    } else {
+      _ensureLiveTicker();
+    }
+    _refreshWatchStatus();
+  }
+
   Future<void> disconnectWatch() async {
     _wantWatchConnection = false;
+    _rideWatchReconnect = false;
     _watchReconnectTimer?.cancel();
     _watchReconnectTimer = null;
     _watchSim = false;
     await _watchConnSub?.cancel();
     _watchConnSub = null;
+    _watchBatteryPercent = null;
+    _watchReconnectAttempts = 0;
+    await _watchBatterySub?.cancel();
+    _watchBatterySub = null;
+    _watchBatteryPercent = null;
     if (_hrSourceId != null &&
         (_hrSourceId == _lastWatchRemoteId ||
             _hrSourceId == _watchDevice?.remoteId.str)) {
@@ -1169,9 +1386,11 @@ class BleCoreChannel {
 
   Future<void> disconnect() async {
     await stopBikeScan();
+    await stopWatchScan();
     _wantConnection = false;
     _wantWatchConnection = false;
     _watchSim = false;
+    _rideWatchReconnect = false;
     _reconnectAttempts = 0;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
@@ -1187,6 +1406,8 @@ class BleCoreChannel {
     _powerSub = null;
     await _batterySub?.cancel();
     _batterySub = null;
+    await _watchBatterySub?.cancel();
+    _watchBatterySub = null;
     await _connSub?.cancel();
     _connSub = null;
     await _watchConnSub?.cancel();
@@ -1195,6 +1416,7 @@ class BleCoreChannel {
     _cscOnly = false;
     _connectedKind = null;
     _socPercent = null;
+    _watchBatteryPercent = null;
     _prevWheelRevs = null;
     _prevWheelEventTime = null;
     _prevCrankRevs = null;
@@ -1313,27 +1535,6 @@ class BleCoreChannel {
     await disconnect();
     await _controller.close();
     await _bikeScanController.close();
-  }
-}
-
-class _WatchScanHit {
-  _WatchScanHit(this.result);
-
-  final ScanResult result;
-  BluetoothDevice get device => result.device;
-
-  int score(String? preferredId) {
-    var s = 0;
-    final id = result.device.remoteId.str;
-    if (preferredId != null && preferredId.isNotEmpty && id == preferredId) {
-      s += 10;
-    }
-    final uuids = result.advertisementData.serviceUuids.map((x) => x.toString());
-    if (advertisesHeartRateService(uuids)) s += 2;
-    final name = result.advertisementData.advName.trim().isNotEmpty
-        ? result.advertisementData.advName
-        : result.device.platformName;
-    if (nameLooksLikeWatch(name)) s += 3;
-    return s;
+    await _watchScanController.close();
   }
 }

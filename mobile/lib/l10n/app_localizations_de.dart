@@ -163,7 +163,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofWatchPair => 'Uhr koppeln';
 
   @override
-  String get hofWatchReconnect => 'Neu koppeln';
+  String get hofWatchReconnect => 'Verbinden';
 
   @override
   String get hofWatchRemove => 'Entfernen';

@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../domain/ble.dart';
 import '../../l10n/app_localizations.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
+import 'watch_pair_sheet.dart';
 
 /// Discreet Hof-bar control for rider watch / HR. Never a hero CTA.
 class HofWatchBarButton extends ConsumerStatefulWidget {
@@ -20,11 +22,21 @@ class HofWatchBarButton extends ConsumerStatefulWidget {
 class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
   BikeBleDevice? _saved;
   bool _busy = false;
+  StreamSubscription<BoschLiveData>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     unawaited(_reload());
+    _liveSub = ref.read(bleCoreProvider).liveData.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_liveSub?.cancel());
+    super.dispose();
   }
 
   Future<void> _reload() async {
@@ -37,62 +49,70 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
   Future<void> _pair() async {
     if (_busy) return;
     setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final ok = await showWatchPairSheet(context);
+      await _reload();
+      if (!mounted) return;
+      if (ok) {
+        final ble = ref.read(bleCoreProvider);
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(
+              ble.connectedWatchName != null
+                  ? 'Gekoppelt: ${ble.connectedWatchName}'
+                  : 'Uhr gekoppelt',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      messenger?.showSnackBar(
+        const SnackBar(content: Text('Kopplung fehlgeschlagen')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _reconnect() async {
+    if (_busy) return;
+    final saved = _saved;
+    if (saved == null) {
+      await _pair();
+      return;
+    }
+    setState(() => _busy = true);
     final ble = ref.read(bleCoreProvider);
     final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final perm = await ble.ensurePermission();
       if (!mounted) return;
-      if (perm == BlePermissionResult.adapterOff) {
-        messenger?.showSnackBar(
-          const SnackBar(content: Text('Bluetooth ist aus')),
-        );
-        return;
-      }
-      if (perm == BlePermissionResult.denied) {
-        messenger?.showSnackBar(
-          const SnackBar(content: Text('Bluetooth-Berechtigung fehlt')),
-        );
-        return;
-      }
-      if (perm == BlePermissionResult.unsupported) {
-        messenger?.showSnackBar(
-          const SnackBar(content: Text('Bluetooth nicht verfügbar')),
-        );
-        return;
-      }
-      final ok = await ble.connectWatch(deviceId: _saved?.deviceId);
-      if (!mounted) return;
-      if (!ok) {
+      if (perm != BlePermissionResult.granted) {
         messenger?.showSnackBar(
           SnackBar(
-            content: Text(
-              ble.watchStatusDetail ??
-                  'Keine Uhr mit Standard-Puls-Service in Reichweite',
-            ),
+            content: Text(ble.watchStatusDetail ?? 'Bluetooth prüfen'),
           ),
         );
         return;
       }
-      final id = ble.lastWatchRemoteId;
-      if (id != null && id.isNotEmpty) {
-        await ref.read(bikeBleStoreProvider).saveWatch(
-              BikeBleDevice(deviceId: id, name: ble.connectedWatchName),
-            );
-      }
-      await _reload();
+      final ok = await ble.connectWatch(
+        deviceId: saved.deviceId,
+        scanIfMissing: true,
+      );
       if (!mounted) return;
       messenger?.showSnackBar(
         SnackBar(
           content: Text(
-            ble.connectedWatchName != null
-                ? 'Gekoppelt: ${ble.connectedWatchName}'
-                : 'Uhr gekoppelt',
+            ok
+                ? (ble.watchStatusDetail ?? 'Uhr verbunden')
+                : (ble.watchStatusDetail ?? 'Uhr nicht in Reichweite'),
           ),
         ),
       );
     } catch (_) {
       messenger?.showSnackBar(
-        const SnackBar(content: Text('Kopplung fehlgeschlagen')),
+        const SnackBar(content: Text('Verbindung fehlgeschlagen')),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -124,6 +144,11 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
             ListTile(
               leading: const Icon(Icons.link),
               title: Text(l10n.hofWatchReconnect),
+              onTap: () => Navigator.pop(ctx, 'reconnect'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.watch_outlined),
+              title: const Text('Andere Uhr'),
               onTap: () => Navigator.pop(ctx, 'pair'),
             ),
             ListTile(
@@ -136,18 +161,28 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
       ),
     );
     if (choice == 'pair') await _pair();
+    if (choice == 'reconnect') await _reconnect();
     if (choice == 'unlink') await _unlink();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final connected = _saved != null;
+    final live = ref.read(bleCoreProvider).isWatchConnected;
+    final saved = _saved != null;
     return Semantics(
       button: true,
-      label: connected ? '${l10n.hofYourWatch} · gekoppelt' : l10n.hofWatchPair,
+      label: live
+          ? '${l10n.hofYourWatch} · live'
+          : saved
+              ? '${l10n.hofYourWatch} · gemerkt'
+              : l10n.hofWatchPair,
       child: Tooltip(
-        message: connected ? l10n.hofYourWatch : l10n.hofWatchPair,
+        message: live
+            ? l10n.hofYourWatch
+            : saved
+                ? l10n.hofWatchReconnect
+                : l10n.hofWatchPair,
         child: InkWell(
           key: const Key('hof-watch-bar'),
           onTap: _busy ? null : () => unawaited(_onTap()),
@@ -166,11 +201,11 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
                       Icon(
                         Icons.watch_outlined,
                         size: 22,
-                        color: connected
+                        color: live
                             ? AppColors.forestOnDark
                             : AppColors.muted,
                       ),
-                      if (connected)
+                      if (live)
                         Positioned(
                           right: -1,
                           top: -1,
