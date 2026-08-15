@@ -1,0 +1,27 @@
+{
+  "id": "rennes",
+  "name": "Rennes / Vilaine",
+  "bbox": [
+    -1.78,
+    48.05,
+    -1.55,
+    48.18
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/bretagne-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/rennes",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "rennes.tar.zst"
+  }
+}

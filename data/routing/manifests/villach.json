@@ -1,0 +1,24 @@
+{
+  "id": "villach",
+  "name": "Villach / Drau",
+  "bbox": [
+    13.68,
+    46.54,
+    14.05,
+    46.68
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "villach.tar.zst",
+    "packGz": "villach.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

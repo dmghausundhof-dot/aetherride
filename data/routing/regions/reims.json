@@ -1,0 +1,27 @@
+{
+  "id": "reims",
+  "name": "Reims / Champagne",
+  "bbox": [
+    3.9,
+    49.18,
+    4.18,
+    49.35
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/champagne-ardenne-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/reims",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "reims.tar.zst"
+  }
+}

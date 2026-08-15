@@ -54,6 +54,18 @@ const ids = new Set(DACH_PACK_REGIONS.map((r) => r.id));
 assert.ok(ids.has("berlin"));
 assert.ok(ids.has("graz"));
 assert.ok(ids.has("leipzig"));
+assert.ok(ids.has("zermatt"));
+assert.ok(ids.has("st-moritz"));
+assert.ok(ids.has("davos"));
+assert.ok(ids.has("villach"));
+assert.ok(ids.has("reims"));
+assert.ok(ids.has("rouen"));
+assert.ok(ids.has("rennes"));
+assert.equal(overlayRegionForPoint(7.75, 46.02)?.id, "zermatt");
+assert.equal(overlayRegionForPoint(9.84, 46.49)?.id, "st-moritz");
+assert.equal(overlayRegionForPoint(9.84, 46.8)?.id, "davos");
+assert.equal(overlayRegionForPoint(13.85, 46.61)?.id, "villach");
+assert.equal(overlayRegionForPoint(14.31, 46.62)?.id, "klagenfurt");
 assert.ok(DACH_ENVELOPE_REGIONS.some((r) => r.id === "de-bayern"));
 assert.ok(DACH_ENVELOPE_REGIONS.some((r) => r.id === "ch-tessin"));
 

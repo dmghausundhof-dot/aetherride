@@ -188,6 +188,10 @@ assert.ok(
     "/storage/v1/object/public/offline-packs/aachen"
   )
 );
+// Footgun: invented Storage URLs look "ready" to catalogStatus. toCatalogRow
+// must evaluate status on the raw stub before applyPackCdn.
+assert.equal(catalogStatus(applyPackCdn("aachen", stub), false), "ready");
+assert.equal(catalogStatus(stub, false), "stub");
 
 try {
   const distRaw = JSON.parse(

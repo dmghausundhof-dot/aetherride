@@ -1,0 +1,24 @@
+{
+  "id": "st-moritz",
+  "name": "St. Moritz / Engadin",
+  "bbox": [
+    9.7,
+    46.42,
+    9.98,
+    46.57
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "st-moritz.tar.zst",
+    "packGz": "st-moritz.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

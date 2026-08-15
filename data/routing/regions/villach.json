@@ -1,0 +1,27 @@
+{
+  "id": "villach",
+  "name": "Villach / Drau",
+  "bbox": [
+    13.68,
+    46.54,
+    14.05,
+    46.68
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/villach",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "villach.tar.zst"
+  }
+}

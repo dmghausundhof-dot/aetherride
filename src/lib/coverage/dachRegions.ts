@@ -168,6 +168,7 @@ export const DACH_COMPLETENESS_PROBES: Array<{
   { id: "innsbruck", lng: 11.4, lat: 47.27 },
   { id: "salzburg", lng: 13.05, lat: 47.8 },
   { id: "klagenfurt", lng: 14.31, lat: 46.62 },
+  { id: "villach", lng: 13.85, lat: 46.61 },
   { id: "bregenz", lng: 9.75, lat: 47.5 },
   { id: "zuerich", lng: 8.541, lat: 47.376 },
   { id: "bern", lng: 7.45, lat: 46.95 },
@@ -177,6 +178,9 @@ export const DACH_COMPLETENESS_PROBES: Array<{
   { id: "luzern", lng: 8.31, lat: 47.05 },
   { id: "lugano", lng: 8.95, lat: 46.0 },
   { id: "chur", lng: 9.53, lat: 46.85 },
+  { id: "zermatt", lng: 7.75, lat: 46.02 },
+  { id: "st-moritz", lng: 9.84, lat: 46.49 },
+  { id: "davos", lng: 9.84, lat: 46.8 },
   { id: "vaduz", lng: 9.52, lat: 47.14 },
 ];
 
