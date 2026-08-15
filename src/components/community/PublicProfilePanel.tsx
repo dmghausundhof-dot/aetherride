@@ -32,7 +32,7 @@ export function PublicProfilePanel() {
     >
       <h3 className="mb-1 font-semibold">Öffentliches Profil</h3>
       <p className="mb-3 text-xs text-text-secondary">
-        Opt-in · keine Tracks · Handle für Reviews und geteilte Sammlungen.
+        Opt-in · keine Tracks · Handle für Stimmen und geteilte Sammlungen.
         Sichtbar unter /u/dein_handle in diesem Browser (Server-Sync folgt).
       </p>
       <label className="flex items-center gap-2 text-sm">

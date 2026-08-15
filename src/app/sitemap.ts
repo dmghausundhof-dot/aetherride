@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { listPublicTourIds } from "@/lib/catalog/publicTours";
 import { listRegions } from "@/lib/catalog/regions";
 import { listGuideSlugs } from "@/lib/content/guides";
+import { listEditorialHandles } from "@/lib/community/editorialProfiles";
+import { SHARE_DEMO_TOKEN } from "@/lib/community/shareCodec";
 
 function base(): string {
   return (
@@ -69,5 +71,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.65,
   }));
 
-  return [...staticPages, ...tours, ...regions, ...guides];
+  const profiles = listEditorialHandles().map((handle) => ({
+    url: `${origin}/u/${handle}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  const shareDemos: MetadataRoute.Sitemap = [
+    `/share/t/${SHARE_DEMO_TOKEN}`,
+    `/share/c/${SHARE_DEMO_TOKEN}`,
+  ].map((path) => ({
+    url: `${origin}${path}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.55,
+  }));
+
+  return [...staticPages, ...tours, ...regions, ...guides, ...profiles, ...shareDemos];
 }

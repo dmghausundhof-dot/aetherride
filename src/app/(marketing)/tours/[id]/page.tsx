@@ -161,7 +161,7 @@ export default async function TourPage({ params }: Props) {
                 Das ist eine redaktionelle Tour-Idee, kein Community-Track mit
                 vermessener GPS-Linie. Unter Planen oder Touren wird die Route mit
                 dem gewählten Sport-Profil berechnet. Navigation und Offline nur
-                in der nativen App. Reviews sind moderiert und enthalten keine
+                in der nativen App. Stimmen sind moderiert und enthalten keine
                 Tracks.
               </p>
             </section>

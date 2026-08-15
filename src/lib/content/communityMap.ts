@@ -30,14 +30,14 @@ export const COMMUNITY_FEATURES: {
   {
     title: "Zusammen raus",
     body: "Gruppe mit Code vor dem Tor. Web hält Roster und Einladung. Live-Pins nur im App-HUD, mit Opt-in.",
-    href: "/library",
-    cta: "Gruppen am Platz",
+    href: "/community#gruppen",
+    cta: "Wie Gruppen laufen",
   },
   {
     title: "Public Profile",
     body: "Nur mit Opt-in. Handle, Sport, optional Anzahl Fahrten — keine GPS-Spuren.",
-    href: "/profile#public-profile",
-    cta: "Im Profil",
+    href: "/u/mara_road",
+    cta: "Beispiel mara_road",
   },
   {
     title: "Events & Clubs",

@@ -15,7 +15,7 @@ export default function LegalWiderrufPage() {
   const custom = legalWithdrawalOverride();
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4 p-4 pt-8">
+    <div className="flex flex-col gap-4 pt-6">
       <h1 className="text-2xl font-bold">Widerruf</h1>
       {custom ? (
         <p className="whitespace-pre-wrap text-sm text-text-secondary">
@@ -70,9 +70,10 @@ export default function LegalWiderrufPage() {
           </p>
         </div>
       )}
-      <a href="/legal/impressum" className="text-sm text-chrome">
-        Zum Impressum
-      </a>
+      <p className="text-sm text-text-secondary">
+        Stand: produktnaher Text. Eine anwaltlich geprüfte Fassung kann diesen
+        Inhalt ersetzen.
+      </p>
     </div>
   );
 }

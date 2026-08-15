@@ -48,6 +48,16 @@ export const FAQ_ITEMS: {
     ],
   },
   {
+    id: "teilen",
+    q: "Wie teile ich eine Tour oder eine Mappe?",
+    a: "Per Link, nicht per Feed. Wer den Link hat, legt die Tour lokal in die Mappe — ohne Account-Zwang. Stimmen und Gruppen bleiben am Platz. Public Profiles sind Opt-in und tragen keine GPS-Spuren.",
+    links: [
+      { href: "/share", label: "Teilen" },
+      { href: "/share/t/demo", label: "Beispiel-Tour" },
+      { href: "/u/mara_road", label: "Beispiel-Profil" },
+    ],
+  },
+  {
     id: "shop",
     q: "Kann ich hier Ersatzteile kaufen?",
     a: "Der Laden ist eine Tür zu Shopify. Es gibt keinen zweiten Warenkorb und keine Kasse in FlowLine. Ohne hinterlegtes Impressum bleibt der Checkout gesperrt.",

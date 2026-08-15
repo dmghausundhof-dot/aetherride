@@ -4,7 +4,7 @@ import { legalContactEmail, legalPrivacyOverride } from "@/lib/legal/siteLegal";
 export const metadata: Metadata = {
   title: "Datenschutz",
   description:
-    "Welche Daten FlowLine verarbeitet: Konto, Fahrten, Garage, optionale Community.",
+    "Welche Daten FlowLine verarbeitet: Konto, Fahrten, Werkstatt, optionale Community.",
 };
 
 export default function LegalDatenschutzPage() {
@@ -12,7 +12,7 @@ export default function LegalDatenschutzPage() {
   const custom = legalPrivacyOverride();
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4 p-4 pt-8">
+    <div className="flex flex-col gap-4 pt-6">
       <h1 className="text-2xl font-bold">Datenschutzerklärung</h1>
       {custom ? (
         <p className="whitespace-pre-wrap text-sm text-text-secondary">
@@ -21,7 +21,7 @@ export default function LegalDatenschutzPage() {
       ) : (
         <div className="flex flex-col gap-3 text-sm text-text-secondary">
           <p>
-            FlowLine verarbeitet personenbezogene Daten, um Fahrten, Garage,
+            FlowLine verarbeitet personenbezogene Daten, um Fahrten, Werkstatt,
             Sync und optionale Community-Funktionen bereitzustellen. Es gibt
             kein Marketing-Pixel und kein Cookie-Banner für Drittwerbung —
             Analytics nur nach Opt-in im Profil.
@@ -49,7 +49,13 @@ export default function LegalDatenschutzPage() {
               Fahrtdaten: GPS-Tracks, Sensor-/Cadence-Werte, wenn du eine Fahrt
               aufzeichnest
             </li>
-            <li>Garage: Fahrrad- und Setup-Angaben, optional Fotos</li>
+            <li>
+              Werkstatt: Fahrrad- und Setup-Angaben, optional Fotos
+            </li>
+            <li>
+              Community (optional): Stimmen, Mappe-Links, Public Profile ohne
+              GPS-Spuren
+            </li>
             <li>
               Einwilligungen: z.&nbsp;B. Heatmap-Beitrag, Analytics,
               Produktempfehlungen (jeweils opt-in)

@@ -95,6 +95,12 @@ export function LandingFooter() {
                 Teilen
               </Link>
               <Link
+                href="/u/mara_road"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Beispiel-Profil
+              </Link>
+              <Link
                 href="/produkt"
                 className="text-text-secondary hover:text-foreground"
               >

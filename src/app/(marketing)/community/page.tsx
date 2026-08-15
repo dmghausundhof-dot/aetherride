@@ -4,6 +4,7 @@ import {
   COMMUNITY_CLUBS,
   COMMUNITY_EVENTS,
 } from "@/lib/community/seed";
+import { EDITORIAL_PROFILES } from "@/lib/community/editorialProfiles";
 import { COMMUNITY_FEATURES, COMMUNITY_OUT } from "@/lib/content/communityMap";
 import { getRegion } from "@/lib/catalog/regions";
 import { Users, Calendar, Shield, MessageSquare, Share2 } from "lucide-react";
@@ -149,6 +150,48 @@ export default function CommunityPage() {
           </div>
         </section>
 
+        <section id="gruppen" className="mt-12 scroll-mt-24 rounded-2xl border border-border bg-surface p-6">
+          <h2 className="text-lg font-semibold">Zusammen raus</h2>
+          <p className="mt-2 text-sm text-text-secondary">
+            Gruppen leben am Platz: Code oder Link, Roster im Browser. Live-Pins
+            nur im App-HUD und nur mit Opt-in — nicht auf der öffentlichen Karte.
+            Eine Website-Erklärung ohne zweite Timeline.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm font-semibold">
+            <Link href="/library" className="text-chrome hover:underline">
+              Zum Platz →
+            </Link>
+            <Link href="/share" className="text-chrome hover:underline">
+              Tour- und Mappe-Links →
+            </Link>
+          </div>
+        </section>
+
+        <section id="profile" className="mt-12 scroll-mt-24">
+          <h2 className="text-lg font-semibold">Beispiel-Profile</h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Editorial, klar gekennzeichnet. Keine GPS-Spuren, keine erfundenen
+            Kilometer.
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {EDITORIAL_PROFILES.map((p) => (
+              <li key={p.handle}>
+                <Link
+                  href={`/u/${p.handle}`}
+                  className="block rounded-2xl border border-border bg-surface p-5 transition hover:border-chrome/40"
+                >
+                  <p className="font-semibold">{p.displayName}</p>
+                  <p className="text-xs text-chrome">@{p.handle}</p>
+                  <p className="mt-2 text-sm text-text-secondary">{p.bio}</p>
+                  <p className="mt-3 text-xs font-semibold text-chrome">
+                    Profil öffnen →
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section className="mt-12 rounded-2xl border border-chrome/30 bg-chrome/10 p-6">
           <h2 className="text-lg font-semibold">So machst du mit</h2>
           <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-text-secondary">
@@ -177,6 +220,10 @@ export default function CommunityPage() {
               anlegen — Beispiel:{" "}
               <Link href="/u/mara_road" className="text-chrome hover:underline">
                 mara_road
+              </Link>
+              {" · "}
+              <Link href="/community#profile" className="text-chrome hover:underline">
+                alle Beispiele
               </Link>
               .
             </li>

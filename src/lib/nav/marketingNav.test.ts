@@ -21,7 +21,7 @@ function testPublicMarketingPaths() {
   assert.equal(isPublicMarketingPath("/faq"), true);
   assert.equal(isPublicMarketingPath("/ueber"), true);
   assert.equal(isPublicMarketingPath("/kontakt"), true);
-  assert.equal(isPublicMarketingPath("/share/t/abc"), true);
+  assert.equal(isPublicMarketingPath("/open/ride"), true);
   assert.equal(isPublicMarketingPath("/u/luka"), true);
   assert.equal(isPublicMarketingPath("/legal/impressum"), true);
   assert.equal(isPublicMarketingPath("/legal/agb"), true);

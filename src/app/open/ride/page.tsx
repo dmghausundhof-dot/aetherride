@@ -8,6 +8,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
 import {
   appDeepLink,
   hasStoreLinks,
@@ -32,8 +33,9 @@ function OpenRideInner() {
   }, [deep]);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-12 text-center">
-      <h1 className="text-2xl font-bold">FlowLine öffnen</h1>
+    <div className="mx-auto flex max-w-md flex-col items-center justify-center px-4 py-16 text-center">
+      <FlowLineWordmark showMark className="text-2xl font-bold tracking-tight" />
+      <h1 className="mt-6 text-2xl font-bold">App öffnen</h1>
       <p className="mt-3 text-sm text-text-secondary">
         {routeId
           ? "Geplante Tour wird an die App übergeben…"
@@ -58,7 +60,7 @@ function OpenRideInner() {
           ) : (
             <Link
               href={routeId ? `/tours/${encodeURIComponent(routeId)}` : "/discover"}
-              className="text-sm font-semibold text-accent hover:underline"
+              className="text-sm font-semibold text-chrome hover:underline"
             >
               Im Browser fortfahren →
             </Link>

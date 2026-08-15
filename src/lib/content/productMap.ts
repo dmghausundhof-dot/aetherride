@@ -172,9 +172,9 @@ export const WORKFLOWS: {
     hint: "Kein Feed auf dem Hof. Community hängt an der Tour.",
     steps: [
       { label: "Platz", href: "/library" },
-      { label: "Tour-Seite", href: "/regions" },
+      { label: "Teilen", href: "/share" },
       { label: "Community", href: "/community" },
-      { label: "Profil", href: "/profile" },
+      { label: "Beispiel-Profil", href: "/u/mara_road" },
     ],
   },
   {
@@ -210,6 +210,8 @@ export const SCREEN_GROUPS: {
       { href: "/faq", name: "FAQ", role: "Web, App, Preise" },
       { href: "/ueber", name: "Über", role: "Marke, fünf Türen" },
       { href: "/kontakt", name: "Kontakt", role: "E-Mail, kein Bot" },
+      { href: "/share", name: "Teilen", role: "Tour-Link und Mappe" },
+      { href: "/u/mara_road", name: "Profil", role: "Editorial-Beispiel" },
     ],
   },
   {

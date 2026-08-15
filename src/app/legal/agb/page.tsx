@@ -11,7 +11,7 @@ export default function LegalAgbPage() {
   const email = legalContactEmail();
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4 p-4 pt-8">
+    <div className="flex flex-col gap-4 pt-6">
       <h1 className="text-2xl font-bold">Allgemeine Geschäftsbedingungen</h1>
       <p className="text-sm text-text-secondary">
         Für die Nutzung von FlowLine im Browser und in der nativen App.
@@ -24,9 +24,9 @@ export default function LegalAgbPage() {
 
       <h2 className="text-base font-semibold">1. Leistung</h2>
       <p className="text-sm text-text-secondary">
-        FlowLine ist eine Outdoor-Cycling-Anwendung: Hof (Planen, Garage,
-        Teilen) im Web; Ride-HUD, GPS, Sensoren und Offline in der App. Free
-        umfasst Entdecken, Planen und ein Rad. Pro vertieft Multi-Bike,
+        FlowLine ist eine Outdoor-Cycling-Anwendung: Hof (Planen, Platz,
+        Werkstatt, Teilen) im Web; Ride-HUD, GPS, Sensoren und Offline in der
+        App. Free umfasst Karte, Planen und ein Rad. Pro vertieft Multi-Bike,
         Bracketing, Reichweite und Offline-Packs.
       </p>
 

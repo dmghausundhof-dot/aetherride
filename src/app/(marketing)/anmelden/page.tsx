@@ -39,6 +39,19 @@ export default function AnmeldenPage() {
           <Link href="/pricing" className="text-chrome hover:underline">
             Preise
           </Link>
+          {" · "}
+          <Link href="/faq" className="text-chrome hover:underline">
+            FAQ
+          </Link>
+        </p>
+        <p className="mt-3 text-center text-xs text-text-secondary">
+          <Link href="/legal/datenschutz" className="text-chrome hover:underline">
+            Datenschutz
+          </Link>
+          {" · "}
+          <Link href="/legal/agb" className="text-chrome hover:underline">
+            AGB
+          </Link>
         </p>
       </div>
     </div>

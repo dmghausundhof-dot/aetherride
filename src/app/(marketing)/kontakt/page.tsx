@@ -57,6 +57,15 @@ export default function KontaktPage() {
             </Link>
           </li>
           <li>
+            <Link href="/legal/agb" className="text-chrome hover:underline">
+              AGB
+            </Link>
+            {" · "}
+            <Link href="/legal/widerruf" className="text-chrome hover:underline">
+              Widerruf
+            </Link>
+          </li>
+          <li>
             <Link href="/faq" className="text-chrome hover:underline">
               FAQ
             </Link>

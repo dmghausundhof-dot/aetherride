@@ -16,7 +16,7 @@ export default function LegalImpressumPage() {
   const complete = hasTmgImprint();
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-4 p-4 pt-8">
+    <div className="flex flex-col gap-4 pt-6">
       <h1 className="text-2xl font-bold">Impressum</h1>
       <p className="text-sm text-text-secondary">
         Angaben gemäß § 5 TMG und § 18 MStV.
