@@ -128,16 +128,20 @@ export default function PricingPage() {
         </div>
         <p className="mt-6 text-xs text-text-secondary">
           Details zu Daten und Abo:{" "}
+          <Link href="/legal/agb" className="text-chrome hover:underline">
+            AGB
+          </Link>
+          {" · "}
+          <Link href="/legal/widerruf" className="text-chrome hover:underline">
+            Widerruf
+          </Link>
+          {" · "}
           <Link href="/legal/datenschutz" className="text-chrome hover:underline">
             Datenschutz
           </Link>
           {" · "}
           <Link href="/produkt" className="text-chrome hover:underline">
             Produkt
-          </Link>
-          {" · "}
-          <Link href="/guides/web-vs-app" className="text-chrome hover:underline">
-            Web vs. App
           </Link>
         </p>
       </div>

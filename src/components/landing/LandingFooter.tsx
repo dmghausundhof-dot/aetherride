@@ -114,11 +114,23 @@ export function LandingFooter() {
                 Datenschutz
               </Link>
               <Link
+                href="/legal/agb"
+                className="text-text-secondary hover:text-foreground"
+              >
+                AGB
+              </Link>
+              <Link
                 href="/legal/widerruf"
                 className="text-text-secondary hover:text-foreground"
               >
                 Widerruf
               </Link>
+              <a
+                href="mailto:hello@aetherride.app"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Kontakt
+              </a>
             </div>
           </div>
         </div>

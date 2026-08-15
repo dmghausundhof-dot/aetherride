@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { Smartphone, Map, WifiOff, Activity } from "lucide-react";
 import { WEB_APP_MATRIX } from "@/lib/content/productMap";
+import { hasStoreLinks } from "@/lib/web/appLinks";
 
 const reasons = [
   {
@@ -44,7 +45,23 @@ export default function DownloadPage() {
           Rausfahren mit HUD, Uhr koppeln und Sensoren — nur in der nativen App.
         </p>
         <div className="mt-10 flex justify-center">
-          <AppDownloadButtons size="lg" />
+          {hasStoreLinks() ? (
+            <AppDownloadButtons size="lg" />
+          ) : (
+            <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-sm text-text-secondary">
+              <p>
+                Noch keine Store-Links. Der Hof, die Karte, der Platz und die
+                Werkstatt laufen im Browser. HUD, Offline und Sensoren kommen
+                mit der nativen App.
+              </p>
+              <Link
+                href="/home"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-7 text-[0.95rem] font-semibold text-white"
+              >
+                Zum Hof
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 

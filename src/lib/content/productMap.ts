@@ -245,6 +245,7 @@ export const SCREEN_GROUPS: {
       { href: "/share/c/demo", name: "Sammlung", role: "Geteilte Mappe" },
       { href: "/legal/impressum", name: "Impressum", role: "Anbieter" },
       { href: "/legal/datenschutz", name: "Datenschutz", role: "DSGVO" },
+      { href: "/legal/agb", name: "AGB", role: "Vertrag" },
       { href: "/legal/widerruf", name: "Widerruf", role: "Abo / Shop" },
     ],
   },

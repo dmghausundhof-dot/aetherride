@@ -30,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/shop",
     "/legal/impressum",
     "/legal/datenschutz",
+    "/legal/agb",
     "/legal/widerruf",
   ].map((path) => ({
     url: `${origin}${path || "/"}`,

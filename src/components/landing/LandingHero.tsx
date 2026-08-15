@@ -27,7 +27,7 @@ export function LandingHero() {
 
   return (
     <section className="relative isolate min-h-[100svh] overflow-hidden">
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 bg-background">
         <Image
           src="/landing/hero-everyday.jpg"
           alt=""

@@ -84,8 +84,23 @@ export default async function RegionPage({ params }: Props) {
           </h2>
           {tours.length === 0 ? (
             <p className="mt-4 text-sm text-text-secondary">
-              Noch keine redaktionellen Touren — schau unter Planen vorbei.
+              Noch keine redaktionellen Touren in dieser Region. Auf der Karte
+              siehst du Nähe vor Ort — ohne Dummy-Routen.
             </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href="/discover"
+                className="text-sm font-semibold text-chrome hover:underline"
+              >
+                Karte öffnen →
+              </Link>
+              <Link
+                href="/planner"
+                className="text-sm font-semibold text-chrome hover:underline"
+              >
+                Planen →
+              </Link>
+            </div>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tours.map((t) => (

@@ -20,7 +20,8 @@ export default function RegionsIndexPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-text-secondary">
           Redaktionelle Tour-Ideen nach Gebiet. Die Stunde vor dem Tor kommt
-          aus echten Nähe-Seeds — Hamburg Alster, nicht pauschal Alpen.
+          aus echten Nähe-Seeds — Hamburg Alster, nicht pauschal Alpen. Wo
+          noch keine Touren stehen, gilt die Karte vor Ort — keine Füll-Routen.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {regions.map((r) => {
@@ -37,7 +38,9 @@ export default function RegionsIndexPage() {
                 <h2 className="mt-1 text-xl font-semibold">{r.name}</h2>
                 <p className="mt-2 text-sm text-text-secondary">{r.teaser}</p>
                 <p className="mt-4 text-xs font-medium text-accent">
-                  {count} Touren · {r.sports.join(" · ")}
+                  {count === 0
+                    ? `Noch keine Touren · auf der Karte suchen`
+                    : `${count} Touren · ${r.sports.join(" · ")}`}
                 </p>
               </Link>
             );

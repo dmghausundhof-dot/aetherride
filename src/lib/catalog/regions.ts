@@ -35,7 +35,7 @@ export const REGIONS: RegionDef[] = [
     country: "DE",
     teaser: "Höhenmeter, Forstwege und klassische Tourenregion.",
     description:
-      "Gravel West, Kaltenbronn, Schauinsland und lange E-Bike-Touren — die Hausberge der AetherRide-Demo-Region.",
+      "Gravel West, Kaltenbronn, Schauinsland und lange E-Bike-Touren — Hausberge um Freiburg und Baden-Baden.",
     center: [8.15, 48.1],
     zoom: 9,
     sports: ["gravel", "mtb", "ebike", "road"],
