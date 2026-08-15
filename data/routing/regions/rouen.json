@@ -1,0 +1,27 @@
+{
+  "id": "rouen",
+  "name": "Rouen / Seine",
+  "bbox": [
+    0.95,
+    49.35,
+    1.22,
+    49.52
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/haute-normandie-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/rouen",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "rouen.tar.zst"
+  }
+}

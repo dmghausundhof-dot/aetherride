@@ -318,9 +318,11 @@ export async function toCatalogRow(
   id: string,
   m: OfflinePackManifest | null
 ): Promise<OfflineCatalogPack> {
+  // Status before applyPackCdn: synthesizing a Storage baseUrl must not turn
+  // empty catalog stubs into downloadable "ready" rows.
+  const onDisk = m ? await packArtifactExists(id, m) : false;
+  const status = catalogStatus(m, onDisk);
   const withCdn = m ? applyPackCdn(id, m) : null;
-  const onDisk = withCdn ? await packArtifactExists(id, withCdn) : false;
-  const status = catalogStatus(withCdn, onDisk);
   return {
     id,
     name: withCdn?.name ?? id,
@@ -331,7 +333,7 @@ export async function toCatalogRow(
     downloadable: status === "ready",
     status,
     bytes: withCdn ? catalogPackBytes(withCdn) : null,
-    cdn: withCdn?.cdn ?? null,
+    cdn: status === "ready" ? withCdn?.cdn ?? null : m?.cdn ?? null,
   };
 }
 

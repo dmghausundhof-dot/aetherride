@@ -1,0 +1,27 @@
+{
+  "id": "zermatt",
+  "name": "Zermatt / Mattertal",
+  "bbox": [
+    7.65,
+    45.95,
+    7.85,
+    46.1
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/zermatt",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "zermatt.tar.zst"
+  }
+}

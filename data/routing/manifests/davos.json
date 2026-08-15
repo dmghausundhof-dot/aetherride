@@ -1,0 +1,24 @@
+{
+  "id": "davos",
+  "name": "Davos / Landwasser",
+  "bbox": [
+    9.7,
+    46.73,
+    9.98,
+    46.89
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "davos.tar.zst",
+    "packGz": "davos.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -70,6 +70,7 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'graz', name: 'Graz / Murtal', bbox: [15.35, 47.02, 15.52, 47.12]),
   OverlayRegion(id: 'linz', name: 'Linz / Donau', bbox: [14.22, 48.25, 14.4, 48.35]),
   OverlayRegion(id: 'klagenfurt', name: 'Klagenfurt / Wörthersee', bbox: [14.2, 46.55, 14.4, 46.7]),
+  OverlayRegion(id: 'villach', name: 'Villach / Drau', bbox: [13.68, 46.54, 14.05, 46.68]),
   OverlayRegion(id: 'bregenz', name: 'Bregenz / Vorarlberg', bbox: [9.6, 47.45, 9.85, 47.55]),
   OverlayRegion(id: 'kitzbuehel', name: 'Kitzbühel / Wilder Kaiser', bbox: [12.2, 47.38, 12.5, 47.55]),
   OverlayRegion(id: 'genf', name: 'Genf / Lac Léman', bbox: [6.05, 46.15, 6.25, 46.28]),
@@ -79,6 +80,9 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'lugano', name: 'Lugano / Tessin', bbox: [8.9, 45.95, 9.05, 46.05]),
   OverlayRegion(id: 'interlaken', name: 'Interlaken / Berner Oberland', bbox: [7.8, 46.65, 8, 46.72]),
   OverlayRegion(id: 'chur', name: 'Chur / Graubünden', bbox: [9.48, 46.82, 9.58, 46.88]),
+  OverlayRegion(id: 'zermatt', name: 'Zermatt / Mattertal', bbox: [7.65, 45.95, 7.85, 46.1]),
+  OverlayRegion(id: 'st-moritz', name: 'St. Moritz / Engadin', bbox: [9.7, 46.42, 9.98, 46.57]),
+  OverlayRegion(id: 'davos', name: 'Davos / Landwasser', bbox: [9.7, 46.73, 9.98, 46.89]),
   OverlayRegion(id: 'strasbourg', name: 'Straßburg / Ill', bbox: [7.65, 48.5, 7.85, 48.65]),
   OverlayRegion(id: 'alsace-vins', name: 'Elsass / Route des Vins', bbox: [7.15, 47.9, 7.55, 48.25]),
   OverlayRegion(id: 'vosges', name: 'Vogesen / Ballon d\'Alsace', bbox: [6.6, 47.7, 7.2, 48.25]),
@@ -97,6 +101,9 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'bordeaux', name: 'Bordeaux / Garonne', bbox: [-0.72, 44.72, -0.4, 44.95]),
   OverlayRegion(id: 'toulouse', name: 'Toulouse / Canal du Midi', bbox: [1.28, 43.48, 1.6, 43.72]),
   OverlayRegion(id: 'nantes', name: 'Nantes / Erdre', bbox: [-1.7, 47.12, -1.4, 47.32]),
+  OverlayRegion(id: 'reims', name: 'Reims / Champagne', bbox: [3.9, 49.18, 4.18, 49.35]),
+  OverlayRegion(id: 'rouen', name: 'Rouen / Seine', bbox: [0.95, 49.35, 1.22, 49.52]),
+  OverlayRegion(id: 'rennes', name: 'Rennes / Vilaine', bbox: [-1.78, 48.05, -1.55, 48.18]),
 ];
 
 const kOverlayPackCatalog = <OverlayPackRef>[
@@ -147,6 +154,7 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'graz', name: 'Graz / Murtal'),
   OverlayPackRef(id: 'linz', name: 'Linz / Donau'),
   OverlayPackRef(id: 'klagenfurt', name: 'Klagenfurt / Wörthersee'),
+  OverlayPackRef(id: 'villach', name: 'Villach / Drau'),
   OverlayPackRef(id: 'bregenz', name: 'Bregenz / Vorarlberg'),
   OverlayPackRef(id: 'kitzbuehel', name: 'Kitzbühel / Wilder Kaiser'),
   OverlayPackRef(id: 'genf', name: 'Genf / Lac Léman'),
@@ -156,6 +164,9 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'lugano', name: 'Lugano / Tessin'),
   OverlayPackRef(id: 'interlaken', name: 'Interlaken / Berner Oberland'),
   OverlayPackRef(id: 'chur', name: 'Chur / Graubünden'),
+  OverlayPackRef(id: 'zermatt', name: 'Zermatt / Mattertal'),
+  OverlayPackRef(id: 'st-moritz', name: 'St. Moritz / Engadin'),
+  OverlayPackRef(id: 'davos', name: 'Davos / Landwasser'),
   OverlayPackRef(id: 'strasbourg', name: 'Straßburg / Ill'),
   OverlayPackRef(id: 'alsace-vins', name: 'Elsass / Route des Vins'),
   OverlayPackRef(id: 'vosges', name: 'Vogesen / Ballon d\'Alsace'),
@@ -174,6 +185,9 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'bordeaux', name: 'Bordeaux / Garonne'),
   OverlayPackRef(id: 'toulouse', name: 'Toulouse / Canal du Midi'),
   OverlayPackRef(id: 'nantes', name: 'Nantes / Erdre'),
+  OverlayPackRef(id: 'reims', name: 'Reims / Champagne'),
+  OverlayPackRef(id: 'rouen', name: 'Rouen / Seine'),
+  OverlayPackRef(id: 'rennes', name: 'Rennes / Vilaine'),
 ];
 
 OverlayRegion? overlayRegionForPoint(double lng, double lat) {
