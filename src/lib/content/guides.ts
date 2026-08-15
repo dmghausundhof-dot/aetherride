@@ -24,7 +24,7 @@ export const GUIDES: Guide[] = [
     body: [
       "Gravel lebt von gemischten Oberflächen: Asphalt, Schotter, Forstwege. Viele Apps priorisieren Trails oder Straße zu stark — und schicken dich auf nicht existente Singletracks oder pure Autobahn-Alternativen.",
       "In FlowLine wählst du unter Planen das Profil „Gravel“. Das Routing bevorzugt tracks und unpaved, meidet aber harte MTB-Scales. Trotzdem: ohne Live-Engine (Demo-Modus) sind Linien Näherungen — prüfe kritische Abschnitte auf der Karte und speichere GPX.",
-      "Tipp: plane am Desktop, speichere in der Bibliothek, navigiere in der App. Für Mehrtages-Touren brich Etappen manuell (Start/Via/Ziel) und nutze flache Fernradwege als Backup.",
+      "Tipp: plane am Desktop, speichere auf dem Platz, navigiere in der App. Für Mehrtages-Touren brich Etappen manuell (Start/Via/Ziel) und nutze flache Fernradwege als Backup.",
       "Community-Wunsch: transparente Surface-Layer und Warnungen statt stiller Umleitungen. Genau das ist unser Honesty-Ansatz — Demo klar labeln, Live-Status anzeigen.",
     ],
     relatedHrefs: [
@@ -43,7 +43,7 @@ export const GUIDES: Guide[] = [
     body: [
       "Rennrad-Touren brauchen andere Filter als MTB: Asphaltanteil, Verkehr und kumulierte Höhenmeter zählen mehr als S-Skalen.",
       "Nutze unter Touren den Sport-Filter „Rennrad“ und Difficulty „Entspannt“ vs. „Sportlich“. Öffentliche Tour-Seiten zeigen Wetter und ein Höhenprofil — das Profil aus Metadaten ist eine Schätzung, bis du live routest.",
-      "Bodensee-Südufer und Inn-Radweg eignen sich für lange, flache Tage. Kaiserstuhl und Alpenvorland liefern Intervalle. Speichere Varianten in der Bibliothek und starte in der App.",
+      "Bodensee-Südufer und Inn-Radweg eignen sich für lange, flache Tage. Kaiserstuhl und Alpenvorland liefern Intervalle. Speichere Varianten auf dem Platz und starte in der App.",
     ],
     relatedHrefs: [
       { href: "/discover?sport=road", label: "Rennrad Touren" },
@@ -79,11 +79,11 @@ export const GUIDES: Guide[] = [
     readMin: 6,
     body: [
       "Druck und Rebound hängen vom Systemgewicht (Fahrer + Packs + Bike) und vom Federweg ab. Hersteller-Charts sind Startpunkte, keine Gesetze.",
-      "In der Garage findest du SAG-Hinweise und Setup-Versionen. Bracketing (Pro) vergleicht Serien systematisch — mit der Regel, dass „kein signifikanter Unterschied“ ehrlich angezeigt wird.",
+      "In der Werkstatt findest du SAG-Hinweise und Setup-Versionen. Bracketing (Pro) vergleicht Serien systematisch — mit der Regel, dass „kein signifikanter Unterschied“ ehrlich angezeigt wird.",
       "Post-Ride-Feedback (≤3 Taps in der App) fließt in Vorschläge. Auf dem Desktop vertiefst du Setups und exportierst Service-Reports für die Werkstatt.",
     ],
     relatedHrefs: [
-      { href: "/garage", label: "Garage" },
+      { href: "/garage", label: "Werkstatt" },
       { href: "/pricing", label: "Pro für Bracketing" },
       { href: "/activities", label: "Aktivitäten" },
     ],
@@ -114,7 +114,7 @@ export const GUIDES: Guide[] = [
     readMin: 4,
     body: [
       "Große Outdoor-Anbieter trennen klar: Web für Inspiration, SEO-Touren und Desktop-Planung; App für Offline, Turn-by-turn und Sensoren.",
-      "FlowLine folgt dem: Touren, Planen, Tour-Seiten, Garage und Bibliothek im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
+      "FlowLine folgt dem: Touren, Planen, Tour-Seiten, Werkstatt und Platz im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
       "Wenn du „Losfahren“ siehst, landest du auf der App-Bridge — speichere die Tour und öffne sie auf dem Gerät.",
     ],
     relatedHrefs: [
@@ -122,6 +122,7 @@ export const GUIDES: Guide[] = [
       { href: "/produkt", label: "Produkt: Web vs. App" },
       { href: "/planner", label: "Planen" },
       { href: "/discover", label: "Karte" },
+      { href: "/community", label: "Community / Platz" },
     ],
   },
 ];

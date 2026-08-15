@@ -9,6 +9,7 @@ import {
   WORKFLOWS,
   SCREEN_GROUPS,
 } from "@/lib/content/productMap";
+import { ScreenGallery } from "@/components/landing/ScreenGallery";
 import { Home, Map, BookOpen, Wrench, Store, Smartphone } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -83,6 +84,11 @@ export default function ProduktPage() {
           </div>
         </div>
       </section>
+
+      <ScreenGallery
+        heading="Screens"
+        hint="Design-System aus Logo und Bilder, zugeordnet zu den Türen. Ride-HUD bleibt die App."
+      />
 
       <section className="border-t border-border bg-surface px-4 py-16 sm:px-6">
         <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2">

@@ -4,67 +4,86 @@ import {
   COMMUNITY_CLUBS,
   COMMUNITY_EVENTS,
 } from "@/lib/community/seed";
+import { COMMUNITY_FEATURES, COMMUNITY_OUT } from "@/lib/content/communityMap";
 import { getRegion } from "@/lib/catalog/regions";
-import { Users, Calendar, Shield } from "lucide-react";
+import { Users, Calendar, Shield, MessageSquare, Share2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Community – Clubs, Events & geteilte Touren",
+  title: "Community – Platz, Stimmen, Gruppen",
   description:
-    "FlowLine Community light: Events, Clubs und geteilte Sammlungen — Privacy-first, moderierte Reviews. Der Platz ist die Tür in der App.",
+    "FlowLine-Community hängt an der Tour: Stimmen, Mappe, Gruppen und Public Profile. Kein Feed auf dem Hof.",
 };
 
 export default function CommunityPage() {
   return (
     <div className="px-4 py-12 sm:px-6">
       <div className="mx-auto max-w-4xl">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        <p className="text-[11px] font-bold tracking-wide text-chrome">
           Community
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+          Am Platz, nicht im Feed
         </h1>
         <p className="mt-3 max-w-2xl text-text-secondary">
-          Kontrolliert und ehrlich: Stimmen an der Tour, keine Feed-Religion
-          auf dem Hof. Reviews mit Moderation, Sammlungen teilen ohne Spam.
+          FlowLine teilt Touren, Stimmen und Gruppen. Es gibt keine Timeline auf
+          dem Hof und kein Live-GPS vor dem Tor. Die Tür heißt Platz.
         </p>
 
-        <div className="mt-6 rounded-2xl border border-chrome/30 bg-chrome/10 p-5">
-          <p className="text-sm font-semibold">Der Platz ist die Tür</p>
-          <p className="mt-1 text-sm text-text-secondary">
-            Mappe, Stimmen und Gruppen liegen unter Platz — dieselben Touren
-            wie auf der Karte, kein zweiter Social-Feed.
-          </p>
-          <Link
-            href="/library"
-            className="mt-3 inline-block text-sm font-semibold text-chrome hover:underline"
-          >
-            Zum Platz →
-          </Link>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          {COMMUNITY_FEATURES.map((f) => (
+            <Link
+              key={f.title}
+              href={f.href}
+              className="rounded-2xl border border-border bg-surface p-5 transition hover:border-chrome/40"
+            >
+              <h2 className="font-semibold">{f.title}</h2>
+              <p className="mt-2 text-sm text-text-secondary">{f.body}</p>
+              <p className="mt-3 text-xs font-semibold text-chrome">{f.cta} →</p>
+            </Link>
+          ))}
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-border bg-surface p-4 text-sm">
             <Shield className="h-5 w-5 text-chrome" />
             <p className="mt-2 font-medium">Privacy-first</p>
             <p className="mt-1 text-xs text-text-secondary">
-              Keine Tracks in Reviews. Public Profile nur mit Opt-in.
+              Keine Tracks in Stimmen. Public Profile nur mit Opt-in.
             </p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <Users className="h-5 w-5 text-accent" />
+            <MessageSquare className="h-5 w-5 text-accent" />
             <p className="mt-2 font-medium">Moderation</p>
             <p className="mt-1 text-xs text-text-secondary">
-              Neue Reviews starten „in Prüfung“, Editorial klar gelabelt.
+              Neue Stimmen starten „in Prüfung“. Editorial ist gekennzeichnet.
             </p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-            <Calendar className="h-5 w-5 text-accent" />
-            <p className="mt-2 font-medium">Events light</p>
+            <Share2 className="h-5 w-5 text-success" />
+            <p className="mt-2 font-medium">Link statt Feed</p>
             <p className="mt-1 text-xs text-text-secondary">
-              Lokale Treffen ohne Zwang zu Live-Standort-Sharing.
+              Sammlung oder Gruppe per Link. Wer ihn hat, ist dabei.
             </p>
           </div>
         </div>
 
-        <section className="mt-12">
-          <h2 className="text-xl font-bold">Kommende Events</h2>
+        <section className="mt-12 rounded-2xl border border-border bg-surface p-6">
+          <h2 className="text-lg font-semibold">Was Community hier nicht ist</h2>
+          <ul className="mt-3 grid gap-2 text-sm text-text-secondary sm:grid-cols-2">
+            {COMMUNITY_OUT.map((line) => (
+              <li key={line}>· {line}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section id="events" className="mt-12 scroll-mt-24">
+          <h2 className="flex items-center gap-2 text-xl font-bold">
+            <Calendar className="h-5 w-5 text-chrome" />
+            Kommende Events
+          </h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Redaktionell. Kein erfundenes RSVP.
+          </p>
           <ul className="mt-4 space-y-3">
             {COMMUNITY_EVENTS.map((e) => {
               const region = getRegion(e.regionSlug);
@@ -96,10 +115,12 @@ export default function CommunityPage() {
         </section>
 
         <section className="mt-12">
-          <h2 className="text-xl font-bold">Clubs light</h2>
+          <h2 className="flex items-center gap-2 text-xl font-bold">
+            <Users className="h-5 w-5 text-chrome" />
+            Clubs light
+          </h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Orientierung — keine Live-Mitgliedschaftspflicht. Kontakte über
-            regionale Communitys.
+            Orientierung — keine Live-Mitgliedschaftspflicht.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {COMMUNITY_CLUBS.map((c) => {
@@ -128,31 +149,38 @@ export default function CommunityPage() {
           </div>
         </section>
 
-        <section className="mt-12 rounded-2xl border border-border bg-surface p-6">
-          <h2 className="text-lg font-semibold">Mitmachen</h2>
-          <ul className="mt-3 space-y-2 text-sm text-text-secondary">
+        <section className="mt-12 rounded-2xl border border-chrome/30 bg-chrome/10 p-6">
+          <h2 className="text-lg font-semibold">So machst du mit</h2>
+          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-text-secondary">
             <li>
-              · Review auf einer{" "}
-              <Link href="/regions" className="text-accent hover:underline">
-                Tour-Seite
+              Tour auf der{" "}
+              <Link href="/regions" className="text-chrome hover:underline">
+                Karte oder Region
               </Link>{" "}
-              schreiben
+              öffnen und eine Stimme hinterlassen.
             </li>
             <li>
-              · Sammlung auf dem{" "}
-              <Link href="/library" className="text-accent hover:underline">
+              Auf dem{" "}
+              <Link href="/library" className="text-chrome hover:underline">
                 Platz
               </Link>{" "}
-              teilen
+              eine Sammlung teilen oder eine Gruppe mit Code starten.
             </li>
             <li>
-              · Optionales{" "}
-              <Link href="/profile#public-profile" className="text-accent hover:underline">
+              Optional ein{" "}
+              <Link
+                href="/profile#public-profile"
+                className="text-chrome hover:underline"
+              >
                 Public Profile
               </Link>{" "}
-              aktivieren
+              anlegen — Beispiel:{" "}
+              <Link href="/u/mara_road" className="text-chrome hover:underline">
+                mara_road
+              </Link>
+              .
             </li>
-          </ul>
+          </ol>
         </section>
       </div>
     </div>

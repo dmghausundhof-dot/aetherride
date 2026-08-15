@@ -1,6 +1,7 @@
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { ServiceCheckSection } from "@/components/landing/ServiceCheckSection";
+import { ScreenGallery } from "@/components/landing/ScreenGallery";
 import Link from "next/link";
 import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
 import {
@@ -9,6 +10,7 @@ import {
   WEB_SURFACES,
   APP_SURFACES,
 } from "@/lib/content/productMap";
+import { COMMUNITY_FEATURES } from "@/lib/content/communityMap";
 
 const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
 
@@ -150,6 +152,39 @@ export default function LandingPage() {
           </ol>
         </div>
       </section>
+
+      <section className="border-t border-border bg-surface py-16 px-4">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold sm:text-3xl">Community am Platz</h2>
+              <p className="mt-2 max-w-xl text-sm text-text-secondary">
+                Stimmen, Mappe, Gruppen. Kein Feed, kein Live-GPS vor dem Tor.
+              </p>
+            </div>
+            <Link
+              href="/community"
+              className="text-sm font-semibold text-chrome hover:underline"
+            >
+              Community →
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {COMMUNITY_FEATURES.slice(0, 6).map((f) => (
+              <Link
+                key={f.title}
+                href={f.href}
+                className="rounded-2xl border border-border bg-background/60 p-5 transition hover:border-chrome/40"
+              >
+                <h3 className="font-semibold">{f.title}</h3>
+                <p className="mt-2 text-sm text-text-secondary">{f.body}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <ScreenGallery />
 
       <ServiceCheckSection />
 

@@ -82,6 +82,10 @@ export const WEB_APP_MATRIX: {
   { feature: "GPS-Aufzeichnung", web: "nach Sync", app: "nativ" },
   { feature: "Sensoren, Uhr, BLE", web: "Hinweis", app: "koppeln" },
   { feature: "Laden / Kasse", web: "Gateway", app: "Gateway" },
+  { feature: "Stimmen an der Tour", web: "voll", app: "voll" },
+  { feature: "Mappe & Sammlungen teilen", web: "voll", app: "Deep Link" },
+  { feature: "Gruppen / Zusammen raus", web: "Roster + Code", app: "HUD-Pins" },
+  { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
 ];
 
 export const JOURNEY = [

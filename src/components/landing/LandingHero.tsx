@@ -48,8 +48,11 @@ export function LandingHero() {
 
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-[calc(5rem+var(--safe-bottom))] pt-[calc(8rem+var(--safe-top))] sm:justify-center sm:px-8 sm:pb-28 sm:pt-28 lg:px-10">
         <div className="max-w-[22rem] animate-hero-rise sm:max-w-md lg:max-w-[32rem]">
-          <p className="mb-8 text-[0.95rem] font-medium tracking-[0.06em] text-foreground/85 sm:mb-11 sm:text-base">
+          <p className="text-[0.95rem] font-medium tracking-[0.06em] text-foreground/85 sm:text-base">
             Flow<span className="text-accent">Line</span>
+          </p>
+          <p className="mb-8 mt-2 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-foreground/70 sm:mb-11">
+            Outdoor · Cycling · Flow
           </p>
 
           <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(18,18,21,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">

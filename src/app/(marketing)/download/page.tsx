@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { Smartphone, Map, WifiOff, Activity } from "lucide-react";
 import { WEB_APP_MATRIX } from "@/lib/content/productMap";
@@ -37,6 +38,16 @@ export default function DownloadPage() {
   return (
     <div className="px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-3xl text-center">
+        <div className="relative mx-auto mb-8 h-40 w-full max-w-sm overflow-hidden rounded-2xl border border-border">
+          <Image
+            src="/brand/splash.jpg"
+            alt="FlowLine Splash"
+            fill
+            className="object-cover"
+            sizes="384px"
+            priority
+          />
+        </div>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Die App für unterwegs
         </h1>

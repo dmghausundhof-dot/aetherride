@@ -36,16 +36,23 @@ export function FlowLineMark({ className = "h-6 w-6" }: { className?: string }) 
         strokeLinecap="round"
       />
       <path
-        d="M6 42 C18 36, 28 48, 40 42 C50 37, 56 44, 58 46"
+        d="M6 40 C18 34, 28 46, 40 40 C50 35, 56 42, 58 44"
         stroke="#FF6A00"
         strokeWidth="3.2"
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d="M8 50 C20 44, 30 54, 42 48 C52 43, 56 50, 58 52"
+        d="M8 47 C20 41, 30 51, 42 45 C52 40, 56 47, 58 49"
         stroke="#7A8B73"
-        strokeWidth="2.4"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M10 54 C22 50, 32 56, 44 52 C52 49, 56 54, 58 55"
+        stroke="#9CA3AF"
+        strokeWidth="2"
         strokeLinecap="round"
         fill="none"
       />

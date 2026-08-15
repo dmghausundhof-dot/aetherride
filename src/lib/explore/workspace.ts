@@ -7,7 +7,7 @@
  * - Planen und Entdecken teilen dieselbe Route-Draft und Map-Layers.
  * - Web = Planung/SEO; App = Nav (Deep Link).
  *
- * AetherRide besser:
+ * FlowLine besser:
  * - Bike-Intelligence (aktives Bike → Profil/Match).
  * - Honesty: engine/editorial/demo klar.
  * - Garage + Setup im selben Account-Sync.
@@ -90,6 +90,6 @@ export function panelFromPlanMode(mode: PlanMode): ExplorePanel {
 export const EXPLORE_PANEL_LABELS: Record<ExplorePanel, string> = {
   discover: "Touren",
   plan: "Planen",
-  library: "Bibliothek",
+  library: "Platz",
   nearby: "Hier & Jetzt",
 };

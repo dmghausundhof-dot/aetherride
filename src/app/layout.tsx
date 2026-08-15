@@ -48,16 +48,16 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/brand/app-icon.png",
-        width: 512,
-        height: 512,
-        alt: "FlowLine",
+        url: "/brand/og-banner.jpg",
+        width: 1200,
+        height: 630,
+        alt: "FlowLine – Outdoor · Cycling · Flow",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    images: ["/brand/app-icon.png"],
+    card: "summary_large_image",
+    images: ["/brand/og-banner.jpg"],
   },
   appleWebApp: {
     capable: true,

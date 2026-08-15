@@ -2,6 +2,8 @@ import Link from "next/link";
 import { AppDownloadButtons } from "./AppDownloadButtons";
 import { HOF_NAV } from "@/lib/nav/hofNav";
 import { MARKETING_NAV } from "@/lib/nav/marketingNav";
+import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
+import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
 
 export function LandingFooter() {
   return (
@@ -9,10 +11,11 @@ export function LandingFooter() {
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
           <div>
-            <div className="text-lg font-bold">
-              Flow<span className="text-accent">Line</span>
-            </div>
-            <p className="mt-1 text-sm text-text-secondary">
+            <FlowLineWordmark />
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-text-secondary">
+              {FLOWLINE_TAGLINE_DOTS}
+            </p>
+            <p className="mt-2 text-sm text-text-secondary">
               Das Rad wohnt hier. Du kommst zurück.
             </p>
           </div>
