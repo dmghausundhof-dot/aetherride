@@ -143,6 +143,10 @@ export default function PricingPage() {
           <Link href="/produkt" className="text-chrome hover:underline">
             Produkt
           </Link>
+          {" · "}
+          <Link href="/faq" className="text-chrome hover:underline">
+            FAQ
+          </Link>
         </p>
       </div>
     </div>

@@ -182,3 +182,46 @@ export const GUIDE_CATEGORY_LABEL: Record<Guide["category"], string> = {
   setup: "Setup",
   safety: "Plattform",
 };
+
+export const GUIDE_CATEGORY_ORDER: Guide["category"][] = [
+  "planning",
+  "safety",
+  "ebike",
+  "setup",
+  "bike",
+];
+
+export function listGuidesGrouped(): {
+  category: Guide["category"];
+  label: string;
+  guides: Guide[];
+}[] {
+  return GUIDE_CATEGORY_ORDER.map((category) => ({
+    category,
+    label: GUIDE_CATEGORY_LABEL[category],
+    guides: GUIDES.filter((g) => g.category === category),
+  })).filter((group) => group.guides.length > 0);
+}
+
+export function relatedGuidesForTour(input: {
+  id: string;
+  primaryCategory: string;
+}): Guide[] {
+  const sport = input.primaryCategory;
+  const slugs: string[] = ["web-vs-app"];
+  if (sport.includes("gravel")) slugs.push("gravel-touren-planen");
+  else if (sport === "road") slugs.push("rennrad-hoehenmeter");
+  else if (sport === "emtb" || sport === "etrekking") slugs.push("ebike-reichweite");
+  else if (sport.startsWith("mtb") || sport === "dh") slugs.push("gravel-touren-planen");
+  else slugs.push("hof-fuenf-tueren");
+  slugs.push("platz-ohne-feed");
+  const seen = new Set<string>();
+  const out: Guide[] = [];
+  for (const slug of slugs) {
+    const g = getGuide(slug);
+    if (!g || seen.has(g.slug)) continue;
+    seen.add(g.slug);
+    out.push(g);
+  }
+  return out.slice(0, 3);
+}

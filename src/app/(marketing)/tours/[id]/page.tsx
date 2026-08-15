@@ -9,6 +9,7 @@ import {
 } from "@/lib/catalog/publicTours";
 import { getRegion } from "@/lib/catalog/regions";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { relatedGuidesForTour } from "@/lib/content/guides";
 import { TourActions } from "@/components/tours/TourActions";
 import { WeatherPanel } from "@/components/tours/WeatherPanel";
 import { TourElevationClient } from "@/components/tours/TourElevationClient";
@@ -55,6 +56,7 @@ export default async function TourPage({ params }: Props) {
 
   const region = getRegion(tour.regionSlug);
   const related = relatedTours(tour, 4);
+  const guides = relatedGuidesForTour(tour);
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
     "https://aetherride.app";
@@ -188,6 +190,21 @@ export default async function TourPage({ params }: Props) {
                     className="rounded-full bg-surface-elevated px-2.5 py-1 text-[11px]"
                   >
                     {bikeCategoryLabel(c)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <h2 className="text-sm font-semibold">Guides</h2>
+              <ul className="mt-3 space-y-2">
+                {guides.map((g) => (
+                  <li key={g.slug}>
+                    <Link
+                      href={`/guides/${g.slug}`}
+                      className="text-xs font-semibold text-chrome hover:underline"
+                    >
+                      {g.title} →
+                    </Link>
                   </li>
                 ))}
               </ul>
