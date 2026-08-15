@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Bookmark, Map } from "lucide-react";
-import { decodeSharePayload } from "@/lib/community/shareCodec";
+import { decodeSharePayload, demoCollectionPayload, isShareDemoToken } from "@/lib/community/shareCodec";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import { useAppStore } from "@/store/useAppStore";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
@@ -19,8 +19,14 @@ export default function SharedCollectionPage() {
   const [remote, setRemote] = useState<SharedCollectionPayload | null>(null);
   const [remoteDone, setRemoteDone] = useState(false);
 
-  const encoded = useMemo(() => decodeSharePayload(token), [token]);
-  const isShort = /^[a-zA-Z0-9]{6,12}$/.test(token);
+  const encoded = useMemo(
+    () =>
+      isShareDemoToken(token)
+        ? demoCollectionPayload()
+        : decodeSharePayload(token),
+    [token],
+  );
+  const isShort = /^[a-zA-Z0-9]{6,12}$/.test(token) && !isShareDemoToken(token);
 
   useEffect(() => {
     if (!isShort || encoded) {
@@ -59,8 +65,8 @@ export default function SharedCollectionPage() {
         <p className="mt-2 text-sm text-text-secondary">
           Die geteilte Sammlung konnte nicht gelesen werden.
         </p>
-        <Link href="/library" className="mt-6 inline-block text-accent">
-          Zur Bibliothek
+        <Link href="/library" className="mt-6 inline-block text-chrome">
+          Zum Platz
         </Link>
       </div>
     );
@@ -107,8 +113,8 @@ export default function SharedCollectionPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10 sm:px-6">
-      <p className="text-xs font-medium uppercase tracking-wide text-accent">
-        Geteilte Sammlung
+      <p className="text-[11px] font-bold tracking-wide text-chrome">
+        {isShareDemoToken(token) ? "Beispiel-Mappe" : "Geteilte Sammlung"}
       </p>
       <h1 className="mt-2 text-2xl font-bold">{payload.name}</h1>
       <p className="mt-2 text-sm text-text-secondary">
@@ -168,18 +174,22 @@ export default function SharedCollectionPage() {
         onClick={adopt}
         className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white"
       >
-        <Bookmark className="h-4 w-4" /> In meine Bibliothek übernehmen
+        <Bookmark className="h-4 w-4" /> In die Mappe übernehmen
       </button>
       <p className="mt-3 text-center text-[11px] text-text-secondary">
         Speichert die Sammlung lokal in diesem Browser.
       </p>
       <div className="mt-6 text-center">
-        <Link href="/community" className="text-sm text-accent hover:underline">
+        <Link href="/share" className="text-sm text-chrome hover:underline">
+          So teilen
+        </Link>
+        {" · "}
+        <Link href="/community" className="text-sm text-chrome hover:underline">
           Community
         </Link>
         {" · "}
-        <Link href="/library" className="text-sm text-accent hover:underline">
-          Bibliothek
+        <Link href="/library" className="text-sm text-chrome hover:underline">
+          Platz
         </Link>
       </div>
     </div>

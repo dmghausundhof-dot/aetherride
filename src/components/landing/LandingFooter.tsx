@@ -89,6 +89,12 @@ export function LandingFooter() {
                 FAQ
               </Link>
               <Link
+                href="/share"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Teilen
+              </Link>
+              <Link
                 href="/produkt"
                 className="text-text-secondary hover:text-foreground"
               >

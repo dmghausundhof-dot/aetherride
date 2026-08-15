@@ -18,8 +18,6 @@ const APP_PREFIXES = [
   "/checkout",
   "/chat",
   "/privacy",
-  "/share",
-  "/u",
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

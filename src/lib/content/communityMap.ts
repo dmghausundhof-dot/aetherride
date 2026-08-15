@@ -24,8 +24,8 @@ export const COMMUNITY_FEATURES: {
   {
     title: "Mappe teilen",
     body: "Sammlung als Link. Wer den Link hat, legt die Touren in die eigene Mappe — ohne Account-Zwang.",
-    href: "/library",
-    cta: "Sammlungen",
+    href: "/share",
+    cta: "So teilen",
   },
   {
     title: "Zusammen raus",

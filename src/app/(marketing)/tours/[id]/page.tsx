@@ -16,6 +16,7 @@ import { TourElevationClient } from "@/components/tours/TourElevationClient";
 import { TourLiveMap } from "@/components/tours/TourLiveMap";
 import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
+import { ShareCatalogTourButton } from "@/components/tours/ShareCatalogTourButton";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 
 type Props = { params: Promise<{ id: string }> };
@@ -127,6 +128,7 @@ export default async function TourPage({ params }: Props) {
               </div>
               <div className="mt-8">
                 <TourActions tour={tour} />
+                <ShareCatalogTourButton tour={tour} />
               </div>
               <div className="mt-4">
                 <TourCommunityChip tourId={tour.id} />

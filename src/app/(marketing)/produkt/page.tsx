@@ -219,11 +219,7 @@ export default function ProduktPage() {
                   {group.screens.map((screen) => (
                     <li key={`${group.title}-${screen.href}`}>
                       <Link
-                        href={
-                          screen.href.startsWith("/share/")
-                            ? "/library"
-                            : screen.href
-                        }
+                        href={screen.href}
                         className="block rounded-2xl border border-border bg-background/60 p-4 transition hover:border-chrome/40"
                       >
                         <p className="font-medium">{screen.name}</p>

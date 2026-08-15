@@ -29,6 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/faq",
     "/ueber",
     "/kontakt",
+    "/share",
     "/garage",
     "/shop",
     "/legal/impressum",
