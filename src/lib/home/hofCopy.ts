@@ -56,7 +56,7 @@ export const HOF_COPY = {
     "Ein Stall für den Bewohner. Bereit, Heute, Am Rad, Sensor. Die Uhr bleibt am Fahrer.",
   workshopEmpty: "Die Box ist leer",
   workshopEmptyHint:
-    "Rad abstellen — Katalog, Basis oder Platzhalter. Kein Demo-Bike, keine erfundenen Kilometer.",
+    "Name und Typ reichen. Der Katalog ist Suche — Serienteile nur wenn du sie übernimmst.",
   workshopAdd: "Rad abstellen",
   workshopTabBox: "Die Box",
   workshopZoneReady: "Bereit",
@@ -111,7 +111,7 @@ export const HOF_COPY = {
   legalKicker: "Rechtliches",
   notFoundTitle: "Diese Tür gibt es nicht",
   notFoundHint:
-    "Leerer Stand. Zurück zum Hof, oder eine der vier Türen.",
+    "Leerer Stand. Zurück zum Hof, oder eine der fünf Türen.",
   rideBridgeTitle: "Die Straße ist die App",
   rideBridgeHint:
     "Live-GPS, Offline-Karten, Sensoren und Hintergrund-Aufzeichnung laufen nur nativ — nicht im Browser.",
@@ -125,19 +125,28 @@ export const HOF_COPY = {
   activitiesEmpty: "Noch keine Rückkehr.",
   activitiesEmptyHint:
     "Fahrten entstehen in der App. Kein Fake-Kalender, keine 0-km-Woche.",
-  libraryKicker: "Hinter der Karte",
-  libraryTitle: "Gespeichert",
+  libraryKicker: "Platz",
+  libraryTitle: "Platz",
   libraryHint:
-    "Lokale Touren und Sammlungen — kein fünfter Tab. Die Tür bleibt die Karte.",
+    "Deine Touren, Stimmen und Gruppen. Dieselben Touren wie auf der Karte.",
+  libraryMappe: "Die Mappe",
+  tafelKicker: "Die Tafel",
+  akteMein: "Mein",
+  akteStimmen: "Stimmen",
+  stimmenPrivateHint:
+    "Noch privat — nach Freigabe können andere kommentieren.",
   plannerKicker: "Karte",
   plannerTitle: "Planen",
   plannerHint:
     "Dieselbe Tür wie die Karte. Navigation startet in der App.",
   checkoutTitle: "Kasse ist der Laden",
   checkoutHint:
-    "Kein Warenkorb in AetherRide. Kauf und Kasse liegen bei Shopify.",
+    "Kein Warenkorb in FlowLine. Kauf und Kasse liegen bei Shopify.",
   chatHint:
     "Power-User. Kein Feed auf dem Hof. Die Werkstatt bleibt die Werkstatt.",
+  coachBell: "Hinweise",
+  coachTafel: (n: number) =>
+    n === 1 ? "1 Hinweis vom Assistenten" : `${n} Hinweise vom Assistenten`,
   privacyKicker: "Du",
   privacyTitle: "Daten & Privatsphäre",
   privacyHint:
@@ -146,4 +155,9 @@ export const HOF_COPY = {
   postRideTitle: "Was reinkam",
   postRideHint:
     "Analyse nach der Fahrt. Aufzeichnung bleibt in der App — hier nur ehrliche Zahlen.",
+
+  togetherOut: "Zusammen raus",
+  groupAtGate: "Gruppe vor dem Tor",
+  groupLiveNavHint:
+    "Alle in der Gruppe auf dem Navi — nur in der App, nur während der Fahrt, nur mit Opt-in. Nicht auf der Karte vor dem Tor.",
 } as const;

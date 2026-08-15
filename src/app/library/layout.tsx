@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Bibliothek",
+  title: "Platz",
   description:
-    "Gespeicherte Touren, GPX-Import, Sammlungen und Offline-Packs für AetherRide.",
+    "Deine Touren, Stimmen und Gruppen auf dem Platz. Dieselben Touren wie auf der Karte.",
 };
 
 export default function LibraryLayout({
