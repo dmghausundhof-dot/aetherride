@@ -8,7 +8,7 @@ import Link from "next/link";
 import { CheckCircle2, Mail, Wrench } from "lucide-react";
 
 const WORKSHOP_MAIL =
-  "mailto:hello@aetherride.app?subject=Werkstatt-Interesse%20Service-Check&body=Hallo%20AetherRide-Team%2C%0A%0Awir%20sind%20eine%20Werkstatt%20und%20interessieren%20uns%20f%C3%BCr%20den%20Service-Check.%0A%0AName%3A%0AOrt%3A%0AWebsite%3A%0A";
+  "mailto:hello@aetherride.app?subject=Werkstatt-Interesse%20Service-Check&body=Hallo%20FlowLine-Team%2C%0A%0Awir%20sind%20eine%20Werkstatt%20und%20interessieren%20uns%20f%C3%BCr%20den%20Service-Check.%0A%0AName%3A%0AOrt%3A%0AWebsite%3A%0A";
 
 export function ServiceCheckSection() {
   return (
@@ -29,7 +29,7 @@ export function ServiceCheckSection() {
             Dein Rad sagt dir, was fällig ist.
           </h2>
           <p className="mt-4 text-text-secondary">
-            AetherRide rechnet Wartungsintervalle aus deinem Kilometerstand und
+            FlowLine rechnet Wartungsintervalle aus deinem Kilometerstand und
             deinen Stunden — mit Quellen aus Hersteller- und Industriepraxis
             (RockShox, Fox, Park Tool u. a.). Keine Blackbox, keine Fake-Partner.
           </p>
