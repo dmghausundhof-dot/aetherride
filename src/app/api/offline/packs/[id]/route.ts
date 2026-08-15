@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+  applyPackCdn,
+  fetchPublishedManifest,
   listKnownPackIds,
+  manifestHasFileEntries,
   readOfflineManifest,
 } from "@/lib/routing/offlinePacks";
 
@@ -11,27 +14,29 @@ type Ctx = { params: Promise<{ id: string }> };
 /** GET /api/offline/packs/:id — region pack manifest (SHA-256, CDN hints). */
 export async function GET(_req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
-  const manifest = await readOfflineManifest(id);
-  if (!manifest) {
-    return NextResponse.json(
-      {
-        error: "pack not found",
-        known: await listKnownPackIds(),
-      },
-      { status: 404 }
-    );
+  const local = await readOfflineManifest(id);
+  const withCdn = local ? applyPackCdn(id, local) : null;
+  if (withCdn && manifestHasFileEntries(withCdn)) {
+    return NextResponse.json(withCdn, {
+      headers: { "Cache-Control": "public, max-age=60" },
+    });
   }
-  const base =
-    process.env.ROUTING_CDN_BASE?.replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "";
-  if (base && (!manifest.cdn || !manifest.cdn.baseUrl)) {
-    manifest.cdn = {
-      ...(manifest.cdn || {}),
-      baseUrl: `${base}/api/offline/packs/${id}`,
-    };
+  const published = await fetchPublishedManifest(id);
+  if (published) {
+    return NextResponse.json(published, {
+      headers: { "Cache-Control": "public, max-age=60" },
+    });
   }
-  return NextResponse.json(manifest, {
-    headers: { "Cache-Control": "public, max-age=60" },
-  });
+  if (withCdn) {
+    return NextResponse.json(withCdn, {
+      headers: { "Cache-Control": "public, max-age=60" },
+    });
+  }
+  return NextResponse.json(
+    {
+      error: "pack not found",
+      known: await listKnownPackIds(),
+    },
+    { status: 404 },
+  );
 }

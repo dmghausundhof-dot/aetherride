@@ -1,29 +1,28 @@
 import { NextResponse } from "next/server";
 import {
+  fetchPublishedCatalog,
   listKnownPackIds,
+  mergeCatalogPreferReady,
   readOfflineManifest,
+  sortCatalogPacks,
+  toCatalogRow,
 } from "@/lib/routing/offlinePacks";
 
 /**
- * GET /api/offline/packs — Katalog verfügbarer Region-Packs (IDs + Namen).
- * Artefakte selbst bleiben Ops/Docker; hier nur Manifest-Metadaten.
+ * GET /api/offline/packs — Katalog verfügbarer Region-Packs.
+ * Production: Storage `catalog.json` (CDN) wins over git stubs without dist/.
  */
 export async function GET() {
   const ids = await listKnownPackIds();
-  const packs = [];
+  const local = [];
   for (const id of ids) {
     const m = await readOfflineManifest(id);
-    packs.push({
-      id,
-      name: m?.name ?? id,
-      bbox: m?.bbox ?? null,
-      builtAt: m?.builtAt ?? null,
-      engines: m?.engines ?? null,
-      hasManifest: Boolean(m),
-    });
+    local.push(await toCatalogRow(id, m));
   }
+  const published = await fetchPublishedCatalog();
+  const packs = mergeCatalogPreferReady(local, published);
   return NextResponse.json({
-    packs,
-    attribution: "AetherRide Offline Region Packs",
+    packs: sortCatalogPacks(packs),
+    attribution: "FlowLine Offline Region Packs",
   });
 }

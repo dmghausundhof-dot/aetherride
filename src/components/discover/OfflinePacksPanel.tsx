@@ -7,7 +7,10 @@ type PackRow = {
   id: string;
   name?: string;
   engines?: { offline_graph?: boolean; valhalla_tiles?: boolean };
-  cdn?: { packGz?: string };
+  cdn?: { baseUrl?: string; packGz?: string };
+  downloadable?: boolean;
+  status?: "ready" | "stub";
+  bytes?: number | null;
 };
 
 /**
@@ -56,18 +59,29 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
     setNote(null);
     try {
       let file = pack.cdn?.packGz ?? `${id}.tar.gz`;
+      let cdnBase = pack.cdn?.baseUrl?.replace(/\/$/, "") ?? "";
       try {
         const manRes = await fetch(`/api/offline/packs/${id}`);
         if (manRes.ok) {
           const man = (await manRes.json()) as {
-            cdn?: { packGz?: string };
+            cdn?: { baseUrl?: string; packGz?: string };
           };
           if (man.cdn?.packGz) file = man.cdn.packGz;
+          if (man.cdn?.baseUrl) cdnBase = man.cdn.baseUrl.replace(/\/$/, "");
         }
       } catch {
         /* Katalog-Default behalten */
       }
-      const res = await fetch(`/api/offline/packs/${id}/${file}`);
+      const urls = [
+        ...(cdnBase ? [`${cdnBase}/${file}`] : []),
+        `/api/offline/packs/${id}/${file}`,
+      ];
+      let res: Response | null = null;
+      for (const u of urls) {
+        res = await fetch(u);
+        if (res.ok) break;
+      }
+      if (!res?.ok) throw new Error(`Download HTTP ${res?.status ?? 0}`);
       if (!res.ok) throw new Error(`Download HTTP ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -95,8 +109,8 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
         Offline-Regionen
       </h3>
       <p className="mb-3 text-xs text-text-secondary">
-        Pack als .tar.gz herunterladen. Routing/Karten-Aktivierung läuft in der
-        Android/iOS-App (Valhalla / offline_graph).
+        Nur gebaute Packs sind ladbar. Aktivierung (Routing + Kartenkacheln)
+        läuft in der Android/iOS-App.
       </p>
       {loading ? (
         <p className="text-xs text-text-secondary">Katalog…</p>
@@ -106,37 +120,51 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {packs.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2"
-            >
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium">
-                  {p.name ?? p.id}
-                </div>
-                <div className="text-[11px] text-text-secondary">
-                  {p.engines?.valhalla_tiles
-                    ? "Valhalla-Tiles"
-                    : "offline_graph"}
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={busyId === p.id}
-                onClick={() => void downloadPack(p)}
-                aria-label={`Offline-Pack ${p.name ?? p.id} herunterladen`}
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          {packs.map((p) => {
+            const ready = p.downloadable !== false && p.status !== "stub";
+            const size =
+              typeof p.bytes === "number" && p.bytes > 0
+                ? `${(p.bytes / (1024 * 1024)).toFixed(1)} MB`
+                : null;
+            return (
+              <li
+                key={p.id}
+                className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2"
               >
-                {busyId === p.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <Download className="h-3.5 w-3.5" aria-hidden />
-                )}
-                Laden
-              </button>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">
+                    {p.name ?? p.id}
+                  </div>
+                  <div className="text-[11px] text-text-secondary">
+                    {!ready
+                      ? "Noch nicht gebaut"
+                      : [
+                          size,
+                          p.engines?.valhalla_tiles
+                            ? "Valhalla-Tiles"
+                            : "offline_graph",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={!ready || busyId === p.id}
+                  onClick={() => void downloadPack(p)}
+                  aria-label={`Offline-Pack ${p.name ?? p.id} herunterladen`}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {busyId === p.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  {ready ? "Laden" : "Stub"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       {note && packs.length > 0 && (
