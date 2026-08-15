@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { SyncProvider } from "@/components/sync/SyncProvider";
+import { isPublicMarketingPath } from "@/lib/nav/marketingNav";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,16 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Marketing, Legal und Checkout bleiben lesbar — Overlay nur auf Kernflows.
-  const hideOnboarding =
-    pathname === "/" ||
-    pathname.startsWith("/legal") ||
-    pathname === "/privacy" ||
-    pathname.startsWith("/privacy/") ||
-    pathname === "/checkout" ||
-    pathname.startsWith("/checkout/") ||
-    pathname === "/pricing" ||
-    pathname === "/download";
+  const hideOnboarding = isPublicMarketingPath(pathname);
   const showOnboarding = ready && !onboardingDone && !hideOnboarding;
 
   return (

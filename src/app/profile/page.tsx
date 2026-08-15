@@ -16,6 +16,8 @@ import {
 } from "@/lib/sync/webSync";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
 import { HOF_COPY } from "@/lib/home/hofCopy";
+import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
+import { AuthCard } from "@/components/auth/AuthCard";
 
 type AuthUser = {
   id: string;
@@ -38,8 +40,6 @@ export default function ProfilePage() {
   const store = useAppStore();
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [authMsg, setAuthMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [syncConflict, setSyncConflict] = useState<SyncConflictState | null>(
@@ -87,77 +87,11 @@ export default function ProfilePage() {
     });
   };
 
-  const login = async () => {
-    setBusy(true);
-    setAuthMsg(null);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login fehlgeschlagen");
-      await refreshMe();
-      setAuthMsg(HOF_COPY.profileWelcome);
-    } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const register = async () => {
-    setBusy(true);
-    setAuthMsg(null);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Registrierung fehlgeschlagen");
-      if (data.needsConfirmation) {
-        setAuthMsg("Bitte E-Mail bestätigen (Supabase), dann anmelden.");
-      } else {
-        await refreshMe();
-        setAuthMsg("Konto erstellt und angemeldet.");
-      }
-    } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const logout = async () => {
     setBusy(true);
     await fetch("/api/auth/logout", { method: "POST" });
     setAuthUser(null);
     setBusy(false);
-  };
-
-  const oauth = async (provider: "google" | "apple") => {
-    setBusy(true);
-    setAuthMsg(null);
-    try {
-      const res = await fetch("/api/auth/oauth/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "OAuth nicht verfügbar");
-      if (data.url) window.location.href = data.url;
-    } catch (e) {
-      setAuthMsg(
-        e instanceof Error
-          ? e.message
-          : "OAuth: Provider in Supabase aktivieren"
-      );
-      setBusy(false);
-    }
   };
 
   const syncNow = async () => {
@@ -356,58 +290,10 @@ export default function ProfilePage() {
             )}
           </div>
         ) : (
-          <div className="space-y-2">
-            <input
-              type="email"
-              placeholder="E-Mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
-            />
-            <input
-              type="password"
-              placeholder="Passwort (min. 8)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void login()}
-                className="rounded-xl bg-chrome py-2 text-sm font-medium text-background"
-              >
-                Anmelden
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void register()}
-                className="rounded-xl bg-surface-elevated py-2 text-sm font-medium"
-              >
-                Registrieren
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void oauth("google")}
-                className="rounded-xl border border-border py-2 text-xs"
-              >
-                Google
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void oauth("apple")}
-                className="rounded-xl border border-border py-2 text-xs"
-              >
-                Apple
-              </button>
-            </div>
-          </div>
+          <AuthCard
+            variant="embedded"
+            onAuthed={refreshMe}
+          />
         )}
         {authMsg && (
           <p className="mt-2 text-xs text-text-secondary">{authMsg}</p>
@@ -720,10 +606,10 @@ export default function ProfilePage() {
           </li>
           <li>
             <Link href="/library" className="font-semibold text-chrome hover:underline">
-              Gespeichert
+              Platz
             </Link>
             <span className="block text-xs text-text-secondary">
-              Touren und Sammlungen hinter der Karte
+              Touren, Stimmen und Gruppen
             </span>
           </li>
           <li>

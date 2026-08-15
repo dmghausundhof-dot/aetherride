@@ -23,7 +23,7 @@ export function HofEmpty({
       {showDoors ? (
         <nav
           className="mt-6 flex flex-wrap justify-center gap-2"
-          aria-label="Vier Türen"
+          aria-label="Fünf Türen"
         >
           {HOF_NAV.map((item) => (
             <Link

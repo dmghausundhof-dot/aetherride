@@ -20,7 +20,6 @@ const APP_PREFIXES = [
   "/privacy",
   "/share",
   "/u",
-  "/tours",
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

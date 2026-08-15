@@ -45,7 +45,7 @@ export default function RideAppBridgePage() {
             Zurück zur Karte
           </Link>
           <Link href="/" className="text-sm font-bold">
-            Aether<span className="text-chrome">Ride</span>
+            Flow<span className="text-chrome">Line</span>
           </Link>
         </div>
       </header>

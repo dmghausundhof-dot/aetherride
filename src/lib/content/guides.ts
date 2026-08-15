@@ -23,7 +23,7 @@ export const GUIDES: Guide[] = [
     readMin: 6,
     body: [
       "Gravel lebt von gemischten Oberflächen: Asphalt, Schotter, Forstwege. Viele Apps priorisieren Trails oder Straße zu stark — und schicken dich auf nicht existente Singletracks oder pure Autobahn-Alternativen.",
-      "In AetherRide wählst du unter Planen das Profil „Gravel“. Das Routing bevorzugt tracks und unpaved, meidet aber harte MTB-Scales. Trotzdem: ohne Live-Engine (Demo-Modus) sind Linien Näherungen — prüfe kritische Abschnitte auf der Karte und speichere GPX.",
+      "In FlowLine wählst du unter Planen das Profil „Gravel“. Das Routing bevorzugt tracks und unpaved, meidet aber harte MTB-Scales. Trotzdem: ohne Live-Engine (Demo-Modus) sind Linien Näherungen — prüfe kritische Abschnitte auf der Karte und speichere GPX.",
       "Tipp: plane am Desktop, speichere in der Bibliothek, navigiere in der App. Für Mehrtages-Touren brich Etappen manuell (Start/Via/Ziel) und nutze flache Fernradwege als Backup.",
       "Community-Wunsch: transparente Surface-Layer und Warnungen statt stiller Umleitungen. Genau das ist unser Honesty-Ansatz — Demo klar labeln, Live-Status anzeigen.",
     ],
@@ -55,12 +55,12 @@ export const GUIDES: Guide[] = [
     slug: "ebike-reichweite",
     title: "E-Bike-Reichweite richtig einschätzen (Spannen, keine Punktwerte)",
     teaser:
-      "Warum eine „80 km Anzeige“ lügt — und wie AetherRide mit Physik, Assist und Kalibrierung arbeitet.",
+      "Warum eine „80 km Anzeige“ lügt — und wie FlowLine mit Physik, Assist und Kalibrierung arbeitet.",
     category: "ebike",
     readMin: 7,
     body: [
       "Reichweite hängt von Gewicht, Wind, Temperatur, Höhenmetern, Reifendruck, Assist-Modus und Akkuzustand ab. Eine einzelne Kilometerzahl ist Marketing — seriöse Systeme zeigen Spannen.",
-      "AetherRide Pro schätzt ein Band (kmLow–kmHigh) und kann sich über Rides kalibrieren. Bosch LDI liefert Live-SOC in der App — nicht im Browser.",
+      "FlowLine Pro schätzt ein Band (kmLow–kmHigh) und kann sich über Rides kalibrieren. Bosch LDI liefert Live-SOC in der App — nicht im Browser.",
       "Plane anspruchsvolle Touren (z. B. E-MTB Alpin) mit Reserve: Ziel unter 70–80 % der oberen Spanne. Lade-Infrastruktur und Eco-Modi für den Rückweg mitdenken.",
       "Unter Touren siehst du bei E-Bikes Reichweiten-Hinweise zu Tour-Ideen. Navigation und Sensoren bleiben App-only.",
     ],
@@ -97,7 +97,7 @@ export const GUIDES: Guide[] = [
     readMin: 5,
     body: [
       "Ketten: oft ab ~0,5 % Längung tauschen (Hersteller/Park Tool). Beläge: Restbelag und Geräusche. Gabel/Dämpfer: Service-Intervalle in Stunden oder Saisons.",
-      "AetherRide speichert Intervalle pro Bike und warnt in der Garage. Der Shop schlägt Ersatzteile vor — nur mit Consent und mit Kompatibilitäts-Urteil zum aktiven Bike.",
+      "FlowLine speichert Intervalle pro Bike und warnt in der Garage. Der Shop schlägt Ersatzteile vor — nur mit Consent und mit Kompatibilitäts-Urteil zum aktiven Bike.",
       "Road und City brauchen andere Schwerpunkte (Reifenpannen, Kette, Bremsen) als Enduro (Fahrwerk, Beläge, Reifen). Disziplin-Filter im Shop helfen.",
     ],
     relatedHrefs: [
@@ -114,13 +114,14 @@ export const GUIDES: Guide[] = [
     readMin: 4,
     body: [
       "Große Outdoor-Anbieter trennen klar: Web für Inspiration, SEO-Touren und Desktop-Planung; App für Offline, Turn-by-turn und Sensoren.",
-      "AetherRide folgt dem: Touren, Planen, Tour-Seiten, Garage und Bibliothek im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
+      "FlowLine folgt dem: Touren, Planen, Tour-Seiten, Garage und Bibliothek im Browser. Live-Fahrt, BLE und Hintergrund-GPS nur nativ.",
       "Wenn du „Losfahren“ siehst, landest du auf der App-Bridge — speichere die Tour und öffne sie auf dem Gerät.",
     ],
     relatedHrefs: [
       { href: "/download", label: "App laden" },
+      { href: "/produkt", label: "Produkt: Web vs. App" },
       { href: "/planner", label: "Planen" },
-      { href: "/discover", label: "Touren" },
+      { href: "/discover", label: "Karte" },
     ],
   },
 ];

@@ -9,8 +9,6 @@ import {
 } from "@/lib/catalog/publicTours";
 import { getRegion } from "@/lib/catalog/regions";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import { LandingHeader } from "@/components/landing/LandingHeader";
-import { LandingFooter } from "@/components/landing/LandingFooter";
 import { TourActions } from "@/components/tours/TourActions";
 import { WeatherPanel } from "@/components/tours/WeatherPanel";
 import { TourElevationClient } from "@/components/tours/TourElevationClient";
@@ -45,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       region?.name ?? "",
       ...tour.tags,
       "Radtour",
-      "AetherRide",
+      "FlowLine",
     ].filter(Boolean),
   };
 }
@@ -63,13 +61,12 @@ export default async function TourPage({ params }: Props) {
   const jsonLd = tourJsonLd(tour, baseUrl);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <LandingHeader />
+    <div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <main className="flex-1">
+      <div>
         <div className="border-b border-border bg-surface/50">
           <div className="mx-auto grid max-w-6xl gap-0 lg:grid-cols-2">
             <div className="flex flex-col justify-center px-4 py-10 sm:px-6 lg:py-14">
@@ -225,8 +222,7 @@ export default async function TourPage({ params }: Props) {
             </div>
           </section>
         )}
-      </main>
-      <LandingFooter />
+      </div>
     </div>
   );
 }

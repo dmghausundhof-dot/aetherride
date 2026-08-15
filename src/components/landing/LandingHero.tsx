@@ -11,7 +11,7 @@ import { useHofTitle } from "@/hooks/useHofTitle";
 import { HOF_COPY } from "@/lib/home/hofCopy";
 import { TrustSheet } from "./TrustSheet";
 
-const PILLS = ["Der Hof", "Karte", "Werkstatt", "Shop"] as const;
+const PILLS = ["Der Hof", "Karte", "Platz", "Werkstatt", "Laden"] as const;
 
 export function LandingHero() {
   const [trustOpen, setTrustOpen] = useState(false);
@@ -37,7 +37,7 @@ export function LandingHero() {
           className="object-cover object-[78%_48%] sm:object-[82%_46%] animate-hero-ken"
         />
         <div
-          className="absolute inset-0 bg-[linear-gradient(112deg,rgba(10,18,16,0.78)_0%,rgba(10,18,16,0.42)_34%,rgba(10,18,16,0.14)_58%,rgba(10,18,16,0.02)_78%,transparent_100%)]"
+          className="absolute inset-0 bg-[linear-gradient(112deg,rgba(18,18,21,0.78)_0%,rgba(18,18,21,0.42)_34%,rgba(18,18,21,0.14)_58%,rgba(18,18,21,0.02)_78%,transparent_100%)]"
           aria-hidden
         />
         <div
@@ -49,10 +49,10 @@ export function LandingHero() {
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-5 pb-[calc(5rem+var(--safe-bottom))] pt-[calc(8rem+var(--safe-top))] sm:justify-center sm:px-8 sm:pb-28 sm:pt-28 lg:px-10">
         <div className="max-w-[22rem] animate-hero-rise sm:max-w-md lg:max-w-[32rem]">
           <p className="mb-8 text-[0.95rem] font-medium tracking-[0.06em] text-foreground/85 sm:mb-11 sm:text-base">
-            Aether<span className="text-chrome">Ride</span>
+            Flow<span className="text-accent">Line</span>
           </p>
 
-          <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(10,18,16,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">
+          <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(18,18,21,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">
             {title}.
             <br />
             Das Rad wohnt hier.
@@ -66,7 +66,7 @@ export function LandingHero() {
           <div className="mt-10 flex flex-col items-stretch gap-3 sm:mt-12 sm:flex-row sm:items-center sm:gap-3.5">
             <Link
               href="/home"
-              className="inline-flex h-12 items-center justify-center rounded-lg bg-chrome px-7 text-[0.95rem] font-semibold text-background transition hover:bg-chrome/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chrome sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-7 text-[0.95rem] font-semibold text-white transition hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
             >
               Zum Hof
             </Link>
@@ -89,7 +89,7 @@ export function LandingHero() {
 
           <ul
             className="mt-10 flex flex-wrap gap-2 sm:mt-12"
-            aria-label="Vier Türen"
+            aria-label="Fünf Türen"
           >
             {PILLS.map((label) => (
               <li

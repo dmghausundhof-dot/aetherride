@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { HOF_NAV, isHofNavActive } from "@/lib/nav/hofNav";
-import { useHofTitle } from "@/hooks/useHofTitle";
+import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
+import {
+  MARKETING_NAV,
+  isMarketingNavActive,
+} from "@/lib/nav/marketingNav";
 import { HOF_COPY } from "@/lib/home/hofCopy";
 import { usePathname } from "next/navigation";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
-  const hofTitle = useHofTitle();
   const pathname = usePathname();
 
   return (
@@ -20,13 +22,18 @@ export function LandingHeader() {
           href="/"
           className="text-[0.95rem] font-semibold tracking-tight text-foreground sm:text-base"
         >
-          Aether<span className="text-chrome">Ride</span>
+          <FlowLineWordmark
+            className="text-[0.95rem] font-semibold tracking-tight text-foreground sm:text-base"
+            markClassName="h-5 w-5"
+          />
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex" aria-label="Der Hof">
-          {HOF_NAV.map((item) => {
-            const label = item.id === "hof" ? hofTitle : item.label;
-            const active = isHofNavActive(pathname, item.href);
+        <nav
+          className="hidden items-center gap-6 lg:flex"
+          aria-label="Website"
+        >
+          {MARKETING_NAV.map((item) => {
+            const active = isMarketingNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -37,7 +44,7 @@ export function LandingHeader() {
                     : "text-sm text-text-secondary hover:text-foreground"
                 }
               >
-                {label}
+                {item.label}
               </Link>
             );
           })}
@@ -45,14 +52,20 @@ export function LandingHeader() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/profile"
+            href="/anmelden"
             className="hidden text-sm text-text-secondary hover:text-chrome sm:block"
           >
-            {HOF_COPY.profile}
+            {HOF_COPY.profileArrive}
+          </Link>
+          <Link
+            href="/home"
+            className="hidden h-9 items-center rounded-lg bg-chrome px-3.5 text-sm font-semibold text-background hover:bg-chrome/90 sm:inline-flex"
+          >
+            Zum Hof
           </Link>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border lg:hidden"
             aria-label={open ? "Menü schließen" : "Menü öffnen"}
             onClick={() => setOpen((v) => !v)}
           >
@@ -62,31 +75,31 @@ export function LandingHeader() {
       </div>
 
       {open && (
-        <div className="border-t border-border px-4 py-3 md:hidden">
-          <nav className="flex flex-col gap-1">
-            {HOF_NAV.map((item) => (
+        <div className="border-t border-border px-4 py-3 lg:hidden">
+          <nav className="flex flex-col gap-1" aria-label="Website">
+            {MARKETING_NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 text-sm text-text-secondary"
               >
-                {item.id === "hof" ? hofTitle : item.label}
+                {item.label}
               </Link>
             ))}
             <Link
-              href="/profile"
+              href="/anmelden"
               onClick={() => setOpen(false)}
               className="rounded-lg px-3 py-3 text-sm text-text-secondary"
             >
-              {HOF_COPY.profile}
+              {HOF_COPY.profileArrive}
             </Link>
             <Link
-              href="/download"
+              href="/home"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-3 text-sm text-chrome"
+              className="rounded-lg px-3 py-3 text-sm font-semibold text-chrome"
             >
-              App laden
+              Zum Hof
             </Link>
           </nav>
         </div>

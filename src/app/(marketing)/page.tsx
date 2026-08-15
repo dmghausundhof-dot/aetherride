@@ -2,52 +2,15 @@ import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { ServiceCheckSection } from "@/components/landing/ServiceCheckSection";
 import Link from "next/link";
-import { Home, Map, Smartphone, Store, Wrench } from "lucide-react";
+import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
+import {
+  PRODUCT_DOORS,
+  JOURNEY,
+  WEB_SURFACES,
+  APP_SURFACES,
+} from "@/lib/content/productMap";
 
-const places = [
-  {
-    href: "/home",
-    icon: Home,
-    title: "Der Hof",
-    body: "Das Rad am Stand. Himmel. Eine Stunde vor dem Tor. Rausfahren.",
-  },
-  {
-    href: "/discover",
-    icon: Map,
-    title: "Karte",
-    body: "OSM-Karte, ~60-Min-Rundkurse, Filter. Kein Google-Layer.",
-  },
-  {
-    href: "/garage",
-    icon: Wrench,
-    title: "Werkstatt",
-    body: "Rad anlegen, Setup, Pflege. Ersatzteile führen in den Shop.",
-  },
-  {
-    href: "/shop",
-    icon: Store,
-    title: "Der Laden",
-    body: "Tür zur Shopify-Teilekammer. Kein zweiter Katalog, kein Checkout hier.",
-  },
-];
-
-const steps = [
-  {
-    n: "1",
-    title: "Rad am Stand",
-    body: "In der Werkstatt abstellen — oder ohne Rad fahren. Kein Demo-Bike.",
-  },
-  {
-    n: "2",
-    title: "Stunde vor dem Tor",
-    body: "Die Karte zeigt echte Nähe-Rundkurse. Fehlt einer, bleibt das Tor leer.",
-  },
-  {
-    n: "3",
-    title: "Rausfahren",
-    body: "Ein oranger Knopf. Navigation und Sensoren laufen in der App.",
-  },
-];
+const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
 
 export default function LandingPage() {
   return (
@@ -57,25 +20,33 @@ export default function LandingPage() {
       <section className="border-t border-border bg-surface py-16 px-4">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-center text-2xl font-bold sm:text-3xl">
-            Vier Türen am Hof
+            Fünf Türen am Hof
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-sm text-text-secondary">
             Der Hof ist der Stand. Alles andere ist eine Tür — nicht ein Stapel
-            Karten auf derselben Fläche.
+            Karten auf derselben Fläche. Ride ist kein Tab.
           </p>
-          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {places.map((p) => (
-              <Link
-                key={p.title}
-                href={p.href}
-                className="group rounded-2xl border border-border bg-background/60 p-5 transition hover:border-chrome/50 hover:bg-background"
-              >
-                <p.icon className="h-5 w-5 text-chrome" />
-                <h3 className="mt-3 font-semibold">{p.title}</h3>
-                <p className="mt-1 text-sm text-text-secondary">{p.body}</p>
-              </Link>
-            ))}
+          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {PRODUCT_DOORS.map((p, i) => {
+              const Icon = DOOR_ICONS[i];
+              return (
+                <Link
+                  key={p.title}
+                  href={p.href}
+                  className="group rounded-2xl border border-border bg-background/60 p-5 transition hover:border-chrome/50 hover:bg-background"
+                >
+                  <Icon className="h-5 w-5 text-chrome" />
+                  <h3 className="mt-3 font-semibold">{p.title}</h3>
+                  <p className="mt-1 text-sm text-text-secondary">{p.body}</p>
+                </Link>
+              );
+            })}
           </div>
+          <p className="mt-8 text-center text-sm">
+            <Link href="/produkt" className="font-semibold text-chrome hover:underline">
+              Alle Screens und Abläufe →
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -85,10 +56,11 @@ export default function LandingPage() {
             <Map className="h-8 w-8 text-chrome" />
             <h3 className="mt-4 text-xl font-bold">Auf der Website</h3>
             <ul className="mt-4 space-y-2 text-sm text-text-secondary">
-              <li>· Der Hof — Stand, Himmel, Tor</li>
-              <li>· Karte mit OSM, Nähe-Loops, Desktop-Planer</li>
-              <li>· Werkstatt: Setup, Wartung (mehrere Räder mit Pro)</li>
-              <li>· Der Laden als Tür zu Shopify</li>
+              {WEB_SURFACES.map((s) => (
+                <li key={s.title}>
+                  · {s.title} — {s.body}
+                </li>
+              ))}
             </ul>
             <div className="mt-6 flex flex-wrap gap-4">
               <Link
@@ -109,10 +81,11 @@ export default function LandingPage() {
             <Smartphone className="h-8 w-8 text-chrome" />
             <h3 className="mt-4 text-xl font-bold">In der App</h3>
             <ul className="mt-4 space-y-2 text-sm text-text-secondary">
-              <li>· Rausfahren mit Ride-HUD</li>
-              <li>· Turn-by-turn, Offline, GPS im Hintergrund</li>
-              <li>· Uhr koppeln am Fahrer — nicht am Rad</li>
-              <li>· Sensoren nur, wenn sie wirklich da sind</li>
+              {APP_SURFACES.map((s) => (
+                <li key={s.title}>
+                  · {s.title} — {s.body}
+                </li>
+              ))}
             </ul>
             <Link
               href="/download"
@@ -163,7 +136,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-3xl">
           <h2 className="text-center text-3xl font-bold">So funktioniert’s</h2>
           <ol className="mt-12 space-y-8">
-            {steps.map((s) => (
+            {JOURNEY.map((s) => (
               <li key={s.n} className="flex gap-4">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-lg font-bold text-chrome">
                   {s.n}
@@ -213,6 +186,10 @@ export default function LandingPage() {
             {" · "}
             <Link href="/guides" className="text-chrome hover:underline">
               Guides
+            </Link>
+            {" · "}
+            <Link href="/produkt" className="text-chrome hover:underline">
+              Produkt
             </Link>
           </p>
         </div>

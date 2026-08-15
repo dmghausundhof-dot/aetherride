@@ -4,8 +4,6 @@ import { notFound } from "next/navigation";
 import { getRegion, listRegions } from "@/lib/catalog/regions";
 import { listToursByRegion } from "@/lib/catalog/publicTours";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import { LandingHeader } from "@/components/landing/LandingHeader";
-import { LandingFooter } from "@/components/landing/LandingFooter";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -35,9 +33,7 @@ export default async function RegionPage({ params }: Props) {
   const tours = listToursByRegion(slug);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <LandingHeader />
-      <main className="flex-1">
+    <div>
         <section className="border-b border-border bg-gradient-to-b from-primary/15 to-background px-4 py-14 sm:px-6">
           <div className="mx-auto max-w-6xl">
             <div className="text-xs text-text-secondary">
@@ -69,13 +65,13 @@ export default async function RegionPage({ params }: Props) {
                 href={`/discover`}
                 className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white"
               >
-                In Explore öffnen
+                Auf der Karte öffnen
               </Link>
               <Link
                 href="/planner"
                 className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium"
               >
-                Planner
+                Planen
               </Link>
             </div>
           </div>
@@ -88,7 +84,7 @@ export default async function RegionPage({ params }: Props) {
           </h2>
           {tours.length === 0 ? (
             <p className="mt-4 text-sm text-text-secondary">
-              Noch keine redaktionellen Touren — schau im Planner vorbei.
+              Noch keine redaktionellen Touren — schau unter Planen vorbei.
             </p>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -114,8 +110,6 @@ export default async function RegionPage({ params }: Props) {
             </div>
           )}
         </section>
-      </main>
-      <LandingFooter />
     </div>
   );
 }
