@@ -1,0 +1,37 @@
+{
+  "id": "lugano",
+  "name": "Lugano / Tessin",
+  "bbox": [
+    8.9,
+    45.95,
+    9.05,
+    46.05
+  ],
+  "builtAt": "2026-08-14T21:19:26Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17453318,
+      "sha256": "fa6eabcf9387aeb6ce7147df9ca080fcb1b57ce69cf448c2f2d54183059eae10",
+      "sha256_16": "fa6eabcf9387aeb6"
+    },
+    "lugano.tar.gz": {
+      "bytes": 2360684,
+      "sha256": "d59252fb3d4a4e25d30f3503992cee6b46419edc41a1ad603b8aa8cd9e34d45d",
+      "sha256_16": "d59252fb3d4a4e25"
+    },
+    "lugano.tar.zst": {
+      "bytes": 2617161,
+      "sha256": "a88425512b8e2591b0df4ae2dc60e1f37203b2c4a65d3ce5799300547f97cfce",
+      "sha256_16": "a88425512b8e2591"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/lugano",
+    "pack": "lugano.tar.zst",
+    "packGz": "lugano.tar.gz"
+  }
+}

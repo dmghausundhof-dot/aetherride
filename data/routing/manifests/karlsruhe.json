@@ -1,0 +1,37 @@
+{
+  "id": "karlsruhe",
+  "name": "Karlsruhe / Hardt",
+  "bbox": [
+    8.3,
+    48.95,
+    8.55,
+    49.1
+  ],
+  "builtAt": "2026-08-15T05:01:20Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18873008,
+      "sha256": "57f71ca096f513351ea8665eaaf06f728acf1fd40c660940148fd4012945303c",
+      "sha256_16": "57f71ca096f51335"
+    },
+    "karlsruhe.tar.gz": {
+      "bytes": 2647932,
+      "sha256": "172d9829bc7a24bcb5c68ecbc71d52a46cd2d3da7fdbdc0dfe02836f217478c6",
+      "sha256_16": "172d9829bc7a24bc"
+    },
+    "karlsruhe.tar.zst": {
+      "bytes": 2825239,
+      "sha256": "ec489677978046f9ea701ada948c3af81b83f9c2e302f4cac441304851553399",
+      "sha256_16": "ec489677978046f9"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/karlsruhe",
+    "pack": "karlsruhe.tar.zst",
+    "packGz": "karlsruhe.tar.gz"
+  }
+}

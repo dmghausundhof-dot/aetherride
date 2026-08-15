@@ -1,0 +1,37 @@
+{
+  "id": "erfurt",
+  "name": "Erfurt",
+  "bbox": [
+    10.98,
+    50.94,
+    11.12,
+    51.05
+  ],
+  "builtAt": "2026-08-15T06:01:21Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19086057,
+      "sha256": "eba8c35f5a223f89f3f039899542a784286c5b5f4bef5f9192a1cde6a7173a29",
+      "sha256_16": "eba8c35f5a223f89"
+    },
+    "erfurt.tar.gz": {
+      "bytes": 2655218,
+      "sha256": "b9cc37892f58f640aacbe2bc80271d766f117bbde3e6bdcd921217b780d55565",
+      "sha256_16": "b9cc37892f58f640"
+    },
+    "erfurt.tar.zst": {
+      "bytes": 2914216,
+      "sha256": "be29e4e4444ec112f4cda5c7326a4ed93a8d6a0d68070e1167166c34b51942d8",
+      "sha256_16": "be29e4e4444ec112"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/erfurt",
+    "pack": "erfurt.tar.zst",
+    "packGz": "erfurt.tar.gz"
+  }
+}

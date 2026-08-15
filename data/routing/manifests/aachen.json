@@ -1,0 +1,37 @@
+{
+  "id": "aachen",
+  "name": "Aachen / Dreil\u00e4ndereck",
+  "bbox": [
+    6,
+    50.72,
+    6.2,
+    50.85
+  ],
+  "builtAt": "2026-08-15T09:08:28Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18328355,
+      "sha256": "dd7f29f49fe43c26502e67ff24697dde349389f7cc647a193e085740b6e0eadc",
+      "sha256_16": "dd7f29f49fe43c26"
+    },
+    "aachen.tar.gz": {
+      "bytes": 2595914,
+      "sha256": "7a6cd8d3bf54e0c5083462d91de9ccd7391352b207155e0c4b3df06782ffb7e6",
+      "sha256_16": "7a6cd8d3bf54e0c5"
+    },
+    "aachen.tar.zst": {
+      "bytes": 2790147,
+      "sha256": "de18ead881a6e2facbac3031570a44ed7a4724c281b8d97a1d74d661d2cad36a",
+      "sha256_16": "de18ead881a6e2fa"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/aachen",
+    "pack": "aachen.tar.zst",
+    "packGz": "aachen.tar.gz"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "toulouse",
+  "name": "Toulouse / Canal du Midi",
+  "bbox": [
+    1.28,
+    43.48,
+    1.6,
+    43.72
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "toulouse.tar.zst",
+    "packGz": "toulouse.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

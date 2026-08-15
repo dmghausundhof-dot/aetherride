@@ -1,0 +1,37 @@
+{
+  "id": "interlaken",
+  "name": "Interlaken / Berner Oberland",
+  "bbox": [
+    7.8,
+    46.65,
+    8,
+    46.72
+  ],
+  "builtAt": "2026-08-14T21:19:01Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 14455774,
+      "sha256": "0edf4badcf50350e6532f464c893596a26816f7947897bf65da6d99038c30848",
+      "sha256_16": "0edf4badcf50350e"
+    },
+    "interlaken.tar.gz": {
+      "bytes": 1954452,
+      "sha256": "3b67d9fec028a4856ae02714afa7e745b33a23471766a76f825b351fa05e7d5c",
+      "sha256_16": "3b67d9fec028a485"
+    },
+    "interlaken.tar.zst": {
+      "bytes": 2138084,
+      "sha256": "9cd342726234fbc07b738d6289469617425d09cf01a7e945c931b8e0abba3efc",
+      "sha256_16": "9cd342726234fbc0"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/interlaken",
+    "pack": "interlaken.tar.zst",
+    "packGz": "interlaken.tar.gz"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "koeln-rhein",
+  "name": "K\u00f6ln / Rheinland",
+  "bbox": [
+    6.7,
+    50.8,
+    7.2,
+    51.1
+  ],
+  "builtAt": "2026-08-15T04:43:42Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18677153,
+      "sha256": "4243d3a9684e4792af21a7dca636f8a2026180d893807c1329ef98449e049668",
+      "sha256_16": "4243d3a9684e4792"
+    },
+    "koeln-rhein.tar.gz": {
+      "bytes": 2631087,
+      "sha256": "bf440a20eb06d47fa4e15c346c5099518c43f01a9a1cbaccfad02a34dd979002",
+      "sha256_16": "bf440a20eb06d47f"
+    },
+    "koeln-rhein.tar.zst": {
+      "bytes": 2786809,
+      "sha256": "8b20017eee90da4f33ada270509a0e9907ec114546926c55ffa6471a59669a7c",
+      "sha256_16": "8b20017eee90da4f"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/koeln-rhein",
+    "pack": "koeln-rhein.tar.zst",
+    "packGz": "koeln-rhein.tar.gz"
+  }
+}

@@ -1,11 +1,11 @@
 {
-  "id": "schwarzwald-nord",
-  "name": "Schwarzwald Süd",
+  "id": "freiburg",
+  "name": "Freiburg / Schauinsland",
   "bbox": [
-    7.7,
-    47.8,
-    8.2,
-    48.15
+    7.75,
+    47.95,
+    8.05,
+    48.08
   ],
   "osm": {
     "geofabrik": "https://download.geofabrik.de/europe/germany/baden-wuerttemberg/freiburg-regbez-latest.osm.pbf",
@@ -15,13 +15,13 @@
     "maxNodes": 80000,
     "maxEdges": 120000
   },
-  "outputDir": "data/routing/dist/schwarzwald-nord",
+  "outputDir": "data/routing/dist/freiburg",
   "valhalla": {
     "tile_dir": "tiles",
     "config": "valhalla.json"
   },
   "cdn": {
     "baseUrl": "",
-    "pack": "schwarzwald-nord.tar.zst"
+    "pack": "freiburg.tar.zst"
   }
 }

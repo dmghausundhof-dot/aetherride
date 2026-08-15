@@ -1,0 +1,37 @@
+{
+  "id": "dresden-elbland",
+  "name": "Dresden / Elbland",
+  "bbox": [
+    13.6,
+    50.9,
+    14,
+    51.2
+  ],
+  "builtAt": "2026-08-15T05:54:56Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19089336,
+      "sha256": "33f076ef518c761f28c333f70c1428b5e84b6d4a728d042cf6ce92f793a49828",
+      "sha256_16": "33f076ef518c761f"
+    },
+    "dresden-elbland.tar.gz": {
+      "bytes": 2661710,
+      "sha256": "10ace00bcb7a1d594ded37d87dddaaffc9170073ca8a8b876c5996531273fe2d",
+      "sha256_16": "10ace00bcb7a1d59"
+    },
+    "dresden-elbland.tar.zst": {
+      "bytes": 2815451,
+      "sha256": "fabc33643cd88cae84be0557f77365087326170acffc5d55a6838d5b6f1e5b19",
+      "sha256_16": "fabc33643cd88cae"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/dresden-elbland",
+    "pack": "dresden-elbland.tar.zst",
+    "packGz": "dresden-elbland.tar.gz"
+  }
+}

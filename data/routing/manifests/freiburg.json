@@ -1,0 +1,37 @@
+{
+  "id": "freiburg",
+  "name": "Freiburg / Schauinsland",
+  "bbox": [
+    7.75,
+    47.95,
+    8.05,
+    48.08
+  ],
+  "builtAt": "2026-08-15T05:29:53Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18077856,
+      "sha256": "07f2518c815e296c4c6cce67a8eafa2ca46c49b22ef2cff4981da3e76aac9447",
+      "sha256_16": "07f2518c815e296c"
+    },
+    "freiburg.tar.gz": {
+      "bytes": 2581064,
+      "sha256": "d78c1afbc84cdfa2cd49ab8fad4233f397f3f211de94ba2141e2442174ec2379",
+      "sha256_16": "d78c1afbc84cdfa2"
+    },
+    "freiburg.tar.zst": {
+      "bytes": 2828066,
+      "sha256": "1220e68aebb2a0ad9c0a38367374f9a31d7561d24870f12f5a5346bd7df13ecc",
+      "sha256_16": "1220e68aebb2a0ad"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/freiburg",
+    "pack": "freiburg.tar.zst",
+    "packGz": "freiburg.tar.gz"
+  }
+}

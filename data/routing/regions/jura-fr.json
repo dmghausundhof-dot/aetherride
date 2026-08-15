@@ -1,0 +1,27 @@
+{
+  "id": "jura-fr",
+  "name": "Jura / Pontarlier",
+  "bbox": [
+    6.1,
+    46.7,
+    6.45,
+    47.1
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/franche-comte-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/jura-fr",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "jura-fr.tar.zst"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "morzine",
+  "name": "Morzine / Portes du Soleil",
+  "bbox": [
+    6.6,
+    46.05,
+    6.9,
+    46.28
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/morzine",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "morzine.tar.zst"
+  }
+}

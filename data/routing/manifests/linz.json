@@ -1,0 +1,37 @@
+{
+  "id": "linz",
+  "name": "Linz / Donau",
+  "bbox": [
+    14.22,
+    48.25,
+    14.4,
+    48.35
+  ],
+  "builtAt": "2026-08-14T23:06:09Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19100842,
+      "sha256": "2af38482eda45330e18c6f57fe98651f2f77be174ad0b6b2f13cf17ff6593889",
+      "sha256_16": "2af38482eda45330"
+    },
+    "linz.tar.gz": {
+      "bytes": 2501718,
+      "sha256": "e09e05388636555d58ab2c799200ac92d3af2866e5b1cd6331def76e340fa0a1",
+      "sha256_16": "e09e05388636555d"
+    },
+    "linz.tar.zst": {
+      "bytes": 2751131,
+      "sha256": "49fd22c0fc4b1282a88f18294265690a55fc131c44f0855b7bf3ba241067a48d",
+      "sha256_16": "49fd22c0fc4b1282"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/linz",
+    "pack": "linz.tar.zst",
+    "packGz": "linz.tar.gz"
+  }
+}

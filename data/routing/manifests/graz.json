@@ -1,0 +1,37 @@
+{
+  "id": "graz",
+  "name": "Graz / Murtal",
+  "bbox": [
+    15.35,
+    47.02,
+    15.52,
+    47.12
+  ],
+  "builtAt": "2026-08-14T23:05:08Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18901300,
+      "sha256": "33243a5e201696806d59080fb73c1bc6864bac7a018afae7f6a7078af2145bbf",
+      "sha256_16": "33243a5e20169680"
+    },
+    "graz.tar.gz": {
+      "bytes": 2546876,
+      "sha256": "9310c58525a144eda6df803453f51ee670f66c83a2a4075f87e532df6c952939",
+      "sha256_16": "9310c58525a144ed"
+    },
+    "graz.tar.zst": {
+      "bytes": 2694584,
+      "sha256": "9df5696859907f9a971457d5b8f834ced0ef2820d6bf89603d328f642a80c421",
+      "sha256_16": "9df5696859907f9a"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/graz",
+    "pack": "graz.tar.zst",
+    "packGz": "graz.tar.gz"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "alsace-vins",
+  "name": "Elsass / Route des Vins",
+  "bbox": [
+    7.15,
+    47.9,
+    7.55,
+    48.25
+  ],
+  "builtAt": "2026-08-15T10:41:41Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18063107,
+      "sha256": "87e68a061a876929100c74b2dd2e05109ac6dc51beaa8849497b0ef15d847f65",
+      "sha256_16": "87e68a061a876929"
+    },
+    "alsace-vins.tar.gz": {
+      "bytes": 2541274,
+      "sha256": "71895f585aa0224eeefb70c6ed19f0cab2e70fe43c9a38c99d9d0c56e023c91e",
+      "sha256_16": "71895f585aa0224e"
+    },
+    "alsace-vins.tar.zst": {
+      "bytes": 2760979,
+      "sha256": "9b863fe27f94ee6eb1f0363e35e0f58c42c885e8d5da0aef8428d22d5448bd1b",
+      "sha256_16": "9b863fe27f94ee6e"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/alsace-vins",
+    "pack": "alsace-vins.tar.zst",
+    "packGz": "alsace-vins.tar.gz"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "strasbourg",
+  "name": "Stra\u00dfburg / Ill",
+  "bbox": [
+    7.65,
+    48.5,
+    7.85,
+    48.65
+  ],
+  "builtAt": "2026-08-15T10:42:24Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18748566,
+      "sha256": "1ade25d5289b8df5f907eb3e7fdf12df59cdcd7d66a56215170ff8b1d43b8b9f",
+      "sha256_16": "1ade25d5289b8df5"
+    },
+    "strasbourg.tar.gz": {
+      "bytes": 2541763,
+      "sha256": "2b510a08734039a9803be6fbe49ecb1c7f94a236a1f163ba9047a7e605024be0",
+      "sha256_16": "2b510a08734039a9"
+    },
+    "strasbourg.tar.zst": {
+      "bytes": 2712436,
+      "sha256": "e0b4428a334ca93fe090fcf01283af513b9a5a9eea77718a85f684ff063fd7fd",
+      "sha256_16": "e0b4428a334ca93f"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/strasbourg",
+    "pack": "strasbourg.tar.zst",
+    "packGz": "strasbourg.tar.gz"
+  }
+}

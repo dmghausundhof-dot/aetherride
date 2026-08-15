@@ -1,0 +1,24 @@
+{
+  "id": "bordeaux",
+  "name": "Bordeaux / Garonne",
+  "bbox": [
+    -0.72,
+    44.72,
+    -0.4,
+    44.95
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bordeaux.tar.zst",
+    "packGz": "bordeaux.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

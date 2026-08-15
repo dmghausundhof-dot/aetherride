@@ -1,0 +1,24 @@
+{
+  "id": "dijon",
+  "name": "Dijon / Canal de Bourgogne",
+  "bbox": [
+    4.9,
+    47.22,
+    5.2,
+    47.42
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "dijon.tar.zst",
+    "packGz": "dijon.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

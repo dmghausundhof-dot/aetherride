@@ -1,0 +1,24 @@
+{
+  "id": "lille",
+  "name": "Lille / Citadelle",
+  "bbox": [
+    2.92,
+    50.52,
+    3.22,
+    50.75
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "lille.tar.zst",
+    "packGz": "lille.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

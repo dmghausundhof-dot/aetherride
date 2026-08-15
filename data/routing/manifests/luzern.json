@@ -1,0 +1,37 @@
+{
+  "id": "luzern",
+  "name": "Luzern / Vierwaldst\u00e4ttersee",
+  "bbox": [
+    8.22,
+    47.02,
+    8.38,
+    47.1
+  ],
+  "builtAt": "2026-08-14T21:19:39Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18125778,
+      "sha256": "8684e080d3779c723bd2aef8229b7233eea4d238807008d33ee75adf69acfa9b",
+      "sha256_16": "8684e080d3779c72"
+    },
+    "luzern.tar.gz": {
+      "bytes": 2480121,
+      "sha256": "c856921a45a0dcc26f7d1223cba0151175c17e68e5c3567833a6f232d137b10a",
+      "sha256_16": "c856921a45a0dcc2"
+    },
+    "luzern.tar.zst": {
+      "bytes": 2671317,
+      "sha256": "d0a275b62e60de6dac41ca4debb1f84712de3cba389d450d9fa9ab4d00009646",
+      "sha256_16": "d0a275b62e60de6d"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/luzern",
+    "pack": "luzern.tar.zst",
+    "packGz": "luzern.tar.gz"
+  }
+}

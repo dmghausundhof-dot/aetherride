@@ -1,0 +1,37 @@
+{
+  "id": "magdeburg",
+  "name": "Magdeburg / Elbe",
+  "bbox": [
+    11.55,
+    52.05,
+    11.7,
+    52.2
+  ],
+  "builtAt": "2026-08-15T05:49:24Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19274308,
+      "sha256": "3ffdbaed07f29c6f449634d99e4e7c28b48aace6961404accd56baf3197f40bf",
+      "sha256_16": "3ffdbaed07f29c6f"
+    },
+    "magdeburg.tar.gz": {
+      "bytes": 2598649,
+      "sha256": "f6bac3edf4828a550746e13c7b5aa636b522e14f96171488ae352ebee5f6f0e3",
+      "sha256_16": "f6bac3edf4828a55"
+    },
+    "magdeburg.tar.zst": {
+      "bytes": 2799135,
+      "sha256": "a87076e869fb9bb43340ff427205c84151105bf091edd3f774f0a6f267cf1023",
+      "sha256_16": "a87076e869fb9bb4"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/magdeburg",
+    "pack": "magdeburg.tar.zst",
+    "packGz": "magdeburg.tar.gz"
+  }
+}

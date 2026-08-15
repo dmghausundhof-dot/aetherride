@@ -1,0 +1,37 @@
+{
+  "id": "muenster",
+  "name": "M\u00fcnsterland",
+  "bbox": [
+    7.5,
+    51.88,
+    7.75,
+    52.05
+  ],
+  "builtAt": "2026-08-15T04:43:55Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18745306,
+      "sha256": "0c5717dcd6e5a46f914bb05e5baa7aa28508c8c692e019374403995694428759",
+      "sha256_16": "0c5717dcd6e5a46f"
+    },
+    "muenster.tar.gz": {
+      "bytes": 2609803,
+      "sha256": "0260d71eadc7167a08bdb4868d034d659dc30cbf555dde625815f7273ad65be2",
+      "sha256_16": "0260d71eadc7167a"
+    },
+    "muenster.tar.zst": {
+      "bytes": 2803200,
+      "sha256": "fba140a07515ddf18ea516ddbbaa9b3399c373e15d49b0850374e44366b2a461",
+      "sha256_16": "fba140a07515ddf1"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/muenster",
+    "pack": "muenster.tar.zst",
+    "packGz": "muenster.tar.gz"
+  }
+}

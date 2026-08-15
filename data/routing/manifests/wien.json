@@ -1,0 +1,37 @@
+{
+  "id": "wien",
+  "name": "Wien & Wienerwald",
+  "bbox": [
+    16.1,
+    48.1,
+    16.6,
+    48.4
+  ],
+  "builtAt": "2026-08-14T23:06:47Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19194232,
+      "sha256": "609844aa2b299739fde9480ac67d5afbff2dd7bf84f6a0ac63ac5df0cfb6e720",
+      "sha256_16": "609844aa2b299739"
+    },
+    "wien.tar.gz": {
+      "bytes": 2594610,
+      "sha256": "bca1bd7fedb35970c86ac4149e06ea7fab485aaccd1438650c429d952ddcb5fe",
+      "sha256_16": "bca1bd7fedb35970"
+    },
+    "wien.tar.zst": {
+      "bytes": 2750938,
+      "sha256": "1bd8b0b70ae95f87434dfc18d5215051945a55a3a695af540fcefe70544a2f39",
+      "sha256_16": "1bd8b0b70ae95f87"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/wien",
+    "pack": "wien.tar.zst",
+    "packGz": "wien.tar.gz"
+  }
+}

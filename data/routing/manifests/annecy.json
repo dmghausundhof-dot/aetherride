@@ -1,0 +1,37 @@
+{
+  "id": "annecy",
+  "name": "Annecy / Semnoz",
+  "bbox": [
+    6.05,
+    45.8,
+    6.25,
+    45.98
+  ],
+  "builtAt": "2026-08-15T10:55:48Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18002126,
+      "sha256": "34fcc28094e1e48a51f27a4c858079369b44997110a09de7e2e06f6f133850a9",
+      "sha256_16": "34fcc28094e1e48a"
+    },
+    "annecy.tar.gz": {
+      "bytes": 2438166,
+      "sha256": "852da9bf75f2f139cfc818927df0d84cce9f75540ff9693484d5c77632346682",
+      "sha256_16": "852da9bf75f2f139"
+    },
+    "annecy.tar.zst": {
+      "bytes": 2654577,
+      "sha256": "2eec88d21a6a4bedb46cf68cd1615f566f10164de92ee7df9d6351e8b0d816a1",
+      "sha256_16": "2eec88d21a6a4bed"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/annecy",
+    "pack": "annecy.tar.zst",
+    "packGz": "annecy.tar.gz"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "aachen",
+  "name": "Aachen / Dreiländereck",
+  "bbox": [
+    6,
+    50.72,
+    6.2,
+    50.85
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/nordrhein-westfalen-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/aachen",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "aachen.tar.zst"
+  }
+}

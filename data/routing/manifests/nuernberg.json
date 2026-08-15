@@ -1,0 +1,37 @@
+{
+  "id": "nuernberg",
+  "name": "N\u00fcrnberg / Franken",
+  "bbox": [
+    10.9,
+    49.3,
+    11.3,
+    49.6
+  ],
+  "builtAt": "2026-08-15T05:21:02Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18949492,
+      "sha256": "be6ce4b325a8dff2b2f78ca32e568949350eb8b7d4065f85c0f0ceef0411b316",
+      "sha256_16": "be6ce4b325a8dff2"
+    },
+    "nuernberg.tar.gz": {
+      "bytes": 2619437,
+      "sha256": "9c07ce3d956bfd9ebbfb349b9a6417c612206c46a3b18f981309ab30105645e2",
+      "sha256_16": "9c07ce3d956bfd9e"
+    },
+    "nuernberg.tar.zst": {
+      "bytes": 2782828,
+      "sha256": "39a6af26d238edfad5c180f2456929564fedba5a42b710914595058d4dbc3142",
+      "sha256_16": "39a6af26d238edfa"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nuernberg",
+    "pack": "nuernberg.tar.zst",
+    "packGz": "nuernberg.tar.gz"
+  }
+}

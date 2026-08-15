@@ -1,0 +1,37 @@
+{
+  "id": "berlin",
+  "name": "Berlin & Brandenburg",
+  "bbox": [
+    13.1,
+    52.3,
+    13.7,
+    52.7
+  ],
+  "builtAt": "2026-08-15T06:08:16Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19765590,
+      "sha256": "95d3475cd26649a4cdbe77391d6b3f51cb4a162891532048e54eb7b77fdce270",
+      "sha256_16": "95d3475cd26649a4"
+    },
+    "berlin.tar.gz": {
+      "bytes": 2666289,
+      "sha256": "a7fad7e8935f5ec222f4c0d2b18f104e6d87bf9ac855e61ed7ed4428c75c51df",
+      "sha256_16": "a7fad7e8935f5ec2"
+    },
+    "berlin.tar.zst": {
+      "bytes": 2917327,
+      "sha256": "a4ed1d61beffd042886817133672f276bec6a25d8be936eb6fae816a5c988884",
+      "sha256_16": "a4ed1d61beffd042"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/berlin",
+    "pack": "berlin.tar.zst",
+    "packGz": "berlin.tar.gz"
+  }
+}

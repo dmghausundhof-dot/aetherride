@@ -1,0 +1,27 @@
+{
+  "id": "rostock",
+  "name": "Rostock / Warnow",
+  "bbox": [
+    12,
+    54.05,
+    12.25,
+    54.22
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/mecklenburg-vorpommern-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/rostock",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "rostock.tar.zst"
+  }
+}

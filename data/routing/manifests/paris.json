@@ -1,0 +1,24 @@
+{
+  "id": "paris",
+  "name": "Paris / Bois & Seine",
+  "bbox": [
+    2.2,
+    48.8,
+    2.48,
+    48.92
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "paris.tar.zst",
+    "packGz": "paris.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "kiel",
+  "name": "Kiel / F\u00f6rde",
+  "bbox": [
+    9.95,
+    54.25,
+    10.2,
+    54.4
+  ],
+  "builtAt": "2026-08-15T05:59:02Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18917857,
+      "sha256": "d101bd4f152508c0db4bf265541cef11b13ce74e8de3390684fa65f13529c849",
+      "sha256_16": "d101bd4f152508c0"
+    },
+    "kiel.tar.gz": {
+      "bytes": 2632349,
+      "sha256": "17b2904868c7ae1de01fbdceb7a348c8c26bb6a3b1149d859f2eb6584ea6d4a3",
+      "sha256_16": "17b2904868c7ae1d"
+    },
+    "kiel.tar.zst": {
+      "bytes": 2819655,
+      "sha256": "f67990f5fa57d4b37cb79ba7863c475d6c031e0eafdbcab67b8ff6df737f69cf",
+      "sha256_16": "f67990f5fa57d4b3"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/kiel",
+    "pack": "kiel.tar.zst",
+    "packGz": "kiel.tar.gz"
+  }
+}

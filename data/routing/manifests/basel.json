@@ -1,0 +1,37 @@
+{
+  "id": "basel",
+  "name": "Basel / Dreil\u00e4ndereck",
+  "bbox": [
+    7.5,
+    47.5,
+    7.7,
+    47.6
+  ],
+  "builtAt": "2026-08-14T21:18:09Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18542617,
+      "sha256": "00f2316290befc7512846a9f525afa33c41eb13745a0c3b0f75809cbdcd68152",
+      "sha256_16": "00f2316290befc75"
+    },
+    "basel.tar.gz": {
+      "bytes": 2559638,
+      "sha256": "c29f511573509a6a2040d7048ffbbac7a6f181db25853777e644aa1afd95f5f2",
+      "sha256_16": "c29f511573509a6a"
+    },
+    "basel.tar.zst": {
+      "bytes": 2733427,
+      "sha256": "70e29225fc5b58b3272ef9aae5f716fc2427c951c9a478de6f101c867592a4d8",
+      "sha256_16": "70e29225fc5b58b3"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/basel",
+    "pack": "basel.tar.zst",
+    "packGz": "basel.tar.gz"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "zuerich",
+  "name": "Zürich & Umland",
+  "bbox": [
+    8.4,
+    47.3,
+    8.7,
+    47.5
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/zuerich",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "zuerich.tar.zst"
+  }
+}

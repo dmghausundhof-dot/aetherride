@@ -1,0 +1,27 @@
+{
+  "id": "eifel-trails",
+  "name": "Eifel",
+  "bbox": [
+    6.2,
+    50.1,
+    7.2,
+    50.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/rheinland-pfalz-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/eifel-trails",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "eifel-trails.tar.zst"
+  }
+}

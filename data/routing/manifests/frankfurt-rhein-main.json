@@ -1,0 +1,37 @@
+{
+  "id": "frankfurt-rhein-main",
+  "name": "Frankfurt Rhein-Main",
+  "bbox": [
+    8.4,
+    49.9,
+    9.1,
+    50.3
+  ],
+  "builtAt": "2026-08-15T05:45:59Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18786974,
+      "sha256": "aa45858193e67be576d856c4cbdc5eec85873540f3d76ba838737ff4ffbd04bb",
+      "sha256_16": "aa45858193e67be5"
+    },
+    "frankfurt-rhein-main.tar.gz": {
+      "bytes": 2609245,
+      "sha256": "880f8bab6fdeb2dfba10f2b4a3a3bbf72f800a70ae35ae7dd689bb401bdd4388",
+      "sha256_16": "880f8bab6fdeb2df"
+    },
+    "frankfurt-rhein-main.tar.zst": {
+      "bytes": 2825036,
+      "sha256": "49a5fa447c2c9fdf5c47a0f4dffd0faf5d20bb9891c771be3f602c2ee4f7486a",
+      "sha256_16": "49a5fa447c2c9fdf"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/frankfurt-rhein-main",
+    "pack": "frankfurt-rhein-main.tar.zst",
+    "packGz": "frankfurt-rhein-main.tar.gz"
+  }
+}

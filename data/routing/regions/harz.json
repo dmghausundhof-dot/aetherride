@@ -1,0 +1,27 @@
+{
+  "id": "harz",
+  "name": "Harz",
+  "bbox": [
+    10.3,
+    51.5,
+    11.35,
+    51.95
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-anhalt-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/harz",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "harz.tar.zst"
+  }
+}

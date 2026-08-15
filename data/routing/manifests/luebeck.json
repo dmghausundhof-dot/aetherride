@@ -1,0 +1,37 @@
+{
+  "id": "luebeck",
+  "name": "L\u00fcbeck / Trave",
+  "bbox": [
+    10.6,
+    53.82,
+    10.8,
+    53.95
+  ],
+  "builtAt": "2026-08-15T05:59:10Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18981921,
+      "sha256": "0503b6b1416f058294a1b95e4ec2eac1e6dbc7f34ba8a5596a84866e64d13407",
+      "sha256_16": "0503b6b1416f0582"
+    },
+    "luebeck.tar.gz": {
+      "bytes": 2633813,
+      "sha256": "ff49367fdcaa768c0e0f9067f24f5c84810a75329556a3ed7342504f1d1c5da5",
+      "sha256_16": "ff49367fdcaa768c"
+    },
+    "luebeck.tar.zst": {
+      "bytes": 2818952,
+      "sha256": "728c04e0f5633a598738f057cdf8c284119540f2d0048aae633ac360a0ba0332",
+      "sha256_16": "728c04e0f5633a59"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/luebeck",
+    "pack": "luebeck.tar.zst",
+    "packGz": "luebeck.tar.gz"
+  }
+}

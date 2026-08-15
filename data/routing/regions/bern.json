@@ -1,0 +1,27 @@
+{
+  "id": "bern",
+  "name": "Bern / Mittelland",
+  "bbox": [
+    7.3,
+    46.9,
+    7.6,
+    47.1
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/bern",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bern.tar.zst"
+  }
+}

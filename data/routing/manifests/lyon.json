@@ -1,0 +1,24 @@
+{
+  "id": "lyon",
+  "name": "Lyon / Tête d'Or",
+  "bbox": [
+    4.7,
+    45.65,
+    5.05,
+    45.9
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "lyon.tar.zst",
+    "packGz": "lyon.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

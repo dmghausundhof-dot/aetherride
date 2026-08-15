@@ -1,0 +1,37 @@
+{
+  "id": "chiemgau",
+  "name": "Chiemgau",
+  "bbox": [
+    12.2,
+    47.7,
+    12.85,
+    47.95
+  ],
+  "builtAt": "2026-08-15T05:37:04Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17919466,
+      "sha256": "3269b70ed67655194832fe0e96d482c5e0b8822612bac30f9a0fcd7bbb8aa36b",
+      "sha256_16": "3269b70ed6765519"
+    },
+    "chiemgau.tar.gz": {
+      "bytes": 2469551,
+      "sha256": "c560857791979d056b9ac0e810667a8f9e9c9336ff7841b350854cc9d6d18278",
+      "sha256_16": "c560857791979d05"
+    },
+    "chiemgau.tar.zst": {
+      "bytes": 2704677,
+      "sha256": "ea7420776801686cbc1da613bc92905f5aeeae804d28ef9a2bda36e39a7bfae4",
+      "sha256_16": "ea7420776801686c"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/chiemgau",
+    "pack": "chiemgau.tar.zst",
+    "packGz": "chiemgau.tar.gz"
+  }
+}

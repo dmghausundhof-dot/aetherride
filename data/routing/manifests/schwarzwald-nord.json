@@ -1,38 +1,45 @@
 {
   "id": "schwarzwald-nord",
-  "name": "Nordschwarzwald (Freiburg–Todtnau Demo)",
-  "bbox": [7.84, 47.94, 7.93, 48.0],
-  "builtAt": "2026-08-07T07:54:55Z",
+  "name": "Schwarzwald S\u00fcd (Freiburg\u2013Todtnau\u2013Titisee)",
+  "bbox": [
+    7.7,
+    47.8,
+    8.2,
+    48.15
+  ],
+  "builtAt": "2026-08-09T10:39:30Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": true
   },
   "files": {
     "offline_graph.json": {
-      "bytes": 1740619,
-      "sha256_16": "dc6006725ea0d3bf"
+      "bytes": 5443442,
+      "sha256": "849a4ec629b4ca0a513c8bb8475589e49cfb3d6a3f1be877557f073543b4e8f8",
+      "sha256_16": "849a4ec629b4ca0a"
     },
     "valhalla.json": {
       "bytes": 7630,
+      "sha256": "4b7bced250a42f51a1fdfc42086832fd53072baa0b7d2a405b8255d59fc0c14a",
       "sha256_16": "4b7bced250a42f51"
     },
     "valhalla_tiles.tar": {
-      "bytes": 2324480,
-      "sha256_16": "f089d8f314cff8c6"
+      "bytes": 31662080,
+      "sha256": "942bca9e231c7a30ed239c34473e9d4c1e0f4dda8b218350dd0acb3e7b7d6754",
+      "sha256_16": "942bca9e231c7a30"
     },
     "tiles/": {
-      "file_count": 5
+      "file_count": 12
+    },
+    "schwarzwald-nord.tar.gz": {
+      "bytes": 24941658,
+      "sha256": "5b4359ec56637dca2c40b344a259aa483418dc1fa3fcb2dd7e16f3c8cbd66a80",
+      "sha256_16": "5b4359ec56637dca"
     }
   },
   "cdn": {
-    "baseUrl": "",
-    "pack": "schwarzwald-nord.tar.zst",
-    "packGz": "schwarzwald-nord.tar.gz"
-  },
-  "source": "overpass+osmium+valhalla-docker",
-  "shipped": {
-    "flutter_asset": "mobile/assets/routing/offline_graph.json",
-    "build_tiles": "scripts/routing/build-region-pack.sh",
-    "note": "Re-run npm run routing:region to refresh full sha256 + tar archives"
+    "packGz": "schwarzwald-nord.tar.gz",
+    "pack": "schwarzwald-nord.tar.gz",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/schwarzwald-nord"
   }
 }

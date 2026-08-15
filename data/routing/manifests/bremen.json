@@ -1,0 +1,37 @@
+{
+  "id": "bremen",
+  "name": "Bremen / Weser",
+  "bbox": [
+    8.7,
+    53,
+    8.95,
+    53.18
+  ],
+  "builtAt": "2026-08-15T06:09:39Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18773724,
+      "sha256": "b2ee5dc6f7ae4ff8cac3e118be3cc9ad7752086d82396f70e15103d4e5fe11d5",
+      "sha256_16": "b2ee5dc6f7ae4ff8"
+    },
+    "bremen.tar.gz": {
+      "bytes": 2652123,
+      "sha256": "349f7097193226f2642ceeec3dd17fa1624a7fe2b2d576cf1d0b1826bf8a565a",
+      "sha256_16": "349f7097193226f2"
+    },
+    "bremen.tar.zst": {
+      "bytes": 2853474,
+      "sha256": "95eeff764d1787f610fb1ff14f85d633ba90f6f8b994cd8ee187bc49c4fdb90b",
+      "sha256_16": "95eeff764d1787f6"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bremen",
+    "pack": "bremen.tar.zst",
+    "packGz": "bremen.tar.gz"
+  }
+}

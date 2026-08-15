@@ -1,0 +1,27 @@
+{
+  "id": "vosges",
+  "name": "Vogesen / Ballon d'Alsace",
+  "bbox": [
+    6.6,
+    47.7,
+    7.2,
+    48.25
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/alsace-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/vosges",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "vosges.tar.zst"
+  }
+}

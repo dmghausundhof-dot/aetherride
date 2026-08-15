@@ -1,0 +1,37 @@
+{
+  "id": "bregenz",
+  "name": "Bregenz / Vorarlberg",
+  "bbox": [
+    9.6,
+    47.45,
+    9.85,
+    47.55
+  ],
+  "builtAt": "2026-08-14T23:04:53Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17986633,
+      "sha256": "f47d068715acdf5369f026b53e7020731e9bcc7bd6b8c04ca4bb44117d1320c3",
+      "sha256_16": "f47d068715acdf53"
+    },
+    "bregenz.tar.gz": {
+      "bytes": 2491988,
+      "sha256": "ccba0dfae5b583ba65ba1c840d3676fc4683e3a057fb119c0cf24104764115cd",
+      "sha256_16": "ccba0dfae5b583ba"
+    },
+    "bregenz.tar.zst": {
+      "bytes": 2701741,
+      "sha256": "aae2de57c5a47a111933144fb5d5cae3b1a2d13197d952c44c76f6512a2caf3b",
+      "sha256_16": "aae2de57c5a47a11"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bregenz",
+    "pack": "bregenz.tar.zst",
+    "packGz": "bregenz.tar.gz"
+  }
+}

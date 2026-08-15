@@ -1,0 +1,37 @@
+{
+  "id": "zuerich",
+  "name": "Z\u00fcrich & Umland",
+  "bbox": [
+    8.4,
+    47.3,
+    8.7,
+    47.5
+  ],
+  "builtAt": "2026-08-14T21:20:09Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18702524,
+      "sha256": "fefd4c716764c8000fa0d28a191c5feda569bba6a02804257b33e7b2f39e3de3",
+      "sha256_16": "fefd4c716764c800"
+    },
+    "zuerich.tar.gz": {
+      "bytes": 2545729,
+      "sha256": "2a7dddf940e05a01e73c6a9ec09ee467db8c44d1e53b22892860e740c04423ce",
+      "sha256_16": "2a7dddf940e05a01"
+    },
+    "zuerich.tar.zst": {
+      "bytes": 2758638,
+      "sha256": "f6b00f848f5a25032d1d8071c8cadfd269dcc3555bf38204f8348247dec9fcb0",
+      "sha256_16": "f6b00f848f5a2503"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/zuerich",
+    "pack": "zuerich.tar.zst",
+    "packGz": "zuerich.tar.gz"
+  }
+}

@@ -134,13 +134,28 @@ export function catalogPackBytes(m: OfflinePackManifest): number | null {
 
 const PACK_CDN_BUCKET = "offline-packs";
 
+/** Public Storage root — not a secret. Fallback when Vercel env is missing. */
+export const DEFAULT_PACK_CDN_ROOT =
+  "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs";
+
+function looksLikeStorageRoot(url: string): boolean {
+  return url.includes("/storage/v1/object/public/");
+}
+
 /** Object-storage root for packs (`…/object/public/offline-packs`). */
 export function packCdnRoot(): string {
   const explicit = (process.env.ROUTING_CDN_BASE || "").replace(/\/$/, "");
   if (explicit) {
-    if (explicit.includes("/storage/v1/object/public/")) return explicit;
+    if (looksLikeStorageRoot(explicit)) return explicit.replace(/\/$/, "");
     if (/supabase\.co$/i.test(explicit)) {
       return `${explicit}/storage/v1/object/public/${PACK_CDN_BUCKET}`;
+    }
+    // App URL or stray /api/offline/packs suffix is not a pack object root.
+    if (
+      explicit.includes("/api/offline/packs") ||
+      explicit.includes("vercel.app")
+    ) {
+      return DEFAULT_PACK_CDN_ROOT;
     }
     return explicit;
   }
@@ -149,10 +164,10 @@ export function packCdnRoot(): string {
     process.env.SUPABASE_URL ||
     ""
   ).replace(/\/$/, "");
-  if (supabase) {
+  if (supabase && !supabase.includes("vercel.app")) {
     return `${supabase}/storage/v1/object/public/${PACK_CDN_BUCKET}`;
   }
-  return "";
+  return DEFAULT_PACK_CDN_ROOT;
 }
 
 export function applyPackCdn(
@@ -192,7 +207,7 @@ export function mergeCatalogPreferReady(
   for (const p of published) {
     if (!p?.id || !SAFE_ID.test(p.id)) continue;
     const existing = byId.get(p.id);
-    if (!existing || (isReadyCatalogRow(p) && !isReadyCatalogRow(existing))) {
+    if (!existing || isReadyCatalogRow(p)) {
       byId.set(p.id, p);
     }
   }
@@ -273,10 +288,11 @@ export function catalogStatus(
   onDisk: boolean
 ): OfflinePackStatus {
   if (!m) return "stub";
+  const cdn = (m.cdn?.baseUrl || "").trim();
+  const cdnReady = looksLikeStorageRoot(cdn);
+  if (onDisk || cdnReady) return "ready";
   if (m.shipped && !manifestHasFileEntries(m)) return "stub";
   if (!manifestHasFileEntries(m)) return "stub";
-  if (onDisk) return "ready";
-  if ((m.cdn?.baseUrl || "").trim()) return "ready";
   return "stub";
 }
 

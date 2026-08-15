@@ -1,0 +1,27 @@
+{
+  "id": "annecy",
+  "name": "Annecy / Semnoz",
+  "bbox": [
+    6.05,
+    45.8,
+    6.25,
+    45.98
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/annecy",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "annecy.tar.zst"
+  }
+}

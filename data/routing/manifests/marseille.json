@@ -1,0 +1,24 @@
+{
+  "id": "marseille",
+  "name": "Marseille / Corniche",
+  "bbox": [
+    5.22,
+    43.2,
+    5.52,
+    43.4
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "marseille.tar.zst",
+    "packGz": "marseille.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

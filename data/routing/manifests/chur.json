@@ -1,0 +1,37 @@
+{
+  "id": "chur",
+  "name": "Chur / Graub\u00fcnden",
+  "bbox": [
+    9.48,
+    46.82,
+    9.58,
+    46.88
+  ],
+  "builtAt": "2026-08-14T21:18:35Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 13789243,
+      "sha256": "a8801001854cfe291469cb7193864a73e85725e190c4800e3483e6bcfc6bc1e3",
+      "sha256_16": "a8801001854cfe29"
+    },
+    "chur.tar.gz": {
+      "bytes": 1839001,
+      "sha256": "a75f715cd783dcbdd081df751a8b44fbfb1b6e3c03c65c83d73b0cf2a57a8216",
+      "sha256_16": "a75f715cd783dcbd"
+    },
+    "chur.tar.zst": {
+      "bytes": 1980017,
+      "sha256": "c5801f2cdb560fd0646aa1486e434e544a9083d047a7ca39e96d1b40ecc21f49",
+      "sha256_16": "c5801f2cdb560fd0"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/chur",
+    "pack": "chur.tar.zst",
+    "packGz": "chur.tar.gz"
+  }
+}

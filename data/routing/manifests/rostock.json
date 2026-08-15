@@ -1,0 +1,37 @@
+{
+  "id": "rostock",
+  "name": "Rostock / Warnow",
+  "bbox": [
+    12,
+    54.05,
+    12.25,
+    54.22
+  ],
+  "builtAt": "2026-08-15T06:14:28Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19239854,
+      "sha256": "b63807de75e48de4ad29a61c33d3214a260535511f18231e59d19376653230d6",
+      "sha256_16": "b63807de75e48de4"
+    },
+    "rostock.tar.gz": {
+      "bytes": 2695603,
+      "sha256": "a89cbc6a015fe0ea524f5138d66196c446c462a53474d50b05536405051f0390",
+      "sha256_16": "a89cbc6a015fe0ea"
+    },
+    "rostock.tar.zst": {
+      "bytes": 2917001,
+      "sha256": "b69d147a505731cd498c5b235f61a9410aa798879b3d26c1d3c74e21dc746894",
+      "sha256_16": "b69d147a505731cd"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/rostock",
+    "pack": "rostock.tar.zst",
+    "packGz": "rostock.tar.gz"
+  }
+}

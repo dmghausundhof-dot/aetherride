@@ -1,0 +1,27 @@
+{
+  "id": "luebeck",
+  "name": "Lübeck / Trave",
+  "bbox": [
+    10.6,
+    53.82,
+    10.8,
+    53.95
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/schleswig-holstein-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/luebeck",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "luebeck.tar.zst"
+  }
+}
