@@ -207,6 +207,9 @@ export const SCREEN_GROUPS: {
       { href: "/pricing", name: "Preise", role: "Free / Pro" },
       { href: "/download", name: "App", role: "Warum nativ" },
       { href: "/anmelden", name: "Anmelden", role: "Konto, dann Hof" },
+      { href: "/faq", name: "FAQ", role: "Web, App, Preise" },
+      { href: "/ueber", name: "Über", role: "Marke, fünf Türen" },
+      { href: "/kontakt", name: "Kontakt", role: "E-Mail, kein Bot" },
     ],
   },
   {

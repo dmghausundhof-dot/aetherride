@@ -4,8 +4,11 @@ import { HOF_NAV } from "@/lib/nav/hofNav";
 import { MARKETING_NAV } from "@/lib/nav/marketingNav";
 import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
 import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
+import { legalContactEmail } from "@/lib/legal/siteLegal";
 
 export function LandingFooter() {
+  const email = legalContactEmail();
+
   return (
     <footer className="border-t border-border bg-surface py-12 pb-[calc(3rem+var(--safe-bottom))]">
       <div className="mx-auto max-w-6xl px-4">
@@ -74,6 +77,18 @@ export function LandingFooter() {
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
               <Link
+                href="/ueber"
+                className="text-text-secondary hover:text-foreground"
+              >
+                Über FlowLine
+              </Link>
+              <Link
+                href="/faq"
+                className="text-text-secondary hover:text-foreground"
+              >
+                FAQ
+              </Link>
+              <Link
                 href="/produkt"
                 className="text-text-secondary hover:text-foreground"
               >
@@ -128,11 +143,17 @@ export function LandingFooter() {
               >
                 Widerruf
               </Link>
-              <a
-                href="mailto:hello@aetherride.app"
+              <Link
+                href="/kontakt"
                 className="text-text-secondary hover:text-foreground"
               >
                 Kontakt
+              </Link>
+              <a
+                href={`mailto:${email}`}
+                className="text-text-secondary hover:text-foreground"
+              >
+                {email}
               </a>
             </div>
           </div>

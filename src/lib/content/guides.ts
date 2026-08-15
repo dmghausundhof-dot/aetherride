@@ -67,7 +67,7 @@ export const GUIDES: Guide[] = [
     relatedHrefs: [
       { href: "/pricing", label: "Pro & Reichweite" },
       { href: "/download", label: "App laden" },
-      { href: "/garage", label: "E-Bike in Garage" },
+      { href: "/garage", label: "E-Bike in der Werkstatt" },
     ],
   },
   {
@@ -97,7 +97,7 @@ export const GUIDES: Guide[] = [
     readMin: 5,
     body: [
       "Ketten: oft ab ~0,5 % Längung tauschen (Hersteller/Park Tool). Beläge: Restbelag und Geräusche. Gabel/Dämpfer: Service-Intervalle in Stunden oder Saisons.",
-      "FlowLine speichert Intervalle pro Bike und warnt in der Garage. Der Shop schlägt Ersatzteile vor — nur mit Consent und mit Kompatibilitäts-Urteil zum aktiven Bike.",
+      "FlowLine speichert Intervalle pro Bike und warnt in der Werkstatt. Der Laden schlägt Ersatzteile vor — nur mit Consent und mit Kompatibilitäts-Urteil zum aktiven Bike.",
       "Road und City brauchen andere Schwerpunkte (Reifenpannen, Kette, Bremsen) als Enduro (Fahrwerk, Beläge, Reifen). Disziplin-Filter im Shop helfen.",
     ],
     relatedHrefs: [
@@ -123,6 +123,42 @@ export const GUIDES: Guide[] = [
       { href: "/planner", label: "Planen" },
       { href: "/discover", label: "Karte" },
       { href: "/community", label: "Community / Platz" },
+    ],
+  },
+  {
+    slug: "hof-fuenf-tueren",
+    title: "Der Hof: fünf Türen, kein Ride-Tab",
+    teaser:
+      "Warum FlowLine nicht wie ein Feed aussieht — und wozu Hof, Karte, Platz, Werkstatt und Laden da sind.",
+    category: "safety",
+    readMin: 4,
+    body: [
+      "Viele Rad-Apps stapeln Karten: Home, Explore, Activity, Club, Shop. FlowLine hat fünf Türen am Hof. Ride ist der oranger Knopf, nicht der sechste Tab.",
+      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Der Platz hält Mappe, Stimmen und Gruppen. Die Werkstatt kennt das Rad. Der Laden ist die Tür zu Shopify — ohne zweite Kasse.",
+      "Was im Browser fehlt, bleibt leer: kein Live-GPS, kein HUD, keine Dummy-Kilometer. Die App übernimmt Navigation, Offline und Sensoren.",
+    ],
+    relatedHrefs: [
+      { href: "/home", label: "Zum Hof" },
+      { href: "/produkt", label: "Produktkarte" },
+      { href: "/ueber", label: "Über FlowLine" },
+    ],
+  },
+  {
+    slug: "platz-ohne-feed",
+    title: "Platz statt Timeline: Stimmen, Mappe, Gruppen",
+    teaser:
+      "Community hängt an der Tour. Kein Feed auf dem Hof, keine Tracks in Kommentaren.",
+    category: "safety",
+    readMin: 4,
+    body: [
+      "Der Platz ist die Community-Tür. Dieselben Touren wie auf der Karte liegen in der Mappe. Stimmen sind Kurztext an der Tour — neu startet in Prüfung, Editorial ist gekennzeichnet.",
+      "Sammlungen teilst du als Link. Wer den Link hat, legt die Touren in die eigene Mappe, ohne Account-Zwang. Gruppen laufen über Code vor dem Tor; Live-Pins gibt es nur im App-HUD und nur mit Opt-in.",
+      "Public Profile ist bewusst: Handle, Sport, optional Fahrten — keine GPS-Spuren. Events und Clubs auf der Website sind redaktionell, kein RSVP-Fake.",
+    ],
+    relatedHrefs: [
+      { href: "/library", label: "Zum Platz" },
+      { href: "/community", label: "Community" },
+      { href: "/guides/web-vs-app", label: "Web vs. App" },
     ],
   },
 ];

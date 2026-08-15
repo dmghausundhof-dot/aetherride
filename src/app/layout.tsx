@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s · FlowLine",
   },
   description:
-    "Ride further. Flow better. Karte, Werkstatt und Shop — Rausfahren in der App.",
+    "Outdoor Cycling, simplified. Hof, Karte, Platz, Werkstatt — Rausfahren in der App.",
   keywords: [
     "FlowLine",
     "Radtouren",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FlowLine – Outdoor Cycling",
     description:
-      "Ride further. Flow better. Eine Stunde vor dem Tor. Rausfahren.",
+      "Outdoor Cycling, simplified. Eine Stunde vor dem Tor. Rausfahren.",
     locale: "de_DE",
     type: "website",
     images: [

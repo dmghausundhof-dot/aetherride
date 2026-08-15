@@ -203,3 +203,30 @@ export function getRegion(slug: string): RegionDef | null {
 export function listRegions(): RegionDef[] {
   return REGIONS;
 }
+
+/** Adjacent editorial regions — for “weiter in der Nähe”, not GPS. */
+export const REGION_NEIGHBORS: Record<string, string[]> = {
+  "baden-wuerttemberg": ["schwarzwald", "rhein-neckar", "bodensee"],
+  schwarzwald: ["baden-wuerttemberg", "elsass-vogesen", "bodensee"],
+  "rhein-neckar": ["baden-wuerttemberg", "hessen-thueringen", "eifel"],
+  bayern: ["bodensee", "oesterreich", "osten"],
+  bodensee: ["bayern", "schwarzwald", "schweiz"],
+  "elsass-vogesen": ["schwarzwald", "alpen-west"],
+  sachsen: ["osten", "berlin-brandenburg"],
+  eifel: ["nrw", "rhein-neckar"],
+  "alpen-west": ["schweiz", "elsass-vogesen"],
+  "berlin-brandenburg": ["norddeutschland", "osten"],
+  norddeutschland: ["berlin-brandenburg", "nrw"],
+  nrw: ["norddeutschland", "eifel", "hessen-thueringen"],
+  "hessen-thueringen": ["rhein-neckar", "nrw", "osten"],
+  osten: ["sachsen", "berlin-brandenburg", "hessen-thueringen"],
+  oesterreich: ["bayern", "schweiz"],
+  schweiz: ["oesterreich", "alpen-west", "bodensee"],
+};
+
+export function neighborRegions(slug: string): RegionDef[] {
+  const ids = REGION_NEIGHBORS[slug] ?? [];
+  return ids
+    .map((id) => getRegion(id))
+    .filter((r): r is RegionDef => r != null);
+}

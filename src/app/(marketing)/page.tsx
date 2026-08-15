@@ -11,12 +11,27 @@ import {
   APP_SURFACES,
 } from "@/lib/content/productMap";
 import { COMMUNITY_FEATURES } from "@/lib/content/communityMap";
+import { featuredPublicTours } from "@/lib/catalog/publicTours";
+import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { websiteJsonLd } from "@/lib/content/siteJsonLd";
 
 const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
 
 export default function LandingPage() {
+  const featured = featuredPublicTours();
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://aetherride.app";
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(websiteJsonLd(origin)),
+        }}
+      />
       <LandingHero />
 
       <section className="border-t border-border bg-surface py-16 px-4">
@@ -116,16 +131,39 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((t) => (
+              <Link
+                key={t.id}
+                href={`/tours/${t.id}`}
+                className="rounded-2xl border border-border bg-background/60 p-4 transition hover:border-chrome/40"
+              >
+                <p className="text-[11px] font-medium uppercase tracking-wide text-chrome">
+                  {bikeCategoryLabel(t.primaryCategory)}
+                </p>
+                <p className="mt-1 font-medium">{t.name}</p>
+                <p className="mt-2 line-clamp-2 text-xs text-text-secondary">
+                  {t.summary}
+                </p>
+                <p className="mt-3 text-xs tabular-nums text-text-secondary">
+                  {t.distanceKm} km · {t.elevationM} hm
+                </p>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap gap-2">
             {[
-              { slug: "schwarzwald", name: "Schwarzwald" },
+              { slug: "norddeutschland", name: "Norddeutschland" },
+              { slug: "berlin-brandenburg", name: "Berlin" },
               { slug: "rhein-neckar", name: "Rhein-Neckar" },
-              { slug: "bayern", name: "Bayern" },
-              { slug: "bodensee", name: "Bodensee" },
+              { slug: "schwarzwald", name: "Schwarzwald" },
+              { slug: "nrw", name: "NRW" },
+              { slug: "oesterreich", name: "Österreich" },
+              { slug: "schweiz", name: "Schweiz" },
             ].map((r) => (
               <Link
                 key={r.slug}
                 href={`/regions/${r.slug}`}
-                className="rounded-2xl border border-border bg-background/60 px-4 py-4 font-medium transition hover:border-chrome/40"
+                className="rounded-full border border-border px-3 py-1 text-xs font-medium transition hover:border-chrome/40"
               >
                 {r.name}
               </Link>

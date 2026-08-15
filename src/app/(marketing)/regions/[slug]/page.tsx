@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRegion, listRegions } from "@/lib/catalog/regions";
+import { getRegion, listRegions, neighborRegions } from "@/lib/catalog/regions";
 import { listToursByRegion } from "@/lib/catalog/publicTours";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 
@@ -31,6 +31,7 @@ export default async function RegionPage({ params }: Props) {
   if (!region) notFound();
 
   const tours = listToursByRegion(slug);
+  const nearby = neighborRegions(slug);
 
   return (
     <div>
@@ -127,6 +128,26 @@ export default async function RegionPage({ params }: Props) {
             </div>
           )}
         </section>
+
+        {nearby.length > 0 ? (
+          <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+            <h2 className="text-xl font-bold">Nachbarregionen</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Weiterlesen in der Nähe — nicht als GPS-Fill.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {nearby.map((n) => (
+                <Link
+                  key={n.slug}
+                  href={`/regions/${n.slug}`}
+                  className="rounded-full border border-border px-3 py-1.5 text-sm hover:border-chrome/40"
+                >
+                  {n.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
     </div>
   );
 }

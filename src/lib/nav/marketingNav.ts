@@ -37,6 +37,9 @@ export function isPublicMarketingPath(pathname: string): boolean {
     "/legal",
     "/share",
     "/open",
+    "/faq",
+    "/ueber",
+    "/kontakt",
   ];
   if (pathname === "/u" || pathname.startsWith("/u/")) return true;
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));

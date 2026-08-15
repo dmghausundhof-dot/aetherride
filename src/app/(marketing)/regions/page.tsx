@@ -10,7 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default function RegionsIndexPage() {
-  const regions = listRegions();
+  const regions = listRegions()
+    .map((r) => ({ region: r, count: listToursByRegion(r.slug).length }))
+    .sort(
+      (a, b) =>
+        b.count - a.count || a.region.name.localeCompare(b.region.name, "de"),
+    );
 
   return (
     <div className="px-4 py-12 sm:px-6">
@@ -24,8 +29,7 @@ export default function RegionsIndexPage() {
           noch keine Touren stehen, gilt die Karte vor Ort — keine Füll-Routen.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {regions.map((r) => {
-            const count = listToursByRegion(r.slug).length;
+          {regions.map(({ region: r, count }) => {
             return (
               <Link
                 key={r.slug}

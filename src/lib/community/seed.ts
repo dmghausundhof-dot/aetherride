@@ -112,6 +112,15 @@ export const COMMUNITY_EVENTS: CommunityEvent[] = [
     blurb: "Flach, fotogen, Kaffee-Stops. Rennrad & E-Trekking willkommen.",
     href: "/regions/bodensee",
   },
+  {
+    id: "ev-alster-hh",
+    title: "Hamburg Alster Feierabend",
+    regionSlug: "norddeutschland",
+    dateLabel: "Mi, 16. Sep 2026 · 18:00",
+    sport: "urban",
+    blurb: "Flache Runde um die Alster. City, nicht Alpen — Tempo nach Gefühl.",
+    href: "/regions/norddeutschland",
+  },
 ];
 
 export const COMMUNITY_CLUBS: CommunityClub[] = [

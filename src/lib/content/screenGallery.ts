@@ -50,7 +50,7 @@ export const SCREEN_GALLERY: {
     alt: "FlowLine Laden als Shopify-Tür",
     title: "Laden",
     door: "Laden",
-    note: "Gateway. Keine zweite Kasse im Browser.",
+    note: "Regal in FlowLine. Kasse bleibt Shopify — kein zweiter Warenkorb.",
   },
   {
     src: "/landing/screens/profil.jpg",

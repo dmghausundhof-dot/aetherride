@@ -636,7 +636,7 @@ const RAW: TourInput[] = [
     difficulty: "—",
     surface: "asphalt/bike-lane",
     loop: true,
-    regionSlug: "eifel",
+    regionSlug: "nrw",
     tags: ["city", "köln", "rhein"],
   },
   {
@@ -919,7 +919,7 @@ const RAW: TourInput[] = [
     difficulty: "—",
     surface: "asphalt",
     loop: true,
-    regionSlug: "bayern",
+    regionSlug: "oesterreich",
     tags: ["rennrad", "innsbruck", "inntal"],
   },
   {
@@ -933,7 +933,7 @@ const RAW: TourInput[] = [
     difficulty: "—",
     surface: "gravel/asphalt",
     loop: true,
-    regionSlug: "bayern",
+    regionSlug: "oesterreich",
     tags: ["gravel", "zillertal"],
   },
   {
@@ -961,7 +961,7 @@ const RAW: TourInput[] = [
     difficulty: "—",
     surface: "asphalt/bike-lane",
     loop: true,
-    regionSlug: "alpen-west",
+    regionSlug: "schweiz",
     tags: ["city", "genève", "see"],
   },
   // --- Baden-Württemberg densify (DACH map coverage) ---
@@ -1161,6 +1161,137 @@ const RAW: TourInput[] = [
     regionSlug: "bodensee",
     tags: ["friedrichshafen", "bodensee", "hafen"],
   },
+  // --- Leere DACH-Regionen: redaktionelle Ideen, keine Füll-GPS ---
+  {
+    id: "r-hamburg-alster",
+    name: "Hamburg Alster-Runde",
+    primaryCategory: "urban",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 18,
+    elevationM: 35,
+    durationMin: 55,
+    difficulty: "—",
+    surface: "asphalt/path",
+    loop: true,
+    regionSlug: "norddeutschland",
+    tags: ["hamburg", "alster", "city"],
+    summary:
+      "Flache City-Runde um Binnen- und Außenalster. Hamburg, nicht pauschal Alpen.",
+  },
+  {
+    id: "r-kiel-foerde",
+    name: "Kiel Förde-Ufer",
+    primaryCategory: "road",
+    categories: ["road", "urban", "etrekking"],
+    distanceKm: 32,
+    elevationM: 80,
+    durationMin: 95,
+    difficulty: "—",
+    surface: "asphalt/path",
+    loop: true,
+    regionSlug: "norddeutschland",
+    tags: ["kiel", "förde", "nord"],
+  },
+  {
+    id: "r-berlin-tempelhof",
+    name: "Berlin Tempelhofer Feld",
+    primaryCategory: "urban",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 12,
+    elevationM: 20,
+    durationMin: 40,
+    difficulty: "—",
+    surface: "asphalt/path",
+    loop: true,
+    regionSlug: "berlin-brandenburg",
+    tags: ["berlin", "tempelhof", "city"],
+    summary:
+      "Weiter Asphalt auf dem Feld. Alltagsrunde — GPS-first in der Stadt, nicht Alpen-Fill.",
+  },
+  {
+    id: "r-potsdam-havel",
+    name: "Potsdam Havelseen",
+    primaryCategory: "gravel",
+    categories: ["gravel", "road", "etrekking"],
+    distanceKm: 38,
+    elevationM: 160,
+    durationMin: 130,
+    difficulty: "—",
+    surface: "gravel/asphalt",
+    loop: true,
+    regionSlug: "berlin-brandenburg",
+    tags: ["potsdam", "havel", "gravel"],
+  },
+  {
+    id: "r-duesseldorf-rhein",
+    name: "Düsseldorf Rheinauen",
+    primaryCategory: "urban",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 22,
+    elevationM: 50,
+    durationMin: 65,
+    difficulty: "—",
+    surface: "asphalt/bike-lane",
+    loop: true,
+    regionSlug: "nrw",
+    tags: ["düsseldorf", "rhein", "city"],
+  },
+  {
+    id: "r-frankfurt-main",
+    name: "Frankfurt Mainufer",
+    primaryCategory: "urban",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 16,
+    elevationM: 45,
+    durationMin: 50,
+    difficulty: "—",
+    surface: "asphalt/bike-lane",
+    loop: true,
+    regionSlug: "hessen-thueringen",
+    tags: ["frankfurt", "main", "city"],
+  },
+  {
+    id: "r-leipzig-neuseen",
+    name: "Leipzig Neuseenland",
+    primaryCategory: "road",
+    categories: ["road", "etrekking", "gravel"],
+    distanceKm: 42,
+    elevationM: 90,
+    durationMin: 130,
+    difficulty: "—",
+    surface: "asphalt/path",
+    loop: true,
+    regionSlug: "osten",
+    tags: ["leipzig", "neuseenland", "flach"],
+  },
+  {
+    id: "r-wien-donauinsel",
+    name: "Wien Donauinsel",
+    primaryCategory: "urban",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 24,
+    elevationM: 30,
+    durationMin: 70,
+    difficulty: "—",
+    surface: "asphalt/path",
+    loop: true,
+    regionSlug: "oesterreich",
+    tags: ["wien", "donau", "city"],
+  },
+  {
+    id: "r-zuerich-see",
+    name: "Zürich Seeufer",
+    primaryCategory: "urban",
+    categories: ["urban", "road", "etrekking"],
+    distanceKm: 20,
+    elevationM: 70,
+    durationMin: 65,
+    difficulty: "—",
+    surface: "asphalt/path",
+    loop: true,
+    regionSlug: "schweiz",
+    tags: ["zürich", "see", "city"],
+  },
 ];
 
 function autoSummary(t: TourInput): string {
@@ -1198,6 +1329,20 @@ const TOURS: PublicTour[] = RAW.map(hydrate);
 
 export function listPublicTours(): PublicTour[] {
   return TOURS;
+}
+
+/** Startseite / Regionen-Teaser — echte Katalog-IDs, keine Dummy-Karten. */
+export const FEATURED_TOUR_IDS = [
+  "r-hamburg-alster",
+  "r-heidelberg-city",
+  "r-schwarzwald-gravel",
+  "r-bodensee-road",
+] as const;
+
+export function featuredPublicTours(): PublicTour[] {
+  return FEATURED_TOUR_IDS.map((id) => getPublicTour(id)).filter(
+    (t): t is PublicTour => t != null,
+  );
 }
 
 export function getPublicTour(id: string): PublicTour | null {
