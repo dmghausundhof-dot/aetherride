@@ -10,7 +10,8 @@
   "builtAt": "2026-08-15T10:56:08Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2491857,
       "sha256": "bc1297cc7935251cd1a5effd02a0cfdfb548cf4a175b393dd719a887f565e520",
       "sha256_16": "bc1297cc7935251c"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 4300470,
+      "sha256": "e263cd1368d2c09c9d0327822f16ac8eadc568d276b0c10cd1c9698d8ec622f3",
+      "sha256_16": "e263cd1368d2c09c"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 982366,
+      "sha256": "697d0d468b93591d09335402efb1be5b32dac153ca5db9bc4e2c4a3667c34fae",
+      "sha256_16": "697d0d468b93591d"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/morzine",
     "pack": "morzine.tar.zst",
     "packGz": "morzine.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }
