@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/routing/bike_overlay.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -11,6 +12,8 @@ class BikeOverlayLegend extends StatefulWidget {
     required this.extraOn,
     required this.onToggleVisible,
     required this.onToggleClass,
+    this.hasOverlayData = true,
+    this.overlayKind = OnlineBikeOverlayKind.ways,
   });
 
   final BikeOverlayFamily family;
@@ -18,6 +21,8 @@ class BikeOverlayLegend extends StatefulWidget {
   final Set<BikeOverlayClass> extraOn;
   final VoidCallback onToggleVisible;
   final ValueChanged<BikeOverlayClass> onToggleClass;
+  final bool hasOverlayData;
+  final OnlineBikeOverlayKind overlayKind;
 
   @override
   State<BikeOverlayLegend> createState() => _BikeOverlayLegendState();
@@ -29,10 +34,33 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final rows = overlayLegendRows(
-      family: widget.family,
-      expanded: _expanded,
-    );
+    if (!widget.hasOverlayData) {
+      return Material(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 168),
+            child: const Text(
+              'Kein Overlay an dieser Stelle. OSM-Wege nur ab Zoom 12 in Hausbergen, Annecy, Lyon und Paris — das Radnetz folgt dem Blatt darunter.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    final mesh = widget.overlayKind == OnlineBikeOverlayKind.mesh;
+    final rows = mesh
+        ? <OverlayLegendRow>[]
+        : overlayLegendRows(
+            family: widget.family,
+            expanded: _expanded,
+          );
     final compact = overlayLegendCompactKey(widget.family);
     final compactLabel = switch (compact) {
       'mtb' => l10n.overlayLegendCompactMtb,
@@ -65,7 +93,9 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                           children: [
                             Expanded(
                               child: Text(
-                                '${l10n.overlayLegendTitle} · $compactLabel',
+                                mesh
+                                    ? 'Radnetz · OSM'
+                                    : '${l10n.overlayLegendTitle} · $compactLabel',
                                 key: const Key('bike-overlay-legend-title'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -145,10 +175,12 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                     ),
                   ),
                 ),
-              if (showNote) ...[
+              if (mesh || showNote) ...[
                 const SizedBox(height: 4),
                 Text(
-                  l10n.overlayScaleNote,
+                  mesh
+                      ? 'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 in ausgewählten Städten.'
+                      : l10n.overlayScaleNote,
                   style: const TextStyle(
                     color: Colors.white54,
                     fontSize: 9,

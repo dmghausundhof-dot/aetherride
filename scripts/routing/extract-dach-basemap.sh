@@ -7,6 +7,8 @@
 #   NAME=alps-south BBOX=5.55,43.40,11.60,45.90 bash scripts/routing/extract-dach-basemap.sh
 #   NAME=benelux BBOX=2.40,49.40,7.25,53.75 bash scripts/routing/extract-dach-basemap.sh
 #   NAME=italy-north BBOX=11.50,43.50,14.10,46.15 bash scripts/routing/extract-dach-basemap.sh
+#   NAME=italy-center BBOX=10.15,40.62,14.90,43.85 bash scripts/routing/extract-dach-basemap.sh
+#   NAME=italy-south BBOX=14.70,37.95,18.55,41.30 bash scripts/routing/extract-dach-basemap.sh
 #   NAME=catalonia-pyrenees BBOX=-2.20,41.15,3.35,43.55 bash scripts/routing/extract-dach-basemap.sh
 #   NAME=uk-south BBOX=-1.50,50.50,1.80,52.50 bash scripts/routing/extract-dach-basemap.sh
 set -euo pipefail
@@ -36,9 +38,14 @@ echo "    out=$OUT"
   --download-threads="${THREADS:-8}"
 ls -lh "$OUT"
 STYLE_NAME="AetherRide ${NAME} z0–${MAXZOOM}"
+GERMAN_NAMES=()
+if [[ "$NAME" == "dach" ]]; then
+  GERMAN_NAMES=(--german-names)
+fi
 python3 "$ROOT/scripts/routing/write-dach-style.py" \
   --maxzoom="$MAXZOOM" \
   --name="$STYLE_NAME" \
+  "${GERMAN_NAMES[@]}" \
   --pmtiles-url="${ROUTING_CDN_BASE:-https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs}/basemap/${NAME}-z${MAXZOOM}.pmtiles" \
   --out="$OUT_DIR/${NAME}-z${MAXZOOM}-style.json"
 echo "EXTRACT_OK $OUT"

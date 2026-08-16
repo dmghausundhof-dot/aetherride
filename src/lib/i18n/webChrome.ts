@@ -55,6 +55,7 @@ type WebChrome = {
 const DE: WebChrome = {
   marketingNav: {
     "/produkt": "Produkt",
+    "/karten": "Karten",
     "/regions": "Regionen",
     "/guides": "Guides",
     "/community": "Community",
@@ -116,6 +117,7 @@ const DE: WebChrome = {
 const EN: WebChrome = {
   marketingNav: {
     "/produkt": "Product",
+    "/karten": "Maps",
     "/regions": "Regions",
     "/guides": "Guides",
     "/community": "Community",
@@ -177,6 +179,7 @@ const EN: WebChrome = {
 const FR: WebChrome = {
   marketingNav: {
     "/produkt": "Produit",
+    "/karten": "Cartes",
     "/regions": "Régions",
     "/guides": "Guides",
     "/community": "Community",
@@ -238,6 +241,7 @@ const FR: WebChrome = {
 const IT: WebChrome = {
   marketingNav: {
     "/produkt": "Prodotto",
+    "/karten": "Carte",
     "/regions": "Regioni",
     "/guides": "Guide",
     "/community": "Community",

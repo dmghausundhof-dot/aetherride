@@ -17,6 +17,8 @@ function testParity() {
   for (const lang of ["de", "en", "fr", "it"] as const) {
     const o = overlayCopy(lang);
     assert.ok(o.waysOsm.includes("OSM"), lang);
+    assert.ok(o.meshOsm.includes("OSM"), lang);
+    assert.ok(o.meshNote.includes("ICN"), lang);
     assert.equal(overlayLegendLabel("S0", lang), "S0", lang);
     assert.equal(overlayLegendLabel("gravel", lang), "Gravel", lang);
     assert.equal(overlayLegendLabel("urban", lang), "City", lang);

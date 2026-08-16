@@ -14,6 +14,7 @@ import {
   pickPreferredManifest,
   publicOfflinePackObjectUrl,
   sortCatalogPacks,
+  summarizeOfflinePacks,
   type OfflineCatalogPack,
   type OfflinePackManifest,
 } from "./offlinePacks";
@@ -198,6 +199,38 @@ assert.ok(
 // must evaluate status on the raw stub before applyPackCdn.
 assert.equal(catalogStatus(applyPackCdn("aachen", stub), false), "ready");
 assert.equal(catalogStatus(stub, false), "stub");
+
+{
+  const summary = summarizeOfflinePacks([
+    {
+      id: "aachen",
+      name: "Aachen",
+      bbox: null,
+      builtAt: null,
+      engines: null,
+      hasManifest: true,
+      downloadable: true,
+      status: "ready",
+      bytes: 100,
+      cdn: null,
+    },
+    {
+      id: "de-bayern",
+      name: "Bayern",
+      bbox: null,
+      builtAt: null,
+      engines: null,
+      hasManifest: true,
+      downloadable: false,
+      status: "stub",
+      bytes: null,
+      cdn: null,
+    },
+  ]);
+  assert.equal(summary.ready, 1);
+  assert.equal(summary.stub, 1);
+  assert.equal(summary.total, 2);
+}
 
 try {
   const distRaw = JSON.parse(

@@ -27,6 +27,7 @@ import '../../data/routing/osm_routes_client.dart';
 import '../../data/routing/osm_trail_network_client.dart';
 import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
+import '../../data/routing/map_style_url.dart';
 import '../../data/routing/coverage_client.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
@@ -381,6 +382,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   bool _styleReady = false;
   bool _pinImagesReady = false;
   bool _bikeOverlayAttached = false;
+  String? _bikeOverlayKey;
   bool _bikeOverlayOn = true;
   final Set<BikeOverlayClass> _bikeOverlayExtra = {
     ...overlayDefaultExtraOn(BikeOverlayFamily.urban),
@@ -3832,7 +3834,18 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _ensureBikeOverlay() async {
     final c = _map;
     if (c == null || !_styleReady) return;
-    if (_bikeOverlayAttached) {
+    final cam = c.cameraPosition;
+    final lng = cam?.target.longitude ?? _mapCenter.lng;
+    final lat = cam?.target.latitude ?? _mapCenter.lat;
+    final zoom = cam?.zoom ?? (_hasRealOrigin ? 12.0 : 5.5);
+    final data = await resolveBikeOverlayData(
+      lng: lng,
+      lat: lat,
+      zoom: zoom,
+    );
+    if (!mounted) return;
+    final key = data?.toString();
+    if (key != null && key == _bikeOverlayKey && _bikeOverlayAttached) {
       await applyBikeOverlayVisibility(
         c,
         family: _overlayFamily,
@@ -3842,12 +3855,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       unawaited(_refreshSGradeLive());
       return;
     }
+    if (_bikeOverlayAttached) {
+      await detachBikeOverlayLayers(c);
+      _bikeOverlayAttached = false;
+    }
+    _bikeOverlayKey = key;
     final live = await attachLiveOsmNetworkLayers(c);
     await attachSGradeLiveLayer(c);
-    final data = await resolveBikeOverlayData(
-      lng: _mapCenter.lng,
-      lat: _mapCenter.lat,
-    );
     if (data != null && mounted) {
       await attachBikeOverlayLayers(
         c,
@@ -5630,6 +5644,24 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 family: _overlayFamily,
                 visible: _bikeOverlayOn,
                 extraOn: _bikeOverlayExtra,
+                hasOverlayData: _bikeOverlayAttached ||
+                    overlayDataExpectedAt(
+                      _map?.cameraPosition?.target.longitude ?? _mapCenter.lng,
+                      _map?.cameraPosition?.target.latitude ?? _mapCenter.lat,
+                      zoom: _map?.cameraPosition?.zoom ??
+                          (_hasRealOrigin ? 12 : 5.5),
+                    ),
+                overlayKind: chooseOnlineBikeOverlay(
+                      lng: _map?.cameraPosition?.target.longitude ??
+                          _mapCenter.lng,
+                      lat: _map?.cameraPosition?.target.latitude ??
+                          _mapCenter.lat,
+                      zoom: _map?.cameraPosition?.zoom ??
+                          (_hasRealOrigin ? 12 : 5.5),
+                    ).kind ==
+                    OnlineBikeOverlayKind.ways
+                    ? OnlineBikeOverlayKind.ways
+                    : OnlineBikeOverlayKind.mesh,
                 onToggleVisible: () {
                   setState(() => _bikeOverlayOn = !_bikeOverlayOn);
                   final c = _map;
@@ -5823,6 +5855,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _pinImagesReady = false;
         _bikeOverlayAttached = false;
         _navPuck.reset();
+        _bikeOverlayKey = null;
         unawaited(OfflineBasemap.applyDetectedNetworkMode());
         unawaited(() async {
           final map = _map;

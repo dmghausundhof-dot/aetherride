@@ -369,95 +369,6 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
   }
 }
 
-class _PartsGlance extends StatelessWidget {
-  const _PartsGlance({
-    required this.components,
-    required this.onSeeAll,
-    this.emphasisSlots = const [],
-  });
-
-  final List<BikeComponent> components;
-  final VoidCallback onSeeAll;
-  final List<ComponentSlot> emphasisSlots;
-
-  static const _fallbackPriority = <ComponentSlot>[
-    ComponentSlot.fork,
-    ComponentSlot.rearShock,
-    ComponentSlot.tireFront,
-    ComponentSlot.tireRear,
-    ComponentSlot.rearDerailleur,
-    ComponentSlot.brakeFront,
-    ComponentSlot.motor,
-    ComponentSlot.battery,
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final bySlot = {for (final c in components) c.slot: c};
-    final priority =
-        emphasisSlots.isNotEmpty ? emphasisSlots : _fallbackPriority;
-    final shown = <BikeComponent>[
-      for (final s in priority)
-        if (bySlot[s] != null) bySlot[s]!,
-    ];
-    if (shown.isEmpty) {
-      shown.addAll(components.take(6));
-    }
-    return Material(
-      color: AppColors.surfaceDark,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: InkWell(
-        onTap: onSeeAll,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.garageYourParts,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                  Text(
-                    l10n.garageAllCount(components.length),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final c in shown.take(8))
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      label: Text(
-                        '${l10n.componentSlotLabel(c.slot)}: ${c.displayName}',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      labelStyle: const TextStyle(fontSize: 11.5),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _BikeTile extends ConsumerWidget {
   const _BikeTile({required this.bike, required this.onTap});
 
@@ -1774,7 +1685,6 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
   Bike? _bike;
   List<BikeComponent> _components = [];
   List<CompatibilityResult> _compat = [];
-  bool _busy = false;
   // Segmente in einer ListView (kein TabBarView / kein BottomSheet —
   // verschachteltes Sheet war auf S25 leer).
   late _DetailTab _tab = widget.initialTab;
@@ -1801,13 +1711,6 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
         _compat = results;
       });
     }
-  }
-
-  Future<void> _setActive() async {
-    setState(() => _busy = true);
-    await ref.read(garageRepositoryProvider).setActiveBike(widget.bikeId);
-    await _load();
-    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _delete() async {
@@ -3493,49 +3396,6 @@ class _MaintenanceBarRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Kennzahl-Chip (km / Std. / Wartung, Bike-Anzahl …) — glanceable statt Fließtext.
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.value, required this.label, this.color});
-
-  final String value;
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-        decoration: BoxDecoration(
-          color: AppColors.chipIdle,
-          borderRadius: BorderRadius.circular(AppRadius.chip),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: color ?? AppColors.chipIdleText,
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.muted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

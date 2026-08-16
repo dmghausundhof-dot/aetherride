@@ -12,7 +12,7 @@ export const PRODUCT_DOORS = [
   {
     href: "/discover",
     title: "Karte",
-    body: "OpenStreetMap, Nähe-Rundkurse, Sport-Filter, Planen am Desktop. Kein Live-GPS im Tab.",
+    body: "OpenStreetMap und Protomaps, Nähe-Rundkurse, Sport-Filter, Planen am Desktop. Kein Live-GPS im Tab.",
   },
   {
     href: "/library",
@@ -57,7 +57,7 @@ export const APP_SURFACES = [
   },
   {
     title: "Offline",
-    body: "Karten- und Routing-Packs ohne Netz. Im Browser nicht sinnvoll.",
+    body: "Stadt-Packs ohne Netz. Keine Länderkarte, kein Komoot-Europa.",
   },
   {
     title: "Sensoren & Uhr",
@@ -201,7 +201,8 @@ export const SCREEN_GROUPS: {
     screens: [
       { href: "/", name: "Start", role: "Hero, Türen, Reise" },
       { href: "/produkt", name: "Produkt", role: "Screens und Abläufe" },
-      { href: "/regions", name: "Regionen", role: "DACH-Ideen, Nähe" },
+      { href: "/karten", name: "Karten", role: "Blätter online, Packs offline" },
+      { href: "/regions", name: "Regionen", role: "Tour-Ideen, Nähe" },
       { href: "/guides", name: "Guides", role: "Planung, Setup, E-Bike" },
       { href: "/guides/teilen-per-link", name: "Teilen-Guide", role: "Link statt Feed" },
       { href: "/guides/laden-ohne-zweite-kasse", name: "Laden-Guide", role: "Keine zweite Kasse" },

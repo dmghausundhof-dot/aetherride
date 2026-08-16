@@ -61,7 +61,7 @@ export const HOME_DOOR_STORIES: {
     href: "/discover",
     title: "Karte",
     kicker: "Vor dem Tor",
-    body: "OpenStreetMap, echte Nähe, Filter nach Sport. Du planst am Desktop: Start, Via, Ziel. Live-Navigation im Browser gibt es nicht — und wird nicht vorgetäuscht.",
+    body: "OpenStreetMap und Protomaps, echte Nähe, Filter nach Sport. Du planst am Desktop: Start, Via, Ziel. Live-Navigation im Browser gibt es nicht — und wird nicht vorgetäuscht.",
   },
   {
     href: "/library",
@@ -89,7 +89,13 @@ export const HOME_SPLIT = {
   webLead:
     "Inspiration, Planen, Pflege und Teilen gehören an den Schreibtisch. Der Browser darf leer bleiben, wo GPS und Sensoren hingehören.",
   appLead:
-    "Unterwegs zählt ein gesperrtes Display, Offline-Packs und eine Uhr am Fahrer. Dafür gibt es keine Web-Attrappe.",
+    "Unterwegs zählt ein gesperrtes Display, Stadt-Packs ohne Netz und eine Uhr am Fahrer. Dafür gibt es keine Web-Attrappe und keine Länderkarte.",
+} as const;
+
+export const HOME_MAPS = {
+  kicker: "Auf der Karte",
+  title: "Neun Blätter. Kein Europa-Download.",
+  lead: "Online streamt die Karte aus benannten Regionen. Offline lädst du Städte, keine Länder. Wo kein Blatt liegt, bleibt ein Loch — nicht ein Fake-Globus.",
 } as const;
 
 export const HOME_TOURS = {
@@ -124,7 +130,7 @@ export const HOME_GUIDES = {
   ],
 } as const;
 
-export const HOME_FAQ_IDS = ["was", "fuer-wen", "web-app", "preise"] as const;
+export const HOME_FAQ_IDS = ["was", "fuer-wen", "web-app", "karten", "preise"] as const;
 
 export const HOME_PRICING = {
   kicker: "Preise",
@@ -140,7 +146,8 @@ export const HOME_HONESTY = {
   lead: "Eine Homepage darf nicht so tun, als wäre der Marktplatz offen oder der Store schon gelistet. Deshalb der ehrliche Stand:",
   live: [
     "Hof, Karte, Planen, Platz, Werkstatt im Browser",
-    "Redaktionelle Touren und Regionen in DACH",
+    "Online-Karte in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen, Südengland",
+    "Redaktionelle Tour-Ideen vor allem in DACH — die Kartenblätter reichen weiter",
     "Stimmen, Mappe-Links, Editorial-Profile",
     "Free und Pro beschrieben, Checkout im Profil (Stripe)",
   ],

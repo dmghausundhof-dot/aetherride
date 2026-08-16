@@ -219,7 +219,6 @@ export async function assembleCoverageLive(opts: {
       lat: opts.lat,
       lng: opts.lng,
       radiusM: Math.round(Math.min(8, radiusKm) * 1000),
-      language,
     }),
     fetchSchweizMobilNear({ lat: opts.lat, lng: opts.lng }),
   ]);

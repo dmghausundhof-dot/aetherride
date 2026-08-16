@@ -707,12 +707,18 @@ export type RequestRouteSuccess = {
   data: ClientRouteResult;
 };
 
+export type RequestRouteOptions = {
+  engine?: string | null;
+  accessLeg?: boolean;
+};
+
 /** Client-Call an /api/route (mit Rate-Limit-Erkennung) */
 export async function requestRouteDetailed(
   profile: RoutingProfile,
   from: [number, number],
   to: [number, number],
-  vias: [number, number][] = []
+  vias: [number, number][] = [],
+  opts?: RequestRouteOptions
 ): Promise<RequestRouteSuccess | RequestRouteFailure> {
   const qs = new URLSearchParams({
     profile,
@@ -722,6 +728,8 @@ export async function requestRouteDetailed(
   for (const v of vias) {
     qs.append("via", `${v[0]},${v[1]}`);
   }
+  if (opts?.engine) qs.set("engine", opts.engine);
+  if (opts?.accessLeg) qs.set("access", "1");
   const res = await fetch(`/api/route?${qs}`);
   if (!res.ok) {
     const text = await res.text();
@@ -747,9 +755,10 @@ export async function requestRoute(
   profile: RoutingProfile,
   from: [number, number],
   to: [number, number],
-  vias: [number, number][] = []
+  vias: [number, number][] = [],
+  opts?: RequestRouteOptions
 ): Promise<ClientRouteResult | null> {
-  const result = await requestRouteDetailed(profile, from, to, vias);
+  const result = await requestRouteDetailed(profile, from, to, vias, opts);
   return result.ok ? result.data : null;
 }
 

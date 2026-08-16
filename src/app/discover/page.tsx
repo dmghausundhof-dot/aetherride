@@ -46,7 +46,8 @@ import {
   overlayFamilyForBike,
   type BikeOverlayClass,
 } from "@/lib/routing/bikeOverlayClass";
-import { overlayHintForPoint } from "@/lib/coverage/regions";
+import { detailOverlayRegionIdForPoint } from "@/lib/coverage/dachRegions";
+import { chooseOnlineBikeOverlay } from "@/lib/map/onlineCycleMesh";
 import {
   consumerRoutingNotice,
   showRoutingDebugUi,
@@ -319,23 +320,31 @@ function DiscoverPageInner() {
   );
   /** GPS/Hier: Karte auf Standort halten — kein Fit auf Tour-Start. */
   const [holdMapFit, setHoldMapFit] = useState(false);
+  const [mapZoom, setMapZoom] = useState(13);
   const bikeOverlaySpec = useMemo(() => {
     const env = process.env.NEXT_PUBLIC_BIKE_OVERLAY_URL?.trim();
     if (env) {
       const kind = env.includes(".geojson") ? "geojson" : "pmtiles";
-      return { url: env, kind: kind as "pmtiles" | "geojson" };
+      return {
+        url: env,
+        kind: kind as "pmtiles" | "geojson",
+        overlayKind: "ways" as const,
+      };
     }
     const [lng, lat] = mapCenter;
-    const overlay = overlayHintForPoint(lng, lat);
-    if (overlay.mode !== "region_pack" || !overlay.pmtilesPath) return null;
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    if (!origin) return null;
+    const choice = chooseOnlineBikeOverlay({
+      regionId: detailOverlayRegionIdForPoint(lng, lat),
+      lng,
+      lat,
+      zoom: mapZoom,
+    });
+    if (!choice.url) return null;
     return {
-      url: `${origin}${overlay.pmtilesPath}`,
+      url: choice.url,
       kind: "pmtiles" as const,
+      overlayKind: choice.kind === "ways" ? ("ways" as const) : ("mesh" as const),
     };
-  }, [mapCenter]);
+  }, [mapCenter, mapZoom]);
   const [draft, setDraft] = useState<PlanDraft>(() =>
     emptyDraft(
       routingProfile,
@@ -390,7 +399,6 @@ function DiscoverPageInner() {
   const [liveOsmStatus, setLiveOsmStatus] = useState<
     "idle" | "loading" | "empty" | "error"
   >("idle");
-  const [mapZoom, setMapZoom] = useState(13);
   const [overlaySheet, setOverlaySheet] = useState<TrailSegment | null>(null);
   const [routingNotice, setRoutingNotice] = useState<string | null>(null);
   const [communityHeat, setCommunityHeat] = useState<HeatmapResult | null>(
@@ -2892,6 +2900,11 @@ function DiscoverPageInner() {
           bikeOverlayVisible={bikeOverlayOn}
           bikeOverlayExtraOn={bikeOverlayExtra}
           bikeOverlayRideProfileId={rideProfileId}
+          bikeOverlayMinZoom={bikeOverlaySpec?.overlayKind === "ways" ? 10 : 5}
+          onViewChange={(view) => {
+            setMapCenter(view.center);
+            setMapZoom(view.zoom);
+          }}
           onMapClick={onMapClick}
           onOverlayClick={(hit) => void onOverlayWayClick(hit)}
           onZoomChange={setMapZoom}
@@ -2938,25 +2951,25 @@ function DiscoverPageInner() {
             )
           }
         />
-        {bikeOverlaySpec && (
-          <div className="absolute left-[max(0.75rem,var(--safe-left))] top-3 z-10">
-            <BikeOverlayLegend
-              family={bikeOverlayFamily}
-              visible={bikeOverlayOn}
-              extraOn={bikeOverlayExtra}
-              rideProfileId={rideProfileId}
-              onToggleVisible={() => setBikeOverlayOn((v) => !v)}
-              onToggleClass={(cls) => {
-                setBikeOverlayOn(true);
-                setBikeOverlayExtra((cur) =>
-                  cur.includes(cls)
-                    ? cur.filter((c) => c !== cls)
-                    : [...cur, cls]
-                );
-              }}
-            />
-          </div>
-        )}
+        <div className="absolute left-[max(0.75rem,var(--safe-left))] top-3 z-10">
+          <BikeOverlayLegend
+            family={bikeOverlayFamily}
+            visible={bikeOverlayOn}
+            extraOn={bikeOverlayExtra}
+            rideProfileId={rideProfileId}
+            hasOverlayData={Boolean(bikeOverlaySpec)}
+            overlayKind={bikeOverlaySpec?.overlayKind ?? "mesh"}
+            onToggleVisible={() => setBikeOverlayOn((v) => !v)}
+            onToggleClass={(cls) => {
+              setBikeOverlayOn(true);
+              setBikeOverlayExtra((cur) =>
+                cur.includes(cls)
+                  ? cur.filter((c) => c !== cls)
+                  : [...cur, cls]
+              );
+            }}
+          />
+        </div>
         {overlaySheet && (
           <div className="absolute bottom-14 left-[max(0.75rem,var(--safe-left))] right-[max(0.75rem,var(--safe-right))] z-20 rounded-xl border border-border bg-surface p-3 shadow-lg lg:left-auto lg:right-[max(0.75rem,var(--safe-right))] lg:max-w-sm">
             <div className="flex items-start justify-between gap-2">

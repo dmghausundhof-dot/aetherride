@@ -19,6 +19,8 @@
     "routing:region:all-graphs": "bash scripts/routing/build-all-graph-packs.sh",
     "routing:region:publish": "bash scripts/routing/publish-offline-packs.sh",
     "routing:overlay": "bash scripts/routing/build-bike-overlay.sh",
+    "routing:cycle-mesh": "node scripts/routing/build-online-cycle-mesh.mjs --dach-only",
+    "routing:cycle-mesh:upload": "node scripts/routing/build-online-cycle-mesh.mjs --dach-only --skip-fetch --upload",
     "routing:sync-demo": "bash scripts/routing/sync-demo-graph.sh",
     "routing:valhalla:android": "bash scripts/routing/valhalla-android-pipeline.sh arm64-v8a",
     "smoke:web": "node scripts/smoke-web-sync-routing.mjs",

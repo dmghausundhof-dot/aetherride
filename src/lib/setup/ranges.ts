@@ -33,6 +33,9 @@ export function recommendedSagPct(
     kids: { fork: [15, 20], shock: [15, 20] },
     emtb: { fork: [20, 26], shock: [27, 35] },
     etrekking: { fork: [20, 25], shock: [25, 30] },
+    cargo: { fork: [15, 20], shock: [15, 20] },
+    folding: { fork: [15, 20], shock: [15, 20] },
+    kids: { fork: [15, 20], shock: [15, 20] },
     hiking: { fork: [0, 0], shock: [0, 0] },
   };
   const [min, max] = table[category][end];

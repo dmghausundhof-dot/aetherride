@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { lastRideForBike } from "@/lib/maintenance/summary";
 import { useAppStore } from "@/store/useAppStore";
 
 export function BikeRideLog({ bikeId }: { bikeId: string }) {
   const rides = useAppStore((s) => s.rides);
-  const savedRoutes = useAppStore((s) => s.savedRoutes);
   const onBike = rides.filter((r) => r.bikeId === bikeId).slice(0, 5);
   if (onBike.length === 0) return null;
   const last = lastRideForBike(rides, bikeId);
@@ -20,31 +18,17 @@ export function BikeRideLog({ bikeId }: { bikeId: string }) {
           : ""}
       </p>
       <ul className="mt-3 space-y-2">
-        {onBike.map((r) => {
-          const akte = savedRoutes.find(
-            (s) => s.id === r.savedRouteId || s.catalogTourId === r.savedRouteId
-          );
-          return (
-            <li key={r.id} className="text-sm">
-              <span className="tabular-nums">
-                {(r.distanceM / 1000).toFixed(1)} km ·{" "}
-                {(r.durationSec / 60).toFixed(0)} min
-              </span>
-              {akte ? (
-                <Link
-                  href="/activities"
-                  className="ml-2 font-semibold text-chrome"
-                >
-                  {akte.name}
-                </Link>
-              ) : (
-                <span className="ml-2 text-text-secondary">
-                  {r.notes ?? "Fahrt"}
-                </span>
-              )}
-            </li>
-          );
-        })}
+        {onBike.map((r) => (
+          <li key={r.id} className="text-sm">
+            <span className="tabular-nums">
+              {(r.distanceM / 1000).toFixed(1)} km ·{" "}
+              {(r.durationSec / 60).toFixed(0)} min
+            </span>
+            {r.notes ? (
+              <span className="ml-2 text-text-secondary">{r.notes}</span>
+            ) : null}
+          </li>
+        ))}
       </ul>
     </section>
   );

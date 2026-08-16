@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  fetchPublishedCatalog,
-  listKnownPackIds,
-  mergeCatalogPreferReady,
-  readOfflineManifest,
-  sortCatalogPacks,
-  toCatalogRow,
-} from "@/lib/routing/offlinePacks";
+import { listMergedOfflineCatalog } from "@/lib/routing/offlinePacks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,16 +10,9 @@ export const revalidate = 0;
  * Production: Storage `catalog.json` (CDN) wins over git stubs without dist/.
  */
 export async function GET() {
-  const ids = await listKnownPackIds();
-  const local = [];
-  for (const id of ids) {
-    const m = await readOfflineManifest(id);
-    local.push(await toCatalogRow(id, m));
-  }
-  const published = await fetchPublishedCatalog();
-  const packs = mergeCatalogPreferReady(local, published);
+  const packs = await listMergedOfflineCatalog();
   return NextResponse.json({
-    packs: sortCatalogPacks(packs),
+    packs,
     attribution: "FlowLine Offline Region Packs",
   });
 }

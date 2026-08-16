@@ -134,4 +134,19 @@ void main() {
       {BikeOverlayClass.gravel},
     );
   });
+
+  test('signed cycle-route mesh keeps icn/ncn/rcn/mtb, drops lcn', () {
+    expect(
+      classifyBikeRoute({
+        'route': 'bicycle',
+        'network': 'icn',
+        'ref': 'EV15',
+      }).bikeClass,
+      BikeOverlayClass.road,
+    );
+    expect(keepSignedCycleMesh({'route': 'bicycle', 'network': 'lcn'}), isFalse);
+    expect(keepSignedCycleMesh({'route': 'bicycle', 'network': 'rcn'}), isTrue);
+    expect(keepSignedCycleMesh({'route': 'bicycle', 'ref': 'EV6'}), isTrue);
+    expect(keepSignedCycleMesh({'route': 'mtb'}), isFalse);
+  });
 }

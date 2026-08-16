@@ -12,6 +12,7 @@ import {
   addBikeOverlayLayers,
   applyBikeOverlayVisibility,
   BIKE_OVERLAY_SOURCE_ID,
+  removeBikeOverlayLayers,
   type BikeOverlayMapLike,
 } from "@/lib/routing/bikeOverlayMap";
 import {
@@ -22,6 +23,11 @@ import {
 import type { RideProfileId } from "@/lib/routing/profiles";
 
 export type { OverlayWayHit };
+import {
+  envLocksOnlineBasemapStyle,
+  MAP_ATTRIBUTION,
+  onlineBasemapStyleUrl,
+} from "@/lib/map/onlineBasemap";
 
 export type MapMarker = {
   id: string;
@@ -76,6 +82,7 @@ interface MapViewProps {
   onOverlayClick?: (hit: OverlayWayHit) => void;
   onMarkerClick?: (id: string) => void;
   onMapReady?: (map: maplibregl.Map) => void;
+  onViewChange?: (view: { center: [number, number]; zoom: number }) => void;
   onZoomChange?: (zoom: number) => void;
   fitRoute?: boolean;
   bikeOverlayUrl?: string | null;
@@ -84,6 +91,7 @@ interface MapViewProps {
   bikeOverlayVisible?: boolean;
   bikeOverlayExtraOn?: BikeOverlayClass[];
   bikeOverlayRideProfileId?: RideProfileId | null;
+  bikeOverlayMinZoom?: number;
 }
 
 let pmtilesRegistered = false;
@@ -124,9 +132,9 @@ function stadiaStyleUrl(): string | null {
   return `https://tiles.stadiamaps.com/styles/outdoors.json?api_key=${encodeURIComponent(key)}`;
 }
 
-function pmtilesStyle(): maplibregl.StyleSpecification | string | null {
-  const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
-  if (!pmtilesUrl) return null;
+function pmtilesStyleFromUrl(
+  pmtilesUrl: string
+): maplibregl.StyleSpecification | string {
   const u = pmtilesUrl.toLowerCase();
   const isStyleJson =
     (u.endsWith(".json") || u.includes("/styles/") || u.includes("style.json")) &&
@@ -142,7 +150,7 @@ function pmtilesStyle(): maplibregl.StyleSpecification | string | null {
       protomaps: {
         type: "vector",
         url: sourceUrl,
-        attribution: "© OpenStreetMap · PMTiles",
+        attribution: MAP_ATTRIBUTION,
       },
     },
     layers: [
@@ -178,36 +186,54 @@ function pmtilesStyle(): maplibregl.StyleSpecification | string | null {
         source: "protomaps",
         "source-layer": "roads",
         paint: {
-          "line-color": "#6a7a72",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 16, 3],
-        },
-      },
-      {
-        id: "paths",
-        type: "line",
-        source: "protomaps",
-        "source-layer": "roads",
-        filter: ["==", ["get", "kind"], "path"],
-        paint: {
-          "line-color": "#4a7a52",
-          "line-width": 1.5,
-          "line-dasharray": [2, 1],
+          "line-color": [
+            "match",
+            ["get", "kind"],
+            "highway",
+            "#3a4a42",
+            "major_road",
+            "#5c6e66",
+            "#8a9a92",
+          ],
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6,
+            0.3,
+            10,
+            0.8,
+            16,
+            2.2,
+          ],
         },
       },
     ],
   };
 }
 
-/** Web: Stadia first (reliable online), then PMTiles, then OSM. */
-function pickInitialStyle(): {
+function lockedEnvStyle(): maplibregl.StyleSpecification | string | null {
+  const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
+  if (!pmtilesUrl || !envLocksOnlineBasemapStyle(pmtilesUrl)) return null;
+  return pmtilesStyleFromUrl(pmtilesUrl);
+}
+
+/** Web: CDN catalog (named regions) unless env locks a custom style. */
+function pickInitialStyle(
+  lng: number,
+  lat: number
+): {
   style: maplibregl.StyleSpecification | string;
   source: "stadia" | "pmtiles" | "osm";
+  switchable: boolean;
 } {
-  const stadia = stadiaStyleUrl();
-  if (stadia) return { style: stadia, source: "stadia" };
-  const pm = pmtilesStyle();
-  if (pm) return { style: pm, source: "pmtiles" };
-  return { style: osmRasterStyle(), source: "osm" };
+  const locked = lockedEnvStyle();
+  if (locked) return { style: locked, source: "pmtiles", switchable: false };
+  return {
+    style: onlineBasemapStyleUrl(lng, lat),
+    source: "pmtiles",
+    switchable: true,
+  };
 }
 
 function normalizeRoutes(
@@ -242,6 +268,7 @@ export function MapView({
   onOverlayClick,
   onMarkerClick,
   onMapReady,
+  onViewChange,
   onZoomChange,
   fitRoute = false,
   bikeOverlayUrl = null,
@@ -250,6 +277,7 @@ export function MapView({
   bikeOverlayVisible = true,
   bikeOverlayExtraOn = [],
   bikeOverlayRideProfileId = null,
+  bikeOverlayMinZoom,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -261,6 +289,7 @@ export function MapView({
   const onMarkerClickRef = useRef(onMarkerClick);
   const onZoomChangeRef = useRef(onZoomChange);
   const interactiveSelectRef = useRef(interactiveSelect);
+  const onViewChangeRef = useRef(onViewChange);
   const [ready, setReady] = useState(false);
   const [tileSource, setTileSource] = useState<"stadia" | "pmtiles" | "osm">(
     "osm"
@@ -274,13 +303,16 @@ export function MapView({
   onMarkerClickRef.current = onMarkerClick;
   onZoomChangeRef.current = onZoomChange;
   interactiveSelectRef.current = interactiveSelect;
+  onViewChangeRef.current = onViewChange;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     ensurePmtilesProtocol();
 
-    const initial = pickInitialStyle();
+    const initial = pickInitialStyle(center[0], center[1]);
     setTileSource(initial.source);
+    let currentStyleUrl =
+      typeof initial.style === "string" ? initial.style : "";
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -335,10 +367,15 @@ export function MapView({
       window.setTimeout(doResize, 100);
       window.setTimeout(doResize, 400);
       onMapReady?.(map);
+      const c0 = map.getCenter();
+      onViewChangeRef.current?.({
+        center: [c0.lng, c0.lat],
+        zoom: map.getZoom(),
+      });
       onZoomChangeRef.current?.(map.getZoom());
       if (showUserLocation && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
-          new maplibregl.Marker({ color: "#FF6A00" })
+          new maplibregl.Marker({ color: "#FF6B35" })
             .setLngLat([pos.coords.longitude, pos.coords.latitude])
             .addTo(map);
         });
@@ -391,7 +428,22 @@ export function MapView({
     });
 
     map.on("moveend", () => {
+      const c = map.getCenter();
+      onViewChangeRef.current?.({
+        center: [c.lng, c.lat],
+        zoom: map.getZoom(),
+      });
       onZoomChangeRef.current?.(map.getZoom());
+      if (!initial.switchable || fallbackTried.current) return;
+      const next = onlineBasemapStyleUrl(c.lng, c.lat, currentStyleUrl);
+      if (!next || next === currentStyleUrl) return;
+      currentStyleUrl = next;
+      try {
+        map.setStyle(next);
+        setTileSource("pmtiles");
+      } catch (err) {
+        console.warn("[MapView] online basemap switch failed", err);
+      }
     });
 
     map.on("error", (e) => {
@@ -405,6 +457,19 @@ export function MapView({
       // Already on OSM, or overlay-only errors: don't wipe layers with setStyle.
       if (fallbackTried.current || initial.source === "osm") return;
       fallbackTried.current = true;
+      const stadia = stadiaStyleUrl();
+      if (stadia) {
+        setMapError(
+          "Kartenanbieter nicht erreichbar – wechsle auf Stadia-Fallback."
+        );
+        setTileSource("stadia");
+        try {
+          map.setStyle(stadia);
+        } catch (setErr) {
+          console.warn("[MapView] setStyle fallback failed", setErr);
+        }
+        return;
+      }
       setMapError(
         "Kartenanbieter nicht erreichbar – wechsle auf OpenStreetMap-Fallback."
       );
@@ -450,8 +515,16 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !bikeOverlayUrl) return;
+    if (!map || !ready) return;
     const overlayMap = map as unknown as BikeOverlayMapLike;
+    if (!bikeOverlayUrl) {
+      try {
+        removeBikeOverlayLayers(overlayMap);
+      } catch {
+        /* overlay not attached */
+      }
+      return;
+    }
     const apply = () => {
       try {
         addBikeOverlayLayers(overlayMap, {
@@ -461,6 +534,7 @@ export function MapView({
           visible: bikeOverlayVisible,
           extraOn: bikeOverlayExtraOn,
           rideProfileId: bikeOverlayRideProfileId,
+          minzoom: bikeOverlayMinZoom,
         });
       } catch (err) {
         console.warn("[MapView] bike overlay", err);
@@ -479,6 +553,7 @@ export function MapView({
     bikeOverlayVisible,
     bikeOverlayExtraOn,
     bikeOverlayRideProfileId,
+    bikeOverlayMinZoom,
   ]);
 
   useEffect(() => {
@@ -569,7 +644,7 @@ export function MapView({
       upsertLine(
         "track",
         track.map((p) => [p.lng, p.lat]),
-        "#FF6A00",
+        "#FF6B35",
         4,
         0.9
       );
@@ -655,10 +730,10 @@ export function MapView({
 
   const sourceLabel =
     tileSource === "stadia"
-      ? "Stadia Outdoors · © OSM"
+      ? "© OpenStreetMap · Stadia"
       : tileSource === "pmtiles"
-        ? "PMTiles · Offline-fähig"
-        : "OSM-Raster · Fallback";
+        ? MAP_ATTRIBUTION
+        : "© OpenStreetMap";
 
   // Don't combine `relative` + caller's `absolute` on the same node — Tailwind
   // source order can keep `relative`, so the map never fills Discover's pane.

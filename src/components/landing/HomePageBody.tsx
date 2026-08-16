@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import {
+  KartenCoverageFallback,
+  KartenCoverageSection,
+} from "@/components/landing/KartenCoverageSection";
 import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
 import { HOME_FAQ_IDS } from "@/lib/content/homepage";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
@@ -136,6 +141,10 @@ export function HomePageBody() {
           </div>
         </div>
       </section>
+
+      <Suspense fallback={<KartenCoverageFallback />}>
+        <KartenCoverageSection />
+      </Suspense>
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
@@ -482,6 +491,10 @@ export function HomePageCta() {
           {" · "}
           <Link href="/guides" className="text-text-secondary hover:text-chrome hover:underline">
             {chrome.marketingNav["/guides"]}
+          </Link>
+          {" · "}
+          <Link href="/karten" className="text-text-secondary hover:text-chrome hover:underline">
+            {chrome.marketingNav["/karten"]}
           </Link>
           {" · "}
           <Link href="/produkt" className="text-text-secondary hover:text-chrome hover:underline">

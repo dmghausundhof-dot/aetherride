@@ -358,6 +358,20 @@ export function sortCatalogPacks(
   });
 }
 
+export function summarizeOfflinePacks(packs: OfflineCatalogPack[]): {
+  ready: number;
+  stub: number;
+  total: number;
+} {
+  let ready = 0;
+  let stub = 0;
+  for (const p of packs) {
+    if (p.downloadable || p.status === "ready") ready += 1;
+    else stub += 1;
+  }
+  return { ready, stub, total: packs.length };
+}
+
 export async function readOfflineManifest(
   id: string
 ): Promise<OfflinePackManifest | null> {
@@ -440,4 +454,15 @@ export async function listKnownPackIds(): Promise<string[]> {
     if (m) ids.push(id);
   }
   return ids.sort();
+}
+
+export async function listMergedOfflineCatalog(): Promise<OfflineCatalogPack[]> {
+  const ids = await listKnownPackIds();
+  const local: OfflineCatalogPack[] = [];
+  for (const id of ids) {
+    const m = await readOfflineManifest(id);
+    local.push(await toCatalogRow(id, m));
+  }
+  const published = await fetchPublishedCatalog();
+  return sortCatalogPacks(mergeCatalogPreferReady(local, published));
 }

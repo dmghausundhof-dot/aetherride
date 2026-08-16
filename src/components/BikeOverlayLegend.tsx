@@ -15,12 +15,23 @@ import {
   prefersUnratedTrails,
   type RideProfileId,
 } from "@/lib/routing/profiles";
+import { KARTEN_PAGE } from "@/lib/content/kartenCopy";
+
+export function OverlayWaysHint() {
+  return (
+    <div className="max-w-[12rem] rounded-xl bg-black/70 px-2.5 py-2 text-[10px] leading-snug text-white/80 shadow-lg">
+      {KARTEN_PAGE.waysHint}
+    </div>
+  );
+}
 
 export function BikeOverlayLegend({
   family,
   visible,
   extraOn,
   rideProfileId = null,
+  hasOverlayData = true,
+  overlayKind = "ways",
   onToggleVisible,
   onToggleClass,
 }: {
@@ -28,11 +39,15 @@ export function BikeOverlayLegend({
   visible: boolean;
   extraOn: BikeOverlayClass[];
   rideProfileId?: RideProfileId | null;
+  hasOverlayData?: boolean;
+  overlayKind?: "ways" | "mesh";
   onToggleVisible: () => void;
   onToggleClass: (cls: BikeOverlayClass) => void;
 }) {
   const lang = useChromeLang();
   const o = overlayCopy(lang);
+  if (!hasOverlayData) return <OverlayWaysHint />;
+  const mesh = overlayKind === "mesh";
   const primary = new Set(overlayClassesForFamily(family));
   const profileOn = rideProfileId
     ? overlayClassesOn({
@@ -52,17 +67,18 @@ export function BikeOverlayLegend({
         className="mb-1.5 flex w-full items-center justify-between gap-2 font-semibold uppercase tracking-wide text-white/90"
         onClick={onToggleVisible}
       >
-        <span>{o.waysOsm}</span>
+        <span>{mesh ? o.meshOsm : o.waysOsm}</span>
         <span className="normal-case font-normal text-white/70">
           {visible ? o.on : o.off}
         </span>
       </button>
-      {ride && (
+      {ride && !mesh && (
         <p className="mb-1 text-[9px] font-medium text-white/80">
           {ride.shortLabel}
           {scaleOn && scaleOn.length > 0 ? ` · ${scaleOn.join("–")}` : ""}
         </p>
       )}
+      {!mesh && (
       <ul className="flex flex-col gap-1">
         {BIKE_OVERLAY_LEGEND_DE.map((row) => {
           let on =
@@ -90,14 +106,15 @@ export function BikeOverlayLegend({
                   className="inline-block h-0.5 w-3.5 rounded-full"
                   style={{ background: row.color }}
                 />
-                <span>{overlayLegendLabel(row.key, lang)}</span>
+                <span>{overlayLegendLabel(row.key, lang) || row.label}</span>
               </button>
             </li>
           );
         })}
       </ul>
+      )}
       <p className="mt-1.5 max-w-[11rem] text-[9px] leading-snug text-white/55">
-        {o.scaleNote}
+        {mesh ? o.meshNote : o.scaleNote}
       </p>
     </div>
   );

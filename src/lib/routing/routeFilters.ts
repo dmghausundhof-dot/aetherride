@@ -5,7 +5,9 @@
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { isHonestLoopSuggestion } from "@/lib/discover/loopHonesty";
-import type { VisibilityScope } from "@/lib/tours/routeVisibility";
+
+/** Filter in Mappe / Discover-Listen. */
+export type VisibilityScope = "all_mine" | "private" | "shared";
 
 /** Generische Beanspruchung — Labels sportabhängig via difficultyOptionsForProfile */
 export type ScaleChip = "any" | "easy" | "mid" | "hard";

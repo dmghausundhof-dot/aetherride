@@ -170,6 +170,52 @@ BikeOverlayClassification classifyBikeWay(Map<String, String?> tags) {
   return const BikeOverlayClassification(bikeClass: BikeOverlayClass.hidden);
 }
 
+String _bikeRouteNetwork(Map<String, String?> tags) {
+  final route = _tag(tags, 'route');
+  final network = _tag(tags, 'network');
+  final ref = (tags['ref'] ?? '').toUpperCase().replaceAll(RegExp(r'\s+'), '');
+  if (network.contains('icn')) return 'icn';
+  if (network.contains('ncn')) return 'ncn';
+  if (network.contains('rcn')) return 'rcn';
+  if (network.contains('lcn')) return 'lcn';
+  if (RegExp(r'^EV\d').hasMatch(ref) ||
+      ref.startsWith('CDP') ||
+      RegExp(r'^D-?ROUTE').hasMatch(ref)) {
+    return 'icn';
+  }
+  if (route == 'mtb') return 'mtb';
+  return '';
+}
+
+BikeOverlayClassification classifyBikeRoute(Map<String, String?> tags) {
+  final route = _tag(tags, 'route');
+  final network = _bikeRouteNetwork(tags);
+  if (route == 'mtb' || network == 'mtb') {
+    return BikeOverlayClassification(
+      bikeClass: BikeOverlayClass.mtb,
+      mtbScale: parseOsmMtbScale(tags['mtb:scale'], tags['mtb:scale:imba']),
+    );
+  }
+  if (route != 'bicycle' && route != 'cycling') {
+    return const BikeOverlayClassification(bikeClass: BikeOverlayClass.hidden);
+  }
+  if (network == 'lcn') {
+    return const BikeOverlayClassification(bikeClass: BikeOverlayClass.urban);
+  }
+  if (network == 'icn' || network == 'ncn' || network == 'rcn') {
+    return const BikeOverlayClassification(bikeClass: BikeOverlayClass.road);
+  }
+  return const BikeOverlayClassification(bikeClass: BikeOverlayClass.hidden);
+}
+
+bool keepSignedCycleMesh(Map<String, String?> tags) {
+  if (classifyBikeRoute(tags).bikeClass == BikeOverlayClass.hidden) {
+    return false;
+  }
+  final network = _bikeRouteNetwork(tags);
+  return network == 'icn' || network == 'ncn' || network == 'rcn';
+}
+
 BikeOverlayFamily overlayFamilyForBike(BikeCategory category) =>
     switch (category) {
       BikeCategory.mtbTrail ||

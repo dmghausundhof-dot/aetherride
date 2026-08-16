@@ -10,13 +10,43 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import 'map_style_url.dart';
 import 'offline_tiles.dart';
 import 'overlay_regions.dart';
 import 'sgrade_live.dart';
 
 const kBikeOverlaySourceId = 'bike-overlay';
 const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
+const kBikeOverlayPmtilesName = 'bike-overlay.pmtiles';
 const kBikeOverlaySampleAsset = 'assets/routing/bike-overlay-sample.geojson';
+
+/// Past the z11 atlas: pack ways replace the signed cycle mesh.
+const kBikeWaysMinZoom = 12.0;
+
+/// Region packs that already publish a way-level bike-overlay on the CDN.
+const kDetailBikeOverlayPacks = <String>{
+  'rhein-neckar',
+  'schwarzwald-nord',
+  'vosges',
+  'innsbruck',
+  'kitzbuehel',
+  'zermatt',
+  'davos',
+  'st-moritz',
+  'interlaken',
+  'morzine',
+  'annecy',
+  'lyon',
+  'paris',
+};
+
+enum OnlineBikeOverlayKind { ways, mesh, none }
+
+class OnlineBikeOverlayChoice {
+  const OnlineBikeOverlayChoice({required this.kind, this.url});
+  final OnlineBikeOverlayKind kind;
+  final String? url;
+}
 
 const kBikeOverlayLayerIds = <BikeOverlayClass, String>{
   BikeOverlayClass.mtb: 'bike-overlay-mtb',
@@ -50,9 +80,62 @@ bool pointInRheinNeckar(double lng, double lat) =>
     lng <= rheinNeckarBbox[2] &&
     lat <= rheinNeckarBbox[3];
 
+/// True when a signed cycle-route mesh exists for the Blatt under the camera.
+bool pointInOnlineCycleMesh(double lng, double lat) =>
+    onlineCycleMeshPmtilesUrlForPoint(lng, lat) != null;
+
+String? detailOverlayPackIdForPoint(double lng, double lat) {
+  final hits = [
+    for (final r in kOverlayRegions)
+      if (r.contains(lng, lat) && kDetailBikeOverlayPacks.contains(r.id)) r,
+  ];
+  if (hits.isEmpty) return null;
+  hits.sort((a, b) {
+    final aa = (a.bbox[2] - a.bbox[0]) * (a.bbox[3] - a.bbox[1]);
+    final bb = (b.bbox[2] - b.bbox[0]) * (b.bbox[3] - b.bbox[1]);
+    return aa.compareTo(bb);
+  });
+  return hits.first.id;
+}
+
+OnlineBikeOverlayChoice chooseOnlineBikeOverlay({
+  required double lng,
+  required double lat,
+  required double zoom,
+}) {
+  final packId = detailOverlayPackIdForPoint(lng, lat);
+  if (packId != null && zoom >= kBikeWaysMinZoom) {
+    return OnlineBikeOverlayChoice(
+      kind: OnlineBikeOverlayKind.ways,
+      url: AppConfig.offlinePackObjectUrl(packId, kBikeOverlayPmtilesName),
+    );
+  }
+  final meshUrl = onlineCycleMeshPmtilesUrlForPoint(lng, lat);
+  if (meshUrl != null) {
+    return OnlineBikeOverlayChoice(
+      kind: OnlineBikeOverlayKind.mesh,
+      url: meshUrl,
+    );
+  }
+  return const OnlineBikeOverlayChoice(kind: OnlineBikeOverlayKind.none);
+}
+
+/// True when a cycle-mesh or city-pack overlay exists for this view.
+bool overlayDataExpectedAt(double lng, double lat, {double zoom = 12}) {
+  return chooseOnlineBikeOverlay(lng: lng, lat: lat, zoom: zoom).kind !=
+      OnlineBikeOverlayKind.none;
+}
+
+bool _isPmtilesOverlay(Object data) {
+  if (data is! String) return false;
+  final u = data.toLowerCase();
+  return u.contains('.pmtiles') || u.startsWith('pmtiles://');
+}
+
 Future<Object?> resolveBikeOverlayData({
   required double lng,
   required double lat,
+  double zoom = 12,
 }) async {
   final region = overlayRegionForPoint(lng, lat);
   if (region != null) {
@@ -67,6 +150,7 @@ Future<Object?> resolveBikeOverlayData({
     } catch (_) {}
   }
 
+  final choice = chooseOnlineBikeOverlay(lng: lng, lat: lat, zoom: zoom);
   final packDir = await OfflineTilesStore.instance.ensureTilesPath(
     bundledFallback: false,
   );
@@ -75,6 +159,9 @@ Future<Object?> resolveBikeOverlayData({
     if (await local.exists() && await local.length() > 20) {
       return Uri.file(local.absolute.path).toString();
     }
+  }
+  if (choice.kind == OnlineBikeOverlayKind.ways) {
+    return choice.url;
   }
 
   if (region != null) {
@@ -112,9 +199,12 @@ Future<Object?> resolveBikeOverlayData({
       } catch (_) {}
     }
   }
+  if (choice.kind == OnlineBikeOverlayKind.mesh) {
+    return choice.url;
+  }
 
   // Sample overlay is Rhein-Neckar geometry — never show it in Wien/Hamburg.
-  if (pointInRheinNeckar(lng, lat)) {
+  if (pointInRheinNeckar(lng, lat) && zoom >= kBikeWaysMinZoom) {
     try {
       final raw = await rootBundle.loadString(kBikeOverlaySampleAsset);
       if (raw.trim().isEmpty || raw.contains('"features":[]')) {
@@ -324,6 +414,17 @@ Future<void> setSGradeLiveData(
   }
 }
 
+Future<void> detachBikeOverlayLayers(MapLibreMapController c) async {
+  for (final id in kBikeOverlayLayerIds.values) {
+    try {
+      await c.removeLayer(id);
+    } catch (_) {}
+  }
+  try {
+    await c.removeSource(kBikeOverlaySourceId);
+  } catch (_) {}
+}
+
 Future<void> attachBikeOverlayLayers(
   MapLibreMapController c, {
   required Object data,
@@ -332,14 +433,26 @@ Future<void> attachBikeOverlayLayers(
   required Set<BikeOverlayClass> extraOn,
   bool sGradeOnly = false,
 }) async {
+  final pmtiles = _isPmtilesOverlay(data);
   try {
-    await c.addSource(
-      kBikeOverlaySourceId,
-      GeojsonSourceProperties(
-        data: data,
-        attribution: '© OpenStreetMap',
-      ),
-    );
+    if (pmtiles) {
+      final raw = data.toString();
+      await c.addSource(
+        kBikeOverlaySourceId,
+        VectorSourceProperties(
+          url: raw.startsWith('pmtiles://') ? raw : 'pmtiles://$raw',
+          attribution: '© OpenStreetMap',
+        ),
+      );
+    } else {
+      await c.addSource(
+        kBikeOverlaySourceId,
+        GeojsonSourceProperties(
+          data: data,
+          attribution: '© OpenStreetMap',
+        ),
+      );
+    }
   } catch (_) {
     // Source already present after a partial attach.
   }
@@ -370,7 +483,8 @@ Future<void> attachBikeOverlayLayers(
           ['get', 'bike_class'],
           classId,
         ],
-        minzoom: minzoom,
+        sourceLayer: pmtiles ? 'bike' : null,
+        minzoom: classId == 'road' || classId == 'mtb' ? 5 : minzoom,
       );
     } catch (_) {}
   }

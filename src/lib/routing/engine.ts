@@ -31,6 +31,7 @@ import {
   fetchOrsRoute,
   isOrsConfigured,
   orsPreferredForGraphhopperBasic,
+  orsProfileFor,
   type OrsExtras,
 } from "@/lib/routing/openRouteService";
 import {
@@ -54,6 +55,30 @@ export type RoutingEngineKind =
   | "openrouteservice"
   | "demo"
   | "editorial";
+
+/** Live DACH engines the rider can pick. Offline Valhalla/OSRM stay fallbacks. */
+export type SelectableRoutingEngine = "graphhopper" | "openrouteservice";
+
+export const SELECTABLE_ROUTING_ENGINES: SelectableRoutingEngine[] = [
+  "graphhopper",
+  "openrouteservice",
+];
+
+export type ComputeRouteOptions = {
+  /** Per-request picker. Does not rewrite costing (auto stays car / driving-car). */
+  engine?: string | null;
+  /**
+   * Gravity/access legs (GPS→trailhead). Skip OSM trail/cycleway splice so
+   * a walk/drive does not become the DH trail.
+   */
+  accessLeg?: boolean;
+};
+
+export type ResolvedRouteEngine = {
+  kind: RoutingEngineKind;
+  requested?: RoutingEngineKind;
+  fallback: boolean;
+};
 
 export type RouteResult = {
   distanceM: number;
@@ -104,10 +129,11 @@ function engine(): RoutingEngineKind {
 }
 
 /**
- * Per-request engine. Explicit ROUTING_ENGINE wins.
+ * Hybrid default (no picker). Explicit ROUTING_ENGINE wins.
  * If GraphHopper is primary but Basic (no extended profiles) and ORS is
  * configured, mtb/gravel/enduro go to OpenRouteService — that is the DACH
  * cycling engine GraphHopper Basic cannot express.
+ * Costing stays on `profile`; this never maps auto→bike.
  */
 function engineForProfile(profile: RoutingProfile): RoutingEngineKind {
   if (profile === "auto") {
@@ -133,6 +159,76 @@ function engineForProfile(profile: RoutingProfile): RoutingEngineKind {
     return "openrouteservice";
   }
   return primary;
+}
+
+export function parseRoutingEngineParam(
+  raw: string | null | undefined
+): RoutingEngineKind | undefined {
+  if (!raw) return undefined;
+  const e = raw.trim().toLowerCase();
+  if (e === "graphhopper" || e === "gh") return "graphhopper";
+  if (e === "openrouteservice" || e === "ors") return "openrouteservice";
+  if (e === "valhalla") return "valhalla";
+  if (e === "osrm") return "osrm";
+  return undefined;
+}
+
+export function engineIsConfigured(kind: RoutingEngineKind): boolean {
+  switch (kind) {
+    case "graphhopper":
+      return Boolean(process.env.GRAPHHOPPER_API_KEY?.trim());
+    case "openrouteservice":
+      return isOrsConfigured();
+    case "valhalla":
+      return Boolean(process.env.VALHALLA_URL?.trim());
+    case "osrm":
+      return Boolean(process.env.OSRM_URL?.trim()) || publicOsrmAllowed();
+    default:
+      return false;
+  }
+}
+
+/**
+ * Native costing name for a sport/access profile on one engine.
+ * Profile (what) is chosen first; engine (who) only translates it.
+ */
+export function nativeCostingFor(
+  profile: RoutingProfile,
+  engineKind: RoutingEngineKind
+): string {
+  switch (engineKind) {
+    case "graphhopper":
+      return graphhopperProfile(profile);
+    case "openrouteservice":
+      return orsProfileFor(profile);
+    case "valhalla":
+      return valhallaCosting(profile).costing;
+    case "osrm":
+      return osrmProfile(profile);
+    default:
+      return profile;
+  }
+}
+
+/**
+ * Picker wins over hybrid. Unconfigured pick falls back instead of
+ * silently rewriting auto→bike or gravity approach→downhill bicycle.
+ */
+export function resolveRouteEngine(
+  profile: RoutingProfile,
+  explicit?: RoutingEngineKind
+): ResolvedRouteEngine {
+  if (explicit && explicit !== "demo" && explicit !== "editorial") {
+    if (engineIsConfigured(explicit)) {
+      return { kind: explicit, requested: explicit, fallback: false };
+    }
+    return {
+      kind: engineForProfile(profile),
+      requested: explicit,
+      fallback: true,
+    };
+  }
+  return { kind: engineForProfile(profile), fallback: false };
 }
 
 function baseUrl(kind: "valhalla" | "osrm"): string | null {
@@ -691,8 +787,11 @@ async function maybeEnrichCorridorTrail(
   result: RouteResult,
   from: [number, number],
   to: [number, number],
-  vias: [number, number][]
+  vias: [number, number][],
+  accessLeg = false
 ): Promise<RouteResult> {
+  if (accessLeg) return result;
+  if (result.profile === "auto") return result;
   if (!trailCorridorSnapEnabled()) return result;
   if (vias.length > 0) return result;
   if (result.engine === "demo") return result;
@@ -740,11 +839,16 @@ export async function computeRoute(
   from: [number, number],
   to: [number, number],
   vias: [number, number][] = [],
-  lang: ChromeLang | string = "de"
+  lang: ChromeLang | string = "de",
+  opts?: ComputeRouteOptions
 ): Promise<RouteResult> {
   const language = chromeLangFrom(lang);
   const points = [from, ...vias, to];
-  const kind = engineForProfile(profile);
+  const resolved = resolveRouteEngine(
+    profile,
+    parseRoutingEngineParam(opts?.engine)
+  );
+  const kind = resolved.kind;
   if (kind === "demo") {
     if (allowDemoContent()) return demoRoute(profile, from, to);
     throw new Error(
@@ -758,9 +862,11 @@ export async function computeRoute(
       try {
         result = await routeOpenRouteService(profile, points, language);
       } catch (orsErr) {
-        const explicit = (process.env.ROUTING_ENGINE || "").toLowerCase();
+        const envEngine = (process.env.ROUTING_ENGINE || "").toLowerCase();
         const orsForced =
-          explicit === "openrouteservice" || explicit === "ors";
+          resolved.requested === "openrouteservice" ||
+          envEngine === "openrouteservice" ||
+          envEngine === "ors";
         if (!orsForced && process.env.GRAPHHOPPER_API_KEY?.trim()) {
           const gh = await routeGraphhopper(profile, points, language);
           const msg =
@@ -809,7 +915,22 @@ export async function computeRoute(
       // OSRM: multi-waypoint in one request
       result = await routeOsrm(profile, from, to, vias);
     }
-    return await maybeEnrichCorridorTrail(result, from, to, vias);
+    if (resolved.fallback && resolved.requested) {
+      result = {
+        ...result,
+        warnings: [
+          `Engine ${resolved.requested} nicht konfiguriert — ${result.engine}.`,
+          ...(result.warnings ?? []),
+        ],
+      };
+    }
+    return await maybeEnrichCorridorTrail(
+      result,
+      from,
+      to,
+      vias,
+      opts?.accessLeg === true
+    );
   } catch (e) {
     // Production: fail-closed — never invent geometry after a live failure.
     if (allowDemoContent()) {

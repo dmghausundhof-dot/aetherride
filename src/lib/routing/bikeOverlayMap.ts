@@ -92,8 +92,10 @@ const LAYER_PAINT: LinePaint[] = [
 export type BikeOverlayMapLike = {
   getSource: (id: string) => unknown;
   addSource: (id: string, spec: unknown) => void;
+  removeSource?: (id: string) => void;
   getLayer: (id: string) => unknown;
   addLayer: (spec: object) => void;
+  removeLayer?: (id: string) => void;
   setLayoutProperty: (id: string, key: string, value: unknown) => void;
   setPaintProperty: (id: string, key: string, value: unknown) => void;
   setFilter: (id: string, filter: unknown) => void;
@@ -158,12 +160,27 @@ export function overlayClassesOn(opts: BikeOverlayApplyOpts): Set<string> {
     if (!(opts.extraOn ?? []).includes("mtb")) on.delete("mtb");
     if (!(opts.extraOn ?? []).includes("mtb_unrated")) on.delete("mtb_unrated");
   }
-  if (p.category === "gravel") on.add("gravel");
+  if (p.category === "gravel" || p.category === "ebike") {
+    on.add("gravel");
+    on.add("road");
+  }
   if (p.category === "hike") {
     on.add("mtb");
     on.add("mtb_unrated");
   }
   return on;
+}
+
+let lastOverlaySourceKey = "";
+
+export function removeBikeOverlayLayers(map: BikeOverlayMapLike) {
+  for (const layer of LAYER_PAINT) {
+    if (map.getLayer(layer.id)) map.removeLayer?.(layer.id);
+  }
+  if (map.getSource(BIKE_OVERLAY_SOURCE_ID)) {
+    map.removeSource?.(BIKE_OVERLAY_SOURCE_ID);
+  }
+  lastOverlaySourceKey = "";
 }
 
 export function addBikeOverlayLayers(
@@ -175,8 +192,19 @@ export function addBikeOverlayLayers(
     visible: boolean;
     extraOn?: BikeOverlayClass[];
     rideProfileId?: RideProfileId | null;
+    /** Ways tiles start ~z10; signed mesh can show from atlas zoom. */
+    minzoom?: number;
   }
 ) {
+  const sourceKey = `${opts.kind}:${opts.url}`;
+  if (
+    map.getSource(BIKE_OVERLAY_SOURCE_ID) &&
+    lastOverlaySourceKey &&
+    lastOverlaySourceKey !== sourceKey
+  ) {
+    removeBikeOverlayLayers(map);
+  }
+
   if (!map.getSource(BIKE_OVERLAY_SOURCE_ID)) {
     if (opts.kind === "pmtiles") {
       const url = opts.url.startsWith("pmtiles://")
@@ -194,6 +222,7 @@ export function addBikeOverlayLayers(
         attribution: "© OpenStreetMap",
       });
     }
+    lastOverlaySourceKey = sourceKey;
   }
 
   const sourceLayer =
@@ -207,6 +236,9 @@ export function addBikeOverlayLayers(
       source: BIKE_OVERLAY_SOURCE_ID,
       ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
       filter: layer.filter,
+      minzoom:
+        opts.minzoom ??
+        (layer.cls === "road" || layer.cls === "mtb" ? 5 : 9),
       layout: {
         "line-cap": "round",
         "line-join": "round",
@@ -218,6 +250,8 @@ export function addBikeOverlayLayers(
           "interpolate",
           ["linear"],
           ["zoom"],
+          5,
+          layer.width * 0.55,
           10,
           layer.width * 0.85,
           14,
@@ -271,6 +305,8 @@ export function applyBikeOverlayVisibility(
       "interpolate",
       ["linear"],
       ["zoom"],
+      5,
+      width * 0.55,
       10,
       width * 0.85,
       14,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../data/routing/map_style_url.dart';
 import '../data/routing/offline_maps_prefs.dart';
+import '../data/routing/offline_pmtiles_store.dart';
 
 abstract final class AppConfig {
   static const supabaseUrl = String.fromEnvironment(
@@ -37,22 +38,34 @@ abstract final class AppConfig {
   }
 
   /// Public DACH MapLibre style (JSON with pmtiles:// source). Not a secret.
-  static const dachBasemapStyleUrl =
-      'https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/basemap/dach-z11-style.json';
+  static const dachBasemapStyleUrl = kDachBasemapStyleUrl;
 
-  static const franceWestBasemapStyleUrl =
-      'https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/basemap/france-west-z11-style.json';
+  static const franceWestBasemapStyleUrl = kFranceWestBasemapStyleUrl;
+
+  static const alpsSouthBasemapStyleUrl = kAlpsSouthBasemapStyleUrl;
+
+  static const beneluxBasemapStyleUrl = kBeneluxBasemapStyleUrl;
+
+  static const italyNorthBasemapStyleUrl = kItalyNorthBasemapStyleUrl;
+
+  static const italyCenterBasemapStyleUrl = kItalyCenterBasemapStyleUrl;
+
+  static const italySouthBasemapStyleUrl = kItalySouthBasemapStyleUrl;
+
+  static const cataloniaPyreneesBasemapStyleUrl =
+      kCataloniaPyreneesBasemapStyleUrl;
+
+  static const ukSouthBasemapStyleUrl = kUkSouthBasemapStyleUrl;
 
   static String get offlinePacksCdnRoot {
     final base = supabaseUrl.replaceAll(RegExp(r'/$'), '');
-    if (base.isEmpty) {
-      return 'https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs';
-    }
+    if (base.isEmpty) return kOfflinePacksPublicCdnRoot;
     return '$base/storage/v1/object/public/offline-packs';
   }
 
-  /// Compile-time override. Empty or overview-only (DACH z11) is ignored
-  /// for the live map — [mapStyleUrl] then uses Stadia / Liberty.
+  /// Compile-time override. Empty → [dachBasemapStyleUrl]; Discover/Ride then
+  /// switch among the CDN catalog (DACH, FR-west, Alps-south, Benelux,
+  /// Italy-north/center/south, Catalonia/Pyrenees, UK-south) by camera/GPS bbox.
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
     defaultValue: '',
@@ -178,24 +191,29 @@ abstract final class AppConfig {
   static String get impressumUrl => '$apiBaseUrl/legal/impressum';
   static String get widerrufUrl => '$apiBaseUrl/legal/widerruf';
 
-  /// Live street map: dart-define street style → Stadia OSM Bright →
-  /// OpenFreeMap Bright. DACH/FR z11 PMTiles is offline-only (no streets
-  /// at HUD zoom). Outdoors/Liberty hide residential as white-on-beige.
-  /// Native MapLibre braucht Style-JSON, kein rohes `.pmtiles`.
+  /// Live Discover/Ride: street-level Stadia Bright / OpenFreeMap Bright.
+  /// Overview PMTiles (DACH z11 catalog) stay offline-only.
   static String get mapStyleUrl => liveMapStyleUrl(
         pmtilesOrStyleUrl: pmtilesUrl,
         stadiaApiKey: stadiaApiKey,
       );
 
-  /// Prefs may point at a custom street-level style. Overview packs (CDN or
-  /// local `dach-z11-style.json`) stay offline-only and do not replace this.
+  /// Runtime: Prefs-Override → lokale PMTiles-Style-Datei → CDN (DACH/FR).
   static Future<String> resolveMapStyleUrl() async {
     try {
       final m = await OfflineMapsPrefs.read();
       final override = (m['pmtilesUrl'] as String?)?.trim() ?? '';
-      if (override.isNotEmpty && isStreetLevelBasemap(override)) {
+      if (override.isNotEmpty &&
+          (override.endsWith('.json') ||
+              override.contains('/styles/') ||
+              override.contains('style.json'))) {
         return override;
       }
+      final bbox = OfflineMapsPrefs.packBboxFrom(m);
+      return await OfflinePmtilesStore.resolveStyleUrl(
+        remoteFallback: mapStyleUrl,
+        packBbox: bbox,
+      );
     } catch (_) {}
     return mapStyleUrl;
   }
@@ -208,4 +226,7 @@ abstract final class AppConfig {
 
   static String offlinePackObjectUrl(String regionId, String file) =>
       '$offlinePacksCdnRoot/$regionId/$file';
+
+  static const onlineCycleMeshPmtilesUrl = kOnlineCycleMeshPmtilesUrl;
+  static const onlineCycleMeshGeojsonUrl = kOnlineCycleMeshGeojsonUrl;
 }

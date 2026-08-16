@@ -486,7 +486,9 @@ export async function snapToTourParts(
     const approach = await requestRoute(
       accessCostingForRideProfile(profile),
       userStart,
-      entry
+      entry,
+      [],
+      { accessLeg: true }
     );
     if (!approach) return null;
     return {
@@ -515,7 +517,9 @@ export async function snapToTourParts(
   const approach = await requestRoute(
     accessCostingForRideProfile(profile),
     userStart,
-    entry
+    entry,
+    [],
+    { accessLeg: true }
   );
   const tourPart: ClientRouteResult = {
     distanceM: (tour.distanceKm ?? 20) * 1000,
@@ -665,7 +669,9 @@ export async function attachTrailToDraft(
   const access = opts?.accessProfile ?? accessCostingForRideProfile(profile);
   const gravityAccess = access === "auto" || access === "hiking";
 
-  const approach = await requestRoute(access, origin, entry);
+  const approach = await requestRoute(access, origin, entry, [], {
+    accessLeg: true,
+  });
   const trailPart = trailEnginePart(segment.name, trailGeom, profile);
 
   const parts: ClientRouteResult[] = [];

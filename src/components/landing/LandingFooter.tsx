@@ -10,6 +10,7 @@ import { legalContactEmail } from "@/lib/legal/siteLegal";
 import { webChrome } from "@/lib/i18n/webChrome";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { useHofTitle } from "@/hooks/useHofTitle";
+import { MAP_ATTRIBUTION_HREF } from "@/lib/map/onlineBasemap";
 
 export function LandingFooter() {
   const email = legalContactEmail();
@@ -180,6 +181,24 @@ export function LandingFooter() {
 
         <p className="mt-10 text-center text-xs text-text-secondary">
           © {new Date().getFullYear()} FlowLine. {copy.footerLegalLine}
+        </p>
+        <p className="mt-3 text-center text-xs text-text-secondary">
+          Karten:{" "}
+          <a
+            href={MAP_ATTRIBUTION_HREF.osm}
+            className="hover:text-foreground"
+            rel="noreferrer"
+          >
+            © OpenStreetMap
+          </a>
+          {" · "}
+          <a
+            href={MAP_ATTRIBUTION_HREF.protomaps}
+            className="hover:text-foreground"
+            rel="noreferrer"
+          >
+            Protomaps
+          </a>
         </p>
       </div>
     </footer>

@@ -5,6 +5,13 @@
  */
 
 import dachRaw from "../../../data/routing/dach-regions.json";
+import {
+  detailBikeOverlayPmtilesUrl,
+  ONLINE_PACK_CDN_ROOT,
+  onlineCycleMeshGeojsonUrl,
+  onlineCycleMeshPmtilesUrl,
+  packHasDetailBikeOverlay,
+} from "../map/onlineCycleMesh";
 import { pointInDach } from "./dach";
 
 export type DachRegionKind = "pack" | "envelope";
@@ -75,6 +82,18 @@ export function dachRegionForPoint(
   return null;
 }
 
+/** Smallest Hausberg pack with a CDN ways overlay covering this point. */
+export function detailOverlayRegionIdForPoint(
+  lng: number,
+  lat: number
+): string | null {
+  const hits = DACH_PACK_REGIONS.filter(
+    (r) => pointInBbox(lng, lat, r.bbox) && packHasDetailBikeOverlay(r.id)
+  );
+  if (!hits.length) return null;
+  return smallestHit(hits).id;
+}
+
 export type OverlayMode = "region_pack" | "dach_live" | "live_osm";
 
 export type OverlayHint = {
@@ -86,19 +105,35 @@ export type OverlayHint = {
   geojsonPath: string | null;
 };
 
+function meshPaths(lng: number, lat: number): {
+  pmtilesPath: string | null;
+  geojsonPath: string | null;
+} {
+  return {
+    pmtilesPath: onlineCycleMeshPmtilesUrl(lng, lat),
+    geojsonPath: onlineCycleMeshGeojsonUrl(lng, lat),
+  };
+}
+
 export function overlayHintFromRegistry(
   lng: number,
   lat: number
 ): OverlayHint {
   const region = dachRegionForPoint(lng, lat);
+  const mesh = meshPaths(lng, lat);
   if (region?.kind === "pack") {
+    const detail = packHasDetailBikeOverlay(region.id);
     return {
       regionId: region.id,
       regionName: region.name,
       mode: "region_pack",
       kind: "pack",
-      pmtilesPath: `/api/offline/packs/${region.id}/bike-overlay.pmtiles`,
-      geojsonPath: `/api/offline/packs/${region.id}/bike-overlay.geojson`,
+      pmtilesPath: detail
+        ? detailBikeOverlayPmtilesUrl(region.id)
+        : mesh.pmtilesPath,
+      geojsonPath: detail
+        ? `${ONLINE_PACK_CDN_ROOT}/${region.id}/bike-overlay.geojson`
+        : mesh.geojsonPath,
     };
   }
   if (region?.kind === "envelope") {
@@ -107,8 +142,7 @@ export function overlayHintFromRegistry(
       regionName: region.name,
       mode: "dach_live",
       kind: "envelope",
-      pmtilesPath: null,
-      geojsonPath: null,
+      ...mesh,
     };
   }
   if (pointInDach(lat, lng)) {
@@ -117,8 +151,16 @@ export function overlayHintFromRegistry(
       regionName: "DACH live",
       mode: "dach_live",
       kind: null,
-      pmtilesPath: null,
-      geojsonPath: null,
+      ...mesh,
+    };
+  }
+  if (mesh.pmtilesPath) {
+    return {
+      regionId: "cycle-mesh",
+      regionName: "Radnetz",
+      mode: "live_osm",
+      kind: null,
+      ...mesh,
     };
   }
   return {

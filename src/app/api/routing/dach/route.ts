@@ -6,6 +6,7 @@ import {
 import {
   configuredEngineForProfile,
   configuredRoutingEngine,
+  graphhopperProfile,
   isLiveRoutingConfigured,
 } from "@/lib/routing/engine";
 import { isOrsConfigured, orsProfileFor } from "@/lib/routing/openRouteService";
@@ -14,6 +15,7 @@ import { listProfiles, type RoutingProfile } from "@/lib/routing/profiles";
 const PROFILES: RoutingProfile[] = [
   ...listProfiles().map((p) => p.id),
   "urban",
+  "auto",
 ];
 
 /**
@@ -37,6 +39,7 @@ export async function GET() {
         p,
         {
           engine: configuredEngineForProfile(p),
+          graphhopperProfile: graphhopperProfile(p),
           orsProfile: orsProfileFor(p),
         },
       ])
