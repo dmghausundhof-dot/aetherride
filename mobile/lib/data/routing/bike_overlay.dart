@@ -15,7 +15,11 @@ import 'overlay_regions.dart';
 
 const kBikeOverlaySourceId = 'bike-overlay';
 const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
+const kBikeOverlayPmtilesName = 'bike-overlay.pmtiles';
 const kBikeOverlaySampleAsset = 'assets/routing/bike-overlay-sample.geojson';
+
+/// Past the z11 atlas: pack ways replace the signed cycle mesh.
+const kBikeWaysMinZoom = 12.0;
 
 /// Region packs that already publish a way-level bike-overlay on the CDN.
 const kDetailBikeOverlayPacks = <String>{
@@ -30,6 +34,14 @@ const kDetailBikeOverlayPacks = <String>{
   'interlaken',
   'morzine',
 };
+
+enum OnlineBikeOverlayKind { ways, mesh, none }
+
+class OnlineBikeOverlayChoice {
+  const OnlineBikeOverlayChoice({required this.kind, this.url});
+  final OnlineBikeOverlayKind kind;
+  final String? url;
+}
 
 const kBikeOverlayLayerIds = <BikeOverlayClass, String>{
   BikeOverlayClass.mtb: 'bike-overlay-mtb',
@@ -52,12 +64,45 @@ bool pointInRheinNeckar(double lng, double lat) =>
 bool pointInOnlineCycleMesh(double lng, double lat) =>
     lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
 
-/// True when a cycle-mesh or city-pack overlay exists for this point.
-bool overlayDataExpectedAt(double lng, double lat) {
-  if (pointInOnlineCycleMesh(lng, lat)) return true;
-  if (pointInRheinNeckar(lng, lat)) return true;
-  final region = overlayRegionForPoint(lng, lat);
-  return region != null && kDetailBikeOverlayPacks.contains(region.id);
+String? detailOverlayPackIdForPoint(double lng, double lat) {
+  final hits = [
+    for (final r in kOverlayRegions)
+      if (r.contains(lng, lat) && kDetailBikeOverlayPacks.contains(r.id)) r,
+  ];
+  if (hits.isEmpty) return null;
+  hits.sort((a, b) {
+    final aa = (a.bbox[2] - a.bbox[0]) * (a.bbox[3] - a.bbox[1]);
+    final bb = (b.bbox[2] - b.bbox[0]) * (b.bbox[3] - b.bbox[1]);
+    return aa.compareTo(bb);
+  });
+  return hits.first.id;
+}
+
+OnlineBikeOverlayChoice chooseOnlineBikeOverlay({
+  required double lng,
+  required double lat,
+  required double zoom,
+}) {
+  final packId = detailOverlayPackIdForPoint(lng, lat);
+  if (packId != null && zoom >= kBikeWaysMinZoom) {
+    return OnlineBikeOverlayChoice(
+      kind: OnlineBikeOverlayKind.ways,
+      url: AppConfig.offlinePackObjectUrl(packId, kBikeOverlayPmtilesName),
+    );
+  }
+  if (pointInOnlineCycleMesh(lng, lat)) {
+    return const OnlineBikeOverlayChoice(
+      kind: OnlineBikeOverlayKind.mesh,
+      url: kOnlineCycleMeshPmtilesUrl,
+    );
+  }
+  return const OnlineBikeOverlayChoice(kind: OnlineBikeOverlayKind.none);
+}
+
+/// True when a cycle-mesh or city-pack overlay exists for this view.
+bool overlayDataExpectedAt(double lng, double lat, {double zoom = 12}) {
+  return chooseOnlineBikeOverlay(lng: lng, lat: lat, zoom: zoom).kind !=
+      OnlineBikeOverlayKind.none;
 }
 
 bool _isPmtilesOverlay(Object data) {
@@ -69,47 +114,25 @@ bool _isPmtilesOverlay(Object data) {
 Future<Object?> resolveBikeOverlayData({
   required double lng,
   required double lat,
+  double zoom = 12,
 }) async {
-  final packDir = await OfflineTilesStore.instance.ensureTilesPath();
-  if (packDir != null) {
-    final local = File(p.join(packDir, kBikeOverlayGeojsonName));
-    if (await local.exists() && await local.length() > 20) {
-      return Uri.file(local.absolute.path).toString();
+  final choice = chooseOnlineBikeOverlay(lng: lng, lat: lat, zoom: zoom);
+  if (choice.kind == OnlineBikeOverlayKind.ways) {
+    final packDir = await OfflineTilesStore.instance.ensureTilesPath();
+    if (packDir != null) {
+      final local = File(p.join(packDir, kBikeOverlayGeojsonName));
+      if (await local.exists() && await local.length() > 20) {
+        return Uri.file(local.absolute.path).toString();
+      }
     }
+    return choice.url;
   }
-
-  final region = overlayRegionForPoint(lng, lat);
-  if (region != null && kDetailBikeOverlayPacks.contains(region.id)) {
-    final urls = [
-      Uri.parse(AppConfig.offlinePackObjectUrl(region.id, kBikeOverlayGeojsonName)),
-      Uri.parse(
-        '${AppConfig.apiBaseUrl}/api/offline/packs/${region.id}/$kBikeOverlayGeojsonName',
-      ),
-      Uri.parse(
-        '${AppConfig.apiBaseUrl}/offline/${region.id}/$kBikeOverlayGeojsonName',
-      ),
-    ];
-    for (final url in urls) {
-      try {
-        final res = await http.get(url).timeout(const Duration(seconds: 45));
-        if (res.statusCode == 200 && res.bodyBytes.length > 20) {
-          if (packDir != null) {
-            final dest = File(p.join(packDir, kBikeOverlayGeojsonName));
-            await dest.writeAsBytes(res.bodyBytes);
-            return Uri.file(dest.absolute.path).toString();
-          }
-          return jsonDecode(utf8.decode(res.bodyBytes));
-        }
-      } catch (_) {}
-    }
-  }
-
-  if (pointInOnlineCycleMesh(lng, lat)) {
-    return kOnlineCycleMeshPmtilesUrl;
+  if (choice.kind == OnlineBikeOverlayKind.mesh) {
+    return choice.url;
   }
 
   // Sample overlay is Rhein-Neckar geometry — never show it in Wien/Hamburg.
-  if (pointInRheinNeckar(lng, lat)) {
+  if (pointInRheinNeckar(lng, lat) && zoom >= kBikeWaysMinZoom) {
     try {
       final raw = await rootBundle.loadString(kBikeOverlaySampleAsset);
       if (raw.trim().isEmpty || raw.contains('"features":[]')) {
@@ -121,6 +144,17 @@ Future<Object?> resolveBikeOverlayData({
     }
   }
   return null;
+}
+
+Future<void> detachBikeOverlayLayers(MapLibreMapController c) async {
+  for (final id in kBikeOverlayLayerIds.values) {
+    try {
+      await c.removeLayer(id);
+    } catch (_) {}
+  }
+  try {
+    await c.removeSource(kBikeOverlaySourceId);
+  } catch (_) {}
 }
 
 Future<void> attachBikeOverlayLayers(

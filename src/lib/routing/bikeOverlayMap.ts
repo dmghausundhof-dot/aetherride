@@ -170,6 +170,16 @@ export function overlayClassesOn(opts: BikeOverlayApplyOpts): Set<string> {
 
 let lastOverlaySourceKey = "";
 
+export function removeBikeOverlayLayers(map: BikeOverlayMapLike) {
+  for (const layer of LAYER_PAINT) {
+    if (map.getLayer(layer.id)) map.removeLayer?.(layer.id);
+  }
+  if (map.getSource(BIKE_OVERLAY_SOURCE_ID)) {
+    map.removeSource?.(BIKE_OVERLAY_SOURCE_ID);
+  }
+  lastOverlaySourceKey = "";
+}
+
 export function addBikeOverlayLayers(
   map: BikeOverlayMapLike,
   opts: {
@@ -179,6 +189,8 @@ export function addBikeOverlayLayers(
     visible: boolean;
     extraOn?: BikeOverlayClass[];
     rideProfileId?: RideProfileId | null;
+    /** Ways tiles start ~z10; signed mesh can show from atlas zoom. */
+    minzoom?: number;
   }
 ) {
   const sourceKey = `${opts.kind}:${opts.url}`;
@@ -187,10 +199,7 @@ export function addBikeOverlayLayers(
     lastOverlaySourceKey &&
     lastOverlaySourceKey !== sourceKey
   ) {
-    for (const layer of LAYER_PAINT) {
-      if (map.getLayer(layer.id)) map.removeLayer?.(layer.id);
-    }
-    map.removeSource?.(BIKE_OVERLAY_SOURCE_ID);
+    removeBikeOverlayLayers(map);
   }
 
   if (!map.getSource(BIKE_OVERLAY_SOURCE_ID)) {
@@ -224,7 +233,9 @@ export function addBikeOverlayLayers(
       source: BIKE_OVERLAY_SOURCE_ID,
       ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
       filter: layer.filter,
-      minzoom: layer.cls === "road" || layer.cls === "mtb" ? 5 : 9,
+      minzoom:
+        opts.minzoom ??
+        (layer.cls === "road" || layer.cls === "mtb" ? 5 : 9),
       layout: {
         "line-cap": "round",
         "line-join": "round",

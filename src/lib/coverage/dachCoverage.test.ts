@@ -46,7 +46,7 @@ assert.equal(ocean.pmtilesPath, null);
 const heidelberg = overlayHintFromRegistry(8.68, 49.41);
 assert.equal(heidelberg.mode, "region_pack");
 assert.ok(
-  heidelberg.pmtilesPath?.includes("/api/offline/packs/rhein-neckar/"),
+  heidelberg.pmtilesPath?.includes("/rhein-neckar/bike-overlay.pmtiles"),
   "detail overlay pack keeps way-level tiles"
 );
 

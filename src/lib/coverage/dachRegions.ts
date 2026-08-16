@@ -6,6 +6,8 @@
 
 import dachRaw from "../../../data/routing/dach-regions.json";
 import {
+  detailBikeOverlayPmtilesUrl,
+  ONLINE_PACK_CDN_ROOT,
   onlineCycleMeshGeojsonUrl,
   onlineCycleMeshPmtilesUrl,
   packHasDetailBikeOverlay,
@@ -80,6 +82,18 @@ export function dachRegionForPoint(
   return null;
 }
 
+/** Smallest Hausberg pack with a CDN ways overlay covering this point. */
+export function detailOverlayRegionIdForPoint(
+  lng: number,
+  lat: number
+): string | null {
+  const hits = DACH_PACK_REGIONS.filter(
+    (r) => pointInBbox(lng, lat, r.bbox) && packHasDetailBikeOverlay(r.id)
+  );
+  if (!hits.length) return null;
+  return smallestHit(hits).id;
+}
+
 export type OverlayMode = "region_pack" | "dach_live" | "live_osm";
 
 export type OverlayHint = {
@@ -115,10 +129,10 @@ export function overlayHintFromRegistry(
       mode: "region_pack",
       kind: "pack",
       pmtilesPath: detail
-        ? `/api/offline/packs/${region.id}/bike-overlay.pmtiles`
+        ? detailBikeOverlayPmtilesUrl(region.id)
         : mesh.pmtilesPath,
       geojsonPath: detail
-        ? `/api/offline/packs/${region.id}/bike-overlay.geojson`
+        ? `${ONLINE_PACK_CDN_ROOT}/${region.id}/bike-overlay.geojson`
         : mesh.geojsonPath,
     };
   }

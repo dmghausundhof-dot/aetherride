@@ -12,6 +12,7 @@ import {
   addBikeOverlayLayers,
   applyBikeOverlayVisibility,
   BIKE_OVERLAY_SOURCE_ID,
+  removeBikeOverlayLayers,
   type BikeOverlayMapLike,
 } from "@/lib/routing/bikeOverlayMap";
 import type { RideProfileId } from "@/lib/routing/profiles";
@@ -73,6 +74,7 @@ interface MapViewProps {
   onRouteClick?: (routeId: string) => void;
   onMarkerClick?: (id: string) => void;
   onMapReady?: (map: maplibregl.Map) => void;
+  onViewChange?: (view: { center: [number, number]; zoom: number }) => void;
   fitRoute?: boolean;
   bikeOverlayUrl?: string | null;
   bikeOverlayKind?: "pmtiles" | "geojson";
@@ -80,6 +82,7 @@ interface MapViewProps {
   bikeOverlayVisible?: boolean;
   bikeOverlayExtraOn?: BikeOverlayClass[];
   bikeOverlayRideProfileId?: RideProfileId | null;
+  bikeOverlayMinZoom?: number;
 }
 
 let pmtilesRegistered = false;
@@ -255,6 +258,7 @@ export function MapView({
   onRouteClick,
   onMarkerClick,
   onMapReady,
+  onViewChange,
   fitRoute = false,
   bikeOverlayUrl = null,
   bikeOverlayKind = "pmtiles",
@@ -262,6 +266,7 @@ export function MapView({
   bikeOverlayVisible = true,
   bikeOverlayExtraOn = [],
   bikeOverlayRideProfileId = null,
+  bikeOverlayMinZoom,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -270,6 +275,7 @@ export function MapView({
   const onClickRef = useRef(onMapClick);
   const onRouteClickRef = useRef(onRouteClick);
   const onMarkerClickRef = useRef(onMarkerClick);
+  const onViewChangeRef = useRef(onViewChange);
   const [ready, setReady] = useState(false);
   const [tileSource, setTileSource] = useState<"stadia" | "pmtiles" | "osm">(
     "osm"
@@ -280,6 +286,7 @@ export function MapView({
   onClickRef.current = onMapClick;
   onRouteClickRef.current = onRouteClick;
   onMarkerClickRef.current = onMarkerClick;
+  onViewChangeRef.current = onViewChange;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -343,6 +350,11 @@ export function MapView({
       window.setTimeout(doResize, 100);
       window.setTimeout(doResize, 400);
       onMapReady?.(map);
+      const c0 = map.getCenter();
+      onViewChangeRef.current?.({
+        center: [c0.lng, c0.lat],
+        zoom: map.getZoom(),
+      });
       if (showUserLocation && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
           new maplibregl.Marker({ color: "#FF6B35" })
@@ -365,8 +377,12 @@ export function MapView({
     });
 
     map.on("moveend", () => {
-      if (!initial.switchable || fallbackTried.current) return;
       const c = map.getCenter();
+      onViewChangeRef.current?.({
+        center: [c.lng, c.lat],
+        zoom: map.getZoom(),
+      });
+      if (!initial.switchable || fallbackTried.current) return;
       const next = onlineBasemapStyleUrl(c.lng, c.lat, currentStyleUrl);
       if (!next || next === currentStyleUrl) return;
       currentStyleUrl = next;
@@ -447,8 +463,16 @@ export function MapView({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !bikeOverlayUrl) return;
+    if (!map || !ready) return;
     const overlayMap = map as unknown as BikeOverlayMapLike;
+    if (!bikeOverlayUrl) {
+      try {
+        removeBikeOverlayLayers(overlayMap);
+      } catch {
+        /* overlay not attached */
+      }
+      return;
+    }
     const apply = () => {
       try {
         addBikeOverlayLayers(overlayMap, {
@@ -458,6 +482,7 @@ export function MapView({
           visible: bikeOverlayVisible,
           extraOn: bikeOverlayExtraOn,
           rideProfileId: bikeOverlayRideProfileId,
+          minzoom: bikeOverlayMinZoom,
         });
       } catch (err) {
         console.warn("[MapView] bike overlay", err);
@@ -476,6 +501,7 @@ export function MapView({
     bikeOverlayVisible,
     bikeOverlayExtraOn,
     bikeOverlayRideProfileId,
+    bikeOverlayMinZoom,
   ]);
 
   useEffect(() => {
