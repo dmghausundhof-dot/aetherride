@@ -8,6 +8,7 @@ export type EditorialProfile = {
   bio: string;
   sports: string[];
   regionLabel: string;
+  regionSlug: string;
 };
 
 export const EDITORIAL_PROFILES: EditorialProfile[] = [
@@ -17,6 +18,7 @@ export const EDITORIAL_PROFILES: EditorialProfile[] = [
     bio: "Rennrad an flachen Ufern. Editorial-Beispiel — keine GPS-Spuren auf diesem Profil.",
     sports: ["road"],
     regionLabel: "Bodensee",
+    regionSlug: "bodensee",
   },
   {
     handle: "jonas_r",
@@ -24,6 +26,7 @@ export const EDITORIAL_PROFILES: EditorialProfile[] = [
     bio: "Asphalt und Höhenmeter. Editorial-Beispiel, klar gekennzeichnet.",
     sports: ["road"],
     regionLabel: "Kaiserstuhl",
+    regionSlug: "baden-wuerttemberg",
   },
   {
     handle: "lea_gravel",
@@ -31,6 +34,7 @@ export const EDITORIAL_PROFILES: EditorialProfile[] = [
     bio: "Forstwege, nach Regen ehrlich. Editorial-Beispiel ohne Track-Anhang.",
     sports: ["gravel"],
     regionLabel: "Schwarzwald",
+    regionSlug: "schwarzwald",
   },
   {
     handle: "eva_tour",
@@ -38,6 +42,7 @@ export const EDITORIAL_PROFILES: EditorialProfile[] = [
     bio: "E-Trekking, Etappen, Pausenorte. Editorial-Beispiel.",
     sports: ["touring"],
     regionLabel: "Neckar",
+    regionSlug: "rhein-neckar",
   },
   {
     handle: "tobi_trails",
@@ -45,6 +50,7 @@ export const EDITORIAL_PROFILES: EditorialProfile[] = [
     bio: "S1–S2, Wurzeln nach Regen. Editorial-Beispiel, Navigation in der App.",
     sports: ["mtb"],
     regionLabel: "Heidelberg",
+    regionSlug: "rhein-neckar",
   },
 ];
 
@@ -55,4 +61,8 @@ export function getEditorialProfile(handle: string): EditorialProfile | null {
 
 export function listEditorialHandles(): string[] {
   return EDITORIAL_PROFILES.map((p) => p.handle);
+}
+
+export function listEditorialProfilesForRegion(slug: string): EditorialProfile[] {
+  return EDITORIAL_PROFILES.filter((p) => p.regionSlug === slug);
 }

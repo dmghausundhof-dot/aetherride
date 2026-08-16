@@ -18,6 +18,7 @@ import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import { ShareCatalogTourButton } from "@/components/tours/ShareCatalogTourButton";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
+import { breadcrumbJsonLd, siteOrigin } from "@/lib/content/siteJsonLd";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -58,16 +59,25 @@ export default async function TourPage({ params }: Props) {
   const region = getRegion(tour.regionSlug);
   const related = relatedTours(tour, 4);
   const guides = relatedGuidesForTour(tour);
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://aetherride.app";
-  const jsonLd = tourJsonLd(tour, baseUrl);
+  const origin = siteOrigin();
+  const jsonLd = tourJsonLd(tour, origin);
+  const crumbs = breadcrumbJsonLd(origin, [
+    { name: "Regionen", path: "/regions" },
+    ...(region
+      ? [{ name: region.name, path: `/regions/${region.slug}` }]
+      : []),
+    { name: tour.name, path: `/tours/${tour.id}` },
+  ]);
 
   return (
     <div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs) }}
       />
       <div>
         <div className="border-b border-border bg-surface/50">

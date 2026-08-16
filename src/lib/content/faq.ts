@@ -54,7 +54,7 @@ export const FAQ_ITEMS: {
     links: [
       { href: "/share", label: "Teilen" },
       { href: "/share/t/demo", label: "Beispiel-Tour" },
-      { href: "/u/mara_road", label: "Beispiel-Profil" },
+      { href: "/guides/teilen-per-link", label: "Guide: Teilen" },
     ],
   },
   {
@@ -63,6 +63,7 @@ export const FAQ_ITEMS: {
     a: "Der Laden ist eine Tür zu Shopify. Es gibt keinen zweiten Warenkorb und keine Kasse in FlowLine. Ohne hinterlegtes Impressum bleibt der Checkout gesperrt.",
     links: [
       { href: "/shop", label: "Laden" },
+      { href: "/guides/laden-ohne-zweite-kasse", label: "Guide: Laden" },
       { href: "/legal/impressum", label: "Impressum" },
     ],
   },
@@ -87,7 +88,7 @@ export const FAQ_ITEMS: {
     id: "app-stores",
     q: "Wo lade ich die App?",
     a: "Store-Links stehen, sobald die Listings live sind. Bis dahin laufen Hof, Karte, Platz und Werkstatt im Browser. HUD, Offline und Sensoren kommen mit der nativen App.",
-    links: [{ href: "/download", label: "App entdecken" }],
+    links: [{ href: "/download", label: "App" }],
   },
   {
     id: "kontakt",

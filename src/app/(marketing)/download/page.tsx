@@ -122,6 +122,13 @@ export default function DownloadPage() {
         </Link>
         <span className="mx-2 text-text-secondary">·</span>
         <Link
+          href="/guides/web-vs-app"
+          className="text-sm font-semibold text-chrome hover:underline"
+        >
+          Web vs. App →
+        </Link>
+        <span className="mx-2 text-text-secondary">·</span>
+        <Link
           href="/produkt"
           className="text-sm font-semibold text-chrome hover:underline"
         >

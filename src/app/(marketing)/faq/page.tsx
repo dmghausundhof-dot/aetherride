@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FAQ_ITEMS } from "@/lib/content/faq";
-import { faqJsonLd } from "@/lib/content/siteJsonLd";
+import { faqJsonLd, siteOrigin } from "@/lib/content/siteJsonLd";
 
 export const metadata: Metadata = {
   title: "FAQ – Web, App, Preise, Community",
@@ -9,21 +9,13 @@ export const metadata: Metadata = {
     "FlowLine kurz erklärt: was im Browser läuft, was in der App, Free und Pro, Community ohne Feed.",
 };
 
-function origin(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://aetherride.app"
-  );
-}
-
 export default function FaqPage() {
   return (
     <div className="px-4 py-12 sm:px-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqJsonLd(origin(), FAQ_ITEMS)),
+          __html: JSON.stringify(faqJsonLd(siteOrigin(), FAQ_ITEMS)),
         }}
       />
       <div className="mx-auto max-w-3xl">

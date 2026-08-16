@@ -4,7 +4,7 @@ import { listRegions } from "@/lib/catalog/regions";
 import { listToursByRegion } from "@/lib/catalog/publicTours";
 
 export const metadata: Metadata = {
-  title: "Regionen – Radtouren entdecken",
+  title: "Regionen – Radtouren in DACH",
   description:
     "Touren-Ideen nach Region: Baden-Württemberg, Schwarzwald, Bayern, Bodensee, Elsass und mehr.",
 };
@@ -41,7 +41,7 @@ export default function RegionsIndexPage() {
                 </p>
                 <h2 className="mt-1 text-xl font-semibold">{r.name}</h2>
                 <p className="mt-2 text-sm text-text-secondary">{r.teaser}</p>
-                <p className="mt-4 text-xs font-medium text-accent">
+                <p className="mt-4 text-xs font-medium text-chrome">
                   {count === 0
                     ? `Noch keine Touren · auf der Karte suchen`
                     : `${count} Touren · ${r.sports.join(" · ")}`}

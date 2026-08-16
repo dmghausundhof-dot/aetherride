@@ -6,6 +6,11 @@ import {
   getGuide,
   listGuideSlugs,
 } from "@/lib/content/guides";
+import {
+  breadcrumbJsonLd,
+  guideArticleJsonLd,
+  siteOrigin,
+} from "@/lib/content/siteJsonLd";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,11 +33,29 @@ export default async function GuidePage({ params }: Props) {
   const { slug } = await params;
   const g = getGuide(slug);
   if (!g) notFound();
+  const origin = siteOrigin();
 
   return (
     <article className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(guideArticleJsonLd(origin, g)),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd(origin, [
+              { name: "Guides", path: "/guides" },
+              { name: g.title, path: `/guides/${g.slug}` },
+            ]),
+          ),
+        }}
+      />
       <div className="text-xs text-text-secondary">
-        <Link href="/guides" className="hover:text-accent">
+        <Link href="/guides" className="hover:text-chrome">
           Guides
         </Link>
         <span className="mx-1.5">/</span>
@@ -60,7 +83,7 @@ export default async function GuidePage({ params }: Props) {
               <li key={r.href}>
                 <Link
                   href={r.href}
-                  className="text-sm font-medium text-accent hover:underline"
+                  className="text-sm font-medium text-chrome hover:underline"
                 >
                   {r.label} →
                 </Link>

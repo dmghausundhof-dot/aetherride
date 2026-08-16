@@ -203,6 +203,8 @@ export const SCREEN_GROUPS: {
       { href: "/produkt", name: "Produkt", role: "Screens und Abläufe" },
       { href: "/regions", name: "Regionen", role: "DACH-Ideen, Nähe" },
       { href: "/guides", name: "Guides", role: "Planung, Setup, E-Bike" },
+      { href: "/guides/teilen-per-link", name: "Teilen-Guide", role: "Link statt Feed" },
+      { href: "/guides/laden-ohne-zweite-kasse", name: "Laden-Guide", role: "Keine zweite Kasse" },
       { href: "/community", name: "Community", role: "Events light, Platz" },
       { href: "/pricing", name: "Preise", role: "Free / Pro" },
       { href: "/download", name: "App", role: "Warum nativ" },

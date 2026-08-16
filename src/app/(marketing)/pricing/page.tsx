@@ -47,7 +47,7 @@ export default function PricingPage() {
           Free plant. Pro vertieft.
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-text-secondary">
-          Touren entdecken und planen ist für alle da. Multi-Bike, Bracketing
+          Touren auf der Karte und Planen ist für alle da. Multi-Bike, Bracketing
           und ehrliche Reichweiten-Spannen sind Pro — Navigation läuft in der
           App auf beiden Stufen.
         </p>

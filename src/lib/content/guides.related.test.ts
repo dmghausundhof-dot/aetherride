@@ -5,7 +5,9 @@ import assert from "node:assert/strict";
 import {
   listGuidesGrouped,
   relatedGuidesForTour,
+  relatedGuidesForRegion,
   listGuideSlugs,
+  getGuide,
 } from "./guides";
 
 function testGroupedCoversAll() {
@@ -25,6 +27,16 @@ function testRelatedRoad() {
   assert.equal(g.length, 3);
 }
 
+function testRelatedRegion() {
+  const g = relatedGuidesForRegion(["road", "touring", "urban"]);
+  assert.ok(g.some((x) => x.slug === "rennrad-hoehenmeter"));
+  assert.ok(g.some((x) => x.slug === "teilen-per-link"));
+  assert.ok(g.length <= 4);
+  assert.ok(getGuide("laden-ohne-zweite-kasse"));
+  assert.ok(getGuide("teilen-per-link"));
+}
+
 testGroupedCoversAll();
 testRelatedRoad();
+testRelatedRegion();
 console.log("guides.related.test.ts OK");

@@ -141,6 +141,7 @@ export const GUIDES: Guide[] = [
       { href: "/home", label: "Zum Hof" },
       { href: "/produkt", label: "Produktkarte" },
       { href: "/ueber", label: "Über FlowLine" },
+      { href: "/guides/laden-ohne-zweite-kasse", label: "Der Laden" },
     ],
   },
   {
@@ -158,7 +159,47 @@ export const GUIDES: Guide[] = [
     relatedHrefs: [
       { href: "/library", label: "Zum Platz" },
       { href: "/community", label: "Community" },
-      { href: "/guides/web-vs-app", label: "Web vs. App" },
+      { href: "/share", label: "Teilen" },
+      { href: "/u/mara_road", label: "Beispiel-Profil" },
+      { href: "/guides/teilen-per-link", label: "Guide: Teilen" },
+    ],
+  },
+  {
+    slug: "teilen-per-link",
+    title: "Teilen per Link: Tour, Mappe, kein Feed",
+    teaser:
+      "Wer den Link hat, legt die Tour in die eigene Mappe. Kein Account-Zwang, keine stillen GPS-Anhänge.",
+    category: "safety",
+    readMin: 4,
+    body: [
+      "FlowLine teilt nicht über eine Timeline. Eine Tour oder eine Mappe wird zum Link. Wer ihn öffnet, kann die Idee lokal übernehmen — ohne Konto, ohne Follow, ohne Heatmap.",
+      "Der Tour-Link trägt Name und Stats. Eine Spur steckt nur drin, wenn sie bewusst im Token liegt; Katalog-Beispiele bleiben Pin und Text. Die Mappe sammelt mehrere Katalog-Touren, immer ohne Tracks.",
+      "Stimmen und Gruppen bleiben am Platz. Public Profiles sind Opt-in und speichern keine Roh-GPS-Daten. Live-Standort vor dem Tor gibt es nicht.",
+    ],
+    relatedHrefs: [
+      { href: "/share", label: "So teilen" },
+      { href: "/share/t/demo", label: "Beispiel-Tour" },
+      { href: "/share/c/demo", label: "Beispiel-Mappe" },
+      { href: "/community", label: "Community" },
+    ],
+  },
+  {
+    slug: "laden-ohne-zweite-kasse",
+    title: "Der Laden: Tür zu Shopify, keine zweite Kasse",
+    teaser:
+      "Teile und Merch liegen hinter einer Tür. Kaufvertrag und Checkout entstehen bei Shopify — oder gar nicht, solange das Impressum fehlt.",
+    category: "safety",
+    readMin: 4,
+    body: [
+      "Der Laden ist die fünfte Tür am Hof, kein zweiter Shop in FlowLine. Katalog und Fit kommen aus der Werkstatt. Die Kasse liegt bei Shopify — es gibt keinen Warenkorb, der hier kassiert.",
+      "Ohne hinterlegtes Impressum (Name und ladungsfähige Anschrift) bleibt der Checkout gesperrt. Das ist Absicht: wir erfinden keine TMG-Angaben, damit etwas „kaufen“ heißt.",
+      "Merchandise wird nicht über den Fit zum Rad gefiltert. Ersatzteile schon: Kategorie und Laufrad zum abgestellten Rad, keine erfundenen SKUs. Store-Listings der App sind unabhängig davon und stehen, sobald sie live sind.",
+    ],
+    relatedHrefs: [
+      { href: "/shop", label: "Zum Laden" },
+      { href: "/garage", label: "Werkstatt" },
+      { href: "/legal/impressum", label: "Impressum" },
+      { href: "/produkt", label: "Produktkarte" },
     ],
   },
 ];
@@ -203,6 +244,19 @@ export function listGuidesGrouped(): {
   })).filter((group) => group.guides.length > 0);
 }
 
+function guidesFromSlugs(slugs: string[], limit: number): Guide[] {
+  const seen = new Set<string>();
+  const out: Guide[] = [];
+  for (const slug of slugs) {
+    const g = getGuide(slug);
+    if (!g || seen.has(g.slug)) continue;
+    seen.add(g.slug);
+    out.push(g);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 export function relatedGuidesForTour(input: {
   id: string;
   primaryCategory: string;
@@ -214,14 +268,22 @@ export function relatedGuidesForTour(input: {
   else if (sport === "emtb" || sport === "etrekking") slugs.push("ebike-reichweite");
   else if (sport.startsWith("mtb") || sport === "dh") slugs.push("gravel-touren-planen");
   else slugs.push("hof-fuenf-tueren");
-  slugs.push("platz-ohne-feed");
-  const seen = new Set<string>();
-  const out: Guide[] = [];
-  for (const slug of slugs) {
-    const g = getGuide(slug);
-    if (!g || seen.has(g.slug)) continue;
-    seen.add(g.slug);
-    out.push(g);
+  slugs.push("platz-ohne-feed", "teilen-per-link");
+  return guidesFromSlugs(slugs, 3);
+}
+
+export function relatedGuidesForRegion(sports: string[]): Guide[] {
+  const slugs: string[] = [];
+  if (sports.includes("road")) slugs.push("rennrad-hoehenmeter");
+  if (sports.includes("gravel") || sports.includes("mtb")) {
+    slugs.push("gravel-touren-planen");
   }
-  return out.slice(0, 3);
+  if (sports.includes("ebike")) slugs.push("ebike-reichweite");
+  slugs.push(
+    "teilen-per-link",
+    "platz-ohne-feed",
+    "laden-ohne-zweite-kasse",
+    "web-vs-app",
+  );
+  return guidesFromSlugs(slugs, 4);
 }

@@ -13,16 +13,13 @@ import {
 import { COMMUNITY_FEATURES } from "@/lib/content/communityMap";
 import { featuredPublicTours } from "@/lib/catalog/publicTours";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import { websiteJsonLd } from "@/lib/content/siteJsonLd";
+import { websiteJsonLd, siteOrigin } from "@/lib/content/siteJsonLd";
 
 const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
 
 export default function LandingPage() {
   const featured = featuredPublicTours();
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://aetherride.app";
+  const origin = siteOrigin();
 
   return (
     <>
@@ -259,6 +256,10 @@ export default function LandingPage() {
             {" · "}
             <Link href="/guides" className="text-chrome hover:underline">
               Guides
+            </Link>
+            {" · "}
+            <Link href="/guides/laden-ohne-zweite-kasse" className="text-chrome hover:underline">
+              Der Laden
             </Link>
             {" · "}
             <Link href="/produkt" className="text-chrome hover:underline">

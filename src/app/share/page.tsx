@@ -68,6 +68,10 @@ export default function ShareIndexPage() {
 
         <p className="mt-8 text-sm text-text-secondary">
           Gruppen und Stimmen bleiben am Platz. Public Profiles sind Opt-in.{" "}
+          <Link href="/guides/teilen-per-link" className="text-chrome hover:underline">
+            Guide: Teilen
+          </Link>
+          {" · "}
           <Link href="/community" className="text-chrome hover:underline">
             Community
           </Link>

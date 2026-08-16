@@ -4,6 +4,10 @@ import {
   getEditorialProfile,
   listEditorialHandles,
 } from "@/lib/community/editorialProfiles";
+import {
+  editorialPersonJsonLd,
+  siteOrigin,
+} from "@/lib/content/siteJsonLd";
 
 type Props = { params: Promise<{ handle: string }> };
 
@@ -30,5 +34,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicProfilePage({ params }: Props) {
   const { handle } = await params;
-  return <PublicProfileView handle={handle.trim().toLowerCase()} />;
+  const normalized = handle.trim().toLowerCase();
+  const editorial = getEditorialProfile(normalized);
+  return (
+    <>
+      {editorial ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              editorialPersonJsonLd(siteOrigin(), editorial),
+            ),
+          }}
+        />
+      ) : null}
+      <PublicProfileView handle={normalized} />
+    </>
+  );
 }
