@@ -394,6 +394,24 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     final bbox = _packBbox(regionId, manifest);
     final archiveId = basemapArchiveIdForBbox(bbox);
     if (await OfflinePmtilesStore.isReady(archiveId)) {
+      if (!await OfflinePmtilesStore.assetsReady()) {
+        if (mounted) {
+          setState(() {
+            _progressValue = null;
+            _progress = 'Karten-Schrift (Glyphs/Sprites)…';
+          });
+        }
+        await OfflinePmtilesStore.downloadAssets(
+          onProgress: (done, total) {
+            if (!mounted || total <= 0) return;
+            setState(() {
+              _progressValue = (done / total).clamp(0.0, 1.0);
+              _progress = 'Karten-Schrift $done / $total';
+            });
+          },
+        );
+        await OfflinePmtilesStore.writeLocalStyle(archiveId);
+      }
       final local = await OfflinePmtilesStore.localStyleUri(archiveId);
       if (local != null) {
         await _savePrefs(pmtilesUrl: local);
@@ -420,6 +438,12 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           });
         },
       );
+      if (mounted) {
+        setState(() {
+          _progressValue = null;
+          _progress = 'Karten-Schrift (Glyphs/Sprites)…';
+        });
+      }
       final local = await OfflinePmtilesStore.localStyleUri(archiveId);
       if (local != null) {
         await _savePrefs(pmtilesUrl: local);
