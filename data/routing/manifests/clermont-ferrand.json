@@ -1,0 +1,37 @@
+{
+  "id": "clermont-ferrand",
+  "name": "Clermont-Ferrand / Puy de Dôme",
+  "bbox": [
+    2.9,
+    45.68,
+    3.22,
+    45.9
+  ],
+  "builtAt": "2026-08-16T09:43:46Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18267303,
+      "sha256": "c6347c2e2bb253e757dd9debe1219359ae56619ec8bb493691875892f22e7877",
+      "sha256_16": "c6347c2e2bb253e7"
+    },
+    "clermont-ferrand.tar.gz": {
+      "bytes": 2497961,
+      "sha256": "827b2cf726e7badaccc11a13268cb44b2088f721052353a03cdd7dd310e2f7f9",
+      "sha256_16": "827b2cf726e7bada"
+    },
+    "clermont-ferrand.tar.zst": {
+      "bytes": 2717792,
+      "sha256": "1325beee728fe9b60e44c2259cd098d62b82b80865a935cd21b0faf632e17428",
+      "sha256_16": "1325beee728fe9b6"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/clermont-ferrand",
+    "pack": "clermont-ferrand.tar.zst",
+    "packGz": "clermont-ferrand.tar.gz"
+  }
+}
