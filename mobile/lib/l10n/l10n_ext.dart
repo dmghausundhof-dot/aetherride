@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 
 import '../domain/ble/bike_ble_kind.dart';
+import '../domain/ble/watch_candidate.dart';
 import '../domain/bike.dart';
 import '../domain/bike_assist.dart';
-import '../domain/compatibility/engine.dart';
 import '../domain/compatibility/rules.dart';
 import '../domain/component.dart';
 import '../domain/garage/die_box.dart';
@@ -568,45 +568,7 @@ extension AetherL10n on AppLocalizations {
     return _compatFail(r);
   }
 
-  String _compatFail(CompatibilityResult r) {
-    final a = r.valuesA;
-    final b = r.valuesB;
-    String va(String k) => a[k] ?? '?';
-    String vb(String k) => b[k] ?? '?';
-    return switch (r.ruleCode) {
-      'RL-DRV-011' =>
-        compatFailDrv011(va('freehub_standard'), vb('freehub_standard')),
-      'RL-FRM-004' => compatFailFrm004(va('rear_spacing'), vb('rear_spacing')),
-      'RL-SUS-007' => compatFailSus007(
-          va('eye_to_eye_mm'),
-          va('stroke_mm'),
-          va('mount_type'),
-        ),
-      'RL-SUS-012' => compatFailSus012(va('steerer_type'), vb('steerer_type')),
-      'RL-BRK-003' =>
-        compatFailBrk003(va('brake_mount'), vb('brake_mount_rear')),
-      'RL-BRK-008' => compatFailBrk008(va('rotor_mount'), vb('rotor_mount')),
-      'RL-BRK-008F' => compatFailBrk008f(va('rotor_mount'), vb('rotor_mount')),
-      'RL-WHL-005' =>
-        compatFailWhl005(va('tire_width_mm'), vb('internal_rim_width_mm')),
-      'RL-WHL-005F' =>
-        compatFailWhl005f(va('tire_width_mm'), vb('internal_rim_width_mm')),
-      'RL-WHL-009' =>
-        compatFailWhl009(va('tire_width_mm'), vb('max_tire_width_mm')),
-      'RL-CKP-002' =>
-        compatFailCkp002(va('handlebar_clamp_mm'), vb('stem_clamp_mm')),
-      'RL-SPT-006' => compatFailSpt006(
-          va('seatpost_diameter_mm'),
-          vb('seatpost_diameter_mm'),
-        ),
-      'RL-BB-003' => compatFailBb003(va('crank_axle'), vb('crank_axle')),
-      'RL-BB-003F' => compatFailBb003f(va('bb_standard'), vb('bb_standard')),
-      'RL-EBK-002' =>
-        compatFailEbk002(vb('motor_interface'), va('motor_interface')),
-      'RL-FRM-004F' => compatFailFrm004f(va('axle_front'), vb('axle_front')),
-      _ => r.explainDe,
-    };
-  }
+  String _compatFail(CompatibilityResult r) => r.explainDe;
 
   String postRideFactLine(String de) {
     final bike = RegExp(r'^Bike: (.+)$').firstMatch(de);
@@ -647,51 +609,41 @@ extension AetherL10n on AppLocalizations {
     return de;
   }
 
-  String postRideObservationText(PostRideObservation o) {
-    final p = o.params;
-    return switch (o.id) {
-      'impacts' => postRideObsImpacts(p['count'] ?? '?', p['km'] ?? '?'),
-      'smooth' => postRideObsSmooth(p['km'] ?? '?'),
-      'flow-high' => postRideObsFlowHigh(p['flow'] ?? '?'),
-      'flow-low' => postRideObsFlowLow(p['flow'] ?? '?'),
-      'peak-g' => postRideObsPeakG(p['g'] ?? '?'),
-      'fb-harsh' => postRideObsFbHarsh(
-          p['front'] == 'too_firm' ? postRideFrontTooFirm : postRideFrontOk,
-          p['bumps'] == 'harsh' ? postRideBumpsHarsh : '—',
-        ),
-      'fb-soft' => postRideObsFbSoft,
-      _ => o.text,
-    };
+  String postRideObservationText(PostRideObservation o) => o.text;
+
+  String _suggestionKind(SetupChangeSuggestion s) {
+    final key = s.adjusterKey ?? '';
+    final delta = s.suggestedDelta ?? 0;
+    if (key == 'fork.pressure') return 'pressure';
+    if (key == 'fork.rebound' && delta < 0) return 'rebound-slow';
+    if (key == 'fork.rebound' && delta > 0) return 'rebound-fast';
+    return '';
   }
 
-  String postRideSuggestionTitle(SetupChangeSuggestion s) => switch (s.kind) {
+  String postRideSuggestionTitle(SetupChangeSuggestion s) =>
+      switch (_suggestionKind(s)) {
         'rebound-slow' => postRideSugReboundSlowTitle,
         'rebound-fast' => postRideSugReboundFastTitle,
         'pressure' => postRideSugPressureTitle,
         _ => s.title,
       };
 
-  String postRideSuggestionContent(SetupChangeSuggestion s) => switch (s.kind) {
-        'rebound-slow' => postRideSugReboundSlowContent(
-            s.params['current'] ?? '?',
-            s.params['next'] ?? '?',
-          ),
-        'rebound-fast' => postRideSugReboundFastContent(
-            s.params['current'] ?? '?',
-            s.params['next'] ?? '?',
-          ),
+  String postRideSuggestionContent(SetupChangeSuggestion s) =>
+      switch (_suggestionKind(s)) {
         'pressure' => postRideSugPressureContent,
         _ => s.content,
       };
 
-  String postRideSuggestionEffect(SetupChangeSuggestion s) => switch (s.kind) {
+  String postRideSuggestionEffect(SetupChangeSuggestion s) =>
+      switch (_suggestionKind(s)) {
         'rebound-slow' => postRideSugReboundSlowEffect,
         'rebound-fast' => postRideSugReboundFastEffect,
         'pressure' => postRideSugPressureEffect,
         _ => s.expectedEffect,
       };
 
-  String postRideSuggestionLimits(SetupChangeSuggestion s) => switch (s.kind) {
+  String postRideSuggestionLimits(SetupChangeSuggestion s) =>
+      switch (_suggestionKind(s)) {
         'rebound-slow' || 'rebound-fast' => postRideSugLimitsClicks,
         'pressure' => postRideSugLimitsPressure,
         _ => s.limits,
