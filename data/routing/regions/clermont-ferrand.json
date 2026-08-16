@@ -1,0 +1,27 @@
+{
+  "id": "clermont-ferrand",
+  "name": "Clermont-Ferrand / Puy de Dôme",
+  "bbox": [
+    2.9,
+    45.68,
+    3.22,
+    45.9
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/auvergne-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/clermont-ferrand",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "clermont-ferrand.tar.zst"
+  }
+}
