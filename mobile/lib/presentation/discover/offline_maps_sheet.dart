@@ -16,6 +16,7 @@ import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_tiles.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/bike_overlay.dart';
+import '../../data/routing/offline_pmtiles_store.dart';
 
 import '../../data/routing/overlay_regions.dart';
 
@@ -42,6 +43,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   bool _loading = true;
   bool _busy = false;
   String? _progress;
+  double? _progressValue;
   String? _catalogNote;
   List<({String id, String name})> _regions = List.from(_kFallbackRegions);
 
@@ -140,18 +142,21 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     String? regionPack,
     String? activatedPackPath,
     String? engineHint,
+    List<double>? packBbox,
   }) async {
     await OfflineMapsPrefs.merge({
       if (pmtilesUrl != null) 'pmtilesUrl': pmtilesUrl,
       if (regionPack != null) 'regionPack': regionPack,
       if (activatedPackPath != null) 'activatedPackPath': activatedPackPath,
       if (engineHint != null) 'engineHint': engineHint,
+      if (packBbox != null) 'packBbox': packBbox,
     });
   }
 
   Future<Map<String, dynamic>?> _fetchManifest(String id) async {
     final urls = [
       Uri.parse('${AppConfig.apiBaseUrl}/api/offline/packs/$id'),
+      Uri.parse(AppConfig.offlinePackObjectUrl(id, 'manifest.json')),
       Uri.parse('${AppConfig.apiBaseUrl}/offline/$id/manifest.json'),
     ];
     for (final url in urls) {
@@ -205,6 +210,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     setState(() {
       _busy = true;
       _progress = 'Manifest…';
+      _progressValue = null;
     });
     try {
       final docs = await getApplicationDocumentsDirectory();
@@ -236,6 +242,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         final urls = <Uri>[
           if (cdnBase != null && cdnBase.isNotEmpty)
             Uri.parse('$cdnBase/$packGz'),
+          Uri.parse(AppConfig.offlinePackObjectUrl(region.id, packGz)),
           Uri.parse(
             '${AppConfig.apiBaseUrl}/api/offline/packs/${region.id}/$packGz',
           ),
@@ -258,6 +265,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         final graphUrls = <Uri>[
           if (cdnBase != null && cdnBase.isNotEmpty)
             Uri.parse('$cdnBase/offline_graph.json'),
+          Uri.parse(
+            AppConfig.offlinePackObjectUrl(region.id, 'offline_graph.json'),
+          ),
           Uri.parse(
             '${AppConfig.apiBaseUrl}/api/offline/packs/${region.id}/offline_graph.json',
           ),
@@ -310,8 +320,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         regionPack: (manifest?['name'] as String?) ?? region.name,
         activatedPackPath: regionDir.path,
         engineHint: hint,
+        packBbox: _packBbox(region.id, manifest),
       );
       await downloadBikeOverlayIntoPack(regionDir, region.id);
+      await _ensureBasemapArchive(region.id, manifest);
       OfflineTilesStore.instance.clearCache();
       final status = await OfflineTilesStore.instance.valhallaLinkStatus();
       if (!mounted) return;
@@ -345,7 +357,84 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         setState(() {
           _busy = false;
           _progress = null;
+          _progressValue = null;
         });
+      }
+    }
+  }
+
+  List<double>? _packBbox(String id, Map<String, dynamic>? manifest) {
+    final raw = manifest?['bbox'];
+    if (raw is List && raw.length >= 4) {
+      final out = <double>[];
+      for (final x in raw.take(4)) {
+        if (x is! num) return overlayRegionById(id)?.bbox;
+        out.add(x.toDouble());
+      }
+      return out;
+    }
+    return overlayRegionById(id)?.bbox;
+  }
+
+  String _fmtBytes(int n) {
+    if (n >= 1024 * 1024 * 1024) {
+      return '${(n / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+    if (n >= 1024 * 1024) {
+      return '${(n / (1024 * 1024)).toStringAsFixed(0)} MB';
+    }
+    return '$n B';
+  }
+
+  /// Copy dach-z11 / france-west-z11 into documents. Never MapLibre OfflineRegion.
+  Future<void> _ensureBasemapArchive(
+    String regionId,
+    Map<String, dynamic>? manifest,
+  ) async {
+    final bbox = _packBbox(regionId, manifest);
+    final archiveId = basemapArchiveIdForBbox(bbox);
+    if (await OfflinePmtilesStore.isReady(archiveId)) {
+      final local = await OfflinePmtilesStore.localStyleUri(archiveId);
+      if (local != null) {
+        await _savePrefs(pmtilesUrl: local);
+        if (mounted) setState(() => _urlCtrl.text = local);
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _progressValue = 0;
+      _progress =
+          'Basemap $archiveId (~${archiveId == OfflinePmtilesStore.franceWestId ? '293' : '515'} MB, WLAN)…';
+    });
+    try {
+      await OfflinePmtilesStore.downloadArchive(
+        id: archiveId,
+        onProgress: (got, total) {
+          if (!mounted) return;
+          final t = total != null && total > 0 ? _fmtBytes(total) : '?';
+          setState(() {
+            _progressValue =
+                total != null && total > 0 ? (got / total).clamp(0.0, 1.0) : null;
+            _progress = 'Basemap $archiveId: ${_fmtBytes(got)} / $t';
+          });
+        },
+      );
+      final local = await OfflinePmtilesStore.localStyleUri(archiveId);
+      if (local != null) {
+        await _savePrefs(pmtilesUrl: local);
+        if (mounted) setState(() => _urlCtrl.text = local);
+      }
+    } catch (e) {
+      debugPrint('PMTiles archive $archiveId: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Karte bleibt online (CDN). Archiv $archiveId: $e',
+            ),
+          ),
+        );
       }
     }
   }
@@ -402,6 +491,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       'regionPack': null,
       'activatedPackPath': null,
       'engineHint': null,
+      'packBbox': null,
     });
     OfflineTilesStore.instance.clearCache();
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
@@ -451,8 +541,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Region laden — danach Touren & Navigation ohne Netz '
-                    '(wie bei Komoot / AllTrails).',
+                    'Region laden — Graph plus Basemap-Archiv (DACH ~515 MB / '
+                    'Frankreich-West ~293 MB). WLAN empfohlen; Glyphs bleiben remote.',
                     style: TextStyle(color: AppColors.muted, fontSize: 13),
                   ),
                   if (kDebugMode) ...[
@@ -545,7 +635,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                     const SizedBox(height: 10),
                     Text(_progress!, style: const TextStyle(fontSize: 12)),
                     const SizedBox(height: 6),
-                    const LinearProgressIndicator(),
+                    LinearProgressIndicator(value: _progressValue),
                   ],
                   const SizedBox(height: 10),
                   for (final r in _regions)

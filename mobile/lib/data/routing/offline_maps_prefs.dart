@@ -36,6 +36,18 @@ abstract final class OfflineMapsPrefs {
     await f.writeAsString(jsonEncode(m));
   }
 
+  /// [west, south, east, north] of the activated pack, if stored.
+  static List<double>? packBboxFrom(Map<String, dynamic> m) {
+    final raw = m['packBbox'];
+    if (raw is! List || raw.length < 4) return null;
+    final bbox = <double>[];
+    for (final x in raw.take(4)) {
+      if (x is! num) return null;
+      bbox.add(x.toDouble());
+    }
+    return bbox;
+  }
+
   /// Activated region directory (contains `offline_graph.json`) or null.
   static Future<String?> activatedPackPath() async {
     final m = await read();

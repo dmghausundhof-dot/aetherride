@@ -225,6 +225,7 @@ Future<void> downloadBikeOverlayIntoPack(Directory regionDir, String regionId) a
   final dest = File(p.join(regionDir.path, kBikeOverlayGeojsonName));
   if (await dest.exists() && await dest.length() > 20) return;
   final urls = [
+    Uri.parse(AppConfig.offlinePackObjectUrl(regionId, kBikeOverlayGeojsonName)),
     Uri.parse(
       '${AppConfig.apiBaseUrl}/api/offline/packs/$regionId/$kBikeOverlayGeojsonName',
     ),
@@ -234,7 +235,7 @@ Future<void> downloadBikeOverlayIntoPack(Directory regionDir, String regionId) a
   ];
   for (final url in urls) {
     try {
-      final res = await http.get(url).timeout(const Duration(seconds: 60));
+      final res = await http.get(url).timeout(const Duration(seconds: 120));
       if (res.statusCode == 200 && res.bodyBytes.length > 20) {
         await dest.writeAsBytes(res.bodyBytes);
         return;

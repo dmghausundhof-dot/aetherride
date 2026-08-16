@@ -194,6 +194,13 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'rennes', name: 'Rennes / Vilaine'),
 ];
 
+OverlayRegion? overlayRegionById(String id) {
+  for (final r in kOverlayRegions) {
+    if (r.id == id) return r;
+  }
+  return null;
+}
+
 OverlayRegion? overlayRegionForPoint(double lng, double lat) {
   final hits = [
     for (final r in kOverlayRegions)

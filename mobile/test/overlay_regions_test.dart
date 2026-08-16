@@ -10,6 +10,7 @@ void main() {
     expect(overlayRegionForPoint(8.694, 49.409)?.id, 'rhein-neckar');
     expect(overlayRegionForPoint(3.885, 43.61)?.id, 'montpellier');
     expect(overlayRegionForPoint(3.082, 45.777)?.id, 'clermont-ferrand');
+    expect(overlayRegionById('vosges')?.id, 'vosges');
     expect(overlayRegionForPoint(-30, 0), isNull);
   });
 }

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { readOfflinePackFile } from "@/lib/routing/offlinePacks";
+import {
+  publicOfflinePackObjectUrl,
+  readOfflinePackFile,
+} from "@/lib/routing/offlinePacks";
 
 export const runtime = "nodejs";
 
@@ -30,6 +33,10 @@ export async function GET(req: Request, ctx: Ctx) {
   }
   const found = await readOfflinePackFile(id, base);
   if (!found) {
+    const cdn = publicOfflinePackObjectUrl(id, base);
+    if (cdn) {
+      return NextResponse.redirect(cdn, 302);
+    }
     return NextResponse.json({ error: "file not found" }, { status: 404 });
   }
   const bytes = found.bytes;

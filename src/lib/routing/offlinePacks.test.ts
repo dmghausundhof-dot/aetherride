@@ -12,6 +12,7 @@ import {
   mergeCatalogPreferReady,
   parsePublishedCatalog,
   pickPreferredManifest,
+  publicOfflinePackObjectUrl,
   sortCatalogPacks,
   type OfflineCatalogPack,
   type OfflinePackManifest,
@@ -186,6 +187,11 @@ assert.equal(merged[0]!.bytes, 2595914);
 assert.ok(
   applyPackCdn("aachen", stub).cdn?.baseUrl?.includes(
     "/storage/v1/object/public/offline-packs/aachen"
+  )
+);
+assert.ok(
+  publicOfflinePackObjectUrl("vosges", "bike-overlay.geojson")?.includes(
+    "/offline-packs/vosges/bike-overlay.geojson"
   )
 );
 // Footgun: invented Storage URLs look "ready" to catalogStatus. toCatalogRow

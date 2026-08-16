@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import '../data/routing/map_style_url.dart';
 import '../data/routing/offline_maps_prefs.dart';
+import '../data/routing/offline_pmtiles_store.dart';
 
 abstract final class AppConfig {
   static const supabaseUrl = String.fromEnvironment(
@@ -35,6 +37,18 @@ abstract final class AppConfig {
     return productionApiBaseUrl;
   }
 
+  /// Public DACH MapLibre style (JSON with pmtiles:// source). Not a secret.
+  static const dachBasemapStyleUrl = kDachBasemapStyleUrl;
+
+  static const franceWestBasemapStyleUrl = kFranceWestBasemapStyleUrl;
+
+  static String get offlinePacksCdnRoot {
+    final base = supabaseUrl.replaceAll(RegExp(r'/$'), '');
+    if (base.isEmpty) return kOfflinePacksPublicCdnRoot;
+    return '$base/storage/v1/object/public/offline-packs';
+  }
+
+  /// Compile-time override. Empty → [dachBasemapStyleUrl].
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
     defaultValue: '',
@@ -160,14 +174,15 @@ abstract final class AppConfig {
   static String get impressumUrl => '$apiBaseUrl/legal/impressum';
   static String get widerrufUrl => '$apiBaseUrl/legal/widerruf';
 
-  /// Sync Style-URL: compile-time PMTiles-Style → Stadia → OpenFreeMap.
-  /// Kein demotiles als Produkt-Default.
+  /// Sync Style-URL: dart-define / DACH-Default → Stadia → OpenFreeMap.
+  /// Native MapLibre braucht Style-JSON, kein rohes `.pmtiles`.
   static String get mapStyleUrl {
-    final pm = pmtilesUrl.trim();
-    if (pm.isNotEmpty &&
-        (pm.endsWith('.json') ||
-            pm.contains('/styles/') ||
-            pm.contains('style.json'))) {
+    final pm = pmtilesUrl.trim().isNotEmpty
+        ? pmtilesUrl.trim()
+        : dachBasemapStyleUrl;
+    if (pm.endsWith('.json') ||
+        pm.contains('/styles/') ||
+        pm.contains('style.json')) {
       return pm;
     }
     if (stadiaApiKey.isNotEmpty) {
@@ -177,7 +192,7 @@ abstract final class AppConfig {
     return 'https://tiles.openfreemap.org/styles/liberty';
   }
 
-  /// Runtime: Prefs-Override (Style-JSON-URL) vor compile-time Defaults.
+  /// Runtime: Prefs-Override → lokale PMTiles-Style-Datei → CDN (DACH/FR).
   static Future<String> resolveMapStyleUrl() async {
     try {
       final m = await OfflineMapsPrefs.read();
@@ -188,10 +203,21 @@ abstract final class AppConfig {
               override.contains('style.json'))) {
         return override;
       }
+      final bbox = OfflineMapsPrefs.packBboxFrom(m);
+      return await OfflinePmtilesStore.resolveStyleUrl(
+        remoteFallback: mapStyleUrl,
+        packBbox: bbox,
+      );
     } catch (_) {}
     return mapStyleUrl;
   }
 
-  static bool get usingFreeBasemap =>
-      stadiaApiKey.isEmpty && pmtilesUrl.trim().isEmpty;
+  static bool get usingFreeBasemap => mapStyleUrl.contains('openfreemap.org');
+
+  /// Public catalog of built region packs (Supabase Storage).
+  static String get offlinePacksCatalogCdnUrl =>
+      '$offlinePacksCdnRoot/catalog.json';
+
+  static String offlinePackObjectUrl(String regionId, String file) =>
+      '$offlinePacksCdnRoot/$regionId/$file';
 }
