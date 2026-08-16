@@ -90,8 +90,10 @@ const LAYER_PAINT: LinePaint[] = [
 export type BikeOverlayMapLike = {
   getSource: (id: string) => unknown;
   addSource: (id: string, spec: unknown) => void;
+  removeSource?: (id: string) => void;
   getLayer: (id: string) => unknown;
   addLayer: (spec: object) => void;
+  removeLayer?: (id: string) => void;
   setLayoutProperty: (id: string, key: string, value: unknown) => void;
   setPaintProperty: (id: string, key: string, value: unknown) => void;
   setFilter: (id: string, filter: unknown) => void;
@@ -155,13 +157,19 @@ export function overlayClassesOn(opts: BikeOverlayApplyOpts): Set<string> {
     if (!(opts.extraOn ?? []).includes("mtb")) on.delete("mtb");
     if (!(opts.extraOn ?? []).includes("mtb_unrated")) on.delete("mtb_unrated");
   }
-  if (p.category === "gravel") on.add("gravel");
+  if (p.category === "gravel") {
+    on.add("gravel");
+    on.add("road");
+  }
+  if (p.category === "urban") on.add("road");
   if (p.category === "hike") {
     on.add("mtb");
     on.add("mtb_unrated");
   }
   return on;
 }
+
+let lastOverlaySourceKey = "";
 
 export function addBikeOverlayLayers(
   map: BikeOverlayMapLike,
@@ -174,6 +182,18 @@ export function addBikeOverlayLayers(
     rideProfileId?: RideProfileId | null;
   }
 ) {
+  const sourceKey = `${opts.kind}:${opts.url}`;
+  if (
+    map.getSource(BIKE_OVERLAY_SOURCE_ID) &&
+    lastOverlaySourceKey &&
+    lastOverlaySourceKey !== sourceKey
+  ) {
+    for (const layer of LAYER_PAINT) {
+      if (map.getLayer(layer.id)) map.removeLayer?.(layer.id);
+    }
+    map.removeSource?.(BIKE_OVERLAY_SOURCE_ID);
+  }
+
   if (!map.getSource(BIKE_OVERLAY_SOURCE_ID)) {
     if (opts.kind === "pmtiles") {
       const url = opts.url.startsWith("pmtiles://")
@@ -191,6 +211,7 @@ export function addBikeOverlayLayers(
         attribution: "© OpenStreetMap",
       });
     }
+    lastOverlaySourceKey = sourceKey;
   }
 
   const sourceLayer =
@@ -204,6 +225,7 @@ export function addBikeOverlayLayers(
       source: BIKE_OVERLAY_SOURCE_ID,
       ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
       filter: layer.filter,
+      minzoom: layer.cls === "road" || layer.cls === "mtb" ? 5 : 9,
       layout: {
         "line-cap": "round",
         "line-join": "round",
@@ -215,6 +237,8 @@ export function addBikeOverlayLayers(
           "interpolate",
           ["linear"],
           ["zoom"],
+          5,
+          layer.width * 0.55,
           10,
           layer.width * 0.85,
           14,
@@ -269,6 +293,8 @@ export function applyBikeOverlayVisibility(
       "interpolate",
       ["linear"],
       ["zoom"],
+      5,
+      width * 0.55,
       10,
       width * 0.85,
       14,

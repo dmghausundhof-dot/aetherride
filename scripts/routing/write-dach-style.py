@@ -122,6 +122,19 @@ def style_for(
                 },
             },
             {
+                "id": "cycleways",
+                "type": "line",
+                "source": "protomaps",
+                "source-layer": "roads",
+                "minzoom": min(11, z),
+                "filter": ["==", ["get", "kind_detail"], "cycleway"],
+                "paint": {
+                    "line-color": "#1E88E5",
+                    "line-width": 1.35,
+                    "line-opacity": 0.85,
+                },
+            },
+            {
                 "id": "boundaries",
                 "type": "line",
                 "source": "protomaps",

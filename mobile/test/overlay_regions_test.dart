@@ -1,3 +1,4 @@
+import 'package:aetherride_mobile/data/routing/bike_overlay.dart';
 import 'package:aetherride_mobile/data/routing/overlay_regions.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,5 +13,11 @@ void main() {
     expect(overlayRegionForPoint(3.082, 45.777)?.id, 'clermont-ferrand');
     expect(overlayRegionById('vosges')?.id, 'vosges');
     expect(overlayRegionForPoint(-30, 0), isNull);
+  });
+
+  test('online cycle mesh covers DACH, not ocean or Paris', () {
+    expect(pointInOnlineCycleMesh(8.54, 47.37), isTrue);
+    expect(pointInOnlineCycleMesh(2.35, 48.86), isFalse);
+    expect(pointInOnlineCycleMesh(-30, 0), isFalse);
   });
 }

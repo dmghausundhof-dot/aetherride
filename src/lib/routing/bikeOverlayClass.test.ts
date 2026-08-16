@@ -4,7 +4,9 @@
  */
 import assert from "node:assert/strict";
 import {
+  classifyBikeRoute,
   classifyBikeWay,
+  keepSignedCycleMesh,
   overlayFamilyForBike,
   overlayClassesForFamily,
   parseOsmMtbScale,
@@ -15,7 +17,7 @@ function testParseScale() {
   assert.equal(parseOsmMtbScale("S1"), "S1");
   assert.equal(parseOsmMtbScale("0+"), "S0");
   assert.equal(parseOsmMtbScale(undefined, "1"), "S1");
-  assert.equal(parseOsmMtbScale("4"), "S3");
+  assert.equal(parseOsmMtbScale("4"), "S3+");
   assert.equal(parseOsmMtbScale(""), null);
   assert.equal(parseOsmMtbScale(undefined, undefined), null);
 }
@@ -109,16 +111,60 @@ function testFamilyDefaults() {
   ]);
   assert.deepEqual(overlayClassesForFamily(overlayFamilyForBike("gravel")), [
     "gravel",
+    "road",
   ]);
   assert.deepEqual(overlayClassesForFamily(overlayFamilyForBike("road")), [
     "road",
+    "urban",
   ]);
   assert.deepEqual(overlayClassesForFamily(overlayFamilyForBike("urban")), [
     "urban",
+    "road",
   ]);
   assert.equal(overlayFamilyForBike("emtb"), "mtb");
   assert.equal(overlayFamilyForBike("downhill"), "mtb");
   assert.equal(overlayFamilyForBike("dh"), "mtb");
+}
+
+function testSignedCycleMeshRoutes() {
+  const icn = classifyBikeRoute({
+    route: "bicycle",
+    network: "icn",
+    ref: "EV15",
+    name: "Rheinradweg",
+  });
+  assert.equal(icn.bikeClass, "road");
+  assert.equal(icn.network, "icn");
+  assert.equal(keepSignedCycleMesh({ route: "bicycle", network: "icn" }), true);
+
+  const lcn = classifyBikeRoute({
+    route: "bicycle",
+    network: "lcn",
+    name: "Stadt-Rundkurs",
+  });
+  assert.equal(lcn.bikeClass, "urban");
+  assert.equal(keepSignedCycleMesh({ route: "bicycle", network: "lcn" }), false);
+
+  const rcn = classifyBikeRoute({
+    route: "bicycle",
+    network: "rcn",
+    name: "Rhein-Radweg-Zubringer",
+  });
+  assert.equal(rcn.bikeClass, "road");
+  assert.equal(rcn.network, "rcn");
+  assert.equal(keepSignedCycleMesh({ route: "bicycle", network: "rcn" }), true);
+
+  const ev = classifyBikeRoute({ route: "bicycle", ref: "EV6" });
+  assert.equal(ev.network, "icn");
+  assert.equal(keepSignedCycleMesh({ route: "bicycle", ref: "EV6" }), true);
+
+  const mtb = classifyBikeRoute({ route: "mtb", name: "Alpen-Traverse" });
+  assert.equal(mtb.bikeClass, "mtb");
+  assert.equal(keepSignedCycleMesh({ route: "mtb" }), false);
+
+  const hiking = classifyBikeRoute({ route: "hiking", network: "nwn" });
+  assert.equal(hiking.bikeClass, "hidden");
+  assert.equal(keepSignedCycleMesh({ route: "hiking" }), false);
 }
 
 testParseScale();
@@ -133,4 +179,5 @@ testRoadCycleway();
 testUrbanLivingStreet();
 testUrbanCycleLane();
 testFamilyDefaults();
+testSignedCycleMeshRoutes();
 console.log("bikeOverlayClass.test.ts: ok");

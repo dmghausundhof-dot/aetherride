@@ -23,6 +23,13 @@ const kCataloniaPyreneesBasemapStyleUrl =
 const kUkSouthBasemapStyleUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/uk-south-z11-style.json';
 
+/// Signed OSM cycle routes (icn/ncn/rcn + MTB relations) on the live catalog.
+const kOnlineCycleMeshPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/cycle-routes.pmtiles';
+
+const kOnlineCycleMeshGeojsonUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/cycle-routes.geojson';
+
 const kDachBasemapId = 'dach-z11';
 const kFranceWestBasemapId = 'france-west-z11';
 const kAlpsSouthBasemapId = 'alps-south-z11';
