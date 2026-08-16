@@ -35,6 +35,8 @@ ARCHIVES: tuple[tuple[str, str, bool], ...] = (
     ("alps-south", "AetherRide alps-south z0–{z}", False),
     ("benelux", "AetherRide benelux z0–{z}", False),
     ("italy-north", "AetherRide italy-north z0–{z}", False),
+    ("italy-center", "AetherRide italy-center z0–{z}", False),
+    ("italy-south", "AetherRide italy-south z0–{z}", False),
     ("catalonia-pyrenees", "AetherRide catalonia-pyrenees z0–{z}", False),
     ("uk-south", "AetherRide uk-south z0–{z}", False),
 )
@@ -296,7 +298,7 @@ def main() -> int:
     ap.add_argument(
         "--all",
         action="store_true",
-        help="Write all seven online archive styles into --out-dir",
+        help="Write all online archive styles into --out-dir",
     )
     ap.add_argument(
         "--out-dir",

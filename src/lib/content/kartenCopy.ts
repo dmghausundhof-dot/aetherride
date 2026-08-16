@@ -6,9 +6,9 @@ export const KARTEN_PAGE = {
   kicker: "Abdeckung",
   title: "Wo die Karte liegt — und wo ein Loch ist.",
   description:
-    "Online-Basemap in DACH, Frankreich, Alpen-Süd, Benelux, Norditalien, Katalonien/Pyrenäen und Südengland. Offline sind Stadt-Packs, keine Länderkarte.",
+    "Online-Basemap in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen und Südengland. Offline sind Stadt-Packs, keine Länderkarte.",
   lead: "Die Karte vor dem Tor ist kein Download von Europa. Online streamt MapLibre benannte Blätter. Offline lädst du Städte. Was fehlt, bleibt leer.",
-  onlineTitle: "Online: sieben Blätter",
+  onlineTitle: "Online: neun Blätter",
   onlineLead:
     "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land. Auf dem DACH-Blatt liegt das Radnetz — OSM-Radrouten (EuroVelo, national, regional). Ab Zoom 12 zeigen Hausberge OSM-Wege (Pfad, Radweg, Track).",
   pathsNote:
@@ -18,13 +18,13 @@ export const KARTEN_PAGE = {
     "In der App liegen Routing-Packs für Städte und Hausberge. Es gibt keine Komoot-Länderkarte und keine Hülle, die so tut.",
   holesTitle: "Löcher, ehrlich",
   holesLead:
-    "Außerhalb der sieben Blätter bleibt die Fläche leer. Wir füllen sie nicht mit einem Fake-Globus.",
+    "Außerhalb der neun Blätter bleibt die Fläche leer. Wir füllen sie nicht mit einem Fake-Globus.",
   holes: [
     "Skandinavien, Polen, der Balkan",
     "Iberien außer Katalonien/Pyrenäen — kein Spanien-Pack",
     "UK außer Südengland — kein Schottland, kein ganzes Königreich",
-    "Italien südlich der Po-Ebene — Rom und der Süden fehlen",
-    "Korsika, Irland, Übersee",
+    "Sizilien, Sardinien, Korsika — kein Insel-Italien",
+    "Irland, Übersee",
   ],
   splitNote:
     "Unter Regionen stehen Tour-Ideen mit Pin. Unter Karten steht, welches Blatt MapLibre wirklich streamt.",

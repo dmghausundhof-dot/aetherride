@@ -15,6 +15,8 @@ abstract final class OfflinePmtilesStore {
   static const alpsSouthId = kAlpsSouthBasemapId;
   static const beneluxId = kBeneluxBasemapId;
   static const italyNorthId = kItalyNorthBasemapId;
+  static const italyCenterId = kItalyCenterBasemapId;
+  static const italySouthId = kItalySouthBasemapId;
   static const cataloniaPyreneesId = kCataloniaPyreneesBasemapId;
   static const ukSouthId = kUkSouthBasemapId;
 

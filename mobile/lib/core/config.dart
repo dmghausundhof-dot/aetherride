@@ -48,6 +48,10 @@ abstract final class AppConfig {
 
   static const italyNorthBasemapStyleUrl = kItalyNorthBasemapStyleUrl;
 
+  static const italyCenterBasemapStyleUrl = kItalyCenterBasemapStyleUrl;
+
+  static const italySouthBasemapStyleUrl = kItalySouthBasemapStyleUrl;
+
   static const cataloniaPyreneesBasemapStyleUrl =
       kCataloniaPyreneesBasemapStyleUrl;
 
@@ -61,7 +65,7 @@ abstract final class AppConfig {
 
   /// Compile-time override. Empty → [dachBasemapStyleUrl]; Discover/Ride then
   /// switch among the CDN catalog (DACH, FR-west, Alps-south, Benelux,
-  /// Italy-north, Catalonia/Pyrenees, UK-south) by camera/GPS bbox.
+  /// Italy-north/center/south, Catalonia/Pyrenees, UK-south) by camera/GPS bbox.
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
     defaultValue: '',

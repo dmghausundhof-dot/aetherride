@@ -209,7 +209,7 @@ function lockedEnvStyle(): maplibregl.StyleSpecification | string | null {
   return pmtilesStyleFromUrl(pmtilesUrl);
 }
 
-/** Web: CDN catalog (seven named regions) unless env locks a custom style. */
+/** Web: CDN catalog (named regions) unless env locks a custom style. */
 function pickInitialStyle(
   lng: number,
   lat: number

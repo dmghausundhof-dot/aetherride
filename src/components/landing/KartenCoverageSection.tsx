@@ -46,7 +46,7 @@ function KartenCoverageView({
             </p>
             <h3 className="mt-1 text-lg font-semibold">Basemap, gestreamt</h3>
             <p className="mt-2 text-sm text-text-secondary">
-              Sieben Blätter auf dem CDN. Die Karte wechselt mit dem Ausschnitt.
+              Neun Blätter auf dem CDN. Die Karte wechselt mit dem Ausschnitt.
               Das ist kein Download von Europa.
             </p>
           </div>
