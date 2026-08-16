@@ -12,6 +12,8 @@ void main() {
     expect(overlayRegionForPoint(8.40, 49.01)?.id, 'karlsruhe');
     expect(overlayRegionForPoint(8.42, 49.045)?.id, 'karlsruhe');
     expect(overlayRegionForPoint(-30, 0), isNull);
+    expect(overlayRegionById('clermont-ferrand')?.name, contains('Puy de Dôme'));
+    expect(overlayRegionById('missing'), isNull);
   });
 
   test('online cycle mesh follows the Blatt, including Paris', () {

@@ -101,6 +101,11 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'bordeaux', name: 'Bordeaux / Garonne', bbox: [-0.72, 44.72, -0.4, 44.95]),
   OverlayRegion(id: 'toulouse', name: 'Toulouse / Canal du Midi', bbox: [1.28, 43.48, 1.6, 43.72]),
   OverlayRegion(id: 'nantes', name: 'Nantes / Erdre', bbox: [-1.7, 47.12, -1.4, 47.32]),
+  OverlayRegion(id: 'clermont-ferrand', name: 'Clermont-Ferrand / Puy de Dôme', bbox: [2.9, 45.68, 3.22, 45.9]),
+  OverlayRegion(id: 'montpellier', name: 'Montpellier / Lez', bbox: [3.75, 43.52, 4.02, 43.7]),
+  OverlayRegion(id: 'reims', name: 'Reims / Champagne', bbox: [3.9, 49.18, 4.18, 49.35]),
+  OverlayRegion(id: 'rouen', name: 'Rouen / Seine', bbox: [0.95, 49.35, 1.22, 49.52]),
+  OverlayRegion(id: 'rennes', name: 'Rennes / Vilaine', bbox: [-1.78, 48.05, -1.55, 48.18]),
 ];
 
 const kOverlayPackCatalog = <OverlayPackRef>[
@@ -182,7 +187,19 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'bordeaux', name: 'Bordeaux / Garonne'),
   OverlayPackRef(id: 'toulouse', name: 'Toulouse / Canal du Midi'),
   OverlayPackRef(id: 'nantes', name: 'Nantes / Erdre'),
+  OverlayPackRef(id: 'clermont-ferrand', name: 'Clermont-Ferrand / Puy de Dôme'),
+  OverlayPackRef(id: 'montpellier', name: 'Montpellier / Lez'),
+  OverlayPackRef(id: 'reims', name: 'Reims / Champagne'),
+  OverlayPackRef(id: 'rouen', name: 'Rouen / Seine'),
+  OverlayPackRef(id: 'rennes', name: 'Rennes / Vilaine'),
 ];
+
+OverlayRegion? overlayRegionById(String id) {
+  for (final r in kOverlayRegions) {
+    if (r.id == id) return r;
+  }
+  return null;
+}
 
 OverlayRegion? overlayRegionForPoint(double lng, double lat) {
   final hits = [
