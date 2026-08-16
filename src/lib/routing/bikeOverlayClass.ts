@@ -188,6 +188,68 @@ export function classifyBikeWay(tags: OsmWayTags): BikeOverlayClassification {
   return { bikeClass: "hidden", mtbScale: null };
 }
 
+/** OSM cycle-network rank for route relations (icn > ncn > rcn > lcn). */
+export type BikeRouteNetwork = "icn" | "ncn" | "rcn" | "lcn" | "mtb" | "";
+
+export type BikeRouteClassification = BikeOverlayClassification & {
+  network: BikeRouteNetwork;
+};
+
+function parseBikeRouteNetwork(
+  networkRaw: string,
+  refRaw: string,
+  routeRaw: string
+): BikeRouteNetwork {
+  const n = networkRaw.toLowerCase();
+  if (n.includes("icn")) return "icn";
+  if (n.includes("ncn")) return "ncn";
+  if (n.includes("rcn")) return "rcn";
+  if (n.includes("lcn")) return "lcn";
+  const ref = refRaw.toUpperCase().replace(/\s+/g, "");
+  if (/^EV\d/.test(ref) || /^CDP/.test(ref) || /^D-?ROUTE/.test(ref)) {
+    return "icn";
+  }
+  if (routeRaw === "mtb") return "mtb";
+  return "";
+}
+
+/**
+ * OSM route relation → overlay class.
+ * Signed long-distance mesh: icn/ncn/rcn (+ EuroVelo ref). LCN is local clutter.
+ */
+export function classifyBikeRoute(tags: OsmWayTags): BikeRouteClassification {
+  const route = tag(tags, "route");
+  const network = parseBikeRouteNetwork(
+    tag(tags, "network"),
+    tag(tags, "ref"),
+    route
+  );
+  if (route === "mtb" || network === "mtb") {
+    return {
+      bikeClass: "mtb",
+      mtbScale: parseOsmMtbScale(tags["mtb:scale"], tags["mtb:scale:imba"]),
+      network: "mtb",
+    };
+  }
+  if (route !== "bicycle" && route !== "cycling") {
+    return { bikeClass: "hidden", mtbScale: null, network: "" };
+  }
+  if (network === "lcn") {
+    return { bikeClass: "urban", mtbScale: null, network: "lcn" };
+  }
+  if (network === "icn" || network === "ncn" || network === "rcn") {
+    return { bikeClass: "road", mtbScale: null, network };
+  }
+  return { bikeClass: "hidden", mtbScale: null, network: "" };
+}
+
+/** Keep icn/ncn/rcn. LCN is local clutter; untagged MTB loops stay out. */
+export function keepSignedCycleMesh(tags: OsmWayTags): boolean {
+  const { bikeClass, network } = classifyBikeRoute(tags);
+  if (bikeClass === "hidden") return false;
+  return network === "icn" || network === "ncn" || network === "rcn";
+}
+
 /** Garage / routing profile → which overlay classes are “on” (others dim). */
 export type BikeOverlayFamily = "mtb" | "gravel" | "road" | "urban";
 

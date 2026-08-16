@@ -234,4 +234,7 @@ abstract final class AppConfig {
 
   static String offlinePackObjectUrl(String regionId, String file) =>
       '$offlinePacksCdnRoot/$regionId/$file';
+
+  static const onlineCycleMeshPmtilesUrl = kOnlineCycleMeshPmtilesUrl;
+  static const onlineCycleMeshGeojsonUrl = kOnlineCycleMeshGeojsonUrl;
 }

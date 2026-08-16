@@ -5,6 +5,11 @@
  */
 
 import dachRaw from "../../../data/routing/dach-regions.json";
+import {
+  onlineCycleMeshGeojsonUrl,
+  onlineCycleMeshPmtilesUrl,
+  packHasDetailBikeOverlay,
+} from "../map/onlineCycleMesh";
 import { pointInDach } from "./dach";
 
 export type DachRegionKind = "pack" | "envelope";
@@ -86,19 +91,35 @@ export type OverlayHint = {
   geojsonPath: string | null;
 };
 
+function meshPaths(lng: number, lat: number): {
+  pmtilesPath: string | null;
+  geojsonPath: string | null;
+} {
+  return {
+    pmtilesPath: onlineCycleMeshPmtilesUrl(lng, lat),
+    geojsonPath: onlineCycleMeshGeojsonUrl(lng, lat),
+  };
+}
+
 export function overlayHintFromRegistry(
   lng: number,
   lat: number
 ): OverlayHint {
   const region = dachRegionForPoint(lng, lat);
+  const mesh = meshPaths(lng, lat);
   if (region?.kind === "pack") {
+    const detail = packHasDetailBikeOverlay(region.id);
     return {
       regionId: region.id,
       regionName: region.name,
       mode: "region_pack",
       kind: "pack",
-      pmtilesPath: `/api/offline/packs/${region.id}/bike-overlay.pmtiles`,
-      geojsonPath: `/api/offline/packs/${region.id}/bike-overlay.geojson`,
+      pmtilesPath: detail
+        ? `/api/offline/packs/${region.id}/bike-overlay.pmtiles`
+        : mesh.pmtilesPath,
+      geojsonPath: detail
+        ? `/api/offline/packs/${region.id}/bike-overlay.geojson`
+        : mesh.geojsonPath,
     };
   }
   if (region?.kind === "envelope") {
@@ -107,8 +128,7 @@ export function overlayHintFromRegistry(
       regionName: region.name,
       mode: "dach_live",
       kind: "envelope",
-      pmtilesPath: null,
-      geojsonPath: null,
+      ...mesh,
     };
   }
   if (pointInDach(lat, lng)) {
@@ -117,8 +137,16 @@ export function overlayHintFromRegistry(
       regionName: "DACH live",
       mode: "dach_live",
       kind: null,
-      pmtilesPath: null,
-      geojsonPath: null,
+      ...mesh,
+    };
+  }
+  if (mesh.pmtilesPath) {
+    return {
+      regionId: "cycle-mesh",
+      regionName: "Radnetz",
+      mode: "live_osm",
+      kind: null,
+      ...mesh,
     };
   }
   return {

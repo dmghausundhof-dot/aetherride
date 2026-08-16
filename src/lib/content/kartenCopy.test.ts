@@ -7,6 +7,7 @@ import { ONLINE_BASEMAP_RIDER } from "../map/onlineBasemap";
 import { FAQ_ITEMS } from "./faq";
 
 assert.ok(KARTEN_PAGE.lead.length > 60);
+assert.ok(KARTEN_PAGE.onlineLead.includes("Radnetz"));
 assert.ok(KARTEN_PAGE.holes.length >= 4);
 assert.equal(
   JSON.stringify(KARTEN_PAGE).includes("uk-south-z11") ||

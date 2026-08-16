@@ -9,12 +9,27 @@ import 'package:path/path.dart' as p;
 import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import 'map_style_url.dart';
 import 'offline_tiles.dart';
 import 'overlay_regions.dart';
 
 const kBikeOverlaySourceId = 'bike-overlay';
 const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
 const kBikeOverlaySampleAsset = 'assets/routing/bike-overlay-sample.geojson';
+
+/// Region packs that already publish a way-level bike-overlay on the CDN.
+const kDetailBikeOverlayPacks = <String>{
+  'rhein-neckar',
+  'schwarzwald-nord',
+  'vosges',
+  'innsbruck',
+  'kitzbuehel',
+  'zermatt',
+  'davos',
+  'st-moritz',
+  'interlaken',
+  'morzine',
+};
 
 const kBikeOverlayLayerIds = <BikeOverlayClass, String>{
   BikeOverlayClass.mtb: 'bike-overlay-mtb',
@@ -33,6 +48,16 @@ bool pointInRheinNeckar(double lng, double lat) =>
     lng <= rheinNeckarBbox[2] &&
     lat <= rheinNeckarBbox[3];
 
+/// DACH online Blatt — same bbox as dach-z11.
+bool pointInOnlineCycleMesh(double lng, double lat) =>
+    lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
+
+bool _isPmtilesOverlay(Object data) {
+  if (data is! String) return false;
+  final u = data.toLowerCase();
+  return u.contains('.pmtiles') || u.startsWith('pmtiles://');
+}
+
 Future<Object?> resolveBikeOverlayData({
   required double lng,
   required double lat,
@@ -46,8 +71,9 @@ Future<Object?> resolveBikeOverlayData({
   }
 
   final region = overlayRegionForPoint(lng, lat);
-  if (region != null) {
+  if (region != null && kDetailBikeOverlayPacks.contains(region.id)) {
     final urls = [
+      Uri.parse(AppConfig.offlinePackObjectUrl(region.id, kBikeOverlayGeojsonName)),
       Uri.parse(
         '${AppConfig.apiBaseUrl}/api/offline/packs/${region.id}/$kBikeOverlayGeojsonName',
       ),
@@ -68,6 +94,10 @@ Future<Object?> resolveBikeOverlayData({
         }
       } catch (_) {}
     }
+  }
+
+  if (pointInOnlineCycleMesh(lng, lat)) {
+    return kOnlineCycleMeshPmtilesUrl;
   }
 
   // Sample overlay is Rhein-Neckar geometry — never show it in Wien/Hamburg.
@@ -92,14 +122,26 @@ Future<void> attachBikeOverlayLayers(
   required bool visible,
   required Set<BikeOverlayClass> extraOn,
 }) async {
+  final pmtiles = _isPmtilesOverlay(data);
   try {
-    await c.addSource(
-      kBikeOverlaySourceId,
-      GeojsonSourceProperties(
-        data: data,
-        attribution: '© OpenStreetMap',
-      ),
-    );
+    if (pmtiles) {
+      final raw = data.toString();
+      await c.addSource(
+        kBikeOverlaySourceId,
+        VectorSourceProperties(
+          url: raw.startsWith('pmtiles://') ? raw : 'pmtiles://$raw',
+          attribution: '© OpenStreetMap',
+        ),
+      );
+    } else {
+      await c.addSource(
+        kBikeOverlaySourceId,
+        GeojsonSourceProperties(
+          data: data,
+          attribution: '© OpenStreetMap',
+        ),
+      );
+    }
   } catch (_) {
     // Source already present after a partial attach.
   }
@@ -129,7 +171,8 @@ Future<void> attachBikeOverlayLayers(
           ['get', 'bike_class'],
           classId,
         ],
-        minzoom: 9,
+        sourceLayer: pmtiles ? 'bike' : null,
+        minzoom: classId == 'road' || classId == 'mtb' ? 5 : 9,
       );
     } catch (_) {}
   }

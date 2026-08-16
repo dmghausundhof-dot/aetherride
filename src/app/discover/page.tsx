@@ -274,13 +274,18 @@ function DiscoverPageInner() {
     }
     const [lng, lat] = mapCenter;
     const overlay = overlayHintForPoint(lng, lat);
-    if (overlay.mode !== "region_pack" || !overlay.pmtilesPath) return null;
+    if (!overlay.pmtilesPath) return null;
+    const path = overlay.pmtilesPath;
+    const kind = path.includes(".geojson") ? "geojson" : "pmtiles";
+    if (/^https?:\/\//i.test(path)) {
+      return { url: path, kind: kind as "pmtiles" | "geojson" };
+    }
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
     if (!origin) return null;
     return {
-      url: `${origin}${overlay.pmtilesPath}`,
-      kind: "pmtiles" as const,
+      url: `${origin}${path}`,
+      kind: kind as "pmtiles" | "geojson",
     };
   }, [mapCenter]);
   const [draft, setDraft] = useState<PlanDraft>(() =>

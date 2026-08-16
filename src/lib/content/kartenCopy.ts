@@ -10,7 +10,7 @@ export const KARTEN_PAGE = {
   lead: "Die Karte vor dem Tor ist kein Download von Europa. Online streamt MapLibre benannte Blätter. Offline lädst du Städte. Was fehlt, bleibt leer.",
   onlineTitle: "Online: sieben Blätter",
   onlineLead:
-    "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land.",
+    "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land. Auf dem DACH-Blatt liegt das Radnetz — OSM-Radrouten (EuroVelo, national, regional), nicht jeder Pfad.",
   offlineTitle: "Offline: Städte, keine Länder",
   offlineLead:
     "In der App liegen Routing-Packs für Städte und Hausberge. Es gibt keine Komoot-Länderkarte und keine Hülle, die so tut.",

@@ -89,6 +89,7 @@ function testGravelKeepsS0S1() {
   });
   assert.ok(on.has("gravel"));
   assert.ok(on.has("mtb"));
+  assert.ok(on.has("road"), "gravel touring also sees signed cycle routes");
 }
 
 testDownhillFiltersS1ToS3();

@@ -41,6 +41,28 @@ assert.ok(genf.regionId, "Genf must be named");
 const ocean = overlayHintFromRegistry(-30, 0);
 assert.equal(ocean.mode, "live_osm");
 assert.equal(ocean.regionId, null);
+assert.equal(ocean.pmtilesPath, null);
+
+const heidelberg = overlayHintFromRegistry(8.68, 49.41);
+assert.equal(heidelberg.mode, "region_pack");
+assert.ok(
+  heidelberg.pmtilesPath?.includes("/api/offline/packs/rhein-neckar/"),
+  "detail overlay pack keeps way-level tiles"
+);
+
+const passau = overlayHintFromRegistry(13.43, 48.57);
+assert.equal(passau.mode, "dach_live");
+assert.ok(
+  passau.pmtilesPath?.includes("/basemap/cycle-routes.pmtiles"),
+  "DACH envelope uses signed cycle-route mesh"
+);
+
+const paris = overlayHintFromRegistry(2.35, 48.86);
+assert.equal(
+  paris.pmtilesPath,
+  null,
+  "france-west has no DACH cycle mesh yet"
+);
 
 assert.equal(pointInDach(51.34, 12.37), true);
 

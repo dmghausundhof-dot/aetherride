@@ -8,6 +8,7 @@ import {
   type OnlineBasemapId,
   riderBasemap,
 } from "@/lib/map/onlineBasemap";
+import { ONLINE_CYCLE_MESH_PMTILES_URL } from "@/lib/map/onlineCycleMesh";
 import { KARTEN_PAGE } from "@/lib/content/kartenCopy";
 
 export function KartenPreview({
@@ -46,6 +47,12 @@ export function KartenPreview({
           center={region.center}
           zoom={region.zoom}
           className="h-[min(52vh,460px)]"
+          bikeOverlayUrl={
+            id === "dach-z11" ? ONLINE_CYCLE_MESH_PMTILES_URL : null
+          }
+          bikeOverlayKind="pmtiles"
+          bikeOverlayFamily="road"
+          bikeOverlayVisible
         />
       </div>
       <p className="mt-3 text-sm text-text-secondary">
