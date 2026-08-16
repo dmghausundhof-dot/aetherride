@@ -1,5 +1,5 @@
 /**
- * AetherRide Garage Domain – Spec F-GAR / F-SET / DM-02…DM-07
+ * FlowLine Garage Domain – Spec F-GAR / F-SET / DM-02…DM-07
  * Clientseitige Modelle für die Web-Implementierung der Spec-P0-Garage.
  */
 
@@ -11,6 +11,9 @@ export type BikeCategory =
   | "gravel"
   | "road"
   | "urban"
+  | "cargo"
+  | "folding"
+  | "kids"
   | "emtb"
   | "etrekking"
   | "hiking";

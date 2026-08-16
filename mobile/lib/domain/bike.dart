@@ -8,9 +8,25 @@ enum BikeCategory {
   gravel,
   road,
   urban,
+  cargo,
+  folding,
+  kids,
   emtb,
   etrekking,
   hiking,
+}
+
+extension BikeCategoryKind on BikeCategory {
+  /// Licht, Schloss, Träger — Alltag, nicht Trail.
+  bool get showsCityAccessories => switch (this) {
+        BikeCategory.urban ||
+        BikeCategory.etrekking ||
+        BikeCategory.cargo ||
+        BikeCategory.folding ||
+        BikeCategory.kids =>
+          true,
+        _ => false,
+      };
 }
 
 enum WheelSize { w275, w29, c700, b650 }
@@ -88,6 +104,9 @@ class Bike {
         BikeCategory.etrekking => 'E-Trekking',
         BikeCategory.gravel => 'E-Gravel',
         BikeCategory.urban => 'E-City',
+        BikeCategory.cargo => 'E-Lastenrad',
+        BikeCategory.folding => 'E-Faltrad',
+        BikeCategory.kids => 'E-Kinderrad',
         BikeCategory.road => 'E-Road',
         BikeCategory.hiking => 'Zu Fuß',
       };
@@ -100,6 +119,9 @@ class Bike {
       BikeCategory.gravel => 'Gravel',
       BikeCategory.road => 'Rennrad',
       BikeCategory.urban => 'City',
+      BikeCategory.cargo => 'Lastenrad',
+      BikeCategory.folding => 'Faltrad',
+      BikeCategory.kids => 'Kinderrad',
       BikeCategory.emtb => 'E-MTB',
       BikeCategory.etrekking => 'E-Trekking',
       BikeCategory.hiking => 'Zu Fuß',

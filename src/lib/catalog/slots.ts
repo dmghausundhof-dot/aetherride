@@ -153,6 +153,9 @@ export function categoryToBikeType(
       return "gravel";
     case "road":
     case "urban":
+    case "cargo":
+    case "folding":
+    case "kids":
       return "road";
     case "emtb":
       return "e_mtb";
@@ -192,7 +195,10 @@ export function bikeCategoryLabel(category: BikeCategory): string {
     dh: "Downhill",
     gravel: "Gravel",
     road: "Rennrad",
-    urban: "Urban",
+    urban: "City",
+    cargo: "Lastenrad",
+    folding: "Faltrad",
+    kids: "Kinderrad",
     emtb: "E-MTB",
     etrekking: "E-Trekking",
     hiking: "Wandern",

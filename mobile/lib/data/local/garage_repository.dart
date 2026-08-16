@@ -109,7 +109,7 @@ class GarageRepository {
   }) async {
     final bike = await addBikeBasic(
       name: name.trim().isEmpty ? 'Import-Bike' : name.trim(),
-      category: BikeCategory.mtbAm,
+      category: BikeCategory.urban,
       makeActive: true,
     );
     final store = profileStore;
@@ -834,7 +834,7 @@ class GarageRepository {
   Bike _toDomain(BikeRow row) {
     final category = BikeCategory.values.firstWhere(
       (c) => c.name == row.category,
-      orElse: () => BikeCategory.mtbAm,
+      orElse: () => BikeCategory.urban,
     );
     return Bike(
       id: row.id,

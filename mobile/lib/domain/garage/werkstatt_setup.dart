@@ -71,7 +71,12 @@ WerkstattKind werkstattKindFor(BikeCategory category) {
       WerkstattKind.mtb,
     BikeCategory.gravel => WerkstattKind.gravel,
     BikeCategory.road => WerkstattKind.road,
-    BikeCategory.urban || BikeCategory.etrekking => WerkstattKind.urban,
+    BikeCategory.urban ||
+    BikeCategory.etrekking ||
+    BikeCategory.cargo ||
+    BikeCategory.folding ||
+    BikeCategory.kids =>
+      WerkstattKind.urban,
     BikeCategory.hiking => WerkstattKind.hiking,
   };
 }

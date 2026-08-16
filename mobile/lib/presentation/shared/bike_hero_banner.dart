@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/garage/bike_photo_sync.dart';
 import '../../domain/bike.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 
 /// Foto-Banner + Name/Kategorie/Aktiv-Badge für ein Bike — gemeinsames
@@ -24,6 +26,7 @@ class BikeHeroBanner extends ConsumerWidget {
     this.showActiveBadge = true,
     this.showCaption = true,
     this.photoHeight = 140,
+    this.lastRideLine,
   });
 
   final Bike bike;
@@ -37,6 +40,7 @@ class BikeHeroBanner extends ConsumerWidget {
   final bool showActiveBadge;
   final bool showCaption;
   final double photoHeight;
+  final String? lastRideLine;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -86,9 +90,9 @@ class BikeHeroBanner extends ConsumerWidget {
                           color: AppColors.accent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
-                        child: const Text(
-                          'AKTIV',
-                          style: TextStyle(
+                        child: Text(
+                          AppLocalizations.of(context).garageActiveStamp,
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -140,7 +144,7 @@ class BikeHeroBanner extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         [
-                          bike.categoryLabel,
+                          AppLocalizations.of(context).bikeCategoryLabel(bike),
                           if (bike.brand != null) bike.brand!,
                           if (bike.model != null) bike.model!,
                           if (bike.year != null) '${bike.year}',
@@ -148,6 +152,16 @@ class BikeHeroBanner extends ConsumerWidget {
                         style: const TextStyle(
                             color: AppColors.muted, fontSize: 12.5),
                       ),
+                      if (lastRideLine != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          lastRideLine!,
+                          style: const TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

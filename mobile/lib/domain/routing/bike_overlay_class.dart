@@ -2,7 +2,7 @@ import '../bike.dart';
 
 /// OSM-Way → Bike-Overlay-Klasse. Spiegel von `src/lib/routing/bikeOverlayClass.ts`.
 ///
-/// Honesty: S0–S3 nur aus `mtb:scale` / `mtb:scale:imba`, nie aus `sac_scale`.
+/// Honesty: S0–S3+ nur aus `mtb:scale` / `mtb:scale:imba`, nie aus `sac_scale`.
 enum BikeOverlayClass {
   mtb,
   mtbUnrated,
@@ -63,7 +63,7 @@ const _cyclewayInfra = {
 String _tag(Map<String, String?> tags, String key) =>
     (tags[key] ?? '').trim().toLowerCase();
 
-/// Parse OSM MTB scale. Liest **nicht** `sac_scale`. 3+ → S3.
+/// Parse OSM MTB scale. Liest **nicht** `sac_scale`. 3+ → S3+ (Anzeige).
 MtbScaleLabel? parseOsmMtbScale(String? mtbScale, [String? mtbScaleImba]) {
   final raw = (mtbScale ?? '').trim().isNotEmpty
       ? mtbScale!.trim()
@@ -180,7 +180,11 @@ BikeOverlayFamily overlayFamilyForBike(BikeCategory category) =>
       BikeCategory.hiking =>
         BikeOverlayFamily.mtb,
       BikeCategory.gravel || BikeCategory.etrekking => BikeOverlayFamily.gravel,
-      BikeCategory.urban => BikeOverlayFamily.urban,
+      BikeCategory.urban ||
+      BikeCategory.cargo ||
+      BikeCategory.folding ||
+      BikeCategory.kids =>
+        BikeOverlayFamily.urban,
       BikeCategory.road => BikeOverlayFamily.road,
     };
 
@@ -199,7 +203,7 @@ String mtbScaleCss(MtbScaleLabel s) => switch (s) {
       MtbScaleLabel.s0 => 'S0',
       MtbScaleLabel.s1 => 'S1',
       MtbScaleLabel.s2 => 'S2',
-      MtbScaleLabel.s3 => 'S3',
+      MtbScaleLabel.s3 => 'S3+',
     };
 
 String bikeOverlayClassId(BikeOverlayClass c) => switch (c) {

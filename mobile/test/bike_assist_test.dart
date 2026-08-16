@@ -174,6 +174,57 @@ void main() {
         'E-Road',
       );
     });
+
+    test('pickGroups führt Alltag vor Trail', () {
+      final muscle = BikeAssistUx.pickGroups(BikeAssistMode.muscle);
+      expect(muscle.first.id, 'everyday');
+      expect(muscle.first.categories, contains(BikeCategory.urban));
+      expect(muscle.first.categories, contains(BikeCategory.cargo));
+      expect(muscle.first.categories, isNot(contains(BikeCategory.mtbAm)));
+      expect(
+        muscle.firstWhere((g) => g.id == 'trail').categories,
+        contains(BikeCategory.mtbAm),
+      );
+
+      final ebike = BikeAssistUx.pickGroups(BikeAssistMode.ebike);
+      expect(ebike.first.categories.first, BikeCategory.etrekking);
+      expect(
+        ebike.firstWhere((g) => g.id == 'trail').categories,
+        [BikeCategory.emtb],
+      );
+    });
+
+    test('Lastenrad / Faltrad / Kind remain themselves', () {
+      expect(
+        BikeAssistUx.coerceCategory(
+          BikeCategory.cargo,
+          BikeAssistMode.muscle,
+        ),
+        BikeCategory.cargo,
+      );
+      expect(
+        BikeAssistUx.coerceCategory(
+          BikeCategory.folding,
+          BikeAssistMode.ebike,
+        ),
+        BikeCategory.folding,
+      );
+      expect(
+        BikeAssistUx.subtypeLabel(
+          BikeCategory.kids,
+          BikeAssistMode.ebike,
+        ),
+        'E-Kinderrad',
+      );
+      expect(
+        const Bike(
+          id: 'c',
+          name: 'Lasten',
+          category: BikeCategory.cargo,
+        ).categoryLabel,
+        'Lastenrad',
+      );
+    });
   });
 
   group('Bike categoryLabel', () {

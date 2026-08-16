@@ -148,21 +148,21 @@ const schemaHotspots = <String, Map<String, SchemaAnchor>>{
 
 const schemaLayers = <String, Map<String, SchemaLayer>>{
   'road': {
-    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6B35'),
-    'battery': SchemaRectLayer(x: 334.0, y: 245.0, width: 44.0, height: 22.0, rx: 4.0, fill: '#1A5C45'),
+    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6A00'),
+    'battery': SchemaRectLayer(x: 334.0, y: 245.0, width: 44.0, height: 22.0, rx: 4.0, fill: '#7A8B73'),
   },
   'gravel': {
-    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6B35'),
-    'battery': SchemaRectLayer(x: 336.0, y: 246.0, width: 44.0, height: 22.0, rx: 4.0, fill: '#1A5C45'),
+    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6A00'),
+    'battery': SchemaRectLayer(x: 336.0, y: 246.0, width: 44.0, height: 22.0, rx: 4.0, fill: '#7A8B73'),
   },
   'mtb': {
-    'rear_shock': SchemaLineLayer(x1: 432.0, y1: 198.0, x2: 482.0, y2: 350.0, stroke: '#FF6B35', strokeWidth: 10.0),
-    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6B35'),
-    'battery': SchemaRectLayer(x: 349.0, y: 253.5, width: 44.0, height: 22.0, rx: 4.0, fill: '#1A5C45'),
+    'rear_shock': SchemaLineLayer(x1: 432.0, y1: 198.0, x2: 482.0, y2: 350.0, stroke: '#FF6A00', strokeWidth: 10.0),
+    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6A00'),
+    'battery': SchemaRectLayer(x: 349.0, y: 253.5, width: 44.0, height: 22.0, rx: 4.0, fill: '#7A8B73'),
   },
   'city': {
-    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6B35'),
-    'battery': SchemaRectLayer(x: 337.0, y: 238.5, width: 44.0, height: 22.0, rx: 4.0, fill: '#1A5C45'),
+    'motor': SchemaRectLayer(x: 372.0, y: 334.0, width: 56.0, height: 32.0, rx: 6.0, fill: '#FF6A00'),
+    'battery': SchemaRectLayer(x: 337.0, y: 238.5, width: 44.0, height: 22.0, rx: 4.0, fill: '#7A8B73'),
   },
 };
 

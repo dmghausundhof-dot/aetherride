@@ -79,6 +79,9 @@ export function planBikeSchema(input: {
       break;
     case "urban":
     case "etrekking":
+    case "cargo":
+    case "folding":
+    case "kids":
       template = "city";
       break;
     case "mtb_trail":

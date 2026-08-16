@@ -7,9 +7,13 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
 import '../../domain/component.dart';
 import '../../domain/garage/die_box.dart';
+import '../../domain/garage/last_ride_hero.dart';
+import '../../domain/garage/pressure_unit.dart';
 import '../../domain/garage/werkstatt_setup.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../domain/setup.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../shared/bike_hero_banner.dart';
 
@@ -47,6 +51,8 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
   List<Map<String, dynamic>> _logs = const [];
   bool _cscPaired = false;
   bool _busy = false;
+  String? _lastRideLine;
+  final Set<String> _snoozed = {};
 
   @override
   void initState() {
@@ -72,11 +78,15 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         .toList();
     final ble =
         await ref.read(bikeBleStoreProvider).deviceForBike(widget.bike.id);
+    final last = await ref
+        .read(rideRepositoryProvider)
+        .lastEndedForBike(widget.bike.id);
     if (!mounted) return;
     setState(() {
       _setups = setups;
       _logs = logs;
       _cscPaired = ble != null;
+      _lastRideLine = lastRideHeroLine(last);
     });
   }
 
@@ -114,10 +124,11 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         case DieBoxItemId.travelUnknown:
           await _logTravel();
         case DieBoxItemId.chainTeach:
+          final l10n = AppLocalizations.of(context);
           await ref.read(userProfileStoreProvider).addMaintenanceLog(
                 bikeId: widget.bike.id,
-                activity: 'Kette gemessen',
-                notes: 'Lehre, nicht Kilometer-Orakel',
+                activity: l10n.dieBoxChainLogged,
+                notes: l10n.dieBoxChainNotes,
                 odometerKm: widget.bike.odometerKm,
               );
         case DieBoxItemId.dueCare:
@@ -142,58 +153,71 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
   }
 
   Future<void> _logPressure() async {
+    final l10n = AppLocalizations.of(context);
+    final usesBar = pressureUsesBar(widget.bike.category);
+    final unit = pressureUnitLabel(widget.bike.category);
     final front = TextEditingController();
     final rear = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Druck merken'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Am Ventil ablesen. Keine OEM-Tabelle, kein erfundener psi.',
-              style: TextStyle(fontSize: 13, color: AppColors.muted),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            TextField(
-              controller: front,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Vorn (psi)',
-                isDense: true,
+      builder: (ctx) {
+        final d = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(d.dieBoxPressureTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                d.dieBoxPressureHint,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            TextField(
-              controller: rear,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Hinten (psi)',
-                isDense: true,
+              const SizedBox(height: AppSpacing.m),
+              TextField(
+                controller: front,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: '${d.dieBoxPressureFront} ($unit)',
+                  isDense: true,
+                ),
               ),
+              const SizedBox(height: AppSpacing.s),
+              TextField(
+                controller: rear,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: '${d.dieBoxPressureRear} ($unit)',
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(d.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(d.save),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Merken'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     if (ok != true) return;
-    final f = double.tryParse(front.text.replaceAll(',', '.'));
-    final r = double.tryParse(rear.text.replaceAll(',', '.'));
-    if (f == null && r == null) return;
-    final current = await ref
-        .read(setupRepositoryProvider)
-        .getCurrent(widget.bike.id);
+    final enteredF = double.tryParse(front.text.replaceAll(',', '.'));
+    final enteredR = double.tryParse(rear.text.replaceAll(',', '.'));
+    if (enteredF == null && enteredR == null) return;
+    final f = enteredF == null
+        ? null
+        : enteredPressureToPsi(enteredF, widget.bike.category);
+    final r = enteredR == null
+        ? null
+        : enteredPressureToPsi(enteredR, widget.bike.category);
+    final current =
+        await ref.read(setupRepositoryProvider).getCurrent(widget.bike.id);
     final values = _mergeValues(
       current?.values ?? const [],
       [
@@ -213,74 +237,83 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
     );
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: 'Druck gemerkt',
+          label: l10n.dieBoxPressureLogged,
           values: values,
           createdBy: 'user',
           parentSetupId: current?.id,
         );
     await ref.read(userProfileStoreProvider).addMaintenanceLog(
           bikeId: widget.bike.id,
-          activity: 'Druck gemerkt',
+          activity: l10n.dieBoxPressureLogged,
           notes: [
-            if (f != null) 'vorn ${f.toStringAsFixed(0)} psi',
-            if (r != null) 'hinten ${r.toStringAsFixed(0)} psi',
+            if (enteredF != null)
+              usesBar
+                  ? l10n.garageLogBarFront(enteredF.toStringAsFixed(1))
+                  : l10n.garageLogPsiFront(enteredF.toStringAsFixed(0)),
+            if (enteredR != null)
+              usesBar
+                  ? l10n.garageLogBarRear(enteredR.toStringAsFixed(1))
+                  : l10n.garageLogPsiRear(enteredR.toStringAsFixed(0)),
           ].join(' · '),
         );
   }
 
   Future<void> _logSag() async {
+    final l10n = AppLocalizations.of(context);
     final fork = TextEditingController();
     final shock = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('SAG messen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'O-Ring, Attack-Position, Prozent. Kein OEM-psi als SAG.',
-              style: TextStyle(fontSize: 13, color: AppColors.muted),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            TextField(
-              controller: fork,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Gabel SAG %',
-                isDense: true,
+      builder: (ctx) {
+        final d = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(d.dieBoxSagTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                d.dieBoxSagHint,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            TextField(
-              controller: shock,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Dämpfer SAG %',
-                isDense: true,
+              const SizedBox(height: AppSpacing.m),
+              TextField(
+                controller: fork,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: d.dieBoxSagFork,
+                  isDense: true,
+                ),
               ),
+              const SizedBox(height: AppSpacing.s),
+              TextField(
+                controller: shock,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: d.dieBoxSagShock,
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(d.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(d.save),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Merken'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     if (ok != true) return;
     final f = double.tryParse(fork.text.replaceAll(',', '.'));
     final s = double.tryParse(shock.text.replaceAll(',', '.'));
     if (f == null && s == null) return;
-    final current = await ref
-        .read(setupRepositoryProvider)
-        .getCurrent(widget.bike.id);
+    final current =
+        await ref.read(setupRepositoryProvider).getCurrent(widget.bike.id);
     final values = _mergeValues(
       current?.values ?? const [],
       [
@@ -292,7 +325,7 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
     );
     await ref.read(setupRepositoryProvider).createVersion(
           bikeId: widget.bike.id,
-          label: 'SAG gemerkt',
+          label: l10n.dieBoxSagLogged,
           values: values,
           createdBy: 'user',
           parentSetupId: current?.id,
@@ -308,46 +341,49 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
     );
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Federweg eintragen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Nur was am Rad steht. Keine erfundenen Fox-Zahlen.',
-              style: TextStyle(fontSize: 13, color: AppColors.muted),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            TextField(
-              controller: front,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Vorn mm',
-                isDense: true,
+      builder: (ctx) {
+        final d = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(d.dieBoxTravelTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                d.dieBoxTravelHint,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            TextField(
-              controller: rear,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Hinten mm',
-                isDense: true,
+              const SizedBox(height: AppSpacing.m),
+              TextField(
+                controller: front,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: d.dieBoxTravelFront,
+                  isDense: true,
+                ),
               ),
+              const SizedBox(height: AppSpacing.s),
+              TextField(
+                controller: rear,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: d.dieBoxTravelRear,
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(d.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(d.dieBoxTravelSave),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eintragen'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     if (ok != true) return;
     final f = int.tryParse(front.text.trim());
@@ -382,19 +418,34 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
     return map.values.toList();
   }
 
+  String _itemKey(DieBoxTodayItem item) {
+    if (item.id == DieBoxItemId.dueCare) {
+      return 'due:${item.due?.label ?? item.title}';
+    }
+    return item.id.name;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final plan = _plan;
-    final primary = plan.primary;
+    final today = [
+      for (final item in plan.today)
+        if (!_snoozed.contains(_itemKey(item))) l10n.localizeDieBoxItem(item),
+    ];
+    final primary = today.isEmpty ? null : today.first;
+    final rest = today.length <= 1 ? const <DieBoxTodayItem>[] : today.sublist(1);
 
     return Column(
       key: const Key('die-box-surface'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         BikeHeroBanner(
+          key: widget.compact ? const Key('werkstatt-bike-hero') : null,
           bike: widget.bike,
           onTap: widget.onOpenDetail,
           photoHeight: widget.compact ? 140 : 160,
+          lastRideLine: _lastRideLine,
         ),
         const SizedBox(height: AppSpacing.s),
         _BereitCard(plan: plan, bike: widget.bike),
@@ -409,8 +460,8 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
           const SizedBox(height: AppSpacing.s),
           Text(
             plan.setup.kind == WerkstattKind.urban
-                ? 'Nichts fällig — Montag-bereit.'
-                : 'Nichts fällig.',
+                ? l10n.dieBoxNothingDueMonday
+                : l10n.dieBoxNothingDue,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 13,
@@ -419,16 +470,20 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
             ),
           ),
         ],
+        if (rest.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.l),
+          _ZoneTitle(label: l10n.dieBoxZoneToday),
+          const SizedBox(height: AppSpacing.s),
+          _HeuteZone(
+            items: rest,
+            busy: _busy,
+            laterLabel: l10n.dieBoxLater,
+            onTap: _runToday,
+            onLater: (item) => setState(() => _snoozed.add(_itemKey(item))),
+          ),
+        ],
         const SizedBox(height: AppSpacing.l),
-    const _ZoneTitle(label: 'Heute'),
-        const SizedBox(height: AppSpacing.s),
-        _HeuteZone(
-          items: plan.today,
-          busy: _busy,
-          onTap: _runToday,
-        ),
-        const SizedBox(height: AppSpacing.l),
-        const _ZoneTitle(label: 'Am Rad'),
+        _ZoneTitle(label: l10n.dieBoxZoneOnBike),
         const SizedBox(height: AppSpacing.s),
         _AmRadZone(
           plan: plan,
@@ -439,22 +494,17 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
                   final next = plan.addableSlots.where(
                     (s) => !plan.onBike.any((c) => c.slot == s),
                   );
-                  final slot = next.isEmpty
-                      ? plan.addableSlots.firstOrNull
-                      : next.first;
+                  final slot =
+                      next.isEmpty ? plan.addableSlots.firstOrNull : next.first;
                   if (slot != null) unawaited(widget.onInstallSlot!(slot));
                 },
         ),
         const SizedBox(height: AppSpacing.l),
-        const _ZoneTitle(label: 'Sensor'),
-        const SizedBox(height: AppSpacing.s),
-        if (widget.sensorChild != null)
-          widget.sensorChild!
-        else
-          const Text(
-            'CSC am Rad. Die Uhr bleibt auf dem Hof.',
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
-          ),
+        if (widget.sensorChild != null) ...[
+          _ZoneTitle(label: l10n.dieBoxZoneSensor),
+          const SizedBox(height: AppSpacing.s),
+          widget.sensorChild!,
+        ],
         if (plan.setup.hasElectricAssist) ...[
           const SizedBox(height: AppSpacing.s),
           const _BatteryHonestyCard(),
@@ -492,6 +542,7 @@ class _BereitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tone = switch (plan.readiness) {
       DieBoxReadiness.ready => AppColors.forestOnDark,
       DieBoxReadiness.almost => const Color(0xFFE8EEEA),
@@ -514,7 +565,7 @@ class _BereitCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                dieBoxReadinessLabel(plan.readiness),
+                l10n.dieBoxReadiness(plan.readiness),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
@@ -524,7 +575,7 @@ class _BereitCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.s),
               Expanded(
                 child: Text(
-                  bike.categoryLabel,
+                  l10n.bikeCategoryLabel(bike),
                   style: const TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ),
@@ -532,45 +583,42 @@ class _BereitCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s),
           Text(
-            plan.sentence,
+            l10n.dieBoxSentenceFor(bike, plan),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               height: 1.25,
             ),
           ),
-          if (plan.chips.isNotEmpty) ...[
+          if (plan.chips.any((c) => c.known)) ...[
             const SizedBox(height: AppSpacing.s),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
                 for (final c in plan.chips)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.chipIdle,
-                      borderRadius: BorderRadius.circular(AppRadius.chip),
-                      border: Border.all(
-                        color: c.known
-                            ? AppColors.forestOnDark.withValues(alpha: 0.45)
-                            : AppColors.border,
+                  if (c.known)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.chipIdle,
+                        borderRadius: BorderRadius.circular(AppRadius.chip),
+                        border: Border.all(
+                          color: AppColors.forestOnDark.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Text(
+                        l10n.dieBoxChipLabel(c.label),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.chipIdleText,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      c.known ? c.label : '${c.label} offen',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: c.known
-                            ? AppColors.chipIdleText
-                            : AppColors.muted,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ],
@@ -584,19 +632,23 @@ class _HeuteZone extends StatelessWidget {
   const _HeuteZone({
     required this.items,
     required this.busy,
+    required this.laterLabel,
     required this.onTap,
+    required this.onLater,
   });
 
   final List<DieBoxTodayItem> items;
   final bool busy;
+  final String laterLabel;
   final Future<void> Function(DieBoxTodayItem) onTap;
+  final ValueChanged<DieBoxTodayItem> onLater;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Text(
-        'Nichts fällig.',
-        style: TextStyle(fontSize: 13, color: AppColors.muted),
+      return Text(
+        AppLocalizations.of(context).dieBoxNothingDue,
+        style: const TextStyle(fontSize: 13, color: AppColors.muted),
       );
     }
     return Column(
@@ -637,13 +689,22 @@ class _HeuteZone extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: AppSpacing.s),
-                      Text(
-                        item.cta,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.forestOnDark,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            item.cta,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.forestOnDark,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: busy ? null : () => onLater(item),
+                            child: Text(laterLabel),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -669,18 +730,19 @@ class _AmRadZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (plan.onBike.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Noch nichts eingetragen — nur was wirklich am Rad ist.',
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
+          Text(
+            l10n.dieBoxEmptyHint,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
           if (onAdd != null)
             TextButton(
               onPressed: onAdd,
-              child: const Text('Etwas eintragen'),
+              child: Text(l10n.dieBoxAddSomething),
             ),
         ],
       );
@@ -706,7 +768,7 @@ class _AmRadZone extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${c.slot.label} · ${c.displayName}',
+                          '${l10n.componentSlotLabel(c.slot)} · ${c.displayName}',
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -726,7 +788,7 @@ class _AmRadZone extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: onAdd,
-              child: const Text('Weiteres eintragen'),
+              child: Text(l10n.dieBoxAddMore),
             ),
           ),
       ],
@@ -746,9 +808,10 @@ class _BatteryHonestyCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Text(
-        'Akku nur mit echtem Sensor — Standard-GATT 0x180F oder offizielles LDI, kein erfundenes SoC.',
-        style: TextStyle(fontSize: 13, height: 1.35, color: AppColors.muted),
+      child: Text(
+        AppLocalizations.of(context).dieBoxBatteryHint,
+        style:
+            const TextStyle(fontSize: 13, height: 1.35, color: AppColors.muted),
       ),
     );
   }

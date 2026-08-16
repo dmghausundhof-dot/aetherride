@@ -1,19 +1,15 @@
 "use client";
 
-import {
-  Wrench,
-  Package,
-  ArrowRightLeft,
-} from "lucide-react";
+import { Wrench, Package, ArrowRightLeft, Plus } from "lucide-react";
 import { SLOT_GROUPS } from "@/types";
 import { slotLabel } from "@/lib/catalog/slots";
 import { getComponentModel, modelDisplayName } from "@/lib/catalog/components";
+import { addableSlotsFor, werkstattKindFor } from "@/lib/garage/dieBox";
 import type { Bike, ComponentSlot, BikeComponent, Ride } from "@/types";
 
 interface Props {
   selected: Bike;
   activeComponents: BikeComponent[];
-  missing: ComponentSlot[];
   spareParts: BikeComponent[];
   rides: Ride[];
   bikes: Bike[];
@@ -25,10 +21,22 @@ interface Props {
   moveComponent: (componentId: string, fromBikeId: string, toBikeId: string) => void;
 }
 
+function defaultInstallSlot(bike: Bike, active: BikeComponent[]): ComponentSlot {
+  const kind = werkstattKindFor(bike.category);
+  const addable = addableSlotsFor({
+    kind,
+    hasSuspension:
+      (bike.travelFrontMm ?? 0) > 0 || (bike.travelRearMm ?? 0) > 0,
+    hasElectricAssist:
+      bike.isEbike || bike.category === "emtb" || bike.category === "etrekking",
+  });
+  const filled = new Set(active.map((c) => c.slot));
+  return addable.find((s) => !filled.has(s)) ?? addable[0] ?? "chain";
+}
+
 export function GarageComponentsTab({
   selected,
   activeComponents,
-  missing,
   spareParts,
   rides,
   bikes,
@@ -39,22 +47,28 @@ export function GarageComponentsTab({
   reinstallComponent,
   moveComponent,
 }: Props) {
+  const groups = SLOT_GROUPS.filter((g) =>
+    g.slots.some((slot) => activeComponents.some((c) => c.slot === slot))
+  );
+
   return (
             <div className="flex flex-col gap-4">
-              {SLOT_GROUPS.filter((g) =>
-                g.slots.some(
-                  (slot) =>
-                    activeComponents.some((c) => c.slot === slot) ||
-                    missing.includes(slot) ||
-                    (g.id === "ebike" && selected.isEbike) ||
-                    (g.id === "hiking" && selected.category === "hiking") ||
-                    (g.id !== "ebike" && g.id !== "hiking")
-                )
-              ).map((group) => {
-                if (group.id === "hiking" && selected.category !== "hiking")
-                  return null;
-                if (group.id === "ebike" && !selected.isEbike) return null;
-                return (
+              <button
+                type="button"
+                onClick={() =>
+                  setInstallSlot(defaultInstallSlot(selected, activeComponents))
+                }
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm font-medium text-chrome hover:border-chrome/40"
+              >
+                <Plus className="h-4 w-4" /> Teil selbst anlegen
+              </button>
+              {activeComponents.length === 0 && (
+                <p className="text-sm text-text-secondary">
+                  Noch keine Teile. Katalog ist Suche — nichts muss vollständig
+                  sein.
+                </p>
+              )}
+              {groups.map((group) => (
                   <section key={group.id}>
                     <h3 className="mb-2 flex items-center gap-2 font-semibold">
                       <Wrench className="h-4 w-4 text-accent" />
@@ -65,22 +79,7 @@ export function GarageComponentsTab({
                         const comp = activeComponents.find(
                           (c) => c.slot === slot
                         );
-                        if (!comp && !missing.includes(slot)) return null;
-                        if (!comp) {
-                          return (
-                            <button
-                              key={slot}
-                              type="button"
-                              onClick={() => setInstallSlot(slot)}
-                              className="rounded-xl border border-dashed border-warning/50 bg-warning/5 p-3 text-left"
-                            >
-                              <div className="text-xs uppercase tracking-wide text-warning">
-                                {slotLabel(slot)}
-                              </div>
-                              <div className="text-sm">Ergänzen</div>
-                            </button>
-                          );
-                        }
+                        if (!comp) return null;
                         const model = comp.componentModelId
                           ? getComponentModel(comp.componentModelId)
                           : undefined;
@@ -114,7 +113,7 @@ export function GarageComponentsTab({
                                   )}{" "}
                                   · ≈ {usageKm.toFixed(0)} km Laufleistung
                                   {!comp.componentModelId &&
-                                    " · Freitext (keine Kompat-Prüfung)"}
+                                    " · selbst angelegt"}
                                 </div>
                               </div>
                             </div>
@@ -181,7 +180,7 @@ export function GarageComponentsTab({
                                     }}
                                     className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs disabled:opacity-40"
                                   >
-                                    <ArrowRightLeft className="h-3 w-3" />
+                                    <ArrowRightLeft className="h-3.5 w-3.5" />
                                     Verschieben
                                   </button>
                                 </div>
@@ -192,8 +191,7 @@ export function GarageComponentsTab({
                       })}
                     </div>
                   </section>
-                );
-              })}
+              ))}
 
               <section>
                 <h3 className="mb-2 flex items-center gap-2 font-semibold">

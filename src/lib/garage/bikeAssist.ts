@@ -4,24 +4,70 @@ import type { BikeCategory } from "@/types";
 export type BikeAssistMode = "muscle" | "ebike";
 
 export const MUSCLE_CATEGORIES: BikeCategory[] = [
+  "urban",
+  "cargo",
+  "folding",
+  "kids",
+  "gravel",
+  "road",
   "mtb_trail",
   "mtb_am",
   "mtb_enduro",
   "dh",
-  "gravel",
-  "road",
-  "urban",
   "hiking",
 ];
 
 /** UI-Untertypen unter E-Bike (Web persistiert category + isEbike). */
 export const EBIKE_CATEGORIES: BikeCategory[] = [
-  "emtb",
   "etrekking",
-  "gravel",
   "urban",
+  "cargo",
+  "folding",
+  "kids",
+  "gravel",
   "road",
+  "emtb",
 ];
+
+export type CategoryPickGroupId = "everyday" | "tour" | "trail";
+
+export type CategoryPickGroup = {
+  id: CategoryPickGroupId;
+  label: string;
+  categories: BikeCategory[];
+};
+
+const EVERYDAY_MUSCLE: BikeCategory[] = ["urban", "cargo", "folding", "kids"];
+const EVERYDAY_EBIKE: BikeCategory[] = [
+  "etrekking",
+  "urban",
+  "cargo",
+  "folding",
+  "kids",
+];
+const TOUR: BikeCategory[] = ["gravel", "road"];
+const TRAIL_MUSCLE: BikeCategory[] = [
+  "mtb_trail",
+  "mtb_am",
+  "mtb_enduro",
+  "dh",
+  "hiking",
+];
+const TRAIL_EBIKE: BikeCategory[] = ["emtb"];
+
+/** Anlegen: Alltag zuerst, Trail nicht als Default-Welt. */
+export function categoryPickGroups(mode: BikeAssistMode): CategoryPickGroup[] {
+  const allowed = new Set(
+    mode === "ebike" ? EBIKE_CATEGORIES : MUSCLE_CATEGORIES
+  );
+  const take = (ids: BikeCategory[]) => ids.filter((c) => allowed.has(c));
+  const groups: CategoryPickGroup[] = [
+    { id: "everyday", label: "Alltag", categories: take(mode === "ebike" ? EVERYDAY_EBIKE : EVERYDAY_MUSCLE) },
+    { id: "tour", label: "Tour", categories: take(TOUR) },
+    { id: "trail", label: "Trail", categories: take(mode === "ebike" ? TRAIL_EBIKE : TRAIL_MUSCLE) },
+  ];
+  return groups.filter((g) => g.categories.length > 0);
+}
 
 export function assistModeFor(
   category: BikeCategory,
@@ -45,7 +91,10 @@ export function subtypeLabel(
       dh: "Downhill",
       gravel: "Gravel",
       road: "Rennrad",
-      urban: "Urban",
+      urban: "City",
+      cargo: "Lastenrad",
+      folding: "Faltrad",
+      kids: "Kinderrad",
       emtb: "E-MTB",
       etrekking: "E-Trekking",
       hiking: "Wandern",
@@ -61,6 +110,12 @@ export function subtypeLabel(
       return "E-Gravel";
     case "urban":
       return "E-City";
+    case "cargo":
+      return "E-Lastenrad";
+    case "folding":
+      return "E-Faltrad";
+    case "kids":
+      return "E-Kinderrad";
     case "road":
       return "E-Road";
     default:
@@ -75,7 +130,7 @@ export function coerceCategory(
   if (mode === "muscle") {
     if (current === "emtb") return "mtb_am";
     if (current === "etrekking") return "urban";
-    return MUSCLE_CATEGORIES.includes(current) ? current : "mtb_am";
+    return MUSCLE_CATEGORIES.includes(current) ? current : "urban";
   }
   if (
     current === "mtb_trail" ||
@@ -87,7 +142,7 @@ export function coerceCategory(
   }
   if (current === "hiking") return "etrekking";
   if (EBIKE_CATEGORIES.includes(current)) return current;
-  return "emtb";
+  return "urban";
 }
 
 export function persistIsEbike(

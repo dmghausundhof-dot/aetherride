@@ -1,6 +1,8 @@
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/domain/component.dart';
 import 'package:aetherride_mobile/domain/garage/die_box.dart';
+import 'package:aetherride_mobile/domain/garage/werkstatt_setup.dart';
+import 'package:aetherride_mobile/domain/maintenance/intervals.dart';
 import 'package:aetherride_mobile/domain/setup.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,12 +27,18 @@ Bike _bike({
       isEbike: ebike,
     );
 
-BikeComponent _part(String bikeId, ComponentSlot slot, {String? model}) =>
+BikeComponent _part(
+  String bikeId,
+  ComponentSlot slot, {
+  String? model,
+  String? catalogModelId,
+}) =>
     BikeComponent(
       id: '$bikeId-${slot.name}',
       bikeId: bikeId,
       slot: slot,
       model: model ?? slot.label,
+      catalogModelId: catalogModelId,
       installedAt: DateTime.utc(2026, 1, 1),
     );
 
@@ -65,12 +73,15 @@ void main() {
     );
     expect(plan.setup.kind.toString(), contains('urban'));
     expect(plan.sentence.toLowerCase(), isNot(contains('sag')));
+    expect(plan.chips.where((c) => !c.known), isEmpty);
     expect(plan.chips.map((c) => c.label), isNot(contains('SAG')));
-    expect(plan.chips.map((c) => c.label), containsAll(['Licht', 'Schloss', 'Träger']));
+    expect(plan.chips.map((c) => c.label), isNot(contains('Licht')));
     expect(plan.addableSlots, contains(ComponentSlot.light));
     expect(plan.addableSlots, isNot(contains(ComponentSlot.fork)));
     expect(plan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isFalse);
     expect(plan.today.any((t) => t.id == DieBoxItemId.lightsMissing), isTrue);
+    expect(plan.sentence.toLowerCase(), contains('wohnt hier'));
+    expect(plan.sentence.toLowerCase(), isNot(contains('nicht')));
   });
 
   test('DH never sees lights unless the slot is installed', () {
@@ -168,6 +179,15 @@ void main() {
     expect(plan.addableSlots, isNot(contains(ComponentSlot.rearShock)));
   });
 
+  test('Lastenrad wohnt in der City-Box, ohne SAG', () {
+    final plan = planDieBox(
+      bike: _bike(id: 'l1', name: 'Lasten', category: BikeCategory.cargo),
+    );
+    expect(plan.setup.kind, WerkstattKind.urban);
+    expect(plan.sentence.toLowerCase(), isNot(contains('sag')));
+    expect(plan.addableSlots, contains(ComponentSlot.light));
+  });
+
   test('Park vs Trail only when both setups already exist', () {
     final bike = _bike(
       id: 'm1',
@@ -228,6 +248,97 @@ void main() {
       cscPaired: false,
     );
     expect(plan.today.any((t) => t.id == DieBoxItemId.pairCsc), isFalse);
-    expect(plan.chips.map((c) => c.label), contains('CSC'));
+    expect(plan.chips.map((c) => c.label), isNot(contains('CSC')));
+  });
+
+  test('Am Rad lists core slots, not the OEM dump', () {
+    final bike = _bike(
+      id: 'j1',
+      name: 'JAM2',
+      category: BikeCategory.emtb,
+      travelF: 150,
+      travelR: 150,
+      wheel: WheelSize.w29,
+      ebike: true,
+    );
+    final plan = planDieBox(
+      bike: bike,
+      components: [
+        _part('j1', ComponentSlot.tireFront, catalogModelId: 'cm-tire'),
+        _part('j1', ComponentSlot.headset, catalogModelId: 'cm-headset'),
+        _part('j1', ComponentSlot.saddle, catalogModelId: 'cm-saddle'),
+        _part('j1', ComponentSlot.motor, catalogModelId: 'cm-motor'),
+        _part('j1', ComponentSlot.lock, model: 'Abus'),
+      ],
+    );
+    final slots = plan.onBike.map((c) => c.slot).toList();
+    expect(slots, contains(ComponentSlot.tireFront));
+    expect(slots, contains(ComponentSlot.motor));
+    expect(slots, contains(ComponentSlot.lock));
+    expect(slots, isNot(contains(ComponentSlot.headset)));
+    expect(slots, isNot(contains(ComponentSlot.saddle)));
+    expect(plan.sentence.toLowerCase(), contains('e-antrieb'));
+    expect(plan.chips.where((c) => !c.known), isEmpty);
+  });
+
+  test('Heute rest does not repeat the primary', () {
+    final plan = planDieBox(
+      bike: _bike(
+        id: 'm1',
+        name: 'Luna',
+        category: BikeCategory.mtbTrail,
+        travelF: 140,
+        travelR: 140,
+      ),
+    );
+    expect(plan.primary, isNotNull);
+    expect(
+      plan.heuteRest.map((t) => t.id),
+      isNot(contains(plan.primary!.id)),
+    );
+    expect(plan.sentence.toLowerCase(), isNot(contains('nicht gemessen')));
+    expect(plan.sentence.toLowerCase(), isNot(contains('offen')));
+  });
+
+  test('Paired CSC is a known chip, unpaired is not', () {
+    final bike = _bike(
+      id: 'e1',
+      name: 'Cargo',
+      category: BikeCategory.etrekking,
+      ebike: true,
+    );
+    expect(
+      planDieBox(bike: bike, cscPaired: false)
+          .chips
+          .map((c) => c.label),
+      isNot(contains('CSC')),
+    );
+    expect(
+      planDieBox(bike: bike, cscPaired: true).chips.map((c) => c.label),
+      contains('CSC'),
+    );
+  });
+
+  test('tafelCareItem ignores Die-Box Heute, only due care', () {
+    final bike = _bike(
+      id: 'r1',
+      name: 'Aeroad',
+      category: BikeCategory.road,
+      wheel: WheelSize.c700,
+    );
+    final plan = planDieBox(
+      bike: bike,
+      components: [
+        _part('r1', ComponentSlot.chain),
+      ],
+    );
+    expect(plan.today, isNotEmpty);
+    expect(
+      listDueMaintenance(bike: bike, components: [
+        _part('r1', ComponentSlot.chain),
+      ]),
+      isEmpty,
+    );
+    expect(tafelCareItem(plan), isNull);
   });
 }

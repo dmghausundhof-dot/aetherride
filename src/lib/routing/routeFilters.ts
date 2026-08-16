@@ -5,6 +5,7 @@
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { isHonestLoopSuggestion } from "@/lib/discover/loopHonesty";
+import type { VisibilityScope } from "@/lib/tours/routeVisibility";
 
 /** Generische Beanspruchung — Labels sportabhängig via difficultyOptionsForProfile */
 export type ScaleChip = "any" | "easy" | "mid" | "hard";
@@ -31,6 +32,8 @@ export interface RouteFilterState {
   sport: SportFilter;
   /** Max. Distanz in km; null = egal */
   maxDistanceKm: number | null;
+  /** Nur Mappe / eigene SavedRoutes — Katalog bleibt öffentlich. */
+  visibility: VisibilityScope;
 }
 
 export const DEFAULT_ROUTE_FILTERS: RouteFilterState = {
@@ -40,7 +43,17 @@ export const DEFAULT_ROUTE_FILTERS: RouteFilterState = {
   surfaceQuery: null,
   sport: "all",
   maxDistanceKm: null,
+  visibility: "all_mine",
 };
+
+export const VISIBILITY_FILTER_OPTIONS: {
+  id: VisibilityScope;
+  label: string;
+}[] = [
+  { id: "all_mine", label: "Alle" },
+  { id: "private", label: "Privat" },
+  { id: "shared", label: "Öffentlich" },
+];
 
 export const SPORT_FILTER_OPTIONS: { id: SportFilter; label: string }[] = [
   { id: "all", label: "Alle" },
@@ -140,7 +153,12 @@ function categoryMatchesSport(
     case "gravel":
       return category === "gravel";
     case "urban":
-      return category === "urban";
+      return (
+        category === "urban" ||
+        category === "cargo" ||
+        category === "folding" ||
+        category === "kids"
+      );
     case "ebike":
       // E-MTB-Fahrer sollen MTB-Trails weich bevorzugt sehen (Mobile-Parität).
       return (

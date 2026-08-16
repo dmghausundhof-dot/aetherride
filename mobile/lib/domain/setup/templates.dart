@@ -164,7 +164,7 @@ final List<SetupTemplate> setupTemplates = [
     conditions: 'wet',
     kind: 'editorial_preset',
     disclaimer: 'Redaktions-Preset — Ausgangspunkt, kein Bracketing-Ersatz.',
-    sourceLabel: 'AetherRide Editorial',
+    sourceLabel: 'FlowLine Editorial',
     categories: [
       BikeCategory.mtbAm,
       BikeCategory.mtbEnduro,
@@ -187,7 +187,7 @@ final List<SetupTemplate> setupTemplates = [
     conditions: 'bikepark',
     kind: 'editorial_preset',
     disclaimer: 'Ausgangspunkt für Park — mehr Support.',
-    sourceLabel: 'AetherRide Editorial',
+    sourceLabel: 'FlowLine Editorial',
     categories: [
       BikeCategory.mtbEnduro,
       BikeCategory.dh,
@@ -239,7 +239,13 @@ final List<SetupTemplate> setupTemplates = [
     kind: 'editorial_preset',
     disclaimer: 'Grober Startdruck — am Reifen nachmessen, kein OEM-Wert.',
     sourceLabel: 'Industriepraxis City',
-    categories: [BikeCategory.urban, BikeCategory.etrekking],
+    categories: [
+      BikeCategory.urban,
+      BikeCategory.etrekking,
+      BikeCategory.cargo,
+      BikeCategory.folding,
+      BikeCategory.kids,
+    ],
     resolve: (w, _) => {
       'tire_front.pressure_psi': w > 85 ? 50 : 45,
       'tire_rear.pressure_psi': w > 85 ? 55 : 50,

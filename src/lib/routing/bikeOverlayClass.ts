@@ -2,7 +2,7 @@
  * OSM-Way → Bike-Overlay-Klasse.
  *
  * Honesty:
- * - S0–S3 nur aus `mtb:scale` / `mtb:scale:imba` (nie aus `sac_scale`).
+ * - S0–S3+ nur aus `mtb:scale` / `mtb:scale:imba` (nie aus `sac_scale`).
  * - Ungenannte path/track ohne Scale → `mtb_unrated` („offen / unbewertet“).
  * - `bicycle=no` / `mtb=no` → hidden.
  */
@@ -15,7 +15,7 @@ export type BikeOverlayClass =
   | "urban"
   | "hidden";
 
-export type MtbScaleLabel = "S0" | "S1" | "S2" | "S3";
+export type MtbScaleLabel = "S0" | "S1" | "S2" | "S3+";
 
 export type OsmWayTags = Record<string, string | undefined | null>;
 
@@ -70,7 +70,7 @@ function isNo(v: string): boolean {
 
 /**
  * Parse OSM MTB scale. Does **not** read `sac_scale`.
- * 3 and above collapse to S3 (legend is S0–S3).
+ * 3 and above collapse to S3+ (same as live `/api/osm-trails`, not silent "S3").
  */
 export function parseOsmMtbScale(
   mtbScale?: string | null,
@@ -102,7 +102,7 @@ export function parseOsmMtbScale(
     head === "5" ||
     head === "6"
   ) {
-    return "S3";
+    return "S3+";
   }
   return null;
 }
@@ -208,7 +208,7 @@ export function overlayFamilyForBike(
     return "mtb";
   }
   if (c.includes("gravel")) return "gravel";
-  if (c === "urban" || c === "city") return "urban";
+  if (c === "urban" || c === "city" || c === "cargo" || c === "folding" || c === "kids") return "urban";
   if (c === "etrekking" || c === "ebike" || c === "ebike_tour") return "gravel";
   if (c === "hiking") return "mtb";
   return "road";
@@ -221,11 +221,11 @@ export function overlayClassesForFamily(
     case "mtb":
       return ["mtb", "mtb_unrated"];
     case "gravel":
-      return ["gravel"];
+      return ["gravel", "road"];
     case "road":
-      return ["road"];
+      return ["road", "urban"];
     case "urban":
-      return ["urban"];
+      return ["urban", "road"];
   }
 }
 
@@ -249,7 +249,7 @@ export const BIKE_OVERLAY_LEGEND_DE: {
   { key: "S0", label: "S0", color: BIKE_OVERLAY_COLORS.S0, bikeClass: "mtb" },
   { key: "S1", label: "S1", color: BIKE_OVERLAY_COLORS.S1, bikeClass: "mtb" },
   { key: "S2", label: "S2", color: BIKE_OVERLAY_COLORS.S2, bikeClass: "mtb" },
-  { key: "S3", label: "S3", color: BIKE_OVERLAY_COLORS.S3, bikeClass: "mtb" },
+  { key: "S3+", label: "S3+", color: BIKE_OVERLAY_COLORS.S3, bikeClass: "mtb" },
   {
     key: "unrated",
     label: "unbewertet",

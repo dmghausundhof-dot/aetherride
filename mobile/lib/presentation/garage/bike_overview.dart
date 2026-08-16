@@ -5,6 +5,7 @@ import '../../domain/bike.dart';
 import '../../domain/garage/garage_primary_cta.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 
 /// Einfache Bike-Karte für die Garage (Einsteiger-Default).
 ///
@@ -95,7 +96,7 @@ class BikeOverviewCard extends StatelessWidget {
               runSpacing: AppSpacing.xs,
               children: [
                 _Pill(
-                  label: bike.categoryLabel,
+                  label: l10n.bikeCategoryLabel(bike),
                   foreground: AppColors.accent,
                   background: AppColors.accent.withValues(alpha: 0.16),
                 ),

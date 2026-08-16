@@ -13,24 +13,89 @@ class BikeAssistUx {
   BikeAssistUx._();
 
   static const muscleCategories = <BikeCategory>[
+    BikeCategory.urban,
+    BikeCategory.cargo,
+    BikeCategory.folding,
+    BikeCategory.kids,
+    BikeCategory.gravel,
+    BikeCategory.road,
     BikeCategory.mtbTrail,
     BikeCategory.mtbAm,
     BikeCategory.mtbEnduro,
     BikeCategory.dh,
-    BikeCategory.gravel,
-    BikeCategory.road,
-    BikeCategory.urban,
     BikeCategory.hiking,
   ];
 
   /// UI-Untertypen unter E-Bike (1:1 mit Persistenz + isEbike).
   static const ebikeCategories = <BikeCategory>[
-    BikeCategory.emtb,
     BikeCategory.etrekking,
-    BikeCategory.gravel,
     BikeCategory.urban,
+    BikeCategory.cargo,
+    BikeCategory.folding,
+    BikeCategory.kids,
+    BikeCategory.gravel,
+    BikeCategory.road,
+    BikeCategory.emtb,
+  ];
+
+  static const everydayMuscle = <BikeCategory>[
+    BikeCategory.urban,
+    BikeCategory.cargo,
+    BikeCategory.folding,
+    BikeCategory.kids,
+  ];
+
+  static const everydayEbike = <BikeCategory>[
+    BikeCategory.etrekking,
+    BikeCategory.urban,
+    BikeCategory.cargo,
+    BikeCategory.folding,
+    BikeCategory.kids,
+  ];
+
+  static const tourCategories = <BikeCategory>[
+    BikeCategory.gravel,
     BikeCategory.road,
   ];
+
+  static const trailMuscle = <BikeCategory>[
+    BikeCategory.mtbTrail,
+    BikeCategory.mtbAm,
+    BikeCategory.mtbEnduro,
+    BikeCategory.dh,
+    BikeCategory.hiking,
+  ];
+
+  static const trailEbike = <BikeCategory>[BikeCategory.emtb];
+
+  /// Anlegen: Alltag zuerst, Trail nicht als Default-Welt.
+  static List<({String id, String label, List<BikeCategory> categories})>
+      pickGroups(BikeAssistMode mode) {
+    final allowed = mode == BikeAssistMode.ebike
+        ? ebikeCategories
+        : muscleCategories;
+    List<BikeCategory> take(List<BikeCategory> raw) => [
+          for (final c in raw)
+            if (allowed.contains(c)) c,
+        ];
+    return [
+      (
+        id: 'everyday',
+        label: 'Alltag',
+        categories: take(
+          mode == BikeAssistMode.ebike ? everydayEbike : everydayMuscle,
+        ),
+      ),
+      (id: 'tour', label: 'Tour', categories: take(tourCategories)),
+      (
+        id: 'trail',
+        label: 'Trail',
+        categories: take(
+          mode == BikeAssistMode.ebike ? trailEbike : trailMuscle,
+        ),
+      ),
+    ].where((g) => g.categories.isNotEmpty).toList();
+  }
 
   static BikeAssistMode modeFor({
     required BikeCategory category,
@@ -54,6 +119,9 @@ class BikeAssistUx {
       BikeCategory.etrekking => 'E-Trekking',
       BikeCategory.gravel => 'E-Gravel',
       BikeCategory.urban => 'E-City',
+      BikeCategory.cargo => 'E-Lastenrad',
+      BikeCategory.folding => 'E-Faltrad',
+      BikeCategory.kids => 'E-Kinderrad',
       BikeCategory.road => 'E-Road',
       BikeCategory.mtbTrail => 'E-MTB Trail',
       BikeCategory.mtbAm => 'E-MTB',
@@ -85,7 +153,7 @@ class BikeAssistUx {
         BikeCategory.etrekking => BikeCategory.urban,
         _ => muscleCategories.contains(current)
             ? current
-            : BikeCategory.mtbAm,
+            : BikeCategory.urban,
       };
     }
     return switch (current) {
@@ -95,12 +163,7 @@ class BikeAssistUx {
       BikeCategory.dh =>
         BikeCategory.emtb,
       BikeCategory.hiking => BikeCategory.etrekking,
-      BikeCategory.emtb ||
-      BikeCategory.etrekking ||
-      BikeCategory.gravel ||
-      BikeCategory.urban ||
-      BikeCategory.road =>
-        current,
+      _ => current,
     };
   }
 

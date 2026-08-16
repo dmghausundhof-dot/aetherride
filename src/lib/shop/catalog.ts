@@ -161,9 +161,9 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-orbea-terra-m20",
     priceEur: 2799,
-    description: "Gravel-Allrounder — AetherRide Shop.",
+    description: "Gravel-Allrounder — FlowLine Shop.",
     affiliateUrl: shopifyProductUrl("orbea-terra-m20"),
-    merchantName: "AetherRide Shop",
+    merchantName: "FlowLine Shop",
     visualHint: "bike",
     imageUrl:
       "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1485965120184-e220f721d03e.jpg?v=1786479558",
@@ -176,9 +176,9 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-specialized-diverge-carbon",
     priceEur: 3499,
-    description: "Carbon-Gravel — AetherRide Shop.",
+    description: "Carbon-Gravel — FlowLine Shop.",
     affiliateUrl: shopifyProductUrl("specialized-diverge-carbon"),
-    merchantName: "AetherRide Shop",
+    merchantName: "FlowLine Shop",
     visualHint: "bike",
     imageUrl:
       "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1571068316344-75bc76f77890.jpg?v=1786479566",
@@ -191,9 +191,9 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-cube-attain-gtc-race",
     priceEur: 1499,
-    description: "Leichtes Carbon-Rennrad — AetherRide Shop.",
+    description: "Leichtes Carbon-Rennrad — FlowLine Shop.",
     affiliateUrl: shopifyProductUrl("cube-attain-gtc-race"),
-    merchantName: "AetherRide Shop",
+    merchantName: "FlowLine Shop",
     visualHint: "bike",
     imageUrl:
       "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1485965120184-e220f721d03e_24d45399-5a57-45a2-a6ac-da88f92d7199.jpg?v=1786479867",
@@ -206,9 +206,9 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-canyon-ultimate-cf-sl-8",
     priceEur: 2499,
-    description: "Rennrad Performance — AetherRide Shop.",
+    description: "Rennrad Performance — FlowLine Shop.",
     affiliateUrl: shopifyProductUrl("canyon-ultimate-cf-sl-8"),
-    merchantName: "AetherRide Shop",
+    merchantName: "FlowLine Shop",
     visualHint: "bike",
     imageUrl:
       "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1532298229144-0ec0c57515c7.jpg?v=1786479572",
@@ -221,9 +221,9 @@ export const SHOPIFY_FEATURED_BIKES: ShopProduct[] = [
     slot: "frame",
     componentModelId: "cm-shopify-canyon-commuter-7-0",
     priceEur: 1299,
-    description: "City / Light-E — AetherRide Shop.",
+    description: "City / Light-E — FlowLine Shop.",
     affiliateUrl: shopifyProductUrl("canyon-commuter-7-0"),
-    merchantName: "AetherRide Shop",
+    merchantName: "FlowLine Shop",
     visualHint: "bike",
     imageUrl:
       "https://cdn.shopify.com/s/files/1/1045/0318/1649/files/photo-1507035895480-2b3156c31fc8.jpg?v=1786479574",
@@ -493,6 +493,9 @@ export function shopSportFromBikeCategory(
     case "gravel":
       return "gravel";
     case "urban":
+    case "cargo":
+    case "folding":
+    case "kids":
       return "urban";
     case "emtb":
     case "etrekking":

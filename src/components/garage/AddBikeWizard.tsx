@@ -1,12 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { listCatalogManufacturers, catalogGeometryForSize } from "@/lib/catalog/bikes";
+import {
+  listCatalogManufacturers,
+  catalogGeometryForSize,
+  findCatalogBike,
+} from "@/lib/catalog/bikes";
+import { searchCatalogBikes } from "@/lib/catalog/identify";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import {
-  EBIKE_CATEGORIES,
-  MUSCLE_CATEGORIES,
   assistModeFor,
+  categoryPickGroups,
   coerceCategory,
   persistIsEbike,
   subtypeLabel,
@@ -14,20 +18,38 @@ import {
 } from "@/lib/garage/bikeAssist";
 import { useAppStore } from "@/store/useAppStore";
 import { notifyGarageBikeShopify, garageBikeInputFromBike } from "@/lib/shop/notifyGarageBikeShopify";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import type { BikeCategory, WheelSize } from "@/types";
 import { X } from "lucide-react";
+
+function defaultWheelFor(c: BikeCategory): WheelSize {
+  if (c === "gravel") return "650b";
+  if (
+    c === "urban" ||
+    c === "road" ||
+    c === "etrekking" ||
+    c === "cargo" ||
+    c === "folding" ||
+    c === "kids"
+  ) {
+    return "700c";
+  }
+  return "29";
+}
 
 type Mode = "catalog" | "basic" | "import";
 
 export function AddBikeWizard({
   onClose,
-  initialMode = "catalog",
+  initialMode = "basic",
   initialCategory,
 }: {
   onClose: () => void;
   initialMode?: Mode;
   initialCategory?: BikeCategory;
 }) {
+  const copy = useHofCopy();
+
   const addBikeFromCatalog = useAppStore((s) => s.addBikeFromCatalog);
   const addBikeBasic = useAppStore((s) => s.addBikeBasic);
   const addBikeFromImport = useAppStore((s) => s.addBikeFromImport);
@@ -46,7 +68,7 @@ export function AddBikeWizard({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const seedCategory = initialCategory ?? "road";
+  const seedCategory = initialCategory ?? "urban";
   const [assistMode, setAssistMode] = useState<BikeAssistMode>(() =>
     assistModeFor(seedCategory)
   );
@@ -55,18 +77,21 @@ export function AddBikeWizard({
   );
   const [travelF, setTravelF] = useState<number | "">("");
   const [travelR, setTravelR] = useState<number | "">("");
-  const [wheel, setWheel] = useState<WheelSize>(
-    seedCategory === "gravel" ? "650b" : seedCategory === "urban" || seedCategory === "road" || seedCategory === "etrekking" ? "700c" : "29"
-  );
+  const [wheel, setWheel] = useState<WheelSize>(defaultWheelFor(seedCategory));
   const [hasLight, setHasLight] = useState(false);
   const [hasLock, setHasLock] = useState(false);
   const [hasRack, setHasRack] = useState(false);
   const [hasBags, setHasBags] = useState(false);
   const [importNote, setImportNote] = useState("");
+  const [includeOemKit, setIncludeOemKit] = useState(false);
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const catalogHits = useMemo(
+    () => searchCatalogBikes(catalogQuery, 8),
+    [catalogQuery]
+  );
 
   const freeBlocked = subscriptionTier === "free" && bikes.length >= 1;
-  const subtypeOptions =
-    assistMode === "ebike" ? EBIKE_CATEGORIES : MUSCLE_CATEGORIES;
+  const pickGroups = categoryPickGroups(assistMode);
 
   const showTravel =
     basicCategory === "mtb_trail" ||
@@ -75,12 +100,20 @@ export function AddBikeWizard({
     basicCategory === "dh" ||
     basicCategory === "emtb";
   const showCity =
-    basicCategory === "urban" || basicCategory === "etrekking";
+    basicCategory === "urban" ||
+    basicCategory === "etrekking" ||
+    basicCategory === "cargo" ||
+    basicCategory === "folding" ||
+    basicCategory === "kids";
   const showBags = basicCategory === "gravel";
 
   const onAssistChange = (next: BikeAssistMode) => {
     setAssistMode(next);
-    setBasicCategory((c) => coerceCategory(c, next));
+    setBasicCategory((c) => {
+      const coerced = coerceCategory(c, next);
+      setWheel(defaultWheelFor(coerced));
+      return coerced;
+    });
   };
 
   const submit = () => {
@@ -91,11 +124,16 @@ export function AddBikeWizard({
     }
     try {
       let createdId: string | undefined;
-      if (mode === "catalog" && bikeId) {
+      if (mode === "catalog") {
+        if (!bikeId) {
+          setError("Bitte ein Modell suchen oder aus der Liste wählen.");
+          return;
+        }
         createdId = addBikeFromCatalog({
           catalogBikeId: bikeId,
           frameSize: size,
           name: name || undefined,
+          includeOemKit,
         });
       } else if (mode === "basic") {
         createdId = addBikeBasic({
@@ -142,7 +180,7 @@ export function AddBikeWizard({
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
       <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-4 sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Rad abstellen</h2>
+          <h2 className="text-lg font-bold">{copy.workshopAdd}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -166,15 +204,15 @@ export function AddBikeWizard({
         )}
 
         <p className="mb-2 text-xs text-text-secondary">
-          Tipp: Mit „Aus Katalog“ sind Hersteller, Modell und Serienteile schon
-          drin — du kannst alles später ändern.
+          Default ist dein Rad. Katalog ist Suche — Serienteile nur mit
+          Häkchen.
         </p>
 
         <div className="mb-4 grid grid-cols-3 gap-2">
           {(
             [
-              ["catalog", "Aus Katalog"],
-              ["basic", "Selbst"],
+              ["basic", "Mein Rad"],
+              ["catalog", "Katalog"],
               ["import", "GPX"],
             ] as const
           ).map(([id, label]) => (
@@ -195,9 +233,9 @@ export function AddBikeWizard({
 
         <p className="mb-3 text-xs text-text-secondary">
           {mode === "catalog" &&
-            "Hersteller wählen — Serienteile (Gabel, Schaltung …) werden mitangelegt."}
+            "Suche nach Marke und Modell. Identität immer, Kit nur wenn du es übernimmst."}
           {mode === "basic" &&
-            "Typ und Laufradgröße reichen. Teile kannst du später ergänzen."}
+            "Typ und Laufradgröße reichen. Teile kannst du später selbst anlegen."}
           {mode === "import" &&
             "GPX/FIT erzeugt ein Platzhalter-Bike — Teile später ergänzen."}
         </p>
@@ -214,6 +252,44 @@ export function AddBikeWizard({
 
         {mode === "catalog" && (
           <div className="flex flex-col gap-3">
+            <label className="text-sm">
+              Suche
+              <input
+                value={catalogQuery}
+                onChange={(e) => setCatalogQuery(e.target.value)}
+                placeholder="Focus JAM², Canyon Grizl …"
+                className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
+              />
+            </label>
+            {catalogQuery.trim().length >= 2 && (
+              <ul className="max-h-40 overflow-y-auto rounded-xl border border-border">
+                {catalogHits.length === 0 ? (
+                  <li className="px-3 py-2 text-xs text-text-secondary">
+                    Kein Treffer — unter „Mein Rad“ selbst anlegen.
+                  </li>
+                ) : (
+                  catalogHits.map((h) => (
+                    <li key={h.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const found = findCatalogBike(h.id);
+                          if (!found) return;
+                          setMfrId(found.manufacturer.id);
+                          setBikeId(found.bike.id);
+                          setSize(found.bike.frameSizeOptions[0] ?? "L");
+                          setCatalogQuery("");
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-surface-elevated"
+                      >
+                        {h.manufacturerName} {h.name} ({h.year})
+                        {h.isEbike ? " · E" : ""}
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
             <label className="text-sm">
               Hersteller
               <select
@@ -291,10 +367,18 @@ export function AddBikeWizard({
                     </div>
                   )}
                 {Object.keys(catBike.oemComponents).length > 0 && (
-                  <div className="mt-1">
-                    {Object.keys(catBike.oemComponents).length} Serienteile
-                    werden mitangelegt
-                  </div>
+                  <label className="mt-2 flex items-start gap-2 text-xs text-text-primary">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={includeOemKit}
+                      onChange={(e) => setIncludeOemKit(e.target.checked)}
+                    />
+                    <span>
+                      Serienteile übernehmen ({Object.keys(catBike.oemComponents).length}{" "}
+                      Slots). Sonst nur Identität — Teile selbst anlegen.
+                    </span>
+                  </label>
                 )}
               </div>
             )}
@@ -327,22 +411,42 @@ export function AddBikeWizard({
                 ))}
               </div>
             </div>
-            <label className="text-sm">
-              {assistMode === "ebike" ? "E-Bike-Typ" : "Kategorie"}
-              <select
-                value={basicCategory}
-                onChange={(e) =>
-                  setBasicCategory(e.target.value as BikeCategory)
-                }
-                className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
-              >
-                {subtypeOptions.map((c) => (
-                  <option key={`${assistMode}-${c}`} value={c}>
-                    {subtypeLabel(c, assistMode)}
-                  </option>
+            <div>
+              <span className="mb-1 block text-sm">
+                {assistMode === "ebike" ? "E-Bike-Typ" : "Welches Rad"}
+              </span>
+              <div className="space-y-3">
+                {pickGroups.map((g) => (
+                  <div key={g.id}>
+                    <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+                      {g.label}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {g.categories.map((c) => {
+                        const on = basicCategory === c;
+                        return (
+                          <button
+                            key={`${assistMode}-${c}`}
+                            type="button"
+                            onClick={() => {
+                              setBasicCategory(c);
+                              setWheel(defaultWheelFor(c));
+                            }}
+                            className={`rounded-xl px-2 py-2.5 text-left text-sm font-medium ${
+                              on
+                                ? "bg-accent text-white"
+                                : "bg-surface-elevated text-text-secondary"
+                            }`}
+                          >
+                            {subtypeLabel(c, assistMode)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
             {showTravel && (
             <div className="grid grid-cols-2 gap-2">
               <label className="text-sm">
@@ -434,7 +538,7 @@ export function AddBikeWizard({
           onClick={submit}
           className="mt-5 w-full rounded-xl bg-chrome py-3 font-semibold text-background"
         >
-          Rad abstellen
+          {copy.workshopAdd}
         </button>
       </div>
     </div>

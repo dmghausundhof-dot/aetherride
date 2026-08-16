@@ -10,15 +10,15 @@ import { GarageComponentsTab } from "@/components/garage/GarageComponentsTab";
 import { GarageSetupsTab } from "@/components/garage/GarageSetupsTab";
 import { GarageMaintenanceTab } from "@/components/garage/GarageMaintenanceTab";
 import { DieBoxSurface } from "@/components/garage/DieBoxSurface";
+import { BikeRideLog } from "@/components/garage/BikeRideLog";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { buildServiceReport, downloadServiceReport } from "@/lib/garage/serviceReport";
 import {
   getActiveComponents,
-  getMissingSlots,
   useAppStore,
 } from "@/store/useAppStore";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import type { ComponentSlot, SetupCondition } from "@/types";
 
 type Tab = "components" | "setups" | "maintenance";
@@ -38,6 +38,8 @@ function parseWizard(raw: string | null): WizardMode | null {
 }
 
 function GaragePageInner() {
+  const copy = useHofCopy();
+
   const searchParams = useSearchParams();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -68,7 +70,7 @@ function GaragePageInner() {
     () => parseWizard(wizardParam) != null
   );
   const [wizardMode, setWizardMode] = useState<WizardMode>(
-    () => parseWizard(wizardParam) ?? "catalog"
+    () => parseWizard(wizardParam) ?? "basic"
   );
   const [wizardCategory, setWizardCategory] = useState<
     import("@/types").BikeCategory | undefined
@@ -110,7 +112,6 @@ function GaragePageInner() {
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
 
   const activeComponents = selected ? getActiveComponents(selected) : [];
-  const missing = selected ? getMissingSlots(selected) : [];
   const spareParts = selected
     ? selected.components.filter((c) => !!c.removedAt)
     : [];
@@ -153,53 +154,55 @@ function GaragePageInner() {
     <div className="mx-auto w-full max-w-5xl p-4 pt-6 lg:p-6 lg:px-10">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <HofPageHeader
-          kicker={HOF_COPY.workshopKicker}
-          title={HOF_COPY.workshopTitle}
-          hint={HOF_COPY.workshopHint}
+          kicker={copy.workshopKicker}
+          title={copy.workshopTitle}
+          hint={copy.workshopHint}
         />
         <div className="flex items-center gap-1 pr-[max(0.75rem,env(safe-area-inset-right,0px))]">
           {selected ? (
             <Link
               href="/download"
-              title={HOF_COPY.workshopCscBar}
-              aria-label={HOF_COPY.workshopCscBar}
+              title={copy.workshopCscBar}
+              aria-label={copy.workshopCscBar}
               className="rounded-full p-2 text-text-secondary hover:bg-surface-elevated hover:text-chrome"
             >
               <Bluetooth className="h-[22px] w-[22px]" strokeWidth={1.75} />
             </Link>
           ) : null}
+          {selected ? (
           <button
             type="button"
             onClick={() => {
-              setWizardMode("catalog");
+              setWizardMode("basic");
               setShowWizard(true);
             }}
             className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-chrome hover:border-chrome"
           >
-            <Plus className="h-4 w-4" /> {HOF_COPY.workshopAdd}
+            <Plus className="h-4 w-4" /> {copy.workshopAddAnother}
           </button>
+          ) : null}
         </div>
       </header>
 
       {/* Wartungs-Status: auf Übersicht übernimmt BikeSchema — sonst Doppelung */}
       {selected && (
         <p className="mb-5 text-[11px] text-text-secondary">
-          {HOF_COPY.workshopNoWatch}
+          {copy.workshopNoWatch}
         </p>
       )}
 
       {!selected ? (
         <section className="rounded-2xl border border-border bg-surface p-6 text-center lg:p-10">
-          <h2 className="text-lg font-semibold">{HOF_COPY.workshopEmpty}</h2>
+          <h2 className="text-lg font-semibold">{copy.workshopEmpty}</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
-            {HOF_COPY.workshopEmptyHint}
+            {copy.workshopEmptyHint}
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {(
               [
-                ["catalog", "Katalog", "Modell wählen, Slots vorgefüllt"],
-                ["basic", "Basis", "Ideal für Road, City, Trekking"],
-                ["import", "Platzhalter", "Ohne Teile — Track via Touren"],
+                ["basic", copy.workshopAdd, copy.workshopAddBasicHint],
+                ["catalog", copy.workshopAddCatalog, copy.workshopAddCatalogHint],
+                ["import", copy.workshopAddPlaceholder, copy.workshopAddPlaceholderHint],
               ] as const
             ).map(([mode, title, desc]) => (
               <button
@@ -222,7 +225,7 @@ function GaragePageInner() {
           {/* Desktop: sticky Bike-Leiste · Mobile: horizontal */}
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <p className="mb-2 hidden text-[10px] font-semibold uppercase tracking-wide text-text-secondary lg:block">
-              {HOF_COPY.workshopBikes} ({bikes.length})
+              {copy.workshopBikes} ({bikes.length})
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
               {bikes.map((bike) => (
@@ -251,7 +254,7 @@ function GaragePageInner() {
                 }}
                 className="flex min-w-[7rem] flex-shrink-0 items-center justify-center gap-1 rounded-xl border border-dashed border-border px-3 py-3 text-xs font-medium text-text-secondary hover:border-chrome/40 hover:text-chrome lg:min-w-0 lg:w-full"
               >
-                <Plus className="h-3.5 w-3.5" /> {HOF_COPY.workshopAddAnother}
+                <Plus className="h-3.5 w-3.5" /> {copy.workshopAddAnother}
               </button>
             </div>
           </aside>
@@ -261,9 +264,10 @@ function GaragePageInner() {
             bike={selected}
             onInstallSlot={(slot) => setInstallSlot(slot)}
           />
+          <BikeRideLog bikeId={selected.id} />
           <details className="rounded-2xl border border-border bg-surface p-4">
             <summary className="cursor-pointer list-none font-semibold">
-              {HOF_COPY.workshopMore}
+              {copy.workshopMore}
               <span className="mt-0.5 block text-xs font-normal text-text-secondary">
                 Teile, Setup-Versionen, Wartung — hinter der Box
               </span>
@@ -272,9 +276,9 @@ function GaragePageInner() {
           <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-elevated p-1 text-xs sm:text-sm">
             {(
               [
-                ["components", HOF_COPY.workshopTabParts],
-                ["setups", HOF_COPY.workshopTabSetups],
-                ["maintenance", HOF_COPY.workshopTabCare],
+                ["components", copy.workshopTabParts],
+                ["setups", copy.workshopTabSetups],
+                ["maintenance", copy.workshopTabCare],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -294,7 +298,6 @@ function GaragePageInner() {
             <GarageComponentsTab
               selected={selected}
               activeComponents={activeComponents}
-              missing={missing}
               spareParts={spareParts}
               rides={rides}
               bikes={bikes}
@@ -341,15 +344,22 @@ function GaragePageInner() {
         <AddBikeWizard initialMode={wizardMode} initialCategory={wizardCategory} onClose={() => setShowWizard(false)} />
       )}
       {selected && installSlot && (
-        <InstallComponentSheet bike={selected} slot={installSlot} onClose={() => setInstallSlot(null)} />
+        <InstallComponentSheet
+          key={installSlot}
+          bike={selected}
+          slot={installSlot}
+          onClose={() => setInstallSlot(null)}
+        />
       )}
     </div>
   );
 }
 
 export default function GaragePage() {
+  const copy = useHofCopy();
+
   return (
-    <Suspense fallback={<div className="p-6 text-center text-sm text-text-secondary">{HOF_COPY.workshopLoading}</div>}>
+    <Suspense fallback={<div className="p-6 text-center text-sm text-text-secondary">{copy.workshopLoading}</div>}>
       <GaragePageInner />
     </Suspense>
   );

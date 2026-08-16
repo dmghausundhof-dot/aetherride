@@ -88,6 +88,9 @@ const FAMILY_ALIASES: Record<string, SportFamily> = {
   trekking: "urban",
   etrekking: "urban",
   commuter: "urban",
+  cargo: "urban",
+  folding: "urban",
+  kids: "urban",
 };
 
 export function isRideableGarageBike(category: BikeCategory): boolean {
@@ -115,6 +118,9 @@ export function familiesFromBike(
       break;
     case "urban":
     case "etrekking":
+    case "cargo":
+    case "folding":
+    case "kids":
       out.add("urban");
       break;
     case "hiking":
