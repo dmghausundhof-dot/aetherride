@@ -204,7 +204,7 @@ abstract final class AppConfig {
         return override;
       }
       final bbox = OfflineMapsPrefs.packBboxFrom(m);
-      return OfflinePmtilesStore.resolveStyleUrl(
+      return await OfflinePmtilesStore.resolveStyleUrl(
         remoteFallback: mapStyleUrl,
         packBbox: bbox,
       );
