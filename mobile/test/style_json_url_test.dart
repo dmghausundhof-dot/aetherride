@@ -35,6 +35,7 @@ void main() {
   test('skipMapLibreOfflineRegion for DACH pmtiles style', () {
     expect(skipMapLibreOfflineRegion(kDachBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kFranceWestBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kAlpsSouthBasemapStyleUrl), isTrue);
     expect(
       skipMapLibreOfflineRegion('https://tiles.openfreemap.org/styles/liberty'),
       isFalse,
@@ -52,8 +53,60 @@ void main() {
       basemapArchiveIdForBbox(overlayRegionById('innsbruck')!.bbox),
       'dach-z11',
     );
+    expect(
+      basemapArchiveIdForBbox(overlayRegionById('nice')!.bbox),
+      'alps-south-z11',
+    );
+    expect(
+      basemapArchiveIdForBbox(overlayRegionById('chambery')!.bbox),
+      'alps-south-z11',
+    );
     expect(kDachBasemapBbox[0], 5.8);
     expect(kFranceWestBasemapBbox[2], 5.85);
+  });
+
+  test('online style switches by viewport, empty fallback is not DACH-only', () {
+    expect(basemapArchiveIdForLngLat(8.54, 47.37), 'dach-z11');
+    expect(basemapArchiveIdForLngLat(2.35, 48.86), 'france-west-z11');
+    expect(basemapArchiveIdForLngLat(7.27, 43.70), 'alps-south-z11');
+    expect(basemapArchiveIdForLngLat(10.75, 45.58), 'alps-south-z11');
+    expect(
+      nextOnlineBasemapStyleUrl(
+        currentStyle: kDachBasemapStyleUrl,
+        lng: 7.27,
+        lat: 43.70,
+      ),
+      kAlpsSouthBasemapStyleUrl,
+    );
+    expect(
+      nextOnlineBasemapStyleUrl(
+        currentStyle: kDachBasemapStyleUrl,
+        lng: 2.35,
+        lat: 48.86,
+      ),
+      kFranceWestBasemapStyleUrl,
+    );
+    expect(
+      nextOnlineBasemapStyleUrl(
+        currentStyle: kAlpsSouthBasemapStyleUrl,
+        lng: 7.27,
+        lat: 43.70,
+      ),
+      isNull,
+    );
+    expect(
+      nextOnlineBasemapStyleUrl(
+        currentStyle: 'https://tiles.openfreemap.org/styles/liberty',
+        lng: 7.27,
+        lat: 43.70,
+      ),
+      isNull,
+    );
+    // Hysteresis: stay on France-west while still inside it.
+    expect(
+      basemapArchiveIdForLngLat(4.83, 45.76, currentId: 'france-west-z11'),
+      'france-west-z11',
+    );
   });
 
   test('rewriteStyleProtomapsUrl points at local archive', () {

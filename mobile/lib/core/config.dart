@@ -42,13 +42,16 @@ abstract final class AppConfig {
 
   static const franceWestBasemapStyleUrl = kFranceWestBasemapStyleUrl;
 
+  static const alpsSouthBasemapStyleUrl = kAlpsSouthBasemapStyleUrl;
+
   static String get offlinePacksCdnRoot {
     final base = supabaseUrl.replaceAll(RegExp(r'/$'), '');
     if (base.isEmpty) return kOfflinePacksPublicCdnRoot;
     return '$base/storage/v1/object/public/offline-packs';
   }
 
-  /// Compile-time override. Empty → [dachBasemapStyleUrl].
+  /// Compile-time override. Empty → [dachBasemapStyleUrl]; Discover/Ride then
+  /// switch among DACH / France-west / Alps-south by camera/GPS bbox.
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
     defaultValue: '',
@@ -174,7 +177,8 @@ abstract final class AppConfig {
   static String get impressumUrl => '$apiBaseUrl/legal/impressum';
   static String get widerrufUrl => '$apiBaseUrl/legal/widerruf';
 
-  /// Sync Style-URL: dart-define / DACH-Default → Stadia → OpenFreeMap.
+  /// Sync Style-URL: dart-define / DACH-Default (empty PMTILES_URL still
+  /// uses the CDN catalog; viewport switching adds France-west / Alps-south).
   /// Native MapLibre braucht Style-JSON, kein rohes `.pmtiles`.
   static String get mapStyleUrl {
     final pm = pmtilesUrl.trim().isNotEmpty

@@ -15,6 +15,10 @@ import {
   type BikeOverlayMapLike,
 } from "@/lib/routing/bikeOverlayMap";
 import type { RideProfileId } from "@/lib/routing/profiles";
+import {
+  envLocksOnlineBasemapStyle,
+  onlineBasemapStyleUrl,
+} from "@/lib/map/onlineBasemap";
 
 export type MapMarker = {
   id: string;
@@ -115,9 +119,9 @@ function stadiaStyleUrl(): string | null {
   return `https://tiles.stadiamaps.com/styles/outdoors.json?api_key=${encodeURIComponent(key)}`;
 }
 
-function pmtilesStyle(): maplibregl.StyleSpecification | string | null {
-  const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
-  if (!pmtilesUrl) return null;
+function pmtilesStyleFromUrl(
+  pmtilesUrl: string
+): maplibregl.StyleSpecification | string {
   const u = pmtilesUrl.toLowerCase();
   const isStyleJson =
     (u.endsWith(".json") || u.includes("/styles/") || u.includes("style.json")) &&
@@ -189,16 +193,28 @@ function pmtilesStyle(): maplibregl.StyleSpecification | string | null {
   };
 }
 
-/** Web: Stadia first (reliable online), then PMTiles, then OSM. */
-function pickInitialStyle(): {
+function lockedEnvStyle(): maplibregl.StyleSpecification | string | null {
+  const pmtilesUrl = process.env.NEXT_PUBLIC_PMTILES_URL?.trim();
+  if (!pmtilesUrl || !envLocksOnlineBasemapStyle(pmtilesUrl)) return null;
+  return pmtilesStyleFromUrl(pmtilesUrl);
+}
+
+/** Web: CDN catalog (DACH / FR-west / Alps-south) unless env locks a custom style. */
+function pickInitialStyle(
+  lng: number,
+  lat: number
+): {
   style: maplibregl.StyleSpecification | string;
   source: "stadia" | "pmtiles" | "osm";
+  switchable: boolean;
 } {
-  const stadia = stadiaStyleUrl();
-  if (stadia) return { style: stadia, source: "stadia" };
-  const pm = pmtilesStyle();
-  if (pm) return { style: pm, source: "pmtiles" };
-  return { style: osmRasterStyle(), source: "osm" };
+  const locked = lockedEnvStyle();
+  if (locked) return { style: locked, source: "pmtiles", switchable: false };
+  return {
+    style: onlineBasemapStyleUrl(lng, lat),
+    source: "pmtiles",
+    switchable: true,
+  };
 }
 
 function normalizeRoutes(
@@ -262,8 +278,10 @@ export function MapView({
     if (!containerRef.current || mapRef.current) return;
     ensurePmtilesProtocol();
 
-    const initial = pickInitialStyle();
+    const initial = pickInitialStyle(center[0], center[1]);
     setTileSource(initial.source);
+    let currentStyleUrl =
+      typeof initial.style === "string" ? initial.style : "";
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -339,6 +357,20 @@ export function MapView({
       onClickRef.current?.([e.lngLat.lng, e.lngLat.lat]);
     });
 
+    map.on("moveend", () => {
+      if (!initial.switchable || fallbackTried.current) return;
+      const c = map.getCenter();
+      const next = onlineBasemapStyleUrl(c.lng, c.lat, currentStyleUrl);
+      if (!next || next === currentStyleUrl) return;
+      currentStyleUrl = next;
+      try {
+        map.setStyle(next);
+        setTileSource("pmtiles");
+      } catch (err) {
+        console.warn("[MapView] online basemap switch failed", err);
+      }
+    });
+
     map.on("error", (e) => {
       const err = e as { error?: { message?: string }; sourceId?: string };
       const msg = err?.error?.message || String(err?.error || "Kartenfehler");
@@ -350,6 +382,19 @@ export function MapView({
       // Already on OSM, or overlay-only errors: don't wipe layers with setStyle.
       if (fallbackTried.current || initial.source === "osm") return;
       fallbackTried.current = true;
+      const stadia = stadiaStyleUrl();
+      if (stadia) {
+        setMapError(
+          "Kartenanbieter nicht erreichbar – wechsle auf Stadia-Fallback."
+        );
+        setTileSource("stadia");
+        try {
+          map.setStyle(stadia);
+        } catch (setErr) {
+          console.warn("[MapView] setStyle fallback failed", setErr);
+        }
+        return;
+      }
       setMapError(
         "Kartenanbieter nicht erreichbar – wechsle auf OpenStreetMap-Fallback."
       );
@@ -602,7 +647,7 @@ export function MapView({
     tileSource === "stadia"
       ? "Stadia Outdoors · © OSM"
       : tileSource === "pmtiles"
-        ? "PMTiles · Offline-fähig"
+        ? "PMTiles · CDN"
         : "OSM-Raster · Fallback";
 
   // Don't combine `relative` + caller's `absolute` on the same node — Tailwind

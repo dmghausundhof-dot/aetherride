@@ -10,8 +10,9 @@ import 'map_style_url.dart';
 /// Local PMTiles archives (DACH / France-West). MapLibre OfflineRegion on
 /// `pmtiles://` stalls — this copies the CDN archive into app documents.
 abstract final class OfflinePmtilesStore {
-  static const dachId = 'dach-z11';
-  static const franceWestId = 'france-west-z11';
+  static const dachId = kDachBasemapId;
+  static const franceWestId = kFranceWestBasemapId;
+  static const alpsSouthId = kAlpsSouthBasemapId;
 
   static const minArchiveBytes = 8 * 1024 * 1024;
 
@@ -44,6 +45,7 @@ abstract final class OfflinePmtilesStore {
     final local = await localStyleUri(id);
     if (local != null) return local;
     if (id == franceWestId) return kFranceWestBasemapStyleUrl;
+    if (id == alpsSouthId) return kAlpsSouthBasemapStyleUrl;
     return remoteFallback;
   }
 
