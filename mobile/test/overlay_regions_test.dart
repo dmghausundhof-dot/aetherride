@@ -15,12 +15,12 @@ void main() {
     expect(overlayRegionForPoint(-30, 0), isNull);
   });
 
-  test('online cycle mesh covers DACH, not ocean or Paris', () {
+  test('online cycle mesh follows the Blatt, including Paris', () {
     expect(pointInOnlineCycleMesh(8.54, 47.37), isTrue);
-    expect(pointInOnlineCycleMesh(2.35, 48.86), isFalse);
+    expect(pointInOnlineCycleMesh(2.35, 48.86), isTrue);
     expect(pointInOnlineCycleMesh(-30, 0), isFalse);
     expect(overlayDataExpectedAt(8.54, 47.37), isTrue);
-    expect(overlayDataExpectedAt(2.35, 48.86), isFalse);
+    expect(overlayDataExpectedAt(2.35, 48.86), isTrue);
     expect(overlayDataExpectedAt(-30, 0), isFalse);
   });
 
@@ -28,6 +28,9 @@ void main() {
     expect(detailOverlayPackIdForPoint(8.68, 49.41), 'rhein-neckar');
     expect(detailOverlayPackIdForPoint(7.85, 47.99), 'schwarzwald-nord');
     expect(detailOverlayPackIdForPoint(13.405, 52.52), isNull);
+    expect(detailOverlayPackIdForPoint(2.35, 48.86), 'paris');
+    expect(detailOverlayPackIdForPoint(4.835, 45.76), 'lyon');
+    expect(detailOverlayPackIdForPoint(6.13, 45.9), 'annecy');
 
     final hdAtlas = chooseOnlineBikeOverlay(
       lng: 8.68,
@@ -36,6 +39,7 @@ void main() {
     );
     expect(hdAtlas.kind, OnlineBikeOverlayKind.mesh);
     expect(hdAtlas.url, contains('cycle-routes.pmtiles'));
+    expect(hdAtlas.url, isNot(contains('france-west')));
 
     final hdWays = chooseOnlineBikeOverlay(
       lng: 8.68,
@@ -45,11 +49,20 @@ void main() {
     expect(hdWays.kind, OnlineBikeOverlayKind.ways);
     expect(hdWays.url, contains('/rhein-neckar/bike-overlay.pmtiles'));
 
-    final paris = chooseOnlineBikeOverlay(
+    final parisAtlas = chooseOnlineBikeOverlay(
+      lng: 2.35,
+      lat: 48.86,
+      zoom: 8,
+    );
+    expect(parisAtlas.kind, OnlineBikeOverlayKind.mesh);
+    expect(parisAtlas.url, contains('cycle-routes-france-west.pmtiles'));
+
+    final parisWays = chooseOnlineBikeOverlay(
       lng: 2.35,
       lat: 48.86,
       zoom: 13,
     );
-    expect(paris.kind, OnlineBikeOverlayKind.none);
+    expect(parisWays.kind, OnlineBikeOverlayKind.ways);
+    expect(parisWays.url, contains('/paris/bike-overlay.pmtiles'));
   });
 }

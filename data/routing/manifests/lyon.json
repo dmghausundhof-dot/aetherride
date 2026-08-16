@@ -7,18 +7,37 @@
     5.05,
     45.9
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-16T17:08:56.777Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
-  "files": {},
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 3791017,
+      "sha256": "9b46112d6e54d927f4ce607ef01d76dd6ca75894510c8a1e3fa245482f6962b8",
+      "sha256_16": "9b46112d6e54d927"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1524638,
+      "sha256": "a261844f7c00812b54f95987d0cc5f5d79560dab648d9f0aa3cba133104e09f9",
+      "sha256_16": "a261844f7c00812b"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/lyon",
     "pack": "lyon.tar.zst",
     "packGz": "lyon.tar.gz"
   },
   "shipped": {
     "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

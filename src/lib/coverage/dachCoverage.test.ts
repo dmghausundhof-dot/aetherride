@@ -58,10 +58,10 @@ assert.ok(
 );
 
 const paris = overlayHintFromRegistry(2.35, 48.86);
-assert.equal(
-  paris.pmtilesPath,
-  null,
-  "france-west has no DACH cycle mesh yet"
+assert.equal(paris.mode, "region_pack");
+assert.ok(
+  paris.pmtilesPath?.includes("/paris/bike-overlay.pmtiles"),
+  "Paris pack streams ways, not the DACH mesh"
 );
 
 assert.equal(pointInDach(51.34, 12.37), true);

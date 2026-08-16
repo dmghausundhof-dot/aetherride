@@ -7,10 +7,11 @@
     6.25,
     45.98
   ],
-  "builtAt": "2026-08-15T10:55:48Z",
+  "builtAt": "2026-08-16T17:08:14.957Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2654577,
       "sha256": "2eec88d21a6a4bedb46cf68cd1615f566f10164de92ee7df9d6351e8b0d816a1",
       "sha256_16": "2eec88d21a6a4bed"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2190076,
+      "sha256": "ae68d7ba1866dbfb983206fae985f1c6641dd3db6ee8ddcd17755b590c70b049",
+      "sha256_16": "ae68d7ba1866dbfb"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 711626,
+      "sha256": "66ad77fa3c3b625744176b6cdc53e599b77748a6443afd70013cd4a5f6fb7666",
+      "sha256_16": "66ad77fa3c3b6257"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/annecy",
     "pack": "annecy.tar.zst",
     "packGz": "annecy.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

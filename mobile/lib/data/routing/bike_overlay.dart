@@ -33,6 +33,9 @@ const kDetailBikeOverlayPacks = <String>{
   'st-moritz',
   'interlaken',
   'morzine',
+  'annecy',
+  'lyon',
+  'paris',
 };
 
 enum OnlineBikeOverlayKind { ways, mesh, none }
@@ -60,9 +63,9 @@ bool pointInRheinNeckar(double lng, double lat) =>
     lng <= rheinNeckarBbox[2] &&
     lat <= rheinNeckarBbox[3];
 
-/// DACH online Blatt — same bbox as dach-z11.
+/// True when a signed cycle-route mesh exists for the Blatt under the camera.
 bool pointInOnlineCycleMesh(double lng, double lat) =>
-    lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
+    onlineCycleMeshPmtilesUrlForPoint(lng, lat) != null;
 
 String? detailOverlayPackIdForPoint(double lng, double lat) {
   final hits = [
@@ -90,10 +93,11 @@ OnlineBikeOverlayChoice chooseOnlineBikeOverlay({
       url: AppConfig.offlinePackObjectUrl(packId, kBikeOverlayPmtilesName),
     );
   }
-  if (pointInOnlineCycleMesh(lng, lat)) {
-    return const OnlineBikeOverlayChoice(
+  final meshUrl = onlineCycleMeshPmtilesUrlForPoint(lng, lat);
+  if (meshUrl != null) {
+    return OnlineBikeOverlayChoice(
       kind: OnlineBikeOverlayKind.mesh,
-      url: kOnlineCycleMeshPmtilesUrl,
+      url: meshUrl,
     );
   }
   return const OnlineBikeOverlayChoice(kind: OnlineBikeOverlayKind.none);

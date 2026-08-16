@@ -7,18 +7,37 @@
     2.48,
     48.92
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-16T17:10:56.744Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
-  "files": {},
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 2004403,
+      "sha256": "23cf32382b1ad73af942f6e645976904fc9f199bc72c6739cc41ee828816a5c4",
+      "sha256_16": "23cf32382b1ad73a"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 856192,
+      "sha256": "a9f5d819caf09c3799473edb8f0cb706eaffa17d1d7b8e5752ec64c450e77d95",
+      "sha256_16": "a9f5d819caf09c37"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/paris",
     "pack": "paris.tar.zst",
     "packGz": "paris.tar.gz"
   },
   "shipped": {
     "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

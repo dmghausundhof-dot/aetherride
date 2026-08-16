@@ -20,12 +20,16 @@ const HAUSBERGE: Array<{
   name: string;
   center: [number, number];
   zoom: number;
+  blatt: OnlineBasemapId;
 }> = [
-  { name: "Heidelberg", center: [8.68, 49.41], zoom: 13 },
-  { name: "Freiburg", center: [7.85, 47.99], zoom: 13 },
-  { name: "Vogesen", center: [6.9, 47.95], zoom: 12.6 },
-  { name: "Zermatt", center: [7.75, 46.02], zoom: 13 },
-  { name: "Innsbruck", center: [11.4, 47.27], zoom: 13 },
+  { name: "Heidelberg", center: [8.68, 49.41], zoom: 13, blatt: "dach-z11" },
+  { name: "Freiburg", center: [7.85, 47.99], zoom: 13, blatt: "dach-z11" },
+  { name: "Vogesen", center: [6.9, 47.95], zoom: 12.6, blatt: "dach-z11" },
+  { name: "Zermatt", center: [7.75, 46.02], zoom: 13, blatt: "dach-z11" },
+  { name: "Innsbruck", center: [11.4, 47.27], zoom: 13, blatt: "dach-z11" },
+  { name: "Paris", center: [2.35, 48.86], zoom: 13, blatt: "france-west-z11" },
+  { name: "Lyon", center: [4.835, 45.76], zoom: 13, blatt: "france-west-z11" },
+  { name: "Annecy", center: [6.13, 45.9], zoom: 13, blatt: "alps-south-z11" },
 ];
 
 export function KartenPreview({
@@ -48,8 +52,9 @@ export function KartenPreview({
       lng,
       lat,
       zoom: view.zoom,
+      archiveId: id,
     });
-  }, [view]);
+  }, [view, id]);
 
   function selectBlatt(next: OnlineBasemapId) {
     const r = riderBasemap(next);
@@ -59,7 +64,7 @@ export function KartenPreview({
   }
 
   function flyHausberg(h: (typeof HAUSBERGE)[number]) {
-    setId("dach-z11");
+    setId(h.blatt);
     setView({ center: h.center, zoom: h.zoom });
     setJump((n) => n + 1);
   }
@@ -86,9 +91,9 @@ export function KartenPreview({
           );
         })}
       </div>
-      {id === "dach-z11" && (
+      {HAUSBERGE.some((h) => h.blatt === id) && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {HAUSBERGE.map((h) => (
+          {HAUSBERGE.filter((h) => h.blatt === id).map((h) => (
             <button
               key={h.name}
               type="button"
