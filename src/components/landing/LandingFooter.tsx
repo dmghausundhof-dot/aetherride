@@ -5,6 +5,7 @@ import { MARKETING_NAV } from "@/lib/nav/marketingNav";
 import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
 import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
 import { legalContactEmail } from "@/lib/legal/siteLegal";
+import { MAP_ATTRIBUTION_HREF } from "@/lib/map/onlineBasemap";
 
 export function LandingFooter() {
   const email = legalContactEmail();
@@ -174,6 +175,24 @@ export function LandingFooter() {
         <p className="mt-10 text-center text-xs text-text-secondary">
           © {new Date().getFullYear()} FlowLine. Offline-First · DSGVO · Web
           ist der Hof, die App fährt.
+        </p>
+        <p className="mt-3 text-center text-xs text-text-secondary">
+          Karten:{" "}
+          <a
+            href={MAP_ATTRIBUTION_HREF.osm}
+            className="hover:text-foreground"
+            rel="noreferrer"
+          >
+            © OpenStreetMap
+          </a>
+          {" · "}
+          <a
+            href={MAP_ATTRIBUTION_HREF.protomaps}
+            className="hover:text-foreground"
+            rel="noreferrer"
+          >
+            Protomaps
+          </a>
         </p>
       </div>
     </footer>

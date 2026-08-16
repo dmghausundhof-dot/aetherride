@@ -18,6 +18,7 @@ function testPublicMarketingPaths() {
   assert.equal(isPublicMarketingPath("/tours/r-heidelberg-city"), true);
   assert.equal(isPublicMarketingPath("/community"), true);
   assert.equal(isPublicMarketingPath("/anmelden"), true);
+  assert.equal(isPublicMarketingPath("/karten"), true);
   assert.equal(isPublicMarketingPath("/faq"), true);
   assert.equal(isPublicMarketingPath("/ueber"), true);
   assert.equal(isPublicMarketingPath("/kontakt"), true);

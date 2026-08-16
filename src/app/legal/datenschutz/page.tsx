@@ -57,6 +57,10 @@ export default function LegalDatenschutzPage() {
               GPS-Spuren
             </li>
             <li>
+              Kartenkacheln: OpenStreetMap-Daten, ausgeliefert über Protomaps
+              (PMTiles). Kein Google-Kartenlayer.
+            </li>
+            <li>
               Einwilligungen: z.&nbsp;B. Heatmap-Beitrag, Analytics,
               Produktempfehlungen (jeweils opt-in)
             </li>
@@ -80,6 +84,18 @@ export default function LegalDatenschutzPage() {
             synchronisiert auf Servern von Supabase bzw. unserem API-Host
             (Vercel). GPS-Tracks können vor Upload um Start/Ziel und
             Privatbereiche gekürzt werden.
+          </p>
+          <h2 className="text-base font-semibold text-foreground">
+            Kartenmaterial
+          </h2>
+          <p>
+            Die Karte im Browser und in der App nutzt OpenStreetMap-Daten
+            (© Mitwirkende), aufbereitet mit Protomaps. Es gibt keinen
+            Google-Kartenlayer. Details zur Abdeckung stehen unter{" "}
+            <a className="text-chrome" href="/karten">
+              Karten
+            </a>
+            .
           </p>
           <h2 className="text-base font-semibold text-foreground">
             Deine Rechte

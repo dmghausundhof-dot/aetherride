@@ -5,6 +5,7 @@
 
 export const MARKETING_NAV = [
   { href: "/produkt", label: "Produkt" },
+  { href: "/karten", label: "Karten" },
   { href: "/regions", label: "Regionen" },
   { href: "/guides", label: "Guides" },
   { href: "/community", label: "Community" },
@@ -28,6 +29,7 @@ export function isPublicMarketingPath(pathname: string): boolean {
   }
   const prefixes = [
     "/produkt",
+    "/karten",
     "/anmelden",
     "/pricing",
     "/download",

@@ -23,6 +23,25 @@ export type OnlineBasemapArchive = {
   styleUrl: string;
 };
 
+/** Rider-facing names — never show archive ids like `uk-south-z11` on the site. */
+export type OnlineBasemapRider = {
+  id: OnlineBasemapId;
+  name: string;
+  area: string;
+  teaser: string;
+  hole: string;
+  /** Preview camera [lng, lat] */
+  center: [number, number];
+  zoom: number;
+};
+
+export const MAP_ATTRIBUTION = "© OpenStreetMap · Protomaps";
+
+export const MAP_ATTRIBUTION_HREF = {
+  osm: "https://www.openstreetmap.org/copyright",
+  protomaps: "https://protomaps.com/",
+} as const;
+
 function styleUrl(id: OnlineBasemapId): string {
   return `${ONLINE_BASEMAP_CDN_ROOT}/${id}-style.json`;
 }
@@ -135,4 +154,94 @@ export function onlineBasemapStyleUrl(
     basemapArchiveIdForLngLat(lng, lat, currentId) ?? currentId ?? "dach-z11";
   const found = ONLINE_BASEMAP_ARCHIVES.find((a) => a.id === id);
   return found?.styleUrl ?? styleUrl("dach-z11");
+}
+
+/**
+ * Display order for the website: how a rider groups the map, not smallest-bbox.
+ * Matching still uses ONLINE_BASEMAP_ARCHIVES (tightest hit + hysteresis).
+ */
+export const ONLINE_BASEMAP_RIDER: readonly OnlineBasemapRider[] = [
+  {
+    id: "dach-z11",
+    name: "DACH",
+    area: "Deutschland · Österreich · Schweiz",
+    teaser: "Der Alltag vor dem Tor: Feierabend, Alpenrand, Mittelland.",
+    hole: "Polen, Tschechien und Skandinavien liegen außerhalb dieses Blatts.",
+    center: [9.2, 49.0],
+    zoom: 5.4,
+  },
+  {
+    id: "france-west-z11",
+    name: "Frankreich",
+    area: "Westlich der DACH-Kante",
+    teaser: "Paris, Bretagne, Loire, Bordeaux — das große westliche Blatt.",
+    hole: "Korsika und Übersee fehlen. Die Südostalpen sind ein eigenes Blatt.",
+    center: [0.4, 46.7],
+    zoom: 5.2,
+  },
+  {
+    id: "alps-south-z11",
+    name: "Alpen-Süd",
+    area: "Nizza · Grenoble · Gardasee",
+    teaser: "Südliche Alpen und obere italienische Seen, nicht ganz Italien.",
+    hole: "Rom, der Süden und die Adria östlich von Venedig sind draußen.",
+    center: [8.6, 44.65],
+    zoom: 6.2,
+  },
+  {
+    id: "benelux-z11",
+    name: "Benelux",
+    area: "Niederlande · Belgien · Luxemburg",
+    teaser: "Flaches Land, NRW-West-Überlapp — ein Blatt, kein Benelux-Staatspack.",
+    hole: "Norddeutschland bleibt DACH. Dänemark ist ein Loch.",
+    center: [4.85, 51.55],
+    zoom: 6.4,
+  },
+  {
+    id: "italy-north-z11",
+    name: "Norditalien",
+    area: "Veneto · Friaul · Emilia",
+    teaser: "Venedig, Triest, Rimini — östlich vom Alpen-Süd-Blatt.",
+    hole: "Kein ganzes Italien. Südlich der Po-Ebene bleibt die Karte leer.",
+    center: [12.8, 44.85],
+    zoom: 6.6,
+  },
+  {
+    id: "catalonia-pyrenees-z11",
+    name: "Katalonien / Pyrenäen",
+    area: "Barcelona · Pyrenäen · Baskenküste",
+    teaser: "Ein Streifen am Mittelmeer, nicht die Iberische Halbinsel.",
+    hole: "Madrid, Andalusien und Portugal sind Löcher.",
+    center: [0.55, 42.35],
+    zoom: 6.5,
+  },
+  {
+    id: "uk-south-z11",
+    name: "Südengland",
+    area: "London · Südosten",
+    teaser: "Ein Blatt um die Themse — nicht das Vereinigte Königreich.",
+    hole: "Schottland, Wales, der Norden und Irland fehlen.",
+    center: [0.15, 51.5],
+    zoom: 7.2,
+  },
+];
+
+export function riderBasemap(id: OnlineBasemapId): OnlineBasemapRider {
+  return ONLINE_BASEMAP_RIDER.find((r) => r.id === id) ?? ONLINE_BASEMAP_RIDER[0];
+}
+
+export function archiveById(
+  id: OnlineBasemapId
+): OnlineBasemapArchive | undefined {
+  return ONLINE_BASEMAP_ARCHIVES.find((a) => a.id === id);
+}
+
+export function riderBasemapForLngLat(
+  lng: number,
+  lat: number,
+  currentId?: string | null
+): OnlineBasemapRider | null {
+  const id = basemapArchiveIdForLngLat(lng, lat, currentId);
+  if (!id) return null;
+  return riderBasemap(id);
 }

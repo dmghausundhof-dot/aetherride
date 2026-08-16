@@ -7,7 +7,10 @@ import {
   basemapArchiveIdForLngLat,
   envLocksOnlineBasemapStyle,
   isCdnOverviewBasemap,
+  MAP_ATTRIBUTION,
+  ONLINE_BASEMAP_RIDER,
   onlineBasemapStyleUrl,
+  riderBasemap,
 } from "./onlineBasemap";
 
 assert.equal(basemapArchiveIdForLngLat(8.54, 47.37), "dach-z11");
@@ -60,5 +63,18 @@ assert.equal(
   basemapArchiveIdForLngLat(4.83, 45.76, "france-west-z11"),
   "france-west-z11"
 );
+
+assert.equal(ONLINE_BASEMAP_RIDER.length, 7);
+assert.equal(ONLINE_BASEMAP_RIDER[0].name, "DACH");
+assert.equal(ONLINE_BASEMAP_RIDER[1].name, "Frankreich");
+assert.equal(ONLINE_BASEMAP_RIDER[6].name, "Südengland");
+for (const r of ONLINE_BASEMAP_RIDER) {
+  assert.equal(r.name.includes("z11"), false);
+  assert.ok(r.teaser.length > 20);
+  assert.ok(r.hole.length > 20);
+}
+assert.equal(riderBasemap("uk-south-z11").name, "Südengland");
+assert.ok(MAP_ATTRIBUTION.includes("OpenStreetMap"));
+assert.ok(MAP_ATTRIBUTION.includes("Protomaps"));
 
 console.log("onlineBasemap.test.ts ok");

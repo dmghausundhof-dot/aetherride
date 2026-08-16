@@ -4,9 +4,9 @@ import { FAQ_ITEMS } from "@/lib/content/faq";
 import { faqJsonLd, siteOrigin } from "@/lib/content/siteJsonLd";
 
 export const metadata: Metadata = {
-  title: "FAQ – Web, App, Preise, Community",
+  title: "FAQ – Web, App, Karten, Preise, Community",
   description:
-    "FlowLine kurz erklärt: was im Browser läuft, was in der App, Free und Pro, Community ohne Feed.",
+    "FlowLine kurz erklärt: was im Browser läuft, was in der App, wo die Karte liegt, Free und Pro, Community ohne Feed.",
 };
 
 export default function FaqPage() {
