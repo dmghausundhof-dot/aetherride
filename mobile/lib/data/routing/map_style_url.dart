@@ -38,6 +38,43 @@ const kItalyNorthBasemapId = 'italy-north-z11';
 const kCataloniaPyreneesBasemapId = 'catalonia-pyrenees-z11';
 const kUkSouthBasemapId = 'uk-south-z11';
 
+/// Signed icn/ncn/rcn PMTiles per online Blatt. DACH keeps the historic name.
+const kOnlineCycleMeshFiles = <String, String>{
+  kDachBasemapId: 'cycle-routes.pmtiles',
+  kFranceWestBasemapId: 'cycle-routes-france-west.pmtiles',
+  kAlpsSouthBasemapId: 'cycle-routes-alps-south.pmtiles',
+  kBeneluxBasemapId: 'cycle-routes-benelux.pmtiles',
+  kItalyNorthBasemapId: 'cycle-routes-italy-north.pmtiles',
+  kCataloniaPyreneesBasemapId: 'cycle-routes-catalonia-pyrenees.pmtiles',
+  kUkSouthBasemapId: 'cycle-routes-uk-south.pmtiles',
+};
+
+String? onlineCycleMeshPmtilesUrlForPoint(
+  double lng,
+  double lat, {
+  String? currentId,
+}) {
+  final id = basemapArchiveIdForLngLat(lng, lat, currentId: currentId);
+  if (id == null) return null;
+  final file = kOnlineCycleMeshFiles[id];
+  if (file == null) return null;
+  return '$kOfflinePacksPublicCdnRoot/basemap/$file';
+}
+
+String? onlineCycleMeshGeojsonUrlForPoint(
+  double lng,
+  double lat, {
+  String? currentId,
+}) {
+  final pm = onlineCycleMeshPmtilesUrlForPoint(
+    lng,
+    lat,
+    currentId: currentId,
+  );
+  if (pm == null) return null;
+  return pm.replaceFirst(RegExp(r'\.pmtiles$'), '.geojson');
+}
+
 /// MapLibre style URL checks (Basemap offline / prefs).
 bool isMapLibreStyleJsonUrl(String raw) {
   final u = raw.trim().toLowerCase();

@@ -111,7 +111,7 @@ export function BikeOverlayLegend({
       )}
       <p className="mt-1.5 max-w-[11rem] text-[9px] leading-snug text-white/55">
         {mesh
-          ? "Signierte Radrouten (ICN/NCN/RCN). Wege ab Zoom 12 in Hausbergen."
+          ? "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 in ausgewählten Städten."
           : "S0–S3 nur bei OSM-Tag. Sonst unbewertet — keine Trailforks-Geometrie."}
       </p>
     </div>

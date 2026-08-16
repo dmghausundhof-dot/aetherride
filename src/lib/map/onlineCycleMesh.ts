@@ -9,7 +9,9 @@
 
 import {
   ONLINE_BASEMAP_CDN_ROOT,
-  pointInBasemapBbox,
+  archiveIdFromStyleUrl,
+  basemapArchiveIdForLngLat,
+  type OnlineBasemapId,
 } from "./onlineBasemap";
 
 export const ONLINE_PACK_CDN_ROOT = ONLINE_BASEMAP_CDN_ROOT.replace(
@@ -20,13 +22,27 @@ export const ONLINE_PACK_CDN_ROOT = ONLINE_BASEMAP_CDN_ROOT.replace(
 export const ONLINE_CYCLE_MESH_PMTILES_URL = `${ONLINE_BASEMAP_CDN_ROOT}/cycle-routes.pmtiles`;
 export const ONLINE_CYCLE_MESH_GEOJSON_URL = `${ONLINE_BASEMAP_CDN_ROOT}/cycle-routes.geojson`;
 
-/** Same bbox as the dach-z11 online basemap — the mesh is DACH, not Europe. */
+/** Same bbox as the dach-z11 online basemap. */
 export const ONLINE_CYCLE_MESH_BBOX: [number, number, number, number] = [
   5.8, 45.75, 17.25, 55.15,
 ];
 
 /** Past the z11 atlas: pack ways (path/track/cycleway) replace the signed mesh. */
 export const BIKE_WAYS_MIN_ZOOM = 12;
+
+/**
+ * Signed icn/ncn/rcn PMTiles per online Blatt.
+ * DACH keeps the historic `cycle-routes.pmtiles` filename.
+ */
+export const ONLINE_CYCLE_MESH_FILES: Record<OnlineBasemapId, string> = {
+  "dach-z11": "cycle-routes.pmtiles",
+  "france-west-z11": "cycle-routes-france-west.pmtiles",
+  "alps-south-z11": "cycle-routes-alps-south.pmtiles",
+  "benelux-z11": "cycle-routes-benelux.pmtiles",
+  "italy-north-z11": "cycle-routes-italy-north.pmtiles",
+  "catalonia-pyrenees-z11": "cycle-routes-catalonia-pyrenees.pmtiles",
+  "uk-south-z11": "cycle-routes-uk-south.pmtiles",
+};
 
 /** Region packs that already publish a way-level bike-overlay on the CDN. */
 export const DETAIL_BIKE_OVERLAY_PACKS = new Set([
@@ -40,6 +56,9 @@ export const DETAIL_BIKE_OVERLAY_PACKS = new Set([
   "st-moritz",
   "interlaken",
   "morzine",
+  "annecy",
+  "lyon",
+  "paris",
 ]);
 
 export type OnlineBikeOverlayKind = "ways" | "mesh" | "none";
@@ -62,6 +81,37 @@ export function detailBikeOverlayPmtilesUrl(
   return `${ONLINE_PACK_CDN_ROOT}/${regionId}/bike-overlay.pmtiles`;
 }
 
+function archiveIdForMesh(
+  lng: number,
+  lat: number,
+  current?: string | null
+): OnlineBasemapId | null {
+  const fromStyle = archiveIdFromStyleUrl(current ?? null);
+  const fromId =
+    current && current in ONLINE_CYCLE_MESH_FILES
+      ? (current as OnlineBasemapId)
+      : null;
+  return basemapArchiveIdForLngLat(lng, lat, fromId ?? fromStyle);
+}
+
+export function cycleMeshPmtilesUrlForArchive(
+  id: OnlineBasemapId | null | undefined
+): string | null {
+  if (!id) return null;
+  const file = ONLINE_CYCLE_MESH_FILES[id];
+  if (!file) return null;
+  return `${ONLINE_BASEMAP_CDN_ROOT}/${file}`;
+}
+
+export function cycleMeshGeojsonUrlForArchive(
+  id: OnlineBasemapId | null | undefined
+): string | null {
+  if (!id) return null;
+  const file = ONLINE_CYCLE_MESH_FILES[id];
+  if (!file) return null;
+  return `${ONLINE_BASEMAP_CDN_ROOT}/${file.replace(/\.pmtiles$/, ".geojson")}`;
+}
+
 /**
  * Mesh at atlas zoom; OSM ways when the camera is in a Hausberg and z ≥ 12.
  */
@@ -70,6 +120,8 @@ export function chooseOnlineBikeOverlay(opts: {
   lng: number;
   lat: number;
   zoom: number;
+  currentStyle?: string | null;
+  archiveId?: string | null;
 }): OnlineBikeOverlayChoice {
   const waysUrl = detailBikeOverlayPmtilesUrl(opts.regionId);
   if (waysUrl && opts.zoom >= BIKE_WAYS_MIN_ZOOM) {
@@ -79,7 +131,11 @@ export function chooseOnlineBikeOverlay(opts: {
       regionId: opts.regionId ?? null,
     };
   }
-  const mesh = onlineCycleMeshPmtilesUrl(opts.lng, opts.lat);
+  const mesh = onlineCycleMeshPmtilesUrl(
+    opts.lng,
+    opts.lat,
+    opts.archiveId ?? opts.currentStyle
+  );
   if (mesh) {
     return {
       kind: "mesh",
@@ -90,25 +146,29 @@ export function chooseOnlineBikeOverlay(opts: {
   return { kind: "none", url: null, regionId: opts.regionId ?? null };
 }
 
-export function pointInOnlineCycleMesh(lng: number, lat: number): boolean {
-  return pointInBasemapBbox(lng, lat, ONLINE_CYCLE_MESH_BBOX);
+export function pointInOnlineCycleMesh(
+  lng: number,
+  lat: number,
+  current?: string | null
+): boolean {
+  return onlineCycleMeshPmtilesUrl(lng, lat, current) != null;
 }
 
-/** CDN PMTiles of signed cycle routes on the DACH online Blatt. */
+/** CDN PMTiles of signed cycle routes on the Blatt under the camera. */
 export function onlineCycleMeshPmtilesUrl(
   lng: number,
-  lat: number
+  lat: number,
+  current?: string | null
 ): string | null {
-  if (!pointInOnlineCycleMesh(lng, lat)) return null;
-  return ONLINE_CYCLE_MESH_PMTILES_URL;
+  return cycleMeshPmtilesUrlForArchive(archiveIdForMesh(lng, lat, current));
 }
 
 export function onlineCycleMeshGeojsonUrl(
   lng: number,
-  lat: number
+  lat: number,
+  current?: string | null
 ): string | null {
-  if (!pointInOnlineCycleMesh(lng, lat)) return null;
-  return ONLINE_CYCLE_MESH_GEOJSON_URL;
+  return cycleMeshGeojsonUrlForArchive(archiveIdForMesh(lng, lat, current));
 }
 
 export function overlayHref(path: string, origin: string): string {
