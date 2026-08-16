@@ -24,9 +24,11 @@ export default function RegionsIndexPage() {
           Regionen
         </h1>
         <p className="mt-3 max-w-2xl text-text-secondary">
-          Redaktionelle Tour-Ideen nach Gebiet. Die Stunde vor dem Tor kommt
-          aus echten Nähe-Seeds — Hamburg Alster, nicht pauschal Alpen. Wo
-          noch keine Touren stehen, gilt die Karte vor Ort — keine Füll-Routen.
+          Redaktionelle Tour-Ideen nach Gebiet: Baden-Württemberg, Schwarzwald,
+          Bayern, Bodensee, Norddeutschland, Berlin, NRW, Österreich, Schweiz.
+          Die Stunde vor dem Tor kommt aus echten Nähe-Seeds — Hamburg Alster,
+          nicht pauschal Alpen. Wo noch keine Touren stehen, gilt die Karte vor
+          Ort. Es gibt keine Füll-Routen, damit die Liste voll wirkt.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {regions.map(({ region: r, count }) => {

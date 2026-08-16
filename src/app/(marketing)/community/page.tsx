@@ -27,7 +27,10 @@ export default function CommunityPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-text-secondary">
           FlowLine teilt Touren, Stimmen und Gruppen. Es gibt keine Timeline auf
-          dem Hof und kein Live-GPS vor dem Tor. Die Tür heißt Platz.
+          dem Hof und kein Live-GPS vor dem Tor. Die Tür heißt Platz: Mappe,
+          Kurztext an der Tour, Gruppen-Code. Public Profiles sind Opt-in und
+          tragen keine Spuren. Editorial-Stimmen sind gekennzeichnet, neue
+          Stimmen starten in Prüfung.
         </p>
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2">

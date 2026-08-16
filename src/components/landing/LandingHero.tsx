@@ -11,7 +11,13 @@ import { useHofTitle } from "@/hooks/useHofTitle";
 import { HOF_COPY } from "@/lib/home/hofCopy";
 import { TrustSheet } from "./TrustSheet";
 
-const PILLS = ["Der Hof", "Karte", "Platz", "Werkstatt", "Laden"] as const;
+const PILLS = [
+  { href: "/home", label: "Der Hof" },
+  { href: "/discover", label: "Karte" },
+  { href: "/library", label: "Platz" },
+  { href: "/garage", label: "Werkstatt" },
+  { href: "/shop", label: "Laden" },
+] as const;
 
 export function LandingHero() {
   const [trustOpen, setTrustOpen] = useState(false);
@@ -62,8 +68,9 @@ export function LandingHero() {
           </h1>
 
           <p className="mt-7 max-w-sm text-[0.95rem] leading-[1.55] text-text-secondary sm:mt-8 sm:max-w-md sm:text-lg sm:leading-relaxed">
-            Drei Sekunden: der Bewohner, der Himmel, eine Stunde vor dem Tor.
-            Ein Knopf — {HOF_COPY.rideOut}.
+            Outdoor Cycling, vereinfacht: planen und pflegen im Browser, fahren
+            in der App. Drei Sekunden — der Himmel, eine Stunde vor dem Tor, ein
+            Knopf: {HOF_COPY.rideOut}.
           </p>
 
           <div className="mt-10 flex flex-col items-stretch gap-3 sm:mt-12 sm:flex-row sm:items-center sm:gap-3.5">
@@ -94,18 +101,20 @@ export function LandingHero() {
             className="mt-10 flex flex-wrap gap-2 sm:mt-12"
             aria-label="Fünf Türen"
           >
-            {PILLS.map((label) => (
-              <li
-                key={label}
-                className="rounded-md border border-foreground/14 bg-background/20 px-2.5 py-1 text-[0.72rem] font-medium tracking-[0.015em] text-foreground/80 sm:text-xs"
-              >
-                {label}
+            {PILLS.map((pill) => (
+              <li key={pill.href}>
+                <Link
+                  href={pill.href}
+                  className="inline-block rounded-md border border-foreground/14 bg-background/20 px-2.5 py-1 text-[0.72rem] font-medium tracking-[0.015em] text-foreground/80 transition hover:border-foreground/35 hover:text-foreground sm:text-xs"
+                >
+                  {pill.label}
+                </Link>
               </li>
             ))}
           </ul>
 
           <p className="mt-5 text-[0.7rem] leading-relaxed tracking-[0.01em] text-text-secondary/80 sm:mt-6 sm:text-[0.8rem]">
-            Kein Feed, keine KPI-Leiste, kein zweiter Shop im Browser.
+            Kein Feed, keine KPI-Leiste, keine zweite Kasse im Browser.
           </p>
         </div>
       </div>

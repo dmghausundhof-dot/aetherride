@@ -18,8 +18,10 @@ export default function GuidesIndexPage() {
           Guides
         </h1>
         <p className="mt-3 text-text-secondary">
-          Ratgeber für Rennrad, Gravel, MTB und E-Bike. Hof, Karte, Platz,
-          Werkstatt — ehrlich erklärt, kein Affiliate-Clickbait.
+          Ratgeber für Rennrad, Gravel, MTB und E-Bike: Touren planen,
+          Reichweite als Spanne, Setup nach Gewicht, der Hof mit fünf Türen,
+          Teilen per Link, der Laden ohne zweite Kasse. Kein Affiliate-Clickbait
+          — was im Produkt fehlt, steht hier nicht als Versprechen.
         </p>
         <div className="mt-10 space-y-10">
           {groups.map((group) => (

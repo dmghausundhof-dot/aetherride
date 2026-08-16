@@ -33,8 +33,9 @@ export default function ProduktPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-text-secondary">
             Dieselbe Anwendung, zwei Oberflächen. Im Browser planst, pflegst und
-            teilst du. Auf dem Gerät navigierst, zeichnest und koppelst du.
-            Kein Feed, keine zweite Kasse, kein Fake-GPS im Tab.
+            teilst du: Hof, Karte, Platz, Werkstatt, Laden-Tür. Auf dem Gerät
+            navigierst, zeichnest und koppelst du. Es gibt keinen Feed, keine
+            zweite Kasse und kein Fake-GPS im Tab — leere Flächen bleiben leer.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link

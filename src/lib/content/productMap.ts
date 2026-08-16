@@ -7,27 +7,27 @@ export const PRODUCT_DOORS = [
   {
     href: "/home",
     title: "Der Hof",
-    body: "Stand, Himmel, eine Stunde vor dem Tor. Ein Knopf — Rausfahren.",
+    body: "Der Stand: Himmel, eine Stunde vor dem Tor, was reinkam. Ein Knopf — Rausfahren. Kein Feed.",
   },
   {
     href: "/discover",
     title: "Karte",
-    body: "OSM, Nähe-Rundkurse, Filter, Planen. Kein Google-Layer.",
+    body: "OpenStreetMap, Nähe-Rundkurse, Sport-Filter, Planen am Desktop. Kein Live-GPS im Tab.",
   },
   {
     href: "/library",
     title: "Platz",
-    body: "Deine Mappe, Stimmen, Gruppen. Dieselben Touren wie auf der Karte.",
+    body: "Mappe, Stimmen, Gruppen-Codes. Dieselben Touren wie auf der Karte — teilen per Link, nicht per Timeline.",
   },
   {
     href: "/garage",
     title: "Werkstatt",
-    body: "Rad abstellen, Setup, Pflege. Ersatzteile führen in den Laden.",
+    body: "Rad abstellen, Setup, Wartung mit Quelle. Ersatzteile führen in den Laden — ohne zweite Kasse hier.",
   },
   {
     href: "/shop",
     title: "Laden",
-    body: "Tür zu Shopify. Kein zweiter Katalog, keine Kasse hier.",
+    body: "Tür zu Shopify. Fit aus der Werkstatt. Checkout nur dort — und nur mit hinterlegtem Impressum.",
   },
 ] as const;
 
@@ -42,7 +42,7 @@ export const WEB_SURFACES = [
   },
   {
     title: "Platz",
-    body: "GPX, Sammlungen, Stimmen, Gruppen-Codes. Teilen ohne Feed.",
+    body: "GPX, Sammlungen, Stimmen, Gruppen. Teilen ohne Feed.",
   },
   {
     title: "Laden",

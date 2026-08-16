@@ -18,6 +18,15 @@ export const FAQ_ITEMS: {
     ],
   },
   {
+    id: "fuer-wen",
+    q: "Für wen ist FlowLine?",
+    a: "Für Rennrad, Gravel, MTB, E-Bike, Touring und City. Eine Anwendung, fünf Türen — nicht fünf Apps. Wer einen Feed oder ein Leaderboard sucht, ist hier falsch. Wer Touren planen, das Rad pflegen und ohne Timeline teilen will, ist richtig.",
+    links: [
+      { href: "/regions", label: "Regionen" },
+      { href: "/produkt", label: "Produkt" },
+    ],
+  },
+  {
     id: "web-app",
     q: "Was läuft im Browser, was in der App?",
     a: "Im Web: Hof, Karte, Planen, Platz, Werkstatt, Laden-Tür. In der App: Ride-HUD, Offline-Packs, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
@@ -31,6 +40,15 @@ export const FAQ_ITEMS: {
     q: "Brauche ich ein Konto?",
     a: "Nein. Der Hof bleibt lokal nutzbar. Ein Konto synchronisiert mit der App und schaltet Pro im Profil frei.",
     links: [{ href: "/anmelden", label: "Anmelden" }],
+  },
+  {
+    id: "ohne-app",
+    q: "Geht FlowLine nur im Browser?",
+    a: "Planen, Karte, Platz, Werkstatt und die Laden-Tür ja. Navigation, Offline, GPS-Aufzeichnung, Sensoren und Uhr brauchen die native App. Es gibt keine Live-Navigation im Tab — und keine Attrappe, die so tut.",
+    links: [
+      { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
   },
   {
     id: "preise",
