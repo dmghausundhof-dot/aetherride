@@ -26,11 +26,11 @@ class BikeOverlayLegend extends StatelessWidget {
       return Material(
         color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(12),
-        child: const Padding(
-          padding: EdgeInsets.fromLTRB(10, 8, 10, 8),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 168),
-            child: Text(
+            constraints: const BoxConstraints(maxWidth: 168),
+            child: const Text(
               'Wege kommen mit dem Stadt-Pack und dem Radnetz-Schalter — nicht auf diesem Überblick.',
               style: TextStyle(
                 color: Colors.white70,
