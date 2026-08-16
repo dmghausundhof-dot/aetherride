@@ -383,7 +383,6 @@ export function MapView({
         zoom: map.getZoom(),
       });
       if (!initial.switchable || fallbackTried.current) return;
-      const c = map.getCenter();
       const next = onlineBasemapStyleUrl(c.lng, c.lat, currentStyleUrl);
       if (!next || next === currentStyleUrl) return;
       currentStyleUrl = next;
