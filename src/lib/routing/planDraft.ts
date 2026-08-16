@@ -793,11 +793,13 @@ export async function resolvePointToPointDraft(
     return stitched;
   }
 
+  const costing = accessCostingForRideProfile(draft.profile);
   const engine = await requestRoute(
-    accessCostingForRideProfile(draft.profile),
+    costing,
     from,
     to,
-    viasOf(draft)
+    viasOf(draft),
+    { accessLeg: costing === "auto" }
   );
   if (!engine) return null;
 

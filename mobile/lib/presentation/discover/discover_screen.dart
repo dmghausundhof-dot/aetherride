@@ -5959,7 +5959,20 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         }
       },
       onCameraIdle: () {
-        final z = _map?.cameraPosition?.zoom ?? _mapZoom;
+        final cam = _map?.cameraPosition;
+        final t = cam?.target;
+        if (t != null) {
+          unawaited(_ensureBikeOverlay());
+          final next = nextOnlineBasemapStyleUrl(
+            currentStyle: _mapStyle,
+            lng: t.longitude,
+            lat: t.latitude,
+          );
+          if (next != null && next != _mapStyle && mounted) {
+            setState(() => _mapStyle = next);
+          }
+        }
+        final z = cam?.zoom ?? _mapZoom;
         final crossed = (z > kBikeOverlayVectorMaxZoom) !=
             (_mapZoom > kBikeOverlayVectorMaxZoom);
         _mapZoom = z;
