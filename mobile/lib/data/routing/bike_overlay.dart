@@ -20,7 +20,8 @@ const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
 const kBikeOverlayPmtilesName = 'bike-overlay.pmtiles';
 const kBikeOverlaySampleAsset = 'assets/routing/bike-overlay-sample.geojson';
 
-/// Past the z11 atlas: pack ways replace the signed cycle mesh.
+/// Past the z11 atlas: pack ways replace the signed cycle mesh when denser;
+/// otherwise DACH-wide ways cover the whole Blatt.
 const kBikeWaysMinZoom = 12.0;
 
 /// Region packs that already publish a way-level bike-overlay on the CDN.
@@ -84,6 +85,10 @@ bool pointInRheinNeckar(double lng, double lat) =>
 bool pointInOnlineCycleMesh(double lng, double lat) =>
     onlineCycleMeshPmtilesUrlForPoint(lng, lat) != null;
 
+/// DACH online Blatt — same bbox as dach-z11. Ways overlay, not per-sheet mesh.
+bool pointInDachWays(double lng, double lat) =>
+    lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
+
 String? detailOverlayPackIdForPoint(double lng, double lat) {
   final hits = [
     for (final r in kOverlayRegions)
@@ -108,6 +113,12 @@ OnlineBikeOverlayChoice chooseOnlineBikeOverlay({
     return OnlineBikeOverlayChoice(
       kind: OnlineBikeOverlayKind.ways,
       url: AppConfig.offlinePackObjectUrl(packId, kBikeOverlayPmtilesName),
+    );
+  }
+  if (zoom >= kBikeWaysMinZoom && pointInDachWays(lng, lat)) {
+    return const OnlineBikeOverlayChoice(
+      kind: OnlineBikeOverlayKind.ways,
+      url: kDachWaysPmtilesUrl,
     );
   }
   final meshUrl = onlineCycleMeshPmtilesUrlForPoint(lng, lat);

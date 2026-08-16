@@ -95,7 +95,7 @@ export const HOME_SPLIT = {
 export const HOME_MAPS = {
   kicker: "Auf der Karte",
   title: "Neun Blätter. Kein Europa-Download.",
-  lead: "Online streamt die Karte aus benannten Regionen. Offline lädst du Städte, keine Länder. Wo kein Blatt liegt, bleibt ein Loch — nicht ein Fake-Globus.",
+  lead: "Online streamt die Karte aus benannten Regionen. In DACH liegen Atlas und Wege für alle, nicht nur für zehn Städte. Offline lädst du Stadt-Packs zum Routing, keine Länder. Wo kein Blatt liegt, bleibt ein Loch — nicht ein Fake-Globus.",
 } as const;
 
 export const HOME_TOURS = {

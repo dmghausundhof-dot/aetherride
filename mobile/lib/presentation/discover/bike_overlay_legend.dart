@@ -43,7 +43,7 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 168),
             child: const Text(
-              'Kein Overlay an dieser Stelle. OSM-Wege nur ab Zoom 12 in Hausbergen, Annecy, Lyon und Paris — das Radnetz folgt dem Blatt darunter.',
+              'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 10,
@@ -179,7 +179,7 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                 const SizedBox(height: 4),
                 Text(
                   mesh
-                      ? 'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 in ausgewählten Städten.'
+                      ? 'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.'
                       : l10n.overlayScaleNote,
                   style: const TextStyle(
                     color: Colors.white54,
