@@ -157,11 +157,10 @@ export function overlayClassesOn(opts: BikeOverlayApplyOpts): Set<string> {
     if (!(opts.extraOn ?? []).includes("mtb")) on.delete("mtb");
     if (!(opts.extraOn ?? []).includes("mtb_unrated")) on.delete("mtb_unrated");
   }
-  if (p.category === "gravel") {
+  if (p.category === "gravel" || p.category === "ebike") {
     on.add("gravel");
     on.add("road");
   }
-  if (p.category === "urban") on.add("road");
   if (p.category === "hike") {
     on.add("mtb");
     on.add("mtb_unrated");
