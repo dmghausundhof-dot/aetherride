@@ -68,4 +68,20 @@ void main() {
       'pmtiles://file:///data/basemap/dach-z11.pmtiles',
     );
   });
+
+  test('rewriteStyleLocalAssets points glyphs and sprites at files', () {
+    final style = <String, dynamic>{
+      'glyphs': 'https://cdn/fonts/{fontstack}/{range}.pbf',
+      'sprite': 'https://cdn/sprites/v4/light',
+    };
+    rewriteStyleLocalAssets(style, '/data/basemap');
+    expect(
+      style['glyphs'],
+      'file:///data/basemap/assets/fonts/{fontstack}/{range}.pbf',
+    );
+    expect(
+      style['sprite'],
+      'file:///data/basemap/assets/sprites/v4/light',
+    );
+  });
 }

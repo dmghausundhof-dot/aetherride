@@ -60,7 +60,7 @@ bool skipMapLibreOfflineRegion(String styleUrl) {
 String localPmtilesSourceUrl(String archivePath) =>
     'pmtiles://file://$archivePath';
 
-/// Point the vector source at a local archive. Glyphs/sprites stay remote.
+/// Point the vector source at a local archive.
 Map<String, dynamic> rewriteStyleProtomapsUrl(
   Map<String, dynamic> style,
   String archivePath,
@@ -73,5 +73,16 @@ Map<String, dynamic> rewriteStyleProtomapsUrl(
       proto['type'] = 'vector';
     }
   }
+  return style;
+}
+
+/// Point glyphs/sprites at files under [basemapDir] (app documents).
+Map<String, dynamic> rewriteStyleLocalAssets(
+  Map<String, dynamic> style,
+  String basemapDir,
+) {
+  final root = basemapDir.endsWith('/') ? basemapDir : '$basemapDir/';
+  style['glyphs'] = 'file://${root}assets/fonts/{fontstack}/{range}.pbf';
+  style['sprite'] = 'file://${root}assets/sprites/v4/light';
   return style;
 }
