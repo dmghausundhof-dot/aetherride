@@ -45,7 +45,7 @@ void main() {
     expect(find.text('Zum Shop'), findsOneWidget);
     expect(find.text('Für dein Rad'), findsWidgets);
     expect(find.text('Merchandise'), findsWidgets);
-    expect(find.textContaining('Kasse dort'), findsOneWidget);
+    expect(find.textContaining('Kasse bei Shopify'), findsOneWidget);
     expect(find.byType(GridView), findsNothing);
     expect(find.textContaining('€'), findsNothing);
   });

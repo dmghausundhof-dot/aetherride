@@ -42,6 +42,13 @@ void main() {
   testWidgets(
     'Bike-Detailsheet zeigt Bauteil und Kompat-Verdikt in einer Zeile',
     (tester) async {
+      tester.platformDispatcher.localeTestValue = const Locale('de', 'DE');
+      tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
+      addTearDown(() {
+        tester.platformDispatcher.clearLocaleTestValue();
+        tester.platformDispatcher.clearLocalesTestValue();
+      });
+
       final db = createMemoryDatabase();
       addTearDown(db.close);
       final garage = GarageRepository(db);
@@ -94,42 +101,35 @@ void main() {
       );
       await _settle(tester);
 
-      // Bike öffnen — Übersichtskarte oder Kachel (beide unter GarageScreen).
-      final garageScrollable = find.descendant(
-        of: find.byType(GarageScreen),
-        matching: find.byType(Scrollable),
-      );
+      // Aktives Rad sitzt in der Box — Name öffnet die Detail-Route.
       final bikeName = find.descendant(
         of: find.byType(GarageScreen),
         matching: find.text('Konflikt-Bike'),
       );
-      if (bikeName.evaluate().isEmpty) {
-        final overviewTitle = find.descendant(
-          of: find.byType(GarageScreen),
-          matching: find.textContaining('Konflikt-Bike'),
-        );
-        await tester.ensureVisible(overviewTitle.first);
-        await tester.tap(overviewTitle.first);
-      } else {
-        await tester.scrollUntilVisible(
-          bikeName.first,
-          120,
-          scrollable: garageScrollable.first,
-        );
-        await tester.tap(bikeName.first);
-      }
+      expect(bikeName, findsWidgets);
+      await tester.tap(bikeName.first);
       await _settle(tester);
 
-      // Bauteil-Zeilen liegen unterhalb des Sheet-Viewports — die Sliver-
-      // Liste baut sie erst, wenn dorthin gescrollt wird.
-      final sheetScrollable = find.descendant(
-        of: find.byType(DraggableScrollableSheet),
+      expect(find.byKey(const Key('bike-detail')), findsOneWidget);
+      final detailScrollable = find.descendant(
+        of: find.byKey(const Key('bike-detail')),
         matching: find.byType(Scrollable),
       );
       await tester.scrollUntilVisible(
+        find.byKey(const Key('garage-more-on-bike')),
+        180,
+        scrollable: detailScrollable.first,
+      );
+      ExpansionTileController.of(tester.element(find.text('Mehr am Rad')))
+          .expand();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await _settle(tester);
+
+      await tester.scrollUntilVisible(
         find.text('Kassette'),
         150,
-        scrollable: sheetScrollable,
+        scrollable: detailScrollable.first,
       );
       await _settle(tester, steps: 2);
 
