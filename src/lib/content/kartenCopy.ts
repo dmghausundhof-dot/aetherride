@@ -11,6 +11,8 @@ export const KARTEN_PAGE = {
   onlineTitle: "Online: sieben Blätter",
   onlineLead:
     "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land. Auf dem DACH-Blatt liegt das Radnetz — OSM-Radrouten (EuroVelo, national, regional), nicht jeder Pfad.",
+  pathsNote:
+    "Der Überblick endet bei Zoom 11: in den Kacheln gibt es keine Pfade. Wege kommen mit dem Stadt-Pack oder, auf DACH, mit dem Radnetz-Schalter.",
   offlineTitle: "Offline: Städte, keine Länder",
   offlineLead:
     "In der App liegen Routing-Packs für Städte und Hausberge. Es gibt keine Komoot-Länderkarte und keine Hülle, die so tut.",
@@ -18,7 +20,7 @@ export const KARTEN_PAGE = {
   holesLead:
     "Außerhalb der sieben Blätter bleibt die Fläche leer. Wir füllen sie nicht mit einem Fake-Globus.",
   holes: [
-    "Skandinavien, Polen, Tschechien, der Balkan",
+    "Skandinavien, Polen, der Balkan",
     "Iberien außer Katalonien/Pyrenäen — kein Spanien-Pack",
     "UK außer Südengland — kein Schottland, kein ganzes Königreich",
     "Italien südlich der Po-Ebene — Rom und der Süden fehlen",
@@ -28,6 +30,8 @@ export const KARTEN_PAGE = {
     "Unter Regionen stehen Tour-Ideen mit Pin. Unter Karten steht, welches Blatt MapLibre wirklich streamt.",
   previewHint:
     "Tippe ein Blatt. Die Karte springt dorthin — derselbe Katalog wie in der App.",
+  waysHint:
+    "Wege kommen mit dem Stadt-Pack und dem Radnetz-Schalter — nicht auf diesem Überblick.",
   attributionNote:
     "Kartenmaterial: OpenStreetMap-Mitwirkende, aufbereitet mit Protomaps. Kein Google-Layer.",
 } as const;

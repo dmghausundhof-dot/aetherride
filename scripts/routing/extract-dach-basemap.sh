@@ -36,9 +36,14 @@ echo "    out=$OUT"
   --download-threads="${THREADS:-8}"
 ls -lh "$OUT"
 STYLE_NAME="AetherRide ${NAME} z0–${MAXZOOM}"
+GERMAN_NAMES=()
+if [[ "$NAME" == "dach" ]]; then
+  GERMAN_NAMES=(--german-names)
+fi
 python3 "$ROOT/scripts/routing/write-dach-style.py" \
   --maxzoom="$MAXZOOM" \
   --name="$STYLE_NAME" \
+  "${GERMAN_NAMES[@]}" \
   --pmtiles-url="${ROUTING_CDN_BASE:-https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs}/basemap/${NAME}-z${MAXZOOM}.pmtiles" \
   --out="$OUT_DIR/${NAME}-z${MAXZOOM}-style.json"
 echo "EXTRACT_OK $OUT"

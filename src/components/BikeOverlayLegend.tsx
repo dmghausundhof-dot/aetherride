@@ -13,12 +13,22 @@ import {
   prefersUnratedTrails,
   type RideProfileId,
 } from "@/lib/routing/profiles";
+import { KARTEN_PAGE } from "@/lib/content/kartenCopy";
+
+export function OverlayWaysHint() {
+  return (
+    <div className="max-w-[12rem] rounded-xl bg-black/70 px-2.5 py-2 text-[10px] leading-snug text-white/80 shadow-lg">
+      {KARTEN_PAGE.waysHint}
+    </div>
+  );
+}
 
 export function BikeOverlayLegend({
   family,
   visible,
   extraOn,
   rideProfileId = null,
+  hasOverlayData = true,
   onToggleVisible,
   onToggleClass,
 }: {
@@ -26,9 +36,11 @@ export function BikeOverlayLegend({
   visible: boolean;
   extraOn: BikeOverlayClass[];
   rideProfileId?: RideProfileId | null;
+  hasOverlayData?: boolean;
   onToggleVisible: () => void;
   onToggleClass: (cls: BikeOverlayClass) => void;
 }) {
+  if (!hasOverlayData) return <OverlayWaysHint />;
   const primary = new Set(overlayClassesForFamily(family));
   const profileOn = rideProfileId
     ? overlayClassesOn({

@@ -121,6 +121,17 @@ export function isCdnOverviewBasemap(raw: string): boolean {
   return archiveIdFromStyleUrl(raw) != null;
 }
 
+/** All seven z11 archives are overview tiles — never street-level HUD. */
+export function isOverviewOnlyBasemap(raw: string): boolean {
+  return isCdnOverviewBasemap(raw);
+}
+
+export function isStreetLevelBasemap(raw: string): boolean {
+  const u = raw.trim();
+  if (!u) return false;
+  return !isOverviewOnlyBasemap(u);
+}
+
 export function envLocksOnlineBasemapStyle(envUrl: string | undefined): boolean {
   const u = envUrl?.trim() ?? "";
   if (!u) return false;
@@ -166,7 +177,7 @@ export const ONLINE_BASEMAP_RIDER: readonly OnlineBasemapRider[] = [
     name: "DACH",
     area: "Deutschland · Österreich · Schweiz",
     teaser: "Der Alltag vor dem Tor: Feierabend, Alpenrand, Mittelland.",
-    hole: "Polen, Tschechien und Skandinavien liegen außerhalb dieses Blatts.",
+    hole: "Polen und Skandinavien liegen außerhalb. Prag sitzt im Blatt — Tschechien ist kein Loch.",
     center: [9.2, 49.0],
     zoom: 5.4,
   },

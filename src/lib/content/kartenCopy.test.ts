@@ -8,6 +8,11 @@ import { FAQ_ITEMS } from "./faq";
 
 assert.ok(KARTEN_PAGE.lead.length > 60);
 assert.ok(KARTEN_PAGE.onlineLead.includes("Radnetz"));
+assert.ok(KARTEN_PAGE.pathsNote.includes("Zoom 11"));
+assert.ok(KARTEN_PAGE.waysHint.includes("Stadt-Pack"));
+assert.ok(!JSON.stringify(KARTEN_PAGE).includes("Tschechien"));
+assert.ok(!JSON.stringify(ONLINE_BASEMAP_RIDER).includes("Tschechien ist ein Loch"));
+assert.ok(ONLINE_BASEMAP_RIDER[0].hole.includes("Prag"));
 assert.ok(KARTEN_PAGE.holes.length >= 4);
 assert.equal(
   JSON.stringify(KARTEN_PAGE).includes("uk-south-z11") ||

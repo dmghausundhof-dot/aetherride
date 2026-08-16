@@ -77,6 +77,9 @@ export default async function KartenPage() {
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
             {KARTEN_PAGE.onlineLead}
           </p>
+          <p className="mt-2 max-w-2xl text-sm text-text-secondary">
+            {KARTEN_PAGE.pathsNote}
+          </p>
           <div className="mt-8">
             <KartenPreview />
           </div>

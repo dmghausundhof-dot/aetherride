@@ -52,6 +52,14 @@ bool pointInRheinNeckar(double lng, double lat) =>
 bool pointInOnlineCycleMesh(double lng, double lat) =>
     lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
 
+/// True when a cycle-mesh or city-pack overlay exists for this point.
+bool overlayDataExpectedAt(double lng, double lat) {
+  if (pointInOnlineCycleMesh(lng, lat)) return true;
+  if (pointInRheinNeckar(lng, lat)) return true;
+  final region = overlayRegionForPoint(lng, lat);
+  return region != null && kDetailBikeOverlayPacks.contains(region.id);
+}
+
 bool _isPmtilesOverlay(Object data) {
   if (data is! String) return false;
   final u = data.toLowerCase();

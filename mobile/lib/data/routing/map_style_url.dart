@@ -180,6 +180,12 @@ String? archiveIdFromStyleUrl(String? raw) {
 
 bool isCdnOverviewBasemap(String raw) => archiveIdFromStyleUrl(raw) != null;
 
+/// All seven z11 CDN archives are overview tiles, not street-level HUD.
+bool isOverviewOnlyBasemap(String raw) => isCdnOverviewBasemap(raw);
+
+bool isStreetLevelBasemap(String raw) =>
+    isMapLibreStyleJsonUrl(raw) && !isOverviewOnlyBasemap(raw);
+
 /// Empty PMTILES_URL / CDN overview styles switch by viewport. Custom
 /// Liberty/Stadia/street-level URLs stay locked.
 bool isOnlineSwitchableBasemap(String raw) => isCdnOverviewBasemap(raw);

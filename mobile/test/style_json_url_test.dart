@@ -118,6 +118,34 @@ void main() {
       ),
       isNull,
     );
+    expect(
+      nextOnlineBasemapStyleUrl(
+        currentStyle: kUkSouthBasemapStyleUrl,
+        lng: -0.13,
+        lat: 51.51,
+      ),
+      isNull,
+    );
+    for (final url in [
+      kDachBasemapStyleUrl,
+      kFranceWestBasemapStyleUrl,
+      kAlpsSouthBasemapStyleUrl,
+      kBeneluxBasemapStyleUrl,
+      kItalyNorthBasemapStyleUrl,
+      kCataloniaPyreneesBasemapStyleUrl,
+      kUkSouthBasemapStyleUrl,
+    ]) {
+      expect(isOverviewOnlyBasemap(url), isTrue, reason: url);
+      expect(isStreetLevelBasemap(url), isFalse, reason: url);
+    }
+    expect(
+      isStreetLevelBasemap('https://tiles.openfreemap.org/styles/liberty'),
+      isTrue,
+    );
+    expect(
+      isOverviewOnlyBasemap('https://tiles.openfreemap.org/styles/liberty'),
+      isFalse,
+    );
     // Hysteresis: stay on France-west while still inside it.
     expect(
       basemapArchiveIdForLngLat(4.83, 45.76, currentId: 'france-west-z11'),

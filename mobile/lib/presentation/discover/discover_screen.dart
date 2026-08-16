@@ -4637,6 +4637,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 family: _overlayFamily,
                 visible: _bikeOverlayOn,
                 extraOn: _bikeOverlayExtra,
+                hasOverlayData: _bikeOverlayAttached ||
+                    overlayDataExpectedAt(_mapCenter.lng, _mapCenter.lat),
                 onToggleVisible: () {
                   setState(() => _bikeOverlayOn = !_bikeOverlayOn);
                   final c = _map;

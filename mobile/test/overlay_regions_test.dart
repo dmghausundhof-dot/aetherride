@@ -19,5 +19,8 @@ void main() {
     expect(pointInOnlineCycleMesh(8.54, 47.37), isTrue);
     expect(pointInOnlineCycleMesh(2.35, 48.86), isFalse);
     expect(pointInOnlineCycleMesh(-30, 0), isFalse);
+    expect(overlayDataExpectedAt(8.54, 47.37), isTrue);
+    expect(overlayDataExpectedAt(2.35, 48.86), isFalse);
+    expect(overlayDataExpectedAt(-30, 0), isFalse);
   });
 }
