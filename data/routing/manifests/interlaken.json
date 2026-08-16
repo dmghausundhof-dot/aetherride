@@ -10,7 +10,8 @@
   "builtAt": "2026-08-14T21:19:01Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2138084,
       "sha256": "9cd342726234fbc07b738d6289469617425d09cf01a7e945c931b8e0abba3efc",
       "sha256_16": "9cd342726234fbc0"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 1074252,
+      "sha256": "d1ba5a9a07b577c65ccffec5c6f7d1fd929525ccc69ed622e376841cb006b9b2",
+      "sha256_16": "d1ba5a9a07b577c6"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 264143,
+      "sha256": "b0df197b66aae3dd42bb492e0ec9ab67f81ac670b411088dcc2a1512b52b144d",
+      "sha256_16": "b0df197b66aae3dd"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/interlaken",
     "pack": "interlaken.tar.zst",
     "packGz": "interlaken.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

@@ -10,15 +10,34 @@
   "builtAt": "2026-08-13T00:00:00Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
-  "files": {},
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 909043,
+      "sha256": "7260926fd656f189c38cdf82d2987bc563817c31b3d368737fc9e2d676f2cedc",
+      "sha256_16": "7260926fd656f189"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 280096,
+      "sha256": "c148955f583f4dfd0fa0e0b28210477a714013dd0785d4cb27fb5bf5798ec161",
+      "sha256_16": "c148955f583f4dfd"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/zermatt",
     "pack": "zermatt.tar.zst",
     "packGz": "zermatt.tar.gz"
   },
   "shipped": {
     "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }
