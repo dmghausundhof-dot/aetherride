@@ -46,8 +46,9 @@ function KartenCoverageView({
             </p>
             <h3 className="mt-1 text-lg font-semibold">Basemap, gestreamt</h3>
             <p className="mt-2 text-sm text-text-secondary">
-              Neun Blätter auf dem CDN. Die Karte wechselt mit dem Ausschnitt.
-              Das ist kein Download von Europa.
+              Neun Blätter auf dem CDN. In DACH: Atlas plus Wege ab Zoom 12
+              für DE, AT, CH und LI. Die Karte wechselt mit dem Ausschnitt —
+              das ist kein Download von Europa.
             </p>
           </div>
           <div className="rounded-2xl border border-border bg-background/60 p-6">

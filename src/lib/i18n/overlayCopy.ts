@@ -25,7 +25,7 @@ const DE: OverlayCopy = {
   scaleNote:
     "S0–S3+ nur bei OSM-Tag mtb:scale. sac_scale wird nicht umgemünzt.",
   meshNote:
-    "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 in ausgewählten Städten.",
+    "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.",
 };
 
 const EN: OverlayCopy = {
@@ -40,7 +40,7 @@ const EN: OverlayCopy = {
   scaleNote:
     "S0–S3+ only with OSM tag mtb:scale. sac_scale is not remapped.",
   meshNote:
-    "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 in selected cities.",
+    "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 across the DACH sheet.",
 };
 
 const FR: OverlayCopy = {
@@ -55,7 +55,7 @@ const FR: OverlayCopy = {
     "S0–S3+ seulement avec le tag OSM mtb:scale. sac_scale n’est pas converti.",
   meshOsm: "Réseau cyclable · OSM",
   meshNote:
-    "Itinéraires cyclables signés (ICN/NCN/RCN) sur cette feuille. Chemins dès le zoom 12 dans des villes choisies.",
+    "Itinéraires cyclables signés (ICN/NCN/RCN) sur cette feuille. Chemins dès le zoom 12 sur toute la feuille DACH.",
 };
 
 const IT: OverlayCopy = {
@@ -70,7 +70,7 @@ const IT: OverlayCopy = {
     "S0–S3+ solo con tag OSM mtb:scale. sac_scale non viene convertito.",
   meshOsm: "Rete ciclabile · OSM",
   meshNote:
-    "Percorsi ciclabili segnalati (ICN/NCN/RCN) su questo foglio. Vie dal zoom 12 in città selezionate.",
+    "Percorsi ciclabili segnalati (ICN/NCN/RCN) su questo foglio. Vie dal zoom 12 su tutto il foglio DACH.",
 };
 
 const BY_LANG: Record<ChromeLang, OverlayCopy> = {

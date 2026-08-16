@@ -36,6 +36,10 @@ const kOnlineCycleMeshPmtilesUrl =
 const kOnlineCycleMeshGeojsonUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/cycle-routes.geojson';
 
+/// DACH-wide OSM ways (cycleway/path/track) — whole Blatt, not Hausberg chips.
+const kDachWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/dach-ways.pmtiles';
+
 /// OpenStreetMap street-level style (buildings, residential, paths).
 const kOpenFreeMapLibertyStyleUrl =
     'https://tiles.openfreemap.org/styles/liberty';
@@ -75,7 +79,6 @@ String liveMapStyleUrl({
   return kOpenFreeMapBrightStyleUrl;
 }
 
-
 const kDachBasemapId = 'dach-z11';
 const kFranceWestBasemapId = 'france-west-z11';
 const kAlpsSouthBasemapId = 'alps-south-z11';
@@ -93,6 +96,8 @@ const kOnlineCycleMeshFiles = <String, String>{
   kAlpsSouthBasemapId: 'cycle-routes-alps-south.pmtiles',
   kBeneluxBasemapId: 'cycle-routes-benelux.pmtiles',
   kItalyNorthBasemapId: 'cycle-routes-italy-north.pmtiles',
+  kItalyCenterBasemapId: 'cycle-routes-italy-center.pmtiles',
+  kItalySouthBasemapId: 'cycle-routes-italy-south.pmtiles',
   kCataloniaPyreneesBasemapId: 'cycle-routes-catalonia-pyrenees.pmtiles',
   kUkSouthBasemapId: 'cycle-routes-uk-south.pmtiles',
 };

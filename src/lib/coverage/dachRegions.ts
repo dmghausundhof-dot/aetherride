@@ -82,7 +82,7 @@ export function dachRegionForPoint(
   return null;
 }
 
-/** Smallest Hausberg pack with a CDN ways overlay covering this point. */
+/** Smallest Hausberg pack with a denser CDN ways overlay covering this point. */
 export function detailOverlayRegionIdForPoint(
   lng: number,
   lat: number
