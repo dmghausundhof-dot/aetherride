@@ -25,6 +25,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import 'post_ride_photos.dart';
+import 'post_ride_stimme_card.dart';
 import 'post_ride_track_map.dart';
 
 class PostRideScreen extends ConsumerStatefulWidget {
@@ -57,6 +58,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   List<String> _photoPaths = [];
   bool _savingAsTour = false;
   bool _savedAsTour = false;
+  String? _stimmeTourId;
 
   @override
   void initState() {
@@ -117,6 +119,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     if (ride != null) {
       unawaited(_postRideSideEffects(ride));
       unawaited(_loadWeather(ride));
+      unawaited(_loadStimmeTourId(ride));
     }
   }
 
@@ -259,6 +262,15 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
         SnackBar(content: Text('$e')),
       );
     }
+  }
+
+  Future<void> _loadStimmeTourId(RideRecord ride) async {
+    final id = ride.routeId?.trim();
+    if (id == null || id.isEmpty) return;
+    final meta = await SavedRouteMetaStore.get(id);
+    final stimmeId = RouteVisibility.stimmenTourIdOf(id, meta);
+    if (!mounted) return;
+    setState(() => _stimmeTourId = stimmeId);
   }
 
   Future<void> _postRideSideEffects(RideRecord ride) async {
@@ -920,6 +932,11 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   ],
                 ),
                 const SizedBox(height: 28),
+                if (_stimmeTourId != null)
+                  PostRideStimmeCard(
+                    tourId: _stimmeTourId!,
+                    track: ride.track,
+                  ),
                 FilledButton(
                   style: FilledButton.styleFrom(),
                   onPressed: _saving ? null : () => _submit(),

@@ -152,6 +152,23 @@ void main() {
         sports: [BikeCategory.mtbAm, BikeCategory.mtbTrail],
       );
       expect(menu, [RoutingProfile.mtbTrail]);
+      expect(discoverNavProfileChipVisible(menu), isFalse);
+    });
+
+    test('nav profile chip stays when there is a real choice', () {
+      expect(
+        discoverNavProfileChipVisible(
+          discoverProfileMenuForSports(
+            primary: BikeCategory.mtbAm,
+            sports: [BikeCategory.mtbAm, BikeCategory.road],
+          ),
+        ),
+        isTrue,
+      );
+      expect(
+        discoverNavProfileChipVisible(kDiscoverProfileMenuFallback),
+        isTrue,
+      );
     });
 
     test('Enduro garage maps to MTB chip, not a fake Enduro nav mode', () {

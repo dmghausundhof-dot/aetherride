@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
+import '../../domain/community/stimme_tags.dart';
 
 enum CloudSubmitResult { pending, approved, rejected, localOnly, failed }
 
@@ -73,6 +75,10 @@ class TourCommunityReview {
     required this.authorLabel,
     required this.createdAt,
     this.photoUris = const [],
+    this.tags = const [],
+    this.alongM,
+    this.pinLat,
+    this.pinLng,
   });
 
   final String id;
@@ -82,6 +88,10 @@ class TourCommunityReview {
   final String authorLabel;
   final DateTime createdAt;
   final List<String> photoUris;
+  final List<String> tags;
+  final double? alongM;
+  final double? pinLat;
+  final double? pinLng;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -91,6 +101,10 @@ class TourCommunityReview {
         'authorLabel': authorLabel,
         'createdAt': createdAt.toIso8601String(),
         'photoUris': photoUris,
+        if (tags.isNotEmpty) 'tags': tags,
+        if (alongM != null) 'alongM': alongM,
+        if (pinLat != null) 'pinLat': pinLat,
+        if (pinLng != null) 'pinLng': pinLng,
       };
 
   static TourCommunityReview? fromJson(Object? raw) {
@@ -125,8 +139,17 @@ class TourCommunityReview {
       authorLabel: author,
       createdAt: DateTime.tryParse(created) ?? DateTime.now(),
       photoUris: photos,
+      tags: parseStimmeTags(raw['tags']),
+      alongM: _finiteDouble(raw['alongM'] ?? raw['along_m']),
+      pinLat: _finiteDouble(raw['pinLat'] ?? raw['pin_lat']),
+      pinLng: _finiteDouble(raw['pinLng'] ?? raw['pin_lng']),
     );
   }
+}
+
+double? _finiteDouble(Object? raw) {
+  if (raw is num && raw.isFinite) return raw.toDouble();
+  return null;
 }
 
 class TourCommunityStore {
@@ -200,6 +223,10 @@ class TourCommunityStore {
     required String body,
     required String authorLabel,
     List<String> photoUris = const [],
+    List<String> tags = const [],
+    double? alongM,
+    double? pinLat,
+    double? pinLng,
   }) async {
     final review = TourCommunityReview(
       id: const Uuid().v4(),
@@ -209,6 +236,10 @@ class TourCommunityStore {
       authorLabel: authorLabel.trim().isEmpty ? 'Du' : authorLabel.trim(),
       createdAt: DateTime.now(),
       photoUris: photoUris,
+      tags: parseStimmeTags(tags),
+      alongM: alongM,
+      pinLat: pinLat,
+      pinLng: pinLng,
     );
     final all = List<TourCommunityReview>.from(await _load())..add(review);
     await _save(all);
@@ -260,18 +291,85 @@ class TourCommunityStore {
           .get(uri, headers: {'Accept': 'application/json'})
           .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) {
-        return (reviews: local, photoUrls: const <String>[]);
+        return _bundleWithCache(tourId, local);
       }
       final body = jsonDecode(res.body);
       final parsed = parseCloudPayload(body, tourId);
       countsCache[tourId] = TourCommunityCounts.fromPayload(body);
+      unawaited(_writeCloudCache(tourId, parsed.reviews, parsed.photoUrls));
       final ids = local.map((r) => r.id).toSet();
       return (
         reviews: [...local, ...parsed.reviews.where((r) => !ids.contains(r.id))],
         photoUrls: parsed.photoUrls,
       );
     } catch (_) {
+      return _bundleWithCache(tourId, local);
+    }
+  }
+
+  Future<({List<TourCommunityReview> reviews, List<String> photoUrls})>
+      _bundleWithCache(
+    String tourId,
+    List<TourCommunityReview> local,
+  ) async {
+    final cached = await _readCloudCache(tourId);
+    if (cached == null) {
       return (reviews: local, photoUrls: const <String>[]);
+    }
+    final ids = local.map((r) => r.id).toSet();
+    return (
+      reviews: [...local, ...cached.reviews.where((r) => !ids.contains(r.id))],
+      photoUrls: cached.photoUrls,
+    );
+  }
+
+  Future<File> _cloudCacheFile(String tourId) async {
+    final dir = await _dirProvider();
+    final safe = tourId.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    return File(p.join(dir.path, 'tour_community_cloud_$safe.json'));
+  }
+
+  Future<void> _writeCloudCache(
+    String tourId,
+    List<TourCommunityReview> reviews,
+    List<String> photoUrls,
+  ) async {
+    try {
+      final f = await _cloudCacheFile(tourId);
+      await f.writeAsString(
+        jsonEncode({
+          'reviews': [for (final r in reviews) r.toJson()],
+          'photoUrls': photoUrls,
+        }),
+      );
+    } catch (_) {}
+  }
+
+  Future<({List<TourCommunityReview> reviews, List<String> photoUrls})?>
+      _readCloudCache(String tourId) async {
+    try {
+      final f = await _cloudCacheFile(tourId);
+      if (!await f.exists()) return null;
+      final decoded = jsonDecode(await f.readAsString());
+      if (decoded is! Map) return null;
+      final reviews = <TourCommunityReview>[];
+      final raw = decoded['reviews'];
+      if (raw is List) {
+        for (final e in raw) {
+          final r = TourCommunityReview.fromJson(e);
+          if (r != null) reviews.add(r);
+        }
+      }
+      final photos = <String>[];
+      final p = decoded['photoUrls'];
+      if (p is List) {
+        for (final e in p) {
+          if (e is String && e.trim().isNotEmpty) photos.add(e.trim());
+        }
+      }
+      return (reviews: reviews, photoUrls: photos);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -307,6 +405,14 @@ class TourCommunityStore {
               'rating': review.rating,
               'body': review.body,
               'authorLabel': review.authorLabel,
+              'tags': review.tags,
+              if (review.pinLat != null && review.pinLng != null)
+                'pin': {
+                  'lat': review.pinLat,
+                  'lng': review.pinLng,
+                  if (review.alongM != null) 'alongM': review.alongM,
+                },
+              if (review.alongM != null) 'alongM': review.alongM,
               'photos': [
                 for (final path in photoPaths) {'storagePath': path},
               ],
@@ -385,6 +491,10 @@ class TourCommunityStore {
             createdAt:
                 DateTime.tryParse('${m['created_at']}') ?? DateTime.now(),
             photoUris: photoUrlsFrom(m['photoUris'] ?? m['photos']),
+            tags: parseStimmeTags(m['tags']),
+            alongM: _finiteDouble(m['alongM'] ?? m['along_m']),
+            pinLat: _finiteDouble(m['pinLat'] ?? m['pin_lat']),
+            pinLng: _finiteDouble(m['pinLng'] ?? m['pin_lng']),
           ),
         );
       }

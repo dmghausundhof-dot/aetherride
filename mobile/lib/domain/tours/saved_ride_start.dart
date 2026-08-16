@@ -1,4 +1,5 @@
 import '../active_route.dart';
+import '../community/poi_from_vias.dart';
 import '../routing/tour_nav_geometry.dart';
 import '../saved_route.dart';
 
@@ -13,5 +14,10 @@ ActiveRoute? activeRouteFromSaved(SavedRouteEntry s) {
     durationMin: s.durationMin,
     coordinates: s.coordinates,
     isLoop: navGeometryIsLoop(s.coordinates),
+    poiStops: poiStopsFromVias(
+      vias: labeledViasFromSaved(s.waypoints),
+      coordinates: s.coordinates,
+      durationMin: s.durationMin,
+    ),
   );
 }

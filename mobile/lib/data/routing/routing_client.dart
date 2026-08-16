@@ -13,10 +13,10 @@ import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/street_from_instruction.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
 import '../../native/routing_core_ffi.dart';
+import '../local/ride_prefs.dart';
 import 'offline_maps_prefs.dart';
 import 'offline_pack_dirs.dart';
 import 'offline_tiles.dart';
-import '../local/ride_prefs.dart';
 
 enum RoutingProfile {
   mtbTrail,
@@ -28,6 +28,7 @@ enum RoutingProfile {
   ebikeTour,
   emtb,
   hiking,
+
   /// Access-only (DH Anfahrt). Nie Discover-Chip / Overlay.
   driving,
 }
@@ -100,7 +101,8 @@ BikeOverlayFamily overlayFamilyForProfile(RoutingProfile profile) =>
       RoutingProfile.downhill ||
       RoutingProfile.mtbEnduro =>
         BikeOverlayFamily.mtb,
-      RoutingProfile.gravel || RoutingProfile.ebikeTour =>
+      RoutingProfile.gravel ||
+      RoutingProfile.ebikeTour =>
         BikeOverlayFamily.gravel,
       RoutingProfile.urban || RoutingProfile.driving => BikeOverlayFamily.urban,
       RoutingProfile.road => BikeOverlayFamily.road,
@@ -178,6 +180,10 @@ List<RoutingProfile> discoverProfileMenuForSports({
       ? List<RoutingProfile>.of(kDiscoverProfileMenuFallback)
       : out;
 }
+
+/// Ein Chip ohne Alternative ist keine Filterung — nur bei ≥2 Profilen.
+bool discoverNavProfileChipVisible(List<RoutingProfile> menu) =>
+    menu.length >= 2;
 
 class GeoPoint {
   const GeoPoint(this.lat, this.lng);

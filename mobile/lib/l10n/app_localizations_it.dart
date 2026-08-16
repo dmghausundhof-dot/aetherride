@@ -4295,6 +4295,91 @@ class AppLocalizationsIt extends AppLocalizations {
   String get stimmenSubmit => 'Invia';
 
   @override
+  String get ortSheetVia => 'Aggiungi come tappa';
+
+  @override
+  String get ortSheetHere => 'Tour verso qui';
+
+  @override
+  String get ortSheetMaps => 'Apri in Maps';
+
+  @override
+  String get ortKindCafe => 'Caffè';
+
+  @override
+  String get ortKindWater => 'Acqua';
+
+  @override
+  String get ortKindViewpoint => 'Belvedere';
+
+  @override
+  String get ortKindShop => 'Negozio';
+
+  @override
+  String get ortKindRepair => 'Officina';
+
+  @override
+  String get ortKindTrailhead => 'Partenza';
+
+  @override
+  String get ortKindTip => 'Consiglio';
+
+  @override
+  String get ortKindMeet => 'Ritrovo';
+
+  @override
+  String get ortKindOther => 'Luogo';
+
+  @override
+  String get viaMoveUp => 'Su';
+
+  @override
+  String get viaMoveDown => 'Giù';
+
+  @override
+  String get stimmeTagsHint => 'Stato — opzionale, max tre';
+
+  @override
+  String get stimmeTagNass => 'bagnato';
+
+  @override
+  String get stimmeTagZu => 'chiuso';
+
+  @override
+  String get stimmeTagVielLos => 'affollato';
+
+  @override
+  String get stimmeTagTop => 'top';
+
+  @override
+  String get stimmeTagBaustelle => 'cantiere';
+
+  @override
+  String get postRideStimmeTitle => 'Voce sul tour?';
+
+  @override
+  String get postRideStimmeHint =>
+      'Solo questo tour, niente traccia nel testo. Saltare va bene.';
+
+  @override
+  String get postRideStimmeSkip => 'Non ora';
+
+  @override
+  String get postRideStimmeDone => 'Voce salvata.';
+
+  @override
+  String get discoverLayerTours => 'Tour';
+
+  @override
+  String get discoverLayerPlaces => 'Luoghi';
+
+  @override
+  String get discoverLayerHeat => 'Heat';
+
+  @override
+  String get discoverLayerHeatOff => 'Heat off';
+
+  @override
   String get discoverRoundTrip => 'Andata e ritorno';
 
   @override

@@ -4303,6 +4303,91 @@ class AppLocalizationsFr extends AppLocalizations {
   String get stimmenSubmit => 'Envoyer';
 
   @override
+  String get ortSheetVia => 'Ajouter comme étape';
+
+  @override
+  String get ortSheetHere => 'Itinéraires vers ici';
+
+  @override
+  String get ortSheetMaps => 'Ouvrir dans Maps';
+
+  @override
+  String get ortKindCafe => 'Café';
+
+  @override
+  String get ortKindWater => 'Eau';
+
+  @override
+  String get ortKindViewpoint => 'Belvédère';
+
+  @override
+  String get ortKindShop => 'Magasin';
+
+  @override
+  String get ortKindRepair => 'Atelier';
+
+  @override
+  String get ortKindTrailhead => 'Départ';
+
+  @override
+  String get ortKindTip => 'Conseil';
+
+  @override
+  String get ortKindMeet => 'Rendez-vous';
+
+  @override
+  String get ortKindOther => 'Lieu';
+
+  @override
+  String get viaMoveUp => 'Monter';
+
+  @override
+  String get viaMoveDown => 'Descendre';
+
+  @override
+  String get stimmeTagsHint => 'État — optionnel, max. trois';
+
+  @override
+  String get stimmeTagNass => 'mouillé';
+
+  @override
+  String get stimmeTagZu => 'fermé';
+
+  @override
+  String get stimmeTagVielLos => 'fréquenté';
+
+  @override
+  String get stimmeTagTop => 'top';
+
+  @override
+  String get stimmeTagBaustelle => 'travaux';
+
+  @override
+  String get postRideStimmeTitle => 'Avis sur la sortie ?';
+
+  @override
+  String get postRideStimmeHint =>
+      'Cette sortie seulement, pas de trace dans le texte. Passer est ok.';
+
+  @override
+  String get postRideStimmeSkip => 'Pas maintenant';
+
+  @override
+  String get postRideStimmeDone => 'Avis enregistré.';
+
+  @override
+  String get discoverLayerTours => 'Sorties';
+
+  @override
+  String get discoverLayerPlaces => 'Lieux';
+
+  @override
+  String get discoverLayerHeat => 'Heat';
+
+  @override
+  String get discoverLayerHeatOff => 'Heat off';
+
+  @override
   String get discoverRoundTrip => 'Aller-retour';
 
   @override

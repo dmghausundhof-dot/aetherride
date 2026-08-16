@@ -124,4 +124,40 @@ void main() {
       expect(eta, closeTo(8, 0.01));
     });
   });
+
+  group('pickPoiAnnounce', () {
+    test('speaks once when eta is close', () {
+      final spoken = <String>{};
+      expect(
+        pickPoiAnnounce(
+          title: 'Café am Feld',
+          atMin: 20,
+          etaMin: 2.2,
+          spoken: spoken,
+        ),
+        'Café am Feld in 3 min',
+      );
+      expect(
+        pickPoiAnnounce(
+          title: 'Café am Feld',
+          atMin: 20,
+          etaMin: 2.0,
+          spoken: spoken,
+        ),
+        isNull,
+      );
+    });
+
+    test('skips far or unnamed', () {
+      final spoken = <String>{};
+      expect(
+        pickPoiAnnounce(title: 'Café', atMin: 20, etaMin: 9, spoken: spoken),
+        isNull,
+      );
+      expect(
+        pickPoiAnnounce(title: '  ', atMin: 20, etaMin: 1, spoken: spoken),
+        isNull,
+      );
+    });
+  });
 }

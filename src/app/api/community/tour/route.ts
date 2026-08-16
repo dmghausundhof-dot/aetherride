@@ -7,6 +7,7 @@ import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { moderateContent } from "@/lib/community/moderate";
 import { persistModeration } from "@/lib/community/persistModeration";
+import { parseStimmeTags } from "@/lib/community/stimmeTags";
 
 export const dynamic = "force-dynamic";
 
@@ -117,12 +118,12 @@ export async function GET(req: Request) {
     });
   }
   if (client && tourId) {
-    const [{ data: reviews, error: rErr }, { data: photos, error: pErr }] =
+    const [{ data: taggedReviews, error: taggedErr }, { data: photos, error: pErr }] =
       await Promise.all([
         client
           .from("tour_reviews")
           .select(
-            "id, tour_id, author_label, rating, body, status, created_at"
+            "id, tour_id, author_label, rating, body, status, created_at, tags, pin_lat, pin_lng, along_m"
           )
           .eq("tour_id", tourId)
           .eq("status", "approved")
@@ -136,6 +137,19 @@ export async function GET(req: Request) {
           .order("created_at", { ascending: false })
           .limit(40),
       ]);
+    let reviews = taggedReviews;
+    let rErr = taggedErr;
+    if (rErr) {
+      const retry = await client
+        .from("tour_reviews")
+        .select("id, tour_id, author_label, rating, body, status, created_at")
+        .eq("tour_id", tourId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      reviews = retry.data;
+      rErr = retry.error;
+    }
     if (!rErr && !pErr) {
       const signed = await signTourPhotoUrls(client, photos ?? []);
       return NextResponse.json({
@@ -172,26 +186,60 @@ export async function POST(req: Request) {
       rating?: number;
       body?: string;
       authorLabel?: string;
+      tags?: unknown;
+      alongM?: unknown;
+      pin?: { lat?: unknown; lng?: unknown; alongM?: unknown };
+      rideId?: unknown;
+      difficultyDelta?: unknown;
       photos?: { storagePath?: string; caption?: string }[];
     };
     const tourId = String(body.tourId || "").trim();
     const rating = Number(body.rating);
     const text = String(body.body || "").trim();
+    const tags = parseStimmeTags(body.tags);
+    const pinLat = Number(body.pin?.lat);
+    const pinLng = Number(body.pin?.lng);
+    const alongM = Number(body.pin?.alongM ?? body.alongM);
+    const hasPin = Number.isFinite(pinLat) && Number.isFinite(pinLng);
+    const deltaRaw = Number(body.difficultyDelta);
+    const difficultyDelta =
+      Number.isFinite(deltaRaw) && deltaRaw >= -2 && deltaRaw <= 2
+        ? Math.round(deltaRaw)
+        : null;
+    const rideId = String(body.rideId || "").trim() || null;
     if (!tourId || !Number.isFinite(rating) || rating < 1 || rating > 5) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
-    const { data, error } = await supabase
+    const extra: Record<string, unknown> = {};
+    if (tags.length > 0) extra.tags = tags;
+    if (hasPin) {
+      extra.pin_lat = pinLat;
+      extra.pin_lng = pinLng;
+    }
+    if (Number.isFinite(alongM)) extra.along_m = alongM;
+    if (difficultyDelta != null) extra.difficulty_delta = difficultyDelta;
+    if (rideId) extra.ride_id = rideId;
+    const baseRow = {
+      tour_id: tourId,
+      author_id: user.id,
+      author_label: String(body.authorLabel || "").trim() || "Rider",
+      rating: Math.round(rating),
+      body: text.slice(0, 2000),
+      status: "pending" as const,
+    };
+    let insert = await supabase
       .from("tour_reviews")
-      .insert({
-        tour_id: tourId,
-        author_id: user.id,
-        author_label: String(body.authorLabel || "").trim() || "Rider",
-        rating: Math.round(rating),
-        body: text.slice(0, 2000),
-        status: "pending",
-      })
+      .insert({ ...baseRow, ...extra })
       .select("id")
       .maybeSingle();
+    if (insert.error && Object.keys(extra).length > 0) {
+      insert = await supabase
+        .from("tour_reviews")
+        .insert(baseRow)
+        .select("id")
+        .maybeSingle();
+    }
+    const { data, error } = insert;
     if (error || !data?.id) {
       return NextResponse.json(
         { error: "insert_failed", note: error?.message },

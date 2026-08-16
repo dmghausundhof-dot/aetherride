@@ -14,6 +14,8 @@ import '../../../data/community/tour_community_store.dart';
 import '../../../data/community/tour_share.dart';
 import '../../../data/local/user_profile_store.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/l10n_ext.dart';
+import 'stimme_tag_chips.dart';
 
 /// Tour-Detail: Stimmen an der Tour (ohne Cloud-Abhängigkeit).
 class TourCommunitySection extends StatefulWidget {
@@ -21,10 +23,14 @@ class TourCommunitySection extends StatefulWidget {
     super.key,
     required this.tourId,
     this.showHeading = true,
+    this.shareBody,
   });
 
   final String tourId;
   final bool showHeading;
+
+  /// Null: Katalog-/Discover-Link. Leer: Teilen sperren (kein Ziel).
+  final String? shareBody;
 
   @override
   State<TourCommunitySection> createState() => _TourCommunitySectionState();
@@ -38,6 +44,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
   List<String> _cloudPhotos = const [];
   double? _avg;
   int _rating = 4;
+  List<String> _tags = const [];
   bool _loading = true;
   bool _saving = false;
   bool _compose = false;
@@ -124,10 +131,12 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
         body: body,
         authorLabel: _nameCtrl.text,
         photoUris: List<String>.from(_draftPhotos),
+        tags: _tags,
       );
       final cloud = await _store.submitToCloud(review);
       _bodyCtrl.clear();
       _draftPhotos.clear();
+      _tags = const [];
       _compose = false;
       await _reload();
       if (mounted) {
@@ -211,10 +220,17 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: () {
+                final body = widget.shareBody;
+                if (body != null && body.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.stimmenShareNeedRelease)),
+                  );
+                  return;
+                }
                 unawaited(
                   SharePlus.instance.share(
                     ShareParams(
-                      text: TourShare.text(widget.tourId),
+                      text: body ?? TourShare.text(widget.tourId),
                       subject: l10n.stimmenShareSubject,
                     ),
                   ),
@@ -302,6 +318,11 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
                 ),
             ],
           ),
+          StimmeTagChips(
+            selected: _tags,
+            onChanged: (next) => setState(() => _tags = next),
+          ),
+          const SizedBox(height: AppSpacing.s),
           TextField(
             controller: _nameCtrl,
             scrollPadding: const EdgeInsets.only(bottom: 120),
@@ -444,6 +465,24 @@ class _ReviewTile extends StatelessWidget {
             review.body,
             style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
+          if (review.tags.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final t in review.tags)
+                  Chip(
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    label: Text(
+                      AppLocalizations.of(context).stimmeTagLabel(t),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+              ],
+            ),
+          ],
           if (review.photoUris.isNotEmpty) ...[
             const SizedBox(height: 8),
             SizedBox(

@@ -22,6 +22,7 @@ void main() {
     expect(catalogTourIdOf('recorded-1'), isNull);
     expect(catalogTourIdOf('import-2'), isNull);
     expect(catalogTourIdOf('library-3'), isNull);
+    expect(catalogTourIdOf('engine-123'), isNull);
   });
 
   test('wear is counter minus install snapshot, not the snapshot', () {

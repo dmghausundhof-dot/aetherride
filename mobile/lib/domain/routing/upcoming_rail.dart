@@ -62,6 +62,23 @@ double? poiEtaMin({
   return remain;
 }
 
+/// Stimme: Ort erst wenn nah (≤3 min), einmal pro Stop. Rail bleibt bis 15 min.
+const double kPoiAnnounceMaxEtaMin = 3;
+
+String? pickPoiAnnounce({
+  required String title,
+  required int atMin,
+  required double etaMin,
+  required Set<String> spoken,
+}) {
+  final name = title.trim();
+  if (name.isEmpty) return null;
+  if (etaMin <= 0 || etaMin > kPoiAnnounceMaxEtaMin) return null;
+  final key = 'poi:$name@$atMin';
+  if (!spoken.add(key)) return null;
+  return '$name in ${etaMin.ceil()} min';
+}
+
 /// ETA minutes for a distance at [speedKmh], falling back to ~18 km/h cruise.
 double etaMinForDistanceM(double distanceM, {double speedKmh = 0}) {
   final v = speedKmh > 3 ? speedKmh : 18.0;

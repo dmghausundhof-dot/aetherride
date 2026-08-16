@@ -7626,6 +7626,174 @@ abstract class AppLocalizations {
   /// **'Absenden'**
   String get stimmenSubmit;
 
+  /// No description provided for @ortSheetVia.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Zwischenziel'**
+  String get ortSheetVia;
+
+  /// No description provided for @ortSheetHere.
+  ///
+  /// In de, this message translates to:
+  /// **'Touren hierher'**
+  String get ortSheetHere;
+
+  /// No description provided for @ortSheetMaps.
+  ///
+  /// In de, this message translates to:
+  /// **'In Maps öffnen'**
+  String get ortSheetMaps;
+
+  /// No description provided for @ortKindCafe.
+  ///
+  /// In de, this message translates to:
+  /// **'Café'**
+  String get ortKindCafe;
+
+  /// No description provided for @ortKindWater.
+  ///
+  /// In de, this message translates to:
+  /// **'Wasser'**
+  String get ortKindWater;
+
+  /// No description provided for @ortKindViewpoint.
+  ///
+  /// In de, this message translates to:
+  /// **'Aussicht'**
+  String get ortKindViewpoint;
+
+  /// No description provided for @ortKindShop.
+  ///
+  /// In de, this message translates to:
+  /// **'Laden'**
+  String get ortKindShop;
+
+  /// No description provided for @ortKindRepair.
+  ///
+  /// In de, this message translates to:
+  /// **'Werkstatt'**
+  String get ortKindRepair;
+
+  /// No description provided for @ortKindTrailhead.
+  ///
+  /// In de, this message translates to:
+  /// **'Start'**
+  String get ortKindTrailhead;
+
+  /// No description provided for @ortKindTip.
+  ///
+  /// In de, this message translates to:
+  /// **'Tipp'**
+  String get ortKindTip;
+
+  /// No description provided for @ortKindMeet.
+  ///
+  /// In de, this message translates to:
+  /// **'Treffpunkt'**
+  String get ortKindMeet;
+
+  /// No description provided for @ortKindOther.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get ortKindOther;
+
+  /// No description provided for @viaMoveUp.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach oben'**
+  String get viaMoveUp;
+
+  /// No description provided for @viaMoveDown.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach unten'**
+  String get viaMoveDown;
+
+  /// No description provided for @stimmeTagsHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Zustand — optional, max. drei'**
+  String get stimmeTagsHint;
+
+  /// No description provided for @stimmeTagNass.
+  ///
+  /// In de, this message translates to:
+  /// **'nass'**
+  String get stimmeTagNass;
+
+  /// No description provided for @stimmeTagZu.
+  ///
+  /// In de, this message translates to:
+  /// **'zu'**
+  String get stimmeTagZu;
+
+  /// No description provided for @stimmeTagVielLos.
+  ///
+  /// In de, this message translates to:
+  /// **'viel los'**
+  String get stimmeTagVielLos;
+
+  /// No description provided for @stimmeTagTop.
+  ///
+  /// In de, this message translates to:
+  /// **'top'**
+  String get stimmeTagTop;
+
+  /// No description provided for @stimmeTagBaustelle.
+  ///
+  /// In de, this message translates to:
+  /// **'Baustelle'**
+  String get stimmeTagBaustelle;
+
+  /// No description provided for @postRideStimmeTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimme zur Tour?'**
+  String get postRideStimmeTitle;
+
+  /// No description provided for @postRideStimmeHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur diese Tour, kein Track im Text. Skip ist in Ordnung.'**
+  String get postRideStimmeHint;
+
+  /// No description provided for @postRideStimmeSkip.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt nicht'**
+  String get postRideStimmeSkip;
+
+  /// No description provided for @postRideStimmeDone.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimme gespeichert.'**
+  String get postRideStimmeDone;
+
+  /// No description provided for @discoverLayerTours.
+  ///
+  /// In de, this message translates to:
+  /// **'Touren'**
+  String get discoverLayerTours;
+
+  /// No description provided for @discoverLayerPlaces.
+  ///
+  /// In de, this message translates to:
+  /// **'Orte'**
+  String get discoverLayerPlaces;
+
+  /// No description provided for @discoverLayerHeat.
+  ///
+  /// In de, this message translates to:
+  /// **'Heat'**
+  String get discoverLayerHeat;
+
+  /// No description provided for @discoverLayerHeatOff.
+  ///
+  /// In de, this message translates to:
+  /// **'Heat aus'**
+  String get discoverLayerHeatOff;
+
   /// No description provided for @discoverRoundTrip.
   ///
   /// In de, this message translates to:

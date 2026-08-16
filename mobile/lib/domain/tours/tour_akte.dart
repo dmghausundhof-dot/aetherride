@@ -13,6 +13,7 @@ String? catalogTourIdOf(String routeId, [SavedRouteMeta meta = SavedRouteMeta.em
     'import-',
     'recorded-',
     'library-',
+    'engine-',
   ];
   for (final p in privatePrefixes) {
     if (routeId.startsWith(p)) return null;

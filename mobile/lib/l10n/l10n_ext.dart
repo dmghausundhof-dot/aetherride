@@ -7,6 +7,7 @@ import '../domain/bike.dart';
 import '../domain/bike_assist.dart';
 import '../domain/compatibility/rules.dart';
 import '../domain/component.dart';
+import '../domain/community/map_place.dart';
 import '../domain/garage/die_box.dart';
 import '../domain/garage/werkstatt_setup.dart';
 import '../domain/hud_compass.dart';
@@ -1372,6 +1373,30 @@ extension AetherL10n on AppLocalizations {
     }
     return t;
   }
+
+  String mapPlaceKindLabel(MapPlaceKind kind) => switch (kind) {
+        MapPlaceKind.cafe => ortKindCafe,
+        MapPlaceKind.water => ortKindWater,
+        MapPlaceKind.viewpoint => ortKindViewpoint,
+        MapPlaceKind.shop => ortKindShop,
+        MapPlaceKind.repair => ortKindRepair,
+        MapPlaceKind.trailhead => ortKindTrailhead,
+        MapPlaceKind.tip => ortKindTip,
+        MapPlaceKind.meet => ortKindMeet,
+        MapPlaceKind.other => ortKindOther,
+      };
+
+  String mapPlaceKindLabelRaw(String? raw) =>
+      mapPlaceKindLabel(mapPlaceKindFromRaw(raw));
+
+  String stimmeTagLabel(String wire) => switch (wire) {
+        'nass' => stimmeTagNass,
+        'zu' => stimmeTagZu,
+        'viel_los' => stimmeTagVielLos,
+        'top' => stimmeTagTop,
+        'baustelle' => stimmeTagBaustelle,
+        _ => wire,
+      };
 
   String _bleWho(String who) => switch (who.trim()) {
         'Sensor' => bleWordSensor,

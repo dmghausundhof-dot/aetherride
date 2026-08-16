@@ -16,6 +16,9 @@ void main() {
             'body': 'Top',
             'author_label': 'Mira',
             'created_at': '2026-08-12T10:00:00Z',
+            'tags': ['nass', 'top', 'unknown'],
+            'pin_lat': 49.41,
+            'pin_lng': 8.67,
           },
         ],
         'photos': [
@@ -31,6 +34,9 @@ void main() {
     );
     expect(parsed.reviews, hasLength(1));
     expect(parsed.reviews.first.authorLabel, 'Mira');
+    expect(parsed.reviews.first.tags, ['nass', 'top']);
+    expect(parsed.reviews.first.pinLat, 49.41);
+    expect(parsed.reviews.first.pinLng, 8.67);
     expect(parsed.photoUrls, ['https://cdn.example/tour.jpg']);
   });
 
@@ -103,5 +109,21 @@ void main() {
     final counts = TourCommunityStore.countsCache['seed-loop-x'];
     expect(counts?.reviewCount, 1);
     expect(counts?.averageRating, 4);
+  });
+
+  test('addReview keeps allowlisted tags', () async {
+    final dir = await Directory.systemTemp.createTemp('tour_community_tags_');
+    addTearDown(() => dir.delete(recursive: true));
+    final store = TourCommunityStore(dirProvider: () async => dir);
+    final review = await store.addReview(
+      tourId: 'seed-loop-x',
+      rating: 5,
+      body: 'nass oben',
+      authorLabel: 'Du',
+      tags: const ['nass', 'unknown', 'top', 'zu', 'baustelle'],
+    );
+    expect(review.tags, ['nass', 'top', 'zu']);
+    final loaded = await store.reviewsForTour('seed-loop-x');
+    expect(loaded.single.tags, ['nass', 'top', 'zu']);
   });
 }

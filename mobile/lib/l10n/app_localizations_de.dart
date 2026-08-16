@@ -4290,6 +4290,91 @@ class AppLocalizationsDe extends AppLocalizations {
   String get stimmenSubmit => 'Absenden';
 
   @override
+  String get ortSheetVia => 'Als Zwischenziel';
+
+  @override
+  String get ortSheetHere => 'Touren hierher';
+
+  @override
+  String get ortSheetMaps => 'In Maps öffnen';
+
+  @override
+  String get ortKindCafe => 'Café';
+
+  @override
+  String get ortKindWater => 'Wasser';
+
+  @override
+  String get ortKindViewpoint => 'Aussicht';
+
+  @override
+  String get ortKindShop => 'Laden';
+
+  @override
+  String get ortKindRepair => 'Werkstatt';
+
+  @override
+  String get ortKindTrailhead => 'Start';
+
+  @override
+  String get ortKindTip => 'Tipp';
+
+  @override
+  String get ortKindMeet => 'Treffpunkt';
+
+  @override
+  String get ortKindOther => 'Ort';
+
+  @override
+  String get viaMoveUp => 'Nach oben';
+
+  @override
+  String get viaMoveDown => 'Nach unten';
+
+  @override
+  String get stimmeTagsHint => 'Zustand — optional, max. drei';
+
+  @override
+  String get stimmeTagNass => 'nass';
+
+  @override
+  String get stimmeTagZu => 'zu';
+
+  @override
+  String get stimmeTagVielLos => 'viel los';
+
+  @override
+  String get stimmeTagTop => 'top';
+
+  @override
+  String get stimmeTagBaustelle => 'Baustelle';
+
+  @override
+  String get postRideStimmeTitle => 'Stimme zur Tour?';
+
+  @override
+  String get postRideStimmeHint =>
+      'Nur diese Tour, kein Track im Text. Skip ist in Ordnung.';
+
+  @override
+  String get postRideStimmeSkip => 'Jetzt nicht';
+
+  @override
+  String get postRideStimmeDone => 'Stimme gespeichert.';
+
+  @override
+  String get discoverLayerTours => 'Touren';
+
+  @override
+  String get discoverLayerPlaces => 'Orte';
+
+  @override
+  String get discoverLayerHeat => 'Heat';
+
+  @override
+  String get discoverLayerHeatOff => 'Heat aus';
+
+  @override
   String get discoverRoundTrip => 'Hin & zurück';
 
   @override

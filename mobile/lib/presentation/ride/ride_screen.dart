@@ -1074,6 +1074,41 @@ class RideScreenState extends ConsumerState<RideScreen> {
     unawaited(_speakHud(text));
   }
 
+  void _considerPoiTts() {
+    if (_ttsMuted || !ref.read(isRidingProvider)) return;
+    final route = ref.read(activeRouteProvider);
+    if (route == null || route.poiStops.isEmpty) return;
+    final totalM = route.distanceKm * 1000;
+    if (totalM <= 0 || route.durationMin <= 0) return;
+    final poi = nextPoiStop(
+      stops: [
+        for (final p in route.poiStops)
+          RoutePoiStop(atMin: p.atMin, title: p.title, kind: p.kind),
+      ],
+      alongRouteM: _alongRouteM,
+      totalDistanceM: totalM,
+      durationMin: route.durationMin,
+    );
+    if (poi == null) return;
+    final eta = poiEtaMin(
+      poi: poi,
+      alongRouteM: _alongRouteM,
+      totalDistanceM: totalM,
+      durationMin: route.durationMin,
+    );
+    if (eta == null) return;
+    final text = pickPoiAnnounce(
+      title: poi.title,
+      atMin: poi.atMin,
+      etaMin: eta,
+      spoken: _spokenAnnounceKeys,
+    );
+    if (text == null || _lastSpokenText == text) return;
+    _lastSpokenText = text;
+    unawaited(_wakeOnCueIfNeeded());
+    unawaited(_speakHud(text));
+  }
+
   void _considerNavTts() {
     final route = ref.read(activeRouteProvider);
     if (route == null || route.coordinates.length < 4) return;
@@ -1600,6 +1635,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       }
       if (mounted) setState(() {});
       _considerNavTts();
+      _considerPoiTts();
       _mapDrawSkip += 1;
       if (_mapDrawSkip >= 3 || _track.length == 2) {
         _mapDrawSkip = 0;
@@ -1683,6 +1719,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
         }
       }
       _considerNavTts();
+      _considerPoiTts();
       final m = _metrics;
       if (m != null) _considerLiveHints(m);
     });
