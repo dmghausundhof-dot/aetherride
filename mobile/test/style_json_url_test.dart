@@ -36,6 +36,10 @@ void main() {
     expect(skipMapLibreOfflineRegion(kDachBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kFranceWestBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kAlpsSouthBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kBeneluxBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kItalyNorthBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kCataloniaPyreneesBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kUkSouthBasemapStyleUrl), isTrue);
     expect(
       skipMapLibreOfflineRegion('https://tiles.openfreemap.org/styles/liberty'),
       isFalse,
@@ -70,6 +74,18 @@ void main() {
     expect(basemapArchiveIdForLngLat(2.35, 48.86), 'france-west-z11');
     expect(basemapArchiveIdForLngLat(7.27, 43.70), 'alps-south-z11');
     expect(basemapArchiveIdForLngLat(10.75, 45.58), 'alps-south-z11');
+    expect(basemapArchiveIdForLngLat(4.90, 52.37), 'benelux-z11');
+    expect(basemapArchiveIdForLngLat(12.33, 45.44), 'italy-north-z11');
+    expect(basemapArchiveIdForLngLat(2.17, 41.39), 'catalonia-pyrenees-z11');
+    expect(basemapArchiveIdForLngLat(-0.13, 51.51), 'uk-south-z11');
+    expect(
+      nextOnlineBasemapStyleUrl(
+        currentStyle: kDachBasemapStyleUrl,
+        lng: 4.90,
+        lat: 52.37,
+      ),
+      kBeneluxBasemapStyleUrl,
+    );
     expect(
       nextOnlineBasemapStyleUrl(
         currentStyle: kDachBasemapStyleUrl,

@@ -14,6 +14,14 @@ assert.equal(basemapArchiveIdForLngLat(8.54, 47.37), "dach-z11");
 assert.equal(basemapArchiveIdForLngLat(2.35, 48.86), "france-west-z11");
 assert.equal(basemapArchiveIdForLngLat(7.27, 43.7), "alps-south-z11");
 assert.equal(basemapArchiveIdForLngLat(10.75, 45.58), "alps-south-z11");
+assert.equal(basemapArchiveIdForLngLat(4.9, 52.37), "benelux-z11");
+assert.equal(basemapArchiveIdForLngLat(12.33, 45.44), "italy-north-z11");
+assert.equal(basemapArchiveIdForLngLat(2.17, 41.39), "catalonia-pyrenees-z11");
+assert.equal(basemapArchiveIdForLngLat(-0.13, 51.51), "uk-south-z11");
+assert.equal(
+  onlineBasemapStyleUrl(4.9, 52.37).includes("benelux-z11-style.json"),
+  true
+);
 assert.equal(
   onlineBasemapStyleUrl(7.27, 43.7).includes("alps-south-z11-style.json"),
   true

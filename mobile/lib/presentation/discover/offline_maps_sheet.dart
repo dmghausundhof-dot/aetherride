@@ -386,7 +386,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     return '$n B';
   }
 
-  /// Copy dach-z11 / france-west-z11 / alps-south-z11 into documents. Never MapLibre OfflineRegion.
+  /// Copy the matching CDN overview archive into documents. Never MapLibre OfflineRegion.
   Future<void> _ensureBasemapArchive(
     String regionId,
     Map<String, dynamic>? manifest,
@@ -423,7 +423,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     setState(() {
       _progressValue = 0;
       _progress =
-          'Basemap $archiveId (~${archiveId == OfflinePmtilesStore.franceWestId ? '293' : '515'} MB, WLAN)…';
+          'Basemap $archiveId (WLAN)…';
     });
     try {
       await OfflinePmtilesStore.downloadArchive(
