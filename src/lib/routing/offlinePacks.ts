@@ -170,6 +170,20 @@ export function packCdnRoot(): string {
   return DEFAULT_PACK_CDN_ROOT;
 }
 
+/** Direct Storage object URL (overlay/graph) when the Vercel disk has no copy. */
+export function publicOfflinePackObjectUrl(
+  id: string,
+  file: string
+): string | null {
+  const root = packCdnRoot();
+  const safeId = safePackId(id);
+  const safeFile = file.replace(/\.\./g, "").replace(/^\/+/, "");
+  if (!root || !SAFE_ID.test(safeId) || !safeFile || safeFile.includes("/")) {
+    return null;
+  }
+  return `${root}/${safeId}/${encodeURIComponent(safeFile)}`;
+}
+
 export function applyPackCdn(
   id: string,
   m: OfflinePackManifest
