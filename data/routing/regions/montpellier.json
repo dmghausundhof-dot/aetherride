@@ -1,0 +1,27 @@
+{
+  "id": "montpellier",
+  "name": "Montpellier / Lez",
+  "bbox": [
+    3.75,
+    43.52,
+    4.02,
+    43.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/languedoc-roussillon-latest.osm.pbf",
+    "note": "FR extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/montpellier",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "montpellier.tar.zst"
+  }
+}
