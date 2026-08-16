@@ -2699,25 +2699,24 @@ function DiscoverPageInner() {
               .computed
           )}
         />
-        {bikeOverlaySpec && (
-          <div className="absolute left-[max(0.75rem,var(--safe-left))] top-3 z-10">
-            <BikeOverlayLegend
-              family={bikeOverlayFamily}
-              visible={bikeOverlayOn}
-              extraOn={bikeOverlayExtra}
-              rideProfileId={rideProfileId}
-              onToggleVisible={() => setBikeOverlayOn((v) => !v)}
-              onToggleClass={(cls) => {
-                setBikeOverlayOn(true);
-                setBikeOverlayExtra((cur) =>
-                  cur.includes(cls)
-                    ? cur.filter((c) => c !== cls)
-                    : [...cur, cls]
-                );
-              }}
-            />
-          </div>
-        )}
+        <div className="absolute left-[max(0.75rem,var(--safe-left))] top-3 z-10">
+          <BikeOverlayLegend
+            family={bikeOverlayFamily}
+            visible={bikeOverlayOn}
+            extraOn={bikeOverlayExtra}
+            rideProfileId={rideProfileId}
+            hasOverlayData={Boolean(bikeOverlaySpec)}
+            onToggleVisible={() => setBikeOverlayOn((v) => !v)}
+            onToggleClass={(cls) => {
+              setBikeOverlayOn(true);
+              setBikeOverlayExtra((cur) =>
+                cur.includes(cls)
+                  ? cur.filter((c) => c !== cls)
+                  : [...cur, cls]
+              );
+            }}
+          />
+        </div>
         {pickTarget && (
           <div className="absolute left-[max(0.75rem,var(--safe-left))] right-[max(0.75rem,var(--safe-right))] top-3 z-10 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white lg:left-auto lg:right-[max(0.75rem,var(--safe-right))] lg:max-w-sm">
             Tippe auf die Karte für{" "}

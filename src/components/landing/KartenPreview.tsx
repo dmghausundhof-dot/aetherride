@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { MapView } from "@/components/MapView";
+import { BikeOverlayLegend } from "@/components/BikeOverlayLegend";
 import {
   MAP_ATTRIBUTION,
   ONLINE_BASEMAP_RIDER,
@@ -17,7 +18,9 @@ export function KartenPreview({
   initialId?: OnlineBasemapId;
 }) {
   const [id, setId] = useState<OnlineBasemapId>(initialId);
+  const [overlayOn, setOverlayOn] = useState(true);
   const region = useMemo(() => riderBasemap(id), [id]);
+  const showRadnetz = id === "dach-z11";
 
   return (
     <div>
@@ -42,18 +45,30 @@ export function KartenPreview({
         })}
       </div>
       <div className="mt-4 overflow-hidden rounded-2xl border border-border">
+        <div className="relative">
         <MapView
           key={id}
           center={region.center}
           zoom={region.zoom}
           className="h-[min(52vh,460px)]"
           bikeOverlayUrl={
-            id === "dach-z11" ? ONLINE_CYCLE_MESH_PMTILES_URL : null
+            showRadnetz ? ONLINE_CYCLE_MESH_PMTILES_URL : null
           }
           bikeOverlayKind="pmtiles"
           bikeOverlayFamily="road"
-          bikeOverlayVisible
+          bikeOverlayVisible={overlayOn}
         />
+        <div className="pointer-events-auto absolute left-3 top-3 z-10">
+          <BikeOverlayLegend
+            family="road"
+            visible={overlayOn}
+            extraOn={[]}
+            hasOverlayData={showRadnetz}
+            onToggleVisible={() => setOverlayOn((v) => !v)}
+            onToggleClass={() => setOverlayOn(true)}
+          />
+        </div>
+        </div>
       </div>
       <p className="mt-3 text-sm text-text-secondary">
         <span className="font-medium text-foreground">{region.name}.</span>{" "}

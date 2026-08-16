@@ -7,7 +7,10 @@ import {
   basemapArchiveIdForLngLat,
   envLocksOnlineBasemapStyle,
   isCdnOverviewBasemap,
+  isOverviewOnlyBasemap,
+  isStreetLevelBasemap,
   MAP_ATTRIBUTION,
+  ONLINE_BASEMAP_ARCHIVES,
   ONLINE_BASEMAP_RIDER,
   onlineBasemapStyleUrl,
   riderBasemap,
@@ -64,6 +67,16 @@ assert.equal(
   "france-west-z11"
 );
 
+assert.equal(basemapArchiveIdForLngLat(14.44, 50.08), "dach-z11");
+assert.equal(ONLINE_BASEMAP_ARCHIVES.length, 7);
+for (const a of ONLINE_BASEMAP_ARCHIVES) {
+  assert.equal(isOverviewOnlyBasemap(a.styleUrl), true, a.id);
+  assert.equal(isStreetLevelBasemap(a.styleUrl), false, a.id);
+}
+assert.equal(
+  isStreetLevelBasemap("https://tiles.openfreemap.org/styles/liberty"),
+  true
+);
 assert.equal(ONLINE_BASEMAP_RIDER.length, 7);
 assert.equal(ONLINE_BASEMAP_RIDER[0].name, "DACH");
 assert.equal(ONLINE_BASEMAP_RIDER[1].name, "Frankreich");

@@ -10,6 +10,7 @@ class BikeOverlayLegend extends StatelessWidget {
     required this.extraOn,
     required this.onToggleVisible,
     required this.onToggleClass,
+    this.hasOverlayData = true,
   });
 
   final BikeOverlayFamily family;
@@ -17,9 +18,30 @@ class BikeOverlayLegend extends StatelessWidget {
   final Set<BikeOverlayClass> extraOn;
   final VoidCallback onToggleVisible;
   final ValueChanged<BikeOverlayClass> onToggleClass;
+  final bool hasOverlayData;
 
   @override
   Widget build(BuildContext context) {
+    if (!hasOverlayData) {
+      return Material(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.fromLTRB(10, 8, 10, 8),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 168),
+            child: Text(
+              'Wege kommen mit dem Stadt-Pack und dem Radnetz-Schalter — nicht auf diesem Überblick.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final primary = overlayClassesForFamily(family).toSet();
     final rows = <({BikeOverlayClass cls, String label, Color color})>[
       (cls: BikeOverlayClass.mtb, label: 'S0', color: _hex(BikeOverlayColors.s0)),
