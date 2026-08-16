@@ -4,7 +4,6 @@
  */
 import type { Bike, BikeCategory, BikeComponent, ComponentSlot, Setup } from "@/types/garage";
 import type { MaintenanceLogEntry } from "@/types/garage";
-import { catalogDriveIdentity } from "@/lib/catalog/bikes";
 
 export type WerkstattKind = "mtb" | "gravel" | "road" | "urban" | "hiking";
 export type DieBoxReadiness = "ready" | "almost" | "unknown";
@@ -255,13 +254,8 @@ export function planDieBox(input: {
     if (hasBrakes) chips.push({ label: "Bremsen", known: true });
     if (showParkTrail) chips.push({ label: "Park | Trail", known: true });
   }
-  const drive = hasElectricAssist
-    ? catalogDriveIdentity(bike.catalogBikeId)
-    : {};
-  if (hasElectricAssist) {
-    if (drive.motor) chips.push({ label: drive.motor, known: true });
-    if (drive.battery) chips.push({ label: drive.battery, known: true });
-    if (input.cscPaired) chips.push({ label: "CSC", known: true });
+  if (hasElectricAssist && input.cscPaired) {
+    chips.push({ label: "CSC", known: true });
   }
   if (hasLights && !everyday) chips.push({ label: "Licht", known: true });
 
@@ -408,7 +402,7 @@ export function planDieBox(input: {
     showParkTrail,
     park,
     wheel,
-    motorLabel: drive.motor,
+    motorLabel: hasElectricAssist ? "E-Antrieb" : undefined,
   });
 
   const addable = addableSlotsFor({ kind, hasSuspension, hasElectricAssist });

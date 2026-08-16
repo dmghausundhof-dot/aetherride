@@ -168,9 +168,9 @@ assert(jamPlan.onBike.some((c) => c.slot === "tire_front"), "jam2 core tire");
 assert(!jamPlan.onBike.some((c) => c.slot === "headset"), "jam2 no oem dump");
 assert(jamPlan.onBike.some((c) => c.slot === "lock"), "jam2 explicit lock");
 assert(jamPlan.sentence.includes("150/150"), "jam2 travel in sentence");
-assert(jamPlan.sentence.includes("Bosch CX"), "jam2 motor identity");
-assert(jamPlan.chips.some((c) => c.label === "Bosch CX"), "jam2 motor chip");
-assert(jamPlan.chips.some((c) => c.label === "800 Wh"), "jam2 battery chip");
+assert(jamPlan.sentence.includes("E-Antrieb"), "jam2 assist named honestly");
+assert(!jamPlan.chips.some((c) => c.label === "Bosch CX"), "no invented motor sku");
+assert(!jamPlan.chips.some((c) => c.label === "800 Wh"), "no invented battery");
 assert(!jamPlan.addableSlots.includes("headset"), "headset not addable");
 
 const hike = planDieBox({
