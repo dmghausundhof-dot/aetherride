@@ -1,0 +1,27 @@
+{
+  "id": "li-liechtenstein",
+  "name": "Liechtenstein",
+  "bbox": [
+    9.47,
+    47.04,
+    9.64,
+    47.27
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "LI extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/li-liechtenstein",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "li-liechtenstein.tar.zst"
+  }
+}

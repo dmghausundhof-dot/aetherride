@@ -37,8 +37,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* md+: Top-Nav. Mobile: kein AppBar — wie Native Hof, nur Tabs. */}
       <AppHeader />
-      <main className="flex-1 pb-[var(--hof-tab-h)] md:pb-0">
+      <main className="flex-1 pb-[var(--hof-tab-h)] pt-[var(--safe-top)] md:pb-0 md:pt-0">
         {children}
       </main>
       <HofThresholdNav />

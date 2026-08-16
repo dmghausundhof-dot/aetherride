@@ -70,8 +70,8 @@ class BikeHeroBanner extends ConsumerWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          AppColors.forest.withValues(alpha: 0.55),
-                          AppColors.forest.withValues(alpha: 0.95),
+                          AppColors.charcoal.withValues(alpha: 0.55),
+                          AppColors.charcoal.withValues(alpha: 0.95),
                         ],
                       ),
                     ),

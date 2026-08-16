@@ -1,0 +1,24 @@
+{
+  "id": "de-brandenburg",
+  "name": "Brandenburg",
+  "bbox": [
+    11.2,
+    51.3,
+    15.05,
+    53.6
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-brandenburg.tar.zst",
+    "packGz": "de-brandenburg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

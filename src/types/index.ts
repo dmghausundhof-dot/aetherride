@@ -1,4 +1,4 @@
-// AetherRide Core Data Models – re-export Garage-Domain + Ride/Shop
+// FlowLine Core Data Models – re-export Garage-Domain + Ride/Shop
 
 export type {
   Bike,
@@ -59,13 +59,23 @@ export interface Ride {
   /** Leer = Freeride ohne Garage-Bike */
   bikeId?: string;
   setupId?: string;
+  /** SavedRoute oder Katalog-ID, wenn die Fahrt an einer Tour hing. */
+  savedRouteId?: string;
   sportType: import("./garage").BikeType;
   startTime: string;
   endTime?: string;
   distanceM: number;
   elevationGainM: number;
   durationSec: number;
-  track?: { lat: number; lng: number; elev?: number; time: number }[];
+  track?: {
+    lat: number;
+    lng: number;
+    elev?: number;
+    time: number;
+    hr?: number;
+    cad?: number;
+    power?: number;
+  }[];
   summaryMetrics: SensorMetrics;
   motorData?: {
     avgSoc: number;

@@ -3,52 +3,33 @@
 import { useMemo, useState } from "react";
 import { slotLabel } from "@/lib/catalog/slots";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import {
-  dieBoxReadinessLabel,
-  planDieBox,
-  type DieBoxTodayItem,
-} from "@/lib/garage/dieBox";
+import { planDieBox, type DieBoxTodayItem } from "@/lib/garage/dieBox";
 import { BikePhotoControl } from "@/components/garage/BikePhotoControl";
 import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { useHofCopy } from "@/hooks/useHofCopy";
-import { lastRideHeroLineForBike } from "@/lib/garage/lastRideHero";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import {
+  dieBoxChipLabel,
+  dieBoxCopy,
+  dieBoxMeasureSpec,
+  dieBoxReadinessUi,
+  dieBoxSentenceUi,
+  lastRideHeroUiForBike,
+  localizeDieBoxItem,
+} from "@/lib/i18n/dieBoxCopy";
 import { enteredPressureToPsi, pressureUnitLabel } from "@/lib/garage/pressureUnit";
 import { getMaintenanceSummary } from "@/lib/maintenance/summary";
 import { useAppStore } from "@/store/useAppStore";
 import type { Bike, ComponentSlot } from "@/types";
 
-function partName(c: { manufacturer?: string; model?: string; freeText?: string }) {
-  return [c.manufacturer, c.model, c.freeText].filter(Boolean).join(" ") || "eingetragen";
+function partName(
+  c: { manufacturer?: string; model?: string; freeText?: string },
+  fallback: string
+) {
+  return [c.manufacturer, c.model, c.freeText].filter(Boolean).join(" ") || fallback;
 }
 
 type MeasureKind = "pressure" | "sag" | "travel";
-
-const MEASURE: Record<
-  MeasureKind,
-  { title: string; hint: string; front: string; rear: string; unit: string }
-> = {
-  pressure: {
-    title: "Druck merken",
-    hint: "Vorn und hinten am Ventil ablesen.",
-    front: "Vorn",
-    rear: "Hinten",
-    unit: "",
-  },
-  sag: {
-    title: "Federung merken",
-    hint: "Prozent an Gabel und Dämpfer. SAG ist, wie weit die Federung mit dir einsinkt.",
-    front: "Gabel",
-    rear: "Dämpfer",
-    unit: "%",
-  },
-  travel: {
-    title: "Federweg merken",
-    hint: "Nur der Federweg, der am Rad steht.",
-    front: "Vorn",
-    rear: "Hinten",
-    unit: "mm",
-  },
-};
 
 export function DieBoxSurface({
   bike,
@@ -58,6 +39,8 @@ export function DieBoxSurface({
   onInstallSlot: (slot: ComponentSlot) => void;
 }) {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const box = dieBoxCopy(lang);
 
   const setActiveBike = useAppStore((s) => s.setActiveBike);
   const setCurrentSetup = useAppStore((s) => s.setCurrentSetup);
@@ -177,14 +160,13 @@ export function DieBoxSurface({
     item.id === "dueCare" ? `due:${item.title}` : item.id;
   const visible = plan.today.filter((item) => !snoozed.has(itemKey(item)));
   const primary = visible[0] ?? null;
+  const primaryUi = primary ? localizeDieBoxItem(primary, lang) : null;
   const rest = visible.slice(1);
   const knownChips = plan.chips.filter((c) => c.known);
-  const lastRideLine = lastRideHeroLineForBike(rides, bike.id);
+  const lastRideLine = lastRideHeroUiForBike(rides, bike.id, lang);
   const pressureUnit = pressureUnitLabel(bike.category);
   const measureSpec = measure
-    ? measure.kind === "pressure"
-      ? { ...MEASURE.pressure, unit: pressureUnit }
-      : MEASURE[measure.kind]
+    ? dieBoxMeasureSpec(measure.kind, lang, measure.kind === "pressure" ? pressureUnit : undefined)
     : null;
 
   return (
@@ -195,10 +177,12 @@ export function DieBoxSurface({
       ) : null}
       <section className="rounded-2xl border border-border bg-surface p-4">
         <div className="flex items-center gap-2 text-xs font-semibold">
-          <span className="text-chrome">{dieBoxReadinessLabel(plan.readiness)}</span>
+          <span className="text-chrome">{dieBoxReadinessUi(plan.readiness, lang)}</span>
           <span className="text-text-secondary">{bikeCategoryLabel(bike.category)}</span>
         </div>
-        <p className="mt-2 text-lg font-semibold leading-snug">{plan.sentence}</p>
+        <p className="mt-2 text-lg font-semibold leading-snug">
+          {dieBoxSentenceUi(plan, bike, lang)}
+        </p>
         {knownChips.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {knownChips.map((c) => (
@@ -206,25 +190,23 @@ export function DieBoxSurface({
                 key={c.label}
                 className="rounded-full border border-chrome/40 px-2.5 py-1 text-[11px] font-semibold text-chrome"
               >
-                {c.label}
+                {dieBoxChipLabel(c.label, lang)}
               </span>
             ))}
           </div>
         )}
-        {primary ? (
+        {primary && primaryUi ? (
           <button
             type="button"
             disabled={busy}
             onClick={() => void run(primary)}
-            className="mt-4 w-full rounded-xl bg-chrome py-3 text-sm font-bold text-background"
+            className="mt-4 w-full rounded-xl bg-chrome py-3 text-sm font-bold text-on-accent"
           >
-            {primary.cta}
+            {primaryUi.cta}
           </button>
         ) : plan.isReady ? (
           <p className="mt-4 text-center text-sm font-semibold text-chrome">
-            {plan.kind === "urban"
-              ? "Montag-bereit — Licht und Kette sitzen."
-              : "Bereit — nichts liegt an."}
+            {plan.kind === "urban" ? box.nothingDueMonday : box.nothingDue}
           </p>
         ) : null}
       </section>
@@ -235,7 +217,9 @@ export function DieBoxSurface({
           {copy.workshopZoneToday}
         </h3>
           <div className="space-y-2">
-            {rest.map((item) => (
+            {rest.map((item) => {
+              const ui = localizeDieBoxItem(item, lang);
+              return (
               <div
                 key={`${item.id}-${item.title}`}
                 className="flex w-full items-start justify-between gap-3 rounded-2xl border border-border bg-surface p-3 text-left"
@@ -246,8 +230,8 @@ export function DieBoxSurface({
                   onClick={() => void run(item)}
                   className="min-w-0 flex-1 text-left"
                 >
-                  <span className="block text-sm font-semibold">{item.title}</span>
-                  <span className="mt-0.5 block text-xs text-text-secondary">{item.hint}</span>
+                  <span className="block text-sm font-semibold">{ui.title}</span>
+                  <span className="mt-0.5 block text-xs text-text-secondary">{ui.hint}</span>
                 </button>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <button
@@ -256,7 +240,7 @@ export function DieBoxSurface({
                     onClick={() => void run(item)}
                     className="text-xs font-bold text-chrome"
                   >
-                    {item.cta}
+                    {ui.cta}
                   </button>
                   <button
                     type="button"
@@ -270,7 +254,8 @@ export function DieBoxSurface({
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
       </section>
       )}
@@ -281,8 +266,7 @@ export function DieBoxSurface({
         </h3>
         {plan.onBike.length === 0 ? (
           <p className="text-sm text-text-secondary">
-            Noch nichts eingetragen. Name und Typ reichen — Teile nur, wenn sie
-            wirklich dran sind.
+            {box.emptyHint}
           </p>
         ) : (
           <ul className="space-y-1.5">
@@ -291,7 +275,7 @@ export function DieBoxSurface({
                 key={c.id}
                 className="rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium"
               >
-                {slotLabel(c.slot)} · {partName(c)}
+                {slotLabel(c.slot)} · {partName(c, box.partLogged)}
               </li>
             ))}
           </ul>
@@ -305,7 +289,7 @@ export function DieBoxSurface({
             }}
             className="mt-2 text-sm font-semibold text-chrome"
           >
-            Weiteres eintragen
+            {box.addMore}
           </button>
         )}
       </section>
@@ -315,7 +299,7 @@ export function DieBoxSurface({
       </p>
       {plan.hasElectricAssist && (
         <p className="text-xs text-text-secondary">
-          Akkustand erscheint, sobald ein Sensor am Rad koppelt. Bis dahin keine Zahl.
+          {box.batteryHint}
         </p>
       )}
 
@@ -342,7 +326,6 @@ export function DieBoxSurface({
             <div className="mt-4 grid grid-cols-2 gap-3">
               <label className="block text-sm">
                 {measureSpec.front}
-                {measureSpec.unit ? ` (${measureSpec.unit})` : ""}
                 <input
                   type="number"
                   inputMode="decimal"
@@ -355,7 +338,6 @@ export function DieBoxSurface({
               </label>
               <label className="block text-sm">
                 {measureSpec.rear}
-                {measureSpec.unit ? ` (${measureSpec.unit})` : ""}
                 <input
                   type="number"
                   inputMode="decimal"
@@ -371,16 +353,16 @@ export function DieBoxSurface({
               <button
                 type="button"
                 onClick={applyMeasure}
-                className="w-full rounded-xl bg-chrome py-3 text-sm font-semibold text-background"
+                className="w-full rounded-xl bg-chrome py-3 text-sm font-semibold text-on-accent"
               >
-                Merken
+                {measureSpec.save}
               </button>
               <button
                 type="button"
                 onClick={() => setMeasure(null)}
                 className="py-2 text-sm text-text-secondary"
               >
-                Abbrechen
+                {box.cancel}
               </button>
             </div>
           </div>

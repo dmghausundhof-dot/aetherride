@@ -13,6 +13,7 @@ import {
   type NavStep,
   type NavStepType,
 } from "@/lib/routing/navSteps";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 
 export const ORS_DEFAULT_URL = "https://api.openrouteservice.org";
 
@@ -21,7 +22,8 @@ export type OrsProfile =
   | "cycling-regular"
   | "cycling-mountain"
   | "cycling-electric"
-  | "foot-hiking";
+  | "foot-hiking"
+  | "driving-car";
 
 export type OrsSurfaceShare = {
   id: number;
@@ -31,7 +33,9 @@ export type OrsSurfaceShare = {
 
 export type OrsExtras = {
   surfaces: OrsSurfaceShare[];
+  waytypes: OrsSurfaceShare[];
   dominantSurface?: string;
+  dominantWaytype?: string;
   trailDifficultyMax?: number;
   steepnessHint?: string;
 };
@@ -54,6 +58,24 @@ const SURFACE_LABEL: Record<number, string> = {
   13: "Schnee/Eis",
 };
 
+/** ORS waytype — https://giscience.github.io/openrouteservice/documentation/extra-info/Waytype */
+const WAYTYPE_LABEL: Record<number, string> = {
+  0: "sonstige",
+  1: "Staatsstraße",
+  2: "Straße",
+  3: "Straße",
+  4: "Pfad",
+  5: "Track",
+  6: "Radweg",
+  7: "Fußweg",
+  8: "Stufen",
+  9: "Fähre",
+  10: "Baustelle",
+};
+
+const WAYTYPE_OFFROAD = new Set([4, 5, 6, 7]);
+const WAYTYPE_BUSY = new Set([1, 2]);
+
 export function orsApiKey(): string | null {
   const k =
     process.env.OPENROUTESERVICE_API_KEY?.trim() ||
@@ -72,9 +94,11 @@ export function isOrsConfigured(): boolean {
   return Boolean(orsApiKey());
 }
 
-/** Map AetherRide sport profile → ORS costing. Gravel has no native ORS profile. */
+/** Map FlowLine sport profile → ORS costing. Gravel has no native ORS profile. */
 export function orsProfileFor(profile: RoutingProfile): OrsProfile {
   switch (profile) {
+    case "auto":
+      return "driving-car";
     case "road":
       return "cycling-road";
     case "mtb_allmountain":
@@ -107,6 +131,45 @@ export function orsPreferredForGraphhopperBasic(
     profile === "downhill" ||
     profile === "emtb"
   );
+}
+
+/** Quiet/green + avoid highways so cycling engines prefer bike infra. */
+export function orsDirectionsOptions(
+  profile: RoutingProfile
+): Record<string, unknown> | undefined {
+  if (profile === "auto") {
+    return { avoid_features: ["ferries"] };
+  }
+  if (profile === "hiking") {
+    return { avoid_features: ["highways", "ferries"] };
+  }
+  if (
+    profile === "mtb_allmountain" ||
+    profile === "mtb_enduro" ||
+    profile === "downhill" ||
+    profile === "emtb"
+  ) {
+    return {
+      avoid_features: ["highways", "ferries"],
+      profile_params: { weightings: { steepness_difficulty: 2 } },
+    };
+  }
+  if (profile === "gravel") {
+    return {
+      avoid_features: ["highways"],
+      profile_params: { weightings: { quiet: 0.45, green: 0.7 } },
+    };
+  }
+  if (profile === "road") {
+    return {
+      profile_params: { weightings: { steepness_difficulty: 1 } },
+    };
+  }
+  // urban / ebike / default
+  return {
+    avoid_features: ["highways"],
+    profile_params: { weightings: { quiet: 0.9, green: 0.5 } },
+  };
 }
 
 export function pointPairInDach(points: [number, number][]): boolean {
@@ -145,6 +208,10 @@ function surfaceLabel(id: number): string {
   return SURFACE_LABEL[id] ?? `surface:${id}`;
 }
 
+function waytypeLabel(id: number): string {
+  return WAYTYPE_LABEL[id] ?? `waytype:${id}`;
+}
+
 export function parseOrsExtras(
   extras: Record<string, OrsExtraBlock> | undefined,
   totalDistanceM: number
@@ -162,6 +229,19 @@ export function parseOrsExtras(
   }
   surfaces.sort((a, b) => b.distanceM - a.distanceM);
   const dominant = surfaces[0];
+
+  const waytypes: OrsSurfaceShare[] = [];
+  for (const row of extras?.waytype?.summary ?? extras?.waytypes?.summary ?? []) {
+    const id = Number(row.value);
+    if (!Number.isFinite(id)) continue;
+    waytypes.push({
+      id,
+      label: waytypeLabel(id),
+      distanceM: Math.round(row.distance ?? 0),
+    });
+  }
+  waytypes.sort((a, b) => b.distanceM - a.distanceM);
+  const dominantWay = waytypes[0];
 
   let trailDifficultyMax: number | undefined;
   for (const row of extras?.traildifficulty?.summary ?? []) {
@@ -185,9 +265,14 @@ export function parseOrsExtras(
 
   return {
     surfaces,
+    waytypes,
     dominantSurface:
       dominant && dominant.distanceM >= totalDistanceM * 0.18
         ? dominant.label
+        : undefined,
+    dominantWaytype:
+      dominantWay && dominantWay.distanceM >= totalDistanceM * 0.18
+        ? dominantWay.label
         : undefined,
     trailDifficultyMax,
     steepnessHint,
@@ -256,6 +341,42 @@ function extrasWarnings(
       "ORS Trail-Schwierigkeit hoch — Rennrad/City-Profil, Track nicht als S-Skala gelesen"
     );
   }
+  const wayTotal = extras.waytypes.reduce((s, x) => s + x.distanceM, 0);
+  if (wayTotal > 0) {
+    let offroad = 0;
+    let busy = 0;
+    let cycleway = 0;
+    for (const row of extras.waytypes) {
+      if (WAYTYPE_OFFROAD.has(row.id)) offroad += row.distanceM;
+      if (WAYTYPE_BUSY.has(row.id)) busy += row.distanceM;
+      if (row.id === 6) cycleway += row.distanceM;
+    }
+    const off = offroad / wayTotal;
+    const bus = busy / wayTotal;
+    const cy = cycleway / wayTotal;
+    const trailSport =
+      profile === "mtb_allmountain" ||
+      profile === "mtb_enduro" ||
+      profile === "downhill" ||
+      profile === "emtb";
+    if (trailSport && off < 0.18 && bus > 0.45) {
+      w.push(
+        "Route folgt überwiegend Straßen. Trail auf der Karte antippen und anhängen."
+      );
+    } else if (profile === "gravel" && off < 0.2 && bus > 0.5) {
+      w.push(
+        "Wenig Track/Schotter auf dieser Linie — OSM-Wege antippen und anhängen."
+      );
+    } else if (
+      (profile === "urban" || profile === "ebike") &&
+      cy < 0.08 &&
+      bus > 0.55
+    ) {
+      w.push(
+        "Wenig eigener Radweg — getrennte Cycleways in OSM fehlen oder die Engine nimmt die Fahrbahn."
+      );
+    }
+  }
   return w;
 }
 
@@ -273,6 +394,7 @@ export async function fetchOrsRoute(opts: {
   profile: RoutingProfile;
   points: [number, number][];
   signal?: AbortSignal;
+  language?: ChromeLang;
 }): Promise<OrsRouteOk> {
   const key = orsApiKey();
   if (!key) throw new Error("OPENROUTESERVICE_API_KEY missing");
@@ -280,14 +402,19 @@ export async function fetchOrsRoute(opts: {
 
   const orsProfile = orsProfileFor(opts.profile);
   const url = `${orsBaseUrl()}/v2/directions/${orsProfile}/geojson`;
-  const body = {
+  const options = orsDirectionsOptions(opts.profile);
+  const body: Record<string, unknown> = {
     coordinates: opts.points,
-    language: "de",
+    language: opts.language ?? "de",
     instructions: true,
     elevation: true,
-    extra_info: ["surface", "steepness", "traildifficulty", "waytype"],
+    extra_info:
+      orsProfile === "driving-car"
+        ? ["waytype"]
+        : ["surface", "steepness", "traildifficulty", "waytype"],
     units: "m",
   };
+  if (options) body.options = options;
 
   const res = await fetch(url, {
     method: "POST",

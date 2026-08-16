@@ -198,7 +198,7 @@ export function decideModeration(
 }
 
 const SYSTEM_PROMPT =
-  "Du moderierst AetherRide Tour-Community (Fahrrad, DE/EN). " +
+  "Du moderierst FlowLine Tour-Community (Fahrrad, DE/EN). " +
   "Antworte NUR mit JSON: " +
   '{"action":"approved"|"rejected"|"review","confidence":0-1,"labels":[],"note":"kurz"}. ' +
   "Labels aus: ok, hate, sexual, csam, violence, spam, scam, pii, off_topic. " +

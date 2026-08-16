@@ -1,24 +1,37 @@
 {
   "id": "grenoble",
-  "name": "Grenoble / Isère",
+  "name": "Grenoble / Is\u00e8re",
   "bbox": [
     5.58,
     45.08,
     5.9,
     45.32
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T11:47:46Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19419886,
+      "sha256": "bea5dafdad4e6809f9d079cceb03b07d4dffb97ffffe959c52e824c30f9c3105",
+      "sha256_16": "bea5dafdad4e6809"
+    },
+    "grenoble.tar.gz": {
+      "bytes": 2635313,
+      "sha256": "892846790722e1b9b00932f3047e50d2ed661e23a3cd149256192c1ea1269900",
+      "sha256_16": "892846790722e1b9"
+    },
+    "grenoble.tar.zst": {
+      "bytes": 2846534,
+      "sha256": "3e077dd6ad1f8793ee6e3ded04cea0d87a056b8dd9475a7b8837aa4bf800caa6",
+      "sha256_16": "3e077dd6ad1f8793"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/grenoble",
     "pack": "grenoble.tar.zst",
     "packGz": "grenoble.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

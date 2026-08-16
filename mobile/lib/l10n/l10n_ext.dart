@@ -1,20 +1,24 @@
 import 'package:flutter/widgets.dart';
 
+import '../data/routing/offline_pack_catalog.dart';
 import '../domain/ble/bike_ble_kind.dart';
+import '../domain/ble/watch_candidate.dart';
 import '../domain/bike.dart';
 import '../domain/bike_assist.dart';
-import '../domain/compatibility/engine.dart';
 import '../domain/compatibility/rules.dart';
 import '../domain/component.dart';
 import '../domain/garage/die_box.dart';
 import '../domain/garage/werkstatt_setup.dart';
+import '../domain/hud_compass.dart';
 import '../domain/post_ride/analyze.dart';
 import '../domain/privacy/consents.dart';
+import '../domain/ride.dart';
 import '../domain/routing/battery_preset.dart';
 import '../domain/routing/connectivity_chip.dart';
 import '../domain/routing/tour_filters.dart';
 import '../domain/routing/trail_difficulty.dart';
 import '../domain/sport/discipline_ux.dart';
+import '../data/routing/routing_client.dart';
 import 'app_localizations.dart';
 
 /// Null when the widget tree has no [AppLocalizations] (unit tests).
@@ -131,6 +135,7 @@ extension AetherL10n on AppLocalizations {
         TrailDifficulty.s0 => trailDiffEasy,
         TrailDifficulty.s1 => trailDiffMedium,
         TrailDifficulty.s2 => trailDiffHard,
+        TrailDifficulty.s3 => filterEffortHard,
         TrailDifficulty.s3plus => trailDiffVeryHard,
         TrailDifficulty.open => trailDiffUnrated,
       };
@@ -139,8 +144,33 @@ extension AetherL10n on AppLocalizations {
         TrailDifficulty.s0 => 'S0',
         TrailDifficulty.s1 => 'S1',
         TrailDifficulty.s2 => 'S2',
+        TrailDifficulty.s3 => 'S3',
         TrailDifficulty.s3plus => 'S3+',
         TrailDifficulty.open => trailDiffOpen,
+      };
+
+  String tourFormChip(TourFormKey key) => switch (key) {
+        TourFormKey.all => filterFormAll,
+        TourFormKey.loop => filterLoopsOnly,
+        TourFormKey.pointToPoint => filterFormPointToPoint,
+        TourFormKey.downhill => filterFormDownhill,
+      };
+
+  String tourFormHint(TourFormKey key) => switch (key) {
+        TourFormKey.all => '',
+        TourFormKey.loop => filterLoopsOnlyTooltip,
+        TourFormKey.pointToPoint => filterFormPointToPointTooltip,
+        TourFormKey.downhill => filterFormDownhillTooltip,
+      };
+
+  String tourSportChip(TourSportKey key) => switch (key) {
+        TourSportKey.mtb => bikeCatMtb,
+        TourSportKey.emtb => bikeCatEmtb,
+        TourSportKey.gravel => bikeCatGravel,
+        TourSportKey.road => bikeCatRoad,
+        TourSportKey.urban => bikeCatUrban,
+        TourSportKey.hiking => bikeCatHiking,
+        TourSportKey.dh => bikeCatDh,
       };
 
   String trailDifficultyFull(TrailDifficulty d) => d == TrailDifficulty.open
@@ -176,6 +206,9 @@ extension AetherL10n on AppLocalizations {
         'CSC' => dieBoxChipCsc,
         'Akku ehrlich' => dieBoxChipBatteryHonest,
         'SAG' => dieBoxChipSag,
+        'Kette' => dieBoxChipChain,
+        'Druck' => dieBoxChipPressure,
+        'Cockpit' => dieBoxChipCockpit,
         _ => label,
       };
 
@@ -244,9 +277,18 @@ extension AetherL10n on AppLocalizations {
         );
       case DieBoxItemId.dueCare:
         final chain = item.slot == ComponentSlot.chain;
+        final remaining = item.due?.remainingLabel;
+        final source = item.due?.sourceLabel;
+        final careHint = [
+          if (remaining != null && remaining.isNotEmpty)
+            maintRemainingFor(remaining),
+          if (source != null && source.isNotEmpty) source,
+        ].join(' · ');
         return item.copyWith(
-          title: chain ? dieBoxChainDueTitle : item.title,
-          hint: chain ? dieBoxChainDueHint : item.hint,
+          title: chain
+              ? dieBoxChainDueTitle
+              : maintIntervalLabel(item.due?.label ?? item.title),
+          hint: chain ? dieBoxChainDueHint : careHint,
           cta: done,
         );
       case DieBoxItemId.parkTrail:
@@ -323,6 +365,14 @@ extension AetherL10n on AppLocalizations {
           : dieBoxSentenceMtb(bike.name, travel, drive);
     }
     return dieBoxSentenceFallback(bike.name);
+  }
+
+  String? lastRideHeroLineFor(RideRecord? ride) {
+    if (ride == null) return null;
+    if (ride.distanceKm >= 0.05) {
+      return lastRideKm(ride.distanceKm.toStringAsFixed(1));
+    }
+    return lastRideNoGps;
   }
 
   String componentSlotLabel(ComponentSlot slot) => switch (slot) {
@@ -405,16 +455,32 @@ extension AetherL10n on AppLocalizations {
         ConnectivityChipState.mapsMissing => rideChipMapsMissing,
       };
 
+  String compassCardinalFor(double headingDeg) {
+    final i = ((normalizeHeadingDeg(headingDeg) + 22.5) / 45).floor() % 8;
+    return [
+      rideCardinalN,
+      rideCardinalNE,
+      rideCardinalE,
+      rideCardinalSE,
+      rideCardinalS,
+      rideCardinalSW,
+      rideCardinalW,
+      rideCardinalNW,
+    ][i];
+  }
+
   String hudPeekLabelFor(String domainLabel) => switch (domainLabel) {
         'Puls' => rideHeart,
         'Akku' => rideBatteryChip,
         'Assist' => rideAssist,
+        'Lean' => rideLean,
         _ => domainLabel,
       };
 
   String hudSpeedCaptionFor(String domainCaption) => switch (domainCaption) {
         'Rad' => rideWheelSpeed,
         'km/h' => rideKmh,
+        'Speed' || 'Tempo' => rideSpeed,
         _ => domainCaption,
       };
 
@@ -861,6 +927,8 @@ extension AetherL10n on AppLocalizations {
         bleGattTimeoutDrive,
       'Timeout — Sensor wecken, näher rangehen.' => bleGattTimeoutSensor,
       'Verbindung fehlgeschlagen' => bleConnectFailed,
+      'Display braucht Bluetooth-Kopplung für den Akku.' => bleStatusNeedBond,
+      'System-Kopplung …' => bleStatusBonding,
       'Uhr in der Liste wählen' => watchStatusPickFromList,
       'Uhr-Suche fehlgeschlagen' => watchStatusScanFailed,
       'Uhr verbunden (Sim)' => watchStatusConnectedSim,
@@ -888,6 +956,12 @@ extension AetherL10n on AppLocalizations {
         RegExp(r'^Uhr verbindet erneut … \((\d+)/(\d+)\)$').firstMatch(t);
     if (wRecon != null) {
       return watchStatusReconnect(wRecon.group(1)!, wRecon.group(2)!);
+    }
+    final driveNeedBond = RegExp(
+      r'^(.+) · erkannt — Akku nach Bluetooth-Kopplung in der Werkstatt$',
+    ).firstMatch(t);
+    if (driveNeedBond != null) {
+      return bleStatusDriveNeedBond(_bleWho(driveNeedBond.group(1)!));
     }
     final drive = RegExp(
       r'^(.+) · erkannt — Tempo über CSC, Akku nur mit Standard-GATT$',
@@ -987,6 +1061,19 @@ extension AetherL10n on AppLocalizations {
     }
     return bikeCategoryLabel(bike);
   }
+
+  /// Discover-Chip: Wege-/Tour-Familie. Enduro-Garage → MTB, kein Navi-Modus.
+  String discoverChipLabel(RoutingProfile profile) =>
+      switch (discoverChipFamilyId(profile)) {
+        'mtb' => bikeCatMtb,
+        'emtb' => bikeCatEmtb,
+        'gravel' => bikeCatGravel,
+        'road' => bikeCatRoad,
+        'urban' => bikeCatUrban,
+        'ebike' => bikeCatEtrekking,
+        'hiking' => bikeCatHiking,
+        _ => bikeCatMtb,
+      };
 
   String bikeAssistModeLabel(BikeAssistMode mode) =>
       mode == BikeAssistMode.ebike ? garageEbikeBadge : garageMuscle;
@@ -1192,6 +1279,29 @@ extension AetherL10n on AppLocalizations {
 
   String offlinePacksReadyLabel(int ready) =>
       ready == 1 ? offlinePacksReadyOne : offlinePacksReadyCount(ready);
+
+  String offlinePackSubtitleFor(
+    OfflinePackRow r, {
+    required bool active,
+    required bool installed,
+  }) {
+    if (active) return offlineSubActive;
+    if (installed) return offlineSubInstalled;
+    if (!r.isReady) {
+      if (r.id == kBundledOfflineGraphRegionId) return offlineSubDemoGraph;
+      return offlineSubNotBuilt;
+    }
+    final size = formatPackBytes(r.bytes);
+    return size.isEmpty ? offlineSubLoad : offlineSubLoadSized(size);
+  }
+
+  String extractedGraphErrorFor(ExtractedGraphCheck check, String name) =>
+      switch (check) {
+        ExtractedGraphCheck.ok => '',
+        ExtractedGraphCheck.missing => offlineGraphMissing(name),
+        ExtractedGraphCheck.shaMismatch => offlineGraphSha(name),
+        ExtractedGraphCheck.bundledMislabel => offlineGraphDemoMismatch(name),
+      };
 
   String honestOfflineEngineCopyFor({
     required String valhallaStatus,

@@ -115,7 +115,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="w-full rounded-xl bg-accent py-3 font-semibold text-white"
+              className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent"
             >
               Weiter
             </button>
@@ -124,7 +124,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
               <button
                 type="button"
                 onClick={() => finish("garage")}
-                className="w-full rounded-xl bg-accent py-3 font-semibold text-white"
+                className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent"
               >
                 Rad abstellen
               </button>

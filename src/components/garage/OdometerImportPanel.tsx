@@ -80,7 +80,7 @@ export function OdometerImportPanel({
       <button
         type="button"
         onClick={apply}
-        className="mt-3 w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+        className="mt-3 w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
       >
         {saved ? "Gespeichert" : "Stand übernehmen"}
       </button>

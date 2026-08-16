@@ -5,12 +5,15 @@ import { ElevationChart } from "@/components/discover/ElevationChart";
 import { buildElevationForSuggestion } from "@/lib/routing/suggestionElevation";
 import type { ElevationProfile } from "@/lib/routing/elevationProfile";
 import type { PublicTour } from "@/lib/catalog/publicTours";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
 
 /**
  * Höhenprofil: zuerst synthetisch aus Metadaten, optional API-Anreicherung
  * um den Tour-Pin (kein Fake-Track in Production).
  */
 export function TourElevationClient({ tour }: { tour: PublicTour }) {
+  const e = catalogCopy(useChromeLang()).elevation;
   const synthetic = useMemo(
     () =>
       buildElevationForSuggestion({
@@ -24,7 +27,6 @@ export function TourElevationClient({ tour }: { tour: PublicTour }) {
   );
   const [elev, setElev] = useState<ElevationProfile>(synthetic);
   const [source, setSource] = useState<"meta" | "api">("meta");
-  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     setElev(synthetic);
@@ -50,7 +52,6 @@ export function TourElevationClient({ tour }: { tour: PublicTour }) {
         if (j?.points?.length >= 2 && !cancelled) {
           setElev(j as ElevationProfile);
           setSource("api");
-          setNote("Höhenpunkte via Open-Elevation (Stichprobe um Pin)");
         }
       })
       .catch(() => {
@@ -64,15 +65,14 @@ export function TourElevationClient({ tour }: { tour: PublicTour }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Höhenprofil</h2>
+        <h2 className="text-sm font-semibold">{e.title}</h2>
         <span className="text-[10px] text-text-secondary">
-          {source === "api" ? "API-Stichprobe" : "Aus Tour-Metadaten"}
+          {source === "api" ? e.apiSample : e.fromMeta}
         </span>
       </div>
       <ElevationChart elev={elev} />
       <p className="mt-2 text-[11px] text-text-secondary">
-        {note ??
-          "Geschätztes Profil aus km/hm — kein vermessener Track. Live-Routing unter Planen liefert die echte Linie."}
+        {source === "api" ? e.noteApi : e.noteMeta}
       </p>
       <p className="mt-1 text-xs tabular-nums text-text-secondary">
         ~{tour.elevationM} hm · {tour.distanceKm} km

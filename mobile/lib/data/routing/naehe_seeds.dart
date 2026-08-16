@@ -426,7 +426,9 @@ class NaeheSeedRoute {
 BikeCategory? _categoryFromSportTag(String raw) {
   final t = raw.toLowerCase().trim();
   return switch (t) {
-    'mtb' || 'trail' || 'enduro' => BikeCategory.mtbAm,
+    'mtb' || 'trail' => BikeCategory.mtbAm,
+    'enduro' => BikeCategory.mtbEnduro,
+    'dh' || 'downhill' => BikeCategory.dh,
     'gravel' => BikeCategory.gravel,
     'road' || 'rennrad' => BikeCategory.road,
     'city' || 'urban' => BikeCategory.urban,
@@ -729,6 +731,10 @@ class NaeheSeedsBundle {
   static const dachAssetPath =
       'assets/seeds/p0-dach-60min-naehe-v1.json';
 
+  /// Alpen / Ostsee / Tirol / Berlin-Trail Lücken (2026-08).
+  static const gapsAssetPath =
+      'assets/seeds/p0-gaps-60min-naehe-v1.json';
+
   /// Rhein-Neckar Premium-Pass (Bike Knowledge array; IDs rn-1/2/3).
   /// Base curated `p0-rhein-neckar-60min-v1.json` stays untouched (#22).
   static const rheinNeckarAssetPath =
@@ -759,12 +765,13 @@ class NaeheSeedsBundle {
     return null;
   }
 
-  /// Loads Berlin Nähe seeds + DACH + Rhein-Neckar Premium-Pass, concatenated
-  /// and deduped by id (Berlin wins on collision — Tempelhof enrich lives in
-  /// the Berlin asset).
+  /// Loads Berlin Nähe seeds + DACH + Alpen/Ostsee-Lücken + Rhein-Neckar
+  /// Premium-Pass + France, concatenated and deduped by id (Berlin wins on
+  /// collision — Tempelhof enrich lives in the Berlin asset).
   static Future<NaeheSeedsBundle> load({
     String path = assetPath,
     String? dachPath = dachAssetPath,
+    String? gapsPath = gapsAssetPath,
     String? rheinNeckarPath = rheinNeckarAssetPath,
     String? francePath = franceAssetPath,
   }) async {
@@ -776,6 +783,14 @@ class NaeheSeedsBundle {
         bundle = merge(bundle, parse(dachRaw));
       } catch (_) {
         // DACH asset optional at runtime (tests / older builds).
+      }
+    }
+    if (gapsPath != null && gapsPath.isNotEmpty) {
+      try {
+        final gapsRaw = await rootBundle.loadString(gapsPath);
+        bundle = merge(bundle, parse(gapsRaw));
+      } catch (_) {
+        // Gaps pack optional at runtime (tests / older builds).
       }
     }
     if (rheinNeckarPath != null && rheinNeckarPath.isNotEmpty) {

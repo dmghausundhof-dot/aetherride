@@ -62,6 +62,10 @@ class SavedRouteMeta {
     this.photoPaths = const [],
     this.notes = const [],
     this.rideId,
+    this.catalogTourId,
+    this.preferredBikeId,
+    this.visibility = 'private',
+    this.shareEpoch = 0,
     this.updatedAt,
   });
 
@@ -69,6 +73,14 @@ class SavedRouteMeta {
   final List<String> photoPaths;
   final List<SavedRouteNote> notes;
   final String? rideId;
+  /// Join zur öffentlichen Tour (Stimmen). Nur Katalog, nie GPX-Import.
+  final String? catalogTourId;
+  /// Welches Rad für diese Runde — optional.
+  final String? preferredBikeId;
+  /// `private` (Default) oder `shared`. Altbestand ohne Feld = privat.
+  final String visibility;
+  /// Steigt bei „zurück auf privat“ — Token-Invalidierung lokal.
+  final int shareEpoch;
   final DateTime? updatedAt;
 
   static const empty = SavedRouteMeta();
@@ -77,13 +89,21 @@ class SavedRouteMeta {
       description.trim().isEmpty &&
       photoPaths.isEmpty &&
       notes.isEmpty &&
-      rideId == null;
+      rideId == null &&
+      catalogTourId == null &&
+      preferredBikeId == null &&
+      visibility != 'shared' &&
+      shareEpoch == 0;
 
   Map<String, dynamic> toJson() => {
         'description': description,
         'photoPaths': photoPaths,
         'notes': [for (final n in notes) n.toJson()],
         if (rideId != null) 'rideId': rideId,
+        if (catalogTourId != null) 'catalogTourId': catalogTourId,
+        if (preferredBikeId != null) 'preferredBikeId': preferredBikeId,
+        if (visibility == 'shared') 'visibility': 'shared',
+        if (shareEpoch > 0) 'shareEpoch': shareEpoch,
         'updatedAt':
             (updatedAt ?? DateTime.now().toUtc()).toIso8601String(),
       };
@@ -102,6 +122,10 @@ class SavedRouteMeta {
             SavedRouteNote.fromJson(Map<String, dynamic>.from(e)),
       ],
       rideId: json['rideId'] as String?,
+      catalogTourId: json['catalogTourId'] as String?,
+      preferredBikeId: json['preferredBikeId'] as String?,
+      visibility: json['visibility'] == 'shared' ? 'shared' : 'private',
+      shareEpoch: (json['shareEpoch'] as num?)?.toInt() ?? 0,
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? ''),
     );
   }
@@ -112,6 +136,12 @@ class SavedRouteMeta {
     List<SavedRouteNote>? notes,
     String? rideId,
     bool clearRideId = false,
+    String? catalogTourId,
+    bool clearCatalogTourId = false,
+    String? preferredBikeId,
+    bool clearPreferredBikeId = false,
+    String? visibility,
+    int? shareEpoch,
     DateTime? updatedAt,
   }) {
     return SavedRouteMeta(
@@ -119,6 +149,13 @@ class SavedRouteMeta {
       photoPaths: photoPaths ?? this.photoPaths,
       notes: notes ?? this.notes,
       rideId: clearRideId ? null : (rideId ?? this.rideId),
+      catalogTourId:
+          clearCatalogTourId ? null : (catalogTourId ?? this.catalogTourId),
+      preferredBikeId: clearPreferredBikeId
+          ? null
+          : (preferredBikeId ?? this.preferredBikeId),
+      visibility: visibility ?? this.visibility,
+      shareEpoch: shareEpoch ?? this.shareEpoch,
       updatedAt: updatedAt ?? DateTime.now().toUtc(),
     );
   }

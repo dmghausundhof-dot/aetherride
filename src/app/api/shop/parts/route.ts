@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { loadShopShelves } from "@/lib/shop/shopCatalog";
 import { FEATURED_PARTS_COLLECTION } from "@/lib/shop/shopifyStorefront";
+import { shopifyLangFromSearch } from "@/lib/shop/shopifyLocale";
 
 /**
- * GET /api/shop/parts
+ * GET /api/shop/parts?lang=
  * Werkstatt-Regal (garage-fit) + Merchandise (ungefiltert) aus Storefront.
+ * lang: Chrome-Sprache (de/en/fr/it). Default de — kein Accept-Language.
  */
-export async function GET() {
-  const result = await loadShopShelves();
+export async function GET(req: Request) {
+  const lang = shopifyLangFromSearch(new URL(req.url).searchParams.get("lang"));
+  const result = await loadShopShelves(lang);
 
   if (!result.ok) {
     const status =
@@ -23,6 +26,7 @@ export async function GET() {
         collectionHandle: result.collectionHandle || FEATURED_PARTS_COLLECTION,
         products: [],
         merch: [],
+        bikes: result.bikes,
         error: result.error,
         code: result.code,
       },
@@ -40,8 +44,10 @@ export async function GET() {
       source: result.source,
       count: result.parts.length,
       merchCount: result.merch.length,
+      bikeCount: result.bikes.length,
       products: result.parts,
       merch: result.merch,
+      bikes: result.bikes,
     },
     {
       headers: {

@@ -1,0 +1,27 @@
+{
+  "id": "at-steiermark",
+  "name": "Steiermark",
+  "bbox": [
+    13.55,
+    46.6,
+    16.25,
+    47.85
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-steiermark",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-steiermark.tar.zst"
+  }
+}

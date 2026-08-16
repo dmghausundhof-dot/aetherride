@@ -4,15 +4,24 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { LiveFeaturedBike } from "@/lib/shop/featuredSync";
+import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { formatShopPrice } from "@/lib/shop/shopifyLocale";
 
 /** Live bike from Storefront sync — never render for 404 handles. */
 export function FeaturedBikeCard({ bike }: { bike: LiveFeaturedBike }) {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+
   const [imgBroken, setImgBroken] = useState(false);
   const showImage = Boolean(bike.imageUrl) && !imgBroken;
+  const dealerUrl = dealerCtaUrl(bike.merchantUrl);
+  const price = formatShopPrice(bike.priceEur, bike.currencyCode || "EUR", lang);
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-background transition hover:border-accent/40">
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-accent/40">
       <Link
         href={bike.href}
         className="relative block aspect-[16/10] bg-surface-elevated"
@@ -27,12 +36,9 @@ export function FeaturedBikeCard({ bike }: { bike: LiveFeaturedBike }) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-text-secondary">
-            Kein Bild
+            {copy.shopNoImage}
           </div>
         )}
-        <span className="absolute left-2 top-2 rounded-full border border-accent/30 bg-accent/90 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
-          Featured
-        </span>
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="text-[11px] font-medium uppercase tracking-wide text-text-secondary">
@@ -43,9 +49,7 @@ export function FeaturedBikeCard({ bike }: { bike: LiveFeaturedBike }) {
             {bike.name}
           </h3>
         </Link>
-        <div className="text-lg font-bold tabular-nums text-accent">
-          {bike.priceEur.toLocaleString("de-DE")} €
-        </div>
+        <div className="text-lg font-bold tabular-nums text-accent">{price}</div>
         {bike.description ? (
           <p className="line-clamp-2 text-xs text-text-secondary">
             {bike.description}
@@ -53,14 +57,14 @@ export function FeaturedBikeCard({ bike }: { bike: LiveFeaturedBike }) {
         ) : null}
         <Link
           href={bike.href}
-          className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white"
+          className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
         >
-          Details <ChevronRight className="h-4 w-4" />
+          {copy.shopDetails} <ChevronRight className="h-4 w-4" />
         </Link>
-        {bike.merchantUrl ? (
+        {dealerUrl ? (
           <ShopifyOutboundButton
-            href={bike.merchantUrl}
-            label="Zum Händler"
+            href={dealerUrl}
+            label={copy.shopZumHaendler}
             variant="ghost"
             className="py-2 text-xs font-medium"
           />

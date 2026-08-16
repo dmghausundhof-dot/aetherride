@@ -1,0 +1,24 @@
+{
+  "id": "de-schleswig-holstein",
+  "name": "Schleswig-Holstein",
+  "bbox": [
+    8.3,
+    53.3,
+    11.4,
+    55.1
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-schleswig-holstein.tar.zst",
+    "packGz": "de-schleswig-holstein.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

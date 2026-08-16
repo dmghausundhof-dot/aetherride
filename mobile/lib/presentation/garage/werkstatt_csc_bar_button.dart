@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import 'ble_pair_sheet.dart';
 
@@ -25,13 +26,17 @@ class WerkstattCscBarButton extends ConsumerStatefulWidget {
 }
 
 class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
-  BikeBleDevice? _saved;
+  BikeBleBinding _binding = const BikeBleBinding();
   bool _busy = false;
+  StreamSubscription<dynamic>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     unawaited(_reload());
+    _liveSub = ref.read(bleCoreProvider).liveData.listen((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -40,9 +45,23 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
     if (oldWidget.bikeId != widget.bikeId) unawaited(_reload());
   }
 
+  @override
+  void dispose() {
+    unawaited(_liveSub?.cancel());
+    super.dispose();
+  }
+
   Future<void> _reload() async {
-    final d = await ref.read(bikeBleStoreProvider).deviceForBike(widget.bikeId);
-    if (mounted) setState(() => _saved = d);
+    final b =
+        await ref.read(bikeBleStoreProvider).bindingForBike(widget.bikeId);
+    if (mounted) setState(() => _binding = b);
+  }
+
+  bool get _live {
+    final ble = ref.read(bleCoreProvider);
+    if (!ble.hasBikeLiveMetrics) return false;
+    return ble.isRemoteLive(_binding.wheel?.deviceId) ||
+        ble.isRemoteLive(_binding.drive?.deviceId);
   }
 
   Future<void> _pair() async {
@@ -59,75 +78,87 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
-        final name = ble.connectedDeviceName ?? _saved?.name;
+        final name = ble.connectedDeviceName ??
+            _binding.wheel?.name ??
+            _binding.drive?.name;
         messenger?.showSnackBar(
           SnackBar(
             content: Text(
               name != null && name.isNotEmpty
-                  ? 'Gekoppelt: $name'
-                  : 'Gerät gekoppelt',
+                  ? AppLocalizations.of(context).garageBlePairedNamed(name)
+                  : AppLocalizations.of(context).garageBlePaired,
             ),
           ),
         );
       }
     } catch (_) {
       messenger?.showSnackBar(
-        const SnackBar(content: Text('Kopplung fehlgeschlagen')),
+        SnackBar(content: Text(AppLocalizations.of(context).blePairFailed)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _unlink() async {
-    await ref.read(bikeBleStoreProvider).removeForBike(widget.bikeId);
-    try {
-      await ref.read(bleCoreProvider).disconnectCsc();
-    } catch (_) {}
+  Future<void> _applyManage(String? choice) async {
+    if (choice == null) return;
+    if (choice == 'pair') {
+      await _pair();
+      return;
+    }
+    final store = ref.read(bikeBleStoreProvider);
+    if (choice == 'unlinkWheel' || choice == 'unlinkAll') {
+      if (choice == 'unlinkAll') {
+        await store.removeForBike(widget.bikeId);
+      } else {
+        await store.removeWheel(widget.bikeId);
+      }
+      try {
+        await ref.read(bleCoreProvider).disconnectCsc();
+      } catch (_) {}
+    } else if (choice == 'unlinkDrive') {
+      await store.removeDrive(widget.bikeId);
+    }
     await _reload();
   }
 
   Future<void> _onTap() async {
     if (_busy) return;
-    if (_saved == null) {
+    if (_binding.isEmpty) {
       await _pair();
       return;
     }
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.link),
-              title: const Text('Neu koppeln'),
-              onTap: () => Navigator.pop(ctx, 'pair'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.link_off),
-              title: const Text('Gerät entfernen'),
-              onTap: () => Navigator.pop(ctx, 'unlink'),
-            ),
-          ],
-        ),
-      ),
+    final choice = await showBikeBleManageSheet(
+      context,
+      hasWheel: _binding.wheel != null,
+      hasDrive: _binding.drive != null,
     );
-    if (choice == 'pair') await _pair();
-    if (choice == 'unlink') await _unlink();
+    await _applyManage(choice);
   }
 
   @override
   Widget build(BuildContext context) {
-    final connected = _saved != null;
+    final l10n = AppLocalizations.of(context);
+    final live = _live;
+    final saved = !_binding.isEmpty;
+    final names = [
+      _binding.drive?.name,
+      _binding.wheel?.name,
+    ].whereType<String>().where((n) => n.trim().isNotEmpty).toList();
+    final tooltip = live
+        ? (names.isEmpty ? l10n.bleSemanticsLive : names.join(' · '))
+        : saved
+            ? l10n.bleTooltipSaved
+            : l10n.bleTooltipPair;
     return Semantics(
       button: true,
-      label: connected ? 'Bluetooth gekoppelt' : 'Bluetooth koppeln',
+      label: live
+          ? l10n.bleSemanticsLive
+          : saved
+              ? l10n.bleSemanticsPaired
+              : l10n.bleSemanticsPair,
       child: Tooltip(
-        message: connected
-            ? (_saved?.name ?? 'Bluetooth gekoppelt')
-            : 'Antrieb oder Sensor koppeln',
+        message: tooltip,
         child: InkWell(
           key: const Key('werkstatt-csc-bar'),
           onTap: _busy ? null : () => unawaited(_onTap()),
@@ -146,11 +177,11 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
                       Icon(
                         Icons.bluetooth,
                         size: 22,
-                        color: connected
-                            ? AppColors.forestOnDark
+                        color: live
+                            ? AppColors.chrome
                             : AppColors.muted,
                       ),
-                      if (connected)
+                      if (live)
                         Positioned(
                           right: -1,
                           top: -1,
@@ -159,7 +190,7 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
                             height: 8,
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.forestOnDark,
+                              color: AppColors.chrome,
                             ),
                           ),
                         ),

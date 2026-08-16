@@ -1,4 +1,4 @@
-# Local Valhalla for AetherRide (Schwarzwald-Nord demo tiles).
+# Local Valhalla for FlowLine (Schwarzwald-Nord demo tiles).
 # Start: docker compose -f docker-compose.valhalla.yml up -d
 # Health: curl -s http://127.0.0.1:8002/status
 services:

@@ -5,10 +5,13 @@ import {
 } from "@/lib/routing/engine";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { isRoutingProfile } from "@/lib/routing/profiles";
+import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 
 /**
  * GET /api/route?profile=mtb_enduro&from=12.15,47.45&to=12.20,47.48&via=12.17,47.46
  * POST { profile, from, to, vias?: [lng,lat][] }
+ * Live GraphHopper A–B may splice a nearby OSM trail (MTB/Gravel)
+ * or a separate cycleway (urban/ebike, gated). TRAIL_CORRIDOR_SNAP=0 disables.
  */
 function parsePair(s: string | null): [number, number] | null {
   if (!s) return null;
@@ -42,8 +45,9 @@ export async function GET(req: Request) {
     );
   }
   const vias = parseVias(searchParams);
+  const lang = chromeLangFrom(searchParams.get("lang"));
   try {
-    const route = await computeRoute(profile, from, to, vias);
+    const route = await computeRoute(profile, from, to, vias, lang);
     return NextResponse.json(route);
   } catch (e) {
     return NextResponse.json(
@@ -70,6 +74,9 @@ export async function POST(req: Request) {
         p.length === 2 &&
         isValidLngLat(p as [number, number])
     ) as [number, number][];
+    const lang = chromeLangFrom(
+      typeof body.lang === "string" ? body.lang : null
+    );
     if (
       !Array.isArray(from) ||
       !Array.isArray(to) ||
@@ -78,7 +85,7 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json({ error: "invalid from/to" }, { status: 400 });
     }
-    const route = await computeRoute(profile, from, to, vias);
+    const route = await computeRoute(profile, from, to, vias, lang);
     return NextResponse.json(route);
   } catch (e) {
     return NextResponse.json(

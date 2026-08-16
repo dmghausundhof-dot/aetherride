@@ -1,0 +1,27 @@
+{
+  "id": "de-bayern",
+  "name": "Bayern",
+  "bbox": [
+    8.97,
+    47.27,
+    13.84,
+    50.57
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/de-bayern",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-bayern.tar.zst"
+  }
+}

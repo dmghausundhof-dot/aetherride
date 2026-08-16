@@ -23,6 +23,7 @@ class SyncPayload {
     this.routeCollections,
     this.savedRouteMeta,
     this.preferredSport,
+    this.preferredSports,
     this.onboardingDone,
     this.freeTierExtraBike,
     this.updatedAt,
@@ -51,6 +52,7 @@ class SyncPayload {
   final dynamic routeCollections;
   final dynamic savedRouteMeta;
   final dynamic preferredSport;
+  final dynamic preferredSports;
   final bool? onboardingDone;
   final bool? freeTierExtraBike;
   final String? updatedAt;
@@ -80,6 +82,7 @@ class SyncPayload {
       routeCollections: json['routeCollections'],
       savedRouteMeta: json['savedRouteMeta'],
       preferredSport: json['preferredSport'],
+      preferredSports: json['preferredSports'],
       onboardingDone: json['onboardingDone'] as bool?,
       freeTierExtraBike: json['freeTierExtraBike'] as bool?,
       updatedAt: json['updatedAt'] as String?,
@@ -112,6 +115,7 @@ class SyncPayload {
         if (routeCollections != null) 'routeCollections': routeCollections,
         if (savedRouteMeta != null) 'savedRouteMeta': savedRouteMeta,
         if (preferredSport != null) 'preferredSport': preferredSport,
+        if (preferredSports != null) 'preferredSports': preferredSports,
         if (onboardingDone != null) 'onboardingDone': onboardingDone,
         if (freeTierExtraBike != null) 'freeTierExtraBike': freeTierExtraBike,
         if (updatedAt != null) 'updatedAt': updatedAt,
@@ -140,6 +144,7 @@ class SyncPayload {
     dynamic wishlistIds,
     dynamic bikePhotos,
     dynamic preferredSport,
+    dynamic preferredSports,
     bool? onboardingDone,
     bool? freeTierExtraBike,
     String? activeBikeId,
@@ -153,15 +158,13 @@ class SyncPayload {
       consents: consents ?? this.consents,
       privacyZones: privacyZones ?? this.privacyZones,
       familyRiders: familyRiders ?? this.familyRiders,
-      activeFamilyRiderId:
-          activeFamilyRiderId ?? this.activeFamilyRiderId,
+      activeFamilyRiderId: activeFamilyRiderId ?? this.activeFamilyRiderId,
       riderProfile: riderProfile ?? this.riderProfile,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       commerceMode: commerceMode ?? this.commerceMode,
       rangeCalibration: rangeCalibration ?? this.rangeCalibration,
       maintenanceLogs: maintenanceLogs ?? this.maintenanceLogs,
-      maintenanceIntervals:
-          maintenanceIntervals ?? this.maintenanceIntervals,
+      maintenanceIntervals: maintenanceIntervals ?? this.maintenanceIntervals,
       rideFeedbacks: rideFeedbacks ?? this.rideFeedbacks,
       recommendations: recommendations ?? this.recommendations,
       wishlistIds: wishlistIds ?? this.wishlistIds,
@@ -171,6 +174,7 @@ class SyncPayload {
       routeCollections: routeCollections ?? this.routeCollections,
       savedRouteMeta: savedRouteMeta ?? this.savedRouteMeta,
       preferredSport: preferredSport ?? this.preferredSport,
+      preferredSports: preferredSports ?? this.preferredSports,
       onboardingDone: onboardingDone ?? this.onboardingDone,
       freeTierExtraBike: freeTierExtraBike ?? this.freeTierExtraBike,
       updatedAt: updatedAt ?? this.updatedAt,

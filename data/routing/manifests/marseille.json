@@ -7,18 +7,31 @@
     5.52,
     43.4
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T12:26:32Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18563755,
+      "sha256": "3685016099bd49901691e0fff5e9af090dcd09c0795410148a96215d93955729",
+      "sha256_16": "3685016099bd4990"
+    },
+    "marseille.tar.gz": {
+      "bytes": 2517086,
+      "sha256": "6e1a286d190840c9b2dc38dc9560741b0ec947818dd572d673e8c8e1283106cc",
+      "sha256_16": "6e1a286d190840c9"
+    },
+    "marseille.tar.zst": {
+      "bytes": 2756081,
+      "sha256": "06e17ec6a63bfc81c36b6591396dee1ae67309d0b351581fb2546bb15228bb6d",
+      "sha256_16": "06e17ec6a63bfc81"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/marseille",
     "pack": "marseille.tar.zst",
     "packGz": "marseille.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

@@ -1,0 +1,24 @@
+{
+  "id": "at-salzburg",
+  "name": "Land Salzburg",
+  "bbox": [
+    12.05,
+    46.9,
+    13.85,
+    48.05
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-salzburg.tar.zst",
+    "packGz": "at-salzburg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

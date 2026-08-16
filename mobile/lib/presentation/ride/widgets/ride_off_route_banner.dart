@@ -25,8 +25,8 @@ class RideOffRouteBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = background ?? Colors.orange.shade100;
-    final fg = foreground ?? Colors.orange.shade900;
+    final bg = background ?? AppColors.mapWarnFill;
+    final fg = foreground ?? AppColors.mapWarnInk;
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.s),
       child: Material(

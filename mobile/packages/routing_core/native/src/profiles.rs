@@ -1,4 +1,4 @@
-//! Spec F-NAV-001 — eight profiles + Valhalla costing mirrored from
+//! Spec F-NAV-001 — ride profiles + auto access + Valhalla costing mirrored from
 //! `src/lib/routing/profiles.ts` (keep in sync with valhalla-costing.json).
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,6 +11,7 @@ pub enum Profile {
     Emtb,
     Downhill,
     Hiking,
+    Auto,
 }
 
 impl Profile {
@@ -23,6 +24,7 @@ impl Profile {
             "ebike" => Some(Self::Ebike),
             "emtb" => Some(Self::Emtb),
             "downhill" | "dh" => Some(Self::Downhill),
+            "auto" | "driving" | "car" => Some(Self::Auto),
             "hiking" => Some(Self::Hiking),
             _ => None,
         }
@@ -39,6 +41,7 @@ impl Profile {
             Self::Emtb => "emtb",
             Self::Downhill => "downhill",
             Self::Hiking => "hiking",
+            Self::Auto => "auto",
         }
     }
 
@@ -53,6 +56,7 @@ impl Profile {
             Self::MtbAllmountain => 3.5,
             Self::MtbEnduro => 3.0,
             Self::Downhill => 3.2,
+            Self::Auto => 13.9,
         }
     }
 
@@ -99,6 +103,10 @@ impl Profile {
                     "bicycle_type": "mountain", "use_roads": 0.05, "use_hills": 1.0, "avoid_bad_surfaces": 0.0
                 }}
             }),
+            Self::Auto => serde_json::json!({
+                "costing": "auto",
+                "costing_options": { "auto": { "use_highways": 1.0, "use_tolls": 0.5 } }
+            }),
             Self::MtbAllmountain => serde_json::json!({
                 "costing": "bicycle",
                 "costing_options": { "bicycle": {
@@ -112,17 +120,26 @@ impl Profile {
     pub fn edge_factor(self, highway: &str, mtb_scale: Option<u8>, surface: &str) -> Option<f64> {
         let rough = matches!(
             surface,
-            "ground" | "dirt" | "mud" | "gravel" | "fine_gravel" | "compacted" | ""
+            "ground" | "dirt" | "mud" | "gravel" | "fine_gravel" | "compacted"
         );
         let paved = matches!(surface, "asphalt" | "paved" | "concrete");
 
         match self {
             Self::Road => {
-                if matches!(highway, "path" | "track" | "footway" | "steps") {
+                if matches!(highway, "path" | "track" | "footway" | "steps" | "motorway" | "trunk") {
                     return None;
+                }
+                if highway == "cycleway" {
+                    return Some(0.72);
                 }
                 if !paved && rough {
                     return Some(4.0);
+                }
+                if matches!(highway, "residential" | "tertiary" | "living_street") {
+                    return Some(0.95);
+                }
+                if matches!(highway, "primary" | "secondary") {
+                    return Some(1.25);
                 }
                 Some(1.0)
             }
@@ -134,9 +151,13 @@ impl Profile {
                     return None;
                 }
                 if matches!(surface, "gravel" | "compacted" | "fine_gravel") || highway == "track" {
-                    Some(0.8)
+                    Some(0.75)
+                } else if matches!(highway, "cycleway" | "path") {
+                    Some(0.9)
+                } else if paved && matches!(highway, "primary" | "secondary") {
+                    Some(1.35)
                 } else if paved {
-                    Some(1.2)
+                    Some(1.15)
                 } else {
                     Some(1.0)
                 }
@@ -200,11 +221,25 @@ impl Profile {
                 if mtb_scale.unwrap_or(0) >= 4 {
                     return None;
                 }
-                if matches!(highway, "cycleway" | "track" | "path" | "tertiary") {
+                if highway == "cycleway" {
+                    Some(0.8)
+                } else if matches!(highway, "track" | "path" | "tertiary") {
                     Some(0.9)
                 } else {
                     Some(1.15)
                 }
+            }
+            Self::Auto => {
+                if matches!(highway, "path" | "footway" | "steps") {
+                    return None;
+                }
+                if highway == "track" {
+                    return Some(2.8);
+                }
+                if matches!(highway, "motorway" | "trunk" | "primary" | "secondary") {
+                    return Some(0.8);
+                }
+                Some(1.0)
             }
         }
     }
@@ -235,7 +270,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_eight_parse() {
+    fn all_nine_parse() {
         for id in [
             "mtb_allmountain",
             "mtb_enduro",
@@ -245,10 +280,12 @@ mod tests {
             "emtb",
             "downhill",
             "hiking",
+            "auto",
         ] {
             assert!(Profile::parse(id).is_some());
         }
         assert_eq!(Profile::parse("dh"), Some(Profile::Downhill));
+        assert_eq!(Profile::parse("car"), Some(Profile::Auto));
     }
 
     #[test]
@@ -261,6 +298,8 @@ mod tests {
         assert_eq!(d["costing"], "bicycle");
         assert_eq!(d["costing_options"]["bicycle"]["use_hills"], 1.0);
         assert_eq!(d["costing_options"]["bicycle"]["use_roads"], 0.05);
+        let a = Profile::Auto.valhalla_costing_json();
+        assert_eq!(a["costing"], "auto");
     }
 
     #[test]
@@ -269,5 +308,13 @@ mod tests {
         assert!(p.edge_factor("motorway", None, "asphalt").is_none());
         assert_eq!(p.edge_factor("path", Some(2), "dirt"), Some(0.7));
         assert_eq!(p.edge_factor("path", Some(3), "dirt"), Some(0.55));
+        let road = Profile::Road;
+        assert_eq!(road.edge_factor("cycleway", None, "asphalt"), Some(0.72));
+        assert_eq!(road.edge_factor("cycleway", None, ""), Some(0.72));
+        assert!(road.edge_factor("motorway", None, "asphalt").is_none());
+        assert!(road.edge_factor("primary", None, "asphalt").unwrap() > 1.0);
+        let gravel = Profile::Gravel;
+        assert_eq!(gravel.edge_factor("track", None, "gravel"), Some(0.75));
+        assert_eq!(gravel.edge_factor("cycleway", None, "asphalt"), Some(0.9));
     }
 }

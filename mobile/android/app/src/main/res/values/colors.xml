@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="hof_ground">#0A1210</color>
+    <color name="hof_ground">#121215</color>
+    <color name="splash_ground">#FAFAFA</color>
+    <color name="flowline_orange">#FF6A00</color>
 </resources>

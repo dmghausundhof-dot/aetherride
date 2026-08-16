@@ -8,6 +8,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../domain/ai/chat_context.dart';
+import '../../domain/ai/coach_inbox.dart';
+import '../../domain/ai/coach_watch.dart';
+import '../../domain/component.dart';
+import '../../domain/setup.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../shared/empty_state.dart';
@@ -46,53 +52,54 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _historyLoaded = false;
   String _tool = 'auto';
   String? _quotaNote;
+  String _welcomeText = '';
 
-  static const _welcome = ChatMessage(
-    role: 'assistant',
-    text: 'Frag mich zu Setup, Routen oder Teilen.',
-  );
-
-  /// Statt der `_welcome`-Bubble (früher: einzige, kaum sichtbare Zeile vor
+  /// Statt der Welcome-Bubble (früher: einzige, kaum sichtbare Zeile vor
   /// viel leerer Fläche — UX-Review „Void-Empty-States") eine echte
   /// Leerzustand-Illustration zeigen.
   bool get _isEmptyConversation =>
       _historyLoaded &&
       _messages.length == 1 &&
-      _messages.first.role == _welcome.role &&
-      _messages.first.text == _welcome.text;
+      _messages.first.role == 'assistant' &&
+      _messages.first.text == _welcomeText;
 
-  static const _prompts = <_SuggestedPrompt>[
-    _SuggestedPrompt(
-      label: 'Garage',
-      query: 'Was steckt in meiner Garage?',
-      tool: 'garage',
-    ),
-    _SuggestedPrompt(
-      label: 'Reichweite',
-      query: 'Welche Reichweite habe ich mit aktuellem Akku?',
-      tool: 'range',
-    ),
-    _SuggestedPrompt(
-      label: 'Setups',
-      query: 'Welche Setups hatte ich und was hat sich geändert?',
-      tool: 'setup_history',
-    ),
-    _SuggestedPrompt(
-      label: 'Fahrten',
-      query: 'Zusammenfassung meiner letzten Fahrten',
-      tool: 'ride_stats',
-    ),
-    _SuggestedPrompt(
-      label: 'Routen',
-      query: 'Welche Routen passen zu mir?',
-      tool: 'route_search',
-    ),
-    _SuggestedPrompt(
-      label: 'Laden',
-      query: 'Brauche ich bald neue Verschleißteile?',
-      tool: 'product_search',
-    ),
-  ];
+  List<_SuggestedPrompt> _promptsFor(AppLocalizations l10n) => [
+        _SuggestedPrompt(
+          label: l10n.chatPromptWatch,
+          query: l10n.chatPromptWatchQuery,
+          tool: 'watch',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptGarage,
+          query: l10n.chatPromptGarageQuery,
+          tool: 'garage',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptRange,
+          query: l10n.chatPromptRangeQuery,
+          tool: 'range',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptSetups,
+          query: l10n.chatPromptSetupsQuery,
+          tool: 'setup_history',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptRides,
+          query: l10n.chatPromptRidesQuery,
+          tool: 'ride_stats',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptRoutes,
+          query: l10n.chatPromptRoutesQuery,
+          tool: 'route_search',
+        ),
+        _SuggestedPrompt(
+          label: l10n.chatPromptShop,
+          query: l10n.chatPromptShopQuery,
+          tool: 'product_search',
+        ),
+      ];
 
   @override
   void initState() {
@@ -100,11 +107,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _loadHistory();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final text = AppLocalizations.of(context).chatWelcome;
+    if (text == _welcomeText) return;
+    final previous = _welcomeText;
+    _welcomeText = text;
+    if (_messages.length == 1 &&
+        _messages.first.role == 'assistant' &&
+        (previous.isEmpty || _messages.first.text == previous)) {
+      _messages[0] = ChatMessage(role: 'assistant', text: text);
+    }
+  }
+
   Future<void> _loadHistory() async {
     final store = ref.read(userProfileStoreProvider);
     await store.load();
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final welcome = ChatMessage(role: 'assistant', text: l10n.chatWelcome);
     setState(() {
+      _welcomeText = l10n.chatWelcome;
       _messages
         ..clear()
         ..addAll([
@@ -115,7 +139,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
         ]);
       if (_messages.isEmpty) {
-        _messages.add(_welcome);
+        _messages.add(welcome);
       }
       _historyLoaded = true;
     });
@@ -134,6 +158,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _send({String? query, String? tool}) async {
+    final l10n = AppLocalizations.of(context);
     final riding = ref.read(isRidingProvider);
     if (riding || _busy) return;
     final q = (query ?? _input.text).trim();
@@ -156,20 +181,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final bikes = await garage.listBikes();
       final active = await garage.getActiveBike();
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 12);
-      final profile = store.riderProfile;
-      final profilePayload = {
-        ...profile.toJson(),
-        'riderWeightKg': store.effectiveWeightKg,
-      };
-      final bikeJson = active == null
-          ? null
-          : {
-              'id': active.id,
-              'name': active.name,
-              'category': active.category.name,
-              'brand': active.brand,
-              'model': active.model,
-            };
+      final compsRepo = ref.read(componentRepositoryProvider);
+      final setupsRepo = ref.read(setupRepositoryProvider);
+      final componentsByBike = <String, List<BikeComponent>>{};
+      final setupsByBike = <String, List<BikeSetup>>{};
+      for (final b in bikes) {
+        componentsByBike[b.id] = await compsRepo.listAll(b.id);
+        setupsByBike[b.id] = await setupsRepo.listForBike(b.id);
+      }
+      final coachItems =
+          ref.read(coachWatchProvider).valueOrNull ?? const <CoachInboxItem>[];
+      final body = buildChatApiBody(
+        query: q,
+        tool: toolName,
+        profile: store.riderProfile,
+        effectiveWeightKg: store.effectiveWeightKg,
+        bikes: bikes,
+        active: active,
+        componentsByBike: componentsByBike,
+        setupsByBike: setupsByBike,
+        rides: rides,
+        calibration: store.rangeCalibration,
+        notices: [for (final i in coachItems) i.notice],
+        lang: Localizations.localeOf(context).languageCode,
+      );
 
       final headers = <String, String>{
         'Content-Type': 'application/json',
@@ -188,53 +223,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final res = await http.post(
         Uri.parse('${AppConfig.apiBaseUrl}/api/chat'),
         headers: headers,
-        body: jsonEncode({
-          'query': q,
-          'tool': toolName,
-          'profile': profilePayload,
-          'bike': bikeJson,
-          'bikes': [
-            for (final b in bikes)
-              {
-                'id': b.id,
-                'name': b.name,
-                'category': b.category.name,
-                'brand': b.brand,
-                'model': b.model,
-              },
-          ],
-          'rides': [
-            for (final r in rides)
-              {
-                'id': r.id,
-                'bikeId': r.bikeId,
-                'startedAt': r.startedAt.toIso8601String(),
-                'distanceKm': r.distanceKm,
-                'movingTimeSec': r.movingTimeSec,
-                'summary': r.summary,
-              },
-          ],
-          'calibration': store.rangeCalibration?.toJson(),
-        }),
+        body: jsonEncode(body),
       );
       String text;
       try {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         text = (data['text'] as String?) ??
             (data['error'] as String?) ??
-            'Keine Antwort.';
-        final remaining = data['remaining'];
-        final dayLimit = data['dayLimit'];
-        if (remaining is num && dayLimit is num) {
-          _quotaNote = 'Quota: ${remaining.toInt()}/${dayLimit.toInt()} heute';
+            l10n.chatNoAnswer;
+        final quota = data['quota'];
+        if (quota is Map) {
+          final remaining = quota['remaining'];
+          final dayLimit = quota['dayLimit'];
+          final dayUsed = quota['dayUsed'];
+          if (remaining is num && dayLimit is num) {
+            _quotaNote = l10n.chatQuota(
+              dayUsed is num ? '${dayUsed.toInt()}' : '?',
+              '${dayLimit.toInt()}',
+              '${remaining.toInt()}',
+            );
+          }
         }
         if (res.statusCode == 429) {
-          text = '$text\n\nLimit erreicht.';
+          text = '$text\n\n${l10n.chatLimitReached}';
         }
       } catch (_) {
         text = res.statusCode >= 400
-            ? 'Fehler ${res.statusCode}'
-            : 'Keine Antwort.';
+            ? l10n.chatErrorStatus(res.statusCode)
+            : l10n.chatNoAnswer;
       }
       if (mounted) {
         setState(() {
@@ -243,7 +259,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         await _persist('assistant', text);
       }
     } catch (e) {
-      final err = 'Netzwerkfehler: $e';
+      final err = l10n.chatNetworkError('$e');
       if (mounted) {
         setState(() {
           _messages.add(ChatMessage(role: 'assistant', text: err));
@@ -269,26 +285,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final riding = ref.watch(isRidingProvider);
     final blocked = riding || _busy;
+    final prompts = _promptsFor(l10n);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Assistent')),
+      appBar: AppBar(title: Text(l10n.chatAssistant)),
       body: Column(
         children: [
           if (riding)
             Material(
               color: AppColors.accent.withValues(alpha: 0.12),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
-                    Icon(Icons.lock_outline, size: 18),
-                    SizedBox(width: 8),
+                    const Icon(Icons.lock_outline, size: 18),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Während der Fahrt ist Chat gesperrt.',
-                        style: TextStyle(fontSize: 13),
+                        l10n.chatLockedRiding,
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ),
                   ],
@@ -305,7 +323,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        for (final p in _prompts) ...[
+                        for (final p in prompts) ...[
                           ActionChip(
                             label: Text(p.label),
                             onPressed: blocked
@@ -318,47 +336,64 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  if (kDebugMode)
+                  if (kDebugMode) ...[
                     DropdownButtonFormField<String>(
-                    initialValue: _tool,
-                    isDense: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Werkzeug (Entwickler)',
-                      border: OutlineInputBorder(),
+                      initialValue: _tool,
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+                      decoration: InputDecoration(
+                        labelText: l10n.chatToolDev,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                       ),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'auto',
+                          child: Text(l10n.chatToolAuto),
+                        ),
+                        DropdownMenuItem(
+                          value: 'watch',
+                          child: Text(l10n.chatToolWatch),
+                        ),
+                        DropdownMenuItem(
+                          value: 'garage',
+                          child: Text(l10n.chatToolGarage),
+                        ),
+                        DropdownMenuItem(
+                          value: 'compat',
+                          child: Text(l10n.chatToolCompat),
+                        ),
+                        DropdownMenuItem(
+                          value: 'range',
+                          child: Text(l10n.chatToolRange),
+                        ),
+                        DropdownMenuItem(
+                          value: 'setup_history',
+                          child: Text(l10n.chatToolSetupHistory),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ride_stats',
+                          child: Text(l10n.chatToolRides),
+                        ),
+                        DropdownMenuItem(
+                          value: 'route_search',
+                          child: Text(l10n.chatToolRoutes),
+                        ),
+                        DropdownMenuItem(
+                          value: 'product_search',
+                          child: Text(l10n.chatToolShop),
+                        ),
+                      ],
+                      onChanged: blocked
+                          ? null
+                          : (v) {
+                              if (v != null) setState(() => _tool = v);
+                            },
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'auto', child: Text('Auto')),
-                      DropdownMenuItem(value: 'garage', child: Text('Werkstatt')),
-                      DropdownMenuItem(
-                          value: 'range', child: Text('Reichweite')),
-                      DropdownMenuItem(
-                        value: 'setup_history',
-                        child: Text('Setup-Historie'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'ride_stats',
-                        child: Text('Fahrten'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'route_search',
-                        child: Text('Routen'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'product_search',
-                        child: Text('Laden'),
-                      ),
-                    ],
-                    onChanged: blocked
-                        ? null
-                        : (v) {
-                            if (v != null) setState(() => _tool = v);
-                          },
-                  ),
+                  ],
                   if (_quotaNote != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -370,6 +405,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                       ),
                     ),
+                  _CoachInboxStrip(
+                    blocked: blocked,
+                    onAsk: (item) async {
+                      await ref
+                          .read(userProfileStoreProvider)
+                          .markCoachNoticesRead([item.notice]);
+                      ref.invalidate(coachWatchProvider);
+                      await _send(
+                        query: item.notice.query,
+                        tool: item.notice.tool,
+                      );
+                    },
+                    onSnooze: (item) async {
+                      await ref
+                          .read(userProfileStoreProvider)
+                          .snoozeCoachNotice(item.notice);
+                      ref.invalidate(coachWatchProvider);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -377,13 +431,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: !_historyLoaded
                 ? const Center(child: CircularProgressIndicator())
                 : _isEmptyConversation
-                    ? const Center(
+                    ? Center(
                         child: EmptyStateIllustration(
                           compact: true,
                           icon: Icons.chat_bubble_outline,
-                          title: 'Frag mich',
-                          message: 'Setup, Routen oder Teilen — probier einen '
-                              'Vorschlag oben oder tipp direkt los.',
+                          title: l10n.chatEmptyTitle,
+                          message: l10n.chatEmptyMessage,
                         ),
                       )
                     : ListView.builder(
@@ -410,7 +463,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               decoration: BoxDecoration(
                                 color: isUser
                                     ? AppColors.accent.withValues(alpha: 0.15)
-                                    : AppColors.forest.withValues(alpha: 0.06),
+                                    : AppColors.charcoal.withValues(alpha: 0.06),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(m.text),
@@ -433,7 +486,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       maxLines: 4,
                       decoration: InputDecoration(
                         hintText:
-                            riding ? 'Gesperrt während Ride' : 'Nachricht…',
+                            riding ? l10n.chatHintLocked : l10n.chatHint,
                         border: const OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -443,8 +496,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   const SizedBox(width: 8),
                   IconButton.filled(
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.forestOnDark,
-                      foregroundColor: AppColors.hofGround,
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: AppColors.onAccent,
                     ),
                     onPressed: blocked ? null : () => _send(),
                     icon: _busy
@@ -459,6 +512,78 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoachInboxStrip extends ConsumerWidget {
+  const _CoachInboxStrip({
+    required this.blocked,
+    required this.onAsk,
+    required this.onSnooze,
+  });
+
+  final bool blocked;
+  final Future<void> Function(CoachInboxItem item) onAsk;
+  final Future<void> Function(CoachInboxItem item) onSnooze;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final async = ref.watch(coachWatchProvider);
+    final items = async.valueOrNull ?? const <CoachInboxItem>[];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final item in items.take(4))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Material(
+                color: item.notice.severity == CoachSeverity.overdue
+                    ? AppColors.accent.withValues(alpha: 0.12)
+                    : AppColors.charcoal.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.notice.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        item.notice.detail,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: blocked ? null : () => onAsk(item),
+                            child: Text(l10n.chatAsk),
+                          ),
+                          TextButton(
+                            onPressed: blocked ? null : () => onSnooze(item),
+                            child: Text(l10n.chatSnooze7),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

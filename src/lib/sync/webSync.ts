@@ -59,6 +59,7 @@ export function sliceFromAppStore(): AppSyncSlice {
     rideFeedbacks: s.rideFeedbacks,
     activeBikeId: s.activeBikeId,
     preferredSport: s.preferredSport,
+    preferredSports: s.preferredSports,
     onboardingDone: s.onboardingDone,
     recommendations: s.recommendations,
   };

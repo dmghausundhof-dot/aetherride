@@ -34,6 +34,20 @@ export function chromeLangFromAcceptLanguage(
   return "de";
 }
 
+/** BCP 47 tag for dates in chrome UI. Catalog names stay German. */
+export function chromeDateLocale(lang: ChromeLang): string {
+  switch (lang) {
+    case "en":
+      return "en-GB";
+    case "fr":
+      return "fr-FR";
+    case "it":
+      return "it-IT";
+    default:
+      return "de-DE";
+  }
+}
+
 export function valhallaLanguage(
   lang: ChromeLang
 ): "de-DE" | "en-US" | "fr-FR" | "it-IT" {

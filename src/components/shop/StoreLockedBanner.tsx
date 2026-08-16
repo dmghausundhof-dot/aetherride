@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react";
 import { Lock, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHofCopy } from "@/hooks/useHofCopy";
 
 type Status = {
   storefrontApiConfigured: boolean;
   onlineStoreLocked: boolean;
-  storeDomain: string;
-  messageDe: string;
 };
 
 export function StoreLockedBanner({ className }: { className?: string }) {
+  const copy = useHofCopy();
   const [status, setStatus] = useState<Status | null>(null);
 
   useEffect(() => {
@@ -24,8 +24,6 @@ export function StoreLockedBanner({ className }: { className?: string }) {
           setStatus({
             storefrontApiConfigured: Boolean(json.storefrontApiConfigured),
             onlineStoreLocked: Boolean(json.onlineStoreLocked),
-            storeDomain: json.storeDomain || "",
-            messageDe: json.messageDe || "",
           });
         }
       } catch {
@@ -53,17 +51,16 @@ export function StoreLockedBanner({ className }: { className?: string }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-warning">
-          Inhaber-Vorschau · Online Store gesperrt
+          {copy.shopLockedBanner}
         </p>
         <p className="mt-0.5 text-xs text-text-secondary">
-          {status.messageDe ||
-            `${status.storeDomain} ist passwortgeschützt. Der Link führt zur Passwort-Seite — kein stiller Dead End.`}
+          {copy.shopLockedBody}
         </p>
         <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-text-secondary">
           <Shield className="h-3 w-3" />
           {status.storefrontApiConfigured
-            ? "Kein In-App-Katalog. Kasse nur bei Shopify."
-            : "Storefront-URL fehlt — Tür bleibt ehrlich zu."}
+            ? copy.shopLockedCatalog
+            : copy.shopLockedMissingUrl}
         </p>
       </div>
     </div>

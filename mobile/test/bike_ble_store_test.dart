@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:aetherride_mobile/data/sensor/bike_ble_store.dart';
+import 'package:aetherride_mobile/domain/ble/bike_ble_kind.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -16,18 +18,13 @@ void main() {
     if (await tmp.exists()) await tmp.delete(recursive: true);
   });
 
-  test('save / load / remove per bike', () async {
-    expect(await store.deviceForBike('bike-a'), isNull);
+  test('wheel and drive occupy separate slots', () async {
+    expect((await store.bindingForBike('bike-a')).isEmpty, isTrue);
 
     await store.saveForBike(
       'bike-a',
       const BikeBleDevice(deviceId: 'AA:BB', name: 'Magene', kind: 'csc'),
     );
-    final saved = await store.deviceForBike('bike-a');
-    expect(saved?.deviceId, 'AA:BB');
-    expect(saved?.name, 'Magene');
-    expect(saved?.kind, 'csc');
-
     await store.saveForBike(
       'bike-a',
       const BikeBleDevice(
@@ -36,10 +33,54 @@ void main() {
         kind: 'bosch',
       ),
     );
-    expect((await store.deviceForBike('bike-a'))?.kind, 'bosch');
+
+    final b = await store.bindingForBike('bike-a');
+    expect(b.wheel?.deviceId, 'AA:BB');
+    expect(b.drive?.deviceId, 'CC:DD');
+    expect((await store.deviceForBike('bike-a'))?.deviceId, 'AA:BB');
+
+    await store.removeWheel('bike-a');
+    expect((await store.bindingForBike('bike-a')).wheel, isNull);
+    expect((await store.bindingForBike('bike-a')).drive?.kind, 'bosch');
 
     await store.removeForBike('bike-a');
-    expect(await store.deviceForBike('bike-a'), isNull);
+    expect((await store.bindingForBike('bike-a')).isEmpty, isTrue);
+  });
+
+  test('legacy flat JSON migrates drive vs wheel', () async {
+    final f = File('${tmp.path}/bike_ble_devices.json');
+    await f.writeAsString(
+      jsonEncode({
+        'legacy-csc': {'deviceId': 'W1', 'name': 'Magene', 'kind': 'csc'},
+        'legacy-bosch': {
+          'deviceId': 'D1',
+          'name': 'Intuvia',
+          'kind': 'bosch',
+        },
+      }),
+    );
+    final migrated = BikeBleStore(dirProvider: () async => tmp);
+    expect((await migrated.bindingForBike('legacy-csc')).wheel?.deviceId, 'W1');
+    expect((await migrated.bindingForBike('legacy-csc')).drive, isNull);
+    expect(
+      (await migrated.bindingForBike('legacy-bosch')).drive?.deviceId,
+      'D1',
+    );
+    expect((await migrated.bindingForBike('legacy-bosch')).wheel, isNull);
+  });
+
+  test('ride preferred target is wheel only', () {
+    const both = BikeBleBinding(
+      wheel: BikeBleDevice(deviceId: 'W', kind: 'csc'),
+      drive: BikeBleDevice(deviceId: 'D', kind: 'bosch'),
+    );
+    expect(rideBlePreferredTarget(both).deviceId, 'W');
+    expect(rideBlePreferredTarget(both).kindHint, BikeBleKind.csc);
+
+    const driveOnly = BikeBleBinding(
+      drive: BikeBleDevice(deviceId: 'D', kind: 'bosch'),
+    );
+    expect(rideBlePreferredTarget(driveOnly).deviceId, isNull);
   });
 
   test('watch is rider kit, not stored on the bike', () async {

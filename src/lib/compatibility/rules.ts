@@ -45,7 +45,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
         "Aufdruck auf Freilaufkörper / Naben-Datenblatt (HG, Micro Spline, XD, XDR)",
     },
     sourceUrl: "https://www.sram.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -66,7 +66,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
         "Rahmen-Geometriedatenblatt bzw. Naben-Spec (135×10 QR, 142×12, 148×12 Boost, 157×12 SuperBoost)",
     },
     sourceUrl: "https://www.bikeradar.com/advice/buyers-guides/mtb-axle-standards",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -91,7 +91,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       shock_mount_type: "Rahmen-Handbuch",
     },
     sourceUrl: "https://www.ridefox.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -113,7 +113,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
     },
     sourceUrl:
       "https://www.mountainflyermagazine.com/img/upimages/standardized_headset_identification_system.pdf",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -135,7 +135,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       brake_mount_rear: "Rahmen-Spec",
     },
     sourceUrl: "https://www.sram.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -155,7 +155,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       rotor_mount: "Center Lock oder 6-Loch – auf Nabe/Scheibe angegeben",
     },
     sourceUrl: "https://bike.shimano.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -175,7 +175,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       rotor_mount: "Center Lock oder 6-Loch",
     },
     sourceUrl: "https://bike.shimano.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -198,7 +198,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       internal_rim_width_mm: "Felgen-Datenblatt (IRW)",
     },
     sourceUrl: "https://de.elite-wheels.com/technology/how-to-optimize-mtb-wheels-for-trail-commute-xc/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -221,7 +221,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       internal_rim_width_mm: "Felgen-Datenblatt",
     },
     sourceUrl: "https://de.elite-wheels.com/technology/how-to-optimize-mtb-wheels-for-trail-commute-xc/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -242,7 +242,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       max_tire_width_mm: "Rahmen-Herstellerangabe (ohne Schätzen!)",
     },
     sourceUrl: "https://www.transitionbikes.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -263,7 +263,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       stem_clamp_mm: "Aufdruck Vorbau / Datenblatt",
     },
     sourceUrl: "https://www.renthal.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -285,7 +285,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       max_seatpost_insertion_mm: "Rahmen-Geometrie",
     },
     sourceUrl: "https://oneupcomponents.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -307,7 +307,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
     },
     sourceUrl:
       "https://www.bike-magazin.de/en/workshop/circuit-or-drive/mountain-bike-bottom-bracket-standards-an-overview-of-the-utter-chaos/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -328,7 +328,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
     },
     sourceUrl:
       "https://www.bike-magazin.de/en/workshop/circuit-or-drive/mountain-bike-bottom-bracket-standards-an-overview-of-the-utter-chaos/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -348,7 +348,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       motor_interface: "Rahmen-OEM und Motorhersteller (z. B. bosch_smart_system)",
     },
     sourceUrl: "https://www.bosch-ebike.com/",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
   {
@@ -368,7 +368,7 @@ export const COMPATIBILITY_RULES: CompatibilityRuleDef[] = [
       axle_front: "Gabel-/Naben-Spec (15×100, 15×110 Boost, 20×110)",
     },
     sourceUrl: "https://www.bikeradar.com/advice/buyers-guides/mtb-axle-standards",
-    reviewedBy: "AetherRide Editorial",
+    reviewedBy: "FlowLine Editorial",
     reviewedAt: "2026-05-14",
   },
 ];

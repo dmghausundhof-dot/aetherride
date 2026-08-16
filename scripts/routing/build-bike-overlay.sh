@@ -22,13 +22,17 @@ OUT="$ROOT/data/routing/dist/$REGION_ID"
 CUSTOM="${VALHALLA_CUSTOM_FILES:-$OUT/custom_files}"
 mkdir -p "$CUSTOM" "$OUT"
 
+CACHE_DIR="${GEOFABRIK_CACHE:-$ROOT/data/routing/dist/_geofabrik}"
+mkdir -p "$CACHE_DIR"
+PBF_NAME="$(basename "$PBF_URL")"
+PBF_CACHE="$CACHE_DIR/$PBF_NAME"
 PBF_FULL="$CUSTOM/region-full.osm.pbf"
 PBF_CLIP="$CUSTOM/region.osm.pbf"
 PBF_BIKE="$CUSTOM/bike-ways.osm.pbf"
 GEOJSONSEQ="$OUT/bike-ways.geojsonseq"
 OVERLAY_GEOJSON="$OUT/bike-overlay.geojson"
 OVERLAY_PMTILES="$OUT/bike-overlay.pmtiles"
-SAMPLE_GEOJSON="$ROOT/mobile/assets/routing/bike-overlay-sample.geojson"
+SAMPLE_GEOJSON="${SAMPLE_GEOJSON:-$ROOT/mobile/assets/routing/bike-overlay-sample.geojson}"
 CFG="$ROOT/scripts/routing/osmium-export-bike.json"
 
 HOST_OSMIUM="$(type -P osmium 2>/dev/null || true)"
@@ -44,6 +48,7 @@ run_osmium() {
   fi
   docker run --rm \
     -u "$(id -u):$(id -g)" \
+    -v "$CACHE_DIR:/cache:ro" \
     -v "$CUSTOM:/data" \
     -v "$OUT:/out" \
     -v "$CFG:/cfg.json:ro" \
@@ -52,16 +57,31 @@ run_osmium() {
 
 echo "==> Bike overlay for $REGION_ID (bbox $BBOX)"
 
-if [[ ! -f "$PBF_FULL" ]]; then
-  echo "==> Download Geofabrik (missing $PBF_FULL)"
-  curl -L --fail --retry 3 -o "$PBF_FULL.part" "$PBF_URL"
-  mv "$PBF_FULL.part" "$PBF_FULL"
+PBF_BYTES=0
+if [[ -f "$PBF_CACHE" ]]; then
+  PBF_BYTES="$(wc -c < "$PBF_CACHE")"
+fi
+if [[ "$PBF_BYTES" -lt 1000000 && -f "$PBF_FULL" ]]; then
+  FULL_BYTES="$(wc -c < "$PBF_FULL")"
+  if [[ "$FULL_BYTES" -gt 1000000 ]]; then
+    echo "==> seeding cache from existing $PBF_FULL ($FULL_BYTES bytes)"
+    cp -f "$PBF_FULL" "$PBF_CACHE"
+    PBF_BYTES="$FULL_BYTES"
+  fi
+fi
+if [[ "$PBF_BYTES" -lt 1000000 ]]; then
+  echo "==> Download Geofabrik $PBF_URL"
+  curl -L --fail --retry 3 -o "$PBF_CACHE.part" "$PBF_URL"
+  mv "$PBF_CACHE.part" "$PBF_CACHE"
 else
-  echo "==> using existing PBF $PBF_FULL ($(wc -c < "$PBF_FULL") bytes)"
+  echo "==> using cached PBF $PBF_CACHE ($PBF_BYTES bytes)"
+fi
+if [[ ! -f "$PBF_FULL" ]]; then
+  ln -s "$PBF_CACHE" "$PBF_FULL" 2>/dev/null || cp -n "$PBF_CACHE" "$PBF_FULL"
 fi
 
 if [[ -n "$HOST_OSMIUM" ]]; then
-  EXTRACT_IN="$PBF_FULL"
+  EXTRACT_IN="$PBF_CACHE"
   EXTRACT_OUT="$PBF_CLIP"
   HW_IN="$PBF_CLIP"
   HW_OUT="$PBF_BIKE"
@@ -70,7 +90,7 @@ if [[ -n "$HOST_OSMIUM" ]]; then
   EXPORT_OUT="$GEOJSONSEQ"
 else
   echo "==> docker iboates/osmium:latest"
-  EXTRACT_IN="/data/region-full.osm.pbf"
+  EXTRACT_IN="/cache/$PBF_NAME"
   EXTRACT_OUT="/data/region.osm.pbf"
   HW_IN="/data/region.osm.pbf"
   HW_OUT="/data/bike-ways.osm.pbf"
@@ -202,7 +222,9 @@ print(json.dumps({"overlay": manifest["overlay"], "files": {k: files[k] for k in
 PY
 
 # Include overlay in existing tar.gz if present (no graph rebuild).
-if [[ -f "$OUT/offline_graph.json" ]]; then
+if [[ "${SKIP_PACK_REFRESH:-}" == "1" ]]; then
+  echo "==> SKIP_PACK_REFRESH=1 — overlay files only, pack tar unchanged"
+elif [[ -f "$OUT/offline_graph.json" ]]; then
   echo "==> refresh tar.gz with overlay"
   PACK_GZ="$OUT/${REGION_ID}.tar.gz"
   TAR_MEMBERS=(manifest.json offline_graph.json)

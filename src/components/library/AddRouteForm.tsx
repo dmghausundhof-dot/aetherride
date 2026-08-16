@@ -4,18 +4,23 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { simpleNamedRoute } from "@/lib/library/simpleAddRoute";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { platzCopy } from "@/lib/i18n/platzCopy";
 
 export function AddRouteForm({
   defaultStart,
   onSaved,
+  onPickGpx,
   compact = false,
 }: {
   /** [lng, lat] Kartenmitte / GPS */
   defaultStart?: [number, number] | null;
   onSaved?: (name: string) => void;
+  onPickGpx?: () => void;
   compact?: boolean;
 }) {
   const saveRoute = useAppStore((s) => s.saveRoute);
+  const p = platzCopy(useChromeLang());
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -42,7 +47,7 @@ export function AddRouteForm({
     setName("");
     setOpen(false);
     setBusy(false);
-    setMsg(`Gespeichert: ${entry.name}`);
+    setMsg(p.savedNamed(entry.name));
     onSaved?.(entry.name);
   };
 
@@ -54,11 +59,11 @@ export function AddRouteForm({
           onClick={() => setOpen(true)}
           className={
             compact
-              ? "inline-flex items-center gap-1.5 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white"
-              : "inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white"
+              ? "inline-flex items-center gap-1.5 rounded-xl bg-accent px-2.5 py-1.5 text-xs font-semibold text-on-accent"
+              : "inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
           }
         >
-          <Plus className="h-3.5 w-3.5" /> Route hinzufügen
+          <Plus className="h-3.5 w-3.5" /> {p.addRoute}
         </button>
         {msg && (
           <p className="mt-2 text-xs text-text-secondary" role="status">
@@ -71,39 +76,48 @@ export function AddRouteForm({
 
   return (
     <div className="rounded-xl border border-border bg-surface p-3">
-      <p className="text-sm font-semibold">Route hinzufügen</p>
-      <p className="mt-1 text-[11px] text-text-secondary">
-        Name + Start (Kartenmitte/GPS) — ohne erfundenen Track. GPX bleibt
-        optional.
-      </p>
+      <p className="text-sm font-semibold">{p.addRoute}</p>
+      <p className="mt-1 text-[11px] text-text-secondary">{p.addRouteHint}</p>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Name der Route"
+        placeholder={p.routeName}
         className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
         maxLength={80}
       />
       <p className="mt-1 text-[11px] text-text-secondary">
         {defaultStart
-          ? `Start: ${defaultStart[1].toFixed(3)}°N, ${defaultStart[0].toFixed(3)}°E`
-          : "Start: GPS, falls erlaubt — sonst ohne Pin."}
+          ? p.startPin(defaultStart[1].toFixed(3), defaultStart[0].toFixed(3))
+          : p.startGps}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={() => void save()}
-          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white"
+          className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
         >
-          {busy ? "…" : "In Meine Touren"}
+          {busy ? "…" : p.intoMappe}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="rounded-lg border border-border px-3 py-1.5 text-xs"
         >
-          Abbrechen
+          {p.cancel}
         </button>
+        {onPickGpx ? (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onPickGpx();
+            }}
+            className="text-xs font-medium text-text-secondary"
+          >
+            {p.importGpx}
+          </button>
+        ) : null}
       </div>
     </div>
   );

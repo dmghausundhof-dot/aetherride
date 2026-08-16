@@ -86,7 +86,7 @@ export function PublicProfileView({ handle }: { handle: string }) {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10 sm:px-6">
-      <p className="text-[11px] font-bold tracking-wide text-chrome">
+      <p className="text-[11px] font-bold tracking-wide text-text-secondary">
         {profile.editorial ? "Editorial-Beispiel" : "Public Profile"}
       </p>
       <div className="mt-3 flex items-start gap-4">

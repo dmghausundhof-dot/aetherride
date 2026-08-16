@@ -1,0 +1,27 @@
+{
+  "id": "at-tirol",
+  "name": "Tirol",
+  "bbox": [
+    10.1,
+    46.62,
+    12.95,
+    47.78
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-tirol",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-tirol.tar.zst"
+  }
+}

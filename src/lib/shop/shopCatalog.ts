@@ -2,6 +2,7 @@
  * Zwei Shop-Regale aus Storefront: Werkstatt-Teile + Merchandise.
  */
 
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   FEATURED_PARTS_COLLECTION,
   MERCHANDISE_COLLECTION,
@@ -10,6 +11,7 @@ import {
   type ShopifyStorefrontProduct,
 } from "@/lib/shop/shopifyStorefront";
 import { mapStorefrontProduct, type PartsProduct } from "@/lib/shop/partsCatalog";
+import { syncLiveFeaturedBikes, type LiveFeaturedBike } from "@/lib/shop/featuredSync";
 import {
   classifyShopProduct,
   splitShopProducts,
@@ -25,12 +27,14 @@ export type ShopShelvesResult =
       collectionTitle: string;
       merchCollectionHandle: string;
       source: "storefront";
+      bikes: LiveFeaturedBike[];
     }
   | {
       ok: false;
       configured: boolean;
       parts: [];
       merch: [];
+      bikes: LiveFeaturedBike[];
       collectionHandle: string;
       error: string;
       code: string;
@@ -56,15 +60,18 @@ function withCollection(
   return products.map((p) => ({ ...p, collectionHandle }));
 }
 
-export async function loadShopShelves(): Promise<ShopShelvesResult> {
+export async function loadShopShelves(
+  lang: ChromeLang = "de"
+): Promise<ShopShelvesResult> {
   const merchHandle =
     (process.env.SHOPIFY_MERCH_COLLECTION || MERCHANDISE_COLLECTION).trim() ||
     MERCHANDISE_COLLECTION;
 
-  const [partsCol, merchCol, merchTagged] = await Promise.all([
-    fetchCollectionProducts(FEATURED_PARTS_COLLECTION),
-    fetchCollectionProducts(merchHandle),
-    fetchProductsByQuery("tag:merch OR tag:merchandise"),
+  const [partsCol, merchCol, merchTagged, featured] = await Promise.all([
+    fetchCollectionProducts(FEATURED_PARTS_COLLECTION, { lang }),
+    fetchCollectionProducts(merchHandle, { lang }),
+    fetchProductsByQuery("tag:merch OR tag:merchandise", { lang }),
+    syncLiveFeaturedBikes(lang),
   ]);
 
   if (!partsCol.ok && partsCol.code === "not_configured") {
@@ -73,6 +80,7 @@ export async function loadShopShelves(): Promise<ShopShelvesResult> {
       configured: false,
       parts: [],
       merch: [],
+      bikes: featured.bikes,
       collectionHandle: FEATURED_PARTS_COLLECTION,
       error: partsCol.error,
       code: partsCol.code,
@@ -85,6 +93,7 @@ export async function loadShopShelves(): Promise<ShopShelvesResult> {
       configured: partsCol.configured,
       parts: [],
       merch: [],
+      bikes: featured.bikes,
       collectionHandle: FEATURED_PARTS_COLLECTION,
       error: partsCol.error,
       code: partsCol.code,
@@ -115,6 +124,7 @@ export async function loadShopShelves(): Promise<ShopShelvesResult> {
     configured: true,
     parts: classifiedParts.parts.map(mapStorefrontProduct),
     merch: merchPool.map(mapStorefrontProduct),
+    bikes: featured.bikes,
     collectionHandle: partsCol.collectionHandle,
     collectionTitle: partsCol.collectionTitle,
     merchCollectionHandle: merchHandle,

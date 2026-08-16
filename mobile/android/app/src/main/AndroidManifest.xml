@@ -11,9 +11,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
     <application
-        android:label="AetherRide"
+        android:label="FlowLine"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
@@ -60,6 +61,8 @@
                 <data android:scheme="aetherride" android:host="tours"/>
                 <data android:scheme="aetherride" android:host="discover"/>
                 <data android:scheme="aetherride" android:host="open"/>
+                <data android:scheme="aetherride" android:host="platz"/>
+                <data android:scheme="aetherride" android:host="library"/>
                 <data android:scheme="aetherride"/>
             </intent-filter>
             <!--
@@ -89,6 +92,10 @@
                     android:pathPrefix="/discover"/>
                 <data
                     android:scheme="https"
+                    android:host="${appLinkHost}"
+                    android:pathPrefix="/library"/>
+                <data
+                    android:scheme="https"
                     android:host="${appLinkHostAlt}"
                     android:pathPrefix="/open"/>
                 <data
@@ -105,18 +112,49 @@
                     android:pathPrefix="/discover"/>
                 <data
                     android:scheme="https"
+                    android:host="${appLinkHostAlt}"
+                    android:pathPrefix="/library"/>
+                <data
+                    android:scheme="https"
                     android:host="www.${appLinkHostAlt}"
                     android:pathPrefix="/open"/>
                 <data
                     android:scheme="https"
                     android:host="www.${appLinkHostAlt}"
                     android:pathPrefix="/tours"/>
+                <data
+                    android:scheme="https"
+                    android:host="www.${appLinkHostAlt}"
+                    android:pathPrefix="/library"/>
+            </intent-filter>
+            <!-- /library?group= ohne Verify: Chooser, falls App-Links nicht bestätigt -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="${appLinkHost}"
+                    android:pathPrefix="/library"/>
+                <data
+                    android:scheme="https"
+                    android:host="${appLinkHostAlt}"
+                    android:pathPrefix="/library"/>
             </intent-filter>
         </activity>
         <service
             android:name=".RideLocationService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <service
+            android:name=".HudMediaListenerService"
+            android:exported="true"
+            android:label="@string/hud_media_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
@@ -133,5 +171,18 @@
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService"/>
         </intent>
+        <intent>
+            <action android:name="android.media.browse.MediaBrowserService"/>
+        </intent>
+        <package android:name="com.spotify.music"/>
+        <package android:name="com.spotify.lite"/>
+        <package android:name="com.google.android.apps.youtube.music"/>
+        <package android:name="com.apple.android.music"/>
+        <package android:name="com.amazon.mp3"/>
+        <package android:name="com.soundcloud.android"/>
+        <package android:name="deezer.android.app"/>
+        <package android:name="com.aspiro.tidal"/>
+        <package android:name="de.danoeh.antennapod"/>
+        <package android:name="au.com.shiftyjelly.pocketcasts"/>
     </queries>
 </manifest>

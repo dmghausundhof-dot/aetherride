@@ -7,18 +7,31 @@
     -1.4,
     47.32
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T13:15:22Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18933268,
+      "sha256": "85d91192b3b2b26ee538232ae27cb504b8a16587b5f1230d9cf1e9937eb98109",
+      "sha256_16": "85d91192b3b2b26e"
+    },
+    "nantes.tar.gz": {
+      "bytes": 2496188,
+      "sha256": "285960591f9c7519e1492bea93e3c3f2a08f309b11a45bb6f4310f76a2785d65",
+      "sha256_16": "285960591f9c7519"
+    },
+    "nantes.tar.zst": {
+      "bytes": 2672965,
+      "sha256": "70b0b56e5c1a46d4d7b5dec8025c6a394df5e7bc2ad72e7c5bafeb180f32368d",
+      "sha256_16": "70b0b56e5c1a46d4"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nantes",
     "pack": "nantes.tar.zst",
     "packGz": "nantes.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

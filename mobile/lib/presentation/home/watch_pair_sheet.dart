@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble/watch_candidate.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 
@@ -68,21 +70,21 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
       if (perm == BlePermissionResult.adapterOff) {
         setState(() {
           _busy = false;
-          _error = 'Bluetooth ist aus — bitte einschalten.';
+          _error = AppLocalizations.of(context).bleOff;
         });
         return;
       }
       if (perm == BlePermissionResult.denied) {
         setState(() {
           _busy = false;
-          _error = 'Bluetooth-Berechtigung fehlt.';
+          _error = AppLocalizations.of(context).bleDenied;
         });
         return;
       }
       if (perm == BlePermissionResult.unsupported) {
         setState(() {
           _busy = false;
-          _error = 'Bluetooth LE ist auf diesem Gerät nicht verfügbar.';
+          _error = AppLocalizations.of(context).bleUnavailable;
         });
         return;
       }
@@ -104,22 +106,22 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
       setState(() {
         _busy = false;
         _scanning = false;
-        _error = 'Suche fehlgeschlagen';
+        _error = AppLocalizations.of(context).bleScanFailed;
       });
     }
   }
 
   Future<void> _pair(WatchBleScanHit hit) async {
     if (_pairingId != null) return;
-    if (hit.honesty == WatchHonesty.appleUnsupported && !hit.hasHrService) {
+    if (!hit.pairable) {
       setState(() {
-        _error = watchConnectTip(hit.honesty);
+        _error = AppLocalizations.of(context).watchConnectTipFor(hit.honesty);
       });
       return;
     }
     setState(() {
       _pairingId = hit.deviceId;
-      _pairStatus = 'Verbinde …';
+      _pairStatus = AppLocalizations.of(context).bleConnecting;
       _error = null;
     });
     try {
@@ -141,8 +143,9 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
         setState(() {
           _pairingId = null;
           _pairStatus = null;
-          _error = _ble.watchStatusDetail ??
-              'Kein Heart Rate 0x180D — Broadcast prüfen.';
+          _error = AppLocalizations.of(context).bleStatusDetailFor(
+            _ble.watchStatusDetail ?? AppLocalizations.of(context).watchNoHr,
+          );
         });
         return;
       }
@@ -152,7 +155,7 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
         setState(() {
           _pairingId = null;
           _pairStatus = null;
-          _error = 'Verbunden, aber ohne Geräte-ID';
+          _error = AppLocalizations.of(context).watchNoDeviceId;
         });
         return;
       }
@@ -172,13 +175,14 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
       setState(() {
         _pairingId = null;
         _pairStatus = null;
-        _error = 'Kopplung fehlgeschlagen';
+        _error = AppLocalizations.of(context).blePairFailed;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final height = MediaQuery.sizeOf(context).height * 0.78;
     return SafeArea(
       child: SizedBox(
@@ -194,14 +198,14 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Uhr koppeln',
+                l10n.watchPairTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                watchBlePairLead(),
+                l10n.watchPairLeadText,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.muted,
                       height: 1.35,
@@ -219,7 +223,7 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
               if (_pairStatus != null) ...[
                 const SizedBox(height: AppSpacing.s),
                 Text(
-                  _pairStatus!,
+                  l10n.bleStatusDetailFor(_pairStatus!),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -229,9 +233,9 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.s),
                 Text(
-                  _error!,
+                  l10n.bleStatusDetailFor(_error!),
                   style: const TextStyle(
-                    color: Color(0xFFFF8A80),
+                    color: AppColors.error,
                     fontSize: 13,
                     height: 1.35,
                   ),
@@ -247,12 +251,9 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
                             _HitTile(
                               hit: h,
                               pairing: _pairingId == h.deviceId,
-                              pairingLabel: _pairingId == h.deviceId
-                                  ? _pairStatus
-                                  : null,
-                              enabled: _pairingId == null &&
-                                  !(h.honesty == WatchHonesty.appleUnsupported &&
-                                      !h.hasHrService),
+                              pairingLabel:
+                                  _pairingId == h.deviceId ? _pairStatus : null,
+                              enabled: _pairingId == null && h.pairable,
                               onTap: () => unawaited(_pair(h)),
                             ),
                         ],
@@ -260,7 +261,7 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
               ),
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Puls nur mit 0x180D. Uhr-Akku ist nicht der Rad-Akku.',
+                l10n.watchPairHint,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.muted,
                       height: 1.35,
@@ -270,15 +271,14 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
               Row(
                 children: [
                   TextButton(
-                    onPressed: _pairingId != null
-                        ? null
-                        : () => unawaited(_start()),
-                    child: const Text('Erneut suchen'),
+                    onPressed:
+                        _pairingId != null ? null : () => unawaited(_start()),
+                    child: Text(l10n.bleScanAgain),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Abbrechen'),
+                    child: Text(l10n.cancel),
                   ),
                 ],
               ),
@@ -303,7 +303,7 @@ class _HowToConnect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notes = watchBleConnectNotes();
+    final notes = AppLocalizations.of(context).watchConnectNotesFor();
     return Material(
       color: AppColors.chipIdle,
       borderRadius: BorderRadius.circular(AppRadius.card),
@@ -323,13 +323,13 @@ class _HowToConnect extends StatelessWidget {
                   Icon(
                     Icons.watch_outlined,
                     size: 16,
-                    color: AppColors.forestOnDark.withValues(alpha: 0.85),
+                    color: AppColors.chrome.withValues(alpha: 0.85),
                   ),
                   const SizedBox(width: AppSpacing.s),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'So verbindest du',
-                      style: TextStyle(
+                      AppLocalizations.of(context).bleHowTo,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
@@ -372,7 +372,7 @@ class _HowToConnect extends StatelessWidget {
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.3,
-                              color: AppColors.forestOnDark,
+                              color: AppColors.chrome,
                             ),
                           ),
                         ),
@@ -406,6 +406,7 @@ class _EmptyScan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -419,7 +420,7 @@ class _EmptyScan extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.m),
             Text(
-              scanning ? 'Suche Uhr und Puls-Gurt …' : 'Nichts gefunden',
+              scanning ? l10n.watchScanning : l10n.bleNothingFound,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
@@ -427,10 +428,10 @@ class _EmptyScan extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.s),
-            const Text(
-              'Broadcast an, Handy nah. Apple Watch sendet keinen Standard-Puls.',
+            Text(
+              l10n.watchEmptyHint,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.muted,
                 height: 1.4,
                 fontSize: 13,
@@ -460,6 +461,7 @@ class _HitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rssi = hit.rssi;
     final bars = rssi >= -60
         ? 3
@@ -482,9 +484,7 @@ class _HitTile extends StatelessWidget {
               children: [
                 Icon(
                   Icons.watch_outlined,
-                  color: blocked
-                      ? AppColors.muted
-                      : AppColors.forestOnDark,
+                  color: blocked ? AppColors.muted : AppColors.chrome,
                 ),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
@@ -492,7 +492,7 @@ class _HitTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        hit.displayName,
+                        l10n.watchScanName(hit),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
@@ -501,7 +501,7 @@ class _HitTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         [
-                          watchHonestyLabel(hit.honesty),
+                          l10n.watchHonestyLabelFor(hit.honesty),
                           if (hit.hasHrService) '0x180D',
                           '$rssi dBm',
                         ].join(' · '),
@@ -512,7 +512,7 @@ class _HitTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        watchConnectTip(hit.honesty),
+                        l10n.watchConnectTipFor(hit.honesty),
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.muted,
@@ -522,7 +522,7 @@ class _HitTile extends StatelessWidget {
                       if (pairing && pairingLabel != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          pairingLabel!,
+                          l10n.bleStatusDetailFor(pairingLabel!),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -550,7 +550,7 @@ class _HitTile extends StatelessWidget {
                             height: 6.0 + i * 4,
                             decoration: BoxDecoration(
                               color: i < bars
-                                  ? AppColors.forestOnDark
+                                  ? AppColors.chrome
                                   : AppColors.border,
                               borderRadius: BorderRadius.circular(1),
                             ),

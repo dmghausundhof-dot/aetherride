@@ -13,6 +13,10 @@ export type TrailSegment = {
   provider: "seed" | "osm" | "gpx" | "outdooractive";
   /** Approximate center [lng, lat] */
   center: [number, number];
+  surface?: string;
+  highway?: string;
+  url?: string;
+  hasOsmName?: boolean;
 };
 
 function line(

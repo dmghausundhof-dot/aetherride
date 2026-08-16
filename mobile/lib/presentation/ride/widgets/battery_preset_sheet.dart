@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/routing/battery_preset.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../l10n/l10n_ext.dart';
 
 /// Opt-in battery / display preset picker (N-04 / N-09).
 /// Default recommendation: Pocket (no Keep-Screen-On).
@@ -14,6 +16,7 @@ Future<RideBatteryPreset?> showBatteryPresetSheet(
     isScrollControlled: true,
     showDragHandle: true,
     builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx);
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -27,16 +30,16 @@ Future<RideBatteryPreset?> showBatteryPresetSheet(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Display & Akku',
+                l10n.rideBatteryTitle,
                 style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Display an lassen? Mehr Akku-Verbrauch. Standard spart Akku.',
+                l10n.rideBatteryHint,
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
+                      color: AppColors.meta(ctx),
                     ),
               ),
               const SizedBox(height: AppSpacing.m),
@@ -50,7 +53,7 @@ Future<RideBatteryPreset?> showBatteryPresetSheet(
               ],
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Abbrechen'),
+                child: Text(l10n.cancel),
               ),
             ],
           ),
@@ -73,6 +76,7 @@ class _PresetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final icon = switch (preset) {
       RideBatteryPreset.pocket => Icons.phone_android_outlined,
       RideBatteryPreset.lenker => Icons.screen_lock_portrait_outlined,
@@ -103,7 +107,7 @@ class _PresetTile extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          preset.titleDe,
+                          l10n.batteryPresetTitle(preset),
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
@@ -117,16 +121,16 @@ class _PresetTile extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.orange.shade100,
+                              color: AppColors.accent.withValues(alpha: 0.18),
                               borderRadius:
                                   BorderRadius.circular(AppRadius.pill),
                             ),
                             child: Text(
-                              'kostet Akku',
-                              style: TextStyle(
+                              l10n.rideCostsBattery,
+                              style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.orange.shade900,
+                                color: AppColors.accent,
                               ),
                             ),
                           ),
@@ -134,11 +138,11 @@ class _PresetTile extends StatelessWidget {
                         if (preset == RideBatteryPreset.pocket) ...[
                           const SizedBox(width: 8),
                           Text(
-                            'Standard',
+                            l10n.rideDefault,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.green.shade800,
+                              color: AppColors.sageOnDark,
                             ),
                           ),
                         ],
@@ -146,10 +150,10 @@ class _PresetTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      preset.subtitleDe,
-                      style: const TextStyle(
+                      l10n.batteryPresetSubtitle(preset),
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.muted,
+                        color: AppColors.meta(context),
                       ),
                     ),
                   ],

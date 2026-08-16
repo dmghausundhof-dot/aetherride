@@ -97,7 +97,7 @@ export default function CommunityModerationPage() {
         />
         <button
           type="button"
-          className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white"
+          className="rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
           onClick={() => void load()}
         >
           Laden
@@ -136,7 +136,7 @@ export default function CommunityModerationPage() {
               </button>
               <button
                 type="button"
-                className="text-xs font-semibold text-red-600"
+                className="text-xs font-semibold text-error"
                 onClick={() => void act("review", r.id, "rejected")}
               >
                 Ablehnen
@@ -169,7 +169,7 @@ export default function CommunityModerationPage() {
               </button>
               <button
                 type="button"
-                className="text-xs font-semibold text-red-600"
+                className="text-xs font-semibold text-error"
                 onClick={() => void act("photo", p.id, "rejected")}
               >
                 Ablehnen

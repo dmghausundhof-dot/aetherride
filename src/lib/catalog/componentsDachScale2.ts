@@ -67,7 +67,7 @@ function frameEnduro(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -167,7 +167,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -191,7 +191,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/marzocchi",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   // FLOAT X 210×55: bereits in componentsDach.ts (cm-fox-float-x-21055)
@@ -210,7 +210,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.raceface.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -228,7 +228,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.raceface.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -246,7 +246,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -264,7 +264,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -279,7 +279,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -294,7 +294,7 @@ export const COMPONENT_CATALOG_DACH_SCALE2: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.magura.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

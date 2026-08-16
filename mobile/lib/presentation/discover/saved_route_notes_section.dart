@@ -4,7 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/saved_route_note.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Lokale Kommentare/Notizen an einer eigenen Strecke (kein Fake-Social-Feed).
+/// Lokale Notizen an einer eigenen Strecke (kein Feed, keine Stimme).
 class SavedRouteNotesSection extends StatefulWidget {
   const SavedRouteNotesSection({
     super.key,
@@ -113,6 +113,7 @@ class _SavedRouteNotesSectionState extends State<SavedRouteNotesSection> {
                   isDense: true,
                   border: const OutlineInputBorder(),
                 ),
+                scrollPadding: const EdgeInsets.only(bottom: 120),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _submit(l10n),
               ),

@@ -89,7 +89,7 @@ export const useCommunityStore = create<CommunityState>()(
           authorLabel:
             input.authorLabel?.trim() ||
             profile.displayName?.trim() ||
-            "Fahrer:in",
+            "Du",
           authorHandle: profile.enabled ? profile.handle || undefined : undefined,
           rating: input.rating,
           body,

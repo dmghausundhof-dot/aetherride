@@ -126,7 +126,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -208,7 +208,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -279,7 +279,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -338,7 +338,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -379,7 +379,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.transitionbikes.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -408,7 +408,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.specialized.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -440,7 +440,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.canyon.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -462,7 +462,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     sourceUrl:
       "https://www.mountainflyermagazine.com/img/upimages/standardized_headset_identification_system.pdf",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -488,7 +488,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.renthal.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -516,7 +516,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.renthal.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -551,7 +551,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://oneupcomponents.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -586,7 +586,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://oneupcomponents.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -606,7 +606,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -626,7 +626,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -646,7 +646,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -665,7 +665,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -684,7 +684,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -717,7 +717,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.maxxis.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -748,7 +748,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.maxxis.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -777,7 +777,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.specialized.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -805,7 +805,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.continental-tires.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -833,7 +833,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.schwalbe.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -854,7 +854,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -873,7 +873,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -892,7 +892,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     sourceUrl:
       "https://www.bike-magazin.de/en/workshop/circuit-or-drive/mountain-bike-bottom-bracket-standards-an-overview-of-the-utter-chaos/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -910,7 +910,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -928,7 +928,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -943,7 +943,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -958,7 +958,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -973,7 +973,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
 
@@ -1009,7 +1009,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1034,7 +1034,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1052,7 +1052,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1070,7 +1070,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1085,7 +1085,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1100,7 +1100,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -1121,7 +1121,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.bosch-ebike.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1139,7 +1139,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.bosch-ebike.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -1154,7 +1154,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.bosch-ebike.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
 
@@ -1179,7 +1179,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "editorial",
     sourceUrl: "https://www.sdgcomponents.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -1193,7 +1193,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "editorial",
     sourceUrl: "https://odigrips.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -1214,7 +1214,7 @@ const BASE_COMPONENT_CATALOG: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://ht-components.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
 ];
@@ -1298,4 +1298,32 @@ export function listComponentModels(slot?: import("@/types/garage").ComponentSlo
 
 export function modelDisplayName(m: ComponentModel): string {
   return [m.manufacturer, m.model, m.variant].filter(Boolean).join(" ");
+}
+
+/** Teilekatalog als Suche — ohne Treffer bleibt Freitext der Weg. */
+export function searchComponentModels(
+  slot: import("@/types/garage").ComponentSlot,
+  q: string,
+  limit = 12
+): ComponentModel[] {
+  const models = listComponentModels(slot);
+  const needle = q.trim().toLowerCase();
+  if (!needle) return models.slice(0, limit);
+  const tokens = needle.split(/\s+/).filter((t) => t.length >= 2);
+  const scored: { m: ComponentModel; score: number }[] = [];
+  for (const m of models) {
+    const hay =
+      `${m.manufacturer} ${m.model} ${m.variant ?? ""} ${m.id}`.toLowerCase();
+    let score = 0;
+    if (hay.includes(needle)) score += 14;
+    for (const t of tokens) {
+      if (m.manufacturer.toLowerCase() === t) score += 10;
+      else if (m.manufacturer.toLowerCase().includes(t)) score += 6;
+      if (m.model.toLowerCase().includes(t)) score += 8;
+      else if (hay.includes(t)) score += 2;
+    }
+    if (score > 0) scored.push({ m, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((x) => x.m);
 }

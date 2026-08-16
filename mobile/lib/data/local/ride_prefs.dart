@@ -56,4 +56,25 @@ abstract final class RidePrefs {
     final m = await read();
     return m['batteryPresetChosen'] == true;
   }
+
+  /// Active nav-puck style id (`NavPuckStyle.name`). Null → default Chevron.
+  static Future<String?> navPuckStyleId() async {
+    final m = await read();
+    final v = m['nav_puck_style'];
+    return v is String ? v : null;
+  }
+
+  static Future<void> setNavPuckStyleId(String id) async {
+    await merge({'nav_puck_style': id});
+  }
+
+  /// Rider dismissed the Pro-HUD “Musik im HUD” permission prompt.
+  static Future<bool> hudMediaPromptDismissed() async {
+    final m = await read();
+    return m['hud_media_prompt_dismissed'] == true;
+  }
+
+  static Future<void> setHudMediaPromptDismissed(bool value) async {
+    await merge({'hud_media_prompt_dismissed': value});
+  }
 }

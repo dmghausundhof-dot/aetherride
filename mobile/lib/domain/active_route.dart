@@ -24,6 +24,8 @@ class ActiveRoute {
     this.steps = const [],
     this.poiStops = const [],
     this.isLoop = false,
+    this.joinAlongM = 0,
+    this.gravitySession = false,
   });
 
   final String id;
@@ -42,6 +44,13 @@ class ActiveRoute {
 
   /// True when [coordinates] form a closed loop (Start≈Ziel) at handoff.
   final bool isLoop;
+
+  /// Metres along [coordinates] where the street approach meets the tour.
+  /// 0 = no approach (the whole line is the tour).
+  final double joinAlongM;
+
+  /// DH-Session: Abfahrt folgen, kein Straßen-Reroute nach dem Join.
+  final bool gravitySession;
 }
 
 class NavStep {

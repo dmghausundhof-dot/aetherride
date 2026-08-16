@@ -75,6 +75,11 @@ assert(soon.dueCount >= 1, "due soon count");
 assert(soon.topItem?.shortLabel === "Kette", "top is chain");
 assert(soon.headline.includes("bald checken"), `headline ${soon.headline}`);
 assert(soon.headline.includes("Kette"), "headline has Kette");
+assert(soon.shopHref?.includes("bike=b1"), `shopHref bike ${soon.shopHref}`);
+assert(soon.shopHref?.includes("slot=chain"), `shopHref slot ${soon.shopHref}`);
+assert(soon.shopHref?.includes("fit=bike"), "shopHref fit");
+assert(soon.shopHref?.includes("door=parts"), "shopHref door");
+assert(!soon.shopHref?.includes("sp-"), "no snapshot sku");
 
 // Overdue — past interval
 const overdue = getMaintenanceSummary(

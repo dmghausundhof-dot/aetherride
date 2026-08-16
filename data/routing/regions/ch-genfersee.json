@@ -1,0 +1,27 @@
+{
+  "id": "ch-genfersee",
+  "name": "Genfersee / Romandie",
+  "bbox": [
+    5.96,
+    46.08,
+    7.25,
+    46.62
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-genfersee",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-genfersee.tar.zst"
+  }
+}

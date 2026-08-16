@@ -2,11 +2,18 @@
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowSplashScreenBackground">@color/hof_ground</item>
+        <item name="android:statusBarColor">@color/splash_ground</item>
+        <item name="android:navigationBarColor">@color/splash_ground</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_ground</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_mark</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">@color/hof_ground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/splash_ground</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@color/hof_ground</item>
+        <item name="android:statusBarColor">@color/hof_ground</item>
+        <item name="android:navigationBarColor">@color/hof_ground</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

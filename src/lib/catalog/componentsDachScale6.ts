@@ -56,7 +56,7 @@ function part(
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: opts.safety ?? false,
   };
 }
@@ -95,7 +95,7 @@ function frameGravel(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -136,7 +136,7 @@ function frameUrban(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -177,7 +177,7 @@ function frameEtrekking(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -260,7 +260,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.specialized.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -289,7 +289,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.focus-bikes.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   frameEtrekking({
@@ -352,7 +352,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.simplon.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -384,7 +384,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.scott-sports.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -413,7 +413,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.yt-industries.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -1032,7 +1032,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/the-all-new-ekano-2-al/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1062,7 +1062,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     sourceUrl:
       "https://www.trekbikes.com/us/en_US/bikes/mountain-bikes/electric-mountain-bikes/rail/rail-9-7-gen-4/p/37026/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1091,7 +1091,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.centurion.de/de-de/bike/1213/numinis-r2000",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1121,7 +1121,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     sourceUrl:
       "https://www.corratec.com/en/Bike-Archive/E-Bikes/E-Power-iLink-Race-Silver-Gray-Pearlized-Black-Red-Anthracite-42.html",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   part("cm-fox-38-factory-180", "fork", "Fox", "38 Factory Grip2", {
@@ -1242,7 +1242,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     sourceUrl:
       "https://www.canyon.com/en-de/productpdf/geometry/?pid=3416",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1275,7 +1275,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     sourceUrl:
       "https://www.simplon.com/en/Bikes/E-Mountain-Bikes/Rapcon-e_b_1149826",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1302,7 +1302,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://ghost-bikes.com/en-int/products/path-riot-advanced-gfat1",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   part("cm-simplon-rapcon-e-shock", "rear_shock", "Simplon", "Rapcon :e Dämpfer", {
@@ -1394,7 +1394,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/enduro/tyee-cf/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1424,7 +1424,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/enduro/tyee-al-trail/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1454,7 +1454,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/freeride/spindrift-cf/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1485,7 +1485,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     sourceUrl:
       "https://www.propain-bikes.com/en/product/bikes/freeride/spindrift-al-dual-crown/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1515,7 +1515,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/downhill/rage-cf/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1544,7 +1544,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/trail/sresh-sl/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1573,7 +1573,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/enduro/ekano-al-enduro/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1602,7 +1602,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/trail/ekano-al-trail/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -1630,7 +1630,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/gravel/terrel-cf/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   part("cm-propain-terrel-fork", "fork", "Propain", "Terrel CF Fork", {

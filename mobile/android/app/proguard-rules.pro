@@ -35,6 +35,10 @@
 -dontwarn com.google.android.play.core.tasks.OnSuccessListener
 -dontwarn com.google.android.play.core.tasks.Task
 
+# HUD media — NotificationListenerService must stay findable by the OS.
+-keep class com.aetherride.aetherride_mobile.HudMediaListenerService { *; }
+-keep class com.aetherride.aetherride_mobile.HudMediaPlugin { *; }
+
 # Keep native method names used by MethodChannels / FFI.
 -keepclasseswithmembernames class * {
     native <methods>;

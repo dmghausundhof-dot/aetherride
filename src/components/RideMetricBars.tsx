@@ -45,7 +45,7 @@ export function RideMetricBars({
           <div className="h-1.5 overflow-hidden rounded-full bg-surface-elevated">
             <div
               className={`h-full rounded-full ${
-                r.accent ? "bg-accent" : "bg-primary"
+                r.accent ? "bg-chrome" : "bg-sage"
               }`}
               style={{ width: `${r.pct}%` }}
             />

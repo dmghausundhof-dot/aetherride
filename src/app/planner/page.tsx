@@ -20,7 +20,10 @@ import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
 import {
   ROUTING_PROFILES,
   DEFAULT_DISCOVER_PROFILE,
+  DISCOVER_PROFILE_CHIPS,
   profileForBikeCategory,
+  discoverNavProfile,
+  sessionCostingForBike,
   type ClientRouteResult,
   type RoutingProfile,
 } from "@/lib/routing/profiles";
@@ -31,6 +34,7 @@ import {
   endOf,
   orderedWaypoints,
   removeWaypoint,
+  routeResultMessage,
   setEnd,
   setStart,
   startOf,
@@ -41,10 +45,26 @@ import { getPublicTour } from "@/lib/catalog/publicTours";
 import type { SavedRoute } from "@/types/route";
 import { RoutingStatusBanner } from "@/components/routing/RoutingStatusBanner";
 import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import {
+  DISCOVER_PIN_DE,
+  discoverPinLabel,
+  discoverUi,
+} from "@/lib/i18n/discoverUi";
+import {
+  PLANNER_STATUS_DE,
+  plannerCopy,
+  plannerStatus,
+} from "@/lib/i18n/plannerCopy";
 
 const FALLBACK: [number, number] = [8.4, 48.5];
 
 function PlannerInner() {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+  const ui = discoverUi(lang);
+  const p = plannerCopy(lang);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tourId = searchParams.get("tour");
@@ -55,9 +75,11 @@ function PlannerInner() {
   const setActiveRoute = useAppStore((s) => s.setActiveRoute);
 
   const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
-  const bikeProfile = activeBike
-    ? profileForBikeCategory(activeBike.category)
-    : DEFAULT_DISCOVER_PROFILE;
+  const bikeProfile = discoverNavProfile(
+    activeBike
+      ? profileForBikeCategory(activeBike.category)
+      : DEFAULT_DISCOVER_PROFILE
+  );
 
   const [profile, setProfile] = useState<RoutingProfile>(bikeProfile);
   const [draft, setDraft] = useState<PlanDraft>(() =>
@@ -115,9 +137,7 @@ function PlannerInner() {
         center: tour.center,
       },
     }));
-    setMsg(
-      `Tour-Idee „${tour.name}“ geladen — Start am Pin. Ziel tippen und berechnen.`
-    );
+    setMsg(plannerCopy("de").tourIdeaLoaded(tour.name));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per tourId
   }, [tourId]);
 
@@ -132,19 +152,17 @@ function PlannerInner() {
           try {
             const result = await computePointToPoint({
               ...next,
-              profile,
+              profile: sessionCostingForBike(activeBike?.category, profile),
             });
             if (result) {
               setDraft((d) => ({
                 ...d,
                 mode: "point_to_point",
                 computed: result,
-                label: d.label || "Geplante Route",
+                label: d.label || DISCOVER_PIN_DE.planned,
                 layers: undefined,
               }));
-              setMsg(
-                `${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min · ${result.engine}`
-              );
+              setMsg(routeResultMessage(result));
             }
           } finally {
             setBusy(false);
@@ -152,7 +170,7 @@ function PlannerInner() {
         })();
       }, 600);
     },
-    [profile]
+    [profile, activeBike?.category]
   );
 
   const onMapClick = (lngLat: [number, number]) => {
@@ -160,10 +178,10 @@ function PlannerInner() {
     setDraft((prev) => {
       let next = prev;
       if (pickTarget === "start") {
-        next = setStart(prev, lngLat, "Start (Karte)");
+        next = setStart(prev, lngLat, DISCOVER_PIN_DE.startMap);
         setMapCenter(lngLat);
       } else if (pickTarget === "end") {
-        next = setEnd(prev, lngLat, "Ziel (Karte)");
+        next = setEnd(prev, lngLat, DISCOVER_PIN_DE.endMap);
       } else {
         next = addVia(prev, lngLat);
       }
@@ -187,13 +205,13 @@ function PlannerInner() {
       }[];
       setAddrHits(
         hits.slice(0, 6).map((h) => ({
-          label: h.label || "Treffer",
+          label: h.label || PLANNER_STATUS_DE.hitFallback,
           lat: Number(h.lat),
           lng: Number(h.lng),
         }))
       );
     } catch {
-      setMsg("Geocoding fehlgeschlagen");
+      setMsg(PLANNER_STATUS_DE.geocodeFail);
     } finally {
       setAddrBusy(false);
     }
@@ -216,7 +234,7 @@ function PlannerInner() {
 
   const runRoute = async () => {
     if (!startOf(draft) || !endOf(draft)) {
-      setMsg("Start und Ziel setzen");
+      setMsg(PLANNER_STATUS_DE.needStartEnd);
       return;
     }
     setBusy(true);
@@ -226,13 +244,11 @@ function PlannerInner() {
         setDraft((d) => ({
           ...d,
           computed: result,
-          label: d.label || "Geplante Route",
+          label: d.label || DISCOVER_PIN_DE.planned,
         }));
-        setMsg(
-          `${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min`
-        );
+        setMsg(routeResultMessage(result));
       } else {
-        setMsg("Keine Route — Profil oder Punkte prüfen");
+        setMsg(PLANNER_STATUS_DE.noRoute);
       }
     } finally {
       setBusy(false);
@@ -248,7 +264,7 @@ function PlannerInner() {
       sanitizeElevationM(draft.baseTour?.elevationM, distanceKm) ?? 0;
     const entry: SavedRoute = {
       id: `saved-${Date.now()}`,
-      name: draft.label || "Geplante Route",
+      name: draft.label || DISCOVER_PIN_DE.planned,
       distanceKm,
       elevationM,
       durationMin: Math.round(draft.computed.durationS / 60),
@@ -264,7 +280,7 @@ function PlannerInner() {
       })),
     };
     saveRoute(entry);
-    setMsg("In Bibliothek gespeichert");
+    setMsg(PLANNER_STATUS_DE.inMappe);
   };
 
   const startInApp = (result: ClientRouteResult, name: string) => {
@@ -277,9 +293,9 @@ function PlannerInner() {
     let via = 0;
     for (const w of orderedWaypoints(draft)) {
       if (w.role === "start")
-        m.push({ id: w.id, lngLat: w.lngLat, color: "#43A047", label: "S" });
+        m.push({ id: w.id, lngLat: w.lngLat, color: "#43A047", label: ui.startAbbr });
       else if (w.role === "end")
-        m.push({ id: w.id, lngLat: w.lngLat, color: "#E53935", label: "Z" });
+        m.push({ id: w.id, lngLat: w.lngLat, color: "#E53935", label: ui.endAbbr });
       else {
         via += 1;
         m.push({
@@ -291,7 +307,7 @@ function PlannerInner() {
       }
     }
     return m;
-  }, [draft]);
+  }, [draft, ui.endAbbr, ui.startAbbr]);
 
   const mapLayers: MapRouteLayer[] = useMemo(() => {
     if (!draft.computed?.geometry) return [];
@@ -300,7 +316,7 @@ function PlannerInner() {
         id: "plan",
         role: "tour",
         geometry: draft.computed.geometry,
-        color: "#81C995",
+        color: "#FF6A00",
         width: 5,
         opacity: 0.9,
       },
@@ -317,26 +333,26 @@ function PlannerInner() {
         <header className="shrink-0 space-y-2 border-b border-border px-4 py-4">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-bold tracking-wide text-chrome">
-                Karte
+              <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+                {copy.plannerKicker}
               </p>
-              <h1 className="text-lg font-bold">Planen</h1>
+              <h1 className="text-lg font-bold">{copy.plannerTitle}</h1>
             </div>
             <Link
               href="/discover"
               className="text-xs font-medium text-chrome hover:underline"
             >
-              Karte
+              {copy.mapTitle}
             </Link>
           </div>
           <p className="text-xs text-text-secondary">
-            Dieselbe Tür wie die Karte. Navigation startet in der App.
+            {copy.plannerHint}
           </p>
           <RoutingStatusBanner />
           <p className="text-[11px] text-text-secondary">
-            Einheitliches Explore-Modell:{" "}
+            {p.exploreLead}
             <Link href="/discover?panel=plan" className="text-chrome hover:underline">
-              Karte · Planen
+              {copy.mapTitle} · {copy.plannerTitle}
             </Link>
             {" · "}
             Docs: <code className="text-[10px]">docs/explore-architecture.md</code>
@@ -346,7 +362,7 @@ function PlannerInner() {
             profile={profile}
           />
           <label className="block text-[11px] text-text-secondary">
-            Routing-Profil
+            {p.routingProfile}
             <select
               value={profile}
               onChange={(e) => {
@@ -356,11 +372,14 @@ function PlannerInner() {
               }}
               className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-2 text-sm text-foreground"
             >
-              {Object.values(ROUTING_PROFILES).map((p) => (
+              {DISCOVER_PROFILE_CHIPS.map((id) => {
+                const p = ROUTING_PROFILES[id];
+                return (
                 <option key={p.id} value={p.id}>
                   {p.label}
                 </option>
-              ))}
+                );
+              })}
             </select>
           </label>
         </header>
@@ -374,8 +393,8 @@ function PlannerInner() {
               }
               className="rounded-lg border border-border bg-surface-elevated px-2 text-xs"
             >
-              <option value="start">Start</option>
-              <option value="end">Ziel</option>
+              <option value="start">{ui.start}</option>
+              <option value="end">{ui.end}</option>
             </select>
             <input
               value={addrQuery}
@@ -383,7 +402,7 @@ function PlannerInner() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") void searchAddress();
               }}
-              placeholder="Adresse suchen…"
+              placeholder={p.addrSearch}
               className="min-w-0 flex-1 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-xs"
             />
             <button
@@ -392,7 +411,7 @@ function PlannerInner() {
               onClick={() => void searchAddress()}
               className="rounded-lg border border-border px-2 text-xs font-medium"
             >
-              OK
+              {p.ok}
             </button>
           </div>
           {addrHits.length > 0 && (
@@ -404,7 +423,9 @@ function PlannerInner() {
                     className="w-full px-2 py-1.5 text-left text-[11px] hover:bg-surface-elevated"
                     onClick={() => applyHit(h)}
                   >
-                    {h.label}
+                    {h.label === PLANNER_STATUS_DE.hitFallback
+                      ? p.hitFallback
+                      : h.label}
                   </button>
                 </li>
               ))}
@@ -414,9 +435,9 @@ function PlannerInner() {
           <div className="grid grid-cols-3 gap-2">
             {(
               [
-                ["start", "Start"],
-                ["via", "+ Via"],
-                ["end", "Ziel"],
+                ["start", ui.start],
+                ["via", ui.tapVia],
+                ["end", ui.end],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -439,13 +460,13 @@ function PlannerInner() {
             onClick={() => {
               if (!userPos) return;
               scheduleRecompute(
-                setStart({ ...draft, profile }, userPos, "Meine Position")
+                setStart({ ...draft, profile }, userPos, DISCOVER_PIN_DE.myPos)
               );
               setMapCenter(userPos);
             }}
             className="flex items-center gap-1.5 text-[11px] font-medium text-chrome"
           >
-            <Crosshair className="h-3.5 w-3.5" /> Start = meine Position
+            <Crosshair className="h-3.5 w-3.5" /> {ui.startMyPos}
           </button>
 
           <ul className="space-y-1">
@@ -455,8 +476,17 @@ function PlannerInner() {
                 className="flex items-center justify-between rounded-lg border border-border px-2 py-1.5 text-xs"
               >
                 <span className="truncate">
-                  {w.role === "start" ? "S" : w.role === "end" ? "Z" : i} ·{" "}
-                  {w.label ?? w.role}
+                  {w.role === "start"
+                    ? ui.startAbbr
+                    : w.role === "end"
+                      ? ui.endAbbr
+                      : i}{" "}
+                  ·{" "}
+                  {w.label === "Start"
+                    ? ui.start
+                    : w.label === "Ziel"
+                      ? ui.end
+                      : discoverPinLabel(w.label, lang) || w.label || w.role}
                 </span>
                 {w.role === "via" && (
                   <button
@@ -477,21 +507,25 @@ function PlannerInner() {
             type="button"
             disabled={busy || !startOf(draft) || !endOf(draft)}
             onClick={() => void runRoute()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-semibold text-background disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
           >
             <Navigation className="h-4 w-4" />
-            {busy ? "Berechne…" : "Route berechnen"}
+            {busy ? ui.computing : ui.computeRoute}
           </button>
 
           {msg && (
-            <p className="text-[11px] text-text-secondary">{msg}</p>
+            <p className="text-[11px] text-text-secondary">
+              {plannerStatus(msg, lang)}
+            </p>
           )}
 
           {stats && (
             <div className="rounded-xl border border-chrome/30 bg-chrome/10 p-3">
               <p className="text-sm font-semibold tabular-nums">{stats}</p>
               {draft.label && (
-                <p className="text-xs text-text-secondary">{draft.label}</p>
+                <p className="text-xs text-text-secondary">
+                  {discoverPinLabel(draft.label, lang) || draft.label}
+                </p>
               )}
               <div className="mt-3 flex gap-2">
                 <button
@@ -499,7 +533,7 @@ function PlannerInner() {
                   onClick={saveCurrent}
                   className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-border py-2 text-xs font-medium"
                 >
-                  <Bookmark className="h-3.5 w-3.5" /> Speichern
+                  <Bookmark className="h-3.5 w-3.5" /> {ui.save}
                 </button>
                 <button
                   type="button"
@@ -507,12 +541,12 @@ function PlannerInner() {
                     draft.computed &&
                     startInApp(
                       draft.computed,
-                      draft.label || "Geplante Route"
+                      draft.label || DISCOVER_PIN_DE.planned
                     )
                   }
-                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-accent py-2 text-xs font-semibold text-white"
+                  className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-accent py-2 text-xs font-semibold text-on-accent"
                 >
-                  <Play className="h-3.5 w-3.5 fill-current" /> In App
+                  <Play className="h-3.5 w-3.5 fill-current" /> {ui.inApp}
                 </button>
               </div>
             </div>
@@ -520,7 +554,7 @@ function PlannerInner() {
 
           <p className="flex items-start gap-2 rounded-lg border border-border bg-surface px-2 py-2 text-[11px] text-text-secondary">
             <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-chrome" />
-            Live-Navigation und Offline nur in der nativen App.
+            {p.navOffline}
           </p>
         </div>
       </aside>
@@ -538,18 +572,19 @@ function PlannerInner() {
         />
         {pickTarget && (
           <div className="absolute left-3 right-3 top-3 z-10 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white lg:left-auto lg:right-3 lg:max-w-xs">
-            Karte tippen:{" "}
-            {pickTarget === "start"
-              ? "Start"
-              : pickTarget === "end"
-                ? "Ziel"
-                : "Via"}
+            {p.pickTap(
+              pickTarget === "start"
+                ? ui.start
+                : pickTarget === "end"
+                  ? ui.end
+                  : p.via
+            )}
             <button
               type="button"
               className="ml-2 underline"
               onClick={() => setPickTarget(null)}
             >
-              Abbrechen
+              {ui.cancel}
             </button>
           </div>
         )}
@@ -559,11 +594,12 @@ function PlannerInner() {
 }
 
 export default function PlannerPage() {
+  const copy = useHofCopy();
   return (
     <Suspense
       fallback={
         <div className="p-8 text-center text-sm text-text-secondary">
-          Planner wird geladen…
+          {copy.mapLoading}
         </div>
       }
     >

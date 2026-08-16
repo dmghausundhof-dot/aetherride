@@ -2,6 +2,8 @@
 /// not UI language. Chrome/CTAs stay on l10n; this map is country → name.
 ///
 /// CH splits by language region (CH-DE / CH-FR / CH-IT).
+/// Callers must pass the **device** language (`AppLocaleBinding.hofLanguageCode`),
+/// not the chrome fallback (`de`/`en`). Otherwise fr-CH becomes Velokeller.
 /// Default is DE: Der Hof.
 String hofTitleFor({
   String? countryCode,
@@ -84,6 +86,11 @@ const _chTokens = <String>[
   'fribourg',
   'neuchatel',
   'sion',
+  'zermatt',
+  'interlaken',
+  'davos',
+  'stmoritz',
+  'moritz',
 ];
 
 const _atTokens = <String>[
@@ -96,6 +103,10 @@ const _atTokens = <String>[
   'bregenz',
   'klagenfurt',
   'villach',
+  'soelden',
+  'solden',
+  'kitzbuehel',
+  'kitzbuhel',
 ];
 
 const _frTokens = <String>[
@@ -164,4 +175,10 @@ const _deTokens = <String>[
   'wiesbaden',
   'trier',
   'schwerin',
+  'garmisch',
+  'ruegen',
+  'mueggel',
+  'stralsund',
+  'luebeck',
+  'flensburg',
 ];

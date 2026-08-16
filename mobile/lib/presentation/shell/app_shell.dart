@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/community/ride_group_store.dart';
+import '../../data/community/tour_community_store.dart';
 import '../../data/deep_links.dart';
 import '../../domain/home/hof_title.dart';
+import '../../l10n/app_locale.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../discover/discover_screen.dart';
 import '../garage/garage_screen.dart';
 import '../home/home_screen.dart';
+import '../library/mappe_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../ride/ride_screen.dart';
 import '../shop/shop_screen.dart';
@@ -35,14 +39,23 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   void initState() {
     super.initState();
+    TourCommunityStore.revision.addListener(_onPlatzBadge);
+    RideGroupStore.revision.addListener(_onPlatzBadge);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _deepLinks = DeepLinkHandler(ref);
       _deepLinks!.start();
     });
   }
 
+  void _onPlatzBadge() {
+    if (!mounted) return;
+    ref.invalidate(platzInboxBadgeProvider);
+  }
+
   @override
   void dispose() {
+    TourCommunityStore.revision.removeListener(_onPlatzBadge);
+    RideGroupStore.revision.removeListener(_onPlatzBadge);
     _deepLinks?.dispose();
     super.dispose();
   }
@@ -60,6 +73,8 @@ class _AppShellState extends ConsumerState<AppShell> {
         return DiscoverScreen(key: _discoverKey);
       case ShellTabs.shop:
         return const ShopScreen();
+      case ShellTabs.platz:
+        return const MappeScreen();
       default:
         return const SizedBox.shrink();
     }
@@ -82,12 +97,13 @@ class _AppShellState extends ConsumerState<AppShell> {
     final locale = Localizations.localeOf(context);
     final homeLabel = hofTitleFor(
       countryCode: locale.countryCode,
-      languageCode: locale.languageCode,
+      languageCode: AppLocaleBinding.hofLanguageCode(),
     );
 
     final hideNav = riding || index == ShellTabs.ride;
     final onboardingOpen = onboardingDone == false;
     final dueCount = ref.watch(fleetDueCountProvider).valueOrNull ?? 0;
+    final platzInbox = ref.watch(platzInboxBadgeProvider).valueOrNull ?? 0;
     final tabHasInnerBack = switch (index) {
       ShellTabs.karte => _discoverKey.currentState?.hasInnerBack ?? false,
       ShellTabs.ride => true,
@@ -113,7 +129,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             IndexedStack(
               index: index,
-              children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
+              children: List.generate(6, (i) => _tabBody(i, mountedTabs)),
             ),
             if (onboardingOpen) OnboardingFlow(key: _onboardingKey),
           ],
@@ -126,6 +142,20 @@ class _AppShellState extends ConsumerState<AppShell> {
                 onDestinationSelected: (nav) {
                   final stack = ShellTabs.stackFromNav(nav);
                   setState(() => _visited.add(stack));
+                  final pendingTarget = ref.read(discoverPendingMineProvider) ||
+                      ref.read(discoverPendingLoopIdProvider) != null ||
+                      ref.read(discoverPendingLensMinutesProvider) != null;
+                  if (onboardingDone != false &&
+                      ShellTabs.shouldOfferRideOutOnKarteNav(
+                        fromStack: index,
+                        toStack: stack,
+                        hasLaunchIntent:
+                            ref.read(discoverLaunchModeProvider) != null,
+                        hasPendingDiscoverTarget: pendingTarget,
+                      )) {
+                    ref.read(discoverLaunchModeProvider.notifier).state =
+                        DiscoverLaunchMode.rideOut;
+                  }
                   ref.read(shellTabIndexProvider.notifier).state = stack;
                 },
                 destinations: [
@@ -138,6 +168,12 @@ class _AppShellState extends ConsumerState<AppShell> {
                     icon: Icons.map_outlined,
                     selectedIcon: Icons.map,
                     label: l10n.navKarte,
+                  ),
+                  HofThresholdDestination(
+                    icon: Icons.menu_book_outlined,
+                    selectedIcon: Icons.menu_book,
+                    label: l10n.navPlatz,
+                    showBadge: platzInbox > 0,
                   ),
                   HofThresholdDestination(
                     icon: Icons.handyman_outlined,
@@ -164,8 +200,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       tabIndex: index,
       onboardingOpen: onboardingOpen,
       tabHasInnerBack: switch (index) {
-        ShellTabs.karte =>
-          _discoverKey.currentState?.hasInnerBack ?? false,
+        ShellTabs.karte => _discoverKey.currentState?.hasInnerBack ?? false,
         ShellTabs.ride => true,
         _ => false,
       },

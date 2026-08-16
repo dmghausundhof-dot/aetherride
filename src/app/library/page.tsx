@@ -1,57 +1,108 @@
 "use client";
 
 /**
- * Bibliothek: gespeicherte Touren, Sammlungen, GPX-Import, Offline-Packs.
+ * Platz: Mappe, Stimmen, Zusammen raus. Dieselben savedRoutes wie auf der Karte.
  */
-import { useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  Bookmark,
-  FolderPlus,
-  Play,
-  Route,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bookmark, FolderPlus } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { parseGpx } from "@/lib/import/gpx";
-import { OfflinePacksPanel } from "@/components/discover/OfflinePacksPanel";
 import { ShareCollectionButton } from "@/components/community/ShareCollectionButton";
+import { VISIBILITY_FILTER_OPTIONS } from "@/lib/routing/routeFilters";
 import { AddRouteForm } from "@/components/library/AddRouteForm";
-import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
+import { TourAkte } from "@/components/tours/TourAkte";
+import {
+  filterSavedByVisibility,
+  stimmenTourIdOf,
+  visibilityOf,
+  type VisibilityScope,
+} from "@/lib/tours/routeVisibility";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { chromeLangFrom } from "@/lib/i18n/chromeLang";
+import { platzCopy, platzNote } from "@/lib/i18n/platzCopy";
+import { resolveAkteSavedRoute } from "@/lib/tours/tourAkte";
+import { useCommunityStore } from "@/store/useCommunityStore";
+import { RideGroupsPanel } from "@/components/community/RideGroupsPanel";
+import { groupInviteScheme } from "@/lib/community/rideGroupInvite";
+import { LOCAL_ONLY_NOTE, useRideGroupStore } from "@/store/useRideGroupStore";
 import type { SavedRoute } from "@/types/route";
-import type { RouteSuggestion } from "@/lib/routing/suggestions";
-
-function savedToSuggestion(r: SavedRoute): RouteSuggestion {
-  return {
-    id: r.id,
-    name: r.name,
-    category: "road",
-    distanceKm: r.distanceKm,
-    elevationM: r.elevationM,
-    durationMin: r.durationMin,
-    mtbScale: r.mtbScale ?? "—",
-    surface: r.surface ?? "—",
-    loop: r.loop ?? false,
-    uncertainKmPct: 5,
-    matchScore: 80,
-    reasons: r.reasons ?? ["Gespeicherte Tour", "Bibliothek", r.source],
-  };
-}
 
 export default function LibraryPage() {
-  const router = useRouter();
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+  const g = platzCopy(lang);
+
   const savedRoutes = useAppStore((s) => s.savedRoutes);
-  const unsaveRoute = useAppStore((s) => s.unsaveRoute);
   const saveRoute = useAppStore((s) => s.saveRoute);
   const routeCollections = useAppStore((s) => s.routeCollections);
   const createRouteCollection = useAppStore((s) => s.createRouteCollection);
-  const addRouteToCollection = useAppStore((s) => s.addRouteToCollection);
-  const setActiveRoute = useAppStore((s) => s.setActiveRoute);
+  const myReviews = useCommunityStore((s) => s.myReviews);
+  const markInboxSeen = useRideGroupStore((s) => s.markInboxSeen);
 
   const [collectionName, setCollectionName] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [appJoinHref, setAppJoinHref] = useState<string | null>(null);
+  const [openAkte, setOpenAkte] = useState<string | null>(null);
+  const [visScope, setVisScope] = useState<VisibilityScope>("all_mine");
+  const visibleRoutes = filterSavedByVisibility(savedRoutes, visScope);
+  const akteRoute = resolveAkteSavedRoute(openAkte, savedRoutes);
+  const stimmenInbox = myReviews.filter((r) =>
+    savedRoutes.some((s) => stimmenTourIdOf(s) === r.tourId)
+  );
+
+  useEffect(() => {
+    const akte = new URLSearchParams(window.location.search).get("akte")?.trim();
+    if (akte) setOpenAkte(akte);
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const group = params.get("group")?.trim();
+    const token = params.get("g")?.trim();
+    if (!group) return;
+    const scheme = groupInviteScheme(group, token);
+    setAppJoinHref(scheme);
+    const openTimer = window.setTimeout(() => {
+      window.location.assign(scheme);
+    }, 80);
+    const run = () => {
+      void useRideGroupStore
+        .getState()
+        .joinFromInviteAsync(group, token)
+        .then((out) => {
+          const note = useRideGroupStore.getState().lastNote;
+          const joinLang = chromeLangFrom(
+            typeof navigator !== "undefined" ? navigator.language : "de",
+          );
+          const join = platzCopy(joinLang);
+          if ("error" in out) {
+            setMsg(platzNote(out.error, joinLang));
+            return;
+          }
+          if (!out.onServer) {
+            setMsg(
+              join.joinNotOnServer(platzNote(note ?? LOCAL_ONLY_NOTE, joinLang)),
+            );
+            return;
+          }
+          setMsg(
+            join.joinOk(out.title, note ? platzNote(note, joinLang) : null),
+          );
+        });
+    };
+    if (useRideGroupStore.persist.hasHydrated()) {
+      run();
+      return () => window.clearTimeout(openTimer);
+    }
+    const unsub = useRideGroupStore.persist.onFinishHydration(run);
+    return () => {
+      window.clearTimeout(openTimer);
+      unsub?.();
+    };
+  }, []);
+  useEffect(() => {
+    markInboxSeen(stimmenInbox.length);
+  }, [markInboxSeen, stimmenInbox.length]);
   const gpxRef = useRef<HTMLInputElement | null>(null);
 
   const importGpx = async (file: File | null) => {
@@ -60,7 +111,7 @@ export default function LibraryPage() {
       const text = await file.text();
       const parsed = parseGpx(text, file.name.replace(/\.gpx$/i, ""));
       if (!parsed?.coordinates?.length) {
-        setMsg("GPX ohne Track");
+        setMsg(g.gpxNoTrack);
         return;
       }
       const entry: SavedRoute = {
@@ -79,43 +130,19 @@ export default function LibraryPage() {
         },
       };
       saveRoute(entry);
-      setMsg(`Importiert: ${entry.name}`);
+      setMsg(g.gpxImported(entry.name));
     } catch {
-      setMsg("GPX konnte nicht gelesen werden");
+      setMsg(g.gpxUnreadable);
     }
-  };
-
-  const openInApp = (r: SavedRoute) => {
-    const s = savedToSuggestion(r);
-    setActiveRoute(
-      activeRouteFromSuggestion(s, r.geometry ?? null)
-    );
-    router.push("/ride");
   };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gespeichert</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Hinter der Karte — lokale Touren und Sammlungen, kein fünfter Tab.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/discover?sheet=plan"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-chrome px-3 py-2 text-sm font-semibold text-background"
-          >
-            <Route className="h-4 w-4" /> Planen
-          </Link>
-          <Link
-            href="/discover"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium"
-          >
-            Karte
-          </Link>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{copy.libraryTitle}</h1>
+        <p className="mt-1 text-sm text-text-secondary">
+          {copy.libraryHint}
+        </p>
       </div>
 
       {msg && (
@@ -125,130 +152,143 @@ export default function LibraryPage() {
       )}
 
       <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">
-            Meine Touren ({savedRoutes.length})
-          </h2>
-          <div>
-            <input
-              ref={gpxRef}
-              type="file"
-              accept=".gpx,application/gpx+xml,text/xml"
-              className="hidden"
-              onChange={(e) => {
-                void importGpx(e.target.files?.[0] ?? null);
-                e.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => gpxRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium"
-            >
-              <Upload className="h-3.5 w-3.5" /> GPX importieren
-            </button>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          {copy.libraryMappe}
+          {savedRoutes.length > 0
+            ? ` · ${visibleRoutes.length}`
+            : ""}
+        </h2>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <AddRouteForm
+            compact
+            onPickGpx={() => gpxRef.current?.click()}
+          />
+          <input
+            ref={gpxRef}
+            type="file"
+            accept=".gpx,application/gpx+xml,text/xml"
+            className="hidden"
+            onChange={(e) => {
+              void importGpx(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+        </div>
+        {savedRoutes.length > 0 ? (
+          <div className="mb-3 flex flex-wrap gap-1 rounded-xl bg-surface-elevated p-1 text-xs">
+            {VISIBILITY_FILTER_OPTIONS.map(({ id }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setVisScope(id)}
+                className={`rounded-lg px-2.5 py-1.5 font-semibold ${
+                  visScope === id
+                    ? "bg-chrome/20 text-chrome"
+                    : "text-text-secondary"
+                }`}
+              >
+                {id === "all_mine"
+                  ? g.visAll
+                  : id === "private"
+                    ? g.visPrivate
+                    : g.visPublic}
+              </button>
+            ))}
           </div>
-        </div>
-        <div className="mb-3">
-          <AddRouteForm />
-        </div>
+        ) : null}
 
         {savedRoutes.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center">
             <Bookmark className="mx-auto h-8 w-8 text-text-secondary" />
-            <p className="mt-3 text-sm text-text-secondary">
-              Noch nichts gespeichert. Route hinzufügen, Touren speichern oder
-              GPX importieren.
-            </p>
-            <Link
-              href="/regions"
-              className="mt-4 inline-block text-sm font-semibold text-accent"
-            >
-              Regionen entdecken →
-            </Link>
+            <p className="mt-3 text-sm text-text-secondary">{g.mappeEmpty}</p>
           </div>
+        ) : visibleRoutes.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-text-secondary">
+            {g.mappeFilterEmpty}
+          </p>
         ) : (
-          <ul className="space-y-3">
-            {savedRoutes.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-2xl border border-border bg-surface p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold">{r.name}</h3>
-                    <p className="mt-0.5 text-xs tabular-nums text-text-secondary">
-                      {r.distanceKm} km · {r.elevationM} hm · {r.durationMin}{" "}
-                      min
-                      {r.source === "import" ? " · GPX" : ""}
-                      {r.geometry ? " · Track" : ""}
-                    </p>
-                    <p className="mt-1 text-[11px] text-text-secondary">
-                      Gespeichert{" "}
-                      {new Date(r.savedAt).toLocaleDateString("de-DE")}
-                    </p>
+          <ul className="divide-y divide-border rounded-xl border border-border">
+            {visibleRoutes.map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
+                  onClick={() =>
+                    setOpenAkte((cur) => (cur === r.id ? null : r.id))
+                  }
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold">
+                      {r.name}
+                    </span>
+                    <span className="mt-0.5 block text-xs tabular-nums text-text-secondary">
+                      {r.geometry ? `${r.distanceKm} km · ` : ""}
+                      {visibilityOf(r) === "shared" ? g.shared : g.privateTour}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-text-secondary">›</span>
+                </button>
+                {akteRoute?.id === r.id ? (
+                  <div className="border-t border-border px-3 py-3">
+                    <TourAkte route={r} />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {routeCollections.length > 0 && (
-                      <select
-                        className="rounded-lg border border-border bg-background px-2 py-1.5 text-[11px]"
-                        defaultValue=""
-                        onChange={(e) => {
-                          const id = e.target.value;
-                          if (!id) return;
-                          addRouteToCollection(id, r.id);
-                          setMsg("Zur Sammlung hinzugefügt");
-                          e.target.value = "";
-                        }}
-                      >
-                        <option value="" disabled>
-                          + Sammlung
-                        </option>
-                        {routeCollections.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <Link
-                      href={`/planner`}
-                      className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium"
-                    >
-                      Planen
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => openInApp(r)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-[11px] font-semibold text-white"
-                    >
-                      <Play className="h-3 w-3 fill-current" /> In App
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => unsaveRoute(r.id)}
-                      className="rounded-lg border border-border px-2 py-1.5 text-text-secondary"
-                      aria-label="Entfernen"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
       </section>
 
+      {appJoinHref ? (
+        <p className="mt-8 text-sm text-text-secondary">
+          <a href={appJoinHref} className="font-semibold text-accent">
+            {g.openInApp}
+          </a>
+          {g.joinOnDevice}
+        </p>
+      ) : null}
+
       <section className="mt-10">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
-          Sammlungen
+          {g.stimmenTitle}
+        </h2>
+        {stimmenInbox.length === 0 ? (
+          <p className="text-sm text-text-secondary">{g.stimmenEmpty}</p>
+        ) : (
+          <ul className="space-y-2">
+            {stimmenInbox.slice(0, 8).map((r) => {
+              const hit = savedRoutes.find((s) => stimmenTourIdOf(s) === r.tourId);
+              return (
+                <li key={r.id} className="rounded-xl border border-border px-4 py-3 text-sm">
+                  <button
+                    type="button"
+                    className="font-semibold text-chrome"
+                    onClick={() => hit && setOpenAkte(hit.id)}
+                  >
+                    {hit?.name ?? r.tourId}
+                  </button>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    {r.status === "pending" ? `${g.pending} · ` : ""}
+                    {r.body}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <RideGroupsPanel savedRoutes={savedRoutes} visibility={visScope} />
+
+      <section className="mt-10">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+          {g.collectionsTitle}
         </h2>
         <div className="mb-3 flex gap-2">
           <input
             value={collectionName}
             onChange={(e) => setCollectionName(e.target.value)}
-            placeholder="Name der Sammlung"
+            placeholder={g.collectionName}
             className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm"
           />
           <button
@@ -257,17 +297,15 @@ export default function LibraryPage() {
               if (!collectionName.trim()) return;
               createRouteCollection(collectionName.trim());
               setCollectionName("");
-              setMsg("Sammlung angelegt");
+              setMsg(g.collectionCreated);
             }}
-            className="inline-flex items-center gap-1 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-medium"
           >
-            <FolderPlus className="h-4 w-4" /> Anlegen
+            <FolderPlus className="h-4 w-4" /> {g.collectionCreate}
           </button>
         </div>
         {routeCollections.length === 0 ? (
-          <p className="text-sm text-text-secondary">
-            Noch keine Sammlung — z. B. „Wochenende“ oder „Alpen 2026“.
-          </p>
+          <p className="text-sm text-text-secondary">{g.collectionEmpty}</p>
         ) : (
           <ul className="space-y-2">
             {routeCollections.map((c) => (
@@ -278,7 +316,7 @@ export default function LibraryPage() {
                 <div>
                   <span className="font-medium">{c.name}</span>
                   <span className="ml-2 text-xs text-text-secondary">
-                    {c.routeIds.length} Touren
+                    {g.collectionTours(c.routeIds.length)}
                   </span>
                 </div>
                 <ShareCollectionButton collectionId={c.id} />
@@ -286,16 +324,6 @@ export default function LibraryPage() {
             ))}
           </ul>
         )}
-      </section>
-
-      <section className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
-          Offline-Packs
-        </h2>
-        <p className="mb-3 text-xs text-text-secondary">
-          Packs für die App vormerken — Download und Navigation nativ.
-        </p>
-        <OfflinePacksPanel />
       </section>
     </div>
   );

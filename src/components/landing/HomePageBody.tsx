@@ -1,41 +1,41 @@
+"use client";
+
 import Link from "next/link";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
-import {
-  APP_SURFACES,
-  JOURNEY,
-  WEB_SURFACES,
-} from "@/lib/content/productMap";
-import { FAQ_ITEMS } from "@/lib/content/faq";
-import { getGuide } from "@/lib/content/guides";
+import { HOME_FAQ_IDS } from "@/lib/content/homepage";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
 import { getPublicTour, featuredPublicTours } from "@/lib/catalog/publicTours";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
-import {
-  HOME_CTA,
-  HOME_DISCIPLINES,
-  HOME_DOOR_STORIES,
-  HOME_FAQ_IDS,
-  HOME_GUIDES,
-  HOME_HONESTY,
-  HOME_INTRO,
-  HOME_JOURNEY,
-  HOME_PRICING,
-  HOME_SPLIT,
-  HOME_TOURS,
-  HOME_VOICES,
-} from "@/lib/content/homepage";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHomepageCopy } from "@/hooks/useHomepageCopy";
+import { faqItems } from "@/lib/i18n/faqCopy";
+import { guideFor } from "@/lib/i18n/guidesCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 const DOOR_ICONS = [Home, Map, BookOpen, Wrench, Store] as const;
 
+const REGION_CHIPS = [
+  { slug: "norddeutschland", name: "Norddeutschland" },
+  { slug: "berlin-brandenburg", name: "Berlin" },
+  { slug: "rhein-neckar", name: "Rhein-Neckar" },
+  { slug: "schwarzwald", name: "Schwarzwald" },
+  { slug: "nrw", name: "NRW" },
+  { slug: "oesterreich", name: "Österreich" },
+  { slug: "schweiz", name: "Schweiz" },
+] as const;
+
 export function HomePageBody() {
+  const lang = useChromeLang();
+  const h = useHomepageCopy();
+  const chrome = webChrome(lang);
   const featured = featuredPublicTours();
-  const guides = HOME_GUIDES.slugs
-    .map((slug) => getGuide(slug))
+  const guides = h.guides.slugs
+    .map((slug) => guideFor(slug, lang))
     .filter((g): g is NonNullable<typeof g> => g != null);
-  const faq = HOME_FAQ_IDS.map((id) => FAQ_ITEMS.find((item) => item.id === id)).filter(
-    (item): item is (typeof FAQ_ITEMS)[number] => item != null,
-  );
+  const faq = HOME_FAQ_IDS.map((id) =>
+    faqItems(lang).find((item) => item.id === id),
+  ).filter((item): item is NonNullable<typeof item> => item != null);
   const voices = EDITORIAL_REVIEWS.slice(0, 4);
 
   return (
@@ -43,24 +43,24 @@ export function HomePageBody() {
       <section className="border-t border-border bg-surface px-4 py-16 sm:px-6">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <p className="text-[11px] font-bold tracking-wide text-chrome">
-              {HOME_INTRO.kicker}
+            <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+              {h.intro.kicker}
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              {HOME_INTRO.title}
+              {h.intro.title}
             </h2>
-            <p className="mt-4 text-text-secondary">{HOME_INTRO.lead}</p>
+            <p className="mt-4 text-text-secondary">{h.intro.lead}</p>
           </div>
           <div className="space-y-4 text-sm leading-relaxed text-text-secondary lg:col-span-7">
-            {HOME_INTRO.paragraphs.map((p) => (
+            {h.intro.paragraphs.map((p) => (
               <p key={p.slice(0, 24)}>{p}</p>
             ))}
             <div className="flex flex-wrap gap-4 pt-2 text-sm font-semibold">
-              <Link href="/produkt" className="text-chrome hover:underline">
-                Produktkarte →
+              <Link href="/produkt" className="text-text-secondary hover:text-chrome hover:underline">
+                {h.ui.productMap} →
               </Link>
-              <Link href="/ueber" className="text-chrome hover:underline">
-                Über FlowLine →
+              <Link href="/ueber" className="text-text-secondary hover:text-chrome hover:underline">
+                {chrome.aboutFlowLine} →
               </Link>
             </div>
           </div>
@@ -69,15 +69,14 @@ export function HomePageBody() {
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-2xl font-bold sm:text-3xl">Für welche Räder</h2>
+          <h2 className="text-2xl font-bold sm:text-3xl">{h.ui.bikesTitle}</h2>
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-            Eine Anwendung, fünf Türen — nicht fünf Apps. Sport-Filter auf der
-            Karte, Setup in der Werkstatt.
+            {h.ui.bikesLead}
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {HOME_DISCIPLINES.map((d) => (
+            {h.disciplines.map((d) => (
               <Link
-                key={d.title}
+                key={d.href}
                 href={d.href}
                 className="rounded-2xl border border-border bg-surface p-5 transition hover:border-chrome/40"
               >
@@ -91,13 +90,12 @@ export function HomePageBody() {
 
       <section className="border-t border-border bg-surface px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-2xl font-bold sm:text-3xl">Fünf Türen am Hof</h2>
+          <h2 className="text-2xl font-bold sm:text-3xl">{h.ui.doorsTitle}</h2>
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-            Der Hof ist der Stand. Alles andere ist eine Tür — nicht ein Stapel
-            Karten. Ride ist kein Tab.
+            {h.ui.doorsLead}
           </p>
           <div className="mt-10 grid gap-4 lg:grid-cols-2">
-            {HOME_DOOR_STORIES.slice(0, 2).map((door, i) => {
+            {h.doors.slice(0, 2).map((door, i) => {
               const Icon = DOOR_ICONS[i];
               return (
                 <Link
@@ -105,8 +103,8 @@ export function HomePageBody() {
                   href={door.href}
                   className="rounded-2xl border border-border bg-background/60 p-6 transition hover:border-chrome/50"
                 >
-                  <Icon className="h-5 w-5 text-chrome" />
-                  <p className="mt-4 text-[11px] font-bold tracking-wide text-chrome">
+                  <Icon className="h-5 w-5 text-sage" />
+                  <p className="mt-4 text-[11px] font-bold tracking-wide text-text-secondary">
                     {door.kicker}
                   </p>
                   <h3 className="mt-1 text-xl font-semibold">{door.title}</h3>
@@ -118,7 +116,7 @@ export function HomePageBody() {
             })}
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            {HOME_DOOR_STORIES.slice(2).map((door, i) => {
+            {h.doors.slice(2).map((door, i) => {
               const Icon = DOOR_ICONS[i + 2];
               return (
                 <Link
@@ -126,8 +124,8 @@ export function HomePageBody() {
                   href={door.href}
                   className="rounded-2xl border border-border bg-background/60 p-5 transition hover:border-chrome/50"
                 >
-                  <Icon className="h-5 w-5 text-chrome" />
-                  <p className="mt-3 text-[11px] font-bold tracking-wide text-chrome">
+                  <Icon className="h-5 w-5 text-sage" />
+                  <p className="mt-3 text-[11px] font-bold tracking-wide text-text-secondary">
                     {door.kicker}
                   </p>
                   <h3 className="mt-1 font-semibold">{door.title}</h3>
@@ -141,21 +139,19 @@ export function HomePageBody() {
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <p className="text-[11px] font-bold tracking-wide text-chrome">
-            {HOME_SPLIT.kicker}
+          <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+            {h.split.kicker}
           </p>
-          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-            {HOME_SPLIT.title}
-          </h2>
+          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.split.title}</h2>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-border bg-surface p-8">
-              <Map className="h-8 w-8 text-chrome" />
-              <h3 className="mt-4 text-xl font-bold">Auf der Website</h3>
+              <Map className="h-8 w-8 text-sage" />
+              <h3 className="mt-4 text-xl font-bold">{h.ui.onWebsite}</h3>
               <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-                {HOME_SPLIT.webLead}
+                {h.split.webLead}
               </p>
               <ul className="mt-4 space-y-2 text-sm text-text-secondary">
-                {WEB_SURFACES.map((s) => (
+                {h.webSurfaces.map((s) => (
                   <li key={s.title}>
                     <span className="font-medium text-foreground">{s.title}.</span>{" "}
                     {s.body}
@@ -163,22 +159,22 @@ export function HomePageBody() {
                 ))}
               </ul>
               <div className="mt-6 flex flex-wrap gap-4">
-                <Link href="/home" className="text-sm font-semibold text-chrome hover:underline">
-                  Zum Hof →
+                <Link href="/home" className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline">
+                  {chrome.toHof} →
                 </Link>
-                <Link href="/discover" className="text-sm font-semibold text-chrome hover:underline">
-                  Karte →
+                <Link href="/discover" className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline">
+                  {chrome.hofNav.karte} →
                 </Link>
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-surface p-8">
-              <Smartphone className="h-8 w-8 text-chrome" />
-              <h3 className="mt-4 text-xl font-bold">In der App</h3>
+              <Smartphone className="h-8 w-8 text-sage" />
+              <h3 className="mt-4 text-xl font-bold">{h.ui.inApp}</h3>
               <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-                {HOME_SPLIT.appLead}
+                {h.split.appLead}
               </p>
               <ul className="mt-4 space-y-2 text-sm text-text-secondary">
-                {APP_SURFACES.map((s) => (
+                {h.appSurfaces.map((s) => (
                   <li key={s.title}>
                     <span className="font-medium text-foreground">{s.title}.</span>{" "}
                     {s.body}
@@ -188,15 +184,15 @@ export function HomePageBody() {
               <div className="mt-6 flex flex-wrap gap-4">
                 <Link
                   href="/download"
-                  className="text-sm font-semibold text-chrome hover:underline"
+                  className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline"
                 >
-                  App laden →
+                  {chrome.loadApp} →
                 </Link>
                 <Link
                   href="/guides/web-vs-app"
-                  className="text-sm font-semibold text-chrome hover:underline"
+                  className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline"
                 >
-                  Web vs. App →
+                  {chrome.webVsApp} →
                 </Link>
               </div>
             </div>
@@ -208,16 +204,14 @@ export function HomePageBody() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-bold tracking-wide text-chrome">
-                {HOME_TOURS.kicker}
+              <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+                {h.tours.kicker}
               </p>
-              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-                {HOME_TOURS.title}
-              </h2>
-              <p className="mt-3 text-sm text-text-secondary">{HOME_TOURS.lead}</p>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.tours.title}</h2>
+              <p className="mt-3 text-sm text-text-secondary">{h.tours.lead}</p>
             </div>
-            <Link href="/regions" className="text-sm font-semibold text-chrome hover:underline">
-              Alle Regionen →
+            <Link href="/regions" className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline">
+              {h.ui.allRegions} →
             </Link>
           </div>
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -227,7 +221,7 @@ export function HomePageBody() {
                 href={`/tours/${t.id}`}
                 className="rounded-2xl border border-border bg-background/60 p-4 transition hover:border-chrome/40"
               >
-                <p className="text-[11px] font-medium uppercase tracking-wide text-chrome">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-text-secondary">
                   {bikeCategoryLabel(t.primaryCategory)}
                 </p>
                 <p className="mt-1 font-medium">{t.name}</p>
@@ -241,15 +235,7 @@ export function HomePageBody() {
             ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-2">
-            {[
-              { slug: "norddeutschland", name: "Norddeutschland" },
-              { slug: "berlin-brandenburg", name: "Berlin" },
-              { slug: "rhein-neckar", name: "Rhein-Neckar" },
-              { slug: "schwarzwald", name: "Schwarzwald" },
-              { slug: "nrw", name: "NRW" },
-              { slug: "oesterreich", name: "Österreich" },
-              { slug: "schweiz", name: "Schweiz" },
-            ].map((r) => (
+            {REGION_CHIPS.map((r) => (
               <Link
                 key={r.slug}
                 href={`/regions/${r.slug}`}
@@ -264,19 +250,17 @@ export function HomePageBody() {
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-3xl">
-          <p className="text-center text-[11px] font-bold tracking-wide text-chrome">
-            {HOME_JOURNEY.kicker}
+          <p className="text-center text-[11px] font-bold tracking-wide text-text-secondary">
+            {h.journey.kicker}
           </p>
-          <h2 className="mt-2 text-center text-3xl font-bold">
-            {HOME_JOURNEY.title}
-          </h2>
+          <h2 className="mt-2 text-center text-3xl font-bold">{h.journey.title}</h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-sm text-text-secondary">
-            {HOME_JOURNEY.lead}
+            {h.journey.lead}
           </p>
           <ol className="mt-12 space-y-8">
-            {JOURNEY.map((s) => (
+            {h.journeySteps.map((s) => (
               <li key={s.n} className="flex gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-lg font-bold text-chrome">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-lg font-bold text-foreground">
                   {s.n}
                 </span>
                 <div>
@@ -293,16 +277,14 @@ export function HomePageBody() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-bold tracking-wide text-chrome">
-                {HOME_VOICES.kicker}
+              <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+                {h.voices.kicker}
               </p>
-              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-                {HOME_VOICES.title}
-              </h2>
-              <p className="mt-3 text-sm text-text-secondary">{HOME_VOICES.lead}</p>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.voices.title}</h2>
+              <p className="mt-3 text-sm text-text-secondary">{h.voices.lead}</p>
             </div>
-            <Link href="/community" className="text-sm font-semibold text-chrome hover:underline">
-              Community →
+            <Link href="/community" className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline">
+              {h.ui.community} →
             </Link>
           </div>
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -320,20 +302,20 @@ export function HomePageBody() {
                     {r.authorHandle ? (
                       <Link
                         href={`/u/${r.authorHandle}`}
-                        className="font-semibold text-chrome hover:underline"
+                        className="font-semibold text-text-secondary hover:text-chrome hover:underline"
                       >
                         {r.authorLabel}
                       </Link>
                     ) : (
                       <span className="font-semibold">{r.authorLabel}</span>
                     )}
-                    <span> · Editorial</span>
+                    <span> · {h.ui.editorial}</span>
                     {tour ? (
                       <>
                         {" · "}
                         <Link
                           href={`/tours/${tour.id}`}
-                          className="text-chrome hover:underline"
+                          className="text-text-secondary hover:text-chrome hover:underline"
                         >
                           {tour.name}
                         </Link>
@@ -351,16 +333,14 @@ export function HomePageBody() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-bold tracking-wide text-chrome">
-                {HOME_GUIDES.kicker}
+              <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+                {h.guides.kicker}
               </p>
-              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-                {HOME_GUIDES.title}
-              </h2>
-              <p className="mt-3 text-sm text-text-secondary">{HOME_GUIDES.lead}</p>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.guides.title}</h2>
+              <p className="mt-3 text-sm text-text-secondary">{h.guides.lead}</p>
             </div>
-            <Link href="/guides" className="text-sm font-semibold text-chrome hover:underline">
-              Alle Guides →
+            <Link href="/guides" className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline">
+              {h.ui.allGuides} →
             </Link>
           </div>
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -371,7 +351,7 @@ export function HomePageBody() {
                 className="rounded-2xl border border-border bg-surface p-5 transition hover:border-chrome/40"
               >
                 <p className="text-[11px] text-text-secondary">
-                  {g.readMin} Min.
+                  {h.ui.readMin(g.readMin)}
                 </p>
                 <h3 className="mt-1 font-semibold">{g.title}</h3>
                 <p className="mt-2 text-sm text-text-secondary">{g.teaser}</p>
@@ -384,15 +364,11 @@ export function HomePageBody() {
       <section className="border-t border-border bg-surface px-4 py-16 sm:px-6">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2">
           <div>
-            <p className="text-[11px] font-bold tracking-wide text-chrome">
-              FAQ
+            <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+              {h.ui.faqKicker}
             </p>
-            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-              Kurz und ehrlich
-            </h2>
-            <p className="mt-3 text-sm text-text-secondary">
-              Keine Store-Versprechen, keine erfundenen Adressen.
-            </p>
+            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.ui.faqTitle}</h2>
+            <p className="mt-3 text-sm text-text-secondary">{h.ui.faqLead}</p>
             <dl className="mt-8 space-y-4">
               {faq.map((item) => (
                 <div
@@ -405,36 +381,30 @@ export function HomePageBody() {
               ))}
             </dl>
             <p className="mt-6 text-sm font-semibold">
-              <Link href="/faq" className="text-chrome hover:underline">
-                Alle Fragen →
+              <Link href="/faq" className="text-text-secondary hover:text-chrome hover:underline">
+                {h.ui.allQuestions} →
               </Link>
             </p>
           </div>
           <div>
-            <p className="text-[11px] font-bold tracking-wide text-chrome">
-              {HOME_PRICING.kicker}
+            <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+              {h.pricing.kicker}
             </p>
-            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-              {HOME_PRICING.title}
-            </h2>
-            <p className="mt-3 text-sm text-text-secondary">{HOME_PRICING.lead}</p>
+            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.pricing.title}</h2>
+            <p className="mt-3 text-sm text-text-secondary">{h.pricing.lead}</p>
             <div className="mt-8 grid gap-3">
               <div className="rounded-2xl border border-border bg-background/60 p-5">
-                <p className="text-sm font-semibold">Free</p>
-                <p className="mt-2 text-sm text-text-secondary">
-                  {HOME_PRICING.free}
-                </p>
+                <p className="text-sm font-semibold">{h.ui.free}</p>
+                <p className="mt-2 text-sm text-text-secondary">{h.pricing.free}</p>
               </div>
               <div className="rounded-2xl border border-chrome/40 bg-chrome/10 p-5">
-                <p className="text-sm font-semibold">Pro</p>
-                <p className="mt-2 text-sm text-text-secondary">
-                  {HOME_PRICING.pro}
-                </p>
+                <p className="text-sm font-semibold">{h.ui.pro}</p>
+                <p className="mt-2 text-sm text-text-secondary">{h.pricing.pro}</p>
               </div>
             </div>
             <p className="mt-6 text-sm font-semibold">
-              <Link href="/pricing" className="text-chrome hover:underline">
-                Preise im Detail →
+              <Link href="/pricing" className="text-text-secondary hover:text-chrome hover:underline">
+                {h.ui.pricesDetail} →
               </Link>
             </p>
           </div>
@@ -443,28 +413,24 @@ export function HomePageBody() {
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <p className="text-[11px] font-bold tracking-wide text-chrome">
-            {HOME_HONESTY.kicker}
+          <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+            {h.honesty.kicker}
           </p>
-          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-            {HOME_HONESTY.title}
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm text-text-secondary">
-            {HOME_HONESTY.lead}
-          </p>
+          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.honesty.title}</h2>
+          <p className="mt-3 max-w-2xl text-sm text-text-secondary">{h.honesty.lead}</p>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-border bg-surface p-6">
-              <h3 className="font-semibold">Schon da</h3>
+              <h3 className="font-semibold">{h.ui.alreadyHere}</h3>
               <ul className="mt-3 space-y-2 text-sm text-text-secondary">
-                {HOME_HONESTY.live.map((line) => (
+                {h.honesty.live.map((line) => (
                   <li key={line}>· {line}</li>
                 ))}
               </ul>
             </div>
             <div className="rounded-2xl border border-border bg-surface p-6">
-              <h3 className="font-semibold">Noch nicht — und nicht erfunden</h3>
+              <h3 className="font-semibold">{h.ui.notYetTitle}</h3>
               <ul className="mt-3 space-y-2 text-sm text-text-secondary">
-                {HOME_HONESTY.notYet.map((line) => (
+                {h.honesty.notYet.map((line) => (
                   <li key={line}>· {line}</li>
                 ))}
               </ul>
@@ -477,49 +443,53 @@ export function HomePageBody() {
 }
 
 export function HomePageCta() {
+  const lang = useChromeLang();
+  const h = useHomepageCopy();
+  const chrome = webChrome(lang);
+
   return (
     <section className="border-t border-border bg-surface px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="text-2xl font-bold sm:text-3xl">{HOME_CTA.title}</h2>
-        <p className="mt-4 text-text-secondary">{HOME_CTA.body}</p>
+        <h2 className="text-2xl font-bold sm:text-3xl">{h.cta.title}</h2>
+        <p className="mt-4 text-text-secondary">{h.cta.body}</p>
         <div className="mt-8 flex flex-col items-center gap-4">
           <div className="flex flex-wrap justify-center gap-3">
             <Link
               href="/home"
-              className="inline-flex h-12 items-center justify-center rounded-xl bg-chrome px-8 text-sm font-semibold text-background hover:bg-chrome/90"
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-chrome px-8 text-sm font-semibold text-on-accent hover:bg-chrome/90"
             >
-              Zum Hof
+              {chrome.toHof}
             </Link>
             <Link
               href="/download"
               className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-6 text-sm font-semibold"
             >
-              App laden
+              {chrome.loadApp}
             </Link>
             <Link
               href="/anmelden"
               className="inline-flex h-12 items-center justify-center rounded-xl border border-border px-6 text-sm font-semibold"
             >
-              Anmelden
+              {chrome.signIn}
             </Link>
           </div>
           <AppDownloadButtons size="lg" />
         </div>
         <p className="mt-6 text-sm text-text-secondary">
-          <Link href="/garage" className="text-chrome hover:underline">
-            Werkstatt
+          <Link href="/garage" className="text-text-secondary hover:text-chrome hover:underline">
+            {chrome.hofNav.werkstatt}
           </Link>
           {" · "}
-          <Link href="/guides" className="text-chrome hover:underline">
-            Guides
+          <Link href="/guides" className="text-text-secondary hover:text-chrome hover:underline">
+            {chrome.marketingNav["/guides"]}
           </Link>
           {" · "}
-          <Link href="/produkt" className="text-chrome hover:underline">
-            Produkt
+          <Link href="/produkt" className="text-text-secondary hover:text-chrome hover:underline">
+            {chrome.marketingNav["/produkt"]}
           </Link>
           {" · "}
-          <Link href="/kontakt" className="text-chrome hover:underline">
-            Kontakt
+          <Link href="/kontakt" className="text-text-secondary hover:text-chrome hover:underline">
+            {chrome.contact}
           </Link>
         </p>
       </div>

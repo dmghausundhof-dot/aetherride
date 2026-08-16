@@ -1,80 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../core/theme/app_theme.dart';
-
-/// In-engine Hof splash — same ground as native Android 12 splash.
+/// Full brand splash artwork — never cropped, always entirely on screen.
 class HofSplash extends StatelessWidget {
   const HofSplash({super.key});
 
+  static const _bg = Color(0xFFFAFAFA);
+
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppColors.hofGround,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _HofMark(),
-            SizedBox(height: 20),
-            Text(
-              'AetherRide',
-              style: TextStyle(
-                color: AppColors.forestOnDark,
-                fontWeight: FontWeight.w800,
-                fontSize: 22,
-                letterSpacing: 0.4,
+    return const AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+        systemStatusBarContrastEnforced: false,
+        systemNavigationBarColor: _bg,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: ColoredBox(
+        color: _bg,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: SizedBox.expand(
+              child: Image(
+                image: AssetImage('assets/brand/splash.png'),
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+                filterQuality: FilterQuality.high,
+                gaplessPlayback: true,
               ),
             ),
-            SizedBox(height: 6),
-            Text(
-              'Der Hof',
-              style: TextStyle(
-                color: AppColors.muted,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _HofMark extends StatelessWidget {
-  const _HofMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(72, 64),
-      painter: _HofMarkPainter(),
-    );
-  }
-}
-
-class _HofMarkPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.forestOnDark
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round;
-    final w = size.width;
-    final h = size.height;
-    final path = Path()
-      ..moveTo(w * 0.12, h * 0.62)
-      ..lineTo(w * 0.5, h * 0.12)
-      ..lineTo(w * 0.88, h * 0.62)
-      ..moveTo(w * 0.28, h * 0.62)
-      ..lineTo(w * 0.28, h * 0.92)
-      ..lineTo(w * 0.72, h * 0.92)
-      ..lineTo(w * 0.72, h * 0.62);
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

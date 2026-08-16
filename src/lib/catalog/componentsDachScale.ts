@@ -68,7 +68,7 @@ function frameEnduro(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -164,7 +164,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -184,7 +184,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -202,7 +202,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.formula-brake.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -220,7 +220,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.formula-brake.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -238,7 +238,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.magura.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -256,7 +256,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.magura.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -276,7 +276,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.schwalbe.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -296,7 +296,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.maxxis.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -315,7 +315,7 @@ export const COMPONENT_CATALOG_DACH_SCALE: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

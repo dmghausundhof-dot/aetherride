@@ -1,7 +1,12 @@
+"use client";
+
 /**
  * Mini-Höhenprofil für Home „HEUTE PASST“ (Spec ElevationStrip).
  * Ohne echte Elev-Serie: synthetisches Profil — UI kennzeichnet als Schätzung.
  */
+
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { discoverUi } from "@/lib/i18n/discoverUi";
 
 export function ElevationStrip({
   elevationM,
@@ -18,6 +23,7 @@ export function ElevationStrip({
   elevProfile?: number[];
   estimated?: boolean;
 }) {
+  const ui = discoverUi(useChromeLang());
   const fromTrack =
     elevProfile &&
     elevProfile.length >= 4 &&
@@ -45,8 +51,8 @@ export function ElevationStrip({
         viewBox={`0 0 ${w} ${h}`}
         aria-label={
           isEstimate
-            ? `Höhenschätzung ca. ${elevationM} hm`
-            : `Höhenprofil ca. ${elevationM} hm`
+            ? ui.elevEst(elevationM)
+            : ui.elevProfile(elevationM)
         }
         preserveAspectRatio="none"
         width="100%"
@@ -63,7 +69,7 @@ export function ElevationStrip({
         />
       </svg>
       {isEstimate && (
-        <p className="mt-0.5 text-[10px] text-text-secondary">Schätzung</p>
+        <p className="mt-0.5 text-[10px] text-text-secondary">{ui.estimate}</p>
       )}
     </div>
   );

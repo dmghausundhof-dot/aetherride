@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:aetherride_mobile/data/routing/naehe_seeds.dart';
 import 'package:aetherride_mobile/domain/routing/route_shape.dart';
 import 'package:aetherride_mobile/domain/routing/tour_coverage.dart';
+import 'package:aetherride_mobile/domain/routing/tour_nav_geometry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _readFirstExisting(List<String> candidates, {required String label}) {
@@ -18,6 +19,7 @@ void main() {
   late String berlinRaw;
   late String dachRaw;
   late String rnRaw;
+  late String gapsRaw;
 
   setUpAll(() {
     // Repo-Root oder mobile/ — beide Pfade versuchen.
@@ -38,6 +40,11 @@ void main() {
       'mobile/assets/seeds/p0-rhein-neckar-60min-premium-v1.json',
       '../assets/seeds/p0-rhein-neckar-60min-premium-v1.json',
     ], label: 'Rhein-Neckar Premium-Pass seeds');
+    gapsRaw = _readFirstExisting([
+      'assets/seeds/p0-gaps-60min-naehe-v1.json',
+      'mobile/assets/seeds/p0-gaps-60min-naehe-v1.json',
+      '../assets/seeds/p0-gaps-60min-naehe-v1.json',
+    ], label: 'Alpen/Ostsee Lücken seeds');
   });
 
   test('parse yields ≥3 is_loop routes in ~60 band', () {
@@ -96,6 +103,37 @@ void main() {
       expect(l.poiStops, isNotEmpty);
       expect(l.poiStops.every((p) => p.atMin > 0), isTrue);
     }
+  });
+
+  test('catalog Baden-Baden attaches Lichtental seed track + pin', () {
+    final dach = NaeheSeedsBundle.parse(dachRaw);
+    final seed = dach.byId('seed-loop-baden-baden-lichtental-60');
+    expect(seed, isNotNull);
+    expect(seed!.hasBakedGeometry, isTrue);
+    expect(isUsableMapTrack(seed.trackLngLat), isTrue);
+
+    final hit = pickBundledSeedForCatalog(
+      catalogName: 'Baden-Baden Lichtental Loop',
+      catalogLat: 47.99,
+      catalogLng: 7.85,
+      catalogDistanceKm: 16,
+      seeds: [
+        for (final s in dach.routes)
+          if (s.trackLngLat != null)
+            (
+              title: s.title,
+              lat: s.centerLat,
+              lng: s.centerLng,
+              distanceKm: s.distanceKm,
+              trackLngLat: s.trackLngLat!,
+            ),
+      ],
+    );
+    expect(hit, isNotNull);
+    expect(hit!.lat, closeTo(48.761, 0.02));
+    expect(hit.lng, closeTo(8.24, 0.02));
+    expect(isUsableMapTrack(hit.trackLngLat), isTrue);
+    expect(hit.trackLngLat.length, seed.trackLngLat!.length);
   });
 
   test('DACH covers broad regions plus MTB trail loops', () {
@@ -365,6 +403,108 @@ void main() {
     expect(
       hashed.every((e) => e == 'assets/seeds/heroes/lake.jpg'),
       isFalse,
+    );
+  });
+
+  test('Alpen/Ostsee Lücken pack covers thin regions', () {
+    final gaps = NaeheSeedsBundle.parse(gapsRaw);
+    final ids = gaps.loops.map((e) => e.id).toSet();
+    expect(
+      ids,
+      containsAll([
+        'seed-loop-berlin-mueggelberge-mtb-60',
+        'seed-loop-kiel-roenner-gehege-mtb-60',
+        'seed-loop-rostock-heide-mtb-60',
+        'seed-loop-luebeck-lauerholz-mtb-60',
+        'seed-loop-ruegen-granitz-gravel-60',
+        'seed-loop-innsbruck-inn-road-60',
+        'seed-loop-innsbruck-igls-gravel-60',
+        'seed-loop-garmisch-wank-mtb-60',
+        'seed-loop-zermatt-zmutt-mtb-60',
+        'seed-loop-zermatt-furi-gravel-60',
+        'seed-loop-interlaken-harderwald-mtb-60',
+        'seed-loop-chur-calanda-mtb-60',
+        'seed-loop-st-moritz-stazerwald-mtb-60',
+        'seed-loop-davos-forest-mtb-60',
+        'seed-loop-soelden-oetztal-mtb-60',
+        'seed-loop-kitzbuehel-hahnenkamm-mtb-60',
+        'seed-loop-zurich-kaeferberg-mtb-60',
+        'seed-loop-salzburg-gaisberg-gravel-60',
+        'seed-loop-chur-rheinauen-gravel-60',
+        'seed-loop-zermatt-dorf-road-60',
+      ]),
+    );
+    for (final l in gaps.loops) {
+      expect(l.isLoop, isTrue, reason: l.id);
+      expect(l.durationBand, '60', reason: l.id);
+      expect(l.durationMin, inInclusiveRange(45, 75), reason: l.id);
+      expect(l.poiStops, isNotEmpty, reason: l.id);
+      expect(l.hasBakedGeometry, isTrue, reason: l.id);
+      expect(routeShapeOf(l.trackLngLat), RouteShape.loop, reason: l.id);
+    }
+    final mtb = gaps.loops
+        .where((l) => l.sportTags.any((t) => t.toLowerCase() == 'mtb'))
+        .toList();
+    expect(mtb.length, greaterThanOrEqualTo(10));
+    for (final l in mtb) {
+      expect(
+        l.surfaceTag,
+        contains('trail'),
+        reason: '${l.id} surfaceTag=${l.surfaceTag}',
+      );
+    }
+  });
+
+  test('Kiel/Zermatt stay regional after gaps merge — no Hamburg/Bern fill', () {
+    final merged = NaeheSeedsBundle.merge(
+      NaeheSeedsBundle.merge(
+        NaeheSeedsBundle.parse(berlinRaw),
+        NaeheSeedsBundle.parse(dachRaw),
+      ),
+      NaeheSeedsBundle.parse(gapsRaw),
+    );
+    double distKm(double lat, double lng, NaeheSeedRoute r) {
+      const earth = 6371.0;
+      final p1 = lat * math.pi / 180;
+      final p2 = r.centerLat * math.pi / 180;
+      final dLat = (r.centerLat - lat) * math.pi / 180;
+      final dLng = (r.centerLng - lng) * math.pi / 180;
+      final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+          math.cos(p1) *
+              math.cos(p2) *
+              math.sin(dLng / 2) *
+              math.sin(dLng / 2);
+      return 2 * earth * math.asin(math.sqrt(a));
+    }
+
+    final kiel = TourCoverage.pickNearbyThenFill(
+      items: merged.loops,
+      distanceKm: (r) => distKm(54.323, 10.139, r),
+    );
+    expect(kiel, isNotEmpty);
+    expect(kiel.every((r) => distKm(54.323, 10.139, r) <= 90), isTrue);
+    expect(kiel.map((r) => r.id), isNot(contains('seed-loop-hamburg-harburg-mtb-60')));
+    expect(
+      kiel.map((r) => r.id),
+      containsAll([
+        'seed-loop-kiel-foerde-60',
+        'seed-loop-kiel-roenner-gehege-mtb-60',
+      ]),
+    );
+
+    final zermatt = TourCoverage.pickNearbyThenFill(
+      items: merged.loops,
+      distanceKm: (r) => distKm(46.021, 7.749, r),
+    );
+    expect(zermatt, isNotEmpty);
+    expect(zermatt.every((r) => distKm(46.021, 7.749, r) <= 90), isTrue);
+    expect(
+      zermatt.map((r) => r.id),
+      isNot(contains('seed-loop-bern-bremgarten-mtb-60')),
+    );
+    expect(
+      zermatt.map((r) => r.id),
+      contains('seed-loop-zermatt-zmutt-mtb-60'),
     );
   });
 

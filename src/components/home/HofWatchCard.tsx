@@ -1,33 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { Watch } from "lucide-react";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { ChevronRight, Watch } from "lucide-react";
+import { useHofCopy } from "@/hooks/useHofCopy";
 
 /**
  * Rider-level watch strip. BLE pairing is native-only — web stays honest.
+ * Layout matches native unpaired HofWatchCard: title, hint, chevron.
  */
 export function HofWatchCard() {
+  const copy = useHofCopy();
+
   return (
-    <section
+    <Link
+      href="/download"
       data-testid="hof-watch"
-      className="rounded-2xl border border-border bg-surface px-4 py-3"
+      className="mt-2 flex items-center gap-2 py-2 text-text-secondary hover:text-chrome"
     >
-      <div className="flex items-start gap-3">
-        <Watch className="mt-0.5 h-5 w-5 shrink-0 text-text-secondary" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-extrabold">{HOF_COPY.yourWatch}</h2>
-          <p className="mt-0.5 text-[13px] text-text-secondary">
-            {HOF_COPY.watchHint}
-          </p>
-          <Link
-            href="/download"
-            className="mt-1 inline-block text-xs text-text-secondary hover:underline"
-          >
-            {HOF_COPY.watchOpenApp}
-          </Link>
-        </div>
-      </div>
-    </section>
+      <Watch className="h-[18px] w-[18px] shrink-0" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-bold">{copy.watchOpenApp}</span>
+        <span className="block truncate text-xs">{copy.watchHint}</span>
+      </span>
+      <ChevronRight className="h-[18px] w-[18px] shrink-0" aria-hidden />
+    </Link>
   );
 }

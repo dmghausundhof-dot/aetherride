@@ -127,8 +127,11 @@ String cueBannerText(NavCue cue, int remainingM) {
   int remainingM,
 ) {
   if (cue.instruction == 'Ziel erreicht' ||
-      cue.instruction.toLowerCase().contains('ziel')) {
-    return (distance: '✓', instruction: 'Ziel erreicht');
+      cue.instruction.toLowerCase().contains('ziel') ||
+      cue.instruction.toLowerCase().contains('arriv') ||
+      cue.instruction.toLowerCase().contains('destination') ||
+      cue.instruction.toLowerCase().contains('destinazione')) {
+    return (distance: '✓', instruction: cue.instruction);
   }
   if (remainingM >= 1000) {
     return (
@@ -142,19 +145,60 @@ String cueBannerText(NavCue cue, int remainingM) {
 /// Material-Icons-Name (String) für HUD — UI mappt auf Icons.
 String navTurnIconName(String instruction) {
   final t = instruction.toLowerCase();
-  if (t.contains('ziel') || t.contains('angekommen')) return 'flag';
-  if (t.contains('scharf links')) return 'turn_sharp_left';
-  if (t.contains('scharf rechts')) return 'turn_sharp_right';
-  if (t.contains('leicht links') || t.contains('halb links')) {
+  if (t.contains('ziel') ||
+      t.contains('angekommen') ||
+      t.contains('arriv') ||
+      t.contains('destination') ||
+      t.contains('destinazione')) {
+    return 'flag';
+  }
+  if (t.contains('scharf links') ||
+      t.contains('sharp left') ||
+      t.contains('fortement à gauche') ||
+      t.contains('netta a sinistra')) {
+    return 'turn_sharp_left';
+  }
+  if (t.contains('scharf rechts') ||
+      t.contains('sharp right') ||
+      t.contains('fortement à droite') ||
+      t.contains('netta a destra')) {
+    return 'turn_sharp_right';
+  }
+  if (t.contains('leicht links') ||
+      t.contains('halb links') ||
+      t.contains('slight left') ||
+      t.contains('légèrement à gauche') ||
+      t.contains('leggermente a sinistra')) {
     return 'turn_slight_left';
   }
-  if (t.contains('leicht rechts') || t.contains('halb rechts')) {
+  if (t.contains('leicht rechts') ||
+      t.contains('halb rechts') ||
+      t.contains('slight right') ||
+      t.contains('légèrement à droite') ||
+      t.contains('leggermente a destra')) {
     return 'turn_slight_right';
   }
-  if (t.contains('links')) return 'turn_left';
-  if (t.contains('rechts')) return 'turn_right';
-  if (t.contains('gerade') || t.contains('weiter')) return 'straight';
-  if (t.contains('wenden') || t.contains('kehre')) return 'u_turn_left';
+  if (t.contains('links') || t.contains('left') || t.contains('gauche') || t.contains('sinistra')) {
+    return 'turn_left';
+  }
+  if (t.contains('rechts') || t.contains('right') || t.contains('droite') || t.contains('destra')) {
+    return 'turn_right';
+  }
+  if (t.contains('gerade') ||
+      t.contains('weiter') ||
+      t.contains('straight') ||
+      t.contains('continue') ||
+      t.contains('tout droit') ||
+      t.contains('dritto')) {
+    return 'straight';
+  }
+  if (t.contains('wenden') ||
+      t.contains('kehre') ||
+      t.contains('u-turn') ||
+      t.contains('demi-tour') ||
+      t.contains('inversione')) {
+    return 'u_turn_left';
+  }
   return 'navigation';
 }
 

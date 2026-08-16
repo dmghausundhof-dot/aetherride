@@ -7,18 +7,31 @@
     3.22,
     50.75
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T13:02:50Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18387958,
+      "sha256": "ae7b729afbd52ae7a0556ed6361d75536a451dc24b5ea751352d8998a28ab590",
+      "sha256_16": "ae7b729afbd52ae7"
+    },
+    "lille.tar.gz": {
+      "bytes": 2486847,
+      "sha256": "731b02d890da1ff0df93d834f4e9506f12ac53b600e32da6def15d3536c87261",
+      "sha256_16": "731b02d890da1ff0"
+    },
+    "lille.tar.zst": {
+      "bytes": 2664186,
+      "sha256": "59a577f20df37945a77e1e0243eea71c06d5b2c6f84ebee275bb23e028d78a84",
+      "sha256_16": "59a577f20df37945"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/lille",
     "pack": "lille.tar.zst",
     "packGz": "lille.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

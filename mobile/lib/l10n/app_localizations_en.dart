@@ -415,6 +415,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hofAtHof => 'at the stand';
 
   @override
+  String hofGarageType(String type) {
+    return 'Type $type';
+  }
+
+  @override
   String get hofSinceOneDay => '1 day';
 
   @override
@@ -573,6 +578,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filterForm => 'Shape';
+
+  @override
+  String get filterFormAll => 'All';
+
+  @override
+  String get filterFormPointToPoint => 'A→B';
+
+  @override
+  String get filterFormPointToPointTooltip =>
+      'Stages and linear trails (start≠end).';
+
+  @override
+  String get filterFormDownhill => 'Downhill';
+
+  @override
+  String get filterFormDownhillTooltip =>
+      'Descents, bike park, enduro A→B. Loops are not auto-DH.';
+
+  @override
+  String get filterBikeType => 'Bike type';
+
+  @override
+  String get filterBikeTypeHonesty =>
+      'Colors filter tours. Navigation: bike (GraphHopper Basic), except walking.';
+
+  @override
+  String get filterSingletrail => 'Singletrack (S-scale)';
+
+  @override
+  String get filterSingletrailHint =>
+      'Only tours/ways with an honest grade. No tag: no matches.';
+
+  @override
+  String get filterNoDownhillTours => 'No downhill tours nearby';
+
+  @override
+  String get filterNoDownhillToursHint =>
+      'OSM trails by S-grade stay on the map. No DH round in the catalog here.';
+
+  @override
+  String get filterNoScaleTours => 'No tour with this S-grade';
 
   @override
   String get filterTrailNetwork => 'Trail network (map)';
@@ -2805,6 +2851,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dieBoxChipSag => 'SAG';
 
   @override
+  String get dieBoxChipChain => 'Chain';
+
+  @override
+  String get dieBoxChipPressure => 'Pressure';
+
+  @override
+  String get dieBoxChipCockpit => 'Cockpit';
+
+  @override
+  String lastRideKm(String km) {
+    return 'Last $km km';
+  }
+
+  @override
+  String get lastRideNoGps => 'Last out — no GPS track';
+
+  @override
   String dieBoxSentenceEverydayReady(String name) {
     return '$name lives here · Monday-ready';
   }
@@ -3545,7 +3608,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ride to the entry, then save the overlay or go.';
 
   @override
+  String get discoverTrailGravityHint =>
+      'DH: drive or walk to the top entry. The descent follows the trail, not the road.';
+
+  @override
   String get discoverRideToTrailhead => 'Ride to the start';
+
+  @override
+  String get discoverApproachByCar => 'Drive to the trail';
+
+  @override
+  String get discoverApproachOnFoot => 'Walk to the entry';
+
+  @override
+  String get discoverAtTrailStart => 'I\'m at the start';
+
+  @override
+  String get discoverApproachByBike => 'Ride there';
+
+  @override
+  String discoverTrailUnsuitableForBike(String bike) {
+    return 'Not with $bike on this trail. Switch bikes in the garage — don\'t secretly MTB-route.';
+  }
+
+  @override
+  String get discoverTrailOrientedDownhill => 'Entry at the top (elevation)';
+
+  @override
+  String get discoverTrailStartUphillUnknown =>
+      'Elevation unknown — nearer entry';
 
   @override
   String get discoverPutOnRoute => 'Put on the route';
@@ -4083,10 +4174,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overlayLegendTitle => 'Ways · OSM';
 
   @override
+  String get overlayLegendCompactCity => 'City';
+
+  @override
+  String get overlayLegendCompactMtb => 'MTB';
+
+  @override
+  String get overlayScaleNote => 'S0–S3+ only with OSM tag. Otherwise unrated.';
+
+  @override
   String get overlayRoadAsphalt => 'Cycleway / asphalt';
 
   @override
   String get overlayUnrated => 'unrated';
+
+  @override
+  String get discoverChipTooltip => 'Tours and ways — not the routing engine';
+
+  @override
+  String get discoverNavHonestyBike =>
+      'Nav: bike — GraphHopper Basic, same route';
+
+  @override
+  String get discoverNavHonestyFoot => 'Nav: walking';
 
   @override
   String get stimmenTitle => 'Voices';
@@ -4273,6 +4383,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get rideOfflineRerouteToast =>
       'Reroute needs internet. Stay on the loaded route.';
+
+  @override
+  String get rideStayOnTrail => 'Stay on the trail — no road reroute.';
+
+  @override
+  String get rideFollowTrail => 'Follow the trail';
 
   @override
   String get rideNoGpsRejoin => 'No GPS-Fix for rejoin';
@@ -4478,7 +4594,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ridePower => 'Power';
 
   @override
-  String get rideSoc => 'SoC';
+  String get rideSoc => 'Battery';
 
   @override
   String get rideAssist => 'Assist';
@@ -4490,7 +4606,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rideWheelSpeed => 'Wheel';
 
   @override
-  String get rideRestKm => 'Rest-km';
+  String get rideRestKm => 'km left';
+
+  @override
+  String get rideUntilJoin => 'to route';
+
+  @override
+  String get rideRestLoop => 'loop left';
+
+  @override
+  String rideKmToRoute(String km) {
+    return '$km km to the route';
+  }
 
   @override
   String get rideEta => 'ETA';
@@ -4604,7 +4731,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ridePuckHofTorSub => 'Two legs, open at the bottom';
 
   @override
-  String get ridePuckKometSub => 'Spearhead with a mint spark';
+  String get ridePuckKometSub => 'Spearhead with an orange spark';
 
   @override
   String get ridePuckKieselSub => 'Soft triangle with halo';
@@ -5185,7 +5312,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rideGPeak => 'G-Peak';
 
   @override
-  String get rideLean => 'Lean °';
+  String get rideLean => 'Lean';
 
   @override
   String get rideFlow => 'Flow';
@@ -5359,6 +5486,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get bleStatusNeedBond =>
+      'Display needs a Bluetooth pairing for the battery.';
+
+  @override
+  String get bleStatusBonding => 'System pairing …';
+
+  @override
+  String bleStatusDriveNeedBond(String who) {
+    return '$who · found — battery after Bluetooth pairing in the workshop';
+  }
+
+  @override
   String bleConnectedNamed(String name) {
     return '$name connected';
   }
@@ -5505,6 +5644,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bleTooltipPair => 'Pair drive or sensor';
+
+  @override
+  String get bleRemoveWheel => 'Remove wheel sensor';
+
+  @override
+  String get bleRemoveDrive => 'Remove drive';
+
+  @override
+  String get bleSemanticsLive => 'Bluetooth live';
+
+  @override
+  String get bleTooltipSaved => 'Paired, not connected';
 
   @override
   String get watchOtherWatch => 'Another watch';

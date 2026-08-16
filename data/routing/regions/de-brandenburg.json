@@ -1,0 +1,27 @@
+{
+  "id": "de-brandenburg",
+  "name": "Brandenburg",
+  "bbox": [
+    11.2,
+    51.3,
+    15.05,
+    53.6
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/brandenburg-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/de-brandenburg",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-brandenburg.tar.zst"
+  }
+}

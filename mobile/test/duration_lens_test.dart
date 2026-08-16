@@ -18,6 +18,10 @@ void main() {
         150,
       );
     });
+
+    test('DH has no duration lens (short runs)', () {
+      expect(DurationLens.defaultMinutesForSport(BikeCategory.dh), 0);
+    });
   });
 
   group('DurationLens.inBand ~60 → 45–75', () {

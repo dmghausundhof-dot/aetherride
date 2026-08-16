@@ -6,7 +6,7 @@
         "color_scheme": "scheme-1",
         "kicker": "Über den Hof",
         "title": "Der Laden",
-        "lede": "Zwei Welten: Ersatzteile für dein Rad, und Merchandise ohne Fit-Filter. Keine erfundenen SKUs, keine Fake-Bewertungen.",
+        "lede": "FlowLine Cycling Parts: Ersatzteile für dein Rad, und Merchandise ohne Fit-Filter. Keine erfundenen SKUs, keine Fake-Bewertungen.",
         "parts_collection": "featured-parts",
         "merch_collection": "merchandise"
       }
@@ -16,7 +16,7 @@
       "settings": {
         "title": "Für dein Rad",
         "heading_size": "h2",
-        "description": "<p>Verbrauch und Teile. Garage-Fit über Tags — keine erfundenen SKUs.</p>",
+        "description": "<p>FlowLine — Verbrauch und Teile. Garage-Fit über Tags — keine erfundenen SKUs.</p>",
         "show_description": true,
         "description_style": "body",
         "collection": "featured-parts",

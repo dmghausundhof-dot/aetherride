@@ -5,15 +5,22 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>de</string>
 	<key>CFBundleDisplayName</key>
-	<string>Aetherride Mobile</string>
+	<string>FlowLine</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>de</string>
+		<string>en</string>
+		<string>fr</string>
+		<string>it</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>aetherride_mobile</string>
 	<key>CFBundlePackageType</key>
@@ -62,15 +69,19 @@
 		</dict>
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>AetherRide koppelt E-Bike-Antriebe (Bosch, Shimano) und Radsensoren für Tempo, Kadenz und optionalen Akku-Stand.</string>
+	<string>FlowLine koppelt Smartwatch und Puls-Gurte (Heart Rate 0x180D) sowie E-Bike-Antriebe und Radsensoren für Tempo, Kadenz und optionalen Akku-Stand.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>AetherRide koppelt E-Bike-Antriebe und Radsensoren über Bluetooth.</string>
+	<string>FlowLine koppelt Smartwatch/Puls-Gurte, E-Bike-Antriebe und Radsensoren über Bluetooth.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>AetherRide nutzt den Standort für Navigation und Ride-Tracking.</string>
+	<string>FlowLine nutzt den Standort für Navigation und Ride-Tracking.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Standort im Hintergrund nur während aktiver Fahrt (optional).</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Bewegungssensoren für Ride-Metriken (Beschleunigung, Neigung).</string>
+	<key>NSCameraUsageDescription</key>
+	<string>FlowLine nutzt die Kamera für Fotos in Garage, nach der Fahrt und am Rad.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FlowLine liest Fotos aus der Mediathek für Profil, Stimmen, Garage und Fahrten.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

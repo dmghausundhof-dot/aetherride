@@ -72,7 +72,7 @@ function frameEnduro(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -117,7 +117,7 @@ function frameEmtb(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -164,7 +164,7 @@ function frameGravel(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -199,7 +199,7 @@ function frameRoad(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -238,7 +238,7 @@ function frameEtrekking(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -535,7 +535,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/trail/hugene-cf/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -580,7 +580,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -600,7 +600,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -617,7 +617,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
 
@@ -637,7 +637,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.bosch-ebike.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -655,7 +655,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.bosch-ebike.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -682,7 +682,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.schwalbe.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

@@ -8,8 +8,11 @@ import {
 } from "@/lib/community/shareCodec";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import type { SavedRoute } from "@/types/route";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
 
 export function ShareCatalogTourButton({ tour }: { tour: PublicTour }) {
+  const t = catalogCopy(useChromeLang()).tour;
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
 
@@ -49,7 +52,7 @@ export function ShareCatalogTourButton({ tour }: { tour: PublicTour }) {
         ) : (
           <Link2 className="h-3.5 w-3.5 text-chrome" />
         )}
-        {copied ? "Link kopiert" : "Tour-Link kopieren"}
+        {copied ? t.linkCopied : t.copyLink}
       </button>
       {url ? (
         <a
@@ -59,9 +62,7 @@ export function ShareCatalogTourButton({ tour }: { tour: PublicTour }) {
           {url}
         </a>
       ) : (
-        <p className="text-[11px] text-text-secondary">
-          Ohne Track. Katalog-Tour, schon öffentlich.
-        </p>
+        <p className="text-[11px] text-text-secondary">{t.noTrackHint}</p>
       )}
     </div>
   );

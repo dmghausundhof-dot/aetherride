@@ -29,6 +29,9 @@ Uint8List rideToFit(RideRecord ride) {
     (0, 4, 133),
     (1, 4, 133),
     (2, 2, 132),
+    (3, 1, 2),
+    (4, 1, 2),
+    (7, 2, 132),
   ]);
 
   var written = 0;
@@ -62,6 +65,9 @@ Uint8List rideToFit(RideRecord ride) {
     records.i32(_toSemi(lng));
     final alt = elev != null ? ((elev + 500) * 5).round() : 0xffff;
     records.u16(alt.clamp(0, 0xffff));
+    records.u8(liveHrFromTrackPoint(p) ?? 0xff);
+    records.u8(liveCadFromTrackPoint(p) ?? 0xff);
+    records.u16(livePowerFromTrackPoint(p) ?? 0xffff);
     written++;
   }
 

@@ -2,7 +2,7 @@
  * P0 Nähe-Peek / 60-min loop seeds — offline fallback when the
  * Discover catalog is empty (e.g. production with demo content off).
  *
- * Sources: Berlin + DACH + Rhein-Neckar curated Nähe seeds.
+ * Sources: Berlin + DACH + Alpen/Ostsee-Lücken + Rhein-Neckar curated Nähe seeds.
  * ~60 / Rundkurs lens: honest loops only (is_loop / closed), never A→B fillers.
  */
 import type { BikeCategory } from "@/types";
@@ -11,6 +11,7 @@ import { sanitizeElevationM } from "@/lib/discover/elevationGuard";
 import { seedIsLoopFlag } from "@/lib/discover/loopHonesty";
 import berlinRaw from "@/lib/discover/berlin-loops-v1.json";
 import dachRaw from "@/lib/discover/p0-dach-60min-naehe-v1.json";
+import gapsRaw from "@/lib/discover/p0-gaps-60min-naehe-v1.json";
 import rnRaw from "@/lib/discover/p0-rhein-neckar-60min-naehe-v1.json";
 
 type SeedJson = {
@@ -78,12 +79,13 @@ function haversineKm(
 
 const berlinBundle = berlinRaw as SeedJson;
 const dachBundle = dachRaw as SeedJson;
+const gapsBundle = gapsRaw as SeedJson;
 const rnBundle = rnRaw as SeedJson;
 
 /** Merge seed lists; earlier sources win on id collision (Berlin enrich first). */
 function mergedRouteSeeds(): BerlinSeed[] {
   const byId = new Map<string, BerlinSeed>();
-  for (const bundle of [berlinBundle, dachBundle, rnBundle]) {
+  for (const bundle of [berlinBundle, dachBundle, gapsBundle, rnBundle]) {
     for (const s of bundle.seeds ?? []) {
       if (s.type !== "route" || s.duration_min == null) continue;
       if (!byId.has(s.id)) byId.set(s.id, s);
@@ -135,7 +137,7 @@ function seedToSuggestion(
   } satisfies RouteSuggestion;
 }
 
-/** All Nähe route seeds (Berlin + DACH + RN), including linear — for catalog fallback. */
+/** All Nähe route seeds (Berlin + DACH + Lücken + RN), including linear — for catalog fallback. */
 export function berlinLoopSuggestions(near?: [number, number]): RouteSuggestion[] {
   return mergedRouteSeeds().map((s) => seedToSuggestion(s, near));
 }

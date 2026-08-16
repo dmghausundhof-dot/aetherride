@@ -338,6 +338,8 @@ export function sportFilterFromProfile(profile: RoutingProfile): SportFilter {
       return "mtb";
     case "hiking":
       return "hiking";
+    case "auto":
+      return "all";
     default:
       return "all";
   }

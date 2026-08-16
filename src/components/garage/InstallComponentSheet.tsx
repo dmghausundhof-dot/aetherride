@@ -203,7 +203,7 @@ export function InstallComponentSheet({
           type="button"
           onClick={submit}
           disabled={!freeText.trim() && !modelId}
-          className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-white disabled:opacity-40"
+          className="mt-4 w-full rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-40"
         >
           {modelId ? "Zuordnen und einbauen" : "Ohne Katalog merken"}
         </button>

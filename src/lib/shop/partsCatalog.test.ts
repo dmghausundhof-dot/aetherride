@@ -6,6 +6,7 @@ import {
   filterAndRankParts,
   mapStorefrontProduct,
   shopPartsHref,
+  shopReplaceHref,
 } from "./partsCatalog";
 import type { ShopifyStorefrontProduct } from "./shopifyStorefront";
 import type { SoftFitContext } from "./softFit";
@@ -91,6 +92,22 @@ assert.equal(shopPartsHref(), "/shop?door=parts");
 assert.equal(
   shopPartsHref({ bike: "b1", fit: "bike", slot: "brake_pads" }),
   "/shop?slot=brake_pads&bike=b1&fit=bike&door=parts"
+);
+assert.equal(
+  shopReplaceHref({ bike: "b1", slot: "chain" }),
+  "/shop?slot=chain&bike=b1&fit=bike&door=parts"
+);
+assert.equal(
+  shopReplaceHref({ bike: "b1", slot: "fork" }),
+  "/shop?bike=b1&fit=bike&door=parts"
+);
+assert.equal(
+  shopReplaceHref({ bike: "b1", slot: "tires" }),
+  "/shop?bike=b1&fit=bike&door=parts"
+);
+assert.equal(
+  shopReplaceHref({ bike: "b1", slot: "tire_front" }),
+  "/shop?slot=tire&bike=b1&fit=bike&door=parts"
 );
 
 const gravelBike: GarageBikeProfile = {
@@ -179,8 +196,8 @@ const merchTee = mapStorefrontProduct({
   ...sample,
   id: "gid://shopify/Product/99",
   handle: "aetherride-tee",
-  title: "AetherRide Gravel Tee",
-  vendor: "AetherRide",
+  title: "FlowLine Gravel Tee",
+  vendor: "FlowLine",
   productType: "T-Shirt",
   tags: ["merch", "category:gravel"],
 });

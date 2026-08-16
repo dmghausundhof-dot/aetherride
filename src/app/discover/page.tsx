@@ -29,10 +29,18 @@ import {
   profileForBikeCategory,
   ROUTING_PROFILES,
   DEFAULT_DISCOVER_PROFILE,
+  DISCOVER_PROFILE_CHIPS,
   isRideProfileId,
   profileLabel,
+  discoverNavProfile,
+  navSessionForBike,
+  sessionCostingForBike,
+  suggestedApproachKind,
+  approachCostingForBike,
+  trailFitsBikeCategory,
   type ClientRouteResult,
   type RoutingProfile,
+  type ApproachKind,
 } from "@/lib/routing/profiles";
 import {
   overlayFamilyForBike,
@@ -77,12 +85,14 @@ import {
   adoptTour,
   addVia,
   attachTrailToDraft,
-  computePointToPoint,
+  adoptTrailToDraft,
   computeQuickOptions,
   emptyDraft,
   endOf,
   orderedWaypoints,
   removeWaypoint,
+  resolvePointToPointDraft,
+  routeResultMessage,
   setEnd,
   setStart,
   snapToTourParts,
@@ -92,8 +102,20 @@ import {
   type PlanMode,
   type QuickOption,
 } from "@/lib/routing/planDraft";
+import {
+  fetchEndpointElevations,
+  trailAccessHaversineKm,
+} from "@/lib/routing/trailAccess";
 import { buildDiscoverMapLayers } from "@/lib/routing/discoverMapLayers";
-import { trailsNear, type TrailSegment } from "@/lib/routing/trailSegments";
+import { type TrailSegment } from "@/lib/routing/trailSegments";
+import {
+  BIKE_OVERLAY_VECTOR_MAX_ZOOM,
+  osmTrailToSegment,
+  overlayHitToSegment,
+  trailHighwayLabelDe,
+  trailSurfaceLabelDe,
+  type OverlayWayHit,
+} from "@/lib/routing/overlayHit";
 import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 import { AddRouteForm } from "@/components/library/AddRouteForm";
 import { prefetchTourCommunityCounts } from "@/components/community/TourCommunityChip";
@@ -114,8 +136,24 @@ import {
   sanitizeDraftForRundkurs,
 } from "@/lib/discover/loopHonesty";
 import { RideOutChoice } from "@/components/discover/RideOutChoice";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { webChrome } from "@/lib/i18n/webChrome";
+import {
+  DISCOVER_PIN_DE,
+  DISCOVER_STATUS_DE,
+  discoverDraftLabel,
+  discoverHighwayLabel,
+  discoverPinLabel,
+  discoverStatus,
+  discoverSurfaceLabel,
+  discoverUi,
+} from "@/lib/i18n/discoverUi";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
+import {
+  filterSavedByVisibility,
+  visibilityOf,
+} from "@/lib/tours/routeVisibility";
 
 type SheetMode = "quick" | "plan" | "tours";
 
@@ -166,6 +204,11 @@ function oaToTour(t: OutdooractiveTour): BaseTour {
 }
 
 function DiscoverPageInner() {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+  const d = discoverUi(lang);
+  const chrome = webChrome(lang);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightRouteId = searchParams.get("route");
@@ -219,8 +262,8 @@ function DiscoverPageInner() {
   const [addrBusy, setAddrBusy] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string>(
     queryCenter
-      ? "Standort: Deep-Link"
-      : "Standort wird ermittelt… — oder Ort tippen"
+      ? DISCOVER_STATUS_DE.locDeep
+      : DISCOVER_STATUS_DE.locWaitOrTap
   );
 
   const rangePro = canUseProFeature("range");
@@ -228,11 +271,14 @@ function DiscoverPageInner() {
 
   const routingProfile = useMemo(
     () =>
-      activeBike
-        ? profileForBikeCategory(activeBike.category)
-        : DEFAULT_DISCOVER_PROFILE,
+      discoverNavProfile(
+        activeBike
+          ? profileForBikeCategory(activeBike.category)
+          : DEFAULT_DISCOVER_PROFILE
+      ),
     [activeBike]
   );
+  const garageSession = navSessionForBike(activeBike?.category ?? "");
 
   const [sheetMode, setSheetMode] = useState<SheetMode>("quick");
   const [rideOutChoice, setRideOutChoice] = useState(
@@ -261,11 +307,18 @@ function DiscoverPageInner() {
         ? sportParam
         : "all",
   }));
+  const mappeRoutes = useMemo(
+    () =>
+      filterSavedByVisibility(savedRoutes, filters.visibility ?? "all_mine"),
+    [savedRoutes, filters.visibility]
+  );
   const [detailId, setDetailId] = useState<string | null>(highlightRouteId);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>(
     () => queryCenter ?? FALLBACK_CENTER
   );
+  /** GPS/Hier: Karte auf Standort halten — kein Fit auf Tour-Start. */
+  const [holdMapFit, setHoldMapFit] = useState(false);
   const bikeOverlaySpec = useMemo(() => {
     const env = process.env.NEXT_PUBLIC_BIKE_OVERLAY_URL?.trim();
     if (env) {
@@ -333,6 +386,12 @@ function DiscoverPageInner() {
     []
   );
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
+  const [liveOsmTrails, setLiveOsmTrails] = useState<TrailSegment[]>([]);
+  const [liveOsmStatus, setLiveOsmStatus] = useState<
+    "idle" | "loading" | "empty" | "error"
+  >("idle");
+  const [mapZoom, setMapZoom] = useState(13);
+  const [overlaySheet, setOverlaySheet] = useState<TrailSegment | null>(null);
   const [routingNotice, setRoutingNotice] = useState<string | null>(null);
   const [communityHeat, setCommunityHeat] = useState<HeatmapResult | null>(
     null
@@ -340,7 +399,8 @@ function DiscoverPageInner() {
   const [heatmapNote, setHeatmapNote] = useState<string | null>(null);
   const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const activeProfile = manualProfile ?? routingProfile;
+  const activeProfile = discoverNavProfile(manualProfile ?? routingProfile);
+  const planCosting = sessionCostingForBike(activeBike?.category, activeProfile);
   const categoryHint = categoryForRoutingProfile(activeProfile);
   const rideProfileId = isRideProfileId(activeProfile) ? activeProfile : null;
   // Overlay-Familie folgt dem Sport-Chip, nicht dem Garage-Bike — sonst bleibt
@@ -363,7 +423,7 @@ function DiscoverPageInner() {
           setCommunityHeat(null);
           // Debug/demo chrome — fail-closed in prod unless SHOW_ROUTING_DEBUG=1
           setHeatmapNote(
-            showRoutingDebugUi() ? "Community-Heatmap offline" : null
+            showRoutingDebugUi() ? DISCOVER_STATUS_DE.heatmapOffline : null
           );
           return;
         }
@@ -372,10 +432,10 @@ function DiscoverPageInner() {
           showRoutingDebugUi()
             ? r.coldStart
               ? r.disclaimer
-              : `${r.segments.length} Community-Segmente · ${r.disclaimer}`
+              : `${r.segments.length} Heatmap-Segmente · ${r.disclaimer}`
             : r.coldStart
               ? null
-              : `${r.segments.length} Community-Segmente`
+              : `${r.segments.length} Heatmap-Segmente`
         );
       });
     }, 400);
@@ -500,10 +560,22 @@ function DiscoverPageInner() {
     return fromCatalog;
   }, [detailId, activeBike, categoryHint, profile, minutes, range, routes, origin]);
 
-  const nearbyTrails = useMemo(
-    () => trailsNear(origin, 0.5),
-    [origin]
-  );
+  const nearbyTrails = liveOsmTrails;
+  const overlayActive = Boolean(bikeOverlaySpec && bikeOverlayOn);
+  const trailsForMap = useMemo(() => {
+    const wantWays = bikeOverlaySpec ? bikeOverlayOn : showTrails;
+    if (!wantWays) return [];
+    if (overlayActive && mapZoom <= BIKE_OVERLAY_VECTOR_MAX_ZOOM) return [];
+    if (overlayActive) return nearbyTrails.filter((t) => t.hasOsmName);
+    return nearbyTrails;
+  }, [
+    bikeOverlaySpec,
+    bikeOverlayOn,
+    showTrails,
+    overlayActive,
+    mapZoom,
+    nearbyTrails,
+  ]);
 
   const mapLayers: MapRouteLayer[] = useMemo(() => {
     // Rundkurs: never paint out-and-back Quick / non-closed A→B on the map.
@@ -515,8 +587,8 @@ function DiscoverPageInner() {
       draft: mapDraft,
       quickOptions: mapQuick,
       activeQuickId: mapQuick.find((q) => q.label === mapDraft.label)?.id,
-      trails: nearbyTrails,
-      showTrails: showTrails && sheetMode === "tours",
+      trails: trailsForMap,
+      showTrails: sheetMode === "tours" && trailsForMap.length > 0,
       rundkursOnly: rundkursActive,
       rideProfileId,
     });
@@ -541,7 +613,7 @@ function DiscoverPageInner() {
     suppressOutAndBackQuick,
     rundkursActive,
     nearbyTrails,
-    showTrails,
+    trailsForMap,
     sheetMode,
     communityHeat,
     rideProfileId,
@@ -570,7 +642,7 @@ function DiscoverPageInner() {
   useEffect(() => {
     if (!queryCenter) return;
     setMapCenter(queryCenter);
-    setDraft((d) => setStart(d, queryCenter, "Deep-Link Ort"));
+    setDraft((d) => setStart(d, queryCenter, DISCOVER_PIN_DE.deepLink));
   }, [queryCenter]);
 
   // Deep-Link ?sport=road|gravel|mtb|… setzt Filter + Profil
@@ -661,7 +733,7 @@ function DiscoverPageInner() {
       const t = setTimeout(() => {
         if (!cancelled && !queryCenter) {
           setLocationStatus(
-            "Standort nicht verfügbar — Demo-Stadt oder Adresse"
+            DISCOVER_STATUS_DE.locNoneDemo
           );
         }
       }, 0);
@@ -681,17 +753,17 @@ function DiscoverPageInner() {
         // Deep-Link lat/lng wins over auto GPS for initial map center.
         if (!queryCenter) {
           setMapCenter(p);
-          setDraft((d) => setStart(d, p, "Meine Position"));
-          setLocationStatus("Standort: GPS");
+          setDraft((d) => setStart(d, p, DISCOVER_PIN_DE.myPos));
+          setLocationStatus(DISCOVER_STATUS_DE.locGps);
         } else {
-          setLocationStatus("Standort: Deep-Link (GPS verfügbar)");
+          setLocationStatus(DISCOVER_STATUS_DE.locDeepGps);
         }
       },
       () => {
         if (cancelled) return;
         if (!queryCenter) {
           setLocationStatus(
-            "Standort verweigert — Demo-Stadt wählen oder Adresse suchen"
+            DISCOVER_STATUS_DE.locDeniedDemo
           );
         }
       },
@@ -705,6 +777,7 @@ function DiscoverPageInner() {
   useEffect(() => {
     let cancelled = false;
     const [lng, lat] = userPos ?? mapCenter;
+    setLiveOsmStatus("loading");
     const qs = new URLSearchParams({
       type: "tour",
       lat: String(lat),
@@ -791,8 +864,73 @@ function DiscoverPageInner() {
         setGooglePlacesWarning(
           gw && (showRoutingDebugUi() || allowDemoContent()) ? gw : null
         );
+        const covTrails = Array.isArray(data.trails) ? data.trails : [];
+        const mapped = covTrails
+          .map((t: Parameters<typeof osmTrailToSegment>[0]) => osmTrailToSegment(t))
+          .filter((t: TrailSegment | null): t is TrailSegment => t != null);
+        if (mapped.length > 0) {
+          setLiveOsmTrails(mapped);
+          setLiveOsmStatus("idle");
+        } else {
+          void fetch(
+            `/api/osm-trails?lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}&radiusKm=8`
+          )
+            .then(async (tr) => {
+              if (cancelled || !tr.ok) {
+                if (!cancelled) {
+                  setLiveOsmTrails([]);
+                  setLiveOsmStatus("empty");
+                }
+                return;
+              }
+              const body = await tr.json();
+              const live = (Array.isArray(body.trails) ? body.trails : [])
+                .map((t: Parameters<typeof osmTrailToSegment>[0]) =>
+                  osmTrailToSegment(t)
+                )
+                .filter((t: TrailSegment | null): t is TrailSegment => t != null);
+              if (cancelled) return;
+              setLiveOsmTrails(live);
+              setLiveOsmStatus(live.length ? "idle" : "empty");
+            })
+            .catch(() => {
+              if (!cancelled) {
+                setLiveOsmTrails([]);
+                setLiveOsmStatus("error");
+              }
+            });
+        }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (cancelled) return;
+        void fetch(
+          `/api/osm-trails?lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}&radiusKm=8`
+        )
+          .then(async (tr) => {
+            if (cancelled || !tr.ok) {
+              if (!cancelled) {
+                setLiveOsmTrails([]);
+                setLiveOsmStatus("error");
+              }
+              return;
+            }
+            const body = await tr.json();
+            const live = (Array.isArray(body.trails) ? body.trails : [])
+              .map((t: Parameters<typeof osmTrailToSegment>[0]) =>
+                osmTrailToSegment(t)
+              )
+              .filter((t: TrailSegment | null): t is TrailSegment => t != null);
+            if (cancelled) return;
+            setLiveOsmTrails(live);
+            setLiveOsmStatus(live.length ? "idle" : "empty");
+          })
+          .catch(() => {
+            if (!cancelled) {
+              setLiveOsmTrails([]);
+              setLiveOsmStatus("error");
+            }
+          });
+      });
 
     return () => {
       cancelled = true;
@@ -824,10 +962,17 @@ function DiscoverPageInner() {
         setQuickBusy(false);
         setQuickTimedOut(true);
         setRoutingMsg(
-          "Berechnung zu langsam — ~60-Min Seeds unten, oder erneut versuchen."
+          DISCOVER_STATUS_DE.calcSlow
         );
       }, QUICK_TIMEOUT_MS);
       try {
+        if (garageSession === "gravity") {
+          setQuickOptions([]);
+          setQuickBusy(false);
+          setQuickTimedOut(false);
+          setDraft((d) => sanitizeDraftForRundkurs(d));
+          return;
+        }
         const { options, rateLimited, fromCache } = await computeQuickOptions(
           origin,
           activeProfile,
@@ -848,13 +993,13 @@ function DiscoverPageInner() {
         if (!next.length) {
           setQuickTimedOut(true);
           setRoutingMsg(
-            "Keine Quick-Routen — Seeds unten oder Planer nutzen."
+            DISCOVER_STATUS_DE.noQuick
           );
           setDraft((d) => sanitizeDraftForRundkurs({ ...d, mode: "quick" }));
         } else {
           if (rateLimited) {
             setRoutingMsg(
-              "Routing-Limit erreicht — Näherungen angezeigt. Später neu berechnen."
+              DISCOVER_STATUS_DE.rateLimit
             );
           } else if (fromCache) {
             setRoutingMsg(null);
@@ -863,7 +1008,7 @@ function DiscoverPageInner() {
             ...setStart(
               { ...d, mode: "quick" as PlanMode, profile: activeProfile },
               origin,
-              "Hier"
+              DISCOVER_PIN_DE.here
             ),
             computed: next[0].result,
             label: next[0].label,
@@ -874,7 +1019,7 @@ function DiscoverPageInner() {
         if (!timedOut) {
           setQuickTimedOut(true);
           setRoutingMsg(
-            "Quick-Routing fehlgeschlagen — Seeds unten, oder erneut versuchen."
+            DISCOVER_STATUS_DE.quickFail
           );
         }
       } finally {
@@ -885,7 +1030,7 @@ function DiscoverPageInner() {
         if (!timedOut) setQuickBusy(false);
       }
     },
-    [origin, activeProfile, minutes, suppressOutAndBackQuick]
+    [origin, activeProfile, minutes, suppressOutAndBackQuick, garageSession]
   );
 
   // NearMe Route=Rundkurs keeps Discover loop filter on (all list sources).
@@ -977,7 +1122,7 @@ function DiscoverPageInner() {
       sanitizeElevationM(draft.baseTour?.elevationM, distanceKm) ?? 0;
     const entry: SavedRoute = {
       id,
-      name: draft.label || draft.baseTour?.name || "Geplante Route",
+      name: draft.label || draft.baseTour?.name || DISCOVER_PIN_DE.planned,
       distanceKm,
       elevationM,
       durationMin: Math.round(draft.computed.durationS / 60),
@@ -1009,7 +1154,7 @@ function DiscoverPageInner() {
       const text = await file.text();
       const parsed = parseGpx(text, file.name.replace(/\.gpx$/i, ""));
       if (!parsed) {
-        setRoutingMsg("GPX ungültig oder zu wenige Punkte");
+        setRoutingMsg(DISCOVER_STATUS_DE.gpxBad);
         return;
       }
       const entry: SavedRoute = {
@@ -1058,7 +1203,7 @@ function DiscoverPageInner() {
       setAddrHits(data.hits ?? []);
       if (!data.hits?.length) setRoutingMsg(`Keine Treffer für „${q}“`);
     } catch {
-      setRoutingMsg("Adresssuche fehlgeschlagen");
+      setRoutingMsg(DISCOVER_STATUS_DE.geocodeFail);
     } finally {
       setAddrBusy(false);
     }
@@ -1106,7 +1251,7 @@ function DiscoverPageInner() {
         });
         setSheetMode("plan");
         setPreviewTour(null);
-        setRoutingMsg("Gespeicherte Route geladen");
+        setRoutingMsg(DISCOVER_STATUS_DE.savedLoaded);
         return;
       }
       const suggestion = getSuggestionById(r.id, {
@@ -1151,30 +1296,30 @@ function DiscoverPageInner() {
     setRoutingBusy(true);
     setRoutingMsg(null);
     try {
-      const withProfile = { ...draft, profile: activeProfile, mode: "point_to_point" as const };
-      const result = await computePointToPoint(withProfile);
-      if (!result) {
-        setRoutingMsg("Route konnte nicht berechnet werden — Start und Ziel setzen.");
+      const withProfile = { ...draft, profile: planCosting, mode: "point_to_point" as const };
+      const next = await resolvePointToPointDraft(withProfile, {
+        trails: nearbyTrails,
+        origin,
+      });
+      if (!next?.computed) {
+        setRoutingMsg(DISCOVER_STATUS_DE.needStartEnd);
         return;
       }
       setDraft({
-        ...withProfile,
-        computed: result,
-        label: "Geplante Route",
-        baseTour: undefined,
-        hybrid: undefined,
-        layers: undefined,
+        ...next,
+        profile: activeProfile,
+        label: next.label || DISCOVER_PIN_DE.planned,
+        baseTour: next.attachedTrailId ? next.baseTour : undefined,
       });
       setPreviewTour(null);
-      setRoutingMsg(
-        `${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min · ${result.engine}`
-      );
+      setRoutingMsg(routeResultMessage(next.computed));
     } finally {
       setRoutingBusy(false);
     }
   };
 
   const previewBaseTour = (tour: BaseTour) => {
+    setHoldMapFit(false);
     setPreviewTour(tour);
     const pin =
       tour.center ??
@@ -1189,7 +1334,7 @@ function DiscoverPageInner() {
             id: "start",
             role: "start",
             lngLat: pin,
-            label: "Tour-Ort",
+            label: DISCOVER_PIN_DE.tourPlace,
           },
         ],
         baseTour: tour,
@@ -1200,7 +1345,7 @@ function DiscoverPageInner() {
       });
       setMapCenter(pin);
       setRoutingMsg(
-        "Nur Ortspunkt — kein Track. In Planen + Ziel oder Live-Routing."
+        DISCOVER_STATUS_DE.pinOnly
       );
       return;
     }
@@ -1213,7 +1358,7 @@ function DiscoverPageInner() {
           id: "start",
           role: "start",
           lngLat: (tour.geometry.coordinates[0] as [number, number]) ?? origin,
-          label: "Tour-Start",
+          label: DISCOVER_PIN_DE.tourStart,
         },
       ],
       baseTour: tour,
@@ -1239,7 +1384,7 @@ function DiscoverPageInner() {
             id: "start",
             role: "start",
             lngLat: pin,
-            label: "Tour-Ort",
+            label: DISCOVER_PIN_DE.tourPlace,
           },
         ],
         computed: null,
@@ -1267,13 +1412,13 @@ function DiscoverPageInner() {
           id: "start",
           role: "start",
           lngLat: startLngLat,
-          label: "Tour-Start",
+          label: DISCOVER_PIN_DE.tourStart,
         },
         {
           id: "end",
           role: "end",
           lngLat: endLngLat,
-          label: "Tour-Ende",
+          label: DISCOVER_PIN_DE.tourEnd,
         },
       ],
       computed: adopted,
@@ -1291,9 +1436,9 @@ function DiscoverPageInner() {
     setRoutingBusy(true);
     setRoutingMsg(null);
     try {
-      const parts = await snapToTourParts(origin, tour, activeProfile);
+      const parts = await snapToTourParts(origin, tour, planCosting);
       if (!parts) {
-        setRoutingMsg("Hybrid-Snap fehlgeschlagen");
+        setRoutingMsg(DISCOVER_STATUS_DE.hybridFail);
         return;
       }
       const { merged: result, approach, tour: tourPart } = parts;
@@ -1308,12 +1453,12 @@ function DiscoverPageInner() {
         mode: "hybrid",
         profile: activeProfile,
         waypoints: [
-          { id: "start", role: "start", lngLat: origin, label: "Hier" },
+          { id: "start", role: "start", lngLat: origin, label: DISCOVER_PIN_DE.here },
           {
             id: "end",
             role: "end",
             lngLat: tourEnd,
-            label: "Tour-Ende",
+            label: DISCOVER_PIN_DE.tourEnd,
           },
         ],
         baseTour: tour,
@@ -1336,21 +1481,70 @@ function DiscoverPageInner() {
 
   const attachTrail = async (
     trail: TrailSegment,
-    mode: "append" | "via_chain"
+    mode: "append" | "via_chain",
+    kind?: ApproachKind
   ) => {
+    const cat = activeBike?.category ?? "urban";
+    if (!trailFitsBikeCategory(cat, trail.difficulty)) {
+      setRoutingMsg(d.trailUnsuitable(bikeCategoryLabel(cat)));
+      return;
+    }
     setRoutingBusy(true);
     setRoutingMsg(null);
     try {
-      const next = await attachTrailToDraft(draft, trail, mode, origin);
+      const coords = (trail.geometry.coordinates ?? []) as [number, number][];
+      const orient = garageSession === "gravity";
+      let startElev: number | null = null;
+      let endElev: number | null = null;
+      if (orient && coords.length >= 2) {
+        const elev = await fetchEndpointElevations(
+          coords[0],
+          coords[coords.length - 1]
+        );
+        startElev = elev.startM;
+        endElev = elev.endM;
+      }
+      const distKm =
+        coords.length < 2
+          ? 1
+          : Math.min(
+              trailAccessHaversineKm(
+                origin[1],
+                origin[0],
+                coords[0][1],
+                coords[0][0]
+              ),
+              trailAccessHaversineKm(
+                origin[1],
+                origin[0],
+                coords[coords.length - 1][1],
+                coords[coords.length - 1][0]
+              )
+            );
+      const accessKind: ApproachKind =
+        kind ??
+        suggestedApproachKind({ session: garageSession, distanceKm: distKm });
+      const orientOpts = {
+        orientDownhill: orient,
+        startElevM: startElev,
+        endElevM: endElev,
+      };
+      const next =
+        accessKind === "atStart"
+          ? adoptTrailToDraft(draft, trail, origin, orientOpts)
+          : await attachTrailToDraft(draft, trail, mode, origin, {
+              ...orientOpts,
+              accessProfile: approachCostingForBike(cat, accessKind),
+            });
       if (!next) {
-        setRoutingMsg("Trail konnte nicht verbunden werden");
+        setRoutingMsg(DISCOVER_STATUS_DE.trailFail);
         return;
       }
-      setDraft(next);
+      setDraft({ ...next, profile: activeProfile });
       setSelectedTrailId(trail.id);
       setRoutingMsg(
         next.computed
-          ? `${trail.name} · ${(next.computed.distanceM / 1000).toFixed(1)} km`
+          ? `${trail.name} · ${routeResultMessage(next.computed)}`
           : `${trail.name} eingefügt`
       );
     } finally {
@@ -1367,21 +1561,13 @@ function DiscoverPageInner() {
           if (!startOf(nextDraft) || !endOf(nextDraft)) return;
           setRoutingBusy(true);
           try {
-            const result = await computePointToPoint({
-              ...nextDraft,
-              profile: activeProfile,
-            });
-            if (result) {
-              setDraft((d) => ({
-                ...d,
-                mode: "point_to_point",
-                computed: result,
-                label: d.label || "Geplante Route",
-                layers: undefined,
-              }));
-              setRoutingMsg(
-                `${(result.distanceM / 1000).toFixed(1)} km · ${Math.round(result.durationS / 60)} min`
-              );
+            const next = await resolvePointToPointDraft(
+              { ...nextDraft, profile: planCosting },
+              { trails: nearbyTrails, origin }
+            );
+            if (next?.computed) {
+              setDraft({ ...next, profile: activeProfile });
+              setRoutingMsg(routeResultMessage(next.computed));
             }
           } finally {
             setRoutingBusy(false);
@@ -1389,7 +1575,7 @@ function DiscoverPageInner() {
         })();
       }, 700);
     },
-    [activeProfile]
+    [activeProfile, planCosting, origin, nearbyTrails]
   );
 
   const applyAddressHit = useCallback(
@@ -1411,15 +1597,52 @@ function DiscoverPageInner() {
     [addrTarget, schedulePlanRecompute]
   );
 
+  const onOverlayWayClick = useCallback(
+    async (hit: OverlayWayHit) => {
+      let seg = overlayHitToSegment(hit);
+      const known = liveOsmTrails.find((t) => t.id === hit.id);
+      if (known) {
+        seg = {
+          ...seg,
+          ...known,
+          geometry:
+            known.geometry.coordinates.length >= seg.geometry.coordinates.length
+              ? known.geometry
+              : seg.geometry,
+        };
+      }
+      if (!seg.surface || seg.geometry.coordinates.length < 2) {
+        try {
+          const r = await fetch(`/api/osm-trails?way=${encodeURIComponent(hit.osmId)}`);
+          if (r.ok) {
+            const body = await r.json();
+            const full = osmTrailToSegment(body.trails?.[0]);
+            if (full) seg = { ...seg, ...full };
+          }
+        } catch {
+          /* sheet still works without surface */
+        }
+      }
+      setSelectedTrailId(seg.id);
+      setOverlaySheet(seg);
+      setShowTrails(true);
+      setSheetMode("tours");
+      setLiveOsmTrails((cur) =>
+        cur.some((t) => t.id === seg.id) ? cur : [seg, ...cur]
+      );
+    },
+    [liveOsmTrails]
+  );
+
   const onMapClick = (lngLat: [number, number]) => {
     if (!pickTarget) return;
     setDraft((prev) => {
       let next = prev;
       if (pickTarget === "start") {
-        next = setStart(prev, lngLat, "Start (Karte)");
+        next = setStart(prev, lngLat, DISCOVER_PIN_DE.startMap);
         setMapCenter(lngLat);
       } else if (pickTarget === "end") {
-        next = setEnd(prev, lngLat, "Ziel (Karte)");
+        next = setEnd(prev, lngLat, DISCOVER_PIN_DE.endMap);
       } else {
         next = addVia(prev, lngLat);
       }
@@ -1531,7 +1754,7 @@ function DiscoverPageInner() {
             onClick={() => void runHybridSnap(suggestionToTour(detailRoute))}
             className="rounded-xl border border-chrome/40 bg-chrome/10 py-2.5 text-sm font-semibold text-chrome"
           >
-            Von hier starten (Hybrid-Snap)
+            {d.fromHereStart}
           </button>
         </div>
       </div>
@@ -1554,16 +1777,16 @@ function DiscoverPageInner() {
         <header className="shrink-0 space-y-2 border-b border-border px-4 pb-3 pt-4 lg:pt-5">
           {debugRoutingNotice && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
-              {debugRoutingNotice}
+              {discoverStatus(debugRoutingNotice, lang)}
             </p>
           )}
           {heatmapNote && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
-              Beliebt: {heatmapNote}
+              {d.heatmapPrefix}{heatmapNote}
               {!heatmapConsent && (
                 <>
                   {" "}
-                  · Eigene Beiträge unter Privatsphäre
+                  {d.heatmapOwn}
                 </>
               )}
             </p>
@@ -1571,15 +1794,15 @@ function DiscoverPageInner() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold tracking-wide text-text-secondary">
-                {HOF_COPY.mapKicker}
+                {copy.mapKicker}
               </p>
               <h1 className="text-xl font-bold tracking-tight">
-                {HOF_COPY.mapTitle}
+                {copy.mapTitle}
               </h1>
               <p className="text-xs text-text-secondary">
                 {activeBike
                   ? `${activeBike.name} · ${bikeCategoryLabel(activeBike.category)}`
-                  : "OSM · ~60-Min-Rundkurse — Bike optional"}
+                  : d.osmOptional}
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2">
@@ -1587,11 +1810,15 @@ function DiscoverPageInner() {
               <button
                 type="button"
                 onClick={() => {
+                  const goHere = (p: [number, number]) => {
+                    setHoldMapFit(true);
+                    setUserPos(p);
+                    setMapCenter(p);
+                    setLocationStatus(DISCOVER_STATUS_DE.locGps);
+                    setRoutingMsg(DISCOVER_STATUS_DE.locGpsCentered);
+                  };
                   if (userPos) {
-                    setMapCenter(userPos);
-                    setDraft((d) => setStart(d, userPos, "Meine Position"));
-                    setLocationStatus("Standort: GPS");
-                    setRoutingMsg("Standort: GPS — Karte zentriert");
+                    goHere(userPos);
                     return;
                   }
                   if (
@@ -1599,27 +1826,19 @@ function DiscoverPageInner() {
                     !navigator.geolocation
                   ) {
                     focusPlanAddress(
-                      "Standort nicht verfügbar — Adresse suchen oder Demo-Stadt wählen"
+                      DISCOVER_STATUS_DE.locNoneAddr
                     );
                     return;
                   }
-                  setLocationStatus("Standort wird ermittelt…");
-                  setRoutingMsg("Standort wird ermittelt…");
+                  setLocationStatus(DISCOVER_STATUS_DE.locWait);
+                  setRoutingMsg(DISCOVER_STATUS_DE.locWait);
                   navigator.geolocation.getCurrentPosition(
                     (pos) => {
-                      const p: [number, number] = [
-                        pos.coords.longitude,
-                        pos.coords.latitude,
-                      ];
-                      setUserPos(p);
-                      setMapCenter(p);
-                      setDraft((d) => setStart(d, p, "Meine Position"));
-                      setLocationStatus("Standort: GPS");
-                      setRoutingMsg("Standort: GPS");
+                      goHere([pos.coords.longitude, pos.coords.latitude]);
                     },
                     () => {
                       focusPlanAddress(
-                        "Standort verweigert — Adresse suchen oder Demo-Stadt wählen"
+                        DISCOVER_STATUS_DE.locDeniedAddr
                       );
                     },
                     { timeout: 8000, maximumAge: 30 * 60 * 1000 }
@@ -1629,7 +1848,7 @@ function DiscoverPageInner() {
                 aria-describedby="discover-location-status"
               >
                 <Crosshair className="h-3.5 w-3.5" />
-                {userPos ? "Hier" : "Ort…"}
+                {userPos ? d.hereBtn : d.placeEllipsis}
               </button>
             </div>
           </div>
@@ -1639,7 +1858,7 @@ function DiscoverPageInner() {
             role="status"
             aria-live="polite"
           >
-            {locationStatus}
+            {discoverStatus(locationStatus, lang)}
           </p>
           {rideOutChoice ? (
             <RideOutChoice
@@ -1660,15 +1879,15 @@ function DiscoverPageInner() {
               data-testid="hof-just-ride"
               className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-[12px] text-text-secondary"
             >
-              {HOF_COPY.mapJustRideHint}{" "}
+              {copy.mapJustRideHint}{" "}
               <Link href="/download" className="font-semibold text-chrome hover:underline">
-                App laden
+                {chrome.loadApp}
               </Link>
             </p>
           ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-1 text-[11px]">
-              <span className="text-text-secondary">Zeit</span>
+              <span className="text-text-secondary">{d.time}</span>
               <input
                 type="range"
                 min={45}
@@ -1681,20 +1900,9 @@ function DiscoverPageInner() {
               <span className="font-medium tabular-nums">{minutes} min</span>
             </label>
           </div>
-          {/* Sport-Chips — Parität zur Flutter-App */}
+          {/* Sport-Chips — Parität zur Flutter-App: Overlay-Familie, kein DH/Auto-Costing */}
           <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {(
-              [
-                "mtb_allmountain",
-                "mtb_enduro",
-                "downhill",
-                "gravel",
-                "road",
-                "urban",
-                "emtb",
-                "ebike",
-              ] as RoutingProfile[]
-            ).map((pid) => {
+            {DISCOVER_PROFILE_CHIPS.map((pid) => {
               const p = ROUTING_PROFILES[pid];
               const selected = activeProfile === pid;
               return (
@@ -1724,9 +1932,9 @@ function DiscoverPageInner() {
         <div className="grid shrink-0 grid-cols-3 gap-1 border-b border-border p-2">
           {(
             [
-              ["quick", HOF_COPY.mapSheetNear, Zap],
-              ["plan", HOF_COPY.mapSheetPlan, Navigation],
-              ["tours", HOF_COPY.mapSheetTours, Route],
+              ["quick", copy.mapSheetNear, Zap],
+              ["plan", copy.mapSheetPlan, Navigation],
+              ["tours", copy.mapSheetTours, Route],
             ] as const
           ).map(([id, label, Icon]) => (
             <button
@@ -1747,18 +1955,17 @@ function DiscoverPageInner() {
 
         <div className="max-h-[38vh] min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2 lg:max-h-none">
           {routingMsg && (
-            <p className="mb-2 text-[11px] text-text-secondary">{routingMsg}</p>
+            <p className="mb-2 text-[11px] text-text-secondary">{discoverStatus(routingMsg, lang)}</p>
           )}
 
           {sheetMode === "quick" && (
             <div className="flex flex-col gap-2">
               <div className="rounded-xl border border-chrome/25 bg-chrome/5 p-3">
                 <p className="text-xs font-semibold text-foreground">
-                  In deiner Nähe · {profileLabel(activeProfile)}
+                  {d.nearbyTitle(profileLabel(activeProfile))}
                 </p>
                 <p className="mt-0.5 text-[11px] text-text-secondary">
-                  Live-Route ab Standort oder Kartenmitte — MTB, Gravel, Rennrad,
-                  City oder E-Bike.
+                  {d.nearbyLiveHint}
                 </p>
                 <div className="mt-2">
                   <NearMeRouteCard
@@ -1768,11 +1975,12 @@ function DiscoverPageInner() {
                     routeMode={nearMeRouteMode}
                     onRouteModeChange={setNearMeRouteMode}
                     onLoopPreview={(result, label) => {
+                      setHoldMapFit(false);
                       setDraft((d) => ({
                         ...setStart(
                           { ...d, mode: "quick", profile: activeProfile },
                           origin,
-                          "Hier"
+                          DISCOVER_PIN_DE.here
                         ),
                         computed: result,
                         label,
@@ -1786,25 +1994,22 @@ function DiscoverPageInner() {
               </div>
               {suppressOutAndBackQuick ? (
                 <p className="text-[11px] text-text-secondary">
-                  Rundkurs aktiv — Live-Vorschläge nur echte Loops (unten). Keine
-                  Out-and-back-Pads (z. B. „60 min · Norden“).
+                  {d.loopActiveHint}
                 </p>
               ) : (
                 <>
                   <p className="text-[11px] text-text-secondary">
-                    Vorschläge · {minutes} min ·{" "}
-                    {profileLabel(activeProfile)}
+                    {d.suggestions(minutes, profileLabel(activeProfile))}
                   </p>
                   {quickBusy && (
                     <p className="text-sm text-text-secondary" role="status">
-                      Berechne…
+                      {d.computing}
                     </p>
                   )}
                   {quickTimedOut && !quickBusy && (
                     <div className="rounded-xl border border-border bg-surface-elevated p-3 text-sm text-text-secondary">
                       <p>
-                        Live-Vorschläge nicht rechtzeitig — Seeds bleiben
-                        sichtbar.
+                        {d.quickTimeout}
                       </p>
                       <button
                         type="button"
@@ -1813,7 +2018,7 @@ function DiscoverPageInner() {
                           void refreshQuick({ force: true, limit: 1 })
                         }
                       >
-                        Erneut versuchen
+                        {d.retry}
                       </button>
                     </div>
                   )}
@@ -1821,18 +2026,17 @@ function DiscoverPageInner() {
                     !quickTimedOut &&
                     quickOptions.length === 0 && (
                       <div className="rounded-xl border border-border p-4 text-center text-sm text-text-secondary">
-                        Keine Live-Vorschläge — Seeds unten, Standort erlauben
-                        oder{" "}
+                        {d.noLive}
                         <button
                           type="button"
                           className="font-medium text-chrome"
                           onClick={() =>
                             focusPlanAddress(
-                              "Adresse suchen — Start setzen"
+                              DISCOVER_STATUS_DE.searchStart
                             )
                           }
                         >
-                          Planen öffnen
+                          {d.openPlan}
                         </button>
                       </div>
                     )}
@@ -1853,7 +2057,7 @@ function DiscoverPageInner() {
                                   profile: activeProfile,
                                 },
                                 origin,
-                                "Hier"
+                                DISCOVER_PIN_DE.here
                               ),
                               computed: q.result,
                               label: q.label,
@@ -1888,7 +2092,7 @@ function DiscoverPageInner() {
                       }
                       className="flex-1 rounded-xl border border-border py-2 text-xs font-medium"
                     >
-                      Neu berechnen
+                      {d.recompute}
                     </button>
                     {quickOptions.length < 3 && (
                       <button
@@ -1904,14 +2108,13 @@ function DiscoverPageInner() {
                         }
                         className="flex-1 rounded-xl border border-border py-2 text-xs font-medium disabled:opacity-40"
                       >
-                        Weitere Option
+                        {d.moreOption}
                       </button>
                     )}
                   </div>
                   {quickRateLimited && (
                     <p className="text-[11px] text-warning">
-                      GraphHopper-Minutenlimit — warte kurz oder nutze den
-                      Planer sparsam.
+                      {d.ghMinuteLimit}
                     </p>
                   )}
                 </>
@@ -1919,11 +2122,10 @@ function DiscoverPageInner() {
 
               {/* Always-on ~60 Min — #35 curated P0 Berlin/RN + honest loops only */}
               <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                ~60 Min Rundkurse
+                {d.sixtyTitle}
               </h3>
               <p className="text-[11px] text-text-secondary">
-                Tempelhofer, Rhein-Neckar & kuratierte Feierabend-Loops —
-                unabhängig vom Live-Routing.
+                {d.sixtyLead}
               </p>
               {hasUsefulNearbyLoops ? (
                 <div className="flex flex-col gap-2">
@@ -1952,7 +2154,7 @@ function DiscoverPageInner() {
                           className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
                           onClick={() => previewBaseTour(suggestionToTour(r))}
                         >
-                          Vorschau
+                          {d.preview}
                         </button>
                         <button
                           type="button"
@@ -1961,7 +2163,7 @@ function DiscoverPageInner() {
                             adoptIntoPlanMode(suggestionToTour(r))
                           }
                         >
-                          In Planen
+                          {d.intoPlan}
                         </button>
                       </div>
                     </div>
@@ -1970,23 +2172,22 @@ function DiscoverPageInner() {
               ) : (
                 <div className="mt-2 rounded-xl border border-border bg-surface-elevated p-3">
                   <p className="text-xs font-semibold text-foreground">
-                    Keine Rundkurse in der Nähe
+                    {d.noLoopsNearby}
                   </p>
                   <p className="mt-0.5 text-[11px] text-text-secondary">
-                    Keine ehrlichen Loops (Start≈Ziel) hier — Demo-Stadt wählen
-                    oder Ort ändern. Keine A→B-Touren als Füllung.
+                    {d.noHonestHere}
                   </p>
                   <button
                     type="button"
-                    className="mt-2 w-full rounded-lg bg-chrome py-2 text-xs font-semibold text-background"
+                    className="mt-2 w-full rounded-xl bg-chrome py-2 text-xs font-semibold text-on-accent"
                     onClick={() =>
-                      focusPlanAddress("Ort ändern — Stadt oder Adresse suchen")
+                      focusPlanAddress(DISCOVER_STATUS_DE.changePlace)
                     }
                   >
-                    Ort ändern
+                    {d.changePlaceBtn}
                   </button>
                   <p className="mt-2 text-[11px] font-semibold text-text-secondary">
-                    Demo-Stadt
+                    {d.demoCity}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {DEMO_CITY_CHIPS.map((c) => (
@@ -2008,7 +2209,7 @@ function DiscoverPageInner() {
           {sheetMode === "plan" && (
             <div className="flex flex-col gap-3">
               <p className="text-[11px] text-text-secondary">
-                Adresse suchen oder auf die Karte tippen
+                {d.planHint}
               </p>
               <div className="flex gap-2">
                 <select
@@ -2018,8 +2219,8 @@ function DiscoverPageInner() {
                   }
                   className="rounded-lg border border-border bg-surface-elevated px-2 text-xs"
                 >
-                  <option value="start">Start</option>
-                  <option value="end">Ziel</option>
+                  <option value="start">{d.start}</option>
+                  <option value="end">{d.end}</option>
                 </select>
                 <input
                   ref={addrInputRef}
@@ -2029,9 +2230,9 @@ function DiscoverPageInner() {
                     if (e.key === "Enter") void searchAddress();
                   }}
                   aria-label={
-                    addrTarget === "end" ? "Ziel-Adresse" : "Start-Adresse"
+                    addrTarget === "end" ? d.endAddr : d.startAddr
                   }
-                  placeholder="z. B. Wiesloch"
+                  placeholder={d.addrPlaceholder}
                   className="min-w-0 flex-1 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-xs"
                 />
                 <button
@@ -2040,7 +2241,7 @@ function DiscoverPageInner() {
                   onClick={() => void searchAddress()}
                   className="rounded-lg border border-border px-2 text-xs font-medium"
                 >
-                  Suchen
+                  {d.search}
                 </button>
               </div>
               {addrHits.length > 0 && (
@@ -2068,7 +2269,7 @@ function DiscoverPageInner() {
                       : "border-border bg-surface"
                   }`}
                 >
-                  Start tippen
+                  {d.tapStart}
                 </button>
                 <button
                   type="button"
@@ -2079,7 +2280,7 @@ function DiscoverPageInner() {
                       : "border-border bg-surface"
                   }`}
                 >
-                  + Via
+                  {d.tapVia}
                 </button>
                 <button
                   type="button"
@@ -2090,7 +2291,7 @@ function DiscoverPageInner() {
                       : "border-border bg-surface"
                   }`}
                 >
-                  Ziel tippen
+                  {d.tapEnd}
                 </button>
               </div>
               <ul className="flex flex-col gap-1.5">
@@ -2101,12 +2302,12 @@ function DiscoverPageInner() {
                   >
                     <span>
                       {w.role === "start"
-                        ? "S"
+                        ? d.startAbbr
                         : w.role === "end"
-                          ? "Z"
+                          ? d.endAbbr
                           : i}
                       {" · "}
-                      {w.label ?? w.role} · {w.lngLat[1].toFixed(3)},{" "}
+                      {discoverPinLabel(w.label, lang) || w.role} · {w.lngLat[1].toFixed(3)},{" "}
                       {w.lngLat[0].toFixed(3)}
                     </span>
                     {w.role === "via" && (
@@ -2128,21 +2329,21 @@ function DiscoverPageInner() {
                 onClick={() => {
                   if (userPos) {
                     schedulePlanRecompute(
-                      setStart(draft, userPos, "Meine Position")
+                      setStart(draft, userPos, DISCOVER_PIN_DE.myPos)
                     );
                   }
                 }}
                 className="text-left text-[11px] font-medium text-chrome"
               >
-                Start = meine Position
+                {d.startMyPos}
               </button>
               <button
                 type="button"
                 disabled={routingBusy || !startOf(draft) || !endOf(draft)}
                 onClick={() => void runPlanRoute()}
-                className="w-full rounded-xl bg-chrome py-2.5 text-sm font-semibold text-background disabled:opacity-40"
+                className="w-full rounded-xl bg-chrome py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
               >
-                {routingBusy ? "Wird berechnet…" : "Route berechnen"}
+                {routingBusy ? d.computingRoute : d.computeRoute}
               </button>
             </div>
           )}
@@ -2151,21 +2352,30 @@ function DiscoverPageInner() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                  Wege in der Nähe
+                  {d.waysNearby}
                 </h3>
                 <label className="flex items-center gap-1.5 text-[11px] text-text-secondary">
                   <input
                     type="checkbox"
-                    checked={showTrails}
-                    onChange={(e) => setShowTrails(e.target.checked)}
+                    checked={bikeOverlaySpec ? bikeOverlayOn : showTrails}
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      if (bikeOverlaySpec) setBikeOverlayOn(on);
+                      else setShowTrails(on);
+                    }}
                   />
-                  Overlay
+                  {d.overlay}
                 </label>
               </div>
-              {nearbyTrails.length === 0 ? (
+              {liveOsmStatus === "loading" && nearbyTrails.length === 0 ? (
                 <p className="text-[11px] text-text-secondary">
-                  Keine OSM-Wege hier — Karte verschieben oder unter „In der Nähe“
-                  eine Live-Route bauen.
+                  {d.osmLoading}
+                </p>
+              ) : nearbyTrails.length === 0 ? (
+                <p className="text-[11px] text-text-secondary">
+                  {liveOsmStatus === "error"
+                    ? d.osmError
+                    : d.osmEmpty}
                 </p>
               ) : (
                 nearbyTrails.map((t) => (
@@ -2179,7 +2389,14 @@ function DiscoverPageInner() {
                   >
                     <div className="text-sm font-medium">{t.name}</div>
                     <p className="text-[11px] text-text-secondary">
-                      {t.difficulty ?? "—"} · {t.provider}
+                      {[
+                        t.difficulty ?? d.difficultyOpen,
+                        discoverHighwayLabel(trailHighwayLabelDe(t.highway), lang),
+                        discoverSurfaceLabel(trailSurfaceLabelDe(t.surface), lang),
+                        "OSM",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button
@@ -2187,28 +2404,51 @@ function DiscoverPageInner() {
                         className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
                         onClick={() => {
                           setSelectedTrailId(t.id);
-                          setShowTrails(true);
+                          setOverlaySheet(t);
                           setMapCenter(t.center);
                         }}
                       >
-                        Anzeigen
+                        {d.show}
                       </button>
-                      <button
-                        type="button"
-                        disabled={routingBusy}
-                        className="rounded-lg border border-chrome/40 px-2.5 py-1.5 text-[11px] text-chrome"
-                        onClick={() => void attachTrail(t, "append")}
-                      >
-                        Anhängen
-                      </button>
-                      <button
-                        type="button"
-                        disabled={routingBusy}
-                        className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
-                        onClick={() => void attachTrail(t, "via_chain")}
-                      >
-                        Als Via
-                      </button>
+                      {garageSession === "gravity" ? (
+                        <button
+                          type="button"
+                          disabled={routingBusy}
+                          className="rounded-lg border border-chrome/40 px-2.5 py-1.5 text-[11px] text-chrome"
+                          onClick={() => void attachTrail(t, "append", "auto")}
+                        >
+                          {d.approachByCar}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            disabled={routingBusy}
+                            className="rounded-lg border border-chrome/40 px-2.5 py-1.5 text-[11px] text-chrome"
+                            onClick={() => void attachTrail(t, "append")}
+                          >
+                            {d.append}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={routingBusy}
+                            className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                            onClick={() => void attachTrail(t, "via_chain")}
+                          >
+                            {d.intoNav}
+                          </button>
+                        </>
+                      )}
+                      {t.url && (
+                        <a
+                          href={t.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="self-center text-[11px] text-chrome"
+                        >
+                          OSM →
+                        </a>
+                      )}
                     </div>
                   </article>
                 ))
@@ -2227,8 +2467,6 @@ function DiscoverPageInner() {
                   else if (next.sport === "gravel") setManualProfile("gravel");
                   else if (next.sport === "mtb") {
                     if (
-                      activeProfile === "downhill" ||
-                      activeProfile === "mtb_enduro" ||
                       activeProfile === "mtb_allmountain" ||
                       activeProfile === "emtb"
                     ) {
@@ -2245,38 +2483,34 @@ function DiscoverPageInner() {
 
               {activeBike?.isEbike && range && (
                 <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs">
-                  Reichweite {range.kmLow}–{range.kmHigh} km
+                  {d.rangeLine(range.kmLow, range.kmHigh)}
                 </div>
               )}
 
               <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                Vom Standort ({nearbyRoutes.length}
-                {fartherRoutes.length ? ` · +${fartherRoutes.length} weiter` : ""}
-                )
+                {d.fromLocation(nearbyRoutes.length, fartherRoutes.length)}
               </h3>
               <p className="text-[11px] text-text-secondary">
-                Sortiert nach Nähe zu{" "}
-                {userPos ? "deiner Position" : "Kartenmitte"} (
+                {d.sortedNear(userPos ? d.sortedByYou : d.sortedByMap)} (
                 {origin[1].toFixed(2)}°N, {origin[0].toFixed(2)}°E)
               </p>
               {routes.some((r) => r.id.startsWith("seed-")) &&
                 !routes.some((r) => !r.id.startsWith("seed-")) && (
                 <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
-                  Offline-Fallback: Berlin 60-Min Rundkurse (inkl. Tempelhofer),
-                  Katalog leer.
+                  {d.offlineFallback}
                 </p>
               )}
               {filtered.length === 0 ? (
                 <div className="rounded-xl border border-border bg-surface-elevated p-3">
                   <p className="text-sm font-semibold text-foreground">
                     {filters.loopOnly
-                      ? "Keine Rundkurse in der Nähe"
-                      : "Keine Tour bei diesen Filtern"}
+                      ? d.noLoopsNearby
+                      : d.noToursFilter}
                   </p>
                   <p className="mt-0.5 text-xs text-text-secondary">
                     {filters.loopOnly
-                      ? "Nur echte Loops (Start≈Ziel) — keine A→B-Touren als Füllung. Filter lockern oder Ort ändern."
-                      : "Filter lockern oder Planer öffnen."}
+                      ? d.loosenLoop
+                      : d.loosenOrPlan}
                   </p>
                   {filters.loopOnly && (
                     <button
@@ -2286,7 +2520,7 @@ function DiscoverPageInner() {
                         setFilters((f) => ({ ...f, loopOnly: false }))
                       }
                     >
-                      Rundkurs-Filter aus
+                      {d.loopFilterOff}
                     </button>
                   )}
                 </div>
@@ -2316,7 +2550,7 @@ function DiscoverPageInner() {
                           className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-medium"
                           onClick={() => previewBaseTour(suggestionToTour(r))}
                         >
-                          Vorschau
+                          {d.preview}
                         </button>
                         <button
                           type="button"
@@ -2324,7 +2558,7 @@ function DiscoverPageInner() {
                           className="flex-1 rounded-lg border border-chrome/40 py-1.5 text-[11px] font-medium text-chrome"
                           onClick={() => void runHybridSnap(suggestionToTour(r))}
                         >
-                          Von hier
+                          {d.fromHere}
                         </button>
                         <button
                           type="button"
@@ -2333,7 +2567,7 @@ function DiscoverPageInner() {
                             adoptIntoPlanMode(suggestionToTour(r))
                           }
                         >
-                          In Planen
+                          {d.intoPlan}
                         </button>
                       </div>
                     </div>
@@ -2341,7 +2575,7 @@ function DiscoverPageInner() {
                   {fartherRoutes.length > 0 && (
                     <>
                       <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                        Weitere Regionen ({fartherRoutes.length})
+                        {d.fartherRegions(fartherRoutes.length)}
                       </h3>
                       {fartherRoutes.map((r) => (
                         <div key={r.id} className="space-y-1.5">
@@ -2370,7 +2604,7 @@ function DiscoverPageInner() {
                                 previewBaseTour(suggestionToTour(r))
                               }
                             >
-                              Vorschau
+                              {d.preview}
                             </button>
                             <button
                               type="button"
@@ -2380,7 +2614,7 @@ function DiscoverPageInner() {
                                 void runHybridSnap(suggestionToTour(r))
                               }
                             >
-                              Von hier
+                              {d.fromHere}
                             </button>
                             <button
                               type="button"
@@ -2389,7 +2623,7 @@ function DiscoverPageInner() {
                                 adoptIntoPlanMode(suggestionToTour(r))
                               }
                             >
-                              In Planen
+                              {d.intoPlan}
                             </button>
                           </div>
                         </div>
@@ -2400,7 +2634,7 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                <Compass className="h-3.5 w-3.5" /> Outdooractive ({oaTours.length})
+                <Compass className="h-3.5 w-3.5" /> {d.outdooractive(oaTours.length)}
               </h3>
               {googlePlacesWarning && (
                 <p className="text-[11px] text-text-secondary">
@@ -2409,13 +2643,12 @@ function DiscoverPageInner() {
               )}
               {googlePlaces.length > 0 && (
                 <p className="text-[11px] text-text-secondary">
-                  {googlePlaces.length} Google-POIs (Laden) · Powered by Google ·
-                  kein Google-Kartenlayer
+                  {d.googlePois(googlePlaces.length)}
                 </p>
               )}
               {oaTours.length === 0 && (
                 <p className="text-[11px] text-text-secondary">
-                  Keine OA-Touren in der Kartenregion.
+                  {d.noOa}
                 </p>
               )}
               {oaTours.map((t) => {
@@ -2430,7 +2663,7 @@ function DiscoverPageInner() {
                       {[
                         t.difficulty,
                         t.lengthKm != null ? `${t.lengthKm} km` : null,
-                        t.source === "demo" ? "Beispiel" : null,
+                        t.source === "demo" ? d.example : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -2441,7 +2674,7 @@ function DiscoverPageInner() {
                         className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
                         onClick={() => previewBaseTour(tour)}
                       >
-                        Vorschau
+                        {d.preview}
                       </button>
                       <button
                         type="button"
@@ -2449,14 +2682,14 @@ function DiscoverPageInner() {
                         className="rounded-lg border border-chrome/40 px-2.5 py-1.5 text-[11px] text-chrome"
                         onClick={() => void runHybridSnap(tour)}
                       >
-                        Von hier
+                        {d.fromHere}
                       </button>
                       <button
                         type="button"
                         className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
                         onClick={() => adoptIntoPlanMode(tour)}
                       >
-                        In Planen
+                        {d.intoPlan}
                       </button>
                       {t.url && (
                         <a
@@ -2477,10 +2710,10 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                <Mountain className="h-3.5 w-3.5" /> Trailforks ({tfPins.length})
+                <Mountain className="h-3.5 w-3.5" /> {d.trailforks(tfPins.length)}
               </h3>
               <p className="text-[11px] text-text-secondary">
-                {tfDisclaimer ?? "Attribution — kein Geometrie-Mirror."}
+                {tfDisclaimer ?? d.tfFallback}
               </p>
               {tfPins.map((p) => (
                 <div
@@ -2490,7 +2723,7 @@ function DiscoverPageInner() {
                   <div>
                     <div className="font-medium">{p.name}</div>
                     <div className="text-text-secondary">
-                      {p.difficulty ?? "—"} · {p.conditionLabel}
+                      {p.difficulty ?? "Trailforks"}
                     </div>
                   </div>
                   <a
@@ -2505,7 +2738,7 @@ function DiscoverPageInner() {
               ))}
 
               <h3 className="mt-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                Gespeichert
+                {d.mappeHeading}
               </h3>
               <div className="mb-2 flex flex-wrap gap-2">
                 <input
@@ -2523,17 +2756,20 @@ function DiscoverPageInner() {
                   onClick={() => gpxInputRef.current?.click()}
                   className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-medium"
                 >
-                  GPX importieren
+                  {d.importGpx}
                 </button>
                 <AddRouteForm compact defaultStart={origin} />
               </div>
               {savedRoutes.length === 0 ? (
                 <p className="text-sm text-text-secondary">
-                  Noch nichts gespeichert — Route hinzufügen, Tour speichern oder
-                  GPX.
+                  {d.mappeEmpty}
+                </p>
+              ) : mappeRoutes.length === 0 ? (
+                <p className="text-sm text-text-secondary">
+                  {d.mappeFilterEmpty}
                 </p>
               ) : (
-                savedRoutes.map((r) => (
+                mappeRoutes.map((r) => (
                   <article
                     key={r.id}
                     className="rounded-xl border border-border bg-surface p-3"
@@ -2545,8 +2781,11 @@ function DiscoverPageInner() {
                         sanitizeElevationM(r.elevationM, r.distanceKm)
                       )}{" "}
                       · {r.durationMin} min
-                      {r.source === "import" ? " · Import" : ""}
-                      {r.geometry ? " · mit Track" : ""}
+                      {r.source === "import" ? ` · ${d.importTag}` : ""}
+                      {r.geometry ? ` · ${d.withTrack}` : ""}
+                      {visibilityOf(r) === "shared"
+                        ? ` · ${d.shared}`
+                        : ` · ${d.privateTour}`}
                     </p>
                     <div className="mt-2 flex gap-2">
                       <button
@@ -2554,11 +2793,11 @@ function DiscoverPageInner() {
                         onClick={() => unsaveRoute(r.id)}
                         className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
                       >
-                        Entfernen
+                        {d.remove}
                       </button>
                       {routeCollections.length > 0 && (
                         <label className="flex items-center gap-1 text-[11px]">
-                          <span className="sr-only">Sammlung</span>
+                          <span className="sr-only">{d.collectionsTitle}</span>
                           <select
                             className="max-w-[7rem] rounded-lg border border-border bg-surface px-1 py-1.5"
                             defaultValue=""
@@ -2570,7 +2809,7 @@ function DiscoverPageInner() {
                             }}
                           >
                             <option value="" disabled>
-                              + Sammlung
+                              {d.plusCollection}
                             </option>
                             {routeCollections.map((c) => (
                               <option key={c.id} value={c.id}>
@@ -2583,9 +2822,9 @@ function DiscoverPageInner() {
                       <button
                         type="button"
                         onClick={() => loadSavedRoute(r)}
-                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-chrome py-1.5 text-[11px] font-semibold text-background"
+                        className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-chrome py-1.5 text-[11px] font-semibold text-on-accent"
                       >
-                        <Play className="h-3.5 w-3.5 fill-current" /> {HOF_COPY.inTheApp}
+                        <Play className="h-3.5 w-3.5 fill-current" /> {copy.inTheApp}
                       </button>
                     </div>
                   </article>
@@ -2593,16 +2832,16 @@ function DiscoverPageInner() {
               )}
 
               <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-                Sammlungen
+                {d.collectionsTitle}
               </h3>
               <p className="mb-2 text-[11px] text-text-secondary">
-                Lokale Ordner — kein Social-Feed.
+                {d.collectionsLead}
               </p>
               <div className="mb-2 flex gap-2">
                 <input
                   value={collectionName}
                   onChange={(e) => setCollectionName(e.target.value)}
-                  placeholder="Name"
+                  placeholder={d.namePlaceholder}
                   className="flex-1 rounded-lg border border-border bg-surface-elevated px-2 py-1.5 text-xs"
                 />
                 <button
@@ -2611,13 +2850,13 @@ function DiscoverPageInner() {
                     createRouteCollection(collectionName);
                     setCollectionName("");
                   }}
-                  className="rounded-lg bg-chrome px-2.5 py-1.5 text-[11px] font-semibold text-background"
+                  className="rounded-xl bg-chrome px-2.5 py-1.5 text-[11px] font-semibold text-on-accent"
                 >
-                  Anlegen
+                  {d.create}
                 </button>
               </div>
               {routeCollections.length === 0 ? (
-                <p className="text-sm text-text-secondary">Noch keine Sammlung.</p>
+                <p className="text-sm text-text-secondary">{d.noCollection}</p>
               ) : (
                 routeCollections.map((c) => (
                   <div
@@ -2626,7 +2865,7 @@ function DiscoverPageInner() {
                   >
                     <span className="font-semibold">{c.name}</span>
                     <span className="ml-2 text-[11px] text-text-secondary">
-                      {c.routeIds.length} Routen
+                      {d.routesCount(c.routeIds.length)}
                     </span>
                   </div>
                 ))
@@ -2654,6 +2893,8 @@ function DiscoverPageInner() {
           bikeOverlayExtraOn={bikeOverlayExtra}
           bikeOverlayRideProfileId={rideProfileId}
           onMapClick={onMapClick}
+          onOverlayClick={(hit) => void onOverlayWayClick(hit)}
+          onZoomChange={setMapZoom}
           onMarkerClick={(id) => {
             if (!id.startsWith("tour-")) return;
             const tourId = id.slice("tour-".length);
@@ -2674,7 +2915,7 @@ function DiscoverPageInner() {
                   ...setStart(
                     { ...d, mode: "quick", profile: activeProfile },
                     origin,
-                    "Hier"
+                    DISCOVER_PIN_DE.here
                   ),
                   computed: q.result,
                   label: q.label,
@@ -2689,10 +2930,13 @@ function DiscoverPageInner() {
               setSheetMode("tours");
             }
           }}
-          fitRoute={Boolean(
-            (rundkursActive ? sanitizeDraftForRundkurs(draft) : draft)
-              .computed
-          )}
+          fitRoute={
+            !holdMapFit &&
+            Boolean(
+              (rundkursActive ? sanitizeDraftForRundkurs(draft) : draft)
+                .computed
+            )
+          }
         />
         {bikeOverlaySpec && (
           <div className="absolute left-[max(0.75rem,var(--safe-left))] top-3 z-10">
@@ -2713,27 +2957,141 @@ function DiscoverPageInner() {
             />
           </div>
         )}
+        {overlaySheet && (
+          <div className="absolute bottom-14 left-[max(0.75rem,var(--safe-left))] right-[max(0.75rem,var(--safe-right))] z-20 rounded-xl border border-border bg-surface p-3 shadow-lg lg:left-auto lg:right-[max(0.75rem,var(--safe-right))] lg:max-w-sm">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-sm font-semibold">{overlaySheet.name}</div>
+                <p className="text-[11px] text-text-secondary">
+                  {[
+                    overlaySheet.difficulty ?? d.difficultyOpen,
+                    discoverHighwayLabel(trailHighwayLabelDe(overlaySheet.highway), lang),
+                    discoverSurfaceLabel(trailSurfaceLabelDe(overlaySheet.surface), lang),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-[11px] text-text-secondary"
+                onClick={() => setOverlaySheet(null)}
+              >
+                {d.close}
+              </button>
+            </div>
+            {garageSession === "gravity" ? (
+              <p className="mt-1 text-[11px] text-text-secondary">
+                {d.trailGravityHint}
+              </p>
+            ) : null}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {!trailFitsBikeCategory(
+                activeBike?.category ?? "urban",
+                overlaySheet.difficulty
+              ) ? (
+                <p className="text-[11px] text-text-secondary">
+                  {d.trailUnsuitable(
+                    bikeCategoryLabel(activeBike?.category ?? "urban")
+                  )}
+                </p>
+              ) : garageSession === "gravity" ? (
+                <>
+                  <button
+                    type="button"
+                    disabled={routingBusy}
+                    className="rounded-lg border border-chrome/40 px-2.5 py-1.5 text-[11px] text-chrome"
+                    onClick={() => {
+                      setOverlaySheet(null);
+                      void attachTrail(overlaySheet, "append", "auto");
+                    }}
+                  >
+                    {d.approachByCar}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={routingBusy}
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                    onClick={() => {
+                      setOverlaySheet(null);
+                      void attachTrail(overlaySheet, "append", "walk");
+                    }}
+                  >
+                    {d.approachOnFoot}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={routingBusy}
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                    onClick={() => {
+                      setOverlaySheet(null);
+                      void attachTrail(overlaySheet, "append", "atStart");
+                    }}
+                  >
+                    {d.atTrailStart}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={routingBusy}
+                    className="rounded-lg border border-chrome/40 px-2.5 py-1.5 text-[11px] text-chrome"
+                    onClick={() => {
+                      setOverlaySheet(null);
+                      void attachTrail(overlaySheet, "append");
+                    }}
+                  >
+                    {d.attachApproach}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={routingBusy}
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-[11px]"
+                    onClick={() => {
+                      setOverlaySheet(null);
+                      void attachTrail(overlaySheet, "via_chain");
+                    }}
+                  >
+                    {d.intoNav}
+                  </button>
+                </>
+              )}
+              {overlaySheet.url && (
+                <a
+                  href={overlaySheet.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="self-center text-[11px] text-chrome"
+                >
+                  OSM →
+                </a>
+              )}
+            </div>
+          </div>
+        )}
         {pickTarget && (
           <div className="absolute left-[max(0.75rem,var(--safe-left))] right-[max(0.75rem,var(--safe-right))] top-3 z-10 rounded-xl bg-black/75 px-3 py-2 text-center text-xs text-white lg:left-auto lg:right-[max(0.75rem,var(--safe-right))] lg:max-w-sm">
-            Tippe auf die Karte für{" "}
-            {pickTarget === "start"
-              ? "Start"
-              : pickTarget === "end"
-                ? "Ziel"
-                : "Via"}
+            {d.tapFor(
+              pickTarget === "start"
+                ? d.start
+                : pickTarget === "end"
+                  ? d.end
+                  : "Via"
+            )}
             <button
               type="button"
               className="ml-2 underline"
               onClick={() => setPickTarget(null)}
             >
-              Abbrechen
+              {d.cancel}
             </button>
           </div>
         )}
         {statsLine && (
           <div className="absolute bottom-3 left-[max(0.75rem,var(--safe-left))] right-[max(0.75rem,var(--safe-right))] z-10 flex items-center justify-between gap-2 rounded-xl bg-black/70 px-3 py-2 text-xs text-white lg:left-auto lg:right-[max(0.75rem,var(--safe-right))] lg:max-w-md">
             <span className="truncate">
-              {draft.label ? `${draft.label} · ` : ""}
+              {draft.label ? `${discoverDraftLabel(draft.label, lang)} · ` : ""}
               {statsLine}
             </span>
             <div className="flex shrink-0 gap-1.5">
@@ -2741,7 +3099,7 @@ function DiscoverPageInner() {
                 type="button"
                 onClick={saveCurrentDraft}
                 className="rounded-lg bg-white/15 px-2 py-1"
-                aria-label="Speichern"
+                aria-label={d.saveAria}
               >
                 <Bookmark className="h-3.5 w-3.5" />
               </button>
@@ -2750,13 +3108,13 @@ function DiscoverPageInner() {
                 onClick={() =>
                   draft.computed &&
                   startWithComputed(
-                    draft.label || "Geplante Route",
+                    draft.label || DISCOVER_PIN_DE.planned,
                     draft.computed
                   )
                 }
-                className="flex items-center gap-1 rounded-lg bg-chrome px-2.5 py-1 font-semibold text-background"
+                className="flex items-center gap-1 rounded-xl bg-chrome px-2.5 py-1 font-semibold text-on-accent"
               >
-                <Play className="h-3.5 w-3.5 fill-current" /> {HOF_COPY.inTheApp}
+                <Play className="h-3.5 w-3.5 fill-current" /> {copy.inTheApp}
               </button>
             </div>
           </div>
@@ -2767,11 +3125,12 @@ function DiscoverPageInner() {
 }
 
 export default function DiscoverPage() {
+  const copy = useHofCopy();
   return (
     <Suspense
       fallback={
         <div className="p-6 text-center text-sm text-text-secondary">
-          Karte wird geladen…
+          {copy.mapLoading}
         </div>
       }
     >

@@ -7,11 +7,17 @@ import {
   ELEVATION_OPTIONS,
   SPORT_FILTER_OPTIONS,
   SURFACE_OPTIONS,
-  difficultyOptionsForProfile,
+  VISIBILITY_FILTER_OPTIONS,
   type RouteFilterState,
   type SurfaceKey,
 } from "@/lib/routing/routeFilters";
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import {
+  discoverCopy,
+  discoverDifficulty,
+  discoverElevationLabel,
+} from "@/lib/i18n/discoverCopy";
 
 export function FilterChips({
   minutes,
@@ -29,14 +35,16 @@ export function FilterChips({
   profile?: RoutingProfile;
   showTime?: boolean;
 }) {
-  const difficulty = difficultyOptionsForProfile(profile);
+  const lang = useChromeLang();
+  const d = discoverCopy(lang);
+  const difficulty = discoverDifficulty(profile, lang);
 
   return (
     <div className="flex flex-col gap-3">
       {showTime && (
         <label className="text-sm">
-          <span className="text-text-secondary">Zeitfenster · </span>
-          <span className="font-medium tabular-nums">{minutes} min</span>
+          <span className="text-text-secondary">{d.timeWindow}</span>
+          <span className="font-medium tabular-nums">{d.minutes(minutes)}</span>
           <input
             type="range"
             min={45}
@@ -51,7 +59,7 @@ export function FilterChips({
 
       <div className="flex flex-wrap gap-1.5">
         <span className="w-full text-[10px] font-medium uppercase tracking-wide text-text-secondary">
-          Disziplin (Präferenz)
+          {d.sportPref}
         </span>
         {SPORT_FILTER_OPTIONS.map((o) => (
           <Chip
@@ -59,7 +67,7 @@ export function FilterChips({
             active={filters.sport === o.id}
             onClick={() => onChange({ ...filters, sport: o.id })}
           >
-            {o.label}
+            {d.sport[o.id]}
           </Chip>
         ))}
       </div>
@@ -67,11 +75,9 @@ export function FilterChips({
       <div className="flex flex-wrap gap-1.5">
         <Chip
           active={filters.loopOnly}
-          onClick={() =>
-            onChange({ ...filters, loopOnly: !filters.loopOnly })
-          }
+          onClick={() => onChange({ ...filters, loopOnly: !filters.loopOnly })}
         >
-          Rundkurs
+          {d.loop}
         </Chip>
         {difficulty
           .filter((o) => o.id !== "any")
@@ -100,7 +106,7 @@ export function FilterChips({
               })
             }
           >
-            {o.label}
+            {discoverElevationLabel(o.id, lang)}
           </Chip>
         ))}
         {DISTANCE_MAX_OPTIONS.filter((o) => o.id != null).map((o) => (
@@ -110,12 +116,11 @@ export function FilterChips({
             onClick={() =>
               onChange({
                 ...filters,
-                maxDistanceKm:
-                  filters.maxDistanceKm === o.id ? null : o.id,
+                maxDistanceKm: filters.maxDistanceKm === o.id ? null : o.id,
               })
             }
           >
-            {o.label}
+            {d.dist(o.id as number)}
           </Chip>
         ))}
         {SURFACE_OPTIONS.filter((o) => o.id != null).map((o) => (
@@ -126,27 +131,48 @@ export function FilterChips({
               onChange({
                 ...filters,
                 surfaceQuery:
-                  filters.surfaceQuery === o.id
-                    ? null
-                    : (o.id as SurfaceKey),
+                  filters.surfaceQuery === o.id ? null : (o.id as SurfaceKey),
               })
             }
           >
-            {o.label}
+            {d.surface[o.id as SurfaceKey]}
           </Chip>
         ))}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        <span className="w-full text-[10px] font-medium uppercase tracking-wide text-text-secondary">
+          {d.mappe}
+        </span>
+        {VISIBILITY_FILTER_OPTIONS.map((o) => (
+          <Chip
+            key={o.id}
+            active={(filters.visibility ?? "all_mine") === o.id}
+            onClick={() => onChange({ ...filters, visibility: o.id })}
+          >
+            {o.id === "all_mine"
+              ? d.visAll
+              : o.id === "private"
+                ? d.visPrivate
+                : d.visPublic}
+          </Chip>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
         {(filters.loopOnly ||
           filters.scale !== "any" ||
           filters.elevation !== "any" ||
           filters.surfaceQuery ||
           filters.maxDistanceKm != null ||
-          filters.sport !== "all") && (
+          filters.sport !== "all" ||
+          (filters.visibility ?? "all_mine") !== "all_mine") && (
           <button
             type="button"
             className="rounded-full px-2.5 py-1 text-[11px] text-text-secondary underline"
             onClick={() => onChange(DEFAULT_ROUTE_FILTERS)}
           >
-            Zurücksetzen
+            {d.reset}
           </button>
         )}
       </div>
@@ -169,7 +195,7 @@ function Chip({
       onClick={onClick}
       className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
         active
-          ? "bg-accent text-white"
+          ? "bg-accent text-on-accent"
           : "bg-surface-elevated text-text-secondary"
       }`}
     >

@@ -65,4 +65,20 @@ class ElevationClient {
       return null;
     }
   }
+
+  Future<({double? startM, double? endM})> fetchEndpointElevations(
+    GeoPoint start,
+    GeoPoint end,
+  ) async {
+    final p = await fetchForTrack([start, end]);
+    if (p == null || p.points.length < 2) {
+      return (startM: null, endM: null);
+    }
+    double? elev(Map<String, dynamic> m) {
+      final a = m['elevM'] ?? m['elev'] ?? m['elevation'];
+      return a is num ? a.toDouble() : null;
+    }
+
+    return (startM: elev(p.points.first), endM: elev(p.points.last));
+  }
 }

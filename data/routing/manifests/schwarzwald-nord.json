@@ -1,16 +1,17 @@
 {
   "id": "schwarzwald-nord",
-  "name": "Schwarzwald S\u00fcd (Freiburg\u2013Todtnau\u2013Titisee)",
+  "name": "Schwarzwald S\u00fcd",
   "bbox": [
     7.7,
     47.8,
     8.2,
     48.15
   ],
-  "builtAt": "2026-08-09T10:39:30Z",
+  "builtAt": "2026-08-15T11:33:51Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": true
+    "valhalla_tiles": true,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -32,14 +33,36 @@
       "file_count": 12
     },
     "schwarzwald-nord.tar.gz": {
-      "bytes": 24941658,
-      "sha256": "5b4359ec56637dca2c40b344a259aa483418dc1fa3fcb2dd7e16f3c8cbd66a80",
-      "sha256_16": "5b4359ec56637dca"
+      "bytes": 33368357,
+      "sha256": "0180a0872051244cd00d382e16946b40956c92026779bb8391d4677e9ce1d9af",
+      "sha256_16": "0180a0872051244c"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 15226941,
+      "sha256": "c834019d78e0fdaf6056fc72ca97fa0d1b33828af7b319026a4e12f5aca89124",
+      "sha256_16": "c834019d78e0fdaf"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 5678026,
+      "sha256": "1e926cdff2459df6097f5deb56992e149bd75b6c0f16f7521e21ea941cc3e46e",
+      "sha256_16": "1e926cdff2459df6"
+    },
+    "schwarzwald-nord.tar.zst": {
+      "bytes": 21915940,
+      "sha256": "be31989af5eb54d739970a30dad0c367b2c225bfb720e064cd7511f269724bbe",
+      "sha256_16": "be31989af5eb54d7"
     }
   },
   "cdn": {
     "packGz": "schwarzwald-nord.tar.gz",
     "pack": "schwarzwald-nord.tar.gz",
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/schwarzwald-nord"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

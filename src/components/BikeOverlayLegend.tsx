@@ -1,5 +1,7 @@
 "use client";
 
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { overlayCopy, overlayLegendLabel } from "@/lib/i18n/overlayCopy";
 import {
   BIKE_OVERLAY_LEGEND_DE,
   overlayClassesForFamily,
@@ -29,6 +31,8 @@ export function BikeOverlayLegend({
   onToggleVisible: () => void;
   onToggleClass: (cls: BikeOverlayClass) => void;
 }) {
+  const lang = useChromeLang();
+  const o = overlayCopy(lang);
   const primary = new Set(overlayClassesForFamily(family));
   const profileOn = rideProfileId
     ? overlayClassesOn({
@@ -48,9 +52,9 @@ export function BikeOverlayLegend({
         className="mb-1.5 flex w-full items-center justify-between gap-2 font-semibold uppercase tracking-wide text-white/90"
         onClick={onToggleVisible}
       >
-        <span>Wege · OSM</span>
+        <span>{o.waysOsm}</span>
         <span className="normal-case font-normal text-white/70">
-          {visible ? "an" : "aus"}
+          {visible ? o.on : o.off}
         </span>
       </button>
       {ride && (
@@ -66,7 +70,7 @@ export function BikeOverlayLegend({
             (primary.has(row.bikeClass) || extraOn.includes(row.bikeClass));
           if (profileOn) {
             on = visible && profileOn.has(row.bikeClass);
-            if (row.bikeClass === "mtb" && /^S[0-3]$/.test(row.key)) {
+            if (row.bikeClass === "mtb" && /^S[0-3]\+?$/.test(row.key)) {
               on = on && (scaleOn?.includes(row.key) ?? false);
             }
             if (row.key === "unrated" && rideProfileId) {
@@ -86,14 +90,14 @@ export function BikeOverlayLegend({
                   className="inline-block h-0.5 w-3.5 rounded-full"
                   style={{ background: row.color }}
                 />
-                <span>{row.label}</span>
+                <span>{overlayLegendLabel(row.key, lang)}</span>
               </button>
             </li>
           );
         })}
       </ul>
       <p className="mt-1.5 max-w-[11rem] text-[9px] leading-snug text-white/55">
-        S0–S3 nur bei OSM-Tag. Sonst unbewertet — keine Trailforks-Geometrie.
+        {o.scaleNote}
       </p>
     </div>
   );

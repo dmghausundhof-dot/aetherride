@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/nav_hud_tokens.dart';
 
-/// Bottom data strip: Speed · Rest-km · ETA (N-HUD-01 / nav-hud-tokens-v1).
+/// Bottom data strip: Tempo · noch km · Ziel (N-HUD-01 / nav-hud-tokens-v1).
 /// Together with next-turn these are the only four Clean Mode HUD elements.
 class RideDataStrip extends StatelessWidget {
   const RideDataStrip({
@@ -30,7 +30,7 @@ class RideDataStrip extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       borderRadius: BorderRadius.circular(AppRadius.card),
-      color: theme.cardColor.withValues(alpha: 0.94),
+      color: theme.cardColor.withValues(alpha: 0.78),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -42,9 +42,9 @@ class RideDataStrip extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _stat(speedLabel, speedCaption),
-              _stat(midValue, midLabel),
-              _stat(rightValue, rightLabel),
+              _stat(context, speedLabel, speedCaption),
+              _stat(context, midValue, midLabel),
+              _stat(context, rightValue, rightLabel),
             ],
           ),
         ),
@@ -52,7 +52,7 @@ class RideDataStrip extends StatelessWidget {
     );
   }
 
-  Widget _stat(String value, String label) {
+  Widget _stat(BuildContext context, String value, String label) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -69,10 +69,10 @@ class RideDataStrip extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: NavHudTokens.statLabelDp,
               fontWeight: NavHudTokens.statLabelWeight,
-              color: AppColors.muted,
+              color: AppColors.meta(context),
             ),
           ),
         ],

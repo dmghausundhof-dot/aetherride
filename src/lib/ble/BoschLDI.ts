@@ -1,5 +1,5 @@
 /**
- * AetherRide – Bosch Live Data Interface (LDI) Client
+ * FlowLine – Bosch Live Data Interface (LDI) Client
  *
  * Contract + Web-Simulation. Im Browser: immer Simulator (kein BLE, keine
  * echte Hardware). Native BLE lebt in der Flutter-App.

@@ -1,4 +1,4 @@
-# AetherRide — Ausbau-Plan (App + Touren-Content)
+# FlowLine — Ausbau-Plan (App + Touren-Content)
 
 Stand: 2026-08-11 · Multi-Sport (MTB · Gravel · Rennrad · City · E-Bike)
 

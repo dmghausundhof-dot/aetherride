@@ -179,6 +179,14 @@
   "hofGpsUnknown": "Kein Standort — Himmel und Tor warten auf GPS.",
   "rideGpsUnavailable": "Kein GPS — Track bleibt leer. Kein erfundener Verlauf.",
   "hofAtHof": "am Hof",
+  "hofGarageType": "Typ {type}",
+  "@hofGarageType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "hofSinceOneDay": "seit 1 Tag",
   "hofSinceDays": "seit {days} Tagen",
   "@hofSinceDays": {
@@ -296,6 +304,18 @@
   "filterDistance": "Distanz",
   "filterElevation": "Höhenmeter",
   "filterForm": "Form",
+  "filterFormAll": "Alle",
+  "filterFormPointToPoint": "A→B",
+  "filterFormPointToPointTooltip": "Etappen und lineare Trails (Start≠Ziel).",
+  "filterFormDownhill": "Downhill",
+  "filterFormDownhillTooltip": "Abfahrten, Bikepark, Enduro A→B. Rundkurse nicht automatisch DH.",
+  "filterBikeType": "Fahrradtyp",
+  "filterBikeTypeHonesty": "Farben filtern Touren. Navigation: Fahrrad (GraphHopper Basic), außer Zu Fuß.",
+  "filterSingletrail": "Singletrail (S-Skala)",
+  "filterSingletrailHint": "Nur Touren/Wege mit ehrlicher Skala. Ohne Tag: keine Treffer.",
+  "filterNoDownhillTours": "Keine Downhill-Touren in der Nähe",
+  "filterNoDownhillToursHint": "OSM-Trails nach S-Skala bleiben auf der Karte. Katalog hat hier keine DH-Runde.",
+  "filterNoScaleTours": "Keine Tour mit dieser S-Stufe",
   "filterTrailNetwork": "Trailnetz (Karte)",
   "filterLoopsOnly": "Rundkurs",
   "filterLoopsOnlyTooltip": "Nur ehrliche Rundkurse (Start≈Ziel). Keine A→B-Füllung.",
@@ -1449,6 +1469,18 @@
   "dieBoxChipCsc": "CSC",
   "dieBoxChipBatteryHonest": "Akku ehrlich",
   "dieBoxChipSag": "SAG",
+  "dieBoxChipChain": "Kette",
+  "dieBoxChipPressure": "Druck",
+  "dieBoxChipCockpit": "Cockpit",
+  "lastRideKm": "Zuletzt {km} km",
+  "@lastRideKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "lastRideNoGps": "Zuletzt unterwegs — ohne GPS-Strecke",
   "dieBoxSentenceEverydayReady": "{name} wohnt hier · Montag-bereit",
   "@dieBoxSentenceEverydayReady": {
     "placeholders": {
@@ -1949,7 +1981,22 @@
   "discoverOsmTags": "Tags aus OpenStreetMap",
   "discoverTapMapTrails": "Tippen auf der Karte wählt Trails.",
   "discoverTrailApproachHint": "Anfahrt zum Einstieg, dann Overlay speichern oder fahren.",
+  "discoverTrailGravityHint": "DH: Auto oder zu Fuß zum oberen Einstieg. Die Abfahrt folgt dem Trail, nicht der Straße.",
   "discoverRideToTrailhead": "Zum Startpunkt anfahren",
+  "discoverApproachByCar": "Anfahrt mit Auto",
+  "discoverApproachOnFoot": "Zu Fuß zum Einstieg",
+  "discoverAtTrailStart": "Ich bin am Start",
+  "discoverApproachByBike": "Mit dem Rad anfahren",
+  "discoverTrailUnsuitableForBike": "Mit {bike} nicht auf diesen Trail. Garage wechseln — nicht heimlich als MTB routen.",
+  "@discoverTrailUnsuitableForBike": {
+    "placeholders": {
+      "bike": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverTrailOrientedDownhill": "Einstieg oben (Höhe)",
+  "discoverTrailStartUphillUnknown": "Höhe unklar — näherer Einstieg",
   "discoverPutOnRoute": "Auf Route legen",
   "discoverOpenOsm": "Auf OpenStreetMap öffnen",
   "discoverApproachTrailhead": "Anfahrt zum Trailhead…",
@@ -2280,8 +2327,14 @@
   "discoverNoSavedFilter": "Keine Touren in diesem Filter.",
   "discoverMineEmptyHint": "Noch keine eigenen Strecken — Route hinzufügen, GPX oder aufzeichnen.",
   "overlayLegendTitle": "Wege · OSM",
+  "overlayLegendCompactCity": "City",
+  "overlayLegendCompactMtb": "MTB",
+  "overlayScaleNote": "S0–S3+ nur bei OSM-Tag. Sonst unbewertet.",
   "overlayRoadAsphalt": "Radweg / Asphalt",
   "overlayUnrated": "unbewertet",
+  "discoverChipTooltip": "Touren und Wege — nicht der Navigationsmotor",
+  "discoverNavHonestyBike": "Navi: Fahrrad — GraphHopper Basic, gleiche Route",
+  "discoverNavHonestyFoot": "Navi: Zu Fuß",
   "stimmenTitle": "Stimmen",
   "stimmenHint": "Sterne, Text und Fotos — Cloud nach Freigabe. Keine erfundenen Stimmen.",
   "stimmenWrite": "Stimme schreiben",
@@ -2336,6 +2389,8 @@
   "rideBleDeniedSnack": "Nearby/Bluetooth verweigert — GPS-Navigation läuft ohne Sensor.",
   "rideNoBikeSensor": "Kein Radsensor gefunden — GPS-Track läuft weiter.",
   "rideOfflineRerouteToast": "Reroute braucht Internet. Auf der geladenen Route bleiben.",
+  "rideStayOnTrail": "Auf dem Trail bleiben — keine Straßen-Umleitung.",
+  "rideFollowTrail": "Trail folgen",
   "rideNoGpsRejoin": "Kein GPS-Fix für Rejoin",
   "rideRejoinFailed": "Rejoin fehlgeschlagen: {error}",
   "rideSkipAheadWhy": "Abschnitt übersprungen — zurück zur Route.",
@@ -2399,12 +2454,22 @@
   "rideWatch": "Smartwatch",
   "rideConnected": "Verbunden",
   "ridePower": "Leistung",
-  "rideSoc": "SoC",
+  "rideSoc": "Akku",
   "rideAssist": "Assist",
   "rideBatteryChip": "Akku",
   "rideWheelSpeed": "Rad",
-  "rideRestKm": "Rest-km",
-  "rideEta": "ETA",
+  "rideRestKm": "noch km",
+  "rideUntilJoin": "bis Route",
+  "rideRestLoop": "Rest Runde",
+  "rideKmToRoute": "{km} km zur Route",
+  "@rideKmToRoute": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "rideEta": "Ziel",
   "rideKmh": "km/h",
   "rideKm": "km",
   "rideChassisOff": "Fahrwerksanalyse aus",
@@ -2440,7 +2505,7 @@
   "ridePuckBergASub": "Buchstabe, Berg und Pfeil in einem",
   "ridePuckTopDownSub": "Orthografisch: Nase, Hörner, zwei Reifen — dreht mit",
   "ridePuckHofTorSub": "Zwei Schenkel, unten offen",
-  "ridePuckKometSub": "Speerblatt mit mintfarbenem Funken",
+  "ridePuckKometSub": "Speerblatt mit orangem Funken",
   "ridePuckKieselSub": "Weiches Dreieck mit Halo",
   "ridePuckLenkerBugSub": "Spitze Nase, zwei Lenkerhörner",
   "ridePuckLichtkegelSub": "Dunkle Scheibe, oranger Kegel",
@@ -2945,7 +3010,7 @@
     }
   },
   "rideGPeak": "G-Peak",
-  "rideLean": "Lean °",
+  "rideLean": "Neig.",
   "rideFlow": "Flow",
   "garageSetNamed": "{name} setzen",
   "@garageSetNamed": {
@@ -3030,6 +3095,16 @@
   },
   "bleStatusDriveNoLive": "{who} · erkannt — Tempo über CSC, Akku nur mit Standard-GATT",
   "@bleStatusDriveNoLive": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "bleStatusNeedBond": "Display braucht Bluetooth-Kopplung für den Akku.",
+  "bleStatusBonding": "System-Kopplung …",
+  "bleStatusDriveNeedBond": "{who} · erkannt — Akku nach Bluetooth-Kopplung in der Werkstatt",
+  "@bleStatusDriveNeedBond": {
     "placeholders": {
       "who": {
         "type": "String"
@@ -3126,6 +3201,10 @@
   "bleSemanticsPaired": "Bluetooth gekoppelt",
   "bleSemanticsPair": "Bluetooth koppeln",
   "bleTooltipPair": "Antrieb oder Sensor koppeln",
+  "bleRemoveWheel": "Radsensor entfernen",
+  "bleRemoveDrive": "Antrieb entfernen",
+  "bleSemanticsLive": "Bluetooth live",
+  "bleTooltipSaved": "Gekoppelt, nicht verbunden",
   "watchOtherWatch": "Andere Uhr",
   "bikeCatMtbTrail": "MTB Trail",
   "bikeCatMtb": "MTB",

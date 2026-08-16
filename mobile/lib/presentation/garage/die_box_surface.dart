@@ -7,7 +7,6 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
 import '../../domain/component.dart';
 import '../../domain/garage/die_box.dart';
-import '../../domain/garage/last_ride_hero.dart';
 import '../../domain/garage/pressure_unit.dart';
 import '../../domain/garage/werkstatt_setup.dart';
 import '../../domain/maintenance/intervals.dart';
@@ -77,16 +76,15 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         .where((e) => e['bikeId'] == widget.bike.id)
         .toList();
     final ble =
-        await ref.read(bikeBleStoreProvider).deviceForBike(widget.bike.id);
-    final last = await ref
-        .read(rideRepositoryProvider)
-        .lastEndedForBike(widget.bike.id);
+        await ref.read(bikeBleStoreProvider).bindingForBike(widget.bike.id);
+    final last =
+        await ref.read(rideRepositoryProvider).lastEndedForBike(widget.bike.id);
     if (!mounted) return;
     setState(() {
       _setups = setups;
       _logs = logs;
-      _cscPaired = ble != null;
-      _lastRideLine = lastRideHeroLine(last);
+      _cscPaired = ble.wheel != null;
+      _lastRideLine = AppLocalizations.of(context).lastRideHeroLineFor(last);
     });
   }
 
@@ -434,7 +432,8 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         if (!_snoozed.contains(_itemKey(item))) l10n.localizeDieBoxItem(item),
     ];
     final primary = today.isEmpty ? null : today.first;
-    final rest = today.length <= 1 ? const <DieBoxTodayItem>[] : today.sublist(1);
+    final rest =
+        today.length <= 1 ? const <DieBoxTodayItem>[] : today.sublist(1);
 
     return Column(
       key: const Key('die-box-surface'),
@@ -466,7 +465,7 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.forestOnDark,
+              color: AppColors.chrome,
             ),
           ),
         ],
@@ -544,8 +543,8 @@ class _BereitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tone = switch (plan.readiness) {
-      DieBoxReadiness.ready => AppColors.forestOnDark,
-      DieBoxReadiness.almost => const Color(0xFFE8EEEA),
+      DieBoxReadiness.ready => AppColors.chrome,
+      DieBoxReadiness.almost => AppColors.sageOnDark,
       DieBoxReadiness.unknown => AppColors.muted,
     };
     return Container(
@@ -554,7 +553,7 @@ class _BereitCard extends StatelessWidget {
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: bike.isActive ? AppColors.forestOnDark : AppColors.border,
+          color: bike.isActive ? AppColors.chrome : AppColors.border,
           width: bike.isActive ? 1.5 : 1,
         ),
       ),
@@ -607,7 +606,7 @@ class _BereitCard extends StatelessWidget {
                         color: AppColors.chipIdle,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                         border: Border.all(
-                          color: AppColors.forestOnDark.withValues(alpha: 0.45),
+                          color: AppColors.chrome.withValues(alpha: 0.45),
                         ),
                       ),
                       child: Text(
@@ -697,7 +696,7 @@ class _HeuteZone extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.forestOnDark,
+                              color: AppColors.chrome,
                             ),
                           ),
                           TextButton(

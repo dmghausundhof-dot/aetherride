@@ -1,11 +1,13 @@
 /**
- * Four destinations — same IA as Flutter HofThresholdNav.
+ * Five destinations — same IA as Flutter HofThresholdNav.
  * Ride HUD is not a tab. Shop is a gateway page, not a rebuilt catalog.
+ * Platz orchestrates Mappe/Stimmen — not a Community feed.
  */
 
 export const HOF_NAV = [
   { id: "hof", href: "/home", label: "Der Hof" },
   { id: "karte", href: "/discover", label: "Karte" },
+  { id: "platz", href: "/library", label: "Platz" },
   { id: "werkstatt", href: "/garage", label: "Werkstatt" },
   { id: "shop", href: "/shop", label: "Laden" },
 ] as const;

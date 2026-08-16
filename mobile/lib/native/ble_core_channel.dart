@@ -87,6 +87,11 @@ class BleCoreChannel {
   BikeBleKind? _kindHint;
   bool _preferScanDevice = true;
   bool _rideReconnect = false;
+  bool _allowBondPrompt = false;
+  bool _driveBonded = false;
+  String? _driveRemoteId;
+  final Map<String, StreamSubscription<BluetoothConnectionState>> _auxConnSubs =
+      {};
   bool _rideWatchReconnect = false;
   int _reconnectAttempts = 0;
   int _watchReconnectAttempts = 0;
@@ -108,6 +113,22 @@ class BleCoreChannel {
   bool get isWatchScanning => _watchScanActive;
   bool get isConnected => _device != null || _ldiConnected;
   bool get isCscOnly => _cscOnly;
+  /// CSC notify or native LDI — enough for wheel speed. Drive GATT alone is not.
+  bool get hasWheelLive => _cscSub != null || _ldiConnected;
+  bool get hasBikeLiveMetrics => bleHasLiveBikeMetrics(
+        hasCscNotify: _cscSub != null,
+        hasPowerNotify: _powerSub != null,
+        hasSoc: _socPercent != null,
+        ldiConnected: _ldiConnected,
+      );
+  bool get isDriveWithoutMetrics => bleDriveWithoutLiveMetrics(
+        connected: isConnected,
+        kind: _connectedKind,
+        hasCscNotify: _cscSub != null,
+        hasPowerNotify: _powerSub != null,
+        hasSoc: _socPercent != null,
+        ldiConnected: _ldiConnected,
+      );
   bool get isWatchConnected => _watchDevice != null || _watchSim;
   /// Live BPM from 0x180D — never invented.
   double? get heartRateBpm => _hrBpm;
@@ -118,6 +139,13 @@ class BleCoreChannel {
   String? get watchStatusDetail => _watchStatusDetail;
   String? get lastRemoteId => _lastRemoteId;
   String? get lastWatchRemoteId => _lastWatchRemoteId;
+
+  /// Live GATT on this id — primary or aux (Intuvia beside CSC).
+  bool isRemoteLive(String? id) {
+    if (id == null || id.isEmpty) return false;
+    if (_device?.remoteId.str == id) return true;
+    return _auxDevices.any((d) => d.remoteId.str == id);
+  }
 
   /// Platform-Name des verbundenen CSC-/LDI-Geräts (Garage-Speicher / HUD).
   String? get connectedDeviceName {
@@ -207,6 +235,7 @@ class BleCoreChannel {
   }) async {
     _wantConnection = true;
     _rideReconnect = scanIfMissing;
+    _allowBondPrompt = !scanIfMissing;
     _preferScanDevice = preferScanDevice;
     _onProgress = onProgress;
     _statusDetail = null;
@@ -267,6 +296,29 @@ class BleCoreChannel {
       _ldiConnected = false;
       _statusDetail ??= 'Kein Radsensor gefunden';
       return false;
+    }
+  }
+
+  /// Ride: one-shot Display-GATT for 0x180F. No OS-bond dialog, no retries.
+  /// If CSC is already primary, the drive lands as aux.
+  Future<bool> attachSavedDrive({
+    required String deviceId,
+    BikeBleKind? kindHint,
+  }) async {
+    if (deviceId.isEmpty) return false;
+    if (isRemoteLive(deviceId)) return true;
+    final prevHint = _kindHint;
+    final prevAllow = _allowBondPrompt;
+    _kindHint = kindHint ?? BikeBleKind.bosch;
+    _allowBondPrompt = false;
+    try {
+      return await _attachSensorDevice(
+        _deviceForAttach(deviceId),
+        gattAttempts: 1,
+      );
+    } finally {
+      _kindHint = prevHint;
+      _allowBondPrompt = prevAllow;
     }
   }
 
@@ -404,7 +456,17 @@ class BleCoreChannel {
       return false;
     }
 
-    if (preferredId != null && preferredId.isNotEmpty) {
+    if (preferredId != null &&
+        preferredId.isNotEmpty &&
+        bleSkipPreferredDriveGatt(
+          scanIfMissing: scanIfMissing,
+          kindHint: _kindHint,
+        )) {
+      debugPrint(
+        'ble_core: skip preferred drive GATT '
+        'hint=${_kindHint?.name} id=$preferredId',
+      );
+    } else if (preferredId != null && preferredId.isNotEmpty) {
       try {
         debugPrint('ble_core preferred attach $preferredId hint=${_kindHint?.name}');
         final device = _deviceForAttach(preferredId);
@@ -412,6 +474,7 @@ class BleCoreChannel {
         final attached = await _attachSensorDevice(
           device,
           gattAttempts: attempts,
+          allowDriveAsPrimary: !scanIfMissing,
         );
         if (attached && _device != null && !scanIfMissing) {
           return true;
@@ -435,23 +498,25 @@ class BleCoreChannel {
       final system = await FlutterBluePlus.systemDevices([
         _cscServiceGuid,
         _powerServiceGuid,
-        _batteryServiceGuid,
+        if (!scanIfMissing) _batteryServiceGuid,
       ]);
       for (final d in system) {
-        await _attachSensorDevice(d);
+        if (scanIfMissing && _looksLikeDrive(d)) continue;
+        await _attachSensorDevice(d, allowDriveAsPrimary: !scanIfMissing);
       }
     } catch (_) {}
 
     try {
       for (final d in FlutterBluePlus.connectedDevices) {
-        await _attachSensorDevice(d);
+        if (scanIfMissing && _looksLikeDrive(d)) continue;
+        await _attachSensorDevice(d, allowDriveAsPrimary: !scanIfMissing);
       }
     } catch (_) {}
 
     if (_device != null &&
         _connectedKind != null &&
         bikeBleKindIsDrive(_connectedKind!)) {
-      return true;
+      if (!scanIfMissing) return true;
     }
     if (_device != null && _powerSub != null) return true;
     if (_device != null && !scanIfMissing) return true;
@@ -506,7 +571,10 @@ class BleCoreChannel {
     // Bosch/Shimano brauchen eine bewusste Wahl in der Werkstatt.
     for (final hit in ranked) {
       if (bikeBleKindIsDrive(hit.kind)) continue;
-      await _attachSensorDevice(_deviceForAttach(hit.deviceId));
+      await _attachSensorDevice(
+        _deviceForAttach(hit.deviceId),
+        allowDriveAsPrimary: false,
+      );
       if (_device != null) return true;
     }
 
@@ -692,6 +760,21 @@ class BleCoreChannel {
     } catch (_) {}
   }
 
+  BikeBleKind? _kindHintFor(BluetoothDevice device) {
+    final id = device.remoteId.str;
+    return _scanKindById[id] ??
+        classifyBikeBle(
+          platformName: device.platformName,
+          advertisedServiceUuids: const [],
+        ) ??
+        _kindHint;
+  }
+
+  bool _looksLikeDrive(BluetoothDevice device) {
+    final kind = _kindHintFor(device);
+    return kind != null && bikeBleKindIsDrive(kind);
+  }
+
   BikeBleKind? _kindForDevice(
     BluetoothDevice device,
     List<BluetoothService> services,
@@ -724,6 +807,69 @@ class BleCoreChannel {
     final kind = _kindHint ?? _scanKindById[id] ?? _connectedKind;
     if (kind != null && bikeBleKindIsDrive(kind)) return null;
     return 512;
+  }
+
+  Future<bool> _isBonded(BluetoothDevice device) async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    try {
+      final s = await device.bondState.first.timeout(const Duration(seconds: 2));
+      return s == BluetoothBondState.bonded;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _maybeBondDrive(BluetoothDevice device) async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    final kind = _kindHintFor(device);
+    if (kind == null || !bikeBleKindIsDrive(kind)) return;
+    try {
+      if (await _isBonded(device)) {
+        _driveBonded = true;
+        return;
+      }
+    } catch (_) {}
+    if (!_allowBondPrompt) {
+      debugPrint('ble_core: drive unbonded, skip pair dialog');
+      _driveBonded = false;
+      return;
+    }
+    _progress('System-Kopplung …');
+    try {
+      await device.createBond(timeout: 45);
+      _driveBonded = true;
+    } catch (e) {
+      debugPrint('ble_core createBond: $e');
+      _driveBonded = false;
+      _statusDetail = 'Display braucht Bluetooth-Kopplung für den Akku.';
+    }
+  }
+
+  void _listenAuxDisconnect(BluetoothDevice device, {required bool isDrive}) {
+    final id = device.remoteId.str;
+    unawaited(_auxConnSubs[id]?.cancel());
+    _auxConnSubs[id] = device.connectionState.listen((state) {
+      if (state != BluetoothConnectionState.disconnected) return;
+      _auxDevices.removeWhere((d) => d.remoteId.str == id);
+      unawaited(_auxConnSubs.remove(id)?.cancel());
+      if (isDrive && _driveRemoteId == id) {
+        unawaited(_batterySub?.cancel());
+        _batterySub = null;
+        _socPercent = null;
+        _driveRemoteId = null;
+      }
+      _refreshStatus();
+    });
+  }
+
+  Future<void> _cancelAuxListeners() async {
+    final subs = List<StreamSubscription<BluetoothConnectionState>>.from(
+      _auxConnSubs.values,
+    );
+    _auxConnSubs.clear();
+    for (final s in subs) {
+      await s.cancel();
+    }
   }
 
   void _progress(String message) {
@@ -787,6 +933,7 @@ class BleCoreChannel {
   Future<bool> _attachSensorDevice(
     BluetoothDevice device, {
     int gattAttempts = 1,
+    bool allowDriveAsPrimary = true,
   }) async {
     final id = device.remoteId.str;
     if (_alreadyAttached(id)) return true;
@@ -796,6 +943,7 @@ class BleCoreChannel {
         attempts: gattAttempts,
       );
       if (!opened) return false;
+      await _maybeBondDrive(device);
       final services = await device.discoverServices();
       BluetoothCharacteristic? measurement;
       for (final s in services) {
@@ -845,18 +993,49 @@ class BleCoreChannel {
       final isDrive = bikeBleKindIsDrive(resolvedKind);
 
       if (gotCsc || isDrive) {
+        if (isDrive) {
+          _driveRemoteId = id;
+        }
         if (_device == null) {
+          if (isDrive && !gotCsc && !allowDriveAsPrimary) {
+            await _batterySub?.cancel();
+            _batterySub = null;
+            _socPercent = null;
+            await _closeGattQuietly(device);
+            _driveRemoteId = null;
+            return false;
+          }
           await _connSub?.cancel();
           _connSub = device.connectionState.listen((state) {
             if (state == BluetoothConnectionState.disconnected) {
               if (_device?.remoteId.str == id) {
+                final code = device.disconnectReason?.code;
+                final kind = _connectedKind;
+                final bonded = _driveBonded;
                 _device = null;
                 _statusDetail = 'Radsensor getrennt';
+                if (kind != null && bikeBleKindIsDrive(kind)) {
+                  _driveRemoteId = null;
+                }
                 if (_watchDevice?.remoteId.str == id) {
                   _watchDevice = null;
                   _watchStatusDetail = 'Uhr getrennt';
                 }
-                if (_wantConnection) _scheduleReconnect();
+                if (_wantConnection) {
+                  if (!bleShouldReconnectAfterDrop(
+                    kind: kind,
+                    disconnectCode: code,
+                    bonded: bonded,
+                  )) {
+                    _statusDetail = bleGattStatusHint(code);
+                    debugPrint(
+                      'ble_core: skip reconnect kind=${kind?.name} '
+                      'code=$code bonded=$bonded',
+                    );
+                    return;
+                  }
+                  _scheduleReconnect();
+                }
               }
             } else if (state == BluetoothConnectionState.connected) {
               _refreshStatus();
@@ -868,13 +1047,17 @@ class BleCoreChannel {
           _reconnectAttempts = 0;
           _reconnectTimer?.cancel();
           _reconnectTimer = null;
-          await _saveLastRemoteId(id);
+          if (!isDrive) {
+            await _saveLastRemoteId(id);
+          }
         } else if (_device!.remoteId.str != id) {
           _auxDevices.add(device);
+          _listenAuxDisconnect(device, isDrive: isDrive);
         }
       } else {
         // Power (or HR on a bike box) without CSC — keep beside the wheel sensor.
         _auxDevices.add(device);
+        _listenAuxDisconnect(device, isDrive: false);
       }
 
       _cscOnly = !_ldiConnected;
@@ -1006,8 +1189,9 @@ class BleCoreChannel {
         bikeBleKindIsDrive(_connectedKind!) &&
         _cscSub == null &&
         _socPercent == null) {
-      _statusDetail =
-          '$who · erkannt — Tempo über CSC, Akku nur mit Standard-GATT';
+      _statusDetail = _driveBonded
+          ? '$who · erkannt — Tempo über CSC, Akku nur mit Standard-GATT'
+          : '$who · erkannt — Akku nach Bluetooth-Kopplung in der Werkstatt';
     } else {
       _statusDetail = caps.isEmpty
           ? '$who verbunden'
@@ -1277,6 +1461,8 @@ class BleCoreChannel {
     _device = null;
     _connectedKind = null;
     _socPercent = null;
+    _driveBonded = false;
+    if (_driveRemoteId == cscId) _driveRemoteId = null;
     _prevWheelRevs = null;
     _prevWheelEventTime = null;
     _prevCrankRevs = null;
@@ -1319,6 +1505,7 @@ class BleCoreChannel {
     } on MissingPluginException {
       // LDI G-1: native plugin may be absent.
     }
+    await _cancelAuxListeners();
     for (final d in List<BluetoothDevice>.from(_auxDevices)) {
       if (watchId != null && d.remoteId.str == watchId) continue;
       try {
@@ -1331,6 +1518,8 @@ class BleCoreChannel {
     _connectedKind = null;
     _socPercent = null;
     _powerW = null;
+    _driveBonded = false;
+    _driveRemoteId = null;
     _rideWatchReconnect = false;
     _prevWheelRevs = null;
     _prevWheelEventTime = null;
@@ -1412,11 +1601,14 @@ class BleCoreChannel {
     _connSub = null;
     await _watchConnSub?.cancel();
     _watchConnSub = null;
+    await _cancelAuxListeners();
     _ldiConnected = false;
     _cscOnly = false;
     _connectedKind = null;
     _socPercent = null;
     _watchBatteryPercent = null;
+    _driveBonded = false;
+    _driveRemoteId = null;
     _prevWheelRevs = null;
     _prevWheelEventTime = null;
     _prevCrankRevs = null;

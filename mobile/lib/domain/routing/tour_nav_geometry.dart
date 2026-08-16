@@ -84,6 +84,30 @@ bool isDegenerateTrack(List<List<double>>? trackLngLat) {
 bool isUsableMapTrack(List<List<double>>? trackLngLat) =>
     !isDegenerateTrack(trackLngLat);
 
+/// Discover ribbon (Komoot-Linie) only for a real street/trail polyline.
+bool shouldPaintDiscoverRibbon(List<List<double>>? trackLngLat) =>
+    isUsableMapTrack(trackLngLat);
+
+/// Active `_computed` line on Discover — not a GPS heading rubber-band.
+///
+/// Heading-A→B (Richtung Norden/…) and demo/approx overlays stay off the map.
+/// When approach is already painted cyan, do not re-paint the same prefix
+/// in tour-green (that reads as a green leash from the puck).
+bool shouldPaintActiveComputedRibbon({
+  required List<List<double>>? trackLngLat,
+  required bool isHeadingOrDemoOverlay,
+  required bool approachPaintedSeparately,
+}) {
+  if (isHeadingOrDemoOverlay) return false;
+  if (approachPaintedSeparately) return false;
+  return shouldPaintDiscoverRibbon(trackLngLat);
+}
+
+/// Trailforks „TF“ pins are attribution points (center + URL).
+/// No mirrored geometry → no map pin and no ribbon.
+bool shouldDrawTrailforksMapPin({List<List<double>>? trackLngLat}) =>
+    isUsableMapTrack(trackLngLat);
+
 /// Live ring is acceptable only when honestly closed and length-plausible
 /// vs the curated distance (same gates as Discover seed upgrade).
 bool isAcceptableLiveLoop({
@@ -122,6 +146,212 @@ bool isAcceptableLiveLoop({
 bool navGeometryIsLoop(List<List<double>>? navLngLat) =>
     routeShapeOf(navLngLat) == RouteShape.loop;
 
+/// Map tap in Navigieren must not steal B while typing or after A+B exist.
+bool mapTapMaySetAbPoint({
+  required bool addressFieldFocused,
+  required bool startSet,
+  required bool endSet,
+  required bool explicitlyPicking,
+}) {
+  if (addressFieldFocused) return false;
+  if (!explicitlyPicking && startSet && endSet) return false;
+  return true;
+}
+
+/// A→B that wanders far beyond the crow-flies (stale cache, coarse offline
+/// graph, or a superseded in-flight calc). Loops (start≈end) are not judged.
+///
+/// Frauenweiler → Wiesloch is ~2.6 km crow / ~3.4 km GraphHopper bike.
+/// A 16 km triangle via Sandhausen must not win over the live engine.
+bool isImplausibleAbDetour({
+  required double distanceM,
+  required double fromLat,
+  required double fromLng,
+  required double toLat,
+  required double toLng,
+  List<({double lat, double lng})> vias = const [],
+}) {
+  var crowM = 0.0;
+  var plat = fromLat;
+  var plng = fromLng;
+  for (final v in vias) {
+    crowM += _haversineKm(plat, plng, v.lat, v.lng) * 1000;
+    plat = v.lat;
+    plng = v.lng;
+  }
+  crowM += _haversineKm(plat, plng, toLat, toLng) * 1000;
+  if (crowM < 400) return false;
+  return distanceM > crowM * 2.4 && distanceM > crowM + 2500;
+}
+
+/// GPS farther than this from the tour polyline → Losfahren must compute
+/// an approach (current position → join), not only load the curated track.
+const double kTourApproachThresholdM = 200;
+
+/// True when the rider is not already on the selected tour.
+bool tourNeedsApproachFromGps(
+  double crossTrackM, {
+  double thresholdM = kTourApproachThresholdM,
+}) =>
+    crossTrackM.isFinite && crossTrackM > thresholdM;
+
+/// Catalog pins are often metadata-only (no polyline, sometimes a default
+/// city center). A bundled Nähe-seed with the same place can supply the
+/// street loop Losfahren needs — without a live pentagon that times out.
+const _kCatalogSeedPlaceStopwords = {
+  'allee',
+  'bike',
+  'city',
+  'gravel',
+  'idea',
+  'idee',
+  'loop',
+  'mtb',
+  'park',
+  'rad',
+  'road',
+  'route',
+  'runde',
+  'rundkurs',
+  'the',
+  'tour',
+  'touren',
+  'trail',
+  'urban',
+};
+
+String _catalogSeedNorm(String raw) {
+  return raw
+      .toLowerCase()
+      .replaceAll('ä', 'ae')
+      .replaceAll('ö', 'oe')
+      .replaceAll('ü', 'ue')
+      .replaceAll('ß', 'ss');
+}
+
+Set<String> catalogSeedPlaceTokens(String name) {
+  final norm = _catalogSeedNorm(name).replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
+  return {
+    for (final t in norm.split(' '))
+      if (t.length >= 5 && !_kCatalogSeedPlaceStopwords.contains(t)) t,
+  };
+}
+
+bool _placeTokensAlign(String a, String b) {
+  if (a == b) return true;
+  if (a.length >= 6 && b.length >= 6) {
+    return a.startsWith(b) || b.startsWith(a);
+  }
+  return false;
+}
+
+/// How many distinctive place tokens are shared (prefix-aware).
+int alignedPlaceTokenCount(String catalogName, String seedTitle) {
+  final catalog = catalogSeedPlaceTokens(catalogName);
+  final seed = catalogSeedPlaceTokens(seedTitle);
+  var n = 0;
+  for (final a in catalog) {
+    if (seed.any((b) => _placeTokensAlign(a, b))) n++;
+  }
+  return n;
+}
+
+/// Catalog card and bundled seed describe the same loop.
+bool catalogMatchesBundledSeed({
+  required String catalogName,
+  required double catalogLat,
+  required double catalogLng,
+  required double catalogDistanceKm,
+  required String seedTitle,
+  required double seedLat,
+  required double seedLng,
+  required double seedDistanceKm,
+}) {
+  final aligned = alignedPlaceTokenCount(catalogName, seedTitle);
+  final gapKm = _haversineKm(catalogLat, catalogLng, seedLat, seedLng);
+  final denom = math.max(catalogDistanceKm, seedDistanceKm);
+  final kmRatio =
+      denom > 0 ? (catalogDistanceKm - seedDistanceKm).abs() / denom : 1.0;
+  // Strong place overlap (Baden-Baden + Lichtental) even if the catalog
+  // pin still sits on a default city (Freiburg).
+  if (aligned >= 2) return true;
+  if (aligned >= 1 && gapKm < 25) return true;
+  if (gapKm < 4.0 && kmRatio < 0.35) return true;
+  return false;
+}
+
+/// Best bundled seed track for a pin-only catalog tour, or null.
+({List<List<double>> trackLngLat, double lat, double lng})?
+    pickBundledSeedForCatalog({
+  required String catalogName,
+  required double catalogLat,
+  required double catalogLng,
+  required double catalogDistanceKm,
+  required List<
+          ({
+            String title,
+            double lat,
+            double lng,
+            double distanceKm,
+            List<List<double>> trackLngLat,
+          })>
+      seeds,
+}) {
+  ({List<List<double>> trackLngLat, double lat, double lng})? best;
+  var bestAligned = -1;
+  var bestGap = double.infinity;
+  for (final s in seeds) {
+    if (s.trackLngLat.length < 4) continue;
+    if (!catalogMatchesBundledSeed(
+      catalogName: catalogName,
+      catalogLat: catalogLat,
+      catalogLng: catalogLng,
+      catalogDistanceKm: catalogDistanceKm,
+      seedTitle: s.title,
+      seedLat: s.lat,
+      seedLng: s.lng,
+      seedDistanceKm: s.distanceKm,
+    )) {
+      continue;
+    }
+    final aligned = alignedPlaceTokenCount(catalogName, s.title);
+    final gap = _haversineKm(catalogLat, catalogLng, s.lat, s.lng);
+    if (aligned > bestAligned || (aligned == bestAligned && gap < bestGap)) {
+      bestAligned = aligned;
+      bestGap = gap;
+      best = (trackLngLat: s.trackLngLat, lat: s.lat, lng: s.lng);
+    }
+  }
+  return best;
+}
+
+/// Prepend a street approach onto the remaining tour from [joinIndex].
+({List<List<double>> coordinates, double remainM}) mergeApproachAndTour({
+  required List<List<double>> approachLngLat,
+  required List<List<double>> tourLngLat,
+  required int joinIndex,
+}) {
+  if (tourLngLat.isEmpty) {
+    return (coordinates: List<List<double>>.from(approachLngLat), remainM: 0);
+  }
+  final idx = joinIndex.clamp(0, tourLngLat.length - 1);
+  final remaining = tourLngLat.sublist(idx);
+  var remainM = 0.0;
+  for (var i = 1; i < remaining.length; i++) {
+    remainM += _haversineKm(
+          remaining[i - 1][1],
+          remaining[i - 1][0],
+          remaining[i][1],
+          remaining[i][0],
+        ) *
+        1000;
+  }
+  return (
+    coordinates: [...approachLngLat, ...remaining],
+    remainM: remainM,
+  );
+}
+
 double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
   const r = 6371.0;
   final dLat = (lat2 - lat1) * math.pi / 180;
@@ -132,4 +362,16 @@ double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
           math.sin(dLng / 2) *
           math.sin(dLng / 2);
   return 2 * r * math.asin(math.sqrt(a.clamp(0.0, 1.0)));
+}
+
+/// HUD/Plan-Titel: Zielname statt generischem „Geplante Route“.
+String plannedRouteHudLabel({
+  required String destinationField,
+  required String plannedFallback,
+  required String suggestEndPlaceholder,
+}) {
+  final dest = destinationField.trim();
+  if (dest.isEmpty || dest == suggestEndPlaceholder) return plannedFallback;
+  if (RegExp(r'^-?\d+[.,]\d+').hasMatch(dest)) return plannedFallback;
+  return dest;
 }

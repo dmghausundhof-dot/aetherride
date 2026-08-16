@@ -10,7 +10,7 @@ import {
   hasCommunity,
 } from "./tourCommunity";
 
-assert.ok(COMMUNITY_EMPTY_COPY.includes("erste"));
+assert.ok(COMMUNITY_EMPTY_COPY.includes("Stimmen"));
 
 const empty = countsFromPayload({
   tourId: "x",

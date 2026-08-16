@@ -12,7 +12,6 @@ import 'package:aetherride_mobile/data/local/component_repository.dart';
 import 'package:aetherride_mobile/data/local/garage_repository.dart';
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/domain/component.dart';
-import 'package:aetherride_mobile/presentation/garage/garage_screen.dart';
 import 'package:aetherride_mobile/providers/app_providers.dart';
 import 'package:aetherride_mobile/providers/ride_providers.dart';
 
@@ -69,21 +68,25 @@ void main() {
         attributes: const {'freehub_standard': 'xd'},
       );
 
+      tester.platformDispatcher.localeTestValue = const Locale('de', 'DE');
+      tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
+      addTearDown(() {
+        tester.platformDispatcher.clearLocaleTestValue();
+        tester.platformDispatcher.clearLocalesTestValue();
+      });
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             onboardingDoneProvider.overrideWith((ref) => true),
             appDatabaseProvider.overrideWithValue(db),
           ],
-          child: const AetherRideApp(),
+          child: const FlowLineApp(),
         ),
       );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 200));
 
-      // Zur Garage wechseln. pumpAndSettle() vermeiden — Home hat
-      // Hintergrund-Polling (Wetter/GPS), das nie „settled" (siehe
-      // widget_test.dart: dort ebenfalls feste pump()-Schritte).
       await tester.tap(
         find
             .descendant(
@@ -94,56 +97,37 @@ void main() {
       );
       await _settle(tester);
 
-      // Bike öffnen — Übersichtskarte oder Kachel (beide unter GarageScreen).
-      final garageScrollable = find.descendant(
-        of: find.byType(GarageScreen),
-        matching: find.byType(Scrollable),
-      );
-      final bikeName = find.descendant(
-        of: find.byType(GarageScreen),
-        matching: find.text('Konflikt-Bike'),
-      );
-      if (bikeName.evaluate().isEmpty) {
-        final overviewTitle = find.descendant(
-          of: find.byType(GarageScreen),
-          matching: find.textContaining('Konflikt-Bike'),
-        );
-        await tester.ensureVisible(overviewTitle.first);
-        await tester.tap(overviewTitle.first);
-      } else {
-        await tester.scrollUntilVisible(
-          bikeName.first,
-          120,
-          scrollable: garageScrollable.first,
-        );
-        await tester.tap(bikeName.first);
-      }
-      await _settle(tester);
+      await tester.tap(find.byKey(const Key('werkstatt-bike-hero')));
+      await _settle(tester, steps: 12);
 
-      // Bauteil-Zeilen liegen unterhalb des Sheet-Viewports — die Sliver-
-      // Liste baut sie erst, wenn dorthin gescrollt wird.
-      final sheetScrollable = find.descendant(
-        of: find.byType(DraggableScrollableSheet),
+      expect(find.byKey(const Key('bike-detail')), findsOneWidget);
+
+      final detailScrollable = find.descendant(
+        of: find.byKey(const Key('bike-detail')),
         matching: find.byType(Scrollable),
       );
       await tester.scrollUntilVisible(
+        find.byKey(const Key('garage-more-on-bike')),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.tap(find.byKey(const Key('garage-more-on-bike')));
+      await _settle(tester);
+
+      await tester.scrollUntilVisible(
         find.text('Kassette'),
-        150,
-        scrollable: sheetScrollable,
+        200,
+        scrollable: detailScrollable.first,
       );
       await _settle(tester, steps: 2);
 
-      // Beide betroffenen Bauteil-Zeilen zeigen Slot-Label, Bauteilname
-      // *und* die Kompat-Kurzform in derselben Zeile.
-      expect(find.text('Kassette'), findsOneWidget);
+      expect(find.text('Kassette'), findsWidgets);
       expect(find.text('SRAM XO Eagle'), findsOneWidget);
-      expect(find.text('Nabe hinten'), findsOneWidget);
+      expect(find.text('Nabe hinten'), findsWidgets);
       expect(find.text('DT Swiss 350'), findsOneWidget);
-      expect(find.textContaining('Passt nicht'), findsWidgets);
+      expect(find.text('Passt nicht'), findsWidgets);
 
-      // Tap auf die Zeile öffnet die Evidence (Regelbegründung) statt einer
-      // zweiten, unabhängigen Liste.
-      await tester.tap(find.text('Kassette'));
+      await tester.tap(find.text('Kassette').last);
       await _settle(tester);
       expect(find.text('RL-DRV-011'), findsOneWidget);
     },

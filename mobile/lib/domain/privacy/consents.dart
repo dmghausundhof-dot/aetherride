@@ -36,28 +36,31 @@ const consentLabels = <ConsentPurpose, ConsentLabel>{
   ConsentPurpose.rawDataUpload: ConsentLabel(
     title: 'Rohdaten-Upload',
     description:
-        'Sensor-Rohdaten nur bei WLAN und Opt-in (Spec F-SEN-006). Widerruf jederzeit.',
+        'Sensor-Rohdaten nur bei WLAN und wenn du zustimmst. '
+        'Jederzeit widerrufbar.',
   ),
   ConsentPurpose.heatmapContribution: ConsentLabel(
-    title: 'Heatmap (eigene + Community k≥5)',
+    title: 'Heatmap (eigene Fahrten, anonym)',
     description:
-        'Lokal: eigene Rides. Mit Login: anonymisierte Zellen ohne Zeitstempel; '
-        'Community-Overlay erst ab ≥5 Fahrern pro Zelle. Kein Fake-Overlay ohne Backend.',
+        'Lokal: deine Fahrten. Mit Konto: anonymisierte Zellen ohne Zeitstempel. '
+        'Die Beliebtheitskarte erscheint erst, wenn genug Fahrer in einer '
+        'Zelle unterwegs waren (k≥5).',
   ),
   ConsentPurpose.productRecommendations: ConsentLabel(
     title: 'Produktempfehlungen',
     description:
-        'Nur anlassbezogen mit Datenpunkt (F-SHP-002). Kein Tracking-Marketing.',
+        'Nur anlassbezogen, mit nachvollziehbarem Datenpunkt. '
+        'Kein Tracking-Marketing.',
   ),
   ConsentPurpose.analytics: ConsentLabel(
     title: 'Analytics',
-    description: 'Produktmetriken ohne Gesundheits-/Rohsensordaten.',
+    description: 'Produktmetriken ohne Gesundheits- oder Rohsensordaten.',
   ),
   ConsentPurpose.healthData: ConsentLabel(
-    title: 'Gesundheitsdaten (Art. 9)',
+    title: 'Gesundheitsdaten',
     description:
-        'Vorbereitung — keine Health-Connect-Anbindung in dieser Version. '
-        'Einwilligung speichert nur die Präferenz für spätere Integration.',
+        'Vorbereitung — noch keine Anbindung an Health Connect. '
+        'Die Einwilligung speichert nur deine Präferenz für später.',
   ),
 };
 

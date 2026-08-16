@@ -1,0 +1,27 @@
+{
+  "id": "at-niederoesterreich",
+  "name": "Niederösterreich",
+  "bbox": [
+    14.4,
+    47.4,
+    17.17,
+    49.02
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-niederoesterreich",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-niederoesterreich.tar.zst"
+  }
+}

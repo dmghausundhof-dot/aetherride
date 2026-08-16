@@ -1,0 +1,24 @@
+{
+  "id": "at-vorarlberg",
+  "name": "Vorarlberg",
+  "bbox": [
+    9.53,
+    46.85,
+    10.3,
+    47.6
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-vorarlberg.tar.zst",
+    "packGz": "at-vorarlberg.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

@@ -3,10 +3,14 @@
  */
 
 import type { ClientRouteResult, RoutingProfile } from "@/lib/routing/profiles";
-import { requestRoute, requestRouteDetailed } from "@/lib/routing/profiles";
+import { requestRoute, requestRouteDetailed, getProfile, isRideProfileId, accessCostingForRideProfile } from "@/lib/routing/profiles";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
 import { buildDemoGeometry } from "@/lib/routing/demoGeometry";
+import { pickTrailAlongRoute, applyCorridorCyclewaySnap } from "@/lib/routing/snapTrailCorridor";
+import type { TrailSegment } from "@/lib/routing/trailSegments";
+import { haversineM, lineLengthM } from "@/lib/routing/routeProgress";
 import type { NavStep } from "@/lib/routing/navSteps";
+import { orientTrail } from "@/lib/routing/trailAccess";
 
 export type QuickOption = {
   id: string;
@@ -409,12 +413,29 @@ export async function computeQuickOptions(
 }
 
 export async function computePointToPoint(
-  draft: PlanDraft
+  draft: PlanDraft,
+  opts?: { trails?: TrailSegment[] }
 ): Promise<ClientRouteResult | null> {
-  const from = startOf(draft);
-  const to = endOf(draft);
-  if (!from || !to) return null;
-  return requestRoute(draft.profile, from, to, viasOf(draft));
+  const next = await resolvePointToPointDraft(draft, opts);
+  return next?.computed ?? null;
+}
+
+/** Rider-facing one-liner for a computed route (engine + first honesty warning). */
+export function routeResultMessage(result: ClientRouteResult): string {
+  const km = (result.distanceM / 1000).toFixed(1);
+  const min = Math.round(result.durationS / 60);
+  const head = `${km} km · ${min} min`;
+  const rider = (result.warnings ?? []).find(
+    (w) =>
+      !w.startsWith("GraphHopper-Account") &&
+      !w.includes("GRAPHHOPPER_ALLOW_EXTENDED") &&
+      !w.startsWith("OpenRouteService Fallback") &&
+      !w.startsWith("Live-Routing") &&
+      !w.startsWith("Kein ROUTING_ENGINE") &&
+      !w.startsWith("Öffentliches OSRM")
+  );
+  if (rider) return `${head} · ${rider}`;
+  return `${head} · ${result.engine}`;
 }
 
 /** Adopt tour geometry as-is. Without geometry: empty result (pin-only UI). */
@@ -462,7 +483,11 @@ export async function snapToTourParts(
   if (!tour.geometry || tour.geometry.coordinates.length < 2) {
     const entry = (tour.center ?? null) as [number, number] | null;
     if (!entry) return null;
-    const approach = await requestRoute(profile, userStart, entry);
+    const approach = await requestRoute(
+      accessCostingForRideProfile(profile),
+      userStart,
+      entry
+    );
     if (!approach) return null;
     return {
       merged: {
@@ -487,7 +512,11 @@ export async function snapToTourParts(
   const entry = tourGeom.coordinates[0] as [number, number];
   if (!entry) return null;
 
-  const approach = await requestRoute(profile, userStart, entry);
+  const approach = await requestRoute(
+    accessCostingForRideProfile(profile),
+    userStart,
+    entry
+  );
   const tourPart: ClientRouteResult = {
     distanceM: (tour.distanceKm ?? 20) * 1000,
     durationS: (tour.durationMin ?? 90) * 60,
@@ -534,10 +563,73 @@ export async function snapToTour(
 
 export type AttachTrailMode = "append" | "via_chain";
 
+export { lineLengthM } from "@/lib/routing/routeProgress";
+
+function trailNavSteps(
+  name: string,
+  coords: [number, number][],
+  distanceM: number
+): NavStep[] {
+  const start = coords[0];
+  const end = coords[coords.length - 1];
+  if (!start || !end) return [];
+  return [
+    {
+      id: "trail-start",
+      type: "start",
+      instruction: `Trail ${name}`,
+      instructionEn: `Trail ${name}`,
+      distanceAlongM: 0,
+      lengthM: distanceM,
+      coordinate: { lng: start[0], lat: start[1] },
+    },
+    {
+      id: "trail-end",
+      type: "arrive",
+      instruction: `Ende ${name}`,
+      instructionEn: `End ${name}`,
+      distanceAlongM: distanceM,
+      lengthM: 0,
+      coordinate: { lng: end[0], lat: end[1] },
+    },
+  ];
+}
+
+function trailEnginePart(
+  name: string,
+  geometry: GeoJSON.LineString,
+  profile: RoutingProfile
+): ClientRouteResult {
+  const coords = (geometry.coordinates ?? []) as [number, number][];
+  const distanceM = Math.max(1, Math.round(lineLengthM(coords)));
+  const speedKmh = isRideProfileId(profile)
+    ? getProfile(profile).defaultSpeedKmh
+    : 16;
+  const durationS = Math.max(1, Math.round((distanceM / 1000 / speedKmh) * 3600));
+  return {
+    distanceM,
+    durationS,
+    geometry,
+    engine: "osm-trail",
+    profile,
+    steps: trailNavSteps(name, coords, distanceM),
+    warnings: [`Trail „${name}“ liegt auf der Route.`],
+  };
+}
+
+export type AttachTrailOpts = {
+  accessProfile?: RoutingProfile;
+  orientDownhill?: boolean;
+  startElevM?: number | null;
+  endElevM?: number | null;
+};
+
 /**
  * Connect a trail segment into the current draft.
- * - append: approach → trail geometry (+ optional continue to end)
- * - via_chain: trail entry/mid/exit as vias, engine re-routes
+ * Both modes keep OSM trail geometry in the nav line — GraphHopper `bike`
+ * often routes around path/track between three vias.
+ * - append: approach → trail → optional continue
+ * - via_chain: same line, plus trail entry/mid/exit as draft waypoints
  */
 export async function attachTrailToDraft(
   draft: PlanDraft,
@@ -547,18 +639,61 @@ export async function attachTrailToDraft(
     geometry: GeoJSON.LineString;
   },
   mode: AttachTrailMode,
-  userStart?: [number, number] | null
+  userStart?: [number, number] | null,
+  opts?: AttachTrailOpts
 ): Promise<PlanDraft | null> {
-  const coords = (segment.geometry.coordinates ?? []) as [number, number][];
-  if (coords.length < 2) return null;
-  const entry = coords[0];
-  const exit = coords[coords.length - 1];
+  const raw = (segment.geometry.coordinates ?? []) as [number, number][];
+  if (raw.length < 2) return null;
+  const origin = userStart ?? startOf(draft) ?? raw[0];
+  const oriented = orientTrail({
+    geometry: raw,
+    fromLng: origin[0],
+    fromLat: origin[1],
+    startElevM: opts?.startElevM,
+    endElevM: opts?.endElevM,
+    preferDownhill: opts?.orientDownhill === true,
+  });
+  const coords = oriented.geometry;
+  const entry = oriented.entry;
+  const exit = oriented.exit;
   const mid = coords[Math.floor(coords.length / 2)];
-  const origin = userStart ?? startOf(draft) ?? entry;
+  const trailGeom: GeoJSON.LineString = {
+    type: "LineString",
+    coordinates: coords,
+  };
   const profile = draft.profile;
+  const access = opts?.accessProfile ?? accessCostingForRideProfile(profile);
+  const gravityAccess = access === "auto" || access === "hiking";
+
+  const approach = await requestRoute(access, origin, entry);
+  const trailPart = trailEnginePart(segment.name, trailGeom, profile);
+
+  const parts: ClientRouteResult[] = [];
+  if (approach) parts.push(approach);
+  parts.push(trailPart);
+
+  const end = endOf(draft);
+  if (
+    !gravityAccess &&
+    end &&
+    (end[0] !== exit[0] || end[1] !== exit[1])
+  ) {
+    const continuePart = await requestRoute(profile, exit, end);
+    if (continuePart) parts.push(continuePart);
+  }
+
+  const merged = mergeRouteResults(parts, profile, [
+    `Trail in der Navi: ${segment.name}`,
+    ...(oriented.usedElevation ? ["Einstieg oben (Höhe)"] : []),
+  ]);
+
+  let next = setStart(
+    end && !gravityAccess ? draft : setEnd(draft, exit, "Trail-Ende"),
+    origin,
+    "Hier"
+  );
 
   if (mode === "via_chain") {
-    let next = setStart(draft, origin, "Start");
     next = {
       ...next,
       waypoints: next.waypoints.filter((w) => w.role !== "via"),
@@ -567,60 +702,137 @@ export async function attachTrailToDraft(
     next = addVia(next, mid, `${segment.name} Mitte`);
     next = addVia(next, exit, `${segment.name} Ausstieg`);
     if (!endOf(next)) next = setEnd(next, exit, "Ziel");
-    const computed = await computePointToPoint(next);
-    return {
-      ...next,
-      mode: "hybrid",
-      hybrid: { strategy: "replan" },
-      computed,
-      label: `${segment.name} (Via)`,
-      attachedTrailId: segment.id,
-      layers: { trail: segment.geometry },
-    };
   }
-
-  // append
-  const approach = await requestRoute(profile, origin, entry);
-  const trailDist =
-    Math.hypot(exit[0] - entry[0], exit[1] - entry[1]) * 111_000 * 1.4;
-  const trailPart: ClientRouteResult = {
-    distanceM: Math.round(trailDist),
-    durationS: Math.round(trailDist / 4),
-    geometry: segment.geometry,
-    engine: "trail-seed",
-    profile,
-    warnings: [`Trail „${segment.name}“ eingefügt (Seed-Geometrie).`],
-  };
-
-  const parts: ClientRouteResult[] = [];
-  if (approach) parts.push(approach);
-  parts.push(trailPart);
-
-  const end = endOf(draft);
-  if (end && (end[0] !== exit[0] || end[1] !== exit[1])) {
-    const continuePart = await requestRoute(profile, exit, end);
-    if (continuePart) parts.push(continuePart);
-  }
-
-  const merged = mergeRouteResults(parts, profile, [
-    `Trail angehängt: ${segment.name}`,
-  ]);
 
   return {
-    ...setStart(
-      end ? draft : setEnd(draft, exit, "Trail-Ende"),
-      origin,
-      "Hier"
-    ),
+    ...next,
     mode: "hybrid",
     hybrid: { strategy: "snap" },
     computed: merged,
-    label: `${segment.name} (angehängt)`,
+    label:
+      mode === "via_chain"
+        ? `${segment.name} (in Navi)`
+        : `${segment.name} (angehängt)`,
     attachedTrailId: segment.id,
     layers: {
       approach: approach?.geometry,
-      trail: segment.geometry,
+      trail: trailGeom,
     },
+  };
+}
+
+/** Gravity „Ich bin am Start“: OSM-Trail ohne Anfahrt. */
+export function adoptTrailToDraft(
+  draft: PlanDraft,
+  segment: {
+    id: string;
+    name: string;
+    geometry: GeoJSON.LineString;
+  },
+  userStart?: [number, number] | null,
+  opts?: AttachTrailOpts
+): PlanDraft | null {
+  const raw = (segment.geometry.coordinates ?? []) as [number, number][];
+  if (raw.length < 2) return null;
+  const origin = userStart ?? startOf(draft) ?? raw[0];
+  const oriented = orientTrail({
+    geometry: raw,
+    fromLng: origin[0],
+    fromLat: origin[1],
+    startElevM: opts?.startElevM,
+    endElevM: opts?.endElevM,
+    preferDownhill: opts?.orientDownhill === true,
+  });
+  const trailGeom: GeoJSON.LineString = {
+    type: "LineString",
+    coordinates: oriented.geometry,
+  };
+  const trailPart = trailEnginePart(segment.name, trailGeom, draft.profile);
+  return {
+    ...setEnd(setStart(draft, oriented.entry, "Trail-Start"), oriented.exit, "Trail-Ende"),
+    mode: "hybrid",
+    hybrid: { strategy: "adopt" },
+    computed: trailPart,
+    label: segment.name,
+    attachedTrailId: segment.id,
+    layers: { trail: trailGeom },
+  };
+}
+
+/**
+ * A–B routing that keeps an attached trail or auto-snaps a nearby
+ * OSM trail/cycleway the engine skipped.
+ */
+export async function resolvePointToPointDraft(
+  draft: PlanDraft,
+  opts?: { trails?: TrailSegment[]; origin?: [number, number] | null }
+): Promise<PlanDraft | null> {
+  const from = startOf(draft);
+  const to = endOf(draft);
+  if (!from || !to) return null;
+  const origin = opts?.origin ?? from;
+
+  if (draft.attachedTrailId && draft.layers?.trail) {
+    const stitched = await attachTrailToDraft(
+      { ...draft, profile: draft.profile },
+      {
+        id: draft.attachedTrailId,
+        name:
+          draft.label?.replace(/\s*\([^)]*\)\s*$/, "").trim() || "Trail",
+        geometry: draft.layers.trail,
+      },
+      draft.waypoints.some((w) => w.role === "via") ? "via_chain" : "append",
+      origin
+    );
+    return stitched;
+  }
+
+  const engine = await requestRoute(
+    accessCostingForRideProfile(draft.profile),
+    from,
+    to,
+    viasOf(draft)
+  );
+  if (!engine) return null;
+
+  if (draft.profile === "urban" || draft.profile === "ebike") {
+    const snapped = applyCorridorCyclewaySnap({
+      profile: draft.profile,
+      from,
+      to,
+      route: engine,
+      trails: opts?.trails ?? [],
+    });
+    return {
+      ...draft,
+      mode: "point_to_point",
+      computed: snapped,
+      layers: undefined,
+    };
+  }
+
+  const picked = pickTrailAlongRoute({
+    profile: draft.profile,
+    from,
+    to,
+    route: engine,
+    trails: opts?.trails ?? [],
+  });
+  if (picked) {
+    const stitched = await attachTrailToDraft(
+      { ...draft, computed: engine },
+      picked,
+      "append",
+      origin
+    );
+    if (stitched?.computed) return stitched;
+  }
+
+  return {
+    ...draft,
+    mode: "point_to_point",
+    computed: engine,
+    layers: undefined,
   };
 }
 

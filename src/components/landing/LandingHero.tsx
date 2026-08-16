@@ -8,20 +8,27 @@ import {
   isExternalAppDiscoverHref,
 } from "@/lib/web/appLinks";
 import { useHofTitle } from "@/hooks/useHofTitle";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useHomepageCopy } from "@/hooks/useHomepageCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 import { TrustSheet } from "./TrustSheet";
 
-const PILLS = [
-  { href: "/home", label: "Der Hof" },
-  { href: "/discover", label: "Karte" },
-  { href: "/library", label: "Platz" },
-  { href: "/garage", label: "Werkstatt" },
-  { href: "/shop", label: "Laden" },
-] as const;
+const HERO_DOORS = [
+  { id: "hof" as const, href: "/home" },
+  { id: "karte" as const, href: "/discover" },
+  { id: "platz" as const, href: "/library" },
+  { id: "werkstatt" as const, href: "/garage" },
+  { id: "shop" as const, href: "/shop" },
+];
 
 export function LandingHero() {
   const [trustOpen, setTrustOpen] = useState(false);
   const title = useHofTitle();
+  const lang = useChromeLang();
+  const chrome = webChrome(lang);
+  const hof = useHofCopy();
+  const home = useHomepageCopy();
 
   function onAppDiscoverClick(e: MouseEvent<HTMLAnchorElement>) {
     const target = appDiscoverHref(navigator.userAgent);
@@ -64,28 +71,26 @@ export function LandingHero() {
           <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(18,18,21,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">
             {title}.
             <br />
-            Das Rad wohnt hier.
+            {home.ui.heroTagline}
           </h1>
 
           <p className="mt-7 max-w-sm text-[0.95rem] leading-[1.55] text-text-secondary sm:mt-8 sm:max-w-md sm:text-lg sm:leading-relaxed">
-            Outdoor Cycling, vereinfacht: planen und pflegen im Browser, fahren
-            in der App. Drei Sekunden — der Himmel, eine Stunde vor dem Tor, ein
-            Knopf: {HOF_COPY.rideOut}.
+            {home.ui.heroLead(hof.rideOut)}
           </p>
 
           <div className="mt-10 flex flex-col items-stretch gap-3 sm:mt-12 sm:flex-row sm:items-center sm:gap-3.5">
             <Link
               href="/home"
-              className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-7 text-[0.95rem] font-semibold text-white transition hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-7 text-[0.95rem] font-semibold text-on-accent transition hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
             >
-              Zum Hof
+              {chrome.toHof}
             </Link>
             <Link
               href="/download"
               onClick={onAppDiscoverClick}
-              className="inline-flex h-12 items-center justify-center rounded-lg border border-foreground/25 bg-transparent px-7 text-[0.95rem] font-medium text-foreground/95 transition hover:border-foreground/45 hover:bg-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chrome sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-foreground/25 bg-transparent px-7 text-[0.95rem] font-medium text-foreground/95 transition hover:border-foreground/45 hover:bg-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chrome sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
             >
-              App laden
+              {chrome.loadApp}
             </Link>
           </div>
 
@@ -94,27 +99,27 @@ export function LandingHero() {
             onClick={() => setTrustOpen(true)}
             className="mt-4 text-left text-sm text-text-secondary underline-offset-4 hover:text-foreground hover:underline"
           >
-            So bleibt’s fair
+            {home.ui.heroFair}
           </button>
 
           <ul
             className="mt-10 flex flex-wrap gap-2 sm:mt-12"
-            aria-label="Fünf Türen"
+            aria-label={chrome.fiveDoors}
           >
-            {PILLS.map((pill) => (
-              <li key={pill.href}>
+            {HERO_DOORS.map((item) => (
+              <li key={item.href}>
                 <Link
-                  href={pill.href}
+                  href={item.href}
                   className="inline-block rounded-md border border-foreground/14 bg-background/20 px-2.5 py-1 text-[0.72rem] font-medium tracking-[0.015em] text-foreground/80 transition hover:border-foreground/35 hover:text-foreground sm:text-xs"
                 >
-                  {pill.label}
+                  {item.id === "hof" ? title : chrome.hofNav[item.id]}
                 </Link>
               </li>
             ))}
           </ul>
 
           <p className="mt-5 text-[0.7rem] leading-relaxed tracking-[0.01em] text-text-secondary/80 sm:mt-6 sm:text-[0.8rem]">
-            Kein Feed, keine KPI-Leiste, keine zweite Kasse im Browser.
+            {home.ui.heroFoot}
           </p>
         </div>
       </div>

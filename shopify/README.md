@@ -1,4 +1,4 @@
-# AetherRide Shopify theme (Dawn)
+# FlowLine Shopify theme (Dawn)
 
 Storefront for **dmg-haus-und-hof-shop**. Look: Hof-adjacent (dark ground, steel hairline, mint) — orange stays the ride CTA in the app, not shop chrome.
 

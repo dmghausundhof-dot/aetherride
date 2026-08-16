@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { useHomepageCopy } from "@/hooks/useHomepageCopy";
 
 type TrustSheetProps = {
   open: boolean;
@@ -8,12 +9,13 @@ type TrustSheetProps = {
 };
 
 /**
- * L-TRUST-01 — Fairness Trust-Sheet (locked copy 1:1).
+ * L-TRUST-01 — Fairness Trust-Sheet.
  * Calm dismiss — no PRO / urgency chrome.
  */
 export function TrustSheet({ open, onClose }: TrustSheetProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const ui = useHomepageCopy().ui;
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +42,7 @@ export function TrustSheet({ open, onClose }: TrustSheetProps) {
     >
       <button
         type="button"
-        aria-label="Schließen"
+        aria-label={ui.trustClose}
         className="absolute inset-0 bg-background/55 backdrop-blur-[1px] animate-hero-fade"
         onClick={onClose}
       />
@@ -55,22 +57,21 @@ export function TrustSheet({ open, onClose }: TrustSheetProps) {
           id={titleId}
           className="text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-[1.35rem]"
         >
-          Fair von Anfang an.
+          {ui.trustTitle}
         </h2>
         <p className="mt-3.5 text-sm leading-relaxed text-text-secondary sm:text-[0.95rem] sm:leading-[1.55]">
-          Sync, Navigation und Export bleiben frei — ohne Überraschungen mitten
-          in der Tour.
+          {ui.trustBody}
         </p>
         <p className="mt-5 inline-flex items-center text-xs font-medium tracking-[0.01em] text-foreground/80">
-          Offline ✓ frei
+          {ui.trustOffline}
         </p>
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
-          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-lg border border-foreground/20 bg-foreground/[0.06] text-sm font-medium text-foreground transition hover:bg-foreground/[0.1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-8 inline-flex h-11 w-full items-center justify-center rounded-xl border border-foreground/20 bg-foreground/[0.06] text-sm font-medium text-foreground transition hover:bg-foreground/[0.1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          Verstanden
+          {ui.trustOk}
         </button>
       </div>
     </div>

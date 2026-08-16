@@ -68,7 +68,7 @@ export function TourLiveMap({
           id: "tour-live",
           role: "tour",
           geometry: data!.geometry,
-          color: "#FF6B35",
+          color: "#FF6A00",
           width: 5,
           opacity: 0.92,
         },
@@ -79,7 +79,7 @@ export function TourLiveMap({
     {
       id: "tour-pin",
       lngLat: center,
-      color: "#FF6B35",
+      color: "#FF6A00",
       label: "T",
     },
   ];

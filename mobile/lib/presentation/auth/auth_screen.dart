@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
 import '../../core/errors/friendly_error.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../billing/upgrade_screen.dart';
@@ -50,9 +51,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Future<void> _onSessionReady() async {
     if (!mounted || _handledOAuthSession) return;
     _handledOAuthSession = true;
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
-      _message = 'Angemeldet — synchronisiere…';
+      _message = l10n.authSignedInSyncing;
     });
     try {
       await ref.read(syncEngineProvider).syncNow();
@@ -60,7 +62,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _message = 'Angemeldet. Sync: $e';
+          _message = l10n.authSignedInSyncFailed('$e');
           _busy = false;
         });
       }
@@ -76,14 +78,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (!AppConfig.isSupabaseConfigured) {
-      setState(() => _message = 'Cloud-Sync ist gerade nicht verfügbar.');
+      setState(() => _message = l10n.authCloudUnavailable);
       return;
     }
     final email = _email.text.trim();
     final password = _password.text;
     if (email.isEmpty || password.length < 8) {
-      setState(() => _message = 'E-Mail und Passwort (min. 8 Zeichen) nötig.');
+      setState(() => _message = l10n.authEmailPasswordRequired);
       return;
     }
     setState(() {
@@ -98,10 +101,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           password: password,
         );
         if (res.session == null) {
-          setState(
-            () => _message =
-                'Konto erstellt — ggf. E-Mail bestätigen, dann anmelden.',
-          );
+          setState(() => _message = l10n.authAccountCreatedConfirm);
         } else {
           _handledOAuthSession = true;
           await ref.read(syncEngineProvider).syncNow();
@@ -126,8 +126,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _oauth(OAuthProvider provider) async {
+    final l10n = AppLocalizations.of(context);
     if (!AppConfig.isSupabaseConfigured) {
-      setState(() => _message = 'Supabase nicht konfiguriert.');
+      setState(() => _message = l10n.authSupabaseMissing);
       return;
     }
     setState(() {
@@ -143,10 +144,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
       if (mounted) {
-        setState(
-          () => _message =
-              'Browser geöffnet — nach Login kehrst du automatisch zurück.',
-        );
+        setState(() => _message = l10n.authBrowserOpened);
       }
     } on AuthException catch (e) {
       setState(() => _message = e.message);
@@ -163,26 +161,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Konto löschen?'),
-        content: const Text(
-          'Remote-Konto und lokale App-Daten werden gelöscht. '
-          'Exportiere vorher GPX/JSON unter Daten & Privatsphäre.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Löschen'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final dialogL10n = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(dialogL10n.authDeleteTitle),
+          content: Text(dialogL10n.authDeleteBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(dialogL10n.cancel),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.chipIdleText,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(dialogL10n.delete),
+            ),
+          ],
+        );
+      },
     );
     if (ok != true) return;
     setState(() => _busy = true);
@@ -203,17 +205,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               body: '{"confirm":"DELETE"}',
             );
             if (res.statusCode == 200) {
-              remoteMsg = 'Remote-Konto gelöscht.';
+              remoteMsg = l10n.authRemoteDeleted;
             } else if (res.statusCode == 503) {
-              remoteMsg =
-                  'Remote-Löschung nicht verfügbar — nur lokale Daten entfernt.';
+              remoteMsg = l10n.authRemoteUnavailable;
             } else {
-              remoteMsg =
-                  'Remote-Löschung fehlgeschlagen (${res.statusCode}) — lokal trotzdem gelöscht.';
+              remoteMsg = l10n.authRemoteFailed(res.statusCode);
             }
           } catch (_) {
-            remoteMsg =
-                'Server nicht erreichbar — nur lokale Daten entfernt.';
+            remoteMsg = l10n.authRemoteUnreachable;
           }
         }
         try {
@@ -230,10 +229,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              remoteMsg ??
-                  'Lokale Daten gelöscht. Export ggf. unter Privatsphäre nachholen.',
-            ),
+            content: Text(remoteMsg ?? l10n.authLocalDeleted),
           ),
         );
         Navigator.of(context).pop(true);
@@ -247,25 +243,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final session = ref.watch(authSessionProvider).valueOrNull;
     final loggedIn = session != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(loggedIn ? 'Konto' : (_register ? 'Registrieren' : 'Anmelden')),
+        title: Text(
+          loggedIn
+              ? l10n.account
+              : (_register ? l10n.register : l10n.signIn),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           if (loggedIn) ...[
             Text(
-              session.user.email ?? 'Angemeldet',
+              session.user.email ?? l10n.profileSignedIn,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'Sync mit ${AppConfig.apiBaseUrl} ist aktiv.',
-              style: TextStyle(color: AppColors.muted),
+              l10n.authSyncActive(AppConfig.apiBaseUrl),
+              style: const TextStyle(color: AppColors.muted),
             ),
             const SizedBox(height: 20),
             FilledButton(
@@ -275,20 +276,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       setState(() => _busy = true);
                       try {
                         await ref.read(syncEngineProvider).syncNow();
-                        setState(() => _message = 'Sync OK');
+                        setState(() => _message = l10n.authSyncOk);
                       } catch (e) {
-                        setState(() => _message = 'Sync: $e');
+                        setState(() => _message = l10n.billingSyncError('$e'));
                       } finally {
                         if (mounted) setState(() => _busy = false);
                       }
                     },
-              child: const Text('Jetzt synchronisieren'),
+              child: Text(l10n.authSyncNow),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openUpgradeScreen(context),
               icon: const Icon(Icons.workspace_premium_outlined),
-              label: const Text('AetherRide Pro'),
+              label: Text(l10n.billingTitle),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
@@ -301,53 +302,73 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ),
                       );
                     },
-              child: const Text('Daten & Privatsphäre'),
+              child: Text(l10n.authPrivacy),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
               icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Assistent öffnen'),
+              label: Text(l10n.authOpenAssistant),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: _busy ? null : _signOut,
-              child: const Text('Abmelden'),
+              child: Text(l10n.signOut),
             ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: _busy ? null : _deleteAccount,
-              child: const Text(
-                'Konto löschen',
-                style: TextStyle(color: Colors.redAccent),
+              child: Text(
+                l10n.authDeleteAccount,
+                style: const TextStyle(color: AppColors.error),
               ),
             ),
           ] else ...[
-            TextField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'E-Mail',
-                border: OutlineInputBorder(),
+            Semantics(
+              label: l10n.authEmail,
+              textField: true,
+              child: TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const [AutofillHints.email],
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: l10n.authEmail,
+                  hintText: l10n.authEmailHint,
+                  prefixIcon: Icon(Icons.email_outlined, semanticLabel: l10n.authEmail),
+                  border: const OutlineInputBorder(),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Passwort',
-                border: OutlineInputBorder(),
+            Semantics(
+              label: l10n.authPassword,
+              textField: true,
+              child: TextField(
+                controller: _password,
+                obscureText: true,
+                autofillHints: const [AutofillHints.password],
+                decoration: InputDecoration(
+                  labelText: l10n.authPassword,
+                  hintText: l10n.authPassword,
+                  prefixIcon: Icon(Icons.lock_outline, semanticLabel: l10n.authPassword),
+                  border: const OutlineInputBorder(),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             FilledButton(
               style: FilledButton.styleFrom(),
               onPressed: _busy ? null : _submit,
-              child: Text(_busy
-                  ? '…'
-                  : (_register ? 'Konto erstellen' : 'Anmelden')),
+              child: Text(
+                _busy
+                    ? (_register ? l10n.authCreating : l10n.authSigningIn)
+                    : (_register ? l10n.authCreateAccount : l10n.signIn),
+              ),
             ),
             TextButton(
               onPressed: _busy
@@ -357,9 +378,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         _message = null;
                       }),
               child: Text(
-                _register
-                    ? 'Bereits Konto? Anmelden'
-                    : 'Neu hier? Registrieren',
+                _register ? l10n.authHaveAccount : l10n.authNewHere,
               ),
             ),
             if (AppConfig.isSupabaseConfigured &&
@@ -373,7 +392,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   onPressed:
                       _busy ? null : () => _oauth(OAuthProvider.google),
                   icon: const Icon(Icons.g_mobiledata),
-                  label: const Text('Mit Google'),
+                  label: Text(l10n.authWithGoogle),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -382,14 +401,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   onPressed:
                       _busy ? null : () => _oauth(OAuthProvider.apple),
                   icon: const Icon(Icons.apple),
-                  label: const Text('Mit Apple'),
+                  label: Text(l10n.authWithApple),
                 ),
             ],
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openUpgradeScreen(context),
               icon: const Icon(Icons.workspace_premium_outlined),
-              label: const Text('AetherRide Pro'),
+              label: Text(l10n.billingTitle),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
@@ -400,18 +419,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   ),
                 );
               },
-              child: const Text('Daten & Privatsphäre'),
+              child: Text(l10n.authPrivacy),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
               icon: const Icon(Icons.chat_bubble_outline),
-              label: const Text('Assistent öffnen'),
+              label: Text(l10n.authOpenAssistant),
             ),
           ],
           if (_message != null) ...[
             const SizedBox(height: 16),
-            Text(_message!, style: TextStyle(color: AppColors.muted)),
+            Text(_message!, style: const TextStyle(color: AppColors.muted)),
           ],
         ],
       ),

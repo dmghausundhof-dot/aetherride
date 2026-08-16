@@ -7,10 +7,17 @@
 import {
   buildValhallaCosting,
   getProfile,
+  graphhopperCustomModel,
   isRideProfileId,
   type RoutingProfile,
   type ValhallaCosting,
 } from "@/lib/routing/profiles";
+import {
+  cityCyclewaySnapWanted,
+  detailShares,
+  graphhopperSurfaceWarnings,
+  type GhDetailRange,
+} from "@/lib/routing/graphhopperHints";
 import {
   stepsFromDemoGeometry,
   stepsFromOsrmLegs,
@@ -18,12 +25,27 @@ import {
   type NavStep,
 } from "@/lib/routing/navSteps";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
+import { showRoutingDebugUi } from "@/lib/routing/routingStatus";
+import { chromeLangFrom, valhallaLanguage, type ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   fetchOrsRoute,
   isOrsConfigured,
   orsPreferredForGraphhopperBasic,
   type OrsExtras,
 } from "@/lib/routing/openRouteService";
+import {
+  clampBbox,
+  fetchOsmTrailsNear,
+  type OsmTrail,
+} from "@/lib/coverage/osmLive";
+import { osmTrailToSegment } from "@/lib/routing/overlayHit";
+import {
+  applyCorridorCyclewaySnap,
+  applyCorridorTrailSnap,
+  profileWantsCorridorCycleways,
+  profileWantsCorridorTrails,
+} from "@/lib/routing/snapTrailCorridor";
+import type { TrailSegment } from "@/lib/routing/trailSegments";
 
 export type RoutingEngineKind =
   | "valhalla"
@@ -44,6 +66,8 @@ export type RouteResult = {
   steps?: NavStep[];
   /** OpenRouteService extra_info (surface/steepness) — honesty, not S-scale */
   orsExtras?: OrsExtras;
+  /** GraphHopper road_class vertex shares — snap gate, not shown in UI. */
+  roadClassShares?: Record<string, number>;
 };
 
 /** Öffentlicher OSRM (nur mit explizitem Opt-in oder Dev-Fallback) */
@@ -86,6 +110,14 @@ function engine(): RoutingEngineKind {
  * cycling engine GraphHopper Basic cannot express.
  */
 function engineForProfile(profile: RoutingProfile): RoutingEngineKind {
+  if (profile === "auto") {
+    const primary = engine();
+    if (primary === "graphhopper") return "graphhopper";
+    if (primary === "osrm") return "osrm";
+    if (primary === "valhalla") return "valhalla";
+    if (isOrsConfigured()) return "openrouteservice";
+    return primary;
+  }
   const primary = engine();
   const explicit = (process.env.ROUTING_ENGINE || "").toLowerCase();
   if (explicit === "openrouteservice" || explicit === "ors") {
@@ -120,13 +152,19 @@ export function isUsingPublicOsrm(): boolean {
 
 /** Valhalla costing — RideProfile SSOT in `profiles.ts` (urban bleibt Legacy). */
 export function valhallaCosting(profile: RoutingProfile): ValhallaCosting {
+  if (profile === "auto") {
+    return {
+      costing: "auto",
+      costing_options: { auto: { use_highways: 1, use_tolls: 0.5 } },
+    };
+  }
   if (profile === "urban") {
     return {
       costing: "bicycle",
       costing_options: {
         bicycle: {
           bicycle_type: "hybrid",
-          use_roads: 0.75,
+          use_roads: 0.35,
           use_hills: 0.15,
           avoid_bad_surfaces: 0.7,
         },
@@ -139,6 +177,7 @@ export function valhallaCosting(profile: RoutingProfile): ValhallaCosting {
 /** OSRM profile name */
 export function osrmProfile(profile: RoutingProfile): string {
   if (profile === "hiking") return "foot";
+  if (profile === "auto") return "driving";
   return "bike";
 }
 
@@ -165,11 +204,19 @@ export function graphhopperProfile(profile: RoutingProfile): string {
       case "gravel":
       case "ebike":
       case "urban":
+      case "auto":
+        return profile === "auto" ? "car" : "bike";
       default:
         return "bike";
     }
   }
+  if (profile === "auto") return "car";
   return profile === "hiking" ? "foot" : "bike";
+}
+
+function graphhopperCustomModelAllowed(): boolean {
+  const v = process.env.GRAPHHOPPER_ALLOW_CUSTOM_MODEL;
+  return v === "1" || v === "true";
 }
 
 function decodePolyline6(str: string): [number, number][] {
@@ -216,7 +263,9 @@ function demoRoute(
   const coords: [number, number][] = [from, mid, to];
   const dist =
     Math.hypot(tlng - flng, tlat - flat) * 111_000 * 1.15;
-  const speedMps = isRideProfileId(profile)
+  const speedMps = profile === "auto"
+    ? 13.9
+    : isRideProfileId(profile)
     ? getProfile(profile).defaultSpeedKmh / 3.6
     : 5.0;
   return {
@@ -235,7 +284,8 @@ function demoRoute(
 async function routeValhalla(
   profile: RoutingProfile,
   from: [number, number],
-  to: [number, number]
+  to: [number, number],
+  lang: ChromeLang = "de"
 ): Promise<RouteResult> {
   const base = baseUrl("valhalla");
   if (!base) throw new Error("VALHALLA_URL missing");
@@ -247,7 +297,7 @@ async function routeValhalla(
     ],
     costing,
     costing_options,
-    directions_options: { units: "kilometers", language: "en-US" },
+    directions_options: { units: "kilometers", language: valhallaLanguage(lang) },
   };
   const stadiaKey = process.env.STADIA_API_KEY?.trim();
   const routeUrl =
@@ -330,7 +380,8 @@ function stepsFromGraphhopper(
 
 async function routeGraphhopper(
   profile: RoutingProfile,
-  points: [number, number][]
+  points: [number, number][],
+  lang: ChromeLang = "de"
 ): Promise<RouteResult> {
   const key = process.env.GRAPHHOPPER_API_KEY?.trim();
   if (!key) throw new Error("GRAPHHOPPER_API_KEY missing");
@@ -339,25 +390,72 @@ async function routeGraphhopper(
     process.env.GRAPHHOPPER_URL || "https://graphhopper.com/api/1"
   ).replace(/\/$/, "");
   const ghProfile = graphhopperProfile(profile);
-  const params = new URLSearchParams();
-  // GraphHopper expects lat,lng
-  for (const [lng, lat] of points) {
-    params.append("point", `${lat},${lng}`);
-  }
-  params.set("profile", ghProfile);
-  params.set("locale", "de");
-  params.set("points_encoded", "false");
-  params.set("elevation", "true");
-  params.set("instructions", "true");
-  params.set("key", key);
+  const custom = graphhopperCustomModelAllowed()
+    ? graphhopperCustomModel(profile)
+    : null;
 
-  const res = await fetch(`${base}/route?${params}`);
-  if (!res.ok) {
-    throw new Error(`GraphHopper ${res.status}: ${await res.text()}`);
+  let data: {
+    paths?: Array<{
+      distance?: number;
+      time?: number;
+      points?: { coordinates?: number[][] };
+      instructions?: Array<{
+        text?: string;
+        street_name?: string;
+        streetName?: string;
+        distance?: number;
+        time?: number;
+        interval?: [number, number];
+        sign?: number;
+      }>;
+      details?: {
+        road_class?: GhDetailRange[];
+        surface?: GhDetailRange[];
+      };
+    }>;
+    message?: string;
+  };
+
+  if (custom) {
+    const res = await fetch(`${base}/route?key=${encodeURIComponent(key)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profile: ghProfile,
+        points,
+        locale: lang,
+        points_encoded: false,
+        elevation: true,
+        instructions: true,
+        details: ["road_class", "surface"],
+        pass_through: points.length > 2,
+        "ch.disable": true,
+        custom_model: custom,
+      }),
+    });
+    data = await res.json();
+    if (!res.ok || data.message) {
+      // Paid-flag set on a free account → fall back to standard bike routing.
+      data = await fetchGraphhopperGet(
+        base,
+        key,
+        ghProfile,
+        points,
+        lang
+      );
+    }
+  } else {
+    data = await fetchGraphhopperGet(base, key, ghProfile, points, lang);
   }
-  const data = await res.json();
+
   const path = data.paths?.[0];
-  if (!path?.points?.coordinates) throw new Error("GraphHopper: no path");
+  if (!path?.points?.coordinates) {
+    throw new Error(
+      data.message
+        ? `GraphHopper: ${data.message}`
+        : "GraphHopper: no path"
+    );
+  }
 
   const coordinates = (path.points.coordinates as number[][]).map(
     (c) => [c[0], c[1]] as [number, number]
@@ -372,7 +470,9 @@ async function routeGraphhopper(
   const steps = stepsFromGraphhopper(instructions, coordinates);
   const warnings: string[] = [];
   if (
+    showRoutingDebugUi() &&
     process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES !== "1" &&
+    process.env.GRAPHHOPPER_ALLOW_EXTENDED_PROFILES !== "true" &&
     (profile.startsWith("mtb") ||
       profile === "downhill" ||
       profile === "emtb" ||
@@ -382,6 +482,8 @@ async function routeGraphhopper(
       `GraphHopper-Account: Profil „${ghProfile}“ (Basic). Für mtb/hike GRAPHHOPPER_ALLOW_EXTENDED_PROFILES=1 nach Plan-Upgrade.`
     );
   }
+  const roadClassShares = detailShares(path.details?.road_class);
+  warnings.push(...graphhopperSurfaceWarnings(profile, roadClassShares));
 
   return {
     distanceM: Math.round(path.distance || 0),
@@ -389,11 +491,42 @@ async function routeGraphhopper(
     geometry,
     engine: "graphhopper",
     profile,
-    steps: steps.length
-      ? steps
-      : stepsFromDemoGeometry(coordinates),
+    steps: steps.length ? steps : stepsFromDemoGeometry(coordinates),
     warnings: warnings.length ? warnings : undefined,
+    roadClassShares:
+      Object.keys(roadClassShares).length > 0 ? roadClassShares : undefined,
   };
+}
+
+async function fetchGraphhopperGet(
+  base: string,
+  key: string,
+  ghProfile: string,
+  points: [number, number][],
+  lang: ChromeLang
+) {
+  const params = new URLSearchParams();
+  for (const [lng, lat] of points) {
+    params.append("point", `${lat},${lng}`);
+  }
+  params.set("profile", ghProfile);
+  params.set("locale", lang);
+  params.set("points_encoded", "false");
+  params.set("elevation", "true");
+  params.set("instructions", "true");
+  params.append("details", "road_class");
+  params.append("details", "surface");
+  if (points.length > 2) params.set("pass_through", "true");
+  params.set("key", key);
+
+  const res = await fetch(`${base}/route?${params}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      `GraphHopper ${res.status}: ${data.message || JSON.stringify(data).slice(0, 240)}`
+    );
+  }
+  return data;
 }
 
 async function routeOsrm(
@@ -443,7 +576,8 @@ async function routeOsrm(
 
 async function routeOpenRouteService(
   profile: RoutingProfile,
-  points: [number, number][]
+  points: [number, number][],
+  lang: ChromeLang = "de"
 ): Promise<RouteResult> {
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), 22_000);
@@ -452,6 +586,7 @@ async function routeOpenRouteService(
       profile,
       points,
       signal: ac.signal,
+      language: lang,
     });
     return {
       distanceM: r.distanceM,
@@ -468,12 +603,146 @@ async function routeOpenRouteService(
   }
 }
 
+function trailCorridorSnapEnabled(): boolean {
+  const v = (process.env.TRAIL_CORRIDOR_SNAP || "1").toLowerCase();
+  return v !== "0" && v !== "false" && v !== "off";
+}
+
+function profileUsesServerTrailSnap(profile: RoutingProfile): boolean {
+  if (!profileWantsCorridorTrails(profile)) return false;
+  return !profileWantsCorridorCycleways(profile);
+}
+
+function routeBbox(
+  coords: [number, number][],
+  padDeg: number,
+  maxDeg: number
+) {
+  const lngs = coords.map((c) => Number(c[0]));
+  const lats = coords.map((c) => Number(c[1]));
+  return clampBbox(
+    {
+      west: Math.min(...lngs) - padDeg,
+      south: Math.min(...lats) - padDeg,
+      east: Math.max(...lngs) + padDeg,
+      north: Math.max(...lats) + padDeg,
+    },
+    maxDeg
+  );
+}
+
+function osmToSegments(trails: OsmTrail[]): TrailSegment[] {
+  const segs: TrailSegment[] = [];
+  for (const t of trails) {
+    const s = osmTrailToSegment(t);
+    if (s) segs.push(s);
+  }
+  return segs;
+}
+
+async function maybeEnrichCorridorCycleway(
+  result: RouteResult,
+  from: [number, number],
+  to: [number, number]
+): Promise<RouteResult> {
+  // No GraphHopper road_class → fail-open (ORS/OSRM / missing details).
+  if (!cityCyclewaySnapWanted(result.roadClassShares ?? {})) return result;
+  if (result.distanceM < 800) return result;
+  try {
+    const coords = (result.geometry.coordinates ?? []) as [number, number][];
+    if (coords.length < 2) return result;
+    const { trails } = await fetchOsmTrailsNear({
+      lat: (from[1] + to[1]) / 2,
+      lon: (from[0] + to[0]) / 2,
+      bbox: routeBbox(coords, 0.005, 0.1),
+      timeoutMs: 8_000,
+      kinds: "cycleways",
+      limit: 80,
+    });
+    const segs = osmToSegments(trails);
+    if (process.env.NODE_ENV !== "production") {
+      console.info(
+        `[cycleway-snap] ${result.profile} osm=${trails.length} segs=${segs.length}`
+      );
+    }
+    if (!segs.length) return result;
+    const next = applyCorridorCyclewaySnap({
+      profile: result.profile,
+      from,
+      to,
+      route: result,
+      trails: segs,
+    });
+    if (process.env.NODE_ENV !== "production") {
+      const snapped = (next.warnings ?? []).some((w) =>
+        /Radweg/.test(w) && w.includes("in die Navi übernommen")
+      );
+      console.info(
+        `[cycleway-snap] ${result.profile} osm=${trails.length} segs=${segs.length} snapped=${snapped}`
+      );
+    }
+    return next;
+  } catch {
+    return result;
+  }
+}
+
+async function maybeEnrichCorridorTrail(
+  result: RouteResult,
+  from: [number, number],
+  to: [number, number],
+  vias: [number, number][]
+): Promise<RouteResult> {
+  if (!trailCorridorSnapEnabled()) return result;
+  if (vias.length > 0) return result;
+  if (result.engine === "demo") return result;
+  if (profileWantsCorridorCycleways(result.profile)) {
+    return maybeEnrichCorridorCycleway(result, from, to);
+  }
+  if (!profileUsesServerTrailSnap(result.profile)) return result;
+  try {
+    const coords = (result.geometry.coordinates ?? []) as [number, number][];
+    if (coords.length < 2) return result;
+    const { trails } = await fetchOsmTrailsNear({
+      lat: (from[1] + to[1]) / 2,
+      lon: (from[0] + to[0]) / 2,
+      bbox: routeBbox(coords, 0.014, 0.18),
+      timeoutMs: 12_000,
+      kinds: "trails",
+      limit: 120,
+    });
+    if (!trails.length) return result;
+    const segs = osmToSegments(trails);
+    if (!segs.length) return result;
+    const next = applyCorridorTrailSnap({
+      profile: result.profile,
+      from,
+      to,
+      route: result,
+      trails: segs,
+    });
+    if (process.env.NODE_ENV !== "production") {
+      const snapped = (next.warnings ?? []).some((w) =>
+        w.includes("in die Navi übernommen")
+      );
+      console.info(
+        `[corridor-snap] ${result.profile} osm=${trails.length} segs=${segs.length} snapped=${snapped}`
+      );
+    }
+    return next;
+  } catch {
+    return result;
+  }
+}
+
 export async function computeRoute(
   profile: RoutingProfile,
   from: [number, number],
   to: [number, number],
-  vias: [number, number][] = []
+  vias: [number, number][] = [],
+  lang: ChromeLang | string = "de"
 ): Promise<RouteResult> {
+  const language = chromeLangFrom(lang);
   const points = [from, ...vias, to];
   const kind = engineForProfile(profile);
   if (kind === "demo") {
@@ -484,56 +753,63 @@ export async function computeRoute(
   }
 
   try {
+    let result: RouteResult;
     if (kind === "openrouteservice") {
       try {
-        return await routeOpenRouteService(profile, points);
+        result = await routeOpenRouteService(profile, points, language);
       } catch (orsErr) {
         const explicit = (process.env.ROUTING_ENGINE || "").toLowerCase();
         const orsForced =
           explicit === "openrouteservice" || explicit === "ors";
         if (!orsForced && process.env.GRAPHHOPPER_API_KEY?.trim()) {
-          const gh = await routeGraphhopper(profile, points);
+          const gh = await routeGraphhopper(profile, points, language);
           const msg =
             orsErr instanceof Error ? orsErr.message : "ORS fehlgeschlagen";
-          return {
+          result = {
             ...gh,
             warnings: [
               `OpenRouteService Fallback → GraphHopper. ${msg}`,
               ...(gh.warnings ?? []),
             ],
           };
+        } else {
+          throw orsErr;
         }
-        throw orsErr;
       }
-    }
-    if (kind === "graphhopper") return await routeGraphhopper(profile, points);
-    if (kind === "valhalla") {
-      if (vias.length === 0) return await routeValhalla(profile, from, to);
-      const parts: RouteResult[] = [];
-      let prev = from;
-      for (const p of [...vias, to]) {
-        parts.push(await routeValhalla(profile, prev, p));
-        prev = p;
+    } else if (kind === "graphhopper") {
+      result = await routeGraphhopper(profile, points, language);
+    } else if (kind === "valhalla") {
+      if (vias.length === 0) {
+        result = await routeValhalla(profile, from, to, language);
+      } else {
+        const parts: RouteResult[] = [];
+        let prev = from;
+        for (const p of [...vias, to]) {
+          parts.push(await routeValhalla(profile, prev, p, language));
+          prev = p;
+        }
+        result = {
+          distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
+          durationS: parts.reduce((a, p) => a + p.durationS, 0),
+          geometry: {
+            type: "LineString",
+            coordinates: parts.flatMap((p, i) =>
+              i === 0
+                ? p.geometry.coordinates
+                : p.geometry.coordinates.slice(1)
+            ),
+          },
+          engine: "valhalla",
+          profile,
+          steps: parts.flatMap((p) => p.steps ?? []),
+          warnings: parts.flatMap((p) => p.warnings ?? []),
+        };
       }
-      return {
-        distanceM: parts.reduce((a, p) => a + p.distanceM, 0),
-        durationS: parts.reduce((a, p) => a + p.durationS, 0),
-        geometry: {
-          type: "LineString",
-          coordinates: parts.flatMap((p, i) =>
-            i === 0
-              ? p.geometry.coordinates
-              : p.geometry.coordinates.slice(1)
-          ),
-        },
-        engine: "valhalla",
-        profile,
-        steps: parts.flatMap((p) => p.steps ?? []),
-        warnings: parts.flatMap((p) => p.warnings ?? []),
-      };
+    } else {
+      // OSRM: multi-waypoint in one request
+      result = await routeOsrm(profile, from, to, vias);
     }
-    // OSRM: multi-waypoint in one request
-    return await routeOsrm(profile, from, to, vias);
+    return await maybeEnrichCorridorTrail(result, from, to, vias);
   } catch (e) {
     // Production: fail-closed — never invent geometry after a live failure.
     if (allowDemoContent()) {

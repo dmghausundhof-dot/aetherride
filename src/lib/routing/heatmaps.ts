@@ -215,13 +215,13 @@ export function buildHeatmap(input?: {
     segments,
     coldStart: fromRides.length === 0 || visibleCount < 3,
     kThreshold: K,
-    attribution: "© OpenStreetMap Mitwirkende · AetherRide eigene Aggregate",
+    attribution: "© OpenStreetMap Mitwirkende · FlowLine eigene Aggregate",
     disclaimer: fromRides.length
       ? consent
-        ? `Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet). Beliebte Community-Abschnitte erst ab ${K} verschiedenen Fahrern.`
+        ? `Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet). Beliebte Heatmap-Abschnitte erst ab ${K} verschiedenen Fahrern.`
         : `Deine Strecken sind ausgeblendet — Beitrag unter Privatsphäre einschalten.`
       : useSeed
         ? `Noch wenig eigene Daten — Beispielabschnitte. Sichtbar erst ab ${K} verschiedenen Fahrern (Privatsphäre).`
-        : `Noch keine eigenen Tracks für die Beliebtheitskarte — fahre Touren, dann erscheint deine Heatmap hier (kein Community-Demo).`,
+        : `Noch keine eigenen Tracks für die Beliebtheitskarte — fahre Touren, dann erscheint deine Heatmap hier (kein Demo).`,
   };
 }

@@ -52,9 +52,9 @@ export const SCHEMA_DOT_R = 8;
 export const SCHEMA_HIT_R_MIN = 22;
 
 export const STATUS_COLORS: Record<HotspotStatus, string> = {
-  ok: "#22C55E",
+  ok: "#7A8B73",
   maintenance: "#EAB308",
-  missing: "#6B7280",
+  missing: "#9CA3AF",
 };
 
 export const SCHEMA_ASSET_PATH: Record<BikeSchemaTemplate, string> = {

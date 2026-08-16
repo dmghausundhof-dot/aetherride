@@ -13,6 +13,8 @@ export type OsmTrail = {
   geometry: [number, number][];
   url: string;
   source: "osm";
+  /** True when OSM has name / name:de / ref — not a generated „Pfad“. */
+  hasOsmName: boolean;
 };
 
 export type OsmRoute = {
@@ -36,7 +38,11 @@ export type OsmBbox = {
   north: number;
 };
 
-const OVERPASS = "https://overpass-api.de/api/interpreter";
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.openstreetmap.fr/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+] as const;
 
 function haversineKm(a: [number, number], b: [number, number]): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -59,7 +65,26 @@ function pathLengthKm(coords: [number, number][]): number {
   return sum;
 }
 
-/** mtb_scale only — never map sac_scale → S0–S3. */
+/** Honest S-Grade from OSM `mtb:scale` — never sac_scale, never „offen“. */
+export function isHonestOsmSGrade(mtbScale: string): boolean {
+  return (
+    mtbScale === "S0" ||
+    mtbScale === "S1" ||
+    mtbScale === "S2" ||
+    mtbScale === "S3" ||
+    mtbScale === "S3+"
+  );
+}
+
+/** Overpass parts: real OSM keys `mtb:scale` / `mtb:scale:imba` (not `mtb_scale`). */
+export function osmSGradeOverpassParts(loc: string): string[] {
+  return [
+    `way["highway"~"path|track|bridleway"]["mtb:scale"]${loc};`,
+    `way["highway"~"path|track|bridleway"]["mtb:scale:imba"]${loc};`,
+  ];
+}
+
+/** mtb_scale only — never map sac_scale → S0–S3. Collapsed 3–6 → S3+ (not S3). */
 export function normalizeMtbScale(raw?: string): string {
   if (!raw) return "offen";
   const t = raw.trim().toLowerCase();
@@ -78,6 +103,15 @@ export function normalizeMtbScale(raw?: string): string {
     return "S3+";
   }
   return raw.slice(0, 12);
+}
+
+/** Accepts `123`, `way/123`, `osm-way-123`. */
+export function parseOsmWayId(raw: unknown): string | null {
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const m = s.match(/(?:osm-way-|way[/:-])?(\d{1,18})\s*$/i);
+  return m?.[1] ?? null;
 }
 
 export function clampBbox(bbox: OsmBbox, maxDeg = 0.4): OsmBbox {
@@ -131,22 +165,31 @@ function simplify(geometry: [number, number][], cap: number): [number, number][]
 async function overpass(query: string, timeoutMs: number): Promise<{
   elements?: Array<Record<string, unknown>>;
 } | null> {
-  try {
-    const res = await fetch(OVERPASS, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        Accept: "application/json",
-      },
-      body: `data=${encodeURIComponent(query)}`,
-      signal: AbortSignal.timeout(timeoutMs),
-      next: { revalidate: 900 },
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as { elements?: Array<Record<string, unknown>> };
-  } catch {
-    return null;
+  const body = `data=${encodeURIComponent(query)}`;
+  for (let i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
+    const ms = i === 0 ? timeoutMs : Math.min(12_000, timeoutMs);
+    try {
+      const res = await fetch(OVERPASS_ENDPOINTS[i], {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          Accept: "application/json",
+          "User-Agent": "AetherRide/dev (https://aetherride.app)",
+        },
+        body,
+        signal: AbortSignal.timeout(ms),
+        next: { revalidate: 900 },
+      });
+      if (!res.ok) continue;
+      const json = (await res.json()) as {
+        elements?: Array<Record<string, unknown>>;
+      };
+      if (json?.elements) return json;
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 function aroundOrBbox(
@@ -167,72 +210,128 @@ export async function fetchOsmTrailsNear(opts: {
   lon: number;
   radiusKm?: number;
   bbox?: OsmBbox;
+  timeoutMs?: number;
+  /** Default: mtb trails + cycleways. `trails` skips city cycleways. `sgrade` = tagged only. */
+  kinds?: "all" | "trails" | "cycleways" | "sgrade";
+  limit?: number;
 }): Promise<{ trails: OsmTrail[]; warning?: string }> {
   const radiusKm = Math.min(18, Math.max(3, opts.radiusKm ?? 8));
   const radiusM = Math.round(radiusKm * 1000);
+  const timeoutMs = Math.min(24_000, Math.max(3_000, opts.timeoutMs ?? 24_000));
+  const queryTimeoutS = Math.max(3, Math.floor(timeoutMs / 1000) - 1);
   const loc = aroundOrBbox(opts.lat, opts.lon, radiusM, opts.bbox);
+  const kinds = opts.kinds ?? "all";
+  const parts: string[] = [];
+  if (kinds === "sgrade") {
+    parts.push(...osmSGradeOverpassParts(loc));
+  } else if (kinds !== "cycleways") {
+    parts.push(
+      ...osmSGradeOverpassParts(loc),
+      `way["highway"="path"]["bicycle"~"yes|designated"]${loc}(if:length()>200);`,
+      `way["highway"~"path|track"]["sac_scale"]${loc};`,
+      `way["highway"="path"]["surface"~"ground|gravel|dirt|grass|compacted|fine_gravel|earth|unpaved"]["bicycle"!="no"]${loc}(if:length()>200);`,
+      `way["highway"="track"]["tracktype"~"grade2|grade3|grade4|grade5"]["bicycle"!="no"]${loc}(if:length()>200);`
+    );
+  }
+  if (kinds !== "trails" && kinds !== "sgrade") {
+    const cyclewayMinM = kinds === "cycleways" ? 80 : 200;
+    parts.push(`way["highway"="cycleway"]${loc}(if:length()>${cyclewayMinM});`);
+  }
   const query = `
-[out:json][timeout:22];
+[out:json][timeout:${queryTimeoutS}];
 (
-  way["highway"~"path|track"]["mtb_scale"]${loc};
-  way["highway"="cycleway"]${loc};
-  way["highway"="path"]["bicycle"~"yes|designated"]${loc};
-  way["highway"~"path|track"]["sac_scale"]${loc};
-  way["highway"="path"]["surface"~"ground|gravel|dirt|grass|compacted|fine_gravel|earth|unpaved"]["bicycle"!="no"]${loc};
-  way["highway"="track"]["tracktype"~"grade2|grade3|grade4|grade5"]["bicycle"!="no"]${loc};
+  ${parts.join("\n  ")}
 );
 out body geom;
 `.trim();
 
-  const json = await overpass(query, 24000);
+  const json = await overpass(query, timeoutMs);
   if (!json) return { trails: [], warning: "Overpass timeout/offline" };
 
   const trails: OsmTrail[] = [];
+  const minKm = kinds === "cycleways" ? 0.08 : kinds === "sgrade" ? 0.04 : 0.12;
+  const maxKm = kinds === "cycleways" ? 12 : 25;
   for (const el of json.elements ?? []) {
-    if (el.type !== "way") continue;
-    const tags = (el.tags as Record<string, string> | undefined) ?? {};
-    const geomRaw = (el.geometry as Array<{ lat: number; lon: number }>) ?? [];
-    if (geomRaw.length < 2) continue;
-    const geometry: [number, number][] = [];
-    for (const g of geomRaw) {
-      if (!Number.isFinite(g.lat) || !Number.isFinite(g.lon)) continue;
-      geometry.push([g.lon, g.lat]);
-    }
-    if (geometry.length < 2) continue;
-    const simplified = simplify(geometry, 80);
-    const lengthKm = pathLengthKm(simplified);
-    if (lengthKm < 0.12 || lengthKm > 25) continue;
-    const mtbScale = normalizeMtbScale(tags.mtb_scale);
-    const name =
-      tags.name ||
-      tags["name:de"] ||
-      tags.ref ||
-      (mtbScale !== "offen"
-        ? `Trail ${mtbScale}`
-        : tags.highway === "cycleway"
-          ? "Radweg"
-          : "Pfad");
-    const mid = simplified[Math.floor(simplified.length / 2)];
-    trails.push({
-      id: `osm-way-${el.id}`,
-      name,
-      mtbScale,
-      surface: tags.surface || tags.tracktype || undefined,
-      highway: tags.highway,
-      lengthKm: Math.round(lengthKm * 100) / 100,
-      center: mid,
-      geometry: simplified,
-      url: `https://www.openstreetmap.org/way/${el.id}`,
-      source: "osm",
-    });
+    const trail = trailFromOverpassWay(el, { minKm, maxKm });
+    if (!trail) continue;
+    if (kinds === "sgrade" && !isHonestOsmSGrade(trail.mtbScale)) continue;
+    trails.push(trail);
   }
   trails.sort((a, b) => {
     const sa = a.mtbScale.startsWith("S") ? 0 : 1;
     const sb = b.mtbScale.startsWith("S") ? 0 : 1;
     if (sa !== sb) return sa - sb;
-    return a.lengthKm - b.lengthKm;
+    return b.lengthKm - a.lengthKm;
   });
-  return { trails: trails.slice(0, 80) };
+  const limit = Math.min(200, Math.max(20, opts.limit ?? 80));
+  return { trails: trails.slice(0, limit) };
+}
+
+function trailFromOverpassWay(
+  el: Record<string, unknown>,
+  opts?: { minKm?: number; maxKm?: number }
+): OsmTrail | null {
+  if (el.type !== "way") return null;
+  const tags = (el.tags as Record<string, string> | undefined) ?? {};
+  const geomRaw = (el.geometry as Array<{ lat: number; lon: number }>) ?? [];
+  if (geomRaw.length < 2) return null;
+  const geometry: [number, number][] = [];
+  for (const g of geomRaw) {
+    if (!Number.isFinite(g.lat) || !Number.isFinite(g.lon)) continue;
+    geometry.push([g.lon, g.lat]);
+  }
+  if (geometry.length < 2) return null;
+  const simplified = simplify(geometry, 80);
+  const lengthKm = pathLengthKm(simplified);
+  if (opts?.minKm != null && lengthKm < opts.minKm) return null;
+  if (opts?.maxKm != null && lengthKm > opts.maxKm) return null;
+  const mtbScale = normalizeMtbScale(
+    tags["mtb:scale"] || tags["mtb:scale:imba"] || tags.mtb_scale
+  );
+  const hasOsmName = Boolean(tags.name || tags["name:de"] || tags.ref);
+  const name =
+    tags.name ||
+    tags["name:de"] ||
+    tags.ref ||
+    (mtbScale !== "offen"
+      ? `Trail ${mtbScale}`
+      : tags.highway === "cycleway"
+        ? "Radweg"
+        : "Pfad");
+  const mid = simplified[Math.floor(simplified.length / 2)];
+  return {
+    id: `osm-way-${el.id}`,
+    name,
+    mtbScale,
+    surface: tags.surface || tags.tracktype || undefined,
+    highway: tags.highway,
+    lengthKm: Math.round(lengthKm * 100) / 100,
+    center: mid,
+    geometry: simplified,
+    url: `https://www.openstreetmap.org/way/${el.id}`,
+    source: "osm",
+    hasOsmName,
+  };
+}
+
+/** Single-way Overpass lookup — surface / full geom for overlay tap sheets. */
+export async function fetchOsmWayById(
+  osmIdRaw: string
+): Promise<OsmTrail | null> {
+  const osmId = parseOsmWayId(osmIdRaw);
+  if (!osmId) return null;
+  const query = `
+[out:json][timeout:12];
+way(${osmId});
+out body geom;
+`.trim();
+  const json = await overpass(query, 14000);
+  if (!json) return null;
+  for (const el of json.elements ?? []) {
+    const trail = trailFromOverpassWay(el);
+    if (trail) return trail;
+  }
+  return null;
 }
 
 export async function fetchOsmRoutesNear(opts: {

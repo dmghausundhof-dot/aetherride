@@ -91,7 +91,6 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'annecy', name: 'Annecy / Semnoz', bbox: [6.05, 45.8, 6.25, 45.98]),
   OverlayRegion(id: 'morzine', name: 'Morzine / Portes du Soleil', bbox: [6.6, 46.05, 6.9, 46.28]),
   OverlayRegion(id: 'lyon', name: 'Lyon / Tête d\'Or', bbox: [4.7, 45.65, 5.05, 45.9]),
-  OverlayRegion(id: 'clermont-ferrand', name: 'Clermont-Ferrand / Puy de Dôme', bbox: [2.9, 45.68, 3.22, 45.9]),
   OverlayRegion(id: 'grenoble', name: 'Grenoble / Isère', bbox: [5.58, 45.08, 5.9, 45.32]),
   OverlayRegion(id: 'dijon', name: 'Dijon / Canal de Bourgogne', bbox: [4.9, 47.22, 5.2, 47.42]),
   OverlayRegion(id: 'chambery', name: 'Chambéry / Lac du Bourget', bbox: [5.8, 45.48, 6.05, 45.68]),
@@ -101,11 +100,7 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'marseille', name: 'Marseille / Corniche', bbox: [5.22, 43.2, 5.52, 43.4]),
   OverlayRegion(id: 'bordeaux', name: 'Bordeaux / Garonne', bbox: [-0.72, 44.72, -0.4, 44.95]),
   OverlayRegion(id: 'toulouse', name: 'Toulouse / Canal du Midi', bbox: [1.28, 43.48, 1.6, 43.72]),
-  OverlayRegion(id: 'montpellier', name: 'Montpellier / Lez', bbox: [3.75, 43.52, 4.02, 43.7]),
   OverlayRegion(id: 'nantes', name: 'Nantes / Erdre', bbox: [-1.7, 47.12, -1.4, 47.32]),
-  OverlayRegion(id: 'reims', name: 'Reims / Champagne', bbox: [3.9, 49.18, 4.18, 49.35]),
-  OverlayRegion(id: 'rouen', name: 'Rouen / Seine', bbox: [0.95, 49.35, 1.22, 49.52]),
-  OverlayRegion(id: 'rennes', name: 'Rennes / Vilaine', bbox: [-1.78, 48.05, -1.55, 48.18]),
 ];
 
 const kOverlayPackCatalog = <OverlayPackRef>[
@@ -177,7 +172,6 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'annecy', name: 'Annecy / Semnoz'),
   OverlayPackRef(id: 'morzine', name: 'Morzine / Portes du Soleil'),
   OverlayPackRef(id: 'lyon', name: 'Lyon / Tête d\'Or'),
-  OverlayPackRef(id: 'clermont-ferrand', name: 'Clermont-Ferrand / Puy de Dôme'),
   OverlayPackRef(id: 'grenoble', name: 'Grenoble / Isère'),
   OverlayPackRef(id: 'dijon', name: 'Dijon / Canal de Bourgogne'),
   OverlayPackRef(id: 'chambery', name: 'Chambéry / Lac du Bourget'),
@@ -187,19 +181,8 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'marseille', name: 'Marseille / Corniche'),
   OverlayPackRef(id: 'bordeaux', name: 'Bordeaux / Garonne'),
   OverlayPackRef(id: 'toulouse', name: 'Toulouse / Canal du Midi'),
-  OverlayPackRef(id: 'montpellier', name: 'Montpellier / Lez'),
   OverlayPackRef(id: 'nantes', name: 'Nantes / Erdre'),
-  OverlayPackRef(id: 'reims', name: 'Reims / Champagne'),
-  OverlayPackRef(id: 'rouen', name: 'Rouen / Seine'),
-  OverlayPackRef(id: 'rennes', name: 'Rennes / Vilaine'),
 ];
-
-OverlayRegion? overlayRegionById(String id) {
-  for (final r in kOverlayRegions) {
-    if (r.id == id) return r;
-  }
-  return null;
-}
 
 OverlayRegion? overlayRegionForPoint(double lng, double lat) {
   final hits = [

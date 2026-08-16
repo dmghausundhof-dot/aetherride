@@ -12,6 +12,8 @@ import {
   bboxFromRadius,
   clampBbox,
   fetchOsmTrailsNear,
+  fetchOsmWayById,
+  parseOsmWayId,
   type OsmTrail,
 } from "@/lib/coverage/osmLive";
 
@@ -30,6 +32,29 @@ export async function GET(req: Request) {
   const hasBbox = [west, south, east, north].every((n) => Number.isFinite(n));
   const hasPoint = Number.isFinite(lat) && Number.isFinite(lon);
 
+  const wayRaw =
+    url.searchParams.get("way") ??
+    url.searchParams.get("osmId") ??
+    url.searchParams.get("osm_id");
+  const wayId = wayRaw ? parseOsmWayId(wayRaw) : null;
+  if (wayId && !hasBbox && !hasPoint) {
+    try {
+      const trail = await fetchOsmWayById(wayId);
+      return NextResponse.json({
+        provider: "osm_overpass",
+        configured: true,
+        trails: trail ? [trail] : [],
+        attribution: "© OpenStreetMap Mitwirkende",
+      });
+    } catch (e) {
+      return NextResponse.json({
+        provider: "osm_overpass",
+        trails: [],
+        warning: e instanceof Error ? e.message : "overpass_failed",
+      });
+    }
+  }
+
   if (!hasBbox && !hasPoint) {
     return NextResponse.json(
       { error: "lat_lon_or_bbox_required", trails: [] },
@@ -46,6 +71,13 @@ export async function GET(req: Request) {
     18,
     Math.max(3, Number(url.searchParams.get("radiusKm") || 8))
   );
+  const kindsRaw = (url.searchParams.get("kinds") || "").trim();
+  const kinds =
+    kindsRaw === "sgrade" ||
+    kindsRaw === "trails" ||
+    kindsRaw === "cycleways"
+      ? kindsRaw
+      : "all";
 
   try {
     const { trails, warning } = await fetchOsmTrailsNear({
@@ -53,6 +85,8 @@ export async function GET(req: Request) {
       lon: centerLon,
       radiusKm,
       bbox: bbox ?? bboxFromRadius(centerLat, centerLon, radiusKm),
+      kinds,
+      limit: kinds === "sgrade" ? 200 : undefined,
     });
     return NextResponse.json({
       provider: "osm_overpass",

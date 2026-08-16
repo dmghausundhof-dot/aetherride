@@ -48,7 +48,7 @@ export default function ActivityDetailPage() {
           type: "LineString",
           coordinates: ride.track.map((p) => [p.lng, p.lat] as [number, number]),
         },
-        color: "#FF6B35",
+        color: "#FF6A00",
         width: 4,
         opacity: 0.9,
       },

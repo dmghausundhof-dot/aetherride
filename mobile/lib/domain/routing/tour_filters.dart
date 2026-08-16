@@ -37,6 +37,25 @@ enum TourVisibilityKey {
   sharedOnly,
 }
 
+/// Form der Tour — nicht nur Rundkurs.
+enum TourFormKey {
+  all,
+  loop,
+  pointToPoint,
+  downhill,
+}
+
+/// Discover-Fahrradtyp (hart filterbar). DH getrennt von MTB.
+enum TourSportKey {
+  mtb,
+  emtb,
+  gravel,
+  road,
+  urban,
+  hiking,
+  dh,
+}
+
 class TourFilterChip<T> {
   const TourFilterChip(this.id, this.label, {this.hint});
   final T id;
@@ -324,7 +343,9 @@ class TourFilters {
         TourEffortKey.mid =>
           parsed == TrailDifficulty.s1 || parsed == TrailDifficulty.s2,
         TourEffortKey.hard =>
-          parsed == TrailDifficulty.s2 || parsed == TrailDifficulty.s3plus,
+          parsed == TrailDifficulty.s2 ||
+              parsed == TrailDifficulty.s3 ||
+              parsed == TrailDifficulty.s3plus,
       };
     }
 
@@ -410,5 +431,254 @@ class TourFilters {
           'urban',
         BikeCategory.etrekking => 'touring',
         BikeCategory.hiking => 'hike',
+      };
+
+  static const sportFilterChips = <TourSportKey>[
+    TourSportKey.mtb,
+    TourSportKey.emtb,
+    TourSportKey.gravel,
+    TourSportKey.road,
+    TourSportKey.urban,
+    TourSportKey.hiking,
+    TourSportKey.dh,
+  ];
+
+  static const formFilterChips = <TourFormKey>[
+    TourFormKey.all,
+    TourFormKey.loop,
+    TourFormKey.pointToPoint,
+    TourFormKey.downhill,
+  ];
+
+  static bool hasTrailFamily(List<BikeCategory> cats) => cats.any(
+        (c) =>
+            c == BikeCategory.mtbTrail ||
+            c == BikeCategory.mtbAm ||
+            c == BikeCategory.mtbEnduro ||
+            c == BikeCategory.dh ||
+            c == BikeCategory.emtb,
+      );
+
+  /// S-Skala im Filter-Sheet nur wenn MTB/Trail/DH relevant — nicht bei City.
+  static bool filterSheetShowsSScale({
+    required bool mtbOverlayFamily,
+    required Set<TourSportKey> sportFilter,
+    required TourFormKey form,
+  }) {
+    if (form == TourFormKey.downhill) return true;
+    if (mtbOverlayFamily) return true;
+    return sportFilter.contains(TourSportKey.mtb) ||
+        sportFilter.contains(TourSportKey.emtb) ||
+        sportFilter.contains(TourSportKey.dh);
+  }
+
+  /// S-Skala nur an MTB/Trail/DH hängen — Gravel/Rennrad bleibt „offen“.
+  static String honestScaleTag({
+    required String effortLabel,
+    required List<BikeCategory> categories,
+    String? stored,
+  }) {
+    final raw = stored?.trim();
+    if (raw != null &&
+        raw.isNotEmpty &&
+        raw != '—' &&
+        raw != '-' &&
+        raw.toLowerCase() != 'offen' &&
+        raw.toLowerCase() != 'open') {
+      if (trailDifficultiesIn(raw).isNotEmpty) return raw;
+    }
+    if (!hasTrailFamily(categories)) return 'offen';
+    return switch (effortLabel.trim().toLowerCase()) {
+      'leicht' || 'easy' => 'S0',
+      'anspruchsvoll' || 'schwer' || 'hard' => 'S2',
+      _ => 'S1',
+    };
+  }
+
+  static bool scaleMatches(
+    String raw,
+    List<BikeCategory> categories,
+    Set<TrailDifficulty> wanted,
+  ) {
+    if (wanted.isEmpty) return true;
+    final grades = trailDifficultiesIn(raw);
+    if (grades.isEmpty) return false;
+    return grades.any(wanted.contains);
+  }
+
+  static bool isDownhillTour({
+    required List<BikeCategory> categories,
+    required List<String> tags,
+    required String title,
+    String? sportLabel,
+    required bool isLoop,
+  }) {
+    if (categories.contains(BikeCategory.dh)) return true;
+    final blob =
+        '${title.toLowerCase()} ${sportLabel ?? ''} ${tags.join(' ')}'.toLowerCase();
+    if (blob.contains('downhill') ||
+        blob.contains('bikepark') ||
+        blob.contains('bike-park') ||
+        RegExp(r'(^|[^a-z])dh([^a-z]|$)').hasMatch(blob)) {
+      return true;
+    }
+    // Enduro A→B ist typisch abfahrtslastig — Rundkurs nicht automatisch DH.
+    if (!isLoop && categories.contains(BikeCategory.mtbEnduro)) return true;
+    return false;
+  }
+
+  static bool formMatches({
+    required TourFormKey form,
+    required bool isLoop,
+    required List<BikeCategory> categories,
+    required List<String> tags,
+    required String title,
+    String? sportLabel,
+  }) {
+    return switch (form) {
+      TourFormKey.all => true,
+      TourFormKey.loop => isLoop,
+      TourFormKey.pointToPoint => !isLoop,
+      TourFormKey.downhill => isDownhillTour(
+          categories: categories,
+          tags: tags,
+          title: title,
+          sportLabel: sportLabel,
+          isLoop: isLoop,
+        ),
+    };
+  }
+
+  static TourSportKey sportOf(List<BikeCategory> cats) {
+    if (cats.isEmpty) return TourSportKey.urban;
+    return _sportOf(cats.first);
+  }
+
+  static TourSportKey _sportOf(BikeCategory c) => switch (c) {
+        BikeCategory.dh => TourSportKey.dh,
+        BikeCategory.emtb => TourSportKey.emtb,
+        BikeCategory.mtbTrail ||
+        BikeCategory.mtbAm ||
+        BikeCategory.mtbEnduro =>
+          TourSportKey.mtb,
+        BikeCategory.gravel || BikeCategory.etrekking => TourSportKey.gravel,
+        BikeCategory.road => TourSportKey.road,
+        BikeCategory.hiking => TourSportKey.hiking,
+        BikeCategory.urban ||
+        BikeCategory.cargo ||
+        BikeCategory.folding ||
+        BikeCategory.kids =>
+          TourSportKey.urban,
+      };
+
+  /// Hart-Filter: leere Auswahl = alle Typen.
+  static bool sportMatches(
+    List<BikeCategory> cats,
+    Iterable<TourSportKey> filters,
+  ) {
+    if (filters.isEmpty) return true;
+    final wanted = filters.toSet();
+    for (final c in cats) {
+      if (wanted.contains(_sportOf(c))) return true;
+    }
+    return false;
+  }
+
+  /// OA/OSM ohne Kategorie-Feld — nur aus Text, nicht erfunden.
+  static List<BikeCategory> inferCategories({
+    required String title,
+    String? type,
+    String? difficulty,
+    String? surface,
+  }) {
+    final blob =
+        '${title.toLowerCase()} ${type?.toLowerCase() ?? ''} ${difficulty?.toLowerCase() ?? ''}';
+    if (blob.contains('downhill') ||
+        blob.contains('bikepark') ||
+        blob.contains('bike-park') ||
+        RegExp(r'(^|[^a-z])dh([^a-z]|$)').hasMatch(blob)) {
+      return const [BikeCategory.dh, BikeCategory.mtbEnduro, BikeCategory.emtb];
+    }
+    if (blob.contains('enduro')) {
+      return const [
+        BikeCategory.mtbEnduro,
+        BikeCategory.mtbAm,
+        BikeCategory.emtb,
+      ];
+    }
+    if (blob.contains('mtb') ||
+        blob.contains('mountain') ||
+        blob.contains('singletrail') ||
+        (blob.contains('trail') && !blob.contains('rail'))) {
+      return const [
+        BikeCategory.mtbAm,
+        BikeCategory.mtbTrail,
+        BikeCategory.emtb,
+      ];
+    }
+    if (blob.contains('hike') ||
+        blob.contains('wander') ||
+        blob.contains('hiking') ||
+        blob.contains('zu fuß') ||
+        blob.contains('zu fuss')) {
+      return const [BikeCategory.hiking];
+    }
+    if (blob.contains('gravel') || blob.contains('schotter')) {
+      return const [BikeCategory.gravel, BikeCategory.etrekking];
+    }
+    if (blob.contains('road') ||
+        blob.contains('rennrad') ||
+        blob.contains('race') ||
+        blob.contains('strada')) {
+      return const [BikeCategory.road];
+    }
+    if (blob.contains('city') ||
+        blob.contains('urban') ||
+        blob.contains('stadt') ||
+        blob.contains('pendel')) {
+      return const [BikeCategory.urban, BikeCategory.etrekking];
+    }
+    final grades = trailDifficultiesIn(difficulty);
+    if (grades.isNotEmpty) {
+      return const [
+        BikeCategory.mtbAm,
+        BikeCategory.mtbTrail,
+        BikeCategory.emtb,
+      ];
+    }
+    final s = parseSurface(surface);
+    if (s == TourSurfaceKey.trail) {
+      return const [BikeCategory.mtbAm, BikeCategory.emtb];
+    }
+    if (s == TourSurfaceKey.gravel) {
+      return const [BikeCategory.gravel, BikeCategory.etrekking];
+    }
+    if (s == TourSurfaceKey.asphalt) {
+      return const [BikeCategory.road, BikeCategory.urban];
+    }
+    return const [
+      BikeCategory.urban,
+      BikeCategory.gravel,
+      BikeCategory.road,
+    ];
+  }
+
+  static String pinLabel(TourSportKey sport) => switch (sport) {
+        TourSportKey.mtb => 'MTB',
+        TourSportKey.emtb => 'eMTB',
+        TourSportKey.gravel => 'GR',
+        TourSportKey.road => 'RR',
+        TourSportKey.urban => 'City',
+        TourSportKey.hiking => 'Fuß',
+        TourSportKey.dh => 'DH',
+      };
+
+  static String pinHalo(TourSportKey sport) => switch (sport) {
+        TourSportKey.mtb || TourSportKey.emtb => '#1B5E20',
+        TourSportKey.gravel => '#5D4037',
+        TourSportKey.road => '#0D47A1',
+        TourSportKey.urban => '#004D40',
+        TourSportKey.hiking => '#4E342E',
+        TourSportKey.dh => '#B71C1C',
       };
 }

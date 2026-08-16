@@ -1,0 +1,27 @@
+{
+  "id": "ch-berner-oberland",
+  "name": "Berner Oberland",
+  "bbox": [
+    7.3,
+    46.3,
+    8.45,
+    46.88
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-berner-oberland",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-berner-oberland.tar.zst"
+  }
+}

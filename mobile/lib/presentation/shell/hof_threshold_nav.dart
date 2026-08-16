@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 
-/// Schwelle zum Hof — ruhiger Boden, Haarlinie, ruhiger Aktiv-Akzent.
-/// Orange bleibt **Rausfahren**; die Nav konkurriert nicht damit.
+/// Schwelle zum Hof — Haarlinie, FlowLine-Orange als aktiver Chrome.
 class HofThresholdNav extends StatelessWidget {
   const HofThresholdNav({
     super.key,
@@ -15,6 +14,16 @@ class HofThresholdNav extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<HofThresholdDestination> destinations;
+
+  /// Tab-Zeile ohne System-Inset — Sheets/Menüs darüber halten.
+  static const double barHeight = 56;
+
+  static double sheetBottomInset(BuildContext context, {double extra = 16}) {
+    return extra +
+        barHeight +
+        MediaQuery.viewInsetsOf(context).bottom +
+        MediaQuery.paddingOf(context).bottom;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,15 +96,15 @@ class _HofThresholdTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.forestOnDark : AppColors.muted;
+    final color = selected ? AppColors.chrome : AppColors.muted;
     return Semantics(
       button: true,
       selected: selected,
       label: '${destination.label}, Tab $semanticIndex von $semanticCount',
       child: InkWell(
         onTap: onTap,
-        splashColor: AppColors.forest.withValues(alpha: 0.10),
-        highlightColor: AppColors.forest.withValues(alpha: 0.06),
+        splashColor: AppColors.charcoal.withValues(alpha: 0.10),
+        highlightColor: AppColors.charcoal.withValues(alpha: 0.06),
         child: ExcludeSemantics(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -116,7 +125,7 @@ class _HofThresholdTab extends StatelessWidget {
                         width: 6,
                         height: 6,
                         decoration: const BoxDecoration(
-                          color: Colors.redAccent,
+                          color: AppColors.error,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -130,7 +139,7 @@ class _HofThresholdTab extends StatelessWidget {
                 width: selected ? 14 : 0,
                 height: 1.5,
                 decoration: BoxDecoration(
-                  color: selected ? AppColors.forestOnDark : Colors.transparent,
+                  color: selected ? AppColors.chrome : Colors.transparent,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),

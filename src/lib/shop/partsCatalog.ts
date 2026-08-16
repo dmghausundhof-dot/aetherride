@@ -3,6 +3,7 @@
  * Collection-driven — no hard-coded product snapshot.
  */
 
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   FEATURED_PARTS_COLLECTION,
   fetchCollectionProducts,
@@ -23,6 +24,7 @@ import {
   type SoftFitContext,
   type SoftFitTags,
   type SoftFitVerdict,
+  PARTS_BROWSE_SLOTS,
 } from "@/lib/shop/softFit";
 import { isPartsProduct } from "@/lib/shop/shopShelf";
 
@@ -67,7 +69,7 @@ function priceToEur(amount: string, currencyCode: string): number {
   const n = Number.parseFloat(amount);
   if (!Number.isFinite(n)) return 0;
   if (currencyCode === "EUR") return Math.round(n * 100) / 100;
-  // Store is EUR for AetherRide; keep amount as-is for other codes
+  // Store is EUR for FlowLine; keep amount as-is for other codes
   return Math.round(n * 100) / 100;
 }
 
@@ -80,7 +82,7 @@ export function mapStorefrontProduct(p: ShopifyStorefrontProduct): PartsProduct 
     id: p.id,
     handle: p.handle,
     name: p.title,
-    manufacturer: p.vendor || "AetherRide Shop",
+    manufacturer: p.vendor || "FlowLine Shop",
     productType: p.productType || "",
     description: (p.description || "").trim(),
     priceEur: priceToEur(
@@ -98,8 +100,12 @@ export function mapStorefrontProduct(p: ShopifyStorefrontProduct): PartsProduct 
   };
 }
 
-export async function loadFeaturedParts(): Promise<PartsCatalogResult> {
-  const result = await fetchCollectionProducts(FEATURED_PARTS_COLLECTION);
+export async function loadFeaturedParts(
+  lang: ChromeLang = "de"
+): Promise<PartsCatalogResult> {
+  const result = await fetchCollectionProducts(FEATURED_PARTS_COLLECTION, {
+    lang,
+  });
   if (!result.ok) {
     return {
       ok: false,
@@ -247,4 +253,17 @@ export function shopPartsHref(opts?: {
   params.set("door", "parts");
   const q = params.toString();
   return `/shop?${q}`;
+}
+
+/** Werkstatt / Verschleiß → Laden, nur Browse-Slots (kein fork-Raten). */
+export function shopReplaceHref(opts: {
+  bike: string;
+  slot?: string | null;
+}): string {
+  const raw = opts.slot ? normalizePartsSlot(opts.slot) : undefined;
+  const slot =
+    raw && raw !== "all" && PARTS_BROWSE_SLOTS.some((s) => s.slot === raw)
+      ? raw
+      : undefined;
+  return shopPartsHref({ bike: opts.bike, fit: "bike", slot });
 }

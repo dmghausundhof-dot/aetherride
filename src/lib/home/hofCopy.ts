@@ -88,6 +88,15 @@ export type HofCopy = {
   shopLockedBody: string;
   shopLockedOpen: string;
   shopLockedCatalog: string;
+  shopLockedBanner: string;
+  shopLockedPasswordNote: string;
+  shopLockedMissingUrl: string;
+  shopNoImage: string;
+  shopGuideHow: string;
+  shopCancel: string;
+  shopExternalLink: string;
+  shopNetworkError: string;
+  shopProductUnavailable: string;
   shopCheckoutElsewhere: string;
   shopProductMissing: string;
   shopBack: string;
@@ -208,7 +217,7 @@ const DE: HofCopy = {
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
   togetherOut: "Zusammen raus",
-  watchHint: "Puls nur mit echtem Sensor. Koppeln in der App.",
+  watchHint: "Puls nur mit echtem Sensor.",
   watchOpenApp: "In der App koppeln",
   watchBar: "Uhr in der App koppeln",
   workshopCscBar: "Radsensor in der App koppeln",
@@ -250,15 +259,20 @@ const DE: HofCopy = {
   shopLockedBody: "Der Shopify-Shop ist passwortgeschützt (Inhaber-Vorschau). Der Link führt zur Passwort-Seite — kein stiller Dead End, aber kein öffentlicher Checkout.",
   shopLockedOpen: "Trotzdem öffnen (Passwort-Seite)",
   shopLockedCatalog: "Katalog in FlowLine. Kasse nur bei Shopify.",
+  shopLockedBanner: "Inhaber-Vorschau · Online Store gesperrt",
+  shopLockedPasswordNote:
+    "Katalog kann in FlowLine stehen. Store-Passwort wird nicht ausgeliefert.",
+  shopLockedMissingUrl: "Storefront-URL fehlt — Tür bleibt ehrlich zu.",
+  shopNoImage: "Kein Bild",
+  shopGuideHow: "Wie der Laden funktioniert",
+  shopCancel: "Zurück",
+  shopExternalLink: "Externer Shopify-Link",
+  shopNetworkError: "Netzwerkfehler.",
+  shopProductUnavailable: "Produkt nicht verfügbar",
   shopCheckoutElsewhere: "Checkout nur bei Shopify, nicht in FlowLine.",
   shopProductMissing: "Dieses Produkt liegt nicht im Laden.",
   shopBack: "Zurück zum Laden",
-  shopSearchHint: "Teile, Marken, Specs…",
-  shopFeatured: "Passende Teile",
-  shopOpenProduct: "Im Shop öffnen",
-  shopAllParts: "Alle Teile",
-  shopFitBanner: (name: string) => `Teile passend zu ${name}`,
-  shopShelfEmpty: "Keine Teile zu dieser Suche.",
+  shopCyclingParts: "Cycling Parts",
   shopCatalogFailed:
     "Katalog gerade nicht erreichbar. Der Laden bleibt die Tür zu Shopify.",
   shopRetry: "Erneut laden",
@@ -269,12 +283,12 @@ const DE: HofCopy = {
     "Noch keine Teile im Regal. Der Laden bleibt die Tür zu Shopify.",
   shopReplaceHint:
     "Ersatz — FlowLine filtert nach deinem Rad, ohne SKUs zu erfinden.",
-  shopCyclingParts: "Cycling Parts",
   shopFeaturedBikes: "Räder im Laden",
   shopDetails: "Details",
   shopOpenInApp: "Im Laden ansehen",
   shopOpenInBrowser: "Im Browser öffnen",
   shopZumHaendler: "Zum Händler",
+  shopShelfEmpty: "Keine Teile zu dieser Suche.",
   profileKicker: "Du",
   profileTitle: "Profil",
   profileHint: "Konto und Fahrstil. Nach dem Anmelden stehst du am Hof — kein Sync-Theater mit der nativen App.",
@@ -378,7 +392,7 @@ const EN: HofCopy = {
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
   togetherOut: "Ride together",
-  watchHint: "Heart rate only with a real sensor. Pair in the app.",
+  watchHint: "Heart rate only with a real sensor.",
   watchOpenApp: "Pair in the app",
   watchBar: "Pair the watch in the app",
   workshopCscBar: "Pair the bike sensor in the app",
@@ -420,6 +434,16 @@ const EN: HofCopy = {
   shopLockedBody: "The Shopify store is password-protected (owner preview). The link opens the password page — not a silent dead end, and not a public checkout.",
   shopLockedOpen: "Open anyway (password page)",
   shopLockedCatalog: "Catalog in FlowLine. Checkout only on Shopify.",
+  shopLockedBanner: "Owner preview · Online store locked",
+  shopLockedPasswordNote:
+    "The catalog can live in FlowLine. The store password is not shipped.",
+  shopLockedMissingUrl: "Storefront URL missing — the door stays honest.",
+  shopNoImage: "No image",
+  shopGuideHow: "How the shop works",
+  shopCancel: "Back",
+  shopExternalLink: "External Shopify link",
+  shopNetworkError: "Network error.",
+  shopProductUnavailable: "Product unavailable",
   shopCheckoutElsewhere: "Checkout only on Shopify, not in FlowLine.",
   shopProductMissing: "This product is not in the shop.",
   shopBack: "Back to the shop",
@@ -540,7 +564,7 @@ const FR: HofCopy = {
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
   togetherOut: "Sortir ensemble",
-  watchHint: "Pouls seulement avec un vrai capteur. Appairer dans l'app.",
+  watchHint: "Pouls seulement avec un vrai capteur.",
   watchOpenApp: "Appairer dans l'app",
   watchBar: "Appairer la montre dans l'app",
   workshopCscBar: "Appairer le capteur vélo dans l'app",
@@ -582,6 +606,16 @@ const FR: HofCopy = {
   shopLockedBody: "Le magasin Shopify est protégé par mot de passe (aperçu propriétaire). Le lien ouvre la page mot de passe — pas une impasse silencieuse, et pas de caisse publique.",
   shopLockedOpen: "Ouvrir quand même (page mot de passe)",
   shopLockedCatalog: "Catalogue dans FlowLine. Caisse seulement chez Shopify.",
+  shopLockedBanner: "Aperçu propriétaire · Online Store verrouillé",
+  shopLockedPasswordNote:
+    "Le catalogue peut vivre dans FlowLine. Le mot de passe du store n’est pas livré.",
+  shopLockedMissingUrl: "URL Storefront manquante — la porte reste honnête.",
+  shopNoImage: "Pas d’image",
+  shopGuideHow: "Comment le magasin marche",
+  shopCancel: "Retour",
+  shopExternalLink: "Lien Shopify externe",
+  shopNetworkError: "Erreur réseau.",
+  shopProductUnavailable: "Produit indisponible",
   shopCheckoutElsewhere: "Caisse seulement chez Shopify, pas dans FlowLine.",
   shopProductMissing: "Ce produit n'est pas dans le magasin.",
   shopBack: "Retour au magasin",
@@ -702,7 +736,7 @@ const IT: HofCopy = {
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
   togetherOut: "Uscire insieme",
-  watchHint: "Battito solo con un vero sensore. Accoppia nell'app.",
+  watchHint: "Battito solo con un vero sensore.",
   watchOpenApp: "Accoppia nell'app",
   watchBar: "Accoppia l'orologio nell'app",
   workshopCscBar: "Accoppia il sensore bici nell'app",
@@ -744,6 +778,16 @@ const IT: HofCopy = {
   shopLockedBody: "Il negozio Shopify è protetto da password (anteprima proprietario). Il link apre la pagina password — non un vicolo cieco silenzioso, e non una cassa pubblica.",
   shopLockedOpen: "Apri lo stesso (pagina password)",
   shopLockedCatalog: "Catalogo in FlowLine. Cassa solo su Shopify.",
+  shopLockedBanner: "Anteprima proprietario · Online Store bloccato",
+  shopLockedPasswordNote:
+    "Il catalogo può stare in FlowLine. La password dello store non viene consegnata.",
+  shopLockedMissingUrl: "URL Storefront mancante — la porta resta onesta.",
+  shopNoImage: "Nessuna immagine",
+  shopGuideHow: "Come funziona il negozio",
+  shopCancel: "Indietro",
+  shopExternalLink: "Link Shopify esterno",
+  shopNetworkError: "Errore di rete.",
+  shopProductUnavailable: "Prodotto non disponibile",
   shopCheckoutElsewhere: "Cassa solo su Shopify, non in FlowLine.",
   shopProductMissing: "Questo prodotto non è nel negozio.",
   shopBack: "Torna al negozio",

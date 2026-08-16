@@ -4,6 +4,7 @@ library;
 import 'dart:math' as math;
 
 import '../bike.dart';
+import '../component.dart';
 
 const _g = 9.81;
 const _rho = 1.225;
@@ -105,6 +106,43 @@ RangeCalibration defaultCalibration({
     cdA: _baseCdA(category),
     riderPowerW: 90 + skillLevel * 15.0,
   );
+}
+
+/// Pack-Wh aus dem eingebauten Akku. Null = unbekannt — nie 500 erfinden.
+double? packCapacityWh(Iterable<BikeComponent> components) {
+  for (final c in components) {
+    if (c.slot != ComponentSlot.battery || !c.isInstalled) continue;
+    if (c.catalogModelId == 'cm-bosch-powertube-800') return 800;
+    final raw = c.attributes['capacity_wh'] ?? c.attributes['capacityWh'];
+    if (raw is num) {
+      final wh = raw.toDouble();
+      if (wh >= 100 && wh <= 2000) return wh;
+    }
+  }
+  return null;
+}
+
+/// SoC-Delta nur mit bekanntem Pack. Null = nicht kalibrieren, nichts erfinden.
+double? rideEnergyUsedWh({
+  required double distanceKm,
+  double? startSoc,
+  double? endSoc,
+  double? packWh,
+}) {
+  if (packWh == null || startSoc == null || endSoc == null) return null;
+  if (startSoc <= endSoc) return null;
+  final wh = packWh * ((startSoc - endSoc) / 100);
+  if (wh < 10) return null;
+  if (distanceKm < 2) return null;
+  return wh;
+}
+
+/// Selbstkalibrierung nur mit gemessener Energie, nie mit 12 Wh/km.
+bool shouldCalibrateRange({
+  required double distanceKm,
+  required double? batteryWhUsed,
+}) {
+  return distanceKm >= 2 && batteryWhUsed != null && batteryWhUsed >= 10;
 }
 
 /// Kalman-artige Ein-Schritt-Anpassung nach Ride (Port calibrateFromRide).

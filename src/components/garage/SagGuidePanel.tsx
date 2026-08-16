@@ -81,7 +81,7 @@ export function SagGuidePanel({
             type="button"
             onClick={() => setEnd(id)}
             className={`rounded-lg py-2 font-medium ${
-              end === id ? "bg-accent text-white" : "text-text-secondary"
+              end === id ? "bg-accent text-on-accent" : "text-text-secondary"
             }`}
           >
             {label}

@@ -36,13 +36,25 @@ const thin = pickNearbyThenFill(
   (e) => e.km,
   { nearbyKm: 90, minCount: 12, maxItems: 32 }
 );
-assert.equal(thin.length, 12, "fill to min 12 when nearby is a 3-card stub");
+assert.equal(thin.length, 7, "thin region stays at nearby count, no Wien fill");
 assert.deepEqual(
   thin.slice(0, 3).map((e) => e.id),
   ["hd", "ma", "boxberg"]
 );
 assert.ok(thin.some((e) => e.id === "ka"));
-assert.equal(thin[thin.length - 1].id, "wien");
+assert.ok(thin.every((e) => e.km <= 90));
+assert.ok(!thin.some((e) => e.id === "wien"));
+assert.ok(!thin.some((e) => e.id === "koeln"));
+
+const noneNearby = pickNearbyThenFill(
+  [
+    { id: "bern", km: 107 },
+    { id: "lausanne", km: 102 },
+  ],
+  (e) => e.km,
+  { nearbyKm: 90 }
+);
+assert.equal(noneNearby.length, 0);
 
 const few = pickNearbyThenFill([10, 20, 30], (n) => n);
 assert.deepEqual(few, [10, 20, 30]);

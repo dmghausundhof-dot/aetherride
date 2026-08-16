@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app/AppShell";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-inter",
   display: "swap",
 });
 

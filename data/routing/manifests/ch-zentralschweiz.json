@@ -1,0 +1,24 @@
+{
+  "id": "ch-zentralschweiz",
+  "name": "Zentralschweiz",
+  "bbox": [
+    7.95,
+    46.58,
+    8.95,
+    47.22
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-zentralschweiz.tar.zst",
+    "packGz": "ch-zentralschweiz.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

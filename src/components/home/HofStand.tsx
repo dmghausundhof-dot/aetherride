@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import { hofSkyLine, isSkyWet } from "@/lib/home/hofSky";
 import {
+  formatHofGateAway,
   hofGateDurationMin,
   hofGateHasLoop,
   hofGateId,
@@ -19,8 +20,15 @@ import { getMaintenanceSummary, lastRideForBike } from "@/lib/maintenance/summar
 import { useHofLocation } from "@/hooks/useHofLocation";
 import { useHofTitle } from "@/hooks/useHofTitle";
 import { useAppStore } from "@/store/useAppStore";
-import { Watch } from "lucide-react";
 import { HofWatchCard } from "./HofWatchCard";
+import { HofTafel } from "./HofTafel";
+import { HofCornerTools } from "@/components/app/HofCornerTools";
+import { buildHofTafel } from "@/lib/tours/tourAkte";
+import { useCommunityStore } from "@/store/useCommunityStore";
+import {
+  listedRideGroups,
+  useRideGroupStore,
+} from "@/store/useRideGroupStore";
 import { cn } from "@/lib/utils";
 
 type WeatherPayload = {
@@ -29,6 +37,8 @@ type WeatherPayload = {
 };
 
 export function HofStand() {
+  const copy = useHofCopy();
+
   const title = useHofTitle();
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
@@ -36,6 +46,8 @@ export function HofStand() {
   const rides = useAppStore((s) => s.rides);
   const savedRoutes = useAppStore((s) => s.savedRoutes);
   const intervals = useAppStore((s) => s.maintenanceIntervals);
+  const myReviews = useCommunityStore((s) => s.myReviews);
+  const groups = useRideGroupStore((s) => s.groups);
   const { geo, resolved: geoResolved } = useHofLocation();
 
   const active =
@@ -100,8 +112,9 @@ export function HofStand() {
         lat: geo?.lat,
         lng: geo?.lng,
         trailsWet: weather?.trailHint === "wet_likely",
+        preferred: active?.category ?? null,
       }),
-    [loops, savedRoutes, geo, weather?.trailHint]
+    [loops, savedRoutes, geo, weather?.trailHint, active?.category]
   );
 
   const gateId = hofGateId(gate);
@@ -141,9 +154,9 @@ export function HofStand() {
   const sky =
     weatherResolved || geoResolved
       ? geo && weather?.current?.temperature_2m != null
-        ? hofSkyLine(weather.trailHint, weather.current.temperature_2m)
+        ? hofSkyLine(weather.trailHint, weather.current.temperature_2m, copy)
         : weatherResolved
-          ? HOF_COPY.skyUnknown
+          ? copy.skyUnknown
           : ""
       : "";
 
@@ -157,147 +170,185 @@ export function HofStand() {
     if (summary.status !== "overdue" && summary.status !== "due_soon") {
       return null;
     }
-    const label = summary.topItem?.shortLabel ?? "Pflege";
+    const label = summary.topItem?.shortLabel ?? copy.careFallback;
     return {
       href: summary.href,
-      text: HOF_COPY.careInWorkshop(label),
+      text: copy.careInWorkshop(label),
       overdue: summary.status === "overdue",
     };
-  }, [active, intervals, rides]);
+  }, [active, intervals, rides, copy]);
+
+  const group = listedRideGroups(groups)[0];
+  const tafel = useMemo(
+    () =>
+      buildHofTafel({
+        care,
+        savedRoutes,
+        myReviews,
+        group: group
+          ? {
+              text: `${copy.groupAtGate} · ${group.title}`,
+              href: "/library",
+            }
+          : null,
+      }),
+    [care, savedRoutes, myReviews, group]
+  );
 
   const primaryHref = active
     ? "/discover?mode=rideOut"
     : "/garage?wizard=basic";
   const primaryLabel = active
     ? justBack
-      ? HOF_COPY.rideOutAgain
-      : HOF_COPY.rideOut
-    : HOF_COPY.parkBike;
-  const primaryIsRideOut = Boolean(active);
+      ? copy.rideOutAgain
+      : copy.rideOut
+    : copy.parkBike;
   const secondaryHref = active
     ? `/garage?bike=${encodeURIComponent(active.id)}`
     : "/discover?mode=rideOut";
-  const secondaryLabel = active ? HOF_COPY.openBike : HOF_COPY.rideWithoutBike;
+  const secondaryLabel = active ? copy.openBike : copy.rideWithoutBike;
 
   return (
-    <div className="relative">
+    <div className="relative bg-sage/10">
       <div
         className={cn(
           "px-5 py-4 lg:px-10 lg:py-8",
           sky
             ? isSkyWet(weather?.trailHint)
-              ? "bg-primary/25"
-              : "bg-primary/15"
-            : "bg-primary/10"
+              ? "bg-sage/40"
+              : "bg-sage/30"
+            : "bg-sage/20"
         )}
       >
         <div className="mx-auto w-full max-w-2xl lg:max-w-3xl">
           <div className="flex items-start justify-between gap-3">
             <h1
               data-testid="hof-title"
-              className="text-2xl font-extrabold tracking-tight text-chrome lg:text-4xl"
+              className="min-w-0 text-2xl font-extrabold tracking-tight text-chrome lg:text-4xl"
             >
               {title}
             </h1>
-            <Link
-              href="/download"
-              title={HOF_COPY.watchBar}
-              aria-label={HOF_COPY.watchBar}
-              data-testid="hof-watch-bar"
-              className="mt-1 shrink-0 rounded-full p-2 pr-3 text-text-secondary hover:bg-surface-elevated hover:text-chrome mr-[max(0.75rem,env(safe-area-inset-right,0px))]"
-            >
-              <Watch className="h-[22px] w-[22px]" strokeWidth={1.75} />
-            </Link>
+            <HofCornerTools className="md:hidden" />
           </div>
           {sky ? (
             <p
               data-testid="hof-sky"
-              className="mt-2 text-[13px] font-semibold text-text-secondary lg:text-base"
+              className="mt-2 text-[13px] font-semibold text-sage lg:text-base"
             >
               {sky}
             </p>
           ) : null}
+
+          {active ? (
+            <section className="mt-5">
+              {active.photoUrl ? (
+                <Link
+                  href={`/garage?bike=${encodeURIComponent(active.id)}`}
+                  className="mb-3 block overflow-hidden rounded-2xl border border-border bg-surface"
+                >
+                  {/* User-captured data URLs / arbitrary hosts — not next/image remote. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={active.photoUrl}
+                    alt=""
+                    className="h-28 w-full object-cover lg:h-44"
+                  />
+                </Link>
+              ) : (
+                <div data-testid="hof-parked-mark" className="mb-2">
+                  <ParkedMark />
+                </div>
+              )}
+              <h2 className="truncate text-xl font-extrabold">
+                <Link
+                  href={`/garage?bike=${encodeURIComponent(active.id)}`}
+                  className="hover:text-chrome"
+                >
+                  {active.name}
+                </Link>
+              </h2>
+              {ret.rideId ? (
+                <Link
+                  href={`/post-ride?id=${encodeURIComponent(ret.rideId)}`}
+                  data-testid="hof-resident-meta"
+                  className="mt-0.5 flex items-start gap-2 text-[13px] font-semibold text-chrome hover:underline"
+                >
+                  <span className="min-w-0 flex-1">
+                    {residentMeta({
+                      sport: hofSportLabel(
+                        active.category,
+                        active.isEbike ||
+                          active.components.some(
+                            (c) => c.slot === "motor" && !c.removedAt
+                          )
+                      ),
+                      ret,
+                      copy,
+                    })}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold text-text-secondary no-underline">
+                    {copy.whatCameIn}
+                  </span>
+                </Link>
+              ) : (
+                <p
+                  data-testid="hof-resident-meta"
+                  className="mt-0.5 text-[13px] text-text-secondary"
+                >
+                  {residentMeta({
+                    sport: hofSportLabel(
+                      active.category,
+                      active.isEbike ||
+                        active.components.some(
+                          (c) => c.slot === "motor" && !c.removedAt
+                        )
+                    ),
+                    ret,
+                    copy,
+                  })}
+                </p>
+              )}
+              {others.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {others.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setActiveBike(b.id)}
+                      className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary hover:border-chrome hover:text-chrome"
+                    >
+                      {copy.bringForward(b.name)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : (
+            <section className="mt-5">
+              <div className="flex h-28 items-center justify-center rounded-2xl border border-border lg:h-44">
+                <EmptyStandMark />
+              </div>
+              <h2
+                data-testid="hof-empty-stand"
+                className="mt-3 text-xl font-extrabold"
+              >
+                {copy.emptyStand}
+              </h2>
+              <p className="text-[13px] text-text-secondary">
+                {copy.noBikeHere}
+              </p>
+            </section>
+          )}
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-2xl px-5 pb-12 pt-5 lg:max-w-3xl lg:px-10 lg:pb-16 lg:pt-8">
-
-      {active ? (
-        <section className="mb-4">
-          <Link
-            href={`/garage?bike=${encodeURIComponent(active.id)}`}
-            className="block overflow-hidden rounded-2xl border border-border bg-surface"
-          >
-            {active.photoUrl ? (
-              // User-captured data URLs / arbitrary hosts — not next/image remote.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={active.photoUrl}
-                alt=""
-                className="h-48 w-full object-cover lg:h-80"
-              />
-            ) : (
-              <div className="flex h-48 items-center justify-center bg-surface-elevated lg:h-80">
-                <ResidentMark name={active.name} />
-              </div>
-            )}
-          </Link>
-          <h2 className="mt-3 truncate text-xl font-extrabold">{active.name}</h2>
-          <p
-            data-testid="hof-resident-meta"
-            className="text-[13px] text-text-secondary"
-          >
-            {residentMeta({
-              sport: hofSportLabel(active.category),
-              ret,
-            })}
-          </p>
-          {others.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {others.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => setActiveBike(b.id)}
-                  className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary hover:border-chrome hover:text-chrome"
-                >
-                  {HOF_COPY.bringForward(b.name)}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </section>
-      ) : (
-        <section className="mb-4">
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-border lg:h-72">
-            <EmptyStandMark />
-          </div>
-          <h2
-            data-testid="hof-empty-stand"
-            className="mt-3 text-xl font-extrabold"
-          >
-            {HOF_COPY.emptyStand}
-          </h2>
-          <p className="text-[13px] text-text-secondary">{HOF_COPY.noBikeHere}</p>
-        </section>
-      )}
-
-      {care ? (
-        <Link
-          href={care.href}
-          className={cn(
-            "mb-4 block text-[13px] font-semibold",
-            care.overdue ? "text-error" : "text-warning"
-          )}
-        >
-          {care.text}
-        </Link>
-      ) : null}
+      <div className="mx-auto w-full max-w-2xl px-5 pb-12 pt-4 lg:max-w-3xl lg:px-10 lg:pb-16 lg:pt-6">
+      <HofTafel items={tafel} />
 
       {!justBack ? (
         <GateCard
           pickTitle={
-            hofGateHasLoop(gate) ? hofGateTitle(gate) : HOF_COPY.noHonestLoop
+            hofGateHasLoop(gate) ? hofGateTitle(gate) : copy.noHonestLoop
           }
           durationMin={hofGateHasLoop(gate) ? hofGateDurationMin(gate) : 0}
           hasLoop={hofGateHasLoop(gate)}
@@ -308,17 +359,20 @@ export function HofStand() {
               : "/discover"
           }
           neighbors={neighborCount}
+          awayKm={gate.distanceKm}
         />
       ) : null}
+
+      <HofWatchCard />
 
       <Link
         href={primaryHref}
         data-testid="hof-ride-out"
         className={cn(
-          "mt-8 flex h-[52px] items-center justify-center rounded-xl text-base font-extrabold lg:mt-10 lg:h-14",
-          primaryIsRideOut
-            ? "bg-accent text-white hover:bg-accent-hover"
-            : "bg-chrome text-background hover:bg-chrome/90"
+          "mt-4 flex h-[52px] items-center justify-center rounded-xl text-base font-extrabold lg:mt-6 lg:h-14",
+          active
+            ? "bg-chrome text-on-accent hover:bg-chrome/90"
+            : "bg-foreground text-background hover:bg-foreground/90",
         )}
       >
         {primaryLabel}
@@ -330,10 +384,6 @@ export function HofStand() {
         >
           {secondaryLabel}
         </Link>
-      </div>
-
-      <div className="mt-6 lg:mt-8">
-        <HofWatchCard />
       </div>
       </div>
     </div>
@@ -347,6 +397,7 @@ function GateCard({
   honesty,
   href,
   neighbors,
+  awayKm,
 }: {
   pickTitle: string;
   durationMin: number;
@@ -354,21 +405,27 @@ function GateCard({
   honesty: "loop" | "wetClosed" | "none";
   href: string;
   neighbors: number | null;
+  awayKm?: number;
 }) {
+  const copy = useHofCopy();
   if (honesty === "none" && !hasLoop) {
     return (
       <Link
         href="/discover"
         className="mt-4 block py-2 text-[13px] font-semibold text-text-secondary hover:text-chrome"
       >
-        {HOF_COPY.openTours}
+        {copy.openTours}
       </Link>
     );
   }
 
   const line = hasLoop
-    ? `${pickTitle} · ${HOF_COPY.loopDuration(durationMin)}`
-    : HOF_COPY.noHonestLoop;
+    ? `${pickTitle} · ${copy.loopDuration(durationMin)}`
+    : copy.noHonestLoop;
+  const away = formatHofGateAway(awayKm, {
+    near: copy.gateAwayNear,
+    km: copy.gateAwayKm,
+  });
 
   return (
     <Link
@@ -377,59 +434,49 @@ function GateCard({
       className="mt-4 block rounded-2xl border border-border p-3"
     >
       <p className="text-[11px] font-bold tracking-wide text-text-secondary">
-        {HOF_COPY.atGate}
+        {copy.atGate}
       </p>
       <p className="mt-1 text-[15px] font-bold">{line}</p>
+      {away ? (
+        <p data-testid="hof-gate-away" className="mt-0.5 text-xs text-text-secondary">
+          {away}
+        </p>
+      ) : null}
       {neighbors != null && neighbors > 0 ? (
         <p className="mt-0.5 text-xs text-text-secondary">
-          {HOF_COPY.communityNotes(neighbors)}
+          {copy.communityNotes(neighbors)}
         </p>
       ) : null}
     </Link>
   );
 }
 
-function ResidentMark({ name }: { name: string }) {
+function ParkedMark() {
   return (
-    <svg width="200" height="72" viewBox="0 0 200 72" aria-hidden>
-      <circle
-        cx="40"
-        cy="52"
-        r="16"
+    <svg width="128" height="56" viewBox="0 0 88 40" aria-hidden>
+      <g
+        className="text-sage"
         fill="none"
         stroke="currentColor"
-        className="text-chrome"
-        strokeWidth="2.4"
-      />
-      <circle cx="40" cy="52" r="3" className="fill-chrome" />
-      <circle
-        cx="132"
-        cy="52"
-        r="16"
-        fill="none"
-        stroke="currentColor"
-        className="text-chrome"
-        strokeWidth="2.4"
-      />
-      <circle cx="132" cy="52" r="3" className="fill-chrome" />
-      <path
-        d="M40 52 L68 22 H108 L132 52 M68 22 L58 52 M108 22 L96 8 H118"
-        fill="none"
-        stroke="currentColor"
-        className="text-foreground"
-        strokeWidth="2.4"
+        strokeWidth="1.8"
+        strokeLinecap="round"
         strokeLinejoin="round"
-      />
-      <text
-        x="100"
-        y="14"
-        textAnchor="middle"
-        className="fill-text-secondary"
-        fontSize="9"
-        fontFamily="ui-sans-serif, system-ui"
       >
-        {name}
-      </text>
+        <circle cx="19" cy="25" r="9" />
+        <circle cx="69" cy="25" r="9" />
+        <path d="M19 25 L37 25 L32 8 L60 9 L69 25 L37 25 L60 9" />
+        <path d="M53 5 H70" />
+      </g>
+      <g
+        className="text-text-secondary"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      >
+        <line x1="8" y1="38" x2="80" y2="38" />
+        <line x1="44" y1="38" x2="44" y2="16" />
+      </g>
     </svg>
   );
 }

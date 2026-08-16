@@ -134,7 +134,7 @@ function frameEnduro(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -165,7 +165,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -192,7 +192,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -216,7 +216,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ohlins.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -275,7 +275,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -332,7 +332,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -399,7 +399,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -446,7 +446,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -493,7 +493,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/en/rockshox",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -521,7 +521,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://oneupcomponents.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -566,7 +566,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "oem",
     sourceUrl: "https://www.propain-bikes.com/en/product/bikes/enduro/tyee-al/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   frameEnduro({
@@ -659,7 +659,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.magura.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -677,7 +677,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.magura.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -695,7 +695,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -713,7 +713,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -731,7 +731,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -749,7 +749,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -780,7 +780,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.maxxis.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -809,7 +809,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.continental-tires.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -838,7 +838,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.continental-tires.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
 
@@ -858,7 +858,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -873,7 +873,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -891,7 +891,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -909,7 +909,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -927,7 +927,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -942,7 +942,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
 
@@ -962,7 +962,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -982,7 +982,7 @@ export const COMPONENT_CATALOG_DACH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

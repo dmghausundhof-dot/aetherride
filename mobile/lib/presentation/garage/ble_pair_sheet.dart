@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble/bike_ble_kind.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 
@@ -22,6 +24,51 @@ Future<bool> showBlePairSheet(
     builder: (ctx) => BlePairSheet(bikeId: bikeId, isEbike: isEbike),
   );
   return result == true;
+}
+
+/// Manage saved wheel / drive without implying the link is live.
+Future<String?> showBikeBleManageSheet(
+  BuildContext context, {
+  required bool hasWheel,
+  required bool hasDrive,
+}) {
+  return showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx);
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: Text(l10n.blePairAgain),
+              onTap: () => Navigator.pop(ctx, 'pair'),
+            ),
+            if (hasWheel)
+              ListTile(
+                leading: const Icon(Icons.speed),
+                title: Text(l10n.bleRemoveWheel),
+                onTap: () => Navigator.pop(ctx, 'unlinkWheel'),
+              ),
+            if (hasDrive)
+              ListTile(
+                leading: const Icon(Icons.electric_bike),
+                title: Text(l10n.bleRemoveDrive),
+                onTap: () => Navigator.pop(ctx, 'unlinkDrive'),
+              ),
+            if (hasWheel && hasDrive)
+              ListTile(
+                leading: const Icon(Icons.link_off),
+                title: Text(l10n.bleRemoveDevice),
+                onTap: () => Navigator.pop(ctx, 'unlinkAll'),
+              ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 class BlePairSheet extends ConsumerStatefulWidget {
@@ -83,21 +130,21 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
       if (perm == BlePermissionResult.adapterOff) {
         setState(() {
           _busy = false;
-          _error = 'Bluetooth ist aus — bitte einschalten.';
+          _error = AppLocalizations.of(context).bleOff;
         });
         return;
       }
       if (perm == BlePermissionResult.denied) {
         setState(() {
           _busy = false;
-          _error = 'Bluetooth-Berechtigung fehlt.';
+          _error = AppLocalizations.of(context).bleDenied;
         });
         return;
       }
       if (perm == BlePermissionResult.unsupported) {
         setState(() {
           _busy = false;
-          _error = 'Bluetooth LE ist auf diesem Gerät nicht verfügbar.';
+          _error = AppLocalizations.of(context).bleUnavailable;
         });
         return;
       }
@@ -121,7 +168,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
       setState(() {
         _busy = false;
         _scanning = false;
-        _error = 'Suche fehlgeschlagen';
+        _error = AppLocalizations.of(context).bleScanFailed;
       });
     }
   }
@@ -136,7 +183,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
     final bikeId = widget.bikeId;
     setState(() {
       _pairingId = hit.deviceId;
-      _pairStatus = 'Verbinde …';
+      _pairStatus = AppLocalizations.of(context).bleConnecting;
       _error = null;
       _rememberHit = null;
     });
@@ -181,21 +228,34 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
         Navigator.of(context).pop(true);
         return;
       }
-      if (!mounted) return;
-      setState(() {
-        _pairingId = null;
-        _pairStatus = null;
-        _error = ble.statusDetail ?? 'Verbindung fehlgeschlagen';
-        _rememberHit =
-            blePairAccepted(connected: false, kind: hit.kind) ? hit : null;
-      });
+      if (!ok) {
+        if (!mounted) return;
+        setState(() {
+          _pairingId = null;
+          _pairStatus = null;
+          _error = bikeBleKindIsDrive(hit.kind)
+              ? AppLocalizations.of(context).bleDriveFailFor(
+                  hit.kind,
+                  detail: ble.statusDetail,
+                )
+              : AppLocalizations.of(context).bleStatusDetailFor(
+                  ble.statusDetail ??
+                      AppLocalizations.of(context).bleConnectFailed,
+                );
+          _rememberHit =
+              blePairAccepted(connected: false, kind: hit.kind) ? hit : null;
+        });
+        return;
+      }
     } catch (e) {
       debugPrint('ble pair: $e');
       if (!mounted) return;
       setState(() {
         _pairingId = null;
         _pairStatus = null;
-        _error = 'Kopplung fehlgeschlagen';
+        _error = bikeBleKindIsDrive(hit.kind)
+            ? AppLocalizations.of(context).bleDriveFailFor(hit.kind)
+            : AppLocalizations.of(context).blePairFailed;
         _rememberHit =
             blePairAccepted(connected: false, kind: hit.kind) ? hit : null;
       });
@@ -222,6 +282,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final height = MediaQuery.sizeOf(context).height * 0.78;
     final drives = _hits.where((h) => bikeBleKindIsDrive(h.kind)).toList();
     final sensors = _hits.where((h) => !bikeBleKindIsDrive(h.kind)).toList();
@@ -240,14 +301,14 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Rad koppeln',
+                l10n.bleBikeTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                bikeBlePairLead(isEbike: widget.isEbike),
+                l10n.blePairLeadFor(isEbike: widget.isEbike),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.muted,
                       height: 1.35,
@@ -266,7 +327,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
               if (_pairStatus != null) ...[
                 const SizedBox(height: AppSpacing.s),
                 Text(
-                  _pairStatus!,
+                  l10n.bleStatusDetailFor(_pairStatus!),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -276,9 +337,9 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.s),
                 Text(
-                  _error!,
+                  l10n.bleStatusDetailFor(_error!),
                   style: const TextStyle(
-                    color: Color(0xFFFF8A80),
+                    color: AppColors.error,
                     fontSize: 13,
                     height: 1.35,
                   ),
@@ -292,7 +353,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
                     onPressed: _pairingId != null
                         ? null
                         : () => unawaited(_rememberWithoutGatt(_rememberHit!)),
-                    child: const Text('Trotzdem merken'),
+                    child: Text(l10n.bleRememberAnyway),
                   ),
                 ),
               ],
@@ -303,7 +364,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
                     : ListView(
                         children: [
                           if (drives.isNotEmpty) ...[
-                            const _SectionLabel('Antrieb'),
+                            _SectionLabel(l10n.bleSectionDrive),
                             for (final h in drives)
                               _HitTile(
                                 hit: h,
@@ -317,7 +378,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
                             const SizedBox(height: AppSpacing.m),
                           ],
                           if (sensors.isNotEmpty) ...[
-                            const _SectionLabel('Sensoren'),
+                            _SectionLabel(l10n.bleSectionSensors),
                             for (final h in sensors)
                               _HitTile(
                                 hit: h,
@@ -334,7 +395,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
               ),
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Akku und Assist nur bei echtem GATT — nichts erfinden.',
+                l10n.bleBikeHint,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.muted,
                       height: 1.35,
@@ -344,15 +405,14 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
               Row(
                 children: [
                   TextButton(
-                    onPressed: _pairingId != null
-                        ? null
-                        : () => unawaited(_start()),
-                    child: const Text('Erneut suchen'),
+                    onPressed:
+                        _pairingId != null ? null : () => unawaited(_start()),
+                    child: Text(l10n.bleScanAgain),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Abbrechen'),
+                    child: Text(l10n.cancel),
                   ),
                 ],
               ),
@@ -379,7 +439,9 @@ class _HowToConnect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notes = bikeBleConnectNotes(isEbike: isEbike);
+    final notes = AppLocalizations.of(context).bleConnectNotesFor(
+      isEbike: isEbike,
+    );
     return Material(
       color: AppColors.chipIdle,
       borderRadius: BorderRadius.circular(AppRadius.card),
@@ -399,13 +461,13 @@ class _HowToConnect extends StatelessWidget {
                   Icon(
                     Icons.bluetooth,
                     size: 16,
-                    color: AppColors.forestOnDark.withValues(alpha: 0.85),
+                    color: AppColors.chrome.withValues(alpha: 0.85),
                   ),
                   const SizedBox(width: AppSpacing.s),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'So verbindest du',
-                      style: TextStyle(
+                      AppLocalizations.of(context).bleHowTo,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.2,
@@ -437,7 +499,7 @@ class _HowToConnect extends StatelessWidget {
                 children: [
                   for (var i = 0; i < notes.length; i++) ...[
                     if (i > 0) const SizedBox(height: AppSpacing.s),
-                    _ConnectNoteRow(note: notes[i]),
+                    _ConnectNoteRow(brand: notes[i].brand, line: notes[i].line),
                   ],
                 ],
               ),
@@ -450,9 +512,10 @@ class _HowToConnect extends StatelessWidget {
 }
 
 class _ConnectNoteRow extends StatelessWidget {
-  const _ConnectNoteRow({required this.note});
+  const _ConnectNoteRow({required this.brand, required this.line});
 
-  final BikeBleConnectNote note;
+  final String brand;
+  final String line;
 
   @override
   Widget build(BuildContext context) {
@@ -462,18 +525,18 @@ class _ConnectNoteRow extends StatelessWidget {
         SizedBox(
           width: 100,
           child: Text(
-            note.brand,
+            brand,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.4,
-              color: AppColors.forestOnDark,
+              color: AppColors.chrome,
             ),
           ),
         ),
         Expanded(
           child: Text(
-            note.line,
+            line,
             style: const TextStyle(
               fontSize: 12,
               height: 1.35,
@@ -515,6 +578,7 @@ class _EmptyScan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -528,9 +592,7 @@ class _EmptyScan extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.m),
             Text(
-              scanning
-                  ? 'Suche Antrieb und Sensoren …'
-                  : 'Nichts gefunden',
+              scanning ? l10n.bleScanningDrive : l10n.bleNothingFound,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
@@ -539,9 +601,7 @@ class _EmptyScan extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
-              isEbike
-                  ? 'Display wecken, Flow oder E-TUBE zu, Handy nah halten.'
-                  : 'Sensor in die Nähe legen und am Rad aktivieren (Magnet/Kurbel).',
+              isEbike ? l10n.bleEmptyEbike : l10n.bleEmptySensor,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.muted,
@@ -573,6 +633,7 @@ class _HitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rssi = hit.rssi;
     final bars = rssi >= -60
         ? 3
@@ -595,7 +656,7 @@ class _HitTile extends StatelessWidget {
                   bikeBleKindIsDrive(hit.kind)
                       ? Icons.electric_bike
                       : Icons.sensors,
-                  color: AppColors.forestOnDark,
+                  color: AppColors.chrome,
                 ),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
@@ -603,7 +664,7 @@ class _HitTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        hit.displayName,
+                        l10n.bleScanName(hit),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
@@ -612,10 +673,11 @@ class _HitTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         [
-                          bikeBleKindLabel(hit.kind),
+                          l10n.bleKindLabel(hit.kind),
                           if (hit.caps.contains(BikeBleCap.csc)) 'CSC',
                           if (hit.caps.contains(BikeBleCap.power)) 'Power',
-                          if (hit.caps.contains(BikeBleCap.battery)) 'Akku',
+                          if (hit.caps.contains(BikeBleCap.battery))
+                            l10n.rideBatteryChip,
                           '$rssi dBm',
                         ].join(' · '),
                         style: const TextStyle(
@@ -628,7 +690,7 @@ class _HitTile extends StatelessWidget {
                           hit.kind == BikeBleKind.power) ...[
                         const SizedBox(height: 2),
                         Text(
-                          bikeBleConnectTip(hit.kind),
+                          l10n.bleConnectTipFor(hit.kind),
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.muted,
@@ -639,7 +701,7 @@ class _HitTile extends StatelessWidget {
                       if (pairing && pairingLabel != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          pairingLabel!,
+                          l10n.bleStatusDetailFor(pairingLabel!),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -667,7 +729,7 @@ class _HitTile extends StatelessWidget {
                             height: 6.0 + i * 4,
                             decoration: BoxDecoration(
                               color: i < bars
-                                  ? AppColors.forestOnDark
+                                  ? AppColors.chrome
                                   : AppColors.border,
                               borderRadius: BorderRadius.circular(1),
                             ),

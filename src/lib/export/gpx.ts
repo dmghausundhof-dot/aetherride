@@ -14,7 +14,7 @@ export function rideHasExportableTrack(ride: Ride): boolean {
  * (no synthetic Berchtesgaden path).
  */
 export function rideToGpx(ride: Ride, bikeName?: string): string {
-  const name = `AetherRide ${new Date(ride.startTime).toISOString().slice(0, 10)}`;
+  const name = `FlowLine ${new Date(ride.startTime).toISOString().slice(0, 10)}`;
   const pts = ride.track && ride.track.length > 0 ? ride.track : [];
 
   const trkpts = pts
@@ -35,7 +35,7 @@ export function rideToGpx(ride: Ride, bikeName?: string): string {
             );
       return `      <trkpt lat="${p.lat}" lon="${p.lng}">${
         p.elev != null ? `\n        <ele>${p.elev}</ele>` : ""
-      }\n        <time>${t.toISOString()}</time>\n      </trkpt>`;
+      }\n        <time>${t.toISOString()}</time>${gpxPointExtensions(p)}\n      </trkpt>`;
     })
     .filter(Boolean)
     .join("\n");
@@ -43,7 +43,7 @@ export function rideToGpx(ride: Ride, bikeName?: string): string {
   const emptyNote = pts.length === 0 ? " · kein GPS-Track" : "";
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="AetherRide" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="FlowLine" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1">
   <metadata>
     <name>${escapeXml(name)}</name>
     <desc>${escapeXml(bikeName || "Ride")} · ${ride.distanceM} m · ${ride.elevationGainM} hm${emptyNote}</desc>
@@ -57,6 +57,51 @@ ${trkpts}
     </trkseg>
   </trk>
 </gpx>`;
+}
+
+function liveHr(p: { hr?: number; heartRateBpm?: number }): number | null {
+  const v = p.hr ?? p.heartRateBpm;
+  if (typeof v !== "number" || v < 1 || v > 239) return null;
+  return Math.round(v);
+}
+
+function liveCad(p: { cad?: number; cadenceRpm?: number }): number | null {
+  const v = p.cad ?? p.cadenceRpm;
+  if (typeof v !== "number" || v < 1 || v > 254) return null;
+  return Math.round(v);
+}
+
+function livePower(p: { power?: number; powerW?: number }): number | null {
+  const v = p.power ?? p.powerW;
+  if (typeof v !== "number" || v < 1 || v > 2500) return null;
+  return Math.round(v);
+}
+
+function gpxPointExtensions(p: {
+  hr?: number;
+  cad?: number;
+  power?: number;
+  heartRateBpm?: number;
+  cadenceRpm?: number;
+  powerW?: number;
+}): string {
+  const hr = liveHr(p);
+  const cad = liveCad(p);
+  const power = livePower(p);
+  if (hr == null && cad == null && power == null) return "";
+  let inner = "\n        <extensions>";
+  if (hr != null || cad != null) {
+    inner += "\n          <gpxtpx:TrackPointExtension>";
+    if (hr != null) inner += `\n            <gpxtpx:hr>${hr}</gpxtpx:hr>`;
+    if (cad != null) inner += `\n            <gpxtpx:cad>${cad}</gpxtpx:cad>`;
+    inner += "\n          </gpxtpx:TrackPointExtension>";
+  }
+  if (power != null) {
+    inner +=
+      `\n          <gpxpx:PowerExtension>\n            <gpxpx:PowerInWatts>${power}</gpxpx:PowerInWatts>\n          </gpxpx:PowerExtension>`;
+  }
+  inner += "\n        </extensions>";
+  return inner;
 }
 
 function escapeXml(s: string): string {
@@ -93,7 +138,7 @@ export function fullJsonExport(input: {
 /** Strava-ähnlicher Activity-Payload (Export-Stub, kein OAuth) */
 export function rideToStravaActivityStub(ride: Ride): object {
   return {
-    name: `AetherRide ${new Date(ride.startTime).toLocaleDateString("de-DE")}`,
+    name: `FlowLine ${new Date(ride.startTime).toLocaleDateString("de-DE")}`,
     type: "Ride",
     sport_type:
       ride.sportType === "enduro" || ride.sportType === "all_mountain"
@@ -104,7 +149,7 @@ export function rideToStravaActivityStub(ride: Ride): object {
     distance: ride.distanceM,
     total_elevation_gain: ride.elevationGainM,
     description:
-      "Exportiert aus AetherRide — Strava API OAuth in Produktion (Spec 8.6 P1).",
+      "Exportiert aus FlowLine — Strava API OAuth in Produktion (Spec 8.6 P1).",
     _note: "Demo-Stub ohne Netzwerkaufruf. Markenrichtlinien Strava beachten.",
   };
 }

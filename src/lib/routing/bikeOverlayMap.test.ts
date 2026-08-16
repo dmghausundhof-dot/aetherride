@@ -62,6 +62,7 @@ function testOverlayFamilyFollowsRideProfile() {
     rideProfileId: "road",
   });
   assert.ok(road.has("road"));
+  assert.ok(road.has("urban"));
   assert.ok(!road.has("mtb"));
 }
 
@@ -73,6 +74,7 @@ function testRoadHidesMtb() {
     rideProfileId: "road",
   });
   assert.ok(on.has("road"));
+  assert.ok(on.has("urban"));
   assert.ok(!on.has("mtb"));
 }
 
@@ -89,6 +91,7 @@ function testGravelKeepsS0S1() {
   });
   assert.ok(on.has("gravel"));
   assert.ok(on.has("mtb"));
+  assert.ok(on.has("road"));
 }
 
 testDownhillFiltersS1ToS3();

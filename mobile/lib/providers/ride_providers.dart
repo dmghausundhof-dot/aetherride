@@ -8,10 +8,11 @@ export '../data/sync/sync_engine.dart' show SyncAuthStatus;
 
 final activeRouteProvider = StateProvider<ActiveRoute?>((ref) => null);
 
-/// Discover-Einstieg von Home: einmalig in DiscoverScreen konsumieren.
-/// Discover ist der Normalzustand; `plan` öffnet zusätzlich das Planen-Panel.
-/// `rideOut` ist Rausfahren: Karte mit Wahl Einfach fahren / Touren anzeigen.
-enum DiscoverLaunchMode { discover, plan, rideOut }
+/// Discover-Einstieg: einmalig in DiscoverScreen konsumieren.
+/// `discover` ist Browse (Deep-Link). `plan` öffnet das Planen-Panel.
+/// `rideOut` ist Rausfahren: Wahl Einfach fahren / Touren anzeigen
+/// (Hof-CTA und Karte-Tab). `mine` ist Tafel/Post-Ride → Mappe, nie Explore.
+enum DiscoverLaunchMode { discover, plan, rideOut, mine }
 
 final discoverLaunchModeProvider =
     StateProvider<DiscoverLaunchMode?>((ref) => null);
@@ -19,8 +20,28 @@ final discoverLaunchModeProvider =
 /// Deep-Link: Discover mit Loop-Highlight (`?loop=<id>` ohne start=1).
 final discoverPendingLoopIdProvider = StateProvider<String?>((ref) => null);
 
+/// Hof-Tafel → Karte in „Meine / Mappe“.
+final discoverPendingMineProvider = StateProvider<bool>((ref) => false);
+
+/// Nach Meine: diese SavedRoute-Akte öffnen (Post-Ride / Tafel-Stimmen).
+final discoverPendingAkteRouteIdProvider = StateProvider<String?>((ref) => null);
+
 /// Deep-Link Dauer-Lens (`?lens=60`).
 final discoverPendingLensMinutesProvider = StateProvider<int?>((ref) => null);
+
+/// Deep-Link / App-Link: Platz-Gruppe beitreten (`?group=` / `?code=` + optional `g=`).
+class PlatzPendingJoin {
+  const PlatzPendingJoin({required this.code, this.token});
+
+  final String code;
+  final String? token;
+}
+
+final platzPendingJoinProvider = StateProvider<PlatzPendingJoin?>((ref) => null);
+
+/// Platz-Gruppenkarte → Karte startet dieselbe Tour.
+final discoverPendingStartRideRouteIdProvider =
+    StateProvider<String?>((ref) => null);
 
 final syncAuthStatusProvider =
     StateProvider<SyncAuthStatus>((ref) => SyncAuthStatus.unknown);
@@ -46,6 +67,9 @@ final shopPendingBikeIdProvider = StateProvider<String?>((ref) => null);
 
 /// Shop: Slot-Chip aus Wartung/Werkstatt (`chain`, `tire`, …).
 final shopPendingSlotProvider = StateProvider<String?>((ref) => null);
+
+/// Shop: Produktakte öffnen (`/shop/p/{handle}` / `?handle=`).
+final shopPendingHandleProvider = StateProvider<String?>((ref) => null);
 
 /// Shop: nur Teile mit ehrlichem Garage-Fit (`fit=bike` / Werkstatt).
 final shopPendingFitOnlyProvider = StateProvider<bool?>((ref) => null);

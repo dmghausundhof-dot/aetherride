@@ -1,0 +1,27 @@
+{
+  "id": "ch-mittelland",
+  "name": "Schweizer Mittelland",
+  "bbox": [
+    6.85,
+    46.72,
+    8.05,
+    47.35
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-mittelland",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-mittelland.tar.zst"
+  }
+}

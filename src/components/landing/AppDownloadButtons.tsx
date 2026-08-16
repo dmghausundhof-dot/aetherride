@@ -1,8 +1,12 @@
+"use client";
+
 import {
   APP_STORE_URL,
   PLAY_STORE_URL,
   hasStoreLinks,
 } from "@/lib/web/appLinks";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 interface Props {
   size?: "lg" | "md";
@@ -10,6 +14,7 @@ interface Props {
 }
 
 export function AppDownloadButtons({ size = "md", className = "" }: Props) {
+  const copy = webChrome(useChromeLang());
   const sizeClasses =
     size === "lg" ? "h-14 px-8 text-base" : "h-10 px-4 text-sm";
 
@@ -24,7 +29,7 @@ export function AppDownloadButtons({ size = "md", className = "" }: Props) {
           href="/download"
           className={`inline-flex items-center justify-center rounded-xl border border-border font-medium text-foreground transition hover:bg-surface-elevated ${sizeClasses}`}
         >
-          App entdecken
+          {copy.discoverApp}
         </a>
       </div>
     );
@@ -38,7 +43,7 @@ export function AppDownloadButtons({ size = "md", className = "" }: Props) {
         <a
           href={APP_STORE_URL}
           className={`inline-flex items-center justify-center gap-2 rounded-xl bg-foreground font-medium text-background transition hover:opacity-90 ${sizeClasses}`}
-          aria-label="Im App Store laden"
+          aria-label={copy.loadAppStore}
           rel="noopener noreferrer"
         >
           App Store
@@ -48,7 +53,7 @@ export function AppDownloadButtons({ size = "md", className = "" }: Props) {
         <a
           href={PLAY_STORE_URL}
           className={`inline-flex items-center justify-center gap-2 rounded-xl border border-border font-medium text-foreground transition hover:bg-surface-elevated ${sizeClasses}`}
-          aria-label="Bei Google Play laden"
+          aria-label={copy.loadPlayStore}
           rel="noopener noreferrer"
         >
           Google Play

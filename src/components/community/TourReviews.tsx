@@ -7,7 +7,6 @@ import {
   useCommunityStore,
 } from "@/store/useCommunityStore";
 import {
-  COMMUNITY_EMPTY_COPY,
   countsFromPayload,
   hasCommunity,
   type TourCommunityCounts,
@@ -16,6 +15,9 @@ import {
   createClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 type CloudReview = {
   id: string;
@@ -31,16 +33,26 @@ type CloudPhoto = {
   caption?: string | null;
 };
 
-export function TourReviews({ tourId }: { tourId: string }) {
+export function TourReviews({
+  tourId,
+  showHeading = true,
+}: {
+  tourId: string;
+  showHeading?: boolean;
+}) {
   const myReviews = useCommunityStore((s) => s.myReviews);
   const submitReview = useCommunityStore((s) => s.submitReview);
   const removeMyReview = useCommunityStore((s) => s.removeMyReview);
   const publicProfile = useCommunityStore((s) => s.publicProfile);
+  const s = catalogCopy(useChromeLang()).stimmen;
+  const chrome = webChrome(useChromeLang());
 
   const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [body, setBody] = useState("");
   const [name, setName] = useState(publicProfile.displayName || "");
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ text: string; profile?: boolean } | null>(
+    null,
+  );
   const [cloudReviews, setCloudReviews] = useState<CloudReview[]>([]);
   const [cloudPhotos, setCloudPhotos] = useState<CloudPhoto[]>([]);
   const [counts, setCounts] = useState<TourCommunityCounts>({
@@ -87,7 +99,14 @@ export function TourReviews({ tourId }: { tourId: string }) {
       authorLabel: name,
     });
     if ("error" in local) {
-      setMsg(local.error);
+      setMsg({
+        text:
+          local.error === "Bitte mindestens 8 Zeichen schreiben."
+            ? s.minChars
+            : local.error === "Bewertung 1–5."
+              ? s.ratingRange
+              : local.error,
+      });
       return;
     }
     setBody("");
@@ -122,21 +141,20 @@ export function TourReviews({ tourId }: { tourId: string }) {
       });
       setPhotoFile(null);
       if (res.status === 401) {
-        setMsg("Gespeichert lokal — für Cloud und Foto bitte anmelden (Profil).");
+        setMsg({ text: s.savedLocalSignIn, profile: true });
         return;
       }
       if (res.ok) {
         const j = await res.json();
-        setMsg(
-          j.status === "approved"
-            ? "Danke — veröffentlicht."
-            : "Danke — in Prüfung, bis zur Freigabe nur für dich sichtbar."
-        );
+        setMsg({
+          text:
+            j.status === "approved" ? s.thanksPublished : s.thanksPending,
+        });
         return;
       }
-      setMsg("Gespeichert lokal — Cloud gerade nicht erreichbar.");
+      setMsg({ text: s.savedLocalCloud });
     } catch {
-      setMsg("Gespeichert lokal — Cloud gerade nicht erreichbar.");
+      setMsg({ text: s.savedLocalCloud });
     } finally {
       setBusy(false);
     }
@@ -147,22 +165,22 @@ export function TourReviews({ tourId }: { tourId: string }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Community</h2>
+        {showHeading ? <h2 className="text-lg font-semibold">{s.heading}</h2> : null}
         {counts.averageRating != null && (
           <p className="flex items-center gap-1 text-sm tabular-nums text-text-secondary">
             <Star className="h-4 w-4 fill-accent text-accent" />
-            {counts.averageRating} · {counts.reviewCount} Bewertungen
-            {counts.photoCount > 0 ? ` · ${counts.photoCount} Fotos` : ""}
+            {s.countLine(
+              counts.averageRating,
+              counts.reviewCount,
+              counts.photoCount,
+            )}
           </p>
         )}
       </div>
-      <p className="mt-1 text-[11px] text-text-secondary">
-        Live aus der Community-API — keine Stub-Sterne. Tracks gehören nicht in
-        Reviews.
-      </p>
+      <p className="mt-1 text-[11px] text-text-secondary">{s.liveHint}</p>
 
       {liveEmpty && (
-        <p className="mt-4 text-sm text-text-secondary">{COMMUNITY_EMPTY_COPY}</p>
+        <p className="mt-4 text-sm text-text-secondary">{s.empty}</p>
       )}
 
       {cloudPhotos.filter((p) => p.url).length > 0 && (
@@ -175,7 +193,7 @@ export function TourReviews({ tourId }: { tourId: string }) {
               <img
                 key={p.id || p.url!}
                 src={p.url!}
-                alt={p.caption || "Community-Foto"}
+                alt={p.caption || s.photoAlt}
                 className="h-20 w-28 rounded-lg object-cover"
               />
             ))}
@@ -221,7 +239,7 @@ export function TourReviews({ tourId }: { tourId: string }) {
               </span>
               {r.status === "pending" && (
                 <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning">
-                  In Prüfung
+                  {s.pending}
                 </span>
               )}
             </div>
@@ -231,14 +249,14 @@ export function TourReviews({ tourId }: { tourId: string }) {
               onClick={() => removeMyReview(r.id)}
               className="mt-2 inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-error"
             >
-              <Trash2 className="h-3 w-3" /> Entfernen
+              <Trash2 className="h-3 w-3" /> {s.remove}
             </button>
           </li>
         ))}
       </ul>
 
       <div className="mt-6 border-t border-border pt-4">
-        <h3 className="text-sm font-semibold">Bewertung schreiben</h3>
+        <h3 className="text-sm font-semibold">{s.write}</h3>
         <div className="mt-2 flex gap-1">
           {([1, 2, 3, 4, 5] as const).map((n) => (
             <button
@@ -246,7 +264,7 @@ export function TourReviews({ tourId }: { tourId: string }) {
               type="button"
               onClick={() => setRating(n)}
               className="p-1"
-              aria-label={`${n} Sterne`}
+              aria-label={s.starsAria(n)}
             >
               <Star
                 className={`h-6 w-6 ${
@@ -261,20 +279,21 @@ export function TourReviews({ tourId }: { tourId: string }) {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Anzeigename"
+          placeholder={s.namePlaceholder}
+          aria-label={s.nameAria}
           className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           maxLength={40}
         />
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value.slice(0, 500))}
-          placeholder="Wie war die Tour? Belag, Verkehr, Tipps… (keine privaten Orte)"
+          placeholder={s.bodyPlaceholder}
           rows={3}
           className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
         />
         <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 text-xs text-text-secondary">
           <Camera className="h-3.5 w-3.5" />
-          Foto
+          {s.photo}
           <input
             type="file"
             accept="image/*"
@@ -285,23 +304,23 @@ export function TourReviews({ tourId }: { tourId: string }) {
         </label>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
           <span className="text-[11px] text-text-secondary">
-            {body.length}/500 · Foto nach Login
+            {s.counter(body.length)}
           </span>
           <button
             type="button"
             disabled={busy}
             onClick={() => void onSubmit()}
-            className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-on-accent"
           >
-            {busy ? "…" : "Absenden"}
+            {busy ? "…" : s.submit}
           </button>
         </div>
         {msg && (
           <p className="mt-2 text-xs text-text-secondary" role="status">
-            {msg}{" "}
-            {msg.includes("anmelden") ? (
+            {msg.text}{" "}
+            {msg.profile ? (
               <Link href="/profile" className="font-semibold text-accent">
-                Profil
+                {chrome.profile}
               </Link>
             ) : null}
           </p>

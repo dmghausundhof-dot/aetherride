@@ -1,4 +1,4 @@
-# AetherRide – Vollständige Referenz-Implementation
+# FlowLine – Vollständige Referenz-Implementation
 
 **Intelligente All-in-One-App für Mountainbike, Enduro, Gravel, E-Bike & Wandern**
 
@@ -105,7 +105,7 @@ Tabs: Der Hof · Karte · Werkstatt · Laden. Ride-HUD nur in der App.
 Bereits verdrahtet auf Branch `feat/production-supabase-stripe`:
 
 - **Supabase** Projekt `aetherride` (EU): Auth, profiles, sync_snapshots, orders, chat_usage + RLS
-- **Stripe**: AetherRide Pro 6,99 €/Mo + 59,99 €/Jahr; Marketplace Checkout; Webhook → `/api/webhooks/stripe`
+- **Stripe**: FlowLine Pro 6,99 €/Mo + 59,99 €/Jahr; Marketplace Checkout; Webhook → `/api/webhooks/stripe`
 - **Grok** (`/api/chat`) hinter Numeric-Guard; Free 5/Tag · Pro 50/Tag (Monatskappe 40/500)
 - Env-Vorlage: [`.env.example`](.env.example)
 

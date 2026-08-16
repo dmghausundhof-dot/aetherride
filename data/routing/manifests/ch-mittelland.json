@@ -1,0 +1,24 @@
+{
+  "id": "ch-mittelland",
+  "name": "Schweizer Mittelland",
+  "bbox": [
+    6.85,
+    46.72,
+    8.05,
+    47.35
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-mittelland.tar.zst",
+    "packGz": "ch-mittelland.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

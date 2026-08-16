@@ -6,4 +6,5 @@ abstract final class NativeChannels {
   static const mapCore = 'com.aetherride/map_core';
   static const routingCore = 'com.aetherride/routing_core';
   static const dspCore = 'com.aetherride/dsp_core';
+  static const hudMedia = 'com.aetherride/hud_media';
 }

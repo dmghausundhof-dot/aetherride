@@ -1,0 +1,27 @@
+{
+  "id": "at-burgenland",
+  "name": "Burgenland",
+  "bbox": [
+    14.65,
+    46.82,
+    17.17,
+    48.12
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-burgenland",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-burgenland.tar.zst"
+  }
+}

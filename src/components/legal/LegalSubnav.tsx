@@ -19,7 +19,7 @@ export function LegalSubnav() {
             href={item.href}
             className={
               active
-                ? "rounded-full bg-chrome px-3 py-1 text-xs font-semibold text-background"
+                ? "rounded-full bg-chrome px-3 py-1 text-xs font-semibold text-on-accent"
                 : "rounded-full border border-border px-3 py-1 text-xs font-medium text-text-secondary hover:border-chrome/40 hover:text-foreground"
             }
           >

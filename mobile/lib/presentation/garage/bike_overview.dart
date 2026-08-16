@@ -54,17 +54,17 @@ class BikeOverviewCard extends StatelessWidget {
             ? l10n.garageMaintOverdue(dueCount)
             : l10n.garageMaintDue(dueCount);
     final statusColor = dueCount == 0
-        ? AppColors.forestOnDark
+        ? AppColors.sageOnDark
         : overdue
-            ? const Color(0xFFFF6B6B)
-            : const Color(0xFFEAB308);
+            ? AppColors.error
+            : AppColors.warning;
 
     final card = Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: bike.isActive ? AppColors.forestOnDark : AppColors.border,
+          color: bike.isActive ? AppColors.chrome : AppColors.border,
           width: bike.isActive ? 1.5 : 1,
         ),
       ),

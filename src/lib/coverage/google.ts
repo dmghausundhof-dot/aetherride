@@ -6,6 +6,8 @@
  * Key stays server-side (`GOOGLE_MAPS_API_KEY`). Missing key → honest empty.
  */
 
+import { chromeLangFrom, type ChromeLang } from "@/lib/i18n/chromeLang";
+
 export type GooglePlaceKind = "bike_shop" | "repair" | "cafe" | "other";
 
 export type GooglePlacePoi = {
@@ -67,7 +69,8 @@ async function placesNewNearby(
   lng: number,
   radiusM: number,
   key: string,
-  fetchImpl: FetchLike
+  fetchImpl: FetchLike,
+  language: ChromeLang = "de"
 ): Promise<GooglePlacePoi[] | null> {
   const res = await fetchImpl("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
@@ -80,7 +83,7 @@ async function placesNewNearby(
     body: JSON.stringify({
       includedTypes: ["bicycle_store"],
       maxResultCount: 10,
-      languageCode: "de",
+      languageCode: language,
       rankPreference: "DISTANCE",
       locationRestriction: {
         circle: {
@@ -128,13 +131,14 @@ async function placesLegacyNearby(
   lng: number,
   radiusM: number,
   key: string,
-  fetchImpl: FetchLike
+  fetchImpl: FetchLike,
+  language: ChromeLang = "de"
 ): Promise<GooglePlacePoi[] | null> {
   const url = new URL("https://maps.googleapis.com/maps/api/place/nearbysearch/json");
   url.searchParams.set("location", `${lat},${lng}`);
   url.searchParams.set("radius", String(Math.round(radiusM)));
   url.searchParams.set("type", "bicycle_store");
-  url.searchParams.set("language", "de");
+  url.searchParams.set("language", language);
   url.searchParams.set("key", key);
   const res = await fetchImpl(url.toString(), {
     signal: AbortSignal.timeout(4500),
@@ -183,6 +187,7 @@ export async function fetchGooglePlacesNearby(opts: {
   radiusM?: number;
   key?: string;
   fetchImpl?: FetchLike;
+  language?: ChromeLang;
 }): Promise<GooglePlacesResult> {
   const key = (opts.key ?? googleMapsApiKey()).trim();
   if (key.length <= 8) {
@@ -196,8 +201,9 @@ export async function fetchGooglePlacesNearby(opts: {
   }
   const radiusM = Math.min(8000, Math.max(800, opts.radiusM ?? 4000));
   const fetchImpl = opts.fetchImpl ?? fetch;
+  const language = chromeLangFrom(opts.language);
   try {
-    const neu = await placesNewNearby(opts.lat, opts.lng, radiusM, key, fetchImpl);
+    const neu = await placesNewNearby(opts.lat, opts.lng, radiusM, key, fetchImpl, language);
     if (neu) {
       return {
         configured: true,
@@ -211,7 +217,8 @@ export async function fetchGooglePlacesNearby(opts: {
       opts.lng,
       radiusM,
       key,
-      fetchImpl
+      fetchImpl,
+      language
     );
     if (legacy) {
       return {
@@ -255,6 +262,7 @@ export async function fetchGoogleGeocode(opts: {
   limit?: number;
   key?: string;
   fetchImpl?: FetchLike;
+  language?: ChromeLang;
 }): Promise<{ hits: GoogleGeocodeHit[]; warning?: string }> {
   const key = (opts.key ?? googleMapsApiKey()).trim();
   if (key.length <= 8) return { hits: [], warning: "Google nicht konfiguriert" };
@@ -263,7 +271,7 @@ export async function fetchGoogleGeocode(opts: {
   try {
     const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
     url.searchParams.set("address", q);
-    url.searchParams.set("language", "de");
+    url.searchParams.set("language", chromeLangFrom(opts.language));
     url.searchParams.set("region", "de");
     url.searchParams.set("key", key);
     if (Number.isFinite(opts.lat) && Number.isFinite(opts.lng)) {

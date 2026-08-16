@@ -7,18 +7,31 @@
     2.48,
     48.92
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T12:47:36Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19540588,
+      "sha256": "df453508c1194f7946ad266c7ec76b26b52e192bab0b152fe68a0b0a9b901703",
+      "sha256_16": "df453508c1194f79"
+    },
+    "paris.tar.gz": {
+      "bytes": 2625422,
+      "sha256": "8b5a9c902901a6c279dfb385537e7908720a2dcdf67f17be606df8e5bcae5ac5",
+      "sha256_16": "8b5a9c902901a6c2"
+    },
+    "paris.tar.zst": {
+      "bytes": 2788543,
+      "sha256": "6732b71dc8a34be2db28f34df23d840a65ca859afb13a806a484478a83ef5500",
+      "sha256_16": "6732b71dc8a34be2"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/paris",
     "pack": "paris.tar.zst",
     "packGz": "paris.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

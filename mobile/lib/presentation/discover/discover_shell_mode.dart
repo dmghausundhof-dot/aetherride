@@ -30,4 +30,11 @@ abstract final class DiscoverShellModeLogic {
   /// Start/destination fields + route compute.
   static bool showsNavigateForm(DiscoverShellMode mode) =>
       mode == DiscoverShellMode.navigate;
+
+  /// Compass (time + heading) lives in Navigieren, not the tour catalog.
+  static bool showsCompassAction(DiscoverShellMode mode) =>
+      mode == DiscoverShellMode.navigate;
+
+  /// Old N/O/SW heading cards must not sit among catalog/seed tours.
+  static bool get showsHeadingCardsInTourCatalog => false;
 }

@@ -7,7 +7,7 @@
     9.98,
     46.57
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-16T10:30:51Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false,
@@ -29,9 +29,6 @@
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/st-moritz",
     "pack": "st-moritz.tar.zst",
     "packGz": "st-moritz.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   },
   "overlay": {
     "layer": "bike",

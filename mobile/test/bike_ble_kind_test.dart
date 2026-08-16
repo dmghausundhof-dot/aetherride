@@ -205,6 +205,30 @@ void main() {
     );
   });
 
+  test('ride auto-connect skips preferred GATT on a drive', () {
+    expect(
+      bleSkipPreferredDriveGatt(
+        scanIfMissing: true,
+        kindHint: BikeBleKind.bosch,
+      ),
+      isTrue,
+    );
+    expect(
+      bleSkipPreferredDriveGatt(
+        scanIfMissing: false,
+        kindHint: BikeBleKind.bosch,
+      ),
+      isFalse,
+    );
+    expect(
+      bleSkipPreferredDriveGatt(
+        scanIfMissing: true,
+        kindHint: BikeBleKind.csc,
+      ),
+      isFalse,
+    );
+  });
+
   test('Shimano name without UUID is proprietary drive, not invented SoC', () {
     expect(
       bikeBleCapsFromUuids(const [], platformName: 'SC-EM800'),
@@ -246,6 +270,38 @@ void main() {
     expect(bleReconnectDelay(9), const Duration(seconds: 30));
   });
 
+  test('untrusted drive drop without OS-bond does not reconnect', () {
+    expect(bleIsUntrustedDrop(8), isTrue);
+    expect(bleIsUntrustedDrop(5), isTrue);
+    expect(bleIsUntrustedDrop(19), isTrue);
+    expect(bleIsUntrustedDrop(133), isFalse);
+    expect(
+      bleShouldReconnectAfterDrop(
+        kind: BikeBleKind.bosch,
+        disconnectCode: 8,
+        bonded: false,
+      ),
+      isFalse,
+    );
+    expect(
+      bleShouldReconnectAfterDrop(
+        kind: BikeBleKind.bosch,
+        disconnectCode: 8,
+        bonded: true,
+      ),
+      isTrue,
+    );
+    expect(
+      bleShouldReconnectAfterDrop(
+        kind: BikeBleKind.csc,
+        disconnectCode: 8,
+        bonded: false,
+      ),
+      isTrue,
+    );
+    expect(bleGattStatusHint(8), contains('Kopplung'));
+  });
+
   test('connect notes stay short and maker-specific', () {
     expect(bikeBlePairLead(isEbike: true), contains('Display an'));
     expect(bikeBlePairLead(isEbike: false), contains('Sensor'));
@@ -264,5 +320,44 @@ void main() {
     expect(parseBatteryLevelPercent(const [0]), 0);
     expect(parseBatteryLevelPercent(const [100]), 100);
     expect(parseBatteryLevelPercent(const [101]), isNull);
+  });
+
+  test('drive GATT without CSC/power/SoC is not live', () {
+    expect(
+      bleHasLiveBikeMetrics(
+        hasCscNotify: false,
+        hasPowerNotify: false,
+        hasSoc: false,
+      ),
+      isFalse,
+    );
+    expect(
+      bleHasLiveBikeMetrics(
+        hasCscNotify: true,
+        hasPowerNotify: false,
+        hasSoc: false,
+      ),
+      isTrue,
+    );
+    expect(
+      bleDriveWithoutLiveMetrics(
+        connected: true,
+        kind: BikeBleKind.bosch,
+        hasCscNotify: false,
+        hasPowerNotify: false,
+        hasSoc: false,
+      ),
+      isTrue,
+    );
+    expect(
+      bleDriveWithoutLiveMetrics(
+        connected: true,
+        kind: BikeBleKind.csc,
+        hasCscNotify: true,
+        hasPowerNotify: false,
+        hasSoc: false,
+      ),
+      isFalse,
+    );
   });
 }

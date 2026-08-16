@@ -179,6 +179,14 @@
   "hofGpsUnknown": "No location — sky and gate wait for GPS.",
   "rideGpsUnavailable": "No GPS — track stays empty. Nothing invented.",
   "hofAtHof": "at the stand",
+  "hofGarageType": "Type {type}",
+  "@hofGarageType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "hofSinceOneDay": "1 day",
   "hofSinceDays": "{days} days",
   "@hofSinceDays": {
@@ -296,6 +304,18 @@
   "filterDistance": "Distance",
   "filterElevation": "Elevation",
   "filterForm": "Shape",
+  "filterFormAll": "All",
+  "filterFormPointToPoint": "A→B",
+  "filterFormPointToPointTooltip": "Stages and linear trails (start≠end).",
+  "filterFormDownhill": "Downhill",
+  "filterFormDownhillTooltip": "Descents, bike park, enduro A→B. Loops are not auto-DH.",
+  "filterBikeType": "Bike type",
+  "filterBikeTypeHonesty": "Colors filter tours. Navigation: bike (GraphHopper Basic), except walking.",
+  "filterSingletrail": "Singletrack (S-scale)",
+  "filterSingletrailHint": "Only tours/ways with an honest grade. No tag: no matches.",
+  "filterNoDownhillTours": "No downhill tours nearby",
+  "filterNoDownhillToursHint": "OSM trails by S-grade stay on the map. No DH round in the catalog here.",
+  "filterNoScaleTours": "No tour with this S-grade",
   "filterTrailNetwork": "Trail network (map)",
   "filterLoopsOnly": "Loop",
   "filterLoopsOnlyTooltip": "Honest loops only (start≈end). No A→B fillers.",
@@ -1449,6 +1469,18 @@
   "dieBoxChipCsc": "CSC",
   "dieBoxChipBatteryHonest": "Honest battery",
   "dieBoxChipSag": "SAG",
+  "dieBoxChipChain": "Chain",
+  "dieBoxChipPressure": "Pressure",
+  "dieBoxChipCockpit": "Cockpit",
+  "lastRideKm": "Last {km} km",
+  "@lastRideKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "lastRideNoGps": "Last out — no GPS track",
   "dieBoxSentenceEverydayReady": "{name} lives here · Monday-ready",
   "@dieBoxSentenceEverydayReady": {
     "placeholders": {
@@ -1949,7 +1981,22 @@
   "discoverOsmTags": "Tags from OpenStreetMap",
   "discoverTapMapTrails": "Tap the map to pick trails.",
   "discoverTrailApproachHint": "Ride to the entry, then save the overlay or go.",
+  "discoverTrailGravityHint": "DH: drive or walk to the top entry. The descent follows the trail, not the road.",
   "discoverRideToTrailhead": "Ride to the start",
+  "discoverApproachByCar": "Drive to the trail",
+  "discoverApproachOnFoot": "Walk to the entry",
+  "discoverAtTrailStart": "I'm at the start",
+  "discoverApproachByBike": "Ride there",
+  "discoverTrailUnsuitableForBike": "Not with {bike} on this trail. Switch bikes in the garage — don't secretly MTB-route.",
+  "@discoverTrailUnsuitableForBike": {
+    "placeholders": {
+      "bike": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverTrailOrientedDownhill": "Entry at the top (elevation)",
+  "discoverTrailStartUphillUnknown": "Elevation unknown — nearer entry",
   "discoverPutOnRoute": "Put on the route",
   "discoverOpenOsm": "Open on OpenStreetMap",
   "discoverApproachTrailhead": "Approaching the trailhead…",
@@ -2280,8 +2327,14 @@
   "discoverNoSavedFilter": "No tours in this filter.",
   "discoverMineEmptyHint": "No own routes yet — add a route, GPX, or record.",
   "overlayLegendTitle": "Ways · OSM",
+  "overlayLegendCompactCity": "City",
+  "overlayLegendCompactMtb": "MTB",
+  "overlayScaleNote": "S0–S3+ only with OSM tag. Otherwise unrated.",
   "overlayRoadAsphalt": "Cycleway / asphalt",
   "overlayUnrated": "unrated",
+  "discoverChipTooltip": "Tours and ways — not the routing engine",
+  "discoverNavHonestyBike": "Nav: bike — GraphHopper Basic, same route",
+  "discoverNavHonestyFoot": "Nav: walking",
   "stimmenTitle": "Voices",
   "stimmenHint": "Stars, text and photos — cloud after share. No invented voices.",
   "stimmenWrite": "Write a voice",
@@ -2336,6 +2389,8 @@
   "rideBleDeniedSnack": "Nearby/Bluetooth denied — GPS navigation runs without a sensor.",
   "rideNoBikeSensor": "No bike sensor found — GPS track continues.",
   "rideOfflineRerouteToast": "Reroute needs internet. Stay on the loaded route.",
+  "rideStayOnTrail": "Stay on the trail — no road reroute.",
+  "rideFollowTrail": "Follow the trail",
   "rideNoGpsRejoin": "No GPS-Fix for rejoin",
   "rideRejoinFailed": "Rejoin failed: {error}",
   "rideSkipAheadWhy": "Section skipped — back to the route.",
@@ -2399,11 +2454,21 @@
   "rideWatch": "Smartwatch",
   "rideConnected": "Connected",
   "ridePower": "Power",
-  "rideSoc": "SoC",
+  "rideSoc": "Battery",
   "rideAssist": "Assist",
   "rideBatteryChip": "Battery",
   "rideWheelSpeed": "Wheel",
-  "rideRestKm": "Rest-km",
+  "rideRestKm": "km left",
+  "rideUntilJoin": "to route",
+  "rideRestLoop": "loop left",
+  "rideKmToRoute": "{km} km to the route",
+  "@rideKmToRoute": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
   "rideEta": "ETA",
   "rideKmh": "km/h",
   "rideKm": "km",
@@ -2440,7 +2505,7 @@
   "ridePuckBergASub": "Letter, mountain and arrow in one",
   "ridePuckTopDownSub": "Top-down: nose, horns, two tires — turns with you",
   "ridePuckHofTorSub": "Two legs, open at the bottom",
-  "ridePuckKometSub": "Spearhead with a mint spark",
+  "ridePuckKometSub": "Spearhead with an orange spark",
   "ridePuckKieselSub": "Soft triangle with halo",
   "ridePuckLenkerBugSub": "Pointed nose, two bar-ends",
   "ridePuckLichtkegelSub": "Dark disc, orange cone",
@@ -2945,7 +3010,7 @@
     }
   },
   "rideGPeak": "G-Peak",
-  "rideLean": "Lean °",
+  "rideLean": "Lean",
   "rideFlow": "Flow",
   "garageSetNamed": "Set {name}",
   "@garageSetNamed": {
@@ -3030,6 +3095,16 @@
   },
   "bleStatusDriveNoLive": "{who} · found — speed via CSC, battery only with standard GATT",
   "@bleStatusDriveNoLive": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "bleStatusNeedBond": "Display needs a Bluetooth pairing for the battery.",
+  "bleStatusBonding": "System pairing …",
+  "bleStatusDriveNeedBond": "{who} · found — battery after Bluetooth pairing in the workshop",
+  "@bleStatusDriveNeedBond": {
     "placeholders": {
       "who": {
         "type": "String"
@@ -3126,6 +3201,10 @@
   "bleSemanticsPaired": "Bluetooth paired",
   "bleSemanticsPair": "Pair Bluetooth",
   "bleTooltipPair": "Pair drive or sensor",
+  "bleRemoveWheel": "Remove wheel sensor",
+  "bleRemoveDrive": "Remove drive",
+  "bleSemanticsLive": "Bluetooth live",
+  "bleTooltipSaved": "Paired, not connected",
   "watchOtherWatch": "Another watch",
   "bikeCatMtbTrail": "MTB trail",
   "bikeCatMtb": "MTB",

@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { HOF_NAV } from "@/lib/nav/hofNav";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofTitle } from "@/hooks/useHofTitle";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 export function HofEmpty({
   title,
@@ -11,6 +15,9 @@ export function HofEmpty({
   hint?: string;
   showDoors?: boolean;
 }) {
+  const hofTitle = useHofTitle();
+  const copy = webChrome(useChromeLang());
+
   return (
     <section className="rounded-2xl border border-dashed border-border bg-surface px-5 py-10 text-center">
       <EmptyStandMark />
@@ -23,7 +30,7 @@ export function HofEmpty({
       {showDoors ? (
         <nav
           className="mt-6 flex flex-wrap justify-center gap-2"
-          aria-label="Fünf Türen"
+          aria-label={copy.fiveDoors}
         >
           {HOF_NAV.map((item) => (
             <Link
@@ -31,12 +38,12 @@ export function HofEmpty({
               href={item.href}
               className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-text-secondary hover:border-chrome hover:text-chrome"
             >
-              {item.label}
+              {item.id === "hof" ? hofTitle : copy.hofNav[item.id]}
             </Link>
           ))}
         </nav>
       ) : null}
-      <p className="sr-only">{HOF_COPY.emptyStand}</p>
+      <p className="sr-only">{copy.emptyStand}</p>
     </section>
   );
 }

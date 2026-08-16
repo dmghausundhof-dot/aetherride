@@ -222,7 +222,7 @@ export function AddBikeWizard({
               onClick={() => setMode(id)}
               className={`rounded-xl px-2 py-2 text-sm font-medium ${
                 mode === id
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-on-accent"
                   : "bg-surface-elevated text-text-secondary"
               }`}
             >
@@ -344,7 +344,7 @@ export function AddBikeWizard({
             </label>
             {catBike && (
               <div className="rounded-xl bg-surface-elevated p-3 text-xs text-text-secondary">
-                <div className="font-medium text-text-primary">
+                <div className="font-medium text-foreground">
                   {[
                     catBike.travelFrontMm != null &&
                     (catBike.travelFrontMm > 0 ||
@@ -367,7 +367,7 @@ export function AddBikeWizard({
                     </div>
                   )}
                 {Object.keys(catBike.oemComponents).length > 0 && (
-                  <label className="mt-2 flex items-start gap-2 text-xs text-text-primary">
+                  <label className="mt-2 flex items-start gap-2 text-xs text-foreground">
                     <input
                       type="checkbox"
                       className="mt-0.5"
@@ -402,7 +402,7 @@ export function AddBikeWizard({
                     onClick={() => onAssistChange(id)}
                     className={`rounded-xl px-2 py-2 text-sm font-medium ${
                       assistMode === id
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-on-accent"
                         : "bg-surface-elevated text-text-secondary"
                     }`}
                   >
@@ -434,7 +434,7 @@ export function AddBikeWizard({
                             }}
                             className={`rounded-xl px-2 py-2.5 text-left text-sm font-medium ${
                               on
-                                ? "bg-accent text-white"
+                                ? "bg-accent text-on-accent"
                                 : "bg-surface-elevated text-text-secondary"
                             }`}
                           >
@@ -536,7 +536,7 @@ export function AddBikeWizard({
         <button
           type="button"
           onClick={submit}
-          className="mt-5 w-full rounded-xl bg-chrome py-3 font-semibold text-background"
+          className="mt-5 w-full rounded-xl bg-chrome py-3 font-semibold text-on-accent"
         >
           {copy.workshopAdd}
         </button>

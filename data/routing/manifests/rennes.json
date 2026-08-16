@@ -7,18 +7,31 @@
     -1.55,
     48.18
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T13:37:44Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19033388,
+      "sha256": "803e3fac16ceffffbdb46a301f25d9dcf4151ac323b1ae21df1d8bedf8b8addc",
+      "sha256_16": "803e3fac16ceffff"
+    },
+    "rennes.tar.gz": {
+      "bytes": 2551063,
+      "sha256": "5acd689ce07c8c6c3bb855fc7094253bb42c574604aa6392ed62037caaca4769",
+      "sha256_16": "5acd689ce07c8c6c"
+    },
+    "rennes.tar.zst": {
+      "bytes": 2751280,
+      "sha256": "6ec9959825aa1ab5f47bab34f7e81766cdbedb4338b7179712e190e8336113b8",
+      "sha256_16": "6ec9959825aa1ab5"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/rennes",
     "pack": "rennes.tar.zst",
     "packGz": "rennes.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

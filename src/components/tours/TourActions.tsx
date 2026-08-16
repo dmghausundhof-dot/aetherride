@@ -15,6 +15,9 @@ import { useAppStore } from "@/store/useAppStore";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 function toSuggestion(tour: PublicTour): RouteSuggestion {
   return {
@@ -40,6 +43,9 @@ function toSuggestion(tour: PublicTour): RouteSuggestion {
 
 export function TourActions({ tour }: { tour: PublicTour }) {
   const router = useRouter();
+  const lang = useChromeLang();
+  const copy = catalogCopy(lang).tour;
+  const chrome = webChrome(lang);
   const saveRoute = useAppStore((s) => s.saveRoute);
   const unsaveRoute = useAppStore((s) => s.unsaveRoute);
   const isRouteSaved = useAppStore((s) => s.isRouteSaved);
@@ -52,13 +58,13 @@ export function TourActions({ tour }: { tour: PublicTour }) {
   const toggleSave = useCallback(() => {
     if (isRouteSaved(tour.id)) {
       unsaveRoute(tour.id);
-      setFlash("Aus Bibliothek entfernt");
+      setFlash(copy.flashRemoved);
     } else {
       saveRoute(suggestion);
-      setFlash("In Bibliothek gespeichert");
+      setFlash(copy.flashSaved);
     }
     setTimeout(() => setFlash(null), 2000);
-  }, [tour.id, isRouteSaved, unsaveRoute, saveRoute, suggestion]);
+  }, [tour.id, isRouteSaved, unsaveRoute, saveRoute, suggestion, copy]);
 
   const startInApp = useCallback(async () => {
     // Live-Geometrie laden, falls Engine verfügbar
@@ -89,10 +95,10 @@ export function TourActions({ tour }: { tour: PublicTour }) {
         <button
           type="button"
           onClick={startInApp}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white hover:bg-accent-hover sm:flex-none"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-on-accent hover:bg-accent-hover sm:flex-none"
         >
           <Play className="h-4 w-4 fill-current" />
-          In App starten
+          {copy.startInApp}
         </button>
         <button
           type="button"
@@ -104,7 +110,7 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           ) : (
             <Bookmark className="h-4 w-4" />
           )}
-          {saved ? "Gespeichert" : "Speichern"}
+          {saved ? copy.saved : copy.save}
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -120,21 +126,21 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
           <Route className="h-3.5 w-3.5 text-accent" />
-          Im Planer öffnen
+          {copy.openPlanner}
         </Link>
         <Link
           href={`/discover?route=${encodeURIComponent(tour.id)}`}
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
           <Map className="h-3.5 w-3.5 text-accent" />
-          In Touren
+          {copy.inTours}
         </Link>
         <Link
           href="/download"
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
           <Navigation className="h-3.5 w-3.5 text-accent" />
-          App laden
+          {chrome.loadApp}
         </Link>
       </div>
       {flash && (

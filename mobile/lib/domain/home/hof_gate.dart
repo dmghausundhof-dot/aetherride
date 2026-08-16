@@ -1,4 +1,5 @@
 import '../../data/routing/naehe_seeds.dart';
+import '../bike.dart';
 import '../ride.dart';
 import '../routing/duration_lens.dart';
 import '../routing/route_progress.dart';
@@ -43,6 +44,8 @@ class HofGatePick {
 ///
 /// [maxDistanceKm] keeps Hamburg from seeing the Alps. Without GPS, seeds are
 /// skipped (wrong landscape); a saved route in the duration band may still show.
+/// [preferred] / [preferredSports] rank matching sports first (Haupt, dann
+/// übrige), then the nearest honest loop.
 HofGatePick pickHofGate({
   required List<NaeheSeedRoute> loops,
   List<SavedRouteEntry> saved = const [],
@@ -51,8 +54,11 @@ HofGatePick pickHofGate({
   bool trailsWet = false,
   int targetMin = 60,
   double maxDistanceKm = 80,
+  BikeCategory? preferred,
+  List<BikeCategory> preferredSports = const [],
 }) {
   SavedRouteEntry? savedInWindow() {
+    // Hof ist persönlich: eigene private Touren dürfen am Tor stehen.
     for (final r in saved) {
       if (DurationLens.inBand(r.durationMin, targetMin) &&
           r.distanceKm > 0 &&
@@ -88,6 +94,22 @@ HofGatePick pickHofGate({
     }
 
     if (ranked.isNotEmpty) {
+      final prefs = <BikeCategory>[
+        if (preferred != null) preferred,
+        for (final s in preferredSports)
+          if (s != preferred) s,
+      ];
+      for (final pref in prefs) {
+        for (final e in ranked) {
+          if (TourFilters.softSportMatch(e.$1.categories, pref)) {
+            return HofGatePick(
+              seed: e.$1,
+              honesty: HofGateHonesty.loop,
+              distanceKm: e.$2,
+            );
+          }
+        }
+      }
       return HofGatePick(
         seed: ranked.first.$1,
         honesty: HofGateHonesty.loop,
@@ -137,6 +159,7 @@ RideReturn rideReturnForBike({
   if (justBack) {
     return RideReturn(
       kind: RideReturnKind.justBack,
+      rideId: last.id,
       distanceKm: last.distanceKm,
       movingTimeSec: last.movingTimeSec,
       endedAt: end,
@@ -147,6 +170,7 @@ RideReturn rideReturnForBike({
   final days = clock.difference(end).inDays;
   return RideReturn(
     kind: RideReturnKind.atHof,
+    rideId: last.id,
     daysSince: days < 1 ? 1 : days,
     endedAt: end,
     usedGps: last.summary['usingGps'] == true,
@@ -159,6 +183,7 @@ enum RideReturnKind { neverOut, justBack, atHof }
 class RideReturn {
   const RideReturn({
     required this.kind,
+    this.rideId,
     this.daysSince,
     this.distanceKm,
     this.movingTimeSec,
@@ -168,6 +193,7 @@ class RideReturn {
   });
 
   final RideReturnKind kind;
+  final String? rideId;
   final int? daysSince;
   final double? distanceKm;
   final int? movingTimeSec;
@@ -183,4 +209,91 @@ String formatMovingTime(int sec) {
   final m = ((sec % 3600) / 60).round();
   if (h <= 0) return '$m min';
   return '$h:${m.toString().padLeft(2, '0')}';
+}
+
+class HofAgo {
+  const HofAgo(this.label, {required this.underHour});
+  final String label;
+  final bool underHour;
+}
+
+/// Sport-Zeile am Stand. Motor in der Werkstatt zählt als Assist — ohne Flag zu erfinden.
+String hofResidentSport(Bike bike, {bool hasMotor = false}) {
+  if (hasMotor && !bike.hasElectricAssist) {
+    return bike.copyWith(isEbike: true).categoryLabel;
+  }
+  return bike.categoryLabel;
+}
+
+/// Stand-Meta: justBack ohne GPS zeigt keine 0 km / 0 min.
+/// Nach einer Stunde fällt „gerade“ weg — die Zeit reicht.
+HofAgo? hofAgoLabel({
+  required DateTime? endedAt,
+  required DateTime now,
+  required String Function(int minutes) minutes,
+  required String Function(int hours) hours,
+}) {
+  if (endedAt == null) return null;
+  final m = now.difference(endedAt).inMinutes;
+  if (m < 60) {
+    return HofAgo(minutes(m < 1 ? 1 : m), underHour: true);
+  }
+  if (m < 24 * 60) {
+    return HofAgo(hours((m / 60).floor().clamp(1, 23)), underHour: false);
+  }
+  return null;
+}
+
+/// GPS-Abstand zum Loop vor dem Tor. Kein Loop-Kilometer, kein Schätzwert.
+String? formatHofGateAway({
+  required double? distanceKm,
+  required String underOne,
+  required String Function(int km) km,
+}) {
+  final d = distanceKm;
+  if (d == null || !d.isFinite || d <= 0) return null;
+  if (d < 1) return underOne;
+  return km(d.round().clamp(1, 80));
+}
+
+String formatHofResidentMeta({
+  required RideReturn ret,
+  required String sport,
+  required String justBackLabel,
+  required String atHofLabel,
+  required String notYetOutLabel,
+  required String sinceOneDay,
+  required String Function(int days) sinceDays,
+  required String noGpsLabel,
+  HofAgo? ago,
+  String? garageTypeLabel,
+}) {
+  final type = (garageTypeLabel != null && garageTypeLabel.trim().isNotEmpty)
+      ? garageTypeLabel.trim()
+      : sport;
+  switch (ret.kind) {
+    case RideReturnKind.neverOut:
+      return '$type · $atHofLabel · $notYetOutLabel';
+    case RideReturnKind.justBack:
+      final km = ret.distanceKm ?? 0;
+      final hasDistance = ret.usedGps || km > 0.05;
+      final parts = <String>[
+        if (ago == null || ago.underHour) justBackLabel,
+        if (ago != null) ago.label,
+      ];
+      if (hasDistance) {
+        parts.add('${km.toStringAsFixed(1)} km');
+        parts.add(formatMovingTime(ret.movingTimeSec ?? 0));
+      }
+      if (!ret.usedGps) parts.add(noGpsLabel);
+      return parts.join(' · ');
+    case RideReturnKind.atHof:
+      final since = (ago != null && !ago.underHour)
+          ? ago.label
+          : (ret.daysSince == 1
+              ? sinceOneDay
+              : sinceDays(ret.daysSince ?? 1));
+      final base = '$type · $atHofLabel · $since';
+      return ret.usedGps ? base : '$base · $noGpsLabel';
+  }
 }

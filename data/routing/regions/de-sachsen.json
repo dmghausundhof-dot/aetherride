@@ -1,0 +1,27 @@
+{
+  "id": "de-sachsen",
+  "name": "Sachsen",
+  "bbox": [
+    11.85,
+    50.17,
+    15.05,
+    51.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/sachsen-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/de-sachsen",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-sachsen.tar.zst"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "ch-tessin",
+  "name": "Tessin",
+  "bbox": [
+    8.38,
+    45.82,
+    9.35,
+    46.55
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-tessin",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-tessin.tar.zst"
+  }
+}

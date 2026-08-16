@@ -1,0 +1,27 @@
+{
+  "id": "de-mecklenburg-vorpommern",
+  "name": "Mecklenburg-Vorpommern",
+  "bbox": [
+    10.5,
+    53.05,
+    14.5,
+    54.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/germany/mecklenburg-vorpommern-latest.osm.pbf",
+    "note": "DE extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/de-mecklenburg-vorpommern",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-mecklenburg-vorpommern.tar.zst"
+  }
+}

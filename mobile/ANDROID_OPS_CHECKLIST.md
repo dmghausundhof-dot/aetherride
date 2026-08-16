@@ -1,4 +1,4 @@
-# Android Ops-Checkliste (AetherRide)
+# Android Ops-Checkliste (FlowLine)
 
 Kurze Gate-/Console-Punkte — App-Code für Strava/Heatmap/Fotos ist vorbereitet.
 Schnellcheck Auth/SHA: `bash scripts/ops-android-auth.sh`

@@ -15,7 +15,24 @@ import { suggestRoutes } from "@/lib/routing/suggestions";
 import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import { estimateRange } from "@/lib/ebike/range";
-import type { Bike, Ride, RiderProfile, Setup } from "@/types";
+import {
+  buildCoachWatch,
+  formulateCoachWatch,
+  type CoachNotice,
+} from "@/lib/ai/coachWatch";
+import {
+  isElectricBike,
+  normalizeBike,
+  normalizeBikes,
+  normalizeRides,
+} from "@/lib/ai/normalize";
+import type {
+  Bike,
+  MaintenanceInterval,
+  Ride,
+  RideFeedback,
+  RiderProfile,
+} from "@/types";
 import type { RangeCalibration } from "@/lib/ebike/range";
 
 export interface WhitelistedNumber {
@@ -107,7 +124,8 @@ export type ChatToolName =
   | "ride_stats"
   | "route_search"
   | "product_search"
-  | "range";
+  | "range"
+  | "watch";
 
 export type ChatContext = {
   bike?: Bike;
@@ -115,6 +133,10 @@ export type ChatContext = {
   rides: Ride[];
   profile: RiderProfile;
   calibration?: RangeCalibration | null;
+  intervals?: MaintenanceInterval[];
+  rideFeedbacks?: RideFeedback[];
+  /** Clientseitig berechnete Hinweise (App) — sonst baut der Server sie. */
+  notices?: CoachNotice[];
 };
 
 /** Engine-Ergebnisse ohne LLM — für Numeric-Guard Whitelist */
@@ -123,12 +145,52 @@ export function buildChatRecommendation(
   query: string,
   ctx: ChatContext
 ): RecommendationSet {
+  try {
+    return buildChatRecommendationInner(tool, query, ctx);
+  } catch {
+    return {
+      toolName: tool,
+      facts: [],
+      numbers: [],
+      rawAnswer:
+        "Daten unvollständig — keine belastbare Antwort. Werkstatt oder Fahrten prüfen.",
+    };
+  }
+}
+
+function buildChatRecommendationInner(
+  tool: ChatToolName,
+  query: string,
+  ctx: ChatContext
+): RecommendationSet {
   const q = query.toLowerCase();
+  const bikes = normalizeBikes(ctx.bikes);
+  const rides = normalizeRides(ctx.rides);
+  const bike = normalizeBike(ctx.bike) ?? bikes.find((b) => b.isActive) ?? bikes[0];
   let set: RecommendationSet;
 
   switch (tool) {
+    case "watch": {
+      const notices =
+        Array.isArray(ctx.notices) && ctx.notices.length > 0
+          ? ctx.notices
+          : buildCoachWatch({
+              bikes,
+              rides,
+              intervals: ctx.intervals,
+              profile: ctx.profile,
+              calibration: ctx.calibration,
+              rideFeedbacks: ctx.rideFeedbacks,
+            });
+      set = {
+        toolName: tool,
+        facts: notices.map((n) => `${n.severity}: ${n.title}`),
+        numbers: notices.flatMap((n) => n.numbers),
+        rawAnswer: formulateCoachWatch(notices),
+      };
+      break;
+    }
     case "garage": {
-      const bikes = ctx.bikes;
       set = {
         toolName: tool,
         facts: bikes.map(
@@ -151,7 +213,7 @@ export function buildChatRecommendation(
       break;
     }
     case "compat": {
-      if (!ctx.bike) {
+      if (!bike) {
         set = {
           toolName: tool,
           facts: [],
@@ -160,7 +222,7 @@ export function buildChatRecommendation(
         };
         break;
       }
-      const results = checkBikeCompatibility(ctx.bike);
+      const results = checkBikeCompatibility(bike);
       const verdict = results.length
         ? aggregateVerdict(results)
         : "INSUFFICIENT_DATA";
@@ -178,7 +240,7 @@ export function buildChatRecommendation(
       break;
     }
     case "setup_history": {
-      if (!ctx.bike) {
+      if (!bike) {
         set = {
           toolName: tool,
           facts: [],
@@ -187,7 +249,7 @@ export function buildChatRecommendation(
         };
         break;
       }
-      const setups = [...ctx.bike.setups].sort((a, b) => b.version - a.version);
+      const setups = [...bike.setups].sort((a, b) => b.version - a.version);
       set = {
         toolName: tool,
         facts: setups.map(
@@ -210,7 +272,6 @@ export function buildChatRecommendation(
       break;
     }
     case "ride_stats": {
-      const rides = ctx.rides;
       const km = rides.reduce((s, r) => s + r.distanceM / 1000, 0);
       const hm = rides.reduce((s, r) => s + r.elevationGainM, 0);
       set = {
@@ -230,7 +291,7 @@ export function buildChatRecommendation(
       break;
     }
     case "route_search": {
-      if (!ctx.bike) {
+      if (!bike) {
         set = {
           toolName: tool,
           facts: [],
@@ -240,7 +301,7 @@ export function buildChatRecommendation(
         break;
       }
       const routes = suggestRoutes({
-        bike: ctx.bike,
+        bike,
         profile: ctx.profile,
         availableMinutes: /lang|marathon|3\s*h/.test(q) ? 180 : 120,
       });
@@ -265,7 +326,7 @@ export function buildChatRecommendation(
       break;
     }
     case "product_search": {
-      if (!ctx.bike) {
+      if (!bike) {
         set = {
           toolName: tool,
           facts: [],
@@ -274,10 +335,10 @@ export function buildChatRecommendation(
         };
         break;
       }
-      const current = ctx.bike.setups.find((s) => s.isCurrent);
+      const current = bike.setups.find((s) => s.isCurrent);
       const recs = allProductRecommendations({
-        bike: ctx.bike,
-        rides: ctx.rides,
+        bike,
+        rides,
         setup: current,
       });
       const catalogHits = SHOP_PRODUCTS.filter((p) =>
@@ -298,7 +359,7 @@ export function buildChatRecommendation(
       } else if (catalogHits[0]) {
         const p = catalogHits[0];
         const verdict = aggregateVerdict(
-          checkCandidateOnBike(ctx.bike, p.slot, p.componentModelId)
+          checkCandidateOnBike(bike, p.slot, p.componentModelId)
         );
         set = {
           toolName: tool,
@@ -318,7 +379,7 @@ export function buildChatRecommendation(
       break;
     }
     case "range": {
-      if (!ctx.bike?.isEbike) {
+      if (!bike || !isElectricBike(bike)) {
         set = {
           toolName: tool,
           facts: [],
@@ -328,7 +389,7 @@ export function buildChatRecommendation(
         break;
       }
       const est = estimateRange({
-        bike: ctx.bike,
+        bike,
         profile: ctx.profile,
         calibration: ctx.calibration ?? undefined,
       });
@@ -372,12 +433,23 @@ export function runChatTool(
 
 export function detectTool(query: string): ChatToolName {
   const q = query.toLowerCase();
-  if (/kompat|passt|incompat/.test(q)) return "compat";
-  if (/setup|sag|zugstufe|dämpfer|gabel/.test(q)) return "setup_history";
+  if (
+    /steht an|f[äa]llig|überf[äa]llig|hinweis|überwach|was ist los|\bcoach\b|ansteh/.test(
+      q
+    )
+  ) {
+    return "watch";
+  }
+  if (/kompat|\bpasst\b|incompat/.test(q)) return "compat";
+  if (/setup|zugstufe|dämpferklick|gabelzug|reifensag|\brebound\b/.test(q)) {
+    return "setup_history";
+  }
   if (/route|trail|tour|entdeck/.test(q)) return "route_search";
   if (/produkt|shop|kauf|belag|kette|reifen/.test(q)) return "product_search";
-  if (/reichweite|akku|wh\/km|range/.test(q)) return "range";
-  if (/ride|fahrt|statistik|km|hm/.test(q)) return "ride_stats";
+  if (/reichweite|akku|wh\/km|\brange\b/.test(q)) return "range";
+  if (/statistik|fahrten|rides?\b|kilometer|h[oö]henmeter/.test(q)) {
+    return "ride_stats";
+  }
   return "garage";
 }
 

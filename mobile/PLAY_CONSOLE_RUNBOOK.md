@@ -42,7 +42,7 @@ finalen App-Signing-Key), aber das ist ein Support-Vorgang, kein Klick.
 
 1. [play.google.com/console](https://play.google.com/console) → falls noch
    keine Entwicklerregistrierung: einmalig 25 $ Registrierungsgebühr.
-2. „App erstellen" → Name `AetherRide`, Standardsprache Deutsch, App
+2. „App erstellen" → Name `FlowLine`, Standardsprache Deutsch, App
    (nicht Spiel), Kostenlos (Pro läuft über In-App-Subscription, nicht
    App-Preis).
 3. Package name **muss exakt** `com.aetherride.aetherride_mobile` sein

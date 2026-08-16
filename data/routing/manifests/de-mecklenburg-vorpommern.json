@@ -1,0 +1,24 @@
+{
+  "id": "de-mecklenburg-vorpommern",
+  "name": "Mecklenburg-Vorpommern",
+  "bbox": [
+    10.5,
+    53.05,
+    14.5,
+    54.7
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-mecklenburg-vorpommern.tar.zst",
+    "packGz": "de-mecklenburg-vorpommern.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

@@ -50,6 +50,10 @@ class ComponentRepository {
 
     final id = _uuid.v4();
     final bike = await _garage.getById(bikeId);
+    final attrs = <String, dynamic>{
+      ...attributes,
+      BikeComponent.hoursAtInstallAttr: bike?.hours ?? 0,
+    };
     await _db.into(_db.components).insert(
           ComponentsCompanion.insert(
             id: id,
@@ -60,7 +64,7 @@ class ComponentRepository {
             catalogModelId: Value(catalogModelId),
             installedAt: Value(now),
             odometerKm: Value(bike?.odometerKm ?? 0),
-            attributesJson: Value(jsonEncode(attributes)),
+            attributesJson: Value(jsonEncode(attrs)),
             updatedAt: now,
           ),
         );
@@ -74,7 +78,8 @@ class ComponentRepository {
       catalogModelId: catalogModelId,
       installedAt: now,
       odometerKm: bike?.odometerKm ?? 0,
-      attributes: attributes,
+      hoursAtInstall: bike?.hours ?? 0,
+      attributes: attrs,
     );
   }
 
@@ -101,6 +106,9 @@ class ComponentRepository {
       installedAt: row.installedAt,
       removedAt: row.removedAt,
       odometerKm: row.odometerKm,
+      hoursAtInstall: attrs[BikeComponent.hoursAtInstallAttr] is num
+          ? (attrs[BikeComponent.hoursAtInstallAttr] as num).toDouble()
+          : null,
       attributes: attrs,
     );
   }

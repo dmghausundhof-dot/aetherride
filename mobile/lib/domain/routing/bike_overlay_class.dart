@@ -188,6 +188,15 @@ BikeOverlayFamily overlayFamilyForBike(BikeCategory category) =>
       BikeCategory.road => BikeOverlayFamily.road,
     };
 
+/// Alle Zeichen-Klassen — Nutzer kann sie in der Legende einzeln anschalten.
+const kAllPaintedOverlayClasses = <BikeOverlayClass>{
+  BikeOverlayClass.mtb,
+  BikeOverlayClass.mtbUnrated,
+  BikeOverlayClass.gravel,
+  BikeOverlayClass.road,
+  BikeOverlayClass.urban,
+};
+
 List<BikeOverlayClass> overlayClassesForFamily(BikeOverlayFamily family) =>
     switch (family) {
       BikeOverlayFamily.mtb => [
@@ -198,6 +207,85 @@ List<BikeOverlayClass> overlayClassesForFamily(BikeOverlayFamily family) =>
       BikeOverlayFamily.road => [BikeOverlayClass.road],
       BikeOverlayFamily.urban => [BikeOverlayClass.urban],
     };
+
+/// Default-Sichtbarkeit: City sieht City+Asphalt, nicht die S-Skala.
+Set<BikeOverlayClass> overlayDefaultExtraOn(BikeOverlayFamily family) =>
+    switch (family) {
+      BikeOverlayFamily.mtb => {
+          BikeOverlayClass.mtb,
+          BikeOverlayClass.mtbUnrated,
+        },
+      BikeOverlayFamily.gravel => {
+          BikeOverlayClass.gravel,
+          BikeOverlayClass.road,
+        },
+      BikeOverlayFamily.road => {
+          BikeOverlayClass.road,
+          BikeOverlayClass.urban,
+        },
+      BikeOverlayFamily.urban => {
+          BikeOverlayClass.urban,
+          BikeOverlayClass.road,
+        },
+    };
+
+/// S0–S3+ nur bei MTB/Trail — nicht als permanente City-Legende.
+bool overlayLegendShowsSScale(BikeOverlayFamily family) =>
+    family == BikeOverlayFamily.mtb;
+
+/// Kompakt-Kürzel für die eingeklappte Legende (ohne S-Zeilen).
+String overlayLegendCompactKey(BikeOverlayFamily family) => switch (family) {
+      BikeOverlayFamily.mtb => 'mtb',
+      BikeOverlayFamily.gravel => 'gravel',
+      BikeOverlayFamily.road => 'road',
+      BikeOverlayFamily.urban => 'urban',
+    };
+
+/// Eine Legendenzeile. [key] ist S0/S1/S2/S3+/unrated/gravel/road/urban.
+class OverlayLegendRow {
+  const OverlayLegendRow({required this.cls, required this.key});
+  final BikeOverlayClass cls;
+  final String key;
+}
+
+/// Ausgeklappt: S-Skala nur bei MTB; City/Rennrad/Gravel ohne S0–S3+.
+List<OverlayLegendRow> overlayLegendRows({
+  required BikeOverlayFamily family,
+  required bool expanded,
+}) {
+  if (!expanded) return const [];
+  if (overlayLegendShowsSScale(family)) {
+    return const [
+      OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S0'),
+      OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S1'),
+      OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S2'),
+      OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S3+'),
+      OverlayLegendRow(cls: BikeOverlayClass.mtbUnrated, key: 'unrated'),
+    ];
+  }
+  return switch (family) {
+    BikeOverlayFamily.urban => const [
+        OverlayLegendRow(cls: BikeOverlayClass.urban, key: 'urban'),
+        OverlayLegendRow(cls: BikeOverlayClass.road, key: 'road'),
+      ],
+    BikeOverlayFamily.road => const [
+        OverlayLegendRow(cls: BikeOverlayClass.road, key: 'road'),
+        OverlayLegendRow(cls: BikeOverlayClass.urban, key: 'urban'),
+      ],
+    BikeOverlayFamily.gravel => const [
+        OverlayLegendRow(cls: BikeOverlayClass.gravel, key: 'gravel'),
+        OverlayLegendRow(cls: BikeOverlayClass.road, key: 'road'),
+      ],
+    BikeOverlayFamily.mtb => const [],
+  };
+}
+
+/// Nutzer-Toggles in [extraOn] sind die Sichtbarkeit. Aus = weg, nicht 16 %.
+Set<BikeOverlayClass> overlayClassesShown({
+  required bool overlayOn,
+  required Set<BikeOverlayClass> extraOn,
+}) =>
+    overlayOn ? extraOn : <BikeOverlayClass>{};
 
 String mtbScaleCss(MtbScaleLabel s) => switch (s) {
       MtbScaleLabel.s0 => 'S0',

@@ -66,6 +66,41 @@ export async function GET(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  const id = new URL(req.url).searchParams.get("id")?.trim() || "";
+  if (!/^[a-zA-Z0-9]{6,12}$/.test(id)) {
+    return NextResponse.json({ error: "invalid_id" }, { status: 400 });
+  }
+  try {
+    const supabase = await createAuthedClient(req);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    const { data, error } = await supabase
+      .from("shared_collections")
+      .delete()
+      .eq("short_id", id)
+      .eq("owner_id", user.id)
+      .select("short_id")
+      .maybeSingle();
+    if (error) {
+      return NextResponse.json(
+        { error: "delete_failed", note: error.message },
+        { status: 501 }
+      );
+    }
+    if (!data) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, id });
+  } catch {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createAuthedClient(req);

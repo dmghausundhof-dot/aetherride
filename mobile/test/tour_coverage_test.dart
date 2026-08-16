@@ -26,8 +26,8 @@ void main() {
     expect(picked.last, 31);
   });
 
-  test('thin nearby fills with next-closest so Touren is not a 3-card stub', () {
-    // 3 within 35 km, rest farther — Heidelberg/Wiesloch pattern.
+  test('thin nearby stays regional — never fill with another landscape', () {
+    // 3 within 35 km, more within 90, rest another Bundesland / country.
     final items = <({String id, double km})>[
       (id: 'hd', km: 12),
       (id: 'ma', km: 18),
@@ -49,13 +49,27 @@ void main() {
       minCount: 12,
       maxItems: 32,
     );
-    expect(picked.length, 12);
     expect(picked.map((e) => e.id).take(3), ['hd', 'ma', 'boxberg']);
     expect(picked.map((e) => e.id), containsAll(['ka', 'mainz', 'ffm', 'stgt']));
-    expect(picked.last.id, 'wien');
+    expect(picked.every((e) => e.km <= 90), isTrue);
+    expect(picked.map((e) => e.id), isNot(contains('wien')));
+    expect(picked.map((e) => e.id), isNot(contains('koeln')));
+    expect(picked.length, 7);
   });
 
-  test('fewer items than minCount returns all', () {
+  test('zero nearby returns empty instead of a far-away landscape', () {
+    final picked = TourCoverage.pickNearbyThenFill(
+      items: const [
+        (id: 'bern', km: 107.0),
+        (id: 'lausanne', km: 102.0),
+      ],
+      distanceKm: (e) => e.km,
+      nearbyKm: 90,
+    );
+    expect(picked, isEmpty);
+  });
+
+  test('fewer nearby than minCount returns all nearby', () {
     final picked = TourCoverage.pickNearbyThenFill(
       items: const [10.0, 20.0, 30.0],
       distanceKm: (e) => e,

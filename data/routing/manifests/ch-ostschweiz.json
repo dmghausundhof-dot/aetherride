@@ -1,0 +1,24 @@
+{
+  "id": "ch-ostschweiz",
+  "name": "Ostschweiz",
+  "bbox": [
+    8.75,
+    46.88,
+    10.49,
+    47.81
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-ostschweiz.tar.zst",
+    "packGz": "ch-ostschweiz.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

@@ -8,16 +8,23 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/config.dart';
-
 import '../../../core/theme/app_theme.dart';
+import '../../../data/community/public_profile_store.dart';
 import '../../../data/community/tour_community_store.dart';
+import '../../../data/community/tour_share.dart';
+import '../../../data/local/user_profile_store.dart';
+import '../../../l10n/app_localizations.dart';
 
-/// Tour-Detail: lokale Bewertungen / Kommentare (ohne Cloud-Abhängigkeit).
+/// Tour-Detail: Stimmen an der Tour (ohne Cloud-Abhängigkeit).
 class TourCommunitySection extends StatefulWidget {
-  const TourCommunitySection({super.key, required this.tourId});
+  const TourCommunitySection({
+    super.key,
+    required this.tourId,
+    this.showHeading = true,
+  });
 
   final String tourId;
+  final bool showHeading;
 
   @override
   State<TourCommunitySection> createState() => _TourCommunitySectionState();
@@ -26,7 +33,7 @@ class TourCommunitySection extends StatefulWidget {
 class _TourCommunitySectionState extends State<TourCommunitySection> {
   final _store = TourCommunityStore();
   final _bodyCtrl = TextEditingController();
-  final _nameCtrl = TextEditingController(text: 'Du');
+  final _nameCtrl = TextEditingController();
   List<TourCommunityReview> _reviews = const [];
   List<String> _cloudPhotos = const [];
   double? _avg;
@@ -35,11 +42,27 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
   bool _saving = false;
   bool _compose = false;
   final List<String> _draftPhotos = [];
+  final _composeKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     unawaited(_reload());
+    unawaited(_prefillAuthor());
+  }
+
+  Future<void> _prefillAuthor() async {
+    try {
+      final pub = await PublicProfileStore().load();
+      var name = pub.displayName.trim();
+      if (name.isEmpty) {
+        final user = UserProfileStore();
+        await user.load();
+        name = user.displayName?.trim() ?? '';
+      }
+      if (!mounted || name.isEmpty || _nameCtrl.text.isNotEmpty) return;
+      _nameCtrl.text = name;
+    } catch (_) {}
   }
 
   @override
@@ -108,17 +131,13 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
       _compose = false;
       await _reload();
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         final msg = switch (cloud) {
-          CloudSubmitResult.approved =>
-            'Gespeichert — veröffentlicht (AI-Freigabe)',
-          CloudSubmitResult.rejected =>
-            'Lokal gespeichert — Cloud hat den Text abgelehnt',
-          CloudSubmitResult.pending =>
-            'Gespeichert — lokal und in Prüfung (AI/Mensch)',
-          CloudSubmitResult.localOnly =>
-            'Gespeichert — lokal (Cloud nach Login)',
-          CloudSubmitResult.failed =>
-            'Gespeichert lokal — Cloud gerade nicht erreichbar',
+          CloudSubmitResult.approved => l10n.stimmenCloudApproved,
+          CloudSubmitResult.rejected => l10n.stimmenCloudRejected,
+          CloudSubmitResult.pending => l10n.stimmenCloudPending,
+          CloudSubmitResult.localOnly => l10n.stimmenCloudLocal,
+          CloudSubmitResult.failed => l10n.stimmenCloudFailed,
         };
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
@@ -127,68 +146,102 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
     }
   }
 
+  void _scrollComposeIntoView() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _composeKey.currentContext;
+      if (ctx == null) return;
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.15,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    String? metaLine;
+    if (_avg != null) {
+      metaLine = '★ ${_avg!.toStringAsFixed(1)} · ${_reviews.length}';
+      if (_cloudPhotos.isNotEmpty) {
+        metaLine = '$metaLine · ${_cloudPhotos.length} ${l10n.myRouteDetailPhotos}';
+      }
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Community',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-              ),
-            ),
-            if (_avg != null)
-              Text(
-                '★ ${_avg!.toStringAsFixed(1)} · ${_reviews.length}'
-                '${_cloudPhotos.isNotEmpty ? ' · ${_cloudPhotos.length} Fotos' : ''}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.muted,
+        if (widget.showHeading)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.stimmenTitle,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Sterne, Kommentar und Fotos — Cloud nach Freigabe. Keine erfundenen Bewertungen.',
-          style: TextStyle(fontSize: 12, color: AppColors.muted),
-        ),
-        const SizedBox(height: AppSpacing.s),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () {
-              final url =
-                  '${AppConfig.productionApiBaseUrl}/tours/${Uri.encodeComponent(widget.tourId)}';
-              unawaited(
-                SharePlus.instance.share(
-                  ShareParams(
-                    text: 'Tour auf AetherRide: $url',
-                    subject: 'Tour teilen',
+              if (metaLine != null)
+                Text(
+                  metaLine,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.muted,
                   ),
                 ),
-              );
-            },
-            icon: const Icon(Icons.ios_share, size: 16),
-            label: const Text('Teilen'),
+            ],
+          )
+        else if (metaLine != null)
+          Text(
+            metaLine,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.s),
+        if (!_compose) ...[
+          const SizedBox(height: 4),
+          Text(
+            l10n.stimmenHint,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () {
+                unawaited(
+                  SharePlus.instance.share(
+                    ShareParams(
+                      text: TourShare.text(widget.tourId),
+                      subject: l10n.stimmenShareSubject,
+                    ),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.muted,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(l10n.share, style: const TextStyle(fontSize: 12)),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s),
+        ],
         if (_loading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.m),
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           )
-        else if (_reviews.isEmpty && _cloudPhotos.isEmpty)
-          const Text(
-            TourCommunityCounts.emptyCopy,
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
+        else if (_reviews.isEmpty && _cloudPhotos.isEmpty && !_compose)
+          Text(
+            l10n.stimmenEmpty,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
           )
-        else
+        else if (!_compose)
           for (final r in _reviews) ...[
             _ReviewTile(
               review: r,
@@ -205,26 +258,33 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => setState(() => _compose = true),
+                  onPressed: () {
+                    setState(() => _compose = true);
+                    _scrollComposeIntoView();
+                  },
                   icon: const Icon(Icons.star_outline, size: 18),
-                  label: const Text('Bewertung schreiben'),
+                  label: Text(l10n.stimmenWrite),
                 ),
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: () {
                   setState(() => _compose = true);
+                  _scrollComposeIntoView();
                   unawaited(_pickPhoto());
                 },
                 icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-                label: const Text('Foto'),
+                label: Text(l10n.garagePhoto),
               ),
             ],
           )
         else ...[
-          const Text(
-            'Bewertung schreiben',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          KeyedSubtree(
+            key: _composeKey,
+            child: Text(
+              l10n.stimmenWrite,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
           ),
           const SizedBox(height: AppSpacing.s),
           Row(
@@ -244,8 +304,12 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
           ),
           TextField(
             controller: _nameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Name',
+            scrollPadding: const EdgeInsets.only(bottom: 120),
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: l10n.profileDisplayName,
+              hintText: l10n.stimmenEmptyName,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
               isDense: true,
             ),
           ),
@@ -254,9 +318,10 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
             controller: _bodyCtrl,
             maxLines: 3,
             maxLength: 500,
-            decoration: const InputDecoration(
-              labelText: 'Kommentar',
-              hintText: 'Wie war die Tour?',
+            scrollPadding: const EdgeInsets.only(bottom: 140),
+            decoration: InputDecoration(
+              labelText: l10n.stimmenLabel,
+              hintText: l10n.stimmenHowWas,
               isDense: true,
             ),
           ),
@@ -309,16 +374,29 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
                   ? null
                   : () => unawaited(_pickPhoto()),
               icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-              label: const Text('Foto hinzufügen'),
+              label: Text(l10n.stimmenAddPhoto),
             ),
           ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton(
-              onPressed: _saving ? null : () => unawaited(_submit()),
-              child: Text(_saving ? 'Speichern …' : 'Absenden'),
-            ),
+          Row(
+            children: [
+              FilledButton(
+                onPressed: _saving ? null : () => unawaited(_submit()),
+                child: Text(_saving ? l10n.stimmenSaving : l10n.stimmenSubmit),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: _saving
+                    ? null
+                    : () => setState(() => _compose = false),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.muted,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(l10n.cancel),
+              ),
+            ],
           ),
+          const SizedBox(height: 8),
         ],
       ],
     );
@@ -355,7 +433,7 @@ class _ReviewTile extends StatelessWidget {
                 style: const TextStyle(color: AppColors.accent, fontSize: 12),
               ),
               IconButton(
-                tooltip: 'Entfernen',
+                tooltip: AppLocalizations.of(context).remove,
                 visualDensity: VisualDensity.compact,
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline, size: 18),

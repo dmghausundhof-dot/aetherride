@@ -234,7 +234,7 @@ export function GarageComponentsTab({
                           onClick={() =>
                             reinstallComponent(selected.id, comp.id)
                           }
-                          className="mt-2 rounded-lg bg-accent px-2 py-1 text-xs font-semibold text-white"
+                          className="mt-2 rounded-xl bg-accent px-2 py-1 text-xs font-semibold text-on-accent"
                         >
                           Wieder einbauen
                         </button>

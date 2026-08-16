@@ -7,18 +7,31 @@
     5.2,
     47.42
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T11:58:48Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18623507,
+      "sha256": "84e2c8f4a6993303cd39033daa7cc54f4819a761d87fe5583cbb1b1cbf5c4fc0",
+      "sha256_16": "84e2c8f4a6993303"
+    },
+    "dijon.tar.gz": {
+      "bytes": 2503848,
+      "sha256": "1ee825c73d5c7a0e2ee06c42c02dac07205d299787b2bd6d1b897c4ec3f6e547",
+      "sha256_16": "1ee825c73d5c7a0e"
+    },
+    "dijon.tar.zst": {
+      "bytes": 2704243,
+      "sha256": "ad337e6564ab963ec2f2b9f6c72ee3b0a0e8443d84f429a644bd82668f05f621",
+      "sha256_16": "ad337e6564ab963e"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/dijon",
     "pack": "dijon.tar.zst",
     "packGz": "dijon.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

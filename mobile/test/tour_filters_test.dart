@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/domain/routing/tour_filters.dart';
+import 'package:aetherride_mobile/domain/routing/trail_difficulty.dart';
 
 void main() {
   group('TourFilters surface', () {
@@ -62,6 +63,159 @@ void main() {
     });
   });
 
+  group('TourFilters form / downhill / S-scale', () {
+    test('form chips include loop, A→B and downhill', () {
+      expect(
+        TourFilters.formFilterChips,
+        containsAll([
+          TourFormKey.all,
+          TourFormKey.loop,
+          TourFormKey.pointToPoint,
+          TourFormKey.downhill,
+        ]),
+      );
+    });
+
+    test('downhill from category or tags, not from a gravel loop', () {
+      expect(
+        TourFilters.isDownhillTour(
+          categories: [BikeCategory.dh],
+          tags: const [],
+          title: 'Königstuhl Line',
+          isLoop: false,
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.isDownhillTour(
+          categories: [BikeCategory.mtbEnduro],
+          tags: const [],
+          title: 'Enduro A nach B',
+          isLoop: false,
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.isDownhillTour(
+          categories: [BikeCategory.mtbEnduro],
+          tags: const [],
+          title: 'Enduro Runde',
+          isLoop: true,
+        ),
+        isFalse,
+      );
+      expect(
+        TourFilters.isDownhillTour(
+          categories: [BikeCategory.gravel],
+          tags: const ['gravel'],
+          title: 'Neckartal Gravel',
+          isLoop: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('S-scale range S1–S2 matches S1 and S2, not S3', () {
+      final grades = trailDifficultiesIn('S1–S2');
+      expect(grades, containsAll([TrailDifficulty.s1, TrailDifficulty.s2]));
+      expect(grades.contains(TrailDifficulty.s3), isFalse);
+      expect(
+        TourFilters.scaleMatches(
+          'S1–S2',
+          [BikeCategory.mtbAm],
+          {TrailDifficulty.s2},
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.scaleMatches(
+          'S1–S2',
+          [BikeCategory.mtbAm],
+          {TrailDifficulty.s3},
+        ),
+        isFalse,
+      );
+    });
+
+    test('S3 and S3+ stay distinct', () {
+      expect(parseTrailDifficulty('S3'), TrailDifficulty.s3);
+      expect(parseTrailDifficulty('S3+'), TrailDifficulty.s3plus);
+      expect(parseTrailDifficulty('4'), TrailDifficulty.s3plus);
+      expect(trailDifficultyLabel(TrailDifficulty.s3), 'S3');
+    });
+
+    test('gravel effort is not mapped to S-scale', () {
+      expect(
+        TourFilters.honestScaleTag(
+          effortLabel: 'Leicht',
+          categories: [BikeCategory.gravel, BikeCategory.road],
+        ),
+        'offen',
+      );
+      expect(
+        TourFilters.honestScaleTag(
+          effortLabel: 'Leicht',
+          categories: [BikeCategory.mtbAm],
+        ),
+        'S0',
+      );
+    });
+
+    test('unrated tours miss S-grade filter (honest empty)', () {
+      expect(
+        TourFilters.scaleMatches(
+          '—',
+          [BikeCategory.road],
+          {TrailDifficulty.s0},
+        ),
+        isFalse,
+      );
+    });
+
+    test('sport hard-filter gravel vs mtb', () {
+      expect(
+        TourFilters.sportMatches(
+          [BikeCategory.gravel],
+          [TourSportKey.gravel],
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.sportMatches(
+          [BikeCategory.road],
+          [TourSportKey.gravel],
+        ),
+        isFalse,
+      );
+      expect(
+        TourFilters.sportMatches(
+          [BikeCategory.road],
+          const [],
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.sportOf([BikeCategory.dh]),
+        TourSportKey.dh,
+      );
+      expect(
+        TourFilters.sportOf([BikeCategory.road]),
+        TourSportKey.road,
+      );
+    });
+
+    test('inferCategories does not stamp MTB on city rides', () {
+      expect(
+        TourFilters.inferCategories(title: 'Heidelberg City Loop', type: 'city'),
+        isNot(contains(BikeCategory.mtbAm)),
+      );
+      expect(
+        TourFilters.inferCategories(title: 'Bikepark Flow', type: 'dh'),
+        contains(BikeCategory.dh),
+      );
+    });
+  });
+
   group('TourFilters soft sport', () {
     test('family proximity for e-mtb / touring', () {
       expect(
@@ -82,6 +236,20 @@ void main() {
         TourFilters.softSportMatch(
           [BikeCategory.road],
           BikeCategory.mtbAm,
+        ),
+        isFalse,
+      );
+      expect(
+        TourFilters.softSportMatchAny(
+          [BikeCategory.road],
+          [BikeCategory.mtbAm, BikeCategory.road],
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.softSportMatchAny(
+          [BikeCategory.road],
+          [BikeCategory.mtbAm],
         ),
         isFalse,
       );
@@ -114,6 +282,76 @@ void main() {
         TourFilters.softSportMatch(
           [BikeCategory.emtb],
           BikeCategory.emtb,
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('TourFilters visibility', () {
+    test('default missing field is private', () {
+      expect(
+        TourFilters.visibilityMatches(null, TourVisibilityKey.allMine),
+        isTrue,
+      );
+      expect(
+        TourFilters.visibilityMatches(null, TourVisibilityKey.privateOnly),
+        isTrue,
+      );
+      expect(
+        TourFilters.visibilityMatches(null, TourVisibilityKey.sharedOnly),
+        isFalse,
+      );
+      expect(
+        TourFilters.visibilityMatches('shared', TourVisibilityKey.sharedOnly),
+        isTrue,
+      );
+      expect(
+        TourFilters.visibilityMatches('private', TourVisibilityKey.sharedOnly),
+        isFalse,
+      );
+    });
+  });
+
+  group('TourFilters S-scale sheet visibility', () {
+    test('City overlay hides S-scale unless MTB/DH filter', () {
+      expect(
+        TourFilters.filterSheetShowsSScale(
+          mtbOverlayFamily: false,
+          sportFilter: {},
+          form: TourFormKey.all,
+        ),
+        isFalse,
+      );
+      expect(
+        TourFilters.filterSheetShowsSScale(
+          mtbOverlayFamily: false,
+          sportFilter: {TourSportKey.urban, TourSportKey.road},
+          form: TourFormKey.all,
+        ),
+        isFalse,
+      );
+      expect(
+        TourFilters.filterSheetShowsSScale(
+          mtbOverlayFamily: true,
+          sportFilter: {},
+          form: TourFormKey.all,
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.filterSheetShowsSScale(
+          mtbOverlayFamily: false,
+          sportFilter: {TourSportKey.mtb},
+          form: TourFormKey.all,
+        ),
+        isTrue,
+      );
+      expect(
+        TourFilters.filterSheetShowsSScale(
+          mtbOverlayFamily: false,
+          sportFilter: {},
+          form: TourFormKey.downhill,
         ),
         isTrue,
       );

@@ -3,8 +3,14 @@
  * Classify osmium GeoJSON/GeoJSONSeq → bike overlay FeatureCollection.
  *
  * Usage:
- *   npx tsx scripts/routing/classify-bike-overlay.mjs \
+ *   npx tsx scripts/routing/classify-bike-overlay.ts \
  *     --in bike-ways.geojsonseq --out bike-overlay.geojson
+ *
+ * Next rebuild (optional props — Discover already Overpass-looks up by osm_id):
+ * - `surface` / `tracktype` on each feature so overlay tap sheets skip Overpass.
+ * - Keep writing `mtb_scale` as S0/S1/S2/S3+ (3–6 collapsed to S3+, never sac_scale).
+ * Vector maxzoom is typically 14; Discover hit-tests overlay layers past that
+ * and can show named Overpass ways when overzoomed.
  */
 import fs from "fs";
 import readline from "readline";
@@ -150,7 +156,8 @@ async function main() {
     }
     const lines =
       geom.type === "LineString" ? [geom.coordinates] : geom.coordinates;
-    const classified = classifyBikeWay(tagsFromProps(feat.properties));
+    const tags = tagsFromProps(feat.properties);
+    const classified = classifyBikeWay(tags);
     if (classified.bikeClass === "hidden") {
       counts.hidden++;
       continue;
@@ -175,6 +182,7 @@ async function main() {
           highway: feat.properties?.highway ?? "",
           name: feat.properties?.name || feat.properties?.["name:de"] || "",
           osm_id: id != null ? String(id) : "",
+          surface: tags.surface || "",
         },
         geometry: { type: "LineString", coordinates: coords },
       };

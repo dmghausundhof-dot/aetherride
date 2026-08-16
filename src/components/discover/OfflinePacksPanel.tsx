@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Download, HardDrive, Loader2 } from "lucide-react";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { DISCOVER_STATUS_DE, discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
 
 type PackRow = {
   id: string;
@@ -18,6 +20,8 @@ type PackRow = {
  * Aktivierung/Valhalla nur in der Mobile-App — hier ehrlich nur Download.
  */
 export function OfflinePacksPanel({ className = "" }: { className?: string }) {
+  const lang = useChromeLang();
+  const d = discoverUi(lang);
   const [packs, setPacks] = useState<PackRow[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -35,14 +39,14 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
         setPacks(data.packs ?? []);
         setNote(
           (data.packs?.length ?? 0) === 0
-            ? "Keine Packs im Katalog — Region-Build lokal ausführen."
+            ? DISCOVER_STATUS_DE.packsEmpty
             : null
         );
       })
       .catch(() => {
         if (!cancelled) {
           setPacks([]);
-          setNote("Offline-Katalog nicht erreichbar.");
+          setNote(DISCOVER_STATUS_DE.packsUnreachable);
         }
       })
       .finally(() => {
@@ -91,10 +95,10 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
       a.click();
       URL.revokeObjectURL(url);
       setNote(
-        `${pack.name ?? id}: Download gestartet. Aktivierung nur in der Mobile-App (Offline-Sheet).`
+        d.packsStarted(pack.name ?? id),
       );
     } catch (e) {
-      setNote(e instanceof Error ? e.message : "Download fehlgeschlagen");
+      setNote(e instanceof Error ? e.message : d.packsFail);
     } finally {
       setBusyId(null);
     }
@@ -106,17 +110,16 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
     >
       <h3 className="mb-1 flex items-center gap-2 font-semibold">
         <HardDrive className="h-4 w-4 text-accent" aria-hidden />
-        Offline-Regionen
+        {d.packsTitle}
       </h3>
       <p className="mb-3 text-xs text-text-secondary">
-        Nur gebaute Packs sind ladbar. Aktivierung (Routing + Kartenkacheln)
-        läuft in der Android/iOS-App.
+        {d.packsLead}
       </p>
       {loading ? (
-        <p className="text-xs text-text-secondary">Katalog…</p>
+        <p className="text-xs text-text-secondary">{d.packsCatalog}</p>
       ) : packs.length === 0 ? (
         <p className="text-xs text-text-secondary">
-          {note ?? "Keine Packs verfügbar."}
+          {discoverStatus(note, lang) || d.packsNone}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -137,7 +140,7 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
                   </div>
                   <div className="text-[11px] text-text-secondary">
                     {!ready
-                      ? "Noch nicht gebaut"
+                      ? d.packsNotBuilt
                       : [
                           size,
                           p.engines?.valhalla_tiles
@@ -152,15 +155,15 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
                   type="button"
                   disabled={!ready || busyId === p.id}
                   onClick={() => void downloadPack(p)}
-                  aria-label={`Offline-Pack ${p.name ?? p.id} herunterladen`}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                  aria-label={d.packsDownload(p.name ?? p.id)}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-accent px-2.5 py-1.5 text-xs font-semibold text-on-accent disabled:opacity-50"
                 >
                   {busyId === p.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   ) : (
                     <Download className="h-3.5 w-3.5" aria-hidden />
                   )}
-                  {ready ? "Laden" : "Stub"}
+                  {ready ? d.packsLoad : d.packsStub}
                 </button>
               </li>
             );
@@ -168,7 +171,9 @@ export function OfflinePacksPanel({ className = "" }: { className?: string }) {
         </ul>
       )}
       {note && packs.length > 0 && (
-        <p className="mt-2 text-[11px] text-text-secondary">{note}</p>
+        <p className="mt-2 text-[11px] text-text-secondary">
+          {discoverStatus(note, lang) || note}
+        </p>
       )}
     </div>
   );

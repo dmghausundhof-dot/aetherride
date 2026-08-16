@@ -3,6 +3,7 @@ import { FEATURED_PARTS_IN_APP_HREF } from "@/lib/shop/catalog";
 import { mapStorefrontProduct } from "@/lib/shop/partsCatalog";
 import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
 import { fetchProductByHandle } from "@/lib/shop/shopifyStorefront";
+import { shopifyLangFromSearch } from "@/lib/shop/shopifyLocale";
 import { getShopStoreStatus, inAppProductHref } from "@/lib/shop/storeStatus";
 
 type Params = { params: Promise<{ handle: string }> };
@@ -11,9 +12,10 @@ type Params = { params: Promise<{ handle: string }> };
  * GET /api/shop/products/[handle]
  * Storefront-only. Missing/404 → redirectTo /shop/parts (no dead card).
  */
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   const { handle: raw } = await params;
   const handle = decodeURIComponent(raw || "").trim();
+  const lang = shopifyLangFromSearch(new URL(req.url).searchParams.get("lang"));
   if (!handle) {
     return NextResponse.json(
       { ok: false, error: "handle fehlt" },
@@ -22,7 +24,7 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   const status = getShopStoreStatus();
-  const live = await fetchProductByHandle(handle);
+  const live = await fetchProductByHandle(handle, lang);
 
   if (live.ok) {
     const product = mapStorefrontProduct(live.product);

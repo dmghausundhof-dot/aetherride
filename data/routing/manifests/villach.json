@@ -7,18 +7,31 @@
     14.05,
     46.68
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T13:32:15Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18265772,
+      "sha256": "5f77112a780d103e3d0cfdd60027ec7319535607943862aa7596a4cefcdab652",
+      "sha256_16": "5f77112a780d103e"
+    },
+    "villach.tar.gz": {
+      "bytes": 2502317,
+      "sha256": "64f6659f9383a06ce4da986971e8e88d44f30d4e4764b5bf1c6cb112f1f3b969",
+      "sha256_16": "64f6659f9383a06c"
+    },
+    "villach.tar.zst": {
+      "bytes": 2721439,
+      "sha256": "1ac40f0d1b94f29add640c147fdf1d41bb3352a730fe624fa5863ddcaa85a545",
+      "sha256_16": "1ac40f0d1b94f29a"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/villach",
     "pack": "villach.tar.zst",
     "packGz": "villach.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

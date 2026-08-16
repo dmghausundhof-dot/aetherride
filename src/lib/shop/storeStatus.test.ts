@@ -25,6 +25,7 @@ try {
   assert.equal(status.onlineStoreLocked, true);
   assert.equal(status.storefrontApiConfigured, true);
   assert.equal(status.recommendedPath, "storefront_api_in_app");
+  assert.ok(status.messageDe.includes("FlowLine"));
   assert.ok(!("password" in status));
 
   assert.equal(inAppProductHref("magura-8p"), "/shop/p/magura-8p");

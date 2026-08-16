@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../domain/bike.dart';
 import '../../domain/ebike/range.dart';
+import '../../domain/ai/coach_inbox.dart';
+import '../../domain/ai/coach_watch.dart';
 import '../../domain/rider_profile.dart';
 
 /// Persistiert Rider-Profil + Familien-Fahrer (Sync-fähig).
@@ -16,7 +18,8 @@ class UserProfileStore {
   List<FamilyRider> familyRiders = [];
   String? activeFamilyRiderId;
   String? displayName;
-  String? bikePhotoPath; // active bike local photo override path map via bikePhotos
+  String?
+      bikePhotoPath; // active bike local photo override path map via bikePhotos
 
   /// Profilbild (lokal oder https).
   String? profilePhotoPath;
@@ -26,6 +29,8 @@ class UserProfileStore {
   Map<String, String> bikePhotoPending = {};
   List<String> wishlistIds = []; // catalog / shop ids
   List<Map<String, dynamic>> chatHistory = [];
+  Map<String, CoachMeta> coachMeta = {};
+
   /// Sync-Feld: `affiliate` | `marketplace` (Web-Parität).
   String commerceMode = 'affiliate';
   RangeCalibration? rangeCalibration;
@@ -34,8 +39,11 @@ class UserProfileStore {
   /// Einmaliges Onboarding (Sport → Gewicht → erster Ride / Garage).
   bool onboardingDone = false;
 
-  /// Aus Onboarding — für Garage-Wizard / Filter.
+  /// Haupt-Disziplin (Onboarding, Discover-Default, Garage-Wizard).
   BikeCategory? preferredSport;
+
+  /// Alle gewählten Disziplinen inkl. Haupt. Nie ohne Haupt, wenn gesetzt.
+  List<BikeCategory> preferredSports = [];
 
   Future<File> _file() async {
     final dir = await getApplicationSupportDirectory();
@@ -75,6 +83,13 @@ class UserProfileStore {
         for (final e in (m['chatHistory'] as List? ?? const []))
           if (e is Map) Map<String, dynamic>.from(e),
       ];
+      coachMeta = {
+        for (final e in (m['coachMeta'] as Map? ?? {}).entries)
+          if (e.value is Map)
+            e.key.toString(): CoachMeta.fromJson(
+              Map<String, dynamic>.from(e.value as Map),
+            ),
+      };
       final cm = m['commerceMode'] as String?;
       if (cm == 'affiliate' || cm == 'marketplace') {
         commerceMode = cm!;
@@ -91,7 +106,7 @@ class UserProfileStore {
       onboardingDone = m.containsKey('onboardingDone')
           ? m['onboardingDone'] == true
           : true; // Legacy: bestehende Profile ohne Key nicht erneut onboarden
-      preferredSport = bikeCategoryFromName(m['preferredSport'] as String?);
+      applyPreferredFromJson(m);
     } catch (_) {}
   }
 
@@ -108,21 +123,107 @@ class UserProfileStore {
         'bikePhotoPending': bikePhotoPending,
         'wishlistIds': wishlistIds,
         'chatHistory': chatHistory,
+        'coachMeta': {
+          for (final e in coachMeta.entries) e.key: e.value.toJson(),
+        },
         'commerceMode': commerceMode,
         if (rangeCalibration != null)
           'rangeCalibration': rangeCalibration!.toJson(),
         'maintenanceLogs': maintenanceLogs,
         'onboardingDone': onboardingDone,
-        if (preferredSport != null) 'preferredSport': preferredSport!.name,
+        ...preferredSportsJson(),
       }),
     );
   }
+
+  /// Legacy: nur `preferredSport` → Liste mit einem Eintrag.
+  void applyPreferredFromJson(Map<String, dynamic> m) {
+    preferredSport = bikeCategoryFromName(m['preferredSport'] as String?);
+    final raw = m['preferredSports'];
+    if (raw is List) {
+      final parsed = <BikeCategory>[];
+      for (final e in raw) {
+        if (e is! String) continue;
+        final c = bikeCategoryFromName(e);
+        if (c != null) parsed.add(c);
+      }
+      preferredSports = parsed;
+    } else if (preferredSport != null) {
+      preferredSports = [preferredSport!];
+    } else {
+      preferredSports = [];
+    }
+    normalizePreferredSports();
+  }
+
+  Map<String, dynamic> preferredSportsJson() => {
+        if (preferredSport != null) 'preferredSport': preferredSport!.name,
+        if (preferredSports.isNotEmpty)
+          'preferredSports': [for (final s in preferredSports) s.name],
+      };
+
+  /// Haupt immer in der Liste und vorn; Liste leer ↔ keine Haupt.
+  void normalizePreferredSports() {
+    final seen = <BikeCategory>{};
+    preferredSports = [
+      for (final s in preferredSports)
+        if (seen.add(s)) s,
+    ];
+    final haupt = preferredSport;
+    if (haupt != null) {
+      preferredSports = [
+        haupt,
+        for (final s in preferredSports)
+          if (s != haupt) s,
+      ];
+    } else if (preferredSports.isNotEmpty) {
+      preferredSport = preferredSports.first;
+    }
+    if (preferredSports.isEmpty) {
+      preferredSport = null;
+    }
+  }
+
+  /// Mitgliedschaft umschalten. `false` wenn die letzte Disziplin bliebe.
+  bool togglePreferredSport(BikeCategory sport) {
+    if (preferredSports.contains(sport)) {
+      if (preferredSports.length <= 1) return false;
+      preferredSports = [
+        for (final s in preferredSports)
+          if (s != sport) s,
+      ];
+      if (preferredSport == sport) {
+        preferredSport = preferredSports.first;
+      }
+    } else {
+      preferredSports = [...preferredSports, sport];
+      preferredSport ??= sport;
+    }
+    normalizePreferredSports();
+    return true;
+  }
+
+  /// Setzt die Haupt-Disziplin und fügt sie der Liste hinzu.
+  void setPrimarySport(BikeCategory sport) {
+    preferredSport = sport;
+    preferredSports = [
+      sport,
+      for (final s in preferredSports)
+        if (s != sport) s,
+    ];
+    normalizePreferredSports();
+  }
+
+  bool prefersSport(BikeCategory sport) => preferredSports.contains(sport);
 
   Future<void> markOnboardingDone({
     BikeCategory? sport,
     double? weightKg,
   }) async {
-    if (sport != null) preferredSport = sport;
+    if (sport != null) {
+      preferredSport = sport;
+      preferredSports = [sport];
+    }
     if (weightKg != null) {
       riderProfile = riderProfile.copyWith(riderWeightKg: weightKg);
     }
@@ -244,8 +345,9 @@ class UserProfileStore {
         continue;
       }
       final local = bikePhotos[e.key];
-      final localIsFile =
-          local != null && !local.startsWith('http') && File(local).existsSync();
+      final localIsFile = local != null &&
+          !local.startsWith('http') &&
+          File(local).existsSync();
       if (localIsFile && bikePhotoPending.containsKey(e.key)) {
         // Lokaler Pending-Upload hat Vorrang bis Upload gelingt.
         continue;
@@ -277,6 +379,16 @@ class UserProfileStore {
     await save();
   }
 
+  Future<void> snoozeCoachNotice(CoachNotice notice, {int days = 7}) async {
+    coachMeta = snoozeMeta(coachMeta, notice, days: days);
+    await save();
+  }
+
+  Future<void> markCoachNoticesRead(Iterable<CoachNotice> notices) async {
+    coachMeta = markReadMeta(coachMeta, notices);
+    await save();
+  }
+
   Future<void> clear() async {
     riderProfile = const RiderProfile();
     familyRiders = [];
@@ -287,11 +399,13 @@ class UserProfileStore {
     bikePhotoPending = {};
     wishlistIds = [];
     chatHistory = [];
+    coachMeta = {};
     commerceMode = 'affiliate';
     rangeCalibration = null;
     maintenanceLogs = [];
     onboardingDone = false;
     preferredSport = null;
+    preferredSports = [];
     await save();
   }
 }

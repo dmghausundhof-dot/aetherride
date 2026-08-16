@@ -4,17 +4,29 @@
  */
 import assert from "node:assert/strict";
 import {
+  DEFAULT_DISCOVER_PROFILE,
   RIDE_PROFILES,
+  DISCOVER_PROFILE_CHIPS,
+  accessCostingForRideProfile,
+  approachCostingForBike,
+  discoverNavProfile,
+  sessionCostingForBike,
+  suggestedApproachKind,
+  trailFitsBikeCategory,
   buildValhallaCosting,
   difficultiesFromTrailLabel,
   getProfile,
+  graphhopperCustomModel,
   isLabeledTrailSuitable,
+  isRoutingProfile,
   isTrailSuitable,
   listBikeProfiles,
   listProfiles,
+  navSessionForBike,
   overlayScaleLabels,
   overlayScaleMatchValues,
   prefersUnratedTrails,
+  routeCostingProfile,
   trailFilterExpression,
   type RideProfileId,
 } from "./profiles";
@@ -76,7 +88,7 @@ for (const id of ids) {
   assert.ok(c.costing === "bicycle" || c.costing === "pedestrian");
 }
 
-assert.deepEqual(overlayScaleLabels("downhill"), ["S1", "S2", "S3"]);
+assert.deepEqual(overlayScaleLabels("downhill"), ["S1", "S2", "S3+"]);
 assert.equal(prefersUnratedTrails("downhill"), false);
 assert.equal(prefersUnratedTrails("mtb_allmountain"), true);
 assert.deepEqual(overlayScaleLabels("road"), []);
@@ -100,5 +112,67 @@ assert.ok(dhFilter.length > 0);
 assert.equal(getProfile("downhill").edgeFactor("path", 2, "dirt"), 0.7);
 assert.equal(getProfile("downhill").edgeFactor("motorway", 2, "asphalt"), null);
 assert.equal(getProfile("road").acceptsHighway("path"), false);
+assert.equal(getProfile("road").acceptsHighway("motorway"), false);
+assert.equal(getProfile("road").edgeFactor("cycleway", null, "asphalt"), 0.72);
+assert.equal(getProfile("road").edgeFactor("cycleway", null, ""), 0.72);
+assert.ok(
+  (getProfile("road").edgeFactor("cycleway", null, "asphalt") ?? 9) <
+    (getProfile("road").edgeFactor("primary", null, "asphalt") ?? 0)
+);
+assert.equal(getProfile("gravel").edgeFactor("track", null, "gravel"), 0.75);
+assert.equal(getProfile("gravel").edgeFactor("cycleway", null, "asphalt"), 0.9);
+assert.ok(
+  (getProfile("gravel").edgeFactor("track", null, "gravel") ?? 9) <
+    (getProfile("gravel").edgeFactor("primary", null, "asphalt") ?? 0)
+);
+assert.equal(getProfile("ebike").edgeFactor("cycleway", null, "asphalt"), 0.8);
+
+assert.equal(DEFAULT_DISCOVER_PROFILE, "urban");
+assert.equal(graphhopperCustomModel("hiking"), null);
+assert.ok(
+  graphhopperCustomModel("urban")?.priority.some((r) =>
+    r.if.includes("CYCLEWAY")
+  )
+);
+assert.ok(
+  graphhopperCustomModel("gravel")?.priority.some((r) => r.if.includes("TRACK"))
+);
+assert.ok(
+  graphhopperCustomModel("mtb_enduro")?.priority.some((r) =>
+    r.if.includes("PATH")
+  )
+);
+
+assert.equal(graphhopperCustomModel("auto"), null);
+assert.equal(isRoutingProfile("auto"), true);
+assert.equal(navSessionForBike("dh"), "gravity");
+assert.equal(navSessionForBike("mtb_am"), "pedal");
+assert.equal(routeCostingProfile("dh"), "auto");
+assert.equal(accessCostingForRideProfile("downhill"), "auto");
+assert.equal(accessCostingForRideProfile("mtb_allmountain"), "mtb_allmountain");
+assert.equal(discoverNavProfile("downhill"), "mtb_allmountain");
+assert.equal(discoverNavProfile("mtb_enduro"), "mtb_allmountain");
+assert.ok(!DISCOVER_PROFILE_CHIPS.includes("downhill"));
+assert.ok(!DISCOVER_PROFILE_CHIPS.includes("auto"));
+assert.equal(sessionCostingForBike("dh", "mtb_allmountain"), "auto");
+assert.equal(sessionCostingForBike("mtb_am", "mtb_allmountain"), "mtb_allmountain");
+assert.equal(approachCostingForBike("dh", "auto"), "auto");
+assert.equal(approachCostingForBike("dh", "walk"), "hiking");
+assert.equal(approachCostingForBike("dh", "bicycle"), "mtb_allmountain");
+assert.equal(
+  suggestedApproachKind({ session: "gravity", distanceKm: 12 }),
+  "auto"
+);
+assert.equal(
+  suggestedApproachKind({ session: "gravity", distanceKm: 0.4 }),
+  "walk"
+);
+assert.equal(
+  suggestedApproachKind({ session: "pedal", distanceKm: 12 }),
+  "bicycle"
+);
+assert.equal(trailFitsBikeCategory("road", "S3"), false);
+assert.equal(trailFitsBikeCategory("dh", "S3"), true);
+assert.equal(trailFitsBikeCategory("road", "offen"), true);
 
 console.log("profiles.test.ts OK");

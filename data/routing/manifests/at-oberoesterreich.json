@@ -1,0 +1,24 @@
+{
+  "id": "at-oberoesterreich",
+  "name": "Oberösterreich",
+  "bbox": [
+    12.75,
+    47.45,
+    15.0,
+    48.78
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-oberoesterreich.tar.zst",
+    "packGz": "at-oberoesterreich.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

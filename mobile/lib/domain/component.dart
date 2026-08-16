@@ -200,6 +200,7 @@ class BikeComponent {
     this.installedAt,
     this.removedAt,
     this.odometerKm = 0,
+    this.hoursAtInstall,
     this.attributes = const {},
   });
 
@@ -211,10 +212,22 @@ class BikeComponent {
   final String? catalogModelId;
   final DateTime? installedAt;
   final DateTime? removedAt;
+  /// Snapshot des Bike-Zählers beim Einbau — kein Verbrauch.
   final double odometerKm;
+  /// Stunden-Stand des Rads beim Einbau. Fehlt → 0 (Altbestand).
+  final double? hoursAtInstall;
 
   /// Attribute key → string/number value (for compat engine).
   final Map<String, dynamic> attributes;
+
+  static const hoursAtInstallAttr = '__hoursAtInstall';
+
+  double get hoursAtInstallResolved {
+    if (hoursAtInstall != null) return hoursAtInstall!;
+    final raw = attributes[hoursAtInstallAttr];
+    if (raw is num) return raw.toDouble();
+    return 0;
+  }
 
   bool get isInstalled => removedAt == null;
 

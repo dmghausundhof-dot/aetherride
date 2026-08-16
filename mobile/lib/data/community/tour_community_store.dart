@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -25,8 +26,7 @@ class TourCommunityCounts {
 
   bool get hasCommunity => reviewCount > 0 || photoCount > 0;
 
-  static const emptyCopy =
-      'Noch keine Community-Beiträge — erste:in sein';
+  static const emptyCopy = 'Noch keine Stimmen.';
 
   static TourCommunityCounts fromPayload(Object? data) {
     if (data is! Map) return const TourCommunityCounts();
@@ -139,6 +139,9 @@ class TourCommunityStore {
   /// Prozess-Cache für Karten-Chips (kein erfundenes Default-Rating).
   static final Map<String, TourCommunityCounts> countsCache = {};
 
+  /// Hof / Chips hören zu — nach lokalem Schreiben ohne App-Neustart.
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
   Future<File> _file() async {
     final dir = await _dirProvider();
     return File(p.join(dir.path, 'tour_community_local.json'));
@@ -169,6 +172,12 @@ class TourCommunityStore {
       final f = await _file();
       await f.writeAsString(jsonEncode([for (final r in list) r.toJson()]));
     } catch (_) {}
+  }
+
+  Future<List<TourCommunityReview>> allReviews() async {
+    final all = await _load();
+    return List<TourCommunityReview>.from(all)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
   Future<List<TourCommunityReview>> reviewsForTour(String tourId) async {
@@ -203,13 +212,36 @@ class TourCommunityStore {
     );
     final all = List<TourCommunityReview>.from(await _load())..add(review);
     await _save(all);
+    _publishLocalCounts(tourId, all);
     return review;
   }
 
   Future<void> removeReview(String id) async {
-    final all = List<TourCommunityReview>.from(await _load())
-      ..removeWhere((r) => r.id == id);
+    final all = List<TourCommunityReview>.from(await _load());
+    String? tourId;
+    for (final r in all) {
+      if (r.id == id) {
+        tourId = r.tourId;
+        break;
+      }
+    }
+    all.removeWhere((r) => r.id == id);
     await _save(all);
+    if (tourId != null) _publishLocalCounts(tourId, all);
+  }
+
+  void _publishLocalCounts(String tourId, List<TourCommunityReview> all) {
+    final local = [for (final r in all) if (r.tourId == tourId) r];
+    final photos = local.fold<int>(0, (n, r) => n + r.photoUris.length);
+    final ratings = [for (final r in local) r.rating];
+    countsCache[tourId] = TourCommunityCounts(
+      reviewCount: local.length,
+      photoCount: photos,
+      averageRating: ratings.isEmpty
+          ? null
+          : ratings.reduce((a, b) => a + b) / ratings.length,
+    );
+    revision.value++;
   }
 
   /// Approved Cloud-Reviews mergen — Fehler = lokal bleiben.

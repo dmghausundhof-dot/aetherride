@@ -87,10 +87,10 @@ export async function GET(req: Request) {
     segments,
     coldStart: segments.length < 3,
     kThreshold: HEATMAP_K_THRESHOLD,
-    attribution: "© OpenStreetMap · AetherRide k≥5 Aggregate",
+    attribution: "© OpenStreetMap · FlowLine k≥5 Aggregate",
     disclaimer:
       segments.length === 0
-        ? "Noch keine Community-Segmente mit ≥5 Fahrern in diesem Ausschnitt."
-        : `Community-Heatmap (k≥${HEATMAP_K_THRESHOLD}), ohne Zeitstempel.`,
+        ? "Noch keine Heatmap-Segmente mit ≥5 Fahrern in diesem Ausschnitt."
+        : `Heatmap (k≥${HEATMAP_K_THRESHOLD}), anonym, ohne Zeitstempel.`,
   });
 }

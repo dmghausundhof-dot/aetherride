@@ -15,5 +15,6 @@ void main() {
     final store = UserProfileStore();
     expect(store.onboardingDone, isFalse);
     expect(store.preferredSport, isNull);
+    expect(store.preferredSports, isEmpty);
   });
 }

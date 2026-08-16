@@ -51,3 +51,23 @@ export function merchantCtaUrl(
 ): string | undefined {
   return isDeepProductUrl(url) ? url!.trim() : undefined;
 }
+
+/**
+ * „Zum Händler“ — tiefe Nicht-Shopify-URLs.
+ * Shopify bleibt „Im Shop öffnen“ (Owner-Preview), kein zweiter Händler-Button.
+ */
+export function dealerCtaUrl(
+  url: string | null | undefined
+): string | undefined {
+  const cta = merchantCtaUrl(url);
+  if (!cta) return undefined;
+  try {
+    const host = new URL(cta).hostname.toLowerCase();
+    if (host.endsWith(".myshopify.com") || host.includes("shopify.com")) {
+      return undefined;
+    }
+  } catch {
+    return undefined;
+  }
+  return cta;
+}

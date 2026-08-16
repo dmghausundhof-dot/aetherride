@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 import 'watch_pair_sheet.dart';
@@ -56,19 +57,20 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
+        final l10n = AppLocalizations.of(context);
         messenger?.showSnackBar(
           SnackBar(
             content: Text(
               ble.connectedWatchName != null
-                  ? 'Gekoppelt: ${ble.connectedWatchName}'
-                  : 'Uhr gekoppelt',
+                  ? l10n.garageBlePairedNamed(ble.connectedWatchName!)
+                  : l10n.garageBlePaired,
             ),
           ),
         );
       }
     } catch (_) {
       messenger?.showSnackBar(
-        const SnackBar(content: Text('Kopplung fehlgeschlagen')),
+        SnackBar(content: Text(AppLocalizations.of(context).blePairFailed)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -91,7 +93,12 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
       if (perm != BlePermissionResult.granted) {
         messenger?.showSnackBar(
           SnackBar(
-            content: Text(ble.watchStatusDetail ?? 'Bluetooth prüfen'),
+            content: Text(
+              AppLocalizations.of(context).bleStatusDetailFor(
+                ble.watchStatusDetail ??
+                    AppLocalizations.of(context).watchCheckBluetooth,
+              ),
+            ),
           ),
         );
         return;
@@ -104,15 +111,21 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
       messenger?.showSnackBar(
         SnackBar(
           content: Text(
-            ok
-                ? (ble.watchStatusDetail ?? 'Uhr verbunden')
-                : (ble.watchStatusDetail ?? 'Uhr nicht in Reichweite'),
+            AppLocalizations.of(context).bleStatusDetailFor(
+              ok
+                  ? (ble.watchStatusDetail ??
+                      AppLocalizations.of(context).bleConnectedNamed(
+                        AppLocalizations.of(context).bleWordWatch,
+                      ))
+                  : (ble.watchStatusDetail ??
+                      AppLocalizations.of(context).watchOutOfRange),
+            ),
           ),
         ),
       );
     } catch (_) {
       messenger?.showSnackBar(
-        const SnackBar(content: Text('Verbindung fehlgeschlagen')),
+        SnackBar(content: Text(AppLocalizations.of(context).bleConnectFailed)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -148,7 +161,7 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
             ),
             ListTile(
               leading: const Icon(Icons.watch_outlined),
-              title: const Text('Andere Uhr'),
+              title: Text(l10n.watchOtherWatch),
               onTap: () => Navigator.pop(ctx, 'pair'),
             ),
             ListTile(
@@ -170,12 +183,13 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
     final l10n = AppLocalizations.of(context);
     final live = ref.read(bleCoreProvider).isWatchConnected;
     final saved = _saved != null;
+    if (!saved) return const SizedBox.shrink();
     return Semantics(
       button: true,
       label: live
-          ? '${l10n.hofYourWatch} · live'
+          ? l10n.watchLiveNamed(l10n.hofYourWatch)
           : saved
-              ? '${l10n.hofYourWatch} · gemerkt'
+              ? l10n.watchRememberedOffline(l10n.hofYourWatch)
               : l10n.hofWatchPair,
       child: Tooltip(
         message: live
@@ -202,7 +216,7 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
                         Icons.watch_outlined,
                         size: 22,
                         color: live
-                            ? AppColors.forestOnDark
+                            ? AppColors.chrome
                             : AppColors.muted,
                       ),
                       if (live)
@@ -214,7 +228,7 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
                             height: 8,
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.forestOnDark,
+                              color: AppColors.chrome,
                             ),
                           ),
                         ),

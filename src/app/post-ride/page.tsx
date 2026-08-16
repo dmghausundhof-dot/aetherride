@@ -14,9 +14,14 @@ import { SetupFingerprint } from "@/components/SetupFingerprint";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { RideMetricBars } from "@/components/RideMetricBars";
 import { contributeHeatmapTrack } from "@/lib/heatmap/client";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { mayContributeRideTrack } from "@/lib/tours/routeVisibility";
+import { resolveAkteSavedRoute } from "@/lib/tours/tourAkte";
+import { getPublicTour } from "@/lib/catalog/publicTours";
 
 function PostRideContent() {
+  const copy = useHofCopy();
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const rideId = searchParams.get("id");
@@ -30,6 +35,7 @@ function PostRideContent() {
   const bikes = useAppStore((s) => s.bikes);
   const consents = useAppStore((s) => s.consents);
   const privacyZones = useAppStore((s) => s.privacyZones);
+  const savedRoutes = useAppStore((s) => s.savedRoutes);
 
   const ride = rides.find((r) => r.id === rideId) || rides[0];
   const bike = ride ? bikes.find((b) => b.id === ride.bikeId) : null;
@@ -82,6 +88,16 @@ function PostRideContent() {
       consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
       false;
     if (!granted) return;
+    const saved = ride.savedRouteId
+      ? savedRoutes.find((r) => r.id === ride.savedRouteId)
+      : undefined;
+    if (!mayContributeRideTrack(saved)) {
+      heatmapTriedRef.current = ride.id;
+      setHeatmapNote(
+        "Heatmap: Tour ist privat — Track nicht beigetragen."
+      );
+      return;
+    }
     heatmapTriedRef.current = ride.id;
     void (async () => {
       try {
@@ -100,7 +116,7 @@ function PostRideContent() {
         );
       }
     })();
-  }, [ride, consents, privacyZones]);
+  }, [ride, consents, privacyZones, savedRoutes]);
 
   if (!ride) {
     return (
@@ -213,13 +229,30 @@ function PostRideContent() {
           <ArrowLeft className="h-6 w-6" aria-hidden />
         </button>
         <div>
-          <p className="text-[11px] font-bold tracking-wide text-chrome">
-            {HOF_COPY.postRideKicker}
+          <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+            {copy.postRideKicker}
           </p>
-          <h1 className="text-xl font-extrabold">{HOF_COPY.postRideTitle}</h1>
+          <h1 className="text-xl font-extrabold">{copy.postRideTitle}</h1>
           <p className="text-sm text-text-secondary">
             {new Date(ride.startTime).toLocaleString("de-DE")}
           </p>
+          {(() => {
+            const saved = resolveAkteSavedRoute(ride.savedRouteId, savedRoutes);
+            const href = saved
+              ? `/library?akte=${encodeURIComponent(saved.id)}`
+              : ride.savedRouteId && getPublicTour(ride.savedRouteId)
+                ? `/tours/${encodeURIComponent(ride.savedRouteId)}`
+                : null;
+            if (!href) return null;
+            return (
+              <Link
+                href={href}
+                className="mt-1 inline-block text-sm font-semibold text-accent"
+              >
+                Tour auf dem Platz
+              </Link>
+            );
+          })()}
         </div>
       </header>
 
@@ -393,7 +426,7 @@ function PostRideContent() {
                 type="button"
                 onClick={() => setOverall(n)}
                 className={`flex-1 rounded-xl py-2 text-sm font-semibold ${
-                  overall === n ? "bg-chrome text-background" : "bg-surface-elevated"
+                  overall === n ? "bg-chrome text-on-accent" : "bg-surface-elevated"
                 }`}
               >
                 {n}
@@ -413,8 +446,8 @@ function PostRideContent() {
                 key={id}
                 type="button"
                 onClick={() => setFrontFeel(id)}
-                className={`flex-1 rounded-lg py-2 text-xs ${
-                  frontFeel === id ? "bg-primary text-white" : "bg-surface-elevated"
+                className={`flex-1 rounded-xl py-2 text-xs ${
+                  frontFeel === id ? "bg-chrome text-on-accent" : "bg-surface-elevated"
                 }`}
               >
                 {label}
@@ -434,8 +467,8 @@ function PostRideContent() {
                 key={id}
                 type="button"
                 onClick={() => setBrakeDive(id)}
-                className={`flex-1 rounded-lg py-2 text-xs ${
-                  brakeDive === id ? "bg-primary text-white" : "bg-surface-elevated"
+                className={`flex-1 rounded-xl py-2 text-xs ${
+                  brakeDive === id ? "bg-chrome text-on-accent" : "bg-surface-elevated"
                 }`}
               >
                 {label}
@@ -455,8 +488,8 @@ function PostRideContent() {
                 key={id}
                 type="button"
                 onClick={() => setSmallBump(id)}
-                className={`flex-1 rounded-lg py-2 text-xs ${
-                  smallBump === id ? "bg-primary text-white" : "bg-surface-elevated"
+                className={`flex-1 rounded-xl py-2 text-xs ${
+                  smallBump === id ? "bg-chrome text-on-accent" : "bg-surface-elevated"
                 }`}
               >
                 {label}
@@ -475,7 +508,7 @@ function PostRideContent() {
                   skipped: false,
                 })
               }
-              className="flex-1 rounded-xl bg-chrome py-2.5 text-sm font-medium text-background"
+              className="flex-1 rounded-xl bg-chrome py-2.5 text-sm font-medium text-on-accent"
             >
               Speichern
             </button>
@@ -531,7 +564,7 @@ function PostRideContent() {
               <button
                 type="button"
                 onClick={() => acceptRecommendation(displaySetup.id!)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-medium text-background"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-medium text-on-accent"
               >
                 <Check className="h-4 w-4" /> Übernehmen
               </button>
@@ -559,7 +592,7 @@ function PostRideContent() {
             <button
               type="button"
               onClick={() => acceptRecommendation(otherRec.id)}
-              className="flex-1 rounded-xl bg-chrome py-2 text-sm font-medium text-background"
+              className="flex-1 rounded-xl bg-chrome py-2 text-sm font-medium text-on-accent"
             >
               Übernehmen
             </button>

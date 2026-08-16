@@ -9,6 +9,7 @@ import {
   evaluateIntervalDue,
   type DueStatus,
 } from "@/lib/maintenance/intervals";
+import { shopReplaceHref } from "@/lib/shop/partsCatalog";
 
 export type MaintenanceSummaryStatus = "empty" | "ok" | "due_soon" | "overdue";
 
@@ -40,6 +41,8 @@ export interface MaintenanceSummary {
   detail: string;
   /** Deep-link into Garage maintenance tab (optional bike) */
   href: string;
+  /** Deep-Link in den Laden (Verschleiß / Fälligkeit), nie Snapshot-SKU */
+  shopHref?: string;
 }
 
 export interface MaintenanceSummaryOptions {
@@ -168,6 +171,10 @@ export function getMaintenanceSummary(
       headline,
       detail: `${topItem?.label ?? "Service"}${extra}`,
       href,
+      shopHref: shopReplaceHref({
+        bike: bike.id,
+        slot: topItem?.slot,
+      }),
     };
   }
 

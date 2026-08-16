@@ -11,7 +11,7 @@
 
 **Muster der Sieger:** Eine **Desktop-Map + Side-Panel**, ein **Routing-Profil**, ein **Route-Objekt**, das man speichern, teilen und in die App schieben kann. Kein zweites „Mini-App“-UI.
 
-## AetherRide-Zielbild (besser)
+## FlowLine-Zielbild (besser)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

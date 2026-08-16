@@ -172,7 +172,7 @@ export const SETUP_TEMPLATES: SetupTemplate[] = [
     kind: "editorial_preset",
     disclaimer:
       "Redaktions-Preset als Ausgangspunkt — kein Ersatz für Bracketing auf deinem Trail.",
-    sourceLabel: "AetherRide Editorial (angelehnt an Enduro Mag Setup Guide)",
+    sourceLabel: "FlowLine Editorial (angelehnt an Enduro Mag Setup Guide)",
     sourceUrl: "https://enduro-mtb.com/en/setup-guide-mtb-suspension/",
     categories: ["mtb_am", "mtb_enduro", "emtb"],
     resolve: (w) => ({
@@ -192,7 +192,7 @@ export const SETUP_TEMPLATES: SetupTemplate[] = [
     conditions: "bikepark",
     kind: "editorial_preset",
     disclaimer: "Ausgangspunkt für Park — mehr Support, weniger SAG-Spiel.",
-    sourceLabel: "AetherRide Editorial · Enduro Mag",
+    sourceLabel: "FlowLine Editorial · Enduro Mag",
     sourceUrl: "https://enduro-mtb.com/en/setup-guide-mtb-suspension/",
     categories: ["mtb_enduro", "dh", "emtb"],
     resolve: (w) => ({
@@ -213,7 +213,7 @@ export const SETUP_TEMPLATES: SetupTemplate[] = [
     kind: "editorial_preset",
     disclaimer:
       "Effizienz-lastiger Ausgangspunkt für lange Touren — weniger SAG, mehr Pedal-Plattform.",
-    sourceLabel: "AetherRide Editorial (Marathon-Praxis)",
+    sourceLabel: "FlowLine Editorial (Marathon-Praxis)",
     sourceUrl: "https://enduro-mtb.com/en/setup-guide-mtb-suspension/",
     categories: ["mtb_trail", "mtb_am", "emtb", "gravel"],
     resolve: (w, cat) => {
@@ -239,7 +239,7 @@ export const SETUP_TEMPLATES: SetupTemplate[] = [
     kind: "editorial_preset",
     disclaimer:
       "Race-Ausgangspunkt — aggressiver Support. Nur Startpunkt vor Track-Walk-Bracketing.",
-    sourceLabel: "AetherRide Editorial",
+    sourceLabel: "FlowLine Editorial",
     sourceUrl: "https://enduro-mtb.com/en/setup-guide-mtb-suspension/",
     categories: ["mtb_enduro", "dh", "emtb"],
     resolve: (w) => {

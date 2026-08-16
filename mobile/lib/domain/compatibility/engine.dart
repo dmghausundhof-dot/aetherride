@@ -113,6 +113,12 @@ CompatibilityResult? evaluateRule(
 
   final mapA = Map<String, dynamic>.from(compA.attributes);
   final mapB = Map<String, dynamic>.from(compB.attributes);
+  final valuesA = {
+    for (final k in rule.requiresA) k: '${_read(mapA, k) ?? '?'}',
+  };
+  final valuesB = {
+    for (final k in rule.requiresB) k: '${_read(mapB, k) ?? '?'}',
+  };
 
   final missing = <({String key, String howToObtain})>[];
   for (final key in rule.requiresA) {
@@ -142,6 +148,8 @@ CompatibilityResult? evaluateRule(
       missingAttributes: missing,
       safetyWorkshopHint: _workshopHint(rule),
       sourceUrl: rule.sourceUrl,
+      valuesA: valuesA,
+      valuesB: valuesB,
     );
   }
 
@@ -160,6 +168,8 @@ CompatibilityResult? evaluateRule(
       conditionText: rule.conditionText,
       safetyWorkshopHint: _workshopHint(rule),
       sourceUrl: rule.sourceUrl,
+      valuesA: valuesA,
+      valuesB: valuesB,
     );
   }
   return CompatibilityResult(
@@ -171,6 +181,8 @@ CompatibilityResult? evaluateRule(
     conditionText: rule.conditionText,
     safetyWorkshopHint: _workshopHint(rule),
     sourceUrl: rule.sourceUrl,
+    valuesA: valuesA,
+    valuesB: valuesB,
   );
 }
 

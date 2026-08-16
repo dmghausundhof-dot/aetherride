@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { withShopifyLocale } from "@/lib/shop/shopifyLocale";
+import { isShopifyOnlineStoreUrl } from "@/lib/shop/storeStatus";
 
 /**
  * External myshopify link — never a silent password dead-end.
@@ -10,7 +14,7 @@ import { cn } from "@/lib/utils";
  */
 export function ShopifyOutboundButton({
   href,
-  label = "Externer Shopify-Link",
+  label,
   className,
   variant = "secondary",
 }: {
@@ -19,6 +23,10 @@ export function ShopifyOutboundButton({
   className?: string;
   variant?: "primary" | "secondary" | "ghost";
 }) {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+  const hrefOut = withShopifyLocale(href, lang);
+  const shown = label ?? copy.shopExternalLink;
   const [locked, setLocked] = useState(true);
   const [open, setOpen] = useState(false);
 
@@ -38,17 +46,19 @@ export function ShopifyOutboundButton({
     };
   }, []);
 
+  const needsOwnerPreview = locked && isShopifyOnlineStoreUrl(hrefOut);
+
   const base =
     variant === "primary"
-      ? "bg-primary text-white"
+      ? "bg-chrome text-on-accent"
       : variant === "ghost"
         ? "border border-border bg-transparent text-text-secondary"
         : "border border-border bg-surface-elevated text-foreground";
 
-  if (!locked) {
+  if (!needsOwnerPreview) {
     return (
       <a
-        href={href}
+        href={hrefOut}
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
@@ -57,7 +67,7 @@ export function ShopifyOutboundButton({
           className
         )}
       >
-        {label} <ExternalLink className="h-3.5 w-3.5" />
+        {shown} <ExternalLink className="h-3.5 w-3.5" />
       </a>
     );
   }
@@ -74,7 +84,7 @@ export function ShopifyOutboundButton({
         )}
       >
         <Lock className="h-3.5 w-3.5" />
-        {label}
+        {shown}
       </button>
       {open ? (
         <div
@@ -89,24 +99,22 @@ export function ShopifyOutboundButton({
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="store-locked-title" className="text-lg font-bold">
-              Online Store gesperrt
+              {copy.shopLockedTitle}
             </h2>
             <p className="mt-2 text-sm text-text-secondary">
-              Der Shopify-Shop ist passwortgeschützt (Inhaber-Vorschau). Der Link
-              führt zur Passwort-Seite — kein stiller Dead End, aber kein
-              öffentlicher Checkout.
+              {copy.shopLockedBody}
             </p>
             <p className="mt-2 text-xs text-text-secondary">
-              Kein In-App-Katalog. Store-Passwort wird nicht ausgeliefert.
+              {copy.shopLockedPasswordNote}
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <a
-                href={href}
+                href={hrefOut}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-warning py-2.5 text-sm font-semibold text-black"
               >
-                Trotzdem öffnen (Passwort-Seite)
+                {copy.shopLockedOpen}
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
               <button
@@ -114,7 +122,7 @@ export function ShopifyOutboundButton({
                 onClick={() => setOpen(false)}
                 className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium"
               >
-                Zurück
+                {copy.shopCancel}
               </button>
             </div>
           </div>

@@ -1,0 +1,27 @@
+{
+  "id": "ch-graubuenden",
+  "name": "Graubünden",
+  "bbox": [
+    8.65,
+    46.12,
+    10.49,
+    47.08
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-graubuenden",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-graubuenden.tar.zst"
+  }
+}

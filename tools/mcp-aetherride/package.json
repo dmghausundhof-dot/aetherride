@@ -6,5 +6,5 @@
   "bin": {
     "mcp-aetherride": "./server.mjs"
   },
-  "description": "Read-only MCP server for AetherRide catalog, tours, geocode"
+  "description": "Read-only MCP server for FlowLine catalog, tours, geocode"
 }

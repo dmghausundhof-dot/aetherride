@@ -15,7 +15,7 @@
  */
 
 export const TRAILFORKS_ATTRIBUTION =
-  "Trail data © Trailforks contributors — share-alike; not mirrored in AetherRide Pro.";
+  "Trail data © Trailforks contributors — share-alike; not mirrored in FlowLine Pro.";
 
 export function trailforksRegionUrl(regionId: string | number): string {
   return `https://www.trailforks.com/region/${regionId}/`;

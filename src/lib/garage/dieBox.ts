@@ -124,7 +124,7 @@ function isTrail(s: Setup): boolean {
   );
 }
 
-function wheelLabel(bike: Bike): string | undefined {
+export function wheelLabel(bike: Bike): string | undefined {
   if (!bike.wheelSizeFront) return undefined;
   if (bike.wheelSizeFront === "700c") return "700c";
   if (bike.wheelSizeFront === "650b") return "650b";

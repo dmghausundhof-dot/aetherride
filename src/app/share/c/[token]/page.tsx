@@ -9,6 +9,10 @@ import { getPublicTour } from "@/lib/catalog/publicTours";
 import { useAppStore } from "@/store/useAppStore";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { SharedCollectionPayload } from "@/lib/community/types";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import { shareCopy } from "@/lib/i18n/shareCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 export default function SharedCollectionPage() {
   const params = useParams();
@@ -18,6 +22,9 @@ export default function SharedCollectionPage() {
   const addRouteToCollection = useAppStore((s) => s.addRouteToCollection);
   const [remote, setRemote] = useState<SharedCollectionPayload | null>(null);
   const [remoteDone, setRemoteDone] = useState(false);
+  const lang = useChromeLang();
+  const s = shareCopy(lang);
+  const chrome = webChrome(lang);
 
   const encoded = useMemo(
     () =>
@@ -55,27 +62,23 @@ export default function SharedCollectionPage() {
     if (isShort && !encoded && !remoteDone) {
       return (
         <div className="mx-auto max-w-lg px-4 py-20 text-center text-sm text-text-secondary">
-          Sammlung wird geladen …
+          {s.loadingCollection}
         </div>
       );
     }
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <h1 className="text-xl font-bold">Link ungültig</h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Die geteilte Sammlung konnte nicht gelesen werden.
-        </p>
+        <h1 className="text-xl font-bold">{s.invalid}</h1>
+        <p className="mt-2 text-sm text-text-secondary">{s.invalidCollection}</p>
         <Link href="/library" className="mt-6 inline-block text-chrome">
-          Zum Platz
+          {s.toPlatz}
         </Link>
       </div>
     );
   }
 
   const adopt = () => {
-    const colId = createRouteCollection(
-      `${payload.name} (geteilt)`
-    );
+    const colId = createRouteCollection(s.sharedSuffix(payload.name));
     payload.routeIds.forEach((id, i) => {
       const pub = getPublicTour(id);
       const name = payload.routeNames[i] ?? pub?.name ?? id;
@@ -113,12 +116,12 @@ export default function SharedCollectionPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-10 sm:px-6">
-      <p className="text-[11px] font-bold tracking-wide text-chrome">
-        {isShareDemoToken(token) ? "Beispiel-Mappe" : "Geteilte Sammlung"}
+      <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+        {isShareDemoToken(token) ? s.demoMappe : s.sharedCollection}
       </p>
       <h1 className="mt-2 text-2xl font-bold">{payload.name}</h1>
       <p className="mt-2 text-sm text-text-secondary">
-        Von {payload.authorLabel}
+        {s.by(payload.authorLabel)}
         {payload.authorHandle ? (
           <>
             {" "}
@@ -133,8 +136,8 @@ export default function SharedCollectionPage() {
         ) : null}
       </p>
       <p className="mt-1 text-[11px] text-text-secondary">
-        {new Date(payload.createdAt).toLocaleDateString("de-DE")} ·{" "}
-        {payload.routeIds.length} Touren · ohne GPS-Tracks
+        {new Date(payload.createdAt).toLocaleDateString(chromeDateLocale(lang))} ·{" "}
+        {s.toursNoGps(payload.routeIds.length)}
       </p>
 
       <ul className="mt-8 space-y-2">
@@ -159,7 +162,7 @@ export default function SharedCollectionPage() {
                   href={`/tours/${pub.id}`}
                   className="shrink-0 text-xs font-medium text-accent"
                 >
-                  Öffnen
+                  {s.open}
                 </Link>
               ) : (
                 <Map className="h-4 w-4 shrink-0 text-text-secondary" />
@@ -172,24 +175,24 @@ export default function SharedCollectionPage() {
       <button
         type="button"
         onClick={adopt}
-        className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white"
+        className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
       >
-        <Bookmark className="h-4 w-4" /> In die Mappe übernehmen
+        <Bookmark className="h-4 w-4" /> {s.adoptMappe}
       </button>
       <p className="mt-3 text-center text-[11px] text-text-secondary">
-        Speichert die Sammlung lokal in diesem Browser.
+        {s.savesCollection}
       </p>
       <div className="mt-6 text-center">
         <Link href="/share" className="text-sm text-chrome hover:underline">
-          So teilen
+          {s.howToShare}
         </Link>
         {" · "}
         <Link href="/community" className="text-sm text-chrome hover:underline">
-          Community
+          {chrome.marketingNav["/community"]}
         </Link>
         {" · "}
         <Link href="/library" className="text-sm text-chrome hover:underline">
-          Platz
+          {chrome.hofNav.platz}
         </Link>
       </div>
     </div>

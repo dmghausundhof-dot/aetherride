@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/routing/upcoming_rail.dart';
+import '../../../l10n/l10n_ext.dart';
 
 /// One-line peek under next-turn (N-07) — stays thin in Clean Mode.
 class RideUpcomingRail extends StatelessWidget {
@@ -29,14 +30,14 @@ class RideUpcomingRail extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: AppColors.muted),
+              Icon(icon, size: 16, color: AppColors.meta(context)),
               const SizedBox(width: 6),
               Text(
-                'Danach',
+                context.l10nOrNull?.rideThereafter ?? 'Danach',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.muted.withValues(alpha: 0.9),
+                  color: AppColors.meta(context).withValues(alpha: 0.9),
                 ),
               ),
               const SizedBox(width: 6),
@@ -55,10 +56,10 @@ class RideUpcomingRail extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   item.detail!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.muted,
+                    color: AppColors.meta(context),
                   ),
                 ),
               ],

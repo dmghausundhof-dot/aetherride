@@ -27,6 +27,18 @@ class _TourSocialProofState extends State<TourSocialProof> {
   @override
   void initState() {
     super.initState();
+    TourCommunityStore.revision.addListener(_onRevision);
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    TourCommunityStore.revision.removeListener(_onRevision);
+    super.dispose();
+  }
+
+  void _onRevision() {
+    if (!mounted) return;
     unawaited(_load());
   }
 

@@ -3,10 +3,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/theme/app_theme.dart';
+
 /// Simple circle pin for MapLibre `addImage` — OpenFreeMap has no `marker-15`.
+/// Default fill is cartographic green; orange pins pass [AppColors.accent].
 Future<Uint8List> buildMapPinPng({
   Color fill = const Color(0xFF00C853),
-  Color stroke = const Color(0xFF14241C),
+  Color stroke = AppColors.hofGround,
 }) async {
   const size = 64.0;
   final recorder = ui.PictureRecorder();

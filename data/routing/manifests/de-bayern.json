@@ -1,0 +1,24 @@
+{
+  "id": "de-bayern",
+  "name": "Bayern",
+  "bbox": [
+    8.97,
+    47.27,
+    13.84,
+    50.57
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-bayern.tar.zst",
+    "packGz": "de-bayern.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

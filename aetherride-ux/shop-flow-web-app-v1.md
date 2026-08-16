@@ -6,7 +6,7 @@ Companion: `shop-parts-wire-v1.md` (S-PART soft-fit tags & Storefront rules).
 
 ## Recommendation
 
-Primary catalog = **Storefront API in AetherRide** (`/shop`, `/shop/parts`, `/shop/p/[handle]`).  
+Primary catalog = **Storefront API in FlowLine** (`/shop`, `/shop/parts`, `/shop/p/[handle]`).  
 External Online Store only as explicit Owner Preview while locked. Never ship storefront password to clients.
 
 ---

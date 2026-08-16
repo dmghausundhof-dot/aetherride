@@ -1,24 +1,37 @@
 {
   "id": "chambery",
-  "name": "Chambéry / Lac du Bourget",
+  "name": "Chamb\u00e9ry / Lac du Bourget",
   "bbox": [
     5.8,
     45.48,
     6.05,
     45.68
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T11:47:29Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18016825,
+      "sha256": "1c8a4b217cfbcefceefdf9b3de888c046325e24e267b7590814971e7639493b4",
+      "sha256_16": "1c8a4b217cfbcefc"
+    },
+    "chambery.tar.gz": {
+      "bytes": 2462904,
+      "sha256": "b78518fd4d7467f0950ffdb714c3108d9f9e783b5b4a12ffdbbef6b44c831a3e",
+      "sha256_16": "b78518fd4d7467f0"
+    },
+    "chambery.tar.zst": {
+      "bytes": 2660859,
+      "sha256": "af559e4b8f0e864355e16ad05dcf41901045db04d3926c2aed852fa00d63de56",
+      "sha256_16": "af559e4b8f0e8643"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/chambery",
     "pack": "chambery.tar.zst",
     "packGz": "chambery.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

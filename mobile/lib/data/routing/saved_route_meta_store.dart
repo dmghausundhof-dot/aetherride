@@ -107,6 +107,18 @@ abstract final class SavedRouteMetaStore {
     return next;
   }
 
+  static Future<SavedRouteMeta> setVisibility(
+    String routeId,
+    String visibility,
+  ) async {
+    final cur = await get(routeId);
+    final next = cur.copyWith(
+      visibility: visibility == 'shared' ? 'shared' : 'private',
+    );
+    await put(routeId, next);
+    return next;
+  }
+
   static Future<SavedRouteMeta> removeNote(
     String routeId,
     String noteId,
@@ -129,6 +141,12 @@ abstract final class SavedRouteMetaStore {
             'description': e.value.description,
             'notes': [for (final n in e.value.notes) n.toJson()],
             if (e.value.rideId != null) 'rideId': e.value.rideId,
+            if (e.value.catalogTourId != null)
+              'catalogTourId': e.value.catalogTourId,
+            if (e.value.preferredBikeId != null)
+              'preferredBikeId': e.value.preferredBikeId,
+            if (e.value.visibility == 'shared') 'visibility': 'shared',
+            if (e.value.shareEpoch > 0) 'shareEpoch': e.value.shareEpoch,
             'updatedAt':
                 (e.value.updatedAt ?? DateTime.now().toUtc()).toIso8601String(),
           },
@@ -154,6 +172,10 @@ abstract final class SavedRouteMetaStore {
           description: incoming.description,
           notes: incoming.notes,
           rideId: incoming.rideId,
+          catalogTourId: incoming.catalogTourId,
+          preferredBikeId: incoming.preferredBikeId,
+          visibility: incoming.visibility,
+          shareEpoch: incoming.shareEpoch,
           updatedAt: remoteTs,
         );
       }

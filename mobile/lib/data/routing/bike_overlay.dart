@@ -5,12 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import 'offline_tiles.dart';
 import 'overlay_regions.dart';
+import 'sgrade_live.dart';
 
 const kBikeOverlaySourceId = 'bike-overlay';
 const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
@@ -23,6 +25,21 @@ const kBikeOverlayLayerIds = <BikeOverlayClass, String>{
   BikeOverlayClass.road: 'bike-overlay-road',
   BikeOverlayClass.urban: 'bike-overlay-urban',
 };
+
+const kBikeOverlayQueryLayerIds = <String>[
+  kOsmSGradeLayerId,
+  kOsmLivePathLayerId,
+  kOsmLiveTrackLayerId,
+  kOsmLiveCyclewayLayerId,
+  'bike-overlay-mtb',
+  'bike-overlay-mtb-unrated',
+  'bike-overlay-gravel',
+  'bike-overlay-road',
+  'bike-overlay-urban',
+];
+
+/// Region-Packs enden typisch bei z14; darüber named Overpass oder Overzoom-Hit.
+const kBikeOverlayVectorMaxZoom = 14.0;
 
 /// RN bbox from `data/routing/regions/rhein-neckar.json`.
 const rheinNeckarBbox = [8.2, 49.2, 9.0, 49.6];
@@ -37,7 +54,22 @@ Future<Object?> resolveBikeOverlayData({
   required double lng,
   required double lat,
 }) async {
-  final packDir = await OfflineTilesStore.instance.ensureTilesPath();
+  final region = overlayRegionForPoint(lng, lat);
+  if (region != null) {
+    try {
+      final docs = await getApplicationDocumentsDirectory();
+      final gpsLocal = File(
+        p.join(docs.path, 'regions', region.id, kBikeOverlayGeojsonName),
+      );
+      if (await gpsLocal.exists() && await gpsLocal.length() > 20) {
+        return Uri.file(gpsLocal.absolute.path).toString();
+      }
+    } catch (_) {}
+  }
+
+  final packDir = await OfflineTilesStore.instance.ensureTilesPath(
+    bundledFallback: false,
+  );
   if (packDir != null) {
     final local = File(p.join(packDir, kBikeOverlayGeojsonName));
     if (await local.exists() && await local.length() > 20) {
@@ -45,7 +77,6 @@ Future<Object?> resolveBikeOverlayData({
     }
   }
 
-  final region = overlayRegionForPoint(lng, lat);
   if (region != null) {
     final urls = [
       Uri.parse(
@@ -59,8 +90,20 @@ Future<Object?> resolveBikeOverlayData({
       try {
         final res = await http.get(url).timeout(const Duration(seconds: 45));
         if (res.statusCode == 200 && res.bodyBytes.length > 20) {
-          if (packDir != null) {
-            final dest = File(p.join(packDir, kBikeOverlayGeojsonName));
+          Directory? destDir;
+          if (packDir != null && p.basename(packDir) == region.id) {
+            destDir = Directory(packDir);
+          } else {
+            try {
+              final docs = await getApplicationDocumentsDirectory();
+              final gpsDir = Directory(
+                p.join(docs.path, 'regions', region.id),
+              );
+              if (await gpsDir.exists()) destDir = gpsDir;
+            } catch (_) {}
+          }
+          if (destDir != null) {
+            final dest = File(p.join(destDir.path, kBikeOverlayGeojsonName));
             await dest.writeAsBytes(res.bodyBytes);
             return Uri.file(dest.absolute.path).toString();
           }
@@ -85,12 +128,209 @@ Future<Object?> resolveBikeOverlayData({
   return null;
 }
 
+const kOsmLiveSourceCandidates = <String>['openmaptiles', 'protomaps'];
+const kOsmLiveCyclewayLayerId = 'osm-live-cycleway';
+const kOsmLivePathLayerId = 'osm-live-path';
+const kOsmLiveTrackLayerId = 'osm-live-track';
+
+const kOsmLiveLayerClass = <String, BikeOverlayClass>{
+  kOsmLiveCyclewayLayerId: BikeOverlayClass.road,
+  kOsmLivePathLayerId: BikeOverlayClass.mtbUnrated,
+  kOsmLiveTrackLayerId: BikeOverlayClass.gravel,
+  kOsmSGradeLayerId: BikeOverlayClass.mtb,
+};
+
+/// OpenFreeMap planet tiles — OSM path/track/cycleway for DACH + FR (and world).
+/// S-grade is live Overpass (`mtb:scale`) — OpenMapTiles has no scale tag.
+Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
+  String? sourceId;
+  try {
+    final ids = await c.getSourceIds();
+    for (final candidate in kOsmLiveSourceCandidates) {
+      if (ids.contains(candidate)) {
+        sourceId = candidate;
+        break;
+      }
+    }
+  } catch (_) {}
+  if (sourceId == null) return false;
+
+  Future<void> addLive({
+    required String layerId,
+    required String color,
+    required double width,
+    required List<dynamic> filter,
+    required double minzoom,
+  }) async {
+    try {
+      await c.addLineLayer(
+        sourceId!,
+        layerId,
+        LineLayerProperties(
+          lineColor: color,
+          lineWidth: width,
+          lineOpacity: 0.88,
+          lineCap: 'round',
+          lineJoin: 'round',
+          visibility: 'visible',
+        ),
+        sourceLayer: 'transportation',
+        minzoom: minzoom,
+        filter: filter,
+        enableInteraction: false,
+      );
+    } catch (_) {}
+  }
+
+  await addLive(
+    layerId: kOsmLiveCyclewayLayerId,
+    color: BikeOverlayColors.road,
+    width: 2.2,
+    minzoom: 11,
+    filter: [
+      'all',
+      [
+        'match',
+        ['geometry-type'],
+        ['LineString', 'MultiLineString'],
+        true,
+        false,
+      ],
+      [
+        'any',
+        [
+          '==',
+          ['get', 'subclass'],
+          'cycleway',
+        ],
+        [
+          '==',
+          ['get', 'class'],
+          'cycleway',
+        ],
+      ],
+    ],
+  );
+  await addLive(
+    layerId: kOsmLivePathLayerId,
+    color: BikeOverlayColors.unrated,
+    width: 1.6,
+    minzoom: 12,
+    filter: [
+      'all',
+      [
+        'match',
+        ['geometry-type'],
+        ['LineString', 'MultiLineString'],
+        true,
+        false,
+      ],
+      [
+        '==',
+        ['get', 'class'],
+        'path',
+      ],
+      [
+        '!=',
+        ['get', 'subclass'],
+        'cycleway',
+      ],
+    ],
+  );
+  await addLive(
+    layerId: kOsmLiveTrackLayerId,
+    color: BikeOverlayColors.gravel,
+    width: 2.0,
+    minzoom: 12,
+    filter: [
+      'all',
+      [
+        'match',
+        ['geometry-type'],
+        ['LineString', 'MultiLineString'],
+        true,
+        false,
+      ],
+      [
+        '==',
+        ['get', 'class'],
+        'track',
+      ],
+    ],
+  );
+  return true;
+}
+
+Future<void> attachSGradeLiveLayer(MapLibreMapController c) async {
+  var hasSource = false;
+  try {
+    hasSource = (await c.getSourceIds()).contains(kOsmSGradeSourceId);
+  } catch (_) {}
+  if (!hasSource) {
+    try {
+      await c.addGeoJsonSource(
+        kOsmSGradeSourceId,
+        const {'type': 'FeatureCollection', 'features': <dynamic>[]},
+      );
+    } catch (_) {}
+  }
+  var hasLayer = false;
+  try {
+    hasLayer = (await c.getLayerIds()).contains(kOsmSGradeLayerId);
+  } catch (_) {}
+  if (hasLayer) return;
+  try {
+    await c.addLineLayer(
+      kOsmSGradeSourceId,
+      kOsmSGradeLayerId,
+      LineLayerProperties(
+        lineColor: [
+          'match',
+          ['get', 'mtb_scale'],
+          'S0',
+          BikeOverlayColors.s0,
+          'S1',
+          BikeOverlayColors.s1,
+          'S2',
+          BikeOverlayColors.s2,
+          'S3',
+          '#FB8C00',
+          'S3+',
+          BikeOverlayColors.s3,
+          BikeOverlayColors.unrated,
+        ],
+        lineWidth: 2.6,
+        lineOpacity: 0.92,
+        lineCap: 'round',
+        lineJoin: 'round',
+        visibility: 'visible',
+      ),
+      minzoom: kOsmSGradeMinZoom,
+    );
+  } catch (_) {}
+}
+
+Future<void> setSGradeLiveData(
+  MapLibreMapController c,
+  Map<String, dynamic> geojson,
+) async {
+  try {
+    await c.setGeoJsonSource(kOsmSGradeSourceId, geojson);
+  } catch (_) {
+    try {
+      await attachSGradeLiveLayer(c);
+      await c.setGeoJsonSource(kOsmSGradeSourceId, geojson);
+    } catch (_) {}
+  }
+}
+
 Future<void> attachBikeOverlayLayers(
   MapLibreMapController c, {
   required Object data,
   required BikeOverlayFamily family,
   required bool visible,
   required Set<BikeOverlayClass> extraOn,
+  bool sGradeOnly = false,
 }) async {
   try {
     await c.addSource(
@@ -110,6 +350,7 @@ Future<void> attachBikeOverlayLayers(
     required dynamic lineColor,
     required double lineWidth,
     List<double>? dash,
+    double minzoom = 11,
   }) async {
     try {
       await c.addLineLayer(
@@ -118,7 +359,7 @@ Future<void> attachBikeOverlayLayers(
         LineLayerProperties(
           lineColor: lineColor,
           lineWidth: lineWidth,
-          lineOpacity: 0.85,
+          lineOpacity: 0.88,
           lineCap: 'round',
           lineJoin: 'round',
           lineDasharray: dash,
@@ -129,7 +370,7 @@ Future<void> attachBikeOverlayLayers(
           ['get', 'bike_class'],
           classId,
         ],
-        minzoom: 9,
+        minzoom: minzoom,
       );
     } catch (_) {}
   }
@@ -148,35 +389,44 @@ Future<void> attachBikeOverlayLayers(
       BikeOverlayColors.s2,
       'S3',
       BikeOverlayColors.s3,
+      'S3+',
+      BikeOverlayColors.s3,
       BikeOverlayColors.unrated,
     ],
     lineWidth: 2.4,
+    minzoom: 11,
   );
-  await addClassLayer(
-    layerId: kBikeOverlayLayerIds[BikeOverlayClass.mtbUnrated]!,
-    classId: 'mtb_unrated',
-    lineColor: BikeOverlayColors.unrated,
-    lineWidth: 1.6,
-    dash: const [2, 1.4],
-  );
-  await addClassLayer(
-    layerId: kBikeOverlayLayerIds[BikeOverlayClass.gravel]!,
-    classId: 'gravel',
-    lineColor: BikeOverlayColors.gravel,
-    lineWidth: 2.0,
-  );
-  await addClassLayer(
-    layerId: kBikeOverlayLayerIds[BikeOverlayClass.road]!,
-    classId: 'road',
-    lineColor: BikeOverlayColors.road,
-    lineWidth: 2.2,
-  );
-  await addClassLayer(
-    layerId: kBikeOverlayLayerIds[BikeOverlayClass.urban]!,
-    classId: 'urban',
-    lineColor: BikeOverlayColors.urban,
-    lineWidth: 1.8,
-  );
+  if (!sGradeOnly) {
+    await addClassLayer(
+      layerId: kBikeOverlayLayerIds[BikeOverlayClass.mtbUnrated]!,
+      classId: 'mtb_unrated',
+      lineColor: BikeOverlayColors.unrated,
+      lineWidth: 1.6,
+      dash: const [2, 1.4],
+      minzoom: 12,
+    );
+    await addClassLayer(
+      layerId: kBikeOverlayLayerIds[BikeOverlayClass.gravel]!,
+      classId: 'gravel',
+      lineColor: BikeOverlayColors.gravel,
+      lineWidth: 2.0,
+      minzoom: 12,
+    );
+    await addClassLayer(
+      layerId: kBikeOverlayLayerIds[BikeOverlayClass.road]!,
+      classId: 'road',
+      lineColor: BikeOverlayColors.road,
+      lineWidth: 2.2,
+      minzoom: 11,
+    );
+    await addClassLayer(
+      layerId: kBikeOverlayLayerIds[BikeOverlayClass.urban]!,
+      classId: 'urban',
+      lineColor: BikeOverlayColors.urban,
+      lineWidth: 1.8,
+      minzoom: 12,
+    );
+  }
 
   await applyBikeOverlayVisibility(
     c,
@@ -192,23 +442,22 @@ Future<void> applyBikeOverlayVisibility(
   required bool visible,
   required Set<BikeOverlayClass> extraOn,
 }) async {
-  final on = {
-    ...overlayClassesForFamily(family),
-    ...extraOn,
-  };
+  final on = overlayClassesShown(overlayOn: visible, extraOn: extraOn);
   for (final entry in kBikeOverlayLayerIds.entries) {
     final layerId = entry.value;
     try {
-      if (!visible) {
-        await c.setLayerVisibility(layerId, false);
-        continue;
+      await c.setLayerVisibility(layerId, on.contains(entry.key));
+      if (on.contains(entry.key)) {
+        await c.setLayerProperties(
+          layerId,
+          const LineLayerProperties(lineOpacity: 0.88),
+        );
       }
-      await c.setLayerVisibility(layerId, true);
-      final active = on.contains(entry.key);
-      await c.setLayerProperties(
-        layerId,
-        LineLayerProperties(lineOpacity: active ? 0.88 : 0.16),
-      );
+    } catch (_) {}
+  }
+  for (final entry in kOsmLiveLayerClass.entries) {
+    try {
+      await c.setLayerVisibility(entry.key, on.contains(entry.value));
     } catch (_) {}
   }
 }

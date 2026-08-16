@@ -54,6 +54,30 @@ export type SharedCollectionPayload = {
   createdAt: string;
 };
 
+/** Einzel-Tour-Freigabe. Geometrie nur wenn includeTrack — nie still. */
+export type SharedTourPayload = {
+  v: 1;
+  kind: "tour";
+  id: string;
+  name: string;
+  distanceKm: number;
+  elevationM: number;
+  durationMin: number;
+  source: string;
+  catalogTourId?: string;
+  includeTrack: boolean;
+  /** LineString-Koordinaten [lng, lat], nur bei includeTrack. */
+  track?: [number, number][];
+  authorLabel: string;
+  createdAt: string;
+  /** Zum lokalen Widerruf: Token älter als revoked epoch ist ungültig. */
+  epoch?: number;
+};
+
+/**
+ * Marketing-Seed auf /community. Kein Join, kein Live-GPS, keine Pins.
+ * Gemeinsames Fahren: `RideGroup` in `rideGroup.ts` (Zusammen raus).
+ */
 export type CommunityEvent = {
   id: string;
   title: string;
@@ -64,6 +88,7 @@ export type CommunityEvent = {
   href?: string;
 };
 
+/** Orientierung auf /community — keine Live-Mitgliedschaft. */
 export type CommunityClub = {
   id: string;
   name: string;
@@ -71,4 +96,64 @@ export type CommunityClub = {
   sports: string[];
   blurb: string;
   href?: string;
+};
+
+/** Hof-Name: Gruppe. CTA: Zusammen raus. Nicht „Runde“ (das ist Loop-Geometrie). */
+export type RideGroupStatus = "scheduled" | "open" | "riding" | "closed";
+
+/** privat: nur Einladungslink. öffentlich: Link + Platz-Filter. Kein Explore-GPS. */
+export type RideGroupListing = "public" | "private";
+
+export type RideGroupPresenceVisibility =
+  | "live"
+  | "stale"
+  | "hidden_zone"
+  | "hidden_offline"
+  | "hidden_opt_out"
+  | "hidden_window"
+  | "hidden_not_member";
+
+/**
+ * Gemeinsame Fahrt — Mitglieder + optional Live-Pins auf dem Ride-HUD.
+ * Nicht öffentlich auf Explore. Kein Presence-Stream in diesem Slice.
+ */
+export type RideGroup = {
+  id: string;
+  hostUserId: string;
+  /** Nur freigegebene SavedRoute oder Katalog-Tour. Private GPX geht nicht. */
+  savedRouteId: string;
+  catalogTourId?: string;
+  title: string;
+  startWindowStart: string;
+  startWindowEnd: string;
+  /** Freitext, z. B. „Parkplatz Schwimmbad“. Kein POI. */
+  meetingPoint?: string;
+  /** Intern — nicht in der UI. Alte Links dürfen ihn noch tragen. */
+  joinCode: string;
+  /** Default private. Fehlt = private (alte Zeilen). */
+  visibility?: RideGroupListing;
+  status: RideGroupStatus;
+  /** Host erlaubt Pins. Jedes Mitglied opt-in’t trotzdem pro Session. */
+  livePinsAllowed: boolean;
+  createdAt: string;
+  /** true = SQL-Zeile, sichtbar für eingeloggte Geräte. */
+  onServer?: boolean;
+};
+
+export type RideGroupMember = {
+  groupId: string;
+  userId: string;
+  displayLabel: string;
+  joinedAt: string;
+  liveOptIn: boolean;
+};
+
+/** Letzter Punkt, kein Track. Überschreiben, nicht historisieren. */
+export type RideGroupPresence = {
+  groupId: string;
+  userId: string;
+  lng?: number;
+  lat?: number;
+  updatedAt: string;
+  visibility: RideGroupPresenceVisibility;
 };

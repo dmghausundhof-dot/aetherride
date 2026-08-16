@@ -840,6 +840,12 @@ abstract class AppLocalizations {
   /// **'am Hof'**
   String get hofAtHof;
 
+  /// No description provided for @hofGarageType.
+  ///
+  /// In de, this message translates to:
+  /// **'Typ {type}'**
+  String hofGarageType(String type);
+
   /// No description provided for @hofSinceOneDay.
   ///
   /// In de, this message translates to:
@@ -1103,6 +1109,78 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Form'**
   String get filterForm;
+
+  /// No description provided for @filterFormAll.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle'**
+  String get filterFormAll;
+
+  /// No description provided for @filterFormPointToPoint.
+  ///
+  /// In de, this message translates to:
+  /// **'A→B'**
+  String get filterFormPointToPoint;
+
+  /// No description provided for @filterFormPointToPointTooltip.
+  ///
+  /// In de, this message translates to:
+  /// **'Etappen und lineare Trails (Start≠Ziel).'**
+  String get filterFormPointToPointTooltip;
+
+  /// No description provided for @filterFormDownhill.
+  ///
+  /// In de, this message translates to:
+  /// **'Downhill'**
+  String get filterFormDownhill;
+
+  /// No description provided for @filterFormDownhillTooltip.
+  ///
+  /// In de, this message translates to:
+  /// **'Abfahrten, Bikepark, Enduro A→B. Rundkurse nicht automatisch DH.'**
+  String get filterFormDownhillTooltip;
+
+  /// No description provided for @filterBikeType.
+  ///
+  /// In de, this message translates to:
+  /// **'Fahrradtyp'**
+  String get filterBikeType;
+
+  /// No description provided for @filterBikeTypeHonesty.
+  ///
+  /// In de, this message translates to:
+  /// **'Farben filtern Touren. Navigation: Fahrrad (GraphHopper Basic), außer Zu Fuß.'**
+  String get filterBikeTypeHonesty;
+
+  /// No description provided for @filterSingletrail.
+  ///
+  /// In de, this message translates to:
+  /// **'Singletrail (S-Skala)'**
+  String get filterSingletrail;
+
+  /// No description provided for @filterSingletrailHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur Touren/Wege mit ehrlicher Skala. Ohne Tag: keine Treffer.'**
+  String get filterSingletrailHint;
+
+  /// No description provided for @filterNoDownhillTours.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Downhill-Touren in der Nähe'**
+  String get filterNoDownhillTours;
+
+  /// No description provided for @filterNoDownhillToursHint.
+  ///
+  /// In de, this message translates to:
+  /// **'OSM-Trails nach S-Skala bleiben auf der Karte. Katalog hat hier keine DH-Runde.'**
+  String get filterNoDownhillToursHint;
+
+  /// No description provided for @filterNoScaleTours.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Tour mit dieser S-Stufe'**
+  String get filterNoScaleTours;
 
   /// No description provided for @filterTrailNetwork.
   ///
@@ -5106,6 +5184,36 @@ abstract class AppLocalizations {
   /// **'SAG'**
   String get dieBoxChipSag;
 
+  /// No description provided for @dieBoxChipChain.
+  ///
+  /// In de, this message translates to:
+  /// **'Kette'**
+  String get dieBoxChipChain;
+
+  /// No description provided for @dieBoxChipPressure.
+  ///
+  /// In de, this message translates to:
+  /// **'Druck'**
+  String get dieBoxChipPressure;
+
+  /// No description provided for @dieBoxChipCockpit.
+  ///
+  /// In de, this message translates to:
+  /// **'Cockpit'**
+  String get dieBoxChipCockpit;
+
+  /// No description provided for @lastRideKm.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt {km} km'**
+  String lastRideKm(String km);
+
+  /// No description provided for @lastRideNoGps.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt unterwegs — ohne GPS-Strecke'**
+  String get lastRideNoGps;
+
   /// No description provided for @dieBoxSentenceEverydayReady.
   ///
   /// In de, this message translates to:
@@ -6402,11 +6510,59 @@ abstract class AppLocalizations {
   /// **'Anfahrt zum Einstieg, dann Overlay speichern oder fahren.'**
   String get discoverTrailApproachHint;
 
+  /// No description provided for @discoverTrailGravityHint.
+  ///
+  /// In de, this message translates to:
+  /// **'DH: Auto oder zu Fuß zum oberen Einstieg. Die Abfahrt folgt dem Trail, nicht der Straße.'**
+  String get discoverTrailGravityHint;
+
   /// No description provided for @discoverRideToTrailhead.
   ///
   /// In de, this message translates to:
   /// **'Zum Startpunkt anfahren'**
   String get discoverRideToTrailhead;
+
+  /// No description provided for @discoverApproachByCar.
+  ///
+  /// In de, this message translates to:
+  /// **'Anfahrt mit Auto'**
+  String get discoverApproachByCar;
+
+  /// No description provided for @discoverApproachOnFoot.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu Fuß zum Einstieg'**
+  String get discoverApproachOnFoot;
+
+  /// No description provided for @discoverAtTrailStart.
+  ///
+  /// In de, this message translates to:
+  /// **'Ich bin am Start'**
+  String get discoverAtTrailStart;
+
+  /// No description provided for @discoverApproachByBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit dem Rad anfahren'**
+  String get discoverApproachByBike;
+
+  /// No description provided for @discoverTrailUnsuitableForBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit {bike} nicht auf diesen Trail. Garage wechseln — nicht heimlich als MTB routen.'**
+  String discoverTrailUnsuitableForBike(String bike);
+
+  /// No description provided for @discoverTrailOrientedDownhill.
+  ///
+  /// In de, this message translates to:
+  /// **'Einstieg oben (Höhe)'**
+  String get discoverTrailOrientedDownhill;
+
+  /// No description provided for @discoverTrailStartUphillUnknown.
+  ///
+  /// In de, this message translates to:
+  /// **'Höhe unklar — näherer Einstieg'**
+  String get discoverTrailStartUphillUnknown;
 
   /// No description provided for @discoverPutOnRoute.
   ///
@@ -7308,6 +7464,24 @@ abstract class AppLocalizations {
   /// **'Wege · OSM'**
   String get overlayLegendTitle;
 
+  /// No description provided for @overlayLegendCompactCity.
+  ///
+  /// In de, this message translates to:
+  /// **'City'**
+  String get overlayLegendCompactCity;
+
+  /// No description provided for @overlayLegendCompactMtb.
+  ///
+  /// In de, this message translates to:
+  /// **'MTB'**
+  String get overlayLegendCompactMtb;
+
+  /// No description provided for @overlayScaleNote.
+  ///
+  /// In de, this message translates to:
+  /// **'S0–S3+ nur bei OSM-Tag. Sonst unbewertet.'**
+  String get overlayScaleNote;
+
   /// No description provided for @overlayRoadAsphalt.
   ///
   /// In de, this message translates to:
@@ -7319,6 +7493,24 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'unbewertet'**
   String get overlayUnrated;
+
+  /// No description provided for @discoverChipTooltip.
+  ///
+  /// In de, this message translates to:
+  /// **'Touren und Wege — nicht der Navigationsmotor'**
+  String get discoverChipTooltip;
+
+  /// No description provided for @discoverNavHonestyBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Navi: Fahrrad — GraphHopper Basic, gleiche Route'**
+  String get discoverNavHonestyBike;
+
+  /// No description provided for @discoverNavHonestyFoot.
+  ///
+  /// In de, this message translates to:
+  /// **'Navi: Zu Fuß'**
+  String get discoverNavHonestyFoot;
 
   /// No description provided for @stimmenTitle.
   ///
@@ -7643,6 +7835,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Reroute braucht Internet. Auf der geladenen Route bleiben.'**
   String get rideOfflineRerouteToast;
+
+  /// No description provided for @rideStayOnTrail.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf dem Trail bleiben — keine Straßen-Umleitung.'**
+  String get rideStayOnTrail;
+
+  /// No description provided for @rideFollowTrail.
+  ///
+  /// In de, this message translates to:
+  /// **'Trail folgen'**
+  String get rideFollowTrail;
 
   /// No description provided for @rideNoGpsRejoin.
   ///
@@ -8025,7 +8229,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideSoc.
   ///
   /// In de, this message translates to:
-  /// **'SoC'**
+  /// **'Akku'**
   String get rideSoc;
 
   /// No description provided for @rideAssist.
@@ -8049,13 +8253,31 @@ abstract class AppLocalizations {
   /// No description provided for @rideRestKm.
   ///
   /// In de, this message translates to:
-  /// **'Rest-km'**
+  /// **'noch km'**
   String get rideRestKm;
+
+  /// No description provided for @rideUntilJoin.
+  ///
+  /// In de, this message translates to:
+  /// **'bis Route'**
+  String get rideUntilJoin;
+
+  /// No description provided for @rideRestLoop.
+  ///
+  /// In de, this message translates to:
+  /// **'Rest Runde'**
+  String get rideRestLoop;
+
+  /// No description provided for @rideKmToRoute.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km zur Route'**
+  String rideKmToRoute(String km);
 
   /// No description provided for @rideEta.
   ///
   /// In de, this message translates to:
-  /// **'ETA'**
+  /// **'Ziel'**
   String get rideEta;
 
   /// No description provided for @rideKmh.
@@ -8271,7 +8493,7 @@ abstract class AppLocalizations {
   /// No description provided for @ridePuckKometSub.
   ///
   /// In de, this message translates to:
-  /// **'Speerblatt mit mintfarbenem Funken'**
+  /// **'Speerblatt mit orangem Funken'**
   String get ridePuckKometSub;
 
   /// No description provided for @ridePuckKieselSub.
@@ -9268,7 +9490,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideLean.
   ///
   /// In de, this message translates to:
-  /// **'Lean °'**
+  /// **'Neig.'**
   String get rideLean;
 
   /// No description provided for @rideFlow.
@@ -9547,6 +9769,24 @@ abstract class AppLocalizations {
   /// **'{who} · erkannt — Tempo über CSC, Akku nur mit Standard-GATT'**
   String bleStatusDriveNoLive(String who);
 
+  /// No description provided for @bleStatusNeedBond.
+  ///
+  /// In de, this message translates to:
+  /// **'Display braucht Bluetooth-Kopplung für den Akku.'**
+  String get bleStatusNeedBond;
+
+  /// No description provided for @bleStatusBonding.
+  ///
+  /// In de, this message translates to:
+  /// **'System-Kopplung …'**
+  String get bleStatusBonding;
+
+  /// No description provided for @bleStatusDriveNeedBond.
+  ///
+  /// In de, this message translates to:
+  /// **'{who} · erkannt — Akku nach Bluetooth-Kopplung in der Werkstatt'**
+  String bleStatusDriveNeedBond(String who);
+
   /// No description provided for @bleConnectedNamed.
   ///
   /// In de, this message translates to:
@@ -9798,6 +10038,30 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Antrieb oder Sensor koppeln'**
   String get bleTooltipPair;
+
+  /// No description provided for @bleRemoveWheel.
+  ///
+  /// In de, this message translates to:
+  /// **'Radsensor entfernen'**
+  String get bleRemoveWheel;
+
+  /// No description provided for @bleRemoveDrive.
+  ///
+  /// In de, this message translates to:
+  /// **'Antrieb entfernen'**
+  String get bleRemoveDrive;
+
+  /// No description provided for @bleSemanticsLive.
+  ///
+  /// In de, this message translates to:
+  /// **'Bluetooth live'**
+  String get bleSemanticsLive;
+
+  /// No description provided for @bleTooltipSaved.
+  ///
+  /// In de, this message translates to:
+  /// **'Gekoppelt, nicht verbunden'**
+  String get bleTooltipSaved;
 
   /// No description provided for @watchOtherWatch.
   ///

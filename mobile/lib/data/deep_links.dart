@@ -9,12 +9,13 @@ import 'package:http/http.dart' as http;
 import '../core/config.dart';
 import '../domain/active_route.dart';
 import '../domain/routing/tour_nav_geometry.dart';
+import '../presentation/shell/shell_tabs.dart';
 import '../providers/app_providers.dart';
 import '../providers/ride_providers.dart';
 import 'routing/naehe_seeds.dart';
 
 /// Parsed intent from a deep / app link.
-enum DeepLinkKind { ride, tour, discover, shop, ignore }
+enum DeepLinkKind { ride, tour, discover, shop, platz, ignore }
 
 /// Pure parsing helpers (unit-tested).
 class DeepLinkParse {
@@ -41,6 +42,7 @@ class DeepLinkParse {
     final segs = uri.pathSegments.map((s) => s.toLowerCase()).toList();
 
     if (uri.scheme == 'aetherride') {
+      if (_isPlatzUri(uri)) return DeepLinkKind.platz;
       if (host == 'discover' || path.contains('discover')) {
         return DeepLinkKind.discover;
       }
@@ -67,6 +69,7 @@ class DeepLinkParse {
     }
 
     if (uri.scheme == 'https' || uri.scheme == 'http') {
+      if (_isPlatzUri(uri)) return DeepLinkKind.platz;
       if (path.startsWith('/discover') || segs.contains('discover')) {
         return DeepLinkKind.discover;
       }
@@ -142,6 +145,48 @@ class DeepLinkParse {
     return s == '1' || s == 'true' || s == 'yes';
   }
 
+  /// Join-Code aus `group=` / `code=` oder `/join/g/{code}`.
+  static String? groupCodeOf(Uri uri) {
+    for (final key in const ['group', 'code']) {
+      final q = uri.queryParameters[key]?.trim().toUpperCase();
+      if (q != null && q.isNotEmpty) return q;
+    }
+    final segs = uri.pathSegments;
+    for (var i = 0; i < segs.length - 1; i++) {
+      if (segs[i].toLowerCase() == 'g' && segs[i + 1].trim().isNotEmpty) {
+        return segs[i + 1].trim().toUpperCase();
+      }
+    }
+    final host = uri.host.toLowerCase();
+    if ((host == 'platz' || host == 'library' || host == 'group') &&
+        segs.isNotEmpty) {
+      return segs.last.trim().toUpperCase();
+    }
+    return null;
+  }
+
+  /// Invite-Token (`g=`) — Titel/Tour/Fenster, kein Roster.
+  static String? groupInviteTokenOf(Uri uri) {
+    final q = uri.queryParameters['g']?.trim();
+    if (q == null || q.isEmpty) return null;
+    return q;
+  }
+
+  static bool _isPlatzUri(Uri uri) {
+    final host = uri.host.toLowerCase();
+    final path = uri.path.toLowerCase();
+    final segs = uri.pathSegments.map((s) => s.toLowerCase()).toList();
+    if (host == 'platz' || host == 'library' || host == 'group') return true;
+    if (segs.contains('platz') || segs.contains('library')) return true;
+    if (path.contains('/join/g') ||
+        (segs.contains('join') && segs.contains('g'))) {
+      return true;
+    }
+    final group = uri.queryParameters['group']?.trim();
+    if (group != null && group.isNotEmpty) return true;
+    return false;
+  }
+
   /// Dauer-Lens aus `lens=` (z. B. 60).
   static int? lensMinutesOf(Uri uri) {
     final raw = uri.queryParameters['lens']?.trim();
@@ -149,13 +194,57 @@ class DeepLinkParse {
     if (raw == 'egal' || raw == 'any') return 0;
     return int.tryParse(raw);
   }
+
+  /// Shop-Slot (`?slot=chain`) — nicht `all`.
+  static String? shopSlotOf(Uri uri) {
+    final s = uri.queryParameters['slot']?.trim();
+    if (s == null || s.isEmpty || s.toLowerCase() == 'all') return null;
+    return s;
+  }
+
+  /// Shop-Bike (`?bike=`).
+  static String? shopBikeOf(Uri uri) {
+    final b = uri.queryParameters['bike']?.trim();
+    if (b == null || b.isEmpty) return null;
+    return b;
+  }
+
+  /// Produkt-Handle aus `handle` / `p` / `focus` oder `/shop/p/{handle}`.
+  /// Snapshot-IDs `sp-…` sind kein Storefront-Handle.
+  static String? shopHandleOf(Uri uri) {
+    for (final key in const ['handle', 'p', 'focus']) {
+      final q = uri.queryParameters[key]?.trim();
+      if (q != null && q.isNotEmpty && !q.startsWith('sp-')) return q;
+    }
+    final segs = uri.pathSegments;
+    final lower = segs.map((s) => s.toLowerCase()).toList();
+    for (var i = 0; i < lower.length; i++) {
+      if ((lower[i] == 'p' || lower[i] == 'products') && i + 1 < segs.length) {
+        final h = segs[i + 1].trim();
+        if (h.isNotEmpty && !h.startsWith('sp-')) return h;
+      }
+    }
+    return null;
+  }
+
+  /// `fit=bike` oder `job=replace` → nur passende Teile.
+  static bool shopFitBikeOf(Uri uri) {
+    final fit = uri.queryParameters['fit']?.trim().toLowerCase();
+    if (fit == 'bike') return true;
+    final job = uri.queryParameters['job']?.trim().toLowerCase();
+    return job == 'replace';
+  }
 }
 
 /// Handles:
 /// - aetherride://ride?route=
 /// - aetherride://tours/{id}
 /// - aetherride://discover
-/// - aetherride://shop | aetherride://teile | aetherride://parts → Shop tab (4)
+/// - aetherride://platz?code=ABC234&g=…  → Platz + Join
+/// - https://aetherride.vercel.app/library?group=ABC234&g=…
+/// - aetherride://shop | aetherride://teile | aetherride://parts → Shop tab
+/// - aetherride://shop?slot=chain&bike=&fit=bike
+/// - https://aetherride.app/shop/p/{handle}
 /// - aetherride://discover?lens=60&loop=SEED_ID&start=1  (D-60-05 → Ride)
 /// - https://aetherride.vercel.app/discover?lens=60&loop=SEED_ID&start=1
 /// - https://aetherride.vercel.app/shop|/teile|/parts
@@ -206,9 +295,35 @@ class DeepLinkHandler {
     if (kind == DeepLinkKind.ignore) return;
     _lastHandled = key;
 
+    if (kind == DeepLinkKind.platz) {
+      final code = DeepLinkParse.groupCodeOf(uri);
+      _ref.read(shellTabIndexProvider.notifier).state = ShellTabs.platz;
+      if (code != null && code.isNotEmpty) {
+        _ref.read(platzPendingJoinProvider.notifier).state = PlatzPendingJoin(
+          code: code,
+          token: DeepLinkParse.groupInviteTokenOf(uri),
+        );
+      }
+      return;
+    }
+
     if (kind == DeepLinkKind.shop) {
-      // S-FLOW-01 / audit: aetherride://shop → Shop-Tab
-      _ref.read(shellTabIndexProvider.notifier).state = 4;
+      _ref.read(shellTabIndexProvider.notifier).state = ShellTabs.shop;
+      final slot = DeepLinkParse.shopSlotOf(uri);
+      final bike = DeepLinkParse.shopBikeOf(uri);
+      final handle = DeepLinkParse.shopHandleOf(uri);
+      if (slot != null) {
+        _ref.read(shopPendingSlotProvider.notifier).state = slot;
+      }
+      if (bike != null) {
+        _ref.read(shopPendingBikeIdProvider.notifier).state = bike;
+      }
+      if (handle != null) {
+        _ref.read(shopPendingHandleProvider.notifier).state = handle;
+      }
+      if (DeepLinkParse.shopFitBikeOf(uri)) {
+        _ref.read(shopPendingFitOnlyProvider.notifier).state = true;
+      }
       return;
     }
 

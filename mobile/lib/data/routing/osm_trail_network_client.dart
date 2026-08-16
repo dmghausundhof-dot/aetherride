@@ -19,6 +19,7 @@ class OsmTrailSegment {
     this.surface,
     this.highway,
     this.url,
+    this.hasOsmName = false,
   });
 
   final String id;
@@ -30,10 +31,136 @@ class OsmTrailSegment {
   final String? surface;
   final String? highway;
   final String? url;
+  final bool hasOsmName;
 
   /// Menschlich zuerst ("Mittel (S2)"), Rohwert in Klammern — statt nur "S2".
   String get difficultyLabel => trailDifficultyFullLabel(difficulty);
   String get lineColor => trailDifficultyColor(difficulty);
+
+  String? get osmWayId => parseOsmWayId(id);
+}
+
+String? parseOsmWayId(dynamic raw) {
+  if (raw == null) return null;
+  final s = raw.toString().trim();
+  if (s.isEmpty) return null;
+  final m = RegExp(r'(?:osm-way-|way[/:-])?(\d{1,18})\s*$', caseSensitive: false)
+      .firstMatch(s);
+  return m?.group(1);
+}
+
+const _kOverpassEndpoints = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.openstreetmap.fr/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+
+Future<http.Response?> _postOverpassQuery(
+  String query, {
+  Duration timeout = const Duration(seconds: 18),
+}) async {
+  final body = 'data=${Uri.encodeComponent(query)}';
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+    'Accept': 'application/json',
+  };
+  for (var i = 0; i < _kOverpassEndpoints.length; i++) {
+    final t = i == 0
+        ? timeout
+        : Duration(seconds: math.min(12, timeout.inSeconds));
+    try {
+      final res = await http
+          .post(
+            Uri.parse(_kOverpassEndpoints[i]),
+            headers: headers,
+            body: body,
+          )
+          .timeout(t);
+      if (res.statusCode >= 200 && res.statusCode < 300) return res;
+    } catch (_) {}
+  }
+  return null;
+}
+
+List<List<double>> _lineCoordsFromGeometry(dynamic geom) {
+  if (geom is! Map) return const [];
+  final type = geom['type'];
+  final coords = geom['coordinates'];
+  final lines = type == 'MultiLineString' && coords is List ? coords : [coords];
+  final out = <List<double>>[];
+  for (final line in lines) {
+    if (line is! List) continue;
+    for (final c in line) {
+      if (c is! List || c.length < 2) continue;
+      final lng = (c[0] as num?)?.toDouble();
+      final lat = (c[1] as num?)?.toDouble();
+      if (lng == null || lat == null) continue;
+      out.add([lng, lat]);
+    }
+  }
+  return out;
+}
+
+OsmTrailSegment? overlayFeatureToTrail(dynamic feature) {
+  if (feature is! Map) return null;
+  final propsRaw = feature['properties'];
+  final props = propsRaw is Map
+      ? Map<String, dynamic>.from(propsRaw)
+      : <String, dynamic>{};
+  final osmId = parseOsmWayId(
+    props['osm_id'] ?? props['osmId'] ?? props['@id'] ?? props['id'],
+  );
+  if (osmId == null) return null;
+  final geometry = _lineCoordsFromGeometry(feature['geometry']);
+  final rawName = '${props['name'] ?? props['name:de'] ?? ''}'.trim();
+  final scaleRaw = '${props['mtb_scale'] ?? props['mtb:scale'] ?? ''}';
+  final difficulty = parseTrailDifficulty(scaleRaw);
+  final highway = '${props['highway'] ?? ''}'.trim();
+  final surface = '${props['surface'] ?? props['tracktype'] ?? ''}'.trim();
+  final name = rawName.isNotEmpty
+      ? rawName
+      : (difficulty != TrailDifficulty.open
+          ? 'Trail ${trailDifficultyLabel(difficulty)}'
+          : (highway == 'cycleway' ? 'Radweg' : 'Pfad'));
+  final mid = geometry.isEmpty
+      ? const LatLng(0, 0)
+      : LatLng(
+          geometry[geometry.length ~/ 2][1],
+          geometry[geometry.length ~/ 2][0],
+        );
+  var lengthKm = 0.0;
+  for (var i = 1; i < geometry.length; i++) {
+    lengthKm += _haversineKm(
+      geometry[i - 1][1],
+      geometry[i - 1][0],
+      geometry[i][1],
+      geometry[i][0],
+    );
+  }
+  return OsmTrailSegment(
+    id: 'osm-way-$osmId',
+    name: name,
+    difficulty: difficulty,
+    lengthKm: (lengthKm * 100).round() / 100,
+    center: mid,
+    geometry: geometry,
+    surface: surface.isEmpty ? null : surface,
+    highway: highway.isEmpty ? null : highway,
+    url: 'https://www.openstreetmap.org/way/$osmId',
+    hasOsmName: rawName.isNotEmpty,
+  );
+}
+
+double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+  const r = 6371.0;
+  final dLat = (lat2 - lat1) * math.pi / 180;
+  final dLon = (lon2 - lon1) * math.pi / 180;
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(lat1 * math.pi / 180) *
+          math.cos(lat2 * math.pi / 180) *
+          math.sin(dLon / 2) *
+          math.sin(dLon / 2);
+  return 2 * r * math.asin(math.sqrt(a));
 }
 
 /// Lädt Trailnetz: Backend `/api/osm-trails`, sonst Overpass direkt.
@@ -46,6 +173,124 @@ class OsmTrailNetworkClient {
     final fromApi = await _fromApi(lat: lat, lon: lon, radiusKm: radiusKm);
     if (fromApi.isNotEmpty) return fromApi;
     return _fromOverpass(lat: lat, lon: lon, radiusKm: radiusKm);
+  }
+
+  /// Viewport S-Grade: only OSM `mtb:scale` / `mtb:scale:imba` (DACH+FR live).
+  Future<List<OsmTrailSegment>> fetchSGradeInBbox({
+    required double west,
+    required double south,
+    required double east,
+    required double north,
+  }) async {
+    final lat = (south + north) / 2;
+    final lon = (west + east) / 2;
+    final fromApi = await _fromApiSGrade(
+      lat: lat,
+      lon: lon,
+      west: west,
+      south: south,
+      east: east,
+      north: north,
+    );
+    if (fromApi.isNotEmpty) {
+      return [for (final t in fromApi) if (t.difficulty != TrailDifficulty.open) t];
+    }
+    return _sGradeFromOverpass(
+      west: west,
+      south: south,
+      east: east,
+      north: north,
+    );
+  }
+
+  Future<OsmTrailSegment?> fetchByOsmId(String osmIdRaw) async {
+    final osmId = parseOsmWayId(osmIdRaw);
+    if (osmId == null) return null;
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/osm-trails').replace(
+        queryParameters: {'way': osmId},
+      );
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final data = jsonDecode(res.body);
+        if (data is Map) {
+          final parsed = _parseList(data['trails'] as List? ?? const []);
+          if (parsed.isNotEmpty) return parsed.first;
+        }
+      }
+    } catch (_) {}
+    return _wayFromOverpass(osmId);
+  }
+
+  Future<OsmTrailSegment?> _wayFromOverpass(String osmId) async {
+    final query = '''
+[out:json][timeout:12];
+way($osmId);
+out body geom;
+''';
+    try {
+      final res = await _postOverpassQuery(
+        query,
+        timeout: const Duration(seconds: 14),
+      );
+      if (res == null || res.statusCode < 200 || res.statusCode >= 300) {
+        return null;
+      }
+      final data = jsonDecode(res.body);
+      if (data is! Map) return null;
+      final elements = data['elements'] as List? ?? const [];
+      final hits = <Map<String, dynamic>>[];
+      for (final raw in elements) {
+        if (raw is! Map) continue;
+        if (raw['type'] != 'way') continue;
+        final tags = Map<String, dynamic>.from(
+          (raw['tags'] as Map?) ?? const {},
+        );
+        final geom = raw['geometry'] as List? ?? const [];
+        final geometry = <List<double>>[];
+        for (final g in geom) {
+          if (g is! Map) continue;
+          final glat = (g['lat'] as num?)?.toDouble();
+          final glon = (g['lon'] as num?)?.toDouble();
+          if (glat == null || glon == null) continue;
+          geometry.add([glon, glat]);
+        }
+        if (geometry.length < 2) continue;
+        final lengthKm = _pathLengthKm(geometry);
+        final scale = (tags['mtb_scale'] as String?) ?? '';
+        final hasOsmName = ((tags['name'] as String?) ??
+                    (tags['name:de'] as String?) ??
+                    (tags['ref'] as String?) ??
+                    '')
+                .trim()
+                .isNotEmpty;
+        final name = (tags['name'] as String?) ??
+            (tags['name:de'] as String?) ??
+            (tags['ref'] as String?) ??
+            (scale.isNotEmpty
+                ? 'Trail ${trailDifficultyLabel(parseTrailDifficulty(scale))}'
+                : 'Pfad');
+        final mid = geometry[geometry.length ~/ 2];
+        hits.add({
+          'id': 'osm-way-${raw['id']}',
+          'name': name,
+          'mtbScale': trailDifficultyLabel(parseTrailDifficulty(scale)),
+          'surface': tags['surface'] ?? tags['tracktype'],
+          'highway': tags['highway'],
+          'lengthKm': (lengthKm * 100).round() / 100,
+          'center': [mid[0], mid[1]],
+          'geometry': geometry,
+          'url': 'https://www.openstreetmap.org/way/${raw['id']}',
+          'hasOsmName': hasOsmName,
+        });
+      }
+      final parsed = _parseList(hits);
+      return parsed.isEmpty ? null : parsed.first;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<OsmTrailSegment>> _fromApi({
@@ -69,6 +314,114 @@ class OsmTrailNetworkClient {
       if (data is! Map) return const [];
       final raw = data['trails'] as List? ?? const [];
       return _parseList(raw);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<OsmTrailSegment>> _fromApiSGrade({
+    required double lat,
+    required double lon,
+    required double west,
+    required double south,
+    required double east,
+    required double north,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/osm-trails').replace(
+        queryParameters: {
+          'lat': '$lat',
+          'lon': '$lon',
+          'west': '$west',
+          'south': '$south',
+          'east': '$east',
+          'north': '$north',
+          'kinds': 'sgrade',
+          'radiusKm': '12',
+        },
+      );
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 18));
+      if (res.statusCode < 200 || res.statusCode >= 300) return const [];
+      final data = jsonDecode(res.body);
+      if (data is! Map) return const [];
+      return _parseList(data['trails'] as List? ?? const []);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<OsmTrailSegment>> _sGradeFromOverpass({
+    required double west,
+    required double south,
+    required double east,
+    required double north,
+  }) async {
+    final query = '''
+[out:json][timeout:18];
+(
+  way["highway"~"path|track|bridleway"]["mtb:scale"]($south,$west,$north,$east);
+  way["highway"~"path|track|bridleway"]["mtb:scale:imba"]($south,$west,$north,$east);
+);
+out body geom;
+''';
+    try {
+      final res = await _postOverpassQuery(
+        query,
+        timeout: const Duration(seconds: 22),
+      );
+      if (res == null || res.statusCode < 200 || res.statusCode >= 300) {
+        return const [];
+      }
+      final data = jsonDecode(res.body);
+      if (data is! Map) return const [];
+      final elements = data['elements'] as List? ?? const [];
+      final hits = <Map<String, dynamic>>[];
+      for (final raw in elements) {
+        if (raw is! Map) continue;
+        if (raw['type'] != 'way') continue;
+        final tags = Map<String, dynamic>.from(
+          (raw['tags'] as Map?) ?? const {},
+        );
+        final scaleRaw =
+            '${tags['mtb:scale'] ?? tags['mtb:scale:imba'] ?? tags['mtb_scale'] ?? ''}';
+        final difficulty = parseTrailDifficulty(scaleRaw);
+        if (difficulty == TrailDifficulty.open) continue;
+        final geom = raw['geometry'] as List? ?? const [];
+        final geometry = <List<double>>[];
+        for (final g in geom) {
+          if (g is! Map) continue;
+          final glat = (g['lat'] as num?)?.toDouble();
+          final glon = (g['lon'] as num?)?.toDouble();
+          if (glat == null || glon == null) continue;
+          geometry.add([glon, glat]);
+        }
+        if (geometry.length < 2) continue;
+        final mid = geometry[geometry.length ~/ 2];
+        final hasOsmName = ((tags['name'] as String?) ??
+                    (tags['name:de'] as String?) ??
+                    (tags['ref'] as String?) ??
+                    '')
+                .trim()
+                .isNotEmpty;
+        hits.add({
+          'id': 'osm-way-${raw['id']}',
+          'name': (tags['name'] as String?) ??
+              (tags['name:de'] as String?) ??
+              (tags['ref'] as String?) ??
+              'Trail ${trailDifficultyLabel(difficulty)}',
+          'mtbScale': trailDifficultyLabel(difficulty),
+          'surface': tags['surface'] ?? tags['tracktype'],
+          'highway': tags['highway'],
+          'lengthKm': _pathLengthKm(geometry),
+          'center': [mid[0], mid[1]],
+          'geometry': geometry,
+          'url': 'https://www.openstreetmap.org/way/${raw['id']}',
+          'hasOsmName': hasOsmName,
+        });
+      }
+      return _parseList(hits);
     } catch (_) {
       return const [];
     }
@@ -98,18 +451,13 @@ class OsmTrailNetworkClient {
 out body geom;
 ''';
     try {
-      final res = await http
-          .post(
-            Uri.parse('https://overpass-api.de/api/interpreter'),
-            headers: {
-              'Content-Type':
-                  'application/x-www-form-urlencoded;charset=UTF-8',
-              'Accept': 'application/json',
-            },
-            body: 'data=${Uri.encodeComponent(query)}',
-          )
-          .timeout(const Duration(seconds: 30));
-      if (res.statusCode < 200 || res.statusCode >= 300) return const [];
+      final res = await _postOverpassQuery(
+        query,
+        timeout: const Duration(seconds: 30),
+      );
+      if (res == null || res.statusCode < 200 || res.statusCode >= 300) {
+        return const [];
+      }
       final data = jsonDecode(res.body);
       if (data is! Map) return const [];
       final elements = data['elements'] as List? ?? const [];
@@ -144,11 +492,17 @@ out body geom;
         final lengthKm = _pathLengthKm(simplified);
         if (lengthKm < 0.12 || lengthKm > 25) continue;
         final scale = (tags['mtb_scale'] as String?) ?? '';
+        final hasOsmName = ((tags['name'] as String?) ??
+                    (tags['name:de'] as String?) ??
+                    (tags['ref'] as String?) ??
+                    '')
+                .trim()
+                .isNotEmpty;
         final name = (tags['name'] as String?) ??
             (tags['name:de'] as String?) ??
             (tags['ref'] as String?) ??
             (scale.isNotEmpty
-                ? 'Trail ${parseTrailDifficulty(scale).name.toUpperCase()}'
+                ? 'Trail ${trailDifficultyLabel(parseTrailDifficulty(scale))}'
                 : 'Pfad');
         final mid = simplified[simplified.length ~/ 2];
         hits.add({
@@ -161,6 +515,7 @@ out body geom;
           'center': [mid[0], mid[1]],
           'geometry': simplified,
           'url': 'https://www.openstreetmap.org/way/${raw['id']}',
+          'hasOsmName': hasOsmName,
         });
       }
       return _parseList(hits);
@@ -207,6 +562,7 @@ out body geom;
           surface: m['surface'] as String?,
           highway: m['highway'] as String?,
           url: m['url'] as String?,
+          hasOsmName: m['hasOsmName'] == true || _looksOsmNamed(name),
         ),
       );
     }
@@ -237,4 +593,11 @@ out body geom;
             math.sin(dLon / 2);
     return 2 * r * math.asin(math.sqrt(a));
   }
+}
+
+bool _looksOsmNamed(String name) {
+  final n = name.trim().toLowerCase();
+  if (n.isEmpty || n == 'pfad' || n == 'radweg') return false;
+  if (n.startsWith('trail s')) return false;
+  return true;
 }

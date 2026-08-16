@@ -69,7 +69,7 @@ function frameEnduro(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -110,7 +110,7 @@ function tire(
     source: "manufacturer_doc",
     sourceUrl: url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   };
 }
@@ -238,7 +238,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -286,7 +286,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.canecreek.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -306,7 +306,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -324,7 +324,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -342,7 +342,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.hopetech.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -360,7 +360,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.hopetech.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -378,7 +378,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.hopetech.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -396,7 +396,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.hopetech.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -416,7 +416,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -436,7 +436,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -456,7 +456,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.industrynine.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 
@@ -509,7 +509,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.bikeyoke.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -528,7 +528,7 @@ export const COMPONENT_CATALOG_DACH_DEPTH: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

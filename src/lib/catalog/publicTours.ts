@@ -33,6 +33,8 @@ export type PublicTour = {
 type TourInput = Omit<PublicTour, "center" | "summary" | "description"> & {
   summary?: string;
   description?: string;
+  /** Explicit pin [lng, lat]. Falls back to demoCenterLngLat(id). */
+  center?: [number, number];
 };
 
 const RAW: TourInput[] = [
@@ -1048,6 +1050,7 @@ const RAW: TourInput[] = [
     loop: true,
     regionSlug: "baden-wuerttemberg",
     tags: ["baden-baden", "kurstadt", "feierabend"],
+    center: [8.24, 48.761],
   },
   {
     id: "r-esslingen-burg",
@@ -1319,7 +1322,7 @@ function hydrate(t: TourInput): PublicTour {
   const region = getRegion(t.regionSlug);
   return {
     ...t,
-    center: demoCenterLngLat(t.id),
+    center: t.center ?? demoCenterLngLat(t.id),
     summary: t.summary ?? autoSummary(t),
     description: t.description ?? autoDescription(t, region),
   };

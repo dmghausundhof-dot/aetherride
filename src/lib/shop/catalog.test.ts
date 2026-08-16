@@ -60,7 +60,7 @@ assert.equal(getFeaturedShopifyProducts().length, 0, "no sync-less live featured
 assert.ok(
   SHOPIFY_FEATURED_BIKES.every(
     (p) =>
-      p.merchantName === "AetherRide Shop" &&
+      p.merchantName === "FlowLine Shop" &&
       p.affiliateUrl &&
       p.affiliateUrl.includes("/products/") &&
       p.slot === "frame"

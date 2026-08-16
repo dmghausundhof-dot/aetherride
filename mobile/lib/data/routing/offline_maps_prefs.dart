@@ -55,4 +55,28 @@ abstract final class OfflineMapsPrefs {
     if (path == null || path.isEmpty) return null;
     return path;
   }
+
+  static bool pointInBbox(List<double> bbox, double lng, double lat) {
+    return lng >= bbox[0] && lat >= bbox[1] && lng <= bbox[2] && lat <= bbox[3];
+  }
+
+  /// True when from+to lie in the activated pack bbox.
+  static Future<bool> coversRoute({
+    required double fromLng,
+    required double fromLat,
+    required double toLng,
+    required double toLat,
+  }) async {
+    try {
+      final m = await read();
+      final path = (m['activatedPackPath'] as String?)?.trim() ?? '';
+      if (path.isEmpty) return false;
+      final bbox = packBboxFrom(m);
+      if (bbox == null) return false;
+      return pointInBbox(bbox, fromLng, fromLat) &&
+          pointInBbox(bbox, toLng, toLat);
+    } catch (_) {
+      return false;
+    }
+  }
 }

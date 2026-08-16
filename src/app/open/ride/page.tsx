@@ -43,7 +43,7 @@ function OpenRideInner() {
       </p>
       <a
         href={deep}
-        className="mt-8 inline-flex items-center justify-center rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white"
+        className="mt-8 inline-flex items-center justify-center rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-on-accent"
       >
         App jetzt öffnen
       </a>

@@ -7,18 +7,31 @@
     7.4,
     43.78
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T12:26:44Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 17982357,
+      "sha256": "82f60419a90b07029c5f4fc486f30c35357bd6c26205c44a3488f4b9e53dd833",
+      "sha256_16": "82f60419a90b0702"
+    },
+    "nice.tar.gz": {
+      "bytes": 2445806,
+      "sha256": "1c12441065972f95444765e8e39914dd9526b52cc638b51de0ec67b25d3ea61f",
+      "sha256_16": "1c12441065972f95"
+    },
+    "nice.tar.zst": {
+      "bytes": 2683209,
+      "sha256": "a864a6c4e2cbc98fb0151d026c3d3ece4c8f5a4ecd10cd34c572ae9f85aca6f6",
+      "sha256_16": "a864a6c4e2cbc98f"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nice",
     "pack": "nice.tar.zst",
     "packGz": "nice.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

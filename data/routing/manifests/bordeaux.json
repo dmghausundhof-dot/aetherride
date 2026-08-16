@@ -7,18 +7,31 @@
     -0.4,
     44.95
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T12:36:13Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18887151,
+      "sha256": "85e53df882eee34d94844248cbe459f6d0bf922397f4da7bd49399f416135c8f",
+      "sha256_16": "85e53df882eee34d"
+    },
+    "bordeaux.tar.gz": {
+      "bytes": 2541503,
+      "sha256": "ea6ba6a57b51f91e139377c973adcb47c9f7297790c313f2c163a8b2fdcf2978",
+      "sha256_16": "ea6ba6a57b51f91e"
+    },
+    "bordeaux.tar.zst": {
+      "bytes": 2716146,
+      "sha256": "adf6b296f5d57eb53e1f43356c4cf76b208ddcc81a5cef108767b2ebbc0b6d1d",
+      "sha256_16": "adf6b296f5d57eb5"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bordeaux",
     "pack": "bordeaux.tar.zst",
     "packGz": "bordeaux.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

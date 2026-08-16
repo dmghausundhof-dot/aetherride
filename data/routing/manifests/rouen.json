@@ -7,18 +7,31 @@
     1.22,
     49.52
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T13:27:52Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18545749,
+      "sha256": "572ad71cb7222b66213c2450f339dbc6e53ff862c9db6ccbaeb655e74ac59959",
+      "sha256_16": "572ad71cb7222b66"
+    },
+    "rouen.tar.gz": {
+      "bytes": 2526098,
+      "sha256": "2ad414e8c861ff507ce0b89d68af4d73528040ec3f98aca39995b138887d5803",
+      "sha256_16": "2ad414e8c861ff50"
+    },
+    "rouen.tar.zst": {
+      "bytes": 2721992,
+      "sha256": "0a44c52881effc0bc18a85b3d8477829c73ec40fd563036a8394b544c9e4f62e",
+      "sha256_16": "0a44c52881effc0b"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/rouen",
     "pack": "rouen.tar.zst",
     "packGz": "rouen.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

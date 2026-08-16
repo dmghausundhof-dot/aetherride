@@ -1,17 +1,41 @@
-String greetingLine({String? displayName, DateTime? now}) {
+String greetingLine({
+  String? displayName,
+  DateTime? now,
+  String languageCode = 'de',
+}) {
   final n = now ?? DateTime.now();
-  final h = n.hour;
-  final g = h < 5
-      ? 'Gute Nacht'
-      : h < 11
-          ? 'Guten Morgen'
-          : h < 17
-              ? 'Guten Tag'
-              : h < 22
-                  ? 'Guten Abend'
-                  : 'Gute Nacht';
+  final g = timeOfDayGreeting(n.hour, languageCode);
   final name = displayName?.trim();
   return (name != null && name.isNotEmpty) ? '$g, $name' : g;
+}
+
+String timeOfDayGreeting(int hour, String languageCode) {
+  final lang = languageCode.toLowerCase();
+  if (lang.startsWith('en')) {
+    if (hour < 5) return 'Good night';
+    if (hour < 11) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    if (hour < 22) return 'Good evening';
+    return 'Good night';
+  }
+  if (lang.startsWith('fr')) {
+    if (hour < 5) return 'Bonne nuit';
+    if (hour < 18) return 'Bonjour';
+    if (hour < 22) return 'Bonsoir';
+    return 'Bonne nuit';
+  }
+  if (lang.startsWith('it')) {
+    if (hour < 5) return 'Buona notte';
+    if (hour < 12) return 'Buongiorno';
+    if (hour < 18) return 'Buon pomeriggio';
+    if (hour < 22) return 'Buonasera';
+    return 'Buona notte';
+  }
+  if (hour < 5) return 'Gute Nacht';
+  if (hour < 11) return 'Guten Morgen';
+  if (hour < 17) return 'Guten Tag';
+  if (hour < 22) return 'Guten Abend';
+  return 'Gute Nacht';
 }
 
 String avatarInitials({String? displayName, String? email}) {

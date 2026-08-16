@@ -59,7 +59,7 @@ export const FAQ_ITEMS: {
   {
     id: "community",
     q: "Gibt es eine Community / einen Feed?",
-    a: "Community hängt an der Tour: Stimmen, Mappe-Links, Gruppen-Codes, optionales Public Profile. Es gibt keine Timeline auf dem Hof, kein Leaderboard und kein Live-GPS vor dem Tor.",
+    a: "Community hängt an der Tour: Stimmen, Mappe-Links, Einladungslinks, optionales Public Profile. Es gibt keine Timeline auf dem Hof, kein Leaderboard und kein Live-GPS vor dem Tor.",
     links: [
       { href: "/community", label: "Community" },
       { href: "/library", label: "Platz" },

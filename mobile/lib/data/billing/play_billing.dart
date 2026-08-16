@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-/// Google Play subscription product id for AetherRide Pro (monthly).
+/// Google Play subscription product id for FlowLine Pro (monthly).
 const kPlayProMonthlyId = 'aetherride_pro_monthly';
 
 class PurchaseUpdate {

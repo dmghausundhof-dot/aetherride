@@ -24,6 +24,7 @@ class DurationLens {
   /// sonst ~60. Unklar → 60.
   static int defaultMinutesForSport(BikeCategory? category) {
     if (category == BikeCategory.etrekking) return 150;
+    if (category == BikeCategory.dh) return 0;
     return 60;
   }
 

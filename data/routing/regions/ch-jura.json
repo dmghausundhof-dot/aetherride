@@ -1,0 +1,27 @@
+{
+  "id": "ch-jura",
+  "name": "Jura / Westschweiz",
+  "bbox": [
+    6.5,
+    46.5,
+    7.55,
+    47.55
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-jura",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-jura.tar.zst"
+  }
+}

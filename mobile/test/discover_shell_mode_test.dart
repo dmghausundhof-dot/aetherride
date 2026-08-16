@@ -20,6 +20,15 @@ void main() {
       expect(DiscoverShellModeLogic.showsTourCatalog(m), isFalse);
       expect(DiscoverShellModeLogic.showsMineList(m), isFalse);
       expect(DiscoverShellModeLogic.showsNavigateForm(m), isTrue);
+      expect(DiscoverShellModeLogic.showsCompassAction(m), isTrue);
+    });
+
+    test('heading cards stay out of the tour catalog', () {
+      expect(DiscoverShellModeLogic.showsHeadingCardsInTourCatalog, isFalse);
+      expect(
+        DiscoverShellModeLogic.showsCompassAction(DiscoverShellMode.explore),
+        isFalse,
+      );
     });
 
     test('mine uses browse sheet for own tracks only', () {

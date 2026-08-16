@@ -12,6 +12,7 @@ fn main() {
         build.cpp(true).file(&cpp).include(manifest.join("cpp"));
         build.flag_if_supported("-std=c++17");
         build.flag_if_supported("-Wno-unused-parameter");
+        build.flag_if_supported("-fvisibility=default");
 
         if let Ok(inc) = env::var("VALHALLA_INCLUDE_DIR") {
             build.include(&inc);
@@ -93,6 +94,13 @@ fn main() {
                 println!("cargo:rustc-link-lib=android");
                 // Fail the link if Valhalla/protobuf still unresolved.
                 println!("cargo:rustc-link-arg=-Wl,-z,defs");
+                // Dart dlsym needs these on the dynamic table (C shim is otherwise LOCAL).
+                println!(
+                    "cargo:rustc-cdylib-link-arg=-Wl,--export-dynamic-symbol=routing_core_valhalla_is_linked"
+                );
+                println!(
+                    "cargo:rustc-cdylib-link-arg=-Wl,--export-dynamic-symbol=valhalla_is_linked"
+                );
             }
         } else {
             println!(

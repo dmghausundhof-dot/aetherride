@@ -32,7 +32,7 @@ Future<HeatmapContributeResult> contributeHeatmapTrack({
   if (token == null) {
     return const HeatmapContributeResult(
       upserted: 0,
-      message: 'Heatmap: eingeloggt nötig für Community-Beitrag',
+      message: 'Heatmap: eingeloggt nötig für den Beitrag',
     );
   }
   final trimmed = trimTrackForPrivacyZones(track, privacyZones);
@@ -162,9 +162,9 @@ Future<HeatmapResult?> fetchCommunityHeatmap({
       coldStart: m['coldStart'] == true || segs.isEmpty,
       kThreshold: (m['kThreshold'] as num?)?.toInt() ?? kHeatmapThreshold,
       attribution: (m['attribution'] as String?) ??
-          '© OpenStreetMap · AetherRide k≥5',
+          '© OpenStreetMap · FlowLine k≥5',
       disclaimer: (m['disclaimer'] as String?) ??
-          'Community-Heatmap (k≥$kHeatmapThreshold).',
+          'Heatmap (k≥$kHeatmapThreshold), anonym, ohne Zeitstempel.',
     );
   } catch (_) {
     return null;

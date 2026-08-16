@@ -12,17 +12,24 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/local/user_profile_store.dart';
 import '../../data/sync/sync_engine.dart'
     show SyncConflictException, SyncConflictStrategy;
 import '../../domain/bike.dart';
 import '../../domain/home/greeting.dart';
+import '../../domain/ride.dart';
 import '../../domain/rider_profile.dart';
-import '../../domain/sport/discipline_ux.dart';
+import '../../domain/ai/coach_inbox.dart';
+import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../auth/auth_screen.dart';
 import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
 import '../privacy/privacy_screen.dart';
+import '../shell/shell_tabs.dart';
+import 'hud_media_connection_tile.dart';
+import 'public_profile_section.dart';
 
 /// Profil: Identität + Aktivität (Komoot/AllTrails-Stil) oben, darunter
 /// Fahrerdaten (View/Edit statt Dauer-Formular), Konto/Abo, Familie, Recht.
@@ -45,6 +52,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   /// Dauer-Formular — wie Komoot/AllTrails „Profil bearbeiten" als
   /// bewusste Aktion, nicht als Default-Zustand. Siehe UX-Review.
   bool _editingRider = false;
+  bool _ignoreChipToggle = false;
 
   @override
   void initState() {
@@ -61,52 +69,82 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
-  List<({String id, String label})> get _styleOptions {
+  List<String> get _styleIds {
     switch (_discipline) {
       case BikeCategory.road:
       case BikeCategory.gravel:
-        return const [
-          (id: 'efficient', label: 'Effizient / Tempo'),
-          (id: 'flow', label: 'Gleichmäßig'),
-          (id: 'explorative', label: 'Entdeckend'),
-        ];
+        return const ['efficient', 'flow', 'explorative'];
       case BikeCategory.urban:
       case BikeCategory.etrekking:
       case BikeCategory.cargo:
       case BikeCategory.folding:
       case BikeCategory.kids:
-        return const [
-          (id: 'efficient', label: 'Alltag / Pendeln'),
-          (id: 'explorative', label: 'Touren'),
-          (id: 'flow', label: 'Locker'),
-        ];
+        return const ['efficient', 'explorative', 'flow'];
       case BikeCategory.mtbEnduro:
       case BikeCategory.dh:
-        return const [
-          (id: 'aggressive', label: 'Aggressiv'),
-          (id: 'flow', label: 'Flow'),
-          (id: 'explorative', label: 'Linien suchen'),
-        ];
+        return const ['aggressive', 'flow', 'explorative'];
       case BikeCategory.emtb:
       case BikeCategory.mtbTrail:
       case BikeCategory.mtbAm:
       case BikeCategory.hiking:
-        return const [
-          (id: 'flow', label: 'Flow'),
-          (id: 'aggressive', label: 'Aggressiv'),
-          (id: 'efficient', label: 'Effizient'),
-          (id: 'explorative', label: 'Entdeckend'),
-        ];
+        return const ['flow', 'aggressive', 'efficient', 'explorative'];
     }
+  }
+
+  List<({String id, String label})> _styleOptions(AppLocalizations l10n) {
+    String labelFor(String id) {
+      switch (_discipline) {
+        case BikeCategory.road:
+        case BikeCategory.gravel:
+          return switch (id) {
+            'efficient' => l10n.profileStyleEfficientPace,
+            'flow' => l10n.profileStyleSteady,
+            'explorative' => l10n.profileStyleExploring,
+            _ => id,
+          };
+        case BikeCategory.urban:
+        case BikeCategory.etrekking:
+        case BikeCategory.cargo:
+        case BikeCategory.folding:
+        case BikeCategory.kids:
+          return switch (id) {
+            'efficient' => l10n.profileStyleCommute,
+            'explorative' => l10n.profileStyleTours,
+            'flow' => l10n.profileStyleRelaxed,
+            _ => id,
+          };
+        case BikeCategory.mtbEnduro:
+        case BikeCategory.dh:
+          return switch (id) {
+            'aggressive' => l10n.profileStyleAggressive,
+            'flow' => l10n.profileStyleFlow,
+            'explorative' => l10n.profileStyleLines,
+            _ => id,
+          };
+        case BikeCategory.emtb:
+        case BikeCategory.mtbTrail:
+        case BikeCategory.mtbAm:
+        case BikeCategory.hiking:
+          return switch (id) {
+            'flow' => l10n.profileStyleFlow,
+            'aggressive' => l10n.profileStyleAggressive,
+            'efficient' => l10n.profileStyleEfficient,
+            'explorative' => l10n.profileStyleExploring,
+            _ => id,
+          };
+      }
+    }
+
+    return [for (final id in _styleIds) (id: id, label: labelFor(id))];
   }
 
   Future<void> _load() async {
     final store = ref.read(userProfileStoreProvider);
     await store.load();
     if (!mounted) return;
-    final styles = _styleOptions.map((e) => e.id).toSet();
+    final styles = _styleIds.toSet();
     var style = store.riderProfile.style;
-    if (!styles.contains(style)) style = _styleOptions.first.id;
+    if (!styles.contains(style)) style = _styleIds.first;
     setState(() {
       _nameCtrl.text = store.displayName ?? '';
       _weightCtrl.text = store.riderProfile.riderWeightKg.toStringAsFixed(0);
@@ -120,7 +158,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   /// Dauer-Textfeld am Seitenende durch eine SnackBar (wie im Rest der App).
   void _notify(String text) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    final bottom = MediaQuery.viewPaddingOf(context).bottom;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(text),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(
+            AppSpacing.l,
+            0,
+            AppSpacing.l,
+            AppSpacing.m + bottom,
+          ),
+        ),
+      );
+  }
+
+  String? _accessTokenOrNull() {
+    if (!AppConfig.isSupabaseConfigured) return null;
+    try {
+      return Supabase.instance.client.auth.currentSession?.accessToken;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _pickPhoto() async {
@@ -134,8 +195,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (file == null) return;
     final store = ref.read(userProfileStoreProvider);
     await store.setProfilePhoto(file.path);
-    if (mounted) setState(() {});
-    _notify('Profilbild gesetzt');
+    if (!mounted) return;
+    setState(() {});
+    _notify(AppLocalizations.of(context).profilePictureSet);
   }
 
   Future<void> _saveProfile() async {
@@ -143,7 +205,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await store.load();
     store.displayName =
         _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim();
-    store.preferredSport = _discipline;
     final w = double.tryParse(_weightCtrl.text.replaceAll(',', '.')) ?? 75;
     await store.setRiderProfile(
       store.riderProfile.copyWith(
@@ -154,11 +215,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
     await store.save();
     await ref.read(garageRepositoryProvider).touchLocalSync();
-    if (mounted) {
-      setState(() => _editingRider = false);
-      ref.invalidate(riderProfileProvider);
-    }
-    _notify('Profil gespeichert');
+    if (!mounted) return;
+    setState(() => _editingRider = false);
+    ref.invalidate(riderProfileProvider);
+    _notify(AppLocalizations.of(context).profileSaved);
   }
 
   void _cancelEditRider() {
@@ -167,6 +227,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _sync() async {
+    final l10n = AppLocalizations.of(context);
+    if (!AppConfig.isSupabaseConfigured || _accessTokenOrNull() == null) {
+      _notify(l10n.profileLocalOnly);
+      return;
+    }
     setState(() => _busy = true);
     try {
       final engine = ref.read(syncEngineProvider);
@@ -174,37 +239,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         final r = await engine.syncNow(onConflict: SyncConflictStrategy.ask);
         _notify(
           r.direction == 'pulled'
-              ? 'Sync: Cloud übernommen'
+              ? l10n.profileSyncCloudKept
               : r.direction == 'pushed'
-                  ? 'Sync: Gerät hochgeladen'
-                  : 'Sync: aktuell',
+                  ? l10n.profileSyncDeviceUploaded
+                  : l10n.profileSyncCurrent,
         );
       } on SyncConflictException catch (c) {
         if (!mounted) return;
         final choice = await showDialog<String>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Sync-Konflikt'),
-            content: Text(
-              'Cloud und dieses Gerät unterscheiden sich.\n'
-              'Cloud: ${c.remoteUpdatedAt ?? "—"}\n\n'
-              'Welche Version soll gelten?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, 'remote'),
-                child: const Text('Cloud behalten'),
+          builder: (ctx) {
+            final loc = AppLocalizations.of(ctx);
+            return AlertDialog(
+              title: Text(loc.profileSyncConflictTitle),
+              content: Text(
+                loc.profileSyncConflictBody(c.remoteUpdatedAt ?? '—'),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, 'local'),
-                child: const Text('Gerät erzwingen'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Abbrechen'),
-              ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'remote'),
+                  child: Text(loc.profileKeepCloud),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'local'),
+                  child: Text(loc.profileForceDevice),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(loc.cancel),
+                ),
+              ],
+            );
+          },
         );
         if (choice == 'remote' || choice == 'local') {
           final r = await engine.resolveConflict(
@@ -213,11 +279,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           );
           _notify(
             r.direction == 'pulled'
-                ? 'Konflikt: Cloud behalten'
-                : 'Konflikt: Gerät erzwungen',
+                ? l10n.profileConflictCloud
+                : l10n.profileConflictDevice,
           );
         } else {
-          _notify('Sync abgebrochen');
+          _notify(l10n.profileSyncCancelled);
         }
       }
     } catch (e) {
@@ -228,9 +294,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _openPortal() async {
-    final token = Supabase.instance.client.auth.currentSession?.accessToken;
+    final l10n = AppLocalizations.of(context);
+    final token = _accessTokenOrNull();
     if (token == null) {
-      _notify('Bitte anmelden für Aboverwaltung');
+      _notify(l10n.profileSignInForBilling);
+      if (!mounted) return;
+      openAuthScreen(context);
       return;
     }
     setState(() => _busy = true);
@@ -249,15 +318,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             : null;
         _notify(
           err == 'no_stripe_customer'
-              ? 'Noch kein Stripe-Abo — zuerst Pro upgraden.'
-              : (err ?? 'Portal: ${res.statusCode}'),
+              ? l10n.profileNoStripeSub
+              : (err ?? l10n.profilePortalError(res.statusCode)),
         );
         return;
       }
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final url = data['url'] as String?;
       if (url == null || url.isEmpty) {
-        _notify('Keine Portal-URL');
+        _notify(l10n.profileNoPortalUrl);
         return;
       }
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
@@ -273,50 +342,89 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final weightCtrl = TextEditingController(text: '70');
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Familien-Fahrer'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(loc.profileFamilyRiderTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: loc.profileName),
+              ),
+              TextField(
+                controller: weightCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: loc.profileWeightKg),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(loc.cancel),
             ),
-            TextField(
-              controller: weightCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Gewicht kg'),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(loc.add),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbruch'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hinzufügen'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     if (ok != true) return;
     final store = ref.read(userProfileStoreProvider);
     await store.load();
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     final riders = [...store.familyRiders];
     riders.add(
       FamilyRider(
         id: const Uuid().v4(),
-        displayName:
-            nameCtrl.text.trim().isEmpty ? 'Fahrer' : nameCtrl.text.trim(),
+        displayName: nameCtrl.text.trim().isEmpty
+            ? l10n.profileRiderFallback
+            : nameCtrl.text.trim(),
         weightKg: double.tryParse(weightCtrl.text) ?? 70,
       ),
     );
     await store.setFamilyRiders(riders);
     await ref.read(garageRepositoryProvider).touchLocalSync();
-    if (mounted) setState(() {});
-    _notify('Fahrer hinzugefügt');
+    if (!mounted) return;
+    setState(() {});
+    _notify(l10n.profileRiderAdded);
+  }
+
+  void _openStatsTarget() {
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.hof;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  String? _garageVsDisciplineHint(
+    List<Bike>? bikes,
+    UserProfileStore store,
+    AppLocalizations l10n,
+  ) {
+    if (bikes == null || bikes.isEmpty) return null;
+    final preferred = store.preferredSport;
+    if (preferred == null) return null;
+    Bike? active;
+    for (final b in bikes) {
+      if (b.isActive) {
+        active = b;
+        break;
+      }
+    }
+    active ??= bikes.first;
+    if (active.category == preferred) return null;
+    final brand = active.brand?.trim();
+    final name = [
+      if (brand != null && brand.isNotEmpty) brand,
+      active.name,
+    ].join(' ');
+    return l10n.profileActiveBike(name, l10n.bikeCategoryShort(active.category));
   }
 
   @override
@@ -330,15 +438,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final initials = avatarInitials(displayName: _nameCtrl.text, email: email);
     final photo = store.profilePhotoPath;
     final isPro = tier == 'pro';
+    final l10n = AppLocalizations.of(context);
+    final styleOptions = _styleOptions(l10n);
 
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
+      appBar: AppBar(title: Text(l10n.profile)),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppSpacing.xl,
           AppSpacing.l,
           AppSpacing.xl,
-          AppSpacing.xxxl,
+          AppSpacing.xxxl + bottomInset,
         ),
         children: [
           _ProfileHeader(
@@ -348,12 +459,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             email: email,
             busy: _busy,
             onTapPhoto: _pickPhoto,
+            onSignIn: () => openAuthScreen(context),
           ),
           const SizedBox(height: AppSpacing.l),
           _StatsRow(
             bikeCount: bikesAsync.valueOrNull?.length,
             rideCount: statsAsync.valueOrNull?.rideCount,
             totalKm: statsAsync.valueOrNull?.totalKm,
+            totalElevationM: statsAsync.valueOrNull?.totalElevationM,
+            distanceKnown: statsAsync.valueOrNull?.distanceKnown ?? true,
+            onTap: _openStatsTarget,
           ),
           const SizedBox(height: AppSpacing.xl),
           _SubscriptionCard(
@@ -366,12 +481,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // Disziplin immer sichtbar — Kern für Multi-Sport-Defaults
           // (Touren-Profil, Home-Copy, Fahren-Fahrwerk).
           _SectionCard(
-            title: 'Deine Disziplin',
+            title: l10n.profileDisciplines,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Steuert Touren-Vorschläge, Routing und Setup-Hinweise.',
+                  l10n.profileDisciplinesHint,
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.muted.withValues(alpha: 0.95),
@@ -383,51 +498,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   runSpacing: AppSpacing.s,
                   children: [
                     for (final d in _quickDisciplines)
-                      ChoiceChip(
-                        label: Text(d.shortLabel),
-                        selected: _discipline == d,
-                        selectedColor:
-                            AppColors.accent.withValues(alpha: 0.28),
-                        labelStyle: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: _discipline == d
-                              ? AppColors.accent
-                              : AppColors.chipIdleText,
-                        ),
-                        onSelected: _busy
-                            ? null
-                            : (_) => unawaited(_setDisciplineQuick(d)),
-                      ),
+                      _disciplineChip(store, d, l10n),
                   ],
                 ),
+                if (store.preferredSports.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    l10n.sportsSummaryLine(
+                      primary: store.preferredSport,
+                      sports: store.preferredSports,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
           _SectionCard(
-            title: 'Fahrerprofil',
+            title: l10n.profileRiderCard,
             trailing: _editingRider
                 ? null
                 : TextButton(
                     onPressed: () => setState(() => _editingRider = true),
-                    child: const Text('Bearbeiten'),
+                    child: Text(l10n.edit),
                   ),
             child: _editingRider
                 ? _RiderEditForm(
                     nameCtrl: _nameCtrl,
                     weightCtrl: _weightCtrl,
-                    discipline: _discipline,
                     style: _style,
                     skill: _skill,
-                    styleOptions: _styleOptions,
+                    styleOptions: styleOptions,
                     busy: _busy,
-                    onDisciplineChanged: (d) => setState(() {
-                      _discipline = d;
-                      final ids = _styleOptions.map((e) => e.id).toSet();
-                      if (!ids.contains(_style)) {
-                        _style = _styleOptions.first.id;
-                      }
-                    }),
                     onStyleChanged: (v) => setState(() => _style = v ?? _style),
                     onSkillChanged: (v) => setState(() => _skill = v.round()),
                     onCancel: _cancelEditRider,
@@ -438,46 +545,89 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           _weightCtrl.text.replaceAll(',', '.'),
                         ) ??
                         75,
-                    discipline: _discipline,
-                    disciplineLabel: _discipline.shortLabel,
-                    styleLabel: _styleOptions
+                    disciplineLabel: store.preferredSport != null
+                        ? l10n.bikeCategoryShort(store.preferredSport!)
+                        : '—',
+                    alsoLabels: [
+                      for (final s in store.preferredSports)
+                        if (s != store.preferredSport) l10n.bikeCategoryShort(s),
+                    ],
+                    styleLabel: styleOptions
                         .firstWhere(
                           (s) => s.id == _style,
-                          orElse: () => _styleOptions.first,
+                          orElse: () => styleOptions.first,
                         )
                         .label,
                     skill: _skill,
+                    activeBikeHint: _garageVsDisciplineHint(
+                      bikesAsync.valueOrNull,
+                      store,
+                      l10n,
+                    ),
                   ),
           ),
           const SizedBox(height: AppSpacing.xl),
           _SectionCard(
-            title: 'Konto & Sync',
+            title: l10n.profilePublic,
+            child: const PublicProfileSection(),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _SectionCard(
+            title: l10n.profileAccountSync,
             padded: false,
             child: Column(
               children: [
+                const HudMediaConnectionTile(),
                 ListTile(
                   leading: const Icon(Icons.sync),
-                  title: const Text('Jetzt synchronisieren'),
+                  title: Text(l10n.authSyncNow),
+                  subtitle: session == null || !AppConfig.isSupabaseConfigured
+                      ? Text(l10n.profileLocalOnly)
+                      : null,
                   onTap: _busy ? null : _sync,
                 ),
                 ListTile(
                   leading: const Icon(Icons.lock_open),
-                  title: Text(session == null ? 'Anmelden' : 'Konto'),
+                  title: Text(session == null ? l10n.signIn : l10n.account),
                   subtitle: Text(
                     session == null
-                        ? 'Cloud-Sync & Abo'
-                        : (email ?? 'Angemeldet'),
+                        ? l10n.profileCloudBilling
+                        : (email ?? l10n.profileSignedIn),
                   ),
                   onTap: () => openAuthScreen(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.chat_bubble_outline),
-                  title: const Text('Assistent'),
+                  title: Text(l10n.chatAssistant),
+                  subtitle: Builder(
+                    builder: (context) {
+                      final unread = unreadCoachCount(
+                        ref.watch(coachWatchProvider).valueOrNull ?? const [],
+                      );
+                      return Text(
+                        unread > 0
+                            ? l10n.coachHintsTooltip(unread)
+                            : l10n.chatSubtitleDue,
+                      );
+                    },
+                  ),
+                  trailing: Builder(
+                    builder: (context) {
+                      final unread = unreadCoachCount(
+                        ref.watch(coachWatchProvider).valueOrNull ?? const [],
+                      );
+                      if (unread <= 0) return const Icon(Icons.chevron_right);
+                      return Badge(
+                        label: Text('$unread'),
+                        child: const Icon(Icons.chevron_right),
+                      );
+                    },
+                  ),
                   onTap: () => openChatScreen(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('Daten & Privatsphäre'),
+                  title: Text(l10n.authPrivacy),
                   onTap: () => openPrivacyScreen(context),
                 ),
               ],
@@ -485,15 +635,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SectionCard(
-            title: 'Familien-Garage',
+            title: l10n.profileFamilyGarage,
             trailing: TextButton(
               onPressed: _addFamilyRider,
-              child: const Text('Hinzufügen'),
+              child: Text(l10n.add),
             ),
             child: store.familyRiders.isEmpty
-                ? const Text(
-                    'Weitere Fahrer mit eigenem Gewicht — z. B. Partner oder Kind.',
-                    style: TextStyle(color: AppColors.muted, fontSize: 13),
+                ? Text(
+                    l10n.profileFamilyHint,
+                    style:
+                        const TextStyle(color: AppColors.muted, fontSize: 13),
                   )
                 : Column(
                     children: [
@@ -538,7 +689,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // Komoot/AllTrails am Seitenende, nicht als gleichwertiger
           // Abschnitt neben Fahrerprofil/Abo.
           Text(
-            'Rechtliches',
+            l10n.profileLegal,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: AppColors.muted,
                   fontWeight: FontWeight.w700,
@@ -549,11 +700,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             spacing: AppSpacing.m,
             runSpacing: AppSpacing.xs,
             children: [
-              _LegalLink('Datenschutz', AppConfig.privacyPolicyUrl),
-              _LegalLink('Impressum', AppConfig.impressumUrl),
-              _LegalLink('Widerruf', AppConfig.widerrufUrl),
+              _LegalLink(l10n.profilePrivacyPolicy, AppConfig.privacyPolicyUrl),
+              _LegalLink(l10n.profileImprint, AppConfig.impressumUrl),
+              _LegalLink(l10n.profileWithdrawal, AppConfig.widerrufUrl),
             ],
           ),
+          const SizedBox(height: AppSpacing.l),
         ],
       ),
     );
@@ -561,6 +713,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   static const _quickDisciplines = <BikeCategory>[
     BikeCategory.urban,
+    BikeCategory.cargo,
+    BikeCategory.folding,
+    BikeCategory.kids,
     BikeCategory.etrekking,
     BikeCategory.gravel,
     BikeCategory.road,
@@ -570,25 +725,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     BikeCategory.mtbEnduro,
   ];
 
-  Future<void> _setDisciplineQuick(BikeCategory d) async {
+  Widget _disciplineChip(
+    UserProfileStore store,
+    BikeCategory d,
+    AppLocalizations l10n,
+  ) {
+    final selected = store.prefersSport(d);
+    final isPrimary = store.preferredSport == d;
+    return FilterChip(
+      showCheckmark: false,
+      selected: selected,
+      selectedColor: AppColors.accent.withValues(alpha: 0.28),
+      labelStyle: TextStyle(
+        fontWeight: FontWeight.w700,
+        color: selected ? AppColors.accent : AppColors.chipIdleText,
+      ),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (selected) ...[
+            GestureDetector(
+              onTap: _busy || isPrimary
+                  ? null
+                  : () {
+                      _ignoreChipToggle = true;
+                      unawaited(
+                        _setPrimaryDiscipline(d).whenComplete(() {
+                          _ignoreChipToggle = false;
+                        }),
+                      );
+                    },
+              child: Tooltip(
+                message: l10n.profileSetPrimary,
+                child: Icon(
+                  isPrimary ? Icons.star : Icons.star_border,
+                  size: 16,
+                  color: AppColors.accent,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            isPrimary
+                ? l10n.profilePrimarySuffix(l10n.bikeCategoryShort(d))
+                : l10n.bikeCategoryShort(d),
+          ),
+        ],
+      ),
+      onSelected: _busy
+          ? null
+          : (_) {
+              if (_ignoreChipToggle) return;
+              unawaited(_onDisciplineChipTap(d));
+            },
+    );
+  }
+
+  Future<void> _onDisciplineChipTap(BikeCategory d) async {
+    final store = ref.read(userProfileStoreProvider);
+    if (store.prefersSport(d)) {
+      if (store.preferredSport == d) {
+        _notify(AppLocalizations.of(context).profileNeedOneDiscipline);
+        return;
+      }
+      store.togglePreferredSport(d);
+    } else {
+      store.togglePreferredSport(d);
+    }
+    _syncDisciplineStyle(store.preferredSport ?? d);
+    await _persistDisciplines();
+  }
+
+  Future<void> _setPrimaryDiscipline(BikeCategory d) async {
+    final store = ref.read(userProfileStoreProvider);
+    if (store.preferredSport == d) return;
+    store.setPrimarySport(d);
+    _syncDisciplineStyle(d);
+    await _persistDisciplines();
+  }
+
+  void _syncDisciplineStyle(BikeCategory d) {
     setState(() {
       _discipline = d;
-      final ids = _styleOptions.map((e) => e.id).toSet();
-      if (!ids.contains(_style)) {
-        _style = _styleOptions.first.id;
+      if (!_styleIds.contains(_style)) {
+        _style = _styleIds.first;
       }
     });
+  }
+
+  Future<void> _persistDisciplines() async {
     final store = ref.read(userProfileStoreProvider);
-    store.preferredSport = d;
     await store.setRiderProfile(
       store.riderProfile.copyWith(style: _style, skillLevel: _skill),
     );
     await store.save();
     await ref.read(garageRepositoryProvider).touchLocalSync();
-    if (mounted) {
-      ref.invalidate(riderProfileProvider);
-      _notify('Disziplin: ${d.shortLabel}');
-    }
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    ref.invalidate(riderProfileProvider);
+    final parts = [
+      for (final s in store.preferredSports)
+        s == store.preferredSport
+            ? l10n.profilePrimarySuffix(l10n.bikeCategoryShort(s))
+            : l10n.bikeCategoryShort(s),
+    ];
+    _notify(l10n.profileDisciplinesSaved(parts.join(', ')));
   }
 }
 
@@ -601,6 +843,7 @@ class _ProfileHeader extends StatelessWidget {
     required this.email,
     required this.busy,
     required this.onTapPhoto,
+    required this.onSignIn,
   });
 
   final String initials;
@@ -609,9 +852,11 @@ class _ProfileHeader extends StatelessWidget {
   final String? email;
   final bool busy;
   final VoidCallback onTapPhoto;
+  final VoidCallback onSignIn;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hasPhoto = photo != null &&
         (photo!.startsWith('http') || File(photo!).existsSync());
     return Row(
@@ -629,14 +874,17 @@ class _ProfileHeader extends StatelessWidget {
                 : null,
             child: hasPhoto
                 ? null
-                : Text(
-                    initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 22,
-                    ),
-                  ),
+                : (initials == '?'
+                    ? const Icon(Icons.person_outline,
+                        color: Colors.white, size: 32)
+                    : Text(
+                        initials,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
+                        ),
+                      )),
           ),
         ),
         const SizedBox(width: AppSpacing.l),
@@ -645,17 +893,39 @@ class _ProfileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                name.isEmpty ? 'Fahrerprofil' : name,
+                name.isEmpty ? l10n.profileRiderCard : name,
                 style:
                     const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: AppSpacing.xxs),
-              Text(
-                email ?? 'Lokal — Sync nach Anmeldung',
-                style: const TextStyle(color: AppColors.muted, fontSize: 13),
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (email != null)
+                Text(
+                  email!,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                )
+              else
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.s,
+                  children: [
+                    Text(
+                      l10n.profileLocalUntilSignIn,
+                      style:
+                          const TextStyle(color: AppColors.muted, fontSize: 13),
+                    ),
+                    TextButton(
+                      onPressed: busy ? null : onSignIn,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(l10n.signIn),
+                    ),
+                  ],
+                ),
               const SizedBox(height: AppSpacing.xs),
               TextButton(
                 onPressed: busy ? null : onTapPhoto,
@@ -664,7 +934,7 @@ class _ProfileHeader extends StatelessWidget {
                   minimumSize: const Size(0, 0),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Foto ändern'),
+                child: Text(l10n.profileChangePhoto),
               ),
             ],
           ),
@@ -675,40 +945,70 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 /// Aktivitäts-Kennzahlen — die Zeile, die Komoot/AllTrails haben und
-/// AetherRide bisher nicht: bestätigt „ich habe hier eine Geschichte",
+/// FlowLine bisher nicht: bestätigt „ich habe hier eine Geschichte",
 /// nutzt Daten, die die App längst hat (Garage-Odometer, Ride-Log).
 class _StatsRow extends StatelessWidget {
-  const _StatsRow({this.bikeCount, this.rideCount, this.totalKm});
+  const _StatsRow({
+    this.bikeCount,
+    this.rideCount,
+    this.totalKm,
+    this.totalElevationM,
+    this.distanceKnown = true,
+    this.onTap,
+  });
 
   final int? bikeCount;
   final int? rideCount;
   final double? totalKm;
+  final double? totalElevationM;
+  final bool distanceKnown;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatTile(
-            value: bikeCount?.toString() ?? '–',
-            label: bikeCount == 1 ? 'Bike' : 'Bikes',
-          ),
+    final l10n = AppLocalizations.of(context);
+    final rides = rideCount ?? 0;
+    final kmLabel = totalKm == null
+        ? '–'
+        : formatProfileDistanceKm(
+            rideCount: rides,
+            totalKm: totalKm!,
+            distanceKnown: distanceKnown,
+          );
+    final hm = totalElevationM ?? 0;
+    final kmCaption =
+        hm >= 1 ? l10n.profileKmElevation(hm.round()) : l10n.profileKmTotal;
+    return Semantics(
+      button: onTap != null,
+      label: l10n.profileActivityLabel,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                value: bikeCount?.toString() ?? '–',
+                label: bikeCount == 1 ? l10n.profileBikeOne : l10n.profileBikes,
+              ),
+            ),
+            Container(width: 1, height: 32, color: AppColors.border),
+            Expanded(
+              child: _StatTile(
+                value: rideCount?.toString() ?? '–',
+                label: rideCount == 1 ? l10n.profileRideOne : l10n.profileRides,
+              ),
+            ),
+            Container(width: 1, height: 32, color: AppColors.border),
+            Expanded(
+              child: _StatTile(
+                value: kmLabel,
+                label: kmCaption,
+              ),
+            ),
+          ],
         ),
-        Container(width: 1, height: 32, color: AppColors.border),
-        Expanded(
-          child: _StatTile(
-            value: rideCount?.toString() ?? '–',
-            label: rideCount == 1 ? 'Ride' : 'Rides',
-          ),
-        ),
-        Container(width: 1, height: 32, color: AppColors.border),
-        Expanded(
-          child: _StatTile(
-            value: totalKm == null ? '–' : totalKm!.round().toString(),
-            label: 'km gesamt',
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -754,6 +1054,7 @@ class _SubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (isPro) {
       return Container(
         padding: const EdgeInsets.symmetric(
@@ -768,15 +1069,15 @@ class _SubscriptionCard extends StatelessWidget {
           children: [
             const Icon(Icons.verified, color: AppColors.accent, size: 20),
             const SizedBox(width: AppSpacing.s),
-            const Expanded(
+            Expanded(
               child: Text(
-                'AetherRide Pro aktiv',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                l10n.profileProActive,
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
             TextButton(
               onPressed: busy ? null : onManage,
-              child: const Text('Verwalten'),
+              child: Text(l10n.profileManage),
             ),
           ],
         ),
@@ -796,25 +1097,26 @@ class _SubscriptionCard extends StatelessWidget {
             children: [
               const Icon(Icons.stars_rounded, color: AppColors.accent),
               const SizedBox(width: AppSpacing.s),
-              const Text(
-                'AetherRide Pro',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              Text(
+                l10n.billingTitle,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          const Text(
-            'Offline-Karten, unbegrenzte Bikes, Fahrwerksanalyse & Bracketing.',
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
+          Text(
+            l10n.profileProPerks,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
           const SizedBox(height: AppSpacing.m),
           FilledButton(
             onPressed: onUpgrade,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.forestOnDark,
+              backgroundColor: AppColors.chrome,
               minimumSize: const Size.fromHeight(44),
             ),
-            child: const Text('Pro upgraden'),
+            child: Text(l10n.profileUpgradePro),
           ),
         ],
       ),
@@ -891,44 +1193,61 @@ class _SectionCard extends StatelessWidget {
 class _RiderSummary extends StatelessWidget {
   const _RiderSummary({
     required this.weightKg,
-    required this.discipline,
     required this.disciplineLabel,
+    required this.alsoLabels,
     required this.styleLabel,
     required this.skill,
+    this.activeBikeHint,
   });
 
   final double weightKg;
-  final BikeCategory discipline;
   final String disciplineLabel;
+  final List<String> alsoLabels;
   final String styleLabel;
   final int skill;
+  final String? activeBikeHint;
 
   @override
   Widget build(BuildContext context) {
-    const skillLabels = [
-      '',
-      'Einsteiger',
-      'Grundlagen',
-      'Fortgeschritten',
-      'Erfahren',
-      'Profi'
-    ];
+    final l10n = AppLocalizations.of(context);
+    final skillLabel = switch (skill.clamp(1, 5)) {
+      1 => l10n.profileSkillBeginner,
+      2 => l10n.profileSkillBasics,
+      3 => l10n.profileSkillAdvanced,
+      4 => l10n.profileSkillExperienced,
+      _ => l10n.profileSkillPro,
+    };
+    final sub = [
+      if (alsoLabels.isNotEmpty) l10n.profileAlsoList(alsoLabels.join(', ')),
+      styleLabel,
+    ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SummaryRow(
-            icon: Icons.pedal_bike, label: disciplineLabel, sub: styleLabel),
+          icon: Icons.pedal_bike,
+          label: disciplineLabel,
+          sub: sub,
+        ),
+        if (activeBikeHint != null && activeBikeHint!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.s),
+          _SummaryRow(
+            icon: Icons.two_wheeler,
+            label: activeBikeHint!,
+            sub: l10n.profileSubGarage,
+          ),
+        ],
         const SizedBox(height: AppSpacing.s),
         _SummaryRow(
           icon: Icons.monitor_weight_outlined,
           label: '${weightKg.toStringAsFixed(0)} kg',
-          sub: 'Fahrergewicht',
+          sub: l10n.profileSubWeight,
         ),
         const SizedBox(height: AppSpacing.s),
         _SummaryRow(
           icon: Icons.trending_up,
-          label: skillLabels[skill.clamp(1, 5)],
-          sub: 'Können ($skill / 5)',
+          label: skillLabel,
+          sub: l10n.profileSubSkill(skill),
         ),
       ],
     );
@@ -948,10 +1267,24 @@ class _SummaryRow extends StatelessWidget {
       children: [
         Icon(icon, size: 20, color: AppColors.muted),
         const SizedBox(width: AppSpacing.s),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(width: AppSpacing.xs),
-        Text('· $sub',
-            style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: label,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(
+                  text: ' · $sub',
+                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                ),
+              ],
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -963,12 +1296,10 @@ class _RiderEditForm extends StatelessWidget {
   const _RiderEditForm({
     required this.nameCtrl,
     required this.weightCtrl,
-    required this.discipline,
     required this.style,
     required this.skill,
     required this.styleOptions,
     required this.busy,
-    required this.onDisciplineChanged,
     required this.onStyleChanged,
     required this.onSkillChanged,
     required this.onCancel,
@@ -977,76 +1308,37 @@ class _RiderEditForm extends StatelessWidget {
 
   final TextEditingController nameCtrl;
   final TextEditingController weightCtrl;
-  final BikeCategory discipline;
   final String style;
   final int skill;
   final List<({String id, String label})> styleOptions;
   final bool busy;
-  final ValueChanged<BikeCategory> onDisciplineChanged;
   final ValueChanged<String?> onStyleChanged;
   final ValueChanged<double> onSkillChanged;
   final VoidCallback onCancel;
   final VoidCallback onSave;
 
-  static const _disciplines = [
-    BikeCategory.urban,
-    BikeCategory.etrekking,
-    BikeCategory.gravel,
-    BikeCategory.road,
-    BikeCategory.emtb,
-    BikeCategory.mtbTrail,
-    BikeCategory.mtbAm,
-    BikeCategory.mtbEnduro,
-  ];
-
-  static String _label(BikeCategory c) => c.shortLabel;
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
           controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'Anzeigename'),
+          decoration: InputDecoration(labelText: l10n.profileDisplayName),
         ),
         const SizedBox(height: AppSpacing.s),
         TextField(
           controller: weightCtrl,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Fahrergewicht (kg)'),
-        ),
-        const SizedBox(height: AppSpacing.m),
-        const Text(
-          'Disziplin',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Wrap(
-          spacing: AppSpacing.s,
-          runSpacing: AppSpacing.s,
-          children: [
-            for (final d in _disciplines)
-              ChoiceChip(
-                label: Text(_label(d)),
-                selected: discipline == d,
-                selectedColor: AppColors.accent.withValues(alpha: 0.25),
-                labelStyle: TextStyle(
-                  color: discipline == d
-                      ? AppColors.accent
-                      : AppColors.chipIdleText,
-                  fontWeight: FontWeight.w600,
-                ),
-                onSelected: (_) => onDisciplineChanged(d),
-              ),
-          ],
+          decoration: InputDecoration(labelText: l10n.profileRiderWeight),
         ),
         const SizedBox(height: AppSpacing.m),
         DropdownButtonFormField<String>(
           initialValue: styleOptions.any((e) => e.id == style)
               ? style
               : styleOptions.first.id,
-          decoration: const InputDecoration(labelText: 'Fahrstil'),
+          decoration: InputDecoration(labelText: l10n.profileRideStyle),
           dropdownColor: AppColors.surfaceDark,
           items: [
             for (final s in styleOptions)
@@ -1057,11 +1349,11 @@ class _RiderEditForm extends StatelessWidget {
         const SizedBox(height: AppSpacing.s),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text('Einsteiger',
-                style: TextStyle(fontSize: 11, color: AppColors.muted)),
-            Text('Profi',
-                style: TextStyle(fontSize: 11, color: AppColors.muted)),
+          children: [
+            Text(l10n.profileSkillBeginner,
+                style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+            Text(l10n.profileSkillPro,
+                style: const TextStyle(fontSize: 11, color: AppColors.muted)),
           ],
         ),
         Slider(
@@ -1078,14 +1370,14 @@ class _RiderEditForm extends StatelessWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: busy ? null : onCancel,
-                child: const Text('Abbrechen'),
+                child: Text(l10n.cancel),
               ),
             ),
             const SizedBox(width: AppSpacing.s),
             Expanded(
               child: FilledButton(
                 onPressed: busy ? null : onSave,
-                child: const Text('Speichern'),
+                child: Text(l10n.save),
               ),
             ),
           ],

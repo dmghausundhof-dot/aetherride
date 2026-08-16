@@ -50,7 +50,7 @@ export function getShopStoreStatus(): ShopStoreStatus {
     recommendedPath: "storefront_api_in_app",
     messageDe: locked
       ? configured
-        ? "Online Store ist passwortgeschützt — Katalog läuft in AetherRide über die Storefront API. Externe Shopify-Links führen zur Passwort-Seite (Inhaber-Vorschau)."
+        ? "Online Store ist passwortgeschützt — Katalog läuft in FlowLine über die Storefront API. Externe Shopify-Links führen zur Passwort-Seite (Inhaber-Vorschau)."
         : "Online Store ist passwortgeschützt und Storefront API nicht konfiguriert. Setze SHOPIFY_STOREFRONT_ACCESS_TOKEN für In-App-Katalog."
       : "Online Store ist öffentlich — externe Produktlinks funktionieren.",
   };

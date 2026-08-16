@@ -1,0 +1,27 @@
+{
+  "id": "ch-ostschweiz",
+  "name": "Ostschweiz",
+  "bbox": [
+    8.75,
+    46.88,
+    10.49,
+    47.81
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-ostschweiz",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-ostschweiz.tar.zst"
+  }
+}

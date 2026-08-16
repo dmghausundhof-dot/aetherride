@@ -1,10 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageSquare, ShieldAlert, Wrench, ArrowLeft } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { type ChatToolName } from "@/lib/ai/chat";
+import { CoachInbox } from "@/components/chat/CoachInbox";
+import { useCoachInbox } from "@/hooks/useCoachInbox";
+import type { CoachInboxItem } from "@/lib/ai/coachInbox";
 import Link from "next/link";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { chatCopy } from "@/lib/i18n/chatCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 type Msg = {
   id: string;
@@ -25,61 +32,45 @@ type QuotaInfo = {
   reason?: string;
 };
 
-const SUGGESTED_PROMPTS: { label: string; query: string; tool: ChatToolName }[] =
-  [
-    {
-      label: "Garage-Überblick",
-      query: "Was steckt in meiner Garage?",
-      tool: "garage",
-    },
-    {
-      label: "Reichweite",
-      query: "Welche Reichweite habe ich mit aktuellem Akku?",
-      tool: "range",
-    },
-    {
-      label: "Setup-Historie",
-      query: "Welche Setups hatte ich und was hat sich geändert?",
-      tool: "setup_history",
-    },
-    {
-      label: "Ride-Stats",
-      query: "Zusammenfassung meiner letzten Rides",
-      tool: "ride_stats",
-    },
-    {
-      label: "Routen",
-      query: "Welche Routen passen zu mir?",
-      tool: "route_search",
-    },
-    {
-      label: "Verschleiß / Shop",
-      query: "Brauche ich bald neue Verschleißteile?",
-      tool: "product_search",
-    },
-  ];
-
 export default function ChatPage() {
+  const lang = useChromeLang();
+  const c = chatCopy(lang);
+  const hof = useHofCopy();
+  const chrome = webChrome(lang);
   const bikes = useAppStore((s) => s.bikes);
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const rides = useAppStore((s) => s.rides);
   const profile = useAppStore((s) => s.riderProfile);
   const calibration = useAppStore((s) => s.rangeCalibration);
+  const intervals = useAppStore((s) => s.maintenanceIntervals);
+  const rideFeedbacks = useAppStore((s) => s.rideFeedbacks);
   const isRiding = useAppStore((s) => s.isRiding);
   const subscriptionTier = useAppStore((s) => s.subscriptionTier);
   const bike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
+  const { items: coachItems } = useCoachInbox();
+  const markRead = useAppStore((s) => s.markCoachNoticesRead);
 
   const [input, setInput] = useState("");
   const [tool, setTool] = useState<ChatToolName | "auto">("auto");
   const [busy, setBusy] = useState(false);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
-  const [messages, setMessages] = useState<Msg[]>([
+  const [messages, setMessages] = useState<Msg[]>(() => [
     {
       id: "sys",
       role: "assistant",
-      text: "Frag nach Garage, Setup, Reichweite, Routen oder Teilen. Zahlen kommen aus deinen App-Daten — nicht aus dem Chat-Modell. Für die meisten Entscheidungen reichen der Hof und die Auswertung nach der Fahrt.",
+      text: chatCopy("de").welcome,
     },
   ]);
+
+  useEffect(() => {
+    const welcome = chatCopy(lang).welcome;
+    setMessages((m) => {
+      if (m.length === 1 && m[0].id === "sys" && m[0].role === "assistant") {
+        return [{ ...m[0], text: welcome }];
+      }
+      return m;
+    });
+  }, [lang]);
 
   const ctx = useMemo(
     () => ({
@@ -88,8 +79,11 @@ export default function ChatPage() {
       rides,
       profile,
       calibration,
+      intervals,
+      rideFeedbacks,
+      notices: coachItems,
     }),
-    [bike, bikes, rides, profile, calibration]
+    [bike, bikes, rides, profile, calibration, intervals, rideFeedbacks, coachItems]
   );
 
   const send = async (override?: { query: string; tool?: ChatToolName | "auto" }) => {
@@ -108,17 +102,16 @@ export default function ChatPage() {
           query: q,
           tool: toolHint,
           ...ctx,
+          lang,
         }),
       });
       const data = await res.json();
       if (data.quota) setQuota(data.quota);
 
-      let text = data.text || data.error || "Keine Antwort.";
+      let text = data.text || data.error || c.noAnswer;
       if (res.status === 429) {
-        text = `${text}\n\nLimit erreicht (${data.quota?.tier || "free"}). ${
-          data.quota?.tier === "free"
-            ? "Pro unter Profil freischalten für mehr Antworten."
-            : "Morgen wieder verfügbar."
+        text = `${text}\n\n${c.limitReached} ${
+          data.quota?.tier === "free" ? c.limitFreeMore : c.limitTomorrow
         }`;
       }
 
@@ -140,7 +133,7 @@ export default function ChatPage() {
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          text: e instanceof Error ? e.message : "Netzwerkfehler",
+          text: e instanceof Error ? e.message : c.networkError,
         },
       ]);
     } finally {
@@ -155,47 +148,51 @@ export default function ChatPage() {
           href="/profile"
           className="mb-2 inline-flex items-center gap-1 text-sm text-chrome"
         >
-          <ArrowLeft className="h-4 w-4" /> Profil
+          <ArrowLeft className="h-4 w-4" /> {hof.profile}
         </Link>
         <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <MessageSquare className="h-6 w-6 text-chrome" /> Mehr fragen
+          <MessageSquare className="h-6 w-6 text-chrome" /> {c.title}
         </h1>
         <p className="text-sm text-text-secondary">
-          Power-User. Kein Feed auf dem Hof.
+          {hof.chatHint}
         </p>
         {quota && (
           <p className="mt-1 text-xs text-text-secondary">
-            Kontingent ({quota.tier}): {quota.dayUsed}/{quota.dayLimit} heute
-            {quota.remaining != null ? ` · ${quota.remaining} übrig` : ""}
+            {c.quotaToday(
+              quota.tier,
+              quota.dayUsed,
+              quota.dayLimit,
+              quota.remaining,
+            )}
             {quota.reason === "login_required_for_grok"
-              ? " · Anmeldung für Cloud-KI nötig"
+              ? ` · ${c.loginForCloud}`
               : ""}
           </p>
         )}
         {!quota && (
           <p className="mt-1 text-xs text-text-secondary">
-            Tarif: {subscriptionTier} — Tageslimits nach Anmeldung
+            {c.tariffLine(subscriptionTier)}
           </p>
         )}
       </header>
 
       {isRiding && (
         <div className="rounded-xl border border-error/40 bg-error/10 px-3 py-2 text-sm text-error">
-          Chat während der Fahrt gesperrt — Sicherheit zuerst.
+          {c.lockedRiding}
         </div>
       )}
 
       {quota && quota.remaining === 0 && quota.tier === "free" && (
         <div className="rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
-          Free-Limit ausgeschöpft.{" "}
+          {c.freeLimit}{" "}
           <Link href="/profile" className="font-semibold text-accent">
-            Pro upgraden
+            {c.upgradePro}
           </Link>
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
-        {SUGGESTED_PROMPTS.map((p) => (
+        {c.prompts.map((p) => (
           <button
             key={p.label}
             type="button"
@@ -208,6 +205,15 @@ export default function ChatPage() {
         ))}
       </div>
 
+      {coachItems.length > 0 ? (
+        <CoachInbox
+          onAsk={(item: CoachInboxItem) => {
+            markRead([item]);
+            void send({ query: item.query, tool: item.tool as ChatToolName });
+          }}
+        />
+      ) : null}
+
       {process.env.NODE_ENV === "development" && (
       <details className="text-xs text-text-secondary">
         <summary className="cursor-pointer text-accent">
@@ -217,6 +223,7 @@ export default function ChatPage() {
           {(
             [
               "auto",
+              "watch",
               "garage",
               "compat",
               "setup_history",
@@ -268,7 +275,7 @@ export default function ChatPage() {
             )}
             {m.guarded && process.env.NODE_ENV !== "development" && (
               <p className="mt-1 text-[10px] text-text-secondary">
-                Antwort anhand deiner Garage-/Ride-Daten geprüft
+                {c.checkedOnData}
               </p>
             )}
           </div>
@@ -281,25 +288,25 @@ export default function ChatPage() {
           disabled={isRiding || busy}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && void send()}
-          placeholder="z. B. Passt die Kassette? / Reichweite?"
+          placeholder={c.hint}
           className="flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
         />
         <button
           type="button"
           disabled={isRiding || busy}
           onClick={() => void send()}
-          className="rounded-xl bg-chrome px-4 py-2 text-sm font-semibold text-background disabled:opacity-40"
+          className="rounded-xl bg-chrome px-4 py-2 text-sm font-semibold text-on-accent disabled:opacity-40"
         >
-          {busy ? "…" : "Senden"}
+          {busy ? "…" : c.send}
         </button>
       </div>
 
       <p className="text-center text-xs text-text-secondary">
         <Link href="/home" className="text-chrome">
-          Zum Hof
+          {chrome.toHof}
         </Link>
         {" · "}
-        Free: 5/Tag · Pro: 50/Tag
+        {c.freeProFoot}
       </p>
     </div>
   );

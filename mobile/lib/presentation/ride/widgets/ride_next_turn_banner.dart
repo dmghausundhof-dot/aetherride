@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/nav_hud_tokens.dart';
+import '../../map/nav_puck_image.dart';
 
-/// Dominant next-turn HUD pill — glanceable at speed (N-HUD-01 / nav-hud-tokens-v1).
-/// Hierarchy: large distance → turn glyph → street (1-line) secondary.
-/// Optional [street] / [maneuver]: when [street] is set, it is the 1-line label
-/// and [maneuver] (if any) is ignored in the street slot (glyph already encodes turn).
+/// Compact next-turn pill — one row, glanceable at speed (N-MAP-02).
+/// Glyph · distance · street. Street is secondary; glyph already encodes turn.
 class RideNextTurnBanner extends StatelessWidget {
   const RideNextTurnBanner({
     super.key,
@@ -15,19 +14,22 @@ class RideNextTurnBanner extends StatelessWidget {
     required this.icon,
     this.street,
     this.maneuver,
+    this.navPuckStyle = NavPuckStyle.chevron,
   });
 
   final String distance;
+
   /// Fallback 1-line text when [street] is null (legacy call sites).
   final String instruction;
   final IconData icon;
 
-  /// Prefer street name on the secondary line (Komoot-style glance).
+  /// Prefer street name (Komoot-style glance).
   final String? street;
 
-  /// Optional maneuver short label (unused in layout when [street] is set;
-  /// kept for API completeness / future dual-line).
+  /// Optional maneuver short label (unused when [street] is set).
   final String? maneuver;
+
+  final NavPuckStyle navPuckStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -38,55 +40,56 @@ class RideNextTurnBanner extends StatelessWidget {
         ? street!.trim()
         : instruction;
 
+    final fill = AppColors.chromeFill(context);
+    final ink = AppColors.inkOnChrome(context);
     return Material(
-      elevation: 6,
-      shadowColor: Colors.black54,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      color: AppColors.accent,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      color: fill,
       child: ConstrainedBox(
         constraints: const BoxConstraints(
           minHeight: NavHudTokens.nextTurnDistanceMinDp,
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.l,
             AppSpacing.m,
+            AppSpacing.s,
             AppSpacing.l,
-            AppSpacing.m,
+            AppSpacing.s,
           ),
           child: Row(
             children: [
-              Icon(icon, color: Colors.white, size: glyphDp),
-              const SizedBox(width: AppSpacing.m),
+              icon == Icons.navigation
+                  ? AetherNavMark(
+                      size: glyphDp,
+                      color: ink,
+                      stroke: fill,
+                      style: navPuckStyle,
+                    )
+                  : Icon(icon, color: ink, size: glyphDp),
+              const SizedBox(width: AppSpacing.s),
+              Text(
+                distance,
+                style: TextStyle(
+                  fontWeight: NavHudTokens.nextTurnDistanceWeight,
+                  fontSize: distanceDp,
+                  color: ink,
+                  height: 1.0,
+                  letterSpacing: -0.4,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      distance,
-                      style: TextStyle(
-                        fontWeight: NavHudTokens.nextTurnDistanceWeight,
-                        fontSize: distanceDp,
-                        color: Colors.white,
-                        height: 1.0,
-                        letterSpacing: -0.5,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      line,
-                      maxLines: NavHudTokens.nextTurnStreetMaxLines,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: NavHudTokens.nextTurnStreetWeight,
-                        fontSize: streetDp,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        height: 1.15,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  line,
+                  maxLines: NavHudTokens.nextTurnStreetMaxLines,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: NavHudTokens.nextTurnStreetWeight,
+                    fontSize: streetDp,
+                    color: ink.withValues(alpha: 0.92),
+                    height: 1.1,
+                  ),
                 ),
               ),
             ],

@@ -63,9 +63,9 @@ const schemaGroundY = 420.0;
 const schemaDotR = 8.0;
 const schemaHitRMin = 22.0;
 
-const statusColorOk = 0xFF22C55E;
+const statusColorOk = 0xFF7A8B73;
 const statusColorMaintenance = 0xFFEAB308;
-const statusColorMissing = 0xFF6B7280;
+const statusColorMissing = 0xFF9CA3AF;
 
 const schemaAssetPath = <String, String>{
   'road': 'assets/garage/silhouettes/road.svg',

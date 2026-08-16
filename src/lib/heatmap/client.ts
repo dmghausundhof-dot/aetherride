@@ -60,7 +60,7 @@ export async function contributeHeatmapTrack(input: {
       return {
         upserted: 0,
         ok: false,
-        message: "Heatmap: eingeloggt nötig für Community-Beitrag",
+        message: "Heatmap: eingeloggt nötig für den Beitrag",
       };
     }
     if (!res.ok) {
@@ -155,10 +155,10 @@ export async function fetchCommunityHeatmap(
       coldStart: m.coldStart === true || segments.length === 0,
       kThreshold: m.kThreshold ?? HEATMAP_K_THRESHOLD,
       attribution:
-        m.attribution ?? "© OpenStreetMap · AetherRide k≥5 Aggregate",
+        m.attribution ?? "© OpenStreetMap · FlowLine k≥5 Aggregate",
       disclaimer:
         m.disclaimer ??
-        `Community-Heatmap (k≥${m.kThreshold ?? HEATMAP_K_THRESHOLD}).`,
+        `Heatmap (k≥${m.kThreshold ?? HEATMAP_K_THRESHOLD}), anonym, ohne Zeitstempel.`,
     };
   } catch {
     return null;

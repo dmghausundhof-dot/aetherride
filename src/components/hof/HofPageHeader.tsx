@@ -10,7 +10,7 @@ export function HofPageHeader({
   return (
     <div>
       {kicker ? (
-        <p className="text-[11px] font-bold tracking-wide text-chrome">
+        <p className="text-[11px] font-bold tracking-wide text-text-secondary">
           {kicker}
         </p>
       ) : null}

@@ -15,7 +15,7 @@ import {
   type SyncConflictState,
 } from "@/lib/sync/webSync";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
 import { AuthCard } from "@/components/auth/AuthCard";
 
@@ -29,6 +29,8 @@ type AuthUser = {
 };
 
 export default function ProfilePage() {
+  const copy = useHofCopy();
+
   const profile = useAppStore((s) => s.riderProfile);
   const explanations = useAppStore((s) => s.profileExplanations);
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
@@ -233,9 +235,9 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-5 px-5 pb-10 pt-6 lg:max-w-3xl lg:px-10">
       <HofPageHeader
-        kicker={HOF_COPY.profileKicker}
-        title={HOF_COPY.profileTitle}
-        hint={HOF_COPY.profileHint}
+        kicker={copy.profileKicker}
+        title={copy.profileTitle}
+        hint={copy.profileHint}
       />
 
       <section className="rounded-2xl border border-border bg-surface p-4">
@@ -244,7 +246,7 @@ export default function ProfilePage() {
         </h3>
         {!configured ? (
           <p className="text-xs text-text-secondary">
-            {HOF_COPY.profileLocalOnly}
+            {copy.profileLocalOnly}
           </p>
         ) : authUser ? (
           <div className="space-y-2 text-sm">
@@ -320,7 +322,7 @@ export default function ProfilePage() {
               type="button"
               disabled={busy || subscriptionTier === "pro"}
               onClick={() => void startBilling("month")}
-              className="rounded-xl bg-chrome py-2 text-sm font-medium text-background disabled:opacity-40"
+              className="rounded-xl bg-chrome py-2 text-sm font-medium text-on-accent disabled:opacity-40"
             >
               Pro 6,99 €/Mo
             </button>
@@ -328,7 +330,7 @@ export default function ProfilePage() {
               type="button"
               disabled={busy || subscriptionTier === "pro"}
               onClick={() => void startBilling("year")}
-              className="rounded-xl bg-chrome py-2 text-sm font-medium text-background disabled:opacity-40"
+              className="rounded-xl bg-chrome py-2 text-sm font-medium text-on-accent disabled:opacity-40"
             >
               Pro 59,99 €/Jahr
             </button>
@@ -567,10 +569,10 @@ export default function ProfilePage() {
       )}
 
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="font-semibold">{HOF_COPY.profileBikesAtStand}</h3>
+        <h3 className="font-semibold">{copy.profileBikesAtStand}</h3>
         {bikes.length === 0 ? (
           <p className="mt-2 text-sm text-text-secondary">
-            {HOF_COPY.noBikeHere} · {HOF_COPY.profileNoKpi}
+            {copy.noBikeHere} · {copy.profileNoKpi}
           </p>
         ) : (
           <ul className="mt-2 space-y-1 text-sm">
@@ -586,7 +588,7 @@ export default function ProfilePage() {
           href="/home"
           className="mt-3 inline-block text-sm font-semibold text-chrome hover:underline"
         >
-          {HOF_COPY.profileArrive} →
+          {copy.profileArrive} →
         </Link>
       </section>
 
@@ -617,7 +619,7 @@ export default function ProfilePage() {
               Assistent
             </Link>
             <span className="block text-xs text-text-secondary">
-              {HOF_COPY.chatHint}
+              {copy.chatHint}
             </span>
           </li>
           <li>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 
 export type GeocodeHit = {
   label: string;
@@ -19,18 +20,27 @@ export async function GET(req: Request) {
     Math.max(1, Number(url.searchParams.get("limit") ?? 5) || 5)
   );
 
+  const lang = chromeLangFrom(url.searchParams.get("lang"));
+
   if (q.length < 2) {
     return NextResponse.json({
       hits: [] as GeocodeHit[],
       attribution: "© OpenStreetMap · Photon",
-      message: "Mindestens 2 Zeichen.",
+      message:
+        lang === "en"
+          ? "At least 2 characters."
+          : lang === "fr"
+            ? "Au moins 2 caractères."
+            : lang === "it"
+              ? "Almeno 2 caratteri."
+              : "Mindestens 2 Zeichen.",
     });
   }
 
   try {
     const photon = new URL("https://photon.komoot.io/api/");
     photon.searchParams.set("q", q);
-    photon.searchParams.set("lang", "de");
+    photon.searchParams.set("lang", lang);
     photon.searchParams.set("limit", String(limit));
     // DACH bias (override with lat/lon near user)
     const biasLat = url.searchParams.get("lat") ?? "48.0";
@@ -42,7 +52,7 @@ export async function GET(req: Request) {
     const res = await fetch(photon.toString(), {
       headers: {
         Accept: "application/json",
-        "User-Agent": "AetherRide/1.0 (geocode; contact@aetherride.local)",
+        "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
       },
       next: { revalidate: 3600 },
     });
@@ -54,6 +64,7 @@ export async function GET(req: Request) {
         lat: Number(biasLat),
         lng: Number(biasLon),
         limit,
+        language: lang,
       });
       if (g.hits.length > 0) {
         return NextResponse.json({
@@ -127,6 +138,7 @@ export async function GET(req: Request) {
       lat: Number(biasLat),
       lng: Number(biasLon),
       limit,
+      language: lang,
     });
     if (g.hits.length > 0) {
       return NextResponse.json({

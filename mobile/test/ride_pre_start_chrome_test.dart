@@ -1,5 +1,6 @@
 import 'package:aetherride_mobile/domain/sport/discipline_ux.dart';
 import 'package:aetherride_mobile/l10n/app_localizations.dart';
+import 'package:aetherride_mobile/presentation/map/nav_puck_image.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_next_turn_banner.dart';
 import 'package:aetherride_mobile/presentation/ride/widgets/ride_pre_start_chrome.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,26 @@ void main() {
       expect(started, isTrue);
     });
 
-    testWidgets('starting state disables CTA and shows Startet…', (tester) async {
+    testWidgets('freeride has start CTA and no nav-symbol picker',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          RidePreStartChrome(
+            routeName: null,
+            onStart: () {},
+          ),
+        ),
+      );
+      expect(find.byKey(const Key('ride-primary-start')), findsOneWidget);
+      expect(find.text(MultiSportCopy.startFreeride), findsOneWidget);
+      expect(find.byKey(const Key('nav-puck-prestart-mark')), findsNothing);
+      expect(find.byKey(const Key('nav-puck-open-picker')), findsNothing);
+      expect(find.text('Symbol'), findsNothing);
+      expect(find.text('Navi-Symbol'), findsNothing);
+    });
+
+    testWidgets('starting state disables CTA and shows Startet…',
+        (tester) async {
       await tester.pumpWidget(
         _wrap(
           RidePreStartChrome(
@@ -95,7 +115,8 @@ void main() {
   });
 
   group('RideNextTurnBanner (N-HUD-01)', () {
-    testWidgets('next-turn distance paints at 48dp Bold (token)', (tester) async {
+    testWidgets('next-turn distance paints at 32dp Bold (token)',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -111,13 +132,28 @@ void main() {
       );
 
       final distance = tester.widget<Text>(find.text('120 m'));
-      expect(distance.style?.fontSize, 48);
+      expect(distance.style?.fontSize, 32);
       expect(distance.style?.fontWeight, FontWeight.w700);
 
       final box = tester.renderObject<RenderBox>(
         find.byType(RideNextTurnBanner),
       );
-      expect(box.size.height, greaterThanOrEqualTo(40));
+      expect(box.size.height, greaterThanOrEqualTo(28));
+    });
+
+    testWidgets('generic navigation glyph uses AetherNavMark', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: RideNextTurnBanner(
+              distance: '200 m',
+              instruction: 'Losfahren',
+              icon: Icons.navigation,
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(AetherNavMark), findsOneWidget);
     });
   });
 }

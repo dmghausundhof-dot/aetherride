@@ -99,12 +99,12 @@ export function BikeSchema({
           {category}
         </span>
         {ebikeBadge && (
-          <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-[11px] font-bold text-text-primary">
+            <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-[11px] font-bold text-foreground">
             E-Bike
           </span>
         )}
         {bike.isActive && (
-          <span className="rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-white">
+          <span className="rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-bold text-on-accent">
             Aktiv
           </span>
         )}
@@ -126,7 +126,7 @@ export function BikeSchema({
         <button
           type="button"
           onClick={() => onPrimaryAction(action)}
-          className="mt-3 w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+          className="mt-3 w-full rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
         >
           {garagePrimaryActionLabelDe(action)}
         </button>

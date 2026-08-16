@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 type AuthUser = {
   id: string;
@@ -20,6 +22,9 @@ export function AuthCard({
   onAuthed?: () => void | Promise<void>;
   variant?: "page" | "embedded";
 }) {
+  const copy = useHofCopy();
+  const chrome = webChrome(useChromeLang());
+
   const router = useRouter();
   const configured = isSupabaseConfigured();
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -122,7 +127,7 @@ export function AuthCard({
 
   if (!configured) {
     return (
-      <p className="text-sm text-text-secondary">{HOF_COPY.profileLocalOnly}</p>
+      <p className="text-sm text-text-secondary">{copy.profileLocalOnly}</p>
     );
   }
 
@@ -131,20 +136,20 @@ export function AuthCard({
     return (
       <div className="space-y-3 text-sm">
         <p>
-          {authUser.email ?? "Angemeldet"} · {HOF_COPY.profileWelcome}
+          {authUser.email ?? copy.signedIn} · {copy.profileWelcome}
         </p>
         <div className="flex flex-wrap gap-2">
           <Link
             href={redirectTo}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-chrome px-4 text-sm font-semibold text-background"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-chrome px-4 text-sm font-semibold text-on-accent"
           >
-            Zum Hof
+            {chrome.toHof}
           </Link>
           <Link
             href="/profile"
             className="inline-flex h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-medium"
           >
-            {HOF_COPY.profile}
+            {copy.profile}
           </Link>
         </div>
       </div>
@@ -174,7 +179,7 @@ export function AuthCard({
           type="button"
           disabled={busy}
           onClick={() => void login()}
-          className="rounded-xl bg-chrome py-2.5 text-sm font-medium text-background disabled:opacity-50"
+          className="rounded-xl bg-chrome py-2.5 text-sm font-medium text-on-accent disabled:opacity-50"
         >
           Anmelden
         </button>

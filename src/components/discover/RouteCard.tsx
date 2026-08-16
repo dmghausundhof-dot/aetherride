@@ -9,6 +9,8 @@ import {
   formatDistanceElevation,
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { discoverUi } from "@/lib/i18n/discoverUi";
 
 export function RouteCard({
   route,
@@ -25,7 +27,7 @@ export function RouteCard({
   onStart: () => void;
   onToggleSave: () => void;
 }) {
-  // Same sanitize as RouteDetail header — never show 0 hm / absurd values.
+  const d = discoverUi(useChromeLang());
   const elev = sanitizeElevationM(route.elevationM, route.distanceKm);
   return (
     <article
@@ -39,11 +41,11 @@ export function RouteCard({
           <div className="min-w-0">
             <h3 className="font-semibold">{route.name}</h3>
             <p className="mt-0.5 text-[11px] text-text-secondary">
-              Tour-Idee · Geometrie wird beim Planen geroutet
+              {d.tourIdea}
             </p>
             <p className="mt-0.5 text-xs tabular-nums text-text-secondary">
               {route.distanceFromOriginKm != null
-                ? `~${route.distanceFromOriginKm} km entfernt · `
+                ? d.away(route.distanceFromOriginKm)
                 : ""}
               {formatDistanceElevation(route.distanceKm, elev)} ·{" "}
               {route.durationMin} min
@@ -67,7 +69,7 @@ export function RouteCard({
           <TourCommunityChip tourId={route.id} />
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Route className="h-3 w-3" />
-            {route.loop ? "⟲ Runde" : "A→B"}
+            {route.loop ? d.loopRound : d.pointAb}
           </span>
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Mountain className="h-3 w-3" />
@@ -75,13 +77,14 @@ export function RouteCard({
           </span>
         </div>
         <p className="mt-2 line-clamp-2 text-xs text-text-secondary">
-          Weil: {route.reasons.slice(0, 2).join(" — ")}
+          {d.because}
+          {route.reasons.slice(0, 2).join(" — ")}
         </p>
         {route.rangeNote && (
           <p className="mt-2 text-xs text-warning">{route.rangeNote}</p>
         )}
         <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent">
-          Details <ChevronRight className="h-3.5 w-3.5" />
+          {d.details} <ChevronRight className="h-3.5 w-3.5" />
         </p>
       </button>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -89,7 +92,7 @@ export function RouteCard({
           type="button"
           onClick={onToggleSave}
           className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-sm"
-          aria-label={saved ? "Gespeichert entfernen" : "Speichern"}
+          aria-label={saved ? d.unsaveAria : d.saveAria}
         >
           {saved ? (
             <BookmarkCheck className="h-4 w-4 text-accent" />
@@ -101,14 +104,14 @@ export function RouteCard({
           href={`/tours/${route.id}`}
           className="inline-flex items-center justify-center gap-1 rounded-xl border border-border px-3 py-2.5 text-xs font-medium text-text-secondary hover:text-foreground"
         >
-          <ExternalLink className="h-3.5 w-3.5" /> Seite
+          <ExternalLink className="h-3.5 w-3.5" /> {d.pageLink}
         </Link>
         <button
           type="button"
           onClick={onStart}
-          className="flex min-w-[7rem] flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+          className="flex min-w-[7rem] flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
         >
-          <Play className="h-4 w-4 fill-current" /> In App starten
+          <Play className="h-4 w-4 fill-current" /> {d.startInApp}
         </button>
       </div>
     </article>

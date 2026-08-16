@@ -1,0 +1,24 @@
+{
+  "id": "at-kaernten",
+  "name": "Kärnten",
+  "bbox": [
+    12.65,
+    46.37,
+    15.1,
+    47.15
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-kaernten.tar.zst",
+    "packGz": "at-kaernten.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

@@ -3,11 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
+import 'l10n/app_locale.dart';
 import 'l10n/app_localizations.dart';
+import 'presentation/shared/hof_splash.dart';
 import 'presentation/shell/app_shell.dart';
 
-class AetherRideApp extends StatelessWidget {
-  const AetherRideApp({super.key});
+class FlowLineApp extends StatelessWidget {
+  const FlowLineApp({super.key, this.ready = true});
+
+  final bool ready;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +30,8 @@ class AetherRideApp extends StatelessWidget {
         theme: AppTheme.dark,
         darkTheme: AppTheme.dark,
         themeMode: ThemeMode.dark,
-        // Gerätesprache; DE ist Primär/Fallback (siehe localeResolutionCallback).
+        // Chrome: de/en/fr/it. Land bleibt am Locale. Gerätesprache → Hof-Titel
+        // (AppLocaleBinding), nicht der UI-Fallback.
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -34,18 +39,19 @@ class AetherRideApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        localeResolutionCallback: (locale, supported) {
-          if (locale != null) {
-            for (final candidate in supported) {
-              if (candidate.languageCode == locale.languageCode) {
-                // Land bleibt am Locale (Titel folgt Land, Chrome der Sprache).
-                return Locale(candidate.languageCode, locale.countryCode);
-              }
-            }
-          }
-          return Locale('de', locale?.countryCode);
+        localeResolutionCallback: AppLocaleBinding.resolve,
+        builder: (context, child) {
+          AppLocaleBinding.sync(context);
+          return child ?? const SizedBox.shrink();
         },
-        home: const AppShell(),
+        home: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 380),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: ready
+              ? const AppShell(key: ValueKey('app'))
+              : const HofSplash(key: ValueKey('splash')),
+        ),
       ),
     );
   }

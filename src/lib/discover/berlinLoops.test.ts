@@ -62,6 +62,23 @@ assert(
 );
 
 assert(
+  loops.some((r) => r.id.includes("mueggelberge")),
+  "Berlin Müggelberge MTB gap seed present"
+);
+assert(
+  berlinSixtyMinLoopSuggestions([10.139, 54.323]).some((r) =>
+    r.id.includes("roenner")
+  ),
+  "Kiel Rönner Gehege trail seed present"
+);
+assert(
+  berlinSixtyMinLoopSuggestions([7.749, 46.021]).some((r) =>
+    r.id.includes("zermatt")
+  ),
+  "Zermatt local loop present"
+);
+
+assert(
   DEMO_CITY_CHIPS.some((c) => c.name === "Berlin") &&
     DEMO_CITY_CHIPS.some((c) => c.name === "Heidelberg") &&
     DEMO_CITY_CHIPS.some((c) => c.name === "Mannheim"),

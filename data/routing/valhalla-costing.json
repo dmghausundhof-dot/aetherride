@@ -82,5 +82,10 @@
         }
       }
     }
+  },
+    "auto": {
+      "costing": "auto",
+      "costing_options": { "auto": { "use_highways": 1.0, "use_tolls": 0.5 } }
+    }
   }
 }

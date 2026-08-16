@@ -2,15 +2,16 @@ import 'dart:math' as math;
 
 /// Welche Seed-/Katalog-Touren auf Karte und Touren-Liste landen.
 ///
-/// Nähe zuerst; wenn die Nähe dünn ist, mit den nächstgelegenen füllen —
-/// kein 3-Karten-Stub, keine erfundenen Tracks.
+/// Nur echte Nähe — nie Wien für Heidelberg, nie Hamburg für Kiel.
+/// Ist die Region dünn, bleibt die Liste kurz statt mit fremder Landschaft
+/// auf 12 Karten aufgefüllt.
 class TourCoverage {
   TourCoverage._();
 
   /// Soft-Nähe (Wiesloch→HD/MA plus Karlsruhe/Mainz/Frankfurt).
   static const double nearbyRadiusKm = 90;
 
-  /// Untergrenze, sobald mehr Seeds existieren.
+  /// Untergrenze, sobald mehr Seeds *in der Nähe* existieren.
   static const int minListCount = 12;
 
   /// Obere Grenze für Liste + Map-Pins (MapLibre-Cap).
@@ -24,13 +25,12 @@ class TourCoverage {
     int maxItems = maxCount,
   }) {
     if (items.isEmpty) return const [];
-    final ranked = List<T>.from(items)
+    final nearby = items.where((e) => distanceKm(e) <= nearbyKm).toList()
       ..sort((a, b) => distanceKm(a).compareTo(distanceKm(b)));
-    final nearbyN = ranked.where((e) => distanceKm(e) <= nearbyKm).length;
-    final want = math.min(
-      maxItems,
-      math.max(minCount, nearbyN),
-    );
-    return ranked.take(math.min(want, ranked.length)).toList();
+    if (nearby.isEmpty) return const [];
+    // minCount is kept for call-site compatibility; we never invent
+    // out-of-radius cards to reach it.
+    final want = math.min(maxItems, nearby.length);
+    return nearby.take(want).toList();
   }
 }

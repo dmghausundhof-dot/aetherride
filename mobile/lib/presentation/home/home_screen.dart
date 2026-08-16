@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,24 +8,40 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
 import '../../data/routing/naehe_seeds.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/offline_pack_dirs.dart';
+import '../../data/routing/overlay_regions.dart';
 import '../../data/weather/weather_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
+import '../../domain/component.dart';
+import '../../domain/garage/die_box.dart';
 import '../../domain/home/greeting.dart';
 import '../../domain/home/hof_gate.dart';
+import '../../domain/home/hof_pack.dart';
+import '../../domain/home/hof_stand.dart';
 import '../../domain/home/hof_title.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
-import '../../domain/sport/discipline_ux.dart';
+import '../../domain/tours/route_visibility.dart';
+import '../../domain/tours/tour_akte.dart';
+import '../../data/routing/saved_route_meta_store.dart';
+import '../../domain/saved_route_note.dart';
+import '../../l10n/app_locale.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
+import '../discover/offline_maps_sheet.dart';
+import '../post_ride/post_ride_screen.dart';
 import '../profile/profile_screen.dart';
 import '../shared/bike_hero_banner.dart';
 import '../shell/shell_tabs.dart';
+import 'hof_coach_banner.dart';
 import 'hof_watch_card.dart';
 import 'hof_watch_bar_button.dart';
 
@@ -44,17 +61,96 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   NaeheSeedsBundle? _seeds;
   HofGatePick _gate = const HofGatePick();
   TourCommunityCounts? _neighbors;
+  String? _tafelStimmenText;
+  String? _tafelStimmenRouteId;
+  String? _tafelGroupText;
+  HofPackHint? _packHint;
 
   @override
   void initState() {
     super.initState();
+    TourCommunityStore.revision.addListener(_onCommunityRevision);
+    RideGroupStore.revision.addListener(_onGroupRevision);
     unawaited(_bootHof());
+  }
+
+  @override
+  void dispose() {
+    TourCommunityStore.revision.removeListener(_onCommunityRevision);
+    RideGroupStore.revision.removeListener(_onGroupRevision);
+    super.dispose();
+  }
+
+  void _onGroupRevision() => unawaited(_loadTafelGroup());
+
+  void _onCommunityRevision() {
+    if (!mounted) return;
+    final id = _gate.seed?.id;
+    if (id != null) unawaited(_loadNeighbors(id));
+    unawaited(_loadTafelStimmen());
   }
 
   Future<void> _bootHof() async {
     await _loadPosition();
     if (!mounted) return;
     await Future.wait([_loadWeather(), _loadGate()]);
+    if (mounted) {
+      unawaited(_loadTafelStimmen());
+      unawaited(_loadTafelGroup());
+    }
+  }
+
+  Future<void> _loadTafelStimmen() async {
+    final saved = ref.read(savedRoutesProvider).valueOrNull ?? const [];
+    if (saved.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _tafelStimmenText = null;
+          _tafelStimmenRouteId = null;
+        });
+      }
+      return;
+    }
+    final metas = await SavedRouteMetaStore.listAll();
+    final store = TourCommunityStore();
+    String? text;
+    String? routeId;
+    for (final r in saved) {
+      final meta = metas[r.id] ?? SavedRouteMeta.empty;
+      final stimmenId = RouteVisibility.stimmenTourIdOf(r.id, meta);
+      if (stimmenId == null) continue;
+      try {
+        final local = await store.reviewsForTour(stimmenId);
+        await store.mergeCloudBundle(stimmenId);
+        final cloud = TourCommunityStore.countsCache[stimmenId];
+        final cloudN = cloud?.reviewCount ?? 0;
+        final n = local.length > cloudN ? local.length : cloudN;
+        if (n <= 0) continue;
+        if (!mounted) return;
+        final loc = AppLocalizations.of(context);
+        text = n == 1
+            ? loc.hofTafelVoiceOne(r.name)
+            : loc.hofTafelVoices(n, r.name);
+        routeId = r.id;
+        break;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {
+      _tafelStimmenText = text;
+      _tafelStimmenRouteId = routeId;
+    });
+  }
+
+  Future<void> _loadTafelGroup() async {
+    final groups = await RideGroupStore().activeGroups();
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _tafelGroupText = groups.isEmpty
+          ? null
+          : l10n.hofTafelGroup(groups.first.title);
+    });
   }
 
   Future<void> _loadPosition() async {
@@ -86,6 +182,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _loadPackHint() async {
+    final lat = _gate.seed?.centerLat ?? _lat;
+    final lng = _gate.seed?.centerLng ?? _lng;
+    if (lat == null || lng == null) {
+      if (mounted) setState(() => _packHint = null);
+      return;
+    }
+    try {
+      final region = overlayRegionForPoint(lng, lat);
+      final ids = await OfflinePackDirs.legitimateIds();
+      final covered = await OfflineMapsPrefs.coversRoute(
+        fromLng: lng,
+        fromLat: lat,
+        toLng: lng,
+        toLat: lat,
+      );
+      final ready =
+          covered || (region != null && ids.contains(region.id));
+      final hint = hofMissingPack(
+        regionId: region?.id,
+        regionName: region?.name,
+        packReady: ready,
+      );
+      if (mounted) setState(() => _packHint = hint);
+    } catch (_) {
+      if (mounted) setState(() => _packHint = null);
+    }
   }
 
   Future<void> _loadWeather() async {
@@ -134,14 +259,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (bundle == null) return;
     final saved = ref.read(savedRoutesProvider).valueOrNull ?? [];
     final wet = _weather?.trailHint == 'wet_likely';
+    final bikes = ref.read(bikesProvider).valueOrNull ?? [];
+    Bike? active;
+    for (final b in bikes) {
+      if (b.isActive) {
+        active = b;
+        break;
+      }
+    }
+    active ??= bikes.isEmpty ? null : bikes.first;
+    final store = ref.read(userProfileStoreProvider);
     final pick = pickHofGate(
       loops: bundle.loops,
       saved: saved,
       lat: _lat,
       lng: _lng,
       trailsWet: wet,
+      preferred: active?.category ?? store.preferredSport,
+      preferredSports: active != null ? const [] : store.preferredSports,
     );
     setState(() => _gate = pick);
+    unawaited(_loadPackHint());
     final id = pick.seed?.id;
     if (id != null) unawaited(_loadNeighbors(id));
   }
@@ -179,6 +317,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       showDragHandle: true,
       builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -191,27 +330,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Systemstatus',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+                Text(
+                  loc.hofSystemStatus,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
                 ),
                 const SizedBox(height: AppSpacing.m),
                 if (!showSupabaseWarning && !showSyncWarning)
-                  const Text(
-                    'Alles verbunden — Werkstatt, Fahrten und Sync laufen normal.',
-                    style: TextStyle(color: AppColors.muted),
+                  Text(
+                    loc.hofSystemOk,
+                    style: const TextStyle(color: AppColors.muted),
                   ),
                 if (showSupabaseWarning) ...[
-                  const ListTile(
+                  ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.settings_outlined),
+                    leading: const Icon(Icons.settings_outlined),
                     title: Text(
-                      'Supabase nicht konfiguriert',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      loc.hofSupabaseMissing,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    subtitle: Text(
-                      'Cloud-Sync ist nicht eingerichtet — Anmeldung und Sync sind aus.',
-                    ),
+                    subtitle: Text(loc.hofSupabaseMissingHint),
                   ),
                   const SizedBox(height: AppSpacing.s),
                 ],
@@ -221,13 +358,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     leading: const Icon(Icons.cloud_off_outlined),
                     title: Text(
                       syncStatus == SyncAuthStatus.unauthorized
-                          ? 'Sync: Sitzung abgelaufen'
-                          : 'Sync nur mit Login',
+                          ? loc.hofSyncSessionExpired
+                          : loc.hofSyncLoginOnly,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    subtitle: const Text(
-                      'Garage/Rides bleiben lokal — Konto für Cloud-Sync.',
-                    ),
+                    subtitle: Text(loc.hofSyncLocalHint),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -237,14 +372,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               unawaited(ref.read(syncEngineProvider).syncNow());
                               Navigator.pop(ctx);
                             },
-                            child: const Text('Erneut'),
+                            child: Text(loc.retry),
                           ),
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
                             openAuthScreen(context);
                           },
-                          child: const Text('Anmelden'),
+                          child: Text(loc.signIn),
                         ),
                       ],
                     ),
@@ -266,12 +401,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.werkstatt;
   }
 
+  void _openMappe({String? akteRouteId}) {
+    if (akteRouteId != null && akteRouteId.isNotEmpty) {
+      ref.read(discoverPendingAkteRouteIdProvider.notifier).state =
+          akteRouteId;
+    }
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.platz;
+  }
+
   void _startRide() {
     final done = ref.read(onboardingDoneProvider);
     if (done == false) return;
     ref.read(discoverLaunchModeProvider.notifier).state =
         DiscoverLaunchMode.rideOut;
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+  }
+
+  void _openPostRide(String rideId) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PostRideScreen(rideId: rideId),
+      ),
+    );
+  }
+
+  Future<void> _openOfflinePacks() async {
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => OfflineMapsSheet(
+        userLng: _lng,
+        userLat: _lat,
+      ),
+    );
+    if (mounted) await _loadPackHint();
   }
 
   void _openGate() {
@@ -320,7 +483,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _gate.seed != null ? countryFromSeedId(_gate.seed!.id) : null;
     return hofTitleFor(
       countryCode: seedCountry ?? locale.countryCode,
-      languageCode: locale.languageCode,
+      languageCode: AppLocaleBinding.hofLanguageCode(),
     );
   }
 
@@ -329,6 +492,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l10n = AppLocalizations.of(context);
     ref.listen(savedRoutesProvider, (prev, next) {
       if (next.hasValue && _seeds != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _recomputeGate();
+        });
+      }
+      if (next.hasValue) {
+        unawaited(_loadTafelStimmen());
+      }
+    });
+    ref.listen(bikesProvider, (prev, next) {
+      if (_seeds != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _recomputeGate();
         });
@@ -349,29 +522,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (list != null && list.isNotEmpty) {
       active = list.firstWhere((b) => b.isActive, orElse: () => list.first);
     }
-    final others = (list ?? [])
-        .where((b) => active == null || b.id != active.id)
-        .toList();
+    final others = active == null
+        ? const <Bike>[]
+        : hofStandOthers(active: active, all: list ?? const <Bike>[]);
 
     final displayName = store.displayName;
     final initials = avatarInitials(
       displayName: displayName,
       email: session?.user.email,
     );
+    final photo = store.profilePhotoPath;
 
     RideReturn? ret;
     if (active != null) {
       ret = rideReturnForBike(bikeId: active.id, rides: rides);
     }
     final justBack = ret?.hidesGate == true;
-    final bleAwake = ref.read(bleCoreProvider).isConnected;
+    final bleAwake = ref.read(bleCoreProvider).hasBikeLiveMetrics;
 
     final sky = _skyLine(l10n);
     final title = _hofTitle(context);
     final landscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
-    final shortLandscape =
-        landscape && MediaQuery.sizeOf(context).height < 560;
+    final shortLandscape = landscape && MediaQuery.sizeOf(context).height < 560;
 
     final header = Row(
       children: [
@@ -381,40 +554,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             key: const Key('hof-title'),
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: AppColors.forestOnDark,
+                  color: AppColors.chrome,
                   fontSize: landscape ? 22 : null,
                 ),
           ),
         ),
         const HofWatchBarButton(),
-        const SizedBox(width: AppSpacing.xs),
-        _SystemStatusIcon(
-          hasNotice: showSupabaseWarning || showSyncWarning,
-          onTap: () => _openSystemStatusSheet(
-            context,
-            showSupabaseWarning: showSupabaseWarning,
-            showSyncWarning: showSyncWarning,
-            syncStatus: syncStatus,
+        const HofCoachBellButton(),
+        if (showSupabaseWarning || showSyncWarning) ...[
+          const SizedBox(width: AppSpacing.xs),
+          _SystemStatusIcon(
+            hasNotice: true,
+            onTap: () => _openSystemStatusSheet(
+              context,
+              showSupabaseWarning: showSupabaseWarning,
+              showSyncWarning: showSyncWarning,
+              syncStatus: syncStatus,
+            ),
           ),
-        ),
+        ],
         const SizedBox(width: AppSpacing.xs),
         Semantics(
           button: true,
           label: l10n.profile,
+          excludeSemantics: true,
           child: Tooltip(
             message: l10n.profile,
             child: InkWell(
               onTap: () => openProfileScreen(context),
               borderRadius: BorderRadius.circular(24),
-              child: CircleAvatar(
-                backgroundColor: AppColors.forest.withValues(alpha: 0.12),
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    color: session != null ? AppColors.accent : AppColors.muted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+              child: _HofProfileAvatar(
+                initials: initials,
+                photo: photo,
+                signedIn: session != null,
               ),
             ),
           ),
@@ -423,28 +595,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ],
     );
 
-    final skyChip = sky.isEmpty
+    final wetSky = _weather?.trailHint == 'wet_likely';
+    final skyBand = Color.alphaBlend(
+      AppColors.sage.withValues(alpha: wetSky ? 0.40 : 0.30),
+      AppColors.hofGround,
+    );
+    final yard = Color.alphaBlend(
+      AppColors.sage.withValues(alpha: wetSky ? 0.16 : 0.10),
+      AppColors.hofGround,
+    );
+    final skyLine = sky.isEmpty
         ? null
-        : Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.m,
-              vertical: AppSpacing.s,
-            ),
-            decoration: BoxDecoration(
-              color: (_weather?.trailHint == 'wet_likely')
-                  ? AppColors.forest.withValues(alpha: 0.18)
-                  : AppColors.forest.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppRadius.chip),
-            ),
-            child: Text(
-              sky,
-              key: const Key('hof-sky'),
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+        : Text(
+            sky,
+            key: const Key('hof-sky'),
+            style: const TextStyle(
+              color: AppColors.sageOnDark,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           );
 
@@ -470,58 +638,146 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (active == null) {
           return _EmptyStand(l10n: l10n, compact: landscape);
         }
-        return _Resident(
-          bike: active,
-          others: others,
-          ret: ret!,
-          l10n: l10n,
-          bleAwake: bleAwake,
-          photoHeight: shortLandscape ? 72 : (landscape ? 108 : 188),
-          onOpenBike: () => _openGarage(bikeId: active!.id),
-          onBringForward: (id) async {
-            await ref.read(garageRepositoryProvider).setActiveBike(id);
-            ref.invalidate(bikesProvider);
-          },
+        final comps = ref
+                    .watch(bikeComponentsProvider(active.id))
+                    .valueOrNull ??
+                const <BikeComponent>[];
+        final hasMotor = comps.any((c) => c.slot == ComponentSlot.motor);
+        final lastId = ret?.rideId;
+        return Semantics(
+          container: true,
+          explicitChildNodes: true,
+          child: _Resident(
+            bike: active,
+            others: others,
+            ret: ret!,
+            l10n: l10n,
+            sport: l10n.hofResidentSportLabel(active, hasMotor: hasMotor),
+            bleAwake: bleAwake,
+            photoHeight: shortLandscape ? 72 : (landscape ? 96 : 112),
+            hasPhoto: (store.bikePhotos[active.id]?.trim().isNotEmpty ??
+                false),
+            onOpenBike: () => _openGarage(bikeId: active!.id),
+            onBringForward: (id) async {
+              await ref.read(garageRepositoryProvider).setActiveBike(id);
+              ref.invalidate(bikesProvider);
+            },
+            onLastRide: (lastId != null && lastId.isNotEmpty)
+                ? () => _openPostRide(lastId)
+                : null,
+          ),
         );
       },
     );
 
-    Widget care = const SizedBox.shrink();
-    if (active != null) {
-      care = Consumer(
+    final savedCount =
+        ref.watch(savedRoutesProvider).valueOrNull?.length ?? 0;
+
+    Widget tafelLine(HofTafelItem item, {required bool overdue}) {
+      return _TafelLine(
+        key: Key(
+          item.kind == HofTafelKind.care
+              ? 'hof-tafel-care'
+              : 'hof-tafel-${item.id}',
+        ),
+        label: item.text,
+        color: item.kind == HofTafelKind.care && overdue
+            ? AppColors.error
+            : AppColors.muted,
+        onTap: item.kind == HofTafelKind.care
+            ? () {
+                final id = active?.id;
+                if (id != null) _openGarage(bikeId: id);
+              }
+            : () => _openMappe(
+                  akteRouteId: item.kind == HofTafelKind.stimmen
+                      ? _tafelStimmenRouteId
+                      : null,
+                ),
+      );
+    }
+
+    Widget tourColumn(String? careText, {bool overdue = false}) {
+      final lines = buildHofTafel(
+        careText: careText,
+        stimmenText: _tafelStimmenText,
+        groupText: _tafelGroupText,
+        savedCount: savedCount,
+      );
+      if (lines.isEmpty) return const SizedBox.shrink();
+      final careLines =
+          lines.where((e) => e.kind == HofTafelKind.care).toList();
+      final tourLines =
+          lines.where((e) => e.kind != HofTafelKind.care).toList();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (careLines.isNotEmpty)
+            _TafelBoard(
+              key: const Key('hof-tafel-workshop'),
+              kicker: l10n.navWorkshop,
+              children: [
+                for (final item in careLines)
+                  tafelLine(item, overdue: overdue),
+              ],
+            ),
+          if (careLines.isNotEmpty && tourLines.isNotEmpty)
+            const SizedBox(height: AppSpacing.s),
+          if (tourLines.isNotEmpty)
+            _TafelBoard(
+              key: const Key('hof-tafel-board'),
+              kicker: l10n.hofTafelTitle,
+              children: [
+                for (final item in tourLines) tafelLine(item, overdue: false),
+              ],
+            ),
+        ],
+      );
+    }
+
+    final Bike? residentForTafel = active;
+    late final Widget tafelBody;
+    if (residentForTafel == null) {
+      tafelBody = tourColumn(null);
+    } else {
+      final bike = residentForTafel;
+      tafelBody = Consumer(
         builder: (context, ref, _) {
-          final compsAsync = ref.watch(bikeComponentsProvider(active!.id));
+          final compsAsync = ref.watch(bikeComponentsProvider(bike.id));
+          final setup =
+              ref.watch(currentSetupProvider(bike.id)).valueOrNull;
+          final logs = ref.watch(userProfileStoreProvider).maintenanceLogs;
           return compsAsync.when(
             data: (comps) {
               final due = listDueMaintenance(
-                bike: active!,
+                bike: bike,
                 components: comps,
               );
-              if (due.isEmpty) return const SizedBox.shrink();
-              final top = due.first;
-              return Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.m),
-                child: InkWell(
-                  onTap: () => _openGarage(bikeId: active!.id),
-                  child: Text(
-                    l10n.hofCareInWorkshop(top.label),
-                    style: TextStyle(
-                      color: top.status == DueStatus.overdue
-                          ? Colors.redAccent
-                          : AppColors.muted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+              final plan = planDieBox(
+                bike: bike,
+                components: comps,
+                currentSetup: setup,
+                setups: setup != null ? [setup] : const [],
+                due: due,
+                logs: logs,
+              );
+              final item = tafelCareItem(plan);
+              return tourColumn(
+                item == null ? null : l10n.hofCareInWorkshop(item.title),
+                overdue: item?.due?.status == DueStatus.overdue,
               );
             },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            loading: () => tourColumn(null),
+            error: (_, __) => tourColumn(null),
           );
         },
       );
     }
+    final tafel = Semantics(
+      container: true,
+      explicitChildNodes: true,
+      child: tafelBody,
+    );
 
     final gate = (!justBack)
         ? _GateCard(
@@ -532,13 +788,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           )
         : null;
 
+    final ctaHeight = shortLandscape ? 44.0 : 52.0;
+    final emptyStand = active == null;
     final cta = FilledButton(
       key: const Key('hof-ride-out'),
-      style: AppTheme.rideOutCta(height: shortLandscape ? 44 : 52),
-      onPressed: _startRide,
+      style: emptyStand
+          ? AppTheme.parkCta(height: ctaHeight)
+          : AppTheme.rideOutCta(height: ctaHeight),
+      onPressed: emptyStand
+          ? () => _openGarage(addBike: true)
+          : _startRide,
       child: Text(
-        active == null
-            ? l10n.hofJustRide
+        emptyStand
+            ? l10n.hofParkBike
             : (justBack ? l10n.hofRideOutAgain : l10n.hofRideOut),
         style: const TextStyle(
           fontWeight: FontWeight.w800,
@@ -549,11 +811,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final secondary = Center(
       child: TextButton(
-        onPressed: active == null
-            ? () => _openGarage(addBike: true)
+        onPressed: emptyStand
+            ? _startRide
             : () => _openGarage(bikeId: active!.id),
         child: Text(
-          active == null ? l10n.hofParkBike : l10n.hofOpenBike,
+          emptyStand ? l10n.hofRideWithoutBike : l10n.hofOpenBike,
         ),
       ),
     );
@@ -571,9 +833,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     header,
-                    if (!short && skyChip != null) ...[
+                    if (!short && skyLine != null) ...[
                       const SizedBox(height: AppSpacing.s),
-                      skyChip,
+                      skyLine,
                     ],
                     if (!short && gpsHonesty != null) gpsHonesty,
                     const SizedBox(height: AppSpacing.s),
@@ -588,10 +850,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   resident,
-                                  care,
-                                  if (short && skyChip != null) ...[
+                                  tafel,
+                                  if (short && skyLine != null) ...[
                                     const SizedBox(height: AppSpacing.s),
-                                    skyChip,
+                                    skyLine,
                                   ],
                                   if (short && gpsHonesty != null) gpsHonesty,
                                 ],
@@ -614,6 +876,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     const SizedBox(height: AppSpacing.s),
                                     gate,
                                   ],
+                                  if (_packHint != null)
+                                    _TafelLine(
+                                      key: const Key('hof-pack-missing'),
+                                      label: l10n.hofPackMissing(
+                                        l10n.overlayRegionNameFor(
+                                          _packHint!.regionId,
+                                          _packHint!.regionName,
+                                        ),
+                                      ),
+                                      onTap: () =>
+                                          unawaited(_openOfflinePacks()),
+                                    ),
                                 ],
                               ),
                             ),
@@ -631,30 +905,187 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return Scaffold(
+      backgroundColor: yard,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            header,
-            if (skyChip != null) ...[
-              const SizedBox(height: AppSpacing.m),
-              skyChip,
-            ],
-            if (gpsHonesty != null) gpsHonesty,
-            const SizedBox(height: AppSpacing.l),
-            resident,
-            care,
-            if (gate != null) ...[
-              const SizedBox(height: AppSpacing.l),
-              gate,
-            ],
-            const SizedBox(height: AppSpacing.xl),
-            cta,
-            const SizedBox(height: AppSpacing.s),
-            secondary,
-            const SizedBox(height: AppSpacing.l),
-            const HofWatchCard(),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ColoredBox(
+                    color: skyBand,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          header,
+                          if (skyLine != null) ...[
+                            const SizedBox(height: AppSpacing.s),
+                            skyLine,
+                          ],
+                          if (gpsHonesty != null) gpsHonesty,
+                          const SizedBox(height: AppSpacing.l),
+                          resident,
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        tafel,
+                        if (gate != null) ...[
+                          const SizedBox(height: AppSpacing.m),
+                          gate,
+                        ],
+                        if (_packHint != null)
+                          _TafelLine(
+                            key: const Key('hof-pack-missing'),
+                            label: l10n.hofPackMissing(
+                              l10n.overlayRegionNameFor(
+                                _packHint!.regionId,
+                                _packHint!.regionName,
+                              ),
+                            ),
+                            onTap: () => unawaited(_openOfflinePacks()),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const HofWatchCard(),
+                  cta,
+                  const SizedBox(height: AppSpacing.s),
+                  secondary,
+                ],
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Eine Tafel als Brett — nicht als lose graue Zeilen auf Kohle.
+class _TafelBoard extends StatelessWidget {
+  const _TafelBoard({
+    super.key,
+    required this.kicker,
+    required this.children,
+  });
+
+  final String kicker;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.m,
+        AppSpacing.m,
+        AppSpacing.m,
+        AppSpacing.s,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.elevated,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            kicker,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.7,
+              color: AppColors.muted,
+            ),
+          ),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+/// Eine Tafel-Zeile: eigener Semantics-Knoten, vollbreite Hit-Fläche.
+class _TafelLine extends StatelessWidget {
+  const _TafelLine({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.kicker,
+    this.color = AppColors.muted,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final String? kicker;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label.replaceAll('\n', ', '),
+      excludeSemantics: true,
+      container: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: double.infinity,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: AppSpacing.s,
+                  bottom: AppSpacing.s,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (kicker != null)
+                      Text(
+                        kicker!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.7,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    if (kicker != null) const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -667,60 +1098,127 @@ class _Resident extends StatelessWidget {
     required this.others,
     required this.ret,
     required this.l10n,
+    required this.sport,
     required this.bleAwake,
     required this.onOpenBike,
     required this.onBringForward,
+    this.onLastRide,
     this.photoHeight = 188,
+    this.hasPhoto = false,
   });
 
   final Bike bike;
   final List<Bike> others;
   final RideReturn ret;
   final AppLocalizations l10n;
+  final String sport;
   final bool bleAwake;
   final VoidCallback onOpenBike;
   final Future<void> Function(String id) onBringForward;
+  final VoidCallback? onLastRide;
   final double photoHeight;
+  final bool hasPhoto;
 
   @override
   Widget build(BuildContext context) {
-    final sport = bike.category.shortLabel;
-    var meta = switch (ret.kind) {
-      RideReturnKind.neverOut => '$sport · ${l10n.hofAtHof} · ${l10n.hofNotYetOut}',
-      RideReturnKind.justBack =>
-        '${l10n.hofJustBack} · ${ret.distanceKm!.toStringAsFixed(1)} km · '
-            '${formatMovingTime(ret.movingTimeSec ?? 0)}',
-      RideReturnKind.atHof =>
-        '$sport · ${l10n.hofAtHof} · ${ret.daysSince == 1 ? l10n.hofSinceOneDay : l10n.hofSinceDays(ret.daysSince ?? 1)}',
-    };
-    if (ret.kind != RideReturnKind.neverOut && !ret.usedGps) {
-      meta = '$meta · ${l10n.hofLastRideNoGps}';
+    final meta = formatHofResidentMeta(
+      ret: ret,
+      sport: sport,
+      garageTypeLabel: l10n.hofGarageType(sport),
+      justBackLabel: l10n.hofJustBack,
+      atHofLabel: l10n.hofAtHof,
+      notYetOutLabel: l10n.hofNotYetOut,
+      sinceOneDay: l10n.hofSinceOneDay,
+      sinceDays: l10n.hofSinceDays,
+      noGpsLabel: l10n.hofLastRideNoGps,
+      ago: hofAgoLabel(
+        endedAt: ret.endedAt,
+        now: DateTime.now(),
+        minutes: l10n.hofAgoMinutes,
+        hours: l10n.hofAgoHours,
+      ),
+    );
+
+    final metaStyle = TextStyle(
+      color: onLastRide != null ? AppColors.chrome : AppColors.muted,
+      fontSize: 13,
+      fontWeight: onLastRide != null ? FontWeight.w600 : FontWeight.w400,
+    );
+
+    Widget metaBlock() {
+      if (onLastRide == null) {
+        return Text(
+          meta,
+          key: const Key('hof-resident-meta'),
+          style: metaStyle,
+        );
+      }
+      return Semantics(
+        button: true,
+        label: '$meta · ${l10n.hofWhatCameIn}',
+        excludeSemantics: true,
+        child: InkWell(
+          key: const Key('hof-resident-meta'),
+          onTap: onLastRide,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: Text(meta, style: metaStyle)),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Text(
+                  l10n.hofWhatCameIn,
+                  key: const Key('hof-what-came-in'),
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        BikeHeroBanner(
-          bike: bike,
+        if (hasPhoto)
+          BikeHeroBanner(
+            bike: bike,
+            onTap: onOpenBike,
+            showPhotoPicker: false,
+            showActiveBadge: false,
+            showCaption: false,
+            photoHeight: photoHeight,
+          ),
+        if (hasPhoto) const SizedBox(height: AppSpacing.s),
+        if (!hasPhoto) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              key: const Key('hof-parked-mark'),
+              width: photoHeight < 90 ? 88 : 128,
+              height: photoHeight < 90 ? 36 : 56,
+              child: const CustomPaint(painter: _ParkedMarkPainter()),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s),
+        ],
+        InkWell(
           onTap: onOpenBike,
-          showPhotoPicker: false,
-          showActiveBadge: false,
-          showCaption: false,
-          photoHeight: photoHeight,
-        ),
-        const SizedBox(height: AppSpacing.s),
-        Text(
-          bike.name,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+          child: Text(
+            bike.name,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
         ),
         const SizedBox(height: 2),
-        Text(
-          meta,
-          key: const Key('hof-resident-meta'),
-          style: const TextStyle(color: AppColors.muted, fontSize: 13),
-        ),
+        metaBlock(),
         if (bleAwake) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -789,6 +1287,60 @@ class _EmptyStand extends StatelessWidget {
   }
 }
 
+class _ParkedMarkPainter extends CustomPainter {
+  const _ParkedMarkPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bike = Paint()
+      ..color = AppColors.sageOnDark
+      ..strokeWidth = 2.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final stand = Paint()
+      ..color = AppColors.muted
+      ..strokeWidth = 1.6
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final cy = size.height * 0.62;
+    final r = size.height * 0.28;
+    final rear = Offset(size.width * 0.22, cy);
+    final front = Offset(size.width * 0.78, cy);
+    final bb = Offset(size.width * 0.42, cy);
+    final saddle = Offset(size.width * 0.36, size.height * 0.18);
+    final head = Offset(size.width * 0.68, size.height * 0.22);
+    canvas.drawCircle(rear, r, bike);
+    canvas.drawCircle(front, r, bike);
+    canvas.drawLine(rear, bb, bike);
+    canvas.drawLine(bb, front, bike);
+    canvas.drawLine(bb, saddle, bike);
+    canvas.drawLine(saddle, head, bike);
+    canvas.drawLine(bb, head, bike);
+    canvas.drawLine(front, head, bike);
+    canvas.drawLine(
+      Offset(size.width * 0.60, size.height * 0.12),
+      Offset(size.width * 0.80, size.height * 0.12),
+      bike,
+    );
+    final standY = size.height * 0.94;
+    canvas.drawLine(
+      Offset(size.width * 0.08, standY),
+      Offset(size.width * 0.92, standY),
+      stand,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.50, standY),
+      Offset(size.width * 0.50, size.height * 0.40),
+      stand,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _StandPainter extends CustomPainter {
   const _StandPainter();
 
@@ -801,7 +1353,8 @@ class _StandPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     final cy = size.height * 0.72;
     final cx = size.width / 2;
-    canvas.drawLine(Offset(size.width * 0.22, cy), Offset(size.width * 0.78, cy), paint);
+    canvas.drawLine(
+        Offset(size.width * 0.22, cy), Offset(size.width * 0.78, cy), paint);
     canvas.drawLine(Offset(cx, cy), Offset(cx, size.height * 0.32), paint);
     canvas.drawLine(
       Offset(cx - 28, size.height * 0.32),
@@ -848,10 +1401,16 @@ class _GateCard extends StatelessWidget {
     }
 
     final title = pick.hasLoop ? pick.title : l10n.hofNoHonestLoop;
-    final duration = pick.hasLoop ? l10n.hofLoopDuration(pick.durationMin) : null;
+    final duration =
+        pick.hasLoop ? l10n.hofLoopDuration(pick.durationMin) : null;
     final neighborLine = (neighbors != null && neighbors!.hasCommunity)
         ? l10n.hofCommunityNotes(neighbors!.reviewCount + neighbors!.photoCount)
         : null;
+    final away = formatHofGateAway(
+      distanceKm: pick.distanceKm,
+      underOne: l10n.hofGateAwayNear,
+      km: l10n.hofGateAwayKm,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -886,6 +1445,14 @@ class _GateCard extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
+              if (away != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  away,
+                  key: const Key('hof-gate-away'),
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+              ],
               if (neighborLine != null) ...[
                 const SizedBox(height: 2),
                 Text(
@@ -909,11 +1476,12 @@ class _SystemStatusIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       button: true,
-      label: hasNotice ? 'Systemstatus — Hinweis vorhanden' : 'Systemstatus',
+      label: hasNotice ? l10n.hofSystemNotice : l10n.hofSystemStatus,
       child: Tooltip(
-        message: hasNotice ? 'Systemstatus — Hinweis' : 'Systemstatus: ok',
+        message: hasNotice ? l10n.hofSystemHint : l10n.hofSystemOkTooltip,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
@@ -925,7 +1493,7 @@ class _SystemStatusIcon extends StatelessWidget {
                 Icon(
                   Icons.shield_outlined,
                   size: 22,
-                  color: hasNotice ? Colors.orange.shade700 : AppColors.muted,
+                  color: hasNotice ? AppColors.warning : AppColors.muted,
                 ),
                 if (hasNotice)
                   Positioned(
@@ -936,7 +1504,7 @@ class _SystemStatusIcon extends StatelessWidget {
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.orange.shade700,
+                        color: AppColors.warning,
                         border: Border.all(
                           color: Theme.of(context).scaffoldBackgroundColor,
                           width: 1.5,
@@ -949,6 +1517,46 @@ class _SystemStatusIcon extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HofProfileAvatar extends StatelessWidget {
+  const _HofProfileAvatar({
+    required this.initials,
+    required this.photo,
+    required this.signedIn,
+  });
+
+  final String initials;
+  final String? photo;
+  final bool signedIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhoto = photo != null &&
+        (photo!.startsWith('http') || File(photo!).existsSync());
+    return CircleAvatar(
+      backgroundColor: AppColors.charcoal.withValues(alpha: 0.12),
+      backgroundImage: hasPhoto
+          ? (photo!.startsWith('http')
+              ? NetworkImage(photo!)
+              : FileImage(File(photo!)) as ImageProvider)
+          : null,
+      child: hasPhoto
+          ? null
+          : (initials == '?'
+              ? Icon(
+                  Icons.person_outline,
+                  color: signedIn ? AppColors.accent : AppColors.muted,
+                )
+              : Text(
+                  initials,
+                  style: TextStyle(
+                    color: signedIn ? AppColors.accent : AppColors.muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )),
     );
   }
 }

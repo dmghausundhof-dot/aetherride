@@ -4,9 +4,11 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/routing/engine_steps_along.dart';
+import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/saved_route.dart';
 import '../local/app_database.dart';
 import 'elevation_client.dart';
+import 'offline_maps_prefs.dart';
 import 'routing_client.dart';
 
 List<List<double>> _geoPointsToLngLat(List<GeoPoint> points) =>
@@ -108,9 +110,22 @@ class RouteRepository {
   }) async {
     final key = _cacheKey(from, to, profile, vias);
     final cached = await _readCache(key);
-    if (cached != null) {
+    if (cached != null &&
+        !isImplausibleAbDetour(
+          distanceM: cached.distanceM,
+          fromLat: from.lat,
+          fromLng: from.lng,
+          toLat: to.lat,
+          toLng: to.lng,
+          vias: [
+            for (final v in vias) (lat: v.lat, lng: v.lng),
+          ],
+        )) {
       lastElevationGainM = null;
       return cached;
+    }
+    if (cached != null) {
+      await invalidateRoute(from: from, to: to, profile: profile, vias: vias);
     }
 
     final result = await _client.requestRoute(
@@ -120,7 +135,13 @@ class RouteRepository {
       vias: vias,
       preferOffline: preferOffline,
     );
-    if (fetchElevation && !preferOffline) {
+    final packCovers = await OfflineMapsPrefs.coversRoute(
+      fromLng: from.lng,
+      fromLat: from.lat,
+      toLng: to.lng,
+      toLat: to.lat,
+    );
+    if (fetchElevation && !preferOffline && !packCovers) {
       final elev = await _elevation.fetchForTrack(result.coordinates);
       lastElevationGainM = elev?.gainM;
     } else {
@@ -160,6 +181,13 @@ class RouteRepository {
       preferOffline: false,
       fetchElevation: false,
     );
+  }
+
+  Future<({double? startM, double? endM})> endpointElevations(
+    GeoPoint a,
+    GeoPoint b,
+  ) {
+    return _elevation.fetchEndpointElevations(a, b);
   }
 
   /// Löscht einen einzelnen Cache-Eintrag — für Aufrufer, die ein
@@ -224,11 +252,19 @@ class RouteRepository {
       // gesamte TTL als scheinbares Ergebnis fest, statt beim nächsten
       // Versuch live neu zu rechnen.
       if (engine == 'fallback-line' || engine == 'approx') return null;
+      final rawWarnings = data['warnings'];
+      final warnings = <String>[];
+      if (rawWarnings is List) {
+        for (final w in rawWarnings) {
+          if (w is String && w.trim().isNotEmpty) warnings.add(w.trim());
+        }
+      }
       return RouteResult(
         coordinates: coords,
         distanceM: (data['distanceM'] as num?)?.toDouble() ?? 0,
         durationS: (data['durationS'] as num?)?.toDouble() ?? 0,
         engine: engine ?? 'cache',
+        warnings: warnings,
       );
     } catch (_) {
       return null;
@@ -247,6 +283,7 @@ class RouteRepository {
       'distanceM': result.distanceM,
       'durationS': result.durationS,
       'engine': result.engine,
+      'warnings': result.warnings,
     });
     await _db.into(_db.routeCache).insertOnConflictUpdate(
           RouteCacheCompanion.insert(

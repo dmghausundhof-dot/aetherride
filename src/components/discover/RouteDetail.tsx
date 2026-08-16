@@ -37,6 +37,8 @@ import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import type { RangeEstimate } from "@/lib/ebike/range";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
 
 type DetailLayer = "overview" | "heat" | "trail" | "elevation";
 
@@ -85,6 +87,8 @@ export function RouteDetail({
   onToggleSave: () => void;
   onAdoptIntoPlan?: () => void;
 }) {
+  const lang = useChromeLang();
+  const d = discoverUi(lang);
   const [layer, setLayer] = useState<DetailLayer>("overview");
   const [photoIdx, setPhotoIdx] = useState(0);
   const [trail, setTrail] = useState<TrailViewResult | null>(null);
@@ -114,7 +118,7 @@ export function RouteDetail({
       if (cancelled) return;
       if (r == null) {
         setCommunity(null);
-        setCommunityErr("Community-Heatmap offline");
+        setCommunityErr("Heatmap offline");
         return;
       }
       setCommunity(r);
@@ -184,7 +188,7 @@ export function RouteDetail({
         onClick={onBack}
         className="inline-flex items-center gap-1 text-sm text-text-secondary"
       >
-        <ArrowLeft className="h-4 w-4" /> Zurück
+        <ArrowLeft className="h-4 w-4" /> {d.back}
       </button>
 
       <header>
@@ -193,26 +197,26 @@ export function RouteDetail({
           <TourCommunityChip tourId={route.id} />
         </div>
         <p className="mt-1 text-xs text-text-secondary">
-          Tour-Idee — Strecke beim Planen oder Starten live berechnen
+          {d.tourIdeaLive}
         </p>
         <p className="mt-1 text-sm tabular-nums text-text-secondary">
           {formatDistanceElevation(route.distanceKm, ascentDisplay)} ·{" "}
           {route.durationMin} min
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
-          {route.loop ? "⟲ Runde" : "A→B"}
+          {route.loop ? d.loopRound : d.pointAb}
         </p>
         <div className="mt-2 inline-flex rounded-full bg-accent/20 px-2.5 py-1 text-xs font-bold text-accent">
-          {route.matchScore}% Match
+          {route.matchScore}% {d.match}
         </div>
       </header>
 
       <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-elevated p-1 text-[10px]">
         {(
           [
-            ["overview", "Überblick", Mountain],
-            ["heat", "Beliebt", Flame],
-            ["trail", "Fotos", Camera],
-            ["elevation", "Höhe", AreaChart],
+            ["overview", d.overview, Mountain],
+            ["heat", d.popular, Flame],
+            ["trail", d.photos, Camera],
+            ["elevation", d.elevation, AreaChart],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -220,7 +224,7 @@ export function RouteDetail({
             type="button"
             onClick={() => setLayer(id)}
             className={`flex flex-col items-center gap-0.5 rounded-lg py-2 font-medium ${
-              layer === id ? "bg-accent text-white" : "text-text-secondary"
+              layer === id ? "bg-accent text-on-accent" : "text-text-secondary"
             }`}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -240,15 +244,14 @@ export function RouteDetail({
                 id: "idea",
                 lngLat: center,
                 color: "#78909C",
-                label: "Idee",
+                label: d.pinIdea,
               },
             ]}
           />
           <p className="text-[11px] text-text-secondary">
-            Nur Ortspunkt — kein gespeicherter Track. Live-Routing, Planen oder
-            GPX für eine echte Linie.
+            {d.pinOnlyHint}
           </p>
-          <EvidenceSheet title="Warum dieser Vorschlag?">
+          <EvidenceSheet title={d.whySuggestion}>
             <ol className="list-decimal space-y-1 pl-4 text-sm">
               {route.reasons.map((r) => (
                 <li key={r}>{r}</li>
@@ -266,24 +269,24 @@ export function RouteDetail({
               {rangePro && range ? (
                 <>
                   <div className="font-medium">
-                    Reichweite {range.kmLow}–{range.kmHigh} km
-                    {rangeTight ? " — eng für diese Tour" : " — passt"}
+                    {d.rangeSpan(range.kmLow, range.kmHigh)}
+                    {rangeTight ? d.rangeTight : d.rangeOk}
                   </div>
                   <p className="mt-1 text-xs text-text-secondary">
-                    Tour {route.distanceKm} km · {range.confidence} Konfidenz
+                    {d.rangeTour(route.distanceKm, range.confidence)}
                   </p>
                 </>
               ) : (
                 <>
-                  <div className="font-medium">Reichweitenprognose · Pro</div>
+                  <div className="font-medium">{d.rangeProTitle}</div>
                   <p className="mt-1 text-xs text-text-secondary">
-                    Zeigt die Spanne gegen die Touranforderung.
+                    {d.rangeProBody}
                   </p>
                   <Link
                     href="/profile"
                     className="mt-2 inline-block text-xs font-semibold text-chrome hover:underline"
                   >
-                    Pro unter Profil freischalten →
+                    {d.unlockPro}
                   </Link>
                 </>
               )}
@@ -293,32 +296,32 @@ export function RouteDetail({
             </div>
           )}
           <p className="text-[11px] text-text-secondary">
-            Offline-Karten lädst du in der App. Hier vormerken geht über{" "}
+            {d.offlineMapsHint}
             <Link href="/library" className="text-chrome hover:underline">
-              Gespeichert
+              {d.savedLink}
             </Link>
-            .
+            {d.offlineMapsAfter}
           </p>
         </div>
       )}
 
       {layer === "heat" && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-text-secondary">{mergedHeat.disclaimer}</p>
+          <p className="text-xs text-text-secondary">
+            {discoverStatus(mergedHeat.disclaimer, lang)}
+          </p>
           {mergedHeat.coldStart && (
             <p className="text-xs text-warning">
-              Noch wenig Community-Daten (k≥{mergedHeat.kThreshold}) — eigene
-              Rides und mehr Fahrer füllen die Karte.
+              {d.heatCold(mergedHeat.kThreshold)}
             </p>
           )}
           {!heatmapConsent && (
             <p className="text-xs">
-              Eigene Beiträge unter{" "}
+              {d.heatConsentBefore}
               <Link href="/privacy" className="text-accent">
-                Privatsphäre
-              </Link>{" "}
-              aktivieren. Community-Segmente (k≥{mergedHeat.kThreshold}) sind
-              trotzdem sichtbar, sobald genug Fahrer da sind.
+                {d.privacyLink}
+              </Link>
+              {d.heatConsentAfter(mergedHeat.kThreshold)}
             </p>
           )}
           <MapView
@@ -338,18 +341,17 @@ export function RouteDetail({
                   className="rounded-xl border border-accent/30 bg-accent/5 px-3 py-2"
                 >
                   {s.id.startsWith("cell-")
-                    ? "Community"
+                    ? "Heatmap"
                     : s.id.startsWith("ride-")
-                      ? "Eigene Ride"
-                      : "Abschnitt"}
+                      ? d.heatOwn
+                      : d.heatSection}
                   {" · "}
-                  {s.uniqueUsers} Fahrer · Intensität{" "}
-                  {(s.intensity * 100).toFixed(0)} %
+                  {d.riders(s.uniqueUsers, (s.intensity * 100).toFixed(0))}
                 </li>
               ))}
             {mergedHeat.segments.filter((s) => s.visible).length === 0 && (
               <li className="text-text-secondary">
-                Keine sichtbaren Segmente in diesem Ausschnitt.
+                {d.noSegments}
               </li>
             )}
           </ul>
@@ -374,7 +376,7 @@ export function RouteDetail({
               <div className="text-sm">
                 <div className="font-semibold">{photo.title}</div>
                 <p className="text-xs text-text-secondary">
-                  Blickrichtung {photo.headingDeg}°
+                  {d.heading(photo.headingDeg)}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -385,7 +387,7 @@ export function RouteDetail({
                     onClick={() => setPhotoIdx(i)}
                     className={`rounded-lg px-3 py-1 text-xs ${
                       i === photoIdx
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-on-accent"
                         : "bg-surface-elevated"
                     }`}
                   >
@@ -395,13 +397,13 @@ export function RouteDetail({
               </div>
               {trail?.usingDemo && (
                 <p className="text-[11px] text-text-secondary">
-                  Beispielbilder — Live-Fotos brauchen Mapillary-Zugang (Ops).
+                  {d.demoPhotos}
                 </p>
               )}
             </>
           ) : (
             <p className="text-sm text-text-secondary">
-              Keine Trail-Fotos in der Nähe.
+              {d.noPhotos}
             </p>
           )}
         </div>
@@ -412,7 +414,7 @@ export function RouteDetail({
           <ElevationChart elev={elev} />
         ) : (
           <p className="text-sm text-text-secondary">
-            Höhenprofil noch nicht verfügbar — keine Schätzung als Füllung.
+            {d.elevMissing}
           </p>
         ))}
 
@@ -423,7 +425,7 @@ export function RouteDetail({
             onClick={onAdoptIntoPlan}
             className="rounded-xl border border-border py-2.5 text-sm font-medium"
           >
-            In Planen
+            {d.intoPlan}
           </button>
         )}
         <div className="flex gap-2">
@@ -437,14 +439,14 @@ export function RouteDetail({
             ) : (
               <Bookmark className="h-4 w-4" />
             )}
-            {saved ? "Gespeichert" : "Speichern"}
+            {saved ? d.saved : d.save}
           </button>
           <button
             type="button"
             onClick={onStart}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
           >
-            <Play className="h-4 w-4 fill-current" /> In App starten
+            <Play className="h-4 w-4 fill-current" /> {d.startInApp}
           </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -452,13 +454,13 @@ export function RouteDetail({
             href={`/tours/${route.id}`}
             className="text-xs font-medium text-accent hover:underline"
           >
-            Öffentliche Tour-Seite →
+            {d.publicTour}
           </Link>
           <Link
             href={`/planner?tour=${encodeURIComponent(route.id)}`}
             className="text-xs font-medium text-accent hover:underline"
           >
-            Im Planer öffnen →
+            {d.openPlanner}
           </Link>
         </div>
       </div>

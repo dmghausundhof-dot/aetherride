@@ -1,7 +1,9 @@
 import 'package:aetherride_mobile/app.dart';
 import 'package:aetherride_mobile/domain/bike.dart';
+import 'package:aetherride_mobile/domain/shop/shop_product.dart';
 import 'package:aetherride_mobile/providers/app_providers.dart';
 import 'package:aetherride_mobile/providers/ride_providers.dart';
+import 'package:aetherride_mobile/providers/shop_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,8 +30,11 @@ void main() {
               ),
             ],
           ),
+          shopShelvesProvider.overrideWith(
+            (ref) async => const ShopShelves(ok: false),
+          ),
         ],
-        child: const AetherRideApp(),
+        child: const FlowLineApp(),
       ),
     );
     await tester.pump();
@@ -72,8 +77,11 @@ void main() {
               ),
             ],
           ),
+          shopShelvesProvider.overrideWith(
+            (ref) async => const ShopShelves(ok: false),
+          ),
         ],
-        child: const AetherRideApp(),
+        child: const FlowLineApp(),
       ),
     );
     await tester.pump();

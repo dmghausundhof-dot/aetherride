@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/config.dart';
 import '../data/catalog/catalog_client.dart';
+import '../data/community/ride_group_store.dart';
+import '../data/community/tour_community_store.dart';
 import '../data/local/app_database.dart';
 import '../data/local/component_repository.dart';
 import '../data/local/garage_repository.dart';
@@ -11,9 +13,12 @@ import '../data/local/ride_repository.dart';
 import '../data/local/setup_repository.dart';
 import '../data/local/user_profile_store.dart';
 import '../data/routing/route_repository.dart';
+import '../data/routing/saved_route_meta_store.dart';
 import '../data/sensor/bike_ble_store.dart';
 import '../data/sync/sync_engine.dart';
 import '../data/weather/weather_client.dart';
+import '../domain/ai/coach_inbox.dart';
+import '../domain/ai/coach_watch.dart';
 import '../domain/bike.dart';
 import '../domain/component.dart';
 import '../domain/maintenance/intervals.dart';
@@ -21,6 +26,7 @@ import '../domain/ride.dart';
 import '../domain/rider_profile.dart';
 import '../domain/saved_route.dart';
 import '../domain/setup.dart';
+import '../domain/tours/route_visibility.dart';
 import '../native/ble_core_channel.dart';
 import '../native/location_core_channel.dart';
 import '../native/sensor_core_channel.dart';
@@ -101,6 +107,23 @@ final bikeComponentsProvider =
   return ref.watch(componentRepositoryProvider).listInstalled(bikeId);
 });
 
+/// Neue Stimmen auf dem Platz — Pille wie Wartung, ohne Zahl.
+final platzInboxBadgeProvider = FutureProvider<int>((ref) async {
+  ref.watch(savedRoutesProvider);
+  final saved = await ref.watch(savedRoutesProvider.future);
+  final metas = await SavedRouteMetaStore.listAll();
+  final all = await TourCommunityStore().allReviews();
+  final ids = <String>{};
+  for (final s in saved) {
+    final id = RouteVisibility.stimmenTourIdOf(s.id, metas[s.id]);
+    if (id != null) ids.add(id);
+  }
+  final inbox = [for (final r in all) if (ids.contains(r.tourId)) r];
+  final seen = await RideGroupStore().inboxSeen();
+  final n = inbox.length - seen;
+  return n < 0 ? 0 : n;
+});
+
 /// Fällige Wartungen über die ganze Flotte — Badge auf der Werkstatt-Tür.
 final fleetDueCountProvider = FutureProvider<int>((ref) async {
   final bikes = await ref.watch(bikesProvider.future);
@@ -111,6 +134,31 @@ final fleetDueCountProvider = FutureProvider<int>((ref) async {
     n += listDueMaintenance(bike: bike, components: comps).length;
   }
   return n;
+});
+
+final coachWatchProvider = FutureProvider<List<CoachInboxItem>>((ref) async {
+  final bikes = await ref.watch(bikesProvider.future);
+  final rides = await ref.watch(recentRidesProvider.future);
+  final compsRepo = ref.watch(componentRepositoryProvider);
+  final setupsRepo = ref.watch(setupRepositoryProvider);
+  final store = ref.watch(userProfileStoreProvider);
+  await store.load();
+  final componentsByBike = <String, List<BikeComponent>>{};
+  final setupsByBike = <String, List<BikeSetup>>{};
+  for (final b in bikes) {
+    componentsByBike[b.id] = await compsRepo.listInstalled(b.id);
+    setupsByBike[b.id] = await setupsRepo.listForBike(b.id);
+  }
+  final notices = buildCoachWatch(
+    CoachWatchInput(
+      bikes: bikes,
+      componentsByBike: componentsByBike,
+      rides: rides,
+      setupsByBike: setupsByBike,
+      calibration: store.rangeCalibration,
+    ),
+  );
+  return mergeCoachInbox(notices, store.coachMeta);
 });
 
 final setupRepositoryProvider = Provider<SetupRepository>((ref) {

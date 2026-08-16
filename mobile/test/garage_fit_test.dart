@@ -237,7 +237,7 @@ void main() {
       classifyShopProduct(
         tags: const [],
         productType: 'Cap',
-        title: 'AetherRide Cap',
+        title: 'FlowLine Cap',
       ),
       ShopShelf.merch,
     );

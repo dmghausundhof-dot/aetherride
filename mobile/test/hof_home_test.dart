@@ -1,5 +1,7 @@
 import 'package:aetherride_mobile/data/routing/naehe_seeds.dart';
+import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/domain/home/hof_gate.dart';
+import 'package:aetherride_mobile/domain/home/hof_pack.dart';
 import 'package:aetherride_mobile/domain/home/hof_title.dart';
 import 'package:aetherride_mobile/domain/ride.dart';
 import 'package:aetherride_mobile/domain/saved_route.dart';
@@ -33,6 +35,11 @@ void main() {
       expect(hofTitleFor(countryCode: 'GB', languageCode: 'en'), 'The Stand');
     });
 
+    test('CA splits French / English', () {
+      expect(hofTitleFor(countryCode: 'CA', languageCode: 'fr'), 'La remise');
+      expect(hofTitleFor(countryCode: 'CA', languageCode: 'en'), 'The Stand');
+    });
+
     test('German UI in the US → The Stand', () {
       expect(hofTitleFor(countryCode: 'US', languageCode: 'de'), 'The Stand');
     });
@@ -50,6 +57,10 @@ void main() {
       expect(countryFromSeedId('seed-loop-hamburg-alster-60'), 'DE');
       expect(countryFromSeedId('seed-loop-konstanz-mainau-60'), 'DE');
       expect(countryFromSeedId('seed-loop-paris-vincennes-60'), 'FR');
+      expect(countryFromSeedId('seed-loop-zermatt-zmutt-mtb-60'), 'CH');
+      expect(countryFromSeedId('seed-loop-soelden-oetztal-mtb-60'), 'AT');
+      expect(countryFromSeedId('seed-loop-garmisch-wank-mtb-60'), 'DE');
+      expect(countryFromSeedId('seed-loop-luebeck-lauerholz-mtb-60'), 'DE');
     });
   });
 
@@ -60,6 +71,7 @@ void main() {
       required double lng,
       int durationMin = 58,
       String surface = 'asphalt/paved',
+      List<String> sportTags = const ['urban'],
     }) {
       return NaeheSeedRoute(
         id: id,
@@ -68,7 +80,7 @@ void main() {
         ascentM: 120,
         durationMin: durationMin,
         effortLabel: 'Mittel',
-        sportTags: const ['urban'],
+        sportTags: sportTags,
         centerLat: lat,
         centerLng: lng,
         isLoop: true,
@@ -130,6 +142,54 @@ void main() {
       expect(pick.honesty, HofGateHonesty.wetClosed);
     });
 
+    test('preferred MTB picks a trail over nearer asphalt', () {
+      final pick = pickHofGate(
+        loops: [
+          loop(
+            id: 'seed-loop-innsbruck-inn-road-60',
+            lat: 47.27,
+            lng: 11.40,
+            sportTags: const ['road'],
+          ),
+          loop(
+            id: 'seed-loop-innsbruck-nordkette-mtb-60',
+            lat: 47.29,
+            lng: 11.41,
+            surface: 'trail/root',
+            sportTags: const ['mtb'],
+          ),
+        ],
+        lat: 47.269,
+        lng: 11.404,
+        preferred: BikeCategory.mtbAm,
+      );
+      expect(pick.seed?.id, 'seed-loop-innsbruck-nordkette-mtb-60');
+    });
+
+    test('preferred road picks asphalt when a trail is nearer', () {
+      final pick = pickHofGate(
+        loops: [
+          loop(
+            id: 'seed-loop-innsbruck-nordkette-mtb-60',
+            lat: 47.28,
+            lng: 11.40,
+            surface: 'trail/root',
+            sportTags: const ['mtb'],
+          ),
+          loop(
+            id: 'seed-loop-innsbruck-inn-road-60',
+            lat: 47.26,
+            lng: 11.39,
+            sportTags: const ['road'],
+          ),
+        ],
+        lat: 47.269,
+        lng: 11.404,
+        preferred: BikeCategory.road,
+      );
+      expect(pick.seed?.id, 'seed-loop-innsbruck-inn-road-60');
+    });
+
     test('saved route fills the gate when no nearby seed', () {
       final pick = pickHofGate(
         loops: const [],
@@ -175,6 +235,7 @@ void main() {
       expect(r.kind, RideReturnKind.justBack);
       expect(r.hidesGate, isTrue);
       expect(r.distanceKm, 18.2);
+      expect(r.rideId, 'r1');
       expect(r.usedGps, isFalse);
     });
 
@@ -197,6 +258,263 @@ void main() {
       );
       expect(r.kind, RideReturnKind.justBack);
       expect(r.usedGps, isTrue);
+    });
+
+    test('justBack without GPS hides 0 km', () {
+      const ret = RideReturn(
+        kind: RideReturnKind.justBack,
+        rideId: 'r0',
+        distanceKm: 0,
+        movingTimeSec: 0,
+      );
+      expect(
+        formatHofResidentMeta(
+          ret: ret,
+          sport: 'E-MTB',
+          justBackLabel: 'gerade reingekommen',
+          atHofLabel: 'am Hof',
+          notYetOutLabel: 'noch nicht draußen',
+          sinceOneDay: 'seit 1 Tag',
+          sinceDays: (d) => 'seit $d Tagen',
+          noGpsLabel: 'ohne GPS-Track — kein erfundener Verlauf',
+        ),
+        'gerade reingekommen · ohne GPS-Track — kein erfundener Verlauf',
+      );
+    });
+
+    test('justBack includes ago when given', () {
+      const ret = RideReturn(
+        kind: RideReturnKind.justBack,
+        rideId: 'r0',
+        distanceKm: 0,
+        movingTimeSec: 0,
+      );
+      expect(
+        formatHofResidentMeta(
+          ret: ret,
+          sport: 'E-MTB',
+          justBackLabel: 'gerade reingekommen',
+          atHofLabel: 'am Hof',
+          notYetOutLabel: 'noch nicht draußen',
+          sinceOneDay: 'seit 1 Tag',
+          sinceDays: (d) => 'seit $d Tagen',
+          noGpsLabel: 'ohne GPS-Track — kein erfundener Verlauf',
+          ago: const HofAgo('vor 12 min', underHour: true),
+        ),
+        'gerade reingekommen · vor 12 min · ohne GPS-Track — kein erfundener Verlauf',
+      );
+    });
+
+    test('justBack after an hour drops gerade', () {
+      const ret = RideReturn(
+        kind: RideReturnKind.justBack,
+        rideId: 'r0',
+        distanceKm: 0,
+        movingTimeSec: 0,
+      );
+      expect(
+        formatHofResidentMeta(
+          ret: ret,
+          sport: 'E-MTB',
+          justBackLabel: 'gerade reingekommen',
+          atHofLabel: 'am Hof',
+          notYetOutLabel: 'noch nicht draußen',
+          sinceOneDay: 'seit 1 Tag',
+          sinceDays: (d) => 'seit $d Tagen',
+          noGpsLabel: 'ohne GPS-Track — kein erfundener Verlauf',
+          ago: const HofAgo('vor 3 Std.', underHour: false),
+        ),
+        'vor 3 Std. · ohne GPS-Track — kein erfundener Verlauf',
+      );
+    });
+
+    test('atHof under a day uses hours, not seit 1 Tag', () {
+      const ret = RideReturn(
+        kind: RideReturnKind.atHof,
+        rideId: 'r0',
+        daysSince: 1,
+      );
+      expect(
+        formatHofResidentMeta(
+          ret: ret,
+          sport: 'MTB',
+          justBackLabel: 'gerade reingekommen',
+          atHofLabel: 'am Hof',
+          notYetOutLabel: 'noch nicht draußen',
+          sinceOneDay: 'seit 1 Tag',
+          sinceDays: (d) => 'seit $d Tagen',
+          noGpsLabel: 'ohne GPS-Track — kein erfundener Verlauf',
+          ago: const HofAgo('vor 4 Std.', underHour: false),
+        ),
+        'MTB · am Hof · vor 4 Std. · ohne GPS-Track — kein erfundener Verlauf',
+      );
+      expect(
+        formatHofResidentMeta(
+          ret: ret,
+          sport: 'Enduro',
+          garageTypeLabel: 'Typ Enduro',
+          justBackLabel: 'gerade reingekommen',
+          atHofLabel: 'am Hof',
+          notYetOutLabel: 'noch nicht draußen',
+          sinceOneDay: 'seit 1 Tag',
+          sinceDays: (d) => 'seit $d Tagen',
+          noGpsLabel: 'ohne GPS-Track — kein erfundener Verlauf',
+        ),
+        'Typ Enduro · am Hof · seit 1 Tag · ohne GPS-Track — kein erfundener Verlauf',
+      );
+    });
+
+    test('justBack with GPS keeps km', () {
+      const ret = RideReturn(
+        kind: RideReturnKind.justBack,
+        rideId: 'r1',
+        distanceKm: 18.2,
+        movingTimeSec: 72 * 60,
+        usedGps: true,
+      );
+      expect(
+        formatHofResidentMeta(
+          ret: ret,
+          sport: 'E-MTB',
+          justBackLabel: 'gerade reingekommen',
+          atHofLabel: 'am Hof',
+          notYetOutLabel: 'noch nicht draußen',
+          sinceOneDay: 'seit 1 Tag',
+          sinceDays: (d) => 'seit $d Tagen',
+          noGpsLabel: 'ohne GPS-Track — kein erfundener Verlauf',
+        ),
+        'gerade reingekommen · 18.2 km · 1:12',
+      );
+    });
+  });
+
+  group('hofAgoLabel', () {
+    final now = DateTime(2026, 8, 15, 15);
+
+    test('under an hour uses minutes', () {
+      expect(
+        hofAgoLabel(
+          endedAt: now.subtract(const Duration(minutes: 12)),
+          now: now,
+          minutes: (m) => 'vor $m min',
+          hours: (h) => 'vor $h Std.',
+        )?.label,
+        'vor 12 min',
+      );
+    });
+
+    test('under a day uses hours, not days', () {
+      expect(
+        hofAgoLabel(
+          endedAt: now.subtract(const Duration(hours: 4)),
+          now: now,
+          minutes: (m) => 'vor $m min',
+          hours: (h) => 'vor $h Std.',
+        )?.label,
+        'vor 4 Std.',
+      );
+    });
+
+    test('after 24 hours falls back to days', () {
+      expect(
+        hofAgoLabel(
+          endedAt: now.subtract(const Duration(hours: 25)),
+          now: now,
+          minutes: (m) => 'vor $m min',
+          hours: (h) => 'vor $h Std.',
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('hofResidentSport', () {
+    const lacuba = Bike(
+      id: 'lacuba',
+      name: 'Bulls Lacuba EVO 10',
+      category: BikeCategory.mtbAm,
+    );
+
+    test('MTB stays MTB without motor or flag', () {
+      expect(hofResidentSport(lacuba), 'MTB');
+    });
+
+    test('motor in the workshop is E-MTB, without inventing the flag', () {
+      expect(hofResidentSport(lacuba, hasMotor: true), 'E-MTB');
+      expect(lacuba.isEbike, isFalse);
+    });
+  });
+
+  group('hofMissingPack', () {
+    test('unknown region stays quiet', () {
+      expect(
+        hofMissingPack(regionId: null, regionName: null, packReady: false),
+        isNull,
+      );
+    });
+
+    test('ready pack is not a Hof line', () {
+      expect(
+        hofMissingPack(
+          regionId: 'karlsruhe',
+          regionName: 'Karlsruhe / Hardt',
+          packReady: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('missing pack names the region', () {
+      final hint = hofMissingPack(
+        regionId: 'karlsruhe',
+        regionName: 'Karlsruhe / Hardt',
+        packReady: false,
+      );
+      expect(hint?.regionId, 'karlsruhe');
+      expect(hint?.regionName, 'Karlsruhe / Hardt');
+    });
+  });
+
+  group('formatHofGateAway', () {
+    test('unknown or zero stays quiet', () {
+      expect(
+        formatHofGateAway(
+          distanceKm: null,
+          underOne: 'unter 1 km',
+          km: (n) => '$n km',
+        ),
+        isNull,
+      );
+      expect(
+        formatHofGateAway(
+          distanceKm: 0,
+          underOne: 'unter 1 km',
+          km: (n) => '$n km',
+        ),
+        isNull,
+      );
+    });
+
+    test('under a kilometre is honest, not 0 km', () {
+      expect(
+        formatHofGateAway(
+          distanceKm: 0.4,
+          underOne: 'unter 1 km',
+          km: (n) => '$n km',
+        ),
+        'unter 1 km',
+      );
+    });
+
+    test('GPS distance to the loop, not loop length', () {
+      expect(
+        formatHofGateAway(
+          distanceKm: 6.4,
+          underOne: 'unter 1 km',
+          km: (n) => '$n km',
+        ),
+        '6 km',
+      );
     });
   });
 }

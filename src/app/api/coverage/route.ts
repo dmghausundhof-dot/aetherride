@@ -4,6 +4,7 @@ import {
   assembleCoverageLocal,
   parseBikeClass,
 } from "@/lib/coverage/assemble";
+import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 
 export const maxDuration = 15;
 
@@ -38,6 +39,7 @@ export async function GET(req: Request) {
   const live =
     url.searchParams.get("live") !== "0" &&
     url.searchParams.get("live") !== "false";
+  const lang = chromeLangFrom(url.searchParams.get("lang"));
 
   try {
     const body = live
@@ -46,6 +48,7 @@ export async function GET(req: Request) {
           lng,
           bikeClass,
           radiusKm: Number.isFinite(radiusKm) ? radiusKm : 8,
+          language: lang,
         })
       : assembleCoverageLocal({ lat, lng, bikeClass });
     return NextResponse.json(body, {

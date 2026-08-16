@@ -5,20 +5,12 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RankedPartsProduct } from "@/lib/shop/partsCatalog";
-import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
+import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
-
-function formatPrice(eur: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: currency || "EUR",
-    }).format(eur);
-  } catch {
-    return `${eur.toLocaleString("de-DE")} €`;
-  }
-}
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { formatShopPrice } from "@/lib/shop/shopifyLocale";
 
 export function PartsProductCard({
   row,
@@ -29,6 +21,9 @@ export function PartsProductCard({
   focused?: boolean;
   hideFit?: boolean;
 }) {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
+
   const { product: p, verdict, chip } = row;
   const chipTone =
     verdict === "passt"
@@ -37,7 +32,7 @@ export function PartsProductCard({
         ? "bg-warning/15 text-warning border-warning/30"
         : "bg-surface-elevated text-text-secondary border-border";
   const detailHref = inAppProductHref(p.handle);
-  const merchantUrl = merchantCtaUrl(p.affiliateUrl);
+  const dealerUrl = dealerCtaUrl(p.affiliateUrl);
   const [imgBroken, setImgBroken] = useState(false);
   const showImage = Boolean(p.imageUrl) && !imgBroken;
 
@@ -61,7 +56,7 @@ export function PartsProductCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-text-secondary">
-            Kein Bild
+            {copy.shopNoImage}
           </div>
         )}
         {!hideFit ? (
@@ -83,7 +78,7 @@ export function PartsProductCard({
           <h3 className="font-semibold leading-snug hover:text-accent">{p.name}</h3>
         </Link>
         <div className="text-lg font-bold tabular-nums text-accent">
-          {formatPrice(p.priceEur, p.currencyCode)}
+          {formatShopPrice(p.priceEur, p.currencyCode, lang)}
         </div>
         {!hideFit && row.fitLabel ? (
           <p className="text-xs font-medium text-success">{row.fitLabel}</p>
@@ -95,14 +90,14 @@ export function PartsProductCard({
         ) : null}
         <Link
           href={detailHref}
-          className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+          className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
         >
-          Details <ChevronRight className="h-4 w-4" />
+          {copy.shopDetails} <ChevronRight className="h-4 w-4" />
         </Link>
-        {merchantUrl ? (
+        {dealerUrl ? (
           <ShopifyOutboundButton
-            href={merchantUrl}
-            label="Zum Händler"
+            href={dealerUrl}
+            label={copy.shopZumHaendler}
             variant="ghost"
             className="py-2 text-xs font-medium"
           />

@@ -27,6 +27,7 @@ export type SyncPayload = {
   bikePhotos?: unknown;
   activeBikeId?: string | null;
   preferredSport?: unknown;
+  preferredSports?: unknown;
   onboardingDone?: boolean;
   updatedAt?: string;
   payloadVersion?: number;

@@ -1,24 +1,37 @@
 {
   "id": "lyon",
-  "name": "Lyon / Tête d'Or",
+  "name": "Lyon / T\u00eate d'Or",
   "bbox": [
     4.7,
     45.65,
     5.05,
     45.9
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T11:48:05Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 19489717,
+      "sha256": "41e3f18eafc0d70329a5e3954c6a0121061745c37e5774432495a0fcc7ff3599",
+      "sha256_16": "41e3f18eafc0d703"
+    },
+    "lyon.tar.gz": {
+      "bytes": 2578031,
+      "sha256": "c5aa233d7176c12eb8c304a994185868a2fcca53047ee82656e5f6814d8c2e87",
+      "sha256_16": "c5aa233d7176c12e"
+    },
+    "lyon.tar.zst": {
+      "bytes": 2765806,
+      "sha256": "1dd69fdcbac493e869ad7a9c4f2dd6ab94b32033e8b910cbef8e7f62b99a16c4",
+      "sha256_16": "1dd69fdcbac493e8"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/lyon",
     "pack": "lyon.tar.zst",
     "packGz": "lyon.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

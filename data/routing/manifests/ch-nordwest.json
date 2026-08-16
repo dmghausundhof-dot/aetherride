@@ -1,0 +1,24 @@
+{
+  "id": "ch-nordwest",
+  "name": "Nordwestschweiz",
+  "bbox": [
+    7.3,
+    47.28,
+    8.25,
+    47.65
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-nordwest.tar.zst",
+    "packGz": "ch-nordwest.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

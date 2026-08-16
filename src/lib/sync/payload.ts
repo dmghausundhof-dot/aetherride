@@ -25,6 +25,7 @@ export type AppSyncSlice = {
   rideFeedbacks: unknown;
   activeBikeId: string | null;
   preferredSport: unknown;
+  preferredSports?: unknown;
   onboardingDone: boolean;
   recommendations?: unknown;
 };
@@ -51,6 +52,7 @@ export function buildSyncPayload(s: AppSyncSlice): SyncPayload {
     rideFeedbacks: s.rideFeedbacks,
     activeBikeId: s.activeBikeId,
     preferredSport: s.preferredSport,
+    preferredSports: s.preferredSports,
     onboardingDone: s.onboardingDone,
     recommendations: s.recommendations,
     updatedAt: new Date().toISOString(),
@@ -76,6 +78,7 @@ export type RemoteApplyPatch = {
   rideFeedbacks?: unknown;
   activeBikeId?: string | null;
   preferredSport?: unknown;
+  preferredSports?: unknown;
   onboardingDone?: boolean;
   recommendations?: unknown;
 };
@@ -115,6 +118,8 @@ export function remoteToApplyPatch(remote: SyncPayload): RemoteApplyPatch {
     patch.activeBikeId = remote.activeBikeId ?? null;
   if (remote.preferredSport !== undefined)
     patch.preferredSport = remote.preferredSport;
+  if (remote.preferredSports !== undefined)
+    patch.preferredSports = remote.preferredSports;
   if (typeof remote.onboardingDone === "boolean")
     patch.onboardingDone = remote.onboardingDone;
   if (Array.isArray(remote.recommendations))

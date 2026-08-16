@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aetherride_mobile/domain/routing/tour_filters.dart';
+import 'package:aetherride_mobile/domain/routing/trail_difficulty.dart';
 import 'package:aetherride_mobile/presentation/discover/discover_map_line_style.dart';
 
 void main() {
@@ -32,5 +34,41 @@ void main() {
 
   test('trail overlay stays under tour ribbons', () {
     expect(DiscoverMapLineStyle.trailUnselectedOpacity, lessThan(0.4));
+  });
+
+  test('gravel, road and DH ribbons are not the same mint green', () {
+    final gravel = DiscoverMapLineStyle.ribbonForTour(
+      sport: TourSportKey.gravel,
+      scale: TrailDifficulty.open,
+      selected: false,
+      routed: true,
+    );
+    final road = DiscoverMapLineStyle.ribbonForTour(
+      sport: TourSportKey.road,
+      scale: TrailDifficulty.open,
+      selected: false,
+      routed: true,
+    );
+    final mtb = DiscoverMapLineStyle.ribbonForTour(
+      sport: TourSportKey.mtb,
+      scale: TrailDifficulty.open,
+      selected: true,
+      routed: true,
+    );
+    final s2 = DiscoverMapLineStyle.ribbonForTour(
+      sport: TourSportKey.mtb,
+      scale: TrailDifficulty.s2,
+      selected: false,
+      routed: true,
+    );
+    expect(gravel, isNot(mtb));
+    expect(road, isNot(mtb));
+    expect(road, isNot(gravel));
+    expect(s2, trailDifficultyColor(TrailDifficulty.s2));
+    expect(DiscoverMapLineStyle.approachCore, '#29B6F6');
+    expect(
+      DiscoverMapLineStyle.approachCore,
+      isNot(DiscoverMapLineStyle.selectedRouted),
+    );
   });
 }

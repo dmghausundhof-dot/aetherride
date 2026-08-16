@@ -1,0 +1,27 @@
+{
+  "id": "at-vorarlberg",
+  "name": "Vorarlberg",
+  "bbox": [
+    9.53,
+    46.85,
+    10.3,
+    47.6
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-vorarlberg",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-vorarlberg.tar.zst"
+  }
+}

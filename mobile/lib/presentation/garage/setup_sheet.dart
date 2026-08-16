@@ -332,7 +332,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
           children: [
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.forestOnDark,
+                backgroundColor: AppColors.chrome,
                 minimumSize: const Size(0, 44),
               ),
               onPressed: _busy ? null : _manualVersion,

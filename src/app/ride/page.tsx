@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import {
   appDeepLink,
   httpsAppLink,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/web/appLinks";
 
 export default function RideAppBridgePage() {
+  const copy = useHofCopy();
   const activeRoute = useAppStore((s) => s.activeRoute);
   const clearActiveRoute = useAppStore((s) => s.clearActiveRoute);
 
@@ -42,7 +44,7 @@ export default function RideAppBridgePage() {
             className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Zurück zur Karte
+            {copy.rideBackToMap}
           </Link>
           <Link href="/" className="text-sm font-bold">
             Flow<span className="text-chrome">Line</span>
@@ -56,11 +58,10 @@ export default function RideAppBridgePage() {
         </div>
 
         <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">
-          Die Straße ist die App
+          {copy.rideBridgeTitle}
         </h1>
         <p className="mt-3 text-text-secondary">
-          Live-GPS, Offline-Karten, Sensoren und Hintergrund-Aufzeichnung sind
-          nur in der nativen Android- und iOS-App verfügbar — nicht im Browser.
+          {copy.rideBridgeHint}
         </p>
 
         {activeRoute ? (
@@ -124,7 +125,7 @@ export default function RideAppBridgePage() {
           <div className="mt-3 flex flex-col gap-2">
             <a
               href={deepLink}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-chrome py-3 text-sm font-semibold text-background transition hover:bg-chrome/90"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-chrome py-3 text-sm font-semibold text-on-accent transition hover:bg-chrome/90"
             >
               <ExternalLink className="h-4 w-4" />
               In der App öffnen

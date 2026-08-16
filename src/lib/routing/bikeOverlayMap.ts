@@ -36,6 +36,8 @@ const MTB_COLOR: unknown = [
   BIKE_OVERLAY_COLORS.S2,
   "S3",
   BIKE_OVERLAY_COLORS.S3,
+  "S3+",
+  BIKE_OVERLAY_COLORS.S3,
   BIKE_OVERLAY_COLORS.unrated,
 ];
 
@@ -152,6 +154,7 @@ export function overlayClassesOn(opts: BikeOverlayApplyOpts): Set<string> {
 
   if (p.category === "road") {
     on.add("road");
+    on.add("urban");
     if (!(opts.extraOn ?? []).includes("mtb")) on.delete("mtb");
     if (!(opts.extraOn ?? []).includes("mtb_unrated")) on.delete("mtb_unrated");
   }
@@ -261,10 +264,9 @@ export function applyBikeOverlayVisibility(
 
     map.setFilter(layer.id, resolvedFilter);
     map.setLayoutProperty(layer.id, "visibility", "visible");
-    const active = on.has(layer.cls);
-    const highlighted = active && (layer.cls !== "mtb" || highlightMtb);
-    map.setPaintProperty(layer.id, "line-opacity", highlighted ? 0.92 : 0.14);
-    const width = highlighted && layer.cls === "mtb" ? layer.width * 1.25 : layer.width;
+    map.setPaintProperty(layer.id, "line-opacity", 0.88);
+    const width =
+      highlightMtb && layer.cls === "mtb" ? layer.width * 1.25 : layer.width;
     map.setPaintProperty(layer.id, "line-width", [
       "interpolate",
       ["linear"],

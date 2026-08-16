@@ -1,5 +1,5 @@
 /**
- * AetherRide – High-Frequency Sensor Fusion Layer
+ * FlowLine – High-Frequency Sensor Fusion Layer
  *
  * Web-Simulation + klare Schnittstelle für native Implementierung
  * (Flutter Platform Channels / Swift CoreMotion / Android SensorManager).

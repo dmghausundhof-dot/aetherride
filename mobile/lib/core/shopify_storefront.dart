@@ -4,7 +4,8 @@ import '../domain/shop/garage_fit.dart';
 import 'config.dart';
 import 'shop_web.dart';
 
-/// Öffentliche Shopify-Storefront — kein Katalog, keine Kasse in der App.
+/// Öffentliche Shopify-Storefront für Checkout (Custom Tabs).
+/// Der Katalog kommt über `/api/shop/parts` — keine In-App-Kasse.
 ///
 /// Tag-Filter nutzen die handleisierte Form
 /// (`category:gravel` → `/collections/featured-parts/category-gravel`).
@@ -23,6 +24,36 @@ abstract final class ShopifyStorefront {
   }
 
   static bool get isConfigured => origin.isNotEmpty;
+
+  /// Chrome langs shipped in the ARB. Unknown codes fall back to de (no prefix).
+  static String chromeLang(String raw) {
+    final s = raw.trim().toLowerCase().replaceAll('_', '-');
+    if (s == 'en' || s.startsWith('en-')) return 'en';
+    if (s == 'fr' || s.startsWith('fr-')) return 'fr';
+    if (s == 'it' || s.startsWith('it-')) return 'it';
+    return 'de';
+  }
+
+  static final _localeSeg = RegExp(r'^(de|en|fr|it)(-[a-z]{2})?$', caseSensitive: false);
+
+  /// DACH shop is primary German — en/fr/it get `/en` `/fr` `/it`.
+  /// Other hosts are left unchanged.
+  static Uri withLocale(Uri uri, String languageCode) {
+    final shop = Uri.tryParse(origin);
+    if (shop == null || uri.host.toLowerCase() != shop.host.toLowerCase()) {
+      return uri;
+    }
+    final lang = chromeLang(languageCode);
+    final segs = [...uri.pathSegments];
+    if (segs.isNotEmpty && _localeSeg.hasMatch(segs.first)) {
+      segs.removeAt(0);
+    }
+    if (lang != 'de') {
+      segs.insert(0, lang);
+    }
+    final path = segs.isEmpty ? '/' : '/${segs.join('/')}';
+    return uri.replace(path: path);
+  }
 
   static String get partsCollection {
     final h = AppConfig.shopifyPartsCollection.trim();
@@ -47,6 +78,13 @@ abstract final class ShopifyStorefront {
   static Uri? homeUri() {
     if (!isConfigured) return null;
     return Uri.parse('$origin/');
+  }
+
+  static Uri? productUri(String handle) {
+    if (!isConfigured) return null;
+    final h = handleize(handle);
+    if (h.isEmpty) return homeUri();
+    return Uri.parse('$origin/products/$h');
   }
 
   static Uri? merchUri() {

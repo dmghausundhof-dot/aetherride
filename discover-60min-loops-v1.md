@@ -91,7 +91,7 @@ Zeitangaben relativ zum Loop-Start (ETA along route) — fühlt sich planbarer a
 
 ## 4) Gap vs Komoot „kurze Runden“
 
-| | Komoot (typisch) | AetherRide Ziel |
+| | Komoot (typisch) | FlowLine Ziel |
 |---|---|---|
 | Discovery Default | Oft Inspiration / Distanz / Highlight-Touren; Dauer-Filter existiert, ~60-Min-Loop nicht emotional Default | **~60 Min Rundkurs = Default-Lens** |
 | Loop-Erkennung | Rundtour-Filter / Profile | ⟲ Glyph + Start≈Ziel hart in Card |

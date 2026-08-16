@@ -5,6 +5,8 @@
  */
 
 import { SHOPIFY_STORE_BASE } from "@/lib/shop/catalog";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
+import { shopifyLanguageCode } from "@/lib/shop/shopifyLocale";
 
 export const FEATURED_PARTS_COLLECTION = "featured-parts";
 export const MERCHANDISE_COLLECTION = "merchandise";
@@ -73,8 +75,12 @@ export function isShopifyStorefrontConfigured(): boolean {
   return getShopifyStorefrontConfig() != null;
 }
 
+function languageVar(lang?: ChromeLang) {
+  return shopifyLanguageCode(lang ?? "de");
+}
+
 const COLLECTION_PRODUCTS_QUERY = /* GraphQL */ `
-  query FeaturedParts($handle: String!, $first: Int!, $after: String) {
+  query FeaturedParts($handle: String!, $first: Int!, $after: String, $language: LanguageCode) @inContext(language: $language) {
     collection(handle: $handle) {
       id
       handle
@@ -155,7 +161,7 @@ async function storefrontFetch(
 /** Fetch all products in a collection (paginated). */
 export async function fetchCollectionProducts(
   handle: string = FEATURED_PARTS_COLLECTION,
-  opts?: { pageSize?: number; maxPages?: number }
+  opts?: { pageSize?: number; maxPages?: number; lang?: ChromeLang }
 ): Promise<FeaturedPartsFetchResult> {
   const config = getShopifyStorefrontConfig();
   if (!config) {
@@ -182,6 +188,7 @@ export async function fetchCollectionProducts(
         handle,
         first: pageSize,
         after,
+        language: languageVar(opts?.lang),
       });
 
       if (json.errors?.length) {
@@ -243,7 +250,7 @@ export function shopifyStoreProductUrl(handle: string): string {
 }
 
 const PRODUCTS_BY_QUERY = /* GraphQL */ `
-  query ShopProducts($query: String!, $first: Int!, $after: String) {
+  query ShopProducts($query: String!, $first: Int!, $after: String, $language: LanguageCode) @inContext(language: $language) {
     products(first: $first, after: $after, query: $query) {
       pageInfo {
         hasNextPage
@@ -293,7 +300,7 @@ export type ProductsQueryResult =
 /** Storefront product search (z. B. tag:merch). */
 export async function fetchProductsByQuery(
   query: string,
-  opts?: { pageSize?: number; maxPages?: number }
+  opts?: { pageSize?: number; maxPages?: number; lang?: ChromeLang }
 ): Promise<ProductsQueryResult> {
   const config = getShopifyStorefrontConfig();
   if (!config) {
@@ -315,6 +322,7 @@ export async function fetchProductsByQuery(
         query,
         first: pageSize,
         after,
+        language: languageVar(opts?.lang),
       });
       if (json.errors?.length) {
         return {
@@ -346,7 +354,7 @@ export async function fetchProductsByQuery(
 }
 
 const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
-  query ProductByHandle($handle: String!) {
+  query ProductByHandle($handle: String!, $language: LanguageCode) @inContext(language: $language) {
     product(handle: $handle) {
       id
       handle
@@ -381,7 +389,8 @@ export type ProductByHandleResult =
     };
 
 export async function fetchProductByHandle(
-  handle: string
+  handle: string,
+  lang: ChromeLang = "de"
 ): Promise<ProductByHandleResult> {
   const config = getShopifyStorefrontConfig();
   if (!config) {
@@ -402,7 +411,7 @@ export async function fetchProductByHandle(
       },
       body: JSON.stringify({
         query: PRODUCT_BY_HANDLE_QUERY,
-        variables: { handle },
+        variables: { handle, language: languageVar(lang) },
       }),
       next: { revalidate: 300 },
     });

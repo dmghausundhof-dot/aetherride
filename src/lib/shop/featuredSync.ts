@@ -3,11 +3,11 @@
  * Prefer collection featured-parts; probe bike handles — skip 404s.
  */
 
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   FEATURED_BIKE_HANDLE_CANDIDATES,
   getFeaturedBikeSnapshots,
   shopifyHandleFromProductId,
-  shopifyProductUrl,
   type ShopProduct,
 } from "@/lib/shop/catalog";
 import {
@@ -21,10 +21,11 @@ import {
   isShopifyStorefrontConfigured,
 } from "@/lib/shop/shopifyStorefront";
 import { getShopStoreStatus } from "@/lib/shop/storeStatus";
-import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
+import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 import { isPartsProduct } from "@/lib/shop/shopShelf";
 
 export type LiveFeaturedBike = {
+  id?: string;
   handle: string;
   name: string;
   manufacturer: string;
@@ -56,8 +57,30 @@ function snapshotMeta(handle: string): ShopProduct | undefined {
   );
 }
 
+/** Storefront-confirmed bike only — Snapshots füllen Lücken, erfinden keine Karten. */
+export function toLiveFeaturedBike(
+  mapped: PartsProduct,
+  snap?: ShopProduct
+): LiveFeaturedBike {
+  return {
+    id: mapped.id,
+    handle: mapped.handle,
+    name: mapped.name,
+    manufacturer: mapped.manufacturer,
+    priceEur: mapped.priceEur,
+    currencyCode: mapped.currencyCode,
+    description: mapped.description || snap?.description || "",
+    imageUrl: mapped.imageUrl || snap?.imageUrl,
+    href: `/shop/p/${encodeURIComponent(mapped.handle)}`,
+    merchantUrl: dealerCtaUrl(mapped.affiliateUrl),
+    sports: snap?.sports ?? [],
+  };
+}
+
 /** Probe candidate bike handles — only return Storefront-confirmed products */
-export async function syncLiveFeaturedBikes(): Promise<{
+export async function syncLiveFeaturedBikes(
+  lang: ChromeLang = "de"
+): Promise<{
   bikes: LiveFeaturedBike[];
   skippedHandles: string[];
 }> {
@@ -73,28 +96,13 @@ export async function syncLiveFeaturedBikes(): Promise<{
 
   await Promise.all(
     FEATURED_BIKE_HANDLE_CANDIDATES.map(async (handle) => {
-      const live = await fetchProductByHandle(handle);
+      const live = await fetchProductByHandle(handle, lang);
       if (!live.ok) {
         skipped.push(handle);
         return;
       }
       const mapped = mapStorefrontProduct(live.product);
-      const snap = snapshotMeta(handle);
-      const merchantUrl = merchantCtaUrl(
-        mapped.affiliateUrl || shopifyProductUrl(handle)
-      );
-      bikes.push({
-        handle: mapped.handle,
-        name: mapped.name,
-        manufacturer: mapped.manufacturer,
-        priceEur: mapped.priceEur,
-        currencyCode: mapped.currencyCode,
-        description: mapped.description || snap?.description || "",
-        imageUrl: mapped.imageUrl || snap?.imageUrl,
-        href: `/shop/p/${encodeURIComponent(mapped.handle)}`,
-        merchantUrl,
-        sports: snap?.sports ?? [],
-      });
+      bikes.push(toLiveFeaturedBike(mapped, snapshotMeta(handle)));
     })
   );
 
@@ -104,10 +112,14 @@ export async function syncLiveFeaturedBikes(): Promise<{
   return { bikes, skippedHandles: skipped };
 }
 
-export async function syncFeaturedCatalog(): Promise<FeaturedSyncResult> {
+export async function syncFeaturedCatalog(
+  lang: ChromeLang = "de"
+): Promise<FeaturedSyncResult> {
   const status = getShopStoreStatus();
-  const partsResult = await fetchCollectionProducts(FEATURED_PARTS_COLLECTION);
-  const { bikes, skippedHandles } = await syncLiveFeaturedBikes();
+  const partsResult = await fetchCollectionProducts(FEATURED_PARTS_COLLECTION, {
+    lang,
+  });
+  const { bikes, skippedHandles } = await syncLiveFeaturedBikes(lang);
 
   if (!partsResult.ok) {
     return {

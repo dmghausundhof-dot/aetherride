@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Cloud, CloudRain, Sun, Wind } from "lucide-react";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { catalogCopy } from "@/lib/i18n/catalogCopy";
 
 type WeatherPayload = {
   provider: string;
@@ -20,11 +22,10 @@ type WeatherPayload = {
   error?: string;
 };
 
-const HINT_DE: Record<string, string> = {
-  wet_likely: "Nass wahrscheinlich — Trails rutschig möglich",
-  damp_possible: "Leicht feucht möglich",
-  dry_likely: "Eher trocken",
-};
+type WeatherErr =
+  | { kind: "unreachable" }
+  | { kind: "status"; code: number }
+  | { kind: "api"; text: string };
 
 export function WeatherPanel({
   lat,
@@ -35,8 +36,9 @@ export function WeatherPanel({
   lng: number;
   className?: string;
 }) {
+  const w = catalogCopy(useChromeLang()).weather;
   const [data, setData] = useState<WeatherPayload | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<WeatherErr | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,14 +54,18 @@ export function WeatherPanel({
         const j = (await r.json()) as WeatherPayload;
         if (cancelled) return;
         if (!r.ok) {
-          setErr(j.error ?? `Wetter ${r.status}`);
+          setErr(
+            j.error
+              ? { kind: "api", text: j.error }
+              : { kind: "status", code: r.status },
+          );
           setData(null);
           return;
         }
         setData(j);
       })
       .catch(() => {
-        if (!cancelled) setErr("Wetter nicht erreichbar");
+        if (!cancelled) setErr({ kind: "unreachable" });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -69,22 +75,39 @@ export function WeatherPanel({
     };
   }, [lat, lng]);
 
+  const hint =
+    data?.trailHint === "wet_likely"
+      ? w.wet
+      : data?.trailHint === "damp_possible"
+        ? w.damp
+        : data?.trailHint === "dry_likely"
+          ? w.dry
+          : data?.trailHint;
+
   if (loading) {
     return (
       <div
         className={`rounded-xl border border-border bg-surface px-3 py-2 text-xs text-text-secondary ${className}`}
       >
-        Wetter wird geladen…
+        {w.loading}
       </div>
     );
   }
 
   if (err || !data?.current) {
+    const message =
+      err?.kind === "unreachable"
+        ? w.unreachable
+        : err?.kind === "status"
+          ? w.status(err.code)
+          : err?.kind === "api"
+            ? err.text
+            : w.none;
     return (
       <div
         className={`rounded-xl border border-border bg-surface px-3 py-2 text-xs text-text-secondary ${className}`}
       >
-        {err ?? "Keine Wetterdaten"}
+        {message}
       </div>
     );
   }
@@ -111,17 +134,15 @@ export function WeatherPanel({
               </span>
             )}
           </p>
-          {data.trailHint && (
-            <p className="mt-1 text-xs text-text-secondary">
-              {HINT_DE[data.trailHint] ?? data.trailHint}
-            </p>
+          {hint && (
+            <p className="mt-1 text-xs text-text-secondary">{hint}</p>
           )}
           {data.daily?.precipitation_sum?.[0] != null && (
             <p className="mt-0.5 text-[11px] text-text-secondary">
-              Niederschlag heute ~{data.daily.precipitation_sum[0]} mm
-              {data.daily.precipitation_probability_max?.[0] != null
-                ? ` · max. ${data.daily.precipitation_probability_max[0]} %`
-                : ""}
+              {w.precip(
+                data.daily.precipitation_sum[0],
+                data.daily.precipitation_probability_max?.[0],
+              )}
             </p>
           )}
           {data.attribution && (

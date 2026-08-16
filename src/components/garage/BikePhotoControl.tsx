@@ -96,7 +96,7 @@ export function BikePhotoControl({
           />
           <button
             type="button"
-            className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white"
+            className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-on-accent"
             onClick={() => {
               if (urlDraft.trim()) {
                 updateBike(bikeId, { photoUrl: urlDraft.trim() });

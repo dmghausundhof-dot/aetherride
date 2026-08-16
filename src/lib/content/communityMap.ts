@@ -29,7 +29,7 @@ export const COMMUNITY_FEATURES: {
   },
   {
     title: "Zusammen raus",
-    body: "Gruppe mit Code vor dem Tor. Web hält Roster und Einladung. Live-Pins nur im App-HUD, mit Opt-in.",
+    body: "Gruppe mit Einladungslink vor dem Tor. Web hält Roster und Einladung. Live-Pins nur im App-HUD, mit Opt-in.",
     href: "/community#gruppen",
     cta: "Wie Gruppen laufen",
   },

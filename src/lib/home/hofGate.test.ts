@@ -1,5 +1,5 @@
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
-import { isTrailHeavyLoop, pickHofGate } from "./hofGate";
+import { formatHofGateAway, isTrailHeavyLoop, pickHofGate } from "./hofGate";
 
 function loop(
   partial: Partial<RouteSuggestion> & { id: string; name: string }
@@ -93,6 +93,54 @@ const tooFar = pickHofGate({
 });
 if (tooFar.honesty !== "none") {
   throw new Error("Hamburg must not see Munich as the hour at the gate");
+}
+
+const innsbruckTrail = loop({
+  id: "seed-loop-innsbruck-nordkette-mtb-60",
+  name: "Nordkette MTB",
+  category: "mtb_am",
+  surface: "trail 50%",
+  center: [11.404, 47.28],
+});
+const innsbruckRoad = loop({
+  id: "seed-loop-innsbruck-inn-road-60",
+  name: "Inn-Radweg",
+  category: "road",
+  surface: "asphalt 90%",
+  center: [11.39, 47.26],
+});
+const mtbAtInnsbruck = pickHofGate({
+  loops: [innsbruckRoad, innsbruckTrail],
+  lat: 47.269,
+  lng: 11.404,
+  preferred: "mtb_am",
+});
+if (mtbAtInnsbruck.seed?.id !== innsbruckTrail.id) {
+  throw new Error(
+    `Innsbruck MTB must pick Nordkette, got ${mtbAtInnsbruck.seed?.id}`
+  );
+}
+const roadAtInnsbruck = pickHofGate({
+  loops: [innsbruckRoad, innsbruckTrail],
+  lat: 47.269,
+  lng: 11.404,
+  preferred: "road",
+});
+if (roadAtInnsbruck.seed?.id !== innsbruckRoad.id) {
+  throw new Error(
+    `Innsbruck road must pick Inn-Radweg, got ${roadAtInnsbruck.seed?.id}`
+  );
+}
+
+const awayCopy = { near: "unter 1 km", km: (n: number) => `${n} km` };
+if (formatHofGateAway(undefined, awayCopy) != null) {
+  throw new Error("unknown distance must stay quiet");
+}
+if (formatHofGateAway(0.4, awayCopy) !== "unter 1 km") {
+  throw new Error("under 1 km must not say 0 km");
+}
+if (formatHofGateAway(6.4, awayCopy) !== "6 km") {
+  throw new Error(`6.4 km should round to 6 km, got ${formatHofGateAway(6.4, awayCopy)}`);
 }
 
 console.log("hofGate.test.ts ok");

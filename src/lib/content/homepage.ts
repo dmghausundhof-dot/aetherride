@@ -9,7 +9,7 @@ export const HOME_INTRO = {
   lead: "FlowLine ist die Anwendung für den Alltag zwischen Feierabendrunde und Wochenend-Etappe. Im Browser planst du, pflegst das Rad und teilst eine Mappe. In der App fährst du: HUD, GPS, Offline, Sensoren.",
   paragraphs: [
     "Der Hof ist der Stand — nicht ein Feed. Fünf Türen: Hof, Karte, Platz, Werkstatt, Laden. Ride ist der orange Knopf, nicht der sechste Tab. Was fehlt, bleibt leer: keine Dummy-Kilometer, kein Leaderboard, keine zweite Kasse im Browser.",
-    "Öffentliche Tour-Seiten sind redaktionelle Ideen mit Pin. Die Linie entsteht, wenn du planst — in Hamburg die Alster, nicht pauschal die Alpen. Community hängt an der Tour: Stimmen, Mappe-Links, Gruppen-Codes. Public Profiles nur mit Opt-in, ohne GPS-Spuren.",
+    "Öffentliche Tour-Seiten sind redaktionelle Ideen mit Pin. Die Linie entsteht, wenn du planst — in Hamburg die Alster, nicht pauschal die Alpen. Community hängt an der Tour: Stimmen, Mappe-Links, Einladungslinks. Public Profiles nur mit Opt-in, ohne GPS-Spuren.",
   ],
 } as const;
 
@@ -67,7 +67,7 @@ export const HOME_DOOR_STORIES: {
     href: "/library",
     title: "Platz",
     kicker: "Community an der Tour",
-    body: "Mappe, Stimmen, Gruppen-Codes. Teilen per Link, nicht per Timeline. Wer den Link hat, legt die Tour lokal ab — ohne Account-Zwang, ohne Track im Kommentar.",
+    body: "Mappe, Stimmen, Einladungslinks. Teilen per Link, nicht per Timeline. Wer den Link hat, legt die Tour lokal ab — ohne Account-Zwang, ohne Track im Kommentar.",
   },
   {
     href: "/garage",

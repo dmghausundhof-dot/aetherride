@@ -1,0 +1,27 @@
+{
+  "id": "ch-zentralschweiz",
+  "name": "Zentralschweiz",
+  "bbox": [
+    7.95,
+    46.58,
+    8.95,
+    47.22
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
+    "note": "CH extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/ch-zentralschweiz",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-zentralschweiz.tar.zst"
+  }
+}

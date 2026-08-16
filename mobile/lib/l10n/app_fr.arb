@@ -179,6 +179,14 @@
   "hofGpsUnknown": "Pas de position — ciel et portail attendent le GPS.",
   "rideGpsUnavailable": "Pas de GPS — la trace reste vide. Rien d'inventé.",
   "hofAtHof": "au stand",
+  "hofGarageType": "Type {type}",
+  "@hofGarageType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "hofSinceOneDay": "depuis 1 jour",
   "hofSinceDays": "depuis {days} jours",
   "@hofSinceDays": {
@@ -296,9 +304,21 @@
   "filterDistance": "Distance",
   "filterElevation": "Dénivelé",
   "filterForm": "Forme",
+  "filterFormAll": "Toutes",
+  "filterFormPointToPoint": "A→B",
+  "filterFormPointToPointTooltip": "Étapes et trails linéaires (départ≠arrivée).",
+  "filterFormDownhill": "Descente",
+  "filterFormDownhillTooltip": "Descentes, bike park, enduro A→B. Les boucles ne sont pas auto-DH.",
+  "filterBikeType": "Type de vélo",
+  "filterBikeTypeHonesty": "Les couleurs filtrent les tours. Navigation : vélo (GraphHopper Basic), sauf à pied.",
+  "filterSingletrail": "Singletrack (échelle S)",
+  "filterSingletrailHint": "Uniquement tours/chemins avec une cotation honnête. Sans tag : aucun résultat.",
+  "filterNoDownhillTours": "Aucune descente à proximité",
+  "filterNoDownhillToursHint": "Les trails OSM selon l'échelle S restent sur la carte. Pas de DH au catalogue ici.",
+  "filterNoScaleTours": "Aucun tour avec ce niveau S",
   "filterTrailNetwork": "Réseau trail (carte)",
   "filterLoopsOnly": "Boucle",
-  "filterLoopsOnlyTooltip": "Seulement de vraies boucles (départ≈arrivée). Pas de remplissage A→B.",
+  "filterLoopsOnlyTooltip": "Seulement de vraies boucles (départ≠arrivée). Pas de remplissage A→B.",
   "filterNetworkOn": "Réseau on",
   "filterNetworkOff": "Réseau off",
   "filterOsmScaleTooltip": "Échelle OSM : {code}",
@@ -1449,6 +1469,18 @@
   "dieBoxChipCsc": "CSC",
   "dieBoxChipBatteryHonest": "Batterie honnête",
   "dieBoxChipSag": "SAG",
+  "dieBoxChipChain": "Chaîne",
+  "dieBoxChipPressure": "Pression",
+  "dieBoxChipCockpit": "Cockpit",
+  "lastRideKm": "Dernière {km} km",
+  "@lastRideKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "lastRideNoGps": "Dernière sortie — sans trace GPS",
   "dieBoxSentenceEverydayReady": "{name} habite ici · prêt pour lundi",
   "@dieBoxSentenceEverydayReady": {
     "placeholders": {
@@ -1949,7 +1981,22 @@
   "discoverOsmTags": "Tags OpenStreetMap",
   "discoverTapMapTrails": "Toucher la carte choisit des trails.",
   "discoverTrailApproachHint": "Va jusqu'à l'entrée, puis enregistre l'overlay ou pars.",
+  "discoverTrailGravityHint": "DH : voiture ou à pied jusqu'à l'entrée haute. La descente suit le trail, pas la route.",
   "discoverRideToTrailhead": "Aller au départ",
+  "discoverApproachByCar": "Y aller en voiture",
+  "discoverApproachOnFoot": "À pied jusqu'à l'entrée",
+  "discoverAtTrailStart": "Je suis au départ",
+  "discoverApproachByBike": "Y aller à vélo",
+  "discoverTrailUnsuitableForBike": "Pas avec un {bike} sur ce trail. Change de vélo au garage — pas de routage VTT caché.",
+  "@discoverTrailUnsuitableForBike": {
+    "placeholders": {
+      "bike": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverTrailOrientedDownhill": "Entrée en haut (altitude)",
+  "discoverTrailStartUphillUnknown": "Altitude inconnue — entrée la plus proche",
   "discoverPutOnRoute": "Mettre sur la route",
   "discoverOpenOsm": "Ouvrir sur OpenStreetMap",
   "discoverApproachTrailhead": "Approche du trailhead…",
@@ -2280,8 +2327,14 @@
   "discoverNoSavedFilter": "Aucun tour dans ce filtre.",
   "discoverMineEmptyHint": "Pas encore de traces à toi — ajoute une route, GPX ou enregistre.",
   "overlayLegendTitle": "Chemins · OSM",
+  "overlayLegendCompactCity": "City",
+  "overlayLegendCompactMtb": "MTB",
+  "overlayScaleNote": "S0–S3+ seulement avec tag OSM. Sinon non noté.",
   "overlayRoadAsphalt": "Piste / asphalte",
   "overlayUnrated": "non classé",
+  "discoverChipTooltip": "Tours et chemins — pas le moteur de navigation",
+  "discoverNavHonestyBike": "Nav : vélo — GraphHopper Basic, même route",
+  "discoverNavHonestyFoot": "Nav : à pied",
   "stimmenTitle": "Voix",
   "stimmenHint": "Étoiles, texte et photos — cloud après partage. Pas de voix inventées.",
   "stimmenWrite": "Écrire une voix",
@@ -2336,6 +2389,8 @@
   "rideBleDeniedSnack": "Nearby/Bluetooth refusé — la navigation GPS tourne sans capteur.",
   "rideNoBikeSensor": "Aucun capteur vélo — la trace GPS continue.",
   "rideOfflineRerouteToast": "Le reroute a besoin d'internet. Reste sur la route chargée.",
+  "rideStayOnTrail": "Reste sur le trail — pas de déviation sur la route.",
+  "rideFollowTrail": "Suivre le trail",
   "rideNoGpsRejoin": "Pas de GPS-Fix pour le rejoin",
   "rideRejoinFailed": "Rejoin échoué : {error}",
   "rideSkipAheadWhy": "Tronçon sauté — retour à la route.",
@@ -2399,12 +2454,22 @@
   "rideWatch": "Smartwatch",
   "rideConnected": "Connecté",
   "ridePower": "Puissance",
-  "rideSoc": "SoC",
+  "rideSoc": "Batterie",
   "rideAssist": "Assist",
   "rideBatteryChip": "Batterie",
   "rideWheelSpeed": "Roue",
-  "rideRestKm": "Rest-km",
-  "rideEta": "ETA",
+  "rideRestKm": "km rest.",
+  "rideUntilJoin": "jusqu'à l'entrée",
+  "rideRestLoop": "reste boucle",
+  "rideKmToRoute": "{km} km vers la route",
+  "@rideKmToRoute": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "rideEta": "Arrivée",
   "rideKmh": "km/h",
   "rideKm": "km",
   "rideChassisOff": "Analyse châssis off",
@@ -2440,7 +2505,7 @@
   "ridePuckBergASub": "Lettre, montagne et flèche en un",
   "ridePuckTopDownSub": "Vue du haut : nez, cornes, deux pneus — tourne avec toi",
   "ridePuckHofTorSub": "Deux jambes, ouvertes en bas",
-  "ridePuckKometSub": "Fer de lance avec étincelle menthe",
+  "ridePuckKometSub": "Fer de lance avec étincelle orange",
   "ridePuckKieselSub": "Triangle doux avec halo",
   "ridePuckLenkerBugSub": "Nez pointu, deux cornes de cintre",
   "ridePuckLichtkegelSub": "Disque sombre, cône orange",
@@ -2945,7 +3010,7 @@
     }
   },
   "rideGPeak": "G-Peak",
-  "rideLean": "Lean °",
+  "rideLean": "Inclin.",
   "rideFlow": "Flow",
   "garageSetNamed": "Régler {name}",
   "@garageSetNamed": {
@@ -3030,6 +3095,16 @@
   },
   "bleStatusDriveNoLive": "{who} · vu — vitesse via CSC, batterie seulement avec GATT standard",
   "@bleStatusDriveNoLive": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "bleStatusNeedBond": "L'écran a besoin d'un couplage Bluetooth pour la batterie.",
+  "bleStatusBonding": "Couplage système …",
+  "bleStatusDriveNeedBond": "{who} · vu — batterie après couplage Bluetooth dans l'atelier",
+  "@bleStatusDriveNeedBond": {
     "placeholders": {
       "who": {
         "type": "String"
@@ -3126,6 +3201,10 @@
   "bleSemanticsPaired": "Bluetooth couplé",
   "bleSemanticsPair": "Coupler Bluetooth",
   "bleTooltipPair": "Coupler moteur ou capteur",
+  "bleRemoveWheel": "Retirer le capteur roue",
+  "bleRemoveDrive": "Retirer le moteur",
+  "bleSemanticsLive": "Bluetooth en direct",
+  "bleTooltipSaved": "Couplé, pas connecté",
   "watchOtherWatch": "Une autre montre",
   "bikeCatMtbTrail": "Trail VTT",
   "bikeCatMtb": "VTT",

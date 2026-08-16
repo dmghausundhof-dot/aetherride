@@ -1,16 +1,11 @@
 import { redirect } from "next/navigation";
+import { shopListingHref } from "@/lib/shop/listingRedirect";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-/** Catalog world retired — door lives on /shop. */
+/** featured-parts listing — Query bleibt, Tür „Für dein Rad“. */
 export default async function ShopPartsRedirect({ searchParams }: Props) {
-  const sp = await searchParams;
-  const params = new URLSearchParams();
-  params.set("door", "parts");
-  for (const [key, value] of Object.entries(sp)) {
-    if (typeof value === "string") params.set(key, value);
-  }
-  redirect(`/shop?${params.toString()}`);
+  redirect(shopListingHref(await searchParams));
 }

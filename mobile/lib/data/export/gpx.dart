@@ -7,7 +7,7 @@ bool rideHasExportableTrack(RideRecord ride) => ride.track.length >= 2;
 /// Empty track → valid GPX with empty `<trkseg>` (no fake Berchtesgaden path).
 String rideToGpx(RideRecord ride, {String? bikeName}) {
   final name =
-      'AetherRide ${ride.startedAt.toUtc().toIso8601String().substring(0, 10)}';
+      'FlowLine ${ride.startedAt.toUtc().toIso8601String().substring(0, 10)}';
   final pts = ride.track;
 
   final trkpts = StringBuffer();
@@ -43,6 +43,8 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
       trkpts.writeln('        <ele>$elev</ele>');
     }
     trkpts.writeln('        <time>${t.toIso8601String()}</time>');
+    final ext = _gpxPointExtensions(p);
+    if (ext.isNotEmpty) trkpts.write(ext);
     trkpts.writeln('      </trkpt>');
   }
 
@@ -51,7 +53,7 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
       ? ' · kein GPS-Track'
       : '';
   return '''<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="AetherRide" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="FlowLine" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1">
   <metadata>
     <name>${_escapeXml(name)}</name>
     <desc>${_escapeXml(bikeName ?? 'Ride')} · $distanceM m · ${ride.elevationM.round()} hm$emptyNote</desc>
@@ -64,6 +66,27 @@ String rideToGpx(RideRecord ride, {String? bikeName}) {
 $trkpts    </trkseg>
   </trk>
 </gpx>''';
+}
+
+String _gpxPointExtensions(Map<String, dynamic> p) {
+  final hr = liveHrFromTrackPoint(p);
+  final cad = liveCadFromTrackPoint(p);
+  final power = livePowerFromTrackPoint(p);
+  if (hr == null && cad == null && power == null) return '';
+  final b = StringBuffer('        <extensions>\n');
+  if (hr != null || cad != null) {
+    b.writeln('          <gpxtpx:TrackPointExtension>');
+    if (hr != null) b.writeln('            <gpxtpx:hr>$hr</gpxtpx:hr>');
+    if (cad != null) b.writeln('            <gpxtpx:cad>$cad</gpxtpx:cad>');
+    b.writeln('          </gpxtpx:TrackPointExtension>');
+  }
+  if (power != null) {
+    b.writeln('          <gpxpx:PowerExtension>');
+    b.writeln('            <gpxpx:PowerInWatts>$power</gpxpx:PowerInWatts>');
+    b.writeln('          </gpxpx:PowerExtension>');
+  }
+  b.writeln('        </extensions>');
+  return b.toString();
 }
 
 String _escapeXml(String s) => s

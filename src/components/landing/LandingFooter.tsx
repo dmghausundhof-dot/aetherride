@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { AppDownloadButtons } from "./AppDownloadButtons";
 import { HOF_NAV } from "@/lib/nav/hofNav";
@@ -5,9 +7,14 @@ import { MARKETING_NAV } from "@/lib/nav/marketingNav";
 import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
 import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
 import { legalContactEmail } from "@/lib/legal/siteLegal";
+import { webChrome } from "@/lib/i18n/webChrome";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { useHofTitle } from "@/hooks/useHofTitle";
 
 export function LandingFooter() {
   const email = legalContactEmail();
+  const copy = webChrome(useChromeLang());
+  const hofTitle = useHofTitle();
 
   return (
     <footer className="border-t border-border bg-surface py-12 pb-[calc(3rem+var(--safe-bottom))]">
@@ -19,7 +26,7 @@ export function LandingFooter() {
               {FLOWLINE_TAGLINE_DOTS}
             </p>
             <p className="mt-2 text-sm text-text-secondary">
-              Das Rad wohnt hier. Du kommst zurück.
+              {copy.footerTagline}
             </p>
           </div>
 
@@ -29,7 +36,7 @@ export function LandingFooter() {
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Website
+              {copy.footerWebsite}
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
               {MARKETING_NAV.map((item) => (
@@ -38,20 +45,20 @@ export function LandingFooter() {
                   href={item.href}
                   className="text-text-secondary hover:text-foreground"
                 >
-                  {item.label}
+                  {copy.marketingNav[item.href]}
                 </Link>
               ))}
               <Link
                 href="/anmelden"
                 className="text-text-secondary hover:text-foreground"
               >
-                Anmelden
+                {copy.signIn}
               </Link>
             </div>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Der Hof
+              {hofTitle}
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
               {HOF_NAV.map((item) => (
@@ -60,106 +67,106 @@ export function LandingFooter() {
                   href={item.href}
                   className="text-text-secondary hover:text-foreground"
                 >
-                  {item.id === "hof" ? "Der Hof" : item.label}
+                  {item.id === "hof" ? hofTitle : copy.hofNav[item.id]}
                 </Link>
               ))}
               <Link
                 href="/planner"
                 className="text-text-secondary hover:text-foreground"
               >
-                Planen
+                {copy.plan}
               </Link>
             </div>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Mehr
+              {copy.footerMore}
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
               <Link
                 href="/ueber"
                 className="text-text-secondary hover:text-foreground"
               >
-                Über FlowLine
+                {copy.aboutFlowLine}
               </Link>
               <Link
                 href="/faq"
                 className="text-text-secondary hover:text-foreground"
               >
-                FAQ
+                {copy.faq}
               </Link>
               <Link
                 href="/share"
                 className="text-text-secondary hover:text-foreground"
               >
-                Teilen
+                {copy.share}
               </Link>
               <Link
                 href="/u/mara_road"
                 className="text-text-secondary hover:text-foreground"
               >
-                Beispiel-Profil
+                {copy.sampleProfile}
               </Link>
               <Link
                 href="/produkt"
                 className="text-text-secondary hover:text-foreground"
               >
-                Screens & Abläufe
+                {copy.screensFlows}
               </Link>
               <Link
                 href="/guides/web-vs-app"
                 className="text-text-secondary hover:text-foreground"
               >
-                Web vs. App
+                {copy.webVsApp}
               </Link>
               <Link
                 href="/activities"
                 className="text-text-secondary hover:text-foreground"
               >
-                Was reinkam
+                {copy.whatCameIn}
               </Link>
               <Link
                 href="/privacy"
                 className="text-text-secondary hover:text-foreground"
               >
-                Daten & Privatsphäre
+                {copy.dataPrivacy}
               </Link>
             </div>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
-              Rechtliches
+              {copy.footerLegal}
             </p>
             <div className="mt-3 flex flex-col gap-2 text-sm">
               <Link
                 href="/legal/impressum"
                 className="text-text-secondary hover:text-foreground"
               >
-                Impressum
+                {copy.imprint}
               </Link>
               <Link
                 href="/legal/datenschutz"
                 className="text-text-secondary hover:text-foreground"
               >
-                Datenschutz
+                {copy.privacyPolicy}
               </Link>
               <Link
                 href="/legal/agb"
                 className="text-text-secondary hover:text-foreground"
               >
-                AGB
+                {copy.terms}
               </Link>
               <Link
                 href="/legal/widerruf"
                 className="text-text-secondary hover:text-foreground"
               >
-                Widerruf
+                {copy.withdrawal}
               </Link>
               <Link
                 href="/kontakt"
                 className="text-text-secondary hover:text-foreground"
               >
-                Kontakt
+                {copy.contact}
               </Link>
               <a
                 href={`mailto:${email}`}
@@ -172,8 +179,7 @@ export function LandingFooter() {
         </div>
 
         <p className="mt-10 text-center text-xs text-text-secondary">
-          © {new Date().getFullYear()} FlowLine. Offline-First · DSGVO · Web
-          ist der Hof, die App fährt.
+          © {new Date().getFullYear()} FlowLine. {copy.footerLegalLine}
         </p>
       </div>
     </footer>

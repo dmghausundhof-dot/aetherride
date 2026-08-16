@@ -1288,7 +1288,7 @@
       "geofabrik": "https://download.geofabrik.de/europe/switzerland-latest.osm.pbf",
       "sports": [
         "mtb",
-        "road"
+        "ebike"
       ]
     },
     {
@@ -1458,28 +1458,6 @@
       "sports": [
         "urban",
         "road"
-      ]
-    },
-    {
-      "id": "clermont-ferrand",
-      "name": "Clermont-Ferrand / Puy de Dôme",
-      "country": "FR",
-      "kind": "pack",
-      "bbox": [
-        2.9,
-        45.68,
-        3.22,
-        45.9
-      ],
-      "center": [
-        3.06,
-        45.79
-      ],
-      "geofabrik": "https://download.geofabrik.de/europe/france/auvergne-latest.osm.pbf",
-      "sports": [
-        "urban",
-        "road",
-        "mtb"
       ]
     },
     {
@@ -1673,27 +1651,6 @@
       ]
     },
     {
-      "id": "montpellier",
-      "name": "Montpellier / Lez",
-      "country": "FR",
-      "kind": "pack",
-      "bbox": [
-        3.75,
-        43.52,
-        4.02,
-        43.7
-      ],
-      "center": [
-        3.885,
-        43.61
-      ],
-      "geofabrik": "https://download.geofabrik.de/europe/france/languedoc-roussillon-latest.osm.pbf",
-      "sports": [
-        "urban",
-        "road"
-      ]
-    },
-    {
       "id": "nantes",
       "name": "Nantes / Erdre",
       "country": "FR",
@@ -1709,69 +1666,6 @@
         47.218
       ],
       "geofabrik": "https://download.geofabrik.de/europe/france/pays-de-la-loire-latest.osm.pbf",
-      "sports": [
-        "urban",
-        "road"
-      ]
-    },
-    {
-      "id": "reims",
-      "name": "Reims / Champagne",
-      "country": "FR",
-      "kind": "pack",
-      "bbox": [
-        3.9,
-        49.18,
-        4.18,
-        49.35
-      ],
-      "center": [
-        4.04,
-        49.265
-      ],
-      "geofabrik": "https://download.geofabrik.de/europe/france/champagne-ardenne-latest.osm.pbf",
-      "sports": [
-        "urban",
-        "road"
-      ]
-    },
-    {
-      "id": "rouen",
-      "name": "Rouen / Seine",
-      "country": "FR",
-      "kind": "pack",
-      "bbox": [
-        0.95,
-        49.35,
-        1.22,
-        49.52
-      ],
-      "center": [
-        1.085,
-        49.435
-      ],
-      "geofabrik": "https://download.geofabrik.de/europe/france/haute-normandie-latest.osm.pbf",
-      "sports": [
-        "urban",
-        "road"
-      ]
-    },
-    {
-      "id": "rennes",
-      "name": "Rennes / Vilaine",
-      "country": "FR",
-      "kind": "pack",
-      "bbox": [
-        -1.78,
-        48.05,
-        -1.55,
-        48.18
-      ],
-      "center": [
-        -1.665,
-        48.115
-      ],
-      "geofabrik": "https://download.geofabrik.de/europe/france/bretagne-latest.osm.pbf",
       "sports": [
         "urban",
         "road"

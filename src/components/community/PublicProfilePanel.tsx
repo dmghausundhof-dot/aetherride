@@ -101,7 +101,7 @@ export function PublicProfilePanel() {
               onClick={() => toggleSport(s)}
               className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
                 publicProfile.sports.includes(s)
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-on-accent"
                   : "bg-surface-elevated text-text-secondary"
               }`}
             >

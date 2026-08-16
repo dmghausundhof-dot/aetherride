@@ -1,5 +1,5 @@
 name: dsp_core
-description: AetherRide dsp_core — Rust FFI + Dart fallback (Spec §5.1 / §5.5)
+description: FlowLine dsp_core — Rust FFI + Dart fallback (Spec §5.1 / §5.5)
 version: 0.1.0
 publish_to: "none"
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/routing/connectivity_chip.dart';
+import '../../../l10n/l10n_ext.dart';
 
 /// Honest mid-ride connectivity / offline trust chip (N-03 / N-08).
 class RideConnectivityChip extends StatelessWidget {
@@ -16,26 +17,27 @@ class RideConnectivityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = connectivityChipLabel(state);
+    final label = context.l10nOrNull?.connectivityChipLabelFor(state) ??
+        connectivityChipLabel(state);
     final (bg, fg, icon) = switch (state) {
       ConnectivityChipState.live => (
-          Colors.green.shade50,
-          Colors.green.shade900,
+          AppColors.sunSurface,
+          AppColors.sageOnLight,
           Icons.cloud_done_outlined,
         ),
       ConnectivityChipState.routeOffline => (
-          Colors.teal.shade50,
-          Colors.teal.shade900,
+          AppColors.sunSurface,
+          AppColors.sageOnLight,
           Icons.offline_pin_outlined,
         ),
       ConnectivityChipState.offlineMapOk => (
-          Colors.amber.shade50,
-          Colors.amber.shade900,
+          AppColors.mapCautionFill,
+          AppColors.charcoal,
           Icons.wifi_off_outlined,
         ),
       ConnectivityChipState.mapsMissing => (
-          Colors.orange.shade100,
-          Colors.orange.shade900,
+          AppColors.mapWarnFill,
+          AppColors.mapWarnInk,
           Icons.map_outlined,
         ),
     };

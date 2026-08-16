@@ -164,7 +164,7 @@ export function mapGarageBikeToShopify(
     sku: shopifySkuFromBikeId(input.bikeId),
     title: `${titleCore} · Garage-Fit`,
     productType: GARAGE_BIKE_PRODUCT_TYPE,
-    vendor: brand || "AetherRide Garage",
+    vendor: brand || "FlowLine Garage",
     tags,
     families,
     wheelSizes,

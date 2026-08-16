@@ -1,6 +1,7 @@
 /**
  * Welche Touren auf Karte / Touren-Liste landen.
- * Nähe zuerst; dünne Nähe mit den nächsten Seeds füllen — kein 3-Karten-Stub.
+ * Nur echte Nähe — dünne Regionen bleiben kurz, statt fremde Landschaft
+ * auf 12 Karten aufzufüllen.
  */
 
 export const TOUR_COVERAGE_NEARBY_KM = 90;
@@ -18,10 +19,10 @@ export function pickNearbyThenFill<T>(
 ): T[] {
   if (items.length === 0) return [];
   const nearbyKm = opts?.nearbyKm ?? TOUR_COVERAGE_NEARBY_KM;
-  const minCount = opts?.minCount ?? TOUR_COVERAGE_MIN_LIST;
   const maxItems = opts?.maxItems ?? TOUR_COVERAGE_MAX;
-  const ranked = [...items].sort((a, b) => distanceKm(a) - distanceKm(b));
-  const nearbyN = ranked.filter((e) => distanceKm(e) <= nearbyKm).length;
-  const want = Math.min(maxItems, Math.max(minCount, nearbyN));
-  return ranked.slice(0, Math.min(want, ranked.length));
+  const nearby = items
+    .filter((e) => distanceKm(e) <= nearbyKm)
+    .sort((a, b) => distanceKm(a) - distanceKm(b));
+  if (nearby.length === 0) return [];
+  return nearby.slice(0, Math.min(maxItems, nearby.length));
 }

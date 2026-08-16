@@ -14,7 +14,10 @@ OUT="$ROOT/data/routing/dist/$REGION_ID"
 CUSTOM="${VALHALLA_CUSTOM_FILES:-$OUT/custom_files}"
 mkdir -p "$CUSTOM" "$OUT"
 
-PBF_FULL="$CUSTOM/region-full.osm.pbf"
+CACHE_DIR="${GEOFABRIK_CACHE:-$ROOT/data/routing/dist/_geofabrik}"
+mkdir -p "$CACHE_DIR"
+PBF_NAME="$(basename "$PBF_URL")"
+PBF_FULL="$CACHE_DIR/$PBF_NAME"
 PBF_CLIP="$CUSTOM/region.osm.pbf"
 PBF_HW="$CUSTOM/highways.osm.pbf"
 GEOJSON="$OUT/highways.geojson"
@@ -38,6 +41,7 @@ run_osmium() {
   # Mount custom_files + out dir; callers pass container paths.
   docker run --rm \
     -u "$(id -u):$(id -g)" \
+    -v "$CACHE_DIR:/cache:ro" \
     -v "$CUSTOM:/data" \
     -v "$OUT:/out" \
     -v "$CFG:/cfg.json:ro" \
@@ -45,11 +49,29 @@ run_osmium() {
 }
 
 echo "==> Geofabrik $PBF_URL"
-if [[ ! -f "$PBF_FULL" ]]; then
-  curl -L --fail --retry 3 -o "$PBF_FULL.part" "$PBF_URL"
-  mv "$PBF_FULL.part" "$PBF_FULL"
+TOOLS_ARIA2="$ROOT/data/routing/dist/_tools/aria2c"
+PBF_BYTES=0
+if [[ -f "$PBF_FULL" ]]; then
+  PBF_BYTES="$(wc -c < "$PBF_FULL")"
+fi
+# 0-byte leftovers from failed runs must not skip the download.
+if [[ -f "$PBF_FULL.aria2" ]] || [[ "$PBF_BYTES" -lt 1000000 ]]; then
+  if [[ -f "$PBF_FULL" && ! -f "$PBF_FULL.aria2" && "$PBF_BYTES" -lt 1000000 ]]; then
+    echo "==> dropping incomplete PBF $PBF_FULL ($PBF_BYTES bytes)"
+    rm -f "$PBF_FULL"
+  fi
+  if [[ -x "$TOOLS_ARIA2" ]]; then
+    "$TOOLS_ARIA2" -x 4 -s 4 --file-allocation=none --allow-overwrite=true --continue=true \
+      -d "$(dirname "$PBF_FULL")" -o "$(basename "$PBF_FULL")" "$PBF_URL"
+  elif command -v aria2c >/dev/null 2>&1; then
+    aria2c -x 4 -s 4 --file-allocation=none --allow-overwrite=true --continue=true \
+      -d "$(dirname "$PBF_FULL")" -o "$(basename "$PBF_FULL")" "$PBF_URL"
+  else
+    curl -L --fail --retry 5 --retry-all-errors -C - -o "$PBF_FULL.part" "$PBF_URL"
+    mv "$PBF_FULL.part" "$PBF_FULL"
+  fi
 else
-  echo "==> using existing PBF $PBF_FULL ($(wc -c < "$PBF_FULL") bytes)"
+  echo "==> using existing PBF $PBF_FULL ($PBF_BYTES bytes)"
 fi
 
 if [[ -n "$HOST_OSMIUM" ]]; then
@@ -63,7 +85,7 @@ if [[ -n "$HOST_OSMIUM" ]]; then
   EXPORT_OUT="$GEOJSON"
 else
   echo "==> docker iboates/osmium:latest"
-  EXTRACT_IN="/data/region-full.osm.pbf"
+  EXTRACT_IN="/cache/$PBF_NAME"
   EXTRACT_OUT="/data/region.osm.pbf"
   HW_IN="/data/region.osm.pbf"
   HW_OUT="/data/highways.osm.pbf"

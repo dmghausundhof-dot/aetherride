@@ -14,6 +14,14 @@ void main() {
     expect(ConsentPurpose.rawDataUpload.apiId, 'raw_data_upload');
     expect(ConsentPurpose.heatmapContribution.apiId, 'heatmap_contribution');
     expect(consentLabels.length, ConsentPurpose.values.length);
+    expect(consentLabels.containsKey(ConsentPurpose.healthData), isTrue);
+    for (final label in consentLabels.values) {
+      expect(label.title, isNot(contains('F-SEN')));
+      expect(label.title, isNot(contains('F-SHP')));
+      expect(label.description, isNot(contains('F-SEN')));
+      expect(label.description, isNot(contains('F-SHP')));
+      expect(label.description, isNot(contains('Spec ')));
+    }
   });
 
   test('listDueMaintenance flags overdue chain', () {
@@ -21,14 +29,15 @@ void main() {
       id: 'b1',
       name: 'T',
       category: BikeCategory.mtbAm,
-      hours: 60,
+      odometerKm: 2200,
+      hours: 80,
     );
     final comps = [
       BikeComponent(
         id: 'c1',
         bikeId: 'b1',
         slot: ComponentSlot.chain,
-        odometerKm: 1200,
+        odometerKm: 1000,
         installedAt: DateTime.now().subtract(const Duration(days: 30)),
       ),
       BikeComponent(
@@ -36,12 +45,35 @@ void main() {
         bikeId: 'b1',
         slot: ComponentSlot.fork,
         odometerKm: 100,
+        hoursAtInstall: 20,
         installedAt: DateTime.now().subtract(const Duration(days: 30)),
       ),
     ];
     final due = listDueMaintenance(bike: bike, components: comps);
     expect(due.any((a) => a.slot == ComponentSlot.chain), isTrue);
     expect(due.any((a) => a.slot == ComponentSlot.fork), isTrue);
+  });
+
+  test('install snapshot is not wear — chain at bike odo is ok', () {
+    const bike = Bike(
+      id: 'b1',
+      name: 'T',
+      category: BikeCategory.mtbAm,
+      odometerKm: 1200,
+      hours: 10,
+    );
+    final comps = [
+      BikeComponent(
+        id: 'c1',
+        bikeId: 'b1',
+        slot: ComponentSlot.chain,
+        odometerKm: 1200,
+        hoursAtInstall: 10,
+        installedAt: DateTime.now(),
+      ),
+    ];
+    final due = listDueMaintenance(bike: bike, components: comps);
+    expect(due.any((a) => a.slot == ComponentSlot.chain), isFalse);
   });
 
   test('buildNavCues and nextCue from geometry', () {

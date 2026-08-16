@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/flowline_mark.dart';
 import '../../domain/bike.dart';
 import '../../domain/sport/discipline_ux.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -22,7 +24,7 @@ class OnboardingFlow extends ConsumerStatefulWidget {
 
 class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _step = 1;
-    BikeCategory _sport = BikeCategory.urban;
+  BikeCategory _sport = BikeCategory.urban;
   double _weight = 78;
   bool _busy = false;
   String? _status;
@@ -41,7 +43,8 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     if (!mounted) return;
 
     if (next == 'ride') {
-      setState(() => _status = 'Standort für GPS-Track…');
+      final l10n = AppLocalizations.of(context);
+      setState(() => _status = l10n.onboardGpsStatus);
       final location = ref.read(locationCoreProvider);
       final result = await location.ensurePermissionDetailed();
       if (!mounted) return;
@@ -50,10 +53,9 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           _busy = false;
           _status = switch (result) {
             LocationPermissionResult.servicesDisabled =>
-              'Ortungsdienste einschalten, dann erneut versuchen.',
-            LocationPermissionResult.deniedForever =>
-              'Standort in den App-Einstellungen erlauben.',
-            _ => 'Standort erlauben — ohne GPS kein Track.',
+              l10n.onboardServicesOff,
+            LocationPermissionResult.deniedForever => l10n.onboardDeniedForever,
+            _ => l10n.onboardNeedGps,
           };
         });
         if (result == LocationPermissionResult.deniedForever) {
@@ -102,6 +104,7 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.black.withValues(alpha: 0.72),
       child: SafeArea(
@@ -113,10 +116,10 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
               margin: const EdgeInsets.fromLTRB(12, 12, 12, 12),
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF14201C),
+                color: AppColors.surfaceDark,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppColors.trail.withValues(alpha: 0.35),
+                  color: AppColors.border,
                 ),
               ),
               child: SingleChildScrollView(
@@ -131,23 +134,18 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'AetherRide',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.6,
-                                  color:
-                                      AppColors.accent.withValues(alpha: 0.95),
-                                ),
+                              const FlowLineWordmark(
+                                fontSize: 13,
+                                showMark: true,
+                                markSize: 18,
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 _step == 1
-                                    ? 'Wie fährst du?'
+                                    ? l10n.onboardHowYouRide
                                     : _step == 2
-                                        ? 'Dein Gewicht'
-                                        : 'Erste Fahrt',
+                                        ? l10n.onboardYourWeight
+                                        : l10n.onboardFirstRide,
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
@@ -156,12 +154,10 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                               const SizedBox(height: 6),
                               Text(
                                 _step == 1
-                                    ? AppLocalizations.of(context).appTagline
+                                    ? l10n.appTagline
                                     : _step == 2
-                                        ? 'Für Setup, SAG & Reichweite — nur lokal, jederzeit änderbar. '
-                                            'Auch ohne Federgabel sinnvoll (z. B. City).'
-                                        : 'Echter GPS-Track — ohne Demo. Bike optional. '
-                                            'MTB, Gravel, Rennrad oder City: gleich gut.',
+                                        ? l10n.onboardWeightHint
+                                        : l10n.onboardGpsHint,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: AppColors.muted,
@@ -171,7 +167,7 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Überspringen',
+                          tooltip: l10n.skip,
                           onPressed:
                               _busy ? null : () => unawaited(_finish('skip')),
                           icon: const Icon(Icons.close),
@@ -199,13 +195,12 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                   border: Border.all(
                                     color: _sport == s.id
                                         ? AppColors.accent
-                                        : AppColors.forest
+                                        : AppColors.charcoal
                                             .withValues(alpha: 0.4),
                                     width: _sport == s.id ? 2 : 1,
                                   ),
                                   color: _sport == s.id
-                                      ? AppColors.accent
-                                          .withValues(alpha: 0.12)
+                                      ? AppColors.accent.withValues(alpha: 0.12)
                                       : const Color(0xFF1A2822),
                                 ),
                                 child: Column(
@@ -221,14 +216,14 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      s.label,
+                                      l10n.onboardingSportLabel(s.id),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      s.blurb,
+                                      l10n.onboardingSportBlurb(s.id),
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: AppColors.muted,
@@ -242,7 +237,7 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       )
                     else if (_step == 2) ...[
                       Text(
-                        'Fahrergewicht: ${_weight.round()} kg',
+                        l10n.onboardWeightLabel(_weight.round()),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       Slider(
@@ -255,18 +250,19 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                         onChanged: (v) => setState(() => _weight = v),
                       ),
                       Text(
-                        'Disziplin: ${_sport.shortLabel}',
+                        l10n.onboardDiscipline(l10n.bikeCategoryShort(_sport)),
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.muted,
                         ),
                       ),
                     ] else ...[
-                      const Text(
-                        'Standort für den GPS-Track. Bluetooth-Sensoren '
-                        '(Geschwindigkeit/Kadenz) sind optional — für alle '
-                        'Bike-Typen.',
-                        style: TextStyle(fontSize: 13, color: AppColors.muted),
+                      Text(
+                        l10n.onboardSensorsHint,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.muted,
+                        ),
                       ),
                       if (_status != null) ...[
                         const SizedBox(height: 10),
@@ -283,25 +279,25 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     if (_step == 1)
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.forestOnDark,
+                          backgroundColor: AppColors.chrome,
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 2),
-                        child: const Text('Weiter'),
+                        child: Text(l10n.next),
                       )
                     else if (_step == 2)
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.forestOnDark,
+                          backgroundColor: AppColors.chrome,
                           minimumSize: const Size.fromHeight(48),
                         ),
                         onPressed: () => setState(() => _step = 3),
-                        child: const Text('Weiter zur Fahrt'),
+                        child: Text(l10n.onboardNextRide),
                       )
                     else ...[
                       FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.forestOnDark,
+                          backgroundColor: AppColors.chrome,
                           minimumSize: const Size.fromHeight(52),
                         ),
                         onPressed:
@@ -314,19 +310,19 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Text(AppLocalizations.of(context).startRide),
+                            : Text(l10n.startRide),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton(
                         onPressed:
                             _busy ? null : () => unawaited(_finish('garage')),
-                        child: const Text('Zuerst Rad abstellen'),
+                        child: Text(l10n.onboardParkBikeFirst),
                       ),
                     ],
                     TextButton(
                       onPressed:
                           _busy ? null : () => unawaited(_finish('skip')),
-                      child: const Text('Später einrichten'),
+                      child: Text(l10n.onboardLater),
                     ),
                   ],
                 ),

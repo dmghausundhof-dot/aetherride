@@ -20,6 +20,9 @@ export interface ActiveRoute {
   setAt: string;
 }
 
+/** Sichtbarkeit einer gespeicherten Tour. Default: privat. */
+export type RouteVisibility = "private" | "shared";
+
 /** Vom Nutzer gespeicherte Tour (Discover Library) */
 export interface SavedRoute {
   id: string;
@@ -34,6 +37,20 @@ export interface SavedRoute {
   matchScore?: number;
   savedAt: string;
   source: "suggestion" | "engine" | "import";
+  /**
+   * Privat (Default) oder freigegeben.
+   * Freigeben erzeugt einen Link — Geometrie nur wenn explizit im Link.
+   * Fehlt das Feld → private (Altbestand).
+   */
+  visibility?: RouteVisibility;
+  /** Steigt bei „zurück auf privat“ — lokale Token-Invalidierung. */
+  shareEpoch?: number;
+  /** Katalog-ID für Stimmen — fehlt bei privater GPX. */
+  catalogTourId?: string;
+  /** Optionales Rad für diese Runde (Werkstatt-Join). */
+  preferredBikeId?: string;
+  /** Private Notiz — nie als Stimme publizieren. */
+  personalNote?: string;
   /** Persistierte Geometrie (Engine / Hybrid / Demo) */
   geometry?: GeoJSON.LineString | null;
   /** Optionale Waypoints für erneutes Planen */

@@ -39,7 +39,7 @@ export async function GET(
       .join("\n");
 
     const gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="AetherRide" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="FlowLine" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
     <name>${escapeXml(tour.name)}</name>
     <desc>${escapeXml(tour.summary)} · engine=${geo?.engine ?? "unknown"} · shape=${geo?.shape ?? ""}</desc>

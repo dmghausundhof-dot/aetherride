@@ -3,9 +3,14 @@
 import '../ride.dart';
 
 class PostRideObservation {
-  const PostRideObservation({required this.id, required this.text});
+  const PostRideObservation({
+    required this.id,
+    required this.text,
+    this.params = const {},
+  });
   final String id;
   final String text;
+  final Map<String, String> params;
 }
 
 class SetupChangeSuggestion {
@@ -18,6 +23,8 @@ class SetupChangeSuggestion {
     required this.confidence,
     this.adjusterKey,
     this.suggestedDelta,
+    this.kind = '',
+    this.params = const {},
   });
 
   final String title;
@@ -28,6 +35,8 @@ class SetupChangeSuggestion {
   final String confidence; // low|medium|high
   final String? adjusterKey;
   final double? suggestedDelta;
+  final String kind;
+  final Map<String, String> params;
 }
 
 class PostRideAnalysis {
@@ -81,6 +90,10 @@ PostRideAnalysis analyzePostRide({
         id: 'impacts',
         text:
             'Viele harte Impacts ($impacts auf ${km.toStringAsFixed(1)} km) — Front/Dämpfer stark belastet.',
+        params: {
+          'count': '$impacts',
+          'km': km.toStringAsFixed(1),
+        },
       ),
     );
   } else if (impacts <= 2 && km >= 10) {
@@ -89,6 +102,7 @@ PostRideAnalysis analyzePostRide({
         id: 'smooth',
         text:
             'Wenige Impacts bei ${km.toStringAsFixed(1)} km — eher flowig oder glatter Untergrund.',
+        params: {'km': km.toStringAsFixed(1)},
       ),
     );
   }
@@ -99,6 +113,7 @@ PostRideAnalysis analyzePostRide({
         id: 'flow-high',
         text:
             'Hoher Flow-Score (${flow.toStringAsFixed(0)}) — Tempo und Linienwahl wirkten stimmig.',
+        params: {'flow': flow.toStringAsFixed(0)},
       ),
     );
   } else if (flow > 0 && flow < 45) {
@@ -107,6 +122,7 @@ PostRideAnalysis analyzePostRide({
         id: 'flow-low',
         text:
             'Niedriger Flow-Score (${flow.toStringAsFixed(0)}) — viele Tempo-Brüche oder Stopps.',
+        params: {'flow': flow.toStringAsFixed(0)},
       ),
     );
   }
@@ -117,6 +133,7 @@ PostRideAnalysis analyzePostRide({
         id: 'peak-g',
         text:
             'Peak ${peakG.toStringAsFixed(1)} g — harte Einschläge; Setup und Reifendruck prüfen.',
+        params: {'g': peakG.toStringAsFixed(1)},
       ),
     );
   }
@@ -128,6 +145,10 @@ PostRideAnalysis analyzePostRide({
           id: 'fb-harsh',
           text:
               'Feedback: Front ${fb.frontFeel == 'too_firm' ? 'zu hart' : 'ok'} · kleine Schläge ${fb.smallBump == 'harsh' ? 'rau' : '—'}.',
+          params: {
+            'front': fb.frontFeel == 'too_firm' ? 'too_firm' : 'ok',
+            'bumps': fb.smallBump == 'harsh' ? 'harsh' : 'dash',
+          },
         ),
       );
     } else if (fb.frontFeel == 'too_soft' || fb.brakeDive == 'dives') {
@@ -191,6 +212,8 @@ SetupChangeSuggestion? _buildSetupSuggestion({
           feedback != null && !feedback.skipped ? 'high' : 'medium',
       adjusterKey: 'fork.rebound',
       suggestedDelta: -2,
+      kind: 'rebound-slow',
+      params: {'current': '$rebound', 'next': '$next'},
     );
   }
 
@@ -209,6 +232,8 @@ SetupChangeSuggestion? _buildSetupSuggestion({
           feedback != null && !feedback.skipped ? 'high' : 'medium',
       adjusterKey: 'fork.rebound',
       suggestedDelta: 2,
+      kind: 'rebound-fast',
+      params: {'current': '$rebound', 'next': '$next'},
     );
   }
 
@@ -222,6 +247,7 @@ SetupChangeSuggestion? _buildSetupSuggestion({
       limits: 'Nur im freigegebenen Druckbereich des Reifens/Gabel.',
       confidence: 'low',
       adjusterKey: 'fork.pressure',
+      kind: 'pressure',
     );
   }
 

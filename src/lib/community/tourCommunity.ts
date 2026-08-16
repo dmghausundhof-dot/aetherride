@@ -3,8 +3,7 @@
  * Keine Stub-Sterne: leere API → Count 0, kein erfundenes Rating.
  */
 
-export const COMMUNITY_EMPTY_COPY =
-  "Noch keine Community-Beiträge — erste:in sein";
+export const COMMUNITY_EMPTY_COPY = "Noch keine Stimmen.";
 
 export type TourCommunityCounts = {
   reviewCount: number;

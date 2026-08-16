@@ -1,21 +1,33 @@
 /**
- * Web Hof tokens — keep in sync with Flutter `AppColors` / `AppSpacing` /
- * `AppRadius` and `src/app/globals.css`.
+ * FlowLine design tokens — keep in sync with `src/app/globals.css`
+ * and Flutter `AppColors` / `AppSpacing` / `AppRadius`.
  *
- * Orange is Rausfahren only. Mint is active chrome.
+ * Orange = primary action, active chrome, route line.
+ * Sage = success / nature.
+ * Charcoal = text and dark surfaces.
+ * `muted` here is **text**, not a fill. CSS `--muted` is a fill.
  */
 
 export const HOF_TOKENS = {
-  background: "#0A1210",
-  surface: "#14201C",
-  surfaceElevated: "#1A2A24",
-  hairline: "#2A3D34",
-  mint: "#81C995",
-  forest: "#1A5C45",
-  text: "#E8EEEA",
-  muted: "#9AABA2",
-  orange: "#FF6B35",
-  orangeHover: "#FF8555",
+  background: "#121215",
+  surface: "#1E1E26",
+  surfaceElevated: "#2A2A34",
+  overlay: "#343440",
+  hairline: "#484854",
+  text: "#F2F2F2",
+  /** Secondary text on dark — not CSS `--muted` (that is a fill). */
+  mutedText: "#9CA3AF",
+  orange: "#FF6A00",
+  orangeHover: "#FF8533",
+  onAccent: "#121215",
+  sage: "#7A8B73",
+  sageOnDark: "#7FA38D",
+  sageOnLight: "#4F6B5A",
+  warning: "#EAB308",
+  error: "#EF4444",
+  mapWarnFill: "#FFE0B2",
+  mapWarnInk: "#B34700",
+  charcoal: "#1F1F1F",
   radius: {
     chip: 12,
     card: 16,

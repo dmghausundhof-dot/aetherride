@@ -7,6 +7,8 @@ const cases: Array<[string | null, string, string]> = [
   ["CH", "de", "Velokeller"],
   ["CH", "fr", "Le local vélo"],
   ["CH", "it", "La rimessa"],
+  ["CA", "fr", "La remise"],
+  ["CA", "en", "The Stand"],
   ["FR", "fr", "La remise"],
   ["IT", "it", "La rimessa"],
   ["US", "en", "The Stand"],

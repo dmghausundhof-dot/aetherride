@@ -22,6 +22,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 SEED_FILES = [
     ROOT / "mobile/assets/seeds/naehe-peek-seeds-berlin-v1.json",
     ROOT / "mobile/assets/seeds/p0-dach-60min-naehe-v1.json",
+    ROOT / "mobile/assets/seeds/p0-gaps-60min-naehe-v1.json",
     ROOT / "mobile/assets/seeds/p0-france-60min-naehe-v1.json",
     ROOT / "mobile/assets/seeds/p0-rhein-neckar-60min-naehe-v1.json",
     ROOT / "mobile/assets/seeds/p0-rhein-neckar-60min-premium-v1.json",

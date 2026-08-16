@@ -41,5 +41,18 @@ const gpx = rideToGpx(withTrack, "Demo");
 assert.ok(gpx.includes("47.99"));
 assert.ok(gpx.includes("7.85"));
 assert.equal(rideHasExportableTrack(withTrack), true);
+assert.equal(gpx.includes("<gpxtpx:hr>"), false);
+
+const withHr = {
+  ...empty,
+  track: [
+    { lat: 47.99, lng: 7.85, elev: 280, time: 0, hr: 132, cad: 78 },
+    { lat: 48.0, lng: 7.86, elev: 300, time: 60, hr: 140 },
+  ],
+} as Ride;
+const gpxHr = rideToGpx(withHr, "Demo");
+assert.ok(gpxHr.includes("<gpxtpx:hr>132</gpxtpx:hr>"));
+assert.ok(gpxHr.includes("<gpxtpx:cad>78</gpxtpx:cad>"));
+assert.ok(gpxHr.includes("<gpxtpx:hr>140</gpxtpx:hr>"));
 
 console.log("gpx export honesty ok");

@@ -9,7 +9,9 @@ import { filterAndRankParts } from "@/lib/shop/partsCatalog";
 import { softFitInputsFromBikes } from "@/lib/shop/garageFit";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { PARTS_BROWSE_SLOTS, parseSoftFitTags } from "@/lib/shop/softFit";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { formatShopPrice } from "@/lib/shop/shopifyLocale";
+import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
 
 function hydrate(p: PartsProduct): PartsProduct {
@@ -20,17 +22,6 @@ function hydrate(p: PartsProduct): PartsProduct {
     softFit: p.softFit ?? parseSoftFitTags(tags),
     slotKey: p.slotKey || "other",
   };
-}
-
-function formatPrice(eur: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: currency || "EUR",
-    }).format(eur);
-  } catch {
-    return `${eur.toLocaleString("de-DE")} €`;
-  }
 }
 
 export function ShopCatalogPreview({
@@ -48,6 +39,8 @@ export function ShopCatalogPreview({
   initialSlot?: string;
   initialFit?: "bike" | "all";
 }) {
+  const copy = useHofCopy();
+  const lang = useChromeLang();
   const [q, setQ] = useState("");
   const [slot, setSlot] = useState(
     initialSlot && initialSlot !== "all" ? initialSlot : "all"
@@ -103,7 +96,7 @@ export function ShopCatalogPreview({
   if (loading) {
     return (
       <div className="space-y-3">
-        <h2 className="text-base font-extrabold">{HOF_COPY.shopFeatured}</h2>
+        <h2 className="text-base font-extrabold">{copy.shopFeatured}</h2>
         <PartsSkeleton count={4} />
       </div>
     );
@@ -115,7 +108,7 @@ export function ShopCatalogPreview({
         data-testid="shop-catalog-empty"
         className="text-sm text-text-secondary"
       >
-        {HOF_COPY.shopCatalogEmpty}
+        {copy.shopCatalogEmpty}
       </p>
     );
   }
@@ -127,7 +120,7 @@ export function ShopCatalogPreview({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder={HOF_COPY.shopSearchHint}
+          placeholder={copy.shopSearchHint}
           className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-3 text-sm outline-none placeholder:text-text-secondary focus:border-accent"
         />
       </label>
@@ -146,7 +139,7 @@ export function ShopCatalogPreview({
                     : "shrink-0 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary"
                 }
               >
-                {c.slot === "all" ? HOF_COPY.shopAllParts : c.label}
+                {c.slot === "all" ? copy.shopAllParts : c.label}
               </button>
             );
           })}
@@ -164,7 +157,7 @@ export function ShopCatalogPreview({
                 : "shrink-0 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary"
             }
           >
-            {HOF_COPY.shopFitAllBikes}
+            {copy.shopFitAllBikes}
           </button>
           {bikes.map((b) => {
             const selected = bikeId === b.id;
@@ -190,8 +183,8 @@ export function ShopCatalogPreview({
         <div className="flex flex-wrap items-center gap-2">
           <p className="rounded-xl bg-sage/20 px-3 py-2 text-xs font-bold text-sage">
             {selectedBike
-              ? HOF_COPY.shopFitBanner(selectedBike.name)
-              : HOF_COPY.shopFitBannerAll}
+              ? copy.shopFitBanner(selectedBike.name)
+              : copy.shopFitBannerAll}
           </p>
           <button
             type="button"
@@ -203,16 +196,16 @@ export function ShopCatalogPreview({
                 : "rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary"
             }
           >
-            {HOF_COPY.shopFitOnly}
+            {copy.shopFitOnly}
           </button>
         </div>
       ) : null}
       <div className="flex items-baseline justify-between">
-        <h2 className="text-base font-extrabold">{HOF_COPY.shopFeatured}</h2>
+        <h2 className="text-base font-extrabold">{copy.shopFeatured}</h2>
         <p className="text-xs text-text-secondary">{visible.length}</p>
       </div>
       {visible.length === 0 ? (
-        <p className="text-sm text-text-secondary">{HOF_COPY.shopShelfEmpty}</p>
+        <p className="text-sm text-text-secondary">{copy.shopShelfEmpty}</p>
       ) : (
         <ul className="space-y-3">
           {visible.slice(0, 24).map((row) => {
@@ -233,7 +226,7 @@ export function ShopCatalogPreview({
                       />
                     ) : (
                       <div className="flex h-[88px] w-[88px] items-center justify-center text-[11px] text-text-secondary">
-                        Kein Bild
+                        {copy.shopNoImage}
                       </div>
                     )}
                   </div>
@@ -250,10 +243,10 @@ export function ShopCatalogPreview({
                       </p>
                     ) : null}
                     <p className="mt-1 text-base font-extrabold tabular-nums text-accent">
-                      {formatPrice(p.priceEur, p.currencyCode)}
+                      {formatShopPrice(p.priceEur, p.currencyCode, lang)}
                     </p>
                     <p className="mt-1 text-xs font-extrabold text-accent">
-                      {HOF_COPY.shopOpenProduct}
+                      {copy.shopOpenProduct}
                     </p>
                   </div>
                 </Link>

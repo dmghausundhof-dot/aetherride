@@ -5,18 +5,42 @@ export const dynamic = "force-dynamic";
 
 const HANDLE_RE = /^[a-z0-9_]{3,24}$/;
 
+const PROFILE_COLS =
+  "handle, display_name, bio, sports, show_ride_count, show_preferred_sports, region_label, enabled";
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const handle = (url.searchParams.get("handle") || "").trim().toLowerCase();
-  if (!handle) {
-    return NextResponse.json({ error: "handle required" }, { status: 400 });
-  }
   const supabase = await createAuthedClient(req);
+
+  if (!handle) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      }
+      const { data, error } = await supabase
+        .from("public_profiles")
+        .select(PROFILE_COLS)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) {
+        return NextResponse.json(
+          { error: "query_failed", note: error.message },
+          { status: 501 }
+        );
+      }
+      return NextResponse.json({ profile: data ?? null, me: true });
+    } catch {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+  }
+
   const { data, error } = await supabase
     .from("public_profiles")
-    .select(
-      "handle, display_name, bio, sports, show_ride_count, show_preferred_sports, region_label, enabled"
-    )
+    .select(PROFILE_COLS)
     .eq("handle", handle)
     .eq("enabled", true)
     .maybeSingle();

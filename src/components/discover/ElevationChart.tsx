@@ -5,8 +5,11 @@ import {
   formatDistanceElevation,
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { discoverUi } from "@/lib/i18n/discoverUi";
 
 export function ElevationChart({ elev }: { elev: ElevationProfile }) {
+  const d = discoverUi(useChromeLang());
   const elevs = elev.points
     .map((p) => p.elevM)
     .filter((e): e is number => e != null);
@@ -26,7 +29,7 @@ export function ElevationChart({ elev }: { elev: ElevationProfile }) {
           climbDisplay
         )}
         {elev.gapKm > 0
-          ? ` · ${elev.gapKm.toFixed(1)} km ohne Höhendaten`
+          ? d.gapElev(elev.gapKm.toFixed(1))
           : ""}
       </p>
       <svg viewBox="0 0 400 120" className="w-full rounded-xl bg-surface">
@@ -46,7 +49,7 @@ export function ElevationChart({ elev }: { elev: ElevationProfile }) {
               y1={y1}
               x2={x2}
               y2={y2}
-              stroke={steep ? "#FF6B35" : "#1A5C45"}
+              stroke={steep ? "#FF6A00" : "#7A8B73"}
               strokeWidth="2"
             />
           );
@@ -66,13 +69,13 @@ export function ElevationChart({ elev }: { elev: ElevationProfile }) {
           ))}
       </svg>
       <div className="text-[11px] text-text-secondary">
-        <p className="font-medium text-foreground">Oberfläche</p>
+        <p className="font-medium text-foreground">{d.surfaceTitle}</p>
         {elev.surfaceBands.slice(0, 6).map((b) => (
           <span key={`${b.fromKm}-${b.surface}`} className="mr-2">
             {b.fromKm.toFixed(1)}–{b.toKm.toFixed(1)} km: {b.surface ?? "—"}
           </span>
         ))}
-        <p className="mt-2 font-medium text-foreground">Schwierigkeit</p>
+        <p className="mt-2 font-medium text-foreground">{d.difficultyTitle}</p>
         {elev.scaleBands.slice(0, 6).map((b) => (
           <span key={`${b.fromKm}-s`} className="mr-2">
             {b.fromKm.toFixed(1)}: {b.scale ?? "—"}

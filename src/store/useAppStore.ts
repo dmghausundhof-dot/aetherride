@@ -22,16 +22,21 @@ import {
 } from "@/lib/setup/ranges";
 import { templatesForCategory } from "@/lib/setup/templates";
 import {
-  calibrateFromRide,
-  defaultCalibration,
   type RangeCalibration,
 } from "@/lib/ebike/range";
 import { buildEstimatedAssistLog } from "@/lib/ebike/assistLog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import {
+  applyRideWearToBike,
+  honestRideDistanceM,
+  shouldAssignRideWear,
+} from "@/lib/garage/applyRideWear";
+import { inferCatalogTourId } from "@/lib/tours/tourAkte";
+import {
   analyzePostRide,
   setupSuggestionToRecommendation,
 } from "@/lib/ai/postRideAnalysis";
+import { markReadMeta, snoozeMeta } from "@/lib/ai/coachInbox";
 import {
   DEFAULT_CONSENTS,
   DEFAULT_PRIVACY_ZONES,
@@ -124,12 +129,15 @@ interface AppState {
   /** First-Run Flow A abgeschlossen oder übersprungen */
   onboardingDone: boolean;
   preferredSport: BikeCategory | null;
+  preferredSports: BikeCategory[];
+  coachMeta: Record<string, import("@/lib/ai/coachInbox").CoachMeta>;
 
   setActiveBike: (id: string) => void;
   addBikeFromCatalog: (input: {
     catalogBikeId: string;
     frameSize: string;
     name?: string;
+    includeOemKit?: boolean;
   }) => string;
   addBikeBasic: (input: {
     name: string;
@@ -212,12 +220,17 @@ interface AppState {
   setActiveFamilyRider: (id: string | null) => void;
   assignSetupToRider: (riderId: string, setupId: string) => void;
   setCommerceMode: (mode: CommerceMode) => void;
+  snoozeCoachNotice: (id: string, fingerprint: string, days?: number) => void;
+  markCoachNoticesRead: (
+    notices: { id: string; fingerprint: string }[]
+  ) => void;
 
   setActiveRoute: (route: ActiveRoute | null) => void;
   clearActiveRoute: () => void;
   saveRoute: (route: RouteSuggestion | SavedRoute | ActiveRoute) => void;
   unsaveRoute: (id: string) => void;
   isRouteSaved: (id: string) => boolean;
+  updateSavedRoute: (id: string, patch: Partial<SavedRoute>) => void;
   createRouteCollection: (name: string) => string;
   addRouteToCollection: (collectionId: string, routeId: string) => void;
   startRide: (bikeId: string | null, sportType: BikeType) => void;
@@ -430,6 +443,8 @@ export const useAppStore = create<AppState>()(
       commerceMode: "affiliate",
       onboardingDone: false,
       preferredSport: null,
+      preferredSports: [],
+      coachMeta: {},
 
       setActiveBike: (id) =>
         set((s) => ({
@@ -441,6 +456,9 @@ export const useAppStore = create<AppState>()(
         set({
           onboardingDone: true,
           preferredSport: sport ?? get().preferredSport,
+          preferredSports: sport
+            ? [sport]
+            : get().preferredSports,
         }),
 
       updateRiderProfile: (patch) =>
@@ -539,7 +557,7 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      addBikeFromCatalog: ({ catalogBikeId, frameSize, name }) => {
+      addBikeFromCatalog: ({ catalogBikeId, frameSize, name, includeOemKit = false }) => {
         if (
           !forcePro() &&
           get().subscriptionTier === "free" &&
@@ -573,48 +591,52 @@ export const useAppStore = create<AppState>()(
         });
 
         const components: BikeComponent[] = [];
-        for (const [slot, modelId] of Object.entries(cat.oemComponents)) {
-          if (!modelId) continue;
-          const c = installFromModel(
-            id,
-            slot as ComponentSlot,
-            modelId,
-            0,
-            0
-          );
-          // SAG-Defaults nach Kategorie
-          if (slot === "fork") {
-            c.currentSettings.sag_pct = recommendedSagPct(
-              cat.category,
-              "fork"
-            ).target;
-            c.currentSettings.air_pressure_psi = 75;
-            c.currentSettings.rebound = 8;
-            c.currentSettings.lsc = 6;
-            c.currentSettings.hsc = 4;
+        if (includeOemKit) {
+          for (const [slot, modelId] of Object.entries(cat.oemComponents)) {
+            if (!modelId) continue;
+            const c = installFromModel(
+              id,
+              slot as ComponentSlot,
+              modelId,
+              0,
+              0
+            );
+            // SAG-Defaults nach Kategorie
+            if (slot === "fork") {
+              c.currentSettings.sag_pct = recommendedSagPct(
+                cat.category,
+                "fork"
+              ).target;
+              c.currentSettings.air_pressure_psi = 75;
+              c.currentSettings.rebound = 8;
+              c.currentSettings.lsc = 6;
+              c.currentSettings.hsc = 4;
+            }
+            if (slot === "rear_shock") {
+              c.currentSettings.sag_pct = recommendedSagPct(
+                cat.category,
+                "shock"
+              ).target;
+              c.currentSettings.air_pressure_psi = 180;
+              c.currentSettings.rebound = 10;
+              c.currentSettings.lsc = 5;
+              c.currentSettings.hsc = 3;
+            }
+            if (slot === "tire_front") c.currentSettings.pressure_psi = 22;
+            if (slot === "tire_rear") c.currentSettings.pressure_psi = 24;
+            components.push(c);
           }
-          if (slot === "rear_shock") {
-            c.currentSettings.sag_pct = recommendedSagPct(
-              cat.category,
-              "shock"
-            ).target;
-            c.currentSettings.air_pressure_psi = 180;
-            c.currentSettings.rebound = 10;
-            c.currentSettings.lsc = 5;
-            c.currentSettings.hsc = 3;
-          }
-          if (slot === "tire_front") c.currentSettings.pressure_psi = 22;
-          if (slot === "tire_rear") c.currentSettings.pressure_psi = 24;
-          components.push(c);
         }
         bike = { ...bike, components };
 
         const setup = createImmutableSetup({
           id: uuidv4(),
           bike,
-          label: "OEM Basis-Setup",
+          label: includeOemKit ? "OEM Basis-Setup" : "Katalog-Identität",
           conditions: "general",
-          description: "Aus Katalog-Vorbefüllung",
+          description: includeOemKit
+            ? "Aus Katalog-Vorbefüllung"
+            : "Modell zugeordnet, ohne Serien-Kit",
           riderWeightKg: get().riderProfile.riderWeightKg,
           createdBy: "catalog",
         });
@@ -1110,6 +1132,10 @@ export const useAppStore = create<AppState>()(
                   ? "import"
                   : "suggestion"
               : "suggestion";
+          const catalogTourId =
+            "catalogTourId" in route && route.catalogTourId
+              ? route.catalogTourId
+              : inferCatalogTourId(route.id, source);
           const entry: SavedRoute = {
             id: route.id,
             name: route.name,
@@ -1123,6 +1149,15 @@ export const useAppStore = create<AppState>()(
             matchScore: "matchScore" in route ? route.matchScore : undefined,
             savedAt: new Date().toISOString(),
             source,
+            catalogTourId,
+            preferredBikeId:
+              "preferredBikeId" in route ? route.preferredBikeId : s.activeBikeId ?? undefined,
+            personalNote:
+              "personalNote" in route ? route.personalNote : undefined,
+            visibility:
+              "visibility" in route && route.visibility === "shared"
+                ? "shared"
+                : "private",
             geometry:
               "geometry" in route ? (route.geometry ?? null) : undefined,
             waypoints:
@@ -1138,6 +1173,13 @@ export const useAppStore = create<AppState>()(
         })),
 
       isRouteSaved: (id) => get().savedRoutes.some((r) => r.id === id),
+
+      updateSavedRoute: (id, patch) =>
+        set((s) => ({
+          savedRoutes: s.savedRoutes.map((r) =>
+            r.id === id ? { ...r, ...patch } : r
+          ),
+        })),
 
       createRouteCollection: (name) => {
         const id = `col-${Date.now()}`;
@@ -1188,6 +1230,7 @@ export const useAppStore = create<AppState>()(
             id: uuidv4(),
             bikeId: bike?.id,
             setupId: activeSetup?.id,
+            savedRouteId: route?.id,
             sportType,
             startTime: new Date().toISOString(),
             distanceM: 0,
@@ -1320,26 +1363,21 @@ export const useAppStore = create<AppState>()(
         const elevFromTrack =
           track.length >= 2 ? trackElevationGainM(track) : 0;
 
+        const distanceM = honestRideDistanceM({
+          recordedM: currentRide.distanceM,
+          trackM: fromTrack,
+        });
         const ride: Ride = {
           id: currentRide.id,
           bikeId: currentRide.bikeId,
           setupId: currentRide.setupId,
+          savedRouteId: currentRide.savedRouteId ?? activeRoute?.id,
           sportType: currentRide.sportType!,
           startTime: currentRide.startTime!,
           endTime,
-          distanceM:
-            currentRide.distanceM ||
-            Math.round(fromTrack) ||
-            Math.round(durationSec * 4.2),
+          distanceM,
           elevationGainM:
-            currentRide.elevationGainM ||
-            Math.round(elevFromTrack) ||
-            (activeRoute
-              ? Math.round(
-                  (activeRoute.elevationM * durationSec) /
-                    Math.max(60, activeRoute.durationMin * 60)
-                )
-              : Math.round(durationSec * 0.8)),
+            currentRide.elevationGainM || Math.round(elevFromTrack) || 0,
           durationSec,
           track: track.length > 0 ? track : undefined,
           notes: currentRide.notes,
@@ -1370,17 +1408,8 @@ export const useAppStore = create<AppState>()(
           });
         }
 
-        // P1: Reichweiten-Selbstkalibrierung aus SOC-Delta
-        if (bikeBefore?.isEbike && boschLive) {
-          const prevCal =
-            get().rangeCalibration ??
-            defaultCalibration(bikeBefore, get().riderProfile);
-          const whCap = 800;
-          const usedWh = Math.max(5, whCap * 0.12);
-          set({
-            rangeCalibration: calibrateFromRide(prevCal, ride, usedWh),
-          });
-        }
+        // P1: Reichweiten-Kalibrierung nur mit echtem SOC-Delta.
+        // Web-Simulator inventiert keine Wh — nichts schreiben.
 
         set((s) => ({
           rides: [ride, ...s.rides],
@@ -1394,14 +1423,13 @@ export const useAppStore = create<AppState>()(
           boschLive: null,
           activeRoute: null,
           bikes: s.bikes.map((b) =>
-            b.id === ride.bikeId
-              ? {
-                  ...b,
-                  totalOdometerKm:
-                    b.totalOdometerKm + ride.distanceM / 1000,
-                  totalHours: b.totalHours + ride.durationSec / 3600,
-                  updatedAt: endTime,
-                }
+            b.id === ride.bikeId &&
+            shouldAssignRideWear({
+              bikeId: ride.bikeId,
+              distanceM: ride.distanceM,
+              durationSec: ride.durationSec,
+            })
+              ? applyRideWearToBike(b, ride)
               : b
           ),
         }));
@@ -1568,6 +1596,7 @@ export const useAppStore = create<AppState>()(
         get().addBikeFromCatalog({
           catalogBikeId: "cat-transition-spire-2024",
           frameSize: "L",
+          includeOemKit: true,
         });
         get().createSetupVersion({
           bikeId: get().bikes[0].id,
@@ -1622,6 +1651,16 @@ export const useAppStore = create<AppState>()(
           ),
         }));
       },
+
+      snoozeCoachNotice: (id, fingerprint, days = 7) =>
+        set((s) => ({
+          coachMeta: snoozeMeta(s.coachMeta, { id, fingerprint }, days),
+        })),
+
+      markCoachNoticesRead: (notices) =>
+        set((s) => ({
+          coachMeta: markReadMeta(s.coachMeta, notices),
+        })),
     }),
     {
       name: "aetherride-storage",
@@ -1668,6 +1707,12 @@ export const useAppStore = create<AppState>()(
           routeCollections: base.routeCollections ?? [],
           onboardingDone: base.onboardingDone ?? false,
           preferredSport: base.preferredSport ?? null,
+          preferredSports: Array.isArray(base.preferredSports)
+            ? base.preferredSports
+            : base.preferredSport
+              ? [base.preferredSport]
+              : [],
+          coachMeta: base.coachMeta ?? {},
           storageVersion: STORAGE_VERSION,
         } as AppState;
       },
@@ -1694,6 +1739,8 @@ export const useAppStore = create<AppState>()(
         commerceMode: s.commerceMode,
         onboardingDone: s.onboardingDone,
         preferredSport: s.preferredSport,
+        preferredSports: s.preferredSports,
+        coachMeta: s.coachMeta,
       }),
       onRehydrateStorage: () => (state) => {
         if (state && forcePro()) {

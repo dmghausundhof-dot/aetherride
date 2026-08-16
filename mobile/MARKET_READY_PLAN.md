@@ -1,4 +1,4 @@
-# AetherRide Android — Gap-Closure zur Marktreife
+# FlowLine Android — Gap-Closure zur Marktreife
 
 Ziel: **öffentliche Play-App ohne Demo/Simulation**, verkaufbar, crash-beobachtbar.
 Stand: Aug 2026 · Version-Ziel Launch: `0.9.0+…` (Internal) → `1.0.0` (Production)

@@ -1,0 +1,24 @@
+{
+  "id": "ch-genfersee",
+  "name": "Genfersee / Romandie",
+  "bbox": [
+    5.96,
+    46.08,
+    7.25,
+    46.62
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-genfersee.tar.zst",
+    "packGz": "ch-genfersee.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

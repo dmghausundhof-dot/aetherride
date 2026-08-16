@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:aetherride_mobile/data/community/tour_community_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,7 +72,7 @@ void main() {
     });
     expect(empty.hasCommunity, isFalse);
     expect(empty.averageRating, isNull);
-    expect(TourCommunityCounts.emptyCopy, contains('erste'));
+    expect(TourCommunityCounts.emptyCopy, contains('Stimmen'));
 
     final live = TourCommunityCounts.fromPayload({
       'reviewCount': 2,
@@ -84,5 +86,22 @@ void main() {
     expect(live.photoCount, 3);
     expect(live.averageRating, 4);
     expect(live.hasCommunity, isTrue);
+  });
+
+  test('addReview publishes counts and bumps revision', () async {
+    final dir = await Directory.systemTemp.createTemp('tour_community_');
+    addTearDown(() => dir.delete(recursive: true));
+    final before = TourCommunityStore.revision.value;
+    final store = TourCommunityStore(dirProvider: () async => dir);
+    await store.addReview(
+      tourId: 'seed-loop-x',
+      rating: 4,
+      body: 'flowig',
+      authorLabel: 'Du',
+    );
+    expect(TourCommunityStore.revision.value, greaterThan(before));
+    final counts = TourCommunityStore.countsCache['seed-loop-x'];
+    expect(counts?.reviewCount, 1);
+    expect(counts?.averageRating, 4);
   });
 }

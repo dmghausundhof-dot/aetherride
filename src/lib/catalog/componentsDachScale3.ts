@@ -71,7 +71,7 @@ function frameEnduro(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -116,7 +116,7 @@ function frameEmtb(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -214,7 +214,7 @@ export const COMPONENT_CATALOG_DACH_SCALE3: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.ridefox.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -232,7 +232,7 @@ export const COMPONENT_CATALOG_DACH_SCALE3: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.burgtec.co.uk/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -250,7 +250,7 @@ export const COMPONENT_CATALOG_DACH_SCALE3: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.burgtec.co.uk/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

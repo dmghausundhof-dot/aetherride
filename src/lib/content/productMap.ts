@@ -17,7 +17,7 @@ export const PRODUCT_DOORS = [
   {
     href: "/library",
     title: "Platz",
-    body: "Mappe, Stimmen, Gruppen-Codes. Dieselben Touren wie auf der Karte — teilen per Link, nicht per Timeline.",
+    body: "Mappe, Stimmen, Einladungslinks. Dieselben Touren wie auf der Karte — teilen per Link, nicht per Timeline.",
   },
   {
     href: "/garage",
@@ -84,7 +84,7 @@ export const WEB_APP_MATRIX: {
   { feature: "Laden / Kasse", web: "Gateway", app: "Gateway" },
   { feature: "Stimmen an der Tour", web: "voll", app: "voll" },
   { feature: "Mappe & Sammlungen teilen", web: "voll", app: "Deep Link" },
-  { feature: "Gruppen / Zusammen raus", web: "Roster + Code", app: "HUD-Pins" },
+  { feature: "Gruppen / Zusammen raus", web: "Roster + Link", app: "HUD-Pins" },
   { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
 ];
 

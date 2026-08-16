@@ -33,7 +33,11 @@ function testChromeLangs() {
   assert.equal(hofCopy("en").libraryMappe, "Die Mappe");
   assert.equal(hofCopy("fr").workshopTabBox, "Die Box");
   assert.equal(hofCopy("it").akteStimmen, "Stimmen");
-  assert.ok(hofCopy("en").communityNotes(2).includes("Stimmen"));
+  assert.equal(HOF_COPY.shopNoImage, "Kein Bild");
+  assert.equal(HOF_COPY.shopGuideHow, "Wie der Laden funktioniert");
+  assert.equal(hofCopy("en").shopNoImage, "No image");
+  assert.equal(hofCopy("fr").shopCancel, "Retour");
+  assert.equal(hofCopy("it").shopProductUnavailable, "Prodotto non disponibile");
 }
 
 testParity();

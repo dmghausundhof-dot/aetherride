@@ -5,12 +5,10 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/export/export_trimmed.dart';
@@ -18,8 +16,32 @@ import '../../data/export/json_export.dart';
 import '../../data/export/strava_client.dart';
 import '../../data/export/strava_stub.dart';
 import '../../data/routing/heatmap_client.dart';
+import '../../data/routing/saved_route_meta_store.dart';
+import '../../domain/tours/route_visibility.dart';
 import '../../domain/privacy/consents.dart';
+import '../../domain/privacy/privacy_zone_map.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../profile/hud_media_connection_tile.dart';
+import 'privacy_zone_map_screen.dart';
+
+({String title, String body}) _consentCopy(
+  AppLocalizations l10n,
+  ConsentPurpose purpose,
+) {
+  switch (purpose) {
+    case ConsentPurpose.rawDataUpload:
+      return (title: l10n.consentRawTitle, body: l10n.consentRawBody);
+    case ConsentPurpose.heatmapContribution:
+      return (title: l10n.consentHeatmapTitle, body: l10n.consentHeatmapBody);
+    case ConsentPurpose.productRecommendations:
+      return (title: l10n.consentRecoTitle, body: l10n.consentRecoBody);
+    case ConsentPurpose.analytics:
+      return (title: l10n.consentAnalyticsTitle, body: l10n.consentAnalyticsBody);
+    case ConsentPurpose.healthData:
+      return (title: l10n.consentHealthTitle, body: l10n.consentHealthBody);
+  }
+}
 
 /// Daten & Privatsphäre — Consents, Zonen, Export (F-ACC-003/005/006).
 class PrivacyScreen extends ConsumerStatefulWidget {
@@ -58,11 +80,14 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           uri.toString().contains('strava-callback')) {
         unawaited(_checkStrava());
         if (mounted) {
+          final l10n = AppLocalizations.of(context);
           final q = uri.queryParameters['strava'];
           setState(() {
             _message = q == 'connected'
-                ? 'Strava verbunden'
-                : (q != null ? 'Strava: $q' : 'Strava-Callback empfangen');
+                ? l10n.privacyStravaConnected
+                : (q != null
+                    ? l10n.privacyStravaStatus(q)
+                    : l10n.privacyStravaCallback);
           });
         }
       }
@@ -103,17 +128,17 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _stravaStatus =
-            'Strava-Status nicht erreichbar — Stub-Export bleibt lokal');
+        final l10n = AppLocalizations.of(context);
+        setState(() => _stravaStatus = l10n.privacyStravaUnreachable);
       }
     }
   }
 
   Future<void> _connectStrava() async {
+    final l10n = AppLocalizations.of(context);
     final url = _stravaAuthorizeUrl;
     if (url == null) {
-      setState(() => _message =
-          'Strava-Authorize-URL fehlt — einloggen und erneut versuchen.');
+      setState(() => _message = l10n.privacyStravaUrlMissing);
       return;
     }
     final ok = await launchUrl(
@@ -121,14 +146,14 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       mode: LaunchMode.externalApplication,
     );
     if (!ok && mounted) {
-      setState(() => _message = 'Browser konnte nicht geöffnet werden');
+      setState(() => _message = l10n.billingBrowserFailed);
     } else if (mounted) {
-      setState(() => _message =
-          'Strava im Browser — nach Freigabe zurück zur App, Status aktualisiert sich.');
+      setState(() => _message = l10n.privacyStravaBrowser);
     }
   }
 
   Future<void> _uploadStravaLive() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -136,7 +161,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     try {
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
       if (rides.isEmpty) {
-        setState(() => _message = 'Kein Ride zum Upload');
+        setState(() => _message = l10n.privacyNoRideUpload);
         return;
       }
       final r = await uploadRideToStrava(rides.first);
@@ -166,6 +191,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
   }
 
   Future<void> _uploadChunks() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -177,10 +203,10 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
         setState(() {
           _pendingChunks = left;
           _message = n > 0
-              ? '$n Chunk(s) hochgeladen, $left ausstehend'
+              ? l10n.privacyChunksUploaded(n, left)
               : left > 0
-                  ? 'Kein Upload (Login/Netz?) — $left ausstehend'
-                  : 'Keine ausstehenden Chunks';
+                  ? l10n.privacyChunksBlocked(left)
+                  : l10n.privacyChunksNone;
         });
       }
     } catch (e) {
@@ -208,127 +234,40 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       final zones =
           await ref.read(garageRepositoryProvider).listPrivacyZones();
       var n = 0;
+      final metas = await SavedRouteMetaStore.listAll();
       for (final r in rides) {
+        if (!RouteVisibility.mayContributeRide(r.routeId, metas[r.routeId])) {
+          continue;
+        }
         final res = await contributeHeatmapTrack(
           track: r.track,
           privacyZones: zones,
         );
         n += res.upserted;
       }
-      if (mounted && n > 0) {
-        setState(() => _message =
-            'Heatmap: $n Zellen beigetragen (sichtbar erst ab k≥5).');
-      } else if (mounted && rides.isNotEmpty) {
-        setState(() => _message =
-            'Heatmap: kein Beitrag (Login/Consent/Track prüfen).');
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      if (n > 0) {
+        setState(() => _message = l10n.privacyHeatmapCells(n));
+      } else if (rides.isNotEmpty) {
+        setState(() => _message = l10n.privacyHeatmapNone);
       }
     } catch (_) {}
   }
 
-  Future<void> _addZone() async {
-    Position? lastPos;
-    try {
-      lastPos = await Geolocator.getLastKnownPosition();
-    } catch (_) {}
-    if (!mounted) return;
-    final usedLastKnown = lastPos != null;
-    final label = TextEditingController(text: 'Zuhause');
-    final lat = TextEditingController(
-      text: lastPos != null ? lastPos.latitude.toStringAsFixed(5) : '',
-    );
-    final lng = TextEditingController(
-      text: lastPos != null ? lastPos.longitude.toStringAsFixed(5) : '',
-    );
-    final radius = TextEditingController(text: '200');
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Privacy-Zone'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: label,
-                decoration: const InputDecoration(labelText: 'Label'),
-              ),
-              TextField(
-                controller: lat,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Lat'),
-              ),
-              TextField(
-                controller: lng,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Lng'),
-              ),
-              TextField(
-                controller: radius,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Radius (m)'),
-              ),
-              if (usedLastKnown) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Lat/Lng vorausgefüllt mit der zuletzt bekannten Position '
-                  '(Geolocator). Bitte prüfen und ggf. anpassen.',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
-                ),
-              ] else ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Keine zuletzt bekannte Position — Lat/Lng manuell eintragen.',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Speichern'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final parsedLat = double.tryParse(lat.text.replaceAll(',', '.'));
-    final parsedLng = double.tryParse(lng.text.replaceAll(',', '.'));
-    if (parsedLat == null || parsedLng == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitte gültige Lat/Lng angeben')),
-        );
-      }
-      return;
-    }
-    final zone = PrivacyZone(
-      id: const Uuid().v4(),
-      label: label.text.trim().isEmpty ? 'Zone' : label.text.trim(),
-      lat: parsedLat,
-      lng: parsedLng,
-      radiusM: double.tryParse(radius.text.replaceAll(',', '.')) ?? 200,
-    );
+  Future<void> _openZoneEditor({PrivacyZone? existing}) async {
+    final zone = await openPrivacyZoneMap(context, existing: existing);
+    if (!mounted || zone == null) return;
     await ref.read(garageRepositoryProvider).upsertPrivacyZone(zone);
     await _load();
   }
 
   Future<void> _sharePath(String path, {String? mime}) async {
+    final l10n = AppLocalizations.of(context);
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(path, mimeType: mime)],
-        subject: 'AetherRide Export',
+        subject: l10n.privacyExportSubject,
       ),
     );
   }
@@ -348,6 +287,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
   }
 
   Future<void> _exportGpx() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -355,7 +295,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     try {
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
       if (rides.isEmpty) {
-        setState(() => _message = 'Kein Ride zum Exportieren.');
+        setState(() => _message = l10n.privacyNoRideExport);
         return;
       }
       final bike = await ref.read(garageRepositoryProvider).getActiveBike();
@@ -372,7 +312,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       await _sharePath(path, mime: 'application/gpx+xml');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('GPX geteilt · $path')),
+          SnackBar(content: Text(l10n.privacySharedGpx(path))),
         );
       }
     } catch (e) {
@@ -383,6 +323,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
   }
 
   Future<void> _exportFit() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -390,7 +331,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     try {
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
       if (rides.isEmpty) {
-        setState(() => _message = 'Kein Ride zum Exportieren.');
+        setState(() => _message = l10n.privacyNoRideExport);
         return;
       }
       final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
@@ -402,7 +343,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       await _sharePath(path, mime: 'application/octet-stream');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('FIT geteilt · $path')),
+          SnackBar(content: Text(l10n.privacySharedFit(path))),
         );
       }
     } catch (e) {
@@ -413,6 +354,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
   }
 
   Future<void> _exportStravaStub() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -420,7 +362,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
     try {
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
       if (rides.isEmpty) {
-        setState(() => _message = 'Kein Ride zum Exportieren.');
+        setState(() => _message = l10n.privacyNoRideExporting);
         return;
       }
       final json = rideToStravaActivityJson(rides.first);
@@ -431,7 +373,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       await _sharePath(path, mime: 'application/json');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Strava-Stub geteilt · $path')),
+          SnackBar(content: Text(l10n.privacySharedStravaStub(path))),
         );
       }
     } catch (e) {
@@ -442,6 +384,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
   }
 
   Future<void> _exportJson() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -463,7 +406,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
       await _sharePath(path, mime: 'application/json');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('JSON geteilt · $path')),
+          SnackBar(content: Text(l10n.privacySharedJson(path))),
         );
       }
     } catch (e) {
@@ -475,13 +418,14 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Daten & Privatsphäre')),
+      appBar: AppBar(title: Text(l10n.privacyTitle)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Einwilligungen',
+            l10n.privacyConsents,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -490,9 +434,9 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           for (final purpose in ConsentPurpose.values)
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(consentLabels[purpose]!.title),
+              title: Text(_consentCopy(l10n, purpose).title),
               subtitle: Text(
-                consentLabels[purpose]!.description,
+                _consentCopy(l10n, purpose).body,
                 style: const TextStyle(fontSize: 12, color: AppColors.muted),
               ),
               value: _consents[purpose.apiId] ?? false,
@@ -502,47 +446,75 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
             ),
           const SizedBox(height: 8),
           Text(
-            'Rohdaten-Chunks: $_pendingChunks ausstehend'
-            '${_consents['raw_data_upload'] == true ? '' : ' (Consent aus)'}',
+            _consents['raw_data_upload'] == true
+                ? l10n.privacyChunksPending(_pendingChunks)
+                : l10n.privacyChunksPendingConsentOff(_pendingChunks),
             style: const TextStyle(color: AppColors.muted, fontSize: 13),
           ),
           if (_pendingChunks > 0)
             TextButton(
               onPressed: _busy ? null : _uploadChunks,
-              child: const Text('Jetzt hochladen'),
+              child: Text(l10n.privacyUploadNow),
             ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.privacyHud,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const HudMediaConnectionTile(
+            copy: HudMediaConnectionCopy.privacy,
+            contentPadding: EdgeInsets.zero,
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
               Text(
-                'Privacy-Zonen',
+                l10n.privacyZones,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
               const Spacer(),
               TextButton.icon(
-                onPressed: _busy ? null : _addZone,
+                onPressed: _busy ? null : () => _openZoneEditor(),
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Zone'),
+                label: Text(l10n.privacyZoneAdd),
               ),
             ],
           ),
           if (_zones.isEmpty)
-            const Text(
-              'Keine Zonen — Start/Ziel-Umgebung kann getrimmt werden.',
-              style: TextStyle(color: AppColors.muted, fontSize: 13),
+            Text(
+              l10n.privacyNoZones,
+              style: const TextStyle(color: AppColors.muted, fontSize: 13),
             ),
           for (final z in _zones)
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(z.label),
-              subtitle: Text(
-                '${z.lat.toStringAsFixed(4)}, ${z.lng.toStringAsFixed(4)} · '
-                '${z.radiusM.round()} m',
+              subtitle: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: l10n.privacyZoneRadius(
+                        privacyZoneRadiusLabel(z.radiusM),
+                      ),
+                    ),
+                    const TextSpan(text: '\n'),
+                    TextSpan(
+                      text: privacyZoneCoordHint(z.lat, z.lng),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
+              isThreeLine: true,
+              onTap: _busy ? null : () => _openZoneEditor(existing: z),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
+                tooltip: l10n.privacyZoneDelete,
                 onPressed: () async {
                   await ref
                       .read(garageRepositoryProvider)
@@ -552,14 +524,13 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
               ),
             ),
           const SizedBox(height: 12),
-          const Text(
-            'Familien-Link / Mitfahrer: unter Profil → Familien-Garage '
-            'weitere Fahrer mit eigenem Gewicht anlegen.',
-            style: TextStyle(color: AppColors.muted, fontSize: 13),
+          Text(
+            l10n.privacyFamilyHint,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
           ),
           const SizedBox(height: 20),
           Text(
-            'Export (Art. 20)',
+            l10n.privacyExportTitle,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -568,26 +539,26 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportGpx,
             icon: const Icon(Icons.route),
-            label: const Text('Letzter Ride als GPX'),
+            label: Text(l10n.privacyExportGpx),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportFit,
             icon: const Icon(Icons.directions_bike),
-            label: const Text('Letzter Ride als FIT'),
+            label: Text(l10n.privacyExportFit),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportJson,
             icon: const Icon(Icons.data_object),
-            label: const Text('JSON-Vollexport'),
+            label: Text(l10n.privacyExportJson),
           ),
           const SizedBox(height: 8),
           if (kDebugMode)
             OutlinedButton.icon(
               onPressed: _busy ? null : _exportStravaStub,
               icon: const Icon(Icons.upload_outlined),
-              label: const Text('Strava-Payload (lokal, Entwickler)'),
+              label: Text(l10n.privacyExportStravaStub),
             ),
           if (_stravaConfigured) ...[
             const SizedBox(height: 8),
@@ -595,13 +566,13 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
               FilledButton.icon(
                 onPressed: _busy ? null : _connectStrava,
                 icon: const Icon(Icons.link),
-                label: const Text('Mit Strava verbinden'),
+                label: Text(l10n.privacyStravaConnect),
               ),
             if (_stravaConnected)
               FilledButton.icon(
                 onPressed: _busy ? null : _uploadStravaLive,
                 icon: const Icon(Icons.cloud_upload_outlined),
-                label: const Text('Letzten Ride zu Strava'),
+                label: Text(l10n.privacyStravaUpload),
               ),
           ],
           if (_stravaStatus != null) ...[
@@ -615,9 +586,9 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           Text(
             _stravaConfigured
                 ? (_stravaConnected
-                    ? 'Live-Upload nutzt gespeicherte OAuth-Tokens (Server).'
-                    : 'OAuth öffnet den Browser; nach Freigabe App fortsetzen.')
-                : 'Strava ist nicht eingerichtet. GPX, FIT und JSON sind die Exportwege.',
+                    ? l10n.privacyStravaLiveHint
+                    : l10n.privacyStravaOauthHint)
+                : l10n.privacyStravaMissing,
             style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
           if (_message != null) ...[

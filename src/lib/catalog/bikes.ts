@@ -2806,6 +2806,40 @@ export function findCatalogBike(id: string) {
   return undefined;
 }
 
+function shortDriveLabel(modelId: string | undefined): string | undefined {
+  if (!modelId) return undefined;
+  const m = getComponentModel(modelId);
+  if (!m) return undefined;
+  const blob = `${m.model} ${m.variant ?? ""}`;
+  if (m.slot === "motor") {
+    if (/\bCX\b/i.test(blob) && /\bRace\b/i.test(blob)) {
+      return `${m.manufacturer} CX Race`;
+    }
+    if (/\bCX\b/i.test(blob)) return `${m.manufacturer} CX`;
+    return `${m.manufacturer} ${m.model.replace(/^Performance Line\s+/i, "")}`.trim();
+  }
+  if (m.slot === "battery") {
+    const wh = m.attributes.find((a) => a.key === "capacity_wh")?.valueNum;
+    if (wh != null) return `${wh} Wh`;
+  }
+  return [m.manufacturer, m.model].filter(Boolean).join(" ");
+}
+
+/** Antrieb aus Katalog-Identität — ohne OEM-Stückliste am Rad. */
+export function catalogDriveIdentity(catalogBikeId?: string | null): {
+  motor?: string;
+  battery?: string;
+} {
+  if (!catalogBikeId) return {};
+  const found = findCatalogBike(catalogBikeId);
+  if (!found) return {};
+  const oem = found.bike.oemComponents;
+  return {
+    motor: shortDriveLabel(oem.motor),
+    battery: shortDriveLabel(oem.battery),
+  };
+}
+
 export function catalogGeometryForSize(
   bikeId: string,
   size: string | undefined

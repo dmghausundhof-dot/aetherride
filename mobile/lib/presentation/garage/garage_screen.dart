@@ -613,8 +613,8 @@ class _BikeTile extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: overdue
-                                      ? Colors.redAccent
-                                      : Colors.orange,
+                                      ? AppColors.error
+                                      : AppColors.warning,
                                 ),
                               ),
                             );
@@ -1512,7 +1512,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           value: _hasLight,
           onChanged: (v) => setState(() => _hasLight = v ?? false),
           title: Text(AppLocalizations.of(context).garageSlotLight),
-          activeColor: AppColors.forestOnDark,
+          activeColor: AppColors.chrome,
         ),
         CheckboxListTile(
           contentPadding: EdgeInsets.zero,
@@ -1520,7 +1520,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           value: _hasLock,
           onChanged: (v) => setState(() => _hasLock = v ?? false),
           title: Text(AppLocalizations.of(context).garageSlotLock),
-          activeColor: AppColors.forestOnDark,
+          activeColor: AppColors.chrome,
         ),
         CheckboxListTile(
           contentPadding: EdgeInsets.zero,
@@ -1528,7 +1528,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           value: _hasRack,
           onChanged: (v) => setState(() => _hasRack = v ?? false),
           title: Text(AppLocalizations.of(context).garageSlotRack),
-          activeColor: AppColors.forestOnDark,
+          activeColor: AppColors.chrome,
         ),
       ],
       if (_showBags) ...[
@@ -1539,7 +1539,7 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
           value: _hasBags,
           onChanged: (v) => setState(() => _hasBags = v ?? false),
           title: Text(AppLocalizations.of(context).garageBagsOnBike),
-          activeColor: AppColors.forestOnDark,
+          activeColor: AppColors.chrome,
         ),
       ],
       const SizedBox(height: AppSpacing.m),
@@ -2012,15 +2012,15 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                       children: [
                         _CompatBadge(
                           label: l10n.garageCompatFits(okCount),
-                          color: const Color(0xFF4CAF50),
+                          color: AppColors.sageOnDark,
                         ),
                         _CompatBadge(
                           label: l10n.garageCompatCheck(warnCount),
-                          color: Colors.orange,
+                          color: AppColors.warning,
                         ),
                         _CompatBadge(
                           label: l10n.garageCompatNoFit(badCount),
-                          color: Colors.redAccent,
+                          color: AppColors.error,
                         ),
                       ],
                     ),
@@ -3217,7 +3217,7 @@ class _ComponentRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.xs),
         padding: const EdgeInsets.only(right: AppSpacing.l),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.85),
+          color: AppColors.error.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(Icons.delete_outline, color: Colors.white),
@@ -3445,7 +3445,7 @@ class _MaintenanceBarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color =
-        alert.status == DueStatus.overdue ? Colors.redAccent : Colors.orange;
+        alert.status == DueStatus.overdue ? AppColors.error : AppColors.warning;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.m),
       child: Column(
@@ -3854,9 +3854,9 @@ Map<ComponentSlot, List<CompatibilityResult>> _groupCompatBySlot(
 }
 
 Color _verdictColor(CompatVerdict v) => switch (v) {
-      CompatVerdict.compatible => const Color(0xFF4CAF50),
-      CompatVerdict.conditional => Colors.orange,
-      CompatVerdict.incompatible => Colors.redAccent,
+      CompatVerdict.compatible => AppColors.sageOnDark,
+      CompatVerdict.conditional => AppColors.warning,
+      CompatVerdict.incompatible => AppColors.error,
       CompatVerdict.insufficientData => AppColors.muted,
     };
 
@@ -3962,11 +3962,11 @@ class _BikeSwitcherPill extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
           decoration: BoxDecoration(
             color: bike.isActive
-                ? AppColors.forestOnDark.withValues(alpha: 0.14)
+                ? AppColors.chrome.withValues(alpha: 0.14)
                 : AppColors.chipIdle,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
-              color: bike.isActive ? AppColors.forestOnDark : AppColors.border,
+              color: bike.isActive ? AppColors.chrome : AppColors.border,
             ),
           ),
           child: Row(
@@ -3974,7 +3974,7 @@ class _BikeSwitcherPill extends ConsumerWidget {
             children: [
               CircleAvatar(
                 radius: 12,
-                backgroundColor: AppColors.forest.withValues(alpha: 0.25),
+                backgroundColor: AppColors.charcoal.withValues(alpha: 0.25),
                 backgroundImage: !hasPhoto
                     ? null
                     : (isRemotePhotoRef(photo)
@@ -4057,11 +4057,11 @@ class _SlotTile extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.forestOnDark.withValues(alpha: 0.14)
+              ? AppColors.chrome.withValues(alpha: 0.14)
               : AppColors.chipIdle,
           borderRadius: BorderRadius.circular(AppRadius.chip),
           border: Border.all(
-            color: selected ? AppColors.forestOnDark : AppColors.border,
+            color: selected ? AppColors.chrome : AppColors.border,
           ),
         ),
         padding:
@@ -4072,7 +4072,7 @@ class _SlotTile extends StatelessWidget {
             Icon(
               _slotIcon(slot),
               size: 18,
-              color: selected ? AppColors.forestOnDark : AppColors.muted,
+              color: selected ? AppColors.chrome : AppColors.muted,
             ),
             const SizedBox(height: 3),
             Text(
@@ -4137,7 +4137,7 @@ class _AttrChipField extends StatelessWidget {
                 labelStyle: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: value == o ? Colors.white : AppColors.chipIdleText,
+                  color: value == o ? AppColors.onAccent : AppColors.chipIdleText,
                 ),
                 backgroundColor: AppColors.chipIdle,
                 side: BorderSide(
@@ -4261,19 +4261,37 @@ class _BleSensorTile extends ConsumerStatefulWidget {
 }
 
 class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
-  BikeBleDevice? _saved;
+  BikeBleBinding _binding = const BikeBleBinding();
   bool _busy = false;
   String? _status;
+  StreamSubscription<dynamic>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     unawaited(_reload());
+    _liveSub = ref.read(bleCoreProvider).liveData.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_liveSub?.cancel());
+    super.dispose();
   }
 
   Future<void> _reload() async {
-    final d = await ref.read(bikeBleStoreProvider).deviceForBike(widget.bikeId);
-    if (mounted) setState(() => _saved = d);
+    final b =
+        await ref.read(bikeBleStoreProvider).bindingForBike(widget.bikeId);
+    if (mounted) setState(() => _binding = b);
+  }
+
+  bool get _live {
+    final ble = ref.read(bleCoreProvider);
+    if (!ble.hasBikeLiveMetrics) return false;
+    return ble.isRemoteLive(_binding.wheel?.deviceId) ||
+        ble.isRemoteLive(_binding.drive?.deviceId);
   }
 
   Future<void> _pair() async {
@@ -4292,7 +4310,9 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
-        final name = ble.connectedDeviceName ?? _saved?.name;
+        final name = ble.connectedDeviceName ??
+            _binding.wheel?.name ??
+            _binding.drive?.name;
         setState(() {
           _status = name != null && name.isNotEmpty
               ? AppLocalizations.of(context).garageBlePairedNamed(name)
@@ -4312,11 +4332,25 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
     }
   }
 
-  Future<void> _unlink() async {
-    await ref.read(bikeBleStoreProvider).removeForBike(widget.bikeId);
-    try {
-      await ref.read(bleCoreProvider).disconnectCsc();
-    } catch (_) {}
+  Future<void> _applyManage(String? choice) async {
+    if (choice == null) return;
+    if (choice == 'pair') {
+      await _pair();
+      return;
+    }
+    final store = ref.read(bikeBleStoreProvider);
+    if (choice == 'unlinkWheel' || choice == 'unlinkAll') {
+      if (choice == 'unlinkAll') {
+        await store.removeForBike(widget.bikeId);
+      } else {
+        await store.removeWheel(widget.bikeId);
+      }
+      try {
+        await ref.read(bleCoreProvider).disconnectCsc();
+      } catch (_) {}
+    } else if (choice == 'unlinkDrive') {
+      await store.removeDrive(widget.bikeId);
+    }
     await _reload();
     if (mounted) {
       setState(() => _status = AppLocalizations.of(context).garageBleRemoved);
@@ -4326,15 +4360,17 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final name = _saved?.name?.trim();
-    final line = _saved == null
+    final names = [
+      _binding.drive?.name?.trim(),
+      _binding.wheel?.name?.trim(),
+    ].whereType<String>().where((n) => n.isNotEmpty).toList();
+    final line = _binding.isEmpty
         ? l10n.dieBoxCscHint
-        : (name != null && name.isNotEmpty ? name : l10n.garageBlePaired);
-    // Unpaired muscle bikes: title is enough. E-bike keeps the display hint
-    // (turn the unit on) because pairing otherwise looks dead.
-    final hint = _saved == null && widget.isEbike
+        : (names.isEmpty ? l10n.garageBlePaired : names.join(' · '));
+    final hint = _binding.isEmpty && widget.isEbike
         ? l10n.garageBleHintEbike
-        : null;
+        : (!_binding.isEmpty && !_live ? l10n.bleTooltipSaved : null);
+    final live = _live;
 
     return InkWell(
       onTap: _busy ? null : () => unawaited(_pair()),
@@ -4346,7 +4382,7 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
             Icon(
               Icons.bluetooth,
               size: 18,
-              color: _saved != null ? AppColors.forestOnDark : AppColors.muted,
+              color: live ? AppColors.chrome : AppColors.muted,
             ),
             const SizedBox(width: AppSpacing.s),
             Expanded(
@@ -4386,9 +4422,17 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            else if (_saved != null)
+            else if (!_binding.isEmpty)
               TextButton(
-                onPressed: () => unawaited(_unlink()),
+                onPressed: () async {
+                  final choice = await showBikeBleManageSheet(
+                    context,
+                    hasWheel: _binding.wheel != null,
+                    hasDrive: _binding.drive != null,
+                  );
+                  if (!mounted) return;
+                  await _applyManage(choice);
+                },
                 child: Text(l10n.remove),
               ),
           ],

@@ -3,7 +3,11 @@
  * npx tsx src/lib/shop/merchantLinks.test.ts
  */
 import assert from "node:assert/strict";
-import { isDeepProductUrl, merchantCtaUrl } from "./merchantLinks";
+import {
+  dealerCtaUrl,
+  isDeepProductUrl,
+  merchantCtaUrl,
+} from "./merchantLinks";
 
 assert.equal(isDeepProductUrl(undefined), false);
 assert.equal(isDeepProductUrl(""), false);
@@ -40,6 +44,16 @@ assert.equal(merchantCtaUrl("https://www.sram.com/de/"), undefined);
 assert.equal(
   merchantCtaUrl("https://oneupcomponents.com/products/v3-dropper-post"),
   "https://oneupcomponents.com/products/v3-dropper-post"
+);
+assert.equal(
+  dealerCtaUrl("https://oneupcomponents.com/products/v3-dropper-post"),
+  "https://oneupcomponents.com/products/v3-dropper-post"
+);
+assert.equal(
+  dealerCtaUrl(
+    "https://dmg-haus-und-hof-shop.myshopify.com/products/orbea-terra-m20"
+  ),
+  undefined
 );
 
 console.log("merchantLinks.test.ts OK");

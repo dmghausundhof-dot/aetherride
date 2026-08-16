@@ -12,6 +12,9 @@ import {
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
 import { isHonestLoop } from "@/lib/discover/loopHonesty";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { discoverCopy } from "@/lib/i18n/discoverCopy";
+import { discoverUi } from "@/lib/i18n/discoverUi";
 
 /**
  * Route ab GPS oder manuellem Zentrum — Live-Engine.
@@ -33,6 +36,9 @@ export function NearMeRouteCard({
   onLoopPreview?: (result: ClientRouteResult, label: string) => void;
 }) {
   const router = useRouter();
+  const lang = useChromeLang();
+  const d = discoverUi(lang);
+  const loopLabel = discoverCopy(lang).loop;
   const setActiveRoute = useAppStore((s) => s.setActiveRoute);
   const saveRoute = useAppStore((s) => s.saveRoute);
   const [km, setKm] = useState(defaultKm);
@@ -50,7 +56,7 @@ export function NearMeRouteCard({
 
   const run = async (andStart: boolean) => {
     if (!center) {
-      setMsg("Standort oder Kartenmitte fehlt");
+      setMsg(d.needCenter);
       return;
     }
     setBusy(true);
@@ -82,9 +88,7 @@ export function NearMeRouteCard({
         !isHonestLoop({ loopFlag: true, trackLngLat: coords })
       ) {
         setPreview(null);
-        setMsg(
-          "Keine echte Runde — Engine lieferte A→B (Start≠Ziel). Bitte erneut oder Seeds nutzen."
-        );
+        setMsg(d.noHonestEngine);
         return;
       }
       setPreview(result);
@@ -112,7 +116,9 @@ export function NearMeRouteCard({
         loop: isLoop,
       });
       setMsg(
-        `${formatDistanceElevation(distanceKm, elev)} · ${result.engine} · gespeichert`
+        d.savedEngine(
+          `${formatDistanceElevation(distanceKm, elev)} · ${result.engine}`,
+        ),
       );
       if (isLoop) {
         onLoopPreview?.(result, name);
@@ -122,7 +128,7 @@ export function NearMeRouteCard({
         router.push("/ride");
       }
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Routing fehlgeschlagen");
+      setMsg(e instanceof Error ? e.message : d.routingFail);
     } finally {
       setBusy(false);
     }
@@ -132,15 +138,14 @@ export function NearMeRouteCard({
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
         <Navigation className="h-4 w-4 text-accent" />
-        <h3 className="text-sm font-semibold">Route ab hier</h3>
+        <h3 className="text-sm font-semibold">{d.fromHereTitle}</h3>
       </div>
       <p className="mt-1 text-[11px] text-text-secondary">
-        Live-Routing vom GPS oder der Kartenmitte — speichern & in der App
-        fahren.
+        {d.fromHereHint}
       </p>
       {!center && (
         <p className="mt-2 text-xs text-warning">
-          Standort freigeben oder Karte verschieben.
+          {d.needCenter}
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
@@ -151,8 +156,8 @@ export function NearMeRouteCard({
           }
           className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
         >
-          <option value="loop">Rundkurs</option>
-          <option value="point_to_point">Strecke</option>
+          <option value="loop">{loopLabel}</option>
+          <option value="point_to_point">{d.stretch}</option>
         </select>
         <label className="flex items-center gap-1 text-xs text-text-secondary">
           ~{km} km
@@ -177,15 +182,15 @@ export function NearMeRouteCard({
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : null}
-          Berechnen
+          {d.compute}
         </button>
         <button
           type="button"
           disabled={busy || !center}
           onClick={() => void run(true)}
-          className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-accent py-2 text-xs font-semibold text-white disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-accent py-2 text-xs font-semibold text-on-accent disabled:opacity-40"
         >
-          <Play className="h-3.5 w-3.5 fill-current" /> In App
+          <Play className="h-3.5 w-3.5 fill-current" /> {d.inApp}
         </button>
       </div>
       {msg && (

@@ -15,7 +15,8 @@ function testParseScale() {
   assert.equal(parseOsmMtbScale("S1"), "S1");
   assert.equal(parseOsmMtbScale("0+"), "S0");
   assert.equal(parseOsmMtbScale(undefined, "1"), "S1");
-  assert.equal(parseOsmMtbScale("4"), "S3");
+  assert.equal(parseOsmMtbScale("4"), "S3+");
+  assert.equal(parseOsmMtbScale("S3"), "S3+");
   assert.equal(parseOsmMtbScale(""), null);
   assert.equal(parseOsmMtbScale(undefined, undefined), null);
 }
@@ -109,12 +110,15 @@ function testFamilyDefaults() {
   ]);
   assert.deepEqual(overlayClassesForFamily(overlayFamilyForBike("gravel")), [
     "gravel",
+    "road",
   ]);
   assert.deepEqual(overlayClassesForFamily(overlayFamilyForBike("road")), [
     "road",
+    "urban",
   ]);
   assert.deepEqual(overlayClassesForFamily(overlayFamilyForBike("urban")), [
     "urban",
+    "road",
   ]);
   assert.equal(overlayFamilyForBike("emtb"), "mtb");
   assert.equal(overlayFamilyForBike("downhill"), "mtb");

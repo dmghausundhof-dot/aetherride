@@ -81,7 +81,7 @@ export function GarageSetupsTab({
           <button
             type="button"
             onClick={createSetup}
-            className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-white"
+            className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent"
           >
             Version speichern
           </button>
@@ -111,7 +111,7 @@ export function GarageSetupsTab({
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-medium">{setup.label}</div>
                   {setup.isCurrent ? (
-                    <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-white">
+                    <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-on-accent">
                       Aktiv
                     </span>
                   ) : (

@@ -167,7 +167,8 @@ List<MaintenanceAlert> listDueMaintenance({
   final remainders = <String>[];
 
   if (template.intervalKm != null) {
-    final used = component.odometerKm;
+    final used = (bike.odometerKm - component.odometerKm)
+        .clamp(0, double.infinity);
     final ratio = used / template.intervalKm!;
     ratios.add(ratio);
     remainders.add(
@@ -175,8 +176,8 @@ List<MaintenanceAlert> listDueMaintenance({
     );
   }
   if (template.intervalHours != null) {
-    // No hours-at-install on component — use bike hours as service clock.
-    final used = bike.hours;
+    final used = (bike.hours - component.hoursAtInstallResolved)
+        .clamp(0, double.infinity);
     final ratio = used / template.intervalHours!;
     ratios.add(ratio);
     remainders.add(

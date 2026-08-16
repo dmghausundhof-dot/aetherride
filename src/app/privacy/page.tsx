@@ -22,10 +22,12 @@ import {
   type ConsentPurpose,
 } from "@/lib/privacy/consents";
 import Link from "next/link";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
 
 export default function PrivacyExportPage() {
+  const copy = useHofCopy();
+
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
   const profile = useAppStore((s) => s.riderProfile);
@@ -173,9 +175,9 @@ export default function PrivacyExportPage() {
     <div className="flex flex-col gap-5 p-4 pt-6">
       <header>
         <HofPageHeader
-          kicker={HOF_COPY.privacyKicker}
-          title={HOF_COPY.privacyTitle}
-          hint={HOF_COPY.privacyHint}
+          kicker={copy.privacyKicker}
+          title={copy.privacyTitle}
+          hint={copy.privacyHint}
         />
       </header>
 
@@ -202,7 +204,7 @@ export default function PrivacyExportPage() {
                 "application/gpx+xml"
               );
             }}
-            className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+            className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
           >
             Letzten Ride als GPX
           </button>
@@ -247,7 +249,7 @@ export default function PrivacyExportPage() {
               {stravaAuthorizeUrl && !stravaConnected && (
                 <a
                   href={stravaAuthorizeUrl}
-                  className="rounded-xl bg-accent py-2.5 text-center text-sm font-semibold text-white"
+                  className="rounded-xl bg-accent py-2.5 text-center text-sm font-semibold text-on-accent"
                 >
                   Mit Strava verbinden
                 </a>
@@ -257,7 +259,7 @@ export default function PrivacyExportPage() {
                   type="button"
                   disabled={!lastRide || stravaBusy}
                   onClick={() => void uploadLastRideToStrava()}
-                  className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+                  className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
                 >
                   {stravaBusy ? "Lade hoch…" : "Letzten Ride zu Strava"}
                 </button>
@@ -445,7 +447,7 @@ export default function PrivacyExportPage() {
               if (setup) assignSetupToRider(id, setup.id);
               setRiderName("");
             }}
-            className="rounded-xl bg-accent px-3 text-sm font-medium text-white"
+            className="rounded-xl bg-accent px-3 text-sm font-medium text-on-accent"
           >
             +
           </button>

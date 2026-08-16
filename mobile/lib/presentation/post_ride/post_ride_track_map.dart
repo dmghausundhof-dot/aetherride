@@ -95,7 +95,7 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
       await c.addLine(
         LineOptions(
           geometry: line,
-          lineColor: '#FF6B35',
+          lineColor: '#FF6A00',
           lineWidth: 5.5,
           lineJoin: 'round',
         ),
@@ -144,9 +144,9 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
         height: widget.height,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.surfaceDark,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.muted.withValues(alpha: 0.35)),
+            border: Border.all(color: AppColors.border),
           ),
           child: const Center(
             child: Text(

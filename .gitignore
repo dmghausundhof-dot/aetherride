@@ -52,6 +52,9 @@ public/offline/
 # Stakeholder / Spec drafts (keep local; not needed to build)
 Claude INhalte/
 
+# Local brand assets (keep local; not needed to build)
+Logo und Bilder/
+
 # Synthetic bulk catalog seeds (OEM + extra-seed are enough for the app)
 data/catalog/bulk-seed.json
 data/catalog/bulk-seed-200.json

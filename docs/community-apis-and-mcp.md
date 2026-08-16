@@ -60,7 +60,7 @@ Bike per Text/Foto: `POST /api/catalog/identify` `{ q, imageBase64 }` — Katalo
 
 ### Zweck
 
-MCP (Model Context Protocol) lässt Grok/andere Agents **strukturiert** auf AetherRide-Tools zugreifen: Tour suchen, Route berechnen, Sync-Status, Shop-Kompat — ohne HTML-Scraping.
+MCP (Model Context Protocol) lässt Grok/andere Agents **strukturiert** auf FlowLine-Tools zugreifen: Tour suchen, Route berechnen, Sync-Status, Shop-Kompat — ohne HTML-Scraping.
 
 ### Vorgeschlagene MCP-Tools (Server `aetherride`)
 

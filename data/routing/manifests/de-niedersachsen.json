@@ -1,0 +1,24 @@
+{
+  "id": "de-niedersachsen",
+  "name": "Niedersachsen",
+  "bbox": [
+    6.6,
+    51.3,
+    11.65,
+    53.9
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "de-niedersachsen.tar.zst",
+    "packGz": "de-niedersachsen.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

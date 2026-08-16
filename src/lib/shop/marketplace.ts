@@ -31,7 +31,7 @@ export function getMarketplaceLegal(): MarketplaceLegal {
     "Versandkosten und Lieferzeit werden vor Kaufabschluss angezeigt.";
   const warranty =
     env("NEXT_PUBLIC_LEGAL_WARRANTY") ||
-    "Gewährleistung nach EU-Recht. Vertragspartner ist der jeweilige Händler bzw. AetherRide laut Impressum.";
+    "Gewährleistung nach EU-Recht. Vertragspartner ist der jeweilige Händler bzw. FlowLine laut Impressum.";
   const gpsr =
     env("NEXT_PUBLIC_LEGAL_GPSR") ||
     "GPSR: Herstellerangaben je Produkt im Katalog bzw. vor Checkout.";

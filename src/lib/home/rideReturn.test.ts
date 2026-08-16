@@ -44,6 +44,57 @@ const just = rideReturnForBike({
 if (just.kind !== "justBack") {
   throw new Error(`recent ride should be justBack, got ${just.kind}`);
 }
+if (just.rideId !== "r1") {
+  throw new Error(`justBack rideId, got ${just.rideId}`);
+}
+
+const zeroGpsMeta = residentMeta({
+  sport: "E-MTB",
+  ret: { kind: "justBack", rideId: "r0", distanceKm: 0, movingTimeSec: 0, usedGps: false },
+});
+if (zeroGpsMeta.includes("0.0 km")) {
+  throw new Error(`justBack without GPS must not show 0 km: ${zeroGpsMeta}`);
+}
+if (!zeroGpsMeta.includes("ohne GPS-Track")) {
+  throw new Error(`justBack without GPS needs honesty: ${zeroGpsMeta}`);
+}
+
+const threeH = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
+const oldMeta = residentMeta({
+  sport: "E-MTB",
+  ret: {
+    kind: "justBack",
+    rideId: "r0",
+    distanceKm: 0,
+    movingTimeSec: 0,
+    usedGps: false,
+    endedAt: threeH,
+  },
+});
+if (oldMeta.includes("gerade reingekommen")) {
+  throw new Error(`hours-old justBack must drop gerade: ${oldMeta}`);
+}
+if (!oldMeta.includes("vor 3 Std.")) {
+  throw new Error(`hours-old justBack needs ago: ${oldMeta}`);
+}
+
+const fourH = new Date(Date.now() - 4 * 3600 * 1000).toISOString();
+const atHofHours = residentMeta({
+  sport: "MTB",
+  ret: {
+    kind: "atHof",
+    rideId: "r0",
+    daysSince: 1,
+    usedGps: false,
+    endedAt: fourH,
+  },
+});
+if (atHofHours.includes("seit 1 Tag")) {
+  throw new Error(`atHof under a day must not say seit 1 Tag: ${atHofHours}`);
+}
+if (!atHofHours.includes("vor 4 Std.")) {
+  throw new Error(`atHof under a day needs hours: ${atHofHours}`);
+}
 
 const atHof = rideReturnForBike({
   bikeId: "luna",

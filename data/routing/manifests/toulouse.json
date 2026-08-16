@@ -7,18 +7,31 @@
     1.6,
     43.72
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T12:57:57Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18865284,
+      "sha256": "d76f1583e609a4d6329c65426c7751f4c998a7d8376ee015c55c038f3a52e263",
+      "sha256_16": "d76f1583e609a4d6"
+    },
+    "toulouse.tar.gz": {
+      "bytes": 2542861,
+      "sha256": "7d631c4f1cdd926342554589a3a8a42f00ea914530379dd6b2b92ee2218effe7",
+      "sha256_16": "7d631c4f1cdd9263"
+    },
+    "toulouse.tar.zst": {
+      "bytes": 2757541,
+      "sha256": "543691b185df6a701903b2c645d6cdafaf81cd8f50cafc8a6ed4cc0dfb981fd3",
+      "sha256_16": "543691b185df6a70"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/toulouse",
     "pack": "toulouse.tar.zst",
     "packGz": "toulouse.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

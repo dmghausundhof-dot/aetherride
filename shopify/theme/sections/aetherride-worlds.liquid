@@ -1,5 +1,18 @@
 <div class="ar-worlds color-{{ section.settings.color_scheme }} gradient">
   <div class="page-width ar-worlds__inner">
+    <div class="ar-worlds__brand">
+      <img
+        src="{{ 'flowline-mark.png' | asset_url }}"
+        width="44"
+        height="44"
+        alt="FlowLine"
+        class="ar-worlds__mark"
+      >
+      <div>
+        <p class="ar-worlds__wordmark">Flow<span>Line</span></p>
+        <p class="ar-worlds__tag">Outdoor · Cycling · Flow</p>
+      </div>
+    </div>
     <p class="ar-worlds__kicker">
       {%- if section.settings.kicker != blank -%}
         {{ section.settings.kicker }}
@@ -64,13 +77,43 @@
 .ar-worlds__inner {
   max-width: 72rem;
 }
+.ar-worlds__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+.ar-worlds__mark {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.ar-worlds__wordmark {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+.ar-worlds__wordmark span {
+  color: #FF6A00;
+}
+.ar-worlds__tag {
+  margin: 0.15rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
 .ar-worlds__kicker {
   margin: 0;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #81c995;
+  color: #9CA3AF;
 }
 .ar-worlds__title {
   margin: 0.4rem 0 0;
@@ -102,18 +145,18 @@
   align-items: flex-start;
   min-height: 11.5rem;
   padding: 1.1rem 1.15rem 1.2rem;
-  border: 1px solid rgba(232, 238, 234, 0.16);
+  border: 1px solid #484854;
   border-radius: 16px;
   text-decoration: none;
   color: inherit;
-  background: rgba(20, 32, 28, 0.72);
+  background: #1E1E26;
 }
 .ar-worlds__label {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #81c995;
+  color: #9CA3AF;
 }
 .ar-worlds__name {
   margin-top: 0.45rem;
@@ -134,11 +177,11 @@
   align-items: center;
   min-height: 2.75rem;
   padding: 0 1rem;
-  border: 1px solid #81c995;
-  border-radius: 999px;
+  border: 1px solid #FF6A00;
+  border-radius: 12px;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #81c995;
+  color: #FF6A00;
 }
 .ar-worlds__honesty {
   margin: 1.35rem 0 0;
@@ -180,7 +223,7 @@
       "type": "textarea",
       "id": "lede",
       "label": "Text",
-      "default": "Zwei Welten: Ersatzteile für dein Rad, und Merchandise ohne Fit-Filter. Keine erfundenen SKUs, keine Fake-Bewertungen."
+      "default": "FlowLine Cycling Parts: Ersatzteile für dein Rad, und Merchandise ohne Fit-Filter. Keine erfundenen SKUs, keine Fake-Bewertungen."
     },
     {
       "type": "collection",

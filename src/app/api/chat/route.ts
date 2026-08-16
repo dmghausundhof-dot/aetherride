@@ -21,6 +21,11 @@ import {
 } from "@/lib/ai/anonIpQuota";
 import type { Bike, Ride, RiderProfile } from "@/types";
 import type { RangeCalibration } from "@/lib/ebike/range";
+import {
+  chatLangFromBody,
+  chatSystemPrompt,
+  chatUserMessage,
+} from "@/lib/i18n/chatPrompt";
 
 async function callGrok(params: {
   system: string;
@@ -60,12 +65,16 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const query = String(body.query || "").trim();
+    const lang = chatLangFromBody(body.lang);
     const toolHint = body.tool as ChatToolName | "auto" | undefined;
     const bikes = (body.bikes || []) as Bike[];
     const rides = (body.rides || []) as Ride[];
     const profile = body.profile as RiderProfile;
     const bike = body.bike as Bike | undefined;
     const calibration = (body.calibration ?? null) as RangeCalibration | null;
+    const intervals = body.intervals;
+    const rideFeedbacks = body.rideFeedbacks;
+    const notices = body.notices;
 
     if (!query || !profile) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
@@ -114,6 +123,9 @@ export async function POST(req: Request) {
       rides,
       profile,
       calibration,
+      intervals,
+      rideFeedbacks,
+      notices,
     });
 
     // Anonymous: never call Grok; IP soft-cap on deterministic fallback
@@ -210,14 +222,15 @@ export async function POST(req: Request) {
       .map((n) => `${n.value}${n.unit ? " " + n.unit : ""} (${n.source})`)
       .join(", ");
 
-    const system = `Du bist AetherRide KI-Coach. Du formulierst NUR die gegebenen Engine-Ergebnisse um.
-Regeln: Erfinde KEINE Zahlen. Verwende ausschließlich diese Whitelist-Zahlen: ${whitelist || "keine"}.
-Fakten: ${set.facts.join(" | ") || "keine"}.
-Antwort kurz auf Deutsch (max 3 Sätze). Keine neuen Metriken.`;
+    const system = chatSystemPrompt(
+      lang,
+      whitelist,
+      set.facts.join(" | "),
+    );
 
     const grokText = await callGrok({
       system,
-      user: `Nutzerfrage: ${query}\nEngine-Rohantwort: ${set.rawAnswer}`,
+      user: chatUserMessage(lang, query, set.rawAnswer),
       maxTokens: limits.maxTokensOut,
     });
 

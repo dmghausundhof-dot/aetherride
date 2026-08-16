@@ -56,10 +56,11 @@ export interface RideProfile {
 }
 
 export type ValhallaCosting = {
-  costing: "bicycle" | "pedestrian";
+  costing: "bicycle" | "pedestrian" | "auto";
   costing_options: {
     bicycle?: ValhallaBicycleOptions;
     pedestrian?: { walking_speed: number; use_hills: number };
+    auto?: { use_highways?: number; use_tolls?: number };
   };
 };
 
@@ -87,7 +88,7 @@ const OVERLAY_SCALE_LABEL: Record<Exclude<TrailDifficulty, "open">, string> = {
   s0: "S0",
   s1: "S1",
   s2: "S2",
-  s3plus: "S3",
+  s3plus: "S3+",
 };
 
 type RideProfileFields = Omit<RideProfile, "acceptsHighway" | "edgeFactor">;
@@ -113,8 +114,7 @@ function isRoughSurface(surface: string): boolean {
     surface === "mud" ||
     surface === "gravel" ||
     surface === "fine_gravel" ||
-    surface === "compacted" ||
-    surface === ""
+    surface === "compacted"
   );
 }
 
@@ -137,8 +137,21 @@ function edgeFactorFor(
 
   switch (id) {
     case "road": {
-      if (blocked(highway, "path", "track", "footway", "steps")) return null;
+      if (
+        blocked(highway, "path", "track", "footway", "steps", "motorway", "trunk")
+      ) {
+        return null;
+      }
+      if (highway === "cycleway") return 0.72;
       if (!paved && rough) return 4.0;
+      if (
+        highway === "residential" ||
+        highway === "tertiary" ||
+        highway === "living_street"
+      ) {
+        return 0.95;
+      }
+      if (highway === "primary" || highway === "secondary") return 1.25;
       return 1.0;
     }
     case "gravel": {
@@ -150,9 +163,13 @@ function edgeFactorFor(
         surface === "fine_gravel" ||
         highway === "track"
       ) {
-        return 0.8;
+        return 0.75;
       }
-      if (paved) return 1.2;
+      if (highway === "cycleway" || highway === "path") return 0.9;
+      if (paved && (highway === "primary" || highway === "secondary")) {
+        return 1.35;
+      }
+      if (paved) return 1.15;
       return 1.0;
     }
     case "hiking": {
@@ -194,8 +211,8 @@ function edgeFactorFor(
     case "ebike": {
       if (blocked(highway, "motorway", "steps")) return null;
       if ((mtbScale ?? 0) >= 4) return null;
+      if (highway === "cycleway") return 0.8;
       if (
-        highway === "cycleway" ||
         highway === "track" ||
         highway === "path" ||
         highway === "tertiary"
@@ -590,7 +607,7 @@ export function trailFilterExpression(profileId: RideProfileId): any[] {
 
 /* Legacy client API — RoutingProfile includes `urban` (City) plus RideProfileId. */
 
-export type RoutingProfile = RideProfileId | "urban";
+export type RoutingProfile = RideProfileId | "urban" | "auto";
 
 export interface ProfileConfig {
   id: RoutingProfile;
@@ -616,6 +633,15 @@ const URBAN_PROFILE: ProfileConfig = {
   ],
   avoid: ["motorway", "trunk", "mtb:scale>=2", "steps"],
   maxSurfaceRoughness: 0.35,
+  preferElevation: false,
+};
+
+const AUTO_PROFILE: ProfileConfig = {
+  id: "auto",
+  label: "Auto",
+  prefer: ["motorway", "trunk", "primary", "secondary", "tertiary"],
+  avoid: ["path", "track", "footway", "steps"],
+  maxSurfaceRoughness: 0.2,
   preferElevation: false,
 };
 
@@ -645,6 +671,7 @@ export const ROUTING_PROFILES: Record<RoutingProfile, ProfileConfig> = {
   emtb: toLegacyConfig(RIDE_PROFILES.emtb),
   hiking: toLegacyConfig(RIDE_PROFILES.hiking),
   urban: URBAN_PROFILE,
+  auto: AUTO_PROFILE,
 };
 
 export function isRoutingProfile(id: string): id is RoutingProfile {
@@ -653,6 +680,8 @@ export function isRoutingProfile(id: string): id is RoutingProfile {
 
 /** UI-Label für Ride- und Legacy-City-Profil. */
 export function profileLabel(id: RoutingProfile): string {
+  if (id === "urban") return URBAN_PROFILE.label;
+  if (id === "auto") return AUTO_PROFILE.label;
   return isRideProfileId(id) ? getProfile(id).label : URBAN_PROFILE.label;
 }
 
@@ -740,6 +769,9 @@ export function profileForBikeCategory(category: string): RoutingProfile {
     case "road":
       return "road";
     case "urban":
+    case "cargo":
+    case "folding":
+    case "kids":
       return "urban";
     case "emtb":
       return "emtb";
@@ -749,12 +781,193 @@ export function profileForBikeCategory(category: string): RoutingProfile {
     case "hiking":
       return "hiking";
     default:
-      return "road";
+      return "urban";
   }
+}
+
+export type NavSessionMode = "street" | "pedal" | "gravity";
+
+export function navSessionForBike(category: string): NavSessionMode {
+  switch (category) {
+    case "dh":
+    case "downhill":
+      return "gravity";
+    case "road":
+    case "urban":
+    case "cargo":
+    case "folding":
+    case "kids":
+    case "gravel":
+    case "etrekking":
+    case "ebike":
+      return "street";
+    default:
+      return "pedal";
+  }
+}
+
+/** Discover-Chip/Menü: Enduro/DH-Garage ist MTB-Wege, nicht Auto- oder DH-Costing. */
+export function discoverNavProfile(profile: RoutingProfile): RoutingProfile {
+  if (profile === "mtb_enduro" || profile === "downhill") return "mtb_allmountain";
+  if (profile === "auto") return "urban";
+  return profile;
+}
+
+/** Chips: no downhill/enduro/auto costing modes. Overlay family follows these. */
+export const DISCOVER_PROFILE_CHIPS: RoutingProfile[] = [
+  "urban",
+  "ebike",
+  "gravel",
+  "road",
+  "mtb_allmountain",
+  "emtb",
+  "hiking",
+];
+
+export const kGravityWalkMaxKm = 1.5;
+export const kGravityAtStartMaxKm = 0.08;
+
+export type ApproachKind = "auto" | "walk" | "bicycle" | "atStart";
+
+export function suggestedApproachKind(opts: {
+  session: NavSessionMode;
+  distanceKm: number;
+}): ApproachKind {
+  if (opts.session !== "gravity") return "bicycle";
+  const d = opts.distanceKm;
+  if (!Number.isFinite(d) || d < 0) return "walk";
+  if (d <= kGravityAtStartMaxKm) return "atStart";
+  if (d <= kGravityWalkMaxKm) return "walk";
+  return "auto";
+}
+
+/** Anfahrt-Costing. DH never bicycle-costs GPS→trail. */
+export function approachCostingForBike(
+  category: string,
+  kind: ApproachKind
+): RoutingProfile {
+  switch (kind) {
+    case "auto":
+      return "auto";
+    case "walk":
+    case "atStart":
+      return "hiking";
+    case "bicycle": {
+      const p = profileForBikeCategory(category);
+      if (p === "downhill") return "mtb_allmountain";
+      return discoverNavProfile(p);
+    }
+  }
+}
+
+/** A→B / live plan costing from garage session + overlay chip. */
+export function sessionCostingForBike(
+  category: string | undefined,
+  overlay: RoutingProfile
+): RoutingProfile {
+  if (category && navSessionForBike(category) === "gravity") return "auto";
+  return overlay;
+}
+
+/** Street bikes must not be secretly MTB-routed onto technical trails. */
+export function trailFitsBikeCategory(
+  category: string,
+  difficulty?: string | null
+): boolean {
+  if (navSessionForBike(category) !== "street") return true;
+  const diffs = difficultiesFromTrailLabel(difficulty);
+  if (diffs.every((d) => d === "open")) return true;
+  const profile = profileForBikeCategory(category);
+  if (profile === "gravel" || profile === "ebike") {
+    return !diffs.some((d) => d === "s3plus");
+  }
+  return diffs.every((d) => d === "open" || d === "s0");
+}
+
+/** A→B costing. DH never uses bicycle `downhill` to reach a trail. */
+export function routeCostingProfile(category: string): RoutingProfile {
+  if (navSessionForBike(category) === "gravity") return "auto";
+  return profileForBikeCategory(category);
+}
+
+/** Approach leg: downhill overlay still must not bicycle-cost the drive. */
+export function accessCostingForRideProfile(
+  profile: RoutingProfile
+): RoutingProfile {
+  if (profile === "downhill") return "auto";
+  return profile;
 }
 
 /**
  * Neutraler Discover-Default ohne aktives Bike.
- * Road/Radweg ist die inklusivste Basis für alle Fahrradfahrer (nicht MTB-first).
+ * City/Radweg — inklusiver als Rennrad (use_roads hoch, Trails aus).
  */
-export const DEFAULT_DISCOVER_PROFILE: RoutingProfile = "road";
+export const DEFAULT_DISCOVER_PROFILE: RoutingProfile = "urban";
+
+export type GraphhopperCustomModel = {
+  priority: Array<{ if: string; multiply_by: number }>;
+};
+
+/**
+ * GraphHopper flexible custom_model — only sent when
+ * GRAPHHOPPER_ALLOW_CUSTOM_MODEL=1 (paid plans). Free packages reject it.
+ */
+export function graphhopperCustomModel(
+  profile: RoutingProfile
+): GraphhopperCustomModel | null {
+  if (profile === "hiking" || profile === "auto") return null;
+  if (
+    profile === "mtb_allmountain" ||
+    profile === "mtb_enduro" ||
+    profile === "downhill" ||
+    profile === "emtb"
+  ) {
+    return {
+      priority: [
+        { if: "road_class == PATH || road_class == TRACK", multiply_by: 2.0 },
+        { if: "road_class == CYCLEWAY", multiply_by: 1.15 },
+        {
+          if: "road_class == PRIMARY || road_class == TRUNK || road_class == SECONDARY",
+          multiply_by: 0.4,
+        },
+      ],
+    };
+  }
+  if (profile === "gravel") {
+    return {
+      priority: [
+        { if: "road_class == TRACK", multiply_by: 1.8 },
+        { if: "road_class == PATH", multiply_by: 1.25 },
+        { if: "road_class == CYCLEWAY", multiply_by: 1.2 },
+        {
+          if: "surface == GRAVEL || surface == COMPACTED || surface == FINE_GRAVEL || surface == UNPAVED",
+          multiply_by: 1.45,
+        },
+        {
+          if: "road_class == PRIMARY || road_class == SECONDARY",
+          multiply_by: 0.55,
+        },
+      ],
+    };
+  }
+  if (profile === "road") {
+    return {
+      priority: [
+        {
+          if: "road_class == CYCLEWAY",
+          multiply_by: 1.25,
+        },
+        { if: "road_class == PATH || road_class == TRACK", multiply_by: 0.25 },
+        { if: "get_off_bike == true", multiply_by: 0.05 },
+      ],
+    };
+  }
+  // urban / ebike / default: cycleway + bike network first
+  return {
+    priority: [
+      { if: "road_class == CYCLEWAY", multiply_by: 2.0 },
+      { if: "bike_network != MISSING", multiply_by: 1.35 },
+      { if: "road_class == PRIMARY || road_class == TRUNK", multiply_by: 0.5 },
+    ],
+  };
+}

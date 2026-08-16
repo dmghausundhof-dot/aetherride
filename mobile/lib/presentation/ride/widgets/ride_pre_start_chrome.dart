@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 /// Map-first pre-ride chrome (N-START-01): one primary CTA, no sensor checklist.
 ///
 /// Sensor / Nearby / BLE must never gate the map — they run after HUD is stable.
+/// Freeride from „Einfach fahren“ autostarts and skips this chrome.
 class RidePreStartChrome extends StatelessWidget {
   const RidePreStartChrome({
     super.key,
@@ -42,11 +43,13 @@ class RidePreStartChrome extends StatelessWidget {
         ? l10n.starting
         : (hasRoute ? l10n.goRide : l10n.startFreeride);
 
+    final topInset = MediaQuery.paddingOf(context).top;
+
     return Stack(
       children: [
         if (hasRoute)
           Positioned(
-            top: 12,
+            top: topInset + 12,
             left: 12,
             right: 12,
             child: Material(
@@ -54,10 +57,6 @@ class RidePreStartChrome extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.card),
               child: ListTile(
                 dense: true,
-                leading: const Icon(
-                  Icons.navigation,
-                  color: NavHudTokens.startCtaGreen,
-                ),
                 title: Text(
                   routeName!,
                   maxLines: 1,
@@ -88,10 +87,10 @@ class RidePreStartChrome extends StatelessWidget {
             child: FilledButton(
               key: const Key('ride-primary-start'),
               style: FilledButton.styleFrom(
-                backgroundColor: NavHudTokens.startCtaGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.chromeFill(context),
+                foregroundColor: AppColors.inkOnChrome(context),
                 disabledBackgroundColor:
-                    NavHudTokens.startCtaGreen.withValues(alpha: 0.7),
+                    AppColors.chromeFill(context).withValues(alpha: 0.7),
                 minimumSize: const Size.fromHeight(
                   NavHudTokens.startCtaMinHeightDp,
                 ),

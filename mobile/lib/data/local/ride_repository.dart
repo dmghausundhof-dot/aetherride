@@ -14,11 +14,16 @@ class RideStats {
     required this.rideCount,
     required this.totalKm,
     required this.totalElevationM,
+    this.distanceKnown = true,
   });
 
   final int rideCount;
   final double totalKm;
   final double totalElevationM;
+
+  /// false, wenn Rides existieren, aber weder Distanz-Spalte noch Track
+  /// eine Strecke hergeben — UI soll dann „—" statt „0 km" zeigen.
+  final bool distanceKnown;
 }
 
 class RideRepository {
@@ -33,7 +38,7 @@ class RideRepository {
           ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
           ..limit(limit))
         .get();
-        return rows.map(_toDomain).toList();
+    return rows.map(_toDomain).toList();
   }
 
   Future<RideRecord?> lastEndedForBike(String bikeId) async {
@@ -56,10 +61,23 @@ class RideRepository {
     final query = _db.selectOnly(_db.rides)
       ..addColumns([countExp, kmExp, hmExp]);
     final row = await query.getSingle();
+    final rideCount = row.read(countExp) ?? 0;
+    var totalKm = row.read(kmExp) ?? 0.0;
+    if (rideCount > 0) {
+      final zeros = await (_db.select(_db.rides)
+            ..where((t) => t.distanceKm.isSmallerOrEqualValue(0)))
+          .get();
+      var fromTrack = 0.0;
+      for (final z in zeros) {
+        fromTrack += distanceKmFromTrack(_parseTrackJson(z.trackJson));
+      }
+      if (fromTrack > 0) totalKm += fromTrack;
+    }
     return RideStats(
-      rideCount: row.read(countExp) ?? 0,
-      totalKm: row.read(kmExp) ?? 0.0,
+      rideCount: rideCount,
+      totalKm: totalKm,
       totalElevationM: row.read(hmExp) ?? 0.0,
+      distanceKnown: rideCount == 0 || totalKm >= 0.05,
     );
   }
 
@@ -70,7 +88,8 @@ class RideRepository {
   }
 
   Future<RideRecord> endRide({
-    required String bikeId,
+    String? bikeId,
+    String? setupId,
     required DateTime startedAt,
     required DateTime endedAt,
     required double distanceKm,
@@ -83,18 +102,32 @@ class RideRepository {
     double elevationM = 0,
   }) async {
     final rideId = id ?? _uuid.v4();
+    final resolvedBike = (bikeId != null &&
+            bikeId.isNotEmpty &&
+            bikeId != 'unknown')
+        ? bikeId
+        : '';
+    final honestKm = distanceKm.isFinite && distanceKm > 0 ? distanceKm : 0.0;
+    final honestSec = movingTimeSec > 0 ? movingTimeSec : 0;
+    final mergedSummary = <String, dynamic>{
+      ...summary,
+      if (setupId != null && setupId.isNotEmpty) 'setupId': setupId,
+      if (routeId != null && routeId.isNotEmpty) 'savedRouteId': routeId,
+      if (resolvedBike.isEmpty) 'unassigned': true,
+    };
     final record = RideRecord(
       id: rideId,
-      bikeId: bikeId,
+      bikeId: resolvedBike,
       startedAt: startedAt,
       endedAt: endedAt,
-      distanceKm: distanceKm,
-      movingTimeSec: movingTimeSec,
+      distanceKm: honestKm,
+      movingTimeSec: honestSec,
       elevationM: elevationM,
       name: name,
       routeId: routeId,
+      setupId: setupId,
       track: track.map((t) => t.toJson()).toList(),
-      summary: summary,
+      summary: mergedSummary,
     );
     await _db.into(_db.rides).insert(
           RidesCompanion.insert(
@@ -111,11 +144,13 @@ class RideRepository {
             summaryJson: Value(jsonEncode(record.summary)),
           ),
         );
-    await _garage.addOdometer(
-      bikeId: bikeId,
-      distanceKm: distanceKm,
-      hours: movingTimeSec / 3600.0,
-    );
+    if (resolvedBike.isNotEmpty && (honestKm > 0 || honestSec > 0)) {
+      await _garage.addOdometer(
+        bikeId: resolvedBike,
+        distanceKm: honestKm,
+        hours: honestSec / 3600.0,
+      );
+    }
     await _garage.touchLocalSync();
     return record;
   }
@@ -149,16 +184,7 @@ class RideRepository {
       final decoded = jsonDecode(row.summaryJson);
       if (decoded is Map) summary = Map<String, dynamic>.from(decoded);
     } catch (_) {}
-    List<Map<String, dynamic>> track = [];
-    try {
-      final decoded = jsonDecode(row.trackJson);
-      if (decoded is List) {
-        track = [
-          for (final e in decoded)
-            if (e is Map) Map<String, dynamic>.from(e),
-        ];
-      }
-    } catch (_) {}
+    final track = _parseTrackJson(row.trackJson);
     RideFeedback? feedback;
     if (row.feedbackJson != null && row.feedbackJson!.isNotEmpty) {
       try {
@@ -178,9 +204,23 @@ class RideRepository {
       elevationM: row.elevationM,
       name: row.name,
       routeId: row.routeId,
+      setupId: summary['setupId'] as String?,
       track: track,
       feedback: feedback,
       summary: summary,
     );
+  }
+
+  List<Map<String, dynamic>> _parseTrackJson(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return [
+          for (final e in decoded)
+            if (e is Map) Map<String, dynamic>.from(e),
+        ];
+      }
+    } catch (_) {}
+    return const [];
   }
 }

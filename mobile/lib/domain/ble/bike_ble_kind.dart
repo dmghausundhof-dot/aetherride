@@ -164,6 +164,15 @@ const kGattConnFailedEstablishment = 133;
 /// Android GATT_CONNECTION_TIMEOUT (0x93). Distinct from supervision timeout 8.
 const kGattConnectionTimeout = 147;
 
+/// HCI / Android GATT supervision timeout — Intuvia drops untrusted Centrals ~8 s.
+const kGattSupervisionTimeout = 8;
+
+/// GATT_INSUF_AUTHENTICATION — encrypted characteristic without a bond.
+const kGattInsufficientAuthentication = 5;
+
+/// HCI Remote User Terminated Connection.
+const kGattRemoteUserTerminated = 19;
+
 /// flutter_blue_plus [FbpErrorCode.timeout] — our connect() deadline fired.
 const kFbpConnectTimeoutCode = 1;
 
@@ -427,8 +436,70 @@ bool blePairAccepted({
 /// CSC/Power brauchen GATT. Drive darf Identität ohne GATT merken (nicht default).
 bool blePairGattRequired(BikeBleKind kind) => !bikeBleKindIsDrive(kind);
 
+/// Ride auto-connect (`scanIfMissing`): Drive-MAC nicht 2×14 s GATT-retrien.
+/// Pair-Sheet nutzt `scanIfMissing: false` und darf Display-GATT weiter versuchen.
+bool bleSkipPreferredDriveGatt({
+  required bool scanIfMissing,
+  BikeBleKind? kindHint,
+}) {
+  if (!scanIfMissing) return false;
+  return kindHint != null && bikeBleKindIsDrive(kindHint);
+}
+
 /// Pair-Sheet schließt nur bei echter GATT-Verbindung.
 bool blePairSheetSuccess({required bool connected}) => connected;
+
+/// CSC, Power oder echter SoC — nicht bloß eine Drive-MAC im GATT.
+bool bleHasLiveBikeMetrics({
+  required bool hasCscNotify,
+  required bool hasPowerNotify,
+  required bool hasSoc,
+  bool ldiConnected = false,
+}) {
+  return hasCscNotify || hasPowerNotify || hasSoc || ldiConnected;
+}
+
+/// Display erkannt, aber kein Tempo/Watt/Akku. Nicht als „Sensor wach“ zeigen.
+bool bleDriveWithoutLiveMetrics({
+  required bool connected,
+  required BikeBleKind? kind,
+  required bool hasCscNotify,
+  required bool hasPowerNotify,
+  required bool hasSoc,
+  bool ldiConnected = false,
+}) {
+  if (!connected) return false;
+  if (kind == null || !bikeBleKindIsDrive(kind)) return false;
+  return !bleHasLiveBikeMetrics(
+    hasCscNotify: hasCscNotify,
+    hasPowerNotify: hasPowerNotify,
+    hasSoc: hasSoc,
+    ldiConnected: ldiConnected,
+  );
+}
+
+bool bleIsUntrustedDrop(int? code) {
+  if (code == null) return false;
+  return code == kGattSupervisionTimeout ||
+      code == kGattInsufficientAuthentication ||
+      code == kGattRemoteUserTerminated;
+}
+
+/// Drive without OS-bond: status 8 is the Intuvia “untrusted client” drop.
+/// Reconnecting spams the radio and never yields SoC. CSC still reconnects.
+bool bleShouldReconnectAfterDrop({
+  required BikeBleKind? kind,
+  required int? disconnectCode,
+  required bool bonded,
+}) {
+  if (kind != null &&
+      bikeBleKindIsDrive(kind) &&
+      bleIsUntrustedDrop(disconnectCode) &&
+      !bonded) {
+    return false;
+  }
+  return true;
+}
 
 bool isTransientGattError(int? code) {
   if (code == null) return false;
@@ -444,6 +515,9 @@ String bleGattStatusHint(int? code) {
   }
   if (code == kGattConnectionTimeout || code == kFbpConnectTimeoutCode) {
     return 'Timeout — Display wecken, 15s-Fenster (Shimano), näher rangehen.';
+  }
+  if (bleIsUntrustedDrop(code)) {
+    return 'Display braucht Bluetooth-Kopplung für den Akku.';
   }
   return 'Verbindung fehlgeschlagen';
 }

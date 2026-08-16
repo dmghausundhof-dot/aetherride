@@ -27,7 +27,7 @@ assert.equal(
 const tee = classifyShopProduct({
   tags: ["merch"],
   productType: "T-Shirt",
-  title: "AetherRide Gravel Tee",
+  title: "FlowLine Gravel Tee",
   handle: "aetherride-gravel-tee",
 });
 assert.equal(tee.shelf, "merch");
@@ -44,7 +44,7 @@ assert.equal(
 const capNoTag = classifyShopProduct({
   tags: [],
   productType: "Cap",
-  title: "AetherRide Cap",
+  title: "FlowLine Cap",
   handle: "aetherride-cap",
 });
 assert.equal(capNoTag.shelf, "merch");

@@ -34,6 +34,9 @@ export function bikeTypeLabel(type: string): string {
     mtb_enduro: "Enduro",
     dh: "Downhill",
     urban: "Urban",
+    cargo: "Lastenrad",
+    folding: "Faltrad",
+    kids: "Kinderrad",
     emtb: "E-MTB",
     etrekking: "E-Trekking",
   };

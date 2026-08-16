@@ -1,13 +1,13 @@
 {
   "id": "kitzbuehel",
-  "name": "Kitzbühel / Wilder Kaiser",
+  "name": "Kitzb\u00fchel / Wilder Kaiser",
   "bbox": [
     12.2,
     47.38,
     12.5,
     47.55
   ],
-  "builtAt": "2026-08-14T23:05:40Z",
+  "builtAt": "2026-08-16T09:53:51Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false,

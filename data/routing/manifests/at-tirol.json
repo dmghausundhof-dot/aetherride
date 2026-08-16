@@ -1,0 +1,24 @@
+{
+  "id": "at-tirol",
+  "name": "Tirol",
+  "bbox": [
+    10.1,
+    46.62,
+    12.95,
+    47.78
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-tirol.tar.zst",
+    "packGz": "at-tirol.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

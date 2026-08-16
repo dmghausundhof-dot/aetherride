@@ -110,6 +110,9 @@ export function rideToFit(ride: Ride): Uint8Array {
     { num: 0, size: 4, base: 133 }, // position_lat
     { num: 1, size: 4, base: 133 }, // position_long
     { num: 2, size: 2, base: 132 }, // altitude (scaled)
+    { num: 3, size: 1, base: 2 }, // heart_rate
+    { num: 4, size: 1, base: 2 }, // cadence
+    { num: 7, size: 2, base: 132 }, // power
   ]);
 
   let written = 0;
@@ -131,6 +134,15 @@ export function rideToFit(ride: Ride): Uint8Array {
     records.i32(toSemi(lng));
     const alt = p.elev != null ? Math.round((p.elev + 500) * 5) : 0xffff;
     records.u16(alt);
+    const hr = typeof p.hr === "number" && p.hr >= 1 && p.hr <= 239 ? Math.round(p.hr) : 0xff;
+    const cad = typeof p.cad === "number" && p.cad >= 1 && p.cad <= 254 ? Math.round(p.cad) : 0xff;
+    const power =
+      typeof p.power === "number" && p.power >= 1 && p.power <= 2500
+        ? Math.round(p.power)
+        : 0xffff;
+    records.u8(hr);
+    records.u8(cad);
+    records.u16(power);
     written++;
   }
 

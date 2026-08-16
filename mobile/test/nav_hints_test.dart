@@ -56,6 +56,56 @@ void main() {
     expect(alreadyNamed, contains('Links abbiegen auf Neckarstaden'));
   });
 
+  test('pickAnnounce English glue uses onto / meters', () {
+    final spoken = <String>{};
+    final text = pickAnnounce(
+      stepId: 's4',
+      instruction: 'Turn right',
+      isArrive: false,
+      remainingM: 145,
+      speedKmh: 18,
+      spoken: spoken,
+      street: 'High Street',
+      languageCode: 'en',
+    );
+    expect(text, contains('onto High Street'));
+    expect(text, contains('meters'));
+    expect(text, isNot(contains('Metern')));
+  });
+
+  test('pickAnnounce French glue uses sur / mètres', () {
+    final spoken = <String>{};
+    final text = pickAnnounce(
+      stepId: 's5',
+      instruction: 'Tournez à droite',
+      isArrive: false,
+      remainingM: 145,
+      speedKmh: 18,
+      spoken: spoken,
+      street: 'Rue Haute',
+      languageCode: 'fr',
+    );
+    expect(text, contains('sur Rue Haute'));
+    expect(text, contains('mètres'));
+    expect(text, isNot(contains('Metern')));
+  });
+
+  test('pickAnnounce Italian glue uses su / metri', () {
+    final spoken = <String>{};
+    final text = pickAnnounce(
+      stepId: 's6',
+      instruction: 'Gira a destra',
+      isArrive: false,
+      remainingM: 145,
+      speedKmh: 18,
+      spoken: spoken,
+      street: 'Via Roma',
+      languageCode: 'it',
+    );
+    expect(text, contains('su Via Roma'));
+    expect(text, contains('metri'));
+  });
+
   test('hintsFromMetrics stand and impact streak', () {
     final hints = hintsFromMetrics(
       speedKmh: 1,

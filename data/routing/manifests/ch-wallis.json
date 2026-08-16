@@ -1,0 +1,24 @@
+{
+  "id": "ch-wallis",
+  "name": "Wallis",
+  "bbox": [
+    6.75,
+    45.85,
+    8.55,
+    46.65
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-wallis.tar.zst",
+    "packGz": "ch-wallis.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

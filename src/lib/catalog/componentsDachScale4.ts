@@ -57,7 +57,7 @@ function frameRoad(opts: {
     source: "oem",
     sourceUrl: opts.url,
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   };
 }
@@ -102,7 +102,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.schwalbe.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -130,7 +130,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.vittoria.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -148,7 +148,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -165,7 +165,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://bike.shimano.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -182,7 +182,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.sram.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -205,7 +205,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.fizik.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: false,
   },
   {
@@ -224,7 +224,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
   {
@@ -243,7 +243,7 @@ export const COMPONENT_CATALOG_DACH_SCALE4: ComponentModel[] = [
     source: "manufacturer_doc",
     sourceUrl: "https://www.dtswiss.com/",
     verifiedAt: VERIFIED,
-    verifiedBy: "AetherRide Editorial",
+    verifiedBy: "FlowLine Editorial",
     safetyCritical: true,
   },
 ];

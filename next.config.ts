@@ -20,12 +20,9 @@ const nextConfig: NextConfig = {
       { source: "/touren", destination: "/discover", permanent: false },
       { source: "/touren/:path*", destination: "/discover", permanent: false },
       { source: "/tours", destination: "/discover", permanent: false },
-      // Shop is a gateway — no in-app catalog world
-      { source: "/teile", destination: "/shop", permanent: false },
+      // Exact /shop/parts · /teile · /parts: App-Router (Query + door=parts).
       { source: "/teile/:path*", destination: "/shop", permanent: false },
-      { source: "/parts", destination: "/shop", permanent: false },
       { source: "/parts/:path*", destination: "/shop", permanent: false },
-      { source: "/shop/parts", destination: "/shop", permanent: false },
       { source: "/shop/parts/:path*", destination: "/shop", permanent: false },
     ];
   },

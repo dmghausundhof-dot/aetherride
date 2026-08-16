@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { buildTrailforksPins } from "@/lib/geo/trailCondition";
 
 /**
- * Trailforks Condition Layer (Attribution + Wetter-Proxy).
- * GET /api/trailforks?hint=dry_likely|damp_possible|wet_likely&lat=&lon=
+ * Trailforks Attribution + Deep-Links (kein Geometry-Mirror, kein Wetter-als-Zustand).
+ * GET /api/trailforks?lat=&lon=
+ * `hint` wird ignoriert — Open-Meteo bleibt am Hof.
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);

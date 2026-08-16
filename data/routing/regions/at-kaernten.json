@@ -1,0 +1,27 @@
+{
+  "id": "at-kaernten",
+  "name": "Kärnten",
+  "bbox": [
+    12.65,
+    46.37,
+    15.1,
+    47.15
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-kaernten",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-kaernten.tar.zst"
+  }
+}

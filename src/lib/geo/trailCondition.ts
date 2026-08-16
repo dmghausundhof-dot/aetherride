@@ -1,6 +1,7 @@
 /**
  * Trailforks Condition Layer — Attribution + Deep-Links (kein Geometry-Mirror).
- * Status-Proxy: Open-Meteo trailHint bis Partnership.
+ * Status-Proxy: Open-Meteo trailHint bleibt am Hof — nicht als
+ * Trailforks-„Zustand“ auf jeden Pin.
  */
 
 import {
@@ -137,14 +138,13 @@ export function conditionFromTrailHint(
 }
 
 export function buildTrailforksPins(
-  trailHint?: string | null,
+  _trailHint?: string | null,
   near?: { lat: number; lon: number } | null
 ): {
   mode: typeof trailforksMode;
   pins: TrailforksPin[];
   disclaimer: string;
 } {
-  const { condition, label } = conditionFromTrailHint(trailHint);
   if (!allowDemoContent()) {
     return {
       mode: trailforksMode,
@@ -157,9 +157,10 @@ export function buildTrailforksPins(
   }
   let pins: TrailforksPin[] = SEED_PINS.map((p) => ({
     ...p,
-    condition,
-    conditionLabel: label,
-    conditionSource: "weather_proxy" as const,
+    // Wetter bleibt am Hof. Pins: Name + Deep-Link, kein Fake-nass/trocken.
+    condition: "unknown" as const,
+    conditionLabel: "",
+    conditionSource: "trailforks" as const,
     openUrl: p.trailId
       ? trailforksTrailUrl(p.trailId)
       : trailforksRegionUrl(p.regionId),
@@ -178,10 +179,10 @@ export function buildTrailforksPins(
 
   const disclaimer =
     trailforksMode === "attribution_only"
-      ? "Beispiel-Regionen mit Link zu Trailforks — kein Live-Zustand in AetherRide."
+      ? "Beispiel-Regionen mit Link zu Trailforks — kein Live-Zustand in FlowLine."
       : trailforksMode === "enabled"
         ? "Trailforks-Zustand aktiv (Partnerschaft)."
-        : "Trailforks-Partnerschaft ausstehend — Wetter nur als grober Hinweis.";
+        : "Trailforks-Partnerschaft ausstehend. Wetter nur am Hof, nicht als Trail-Zustand.";
 
   return { mode: trailforksMode, pins, disclaimer };
 }

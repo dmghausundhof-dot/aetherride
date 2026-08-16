@@ -4,6 +4,7 @@
  */
 import assert from "node:assert/strict";
 import {
+  orsDirectionsOptions,
   orsProfileFor,
   orsPreferredForGraphhopperBasic,
   orsTypeToNav,
@@ -21,6 +22,7 @@ assert.equal(orsProfileFor("mtb_allmountain"), "cycling-mountain");
 assert.equal(orsProfileFor("emtb"), "cycling-mountain");
 assert.equal(orsProfileFor("ebike"), "cycling-electric");
 assert.equal(orsProfileFor("hiking"), "foot-hiking");
+assert.equal(orsProfileFor("auto"), "driving-car");
 
 assert.equal(orsPreferredForGraphhopperBasic("gravel"), true);
 assert.equal(orsPreferredForGraphhopperBasic("mtb_enduro"), true);
@@ -51,6 +53,15 @@ assert.equal(extras.dominantSurface, "Asphalt");
 assert.equal(extras.surfaces[0].label, "Asphalt");
 assert.equal(extras.steepnessHint, "hügelig");
 assert.equal(extras.trailDifficultyMax, 1);
+assert.deepEqual(extras.waytypes, []);
+
+assert.ok(orsDirectionsOptions("urban")?.avoid_features);
+assert.ok(
+  JSON.stringify(orsDirectionsOptions("mtb_enduro")).includes("highways")
+);
+assert.ok(
+  JSON.stringify(orsDirectionsOptions("gravel")).includes("green")
+);
 
 assert.equal(pointPairInDach([[13.405, 52.52], [13.41, 52.53]]), true);
 assert.equal(pointPairInDach([[0, 0], [1, 1]]), false);

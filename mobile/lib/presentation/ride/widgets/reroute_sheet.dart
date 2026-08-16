@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Result of the offline-aware reroute sheet (N-02b).
 enum RerouteSheetAction {
@@ -23,6 +24,7 @@ Future<RerouteSheetAction?> showRerouteSheet(BuildContext context) {
       ),
     ),
     builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx);
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
@@ -36,30 +38,32 @@ Future<RerouteSheetAction?> showRerouteSheet(BuildContext context) {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Abseits der Route.',
+                l10n.rerouteTitle,
                 style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Ruhig bleiben — du entscheidest.',
+                l10n.rerouteHint,
                 style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
+                      color: AppColors.meta(ctx),
                     ),
               ),
               const SizedBox(height: AppSpacing.l),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.forestOnDark,
+                  backgroundColor: AppColors.chromeFill(ctx),
+                  foregroundColor: AppColors.inkOnChrome(ctx),
                   minimumSize: const Size.fromHeight(52),
                 ),
                 onPressed: () =>
                     Navigator.of(ctx).pop(RerouteSheetAction.rejoin),
                 icon: const Icon(Icons.alt_route),
-                label: const Text(
-                  'Zurück zur Route',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                label: Text(
+                  l10n.rerouteRejoin,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 16),
                 ),
               ),
               const SizedBox(height: AppSpacing.s),
@@ -68,17 +72,17 @@ Future<RerouteSheetAction?> showRerouteSheet(BuildContext context) {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 onPressed: () => Navigator.of(ctx).pop(RerouteSheetAction.stay),
-                child: const Text(
-                  'Bleiben',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                child: Text(
+                  l10n.rerouteStay,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
               const SizedBox(height: AppSpacing.s),
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(RerouteSheetAction.skip),
-                child: const Text(
-                  'Abschnitt überspringen',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                child: Text(
+                  l10n.rerouteSkip,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
             ],

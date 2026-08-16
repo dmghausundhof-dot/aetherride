@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
 import 'watch_pair_sheet.dart';
@@ -70,15 +71,21 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
+        final l10n = AppLocalizations.of(context);
         setState(() {
-          _status = ble.watchStatusDetail ??
-              (ble.connectedWatchName != null
-                  ? 'Gekoppelt: ${ble.connectedWatchName}'
-                  : 'Uhr gekoppelt');
+          _status = ble.watchStatusDetail != null
+              ? l10n.bleStatusDetailFor(ble.watchStatusDetail!)
+              : (ble.connectedWatchName != null
+                  ? l10n.garageBlePairedNamed(ble.connectedWatchName!)
+                  : l10n.garageBlePaired);
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _status = 'Kopplung fehlgeschlagen');
+      if (mounted) {
+        setState(
+          () => _status = AppLocalizations.of(context).blePairFailed,
+        );
+      }
       debugPrint('hof watch pair: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -94,14 +101,19 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
     }
     setState(() {
       _busy = true;
-      _status = 'Verbinde …';
+      _status = AppLocalizations.of(context).bleConnecting;
     });
     final ble = ref.read(bleCoreProvider);
     try {
       final perm = await ble.ensurePermission();
       if (!mounted) return;
       if (perm != BlePermissionResult.granted) {
-        setState(() => _status = ble.watchStatusDetail ?? 'Bluetooth prüfen');
+        setState(
+          () => _status = AppLocalizations.of(context).bleStatusDetailFor(
+            ble.watchStatusDetail ??
+                AppLocalizations.of(context).watchCheckBluetooth,
+          ),
+        );
         return;
       }
       final ok = await ble.connectWatch(
@@ -110,12 +122,21 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
       );
       if (!mounted) return;
       setState(() {
+        final l10n = AppLocalizations.of(context);
         _status = ok
-            ? (ble.watchStatusDetail ?? 'Uhr verbunden')
-            : (ble.watchStatusDetail ?? 'Uhr nicht in Reichweite');
+            ? l10n.bleStatusDetailFor(
+                ble.watchStatusDetail ?? l10n.bleConnectedNamed(l10n.bleWordWatch),
+              )
+            : l10n.bleStatusDetailFor(
+                ble.watchStatusDetail ?? l10n.watchOutOfRange,
+              );
       });
     } catch (e) {
-      if (mounted) setState(() => _status = 'Verbindung fehlgeschlagen');
+      if (mounted) {
+        setState(
+          () => _status = AppLocalizations.of(context).bleConnectFailed,
+        );
+      }
       debugPrint('hof watch reconnect: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -128,13 +149,18 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
       await ref.read(bleCoreProvider).disconnectWatch();
     } catch (_) {}
     await _reload();
-    if (mounted) setState(() => _status = 'Uhr entfernt');
+    if (mounted) {
+      setState(() => _status = AppLocalizations.of(context).watchRemoved);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ble = ref.read(bleCoreProvider);
+    if (_saved != null && !widget.compact) {
+      return const SizedBox.shrink();
+    }
     if (widget.compact) {
       if (ble.isWatchConnected) return const SizedBox.shrink();
       return Align(
@@ -162,15 +188,16 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
     final subtitle = _saved == null
         ? l10n.hofWatchHint
         : live
-            ? (ble.watchStatusDetail ??
-                (bpm != null
-                    ? '${name ?? 'Uhr'} · ${bpm.round()} bpm'
-                    : '${name ?? 'Uhr'} · live'))
+            ? (ble.watchStatusDetail != null
+                ? l10n.bleStatusDetailFor(ble.watchStatusDetail!)
+                : (bpm != null
+                    ? l10n.watchLiveBpm(name ?? l10n.bleWordWatch, '${bpm.round()}')
+                    : l10n.watchLiveNamed(name ?? l10n.bleWordWatch)))
             : (name != null && name.isNotEmpty
-                ? '$name · gemerkt, nicht live'
-                : 'Gemerkt, nicht live');
+                ? l10n.watchRememberedOffline(name)
+                : l10n.watchRememberedOfflineNoName);
     final liveColor =
-        live ? AppColors.forestOnDark : AppColors.muted;
+        live ? AppColors.chrome : AppColors.muted;
 
     if (widget.dense) {
       return Material(
@@ -226,40 +253,47 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                l10n.hofYourWatch,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              Icon(
+                Icons.watch_outlined,
+                size: 18,
+                color: liveColor,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _saved == null ? l10n.hofWatchPair : l10n.hofYourWatch,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_busy)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                const Icon(
+                  Icons.chevron_right,
+                  size: 18,
                   color: AppColors.muted,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: AppColors.muted),
-              ),
-              if (_status != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  _status!,
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                ),
-              ],
-              if (_saved != null)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: _busy ? null : () => unawaited(_unlink()),
-                    child: Text(l10n.hofWatchRemove),
-                  ),
                 ),
             ],
           ),

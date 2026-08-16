@@ -1,0 +1,24 @@
+{
+  "id": "at-burgenland",
+  "name": "Burgenland",
+  "bbox": [
+    14.65,
+    46.82,
+    17.17,
+    48.12
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-burgenland.tar.zst",
+    "packGz": "at-burgenland.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

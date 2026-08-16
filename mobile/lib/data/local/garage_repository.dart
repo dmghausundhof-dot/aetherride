@@ -168,8 +168,8 @@ class GarageRepository {
             const BikesCompanion(isActive: Value(false)),
           );
       await (_db.update(_db.bikes)..where((t) => t.id.equals(id))).write(
-            const BikesCompanion(isActive: Value(true)),
-          );
+        const BikesCompanion(isActive: Value(true)),
+      );
     });
     await touchLocalSync();
   }
@@ -349,9 +349,8 @@ class GarageRepository {
             'elevationM': s.elevationM,
             'durationMin': s.durationMin,
             'source': s.source,
-            'geometry': s.geometryJson == null
-                ? null
-                : jsonDecode(s.geometryJson!),
+            'geometry':
+                s.geometryJson == null ? null : jsonDecode(s.geometryJson!),
             'waypoints': jsonDecode(s.waypointsJson),
             'layers': s.layersJson == null ? null : jsonDecode(s.layersJson!),
             'savedAt': s.savedAt.toIso8601String(),
@@ -369,11 +368,14 @@ class GarageRepository {
       activeFamilyRiderId: profileStore?.activeFamilyRiderId,
       commerceMode: profileStore?.commerceMode,
       rangeCalibration: profileStore?.rangeCalibration?.toJson(),
-      maintenanceLogs: profileStore == null
-          ? null
-          : profileStore!.maintenanceLogs,
+      maintenanceLogs:
+          profileStore == null ? null : profileStore!.maintenanceLogs,
       // v2 fields (aligned with web SyncPayload)
       preferredSport: profileStore?.preferredSport?.name,
+      preferredSports:
+          profileStore == null || profileStore!.preferredSports.isEmpty
+              ? null
+              : [for (final s in profileStore!.preferredSports) s.name],
       onboardingDone: profileStore?.onboardingDone,
       rideFeedbacks: [
         for (final r in rides)
@@ -386,9 +388,8 @@ class GarageRepository {
             },
       ],
       wishlistIds: profileStore == null ? null : profileStore!.wishlistIds,
-      bikePhotos: profileStore == null
-          ? null
-          : profileStore!.syncableBikePhotos(),
+      bikePhotos:
+          profileStore == null ? null : profileStore!.syncableBikePhotos(),
       updatedAt: state?.localUpdatedAt,
       payloadVersion: 2,
     );
@@ -525,8 +526,7 @@ class GarageRepository {
       if (payload.familyRiders is List) {
         store.familyRiders = [
           for (final e in payload.familyRiders as List)
-            if (e is Map)
-              FamilyRider.fromJson(Map<String, dynamic>.from(e)),
+            if (e is Map) FamilyRider.fromJson(Map<String, dynamic>.from(e)),
         ];
       }
       if (payload.activeFamilyRiderId != null) {
@@ -562,9 +562,13 @@ class GarageRepository {
       if (payload.onboardingDone != null) {
         store.onboardingDone = payload.onboardingDone!;
       }
-      if (payload.preferredSport is String) {
-        store.preferredSport =
-            bikeCategoryFromName(payload.preferredSport as String);
+      if (payload.preferredSport is String || payload.preferredSports is List) {
+        store.applyPreferredFromJson({
+          if (payload.preferredSport is String)
+            'preferredSport': payload.preferredSport,
+          if (payload.preferredSports is List)
+            'preferredSports': payload.preferredSports,
+        });
       }
       await store.save();
     }
@@ -723,8 +727,8 @@ class GarageRepository {
                 const BikesCompanion(isActive: Value(false)),
               );
           await (_db.update(_db.bikes)..where((t) => t.id.equals(aid))).write(
-                const BikesCompanion(isActive: Value(true)),
-              );
+            const BikesCompanion(isActive: Value(true)),
+          );
         }
       }
 

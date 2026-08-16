@@ -1,0 +1,27 @@
+{
+  "id": "at-salzburg",
+  "name": "Land Salzburg",
+  "bbox": [
+    12.05,
+    46.9,
+    13.85,
+    48.05
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    "note": "AT extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/at-salzburg",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "at-salzburg.tar.zst"
+  }
+}

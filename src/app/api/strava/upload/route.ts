@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       form.append(
         "name",
         body.name?.trim() ||
-          `AetherRide ${new Date().toISOString().slice(0, 10)}`
+          `FlowLine ${new Date().toISOString().slice(0, 10)}`
       );
       if (body.description?.trim()) {
         form.append("description", body.description.trim());
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
     const payload = {
       name:
         body.name?.trim() ||
-        `AetherRide ${new Date().toISOString().slice(0, 10)}`,
+        `FlowLine ${new Date().toISOString().slice(0, 10)}`,
       type: body.type || "Ride",
       sport_type: body.sport_type || "MountainBikeRide",
       start_date_local:
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
       distance: Number(body.distance) || 0,
       total_elevation_gain: Number(body.total_elevation_gain) || 0,
       description:
-        (body.description?.trim() || "Hochgeladen aus AetherRide") +
+        (body.description?.trim() || "Hochgeladen aus FlowLine") +
         (trkpts < 2
           ? " (nur Metadaten — kein GPS-Track in der App)."
           : ""),

@@ -1,0 +1,86 @@
+/// Redaktionelle Treffen — Spiegel von src/lib/community/seed.ts.
+/// Kein Join, keine Live-Pins, keine erfundenen Teilnehmer.
+class CommunityEventSeed {
+  const CommunityEventSeed({
+    required this.id,
+    required this.title,
+    required this.regionLabel,
+    required this.dateLabel,
+    required this.sport,
+    required this.blurb,
+  });
+
+  final String id;
+  final String title;
+  final String regionLabel;
+  final String dateLabel;
+  final String sport;
+  final String blurb;
+}
+
+class CommunityClubSeed {
+  const CommunityClubSeed({
+    required this.id,
+    required this.name,
+    required this.regionLabel,
+    required this.sports,
+    required this.blurb,
+  });
+
+  final String id;
+  final String name;
+  final String regionLabel;
+  final String sports;
+  final String blurb;
+}
+
+const communityClubSeeds = <CommunityClubSeed>[
+  CommunityClubSeed(
+    id: 'cl-rn-allround',
+    name: 'Rhein-Neckar Allround',
+    regionLabel: 'Rhein-Neckar',
+    sports: 'road · gravel · urban',
+    blurb: 'Wöchentliche Gruppen — Disziplin rotiert. Anfänger willkommen.',
+  ),
+  CommunityClubSeed(
+    id: 'cl-sw-trails',
+    name: 'Schwarzwald Trail & Tour',
+    regionLabel: 'Schwarzwald',
+    sports: 'mtb · gravel · ebike',
+    blurb: 'MTB und Gravel gemischt, Fokus auf sichere Linien und Trail-Etikette.',
+  ),
+  CommunityClubSeed(
+    id: 'cl-by-lakes',
+    name: 'Bayern Seenrunde',
+    regionLabel: 'Bayern',
+    sports: 'road · gravel · touring',
+    blurb: 'Seen, Flachland und Alpenvorland — Touring-lastig.',
+  ),
+];
+
+const communityEventSeeds = <CommunityEventSeed>[
+  CommunityEventSeed(
+    id: 'ev-gravel-bw',
+    title: 'Gravel-Treff Schwarzwald West',
+    regionLabel: 'Schwarzwald',
+    dateLabel: 'Sa, 12. Sep 2026 · 09:00',
+    sport: 'gravel',
+    blurb: 'Lockere Gruppenfahrt, ca. 50 km. Keine Zeitnahme — nur Community.',
+  ),
+  CommunityEventSeed(
+    id: 'ev-city-hd',
+    title: 'Heidelberg Critical Mass light',
+    regionLabel: 'Rhein-Neckar',
+    dateLabel: 'Fr, 25. Sep 2026 · 18:30',
+    sport: 'urban',
+    blurb: 'Langsame Stadt-Runde für alle Räder. Treffpunkt am Neckar.',
+  ),
+  CommunityEventSeed(
+    id: 'ev-road-bodensee',
+    title: 'Bodensee Südufer Genussfahrt',
+    regionLabel: 'Bodensee',
+    dateLabel: 'So, 4. Okt 2026 · 08:30',
+    sport: 'road',
+    blurb: 'Flach, fotogen, Kaffee-Stops. Rennrad & E-Trekking willkommen.',
+  ),
+];

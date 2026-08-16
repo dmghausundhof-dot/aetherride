@@ -38,4 +38,22 @@ void main() {
     );
     expect(ShopifyStorefront.fitTags(bike), isEmpty);
   });
+
+  test('withLocale hängt en/fr/it an, de bleibt ohne Prefix', () {
+    final home = ShopifyStorefront.homeUri()!;
+    expect(ShopifyStorefront.withLocale(home, 'de').path, '/');
+    expect(ShopifyStorefront.withLocale(home, 'en').path, '/en');
+    expect(ShopifyStorefront.withLocale(home, 'fr-CH').path, '/fr');
+    final parts = ShopifyStorefront.merchUri()!;
+    expect(
+      ShopifyStorefront.withLocale(parts, 'it').path,
+      '/it/collections/merchandise',
+    );
+    expect(
+      ShopifyStorefront.withLocale(parts, 'de').path,
+      '/collections/merchandise',
+    );
+    final foreign = Uri.parse('https://oneupcomponents.com/products/v3');
+    expect(ShopifyStorefront.withLocale(foreign, 'fr'), foreign);
+  });
 }

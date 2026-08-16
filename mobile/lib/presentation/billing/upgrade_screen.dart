@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/billing/play_billing.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 
 /// Pro upgrade: Stripe Checkout (web) + Play Billing (Android) + sync.
@@ -36,7 +37,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       unawaited(_play!.start());
       _playSub = _play!.updates.listen(_onPlayPurchase);
       _playErrSub = _play!.errors.listen((msg) {
-        if (mounted) setState(() => _message = 'Play: $msg');
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context);
+        setState(() => _message = l10n.billingPlayError(msg));
       });
     }
   }
@@ -51,9 +54,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
 
   Future<void> _onPlayPurchase(PurchaseUpdate update) async {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
-      _message = 'Kauf wird verifiziert…';
+      _message = l10n.billingVerifying;
     });
     try {
       final mode = await _verifyPlay(
@@ -64,13 +68,11 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       if (!mounted) return;
       setState(() {
         _message = mode == 'trusted_token_mvp'
-            ? (kDebugMode
-                ? 'Pro gesetzt (Trusted-Token-MVP — ohne Google Play Service Account). Sync OK.'
-                : 'Pro aktiv. Sync läuft.')
-            : 'Pro aktiv. Sync läuft.';
+            ? (kDebugMode ? l10n.billingProTrusted : l10n.billingProActive)
+            : l10n.billingProActive;
       });
     } catch (e) {
-      if (mounted) setState(() => _message = 'Play: $e');
+      if (mounted) setState(() => _message = l10n.billingPlayError('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -86,9 +88,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   Future<void> _stripeCheckout(String interval) async {
+    final l10n = AppLocalizations.of(context);
     final token = await _accessToken();
     if (token == null) {
-      setState(() => _message = 'Bitte zuerst anmelden.');
+      setState(() => _message = l10n.billingPleaseSignIn);
       return;
     }
     setState(() {
@@ -110,11 +113,17 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
         throw Exception(data['error'] ?? 'checkout ${res.statusCode}');
       }
       final url = data['url'] as String?;
-      if (url == null || url.isEmpty) throw Exception('Keine Checkout-URL');
+      if (url == null || url.isEmpty) {
+        setState(() => _message = l10n.billingNoCheckoutUrl);
+        return;
+      }
       final uri = Uri.parse(url);
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok) throw Exception('Browser konnte nicht geöffnet werden');
-      setState(() => _message = 'Checkout geöffnet — danach „Sync after purchase“.');
+      if (!ok) {
+        setState(() => _message = l10n.billingBrowserFailed);
+        return;
+      }
+      setState(() => _message = l10n.billingCheckoutOpened);
     } catch (e) {
       setState(() => _message = '$e');
     } finally {
@@ -126,8 +135,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     required String purchaseToken,
     required String productId,
   }) async {
+    final l10n = AppLocalizations.of(context);
     final token = await _accessToken();
-    if (token == null) throw Exception('Bitte zuerst anmelden.');
+    if (token == null) throw Exception(l10n.billingPleaseSignIn);
     final res = await http.post(
       Uri.parse('${AppConfig.apiBaseUrl}/api/billing/play-verify'),
       headers: {
@@ -156,9 +166,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   Future<void> _playBuy() async {
+    final l10n = AppLocalizations.of(context);
     final play = _play;
     if (play == null) {
-      setState(() => _message = 'Play Billing nur auf Android.');
+      setState(() => _message = l10n.billingPlayOnlyAndroid);
       return;
     }
     setState(() {
@@ -167,32 +178,30 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     });
     try {
       await play.buyProMonthly();
-      setState(() => _message = 'Play-Kauf gestartet…');
+      setState(() => _message = l10n.billingPlayStarted);
     } catch (e) {
-      setState(() => _message = 'Play: $e');
+      setState(() => _message = l10n.billingPlayError('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _playRestore() async {
+    final l10n = AppLocalizations.of(context);
     final play = _play;
     if (play == null) {
-      setState(() => _message = 'Play Billing nur auf Android.');
+      setState(() => _message = l10n.billingPlayOnlyAndroid);
       return;
     }
     setState(() {
       _busy = true;
-      _message = 'Käufe werden wiederhergestellt…';
+      _message = l10n.billingRestoring;
     });
     try {
       await play.restorePurchases();
-      setState(
-        () => _message =
-            'Restore gestartet — gültige Abos werden verifiziert.',
-      );
+      setState(() => _message = l10n.billingRestoreStarted);
     } catch (e) {
-      setState(() => _message = 'Restore: $e');
+      setState(() => _message = l10n.billingRestoreError('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -222,6 +231,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   Future<void> _syncAfterPurchase() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _message = null;
@@ -231,9 +241,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       await ref.read(syncEngineProvider).syncNow();
       if (token != null) await _applyTierFromMe(token);
       final tier = ref.read(subscriptionTierProvider);
-      setState(() => _message = 'Sync OK — Tarif: $tier');
+      setState(() => _message = l10n.billingSyncOkTier(tier));
     } catch (e) {
-      setState(() => _message = 'Sync: $e');
+      setState(() => _message = l10n.billingSyncError('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -241,58 +251,76 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tier = ref.watch(subscriptionTierProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('AetherRide Pro')),
+      appBar: AppBar(title: Text(l10n.billingTitle)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            tier == 'pro' ? 'Du hast Pro.' : 'Free → Pro',
+            tier == 'pro' ? l10n.billingYouHavePro : l10n.billingFreeToPro,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Mehr Bikes, Sync-Vorteile und Offline-Regionen.',
-            style: TextStyle(color: AppColors.muted),
+          Text(
+            l10n.billingMoreBikes,
+            style: const TextStyle(color: AppColors.muted),
           ),
           const SizedBox(height: 24),
-          FilledButton(
-            style: FilledButton.styleFrom(),
-            onPressed: _busy ? null : () => _stripeCheckout('month'),
-            child: const Text('Stripe — monatlich'),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.tonal(
-            onPressed: _busy ? null : () => _stripeCheckout('year'),
-            child: const Text('Stripe — jährlich'),
-          ),
-          if (defaultTargetPlatform == TargetPlatform.android) ...[
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _playBuy,
-              icon: const Icon(Icons.shop_outlined),
-              label: const Text('Google Play — monatlich'),
+          if (tier == 'pro') ...[
+            Text(
+              l10n.billingAlreadyPro,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _busy ? null : _playRestore,
-              child: const Text('Play-Käufe wiederherstellen'),
-            ),
-            const SizedBox(height: 8),
-            if (kDebugMode)
-              const Text(
-                'Hinweis: Ohne GOOGLE_PLAY_SERVICE_ACCOUNT_JSON prüft der Server '
-                'nur den Trusted-Token (MVP) — kein Publisher-API-Verify.',
-                style: TextStyle(color: AppColors.muted, fontSize: 12),
+            if (AppConfig.forcePro && kDebugMode) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.billingForceProDebug,
+                style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),
+            ],
+          ] else ...[
+            FilledButton(
+              style: FilledButton.styleFrom(),
+              onPressed: _busy ? null : () => _stripeCheckout('month'),
+              child: Text(l10n.billingStripeMonth),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+              onPressed: _busy ? null : () => _stripeCheckout('year'),
+              child: Text(l10n.billingStripeYear),
+            ),
+            if (defaultTargetPlatform == TargetPlatform.android) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _playBuy,
+                icon: const Icon(Icons.shop_outlined),
+                label: Text(l10n.billingPlayMonth),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: _busy ? null : _playRestore,
+                child: Text(l10n.billingPlayRestore),
+              ),
+              const SizedBox(height: 8),
+              if (kDebugMode)
+                Text(
+                  l10n.billingPlayHint,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+            ],
           ],
           const SizedBox(height: 16),
           OutlinedButton(
             onPressed: _busy ? null : _syncAfterPurchase,
-            child: const Text('Nach Kauf synchronisieren'),
+            child: Text(
+              tier == 'pro'
+                  ? l10n.billingSyncStatus
+                  : l10n.billingSyncAfterPurchase,
+            ),
           ),
           if (_message != null) ...[
             const SizedBox(height: 16),

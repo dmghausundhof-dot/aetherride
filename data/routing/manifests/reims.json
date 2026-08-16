@@ -7,18 +7,31 @@
     4.18,
     49.35
   ],
-  "builtAt": "2026-08-13T00:00:00Z",
+  "builtAt": "2026-08-15T13:22:35Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false
   },
-  "files": {},
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18522547,
+      "sha256": "98f87855faf4aed1fd370b1576fda5923cac76e21403cc677c8ed3d5bec74089",
+      "sha256_16": "98f87855faf4aed1"
+    },
+    "reims.tar.gz": {
+      "bytes": 2509932,
+      "sha256": "10e97be7b007b110989735ad38001e5db808ab5872acf1735c09a6e9d08b9aa7",
+      "sha256_16": "10e97be7b007b110"
+    },
+    "reims.tar.zst": {
+      "bytes": 2699547,
+      "sha256": "863b449b89f3086aaf78646bde83618c95e1d84ef70654afdb6acea0d802f12b",
+      "sha256_16": "863b449b89f3086a"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/reims",
     "pack": "reims.tar.zst",
     "packGz": "reims.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
   }
 }

@@ -1,5 +1,5 @@
 name: aetherride_mobile
-description: AetherRide Flutter client — UI, Riverpod state, offline-first domain (Spec §5).
+description: FlowLine Flutter client — UI, Riverpod state, offline-first domain (Spec §5).
 publish_to: "none"
 version: 0.1.0+1
 
@@ -25,6 +25,8 @@ dependencies:
   ffi: ^2.1.3
   supabase_flutter: ^2.8.0
   flutter_blue_plus: ^1.35.2
+  # 0.22+ needs AGP 8.8.2 (unreliable here). 0.21 Dart API + Android SDK 11.9.0
+  # (forced in android/build.gradle.kts) is enough for pmtiles:// DACH styles.
   maplibre_gl: ^0.21.0
   geolocator: ^13.0.2
   app_links: ^6.3.3
@@ -64,9 +66,15 @@ flutter:
     - assets/routing/bike-overlay-sample.geojson
     - assets/seeds/naehe-peek-seeds-berlin-v1.json
     - assets/seeds/p0-dach-60min-naehe-v1.json
+    - assets/seeds/p0-gaps-60min-naehe-v1.json
     - assets/seeds/p0-rhein-neckar-60min-naehe-v1.json
     - assets/seeds/p0-rhein-neckar-60min-v1.json
     - assets/seeds/p0-rhein-neckar-60min-premium-v1.json
     - assets/seeds/p0-france-60min-naehe-v1.json
     - assets/seeds/heroes/
     - assets/garage/silhouettes/
+    - assets/brand/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf

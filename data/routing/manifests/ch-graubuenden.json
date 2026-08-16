@@ -1,0 +1,24 @@
+{
+  "id": "ch-graubuenden",
+  "name": "Graubünden",
+  "bbox": [
+    8.65,
+    46.12,
+    10.49,
+    47.08
+  ],
+  "builtAt": "2026-08-15T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "ch-graubuenden.tar.zst",
+    "packGz": "ch-graubuenden.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — envelope graph pack"
+  }
+}

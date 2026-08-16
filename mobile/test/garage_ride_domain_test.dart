@@ -34,5 +34,6 @@ void main() {
     expect(p.toJson()['lat'], 48.1);
     expect(p.toJson()['lng'], 8.2);
     expect(p.toJson()['elev'], 400);
+    expect(p.toJson().containsKey('hr'), isFalse);
   });
 }

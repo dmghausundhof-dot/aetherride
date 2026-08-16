@@ -18,6 +18,26 @@ String? extractStreetNameFromInstruction(String instruction) {
     if (s != null) return s;
   }
 
+  // FR: "… sur X" / "… vers X"
+  final sur = RegExp(
+    r'\b(?:sur|vers)\s+(.+)$',
+    caseSensitive: false,
+  ).firstMatch(t);
+  if (sur != null) {
+    final s = _cleanStreet(sur.group(1)!);
+    if (s != null) return s;
+  }
+
+  // IT: "… su X" / "… verso X"
+  final su = RegExp(
+    r'\b(?:su|verso)\s+(.+)$',
+    caseSensitive: false,
+  ).firstMatch(t);
+  if (su != null) {
+    final s = _cleanStreet(su.group(1)!);
+    if (s != null) return s;
+  }
+
   // DE: "… auf X" / "… nach X" / "… in die X" / "… in den X" / "… in der X"
   final auf = RegExp(
     r'\b(?:auf|nach|in die|in den|in der|in dem)\s+(.+)$',
@@ -60,7 +80,11 @@ String? _cleanStreet(String raw) {
   final lower = s.toLowerCase();
   if (lower == 'ziel' ||
       lower.contains('ziel erreicht') ||
-      lower == 'destination') {
+      lower == 'destination' ||
+      lower == 'arrivée' ||
+      lower.contains('vous êtes arrivé') ||
+      lower == 'destinazione' ||
+      lower.contains('destinazione raggiunta')) {
     return null;
   }
   return s;

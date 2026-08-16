@@ -8,12 +8,14 @@ import {
   MARKETING_NAV,
   isMarketingNavActive,
 } from "@/lib/nav/marketingNav";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import { usePathname } from "next/navigation";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const copy = webChrome(useChromeLang());
 
   return (
     <header className="hof-safe-header sticky top-0 z-50 border-b border-border/40 bg-background/55 backdrop-blur-md">
@@ -30,7 +32,7 @@ export function LandingHeader() {
 
         <nav
           className="hidden items-center gap-6 lg:flex"
-          aria-label="Website"
+          aria-label={copy.websiteAria}
         >
           {MARKETING_NAV.map((item) => {
             const active = isMarketingNavActive(pathname, item.href);
@@ -44,7 +46,7 @@ export function LandingHeader() {
                     : "text-sm text-text-secondary hover:text-foreground"
                 }
               >
-                {item.label}
+                {copy.marketingNav[item.href]}
               </Link>
             );
           })}
@@ -55,18 +57,18 @@ export function LandingHeader() {
             href="/anmelden"
             className="hidden text-sm text-text-secondary hover:text-chrome sm:block"
           >
-            {HOF_COPY.profileArrive}
+            {copy.arriveAtHof}
           </Link>
           <Link
             href="/home"
-            className="hidden h-9 items-center rounded-lg bg-chrome px-3.5 text-sm font-semibold text-background hover:bg-chrome/90 sm:inline-flex"
+            className="hidden h-9 items-center rounded-xl bg-chrome px-3.5 text-sm font-semibold text-on-accent hover:bg-chrome/90 sm:inline-flex"
           >
-            Zum Hof
+            {copy.toHof}
           </Link>
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border lg:hidden"
-            aria-label={open ? "Menü schließen" : "Menü öffnen"}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border lg:hidden"
+            aria-label={open ? copy.menuClose : copy.menuOpen}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -76,7 +78,7 @@ export function LandingHeader() {
 
       {open && (
         <div className="border-t border-border px-4 py-3 lg:hidden">
-          <nav className="flex flex-col gap-1" aria-label="Website">
+          <nav className="flex flex-col gap-1" aria-label={copy.websiteAria}>
             {MARKETING_NAV.map((item) => (
               <Link
                 key={item.href}
@@ -84,7 +86,7 @@ export function LandingHeader() {
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 text-sm text-text-secondary"
               >
-                {item.label}
+                {copy.marketingNav[item.href]}
               </Link>
             ))}
             <Link
@@ -92,14 +94,14 @@ export function LandingHeader() {
               onClick={() => setOpen(false)}
               className="rounded-lg px-3 py-3 text-sm text-text-secondary"
             >
-              {HOF_COPY.profileArrive}
+              {copy.arriveAtHof}
             </Link>
             <Link
               href="/home"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-3 text-sm font-semibold text-chrome"
+              className="mt-1 flex h-11 items-center justify-center rounded-xl bg-chrome px-3 text-sm font-semibold text-on-accent"
             >
-              Zum Hof
+              {copy.toHof}
             </Link>
           </nav>
         </div>

@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
 /// Chrome Custom Tabs (Android) / SFSafariViewController (iOS).
-/// Shop-Flow bleibt im Browser-Chrome der App, ohne In-App-Katalog/Kasse.
+/// Checkout bleibt Shopify. Katalog lebt in FlowLine.
 Future<bool> openShopifyStorefront(Uri? uri) async {
   if (uri == null) return false;
   try {

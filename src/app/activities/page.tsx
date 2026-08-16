@@ -8,9 +8,11 @@ import Link from "next/link";
 import { Activity, Bike, ChevronRight, Smartphone } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration, bikeTypeLabel } from "@/lib/utils";
-import { HOF_COPY } from "@/lib/home/hofCopy";
+import { useHofCopy } from "@/hooks/useHofCopy";
 
 export default function ActivitiesPage() {
+  const copy = useHofCopy();
+
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
 
@@ -23,9 +25,9 @@ export default function ActivitiesPage() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{HOF_COPY.activitiesTitle}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{copy.activitiesTitle}</h1>
           <p className="mt-1 text-sm text-text-secondary">
-            {HOF_COPY.activitiesHint}
+            {copy.activitiesHint}
           </p>
         </div>
         <Link
@@ -39,14 +41,14 @@ export default function ActivitiesPage() {
       {sorted.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center">
           <Activity className="mx-auto h-10 w-10 text-text-secondary" />
-          <h2 className="mt-4 font-semibold">{HOF_COPY.activitiesEmpty}</h2>
+          <h2 className="mt-4 font-semibold">{copy.activitiesEmpty}</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-text-secondary">
-            {HOF_COPY.activitiesEmptyHint}
+            {copy.activitiesEmptyHint}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/download"
-              className="rounded-xl bg-chrome px-4 py-2.5 text-sm font-semibold text-background"
+              className="rounded-xl bg-chrome px-4 py-2.5 text-sm font-semibold text-on-accent"
             >
               App öffnen
             </Link>

@@ -10,6 +10,8 @@ void main() {
     });
     expect(tagged.bikeClass, BikeOverlayClass.mtb);
     expect(tagged.mtbScale, MtbScaleLabel.s2);
+    expect(mtbScaleCss(MtbScaleLabel.s3), 'S3+');
+    expect(parseOsmMtbScale('4'), MtbScaleLabel.s3);
 
     final sacOnly = classifyBikeWay({
       'highway': 'path',
@@ -77,6 +79,59 @@ void main() {
     expect(
       overlayClassesForFamily(overlayFamilyForBike(BikeCategory.gravel)),
       [BikeOverlayClass.gravel],
+    );
+  });
+
+  test('City default extraOn skips S-scale; MTB keeps trails', () {
+    expect(
+      overlayDefaultExtraOn(BikeOverlayFamily.urban),
+      {BikeOverlayClass.urban, BikeOverlayClass.road},
+    );
+    expect(
+      overlayDefaultExtraOn(BikeOverlayFamily.mtb),
+      {BikeOverlayClass.mtb, BikeOverlayClass.mtbUnrated},
+    );
+    expect(overlayLegendShowsSScale(BikeOverlayFamily.urban), isFalse);
+    expect(overlayLegendShowsSScale(BikeOverlayFamily.mtb), isTrue);
+    expect(
+      overlayLegendRows(family: BikeOverlayFamily.urban, expanded: false),
+      isEmpty,
+    );
+    expect(
+      overlayLegendRows(family: BikeOverlayFamily.urban, expanded: true)
+          .map((r) => r.key),
+      ['urban', 'road'],
+    );
+    expect(
+      overlayLegendRows(family: BikeOverlayFamily.mtb, expanded: true)
+          .map((r) => r.key),
+      ['S0', 'S1', 'S2', 'S3+', 'unrated'],
+    );
+  });
+
+  test('Discover overlay default is all classes; off hides, never 16%', () {
+    expect(kAllPaintedOverlayClasses, contains(BikeOverlayClass.mtbUnrated));
+    expect(kAllPaintedOverlayClasses, contains(BikeOverlayClass.road));
+    expect(
+      overlayClassesShown(
+        overlayOn: true,
+        extraOn: kAllPaintedOverlayClasses,
+      ),
+      kAllPaintedOverlayClasses,
+    );
+    expect(
+      overlayClassesShown(
+        overlayOn: false,
+        extraOn: kAllPaintedOverlayClasses,
+      ),
+      isEmpty,
+    );
+    expect(
+      overlayClassesShown(
+        overlayOn: true,
+        extraOn: {BikeOverlayClass.gravel},
+      ),
+      {BikeOverlayClass.gravel},
     );
   });
 }

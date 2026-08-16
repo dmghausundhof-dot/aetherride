@@ -77,6 +77,7 @@ const BASE: Record<string, { lat: number; lng: number }> = {
   "r-chamonix-emtb": { lat: 45.92, lng: 6.87 },
   "r-geneve-urban": { lat: 46.2, lng: 6.15 },
   "r-wiesloch-feierabend": { lat: 49.295, lng: 8.698 },
+  "r-baden-baden-allee": { lat: 48.761, lng: 8.24 },
   "r-speyer-rhein": { lat: 49.317, lng: 8.431 },
   "r-ladenburg-neckar": { lat: 49.473, lng: 8.609 },
   "r-bruchsal-gravel": { lat: 49.124, lng: 8.598 },

@@ -115,7 +115,7 @@ export function GarageMaintenanceTab({
                           <button
                             type="button"
                             onClick={() => markIntervalDone(interval.id)}
-                            className="rounded-lg bg-accent px-2 py-1 text-xs font-semibold text-white"
+                            className="rounded-xl bg-accent px-2 py-1 text-xs font-semibold text-on-accent"
                           >
                             Erledigt
                           </button>

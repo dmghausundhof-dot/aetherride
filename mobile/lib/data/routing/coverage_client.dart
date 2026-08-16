@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../core/config.dart';
+import '../../l10n/app_locale.dart';
 
 class CoveragePlace {
   const CoveragePlace({
@@ -60,6 +61,7 @@ class CoverageClient {
           'lat': lat.toStringAsFixed(5),
           'lng': lng.toStringAsFixed(5),
           'bike': bike,
+          'lang': AppLocaleBinding.chromeLanguageCode,
         },
       );
       final res = await _http

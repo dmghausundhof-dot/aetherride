@@ -58,6 +58,8 @@ class CompatibilityResult {
     this.conditionText,
     this.safetyWorkshopHint,
     this.sourceUrl,
+    this.valuesA = const {},
+    this.valuesB = const {},
   });
 
   final CompatVerdict verdict;
@@ -69,6 +71,10 @@ class CompatibilityResult {
   final String? conditionText;
   final String? safetyWorkshopHint;
   final String? sourceUrl;
+
+  /// Stringified rule attributes — UI fills l10n templates, domain stays DE.
+  final Map<String, String> valuesA;
+  final Map<String, String> valuesB;
 }
 
 const compatibilityRules = <CompatibilityRuleDef>[

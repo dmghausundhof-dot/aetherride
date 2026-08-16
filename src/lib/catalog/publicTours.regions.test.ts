@@ -36,6 +36,13 @@ function testDachPins() {
   assert.equal(getPublicTour("r-koeln-urban")?.regionSlug, "nrw");
   assert.equal(getPublicTour("r-innsbruck-road")?.regionSlug, "oesterreich");
   assert.equal(getPublicTour("r-geneve-urban")?.regionSlug, "schweiz");
+  const baden = getPublicTour("r-baden-baden-allee");
+  assert.ok(baden, "missing r-baden-baden-allee");
+  assert.ok(
+    Math.abs(baden!.center[0] - 8.24) < 0.02 &&
+      Math.abs(baden!.center[1] - 48.761) < 0.02,
+    `Baden-Baden pin must not fall back to Freiburg default, got ${baden!.center}`,
+  );
 }
 
 function testNeighborsExist() {

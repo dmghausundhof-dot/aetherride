@@ -6,6 +6,7 @@
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { haversineKm } from "@/lib/routing/demoGeometry";
 import type { SavedRoute } from "@/types/route";
+import type { BikeCategory } from "@/types";
 
 export type HofGateHonesty = "loop" | "wetClosed" | "none";
 
@@ -50,6 +51,46 @@ export function isTrailHeavyLoop(route: {
   return /\btrail\b/.test(surface) || /\bgravel\b/.test(surface);
 }
 
+function sportFamily(category: string | undefined): string {
+  const c = (category ?? "").toLowerCase();
+  if (
+    c === "mtb_trail" ||
+    c === "mtb_am" ||
+    c === "mtb_enduro" ||
+    c === "dh" ||
+    c === "emtb"
+  ) {
+    return "mtb";
+  }
+  if (c === "gravel") return "gravel";
+  if (c === "road") return "road";
+  if (c === "urban") return "urban";
+  if (c === "cargo" || c === "folding" || c === "kids") return "urban";
+  if (c === "etrekking") return "touring";
+  if (c === "hiking") return "hike";
+  return c;
+}
+
+function softSportMatch(
+  tourCategory: string | undefined,
+  preferred?: BikeCategory | null
+): boolean {
+  if (!preferred) return false;
+  const tour = (tourCategory ?? "").toLowerCase();
+  const pref = preferred.toLowerCase();
+  if (tour === pref) return true;
+  if (sportFamily(tour) === sportFamily(pref) && sportFamily(pref) !== "") {
+    return true;
+  }
+  if (pref === "etrekking") {
+    return tour === "road" || tour === "gravel" || tour === "urban";
+  }
+  if (tour === "etrekking") {
+    return pref === "road" || pref === "gravel" || pref === "urban";
+  }
+  return false;
+}
+
 function savedInWindow(saved: SavedRoute[]): SavedRoute | undefined {
   return saved.find(
     (r) =>
@@ -66,6 +107,7 @@ export function pickHofGate(opts: {
   lng?: number | null;
   trailsWet?: boolean;
   maxDistanceKm?: number;
+  preferred?: BikeCategory | null;
 }): HofGatePick {
   const saved = opts.saved ?? [];
   const maxKm = opts.maxDistanceKm ?? MAX_DISTANCE_KM;
@@ -96,7 +138,19 @@ export function pickHofGate(opts: {
       return { honesty: "wetClosed" };
     }
 
-    if (ranked[0]) {
+    if (ranked.length > 0) {
+      if (opts.preferred) {
+        const match = ranked.find((e) =>
+          softSportMatch(e.seed.category, opts.preferred)
+        );
+        if (match) {
+          return {
+            honesty: "loop",
+            seed: match.seed,
+            distanceKm: match.km,
+          };
+        }
+      }
       return {
         honesty: "loop",
         seed: ranked[0].seed,
@@ -127,4 +181,16 @@ export function hofGateDurationMin(pick: HofGatePick): number {
 
 export function hofGateId(pick: HofGatePick): string | undefined {
   return pick.seed?.id ?? pick.saved?.id;
+}
+
+/** GPS distance to the gate loop. Not the loop length. */
+export function formatHofGateAway(
+  distanceKm: number | undefined,
+  copy: { near: string; km: (n: number) => string }
+): string | null {
+  if (distanceKm == null || !Number.isFinite(distanceKm) || distanceKm <= 0) {
+    return null;
+  }
+  if (distanceKm < 1) return copy.near;
+  return copy.km(Math.min(80, Math.max(1, Math.round(distanceKm))));
 }

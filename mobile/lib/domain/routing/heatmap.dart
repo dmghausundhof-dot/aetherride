@@ -93,15 +93,15 @@ HeatmapResult buildHeatmapFromRides({
     segments: segments,
     coldStart: fromRides.isEmpty || visibleCount < 3,
     kThreshold: kHeatmapThreshold,
-    attribution: '© OpenStreetMap · AetherRide eigene Aggregate',
+    attribution: '© OpenStreetMap · FlowLine eigene Aggregate',
     disclaimer: fromRides.isNotEmpty
         ? (consentHeatmap
             ? 'Lokal aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet) '
-                '— keine Community-Nutzerzahl; k≥$kHeatmapThreshold gilt nur serverseitig.'
+                '— keine Nutzerzahl; k≥$kHeatmapThreshold gilt nur serverseitig.'
             : 'Deine Strecken sind ausgeblendet — Consent unter Privatsphäre.')
         : (useSeed
             ? 'Noch wenig eigene Daten — Beispielabschnitte bis genug Rides da sind.'
-            : 'Noch keine eigenen Tracks für die Beliebtheitskarte — kein Community-Demo.'),
+            : 'Noch keine eigenen Tracks für die Beliebtheitskarte — kein Demo.'),
   );
 }
 
