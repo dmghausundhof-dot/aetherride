@@ -1,6 +1,6 @@
 {
   "id": "kitzbuehel",
-  "name": "Kitzb\u00fchel / Wilder Kaiser",
+  "name": "Kitzbühel / Wilder Kaiser",
   "bbox": [
     12.2,
     47.38,
@@ -10,7 +10,8 @@
   "builtAt": "2026-08-14T23:05:40Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2597985,
       "sha256": "0cfd54bf7a4fa16aaeb592f2fddafe164d3a5fa94f635a2483d1076a27896ff5",
       "sha256_16": "0cfd54bf7a4fa16a"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2902018,
+      "sha256": "0cca298730daf3998d95bdf06c2ef7c95b8d93d84650ebf3faefdb75ed261eb1",
+      "sha256_16": "0cca298730daf399"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 765130,
+      "sha256": "764e72e222774efa7319a3be4723c9b17c7861f23cfefbb47258def000c40c13",
+      "sha256_16": "764e72e222774efa"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/kitzbuehel",
     "pack": "kitzbuehel.tar.zst",
     "packGz": "kitzbuehel.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

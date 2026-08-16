@@ -10,7 +10,8 @@
   "builtAt": "2026-08-14T23:05:26Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2652184,
       "sha256": "dc0a8fc89ee77a050e02217b8e46866975d7b237437401741c81eb37d35d4cb1",
       "sha256_16": "dc0a8fc89ee77a05"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2964498,
+      "sha256": "0b5836a8927a20b6daf0456bba5b22cb0da038ab3865289e480cb895e441da71",
+      "sha256_16": "0b5836a8927a20b6"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 921825,
+      "sha256": "da2ea2c32bfd8a76d63362fb691015ed4eea9a0911a185abdbc490840c3e3c1f",
+      "sha256_16": "da2ea2c32bfd8a76"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/innsbruck",
     "pack": "innsbruck.tar.zst",
     "packGz": "innsbruck.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }
