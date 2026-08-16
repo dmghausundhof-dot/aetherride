@@ -10,7 +10,8 @@
   "builtAt": "2026-08-15T10:43:09Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2712008,
       "sha256": "8904c945d9c40fe2dbdccc31ddd8d99c16a4af5fceb1dda4bc5f97f13f381b57",
       "sha256_16": "8904c945d9c40fe2"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 8985517,
+      "sha256": "92925e05f3d8d18fd7e777b091d6485cd276a6d5e0b290244d65b93c7017516d",
+      "sha256_16": "92925e05f3d8d18f"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 3047376,
+      "sha256": "f317592c10ada9bccfcbe7d747661b86b9ffd0b53b980fa69a60f1bc4804f4c9",
+      "sha256_16": "f317592c10ada9bc"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/vosges",
     "pack": "vosges.tar.zst",
     "packGz": "vosges.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }
