@@ -38,7 +38,8 @@ import {
   overlayFamilyForBike,
   type BikeOverlayClass,
 } from "@/lib/routing/bikeOverlayClass";
-import { overlayHintForPoint } from "@/lib/coverage/regions";
+import { detailOverlayRegionIdForPoint } from "@/lib/coverage/dachRegions";
+import { chooseOnlineBikeOverlay } from "@/lib/map/onlineCycleMesh";
 import {
   consumerRoutingNotice,
   showRoutingDebugUi,
@@ -266,28 +267,31 @@ function DiscoverPageInner() {
   const [mapCenter, setMapCenter] = useState<[number, number]>(
     () => queryCenter ?? FALLBACK_CENTER
   );
+  const [mapZoom, setMapZoom] = useState(13);
   const bikeOverlaySpec = useMemo(() => {
     const env = process.env.NEXT_PUBLIC_BIKE_OVERLAY_URL?.trim();
     if (env) {
       const kind = env.includes(".geojson") ? "geojson" : "pmtiles";
-      return { url: env, kind: kind as "pmtiles" | "geojson" };
+      return {
+        url: env,
+        kind: kind as "pmtiles" | "geojson",
+        overlayKind: "ways" as const,
+      };
     }
     const [lng, lat] = mapCenter;
-    const overlay = overlayHintForPoint(lng, lat);
-    if (!overlay.pmtilesPath) return null;
-    const path = overlay.pmtilesPath;
-    const kind = path.includes(".geojson") ? "geojson" : "pmtiles";
-    if (/^https?:\/\//i.test(path)) {
-      return { url: path, kind: kind as "pmtiles" | "geojson" };
-    }
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
-    if (!origin) return null;
+    const choice = chooseOnlineBikeOverlay({
+      regionId: detailOverlayRegionIdForPoint(lng, lat),
+      lng,
+      lat,
+      zoom: mapZoom,
+    });
+    if (!choice.url) return null;
     return {
-      url: `${origin}${path}`,
-      kind: kind as "pmtiles" | "geojson",
+      url: choice.url,
+      kind: "pmtiles" as const,
+      overlayKind: choice.kind === "ways" ? ("ways" as const) : ("mesh" as const),
     };
-  }, [mapCenter]);
+  }, [mapCenter, mapZoom]);
   const [draft, setDraft] = useState<PlanDraft>(() =>
     emptyDraft(
       routingProfile,
@@ -2658,6 +2662,11 @@ function DiscoverPageInner() {
           bikeOverlayVisible={bikeOverlayOn}
           bikeOverlayExtraOn={bikeOverlayExtra}
           bikeOverlayRideProfileId={rideProfileId}
+          bikeOverlayMinZoom={bikeOverlaySpec?.overlayKind === "ways" ? 10 : 5}
+          onViewChange={(view) => {
+            setMapCenter(view.center);
+            setMapZoom(view.zoom);
+          }}
           onMapClick={onMapClick}
           onMarkerClick={(id) => {
             if (!id.startsWith("tour-")) return;
@@ -2706,6 +2715,7 @@ function DiscoverPageInner() {
             extraOn={bikeOverlayExtra}
             rideProfileId={rideProfileId}
             hasOverlayData={Boolean(bikeOverlaySpec)}
+            overlayKind={bikeOverlaySpec?.overlayKind ?? "mesh"}
             onToggleVisible={() => setBikeOverlayOn((v) => !v)}
             onToggleClass={(cls) => {
               setBikeOverlayOn(true);

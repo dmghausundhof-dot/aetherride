@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/routing/bike_overlay.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 
 class BikeOverlayLegend extends StatelessWidget {
@@ -11,6 +12,7 @@ class BikeOverlayLegend extends StatelessWidget {
     required this.onToggleVisible,
     required this.onToggleClass,
     this.hasOverlayData = true,
+    this.overlayKind = OnlineBikeOverlayKind.ways,
   });
 
   final BikeOverlayFamily family;
@@ -19,6 +21,7 @@ class BikeOverlayLegend extends StatelessWidget {
   final VoidCallback onToggleVisible;
   final ValueChanged<BikeOverlayClass> onToggleClass;
   final bool hasOverlayData;
+  final OnlineBikeOverlayKind overlayKind;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +34,7 @@ class BikeOverlayLegend extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 168),
             child: const Text(
-              'Wege kommen mit dem Stadt-Pack und dem Radnetz-Schalter — nicht auf diesem Überblick.',
+              'Kein Overlay auf diesem Blatt. OSM-Wege nur in Hausbergen ab Zoom 12 — Rhein-Neckar, Vogesen, Alpenorte.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 10,
@@ -42,8 +45,11 @@ class BikeOverlayLegend extends StatelessWidget {
         ),
       );
     }
+    final mesh = overlayKind == OnlineBikeOverlayKind.mesh;
     final primary = overlayClassesForFamily(family).toSet();
-    final rows = <({BikeOverlayClass cls, String label, Color color})>[
+    final rows = mesh
+        ? <({BikeOverlayClass cls, String label, Color color})>[]
+        : <({BikeOverlayClass cls, String label, Color color})>[
       (cls: BikeOverlayClass.mtb, label: 'S0', color: _hex(BikeOverlayColors.s0)),
       (cls: BikeOverlayClass.mtb, label: 'S1', color: _hex(BikeOverlayColors.s1)),
       (cls: BikeOverlayClass.mtb, label: 'S2', color: _hex(BikeOverlayColors.s2)),
@@ -85,9 +91,9 @@ class BikeOverlayLegend extends StatelessWidget {
                 onTap: onToggleVisible,
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Wege · OSM',
+                        mesh ? 'Radnetz · OSM' : 'Wege · OSM',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -106,7 +112,8 @@ class BikeOverlayLegend extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 6),
+              if (!mesh) const SizedBox(height: 6),
+              if (!mesh)
               for (final row in rows)
                 InkWell(
                   onTap: () => onToggleClass(row.cls),
@@ -141,8 +148,10 @@ class BikeOverlayLegend extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 4),
-              const Text(
-                'S0–S3 nur bei OSM-Tag. Sonst unbewertet.',
+              Text(
+                mesh
+                    ? 'Signierte Radrouten (ICN/NCN/RCN). Wege ab Zoom 12 in Hausbergen.'
+                    : 'S0–S3 nur bei OSM-Tag. Sonst unbewertet.',
                 style: TextStyle(
                   color: Colors.white54,
                   fontSize: 9,

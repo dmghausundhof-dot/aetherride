@@ -23,4 +23,33 @@ void main() {
     expect(overlayDataExpectedAt(2.35, 48.86), isFalse);
     expect(overlayDataExpectedAt(-30, 0), isFalse);
   });
+
+  test('ways overlay at z12 in Hausberge, mesh at atlas zoom', () {
+    expect(detailOverlayPackIdForPoint(8.68, 49.41), 'rhein-neckar');
+    expect(detailOverlayPackIdForPoint(7.85, 47.99), 'schwarzwald-nord');
+    expect(detailOverlayPackIdForPoint(13.405, 52.52), isNull);
+
+    final hdAtlas = chooseOnlineBikeOverlay(
+      lng: 8.68,
+      lat: 49.41,
+      zoom: 8,
+    );
+    expect(hdAtlas.kind, OnlineBikeOverlayKind.mesh);
+    expect(hdAtlas.url, contains('cycle-routes.pmtiles'));
+
+    final hdWays = chooseOnlineBikeOverlay(
+      lng: 8.68,
+      lat: 49.41,
+      zoom: 13,
+    );
+    expect(hdWays.kind, OnlineBikeOverlayKind.ways);
+    expect(hdWays.url, contains('/rhein-neckar/bike-overlay.pmtiles'));
+
+    final paris = chooseOnlineBikeOverlay(
+      lng: 2.35,
+      lat: 48.86,
+      zoom: 13,
+    );
+    expect(paris.kind, OnlineBikeOverlayKind.none);
+  });
 }

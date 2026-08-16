@@ -29,6 +29,7 @@ export function BikeOverlayLegend({
   extraOn,
   rideProfileId = null,
   hasOverlayData = true,
+  overlayKind = "ways",
   onToggleVisible,
   onToggleClass,
 }: {
@@ -37,10 +38,12 @@ export function BikeOverlayLegend({
   extraOn: BikeOverlayClass[];
   rideProfileId?: RideProfileId | null;
   hasOverlayData?: boolean;
+  overlayKind?: "ways" | "mesh";
   onToggleVisible: () => void;
   onToggleClass: (cls: BikeOverlayClass) => void;
 }) {
   if (!hasOverlayData) return <OverlayWaysHint />;
+  const mesh = overlayKind === "mesh";
   const primary = new Set(overlayClassesForFamily(family));
   const profileOn = rideProfileId
     ? overlayClassesOn({
@@ -60,17 +63,18 @@ export function BikeOverlayLegend({
         className="mb-1.5 flex w-full items-center justify-between gap-2 font-semibold uppercase tracking-wide text-white/90"
         onClick={onToggleVisible}
       >
-        <span>Wege · OSM</span>
+        <span>{mesh ? "Radnetz · OSM" : "Wege · OSM"}</span>
         <span className="normal-case font-normal text-white/70">
           {visible ? "an" : "aus"}
         </span>
       </button>
-      {ride && (
+      {ride && !mesh && (
         <p className="mb-1 text-[9px] font-medium text-white/80">
           {ride.shortLabel}
           {scaleOn && scaleOn.length > 0 ? ` · ${scaleOn.join("–")}` : ""}
         </p>
       )}
+      {!mesh && (
       <ul className="flex flex-col gap-1">
         {BIKE_OVERLAY_LEGEND_DE.map((row) => {
           let on =
@@ -104,8 +108,11 @@ export function BikeOverlayLegend({
           );
         })}
       </ul>
+      )}
       <p className="mt-1.5 max-w-[11rem] text-[9px] leading-snug text-white/55">
-        S0–S3 nur bei OSM-Tag. Sonst unbewertet — keine Trailforks-Geometrie.
+        {mesh
+          ? "Signierte Radrouten (ICN/NCN/RCN). Wege ab Zoom 12 in Hausbergen."
+          : "S0–S3 nur bei OSM-Tag. Sonst unbewertet — keine Trailforks-Geometrie."}
       </p>
     </div>
   );
