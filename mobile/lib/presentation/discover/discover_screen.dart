@@ -1651,6 +1651,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         from: _origin,
         to: entry,
         profile: costing,
+        accessLeg: _navPolicy.isGravity,
       );
       final trailPts = [
         for (final p in oriented.geometry) GeoPoint(p[1], p[0]),
@@ -3061,13 +3062,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     required GeoPoint to,
     List<GeoPoint> vias = const [],
     RoutingProfile? profile,
+    bool accessLeg = false,
   }) async {
     final p = profile ?? _abCosting;
+    final access = accessLeg || p == RoutingProfile.driving;
     var result = await _routes.planRoute(
       from: from,
       to: to,
       profile: p,
       vias: vias,
+      accessLeg: access,
     );
     if (p == RoutingProfile.driving || p == RoutingProfile.hiking) {
       return result;
@@ -3078,12 +3082,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       to: to,
       profile: p,
       vias: vias,
+      accessLeg: access,
     );
     return _routes.planRoute(
       from: from,
       to: to,
       profile: p,
       vias: vias,
+      accessLeg: access,
     );
   }
 
@@ -3144,7 +3150,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         approach = await _planRouteMaybeRetry(
           from: from,
           to: join,
-          profile: _profile,
+          profile: _abCosting,
+          accessLeg: _navPolicy.isGravity,
         );
         if (!mounted || gen != _calcAbGen) return;
         var merged = _stitchApproachLastMile(approach, mile);
@@ -3152,7 +3159,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           final direct = await _planRouteMaybeRetry(
             from: from,
             to: dest,
-            profile: _profile,
+            profile: _abCosting,
+            accessLeg: _navPolicy.isGravity,
           );
           if (!mounted || gen != _calcAbGen) return;
           if (!_isAbDetour(direct, from, dest) &&

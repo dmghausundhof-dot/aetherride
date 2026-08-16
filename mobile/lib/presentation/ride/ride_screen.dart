@@ -2051,6 +2051,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
               from: GeoPoint(lastFix.lat, lastFix.lng),
               to: GeoPoint(rejoinPt[1], rejoinPt[0]),
               profile: rejoinProfile,
+              accessLeg: route.gravitySession,
             );
         approach = result.coordinates.map((p) => [p.lng, p.lat]).toList();
         approachDistM = result.distanceM;
