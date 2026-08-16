@@ -1,0 +1,37 @@
+{
+  "id": "montpellier",
+  "name": "Montpellier / Lez",
+  "bbox": [
+    3.75,
+    43.52,
+    4.02,
+    43.7
+  ],
+  "builtAt": "2026-08-15T13:44:22Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 18517351,
+      "sha256": "fed24727a7ea44f275233d5607adf9f6dba196ecd6ed3cff0c825bd7af3637e7",
+      "sha256_16": "fed24727a7ea44f2"
+    },
+    "montpellier.tar.gz": {
+      "bytes": 2531122,
+      "sha256": "925f2382b8abe8ddc86cc269c837aa1b7b32b2f20a41148bbabfbae9d9106291",
+      "sha256_16": "925f2382b8abe8dd"
+    },
+    "montpellier.tar.zst": {
+      "bytes": 2758018,
+      "sha256": "36540e30aacac7faa8c19f4fc9206e8d8a4f858e9134776ad60c417bfb9e56dc",
+      "sha256_16": "36540e30aacac7fa"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/montpellier",
+    "pack": "montpellier.tar.zst",
+    "packGz": "montpellier.tar.gz"
+  }
+}

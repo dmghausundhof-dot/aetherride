@@ -1651,6 +1651,27 @@
       ]
     },
     {
+      "id": "montpellier",
+      "name": "Montpellier / Lez",
+      "country": "FR",
+      "kind": "pack",
+      "bbox": [
+        3.75,
+        43.52,
+        4.02,
+        43.7
+      ],
+      "center": [
+        3.885,
+        43.61
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/france/languedoc-roussillon-latest.osm.pbf",
+      "sports": [
+        "urban",
+        "road"
+      ]
+    },
+    {
       "id": "nantes",
       "name": "Nantes / Erdre",
       "country": "FR",
