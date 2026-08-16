@@ -10,15 +10,34 @@
   "builtAt": "2026-08-13T00:00:00Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
-  "files": {},
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 1523415,
+      "sha256": "7d2509baf51825907a30b58cc2c0aeef8830d05483c3d7f18a36d2139c4c5438",
+      "sha256_16": "7d2509baf5182590"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 420312,
+      "sha256": "84d5ba54788eccadb2c336cbab705878d41935675e72fd066174867e8e878a3a",
+      "sha256_16": "84d5ba54788eccad"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/st-moritz",
     "pack": "st-moritz.tar.zst",
     "packGz": "st-moritz.tar.gz"
   },
   "shipped": {
     "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

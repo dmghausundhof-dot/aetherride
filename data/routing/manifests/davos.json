@@ -10,15 +10,34 @@
   "builtAt": "2026-08-13T00:00:00Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
-  "files": {},
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 1694580,
+      "sha256": "9ba31c71b806a5a7b95da69c38828079a750c23ce91e2f44fda2661b7c3148c3",
+      "sha256_16": "9ba31c71b806a5a7"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 507126,
+      "sha256": "5aa37dc5b9c608f07dec8beb0d069098f307d31ce5ae3d733d84d47bea905fc6",
+      "sha256_16": "5aa37dc5b9c608f0"
+    }
+  },
   "cdn": {
-    "baseUrl": "",
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/davos",
     "pack": "davos.tar.zst",
     "packGz": "davos.tar.gz"
   },
   "shipped": {
     "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }
