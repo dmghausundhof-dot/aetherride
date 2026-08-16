@@ -40,6 +40,7 @@ import '../../domain/routing/tour_filters.dart';
 import '../../domain/routing/tour_coverage.dart';
 import '../../domain/routing/heatmap.dart';
 import '../../data/routing/heatmap_client.dart';
+import '../../data/routing/map_style_url.dart';
 import '../../data/routing/routing_status_client.dart';
 import '../../domain/routing/engine_steps_along.dart';
 import '../../domain/routing/nav_cues.dart';
@@ -2033,11 +2034,18 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       if (!mounted) return;
       final p = GeoPoint(pos.latitude, pos.longitude);
+      final nextStyle = nextOnlineBasemapStyleUrl(
+        currentStyle: _mapStyle,
+        lng: p.lng,
+        lat: p.lat,
+      );
+      final styleChanged = nextStyle != null && nextStyle != _mapStyle;
       setState(() {
         _userPos = p;
         _start = p;
         _startAddrCtrl.text = 'Meine Position';
         _status = 'Standort bereit · In der Nähe wird geladen…';
+        if (nextStyle != null) _mapStyle = nextStyle;
       });
       unawaited(_fetchOutdooractive());
       unawaited(_fetchOsmRoutes());
@@ -2053,9 +2061,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         unawaited(_refreshQuick(limit: 3));
       }
       try {
-        await _map?.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
-        );
+        if (!styleChanged) {
+          await _map?.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
+          );
+        }
       } catch (_) {}
     } catch (e) {
       if (mounted) {
@@ -4813,6 +4823,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         zoom: _hasRealOrigin ? 12 : 5.5,
       ),
       compassEnabled: true,
+      trackCameraPosition: true,
       rotateGesturesEnabled: true,
       scrollGesturesEnabled: true,
       zoomGesturesEnabled: true,
@@ -4833,6 +4844,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _bikeOverlayAttached = false;
         unawaited(_ensureBikeOverlay());
         unawaited(_drawAll());
+      },
+      onCameraIdle: () {
+        final t = _map?.cameraPosition?.target;
+        if (t == null) return;
+        final next = nextOnlineBasemapStyleUrl(
+          currentStyle: _mapStyle,
+          lng: t.longitude,
+          lat: t.latitude,
+        );
+        if (next == null || next == _mapStyle || !mounted) return;
+        setState(() => _mapStyle = next);
       },
       // Kurzer Tipp setzt Punkte nur, wenn Planen offen ist — sonst bleiben
       // Tipps für Trails/Touren/Routen auf der Karte reserviert.

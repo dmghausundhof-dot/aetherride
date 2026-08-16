@@ -16,6 +16,7 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/nav_hud_tokens.dart';
 import '../../data/local/ride_prefs.dart';
+import '../../data/routing/map_style_url.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/routing_client.dart';
 import '../../data/sensor/bike_ble_store.dart';
@@ -434,6 +435,14 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   LatLng _mapTarget(ActiveRoute? route) =>
       _mapTargetOrNull(route) ?? _regionOverview;
+
+  String _onlineStyleFor(LatLng t) =>
+      nextOnlineBasemapStyleUrl(
+        currentStyle: _mapStyle,
+        lng: t.longitude,
+        lat: t.latitude,
+      ) ??
+      _mapStyle;
 
   Future<void> _drawRideMap() async {
     final c = _rideMap;
@@ -1808,8 +1817,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
       children: [
         Positioned.fill(
           child: MapLibreMap(
-            key: ValueKey('ride-map-$_mapStyle'),
-            styleString: _mapStyle,
+            key: ValueKey('ride-map-${_onlineStyleFor(_mapTarget(route))}'),
+            styleString: _onlineStyleFor(_mapTarget(route)),
             initialCameraPosition: CameraPosition(
               target: _mapTarget(route),
               zoom: route != null ? 12.5 : 5.8,
@@ -1950,8 +1959,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
         Positioned.fill(
           child: layer == RideLiveLayer.map
               ? MapLibreMap(
-                  key: ValueKey('ride-map-$_mapStyle'),
-                  styleString: _mapStyle,
+                  key: ValueKey('ride-map-${_onlineStyleFor(_mapTarget(route))}'),
+                  styleString: _onlineStyleFor(_mapTarget(route)),
                   initialCameraPosition: CameraPosition(
                     target: _mapTarget(route),
                     zoom: 14,
@@ -2470,8 +2479,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
         return ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.chip),
           child: MapLibreMap(
-            key: ValueKey(_mapStyle),
-            styleString: _mapStyle,
+            key: ValueKey(_onlineStyleFor(_mapTarget(route))),
+            styleString: _onlineStyleFor(_mapTarget(route)),
             initialCameraPosition: CameraPosition(
               target: _mapTarget(route),
               zoom: 14,

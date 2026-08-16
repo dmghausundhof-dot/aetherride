@@ -386,7 +386,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     return '$n B';
   }
 
-  /// Copy dach-z11 / france-west-z11 into documents. Never MapLibre OfflineRegion.
+  /// Copy dach-z11 / france-west-z11 / alps-south-z11 into documents. Never MapLibre OfflineRegion.
   Future<void> _ensureBasemapArchive(
     String regionId,
     Map<String, dynamic>? manifest,
