@@ -96,6 +96,22 @@ export const HOF_COPY = {
   shopCheckoutElsewhere: "Checkout nur bei Shopify, nicht auf aetherride.app.",
   shopProductMissing: "Dieses Produkt liegt nicht im Laden.",
   shopBack: "Zurück zum Laden",
+  shopSearchHint: "Teile, Marken, Specs…",
+  shopFeatured: "Passende Teile",
+  shopOpenProduct: "Im Shop öffnen",
+  shopAllParts: "Alle Teile",
+  shopFitBanner: (name: string) => `Teile passend zu ${name}`,
+  shopShelfEmpty: "Keine Teile zu dieser Suche.",
+  shopCatalogFailed:
+    "Katalog gerade nicht erreichbar. Der Laden bleibt die Tür zu Shopify.",
+  shopRetry: "Erneut laden",
+  shopFitOnly: "Nur passende",
+  shopFitAllBikes: "Alle Räder",
+  shopFitBannerAll: "Teile passend zu deinen Rädern",
+  shopCatalogEmpty:
+    "Noch keine Teile im Regal. Der Laden bleibt die Tür zu Shopify.",
+  shopReplaceHint:
+    "Ersatz — FlowLine filtert nach deinem Rad, ohne SKUs zu erfinden.",
 
   profileKicker: "Du",
   profileTitle: "Profil",
