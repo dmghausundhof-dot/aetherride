@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/routing/battery_preset.dart';
+import '../../domain/routing/live_engine.dart';
 
 /// Light mid-ride preferences (battery preset, first-ask flag).
 /// JSON file under app support — no SharedPreferences plugin required.
@@ -76,5 +77,17 @@ abstract final class RidePrefs {
 
   static Future<void> setHudMediaPromptDismissed(bool value) async {
     await merge({'hud_media_prompt_dismissed': value});
+  }
+
+  /// Live engine picker. Hybrid = server chooses GraphHopper / ORS per profile.
+  static Future<LiveRoutingEngine> routingEngine() async {
+    final m = await read();
+    return LiveRoutingEngineX.parse(m['routingEngine'] as String?);
+  }
+
+  static Future<void> setRoutingEngine(LiveRoutingEngine engine) async {
+    await merge({
+      'routingEngine': engine == LiveRoutingEngine.hybrid ? null : engine.apiId,
+    });
   }
 }

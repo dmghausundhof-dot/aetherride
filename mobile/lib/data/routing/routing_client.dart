@@ -7,6 +7,7 @@ import '../../core/config.dart';
 import '../../l10n/app_locale.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/live_engine.dart';
 import '../../domain/routing/nav_policy.dart';
 import '../../domain/routing/nav_cues.dart';
 import '../../domain/routing/street_from_instruction.dart';
@@ -15,6 +16,7 @@ import '../../native/routing_core_ffi.dart';
 import 'offline_maps_prefs.dart';
 import 'offline_pack_dirs.dart';
 import 'offline_tiles.dart';
+import '../local/ride_prefs.dart';
 
 enum RoutingProfile {
   mtbTrail,
@@ -263,6 +265,8 @@ class RoutingClient {
     RoutingProfile profile = RoutingProfile.mtbTrail,
     bool preferOffline = false,
     List<GeoPoint> vias = const [],
+    LiveRoutingEngine? engine,
+    bool accessLeg = false,
   }) async {
     var offlineFirst = preferOffline || AppConfig.preferOfflineRouting;
     if (!offlineFirst) {
@@ -303,7 +307,14 @@ class RoutingClient {
     }
 
     try {
-      return await _requestOnline(from, to, profile, vias: vias);
+      return await _requestOnline(
+        from,
+        to,
+        profile,
+        vias: vias,
+        engine: engine,
+        accessLeg: accessLeg,
+      );
     } catch (_) {
       final offline = await _tryOffline(from, to, profile);
       if (offline != null) return offline;
@@ -353,14 +364,20 @@ class RoutingClient {
     GeoPoint to,
     RoutingProfile profile, {
     List<GeoPoint> vias = const [],
+    LiveRoutingEngine? engine,
+    bool accessLeg = false,
   }) async {
     // Web-API: from=lng,lat&to=lng,lat&via=... (Spec /api/route)
+    final choice = engine ?? await RidePrefs.routingEngine();
     final qp = <String, String>{
       'from': '${from.lng},${from.lat}',
       'to': '${to.lng},${to.lat}',
       'profile': profile.apiId,
       'lang': AppLocaleBinding.chromeLanguageCode,
     };
+    final engineId = choice.apiId;
+    if (engineId != null) qp['engine'] = engineId;
+    if (accessLeg) qp['access'] = '1';
     var url = Uri.parse('${AppConfig.apiBaseUrl}/api/route').replace(
       queryParameters: qp,
     );

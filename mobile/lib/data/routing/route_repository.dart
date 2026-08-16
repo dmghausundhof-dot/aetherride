@@ -4,9 +4,11 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/routing/engine_steps_along.dart';
+import '../../domain/routing/live_engine.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/saved_route.dart';
 import '../local/app_database.dart';
+import '../local/ride_prefs.dart';
 import 'elevation_client.dart';
 import 'offline_maps_prefs.dart';
 import 'routing_client.dart';
@@ -107,8 +109,11 @@ class RouteRepository {
     List<GeoPoint> vias = const [],
     bool preferOffline = false,
     bool fetchElevation = true,
+    LiveRoutingEngine? engine,
+    bool accessLeg = false,
   }) async {
-    final key = _cacheKey(from, to, profile, vias);
+    final choice = engine ?? await RidePrefs.routingEngine();
+    final key = _cacheKey(from, to, profile, vias, choice, accessLeg);
     final cached = await _readCache(key);
     if (cached != null &&
         !isImplausibleAbDetour(
@@ -125,7 +130,14 @@ class RouteRepository {
       return cached;
     }
     if (cached != null) {
-      await invalidateRoute(from: from, to: to, profile: profile, vias: vias);
+      await invalidateRoute(
+        from: from,
+        to: to,
+        profile: profile,
+        vias: vias,
+        engine: choice,
+        accessLeg: accessLeg,
+      );
     }
 
     final result = await _client.requestRoute(
@@ -134,6 +146,8 @@ class RouteRepository {
       profile: profile,
       vias: vias,
       preferOffline: preferOffline,
+      engine: choice,
+      accessLeg: accessLeg,
     );
     final packCovers = await OfflineMapsPrefs.coversRoute(
       fromLng: from.lng,
@@ -200,8 +214,11 @@ class RouteRepository {
     required GeoPoint to,
     RoutingProfile profile = RoutingProfile.mtbTrail,
     List<GeoPoint> vias = const [],
+    LiveRoutingEngine? engine,
+    bool accessLeg = false,
   }) async {
-    final key = _cacheKey(from, to, profile, vias);
+    final choice = engine ?? await RidePrefs.routingEngine();
+    final key = _cacheKey(from, to, profile, vias, choice, accessLeg);
     await (_db.delete(_db.routeCache)..where((t) => t.cacheKey.equals(key)))
         .go();
   }
@@ -211,9 +228,13 @@ class RouteRepository {
     GeoPoint to,
     RoutingProfile profile,
     List<GeoPoint> vias,
+    LiveRoutingEngine engine,
+    bool accessLeg,
   ) {
     final viaPart = vias.map((v) => '${v.lng},${v.lat}').join('|');
-    return '${profile.apiId}|${from.lng},${from.lat}|${to.lng},${to.lat}|$viaPart';
+    final eng = engine.apiId ?? 'hybrid';
+    final access = accessLeg ? '1' : '0';
+    return '${profile.apiId}|$eng|a$access|${from.lng},${from.lat}|${to.lng},${to.lat}|$viaPart';
   }
 
   /// Kein zeitloser Cache: eine Route, die heute stimmt, kann durch

@@ -1590,6 +1590,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           from: _origin,
           to: join,
           profile: costing,
+          accessLeg: _navPolicy.isGravity,
         );
         RouteResult merged;
         List<GeoPoint>? trailPts;
