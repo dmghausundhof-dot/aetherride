@@ -14,7 +14,7 @@ const reasons = [
   {
     icon: WifiOff,
     title: "Offline",
-    body: "Karten und Routing-Packs ohne Netz. Im Browser nicht sinnvoll.",
+    body: "Stadt-Packs ohne Netz — Graph für die Stadt, keine Länderkarte. Im Browser nicht sinnvoll.",
   },
   {
     icon: Activity,
@@ -114,6 +114,13 @@ export default function DownloadPage() {
       </div>
 
       <div className="mx-auto mt-12 max-w-xl text-center">
+        <Link
+          href="/karten"
+          className="text-sm font-semibold text-chrome hover:underline"
+        >
+          Kartenabdeckung →
+        </Link>
+        <span className="mx-2 text-text-secondary">·</span>
         <Link
           href="/discover"
           className="text-sm font-semibold text-chrome hover:underline"

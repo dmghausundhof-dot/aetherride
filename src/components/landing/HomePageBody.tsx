@@ -1,5 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
+import {
+  KartenCoverageFallback,
+  KartenCoverageSection,
+} from "@/components/landing/KartenCoverageSection";
 import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
 import {
   APP_SURFACES,
@@ -138,6 +143,10 @@ export function HomePageBody() {
           </div>
         </div>
       </section>
+
+      <Suspense fallback={<KartenCoverageFallback />}>
+        <KartenCoverageSection />
+      </Suspense>
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
@@ -512,6 +521,10 @@ export function HomePageCta() {
           {" · "}
           <Link href="/guides" className="text-chrome hover:underline">
             Guides
+          </Link>
+          {" · "}
+          <Link href="/karten" className="text-chrome hover:underline">
+            Karten
           </Link>
           {" · "}
           <Link href="/produkt" className="text-chrome hover:underline">

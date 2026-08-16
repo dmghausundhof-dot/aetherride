@@ -12,6 +12,7 @@ import {
   HOME_GUIDES,
   HOME_HONESTY,
   HOME_INTRO,
+  HOME_MAPS,
 } from "./homepage";
 import { ABOUT_REFUSALS, ABOUT_STORY } from "./aboutPage";
 
@@ -24,6 +25,10 @@ function testHomepageHasProse() {
   assert.ok(HOME_HONESTY.notYet.some((line) => /Impressum/i.test(line)));
   assert.ok(!JSON.stringify(HOME_HONESTY).includes("Musterstraße"));
   assert.ok(HOME_CTA.body.length > 40);
+  assert.ok(HOME_MAPS.lead.length > 40);
+  const honesty = JSON.stringify(HOME_HONESTY);
+  assert.ok(honesty.includes("Frankreich"));
+  assert.ok(!honesty.includes("56"));
 }
 
 function testHomepagePointersExist() {

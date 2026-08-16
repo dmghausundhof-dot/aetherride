@@ -23,6 +23,7 @@ export const FAQ_ITEMS: {
     a: "Für Rennrad, Gravel, MTB, E-Bike, Touring und City. Eine Anwendung, fünf Türen — nicht fünf Apps. Wer einen Feed oder ein Leaderboard sucht, ist hier falsch. Wer Touren planen, das Rad pflegen und ohne Timeline teilen will, ist richtig.",
     links: [
       { href: "/regions", label: "Regionen" },
+      { href: "/karten", label: "Karten" },
       { href: "/produkt", label: "Produkt" },
     ],
   },
@@ -47,6 +48,16 @@ export const FAQ_ITEMS: {
     a: "Planen, Karte, Platz, Werkstatt und die Laden-Tür ja. Navigation, Offline, GPS-Aufzeichnung, Sensoren und Uhr brauchen die native App. Es gibt keine Live-Navigation im Tab — und keine Attrappe, die so tut.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "karten",
+    q: "Wo kann ich mit einer echten Karte fahren?",
+    a: "Online in sieben Regionen: DACH, Frankreich, Alpen-Süd, Benelux, Norditalien, Katalonien/Pyrenäen, Südengland. Die Karte wechselt mit dem Ausschnitt. Offline sind das Stadt-Packs in der App — keine Länderkarte. Skandinavien, Polen, der Rest von UK und Iberien sind Löcher.",
+    links: [
+      { href: "/karten", label: "Karten" },
+      { href: "/discover", label: "Karte öffnen" },
       { href: "/download", label: "App" },
     ],
   },
@@ -91,6 +102,7 @@ export const FAQ_ITEMS: {
     a: "Öffentliche Tour-Seiten sind redaktionelle Ideen mit Pin. Die Linie entsteht beim Planen über das Routing-Profil — keine garantierte GPX-Datei und keine Dummy-Alpen, wenn du in Hamburg stehst.",
     links: [
       { href: "/regions", label: "Regionen" },
+      { href: "/karten", label: "Karten" },
       { href: "/discover", label: "Karte" },
     ],
   },

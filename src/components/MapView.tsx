@@ -17,6 +17,7 @@ import {
 import type { RideProfileId } from "@/lib/routing/profiles";
 import {
   envLocksOnlineBasemapStyle,
+  MAP_ATTRIBUTION,
   onlineBasemapStyleUrl,
 } from "@/lib/map/onlineBasemap";
 
@@ -137,7 +138,7 @@ function pmtilesStyleFromUrl(
       protomaps: {
         type: "vector",
         url: sourceUrl,
-        attribution: "© OpenStreetMap · PMTiles",
+        attribution: MAP_ATTRIBUTION,
       },
     },
     layers: [
@@ -199,7 +200,7 @@ function lockedEnvStyle(): maplibregl.StyleSpecification | string | null {
   return pmtilesStyleFromUrl(pmtilesUrl);
 }
 
-/** Web: CDN catalog (DACH / FR-west / Alps-south) unless env locks a custom style. */
+/** Web: CDN catalog (seven named regions) unless env locks a custom style. */
 function pickInitialStyle(
   lng: number,
   lat: number
@@ -645,10 +646,10 @@ export function MapView({
 
   const sourceLabel =
     tileSource === "stadia"
-      ? "Stadia Outdoors · © OSM"
+      ? "© OpenStreetMap · Stadia"
       : tileSource === "pmtiles"
-        ? "PMTiles · CDN"
-        : "OSM-Raster · Fallback";
+        ? MAP_ATTRIBUTION
+        : "© OpenStreetMap";
 
   // Don't combine `relative` + caller's `absolute` on the same node — Tailwind
   // source order can keep `relative`, so the map never fills Discover's pane.

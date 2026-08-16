@@ -4,9 +4,9 @@ import { listRegions } from "@/lib/catalog/regions";
 import { listToursByRegion } from "@/lib/catalog/publicTours";
 
 export const metadata: Metadata = {
-  title: "Regionen – Radtouren in DACH",
+  title: "Regionen – Tour-Ideen, Nähe, keine Füll-Routen",
   description:
-    "Touren-Ideen nach Region: Baden-Württemberg, Schwarzwald, Bayern, Bodensee, Elsass und mehr.",
+    "Touren-Ideen nach Region: Baden-Württemberg, Schwarzwald, Bayern, Bodensee, Elsass und mehr. Die Kartenabdeckung steht unter Karten.",
 };
 
 export default function RegionsIndexPage() {
@@ -29,6 +29,14 @@ export default function RegionsIndexPage() {
           Die Stunde vor dem Tor kommt aus echten Nähe-Seeds — Hamburg Alster,
           nicht pauschal Alpen. Wo noch keine Touren stehen, gilt die Karte vor
           Ort. Es gibt keine Füll-Routen, damit die Liste voll wirkt.
+        </p>
+        <p className="mt-4 max-w-2xl text-sm text-text-secondary">
+          Wo MapLibre wirklich ein Blatt hat — DACH, Frankreich, Alpen-Süd,
+          Benelux, Norditalien, Katalonien/Pyrenäen, Südengland — steht unter{" "}
+          <Link href="/karten" className="font-semibold text-chrome hover:underline">
+            Karten
+          </Link>
+          . Regionen hier sind Ideen, keine Länder-Downloads.
         </p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {regions.map(({ region: r, count }) => {
