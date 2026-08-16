@@ -44,6 +44,15 @@ abstract final class AppConfig {
 
   static const alpsSouthBasemapStyleUrl = kAlpsSouthBasemapStyleUrl;
 
+  static const beneluxBasemapStyleUrl = kBeneluxBasemapStyleUrl;
+
+  static const italyNorthBasemapStyleUrl = kItalyNorthBasemapStyleUrl;
+
+  static const cataloniaPyreneesBasemapStyleUrl =
+      kCataloniaPyreneesBasemapStyleUrl;
+
+  static const ukSouthBasemapStyleUrl = kUkSouthBasemapStyleUrl;
+
   static String get offlinePacksCdnRoot {
     final base = supabaseUrl.replaceAll(RegExp(r'/$'), '');
     if (base.isEmpty) return kOfflinePacksPublicCdnRoot;
@@ -51,7 +60,8 @@ abstract final class AppConfig {
   }
 
   /// Compile-time override. Empty → [dachBasemapStyleUrl]; Discover/Ride then
-  /// switch among DACH / France-west / Alps-south by camera/GPS bbox.
+  /// switch among the CDN catalog (DACH, FR-west, Alps-south, Benelux,
+  /// Italy-north, Catalonia/Pyrenees, UK-south) by camera/GPS bbox.
   static const pmtilesUrl = String.fromEnvironment(
     'PMTILES_URL',
     defaultValue: '',

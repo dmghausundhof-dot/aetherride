@@ -144,7 +144,7 @@ Style-Priorität: Prefs-PMTiles-Style → compile-time PMTiles → Stadia → Op
 ## Routing-Infra (Schnitt 2)
 
 - `/api/route` → Valhalla (`VALHALLA_URL`) oder OSRM (`OSRM_URL`); ohne Env Demo-Geometrie
-- MapLibre: CDN-PMTiles-Katalog (DACH / France-west / Alps-south), Viewport-Wechsel; `NEXT_PUBLIC_PMTILES_URL` nur zum Sperren eines Street-Level-Styles
+- MapLibre: CDN-PMTiles-Katalog (DACH / France-west / Alps-south / Benelux / Italy-north / Catalonia-Pyrenees / UK-south), Viewport-Wechsel; `NEXT_PUBLIC_PMTILES_URL` nur zum Sperren eines Street-Level-Styles
 - Discover → „Route berechnen“ zeichnet Engine-Polyline
 - Demo-Offline-Graph: nur `mobile/assets/routing/offline_graph.json` (Sync: `./scripts/routing/sync-demo-graph.sh`)
 - Region-Builds unter `data/routing/dist/` sind gitignored (~GB); Manifeste/Region-Configs bleiben im Repo

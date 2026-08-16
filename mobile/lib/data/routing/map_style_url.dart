@@ -11,9 +11,25 @@ const kFranceWestBasemapStyleUrl =
 const kAlpsSouthBasemapStyleUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/alps-south-z11-style.json';
 
+const kBeneluxBasemapStyleUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/benelux-z11-style.json';
+
+const kItalyNorthBasemapStyleUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/italy-north-z11-style.json';
+
+const kCataloniaPyreneesBasemapStyleUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/catalonia-pyrenees-z11-style.json';
+
+const kUkSouthBasemapStyleUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/uk-south-z11-style.json';
+
 const kDachBasemapId = 'dach-z11';
 const kFranceWestBasemapId = 'france-west-z11';
 const kAlpsSouthBasemapId = 'alps-south-z11';
+const kBeneluxBasemapId = 'benelux-z11';
+const kItalyNorthBasemapId = 'italy-north-z11';
+const kCataloniaPyreneesBasemapId = 'catalonia-pyrenees-z11';
+const kUkSouthBasemapId = 'uk-south-z11';
 
 /// MapLibre style URL checks (Basemap offline / prefs).
 bool isMapLibreStyleJsonUrl(String raw) {
@@ -41,6 +57,18 @@ const kFranceWestBasemapBbox = <double>[-5.3, 42.3, 5.85, 51.1];
 /// SE France Alps + Côte d'Azur + N-Italy lakes (Nice, Grenoble, Garda).
 const kAlpsSouthBasemapBbox = <double>[5.55, 43.40, 11.60, 45.90];
 
+/// NL / BE / LU + NRW-west overlap.
+const kBeneluxBasemapBbox = <double>[2.40, 49.40, 7.25, 53.75];
+
+/// Veneto / Friuli / Emilia-Romagna east of alps-south (Venice, Trieste, Rimini).
+const kItalyNorthBasemapBbox = <double>[11.50, 43.50, 14.10, 46.15];
+
+/// Catalonia + Pyrenees + Basque coast (not full Iberia).
+const kCataloniaPyreneesBasemapBbox = <double>[-2.20, 41.15, 3.35, 43.55];
+
+/// London + South-East England (not full UK).
+const kUkSouthBasemapBbox = <double>[-1.50, 50.50, 1.80, 52.50];
+
 class OnlineBasemapArchive {
   const OnlineBasemapArchive({
     required this.id,
@@ -66,12 +94,32 @@ class OnlineBasemapArchive {
   }
 }
 
-/// Smallest-area first so overlap (Grenoble / Annecy) prefers Alps-south.
+/// Smallest-area first so overlap prefers the tighter extract.
 const kOnlineBasemapArchives = <OnlineBasemapArchive>[
+  OnlineBasemapArchive(
+    id: kUkSouthBasemapId,
+    bbox: kUkSouthBasemapBbox,
+    styleUrl: kUkSouthBasemapStyleUrl,
+  ),
+  OnlineBasemapArchive(
+    id: kItalyNorthBasemapId,
+    bbox: kItalyNorthBasemapBbox,
+    styleUrl: kItalyNorthBasemapStyleUrl,
+  ),
+  OnlineBasemapArchive(
+    id: kCataloniaPyreneesBasemapId,
+    bbox: kCataloniaPyreneesBasemapBbox,
+    styleUrl: kCataloniaPyreneesBasemapStyleUrl,
+  ),
   OnlineBasemapArchive(
     id: kAlpsSouthBasemapId,
     bbox: kAlpsSouthBasemapBbox,
     styleUrl: kAlpsSouthBasemapStyleUrl,
+  ),
+  OnlineBasemapArchive(
+    id: kBeneluxBasemapId,
+    bbox: kBeneluxBasemapBbox,
+    styleUrl: kBeneluxBasemapStyleUrl,
   ),
   OnlineBasemapArchive(
     id: kFranceWestBasemapId,
@@ -108,6 +156,10 @@ String? archiveIdFromStyleUrl(String? raw) {
   if (raw == null) return null;
   final u = raw.trim().toLowerCase();
   if (u.isEmpty) return null;
+  if (u.contains('catalonia-pyrenees-z')) return kCataloniaPyreneesBasemapId;
+  if (u.contains('italy-north-z')) return kItalyNorthBasemapId;
+  if (u.contains('uk-south-z')) return kUkSouthBasemapId;
+  if (u.contains('benelux-z')) return kBeneluxBasemapId;
   if (u.contains('alps-south-z')) return kAlpsSouthBasemapId;
   if (u.contains('france-west-z')) return kFranceWestBasemapId;
   if (u.contains('dach-z11') ||
@@ -183,11 +235,19 @@ bool skipMapLibreOfflineRegion(String styleUrl) {
       u.contains('/basemap/dach-z') ||
       u.contains('/basemap/france-west-z') ||
       u.contains('/basemap/alps-south-z') ||
+      u.contains('/basemap/benelux-z') ||
+      u.contains('/basemap/italy-north-z') ||
+      u.contains('/basemap/catalonia-pyrenees-z') ||
+      u.contains('/basemap/uk-south-z') ||
       u.contains('dach-z11-style.json') ||
       u.contains('dach-z12-style.json') ||
       u.contains('dach-z13-style.json') ||
       u.contains('france-west-z11-style.json') ||
-      u.contains('alps-south-z11-style.json');
+      u.contains('alps-south-z11-style.json') ||
+      u.contains('benelux-z11-style.json') ||
+      u.contains('italy-north-z11-style.json') ||
+      u.contains('catalonia-pyrenees-z11-style.json') ||
+      u.contains('uk-south-z11-style.json');
 }
 
 String localPmtilesSourceUrl(String archivePath) =>

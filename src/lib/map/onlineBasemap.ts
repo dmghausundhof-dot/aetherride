@@ -1,7 +1,7 @@
 /**
  * CDN PMTiles overview archives for the live (online) map.
  * Empty NEXT_PUBLIC_PMTILES_URL still uses this catalog — do not fall
- * through to OSM and ignore France-west / Alps-south.
+ * through to OSM and ignore regional extracts.
  */
 
 export const ONLINE_BASEMAP_CDN_ROOT =
@@ -10,7 +10,11 @@ export const ONLINE_BASEMAP_CDN_ROOT =
 export type OnlineBasemapId =
   | "dach-z11"
   | "france-west-z11"
-  | "alps-south-z11";
+  | "alps-south-z11"
+  | "benelux-z11"
+  | "italy-north-z11"
+  | "catalonia-pyrenees-z11"
+  | "uk-south-z11";
 
 export type OnlineBasemapArchive = {
   id: OnlineBasemapId;
@@ -25,9 +29,29 @@ function styleUrl(id: OnlineBasemapId): string {
 
 export const ONLINE_BASEMAP_ARCHIVES: readonly OnlineBasemapArchive[] = [
   {
+    id: "uk-south-z11",
+    bbox: [-1.5, 50.5, 1.8, 52.5],
+    styleUrl: styleUrl("uk-south-z11"),
+  },
+  {
+    id: "italy-north-z11",
+    bbox: [11.5, 43.5, 14.1, 46.15],
+    styleUrl: styleUrl("italy-north-z11"),
+  },
+  {
+    id: "catalonia-pyrenees-z11",
+    bbox: [-2.2, 41.15, 3.35, 43.55],
+    styleUrl: styleUrl("catalonia-pyrenees-z11"),
+  },
+  {
     id: "alps-south-z11",
     bbox: [5.55, 43.4, 11.6, 45.9],
     styleUrl: styleUrl("alps-south-z11"),
+  },
+  {
+    id: "benelux-z11",
+    bbox: [2.4, 49.4, 7.25, 53.75],
+    styleUrl: styleUrl("benelux-z11"),
   },
   {
     id: "france-west-z11",
@@ -57,6 +81,10 @@ export function archiveIdFromStyleUrl(raw: string | null | undefined): OnlineBas
   if (!raw) return null;
   const u = raw.trim().toLowerCase();
   if (!u) return null;
+  if (u.includes("catalonia-pyrenees-z")) return "catalonia-pyrenees-z11";
+  if (u.includes("italy-north-z")) return "italy-north-z11";
+  if (u.includes("uk-south-z")) return "uk-south-z11";
+  if (u.includes("benelux-z")) return "benelux-z11";
   if (u.includes("alps-south-z")) return "alps-south-z11";
   if (u.includes("france-west-z")) return "france-west-z11";
   if (
