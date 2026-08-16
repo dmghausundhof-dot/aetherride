@@ -13,6 +13,8 @@ export type OnlineBasemapId =
   | "alps-south-z11"
   | "benelux-z11"
   | "italy-north-z11"
+  | "italy-center-z11"
+  | "italy-south-z11"
   | "catalonia-pyrenees-z11"
   | "uk-south-z11";
 
@@ -51,6 +53,16 @@ export const ONLINE_BASEMAP_ARCHIVES: readonly OnlineBasemapArchive[] = [
     id: "uk-south-z11",
     bbox: [-1.5, 50.5, 1.8, 52.5],
     styleUrl: styleUrl("uk-south-z11"),
+  },
+  {
+    id: "italy-south-z11",
+    bbox: [14.7, 37.95, 18.55, 41.3],
+    styleUrl: styleUrl("italy-south-z11"),
+  },
+  {
+    id: "italy-center-z11",
+    bbox: [10.15, 40.62, 14.9, 43.85],
+    styleUrl: styleUrl("italy-center-z11"),
   },
   {
     id: "italy-north-z11",
@@ -101,6 +113,8 @@ export function archiveIdFromStyleUrl(raw: string | null | undefined): OnlineBas
   const u = raw.trim().toLowerCase();
   if (!u) return null;
   if (u.includes("catalonia-pyrenees-z")) return "catalonia-pyrenees-z11";
+  if (u.includes("italy-center-z")) return "italy-center-z11";
+  if (u.includes("italy-south-z")) return "italy-south-z11";
   if (u.includes("italy-north-z")) return "italy-north-z11";
   if (u.includes("uk-south-z")) return "uk-south-z11";
   if (u.includes("benelux-z")) return "benelux-z11";
@@ -121,7 +135,7 @@ export function isCdnOverviewBasemap(raw: string): boolean {
   return archiveIdFromStyleUrl(raw) != null;
 }
 
-/** All seven z11 archives are overview tiles — never street-level HUD. */
+/** All catalog z11 archives are overview tiles — never street-level HUD. */
 export function isOverviewOnlyBasemap(raw: string): boolean {
   return isCdnOverviewBasemap(raw);
 }
@@ -195,7 +209,7 @@ export const ONLINE_BASEMAP_RIDER: readonly OnlineBasemapRider[] = [
     name: "Alpen-Süd",
     area: "Nizza · Grenoble · Gardasee",
     teaser: "Südliche Alpen und obere italienische Seen, nicht ganz Italien.",
-    hole: "Rom, der Süden und die Adria östlich von Venedig sind draußen.",
+    hole: "Rom sitzt auf dem Mittel-Blatt. Sizilien und Sardinien fehlen.",
     center: [8.6, 44.65],
     zoom: 6.2,
   },
@@ -213,9 +227,27 @@ export const ONLINE_BASEMAP_RIDER: readonly OnlineBasemapRider[] = [
     name: "Norditalien",
     area: "Veneto · Friaul · Emilia",
     teaser: "Venedig, Triest, Rimini — östlich vom Alpen-Süd-Blatt.",
-    hole: "Kein ganzes Italien. Südlich der Po-Ebene bleibt die Karte leer.",
+    hole: "Kein ganzes Italien. Rom und der Stiefel sind eigene Blätter.",
     center: [12.8, 44.85],
     zoom: 6.6,
+  },
+  {
+    id: "italy-center-z11",
+    name: "Mitteitalien",
+    area: "Toskana · Umbrien · Rom · Neapel",
+    teaser: "Florenz-Süd, Rom, Umbrien, der Vesuv — nicht der ganze Stiefel.",
+    hole: "Sizilien, Sardinien und die Adria östlich von Bari fehlen.",
+    center: [12.5, 41.9],
+    zoom: 6.4,
+  },
+  {
+    id: "italy-south-z11",
+    name: "Süditalien",
+    area: "Puglia · Kalabrien · Basilikata",
+    teaser: "Bari, Lecce, der Stiefel — ohne Inseln.",
+    hole: "Sizilien und Sardinien bleiben leer. Kein ganzes Mezzogiorno-Pack.",
+    center: [16.7, 40.2],
+    zoom: 6.5,
   },
   {
     id: "catalonia-pyrenees-z11",

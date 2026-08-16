@@ -54,7 +54,7 @@ export const FAQ_ITEMS: {
   {
     id: "karten",
     q: "Wo kann ich mit einer echten Karte fahren?",
-    a: "Online in sieben Regionen: DACH, Frankreich, Alpen-Süd, Benelux, Norditalien, Katalonien/Pyrenäen, Südengland. Die Karte wechselt mit dem Ausschnitt. Offline sind das Stadt-Packs in der App — keine Länderkarte. Skandinavien, Polen, der Rest von UK und Iberien sind Löcher.",
+    a: "Online in neun Regionen: DACH, Frankreich, Alpen-Süd, Benelux, Nord-, Mitte- und Süditalien, Katalonien/Pyrenäen, Südengland. Die Karte wechselt mit dem Ausschnitt. Offline sind das Stadt-Packs in der App — keine Länderkarte. Sizilien, Sardinien, Skandinavien, Polen, der Rest von UK und Iberien sind Löcher.",
     links: [
       { href: "/karten", label: "Karten" },
       { href: "/discover", label: "Karte öffnen" },

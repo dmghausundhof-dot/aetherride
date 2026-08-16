@@ -1,0 +1,301 @@
+{
+  "version": 8,
+  "name": "AetherRide italy-south z0\u201311",
+  "metadata": {
+    "aetherride:overview": true,
+    "aetherride:paths": "absent-at-z11",
+    "aetherride:name-de": false
+  },
+  "glyphs": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/basemap/assets/fonts/{fontstack}/{range}.pbf",
+  "sprite": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/basemap/assets/sprites/v4/light",
+  "sources": {
+    "protomaps": {
+      "type": "vector",
+      "url": "pmtiles://https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/basemap/italy-south-z11.pmtiles",
+      "attribution": "\u00a9 OpenStreetMap \u00b7 Protomaps",
+      "minzoom": 0,
+      "maxzoom": 11
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#e8eee9"
+      }
+    },
+    {
+      "id": "earth",
+      "type": "fill",
+      "source": "protomaps",
+      "source-layer": "earth",
+      "paint": {
+        "fill-color": "#dfe8e2"
+      }
+    },
+    {
+      "id": "landcover",
+      "type": "fill",
+      "source": "protomaps",
+      "source-layer": "landcover",
+      "paint": {
+        "fill-color": "#c5d9c8",
+        "fill-opacity": 0.45
+      }
+    },
+    {
+      "id": "landuse",
+      "type": "fill",
+      "source": "protomaps",
+      "source-layer": "landuse",
+      "paint": {
+        "fill-color": "#c5d9c8",
+        "fill-opacity": 0.7
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "protomaps",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": "#a8c8d8"
+      }
+    },
+    {
+      "id": "waterway",
+      "type": "line",
+      "source": "protomaps",
+      "source-layer": "water",
+      "filter": [
+        "==",
+        [
+          "geometry-type"
+        ],
+        "LineString"
+      ],
+      "paint": {
+        "line-color": "#a8c8d8",
+        "line-width": 1
+      }
+    },
+    {
+      "id": "buildings",
+      "type": "fill",
+      "source": "protomaps",
+      "source-layer": "buildings",
+      "minzoom": 10,
+      "paint": {
+        "fill-color": "#cfd6d0",
+        "fill-opacity": 0.6
+      }
+    },
+    {
+      "id": "roads",
+      "type": "line",
+      "source": "protomaps",
+      "source-layer": "roads",
+      "filter": [
+        "all",
+        [
+          "!=",
+          [
+            "get",
+            "kind"
+          ],
+          "highway"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "kind"
+          ],
+          "major_road"
+        ],
+        [
+          "!=",
+          [
+            "get",
+            "kind"
+          ],
+          "path"
+        ]
+      ],
+      "paint": {
+        "line-color": "#8a9a92",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.25,
+          10,
+          0.7,
+          11,
+          1.15
+        ]
+      }
+    },
+    {
+      "id": "roads-major",
+      "type": "line",
+      "source": "protomaps",
+      "source-layer": "roads",
+      "filter": [
+        "==",
+        [
+          "get",
+          "kind"
+        ],
+        "major_road"
+      ],
+      "paint": {
+        "line-color": "#5c6e66",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.45,
+          10,
+          1.1500000000000001,
+          11,
+          1.85
+        ]
+      }
+    },
+    {
+      "id": "roads-highway",
+      "type": "line",
+      "source": "protomaps",
+      "source-layer": "roads",
+      "filter": [
+        "==",
+        [
+          "get",
+          "kind"
+        ],
+        "highway"
+      ],
+      "paint": {
+        "line-color": "#3a4a42",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          6,
+          0.7,
+          10,
+          1.5750000000000002,
+          11,
+          2.45
+        ]
+      }
+    },
+    {
+      "id": "boundaries",
+      "type": "line",
+      "source": "protomaps",
+      "source-layer": "boundaries",
+      "paint": {
+        "line-color": "#9aa89c",
+        "line-width": 0.6,
+        "line-dasharray": [
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "id": "pois",
+      "type": "symbol",
+      "source": "protomaps",
+      "source-layer": "pois",
+      "minzoom": 8,
+      "filter": [
+        "in",
+        [
+          "get",
+          "kind"
+        ],
+        [
+          "literal",
+          [
+            "peak",
+            "volcano",
+            "station",
+            "alpine_hut",
+            "wilderness_hut",
+            "shelter"
+          ]
+        ]
+      ],
+      "layout": {
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": 11,
+        "text-max-width": 8,
+        "text-optional": true,
+        "text-padding": 2
+      },
+      "paint": {
+        "text-color": "#2c3a32",
+        "text-halo-color": "#f4f7f4",
+        "text-halo-width": 1.1
+      }
+    },
+    {
+      "id": "places",
+      "type": "symbol",
+      "source": "protomaps",
+      "source-layer": "places",
+      "minzoom": 5,
+      "layout": {
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          10,
+          11,
+          14
+        ]
+      },
+      "paint": {
+        "text-color": "#2c3a32",
+        "text-halo-color": "#f4f7f4",
+        "text-halo-width": 1.2
+      }
+    }
+  ]
+}

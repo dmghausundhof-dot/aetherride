@@ -32,7 +32,8 @@ export default function RegionsIndexPage() {
         </p>
         <p className="mt-4 max-w-2xl text-sm text-text-secondary">
           Wo MapLibre wirklich ein Blatt hat — DACH, Frankreich, Alpen-Süd,
-          Benelux, Norditalien, Katalonien/Pyrenäen, Südengland — steht unter{" "}
+          Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen,
+          Südengland — steht unter{" "}
           <Link href="/karten" className="font-semibold text-chrome hover:underline">
             Karten
           </Link>

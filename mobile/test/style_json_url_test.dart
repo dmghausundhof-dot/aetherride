@@ -38,6 +38,8 @@ void main() {
     expect(skipMapLibreOfflineRegion(kAlpsSouthBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kBeneluxBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kItalyNorthBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kItalyCenterBasemapStyleUrl), isTrue);
+    expect(skipMapLibreOfflineRegion(kItalySouthBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kCataloniaPyreneesBasemapStyleUrl), isTrue);
     expect(skipMapLibreOfflineRegion(kUkSouthBasemapStyleUrl), isTrue);
     expect(
@@ -76,6 +78,9 @@ void main() {
     expect(basemapArchiveIdForLngLat(10.75, 45.58), 'alps-south-z11');
     expect(basemapArchiveIdForLngLat(4.90, 52.37), 'benelux-z11');
     expect(basemapArchiveIdForLngLat(12.33, 45.44), 'italy-north-z11');
+    expect(basemapArchiveIdForLngLat(12.50, 41.90), 'italy-center-z11');
+    expect(basemapArchiveIdForLngLat(14.27, 40.85), 'italy-center-z11');
+    expect(basemapArchiveIdForLngLat(16.87, 41.12), 'italy-south-z11');
     expect(basemapArchiveIdForLngLat(2.17, 41.39), 'catalonia-pyrenees-z11');
     expect(basemapArchiveIdForLngLat(-0.13, 51.51), 'uk-south-z11');
     expect(
@@ -132,6 +137,8 @@ void main() {
       kAlpsSouthBasemapStyleUrl,
       kBeneluxBasemapStyleUrl,
       kItalyNorthBasemapStyleUrl,
+      kItalyCenterBasemapStyleUrl,
+      kItalySouthBasemapStyleUrl,
       kCataloniaPyreneesBasemapStyleUrl,
       kUkSouthBasemapStyleUrl,
     ]) {

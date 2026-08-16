@@ -94,7 +94,7 @@ export const HOME_SPLIT = {
 
 export const HOME_MAPS = {
   kicker: "Auf der Karte",
-  title: "Sieben Blätter. Kein Europa-Download.",
+  title: "Neun Blätter. Kein Europa-Download.",
   lead: "Online streamt die Karte aus benannten Regionen. Offline lädst du Städte, keine Länder. Wo kein Blatt liegt, bleibt ein Loch — nicht ein Fake-Globus.",
 } as const;
 
@@ -146,7 +146,7 @@ export const HOME_HONESTY = {
   lead: "Eine Homepage darf nicht so tun, als wäre der Marktplatz offen oder der Store schon gelistet. Deshalb der ehrliche Stand:",
   live: [
     "Hof, Karte, Planen, Platz, Werkstatt im Browser",
-    "Online-Karte in DACH, Frankreich, Alpen-Süd, Benelux, Norditalien, Katalonien/Pyrenäen, Südengland",
+    "Online-Karte in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen, Südengland",
     "Redaktionelle Tour-Ideen vor allem in DACH — die Kartenblätter reichen weiter",
     "Stimmen, Mappe-Links, Editorial-Profile",
     "Free und Pro beschrieben, Checkout im Profil (Stripe)",

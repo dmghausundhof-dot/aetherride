@@ -17,6 +17,12 @@ const kBeneluxBasemapStyleUrl =
 const kItalyNorthBasemapStyleUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/italy-north-z11-style.json';
 
+const kItalyCenterBasemapStyleUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/italy-center-z11-style.json';
+
+const kItalySouthBasemapStyleUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/italy-south-z11-style.json';
+
 const kCataloniaPyreneesBasemapStyleUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/catalonia-pyrenees-z11-style.json';
 
@@ -35,6 +41,8 @@ const kFranceWestBasemapId = 'france-west-z11';
 const kAlpsSouthBasemapId = 'alps-south-z11';
 const kBeneluxBasemapId = 'benelux-z11';
 const kItalyNorthBasemapId = 'italy-north-z11';
+const kItalyCenterBasemapId = 'italy-center-z11';
+const kItalySouthBasemapId = 'italy-south-z11';
 const kCataloniaPyreneesBasemapId = 'catalonia-pyrenees-z11';
 const kUkSouthBasemapId = 'uk-south-z11';
 
@@ -107,6 +115,12 @@ const kBeneluxBasemapBbox = <double>[2.40, 49.40, 7.25, 53.75];
 /// Veneto / Friuli / Emilia-Romagna east of alps-south (Venice, Trieste, Rimini).
 const kItalyNorthBasemapBbox = <double>[11.50, 43.50, 14.10, 46.15];
 
+/// Tuscany south / Umbria / Lazio / Rome / Naples (not Sicily).
+const kItalyCenterBasemapBbox = <double>[10.15, 40.62, 14.90, 43.85];
+
+/// Puglia / Calabria / Basilicata (not Sicily, not Sardinia).
+const kItalySouthBasemapBbox = <double>[14.70, 37.95, 18.55, 41.30];
+
 /// Catalonia + Pyrenees + Basque coast (not full Iberia).
 const kCataloniaPyreneesBasemapBbox = <double>[-2.20, 41.15, 3.35, 43.55];
 
@@ -144,6 +158,16 @@ const kOnlineBasemapArchives = <OnlineBasemapArchive>[
     id: kUkSouthBasemapId,
     bbox: kUkSouthBasemapBbox,
     styleUrl: kUkSouthBasemapStyleUrl,
+  ),
+  OnlineBasemapArchive(
+    id: kItalySouthBasemapId,
+    bbox: kItalySouthBasemapBbox,
+    styleUrl: kItalySouthBasemapStyleUrl,
+  ),
+  OnlineBasemapArchive(
+    id: kItalyCenterBasemapId,
+    bbox: kItalyCenterBasemapBbox,
+    styleUrl: kItalyCenterBasemapStyleUrl,
   ),
   OnlineBasemapArchive(
     id: kItalyNorthBasemapId,
@@ -201,6 +225,8 @@ String? archiveIdFromStyleUrl(String? raw) {
   final u = raw.trim().toLowerCase();
   if (u.isEmpty) return null;
   if (u.contains('catalonia-pyrenees-z')) return kCataloniaPyreneesBasemapId;
+  if (u.contains('italy-center-z')) return kItalyCenterBasemapId;
+  if (u.contains('italy-south-z')) return kItalySouthBasemapId;
   if (u.contains('italy-north-z')) return kItalyNorthBasemapId;
   if (u.contains('uk-south-z')) return kUkSouthBasemapId;
   if (u.contains('benelux-z')) return kBeneluxBasemapId;
@@ -217,7 +243,7 @@ String? archiveIdFromStyleUrl(String? raw) {
 
 bool isCdnOverviewBasemap(String raw) => archiveIdFromStyleUrl(raw) != null;
 
-/// All seven z11 CDN archives are overview tiles, not street-level HUD.
+/// All catalog z11 CDN archives are overview tiles, not street-level HUD.
 bool isOverviewOnlyBasemap(String raw) => isCdnOverviewBasemap(raw);
 
 bool isStreetLevelBasemap(String raw) =>
@@ -287,6 +313,8 @@ bool skipMapLibreOfflineRegion(String styleUrl) {
       u.contains('/basemap/alps-south-z') ||
       u.contains('/basemap/benelux-z') ||
       u.contains('/basemap/italy-north-z') ||
+      u.contains('/basemap/italy-center-z') ||
+      u.contains('/basemap/italy-south-z') ||
       u.contains('/basemap/catalonia-pyrenees-z') ||
       u.contains('/basemap/uk-south-z') ||
       u.contains('dach-z11-style.json') ||
@@ -296,6 +324,8 @@ bool skipMapLibreOfflineRegion(String styleUrl) {
       u.contains('alps-south-z11-style.json') ||
       u.contains('benelux-z11-style.json') ||
       u.contains('italy-north-z11-style.json') ||
+      u.contains('italy-center-z11-style.json') ||
+      u.contains('italy-south-z11-style.json') ||
       u.contains('catalonia-pyrenees-z11-style.json') ||
       u.contains('uk-south-z11-style.json');
 }

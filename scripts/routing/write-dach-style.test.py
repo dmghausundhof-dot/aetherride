@@ -62,10 +62,10 @@ def test_paths_only_when_zoom_allows() -> None:
     assert "paths" in layer_ids(hi)
 
 
-def test_write_all_seven() -> None:
+def test_write_all_archives() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         written = mod.write_all(Path(tmp), maxzoom=11)
-        assert len(written) == 7
+        assert len(written) == 9
         names = {p.name for p in written}
         for stem, _, german in mod.ARCHIVES:
             path = Path(tmp) / f"{stem}-z11-style.json"
@@ -83,5 +83,5 @@ if __name__ == "__main__":
     test_hierarchy_and_pois()
     test_local_names_outside_dach()
     test_paths_only_when_zoom_allows()
-    test_write_all_seven()
+    test_write_all_archives()
     print("write-dach-style.test.py ok")

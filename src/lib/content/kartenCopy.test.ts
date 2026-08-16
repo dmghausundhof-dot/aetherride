@@ -49,6 +49,8 @@ assert.deepEqual(names, [
   "Alpen-Süd",
   "Benelux",
   "Norditalien",
+  "Mitteitalien",
+  "Süditalien",
   "Katalonien / Pyrenäen",
   "Südengland",
 ]);
