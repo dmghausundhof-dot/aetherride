@@ -24,7 +24,11 @@ extension BikeCategoryUx on BikeCategory {
           SportFamily.mtb,
         BikeCategory.gravel => SportFamily.gravel,
         BikeCategory.road => SportFamily.road,
-        BikeCategory.urban => SportFamily.urban,
+        BikeCategory.urban ||
+        BikeCategory.cargo ||
+        BikeCategory.folding ||
+        BikeCategory.kids =>
+          SportFamily.urban,
         BikeCategory.emtb || BikeCategory.etrekking => SportFamily.ebike,
         BikeCategory.hiking => SportFamily.other,
       };
@@ -38,6 +42,9 @@ extension BikeCategoryUx on BikeCategory {
         BikeCategory.gravel => 'Gravel',
         BikeCategory.road => 'Rennrad',
         BikeCategory.urban => 'City',
+        BikeCategory.cargo => 'Lastenrad',
+        BikeCategory.folding => 'Faltrad',
+        BikeCategory.kids => 'Kinderrad',
         BikeCategory.emtb => 'E-MTB',
         BikeCategory.etrekking => 'E-Trekking',
         BikeCategory.hiking => 'Zu Fuß',
@@ -52,6 +59,9 @@ extension BikeCategoryUx on BikeCategory {
         BikeCategory.gravel => 'Schotter & Distanz',
         BikeCategory.road => 'Asphalt & Tempo',
         BikeCategory.urban => 'Alltag & Pendeln',
+        BikeCategory.cargo => 'Lasten & Alltag',
+        BikeCategory.folding => 'Falten & mitnehmen',
+        BikeCategory.kids => 'Kinderrad',
         BikeCategory.emtb => 'Trail mit Assist',
         BikeCategory.etrekking => 'Touren mit Assist',
         BikeCategory.hiking => 'Zu Fuß unterwegs',
@@ -169,7 +179,7 @@ abstract final class MultiSportCopy {
   static const discoverMenuPrivacy = 'Heatmap & Privatsphäre';
   static const partsTitle = 'Teile & Zubehör';
   static const partsSubtitle =
-      'Live featured-parts in AetherRide — Soft-Fit & Preise, '
+      'Live featured-parts in FlowLine — Soft-Fit & Preise, '
       'ohne Shopify-Passwort-Dead-End.';
   static const weatherFallback = 'Wetter nicht verfügbar';
   static const statsRidesOne = 'Fahrt';
@@ -203,7 +213,8 @@ abstract final class MultiSportCopy {
       };
 
   static String tipHeroSubtitle(BikeCategory? sport) => switch (sport?.family) {
-        SportFamily.mtb => 'Route wählen oder einfach freifahren — Track lokal.',
+        SportFamily.mtb =>
+          'Route wählen oder einfach freifahren — Track lokal.',
         SportFamily.gravel => 'Plane eine Distanz oder starte ohne Route.',
         SportFamily.road => 'Runde bauen oder freies Training aufzeichnen.',
         SportFamily.urban => 'Pendeln tracken oder kurze Runde speichern.',
@@ -214,4 +225,19 @@ abstract final class MultiSportCopy {
   /// Layer-Label: Fahrwerk nur wenn relevant, sonst „Sensorik“ (DE-Fallback).
   static String chassisLayerLabel(BikeCategory? sport) =>
       (sport?.showsChassisLayer ?? true) ? 'Fahrwerk' : 'Sensorik';
+}
+
+/// Zeile unter den Disziplin-Chips: `Haupt: MTB · auch Rennrad, Gravel`.
+String preferredSportsSummaryLine({
+  required BikeCategory? primary,
+  required List<BikeCategory> sports,
+}) {
+  if (primary == null && sports.isEmpty) return '';
+  final haupt = primary ?? sports.first;
+  final others = [
+    for (final s in sports)
+      if (s != haupt) s.shortLabel,
+  ];
+  if (others.isEmpty) return 'Haupt: ${haupt.shortLabel}';
+  return 'Haupt: ${haupt.shortLabel} · auch ${others.join(', ')}';
 }

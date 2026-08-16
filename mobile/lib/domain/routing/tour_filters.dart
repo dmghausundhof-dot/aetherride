@@ -30,6 +30,13 @@ enum TourElevationKey {
   alpine,
 }
 
+/// Sichtbarkeit eigener SavedRoutes (Mappe / Meine).
+enum TourVisibilityKey {
+  allMine,
+  privateOnly,
+  sharedOnly,
+}
+
 class TourFilterChip<T> {
   const TourFilterChip(this.id, this.label, {this.hint});
   final T id;
@@ -96,6 +103,21 @@ class TourFilters {
   ];
 
   /// Distanz-Obergrenzen (km) — aus typischen Katalog-/Seed-Längen.
+  static const visibilityChips = <TourFilterChip<TourVisibilityKey>>[
+    TourFilterChip(TourVisibilityKey.allMine, 'Alle'),
+    TourFilterChip(TourVisibilityKey.privateOnly, 'Privat'),
+    TourFilterChip(TourVisibilityKey.sharedOnly, 'Öffentlich'),
+  ];
+
+  static bool visibilityMatches(String? visibility, TourVisibilityKey filter) {
+    final shared = visibility == 'shared';
+    return switch (filter) {
+      TourVisibilityKey.allMine => true,
+      TourVisibilityKey.privateOnly => !shared,
+      TourVisibilityKey.sharedOnly => shared,
+    };
+  }
+
   static const distanceMaxChips = <TourFilterChip<double>>[
     TourFilterChip(20, '≤ 20 km'),
     TourFilterChip(40, '≤ 40 km'),
@@ -361,6 +383,17 @@ class TourFilters {
     return false;
   }
 
+  /// Weiche Präferenz gegen mehrere gewählte Disziplinen.
+  static bool softSportMatchAny(
+    List<BikeCategory> tourCategories,
+    Iterable<BikeCategory> preferred,
+  ) {
+    for (final p in preferred) {
+      if (softSportMatch(tourCategories, p)) return true;
+    }
+    return false;
+  }
+
   static String _family(BikeCategory c) => switch (c) {
         BikeCategory.mtbTrail ||
         BikeCategory.mtbAm ||
@@ -370,7 +403,11 @@ class TourFilters {
           'mtb',
         BikeCategory.gravel => 'gravel',
         BikeCategory.road => 'road',
-        BikeCategory.urban => 'urban',
+        BikeCategory.urban ||
+        BikeCategory.cargo ||
+        BikeCategory.folding ||
+        BikeCategory.kids =>
+          'urban',
         BikeCategory.etrekking => 'touring',
         BikeCategory.hiking => 'hike',
       };

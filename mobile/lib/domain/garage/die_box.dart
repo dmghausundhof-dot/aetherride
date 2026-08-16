@@ -45,6 +45,23 @@ class DieBoxTodayItem {
   final String cta;
   final ComponentSlot? slot;
   final MaintenanceAlert? due;
+
+  DieBoxTodayItem copyWith({
+    String? title,
+    String? hint,
+    String? cta,
+    ComponentSlot? slot,
+    MaintenanceAlert? due,
+  }) {
+    return DieBoxTodayItem(
+      id: id,
+      title: title ?? this.title,
+      hint: hint ?? this.hint,
+      cta: cta ?? this.cta,
+      slot: slot ?? this.slot,
+      due: due ?? this.due,
+    );
+  }
 }
 
 class DieBoxPlan {
@@ -74,7 +91,22 @@ class DieBoxPlan {
 
   DieBoxTodayItem? get primary => today.isEmpty ? null : today.first;
 
+  /// Heute without the primary — one next thing, no duplicate card.
+  List<DieBoxTodayItem> get heuteRest =>
+      today.length <= 1 ? const [] : today.sublist(1);
+
   bool get isReady => readiness == DieBoxReadiness.ready && today.isEmpty;
+}
+
+/// Hof-Tafel: nur fällige Pflege. SAG/Druck/Kette-Heute bleibt in der Box.
+DieBoxTodayItem? tafelCareItem(DieBoxPlan plan) {
+  DieBoxTodayItem? soon;
+  for (final item in plan.today) {
+    if (item.id != DieBoxItemId.dueCare) continue;
+    if (item.due?.status == DueStatus.overdue) return item;
+    soon ??= item;
+  }
+  return soon;
 }
 
 bool _hasSlot(List<BikeComponent> comps, ComponentSlot slot) =>
@@ -102,7 +134,8 @@ bool _userLoggedSag(List<BikeSetup> setups) {
   return false;
 }
 
-bool _logMentions(List<Map<String, dynamic>> logs, String bikeId, String needle) {
+bool _logMentions(
+    List<Map<String, dynamic>> logs, String bikeId, String needle) {
   final n = needle.toLowerCase();
   for (final e in logs) {
     if (e['bikeId'] != bikeId) continue;
@@ -182,8 +215,8 @@ DieBoxPlan planDieBox({
   final hasChain = _hasSlot(installed, ComponentSlot.chain);
   final hasBrakes = _hasSlot(installed, ComponentSlot.brakeFront) ||
       _hasSlot(installed, ComponentSlot.brakeRear);
-  final pressureKnown = _userLoggedPressure(setups) ||
-      _logMentions(logs, bike.id, 'druck');
+  final pressureKnown =
+      _userLoggedPressure(setups) || _logMentions(logs, bike.id, 'druck');
   final sagKnown = setup.hasSuspension && _userLoggedSag(setups);
   final chainMeasured = _logMentions(logs, bike.id, 'kette gemessen') ||
       _logMentions(logs, bike.id, 'chain_measured');
@@ -201,45 +234,46 @@ DieBoxPlan planDieBox({
   }
   final showParkTrail = mtb && park != null && trail != null;
 
+  final hasCockpit = _hasSlot(installed, ComponentSlot.handlebar) ||
+      _hasSlot(installed, ComponentSlot.stem);
+
+  // Only known facts on the first surface — gaps live in Heute, not as "offen".
   final chips = <DieBoxChip>[];
   if (setup.wheelLabel != null) {
     chips.add(DieBoxChip(label: setup.wheelLabel!));
   }
   if (everyday) {
-    chips.add(DieBoxChip(label: 'Licht', known: hasLights));
-    chips.add(DieBoxChip(label: 'Schloss', known: hasLock));
-    chips.add(DieBoxChip(label: 'Träger', known: hasRack));
-    chips.add(DieBoxChip(label: 'Kette', known: hasChain || chainMeasured));
-    chips.add(DieBoxChip(label: 'Druck', known: pressureKnown));
+    if (hasLights) chips.add(const DieBoxChip(label: 'Licht'));
+    if (hasLock) chips.add(const DieBoxChip(label: 'Schloss'));
+    if (hasRack) chips.add(const DieBoxChip(label: 'Träger'));
+    if (hasChain || chainMeasured) chips.add(const DieBoxChip(label: 'Kette'));
+    if (pressureKnown) chips.add(const DieBoxChip(label: 'Druck'));
   }
   if (gravel) {
-    chips.add(DieBoxChip(label: 'Druck', known: pressureKnown));
-    chips.add(DieBoxChip(label: 'Taschen', known: hasBags));
-    chips.add(const DieBoxChip(label: 'Cockpit'));
-    chips.add(DieBoxChip(label: 'Kette', known: hasChain || chainMeasured));
+    if (pressureKnown) chips.add(const DieBoxChip(label: 'Druck'));
+    if (hasBags) chips.add(const DieBoxChip(label: 'Taschen'));
+    if (hasCockpit) chips.add(const DieBoxChip(label: 'Cockpit'));
+    if (hasChain || chainMeasured) chips.add(const DieBoxChip(label: 'Kette'));
   }
   if (road) {
-    chips.add(DieBoxChip(label: 'Druck', known: pressureKnown));
-    chips.add(DieBoxChip(label: 'Kette', known: chainMeasured));
-    chips.add(const DieBoxChip(label: 'Cockpit'));
+    if (pressureKnown) chips.add(const DieBoxChip(label: 'Druck'));
+    if (chainMeasured) chips.add(const DieBoxChip(label: 'Kette'));
+    if (hasCockpit) chips.add(const DieBoxChip(label: 'Cockpit'));
   }
   if (mtb) {
-    if (setup.hasSuspension) {
-      final t =
-          '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'} mm';
+    if (setup.hasSuspension &&
+        ((bike.travelFrontMm ?? 0) > 0 || (bike.travelRearMm ?? 0) > 0)) {
+      final t = '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'} mm';
       chips.add(DieBoxChip(label: t));
-      chips.add(DieBoxChip(label: 'SAG', known: sagKnown));
-    } else {
-      chips.add(const DieBoxChip(label: 'Federweg', known: false));
     }
-    chips.add(DieBoxChip(label: 'Reifen', known: pressureKnown));
+    if (sagKnown) chips.add(const DieBoxChip(label: 'SAG'));
+    if (pressureKnown) chips.add(const DieBoxChip(label: 'Reifen'));
     if (setup.hasDropper) chips.add(const DieBoxChip(label: 'Vario'));
-    chips.add(DieBoxChip(label: 'Bremsen', known: hasBrakes));
+    if (hasBrakes) chips.add(const DieBoxChip(label: 'Bremsen'));
     if (showParkTrail) chips.add(const DieBoxChip(label: 'Park | Trail'));
   }
-  if (setup.hasElectricAssist) {
-    chips.add(DieBoxChip(label: 'CSC', known: cscPaired));
-    chips.add(const DieBoxChip(label: 'Akku ehrlich'));
+  if (setup.hasElectricAssist && cscPaired) {
+    chips.add(const DieBoxChip(label: 'CSC'));
   }
   if (hasLights && !everyday) {
     chips.add(const DieBoxChip(label: 'Licht'));
@@ -251,7 +285,7 @@ DieBoxPlan planDieBox({
       const DieBoxTodayItem(
         id: DieBoxItemId.setActive,
         title: 'Dieses Rad nach vorn',
-        hint: 'Ein Bewohner in der Box — Umschalten ist Wohnrecht.',
+        hint: 'Eines steht in der Box — Umschalten holt es nach vorn.',
         cta: 'Als aktiv setzen',
       ),
     );
@@ -260,8 +294,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.lightsMissing,
-        title: 'Licht nicht eingetragen',
-        hint: 'Kein Ghost-Fahrwerk. Nur einhaken, wenn Licht wirklich da ist.',
+        title: 'Licht eintragen',
+        hint: 'Nur wenn Licht wirklich am Rad ist.',
         cta: 'Licht eintragen',
         slot: ComponentSlot.light,
       ),
@@ -271,8 +305,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.lockMissing,
-        title: 'Schloss nicht eingetragen',
-        hint: 'Alltag: anschließen, nicht nur abschließen.',
+        title: 'Schloss eintragen',
+        hint: 'Nur wenn ein Schloss am Rad ist.',
         cta: 'Schloss eintragen',
         slot: ComponentSlot.lock,
       ),
@@ -282,8 +316,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.rackMissing,
-        title: 'Gepäckträger nicht eingetragen',
-        hint: 'Nur wenn das Rad einen hat.',
+        title: 'Träger eintragen',
+        hint: 'Nur wenn das Rad einen Gepäckträger hat.',
         cta: 'Träger eintragen',
         slot: ComponentSlot.rack,
       ),
@@ -293,8 +327,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.bagsMissing,
-        title: 'Taschen nicht eingetragen',
-        hint: 'Kein erfundenes Apidura-Set — nur wenn Taschen am Rad sind.',
+        title: 'Taschen eintragen',
+        hint: 'Nur wenn Taschen am Rad sind.',
         cta: 'Taschen eintragen',
         slot: ComponentSlot.bags,
       ),
@@ -304,8 +338,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.pressureUnknown,
-        title: 'Druck nicht gemessen',
-        hint: 'Am Rad nachmessen. Keine OEM-Tabelle, kein erfundener psi.',
+        title: 'Druck merken',
+        hint: 'Vorn und hinten am Ventil ablesen.',
         cta: 'Druck merken',
       ),
     );
@@ -314,8 +348,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.pressureUnknown,
-        title: 'Reifendruck nicht gemessen',
-        hint: 'psi am Ventil, nicht aus einer Gewichtstabelle.',
+        title: 'Reifendruck merken',
+        hint: 'Vorn und hinten am Ventil ablesen.',
         cta: 'Druck merken',
       ),
     );
@@ -324,8 +358,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.travelUnknown,
-        title: 'Federweg nicht eingetragen',
-        hint: 'Keine erfundenen Fox-Zahlen. Travel nur wenn er am Rad steht.',
+        title: 'Federweg eintragen',
+        hint: 'Nur der Federweg, der am Rad steht.',
         cta: 'Federweg eintragen',
       ),
     );
@@ -334,9 +368,9 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.sagUnknown,
-        title: 'SAG nicht gemessen',
-        hint: 'O-Ring, Attack-Position, Prozent eintragen. Kein OEM-psi als SAG.',
-        cta: 'SAG messen',
+        title: 'Federung merken',
+        hint: 'Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.',
+        cta: 'Federung merken',
       ),
     );
   }
@@ -344,9 +378,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.chainTeach,
-        title: 'Kette noch nicht gemessen',
-        hint:
-            'Die Lehre schlägt jede Kilometer-Rechnung. Messen, dann hier merken.',
+        title: 'Kette merken',
+        hint: 'Mit der Lehre messen, dann hier merken.',
         cta: 'Kette gemessen',
         slot: ComponentSlot.chain,
       ),
@@ -356,8 +389,8 @@ DieBoxPlan planDieBox({
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.brakesUnknown,
-        title: 'Beläge nicht eingetragen',
-        hint: 'Park braucht Beläge in der Box — nur wenn sie am Rad sind.',
+        title: 'Bremsen eintragen',
+        hint: 'Nur wenn Beläge am Rad sind.',
         cta: 'Bremse eintragen',
         slot: ComponentSlot.brakeFront,
       ),
@@ -371,7 +404,7 @@ DieBoxPlan planDieBox({
         id: DieBoxItemId.dueCare,
         title: teachChain ? 'Kette mit der Lehre prüfen' : a.label,
         hint: teachChain
-            ? 'Kein km-Orakel. Anschauen und messen.'
+            ? 'Anschauen und mit der Lehre messen.'
             : '${a.remainingLabel}${a.sourceLabel != null ? ' · ${a.sourceLabel}' : ''}',
         cta: 'Erledigt',
         slot: a.slot,
@@ -384,7 +417,7 @@ DieBoxPlan planDieBox({
       const DieBoxTodayItem(
         id: DieBoxItemId.parkTrail,
         title: 'Park oder Trail',
-        hint: 'Nur weil beide Setups existieren — kein zweiter Modus erfunden.',
+        hint: 'Beide Setups sind da — wechseln, wenn du willst.',
         cta: 'Wechseln',
       ),
     );
@@ -412,16 +445,12 @@ DieBoxPlan planDieBox({
 
   final sentence = _sentence(
     bike: bike,
-    kind: kind,
     readiness: readiness,
     everyday: everyday,
     gravel: gravel,
     road: road,
     mtb: mtb,
-    hasLights: hasLights,
-    hasChain: hasChain || chainMeasured,
     pressureKnown: pressureKnown,
-    sagKnown: sagKnown,
     hasBags: hasBags,
     chainMeasured: chainMeasured,
     showParkTrail: showParkTrail,
@@ -435,7 +464,9 @@ DieBoxPlan planDieBox({
         installed.firstWhere((c) => c.slot == s),
   ];
   for (final c in installed) {
-    if (!onBike.any((x) => x.id == c.id)) onBike.add(c);
+    if (onBike.any((x) => x.id == c.id)) continue;
+    final explicit = c.catalogModelId == null;
+    if (explicit) onBike.add(c);
   }
 
   return DieBoxPlan(
@@ -454,16 +485,12 @@ DieBoxPlan planDieBox({
 
 String _sentence({
   required Bike bike,
-  required WerkstattKind kind,
   required DieBoxReadiness readiness,
   required bool everyday,
   required bool gravel,
   required bool road,
   required bool mtb,
-  required bool hasLights,
-  required bool hasChain,
   required bool pressureKnown,
-  required bool sagKnown,
   required bool hasBags,
   required bool chainMeasured,
   required bool showParkTrail,
@@ -471,51 +498,51 @@ String _sentence({
 }) {
   if (everyday) {
     if (readiness == DieBoxReadiness.ready) {
-      return '${bike.name} · Montag-bereit · Licht und Kette ok';
+      return '${bike.name} wohnt hier · Montag-bereit';
     }
-    final bits = <String>[
-      if (hasLights && hasChain) 'Licht und Kette ok',
-      if (!pressureKnown) 'Druck nicht gemessen',
-      if (!hasLights) 'Licht nicht eingetragen',
-    ];
-    return bits.isEmpty
-        ? '${bike.name} · noch nicht bereit'
-        : '${bike.name} · ${bits.join(' · ')}';
+    return '${bike.name} wohnt hier';
   }
   if (gravel) {
-    final wheel = bike.wheelSize?.label ?? 'Laufrad offen';
+    final wheel = bike.wheelSize?.label;
     final bits = <String>[
-      wheel,
-      pressureKnown ? 'Druck gemerkt' : 'Druck grob — nachmessen',
-      hasBags ? 'Taschen da' : 'Taschen nicht eingetragen',
+      if (wheel != null) wheel,
+      if (pressureKnown) 'Druck gemerkt',
+      if (hasBags) 'Taschen da',
     ];
-    return '${bike.name} · ${bits.join(' · ')}';
+    final core = bits.isEmpty
+        ? '${bike.name} wohnt hier'
+        : '${bike.name} · ${bits.join(' · ')}';
+    return readiness == DieBoxReadiness.ready ? '$core · bereit' : core;
   }
   if (road) {
-    final wheel = bike.wheelSize?.label ?? '700c';
+    final wheel = bike.wheelSize?.label;
     final bits = <String>[
-      wheel,
-      chainMeasured ? 'Kette gemessen' : 'Kette noch nicht gemessen',
-      pressureKnown ? 'Druck gemerkt' : 'Druck heute offen',
+      if (wheel != null) wheel,
+      if (chainMeasured) 'Kette gemessen',
+      if (pressureKnown) 'Druck gemerkt',
     ];
-    return '${bike.name} · ${bits.join(' · ')}';
+    final core = bits.isEmpty
+        ? '${bike.name} wohnt hier'
+        : '${bike.name} · ${bits.join(' · ')}';
+    return readiness == DieBoxReadiness.ready ? '$core · bereit' : core;
   }
   if (mtb) {
     if (showParkTrail && park?.isCurrent == true) {
-      return 'Park-Setup · ${sagKnown ? 'SAG gemerkt' : 'SAG nicht gemessen'}';
+      return 'Park-Setup';
     }
     if ((bike.travelFrontMm ?? 0) == 0 && (bike.travelRearMm ?? 0) == 0) {
-      return '${bike.name} · Federweg nicht eingetragen';
+      return '${bike.name} wohnt hier';
     }
-    final travel =
-        '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'}';
-    return '${bike.name} · $travel · ${sagKnown ? 'SAG gemerkt' : 'SAG nicht gemessen'}';
+    final travel = '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'}';
+    final drive = bike.hasElectricAssist ? ' · E-Antrieb' : '';
+    final core = '${bike.name} · $travel$drive';
+    return readiness == DieBoxReadiness.ready ? '$core · bereit' : core;
   }
-  return '${bike.name} · ${bike.categoryLabel}';
+  return '${bike.name} wohnt hier';
 }
 
 String dieBoxReadinessLabel(DieBoxReadiness r) => switch (r) {
       DieBoxReadiness.ready => 'Bereit',
-      DieBoxReadiness.almost => 'Fast',
-      DieBoxReadiness.unknown => 'Unbekannt',
+      DieBoxReadiness.almost => 'Fast bereit',
+      DieBoxReadiness.unknown => 'Neu hier',
     };

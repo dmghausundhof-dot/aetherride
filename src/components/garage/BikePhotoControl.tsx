@@ -58,7 +58,7 @@ export function BikePhotoControl({
         />
       ) : (
         <div className="flex h-28 items-center justify-center bg-surface-elevated text-sm text-text-secondary">
-          Noch kein Foto — Identität für die Garage
+          Noch kein Foto — dein Rad auf der Bühne
         </div>
       )}
       <div className="flex gap-2 p-2">

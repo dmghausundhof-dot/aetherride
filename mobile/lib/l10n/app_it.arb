@@ -1,0 +1,3843 @@
+{
+  "@@locale": "it",
+  "appTitle": "FlowLine",
+  "appTagline": "Ride further. Flow better — MTB, gravel, strada, city & e-bike.",
+  "navHome": "Home",
+  "navGarage": "Garage",
+  "navRide": "Pedala",
+  "navDiscover": "Tour",
+  "navParts": "Pezzi",
+  "navKarte": "Mappa",
+  "navWorkshop": "Officina",
+  "navShop": "Negozio",
+  "navPlatz": "Platz",
+  "hofJustRide": "Pedala e basta",
+  "hofShowTours": "Mostra i tour",
+  "hofMapChoiceHint": "Parti senza itinerario, o mostra i tour sulla mappa.",
+  "werkstattPartsShelf": "Shop",
+  "werkstattForYourBike": "Per la tua bici",
+  "werkstattMerch": "Merchandise",
+  "werkstattShopParts": "Ricambi nel negozio",
+  "shopGatewayKicker": "Dall'altra parte del cortile",
+  "shopGatewayTitle": "Il negozio",
+  "shopGatewayHint": "La bici non vive qui. FlowLine mostra pezzi onesti — acquisto e cassa su Shopify, non nell'app.",
+  "shopZumShop": "Al negozio",
+  "shopForYourBikeHint": "Pezzi che stanno a {name} — categoria e ruota. Niente SKU inventati.",
+  "@shopForYourBikeHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shopForYourBikeEmpty": "Parcheggia una bici in officina — poi apriamo i pezzi che calzano, nel negozio.",
+  "shopMerchHint": "Abbigliamento e oggettistica. Mai filtrati sulla bici.",
+  "shopNotConnected": "Negozio non collegato",
+  "shopNotConnectedHint": "Nessun URL storefront. Imposta SHOPIFY_STOREFRONT_URL, poi questa scheda apre il negozio.",
+  "shopOpenFailed": "Impossibile aprire il negozio.",
+  "shopPasswordWall": "Lo shop Shopify è ancora in anteprima proprietario (dev store). I link esterni possono finire sulla pagina password. Il catalogo può stare qui in FlowLine.",
+  "shopLockedTitle": "Online Store bloccato",
+  "shopPasswordConfirm": "Apri lo stesso",
+  "shopPasswordCancel": "Indietro",
+  "shopCyclingParts": "CYCLING PARTS",
+  "shopSearchHint": "Pezzi, marche, specs…",
+  "shopFeatured": "Pezzi che calzano",
+  "shopOpenProduct": "Apri nel negozio",
+  "shopAllParts": "Tutti i pezzi",
+  "shopFitBanner": "Pezzi che stanno a {name}",
+  "@shopFitBanner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shopShelfEmpty": "Nessun pezzo per questa ricerca.",
+  "shopCatalogEmpty": "Ancora nessun pezzo in scaffale. La porta apre comunque Shopify.",
+  "shopFitOnly": "Solo adatti",
+  "shopFitAllBikes": "Tutte le bici",
+  "shopFitBannerAll": "Pezzi che stanno alle tue bici",
+  "shopOpenInBrowser": "Apri nel browser",
+  "shopZumHaendler": "Dal rivenditore",
+  "shopOpenInApp": "Vedi nel negozio",
+  "shopProductMissing": "Questo prodotto non è nel negozio.",
+  "shopCatalogFailed": "Catalogo irraggiungibile al momento. La porta del negozio apre comunque Shopify.",
+  "shopRetry": "Riprova",
+  "shopSheetCheckout": "Cassa su Shopify, non in FlowLine.",
+  "shopDetails": "Dettagli",
+  "shopFeaturedBikes": "Bici nel negozio",
+  "garageSetupTabHintTires": "Pressione a occhio da peso e gomme — misura sulla bici, non una tabella OEM.",
+  "werkstattSetupTires": "Gomme / pressione a occhio",
+  "werkstattSetupSuspension": "Sospensione — SAG e aria in base all'escursione",
+  "werkstattSetupSuspensionUnknown": "Sospensione — escursione non iscritta",
+  "werkstattSetupDropper": "Telescopica (iscritta)",
+  "werkstattSetupWheel": "Ruota {size}",
+  "@werkstattSetupWheel": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "werkstattSetupCockpit": "Cockpit — piega e attacco",
+  "werkstattSetupBagsCockpit": "Borse / cockpit",
+  "werkstattSetupLightsRack": "Luci e portapacchi — solo se iscritto",
+  "werkstattSetupDrivetrain": "Trasmissione",
+  "werkstattBatteryHonest": "Batteria solo con un sensore vero",
+  "werkstattBatteryHonestHint": "Niente percentuale senza sensore abbinato. Bosch LDI resta G-1.",
+  "werkstattSensorEbike": "Sensore ruota (CSC) — velocità e cadenza. Batteria solo con un sensore vero.",
+  "werkstattSensorAnalog": "Sensore ruota — velocità e cadenza sulla bici.",
+  "hofYourWatch": "Il tuo orologio",
+  "hofWatchHint": "Fitness sul rider — non sulla bici. Polso solo con un sensore vero. Apple Watch spesso senza BLE standard.",
+  "hofWatchPair": "Associa orologio",
+  "hofWatchReconnect": "Collega",
+  "hofWatchRemove": "Rimuovi",
+  "hofWatchConnect": "Collega orologio",
+  "hofYou": "Tu",
+  "hofYouSheetHint": "Tu e il tuo orologio. Il sensore ruota resta sulla bici, in officina.",
+  "werkstattWatchEbike": "Orologio — polso accanto al CSC. Niente SoC inventato.",
+  "werkstattWatchAnalog": "Smartwatch / fitness",
+  "setupTirePressureLabel": "Gomma anteriore (psi)",
+  "setupCompareHintTires": "Crea due pressioni alla cieca. Dopo qualche uscita vedi quale si sente meglio.",
+  "setupTirePressureValue": "Gomme {value} psi",
+  "@setupTirePressureValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "searchHome": "Dove vai? Luogo, tour o indirizzo",
+  "startRide": "Avvia l'uscita",
+  "startFreeride": "Pedala senza itinerario",
+  "startWithRoute": "Segui l'itinerario",
+  "goRide": "Si parte",
+  "readyTitle": "Pronto a partire",
+  "readyMessage": "Il GPS parte subito. Sensori e itinerario sono opzionali — trail, asfalto o city.",
+  "optionalRoute": "Opzionale: sotto Tour scegli un itinerario e tocca « Si parte ».",
+  "starting": "Avvio…",
+  "cancel": "Annulla",
+  "save": "Salva",
+  "reset": "Azzera",
+  "errorPrefix": "Errore: {error}",
+  "@errorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverMenuPhotos": "Foto intorno",
+  "discoverMenuOffline": "Mappe offline",
+  "discoverMenuCollections": "Raccolte",
+  "discoverMenuPrivacy": "Heatmap e privacy",
+  "partsTitle": "Pezzi e accessori",
+  "partsSubtitle": "Pezzi featured live in FlowLine — soft-fit e prezzi, senza vicolo cieco password Shopify.",
+  "weatherFallback": "Meteo non disponibile",
+  "weatherLoading": "Caricamento meteo…",
+  "statsRidesOne": "uscita",
+  "statsRidesMany": "uscite",
+  "profile": "Profilo",
+  "chat": "Chat",
+  "hofRideOut": "Esci",
+  "hofOpenBike": "Apri la bici",
+  "hofParkBike": "Parcheggia la bici",
+  "hofRideWithoutBike": "Pedala senza bici",
+  "hofRideOutAgain": "Esci di nuovo",
+  "hofAtGate": "davanti al cancello",
+  "hofEmptyStand": "Posto vuoto",
+  "hofSkyUnknown": "Cielo sconosciuto",
+  "hofNoHonestLoop": "Nessun anello trail onesto",
+  "hofNotYetOut": "non ancora fuori",
+  "hofJustBack": "appena rientrato",
+  "hofAgoMinutes": "{minutes} min fa",
+  "@hofAgoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hofAgoHours": "{hours} h fa",
+  "@hofAgoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "hofWhatCameIn": "Cosa è rientrato",
+  "hofPackMissing": "Manca il pack per {name}",
+  "@hofPackMissing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hofLastRideNoGps": "senza traccia GPS — niente di inventato",
+  "hofGpsUnknown": "Nessuna posizione — cielo e cancello aspettano il GPS.",
+  "rideGpsUnavailable": "Niente GPS — la traccia resta vuota. Niente di inventato.",
+  "hofAtHof": "al posto",
+  "hofSinceOneDay": "da 1 giorno",
+  "hofSinceDays": "da {days} giorni",
+  "@hofSinceDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "hofNoBikeHere": "Nessuna bici qui",
+  "hofBringForward": "Porta avanti {name}",
+  "@hofBringForward": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hofCareInWorkshop": "{label} — in officina",
+  "@hofCareInWorkshop": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "hofSensorAwake": "Sensore sveglio",
+  "hofOpenTours": "Apri i tour",
+  "hofSkyDry": "{temp}° · piuttosto secco",
+  "@hofSkyDry": {
+    "placeholders": {
+      "temp": {
+        "type": "String"
+      }
+    }
+  },
+  "hofSkyDamp": "{temp}° · umido possibile",
+  "@hofSkyDamp": {
+    "placeholders": {
+      "temp": {
+        "type": "String"
+      }
+    }
+  },
+  "hofSkyWet": "{temp}° · pioggia · trail piuttosto bagnati",
+  "@hofSkyWet": {
+    "placeholders": {
+      "temp": {
+        "type": "String"
+      }
+    }
+  },
+  "hofLoopDuration": "⟲ {minutes} min",
+  "@hofLoopDuration": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hofGateAwayKm": "{km} km",
+  "@hofGateAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "hofGateAwayNear": "meno di 1 km",
+  "hofCommunityNotes": "{count, plural, =1{1 nota su questo anello} other{{count} note su questo anello}}",
+  "@hofCommunityNotes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeSubtitleMtb": "Trail, tour e il tuo setup",
+  "homeSubtitleGravel": "Gravel, distanza e navigazione",
+  "homeSubtitleRoad": "Asfalto, ritmo e allenamento",
+  "homeSubtitleUrban": "Pendolarismo, città e quotidiano",
+  "homeSubtitleEbike": "Assist, autonomia e tour",
+  "homeSubtitleDefault": "Ogni modo di pedalare — la tua bici, il tuo itinerario",
+  "homeSubtitleWithWeather": "{weather} · {base}",
+  "@homeSubtitleWithWeather": {
+    "placeholders": {
+      "weather": {
+        "type": "String"
+      },
+      "base": {
+        "type": "String"
+      }
+    }
+  },
+  "tipHeroTitleMtb": "Oggi fuori in bici",
+  "tipHeroTitleGravel": "Oggi gravel o mix",
+  "tipHeroTitleRoad": "Oggi chilometri d'asfalto",
+  "tipHeroTitleUrban": "Oggi attraverso la città",
+  "tipHeroTitleEbike": "Oggi con assist",
+  "tipHeroTitleDefault": "Oggi un'uscita ci sta",
+  "tipHeroSubtitleMtb": "Scegli un itinerario o pedala libero — traccia locale.",
+  "tipHeroSubtitleGravel": "Pianifica una distanza o parti senza itinerario.",
+  "tipHeroSubtitleRoad": "Costruisci un anello o registra un allenamento libero.",
+  "tipHeroSubtitleUrban": "Traccia il tragitto o salva un anello corto.",
+  "tipHeroSubtitleEbike": "Pianifica un tour e tieni d'occhio l'autonomia.",
+  "tipHeroSubtitleDefault": "MTB, gravel, strada o city — tutto qui.",
+  "chassisLayer": "Sospensione",
+  "sensorLayer": "Sensori",
+  "filter": "Filtri",
+  "filterReset": "Azzera",
+  "filterResetFilters": "Azzera i filtri",
+  "filterDurationLens": "Durata",
+  "filterSurfaceGroup": "Fondo",
+  "filterExertion": "Difficoltà",
+  "filterDistance": "Distanza",
+  "filterElevation": "Dislivello",
+  "filterForm": "Forma",
+  "filterTrailNetwork": "Rete trail (mappa)",
+  "filterLoopsOnly": "Anello",
+  "filterLoopsOnlyTooltip": "Solo anelli onesti (partenza≈arrivo). Niente riempimento A→B.",
+  "filterNetworkOn": "Rete on",
+  "filterNetworkOff": "Rete off",
+  "filterOsmScaleTooltip": "Scala OSM: {code}",
+  "@filterOsmScaleTooltip": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "filterShowTours": "{count, plural, one{Mostra 1 tour} other{Mostra {count} tour}}",
+  "@filterShowTours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filterNoTours": "Nessun tour con questi filtri.",
+  "filterNoToursHint": "Nessun tour — tocca « Nuovo » o allenta i filtri.",
+  "loopLabel": "Anello",
+  "computeRoute": "Calcola itinerario",
+  "adaptTour": "Modifica",
+  "adaptTourTitle": "Modifica tour",
+  "adaptTourHint": "Cambia partenza, arrivo o stop — poi calcola l'itinerario.",
+  "planRouteTitle": "Pianifica itinerario",
+  "planRouteCta": "+ Pianifica",
+  "discoverSearchHint": "Luogo o tour",
+  "filterAroundKm": "entro {km} km",
+  "@filterAroundKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "mapToggleFab": "Mappa",
+  "communityWriteReview": "Scrivi una recensione",
+  "discoverModeExplore": "Esplora",
+  "discoverModeNavigate": "Naviga",
+  "discoverModeMine": "Miei",
+  "navigateTitle": "Naviga",
+  "navigateSubtitle": "Tocca l'arrivo o un indirizzo — poi calcola",
+  "navigateStartLabel": "Partenza",
+  "navigateEndLabel": "Arrivo",
+  "navigateStartHint": "Indirizzo, luogo o tap sulla mappa",
+  "navigateEndHint": "Dove vai?",
+  "navigateMyLocation": "La mia posizione",
+  "navigateSwap": "Inverti partenza e arrivo",
+  "navigatePickStart": "Partenza sulla mappa",
+  "navigatePickEnd": "Arrivo sulla mappa",
+  "navigateAddVia": "Via",
+  "navigateNeedStartEnd": "Imposta partenza e arrivo",
+  "navigateComputeNeedBoth": "Calcola itinerario (servono partenza e arrivo)",
+  "navigateBackToExplore": "Torna a Esplora",
+  "mineSheetHint": "Le tue registrazioni, import e percorsi salvati",
+  "mineEmptyCtaNavigate": "Itinerario da A a B",
+  "gpxImportAction": "Importa GPX",
+  "exploreOpenNavigate": "Naviga A→B",
+  "sheetDragHandleMine": "Trascina il foglio I miei percorsi",
+  "sheetDragHandleNavigate": "Trascina il foglio Navigazione",
+  "browseMap": "Mappa",
+  "browseList": "Elenco",
+  "quickFilter1h": "1 h",
+  "sheetDragHandle": "Trascina il foglio Tour",
+  "sheetPeekHint": "Tira su — tour e filtri",
+  "rideBarCollapseHint": "Tira giù per chiudere",
+  "rideBarExpandHint": "Apri",
+  "rideBarStart": "Si parte",
+  "rideBarRoute": "Percorso",
+  "rideBarPointToPoint": "Percorso",
+  "emptyToursTitle": "Nessun tour trovato",
+  "emptyToursFiltersBody": "Azzera i filtri — rivedi i tour vicini.",
+  "emptyToursNearbyBody": "Cambia luogo o durata — o azzera i filtri. Niente riempimento A→B.",
+  "showOnMap": "Sulla mappa",
+  "tourDetails": "Dettagli",
+  "moreFilters": "Altri filtri",
+  "moreActions": "Altre azioni",
+  "filterSurfaceAsphalt": "Asfalto",
+  "filterSurfaceGravel": "Sterrato",
+  "filterSurfaceTrail": "Trail",
+  "filterSurfaceMixed": "Misto",
+  "filterSurfaceAsphaltHint": "Asfalto · ciclabile · asfaltato",
+  "filterSurfaceGravelHint": "Sterrato · forestale · compatto",
+  "filterSurfaceTrailHint": "Naturale · singletrail · radici",
+  "filterSurfaceMixedHint": "Città · fondo misto",
+  "filterSurfaceAsphaltFull": "Asfalto · asfaltato",
+  "filterSurfaceGravelFull": "Sterrato · compatto",
+  "filterSurfaceTrailFull": "Naturale · trail",
+  "filterSurfaceMixedFull": "Città · misto",
+  "filterEffortEasy": "Facile",
+  "filterEffortMid": "Medio",
+  "filterEffortHard": "Impegnativo",
+  "filterEffortEasyHint": "S0 / rilassato / poca tecnica",
+  "filterEffortMidHint": "S1–S2 / sportivo / misto",
+  "filterEffortHardHint": "S2+ / duro / tecnico",
+  "filterElevFlat": "< 400 hm",
+  "filterElevHilly": "400–1100 hm",
+  "filterElevAlpine": "1100+ hm",
+  "filterDistMax20": "≤ 20 km",
+  "filterDistMax40": "≤ 40 km",
+  "filterDistMax70": "≤ 70 km",
+  "filterScaleEasy": "Facile",
+  "filterScaleMedium": "Medio",
+  "filterScaleHard": "Impegnativo",
+  "trailDiffEasy": "Facile",
+  "trailDiffMedium": "Medio",
+  "trailDiffHard": "Duro",
+  "trailDiffVeryHard": "Molto duro",
+  "trailDiffUnrated": "Non classificato",
+  "trailDiffOpen": "aperto",
+  "durationAny": "indifferente",
+  "duration2to3h": "2–3 h",
+  "garageTitle": "Garage",
+  "garageFabBike": "Aggiungi una bici",
+  "garageEmptyTitle": "Nessuna bici qui",
+  "garageEmptyMessage": "Nome e tipo bastano. Il catalogo è ricerca — i pezzi di serie solo se li prendi.",
+  "garageAddBike": "Aggiungi una bici",
+  "garageAddAnother": "Altra bici",
+  "garageStatBike": "BICI",
+  "garageStatBikes": "BICI",
+  "garageStatKmTotal": "KM TOTALI",
+  "garageQuickSwitch": "Cambio rapido",
+  "garageLastRides": "Ultime uscite",
+  "garageNoRidesTitle": "Ancora nessuna uscita",
+  "garageNoRidesMessage": "La tua prima uscita salvata compare qui.",
+  "garageActive": "Attiva",
+  "garageActiveBike": "Bici attiva · {name}",
+  "@garageActiveBike": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "garageEbikeBadge": "E-bike",
+  "garageMaintOk": "Tutto ok",
+  "garageMaintDue": "{count} manutenzioni in scadenza",
+  "@garageMaintDue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageMaintOverdue": "{count} in ritardo",
+  "@garageMaintOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garagePartsCount": "{count} pezzi",
+  "@garagePartsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageParts": "Pezzi",
+  "garageMaintenance": "Manutenzione",
+  "garageSetup": "Setup",
+  "garageInstall": "Aggiungi pezzo",
+  "garageOtherBikes": "Altre bici",
+  "garageTechDetails": "Dettagli tecnici",
+  "garageTechHint": "Escursione, telaio, basi del setup — per amatori",
+  "garageCtaMaintenance": "Vedi manutenzione",
+  "garageCtaAddPart": "Aggiungi pezzo",
+  "garageCtaSetActive": "Imposta come attiva",
+  "garageCtaOpenSetup": "Vai al setup",
+  "garageHours": "Ore",
+  "garageTravel": "Escursione",
+  "garageFrameSize": "Taglia telaio",
+  "garageWheelSize": "Ruota",
+  "garageBrandModel": "Modello",
+  "garageCompatFits": "Calza {count}",
+  "@garageCompatFits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageCompatCheck": "Controlla {count}",
+  "@garageCompatCheck": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageCompatNoFit": "Non calza {count}",
+  "@garageCompatNoFit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garagePartsEmpty": "Ancora nessun pezzo. Tocca « Aggiungi pezzo » — poi ti ricordiamo la manutenzione e mostriamo se i pezzi stanno insieme.",
+  "garageMaintEmpty": "Tutto a posto — nessuna manutenzione in scadenza.",
+  "garageSetupTabTitle": "Il tuo setup",
+  "garageSetupTabHint": "SAG = quanto affonda la sospensione col tuo peso (spesso ~25–30 %).",
+  "garageYourParts": "I tuoi pezzi",
+  "garageMissingSlots": "Non ancora iscritto (opzionale)",
+  "garageActiveBadge": "Bici attiva",
+  "garageStatKm": "KM",
+  "garageStatHours": "ORE",
+  "garageStatMaint": "MANUT.",
+  "setupVersionsTitle": "Versioni e confronto",
+  "setupVersionsHint": "Ogni modifica salva una nuova versione. Puoi tornare indietro quando vuoi.",
+  "setupRiderWeightLabel": "Peso rider (kg) per i modelli",
+  "setupNewVersionCta": "Nuova versione",
+  "setupCompareCta": "Prova due varianti",
+  "setupCompareHint": "Crea due varianti alla cieca (es. ritorno). Dopo qualche uscita vedi quale si sente meglio.",
+  "setupSavedVersions": "Versioni salvate",
+  "setupEmpty": "Ancora nessuna versione — parti da un modello o salva i tuoi settaggi.",
+  "setupActiveBadge": "Attiva",
+  "setupVersionMeta": "Versione {version}",
+  "@setupVersionMeta": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "setupUseVersion": "Usa",
+  "setupForkReboundValue": "Ritorno {value}",
+  "@setupForkReboundValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSourceTemplate": "Modello",
+  "setupSourceBaseline": "Base",
+  "setupSourceManual": "Manuale",
+  "setupTemplatesTitle": "Modelli per iniziare",
+  "setupTemplatesHint": "Punto di partenza — non una reco personale.",
+  "setupApplyTemplate": "Applica",
+  "setupNewVersionTitle": "Nuova versione setup",
+  "setupNewVersionHint": "Dagli un nome che riconosci — es. « Trail asciutto ».",
+  "setupVersionNameLabel": "Nome",
+  "setupForkReboundLabel": "Ritorno forcella (click)",
+  "setupCancel": "Annulla",
+  "setupSave": "Salva",
+  "setupNewVersionDefaultName": "Versione {n}",
+  "@setupNewVersionDefaultName": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "setupManualFallback": "Manuale",
+  "setupTemplateAppliedLabel": "{label} (modello)",
+  "@setupTemplateAppliedLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "setupTemplateAppliedSnack": "Modello applicato — {disclaimer}",
+  "@setupTemplateAppliedSnack": {
+    "placeholders": {
+      "disclaimer": {
+        "type": "String"
+      }
+    }
+  },
+  "setupCompareVariantA": "Variante test A",
+  "setupCompareVariantB": "Variante test B",
+  "setupCompareResultFromRides": "Varianti create · lettura da {count} uscite: {summary}",
+  "@setupCompareResultFromRides": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "setupCompareResultDemo": "Varianti create · ancora pochi feedback di uscita — esempio: {summary}",
+  "@setupCompareResultDemo": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "rideMap": "Mappa",
+  "rideData": "Dati",
+  "rideLiveData": "Dati live",
+  "rideMapReady": "Mappa pronta — sensore opzionale dopo la partenza",
+  "rideClearRoute": "Rimuovi itinerario",
+  "postRideTitle": "Attività",
+  "postRideFreeride": "Freeride",
+  "postRideTrackMap": "Traccia percorsa",
+  "postRideNoTrack": "Nessuna traccia GPS — la mappa non ha nulla da mostrare.",
+  "postRideStatDistance": "Distanza",
+  "postRideStatDuration": "Durata",
+  "postRideStatPace": "Ritmo",
+  "postRideStatElevation": "Dislivello",
+  "postRideWeatherTitle": "Meteo",
+  "postRideWeatherStart": "Partenza",
+  "postRideWeatherEnd": "Arrivo",
+  "postRideWeatherUnavailable": "Meteo non disponibile",
+  "postRidePhotosTitle": "Foto",
+  "postRidePhotosHint": "Aggiungi foto all'uscita — salvate in locale.",
+  "postRidePhotoCamera": "Fotocamera",
+  "postRidePhotoGallery": "Galleria",
+  "postRidePhotosShare": "Condividi",
+  "postRidePhotosShareText": "La mia uscita FlowLine",
+  "postRidePhotosEmpty": "Ancora nessuna foto da condividere",
+  "postRidePhotosMax": "Massimo {count} foto",
+  "@postRidePhotosMax": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postRideCommunityStub": "Le foto restano locali. Le voci stanno sul tour — non in un feed.",
+  "postRideOpenTour": "Apri il tour",
+  "postRideSaveAsTour": "Salva come tour",
+  "postRideSaveAsTourDone": "Salvato in I miei percorsi",
+  "postRideSaveAsTourNeedTrack": "Serve una traccia GPS per salvare.",
+  "postRideSaveAsTourHint": "Salva la traccia come percorso tuo — visibile sotto Tour.",
+  "myRoutesTitle": "I miei percorsi",
+  "myRoutesEmpty": "Ancora nessun percorso — importa un GPX o registra un'uscita.",
+  "myRoutesSourceImport": "Import",
+  "myRoutesSourceRecorded": "Registrato",
+  "myRoutesSourceEngine": "Pianificato",
+  "myRoutesShowOnMap": "I miei sulla mappa",
+  "myRoutesHideOnMap": "Nascondi i miei",
+  "myRouteNotesTitle": "Nota privata",
+  "myRouteNotesHint": "Solo per te. Voci pubbliche solo dopo la condivisione, sotto Voci.",
+  "myRouteNotesEmpty": "Ancora nessuna nota.",
+  "myRouteNotesPlaceholder": "Solo per te — non una voce.",
+  "myRouteNotesAdd": "Salva",
+  "myRouteDetailPhotos": "Foto",
+  "myRouteOpenDetail": "Dettagli",
+  "collectionRouteCount": "{count, plural, =1{1 itinerario · tocca per aprire} other{{count} itinerari · tocca per aprire}}",
+  "@collectionRouteCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delete": "Elimina",
+  "add": "Aggiungi",
+  "skip": "Salta",
+  "next": "Avanti",
+  "onLabel": "On",
+  "offLabel": "Off",
+  "signIn": "Accedi",
+  "signOut": "Esci",
+  "account": "Account",
+  "register": "Registrati",
+  "edit": "Modifica",
+  "share": "Condividi",
+  "done": "Fatto",
+  "authSignedInSyncing": "Accesso effettuato — sync in corso…",
+  "authSignedInSyncFailed": "Accesso effettuato. Sync: {error}",
+  "@authSignedInSyncFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "authCloudUnavailable": "Il cloud-sync non è disponibile adesso.",
+  "authEmailPasswordRequired": "E-mail e password (min. 8 caratteri) obbligatori.",
+  "authAccountCreatedConfirm": "Account creato — conferma l'e-mail se serve, poi accedi.",
+  "authSupabaseMissing": "Supabase non è configurato.",
+  "authBrowserOpened": "Browser aperto — dopo il login torni da solo.",
+  "authDeleteTitle": "Eliminare l'account?",
+  "authDeleteBody": "Account remoto e dati locali dell'app verranno eliminati. Esporta prima GPX/JSON sotto Dati e privacy.",
+  "authRemoteDeleted": "Account remoto eliminato.",
+  "authRemoteUnavailable": "Eliminazione remota non disponibile — rimossi solo i dati locali.",
+  "authRemoteFailed": "Eliminazione remota fallita ({code}) — locale comunque eliminato.",
+  "@authRemoteFailed": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "authRemoteUnreachable": "Server irraggiungibile — rimossi solo i dati locali.",
+  "authLocalDeleted": "Dati locali eliminati. Export eventualmente sotto Privacy.",
+  "authEmail": "E-mail",
+  "authEmailHint": "Indirizzo e-mail",
+  "authPassword": "Password",
+  "authCreateAccount": "Crea account",
+  "authHaveAccount": "Hai già un account? Accedi",
+  "authNewHere": "Nuovo qui? Registrati",
+  "authWithGoogle": "Con Google",
+  "authWithApple": "Con Apple",
+  "authPrivacy": "Dati e privacy",
+  "authOpenAssistant": "Apri assistente",
+  "authDeleteAccount": "Elimina account",
+  "authSyncNow": "Sincronizza ora",
+  "authSyncing": "Sincronizzo…",
+  "authSyncOk": "Sync OK",
+  "authSyncActive": "Sync con {api} è attivo.",
+  "@authSyncActive": {
+    "placeholders": {
+      "api": {
+        "type": "String"
+      }
+    }
+  },
+  "authCreating": "Creazione…",
+  "authSigningIn": "Accesso…",
+  "billingTitle": "FlowLine Pro",
+  "billingYouHavePro": "Hai Pro.",
+  "billingFreeToPro": "Free → Pro",
+  "billingMoreBikes": "Più bici, vantaggi sync e regioni offline.",
+  "billingAlreadyPro": "Pro è già attivo — non serve ricomprare.",
+  "billingForceProDebug": "Debug: Force-Pro. Stripe/Play restano nascosti.",
+  "billingStripeMonth": "Stripe — mensile",
+  "billingStripeYear": "Stripe — annuale",
+  "billingPlayMonth": "Google Play — mensile",
+  "billingPlayRestore": "Ripristina acquisti Play",
+  "billingPlayHint": "Nota: senza GOOGLE_PLAY_SERVICE_ACCOUNT_JSON il server non verifica gli acquisti con Google.",
+  "billingSyncStatus": "Sincronizza stato abbonamento",
+  "billingSyncAfterPurchase": "Sincronizza dopo l'acquisto",
+  "billingPleaseSignIn": "Accedi prima.",
+  "billingNoCheckoutUrl": "Nessun URL checkout",
+  "billingBrowserFailed": "Impossibile aprire il browser",
+  "billingCheckoutOpened": "Checkout aperto — poi « Sync after purchase ».",
+  "billingPlayOnlyAndroid": "Play Billing solo su Android.",
+  "billingPlayStarted": "Acquisto Play avviato…",
+  "billingVerifying": "Verifica acquisto…",
+  "billingProTrusted": "Pro impostato (trusted-token MVP — senza Google Play Service Account). Sync OK.",
+  "billingProActive": "Pro attivo. Sync in corso.",
+  "billingRestoring": "Ripristino acquisti…",
+  "billingRestoreStarted": "Restore avviato — gli abbonamenti validi verranno verificati.",
+  "billingSyncOkTier": "Sync OK — piano: {tier}",
+  "@billingSyncOkTier": {
+    "placeholders": {
+      "tier": {
+        "type": "String"
+      }
+    }
+  },
+  "billingPlayError": "Play: {error}",
+  "@billingPlayError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billingSyncError": "Sync: {error}",
+  "@billingSyncError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "billingRestoreError": "Restore: {error}",
+  "@billingRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAssistant": "Assistente",
+  "chatWelcome": "Chiedimi cosa è in scadenza — o setup, itinerari e pezzi.",
+  "chatEmptyTitle": "Chiedimi",
+  "chatEmptyMessage": "Cosa è in scadenza, setup, itinerari o pezzi — prova un suggerimento sopra o scrivi.",
+  "chatLockedRiding": "La chat è bloccata durante l'uscita.",
+  "chatHint": "Messaggio…",
+  "chatHintLocked": "Bloccata durante l'uscita",
+  "chatAsk": "Chiedi",
+  "chatSnooze7": "Silenzio 7 giorni",
+  "chatNoAnswer": "Nessuna risposta.",
+  "chatNetworkError": "Errore di rete: {error}",
+  "@chatNetworkError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatErrorStatus": "Errore {code}",
+  "@chatErrorStatus": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "chatLimitReached": "Limite raggiunto.",
+  "chatQuota": "Quota: {used} / {limit} · ancora {remaining}",
+  "@chatQuota": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "chatToolDev": "Strumento (sviluppatore)",
+  "chatToolAuto": "Auto",
+  "chatPromptWatch": "Cosa è in scadenza?",
+  "chatPromptWatchQuery": "Cosa è in scadenza?",
+  "chatPromptGarage": "Garage",
+  "chatPromptGarageQuery": "Cosa c'è nel mio garage?",
+  "chatPromptRange": "Autonomia",
+  "chatPromptRangeQuery": "Che autonomia ho con la batteria attuale?",
+  "chatPromptSetups": "Setup",
+  "chatPromptSetupsQuery": "Quali setup ho avuto e cosa è cambiato?",
+  "chatPromptRides": "Uscite",
+  "chatPromptRidesQuery": "Riassunto delle mie ultime uscite",
+  "chatPromptRoutes": "Itinerari",
+  "chatPromptRoutesQuery": "Quali itinerari mi calzano?",
+  "chatPromptShop": "Negozio",
+  "chatPromptShopQuery": "Presto mi servono consumabili?",
+  "chatToolWatch": "In scadenza",
+  "chatToolGarage": "Officina",
+  "chatToolCompat": "Compatibilità",
+  "chatToolRange": "Autonomia",
+  "chatToolSetupHistory": "Storico setup",
+  "chatToolRides": "Uscite",
+  "chatToolRoutes": "Itinerari",
+  "chatToolShop": "Negozio",
+  "chatSubtitleDue": "In scadenza, setup, itinerari, pezzi",
+  "coachHintsTooltip": "{count} suggerimenti",
+  "@coachHintsTooltip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyTitle": "Dati e privacy",
+  "privacyConsents": "Consensi",
+  "privacyHud": "HUD",
+  "privacyZones": "Zone privacy",
+  "privacyZoneAdd": "Zona",
+  "privacyNoZones": "Nessuna zona — l'intorno partenza/arrivo può essere tagliato.",
+  "privacyZoneRadius": "Raggio {label}",
+  "@privacyZoneRadius": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "privacyZoneDelete": "Elimina zona",
+  "privacyFamilyHint": "Famiglia / altri rider: sotto Profilo → Garage famiglia aggiungi rider con il proprio peso.",
+  "privacyExportTitle": "Export (art. 20)",
+  "privacyExportGpx": "Ultima uscita come GPX",
+  "privacyExportFit": "Ultima uscita come FIT",
+  "privacyExportJson": "Export JSON completo",
+  "privacyExportStravaStub": "Payload Strava (locale, sviluppatore)",
+  "privacyStravaConnect": "Collega Strava",
+  "privacyStravaUpload": "Ultima uscita su Strava",
+  "privacyStravaLiveHint": "L'upload live usa i token OAuth salvati (server).",
+  "privacyStravaOauthHint": "OAuth apre il browser; dopo l'autorizzazione continua nell'app.",
+  "privacyStravaMissing": "Strava non è configurato. GPX, FIT e JSON restano le vie di export.",
+  "privacyStravaConnected": "Strava collegato",
+  "privacyStravaCallback": "Callback Strava ricevuto",
+  "privacyStravaStatus": "Strava: {status}",
+  "@privacyStravaStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "privacyStravaUnreachable": "Stato Strava irraggiungibile — l'export stub resta locale",
+  "privacyStravaUrlMissing": "URL di autorizzazione Strava mancante — accedi e riprova.",
+  "privacyStravaBrowser": "Strava nel browser — torna all'app dopo l'autorizzazione, lo stato si aggiorna.",
+  "privacyNoRideUpload": "Nessuna uscita da caricare",
+  "privacyChunksUploaded": "{n} chunk caricati, {left} in attesa",
+  "@privacyChunksUploaded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "left": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyChunksBlocked": "Nessun upload (login/rete?) — {left} in attesa",
+  "@privacyChunksBlocked": {
+    "placeholders": {
+      "left": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyChunksNone": "Nessun chunk in attesa",
+  "privacyHeatmapCells": "Heatmap: {n} celle contribute (visibile solo a k≥5).",
+  "@privacyHeatmapCells": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyHeatmapNone": "Heatmap: nessun contributo (controlla login/consenso/traccia).",
+  "privacyUploadNow": "Carica ora",
+  "privacyChunksPending": "Chunk dati grezzi: {count} in attesa",
+  "@privacyChunksPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyChunksPendingConsentOff": "Chunk dati grezzi: {count} in attesa (consenso off)",
+  "@privacyChunksPendingConsentOff": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacySharedGpx": "GPX condiviso · {path}",
+  "@privacySharedGpx": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "privacySharedFit": "FIT condiviso · {path}",
+  "@privacySharedFit": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "privacySharedStravaStub": "Stub Strava condiviso · {path}",
+  "@privacySharedStravaStub": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "privacyExportSubject": "Export FlowLine",
+  "privacyNoRideExporting": "Nessuna uscita da esportare.",
+  "privacySharedJson": "JSON condiviso · {path}",
+  "@privacySharedJson": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "privacyNoRideExport": "Nessuna uscita da esportare.",
+  "consentRawTitle": "Upload dati grezzi",
+  "consentRawBody": "Dati grezzi dei sensori solo su Wi-Fi e se accetti. Revocabile in qualsiasi momento.",
+  "consentHeatmapTitle": "Heatmap (le tue uscite, anonima)",
+  "consentHeatmapBody": "In locale: le tue uscite. Con un account: celle anonimizzate senza timestamp. La mappa di frequentazione compare solo quando abbastanza rider sono passati in una cella (k≥5).",
+  "consentRecoTitle": "Raccomandazioni prodotti",
+  "consentRecoBody": "Solo quando è pertinente, con un dato tracciabile. Niente marketing di tracking.",
+  "consentAnalyticsTitle": "Analytics",
+  "consentAnalyticsBody": "Metriche prodotto senza dati di salute né sensori grezzi.",
+  "consentHealthTitle": "Dati di salute",
+  "consentHealthBody": "Preparazione — Health Connect non è ancora collegato. Questo consenso salva solo la tua preferenza per dopo.",
+  "privacyZoneTapHint": "Tocca la mappa per posizionare la zona.",
+  "privacyZoneRadiusHint": "Il raggio vale per export e heatmap.",
+  "privacyZoneLabel": "Etichetta",
+  "privacyZoneRadiusWord": "Raggio",
+  "privacyZoneApplyCoords": "Applica coordinate",
+  "privacyZoneCoords": "Coordinate",
+  "privacyZoneCoordsHint": "Solo se vuoi impostare il punto con i numeri",
+  "profilePictureSet": "Foto profilo impostata",
+  "profileSaved": "Profilo salvato",
+  "profileLocalOnly": "Solo locale — accedi per il sync",
+  "profileSyncCloudKept": "Sync: cloud tenuto",
+  "profileSyncDeviceUploaded": "Sync: dispositivo caricato",
+  "profileSyncCurrent": "Sync: aggiornato",
+  "profileSyncConflictTitle": "Conflitto di sync",
+  "profileSyncConflictBody": "Cloud e questo dispositivo differiscono.\nCloud: {when}\n\nQuale versione deve valere?",
+  "@profileSyncConflictBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "profileKeepCloud": "Tieni il cloud",
+  "profileForceDevice": "Forza il dispositivo",
+  "profileConflictCloud": "Conflitto: cloud tenuto",
+  "profileConflictDevice": "Conflitto: dispositivo forzato",
+  "profileSyncCancelled": "Sync annullato",
+  "profileSignInForBilling": "Accedi per gestire l'abbonamento",
+  "profileNoStripeSub": "Ancora nessun abbonamento Stripe — passa prima a Pro.",
+  "profilePortalError": "Portale: {code}",
+  "@profilePortalError": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "profileNoPortalUrl": "Nessun URL portale",
+  "profileFamilyRiderTitle": "Rider famiglia",
+  "profileName": "Nome",
+  "profileWeightKg": "Peso kg",
+  "profileRiderAdded": "Rider aggiunto",
+  "profileRiderFallback": "Rider",
+  "profileActiveBike": "Attiva: {name} · {category}",
+  "@profileActiveBike": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "profileDisciplines": "Le tue discipline",
+  "profileDisciplinesHint": "Preferenze per i tour. Il routing segue la bici attiva, non solo questa lista.",
+  "profileRiderCard": "Profilo rider",
+  "profilePublic": "Pubblico",
+  "profileAccountSync": "Account e sync",
+  "profileCloudBilling": "Cloud-sync e abbonamento",
+  "profileSignedIn": "Accesso effettuato",
+  "profileFamilyGarage": "Garage famiglia",
+  "profileFamilyHint": "Altri rider con il proprio peso — es. partner o figlio.",
+  "profileLegal": "Note legali",
+  "profilePrivacyPolicy": "Privacy",
+  "profileImprint": "Impressum",
+  "profileWithdrawal": "Recesso",
+  "profileSetPrimary": "Imposta come disciplina principale",
+  "profilePrimarySuffix": "{label} · principale",
+  "@profilePrimarySuffix": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "profileNeedOneDiscipline": "Tieni almeno una disciplina selezionata.",
+  "profileLocalUntilSignIn": "Locale — sync dopo l'accesso",
+  "profileChangePhoto": "Cambia foto",
+  "profileActivityLabel": "Attività — ultime uscite a casa",
+  "profileBikeOne": "Bici",
+  "profileBikes": "Bici",
+  "profileRideOne": "Uscita",
+  "profileRides": "Uscite",
+  "profileKmTotal": "km totali",
+  "profileKmElevation": "km · {hm} hm",
+  "@profileKmElevation": {
+    "placeholders": {
+      "hm": {
+        "type": "int"
+      }
+    }
+  },
+  "profileProActive": "FlowLine Pro attivo",
+  "profileManage": "Gestisci",
+  "profileProPerks": "Mappe offline, bici illimitate, analisi sospensione e bracketing.",
+  "profileUpgradePro": "Passa a Pro",
+  "profileDisplayName": "Nome visualizzato",
+  "profileRiderWeight": "Peso rider (kg)",
+  "profileRideStyle": "Stile di guida",
+  "profileSkillBeginner": "Principiante",
+  "profileSkillBasics": "Basi",
+  "profileSkillAdvanced": "Avanzato",
+  "profileSkillExperienced": "Esperto",
+  "profileSkillPro": "Pro",
+  "profileSubGarage": "Garage",
+  "profileSubWeight": "Peso rider",
+  "profileSubSkill": "Livello ({skill} / 5)",
+  "@profileSubSkill": {
+    "placeholders": {
+      "skill": {
+        "type": "int"
+      }
+    }
+  },
+  "profileStyleEfficientPace": "Efficiente / ritmo",
+  "profileStyleSteady": "Costante",
+  "profileStyleExploring": "Esplorazione",
+  "profileStyleCommute": "Quotidiano / pendolare",
+  "profileStyleTours": "Tour",
+  "profileStyleRelaxed": "Rilassato",
+  "profileStyleAggressive": "Aggressivo",
+  "profileStyleFlow": "Flow",
+  "profileStyleLines": "Cercare le linee",
+  "profileStyleEfficient": "Efficiente",
+  "profileDisciplinesSaved": "Discipline: {list}",
+  "@profileDisciplinesSaved": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "profileAlsoList": "anche {list}",
+  "@profileAlsoList": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "publicProfileTitle": "Profilo pubblico",
+  "publicProfileHint": "Opt-in. Handle sulle voci, niente tracce, niente scheda.",
+  "publicProfileHandle": "Handle",
+  "publicProfileBio": "Bio",
+  "publicProfileRegion": "Regione",
+  "publicProfileShowRides": "Mostra il numero di uscite",
+  "publicProfileFoot": "Niente traccia pubblica, niente DM. L'handle resta locale fino al sync.",
+  "hudMediaTitle": "Media nell'HUD",
+  "hudMediaProfileHint": "Accesso opzionale perché l'HUD mostri il titolo in corso. Play/Pause spesso già funziona senza.",
+  "hudMediaPrivacyHint": "Impostazione sotto Profilo. Accesso opzionale alla sessione media per il titolo nell'HUD.",
+  "onboardHowYouRide": "Come pedali?",
+  "onboardYourWeight": "Il tuo peso",
+  "onboardFirstRide": "Prima uscita",
+  "onboardWeightHint": "Per setup, SAG e autonomia — solo locale, modificabile quando vuoi. Utile anche senza forcella (es. city).",
+  "onboardGpsHint": "Traccia GPS vera — niente demo. Bici opzionale. MTB, gravel, strada o city: allo stesso modo.",
+  "onboardGpsStatus": "Posizione per la traccia GPS…",
+  "onboardServicesOff": "Attiva i servizi di localizzazione, poi riprova.",
+  "onboardDeniedForever": "Consenti la posizione nelle impostazioni dell'app.",
+  "onboardNeedGps": "Consenti la posizione — senza GPS niente traccia.",
+  "onboardWeightLabel": "Peso rider: {kg} kg",
+  "@onboardWeightLabel": {
+    "placeholders": {
+      "kg": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardDiscipline": "Disciplina: {label}",
+  "@onboardDiscipline": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardSensorsHint": "Posizione per la traccia GPS. Sensori Bluetooth più tardi in officina — per ogni tipo di bici.",
+  "onboardNextRide": "Continua verso l'uscita",
+  "onboardParkBikeFirst": "Prima parcheggia una bici",
+  "onboardLater": "Configura più tardi",
+  "offlineMapsTitle": "Mappe offline",
+  "offlineMapsHint": "Scarica il grafo di routing e le tile per la regione. Offline: mappa caricata + routing grafo nella bounding box. Le tile Valhalla non sono ancora nei pack.",
+  "offlineRegionActive": "Regione attiva",
+  "offlineNoRegion": "Nessuna regione attiva",
+  "offlineReadyBoth": "Routing + tile pronti.",
+  "offlineReadyRouting": "Routing pronto — mappa non ancora offline.",
+  "offlineLoadBelow": "Carica un pack costruito più sotto.",
+  "offlineRegions": "Regioni",
+  "offlineSearchRegion": "Cerca regione",
+  "offlineNoneFound": "Nessuna regione trovata",
+  "offlineNoPacks": "Nessun pack scaricabile. Stub sotto — niente grafo demo sotto un altro nome.",
+  "offlineNotBuilt": "Non ancora costruito ({count})",
+  "@offlineNotBuilt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineStubsHint": "Stub catalogo — download disattivato",
+  "offlineRemoveRegion": "Rimuovi regione",
+  "offlineStyleTitle": "Stile mappa (opzionale)",
+  "offlineStyleHint": "Default: DACH z11 style JSON. Cambia solo per il tuo stile MapLibre.",
+  "offlineStyleUrl": "URL style JSON",
+  "offlineSaveStyle": "Salva stile",
+  "offlineRegionActiveSnack": "{name} attiva",
+  "@offlineRegionActiveSnack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineActivateError": "Attiva: {error}",
+  "@offlineActivateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "offlinePackError": "Pack regione: {error}",
+  "@offlinePackError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineRemoved": "Regione rimossa",
+  "offlineNoRemoteDach": "Nessun pack remoto — fallback DACH attivo",
+  "offlineNoBuiltPacks": "Nessun pack costruito su questo server",
+  "offlineDachCatalog": "Offline — regioni DACH dal catalogo app",
+  "offlineReadyMapRouting": "Mappa + routing pronti",
+  "offlineRoutingBg": "Routing pronto, mappa in caricamento in background",
+  "offlineBasemapFail": "Routing pronto — download basemap fallito, la mappa serve il CDN",
+  "offlineTilesMissing": "Routing pronto, tile mancanti (rete/limite)",
+  "offlineDemoGraph": "Grafo demo Foresta Nera attivo — non la mappa {name}",
+  "@offlineDemoGraph": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineStyleCleared": "Override cancellato — stile default attivo",
+  "offlineStyleSaved": "Stile salvato. La mappa si ricarica: {url}",
+  "@offlineStyleSaved": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "platzTogetherKicker": "USCIRE INSIEME",
+  "platzTogetherTitle": "Uscire insieme",
+  "platzTogetherHint": "Invita condivide il link. Il filtro Tutte, Privato, Pubblico vale anche per i gruppi.",
+  "platzTogetherListHint": "Gruppo davanti al cancello. Accesso: sul server. Altrimenti solo questo dispositivo — niente utente demo. Pin solo nell'HUD dopo opt-in.",
+  "platzCreateGroup": "Crea gruppo",
+  "platzJoinCode": "Codice",
+  "platzNoGroup": "Ancora nessun gruppo. Solo codici veri — niente di recitato.",
+  "platzHost": "Host",
+  "platzGuest": "Ospite",
+  "platzYou": "Tu",
+  "platzInvite": "Invita",
+  "platzDissolve": "Sciogli",
+  "platzLeave": "Lascia",
+  "platzCopyLink": "Copia link",
+  "platzInviteShares": "Invita condivide il link del gruppo",
+  "platzInviteSharesProfile": " e il tuo profilo Platz",
+  "platzMembersCount": "{count} dentro",
+  "@platzMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "platzOnServer": "sul server",
+  "platzOnDevice": "solo su questo dispositivo",
+  "platzCollectionDefaultName": "Raccolta {day}.{month}.",
+  "@platzCollectionDefaultName": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
+    }
+  },
+  "platzPinsOff": "Pin off",
+  "platzPinsHudOnly": "Pin solo nell'HUD",
+  "platzCollectionsKicker": "RACCOLTE",
+  "platzNoCollection": "Ancora nessuna raccolta — creane una qui.",
+  "platzCollectionTours": "{count} tour",
+  "@platzCollectionTours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "platzCreateCollection": "Crea raccolta",
+  "platzJoinWithCode": "Entra con un codice",
+  "platzJoinCodeField": "Join-code",
+  "platzJoin": "Entra",
+  "platzNeedSharedTour": "Gruppo solo su un tour condiviso o di catalogo. Il GPX privato resta privato.",
+  "platzNoSharedTours": "Nessun tour condiviso o di catalogo. Il GPX privato resta fuori.",
+  "platzGroupCreated": "Gruppo {code} — invita condivide il link, niente explore.",
+  "@platzGroupCreated": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "platzGroupCreatedNote": "Gruppo {code} — {note}",
+  "@platzGroupCreatedNote": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "platzShareSubject": "Uscire insieme: {title}",
+  "@platzShareSubject": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "platzLinkCopied": "Link copiato. Chi ce l'ha può entrare finché il gruppo è aperto.",
+  "platzWindowClosed": "Finestra chiusa",
+  "platzWindowHours": "Finestra {hours} h",
+  "@platzWindowHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "platzWindowMinutes": "Finestra {minutes} min",
+  "@platzWindowMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "platzWindowOpen": "Finestra aperta",
+  "platzCollectionShare": "Raccolta « {name} »: {routes}",
+  "@platzCollectionShare": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "routes": {
+        "type": "String"
+      }
+    }
+  },
+  "rerouteTitle": "Fuori itinerario.",
+  "rerouteHint": "Stai calmo — decidi tu.",
+  "rerouteRejoin": "Torna all'itinerario",
+  "rerouteStay": "Resta",
+  "rerouteSkip": "Salta questo tratto",
+  "bleOff": "Bluetooth è off — accendilo.",
+  "bleDenied": "Permesso Bluetooth mancante.",
+  "bleUnavailable": "Bluetooth LE non è disponibile su questo dispositivo.",
+  "bleScanFailed": "Ricerca fallita",
+  "bleConnecting": "Connessione…",
+  "blePairFailed": "Associazione fallita",
+  "bleNothingFound": "Niente trovato",
+  "bleScanAgain": "Cerca di nuovo",
+  "bleHowTo": "Come colleghi",
+  "watchPairTitle": "Associa orologio",
+  "watchPairHint": "Polso solo con 0x180D. La batteria dell'orologio non è quella della bici.",
+  "watchScanning": "Cerco orologio e fascia cardio…",
+  "watchEmptyHint": "Broadcast on, telefono vicino. Apple Watch non invia polso standard.",
+  "watchNoHr": "Niente Heart Rate 0x180D — controlla il broadcast.",
+  "watchNoDeviceId": "Collegato, ma senza ID dispositivo",
+  "bleBikeTitle": "Associa bici",
+  "bleBikeHint": "Batteria e assist solo con GATT vero — niente da inventare.",
+  "bleRememberAnyway": "Ricorda lo stesso",
+  "bleScanningDrive": "Cerco motore e sensori…",
+  "bleEmptyEbike": "Sveglia il display, chiudi Flow o E-TUBE, tieni il telefono vicino.",
+  "bleEmptySensor": "Metti il sensore vicino e attivalo sulla bici (magnete/pedivella).",
+  "bleConnectFailed": "Connessione fallita",
+  "dieBoxReady": "Pronto",
+  "dieBoxAlmost": "Quasi pronto",
+  "dieBoxUnknown": "Appena arrivato",
+  "dieBoxNothingDueMonday": "Pronto per lunedì — luci e catena a posto.",
+  "dieBoxNothingDue": "Pronto — niente in attesa.",
+  "dieBoxCscHint": "Accoppia il sensore della bici qui. L’orologio resta su di te in uscita.",
+  "dieBoxEmptyHint": "Niente iscritto. Nome e tipo bastano — parti solo se sono davvero sulla bici.",
+  "dieBoxAddSomething": "Iscrivi qualcosa",
+  "dieBoxAddMore": "Iscrivi altro",
+  "dieBoxBatteryHint": "La carica compare quando un sensore sulla bici si accoppia. Nessun numero prima.",
+  "dieBoxPressureTitle": "Segna la pressione",
+  "dieBoxPressureHint": "Leggi anteriore e posteriore alla valvola.",
+  "dieBoxPressureFront": "Anteriore",
+  "dieBoxPressureRear": "Posteriore",
+  "dieBoxPressureLogged": "Pressione segnata",
+  "dieBoxSagTitle": "Segna la sospensione",
+  "dieBoxSagHint": "Percentuale su forcella e ammortizzatore. Il SAG è quanto affonda con te sopra.",
+  "dieBoxSagFork": "SAG forcella %",
+  "dieBoxSagShock": "SAG ammortizzatore %",
+  "dieBoxSagLogged": "SAG segnato",
+  "dieBoxTravelTitle": "Iscrivi l'escursione",
+  "dieBoxTravelHint": "Solo l’escursione scritta sulla bici.",
+  "dieBoxTravelFront": "Anteriore mm",
+  "dieBoxTravelRear": "Posteriore mm",
+  "dieBoxTravelSave": "Iscrivi",
+  "dieBoxChainLogged": "Catena misurata",
+  "dieBoxChainNotes": "Misurata col calibro",
+  "dieBoxSetActiveTitle": "Porta avanti questa bici",
+  "dieBoxSetActiveHint": "Una bici sta nel box — cambiare la porta avanti.",
+  "dieBoxSetActiveCta": "Imposta come attiva",
+  "dieBoxLightsTitle": "Iscrivi le luci",
+  "dieBoxLightsHint": "Solo se le luci sono davvero sulla bici.",
+  "dieBoxLightsCta": "Iscrivi luci",
+  "dieBoxLockTitle": "Iscrivi il lucchetto",
+  "dieBoxLockHint": "Solo se c’è un lucchetto sulla bici.",
+  "dieBoxLockCta": "Iscrivi lucchetto",
+  "dieBoxRackTitle": "Iscrivi il portapacchi",
+  "dieBoxRackHint": "Solo se la bici ce l’ha.",
+  "dieBoxRackCta": "Iscrivi portapacchi",
+  "dieBoxBagsTitle": "Iscrivi le borse",
+  "dieBoxBagsHint": "Solo se le borse sono sulla bici.",
+  "dieBoxBagsCta": "Iscrivi borse",
+  "dieBoxPressureMissingTitle": "Segna la pressione",
+  "dieBoxPressureMissingHint": "Leggi anteriore e posteriore alla valvola.",
+  "dieBoxPressureMissingCta": "Segna la pressione",
+  "dieBoxTirePressureTitle": "Segna la pressione gomme",
+  "dieBoxTirePressureHint": "Leggi anteriore e posteriore alla valvola.",
+  "dieBoxTravelMissingTitle": "Iscrivi l’escursione",
+  "dieBoxTravelMissingHint": "Solo l’escursione scritta sulla bici.",
+  "dieBoxTravelMissingCta": "Iscrivi l'escursione",
+  "dieBoxSagMissingTitle": "Segna la sospensione",
+  "dieBoxSagMissingHint": "Un numero su forcella e ammortizzatore, letto sulla bici.",
+  "dieBoxSagMissingCta": "Segna la sospensione",
+  "dieBoxChainTitle": "Segna la catena",
+  "dieBoxChainHint": "Misura col calibro, poi segna qui.",
+  "dieBoxChainCta": "Catena misurata",
+  "dieBoxBrakesTitle": "Iscrivi i freni",
+  "dieBoxBrakesHint": "Solo se le pastiglie sono sulla bici.",
+  "dieBoxBrakesCta": "Iscrivi freno",
+  "dieBoxChainDueTitle": "Controlla la catena col calibro",
+  "dieBoxChainDueHint": "Guarda, poi misura col calibro.",
+  "dieBoxParkTrailTitle": "Park o trail",
+  "dieBoxParkTrailHint": "Entrambi i setup ci sono — cambia se vuoi.",
+  "dieBoxParkTrailCta": "Cambia",
+  "dieBoxChipLight": "Luci",
+  "dieBoxChipLock": "Lucchetto",
+  "dieBoxChipRack": "Portapacchi",
+  "dieBoxChipBags": "Borse",
+  "dieBoxChipTires": "Gomme",
+  "dieBoxChipDropper": "Telescopica",
+  "dieBoxChipBrakes": "Freni",
+  "dieBoxChipParkTrail": "Park | Trail",
+  "dieBoxChipTravel": "Escursione",
+  "dieBoxChipCsc": "CSC",
+  "dieBoxChipBatteryHonest": "Batteria onesta",
+  "dieBoxChipSag": "SAG",
+  "dieBoxSentenceEverydayReady": "{name} vive qui · pronto per lunedì",
+  "@dieBoxSentenceEverydayReady": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dieBoxBitLightsChainOk": "Luci e catena ok",
+  "dieBoxBitPressureUnknown": "Pressione non misurata",
+  "dieBoxBitLightsMissing": "Luci non iscritte",
+  "dieBoxSentenceNotReady": "{name} vive qui",
+  "@dieBoxSentenceNotReady": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dieBoxSentenceBits": "{name} · {bits}",
+  "@dieBoxSentenceBits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "bits": {
+        "type": "String"
+      }
+    }
+  },
+  "dieBoxWheelOpen": "Ruota aperta",
+  "dieBoxBitPressureLogged": "Pressione segnata",
+  "dieBoxBitPressureRough": "Pressione a occhio — rimisura",
+  "dieBoxBitBagsYes": "Borse ci sono",
+  "dieBoxBitBagsNo": "Borse non iscritte",
+  "dieBoxBitChainYes": "Catena misurata",
+  "dieBoxBitChainNo": "Catena non ancora misurata",
+  "dieBoxBitPressureToday": "Pressione ancora aperta oggi",
+  "dieBoxSentencePark": "Setup park",
+  "dieBoxSagLoggedShort": "SAG segnato",
+  "dieBoxSagMissingShort": "SAG non misurato",
+  "dieBoxSentenceNoTravel": "{name} vive qui",
+  "@dieBoxSentenceNoTravel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dieBoxDriveAssist": " · e-assist",
+  "dieBoxSentenceMtb": "{name} · {travel}{drive}",
+  "@dieBoxSentenceMtb": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "travel": {
+        "type": "String"
+      },
+      "drive": {
+        "type": "String"
+      }
+    }
+  },
+  "dieBoxSentenceFallback": "{name} vive qui",
+  "@dieBoxSentenceFallback": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "close": "Chiudi",
+  "ok": "OK",
+  "remove": "Rimuovi",
+  "garageMoreOnBike": "Altro sulla bici",
+  "garageMoreOnBikeHint": "Parti, manutenzione, versioni di setup — dietro la Box",
+  "garageDeleteBike": "Elimina bici",
+  "garageDeleteBikeTitle": "Eliminare questa bici?",
+  "garageDeleteBikeBody": "Componenti e setup di questa bici spariscono in locale.",
+  "garageRemovePartTitle": "Rimuovere il componente?",
+  "garageRemovePartBody": "{slot}: {name} verrà rimosso dal garage.",
+  "@garageRemovePartBody": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "garageNotLogged": "Non registrato",
+  "garageOptions": "Opzioni",
+  "garageFitTitle": "Compatibilità",
+  "garageFitStatus": "Stato: {label}",
+  "@garageFitStatus": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "garageFitSeverity": "Gravità: {label}",
+  "@garageFitSeverity": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "garageFitSeveritySafety": "critico per la sicurezza",
+  "garageFitSeverityFunctional": "funzionale",
+  "garageFitExplained": "In parole semplici",
+  "garageFitCondition": "Condizione: {text}",
+  "@garageFitCondition": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "garageFitHint": "Nota: {text}",
+  "@garageFitHint": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "garageFitMissing": "Info ancora mancanti",
+  "garageFitSource": "Fonte: {url}",
+  "@garageFitSource": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "garageGroupCount": "{group} · {count}",
+  "@garageGroupCount": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageVerdictFits": "Va bene",
+  "garageVerdictCheck": "Controlla",
+  "garageVerdictNoFit": "Non va",
+  "garageVerdictUnclear": "Incerto",
+  "garageAllCount": "tutti {count}",
+  "@garageAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageActiveStamp": "ATTIVO",
+  "garageFreeOneBikeTitle": "Free: una bici",
+  "garageFreeOneBikeBody": "Il piano Free prevede una bici. Puoi comunque crearne altre in locale — i limiti di sync valgono dopo l'accesso.",
+  "garageUnlockPro": "Sblocca Pro",
+  "garageAddAnyway": "Crea comunque",
+  "garageSlotFrame": "Telaio",
+  "garageSlotFork": "Forcella",
+  "garageSlotRearShock": "Ammortizzatore",
+  "garageSlotHeadset": "Serie sterzo",
+  "garageSlotStem": "Attacco",
+  "garageSlotHandlebar": "Manubrio",
+  "garageSlotGrips": "Manopole",
+  "garageSlotSeatpost": "Reggisella",
+  "garageSlotSaddle": "Sella",
+  "garageSlotFrontHub": "Mozzo anteriore",
+  "garageSlotRearHub": "Mozzo posteriore",
+  "garageSlotFrontRim": "Cerchio anteriore",
+  "garageSlotRearRim": "Cerchio posteriore",
+  "garageSlotTireFront": "Gomma anteriore",
+  "garageSlotTireRear": "Gomma posteriore",
+  "garageSlotCassette": "Cassetta",
+  "garageSlotChain": "Catena",
+  "garageSlotCrankset": "Guarnitura",
+  "garageSlotBottomBracket": "Movimento centrale",
+  "garageSlotFrontDerailleur": "Deragliatore",
+  "garageSlotRearDerailleur": "Cambio",
+  "garageSlotShifter": "Comando",
+  "garageSlotBrakeFront": "Freno anteriore",
+  "garageSlotBrakeRear": "Freno posteriore",
+  "garageSlotRotorFront": "Disco anteriore",
+  "garageSlotRotorRear": "Disco posteriore",
+  "garageSlotMotor": "Motore",
+  "garageSlotBattery": "Batteria",
+  "garageSlotDisplay": "Display",
+  "garageSlotLight": "Luci",
+  "garageSlotLock": "Lucchetto",
+  "garageSlotRack": "Portapacchi",
+  "garageSlotBags": "Borse",
+  "garageSlotOther": "Altro",
+  "garageGroupSuspension": "Sospensione",
+  "garageGroupWheels": "Ruote",
+  "garageGroupCockpit": "Cockpit",
+  "garageGroupDrivetrain": "Trasmissione",
+  "garageGroupBrakes": "Freni",
+  "garageGroupPower": "E-Bike",
+  "garageGroupOther": "Altro",
+  "dieBoxZoneToday": "Oggi",
+  "dieBoxZoneOnBike": "Sulla bici",
+  "dieBoxZoneSensor": "Sensore",
+  "garageCatalogOffline": "Catalogo offline — puoi creare la bici sotto «La mia bici» o «GPX».",
+  "garageNoHit": "Nessun risultato — usa l'elenco o cerca diversamente.",
+  "garageSearchUnavailable": "Ricerca non disponibile — usa l'elenco.",
+  "garageFileUnreadable": "File illeggibile",
+  "garageGpxInvalid": "Track GPX non valido (min. 2 punti)",
+  "garageNeedMakeModel": "Scegli marca e modello",
+  "garageCreateFailed": "Creazione fallita: {error}",
+  "@garageCreateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "garageOemSetup": "Setup di serie",
+  "garageCatalogIdentity": "Identità catalogo",
+  "garageImportBike": "Bici importata",
+  "garageImportNoGpx": "Import senza GPX — componenti dopo",
+  "garageBaseSetup": "Setup di base",
+  "garageFreeExtraLocal": "Free: altra bici in locale (multi-bici è Pro).",
+  "garageOemTakeover": "Prendi i pezzi di serie ({count})",
+  "@garageOemTakeover": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageOemHint": "Altrimenti solo identità. Il catalogo resta una ricerca.",
+  "garageReachStack": "Reach {reach} mm · Stack {stack} mm",
+  "@garageReachStack": {
+    "placeholders": {
+      "reach": {
+        "type": "String"
+      },
+      "stack": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCatalogNotLoaded": "Catalogo non caricato — passa a «La mia bici» o riprova più tardi.",
+  "garageSearchBrandHint": "Focus SAM, Canyon Grizl, Stevens …",
+  "garageSearchIntro": "Cerca marca e modello, fai una foto o scegli dall'elenco.",
+  "garageHideList": "Nascondi elenco",
+  "garagePickFromList": "Scegli dall'elenco",
+  "garageManufacturer": "Produttore",
+  "garageNickname": "Soprannome (opzionale)",
+  "garageNicknameHint": "es. trail",
+  "garageTravelFrontMm": "Escursione anteriore (mm)",
+  "garageTravelRearMm": "Escursione posteriore (mm)",
+  "garageTravelOnlyIfPresent": "Solo se è sulla bici",
+  "garageOnBikeCheck": "Sulla bici — spunta solo se c'è davvero",
+  "garageBagsOnBike": "Borse sulla bici",
+  "garageBrandOptional": "Marca (opzionale)",
+  "garageModelOptional": "Modello (opzionale)",
+  "garagePickGpx": "Scegli file GPX",
+  "garageNameOptional": "Nome (opzionale)",
+  "garageMyBike": "La mia bici",
+  "garageCatalog": "Catalogo",
+  "garageImport": "Importa",
+  "garageCreateBike": "Crea bici",
+  "garageGpxImported": "GPX «{name}» · {km} km",
+  "@garageGpxImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "garageName": "Nome",
+  "garageNameHint": "es. bici di tutti i giorni",
+  "garagePhoto": "Foto",
+  "garageGallery": "Galleria",
+  "garageSlotHeading": "Slot",
+  "garageEditPart": "Modifica pezzo",
+  "garageInstallPart": "Installa pezzo",
+  "garageSearchParts": "Cerca pezzi (API/cache)",
+  "garageSearchPartsHint": "Marca / modello — opzionale",
+  "garageSearchPartsHelper": "Senza risultati: dati base a mano",
+  "garageHits": "Risultati",
+  "garageNoHitsManual": "Nessun risultato — compila a mano. La cache può essere vuota.",
+  "garageCacheId": "ID cache: {id}",
+  "@garageCacheId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCompatAttrs": "Attributi di fit · {slot}",
+  "@garageCompatAttrs": {
+    "placeholders": {
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCompatAttrsHint": "Fonte: scheda tecnica o stampa sul pezzo. Lascia vuoto se sconosciuto — allora «dati mancanti», niente indovinelli.",
+  "garageExtraAttr": "Altro attributo (avanzato)",
+  "garageAttrKey": "Chiave attributo",
+  "garageAttrValue": "Valore attributo",
+  "garageCompatPlaceholder": "Placeholder di fit impostati (es. 148×12 / Microspline) — non è verità da catalogo. Controlla gli attributi.",
+  "garageSagGuideTitle": "Valori di partenza sospensione (ciclista {kg} kg)",
+  "@garageSagGuideTitle": {
+    "placeholders": {
+      "kg": {
+        "type": "String"
+      }
+    }
+  },
+  "garageSagGuideFork": "Forcella: {psi} psi ({min}–{max}) · SAG {sag}%",
+  "@garageSagGuideFork": {
+    "placeholders": {
+      "psi": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      },
+      "sag": {
+        "type": "String"
+      }
+    }
+  },
+  "garageSagGuideShock": "Ammortizzatore: {psi} psi ({min}–{max}) · SAG {sag}%",
+  "@garageSagGuideShock": {
+    "placeholders": {
+      "psi": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      },
+      "sag": {
+        "type": "String"
+      }
+    }
+  },
+  "garageSagGuideHint": "Valore di partenza — misura sulla bici, poi raffina.",
+  "garageMeasureSag": "Misura SAG",
+  "garageShowMeasureSteps": "Mostra i passi",
+  "garageOdometer": "Chilometraggio",
+  "garageOperatingHours": "Ore di esercizio",
+  "garageOdoStand": "Lettura: {km} km",
+  "@garageOdoStand": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "garageHoursStand": "Ore: {hours} h",
+  "@garageHoursStand": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "garageAddKmNoGps": "Aggiungi km senza track GPS",
+  "garageDistanceKm": "Distanza (km)",
+  "garageImportKm": "Importa km (senza ride GPS)",
+  "garageMaintLog": "Log manutenzione",
+  "garageMaintLogEmpty": "Ancora nessuna voce — impostare l'odometro scrive i log.",
+  "garageBleScanning": "Cerco dispositivi …",
+  "garageBlePaired": "Dispositivo accoppiato",
+  "garageBlePairedNamed": "Accoppiato: {name}",
+  "@garageBlePairedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "garageBlePairFailed": "Accoppiamento fallito",
+  "garageBleRemoved": "Sensore rimosso",
+  "garageBleDisconnected": "Bluetooth non collegato",
+  "garageBleHintEbike": "Bosch, Shimano STEPS o CSC. Accendi il display.",
+  "garageBleHintSensor": "Sensore sulla bici, non sul ciclista.",
+  "discoverRefresh": "Aggiorna",
+  "discoverChangePlace": "Cambia luogo",
+  "discoverSuggestDuration": "Proponi durata",
+  "discoverDemoCities": "Città demo",
+  "discoverNearbyTitle": "Vicino a te · {profile}",
+  "@discoverNearbyTitle": {
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverNearbyHintGps": "Tocca per vedere il tracciato · Parti avvia la navigazione",
+  "discoverNearbyHintNoGps": "Condividi la posizione per tour da qui",
+  "discoverGrantLocation": "Condividi posizione",
+  "discoverSuggestionsComputing": "Calcolo dei suggerimenti…",
+  "discoverNoSuggestions": "Nessun suggerimento — imposta un luogo, scegli un profilo o tocca Aggiorna.",
+  "discoverAdaptSuggestion": "Adatta il suggerimento: {label}",
+  "@discoverAdaptSuggestion": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverTours": "Tour",
+  "discoverToursLoops": "Tour · {count} anelli",
+  "@discoverToursLoops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverToursCount": "Tour · {count}",
+  "@discoverToursCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverNoGpsCurated": "Senza GPS: tour scelti · posizione per i vicini",
+  "discoverGrantLocationNearby": "Condividi la posizione per tour vicino a te",
+  "discoverToursNearbyCount": "{count} tour nelle vicinanze",
+  "@discoverToursNearbyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverCuratedLoops": "{count} anelli scelti",
+  "@discoverCuratedLoops": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverOfflineSuffix": " · offline",
+  "discoverHeatmapConsent": "Heatmap dopo il consenso — apri privacy",
+  "discoverRideToStartShort": "Al via",
+  "discoverLoopsNearby": "Anelli vicino a te",
+  "discoverNoLoop90": "Nessun anello entro 90 km — regioni successive",
+  "discoverRecommendedNoGps": "Tour consigliati · anche senza GPS",
+  "discoverRecommended": "Consigliati ({count})",
+  "@discoverRecommended": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverRecommendedHint": "Per tutti i tipi di bici · il tracciato arriva quando parti",
+  "discoverInRegion": "In zona ({count})",
+  "@discoverInRegion": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverToursAround": "Tour qui intorno",
+  "discoverAfterLocation": "Compare dopo la posizione",
+  "discoverNeedLocationTrails": "Imposta luogo o partenza per la rete trail",
+  "discoverTrailLoading": "Rete trail in caricamento…",
+  "discoverTrailEmpty": "Nessuna rete OSM di trail qui vicino",
+  "discoverTrailCount": "Rete {count} · tocca per scegliere",
+  "@discoverTrailCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverTrailOffline": "Rete trail offline",
+  "discoverOsmLivePath": "Percorso OSM live",
+  "discoverOsmTags": "Tag da OpenStreetMap",
+  "discoverTapMapTrails": "Tocca la mappa per scegliere i trail.",
+  "discoverTrailApproachHint": "Arriva all'ingresso, poi salva l'overlay o parti.",
+  "discoverRideToTrailhead": "Vai al via",
+  "discoverPutOnRoute": "Metti sul percorso",
+  "discoverOpenOsm": "Apri su OpenStreetMap",
+  "discoverApproachTrailhead": "Avvicinamento al trailhead…",
+  "discoverApproachPlusTrail": "Avvicinamento + trail · {km} km · {diff}",
+  "@discoverApproachPlusTrail": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "diff": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverTrailLaid": "Trail posato · {diff} · {km} km — salva o parti",
+  "@discoverTrailLaid": {
+    "placeholders": {
+      "diff": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverSurfaceNature": "Naturale",
+  "discoverSurfaceGrass": "Erba",
+  "discoverSurfaceWood": "Legno",
+  "discoverHighwayPath": "Sentiero",
+  "discoverHighwayTrack": "Pista forestale",
+  "discoverHighwayCycle": "Ciclabile",
+  "discoverHighwayBridle": "Ippovia",
+  "discoverHighwayFoot": "Pedonale",
+  "discoverSetStartEnd": "Imposta partenza e arrivo — poi calcola il percorso",
+  "discoverAdjustStops": "Regola partenza, arrivo o uno stop",
+  "discoverNoHitsFor": "Nessun risultato per «{query}»",
+  "@discoverNoHitsFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverGeocodeFailed": "Ricerca indirizzo fallita",
+  "discoverStartEndHit": "{kind}: {label}",
+  "@discoverStartEndHit": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverIdeaStartSet": "Idea di tour: partenza = punto, arrivo proposto — calcola il percorso.",
+  "discoverSuggestEnd": "Arrivo proposto (modificabile)",
+  "discoverTourInPlan": "Tour in Pianifica — partenza/arrivo/via modificabili",
+  "discoverNeedLocationTours": "Imposta luogo o partenza per i tour",
+  "discoverOaOffline": "Outdooractive offline",
+  "discoverOaNoLive": "Outdooractive — nessun tour live qui vicino",
+  "discoverOaCount": "Outdooractive {count} · OSM/tracce seguono",
+  "@discoverOaCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverLocationOff": "Localizzazione off — tocca la partenza o un indirizzo",
+  "discoverLocationDenied": "Permesso posizione mancante — usa un indirizzo",
+  "discoverNoGpsFix": "Nessun fix GPS — tocca la mappa o cerca un indirizzo",
+  "discoverMyPosition": "La mia posizione",
+  "discoverLocationReady": "Posizione pronta · carico i vicini…",
+  "discoverLocationUnavailable": "Posizione non disponibile — indirizzo o tocca",
+  "discoverComputing": "Calcolo del percorso…",
+  "discoverComputingN": "Calcolo di {count} percorsi…",
+  "@discoverComputingN": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverHeadingNorth": "Verso nord",
+  "discoverHeadingEast": "Verso est",
+  "discoverHeadingSouthwest": "Verso sud-ovest",
+  "discoverTargetNorth": "Arrivo a nord — ritorno non ancora incluso",
+  "discoverTargetEast": "Arrivo a est — ritorno non ancora incluso",
+  "discoverTargetSouthwest": "Arrivo a sud-ovest — ritorno non ancora incluso",
+  "discoverApproxLabel": "{label} (approx.)",
+  "@discoverApproxLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverQuickRoute": "Percorso rapido",
+  "discoverRoutingLimit": "Limite di routing — usata un'approx. Ricalcola dopo.",
+  "discoverNoQuickRoutes": "Nessun percorso rapido",
+  "discoverPartialApprox": "Approx parziale — routing live limitato",
+  "discoverPlannedRoute": "Percorso pianificato",
+  "discoverStraightFallback": "Linea dritta — il routing live non ha dato geometria",
+  "discoverSaved": "Salvato",
+  "discoverSavedNamed": "Salvato: {name}",
+  "@discoverSavedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverSavedRouteLoaded": "Percorso salvato caricato",
+  "discoverStartSetPickEnd": "Partenza impostata — ora scegli l'arrivo",
+  "discoverEndSetComputing": "Arrivo impostato — calcolo del percorso",
+  "discoverFromHere": "Da qui",
+  "discoverNearbyPhotos": "Foto qui vicino",
+  "discoverToMyTours": "Ai Miei tour",
+  "discoverAlreadyInMappe": "Già nella Mappe",
+  "discoverInMappeNamed": "Nella Mappe: {name}",
+  "@discoverInMappeNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverAddRoute": "Aggiungi un percorso",
+  "discoverAddRouteHint": "Nome + partenza — niente traccia inventata. Calcola dopo o GPX.",
+  "discoverMapCenter": "Centro mappa",
+  "discoverSaveToMine": "Salva nei Miei tour",
+  "discoverSavedToMine": "Nei Miei tour: {name}",
+  "@discoverSavedToMine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPickFileAgain": "Scegli un altro file",
+  "discoverGpxUnreadable": "Impossibile leggere «{name}» — danneggiato o GPX non valido.",
+  "@discoverGpxUnreadable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverGpxInvalid": "GPX non valido o troppi pochi punti — altro file?",
+  "discoverGpxImported": "GPX importato: {name} · {km} km",
+  "@discoverGpxImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverSavedDotName": "Salvato · {name}",
+  "@discoverSavedDotName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverAsActive": "Come attivo",
+  "discoverLocalFoldersHint": "Cartelle locali per i percorsi salvati — non un feed social.",
+  "discoverNoSavedInCollection": "Nessun percorso salvato in questa raccolta",
+  "discoverNoCollectionYet": "Ancora nessuna raccolta.",
+  "discoverNewCollection": "Nuova raccolta",
+  "discoverNeedRouteAndCollection": "Serve almeno un percorso salvato e una raccolta",
+  "discoverPickRoute": "Scegli un percorso",
+  "discoverPickCollection": "Scegli una raccolta",
+  "discoverAddedToCollection": "Aggiunto alla raccolta",
+  "discoverRouteToCollection": "Percorso alla raccolta",
+  "discoverStartSavedNoTrack": "Partenza salvata — ancora nessuna traccia. Naviga o GPX.",
+  "discoverComputedRoute": "Percorso calcolato",
+  "discoverSavedRoute": "Percorso salvato",
+  "discoverViaN": "Via {n}",
+  "@discoverViaN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverTourGone": "Tour non più disponibile",
+  "discoverTourGoneBody": "Questo tour non è in elenco — magari un filtro lo nasconde.",
+  "discoverTourTimeline": "Lungo il tour",
+  "discoverNoTrackYet": "Ancora nessuna traccia — Calcola percorso la costruisce in live.",
+  "discoverDuration": "Durata",
+  "discoverLength": "Lunghezza",
+  "discoverAscent": "Salita",
+  "discoverElevationProfile": "Profilo",
+  "discoverDescent": "↓ {m} m di discesa",
+  "@discoverDescent": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverTip": "Consiglio",
+  "discoverBestTime": "Periodo migliore",
+  "discoverDiscipline": "Disciplina",
+  "discoverCorridor": "Corridoio",
+  "discoverTraits": "Tratti",
+  "discoverTipsInfo": "Consigli e info",
+  "discoverStartPoint": "Partenza",
+  "discoverFromHereKm": "{dist} da qui",
+  "@discoverFromHereKm": {
+    "placeholders": {
+      "dist": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverApproach": "Avvicinamento",
+  "discoverInMyTours": "Nei Miei tour",
+  "discoverPinIdeaNamed": "Idea «{name}» — solo punto",
+  "@discoverPinIdeaNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPinIdea": "Idea di tour — solo un punto sulla mappa",
+  "discoverStartEndReady": "Partenza/arrivo impostati. Calcola il percorso o regola l'arrivo.",
+  "discoverComputeAndSave": "Calcola e salva",
+  "discoverChangePlaceSearch": "Cambia luogo — cerca città o indirizzo",
+  "discoverDemoRegion": "Regione demo: {name}",
+  "@discoverDemoRegion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPickProfile": "Scegli profilo",
+  "discoverOwn": "Tue",
+  "discoverStartOnlyNoTrack": "{badge} · partenza — ancora nessuna traccia",
+  "@discoverStartOnlyNoTrack": {
+    "placeholders": {
+      "badge": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverShowLess": "Mostra meno",
+  "discoverShowMore": "Mostra di più",
+  "discoverTrailView": "Vista trail",
+  "discoverNoPhotosNearby": "Nessuna foto qui vicino",
+  "discoverImageUnavailable": "Immagine non disponibile",
+  "discoverNoLivePhotos": "Nessuna foto live",
+  "discoverOpenMapillary": "Apri Mapillary",
+  "discoverMapillarySample": "Esempio — Mapillary non disponibile",
+  "discoverNoTrackOnMap": "Nessuna traccia — caricala prima sulla mappa o GPX.",
+  "discoverNoClosedLoop": "Nessun anello chiuso — scegli di nuovo il tour o Adatta.",
+  "discoverNoLiveTrackPlan": "Nessuna traccia live — Calcola apre Pianifica con un arrivo proposto.",
+  "discoverNotClosedLoopNav": "La geometria non è un anello — navigazione annullata.",
+  "discoverNoRealPolyline": "Nessuna polyline vera — ricalcola o GPX.",
+  "discoverPoiIdeaHint": "Avvicinamento al punto — niente traccia del tour. Continua l'arrivo o GPX.",
+  "discoverHybridKm": "Ibrido · {km} km",
+  "@discoverHybridKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverAroundPoiComputing": "Calcolo di un percorso intorno al punto…",
+  "discoverLiveRouteReady": "Percorso live · {km} km — salva o parti",
+  "@discoverLiveRouteReady": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPoiNamed": "Punto · {name}",
+  "@discoverPoiNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverNotLoopAb": "Non è un anello — proposta A→B. Calcola il percorso o tocca l'arrivo.",
+  "discoverApproxAb": "Approx A→B · regola l'arrivo sulla mappa, poi ricalcola.",
+  "discoverRoutingFailedRetry": "Routing fallito — tocca l'arrivo e riprova.",
+  "discoverUnplausibleDropped": "Risultato di routing poco plausibile scartato",
+  "discoverAltChosen": "Alternativa scelta: {label}",
+  "@discoverAltChosen": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverLoading": "Caricamento",
+  "discoverCatalog": "Catalogo",
+  "discoverShared": "condiviso",
+  "discoverPrivate": "privato",
+  "discoverPrivateCap": "Privato",
+  "discoverShareRelease": "Condividi",
+  "discoverRiddenWith": "pedalato con {name}",
+  "@discoverRiddenWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPrivateCommentHint": "Ancora privato — gli altri commentano dopo la condivisione.",
+  "discoverRemoveFromMappe": "Togli dalla Mappe",
+  "discoverLinkNoTrack": "Link senza traccia — troppo lungo per l'URL. Nome e stats, niente GPS.",
+  "discoverLinkCopiedTrack": "Link copiato. Include una traccia semplificata.",
+  "discoverLinkCopiedStats": "Link copiato. Nome e stats, niente traccia.",
+  "discoverTrackLocal": "Traccia in locale. Sync tra i tuoi dispositivi.",
+  "discoverNoTrackEntry": "Ancora nessuna traccia — solo la voce nella Mappe.",
+  "discoverVisibility": "Visibilità",
+  "discoverCopyLink": "Copia link",
+  "discoverNoSavedFilter": "Nessun tour in questo filtro.",
+  "discoverMineEmptyHint": "Ancora nessun percorso tuo — aggiungi un percorso, GPX o registra.",
+  "overlayLegendTitle": "Vie · OSM",
+  "overlayRoadAsphalt": "Ciclabile / asfalto",
+  "overlayUnrated": "non classificato",
+  "stimmenTitle": "Voci",
+  "stimmenHint": "Stelle, testo e foto — cloud dopo la condivisione. Niente voci inventate.",
+  "stimmenWrite": "Scrivi una voce",
+  "stimmenHowWas": "Com'era il tour?",
+  "stimmenEmptyName": "Vuoto resti tu",
+  "stimmenAddPhoto": "Aggiungi una foto",
+  "stimmenSaving": "Salvataggio …",
+  "stimmenShareSubject": "Condividi tour",
+  "stimmenEmpty": "Ancora nessuna voce.",
+  "stimmenLabel": "Voce",
+  "stimmenCloudApproved": "Salvato — pubblicato (condivisione IA)",
+  "stimmenCloudRejected": "Salvato in locale — il cloud ha rifiutato il testo",
+  "stimmenCloudPending": "Salvato — locale e in revisione (IA/umano)",
+  "stimmenCloudLocal": "Salvato — locale (cloud dopo l'accesso)",
+  "stimmenCloudFailed": "Salvato in locale — cloud non raggiungibile",
+  "akteHonestyCatalog": "I tour da catalogo sono già pubblici. Condividere rende la tua cartella collegabile — il link mostra nome e stats, nessuna traccia privata extra.",
+  "akteHonestyTrack": "Condividere crea un link. Il link contiene una traccia semplificata (coordinate), non solo il nome. Tornare a privato lo toglie dai filtri e registra la revoca sul server se sei collegato. Senza login vale solo su questo dispositivo.",
+  "akteHonestyNoTrack": "Condividere crea un link con nome e stats — senza traccia, perché non ce n'è una.",
+  "stimmenSubmit": "Invia",
+  "discoverRoundTrip": "Andata e ritorno",
+  "discoverOutboundOnly": "solo andata",
+  "discoverOsmNoHitsSuffix": " · OSM nessun risultato",
+  "discoverLiveRoutingUnavailable": " · routing live non disponibile",
+  "discoverUnplausibleLive": " · il routing live non ha dato un risultato plausibile",
+  "discoverTapEndCompute": "Tocca una destinazione o un indirizzo — poi calcola la route.",
+  "discoverPlanYourself": "Pianifica la route tu — imposta partenza e arrivo",
+  "discoverLoopBadge": "⟲ Giro",
+  "discoverElevMin": "Min {min}",
+  "discoverHeatmapOffline": "Heatmap offline",
+  "discoverCreate": "Crea",
+  "discoverRegionSource": "Regione",
+  "discoverTourNoun": "Tour",
+  "discoverOsmLive": "OSM live",
+  "discoverApproachParen": "({name})",
+  "discoverShop": "Negozio",
+  "discoverPreview": "Anteprima",
+  "discoverApproachName": "{name} (avvicinamento)",
+  "discoverFromHereName": "{name} (da qui)",
+  "rideLocationOff": "Posizione spenta",
+  "rideLocationOffBody": "Senza posizione niente traccia GPS. Attiva i servizi di localizzazione.",
+  "rideSettings": "Impostazioni",
+  "rideLocationPermission": "Autorizzazione posizione",
+  "rideLocationDeniedForever": "Posizione negata per sempre. Attivala nelle impostazioni dell'app, altrimenti la traccia resta vuota.",
+  "rideAppSettings": "Impostazioni app",
+  "rideLocationNeeded": "Serve la posizione per traccia e navigazione — riparti e consenti.",
+  "rideGpsFix": "GPS-Fix…",
+  "rideGpsFixN": "GPS-Fix {count}…",
+  "rideGpsStillSim": "GPS fermo — Sim-Track (non salvare)",
+  "rideGpsStillWeak": "GPS fermo — segnale debole / fermo",
+  "rideGpsSimActive": "Sim-Track attivo (AETHER_SIM_MOTION)",
+  "rideBleOffSnack": "Bluetooth spento — puoi pedalare senza sensore; abbina dopo.",
+  "rideBleDeniedSnack": "Nearby/Bluetooth negato — la navigazione GPS gira senza sensore.",
+  "rideNoBikeSensor": "Nessun sensore bici — la traccia GPS continua.",
+  "rideOfflineRerouteToast": "Il reroute serve internet. Resta sulla route caricata.",
+  "rideNoGpsRejoin": "Nessun GPS-Fix per il rejoin",
+  "rideRejoinFailed": "Rejoin fallito: {error}",
+  "rideSkipAheadWhy": "Tratto saltato — torna alla route.",
+  "rideRejoinWhy": "Torna alla route.",
+  "rideSkipAheadTts": "Tratto saltato",
+  "rideRouteRestoredTts": "Route ripristinata",
+  "rideOffRouteTts": "Fuori dalla route",
+  "rideRerouting": "La route si ricalcola …",
+  "rideUndo10s": "10 s per annullare",
+  "rideUndo": "Annulla",
+  "rideStayOffHint": "Resti fuori route — tocca per le opzioni.",
+  "rideRecalc": "Ricalcolo …",
+  "rideTapOptions": "Tocca per le opzioni.",
+  "rideOptions": "Opzioni",
+  "ridePause": "Pausa",
+  "rideResume": "Riprendi",
+  "rideRunning": "Percorso in corso",
+  "rideStop": "Stop",
+  "rideTapAgain": "Tocca di nuovo",
+  "rideStopNeedsTwo": "Fermare chiede 2 tocchi",
+  "rideQuietDisplay": "Vista calma",
+  "rideFollowCamera": "Segui la camera",
+  "rideFollowOn": "Follow camera on",
+  "rideFollowFree": "Camera libera",
+  "rideLiveRide": "Percorso live",
+  "rideReady": "Pronto",
+  "rideTtsOn": "TTS on",
+  "rideTtsMute": "TTS muto",
+  "rideNorthUp": "Nord in alto",
+  "rideHeadingUp": "Direzione in alto",
+  "rideHeadingCourse": "{mode}, rotta {cardinal}",
+  "rideAutoRerouteOn": "Auto-Reroute on",
+  "rideAutoRerouteOff": "Auto-Reroute off",
+  "rideAutoRerouteActive": "Auto-Reroute attivo (cooldown {sec}s)",
+  "rideAutoRerouteManual": "Auto-Reroute off — il rejoin manuale resta",
+  "rideSunlightAuto": "Sunlight Mode (Auto)",
+  "rideSunlightManual": "Sunlight Mode (Manuale)",
+  "rideDisplayNamed": "Display: {name}",
+  "rideDisplayNamedBattery": "Display: {name} (consuma batteria)",
+  "rideCostsBattery": "consuma batteria",
+  "rideBatteryTitle": "Display e batteria",
+  "rideBatteryHint": "Lasciare il display acceso? Consuma di più. Standard risparmia batteria.",
+  "rideBatteryPocketSnack": "Pocket — il display può spegnersi (risparmiare).",
+  "rideBatteryLenkerSnack": "Lenker — display acceso (consuma batteria).",
+  "rideBatteryUltraSnack": "Ultra — display solo in curva (consuma batteria).",
+  "rideBatteryPocket": "Pocket",
+  "rideBatteryLenker": "Lenker",
+  "rideBatteryUltra": "Ultra",
+  "rideBatteryPocketSub": "Voce + aptica, display può spegnersi",
+  "rideBatteryLenkerSub": "Lascia il display acceso",
+  "rideBatteryUltraSub": "Sveglia il display solo in curva",
+  "rideDefault": "Standard",
+  "rideSpeed": "Andatura",
+  "rideSensorSpeed": "Andatura sensore",
+  "rideDistance": "Distanza",
+  "rideTime": "Tempo",
+  "rideHeart": "Polso",
+  "rideHeartWaiting": "Polso in attesa",
+  "rideCadence": "Cadenza",
+  "rideBikeSensor": "Sensore bici",
+  "rideWatch": "Smartwatch",
+  "rideConnected": "Collegato",
+  "ridePower": "Potenza",
+  "rideSoc": "SoC",
+  "rideAssist": "Assist",
+  "rideBatteryChip": "Batteria",
+  "rideWheelSpeed": "Ruota",
+  "rideRestKm": "Rest-km",
+  "rideEta": "ETA",
+  "rideKmh": "km/h",
+  "rideKm": "km",
+  "rideChassisOff": "Analisi telaio off",
+  "rideChassisHint": "Fissa il telefono al manubrio e segnalo come montato.",
+  "rideMarkMounted": "Segna come montato",
+  "rideWaitingSensors": "In attesa dei sensori…",
+  "rideThereafter": "Poi",
+  "rideAutoLock": "Auto-Lock",
+  "rideAutoLockHint": "Tocca per svegliare",
+  "rideWake": "Sveglia",
+  "rideMusicHud": "Musica nel HUD",
+  "rideMusicHudHint": "Mostra i titoli di Spotify & Co.",
+  "rideDismissHint": "Chiudi avviso",
+  "rideMusicControls": "Comandi musica",
+  "ridePrevTrack": "Brano precedente",
+  "rideNextTrack": "Brano successivo",
+  "ridePlay": "Play",
+  "rideNavSymbol": "Simbolo",
+  "rideChangeNavSymbol": "Cambia simbolo navi",
+  "rideNavPuckTitle": "Simbolo navi",
+  "rideNavPuckHint": "Tutte le varianti su scuro e chiaro. Tocca per scegliere il simbolo mappa e HUD. 0° = punta in alto.",
+  "rideRecommend": "Consigliato",
+  "ridePuckDark": "Scuro",
+  "ridePuckLight": "Chiaro",
+  "ridePuckBergA": "Berg-A",
+  "ridePuckTopDown": "Bici dall'alto",
+  "ridePuckHofTor": "Hof-Tor",
+  "ridePuckKomet": "Aether-Komet",
+  "ridePuckKiesel": "Ciottolo",
+  "ridePuckLenkerBug": "Prua manubrio",
+  "ridePuckLichtkegel": "Cono di luce",
+  "ridePuckChevron": "Chevron",
+  "ridePuckBergASub": "Lettera, monte e freccia in uno",
+  "ridePuckTopDownSub": "Dall'alto: naso, corna, due gomme — gira con te",
+  "ridePuckHofTorSub": "Due gambe, aperte in basso",
+  "ridePuckKometSub": "Punta di lancia con scintilla menta",
+  "ridePuckKieselSub": "Triangolo morbido con halo",
+  "ridePuckLenkerBugSub": "Naso a punta, due corna del manubrio",
+  "ridePuckLichtkegelSub": "Disco scuro, cono arancio",
+  "ridePuckChevronSub": "Freccia navi standard",
+  "rideChipLive": "Live",
+  "rideChipRouteOffline": "Route offline",
+  "rideChipOfflineMapOk": "Offline · mappa ok · Reroute: rete",
+  "rideChipMapsMissing": "Mappe mancanti",
+  "rideCardinalN": "N",
+  "rideCardinalNE": "NE",
+  "rideCardinalE": "E",
+  "rideCardinalSE": "SE",
+  "rideCardinalS": "S",
+  "rideCardinalSW": "SO",
+  "rideCardinalW": "O",
+  "rideCardinalNW": "NO",
+  "navCueArrive": "Destinazione",
+  "navCueSlightLeft": "Leggermente a sinistra",
+  "navCueSlightRight": "Leggermente a destra",
+  "navCueTurnLeft": "Gira a sinistra",
+  "navCueTurnRight": "Gira a destra",
+  "navCueSharpLeft": "Netta a sinistra",
+  "navCueSharpRight": "Netta a destra",
+  "liveHintBracketRun": "Passaggio {n} rilevato",
+  "@liveHintBracketRun": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "liveHintImpactStreak": "Sequenza di urti duri",
+  "liveHintStandSetup": "Fermo: puoi sistemare",
+  "maintForkLower": "Service lower-leg forcella",
+  "maintForkFull": "Revisione completa forcella (molla/ammortizzatore)",
+  "maintShockAir": "Service air-can ammortizzatore",
+  "maintShockFull": "Revisione completa ammortizzatore",
+  "maintChainWear": "Controlla usura catena",
+  "maintCassetteCheck": "Controlla cassetta (dopo 2–3 catene)",
+  "maintPadsFront": "Controlla pastiglie anteriori",
+  "maintPadsRear": "Controlla pastiglie posteriori",
+  "maintSealant": "Rinnova latte tubeless",
+  "maintDropper": "Service lower-post dropper",
+  "maintDays": "{n} giorni",
+  "@maintDays": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "maintNoInterval": "Nessun intervallo",
+  "compatTitleDrv011": "La cassetta richiede il corpo ruota libera giusto",
+  "compatTitleFrm004": "La larghezza del carro deve coincidere col mozzo",
+  "compatTitleSus007": "La misura dell'ammortizzatore deve coincidere col telaio",
+  "compatTitleSus012": "Cannotto forcella vs serie sterzo (S.H.I.S.)",
+  "compatTitleBrk003": "Attacco pinza sul telaio",
+  "compatTitleBrk008": "Attacco disco vs mozzo",
+  "compatTitleBrk008f": "Disco anteriore vs mozzo anteriore",
+  "compatTitleWhl005": "Larghezza gomma vs canale interno cerchio",
+  "compatTitleWhl005f": "Gomma anteriore vs canale interno cerchio",
+  "compatTitleWhl009": "Larghezza gomma vs passaggio telaio",
+  "compatTitleCkp002": "Diametro morsetto manubrio vs attacco",
+  "compatTitleSpt006": "Diametro reggisella vs tubo sella",
+  "compatTitleBb003": "Standard movimento centrale vs perno pedivelle",
+  "compatTitleBb003f": "Movimento centrale vs standard telaio",
+  "compatTitleEbk002": "Interfaccia motore solo con omologa OEM",
+  "compatTitleFrm004f": "Perno anteriore vs forcella",
+  "compatFailDrv011": "La cassetta richiede {cassette}, il tuo mozzo ha {hub}.",
+  "@compatFailDrv011": {
+    "placeholders": {
+      "cassette": {
+        "type": "String"
+      },
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailFrm004": "Larghezza telaio {frame} ≠ mozzo {hub}.",
+  "@compatFailFrm004": {
+    "placeholders": {
+      "frame": {
+        "type": "String"
+      },
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailSus007": "Ammortizzatore {eye}×{stroke} ({mount}) non coincide col telaio.",
+  "@compatFailSus007": {
+    "placeholders": {
+      "eye": {
+        "type": "String"
+      },
+      "stroke": {
+        "type": "String"
+      },
+      "mount": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailSus012": "Cannotto {fork} non coincide con la serie sterzo {headset}.",
+  "@compatFailSus012": {
+    "placeholders": {
+      "fork": {
+        "type": "String"
+      },
+      "headset": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailBrk003": "Pinza {caliper} vs attacco telaio {frame}.",
+  "@compatFailBrk003": {
+    "placeholders": {
+      "caliper": {
+        "type": "String"
+      },
+      "frame": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailBrk008": "Disco {rotor} ≠ mozzo {hub}.",
+  "@compatFailBrk008": {
+    "placeholders": {
+      "rotor": {
+        "type": "String"
+      },
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailBrk008f": "Disco anteriore {rotor} ≠ mozzo {hub}.",
+  "@compatFailBrk008f": {
+    "placeholders": {
+      "rotor": {
+        "type": "String"
+      },
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailWhl005": "Larghezza gomma {tire} mm fuori range per canale {rim} mm.",
+  "@compatFailWhl005": {
+    "placeholders": {
+      "tire": {
+        "type": "String"
+      },
+      "rim": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailWhl005f": "Gomma anteriore {tire} mm fuori range per {rim} mm.",
+  "@compatFailWhl005f": {
+    "placeholders": {
+      "tire": {
+        "type": "String"
+      },
+      "rim": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailWhl009": "Larghezza gomma {tire} mm > passaggio telaio {max} mm.",
+  "@compatFailWhl009": {
+    "placeholders": {
+      "tire": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailCkp002": "Morsetto manubrio {bar} mm ≠ attacco {stem} mm.",
+  "@compatFailCkp002": {
+    "placeholders": {
+      "bar": {
+        "type": "String"
+      },
+      "stem": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailSpt006": "Reggisella Ø {post} non coincide col telaio Ø {frame}.",
+  "@compatFailSpt006": {
+    "placeholders": {
+      "post": {
+        "type": "String"
+      },
+      "frame": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailBb003": "Perno movimento {bb} ≠ pedivelle {crank}.",
+  "@compatFailBb003": {
+    "placeholders": {
+      "bb": {
+        "type": "String"
+      },
+      "crank": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailBb003f": "Movimento centrale {bb} ≠ telaio {frame}.",
+  "@compatFailBb003f": {
+    "placeholders": {
+      "bb": {
+        "type": "String"
+      },
+      "frame": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailEbk002": "Cambio motore fuori omologa OEM non ammesso. Telaio {frame} ≠ motore {motor}.",
+  "@compatFailEbk002": {
+    "placeholders": {
+      "frame": {
+        "type": "String"
+      },
+      "motor": {
+        "type": "String"
+      }
+    }
+  },
+  "compatFailFrm004f": "Perno forcella {fork} ≠ mozzo {hub}.",
+  "@compatFailFrm004f": {
+    "placeholders": {
+      "fork": {
+        "type": "String"
+      },
+      "hub": {
+        "type": "String"
+      }
+    }
+  },
+  "compatRuleOk": "Regola soddisfatta.",
+  "compatConditional": "Compatibile con riserva",
+  "compatMissingFacts": "Attributi mancanti — niente COMPATIBLE senza fatti completi.",
+  "compatWorkshopHint": "Montaggio rilevante per la sicurezza: officina. Coppie solo dai documenti del produttore.",
+  "compatConditionBrk003": "Solo con l'adattatore giusto (Post Mount ↔ IS).",
+  "compatDatasheet": "Controlla la scheda del produttore",
+  "attrFreehub": "Standard ruota libera",
+  "attrRearSpacing": "Larghezza carro",
+  "attrEyeToEye": "Lunghezza occhio-occhio",
+  "attrStroke": "Corsa",
+  "attrMountType": "Tipo di montaggio",
+  "attrShockEyeToEye": "Spec telaio: occhio-occhio",
+  "attrShockStroke": "Spec telaio: corsa",
+  "attrShockMount": "Spec telaio: tipo di montaggio",
+  "attrSteerer": "Cannotto forcella",
+  "attrBrakeMount": "Attacco pinza",
+  "attrBrakeMountRear": "Telaio: attacco freno posteriore",
+  "attrRotorMount": "Attacco disco",
+  "attrTireWidth": "Larghezza gomma",
+  "attrRimWidth": "Canale interno cerchio",
+  "attrMaxTire": "Telaio: passaggio gomma max.",
+  "attrBarClamp": "Diametro morsetto",
+  "attrStemClamp": "Morsetto attacco manubrio",
+  "attrSeatpostDia": "Diametro",
+  "attrMinInsert": "Inserimento min.",
+  "attrMaxInsert": "Telaio: inserimento max.",
+  "attrCrankAxle": "Perno pedivelle",
+  "attrBbStandard": "Standard movimento centrale",
+  "attrMotorInterface": "Interfaccia motore",
+  "attrAxleFront": "Perno",
+  "howToFreehub": "Stampa corpo ruota libera / scheda mozzo",
+  "howToRearSpacing": "Spec telaio/mozzo (Boost 148, 142×12, …)",
+  "howToEyeToEye": "Stampa ammortizzatore",
+  "howToStroke": "Catalogo ammortizzatore",
+  "howToMountType": "Trunnion vs. Eyelet",
+  "howToSteerer": "1⅛″ o tapered 1,5″ / S.H.I.S.",
+  "howToBrakeMount": "Post Mount / Flat Mount / IS",
+  "howToBrakeMountRear": "Spec telaio",
+  "howToRotorMount": "Center Lock o 6 fori",
+  "howToTireWidth": "ETRTO",
+  "howToRimWidth": "Scheda cerchio",
+  "howToMaxTire": "Dato del produttore telaio",
+  "howToBarClamp": "31,8 o 35,0",
+  "howToStemClamp": "Scheda attacco manubrio",
+  "howToSeatpostDia": "27,2 / 30,9 / 31,6 / 34,9",
+  "howToMinInsert": "Manuale dropper",
+  "howToMaxInsert": "Geometria telaio",
+  "howToCrankAxle": "DUB / 24mm / 30mm",
+  "howToBbStandard": "BSA / T47 / PF92 / …",
+  "howToMotorInterface": "es. bosch_smart_system",
+  "howToAxleFront": "15×100 / 15×110 Boost / …",
+  "postRideObsImpacts": "Molti impact duri ({count} su {km} km) — anteriore/ammortizzatore molto caricati.",
+  "@postRideObsImpacts": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsSmooth": "Pochi impact su {km} km — più fluido o fondo liscio.",
+  "@postRideObsSmooth": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsFlowHigh": "Flow alto ({flow}) — ritmo e linea sembravano giusti.",
+  "@postRideObsFlowHigh": {
+    "placeholders": {
+      "flow": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsFlowLow": "Flow basso ({flow}) — molte interruzioni di ritmo o fermate.",
+  "@postRideObsFlowLow": {
+    "placeholders": {
+      "flow": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsPeakG": "Peak {g} g — urti duri; controlla setup e pressione.",
+  "@postRideObsPeakG": {
+    "placeholders": {
+      "g": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideFrontTooFirm": "troppo dura",
+  "postRideFrontOk": "ok",
+  "postRideBumpsHarsh": "ruvidi",
+  "postRideObsFbHarsh": "Feedback: anteriore {front} · piccoli urti {bumps}.",
+  "@postRideObsFbHarsh": {
+    "placeholders": {
+      "front": {
+        "type": "String"
+      },
+      "bumps": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsFbSoft": "Feedback: l'anteriore è morbido / affonda in frenata.",
+  "postRideSugReboundSlowTitle": "Ritorno forcella: 2 click più lento",
+  "postRideSugReboundSlowContent": "Circa {current} click da chiuso → obiettivo {next}.",
+  "@postRideSugReboundSlowContent": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideSugReboundSlowEffect": "Anteriore più calmo sulle sequenze, un po' meno pop.",
+  "postRideSugReboundFastTitle": "Ritorno forcella: 2 click più veloce",
+  "postRideSugReboundFastContent": "Circa {current} click → obiettivo {next} (meno affondo).",
+  "@postRideSugReboundFastContent": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "next": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideSugReboundFastEffect": "Frenata più stabile, meno sensazione di fondocorsa.",
+  "postRideSugPressureTitle": "Controlla la pressione anteriore",
+  "postRideSugPressureContent": "Peak-g molto alto — tieni pressione e spacer volume sulla tabella del produttore.",
+  "postRideSugPressureEffect": "Meno rischio di fondocorsa, feedback più chiaro.",
+  "postRideSugLimitsClicks": "Range produttore tipico 0–14 click da chiuso.",
+  "postRideSugLimitsPressure": "Solo nel range di pressione omologato di gomma/forcella.",
+  "postRideReasonHarshBumps": "Feedback “piccoli urti ruvidi”",
+  "postRideReasonFrontFirm": "Feedback “anteriore troppo duro”",
+  "postRideReasonImpacts": "{count} impact / {km} km",
+  "@postRideReasonImpacts": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideReasonRms": "RMS {rms} g",
+  "@postRideReasonRms": {
+    "placeholders": {
+      "rms": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideReasonFrontLoad": "Alto carico di urti sull'anteriore",
+  "postRideReasonDive": "Feedback “affonda”",
+  "postRideReasonFrontSoft": "Feedback “anteriore troppo morbido”",
+  "postRideReasonSoftDive": "Anteriore troppo morbido / affondo",
+  "postRideReasonPeakLong": "Peak ≥ 5 g su un giro più lungo",
+  "postRideAnalysis": "Analisi",
+  "postRideExpect": "Atteso: {text}",
+  "@postRideExpect": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideLimit": "Limite: {text}",
+  "@postRideLimit": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideEvidence": "Evidenza",
+  "postRideConfidence": "Confidenza {level}",
+  "@postRideConfidence": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideConfHigh": "alta",
+  "postRideConfMedium": "media",
+  "postRideConfLow": "bassa",
+  "postRideFactRide": "{km} km · {hm} hm · {min} min",
+  "@postRideFactRide": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "hm": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideFactMetrics": "Flow {flow} · Peak {g} g · {impacts} impact",
+  "@postRideFactMetrics": {
+    "placeholders": {
+      "flow": {
+        "type": "String"
+      },
+      "g": {
+        "type": "String"
+      },
+      "impacts": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideFactMetricsLean": "Flow {flow} · Peak {g} g · {impacts} impact · Lean {lean}°",
+  "@postRideFactMetricsLean": {
+    "placeholders": {
+      "flow": {
+        "type": "String"
+      },
+      "g": {
+        "type": "String"
+      },
+      "impacts": {
+        "type": "String"
+      },
+      "lean": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideFactBike": "Bici: {name}",
+  "@postRideFactBike": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideFactSoc": "SOC {soc}%",
+  "@postRideFactSoc": {
+    "placeholders": {
+      "soc": {
+        "type": "String"
+      }
+    }
+  },
+  "rideGPeak": "G-Peak",
+  "rideLean": "Lean °",
+  "rideFlow": "Flow",
+  "garageSetNamed": "Imposta {name}",
+  "@garageSetNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bleKindPower": "Powermeter",
+  "bleKindOtherDrive": "Motore",
+  "bleTipBosch": "Chiudi Flow del tutto · 10–20 cm dal display",
+  "bleTipShimano": "Chiudi E-TUBE · tocca entro 15 s dopo Power/tasto",
+  "bleTipYamaha": "Chiudi e-Sync · velocità via sensore CSC",
+  "bleTipOtherDrive": "Chiudi l'app del produttore · display acceso, tieni vicino",
+  "bleTipCsc": "Sveglia il sensore sulla bici, tieni vicino",
+  "bleTipPower": "Accendi il powermeter, tieni vicino",
+  "blePairLeadEbike": "Display acceso, app del produttore chiusa, telefono vicino — poi tocca.",
+  "blePairLeadSensor": "Sveglia il sensore sulla bici, non l'orologio al polso.",
+  "bleNoteSensorBrand": "Sensore",
+  "bleNoteSensorLine": "Magnete o pedivella, vicino al sensore — non l'orologio.",
+  "bleNoteBoschLine": "Chiudi Flow del tutto (non solo in background). Display acceso, 10–20 cm.",
+  "bleNoteShimanoLine": "Chiudi E-TUBE. Dopo Power o tasto spesso solo 15 s — poi tocca.",
+  "bleNoteYamahaLine": "Chiudi e-Sync o l'app TQ. Velocità live di solito solo via CSC.",
+  "bleNoteFazuaLine": "Remote accesa — CSC e power come un sensore normale.",
+  "bleNoteOtherBrand": "Altri",
+  "bleNoteOtherLine": "Chiudi RideControl / Mission Control. Un telefono, display acceso.",
+  "bleGattWatchRejected": "Connessione rifiutata — chiudi l'altra app fitness, tieni l'orologio vicino.",
+  "bleGattWatchTimeout": "Timeout — tieni l'orologio vicino, controlla la frequenza in broadcast.",
+  "bleGattWatchFailed": "Connessione orologio fallita",
+  "bleGattRejectedBosch": "Connessione rifiutata — chiudi Bosch Flow, display acceso, 10–20 cm.",
+  "bleGattRejectedShimano": "Connessione rifiutata — chiudi E-TUBE, display acceso, tieni vicino.",
+  "bleGattRejectedGeneric": "Connessione rifiutata — chiudi Bosch Flow / Shimano E-TUBE, display acceso, tieni vicino.",
+  "bleGattTimeoutBosch": "Timeout — sveglia il display, chiudi Flow, tieni vicino. Valori motore solo con CSC o LDI ufficiale.",
+  "bleGattTimeoutShimano": "Timeout — chiudi E-TUBE, tocca entro 15 s dopo Power/tasto.",
+  "bleGattTimeoutDrive": "Timeout — chiudi l'app del produttore, display acceso. Velocità via sensore CSC.",
+  "bleGattTimeoutSensor": "Timeout — sveglia il sensore, avvicinati.",
+  "bleDriveFailBosch": "Bosch trovato, nessun valore motore live. Poi associa un sensore ruota (CSC).",
+  "bleDriveFailShimano": "Shimano trovato, nessun valore motore live. Poi associa un sensore ruota (CSC).",
+  "bleDriveFailYamaha": "Yamaha trovato, nessun valore motore live. Associa la velocità via sensore CSC.",
+  "bleDriveFailGeneric": "Motore trovato, nessun valore motore live. Poi associa un sensore ruota (CSC).",
+  "bleStatusBtOff": "Bluetooth spento",
+  "bleStatusScanFailed": "Ricerca sensore ruota fallita",
+  "bleStatusNoSensor": "Nessun sensore ruota trovato",
+  "bleStatusNoneInRange": "Nessuna bici, motore o sensore a portata",
+  "bleStatusDriveSeen": "Motore visto — associa in officina (Bosch/Shimano)",
+  "bleStatusNoCscInRange": "Nessun sensore ruota a portata",
+  "bleStatusSensorDisconnected": "Sensore ruota disconnesso",
+  "bleStatusReconnectLost": "Connessione persa — controlla il display, chiudi Flow/E-TUBE, associa di nuovo in officina.",
+  "bleStatusRetry": "Connessione … retry {n}/{max}",
+  "@bleStatusRetry": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "bleStatusAttempt": "Connessione … tentativo {n}/{max}",
+  "@bleStatusAttempt": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "bleStatusReconnect": "Riconnessione … ({n}/{max})",
+  "@bleStatusReconnect": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "bleStatusDriveNoLive": "{who} · trovato — velocità via CSC, batteria solo con GATT standard",
+  "@bleStatusDriveNoLive": {
+    "placeholders": {
+      "who": {
+        "type": "String"
+      }
+    }
+  },
+  "bleConnectedNamed": "{name} connesso",
+  "@bleConnectedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bleWordSensor": "Sensore",
+  "bleWordWatch": "Orologio",
+  "bleSectionDrive": "Motore",
+  "bleSectionSensors": "Sensori",
+  "watchStatusPickFromList": "Scegli l'orologio dalla lista",
+  "watchStatusScanFailed": "Ricerca orologio fallita",
+  "watchStatusConnectedSim": "Orologio connesso (sim)",
+  "watchStatusDisconnected": "Orologio disconnesso",
+  "watchStatusNoHrService": "Orologio trovato, ma senza servizio polso standard",
+  "watchStatusReconnectLost": "Orologio disconnesso — controlla il broadcast, associa di nuovo da vicino.",
+  "watchStatusReconnect": "L'orologio si riconnette … ({n}/{max})",
+  "@watchStatusReconnect": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "watchStatusBattery": "Batteria orologio {n} %",
+  "@watchStatusBattery": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "watchHrSensorFallback": "Sensore di frequenza cardiaca",
+  "watchCheckBluetooth": "Controlla Bluetooth",
+  "watchOutOfRange": "Orologio fuori portata",
+  "watchRemoved": "Orologio rimosso",
+  "watchRememberedOffline": "{name} · memorizzato, non live",
+  "@watchRememberedOffline": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "watchRememberedOfflineNoName": "Memorizzato, non live",
+  "watchLiveNamed": "{name} · live",
+  "@watchLiveNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "watchLiveBpm": "{name} · {bpm} bpm",
+  "@watchLiveBpm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "bpm": {
+        "type": "String"
+      }
+    }
+  },
+  "watchHonestyHr": "Polso via BLE standard",
+  "watchHonestyGarmin": "Garmin: attiva il broadcast HR",
+  "watchHonestyApple": "Apple Watch: niente polso BLE standard",
+  "watchHonestyGalaxy": "Galaxy: di solito niente 0x180D",
+  "watchHonestyUnknown": "Solo con Heart Rate 0x180D",
+  "watchTipHr": "Modalità sensore o broadcast accesa, tieni vicino",
+  "watchTipGarmin": "Sull'orologio Garmin: invia frequenza / broadcast",
+  "watchTipApple": "Niente polso BLE verso Android — HealthKit solo su iPhone",
+  "watchTipGalaxy": "Solo se l'orologio invia Heart Rate 0x180D — altrimenti Samsung Health",
+  "watchTipUnknown": "Heart Rate 0x180D deve essere attivo",
+  "watchNotePolarBrand": "Polar / fascia",
+  "watchNotePolarLine": "Modalità sensore accesa. Polso standard 0x180D — quello associamo.",
+  "watchNoteGarminLine": "Invia frequenza / broadcast nelle impostazioni dell'orologio.",
+  "watchNoteAppleLine": "Niente polso BLE standard verso Android. Non associare.",
+  "watchNoteGalaxyLine": "Di solito solo Samsung Health. Solo con 0x180D visibile.",
+  "watchPairLeadText": "Polso sul rider, non sulla bici. Solo un vero servizio Heart Rate 0x180D.",
+  "blePairAgain": "Associa di nuovo",
+  "bleRemoveDevice": "Rimuovi dispositivo",
+  "bleSemanticsPaired": "Bluetooth associato",
+  "bleSemanticsPair": "Associa Bluetooth",
+  "bleTooltipPair": "Associa motore o sensore",
+  "watchOtherWatch": "Un altro orologio",
+  "bikeCatMtbTrail": "Trail MTB",
+  "bikeCatMtb": "MTB",
+  "bikeCatEnduro": "Enduro",
+  "bikeCatDh": "Downhill",
+  "bikeCatGravel": "Gravel",
+  "bikeCatRoad": "Bici da corsa",
+  "bikeCatUrban": "City",
+  "bikeCatCargo": "Cargo",
+  "bikeCatFolding": "Pieghevole",
+  "bikeCatKids": "Bambini",
+  "bikeCatEmtb": "E-MTB",
+  "bikeCatEtrekking": "E-trekking",
+  "bikeCatHiking": "A piedi",
+  "bikeCatEgravel": "E-gravel",
+  "bikeCatEcity": "E-city",
+  "bikeCatEcargo": "E-cargo",
+  "bikeCatEfolding": "E-pieghevole",
+  "bikeCatEkids": "E-bambini",
+  "bikeCatEroad": "E-road",
+  "bikeBlurbMtbTrail": "Singletrail e bosco",
+  "bikeBlurbMtb": "Trail e giri",
+  "bikeBlurbEnduro": "Ripido e tecnico",
+  "bikeBlurbDh": "Bike park e discesa",
+  "bikeBlurbGravel": "Sterrato e distanza",
+  "bikeBlurbRoad": "Asfalto e ritmo",
+  "bikeBlurbUrban": "Quotidiano e pendolari",
+  "bikeBlurbCargo": "Carico e quotidiano",
+  "bikeBlurbFolding": "Piegare e portare",
+  "bikeBlurbKids": "Bici per bambini",
+  "bikeBlurbEmtb": "Trail con assistenza",
+  "bikeBlurbEtrekking": "Giri con assistenza",
+  "bikeBlurbHiking": "In cammino a piedi",
+  "bikeBlurbMtbTrailFocus": "Focus singletrail",
+  "onboardSportTrail": "Trail",
+  "sportsSummaryPrimary": "Principale: {label}",
+  "@sportsSummaryPrimary": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sportsSummaryPrimaryAlso": "Principale: {label} · anche {list}",
+  "@sportsSummaryPrimaryAlso": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "seasonYearRound": "Tutto l'anno",
+  "seasonSpringSummer": "Primavera–estate",
+  "seasonAutumn": "Autunno",
+  "seasonWinter": "Inverno",
+  "naeheInYourRegion": "~60 min nella tua zona",
+  "naeheAroundYou": "~60 min intorno a te",
+  "sportTagTouring": "Turismo",
+  "sportTagEbike": "E-bike",
+  "overlayRheinNeckar": "Reno-Neckar / Heidelberg",
+  "overlaySchwarzwaldNord": "Foresta Nera sud",
+  "overlayBodensee": "Lago di Costanza",
+  "overlayStuttgart": "Stoccarda / Neckar medio",
+  "overlayMuenchen": "Monaco di Baviera e dintorni",
+  "overlayNuernberg": "Norimberga / Franconia",
+  "overlayFrankfurtRheinMain": "Francoforte Reno-Meno",
+  "overlayKoelnRhein": "Colonia / Renania",
+  "overlayHamburg": "Amburgo e dintorni",
+  "overlayBerlin": "Berlino e Brandeburgo",
+  "overlayDresdenElbland": "Dresda / Elbland",
+  "overlayWien": "Vienna e Wienerwald",
+  "overlaySalzburg": "Salisburgo",
+  "overlayInnsbruck": "Innsbruck / Tirolo",
+  "overlayZuerich": "Zurigo e dintorni",
+  "overlayBern": "Berna / Altopiano svizzero",
+  "overlayBasel": "Basilea / triplice frontiera",
+  "overlayRuhrgebiet": "Ruhr",
+  "overlayDuesseldorf": "Düsseldorf / Basso Reno",
+  "overlayHannover": "Hannover / Leine",
+  "overlayLeipzig": "Lipsia / Neuseenland",
+  "overlayFreiburg": "Friburgo / Schauinsland",
+  "overlayKarlsruhe": "Karlsruhe / Hardt",
+  "overlayAugsburg": "Augusta / Lech",
+  "overlayKiel": "Kiel / fiordo",
+  "overlayRostock": "Rostock / Warnow",
+  "overlayKassel": "Kassel / Bergpark",
+  "overlayTrierMosel": "Treviri / Mosella",
+  "overlayPfalz": "Foresta Palatina",
+  "overlaySauerland": "Sauerland",
+  "overlayEifelTrails": "Eifel",
+  "overlayHarz": "Harz",
+  "overlayThueringerWald": "Foresta di Turingia",
+  "overlayBayerischerWald": "Foresta Bavarese",
+  "overlayAllgaeu": "Algovia",
+  "overlayChiemgau": "Chiemgau",
+  "overlaySaarbruecken": "Saarbrücken",
+  "overlayMuenster": "Münsterland",
+  "overlayAachen": "Aquisgrana / triplice frontiera",
+  "overlayLuebeck": "Lubecca / Trave",
+  "overlayBremen": "Brema / Weser",
+  "overlayMagdeburg": "Magdeburgo / Elba",
+  "overlayErfurt": "Erfurt",
+  "overlayKoblenz": "Coblenza / Reno-Mosella",
+  "overlayGraz": "Graz / valle della Mur",
+  "overlayLinz": "Linz / Danubio",
+  "overlayKlagenfurt": "Klagenfurt / Wörthersee",
+  "overlayVillach": "Villach / Drava",
+  "overlayBregenz": "Bregenz / Vorarlberg",
+  "overlayKitzbuehel": "Kitzbühel / Wilder Kaiser",
+  "overlayGenf": "Ginevra / Lago Lemano",
+  "overlayLausanne": "Losanna / Lavaux",
+  "overlayLuzern": "Lucerna / Lago dei Quattro Cantoni",
+  "overlayStGallen": "San Gallo / Appenzello",
+  "overlayLugano": "Lugano / Ticino",
+  "overlayInterlaken": "Interlaken / Oberland bernese",
+  "overlayChur": "Coira / Grigioni",
+  "overlayZermatt": "Zermatt / Mattertal",
+  "overlayStMoritz": "St. Moritz / Engadina",
+  "overlayDavos": "Davos / Landwasser",
+  "overlayStrasbourg": "Strasburgo / Ill",
+  "overlayAlsaceVins": "Alsazia / Route des Vins",
+  "overlayVosges": "Vosgi / Ballon d'Alsace",
+  "overlayNancyMoselle": "Nancy / Mosella",
+  "overlayJuraFr": "Giura / Pontarlier",
+  "overlayAnnecy": "Annecy / Semnoz",
+  "overlayMorzine": "Morzine / Portes du Soleil",
+  "overlayLyon": "Lione / Tête d'Or",
+  "overlayGrenoble": "Grenoble / Isère",
+  "overlayDijon": "Digione / Canal de Bourgogne",
+  "overlayChambery": "Chambéry / Lac du Bourget",
+  "overlayParis": "Parigi / Bois e Senna",
+  "overlayLille": "Lilla / Cittadella",
+  "overlayNice": "Nizza / Promenade des Anglais",
+  "overlayMarseille": "Marsiglia / Corniche",
+  "overlayBordeaux": "Bordeaux / Garonna",
+  "overlayToulouse": "Tolosa / Canal du Midi",
+  "overlayNantes": "Nantes / Erdre",
+  "offlineProgressPack": "Pack {got} / {total}",
+  "@offlineProgressPack": {
+    "placeholders": {
+      "got": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineProgressBasemap": "Basemap {id}…",
+  "@offlineProgressBasemap": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineProgressBasemapBytes": "Basemap {got} / {total}",
+  "@offlineProgressBasemapBytes": {
+    "placeholders": {
+      "got": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineProgressMapZoom": "Mappa (zoom {min}–{max})…",
+  "@offlineProgressMapZoom": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineProgressMapPercent": "Mappa {percent}%",
+  "@offlineProgressMapPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineProgressActivating": "Attivazione…",
+  "offlineProgressManifest": "Manifest…",
+  "offlineProgressPackFile": "Pack {file}…",
+  "@offlineProgressPackFile": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineProgressGraphFile": "offline_graph.json…",
+  "offlineProgressDemoGraph": "Grafo demo (Foresta Nera)…",
+  "offlinePacksReadyOne": "1 pack scaricabile",
+  "offlinePacksReadyCount": "{count} pack scaricabili",
+  "@offlinePacksReadyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlinePackNotBuilt": "{name}: pack non ancora costruito — nessun download.",
+  "@offlinePackNotBuilt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineShaMismatch": "SHA-256 non corrisponde a nessun download (atteso {sha})",
+  "@offlineShaMismatch": {
+    "placeholders": {
+      "sha": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineInvalidGraphFolder": "La cartella {id} non contiene un grafo valido per questa regione",
+  "@offlineInvalidGraphFolder": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineNoRemotePack": "Nessun pack remoto per {name}. Gli stub del catalogo non attivano il grafo demo di un'altra regione.",
+  "@offlineNoRemotePack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineDownloadEmpty": "Download vuoto",
+  "offlineNoGraphAfterExtract": "Nessun grafo dopo l'extract",
+  "offlineRawPmtiles": "Un .pmtiles grezzo non è supportato — serve uno style JSON MapLibre con source pmtiles://.",
+  "offlineInvalidUrl": "URL non valido",
+  "offlineExpectStyleJson": "Serve un URL di style JSON (*.json o /styles/…), non un file di tile.",
+  "offlineSubActive": "Attivo — tocca per aggiornare",
+  "offlineSubInstalled": "Installato — tocca per attivare",
+  "offlineSubDemoGraph": "Grafo demo nell'app (nessun pack remoto)",
+  "offlineSubNotBuilt": "Non ancora costruito",
+  "offlineSubLoad": "Carica routing + mappa",
+  "offlineSubLoadSized": "{size} · routing + mappa",
+  "@offlineSubLoadSized": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineGraphMissing": "Nessun grafo in {name}",
+  "@offlineGraphMissing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineGraphSha": "Lo SHA del grafo di {name} non corrisponde",
+  "@offlineGraphSha": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineGraphDemoMismatch": "Il grafo demo Foresta Nera non corrisponde a {name}",
+  "@offlineGraphDemoMismatch": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineEngineLinkedNoTiles": "Motore grafo · Valhalla collegato, tile regionali ancora assenti",
+  "offlineEngineTilesNotBuilt": "Motore grafo · tile Valhalla non costruite",
+  "offlineNoTiles": "nessuna tile",
+  "offlineFfiMissing": "FFI mancante — solo grafo / flag Valhalla non collegato",
+  "offlineValhallaTilesLinked": "Tile Valhalla · libvalhalla collegato",
+  "offlineValhallaTilesUnlinked": "Tile Valhalla · UNLINKED (codice {code})",
+  "@offlineValhallaTilesUnlinked": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineValhallaFeature": "Funzione Valhalla disponibile",
+  "offlineValhallaNotLinked": "Valhalla non collegato",
+  "garageMuscle": "Muscolare",
+  "garageOemTaken": "{name}: {count} pezzi di serie presi.",
+  "garageOemTakenPartial": "{name}: {taken} pezzi di serie, {skipped} saltati.",
+  "garageOemKitOff": "{name} parcheggiata — aggiungi i pezzi tu, il kit era spento.",
+  "garageGpxSaved": "{name}: GPX salvato ({km} km).",
+  "garageKmImported": "+{km} km importati",
+  "garageLogOdoUpdated": "Contachilometri aggiornato",
+  "garageLogHoursUpdated": "Ore di esercizio aggiornate",
+  "garageLogGpxImport": "GPX importato",
+  "garageLogImportPlaceholder": "Import senza componenti",
+  "garageLogManualKm": "Manuale: {km} km",
+  "garageLogManualHours": "Manuale: {hours} h",
+  "garageLogPsiFront": "anteriore {psi} psi",
+  "garageLogPsiRear": "posteriore {psi} psi",
+  "garageLogBarFront": "anteriore {bar} bar",
+  "garageLogBarRear": "posteriore {bar} bar",
+  "bikeCatEmtbTrail": "Trail E-MTB",
+  "bikeCatEenduro": "E-Enduro",
+  "bikeCatEdh": "E-DH",
+  "@garageOemTaken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageOemTakenPartial": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "taken": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageOemKitOff": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageGpxSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageKmImported": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageLogManualKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageLogManualHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageLogPsiFront": {
+    "placeholders": {
+      "psi": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageLogPsiRear": {
+    "placeholders": {
+      "psi": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverCatalogTours": "Catalogo {count} tour",
+  "discoverCatalogToursSuffix": " · Catalogo {count}",
+  "discoverToursOsmStatus": "Tour {tours} ({withTrack} con traccia) · OSM {osm}",
+  "discoverElevationApprox": "~{hm} hm (stima dalla distanza — API altitudine non raggiungibile)",
+  "discoverElevationGainLoss": "+{gain} / −{loss} hm",
+  "discoverElevationGainLossSource": "+{gain} / −{loss} hm · {source}",
+  "discoverDurationMin": "{n} min",
+  "discoverPlanName": "{name} (piano)",
+  "demoCityMuenchen": "Monaco di Baviera",
+  "demoCityKoeln": "Colonia",
+  "demoCityZuerich": "Zurigo",
+  "demoCityWien": "Vienna",
+  "demoCityKonstanz": "Costanza",
+  "demoCityParis": "Parigi",
+  "demoCityStrasbourg": "Strasburgo",
+  "demoCityNice": "Nizza",
+  "@discoverCatalogTours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@discoverCatalogToursSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@discoverToursOsmStatus": {
+    "placeholders": {
+      "tours": {
+        "type": "int"
+      },
+      "withTrack": {
+        "type": "int"
+      },
+      "osm": {
+        "type": "int"
+      }
+    }
+  },
+  "@discoverElevationApprox": {
+    "placeholders": {
+      "hm": {
+        "type": "String"
+      }
+    }
+  },
+  "@discoverElevationGainLoss": {
+    "placeholders": {
+      "gain": {
+        "type": "String"
+      },
+      "loss": {
+        "type": "String"
+      }
+    }
+  },
+  "@discoverElevationGainLossSource": {
+    "placeholders": {
+      "gain": {
+        "type": "String"
+      },
+      "loss": {
+        "type": "String"
+      },
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "@discoverDurationMin": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "@discoverPlanName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideStravaConnect": "Collega Strava in Dati e privacy.",
+  "postRideStravaKeysMissing": "Chiavi Strava mancanti — usa GPX/FIT.",
+  "postRideStravaStatusDown": "Stato Strava non raggiungibile — usa GPX/FIT.",
+  "postRideStravaHint": "Strava: con traccia GPS via Uploads-API; senza traccia solo metadati.",
+  "postRideStravaError": "Strava: {error}",
+  "postRideHeatmapPrivate": "Heatmap: tour privato — traccia non inviata.",
+  "postRideHeatmapError": "Heatmap: {error}",
+  "postRideSetupSaved": "Versione setup salvata",
+  "postRideSetupSaveFailed": "Salvataggio setup fallito: {error}",
+  "postRideGpxEmpty": "Nessuna traccia GPS — GPX sarebbe vuoto",
+  "postRideGpxExportError": "Export GPX: {error}",
+  "postRideFitExportError": "Export FIT: {error}",
+  "postRideShareGpx": "Condividi GPX",
+  "postRideSimActive": "Traccia sim era attiva",
+  "postRideSimDistance": " (~{km} km simulati)",
+  "postRideSimUnreliable": " — distanza/analisi poco affidabili. Per uscite vere spegni AETHER_SIM_MOTION.",
+  "postRideAvgSpeedHigh": "Velocità media insolitamente alta — controlla GPS/sim.",
+  "postRideSuggestionTaken": "Applicata",
+  "postRideSuggestionAccept": "Accetta consiglio",
+  "postRideAssistEstimate": "Assist (stima)",
+  "postRideAssistDominant": "Dominante: {mode} · ~{wh} Wh",
+  "postRideAssistApproach": "Stima: {mode} (avvicinamento)",
+  "postRideAssistClimb": "Stima: {mode} (salita, {pct} %)",
+  "postRideAssistRest": "Stima: {mode} (resto)",
+  "postRideAssistDisclaimer": "Stime da firma potenza/velocità — niente lettura OEM. Niente controllo motore (F-EBK-000).",
+  "postRideFeelTitle": "Com'era la sensazione?",
+  "postRideFrontSuspension": "Sospensione anteriore",
+  "postRideFrontTooSoft": "troppo morbida",
+  "postRideBrakeDive": "Affondo in frenata",
+  "postRideBrakeDives": "affonda",
+  "postRideBrakeNeutral": "neutro",
+  "postRideBrakeHarsh": "duro",
+  "postRideSmallBumps": "Piccoli urti",
+  "postRideBumpsVague": "vago",
+  "postRideSaveFeedback": "Salva feedback",
+  "postRideShortRideMetrics": "Uscita breve — metriche limitate (< 0,5 km).",
+  "postRideMetricsTitle": "Metriche",
+  "postRideDefaultName": "Uscita",
+  "@postRideStravaError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideHeatmapError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideSetupSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideGpxExportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideFitExportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideSimDistance": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideAssistDominant": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "wh": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideAssistApproach": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideAssistClimb": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "@postRideAssistRest": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "platzCreateGroupHint": "Scegli il tour, la visibilità, poi condividi il link.",
+  "platzGroupPublicHint": "Chi ha il link può entrare. Il gruppo può stare sul Platz sotto Pubblico.",
+  "platzGroupPrivateHint": "Solo chi ha il link può entrare. Niente roster pubblico.",
+  "platzNoPrivateGroups": "Nessun gruppo privato in questo filtro.",
+  "platzMakePrivate": "Rendi privato",
+  "platzMakePublic": "Rendi pubblico",
+  "platzNoPublicGroups": "Nessun gruppo pubblico sul server.",
+  "platzPublicGroupsHint": "Gruppi pubblici — entra con login, niente GPS Explore.",
+  "platzListedPublic": "pubblico",
+  "filterVisibilityAll": "Tutte",
+  "filterVisibilityPublic": "Pubblico",
+  "mappeTitle": "Die Mappe",
+  "mappeSubtitle": "I tuoi tour, Stimmen e gruppi. Gli stessi della mappa.",
+  "mappeAddHint": "Nome + partenza — senza traccia inventata. GPX come opzione sotto.",
+  "mappePutIn": "Metti nella Mappe",
+  "mappeSaved": "Nella Mappe: {name}",
+  "@mappeSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mappeImported": "Importato: {name}",
+  "@mappeImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mappeEmpty": "Ancora nessuna traccia tua — aggiungi un percorso.",
+  "mappeStimmenEmpty": "Ancora nessuna Stimme sui tuoi tour. Dopo la condivisione gli altri possono scrivere.",
+  "myRoutesSourceOwn": "Proprie",
+  "privacyZoneTitle": "Privacy-Zone",
+  "privacyZoneEdit": "Modifica zona",
+  "privacyZoneInvalidCoords": "Inserisci coordinate valide",
+  "privacyZoneNeedTap": "Tocca prima la mappa",
+  "privacyZoneTapShort": "Tocca la mappa",
+  "retry": "Riprova",
+  "hofSystemStatus": "Stato di sistema",
+  "hofSystemOk": "Tutto collegato — officina, uscite e sync vanno.",
+  "hofSupabaseMissing": "Supabase non configurato",
+  "hofSupabaseMissingHint": "Cloud-sync non è impostato — accesso e sync sono off.",
+  "hofSyncSessionExpired": "Sync: sessione scaduta",
+  "hofSyncLoginOnly": "Sync solo con login",
+  "hofSyncLocalHint": "Garage/Rides restano locali — account per il cloud-sync.",
+  "hofSystemNotice": "Stato di sistema — avviso presente",
+  "hofSystemHint": "Stato di sistema — avviso",
+  "hofSystemOkTooltip": "Stato di sistema: ok",
+  "hofTafelTitle": "Die Tafel",
+  "hofTafelVoiceOne": "Nuova Stimme su {name}",
+  "@hofTafelVoiceOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hofTafelVoices": "{count} Stimmen su {name}",
+  "@hofTafelVoices": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hofTafelGroup": "Gruppo davanti al cancello · {title}",
+  "@hofTafelGroup": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "ridePuckSemantics": "Navigazione, {name}",
+  "@ridePuckSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dieBoxSentenceHome": "{name} vive qui",
+  "dieBoxLater": "Più tardi",
+  "dieBoxSentenceMtbReady": "{name} · {travel}{drive} · pronto",
+  "dieBoxSentenceReadyBits": "{name} · {bits} · pronto",
+  "@dieBoxSentenceHome": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@dieBoxSentenceMtbReady": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "travel": {
+        "type": "String"
+      },
+      "drive": {
+        "type": "String"
+      }
+    }
+  },
+  "@dieBoxSentenceReadyBits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "bits": {
+        "type": "String"
+      }
+    }
+  }
+}

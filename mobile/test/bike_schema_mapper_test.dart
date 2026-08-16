@@ -9,6 +9,9 @@ void main() {
       expect(planBikeSchema(category: BikeCategory.road).assetKey, 'road');
       expect(planBikeSchema(category: BikeCategory.gravel).assetKey, 'gravel');
       expect(planBikeSchema(category: BikeCategory.urban).assetKey, 'city');
+      expect(planBikeSchema(category: BikeCategory.cargo).assetKey, 'city');
+      expect(planBikeSchema(category: BikeCategory.folding).assetKey, 'city');
+      expect(planBikeSchema(category: BikeCategory.kids).assetKey, 'city');
       expect(planBikeSchema(category: BikeCategory.etrekking).assetKey, 'city');
       expect(planBikeSchema(category: BikeCategory.mtbTrail).assetKey, 'mtb');
       expect(planBikeSchema(category: BikeCategory.emtb).assetKey, 'mtb');

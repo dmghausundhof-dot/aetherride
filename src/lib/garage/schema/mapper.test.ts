@@ -11,6 +11,9 @@ function assert(cond: boolean, msg: string) {
 assert(planBikeSchema({ category: "road" }).template === "road", "road");
 assert(planBikeSchema({ category: "gravel" }).template === "gravel", "gravel");
 assert(planBikeSchema({ category: "urban" }).template === "city", "urban→city");
+assert(planBikeSchema({ category: "cargo" }).template === "city", "cargo→city");
+assert(planBikeSchema({ category: "folding" }).template === "city", "folding→city");
+assert(planBikeSchema({ category: "kids" }).template === "city", "kids→city");
 assert(
   planBikeSchema({ category: "etrekking" }).template === "city",
   "etrekking→city"

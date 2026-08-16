@@ -216,6 +216,9 @@ String _categoryApiId(BikeCategory c) => switch (c) {
       BikeCategory.gravel => 'gravel',
       BikeCategory.road => 'road',
       BikeCategory.urban => 'urban',
+      BikeCategory.cargo => 'cargo',
+      BikeCategory.folding => 'folding',
+      BikeCategory.kids => 'kids',
       BikeCategory.emtb => 'emtb',
       BikeCategory.etrekking => 'etrekking',
       BikeCategory.hiking => 'hiking',
@@ -238,12 +241,15 @@ BikeCategory bikeCategoryFromApi(String raw) {
     'gravel' => BikeCategory.gravel,
     'road' => BikeCategory.road,
     'urban' => BikeCategory.urban,
+    'cargo' || 'lastenrad' => BikeCategory.cargo,
+    'folding' || 'faltrad' || 'fold' => BikeCategory.folding,
+    'kids' || 'kinderrad' || 'children' => BikeCategory.kids,
     'emtb' => BikeCategory.emtb,
     'etrekking' => BikeCategory.etrekking,
     'hiking' => BikeCategory.hiking,
     _ => BikeCategory.values.firstWhere(
         (c) => c.name.toLowerCase() == n.replaceAll('_', ''),
-        orElse: () => BikeCategory.mtbAm,
+        orElse: () => BikeCategory.urban,
       ),
   };
 }

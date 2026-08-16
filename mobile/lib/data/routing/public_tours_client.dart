@@ -89,6 +89,18 @@ class PublicTourHit {
   }
 }
 
+/// Live / editorial polyline from GET `/api/tours/geometry?id=`.
+class CatalogTourGeometryHit {
+  const CatalogTourGeometryHit({
+    required this.coordinates,
+    this.engine,
+  });
+
+  /// GeoJSON order: `[lng, lat]`.
+  final List<List<double>> coordinates;
+  final String? engine;
+}
+
 class PublicToursClient {
   PublicToursClient({http.Client? httpClient})
       : _http = httpClient ?? http.Client();
@@ -126,6 +138,46 @@ class PublicToursClient {
       return const [];
     }
   }
+
+  /// GET `/api/tours/geometry?id=` — editorial override or live ring.
+  Future<CatalogTourGeometryHit?> fetchGeometry({
+    required String tourId,
+    String? profile,
+  }) async {
+    if (tourId.isEmpty) return null;
+    final q = <String, String>{'id': tourId};
+    if (profile != null && profile.isNotEmpty) q['profile'] = profile;
+    final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/tours/geometry')
+        .replace(queryParameters: q);
+    try {
+      final res = await _http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 22));
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body);
+      if (data is! Map) return null;
+      final geom = data['geometry'];
+      List? raw;
+      if (geom is Map) raw = geom['coordinates'] as List?;
+      if (raw == null) return null;
+      final coords = <List<double>>[];
+      for (final c in raw) {
+        if (c is List && c.length >= 2) {
+          coords.add([
+            (c[0] as num).toDouble(),
+            (c[1] as num).toDouble(),
+          ]);
+        }
+      }
+      if (coords.length < 2) return null;
+      return CatalogTourGeometryHit(
+        coordinates: coords,
+        engine: data['engine'] as String?,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// Map RoutingProfile / BikeCategory → catalog sport query.
@@ -155,6 +207,9 @@ BikeCategory? categoryFromApi(String? raw) {
     'gravel' => BikeCategory.gravel,
     'road' || 'rennrad' => BikeCategory.road,
     'urban' || 'city' => BikeCategory.urban,
+    'cargo' || 'lastenrad' => BikeCategory.cargo,
+    'folding' || 'faltrad' => BikeCategory.folding,
+    'kids' || 'kinderrad' => BikeCategory.kids,
     'emtb' => BikeCategory.emtb,
     'etrekking' || 'ebike' || 'e_trekking' => BikeCategory.etrekking,
     'hiking' || 'wandern' => BikeCategory.hiking,

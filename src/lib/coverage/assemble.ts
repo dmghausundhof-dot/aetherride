@@ -14,6 +14,7 @@ import {
 import { fetchGooglePlacesNearby, type GooglePlacePoi } from "./google";
 import { fetchSchweizMobilNear, type SchweizMobilHit } from "./schweizmobil";
 import type { DachHonesty } from "./dach";
+import { chromeLangFrom, type ChromeLang } from "@/lib/i18n/chromeLang";
 
 export type CoverageBikeClass = "mtb" | "gravel" | "road" | "urban";
 
@@ -57,9 +58,10 @@ function cacheKey(
   lat: number,
   lng: number,
   bike: CoverageBikeClass,
-  live: boolean
+  live: boolean,
+  lang = "de"
 ): string {
-  return `${lat.toFixed(3)}:${lng.toFixed(3)}:${bike}:${live ? "1" : "0"}`;
+  return `${lat.toFixed(3)}:${lng.toFixed(3)}:${bike}:${live ? "1" : "0"}:${lang}`;
 }
 
 export function parseBikeClass(raw: string | null): CoverageBikeClass {
@@ -87,7 +89,7 @@ export function parseBikeClass(raw: string | null): CoverageBikeClass {
   ) {
     return "gravel";
   }
-  if (t === "urban" || t === "city") return "urban";
+  if (t === "urban" || t === "city" || t === "cargo" || t === "folding" || t === "kids") return "urban";
   return "road";
 }
 
@@ -185,9 +187,11 @@ export async function assembleCoverageLive(opts: {
   bikeClass?: CoverageBikeClass;
   radiusKm?: number;
   skipCache?: boolean;
+  language?: ChromeLang | string;
 }): Promise<CoveragePayload> {
   const bikeClass = opts.bikeClass ?? "road";
-  const key = cacheKey(opts.lat, opts.lng, bikeClass, true);
+  const language = chromeLangFrom(opts.language);
+  const key = cacheKey(opts.lat, opts.lng, bikeClass, true, language);
   if (!opts.skipCache) {
     const hit = cache.get(key);
     if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.body;
@@ -215,6 +219,7 @@ export async function assembleCoverageLive(opts: {
       lat: opts.lat,
       lng: opts.lng,
       radiusM: Math.round(Math.min(8, radiusKm) * 1000),
+      language,
     }),
     fetchSchweizMobilNear({ lat: opts.lat, lng: opts.lng }),
   ]);

@@ -56,6 +56,10 @@ RoutingProfile routingProfileForBike(BikeCategory category) =>
       BikeCategory.gravel => RoutingProfile.gravel,
       BikeCategory.road => RoutingProfile.road,
       BikeCategory.urban => RoutingProfile.urban,
+      BikeCategory.cargo ||
+      BikeCategory.folding ||
+      BikeCategory.kids =>
+        RoutingProfile.urban,
       BikeCategory.emtb => RoutingProfile.emtb,
       BikeCategory.etrekking => RoutingProfile.ebikeTour,
       BikeCategory.hiking => RoutingProfile.hiking,

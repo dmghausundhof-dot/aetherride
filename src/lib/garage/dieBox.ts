@@ -4,6 +4,7 @@
  */
 import type { Bike, BikeCategory, BikeComponent, ComponentSlot, Setup } from "@/types/garage";
 import type { MaintenanceLogEntry } from "@/types/garage";
+import { catalogDriveIdentity } from "@/lib/catalog/bikes";
 
 export type WerkstattKind = "mtb" | "gravel" | "road" | "urban" | "hiking";
 export type DieBoxReadiness = "ready" | "almost" | "unknown";
@@ -46,6 +47,7 @@ export type DieBoxPlan = {
   parkSetup?: Setup;
   trailSetup?: Setup;
   primary: DieBoxTodayItem | null;
+  heuteRest: DieBoxTodayItem[];
   isReady: boolean;
 };
 
@@ -137,6 +139,9 @@ export function addableSlotsFor(input: {
   hasSuspension: boolean;
   hasElectricAssist: boolean;
 }): ComponentSlot[] {
+  if (input.kind === "hiking") {
+    return ["hiking_shoes", "hiking_pack", "hiking_poles"];
+  }
   const slots = new Set<ComponentSlot>([
     "tire_front",
     "tire_rear",
@@ -215,44 +220,48 @@ export function planDieBox(input: {
   }
   const showParkTrail = mtb && !!park && !!trail;
 
+  const hasCockpit = hasSlot(parts, "handlebar") || hasSlot(parts, "stem");
+
   const chips: DieBoxChip[] = [];
   const wheel = wheelLabel(bike);
   if (wheel) chips.push({ label: wheel, known: true });
   if (everyday) {
-    chips.push({ label: "Licht", known: hasLights });
-    chips.push({ label: "Schloss", known: hasLock });
-    chips.push({ label: "Träger", known: hasRack });
-    chips.push({ label: "Kette", known: hasChain || chainMeasured });
-    chips.push({ label: "Druck", known: pressureKnown });
+    if (hasLights) chips.push({ label: "Licht", known: true });
+    if (hasLock) chips.push({ label: "Schloss", known: true });
+    if (hasRack) chips.push({ label: "Träger", known: true });
+    if (hasChain || chainMeasured) chips.push({ label: "Kette", known: true });
+    if (pressureKnown) chips.push({ label: "Druck", known: true });
   }
   if (gravel) {
-    chips.push({ label: "Druck", known: pressureKnown });
-    chips.push({ label: "Taschen", known: hasBags });
-    chips.push({ label: "Cockpit", known: true });
-    chips.push({ label: "Kette", known: hasChain || chainMeasured });
+    if (pressureKnown) chips.push({ label: "Druck", known: true });
+    if (hasBags) chips.push({ label: "Taschen", known: true });
+    if (hasCockpit) chips.push({ label: "Cockpit", known: true });
+    if (hasChain || chainMeasured) chips.push({ label: "Kette", known: true });
   }
   if (road) {
-    chips.push({ label: "Druck", known: pressureKnown });
-    chips.push({ label: "Kette", known: chainMeasured });
-    chips.push({ label: "Cockpit", known: true });
+    if (pressureKnown) chips.push({ label: "Druck", known: true });
+    if (chainMeasured) chips.push({ label: "Kette", known: true });
+    if (hasCockpit) chips.push({ label: "Cockpit", known: true });
   }
   if (mtb) {
-    if (hasSuspension) {
+    if (hasSuspension && (travelF > 0 || travelR > 0)) {
       chips.push({
         label: `${bike.travelFrontMm ?? "–"}/${bike.travelRearMm ?? "–"} mm`,
         known: true,
       });
-      chips.push({ label: "SAG", known: sagKnown });
-    } else {
-      chips.push({ label: "Federweg", known: false });
     }
-    chips.push({ label: "Reifen", known: pressureKnown });
-    chips.push({ label: "Bremsen", known: hasBrakes });
+    if (sagKnown) chips.push({ label: "SAG", known: true });
+    if (pressureKnown) chips.push({ label: "Reifen", known: true });
+    if (hasBrakes) chips.push({ label: "Bremsen", known: true });
     if (showParkTrail) chips.push({ label: "Park | Trail", known: true });
   }
+  const drive = hasElectricAssist
+    ? catalogDriveIdentity(bike.catalogBikeId)
+    : {};
   if (hasElectricAssist) {
-    chips.push({ label: "CSC", known: !!input.cscPaired });
-    chips.push({ label: "Akku ehrlich", known: true });
+    if (drive.motor) chips.push({ label: drive.motor, known: true });
+    if (drive.battery) chips.push({ label: drive.battery, known: true });
+    if (input.cscPaired) chips.push({ label: "CSC", known: true });
   }
   if (hasLights && !everyday) chips.push({ label: "Licht", known: true });
 
@@ -261,15 +270,15 @@ export function planDieBox(input: {
     today.push({
       id: "setActive",
       title: "Dieses Rad nach vorn",
-      hint: "Ein Bewohner in der Box — Umschalten ist Wohnrecht.",
+      hint: "Eines steht in der Box — Umschalten holt es nach vorn.",
       cta: "Als aktiv setzen",
     });
   }
   if (everyday && !hasLights) {
     today.push({
       id: "lightsMissing",
-      title: "Licht nicht eingetragen",
-      hint: "Kein Ghost-Fahrwerk. Nur einhaken, wenn Licht wirklich da ist.",
+      title: "Licht eintragen",
+      hint: "Nur wenn Licht wirklich am Rad ist.",
       cta: "Licht eintragen",
       slot: "light",
     });
@@ -277,8 +286,8 @@ export function planDieBox(input: {
   if (everyday && !hasLock) {
     today.push({
       id: "lockMissing",
-      title: "Schloss nicht eingetragen",
-      hint: "Alltag: anschließen, nicht nur abschließen.",
+      title: "Schloss eintragen",
+      hint: "Nur wenn ein Schloss am Rad ist.",
       cta: "Schloss eintragen",
       slot: "lock",
     });
@@ -286,8 +295,8 @@ export function planDieBox(input: {
   if (everyday && !hasRack) {
     today.push({
       id: "rackMissing",
-      title: "Gepäckträger nicht eingetragen",
-      hint: "Nur wenn das Rad einen hat.",
+      title: "Träger eintragen",
+      hint: "Nur wenn das Rad einen Gepäckträger hat.",
       cta: "Träger eintragen",
       slot: "rack",
     });
@@ -295,8 +304,8 @@ export function planDieBox(input: {
   if (gravel && !hasBags) {
     today.push({
       id: "bagsMissing",
-      title: "Taschen nicht eingetragen",
-      hint: "Kein erfundenes Apidura-Set — nur wenn Taschen am Rad sind.",
+      title: "Taschen eintragen",
+      hint: "Nur wenn Taschen am Rad sind.",
       cta: "Taschen eintragen",
       slot: "bags",
     });
@@ -304,40 +313,40 @@ export function planDieBox(input: {
   if ((everyday || gravel || road) && !pressureKnown) {
     today.push({
       id: "pressureUnknown",
-      title: "Druck nicht gemessen",
-      hint: "Am Rad nachmessen. Keine OEM-Tabelle, kein erfundener psi.",
+      title: "Druck merken",
+      hint: "Vorn und hinten am Ventil ablesen.",
       cta: "Druck merken",
     });
   }
   if (mtb && hasSuspension && !pressureKnown) {
     today.push({
       id: "pressureUnknown",
-      title: "Reifendruck nicht gemessen",
-      hint: "psi am Ventil, nicht aus einer Gewichtstabelle.",
+      title: "Reifendruck merken",
+      hint: "Vorn und hinten am Ventil ablesen.",
       cta: "Druck merken",
     });
   }
   if (mtb && !hasSuspension) {
     today.push({
       id: "travelUnknown",
-      title: "Federweg nicht eingetragen",
-      hint: "Keine erfundenen Fox-Zahlen. Travel nur wenn er am Rad steht.",
+      title: "Federweg eintragen",
+      hint: "Nur der Federweg, der am Rad steht.",
       cta: "Federweg eintragen",
     });
   }
   if (mtb && hasSuspension && !sagKnown) {
     today.push({
       id: "sagUnknown",
-      title: "SAG nicht gemessen",
-      hint: "O-Ring, Attack-Position, Prozent eintragen. Kein OEM-psi als SAG.",
-      cta: "SAG messen",
+      title: "Federung merken",
+      hint: "Eine Zahl an Gabel und Dämpfer, abgelesen am Rad.",
+      cta: "Federung merken",
     });
   }
   if ((road || gravel || everyday) && !chainMeasured) {
     today.push({
       id: "chainTeach",
-      title: "Kette noch nicht gemessen",
-      hint: "Die Lehre schlägt jede Kilometer-Rechnung. Messen, dann hier merken.",
+      title: "Kette merken",
+      hint: "Mit der Lehre messen, dann hier merken.",
       cta: "Kette gemessen",
       slot: "chain",
     });
@@ -345,8 +354,8 @@ export function planDieBox(input: {
   if (mtb && !hasBrakes) {
     today.push({
       id: "brakesUnknown",
-      title: "Beläge nicht eingetragen",
-      hint: "Park braucht Beläge in der Box — nur wenn sie am Rad sind.",
+      title: "Bremsen eintragen",
+      hint: "Nur wenn Beläge am Rad sind.",
       cta: "Bremse eintragen",
       slot: "brake_front",
     });
@@ -357,7 +366,7 @@ export function planDieBox(input: {
       id: "dueCare",
       title: teachChain ? "Kette mit der Lehre prüfen" : a.label,
       hint: teachChain
-        ? "Kein km-Orakel. Anschauen und messen."
+        ? "Anschauen und mit der Lehre messen."
         : `${a.remainingLabel ?? ""}${a.sourceLabel ? ` · ${a.sourceLabel}` : ""}`,
       cta: "Erledigt",
       slot: a.slot,
@@ -367,7 +376,7 @@ export function planDieBox(input: {
     today.push({
       id: "parkTrail",
       title: "Park oder Trail",
-      hint: "Nur weil beide Setups existieren — kein zweiter Modus erfunden.",
+      hint: "Beide Setups sind da — wechseln, wenn du willst.",
       cta: "Wechseln",
     });
   }
@@ -399,6 +408,7 @@ export function planDieBox(input: {
     showParkTrail,
     park,
     wheel,
+    motorLabel: drive.motor,
   });
 
   const addable = addableSlotsFor({ kind, hasSuspension, hasElectricAssist });
@@ -408,7 +418,9 @@ export function planDieBox(input: {
     if (hit) onBike.push(hit);
   }
   for (const c of parts) {
-    if (!onBike.some((x) => x.id === c.id)) onBike.push(c);
+    if (onBike.some((x) => x.id === c.id)) continue;
+    const explicit = Boolean(c.freeText) && !c.componentModelId;
+    if (explicit) onBike.push(c);
   }
 
   return {
@@ -425,6 +437,7 @@ export function planDieBox(input: {
     parkSetup: park,
     trailSetup: trail,
     primary: today[0] ?? null,
+    heuteRest: today.slice(1),
     isReady: readiness === "ready" && today.length === 0,
   };
 }
@@ -446,51 +459,55 @@ function buildSentence(p: {
   showParkTrail: boolean;
   park?: Setup;
   wheel?: string;
+  motorLabel?: string;
 }): string {
   if (p.everyday) {
     if (p.readiness === "ready") {
-      return `${p.bike.name} · Montag-bereit · Licht und Kette ok`;
+      return `${p.bike.name} wohnt hier · Montag-bereit`;
     }
-    const bits = [
-      p.hasLights && p.hasChain ? "Licht und Kette ok" : null,
-      !p.pressureKnown ? "Druck nicht gemessen" : null,
-      !p.hasLights ? "Licht nicht eingetragen" : null,
-    ].filter(Boolean);
-    return bits.length === 0
-      ? `${p.bike.name} · noch nicht bereit`
-      : `${p.bike.name} · ${bits.join(" · ")}`;
+    return `${p.bike.name} wohnt hier`;
   }
   if (p.gravel) {
     const bits = [
-      p.wheel ?? "Laufrad offen",
-      p.pressureKnown ? "Druck gemerkt" : "Druck grob — nachmessen",
-      p.hasBags ? "Taschen da" : "Taschen nicht eingetragen",
-    ];
-    return `${p.bike.name} · ${bits.join(" · ")}`;
+      p.wheel,
+      p.pressureKnown ? "Druck gemerkt" : null,
+      p.hasBags ? "Taschen da" : null,
+    ].filter(Boolean);
+    const core =
+      bits.length === 0
+        ? `${p.bike.name} wohnt hier`
+        : `${p.bike.name} · ${bits.join(" · ")}`;
+    return p.readiness === "ready" ? `${core} · bereit` : core;
   }
   if (p.road) {
     const bits = [
-      p.wheel ?? "700c",
-      p.chainMeasured ? "Kette gemessen" : "Kette noch nicht gemessen",
-      p.pressureKnown ? "Druck gemerkt" : "Druck heute offen",
-    ];
-    return `${p.bike.name} · ${bits.join(" · ")}`;
+      p.wheel,
+      p.chainMeasured ? "Kette gemessen" : null,
+      p.pressureKnown ? "Druck gemerkt" : null,
+    ].filter(Boolean);
+    const core =
+      bits.length === 0
+        ? `${p.bike.name} wohnt hier`
+        : `${p.bike.name} · ${bits.join(" · ")}`;
+    return p.readiness === "ready" ? `${core} · bereit` : core;
   }
   if (p.mtb) {
     if (p.showParkTrail && p.park?.isCurrent) {
-      return `Park-Setup · ${p.sagKnown ? "SAG gemerkt" : "SAG nicht gemessen"}`;
+      return "Park-Setup";
     }
     if ((p.bike.travelFrontMm ?? 0) === 0 && (p.bike.travelRearMm ?? 0) === 0) {
-      return `${p.bike.name} · Federweg nicht eingetragen`;
+      return `${p.bike.name} wohnt hier`;
     }
     const travel = `${p.bike.travelFrontMm ?? "–"}/${p.bike.travelRearMm ?? "–"}`;
-    return `${p.bike.name} · ${travel} · ${p.sagKnown ? "SAG gemerkt" : "SAG nicht gemessen"}`;
+    const drive = p.motorLabel ? ` · ${p.motorLabel}` : "";
+    const core = `${p.bike.name} · ${travel}${drive}`;
+    return p.readiness === "ready" ? `${core} · bereit` : core;
   }
-  return `${p.bike.name}`;
+  return `${p.bike.name} wohnt hier`;
 }
 
 export function dieBoxReadinessLabel(r: DieBoxReadiness): string {
   if (r === "ready") return "Bereit";
-  if (r === "almost") return "Fast";
-  return "Unbekannt";
+  if (r === "almost") return "Fast bereit";
+  return "Neu hier";
 }

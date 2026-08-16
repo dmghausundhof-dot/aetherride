@@ -80,6 +80,14 @@ assert(!city.sentence.toLowerCase().includes("sag"), "city no sag");
 assert(city.addableSlots.includes("light"), "city can add light");
 assert(!city.addableSlots.includes("fork"), "city no ghost fork");
 assert(city.today.some((t) => t.id === "lightsMissing"), "city lights today");
+assert(!city.chips.some((c) => !c.known), "city chips are known facts");
+assert(!city.sentence.toLowerCase().includes("nicht"), "city sentence not a deficit");
+
+const cargoBike: Bike = { ...cityBike, id: "cargo1", name: "Lasten", category: "cargo" };
+const cargo = planDieBox({ bike: cargoBike });
+assert(cargo.kind === "urban", "cargo lives in city box");
+assert(!cargo.sentence.toLowerCase().includes("sag"), "cargo no sag");
+assert(cargo.addableSlots.includes("light"), "cargo can add light");
 
 const dhBike: Bike = {
   ...cityBike,
@@ -104,6 +112,80 @@ const emtb: Bike = {
 };
 const eplan = planDieBox({ bike: emtb, cscPaired: false });
 assert(!eplan.today.some((t) => t.id === "pairCsc"), "csc not today hero");
-assert(eplan.chips.some((c) => c.label === "CSC"), "ebike csc chip");
+assert(!eplan.chips.some((c) => c.label === "CSC"), "unpaired csc not a chip");
+
+const jam2Parts: Bike["components"] = [
+  {
+    id: "p-tire",
+    bikeId: "j1",
+    slot: "tire_front",
+    componentModelId: "cm-tire",
+    installedAt: now,
+    odometerKmAtInstall: 0,
+    hoursAtInstall: 0,
+    attributes: [],
+    currentSettings: {},
+  },
+  {
+    id: "p-headset",
+    bikeId: "j1",
+    slot: "headset",
+    componentModelId: "cm-headset",
+    installedAt: now,
+    odometerKmAtInstall: 0,
+    hoursAtInstall: 0,
+    attributes: [],
+    currentSettings: {},
+  },
+  {
+    id: "p-lock",
+    bikeId: "j1",
+    slot: "lock",
+    freeText: "Abus",
+    installedAt: now,
+    odometerKmAtInstall: 0,
+    hoursAtInstall: 0,
+    attributes: [],
+    currentSettings: {},
+  },
+];
+const jam2: Bike = {
+  ...cityBike,
+  id: "j1",
+  name: "JAM² 6.9",
+  category: "emtb",
+  type: "e_mtb",
+  isEbike: true,
+  catalogBikeId: "cat-focus-jam2-2024",
+  travelFrontMm: 150,
+  travelRearMm: 150,
+  wheelSizeFront: "29",
+  wheelSizeRear: "29",
+  components: jam2Parts,
+};
+const jamPlan = planDieBox({ bike: jam2 });
+assert(jamPlan.onBike.some((c) => c.slot === "tire_front"), "jam2 core tire");
+assert(!jamPlan.onBike.some((c) => c.slot === "headset"), "jam2 no oem dump");
+assert(jamPlan.onBike.some((c) => c.slot === "lock"), "jam2 explicit lock");
+assert(jamPlan.sentence.includes("150/150"), "jam2 travel in sentence");
+assert(jamPlan.sentence.includes("Bosch CX"), "jam2 motor identity");
+assert(jamPlan.chips.some((c) => c.label === "Bosch CX"), "jam2 motor chip");
+assert(jamPlan.chips.some((c) => c.label === "800 Wh"), "jam2 battery chip");
+assert(!jamPlan.addableSlots.includes("headset"), "headset not addable");
+
+const hike = planDieBox({
+  bike: {
+    ...cityBike,
+    id: "h1",
+    name: "Tour-Kit",
+    category: "hiking",
+    type: "hiking",
+  },
+});
+assert(
+  hike.addableSlots.every((s) => s.startsWith("hiking_")),
+  "hiking only kit slots"
+);
+assert(!hike.addableSlots.includes("fork"), "hiking no fork");
 
 console.log("garageUx.test.ts OK");

@@ -75,6 +75,9 @@ BikeSchemaPlan planBikeSchema({
       template = BikeSchemaTemplate.gravel;
     case BikeCategory.urban:
     case BikeCategory.etrekking:
+    case BikeCategory.cargo:
+    case BikeCategory.folding:
+    case BikeCategory.kids:
       template = BikeSchemaTemplate.city;
     case BikeCategory.mtbTrail:
     case BikeCategory.mtbAm:

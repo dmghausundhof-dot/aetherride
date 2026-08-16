@@ -92,6 +92,9 @@ const _familyAliases = <String, String>{
   'trekking': 'urban',
   'etrekking': 'urban',
   'commuter': 'urban',
+  'cargo': 'urban',
+  'folding': 'urban',
+  'kids': 'urban',
 };
 
 const _drivetrainSlots = {
@@ -120,6 +123,9 @@ List<String> familiesFromBike(BikeCategory category) {
       return const ['road'];
     case BikeCategory.urban:
     case BikeCategory.etrekking:
+    case BikeCategory.cargo:
+    case BikeCategory.folding:
+    case BikeCategory.kids:
       return const ['urban'];
     case BikeCategory.hiking:
       return const [];

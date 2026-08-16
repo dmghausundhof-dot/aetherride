@@ -18,7 +18,7 @@ export function buildServiceReport(input: {
   const current = bike.setups.find((s) => s.isCurrent);
 
   const lines: string[] = [
-    "AetherRide — Service-Report",
+    "FlowLine — Service-Report",
     `Erstellt: ${new Date().toLocaleString("de-DE")}`,
     "",
     `Bike: ${bike.name}`,

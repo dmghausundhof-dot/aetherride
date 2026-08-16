@@ -33,7 +33,18 @@ class RideRepository {
           ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
           ..limit(limit))
         .get();
-    return rows.map(_toDomain).toList();
+        return rows.map(_toDomain).toList();
+  }
+
+  Future<RideRecord?> lastEndedForBike(String bikeId) async {
+    if (bikeId.isEmpty) return null;
+    final rows = await (_db.select(_db.rides)
+          ..where((t) => t.bikeId.equals(bikeId) & t.endedAt.isNotNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
+          ..limit(1))
+        .get();
+    if (rows.isEmpty) return null;
+    return _toDomain(rows.first);
   }
 
   /// SQL-Aggregat statt „limit hoch genug setzen und clientseitig summieren"

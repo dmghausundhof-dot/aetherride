@@ -72,6 +72,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ];
       case BikeCategory.urban:
       case BikeCategory.etrekking:
+      case BikeCategory.cargo:
+      case BikeCategory.folding:
+      case BikeCategory.kids:
         return const [
           (id: 'efficient', label: 'Alltag / Pendeln'),
           (id: 'explorative', label: 'Touren'),

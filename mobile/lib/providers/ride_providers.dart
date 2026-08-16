@@ -44,6 +44,12 @@ final garagePendingBikeIdProvider = StateProvider<String?>((ref) => null);
 /// Shop: Bike für Garage-Fit, einmalig aus der Werkstatt setzen.
 final shopPendingBikeIdProvider = StateProvider<String?>((ref) => null);
 
+/// Shop: Slot-Chip aus Wartung/Werkstatt (`chain`, `tire`, …).
+final shopPendingSlotProvider = StateProvider<String?>((ref) => null);
+
+/// Shop: nur Teile mit ehrlichem Garage-Fit (`fit=bike` / Werkstatt).
+final shopPendingFitOnlyProvider = StateProvider<bool?>((ref) => null);
+
 /// Kategorie-Vorbefüllung für Garage-Add aus Onboarding.
 final garageAddCategoryProvider = StateProvider<BikeCategory?>((ref) => null);
 

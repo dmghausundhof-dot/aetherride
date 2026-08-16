@@ -456,7 +456,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 56,
       "height": 32,
       "rx": 6,
-      "fill": "#FF6B35"
+      "fill": "#FF6A00"
     },
     "battery": {
       "type": "rect",
@@ -465,7 +465,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 44,
       "height": 22,
       "rx": 4,
-      "fill": "#1A5C45"
+      "fill": "#7A8B73"
     }
   },
   "gravel": {
@@ -476,7 +476,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 56,
       "height": 32,
       "rx": 6,
-      "fill": "#FF6B35"
+      "fill": "#FF6A00"
     },
     "battery": {
       "type": "rect",
@@ -485,7 +485,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 44,
       "height": 22,
       "rx": 4,
-      "fill": "#1A5C45"
+      "fill": "#7A8B73"
     }
   },
   "mtb": {
@@ -495,7 +495,7 @@ export const SCHEMA_LAYERS: Record<
       "y1": 198,
       "x2": 482,
       "y2": 350,
-      "stroke": "#FF6B35",
+      "stroke": "#FF6A00",
       "strokeWidth": 10
     },
     "motor": {
@@ -505,7 +505,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 56,
       "height": 32,
       "rx": 6,
-      "fill": "#FF6B35"
+      "fill": "#FF6A00"
     },
     "battery": {
       "type": "rect",
@@ -514,7 +514,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 44,
       "height": 22,
       "rx": 4,
-      "fill": "#1A5C45"
+      "fill": "#7A8B73"
     }
   },
   "city": {
@@ -525,7 +525,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 56,
       "height": 32,
       "rx": 6,
-      "fill": "#FF6B35"
+      "fill": "#FF6A00"
     },
     "battery": {
       "type": "rect",
@@ -534,7 +534,7 @@ export const SCHEMA_LAYERS: Record<
       "width": 44,
       "height": 22,
       "rx": 4,
-      "fill": "#1A5C45"
+      "fill": "#7A8B73"
     }
   }
 };

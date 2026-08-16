@@ -672,7 +672,7 @@ export const useAppStore = create<AppState>()(
       addBikeFromImport: ({ name, note }) => {
         const id = get().addBikeBasic({
           name: name || "Import-Bike",
-          category: "mtb_am",
+          category: "urban",
         });
         if (note) {
           get().updateBike(id, {

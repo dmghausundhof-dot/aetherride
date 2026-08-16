@@ -18,6 +18,9 @@ void main() {
     test('families cover core bike types', () {
       expect(BikeCategory.road.family, SportFamily.road);
       expect(BikeCategory.urban.family, SportFamily.urban);
+      expect(BikeCategory.cargo.family, SportFamily.urban);
+      expect(BikeCategory.folding.family, SportFamily.urban);
+      expect(BikeCategory.kids.family, SportFamily.urban);
       expect(BikeCategory.gravel.family, SportFamily.gravel);
       expect(BikeCategory.mtbAm.family, SportFamily.mtb);
       expect(BikeCategory.emtb.family, SportFamily.ebike);
@@ -55,6 +58,16 @@ void main() {
       expect(
         MultiSportCopy.homeSubtitle(sport: BikeCategory.gravel),
         contains('Schotter'),
+      );
+    });
+
+    test('preferred sports summary is German', () {
+      expect(
+        preferredSportsSummaryLine(
+          primary: BikeCategory.mtbAm,
+          sports: const [BikeCategory.mtbAm, BikeCategory.road],
+        ),
+        'Haupt: MTB · auch Rennrad',
       );
     });
   });
