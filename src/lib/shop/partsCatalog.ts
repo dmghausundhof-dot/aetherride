@@ -23,6 +23,7 @@ import {
   type SoftFitContext,
   type SoftFitTags,
   type SoftFitVerdict,
+  PARTS_BROWSE_SLOTS,
 } from "@/lib/shop/softFit";
 import { isPartsProduct } from "@/lib/shop/shopShelf";
 
@@ -247,4 +248,17 @@ export function shopPartsHref(opts?: {
   params.set("door", "parts");
   const q = params.toString();
   return `/shop?${q}`;
+}
+
+/** Werkstatt / Verschleiß → Laden, nur Browse-Slots (kein fork-Raten). */
+export function shopReplaceHref(opts: {
+  bike: string;
+  slot?: string | null;
+}): string {
+  const raw = opts.slot ? normalizePartsSlot(opts.slot) : undefined;
+  const slot =
+    raw && raw !== "all" && PARTS_BROWSE_SLOTS.some((s) => s.slot === raw)
+      ? raw
+      : undefined;
+  return shopPartsHref({ bike: opts.bike, fit: "bike", slot });
 }

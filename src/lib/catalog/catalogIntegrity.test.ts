@@ -3,7 +3,7 @@
  * Ausführen: npx tsx src/lib/catalog/catalogIntegrity.test.ts
  */
 import { BIKE_CATALOG, catalogStats } from "./bikes";
-import { COMPONENT_CATALOG, getComponentModel } from "./components";
+import { COMPONENT_CATALOG, getComponentModel, searchComponentModels } from "./components";
 import { COMPATIBILITY_RULES } from "@/lib/compatibility/rules";
 
 function assert(cond: boolean, msg: string) {
@@ -120,6 +120,18 @@ for (const mfr of BIKE_CATALOG) {
   }
 }
 assert(geoIssues === 0, `Geometrie-Fehler:\n${geoList.join("\n")}`);
+
+const emptyHits = searchComponentModels("cassette", "", 3);
+assert(emptyHits.length <= 3, "Suche ohne Query ist gedeckelt");
+assert(
+  emptyHits.every((m) => m.slot === "cassette"),
+  "Suche ohne Query bleibt im Slot"
+);
+const namedHits = searchComponentModels("cassette", "sram", 8);
+assert(
+  namedHits.every((m) => m.slot === "cassette"),
+  "Namenssuche bleibt im Slot"
+);
 
 console.log(
   JSON.stringify(

@@ -130,6 +130,7 @@ interface AppState {
     catalogBikeId: string;
     frameSize: string;
     name?: string;
+    includeOemKit?: boolean;
   }) => string;
   addBikeBasic: (input: {
     name: string;
@@ -539,7 +540,7 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      addBikeFromCatalog: ({ catalogBikeId, frameSize, name }) => {
+      addBikeFromCatalog: ({ catalogBikeId, frameSize, name, includeOemKit }) => {
         if (
           !forcePro() &&
           get().subscriptionTier === "free" &&
@@ -573,7 +574,8 @@ export const useAppStore = create<AppState>()(
         });
 
         const components: BikeComponent[] = [];
-        for (const [slot, modelId] of Object.entries(cat.oemComponents)) {
+        if (includeOemKit) {
+          for (const [slot, modelId] of Object.entries(cat.oemComponents)) {
           if (!modelId) continue;
           const c = installFromModel(
             id,
@@ -606,6 +608,7 @@ export const useAppStore = create<AppState>()(
           if (slot === "tire_front") c.currentSettings.pressure_psi = 22;
           if (slot === "tire_rear") c.currentSettings.pressure_psi = 24;
           components.push(c);
+          }
         }
         bike = { ...bike, components };
 
