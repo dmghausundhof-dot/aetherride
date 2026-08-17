@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTagline.
   ///
   /// In de, this message translates to:
-  /// **'Ride further. Flow better — MTB, Gravel, Rennrad, City & E-Bike.'**
+  /// **'Outdoor Cycling, vereinfacht.'**
   String get appTagline;
 
   /// No description provided for @navHome.
@@ -545,7 +545,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofWatchPair.
   ///
   /// In de, this message translates to:
-  /// **'Uhr koppeln'**
+  /// **'Puls-Sensor'**
   String get hofWatchPair;
 
   /// No description provided for @hofWatchReconnect.
@@ -797,7 +797,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofNoHonestLoop.
   ///
   /// In de, this message translates to:
-  /// **'Kein ehrlicher Trail-Rundkurs'**
+  /// **'Keine Runde in der Nähe'**
   String get hofNoHonestLoop;
 
   /// No description provided for @hofGateWetClosed.
@@ -851,8 +851,32 @@ abstract class AppLocalizations {
   /// No description provided for @hofGpsUnknown.
   ///
   /// In de, this message translates to:
-  /// **'Kein Standort — die Karte wartet auf GPS.'**
+  /// **'Standort erlauben'**
   String get hofGpsUnknown;
+
+  /// No description provided for @hofAllowLocation.
+  ///
+  /// In de, this message translates to:
+  /// **'Standort erlauben'**
+  String get hofAllowLocation;
+
+  /// No description provided for @hofHintsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Hinweise'**
+  String get hofHintsTitle;
+
+  /// No description provided for @hofHintsEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Nichts offen.'**
+  String get hofHintsEmpty;
+
+  /// No description provided for @hofHintsTooltip.
+  ///
+  /// In de, this message translates to:
+  /// **'Hinweise'**
+  String get hofHintsTooltip;
 
   /// No description provided for @rideGpsUnavailable.
   ///
@@ -911,7 +935,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofOpenTours.
   ///
   /// In de, this message translates to:
-  /// **'Touren öffnen'**
+  /// **'Touren auf der Karte'**
   String get hofOpenTours;
 
   /// No description provided for @hofSkyDry.
@@ -941,7 +965,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofGateAwayKm.
   ///
   /// In de, this message translates to:
-  /// **'{km} km'**
+  /// **'{km} km entfernt'**
   String hofGateAwayKm(int km);
 
   /// No description provided for @hofGateAwayNear.
@@ -1313,8 +1337,50 @@ abstract class AppLocalizations {
   /// No description provided for @filterAroundKm.
   ///
   /// In de, this message translates to:
-  /// **'in {km} km'**
+  /// **'Umkreis {km} km'**
   String filterAroundKm(int km);
+
+  /// No description provided for @discoverAroundIdle.
+  ///
+  /// In de, this message translates to:
+  /// **'Umkreis'**
+  String get discoverAroundIdle;
+
+  /// No description provided for @discoverAroundAwayKm.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km entfernt'**
+  String discoverAroundAwayKm(int km);
+
+  /// No description provided for @discoverPeekLoopKm.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km Runde'**
+  String discoverPeekLoopKm(String km);
+
+  /// No description provided for @discoverPeekAwayKm.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km entfernt'**
+  String discoverPeekAwayKm(int km);
+
+  /// No description provided for @discoverPeekAwayNear.
+  ///
+  /// In de, this message translates to:
+  /// **'unter 1 km'**
+  String get discoverPeekAwayNear;
+
+  /// No description provided for @discoverPeekSave.
+  ///
+  /// In de, this message translates to:
+  /// **'Merken'**
+  String get discoverPeekSave;
+
+  /// No description provided for @discoverPeekAkte.
+  ///
+  /// In de, this message translates to:
+  /// **'Akte'**
+  String get discoverPeekAkte;
 
   /// No description provided for @mapToggleFab.
   ///
@@ -2294,6 +2360,18 @@ abstract class AppLocalizations {
   /// **'Route entfernen'**
   String get rideClearRoute;
 
+  /// No description provided for @rideDrawTour.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Tour zeichnen'**
+  String get rideDrawTour;
+
+  /// No description provided for @rideDrawingTour.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Tour · zeichnet'**
+  String get rideDrawingTour;
+
   /// No description provided for @postRideTitle.
   ///
   /// In de, this message translates to:
@@ -2305,6 +2383,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Freeride'**
   String get postRideFreeride;
+
+  /// No description provided for @postRideLiveTour.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Tour'**
+  String get postRideLiveTour;
+
+  /// No description provided for @postRideToMappe.
+  ///
+  /// In de, this message translates to:
+  /// **'In die Mappe'**
+  String get postRideToMappe;
 
   /// No description provided for @postRideTrackMap.
   ///
@@ -2839,6 +2929,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Debug: Force-Pro. Stripe/Play bleiben ausgeblendet.'**
   String get billingForceProDebug;
+
+  /// No description provided for @billingCommerceClosed.
+  ///
+  /// In de, this message translates to:
+  /// **'Entwicklungsstand — keine Käufe. Es gibt kein öffentliches Abo.'**
+  String get billingCommerceClosed;
 
   /// No description provided for @billingStripeMonth.
   ///
@@ -3740,6 +3836,42 @@ abstract class AppLocalizations {
   /// **'Konto & Sync'**
   String get profileAccountSync;
 
+  /// No description provided for @profileConnections.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindungen'**
+  String get profileConnections;
+
+  /// No description provided for @profileWatchTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Uhr / Puls'**
+  String get profileWatchTitle;
+
+  /// No description provided for @profileWatchIdle.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Uhr gekoppelt — Garmin, Polar, Wahoo.'**
+  String get profileWatchIdle;
+
+  /// No description provided for @profileBikeBleTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad / Bosch LDI'**
+  String get profileBikeBleTitle;
+
+  /// No description provided for @profileBikeBleIdle.
+  ///
+  /// In de, this message translates to:
+  /// **'Display, Motor oder CSC am aktiven Rad.'**
+  String get profileBikeBleIdle;
+
+  /// No description provided for @profileBikeBleNeedBike.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuerst ein Rad in die Werkstatt stellen.'**
+  String get profileBikeBleNeedBike;
+
   /// No description provided for @profileCloudBilling.
   ///
   /// In de, this message translates to:
@@ -4379,7 +4511,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzTogetherHint.
   ///
   /// In de, this message translates to:
-  /// **'Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen — kein Feed.'**
+  /// **'Einladen teilt den Link. Deine Gruppen bleiben — kein Feed.'**
   String get platzTogetherHint;
 
   /// No description provided for @platzTogetherListHint.
@@ -4403,7 +4535,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzNoGroup.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Gruppe. Einladen teilt den Link — nichts Vorgespieltes.'**
+  /// **'Noch keine Gruppe. Ein Link reicht.'**
   String get platzNoGroup;
 
   /// No description provided for @platzHost.
@@ -6614,6 +6746,12 @@ abstract class AppLocalizations {
   /// **'Rundkurse in deiner Nähe'**
   String get discoverLoopsNearby;
 
+  /// No description provided for @discoverNearbySection.
+  ///
+  /// In de, this message translates to:
+  /// **'In der Nähe'**
+  String get discoverNearbySection;
+
   /// No description provided for @discoverNoLoop90.
   ///
   /// In de, this message translates to:
@@ -7697,7 +7835,7 @@ abstract class AppLocalizations {
   /// No description provided for @overlayLegendEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.'**
+  /// **'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 11 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.'**
   String get overlayLegendEmpty;
 
   /// No description provided for @overlayLegendMeshTitle.
@@ -7709,7 +7847,7 @@ abstract class AppLocalizations {
   /// No description provided for @overlayLegendMeshNote.
   ///
   /// In de, this message translates to:
-  /// **'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.'**
+  /// **'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 11 im ganzen DACH-Blatt.'**
   String get overlayLegendMeshNote;
 
   /// No description provided for @overlayLegendCompactGravel.
@@ -8155,6 +8293,72 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Touren'**
   String get discoverLayerTours;
+
+  /// No description provided for @discoverLayerTrails.
+  ///
+  /// In de, this message translates to:
+  /// **'Trails'**
+  String get discoverLayerTrails;
+
+  /// No description provided for @discoverLayerWays.
+  ///
+  /// In de, this message translates to:
+  /// **'Wege'**
+  String get discoverLayerWays;
+
+  /// No description provided for @discoverLayerHeight.
+  ///
+  /// In de, this message translates to:
+  /// **'Höhe'**
+  String get discoverLayerHeight;
+
+  /// No description provided for @discoverLayerHeightHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur Relief — keine Höhenlinien in dieser Karte.'**
+  String get discoverLayerHeightHint;
+
+  /// No description provided for @browseMapLegendPaved.
+  ///
+  /// In de, this message translates to:
+  /// **'Asphalt'**
+  String get browseMapLegendPaved;
+
+  /// No description provided for @browseMapLegendGravel.
+  ///
+  /// In de, this message translates to:
+  /// **'Schotter'**
+  String get browseMapLegendGravel;
+
+  /// No description provided for @browseMapLegendTrail.
+  ///
+  /// In de, this message translates to:
+  /// **'Pfad'**
+  String get browseMapLegendTrail;
+
+  /// No description provided for @discoverDurationAll.
+  ///
+  /// In de, this message translates to:
+  /// **'alle'**
+  String get discoverDurationAll;
+
+  /// No description provided for @overlayLegendTrailsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Trails · OSM'**
+  String get overlayLegendTrailsTitle;
+
+  /// No description provided for @overlayLegendWaysTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Radwege · OSM'**
+  String get overlayLegendWaysTitle;
+
+  /// No description provided for @overlayLegendAllTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Wege · OSM'**
+  String get overlayLegendAllTitle;
 
   /// No description provided for @discoverLayerPlaces.
   ///
@@ -8897,7 +9101,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideUntilJoin.
   ///
   /// In de, this message translates to:
-  /// **'km bis Route'**
+  /// **'bis zur Strecke'**
   String get rideUntilJoin;
 
   /// No description provided for @rideRestLoop.
@@ -12229,14 +12433,68 @@ abstract class AppLocalizations {
   /// No description provided for @mappeSubtitle.
   ///
   /// In de, this message translates to:
-  /// **'Touren merken, kurz schreiben, Freunde per Link mitnehmen — dieselben Touren wie auf der Karte.'**
+  /// **'Touren merken, Stimmen und Freunde an der Strecke — dieselben wie auf der Karte.'**
   String get mappeSubtitle;
 
   /// No description provided for @mappeAddHint.
   ///
   /// In de, this message translates to:
-  /// **'Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX als Option darunter.'**
+  /// **'Name merken, Start von GPS oder letzter Karte, sonst ohne Pin. GPX darunter — ohne erfundenen Track.'**
   String get mappeAddHint;
+
+  /// No description provided for @mappeKeep.
+  ///
+  /// In de, this message translates to:
+  /// **'Merken'**
+  String get mappeKeep;
+
+  /// No description provided for @mappeSearch.
+  ///
+  /// In de, this message translates to:
+  /// **'Tour suchen'**
+  String get mappeSearch;
+
+  /// No description provided for @mappeSortRecent.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt'**
+  String get mappeSortRecent;
+
+  /// No description provided for @mappeSortDistance.
+  ///
+  /// In de, this message translates to:
+  /// **'Länge'**
+  String get mappeSortDistance;
+
+  /// No description provided for @mappeSortName.
+  ///
+  /// In de, this message translates to:
+  /// **'Name'**
+  String get mappeSortName;
+
+  /// No description provided for @mappeKicker.
+  ///
+  /// In de, this message translates to:
+  /// **'Mappe'**
+  String get mappeKicker;
+
+  /// No description provided for @mappeInviteFriends.
+  ///
+  /// In de, this message translates to:
+  /// **'Freunde mitnehmen'**
+  String get mappeInviteFriends;
+
+  /// No description provided for @mappeActiveMeet.
+  ///
+  /// In de, this message translates to:
+  /// **'{title} · {when}'**
+  String mappeActiveMeet(String title, String when);
+
+  /// No description provided for @mappeCollectionNew.
+  ///
+  /// In de, this message translates to:
+  /// **'Sammlung anlegen'**
+  String get mappeCollectionNew;
 
   /// No description provided for @mappeStartNone.
   ///
@@ -12283,7 +12541,7 @@ abstract class AppLocalizations {
   /// No description provided for @mappeEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine eigenen Touren — Route hinzufügen.'**
+  /// **'Noch keine eigenen Touren — merken oder GPX importieren.'**
   String get mappeEmpty;
 
   /// No description provided for @mappeStimmenEmpty.

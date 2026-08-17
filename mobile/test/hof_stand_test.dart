@@ -42,6 +42,30 @@ void main() {
     );
   });
 
+  test('named catalog bike is resident over placeholder', () {
+    expect(
+      hofResidentBike(const [phantom, aeroad, namedOther])?.id,
+      'aeroad',
+    );
+    expect(
+      hofResidentBike(const [
+        Bike(
+          id: 'ph-active',
+          name: 'Mein Bike',
+          category: BikeCategory.urban,
+          isActive: true,
+        ),
+        namedOther,
+      ])?.id,
+      'luna',
+    );
+  });
+
+  test('only placeholders stay honest as resident', () {
+    expect(hofResidentBike(const [phantom, phantom2])?.id, 'ph1');
+    expect(hofResidentBike(const []), isNull);
+  });
+
   test('hofStandOthers hides default phantoms when resident is real', () {
     final others = hofStandOthers(
       active: aeroad,

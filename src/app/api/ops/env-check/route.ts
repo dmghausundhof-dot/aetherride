@@ -5,7 +5,13 @@ import {
   isUsingPublicOsrm,
 } from "@/lib/routing/engine";
 import { hasStoreLinks, siteOrigin, ANDROID_PACKAGE } from "@/lib/web/appLinks";
-import { isShopifyCommerceEnabled } from "@/lib/shop/shopEnabled";
+import {
+  appStage,
+  isAppLaunched,
+  isCommerceOpen,
+  isPublicIndexable,
+} from "@/lib/config/appStage";
+import { isShopEnabled, isShopifyCommerceEnabled } from "@/lib/shop/shopEnabled";
 
 /**
  * GET /api/ops/env-check
@@ -22,6 +28,13 @@ export async function GET() {
   const engine = configuredRoutingEngine();
 
   const checks = {
+    stage: {
+      value: appStage(),
+      launched: isAppLaunched(),
+      commerceOpen: isCommerceOpen(),
+      indexable: isPublicIndexable(),
+      shopEnabled: isShopEnabled(),
+    },
     appUrl: set("NEXT_PUBLIC_APP_URL") || set("NEXT_PUBLIC_SITE_URL"),
     siteOrigin: siteOrigin() || null,
     supabasePublic: supabase,
@@ -86,6 +99,8 @@ export async function GET() {
     nodeEnv: process.env.NODE_ENV,
     checks,
     hints: [
+      !checks.stage.launched &&
+        "Entwicklungsstand: NEXT_PUBLIC_APP_STAGE=launched erst beim echten Launch",
       !checks.supabasePublic && "NEXT_PUBLIC_SUPABASE_* setzen",
       !checks.routing.liveConfigured &&
         "OPENROUTESERVICE_API_KEY, GRAPHHOPPER_API_KEY oder VALHALLA_URL/OSRM_URL setzen",

@@ -549,6 +549,23 @@ class TourFilters {
     };
   }
 
+  /// Peek/Liste: ein einzelnes „ebike“ auf Asphalt ist City, nicht E-Bike.
+  static String? honestSportLabel({
+    String? sportLabel,
+    required String surface,
+  }) {
+    final raw = sportLabel?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    final t = raw.toLowerCase();
+    if (t == 'ebike' || t == 'e-bike') {
+      final surf = parseSurface(surface);
+      if (surf == TourSurfaceKey.asphalt || surf == TourSurfaceKey.mixed) {
+        return 'city';
+      }
+    }
+    return raw;
+  }
+
   static TourSportKey sportOf(List<BikeCategory> cats) {
     if (cats.isEmpty) return TourSportKey.urban;
     return _sportOf(cats.first);
@@ -672,6 +689,19 @@ class TourFilters {
         TourSportKey.hiking => 'Fuß',
         TourSportKey.dh => 'DH',
       };
+
+  /// Browse-Karte: Minuten, keine Sport-Kürzel (GR/RR).
+  static String browseTourTimeLabel(int durationMin) {
+    if (durationMin <= 0) return '';
+    return '$durationMin′';
+  }
+
+  /// Unselected starts stay silent; selected may show time.
+  static bool browseTourShowsTime({
+    required bool selected,
+    required double zoom,
+  }) =>
+      selected && zoom >= 11;
 
   static String pinHalo(TourSportKey sport) => switch (sport) {
         TourSportKey.mtb || TourSportKey.emtb => '#1B5E20',

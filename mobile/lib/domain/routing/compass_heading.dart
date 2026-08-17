@@ -8,8 +8,10 @@ abstract final class CompassHeading {
     required String? selectedTourId,
     required String? firstFilteredTourId,
   }) {
-    if (selectedTourId != null) return selectedTourId;
-    return firstFilteredTourId;
+    if (selectedTourId != null && selectedTourId.isNotEmpty) {
+      return selectedTourId;
+    }
+    return null;
   }
 
   /// Live GH polyline is OK in the HUD; Discover must not paint demo/heading.

@@ -97,6 +97,34 @@ class OnboardingSportOption {
   final String blurb;
   final String icon; // Material icon name hint for UI
 
+  /// Erste Frage: vier Kacheln. Rest bleibt im Profil / beim Rad.
+  static const List<OnboardingSportOption> primary = [
+    OnboardingSportOption(
+      id: BikeCategory.urban,
+      label: 'City',
+      blurb: 'Alltag & Pendeln',
+      icon: 'location_city',
+    ),
+    OnboardingSportOption(
+      id: BikeCategory.gravel,
+      label: 'Gravel',
+      blurb: 'Schotter & Distanz',
+      icon: 'route',
+    ),
+    OnboardingSportOption(
+      id: BikeCategory.road,
+      label: 'Rennrad',
+      blurb: 'Asphalt & Tempo',
+      icon: 'speed',
+    ),
+    OnboardingSportOption(
+      id: BikeCategory.mtbAm,
+      label: 'MTB',
+      blurb: 'Trails & Touren',
+      icon: 'terrain',
+    ),
+  ];
+
   static const List<OnboardingSportOption> all = [
     OnboardingSportOption(
       id: BikeCategory.mtbAm,

@@ -183,7 +183,6 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
     final l10n = AppLocalizations.of(context);
     final live = ref.read(bleCoreProvider).isWatchConnected;
     final saved = _saved != null;
-    if (!saved) return const SizedBox.shrink();
     return Semantics(
       button: true,
       label: live

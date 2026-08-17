@@ -4,6 +4,7 @@ import { listRegions } from "@/lib/catalog/regions";
 import { listGuideSlugs } from "@/lib/content/guides";
 import { listEditorialHandles } from "@/lib/community/editorialProfiles";
 import { SHARE_DEMO_TOKEN } from "@/lib/community/shareCodec";
+import { isPublicIndexable } from "@/lib/config/appStage";
 
 function base(): string {
   return (
@@ -14,6 +15,7 @@ function base(): string {
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  if (!isPublicIndexable()) return [];
   const origin = base();
   const now = new Date();
 

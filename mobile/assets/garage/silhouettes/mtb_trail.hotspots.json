@@ -1,0 +1,108 @@
+{
+  "id": "mtb_trail",
+  "name": "Trail / Hardtail",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "mtb_trail",
+  "family": "mtb_ht",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 450,
+    "stackMm": 616,
+    "headAngleDeg": 65.4,
+    "seatAngleEffectiveDeg": 76.4,
+    "chainstayMm": 432,
+    "wheelbaseMm": 1214,
+    "bbDropMm": 34,
+    "headTubeMm": 100,
+    "wheelSizeFront": "29",
+    "wheelSizeRear": "29",
+    "travelFrontMm": 130,
+    "travelRearMm": 0,
+    "isEbike": false,
+    "isFully": false,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 693.1,
+      "cy": 314.6,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 306.9,
+      "cy": 315.3,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 642.0,
+      "cy": 229.1,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 681.9,
+      "cy": 296.0,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 301.2,
+      "cy": 293.0,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 598.7,
+      "cy": 123.5,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 590.8,
+      "cy": 124.0,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 500.4,
+      "cy": 165.8,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 408.5,
+      "cy": 179.6,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 404.6,
+      "cy": 163.4,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 443.9,
+      "cy": 326.1,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 375.4,
+      "cy": 320.7,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 309.5,
+      "cy": 315.3,
+      "hitR": 28,
+      "label_de": "Kassette"
+    }
+  },
+  "cue": "Hardtail, Federgabel, Flatbar, keine Hinterbaudämpfung"
+}

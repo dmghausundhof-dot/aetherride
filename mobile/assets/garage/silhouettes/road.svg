@@ -1,42 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500"
-     data-schema-kind="road" data-viewbox="1000x500" data-bb="400,372" fill="none">
-  <title>AetherRide Bike Schema — road</title>
-  <desc>Diamond-frame side view. Shared viewBox 0 0 1000 500, locked BB (400,372). Status hotspots overlaid by app.</desc>
-
-  <line x1="80" y1="420" x2="920" y2="420" stroke="#343440" stroke-width="4"/>
-
-  <circle class="tire" cx="220" cy="420" r="88" fill="none" stroke="#4B5563" stroke-width="8"/>
-  <circle class="rim" cx="220" cy="420" r="82" fill="none" stroke="#9CA3AF" stroke-width="4"/>
-  <circle class="tire" cx="604" cy="420" r="88" fill="none" stroke="#4B5563" stroke-width="8"/>
-  <circle class="rim" cx="604" cy="420" r="82" fill="none" stroke="#9CA3AF" stroke-width="4"/>
-
-  <g id="part-fork">
-    <line x1="288" y1="158" x2="220" y2="420" stroke="#FF6A00" stroke-width="8" stroke-linecap="round"/>
-  </g>
-
-  <g id="part-frame" stroke="#7A8B73" stroke-linecap="round" fill="none">
-    <line id="tube-ht" x1="288" y1="158" x2="292" y2="186" stroke-width="14"/>
-    <line id="tube-tt" x1="288" y1="158" x2="408" y2="152" stroke-width="12"/>
-    <line id="tube-dt" x1="288" y1="158" x2="400" y2="372" stroke-width="12"/>
-    <line id="tube-st" x1="408" y1="152" x2="400" y2="372" stroke-width="12"/>
-    <line id="tube-cs" x1="400" y1="372" x2="604" y2="420" stroke-width="9"/>
-    <line id="tube-ss" x1="408" y1="192" x2="604" y2="420" stroke-width="9"/>
-  </g>
-
-  <line id="part-stem" x1="288" y1="158" x2="232" y2="128" stroke="#F2F2F2" stroke-width="7" stroke-linecap="round"/>
-
-  <g id="part-handlebar">
-    <line x1="222" y1="128" x2="272" y2="132" stroke="#F2F2F2" stroke-width="8" stroke-linecap="round"/>
-    <path d="M222 128 C204 140 206 176 224 186" stroke="#F2F2F2" stroke-width="7" fill="none"/>
-  </g>
-  <line id="part-seatpost" x1="408" y1="152" x2="408" y2="134" stroke="#9CA3AF" stroke-width="8"/>
-  <ellipse id="part-saddle" cx="418" cy="130" rx="36" ry="11" fill="#F2F2F2"/>
-
-  <g id="part-crank">
-    <circle cx="400" cy="372" r="22" fill="none" stroke="#FF6A00" stroke-width="5"/>
-    <line x1="400" y1="372" x2="436" y2="402" stroke="#F2F2F2" stroke-width="7" stroke-linecap="round"/>
-  </g>
-  <line id="part-chain" x1="418" y1="378" x2="592" y2="410" stroke="#6B7280" stroke-width="3"/>
-
+     data-bike-id="road" data-size="M" data-family="road"
+     data-geo-source="category_silhouette" fill="none">
+  <title>AetherRide Rennrad 2026 · Size M</title>
+  <desc>Side profile from geometry (category_silhouette): reach 386 stack 552 HTA 72.8° STA 73.5° CS 410 WB 992 wheels 700c/700c</desc>
+  <ellipse cx="500.00" cy="438.00" rx="186.26" ry="7.00" fill="#000" opacity="0.10"/>
+<g id="part-tire-rear">
+<circle cx="342.24" cy="324.18" r="107.82" fill="#1A1A1E" class="tire"/>
+    <circle cx="342.24" cy="324.18" r="106.02" fill="none" stroke="#2C2C32" stroke-width="2.87" />
+    <circle cx="342.24" cy="324.18" r="103.32" fill="none" stroke="#8A8F96" stroke-width="2.20" />
+    <circle cx="342.24" cy="324.18" r="100.14" fill="none" stroke="#4B5060" stroke-width="1.20" />
+    <line x1="342.24" y1="324.18" x2="441.54" y2="304.05" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="438.30" y2="356.39" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="409.32" y2="400.11" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="362.37" y2="423.47" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="310.03" y2="420.24" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="266.31" y2="391.26" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="242.95" y2="344.31" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="246.19" y2="291.96" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="275.16" y2="248.25" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="322.11" y2="224.88" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="374.46" y2="228.12" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="342.24" y1="324.18" x2="418.17" y2="257.10" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <circle cx="342.24" cy="324.18" r="5.09" fill="#2A2A30" stroke="#9CA3AF" stroke-width="1.40" />
+    <circle cx="342.24" cy="324.18" r="29.26" fill="none" stroke="#6B7280" stroke-width="1.60" opacity="0.85"/>
+    <circle cx="342.24" cy="324.18" r="24.81" fill="none" stroke="#4B5563" stroke-width="1.00" opacity="0.7"/>
+</g>
+<g id="part-tire-front">
+<circle cx="657.76" cy="324.18" r="107.82" fill="#1A1A1E" class="tire"/>
+    <circle cx="657.76" cy="324.18" r="106.02" fill="none" stroke="#2C2C32" stroke-width="2.87" />
+    <circle cx="657.76" cy="324.18" r="103.32" fill="none" stroke="#8A8F96" stroke-width="2.20" />
+    <circle cx="657.76" cy="324.18" r="100.14" fill="none" stroke="#4B5060" stroke-width="1.20" />
+    <line x1="657.76" y1="324.18" x2="757.05" y2="304.05" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="753.81" y2="356.39" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="724.84" y2="400.11" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="677.89" y2="423.47" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="625.54" y2="420.24" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="581.83" y2="391.26" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="558.46" y2="344.31" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="561.70" y2="291.96" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="590.68" y2="248.25" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="637.63" y2="224.88" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="689.97" y2="228.12" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <line x1="657.76" y1="324.18" x2="733.69" y2="257.10" stroke="#6B7280" stroke-width="0.9" opacity="0.75"/>
+    <circle cx="657.76" cy="324.18" r="5.09" fill="#2A2A30" stroke="#9CA3AF" stroke-width="1.40" />
+    <circle cx="657.76" cy="324.18" r="29.26" fill="none" stroke="#6B7280" stroke-width="1.60" opacity="0.85"/>
+    <circle cx="657.76" cy="324.18" r="24.81" fill="none" stroke="#4B5563" stroke-width="1.00" opacity="0.7"/>
+</g>
+<line x1="475.52" y1="354.78" x2="344.66" y2="328.41" stroke="#6B7280" stroke-width="1.80" stroke-linecap="round" id="part-chain"/>
+<g id="part-fork">
+<line x1="607.03" y1="215.57" x2="657.76" y2="324.18" stroke="#2A332C" stroke-width="8.27" stroke-linecap="round" />
+<circle cx="615.15" cy="232.94" r="3.82" fill="#2A332C" />
+</g>
+<g id="part-frame">
+<line x1="593.39" y1="171.51" x2="607.03" y2="215.57" stroke="#3D4F6F" stroke-width="10.81" stroke-linecap="round" />
+<line x1="593.39" y1="171.51" x2="434.26" y2="224.31" stroke="#3D4F6F" stroke-width="7.00" stroke-linecap="round" />
+<line x1="470.62" y1="347.08" x2="431.73" y2="215.77" stroke="#3D4F6F" stroke-width="8.27" stroke-linecap="round" />
+<line x1="607.03" y1="215.57" x2="470.62" y2="347.08" stroke="#3D4F6F" stroke-width="8.91" stroke-linecap="round" />
+<line x1="434.26" y1="224.31" x2="342.24" y2="324.18" stroke="#3D4F6F" stroke-width="5.09" stroke-linecap="round" />
+<line x1="470.62" y1="347.08" x2="342.24" y2="324.18" stroke="#3D4F6F" stroke-width="5.73" stroke-linecap="round" />
+<circle cx="593.39" cy="171.51" r="2.54" fill="#3D4F6F" />
+<circle cx="607.03" cy="215.57" r="2.54" fill="#3D4F6F" />
+<circle cx="434.26" cy="224.31" r="2.23" fill="#3D4F6F" />
+<circle cx="431.73" cy="215.77" r="2.23" fill="#3D4F6F" />
+<circle cx="470.62" cy="347.08" r="3.18" fill="#3D4F6F" />
+</g>
+<g id="part-crank">
+<circle cx="470.62" cy="347.08" r="13.99" fill="none" stroke="#A1A1AA" stroke-width="3.20" />
+<circle cx="470.62" cy="347.08" r="10.81" fill="none" stroke="#71717A" stroke-width="1.20" />
+<line x1="470.62" y1="347.08" x2="500.84" y2="369.34" stroke="#D4D4D8" stroke-width="5.09" stroke-linecap="round" />
+<circle cx="500.84" cy="369.34" r="4.45" fill="#27272A" stroke="#A1A1AA" stroke-width="1.40" />
+</g>
+<circle cx="344.15" cy="324.18" r="12.09" fill="none" stroke="#71717A" stroke-width="5.00" />
+<line x1="342.24" y1="327.99" x2="347.97" y2="341.67" stroke="#52525B" stroke-width="2.40" stroke-linecap="round" />
+<circle cx="347.97" cy="341.67" r="3.82" fill="none" stroke="#71717A" stroke-width="2.00" />
+<g id="part-seatpost">
+<path d="M433.86 215.14 L427.54 193.79 L423.27 195.06 L429.59 216.41 Z" fill="#9CA3AF" stroke-linejoin="round"/>
+</g>
+<g id="part-saddle">
+<path d="M387.87 195.14 C387.87 188.07, 412.27 188.07, 422.40 190.29 C438.58 191.74, 459.30 191.56, 472.48 193.85 L472.48 196.00 C451.29 198.00, 425.40 199.20, 409.64 199.20 C396.13 198.00, 387.87 196.10, 387.87 195.14 Z" fill="#1A1A1C" />
+    <line x1="412.27" y1="200.15" x2="443.29" y2="199.83" stroke="#6B7280" stroke-width="1.80" stroke-linecap="round" />
+</g>
+<g id="part-stem">
+<line x1="593.39" y1="171.51" x2="591.98" y2="166.95" stroke="#D4D4D8" stroke-width="5.09" stroke-linecap="round" />
+<line x1="591.98" y1="166.95" x2="623.69" y2="169.49" stroke="#D4D4D8" stroke-width="5.73" stroke-linecap="round" />
+</g>
+<g id="part-handlebar">
+<path d="M626.23 168.22 C629.41 172.67, 624.96 179.03, 621.78 181.57 C619.23 186.66, 619.23 189.84, 616.69 192.39" fill="none" stroke="#1C1C1E" stroke-width="7.63" stroke-linecap="round"/>
+</g>
+<circle cx="651.67" cy="311.14" r="2.86" fill="#3F3F46" id="part-brake-front"/>
+<circle cx="336.52" cy="301.91" r="2.86" fill="#3F3F46" id="part-brake-rear"/>
 </svg>

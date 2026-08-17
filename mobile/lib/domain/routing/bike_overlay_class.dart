@@ -1,4 +1,5 @@
 import '../bike.dart';
+import 'browse_map_paint.dart';
 
 /// OSM-Way → Bike-Overlay-Klasse. Spiegel von `src/lib/routing/bikeOverlayClass.ts`.
 ///
@@ -254,6 +255,9 @@ List<BikeOverlayClass> overlayClassesForFamily(BikeOverlayFamily family) =>
       BikeOverlayFamily.urban => [BikeOverlayClass.urban],
     };
 
+/// Explore-Default: alle Klassen, unabhängig vom Rad.
+const overlayExploreAllClasses = kAllPaintedOverlayClasses;
+
 /// Default-Sichtbarkeit: City sieht City+Asphalt, nicht die S-Skala.
 Set<BikeOverlayClass> overlayDefaultExtraOn(BikeOverlayFamily family) =>
     switch (family) {
@@ -326,6 +330,29 @@ List<OverlayLegendRow> overlayLegendRows({
   };
 }
 
+/// Explore: Trails und Radwege getrennt, S-Skala nur ausgeklappt.
+List<OverlayLegendRow> overlayLegendRowsExplore({
+  required bool trailsOn,
+  required bool waysOn,
+  required bool expanded,
+}) {
+  if (!expanded) return const [];
+  return [
+    if (trailsOn) ...[
+      const OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S0'),
+      const OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S1'),
+      const OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S2'),
+      const OverlayLegendRow(cls: BikeOverlayClass.mtb, key: 'S3+'),
+      const OverlayLegendRow(cls: BikeOverlayClass.mtbUnrated, key: 'unrated'),
+      const OverlayLegendRow(cls: BikeOverlayClass.gravel, key: 'gravel'),
+    ],
+    if (waysOn) ...[
+      const OverlayLegendRow(cls: BikeOverlayClass.road, key: 'road'),
+      const OverlayLegendRow(cls: BikeOverlayClass.urban, key: 'urban'),
+    ],
+  ];
+}
+
 /// Nutzer-Toggles in [extraOn] sind die Sichtbarkeit. Aus = weg, nicht 16 %.
 Set<BikeOverlayClass> overlayClassesShown({
   required bool overlayOn,
@@ -354,11 +381,11 @@ abstract final class BikeOverlayColors {
   static const s1 = '#8BC34A';
   static const s2 = '#FFC107';
   static const s3 = '#E53935';
-  static const unrated = '#90A4AE';
-  static const gravel = '#C49A3C';
-  static const road = '#1E88E5';
-  static const urban = '#00897B';
-  static const dirt = '#9A5B32';
+  static const unrated = BrowseMapPaint.trailHex;
+  static const gravel = BrowseMapPaint.gravelHex;
+  static const road = BrowseMapPaint.wayHex;
+  static const urban = BrowseMapPaint.wayHex;
+  static const dirt = BrowseMapPaint.trailHex;
 }
 
 const kOverlaySurfacePaved = [

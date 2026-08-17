@@ -3,6 +3,7 @@ import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { upsertSubscriptionTierInSyncSnapshot } from "@/lib/billing/syncTier";
 import { verifyPlayPurchaseWithGoogle } from "@/lib/billing/googlePlayVerify";
+import { COMMERCE_CLOSED, isCommerceOpen } from "@/lib/config/appStage";
 
 /**
  * Play Billing verify (2B + 2A):
@@ -14,6 +15,9 @@ import { verifyPlayPurchaseWithGoogle } from "@/lib/billing/googlePlayVerify";
  * Ops: create Play product `aetherride_pro_monthly` (see mobile/README Billing).
  */
 export async function POST(req: Request) {
+  if (!isCommerceOpen()) {
+    return NextResponse.json(COMMERCE_CLOSED, { status: 403 });
+  }
   try {
     const supabase = await createAuthedClient(req);
     const {

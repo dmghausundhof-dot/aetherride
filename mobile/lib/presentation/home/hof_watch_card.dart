@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/local/ride_prefs.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble.dart';
 import '../../l10n/app_localizations.dart';
@@ -34,6 +35,7 @@ class HofWatchCard extends ConsumerStatefulWidget {
 class _HofWatchCardState extends ConsumerState<HofWatchCard> {
   BikeBleDevice? _saved;
   bool _busy = false;
+  bool _heroDismissed = false;
   String? _status;
   StreamSubscription<BoschLiveData>? _liveSub;
 
@@ -57,6 +59,10 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
       final d = await ref.read(bikeBleStoreProvider).savedWatch();
       if (mounted) setState(() => _saved = d);
     } catch (_) {}
+    try {
+      final dismissed = await RidePrefs.hofWatchHeroDismissed();
+      if (mounted) setState(() => _heroDismissed = dismissed);
+    } catch (_) {}
   }
 
   Future<void> _pair() async {
@@ -70,15 +76,20 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
       await _reload();
       if (!mounted) return;
       if (ok) {
+        await RidePrefs.setHofWatchHeroDismissed(false);
         final ble = ref.read(bleCoreProvider);
         final l10n = AppLocalizations.of(context);
         setState(() {
+          _heroDismissed = false;
           _status = ble.watchStatusDetail != null
               ? l10n.bleStatusDetailFor(ble.watchStatusDetail!)
               : (ble.connectedWatchName != null
                   ? l10n.garageBlePairedNamed(ble.connectedWatchName!)
                   : l10n.garageBlePaired);
         });
+      } else {
+        await RidePrefs.setHofWatchHeroDismissed(true);
+        if (mounted) setState(() => _heroDismissed = true);
       }
     } catch (e) {
       if (mounted) {
@@ -158,9 +169,7 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ble = ref.read(bleCoreProvider);
-    if (_saved != null && !widget.compact) {
-      return const SizedBox.shrink();
-    }
+    if (!widget.compact) return const SizedBox.shrink();
     if (widget.compact) {
       if (ble.isWatchConnected) return const SizedBox.shrink();
       return Align(
@@ -200,6 +209,7 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
         live ? AppColors.chrome : AppColors.muted;
 
     if (widget.dense) {
+      if (_saved == null) return const SizedBox.shrink();
       return Material(
         key: const Key('hof-watch'),
         color: Colors.transparent,

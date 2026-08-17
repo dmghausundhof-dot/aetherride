@@ -13,6 +13,7 @@ void main() {
       expect(ids, contains(BikeCategory.emtb));
       expect(ids, contains(BikeCategory.etrekking));
       expect(OnboardingSportOption.all.length, greaterThanOrEqualTo(6));
+      expect(OnboardingSportOption.primary.length, 4);
     });
 
     test('families cover core bike types', () {

@@ -24,7 +24,8 @@ void main() {
     expect(de.platzCollectionTours(0), '0 Touren');
     expect(de.platzTogetherKicker, 'Gruppe');
     expect(de.platzCollectionsKicker, 'Sammlungen');
-    expect(de.mappeTitle, 'Touren');
+    expect(de.mappeKeep, 'Merken');
+    expect(de.mappeInviteFriends, 'Freunde mitnehmen');
     expect(de.platzTogetherKicker, isNot(de.platzTogetherKicker.toUpperCase()));
     expect(de.filterVisibilityPublic, 'Freigegeben');
     expect(de.platzPinsOff, contains('Freunde'));

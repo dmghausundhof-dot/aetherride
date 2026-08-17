@@ -9,13 +9,14 @@ class DiscoverMapLineStyle {
   DiscoverMapLineStyle._();
 
   /// Max Tour-Polylines / Warm-Targets / pending Pins auf der Karte.
-  static const int mapTourCap = 32;
+  static const int mapTourCap = 40;
 
   /// Parallel Warm-Routing-Jobs (OSRM schonen).
   static const int warmBatchSize = 5;
 
-  static const String selectedRouted = '#00E676';
-  static const String unselectedRouted = '#2E7D32';
+  /// Gewählt: FlowLine-Orange — nicht Mint, das wie ein Radweg wirkt.
+  static const String selectedRouted = '#FF6A00';
+  static const String unselectedRouted = '#E65100';
   static const String selectedApprox = '#78909C';
   static const String unselectedApprox = '#90A4AE';
 
@@ -31,12 +32,12 @@ class DiscoverMapLineStyle {
   static const String approachCore = '#29B6F6';
   static const String approachCasing = '#0A1A2A';
 
-  static const double activeWidth = 6.5;
-  static const double inactiveWidth = 3.4;
+  static const double activeWidth = 6.8;
+  static const double inactiveWidth = 4.4;
   static const double activeOpacity = 1.0;
-  static const double inactiveOpacity = 0.72;
+  static const double inactiveOpacity = 0.86;
   static const double activeCasingWidth = 14;
-  static const double mutedCasingWidth = 7.5;
+  static const double mutedCasingWidth = 8.4;
   static const double activeCasingOpacity = 0.95;
   static const double mutedCasingOpacity = 0.42;
 
@@ -74,12 +75,12 @@ class DiscoverMapLineStyle {
       return trailDifficultyColor(scale);
     }
     return switch (sport) {
-      TourSportKey.gravel => selected ? selectedGravel : unselectedGravel,
-      TourSportKey.road => selected ? selectedRoad : unselectedRoad,
-      TourSportKey.urban => selected ? selectedUrban : unselectedUrban,
-      TourSportKey.hiking => selected ? selectedHiking : unselectedHiking,
-      TourSportKey.dh => selected ? selectedDh : unselectedDh,
-      TourSportKey.emtb => selected ? selectedEmtb : unselectedEmtb,
+      TourSportKey.gravel => selected ? selectedRouted : unselectedGravel,
+      TourSportKey.road => selected ? selectedRouted : unselectedRoad,
+      TourSportKey.urban => selected ? selectedRouted : unselectedUrban,
+      TourSportKey.hiking => selected ? selectedRouted : unselectedHiking,
+      TourSportKey.dh => selected ? selectedRouted : unselectedDh,
+      TourSportKey.emtb => selected ? selectedRouted : unselectedEmtb,
       TourSportKey.mtb => selected ? selectedRouted : unselectedRouted,
     };
   }

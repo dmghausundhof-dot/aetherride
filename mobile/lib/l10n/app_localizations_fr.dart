@@ -255,7 +255,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Suivi fitness sur le rider — pas sur le vélo. Pouls seulement avec un vrai capteur. Apple Watch souvent sans BLE standard.';
 
   @override
-  String get hofWatchPair => 'Appairer la montre';
+  String get hofWatchPair => 'Capteur de pouls';
 
   @override
   String get hofWatchReconnect => 'Connecter';
@@ -390,7 +390,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hofSkyUnknown => 'Ciel inconnu';
 
   @override
-  String get hofNoHonestLoop => 'Pas de vraie boucle trail';
+  String get hofNoHonestLoop => 'Pas de boucle à proximité';
 
   @override
   String get hofGateWetClosed =>
@@ -424,7 +424,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hofLastRideNoGps => 'sans trace GPS — rien d\'inventé';
 
   @override
-  String get hofGpsUnknown => 'Pas de position — la carte attend le GPS.';
+  String get hofGpsUnknown => 'Autoriser la position';
+
+  @override
+  String get hofAllowLocation => 'Autoriser la position';
+
+  @override
+  String get hofHintsTitle => 'Notifications';
+
+  @override
+  String get hofHintsEmpty => 'Rien d’ouvert.';
+
+  @override
+  String get hofHintsTooltip => 'Notifications';
 
   @override
   String get rideGpsUnavailable =>
@@ -463,7 +475,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hofSensorAwake => 'Capteur réveillé';
 
   @override
-  String get hofOpenTours => 'Ouvrir les tours';
+  String get hofOpenTours => 'Tours sur la carte';
 
   @override
   String hofSkyDry(String temp) {
@@ -712,6 +724,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String filterAroundKm(int km) {
     return 'dans $km km';
   }
+
+  @override
+  String get discoverAroundIdle => 'Autour';
+
+  @override
+  String discoverAroundAwayKm(int km) {
+    return 'à $km km';
+  }
+
+  @override
+  String discoverPeekLoopKm(String km) {
+    return 'boucle $km km';
+  }
+
+  @override
+  String discoverPeekAwayKm(int km) {
+    return '$km km jusqu’au départ';
+  }
+
+  @override
+  String get discoverPeekAwayNear => 'moins d’1 km jusqu’au départ';
+
+  @override
+  String get discoverPeekSave => 'Garder';
+
+  @override
+  String get discoverPeekAkte => 'Fiche';
 
   @override
   String get mapToggleFab => 'Carte';
@@ -1245,10 +1284,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rideClearRoute => 'Retirer l\'itinéraire';
 
   @override
+  String get rideDrawTour => 'Tracer comme tour';
+
+  @override
+  String get rideDrawingTour => 'Nouveau tour · enregistre';
+
+  @override
   String get postRideTitle => 'Activité';
 
   @override
   String get postRideFreeride => 'Freeride';
+
+  @override
+  String get postRideLiveTour => 'Nouveau tour';
+
+  @override
+  String get postRideToMappe => 'Dans Tours';
 
   @override
   String get postRideTrackMap => 'Trace roulée';
@@ -1550,6 +1601,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get billingForceProDebug =>
       'Debug : Force-Pro. Stripe/Play restent masqués.';
+
+  @override
+  String get billingCommerceClosed =>
+      'Version de développement — pas d’achats. Pas d’abonnement public.';
 
   @override
   String get billingStripeMonth => 'Stripe — mensuel';
@@ -2079,6 +2134,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileAccountSync => 'Compte & sync';
 
   @override
+  String get profileConnections => 'Verbindungen';
+
+  @override
+  String get profileWatchTitle => 'Uhr / Puls';
+
+  @override
+  String get profileWatchIdle => 'Keine Uhr gekoppelt — Garmin, Polar, Wahoo.';
+
+  @override
+  String get profileBikeBleTitle => 'Rad / Bosch LDI';
+
+  @override
+  String get profileBikeBleIdle => 'Display, Motor oder CSC am aktiven Rad.';
+
+  @override
+  String get profileBikeBleNeedBike =>
+      'Zuerst ein Rad in die Werkstatt stellen.';
+
+  @override
   String get profileCloudBilling => 'Cloud-sync & abo';
 
   @override
@@ -2444,7 +2518,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get platzTogetherHint =>
-      'Inviter partage le lien. Tes groupes restent. Partagé liste aussi les groupes ouverts — pas un fil.';
+      'Inviter partage le lien. Tes groupes restent — pas un fil.';
 
   @override
   String get platzTogetherListHint =>
@@ -2457,8 +2531,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get platzJoinCode => 'Code';
 
   @override
-  String get platzNoGroup =>
-      'Pas encore de groupe. Seulement de vrais codes — rien de mis en scène.';
+  String get platzNoGroup => 'Pas encore de groupe. Un lien suffit.';
 
   @override
   String get platzHost => 'Host';
@@ -3717,6 +3790,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get discoverLoopsNearby => 'Boucles près de toi';
 
   @override
+  String get discoverNearbySection => 'À proximité';
+
+  @override
   String get discoverNoLoop90 => 'Pas de boucle dans 90 km — régions suivantes';
 
   @override
@@ -4621,6 +4697,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get discoverLayerTours => 'Sorties';
+
+  @override
+  String get discoverLayerTrails => 'Trails';
+
+  @override
+  String get discoverLayerWays => 'Pistes';
+
+  @override
+  String get discoverLayerHeight => 'Relief';
+
+  @override
+  String get discoverLayerHeightHint =>
+      'Relief seulement — pas de courbes de niveau.';
+
+  @override
+  String get browseMapLegendPaved => 'Asphalte';
+
+  @override
+  String get browseMapLegendGravel => 'Gravier';
+
+  @override
+  String get browseMapLegendTrail => 'Sentier';
+
+  @override
+  String get discoverDurationAll => 'toutes';
+
+  @override
+  String get overlayLegendTrailsTitle => 'Trails · OSM';
+
+  @override
+  String get overlayLegendWaysTitle => 'Pistes · OSM';
+
+  @override
+  String get overlayLegendAllTitle => 'Voies · OSM';
 
   @override
   String get discoverLayerPlaces => 'Lieux';
@@ -6982,11 +7092,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get mappeSubtitle =>
-      'Garder des sorties, écrire court, emmener des amis par lien — les mêmes que sur la carte.';
+      'Garder des sorties, Stimmen et amis sur le parcours — les mêmes que sur la carte.';
 
   @override
   String get mappeAddHint =>
-      'Nom + départ (GPS, sinon dernier centre carte, sinon sans épingle) — sans trace inventée. GPX en option en dessous.';
+      'Nom, départ GPS ou dernier centre carte, sinon sans épingle. GPX en dessous — sans trace inventée.';
+
+  @override
+  String get mappeKeep => 'Garder';
+
+  @override
+  String get mappeSearch => 'Chercher une sortie';
+
+  @override
+  String get mappeSortRecent => 'Récent';
+
+  @override
+  String get mappeSortDistance => 'Longueur';
+
+  @override
+  String get mappeSortName => 'Nom';
+
+  @override
+  String get mappeKicker => 'Mappe';
+
+  @override
+  String get mappeInviteFriends => 'Emmener des amis';
+
+  @override
+  String mappeActiveMeet(String title, String when) {
+    return '$title · $when';
+  }
+
+  @override
+  String get mappeCollectionNew => 'Créer une collection';
 
   @override
   String get mappeStartNone =>
@@ -7021,7 +7160,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get mappeEmpty => 'Pas encore de traces à toi — ajoute une route.';
+  String get mappeEmpty => 'Pas encore de sorties — garder ou importer un GPX.';
 
   @override
   String get mappeStimmenEmpty =>

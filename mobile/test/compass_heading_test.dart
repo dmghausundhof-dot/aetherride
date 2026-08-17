@@ -14,7 +14,7 @@ void main() {
           selectedTourId: null,
           firstFilteredTourId: 'seed-mittel-14',
         ),
-        'seed-mittel-14',
+        isNull,
       );
       expect(
         CompassHeading.peekTourId(

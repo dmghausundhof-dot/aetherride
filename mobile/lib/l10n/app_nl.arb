@@ -14,12 +14,8 @@
   "navTabOf": "Tab {index} van {count}",
   "@navTabOf": {
     "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
+      "index": { "type": "int" },
+      "count": { "type": "int" }
     }
   },
   "hofJustRide": "Gewoon rijden",
@@ -191,6 +187,10 @@
   },
   "hofLastRideNoGps": "geen GPS-track — niets verzonnen",
   "hofGpsUnknown": "Locatie toestaan",
+  "hofAllowLocation": "Locatie toestaan",
+  "hofHintsTitle": "Meldingen",
+  "hofHintsEmpty": "Niets open.",
+  "hofHintsTooltip": "Meldingen",
   "rideGpsUnavailable": "Geen GPS — track blijft leeg. Niets verzonnen.",
   "hofAtHof": "op de stand",
   "hofGarageType": "Type {type}",
@@ -362,6 +362,34 @@
   "planRouteCta": "Navigeren",
   "discoverSearchHint": "Plaats of tocht",
   "filterAroundKm": "binnen {km} km",
+  "discoverAroundIdle": "Omgeving",
+  "discoverAroundAwayKm": "{km} km verder",
+  "@discoverAroundAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekLoopKm": "{km} km lus",
+  "@discoverPeekLoopKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPeekAwayKm": "{km} km naar de start",
+  "@discoverPeekAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekAwayNear": "onder 1 km naar de start",
+  "discoverPeekSave": "Bewaren",
+  "discoverPeekAkte": "Dossier",
   "@filterAroundKm": {
     "placeholders": {
       "km": {
@@ -633,6 +661,10 @@
   "rideLiveData": "Livedata",
   "rideMapReady": "Kaart klaar. Sensor is optioneel.",
   "rideClearRoute": "Route verwijderen",
+  "rideDrawTour": "Als tour tekenen",
+  "rideDrawingTour": "Nieuwe tour · tekent",
+  "postRideLiveTour": "Nieuwe tour",
+  "postRideToMappe": "Naar Tours",
   "postRideTitle": "Activiteit",
   "postRideFreeride": "Freeride",
   "postRideTrackMap": "Gereden track",
@@ -759,6 +791,7 @@
   "billingMoreBikes": "Meer fietsen, sync-voordelen en offlineregio’s.",
   "billingAlreadyPro": "Pro is al actief — niet opnieuw kopen.",
   "billingForceProDebug": "Debug: Force-Pro. Stripe/Play blijven verborgen.",
+  "billingCommerceClosed": "Ontwikkelstand — geen aankopen. Geen openbaar abonnement.",
   "billingStripeMonth": "Stripe — maandelijks",
   "billingStripeYear": "Stripe — jaarlijks",
   "billingPlayMonth": "Google Play — maandelijks",
@@ -1994,6 +2027,7 @@
   "discoverHeatmapConsent": "Waar velen rijden — nadat je toestemt. Privacy openen",
   "discoverRideToStartShort": "Naar de start",
   "discoverLoopsNearby": "Lussen bij jou",
+  "discoverNearbySection": "Dichtbij",
   "discoverNoLoop90": "Geen lus binnen 90 km — volgende regio’s",
   "discoverRecommendedNoGps": "Aanbevolen tochten · ook zonder GPS",
   "discoverRecommended": "Aanbevolen ({count})",
@@ -2454,25 +2488,19 @@
   "akteDifficultyCrowdEasier": "Rijders: makkelijker dan gemarkeerd ({n})",
   "@akteDifficultyCrowdEasier": {
     "placeholders": {
-      "n": {
-        "type": "int"
-      }
+      "n": { "type": "int" }
     }
   },
   "akteDifficultyCrowdAsMarked": "Rijders: zoals gemarkeerd ({n})",
   "@akteDifficultyCrowdAsMarked": {
     "placeholders": {
-      "n": {
-        "type": "int"
-      }
+      "n": { "type": "int" }
     }
   },
   "akteDifficultyCrowdHarder": "Rijders: zwaarder dan gemarkeerd ({n})",
   "@akteDifficultyCrowdHarder": {
     "placeholders": {
-      "n": {
-        "type": "int"
-      }
+      "n": { "type": "int" }
     }
   },
   "akteAddToCollection": "Aan collectie toevoegen",
@@ -2480,6 +2508,17 @@
   "discoverEditorialHonesty": "Redactionele ideeën — geen gebruikerscollecties.",
   "discoverEditorialEmpty": "Deze regio staat in de catalogus; die tochten staan nu niet in de lijst.",
   "discoverLayerTours": "Tochten",
+  "discoverLayerTrails": "Trails",
+  "discoverLayerWays": "Fietspaden",
+  "discoverLayerHeight": "Hoogte",
+  "discoverLayerHeightHint": "Alleen reliëf — geen hoogtelijnen op deze kaart.",
+  "browseMapLegendPaved": "Asfalt",
+  "browseMapLegendGravel": "Gravel",
+  "browseMapLegendTrail": "Pad",
+  "discoverDurationAll": "alle",
+  "overlayLegendTrailsTitle": "Trails · OSM",
+  "overlayLegendWaysTitle": "Fietspaden · OSM",
+  "overlayLegendAllTitle": "Wegen · OSM",
   "discoverLayerPlaces": "Plekken",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat uit",
@@ -3965,6 +4004,21 @@
   "mappeTitle": "Tochten",
   "mappeSubtitle": "Tochten bewaren, Stimmen en vrienden op de route — dezelfde als op de kaart.",
   "mappeAddHint": "Naam bewaren, start via GPS of laatste kaartmidden, anders geen pin. GPX eronder — geen verzonnen track.",
+  "mappeKeep": "Bewaren",
+  "mappeSearch": "Tocht zoeken",
+  "mappeSortRecent": "Recent",
+  "mappeSortDistance": "Lengte",
+  "mappeSortName": "Naam",
+  "mappeKicker": "Mappe",
+  "mappeInviteFriends": "Vrienden meenemen",
+  "mappeActiveMeet": "{title} · {when}",
+  "@mappeActiveMeet": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "mappeCollectionNew": "Verzameling maken",
   "mappeStartNone": "Start: nog geen pin — open GPS of de kaart.",
   "mappeStartPin": "Start: {lat}°N, {lng}°O",
   "@mappeStartPin": {

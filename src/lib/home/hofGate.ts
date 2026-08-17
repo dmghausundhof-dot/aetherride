@@ -20,7 +20,7 @@ export type HofGatePick = {
 const TARGET_MIN = 60;
 const BAND_LO = 45;
 const BAND_HI = 75;
-const MAX_DISTANCE_KM = 80;
+const MAX_DISTANCE_KM = 15;
 
 export function durationInBand(
   durationMin: number,
@@ -200,5 +200,5 @@ export function formatHofGateAway(
     return null;
   }
   if (distanceKm < 1) return copy.near;
-  return copy.km(Math.min(80, Math.max(1, Math.round(distanceKm))));
+  return copy.km(Math.min(15, Math.max(1, Math.round(distanceKm))));
 }

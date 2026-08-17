@@ -184,7 +184,7 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                         crossAxisSpacing: 8,
                         childAspectRatio: 1.45,
                         children: [
-                          for (final s in OnboardingSportOption.all)
+                          for (final s in OnboardingSportOption.primary)
                             InkWell(
                               borderRadius: BorderRadius.circular(14),
                               onTap: () => setState(() => _sport = s.id),

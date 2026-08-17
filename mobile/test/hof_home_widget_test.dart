@@ -61,14 +61,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Start'), findsOneWidget);
+    expect(find.byKey(const Key('coach-bell')), findsOneWidget);
+    expect(find.byKey(const Key('coach-chat')), findsOneWidget);
     expect(find.text('Luna'), findsWidgets);
     expect(find.text('Losfahren'), findsOneWidget);
     expect(find.text('Rad öffnen'), findsOneWidget);
-    expect(find.text('Uhr koppeln'), findsOneWidget);
-    expect(
-      tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
-      lessThan(tester.getRect(find.byKey(const Key('hof-watch'))).top + 1),
-    );
+    expect(find.text('Puls-Sensor'), findsNothing);
     expect(find.text('?'), findsNothing);
     expect(find.textContaining('Tour finden'), findsNothing);
     expect(find.textContaining('HEUTE FAHREN'), findsNothing);
@@ -109,11 +107,9 @@ void main() {
 
     expect(find.byKey(const Key('hof-ride-out')), findsOneWidget);
     expect(find.text('Losfahren'), findsOneWidget);
-    expect(find.text('Uhr koppeln'), findsOneWidget);
+    expect(find.text('Puls-Sensor'), findsNothing);
     expect(tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
         lessThan(tester.view.physicalSize.height / tester.view.devicePixelRatio));
-    expect(tester.getRect(find.byKey(const Key('hof-watch'))).bottom,
-        lessThan(tester.view.physicalSize.height / tester.view.devicePixelRatio + 1));
   });
 
   testWidgets('Phone-Querformat: Rausfahren und Uhr-Icon bleiben über der Nav',
@@ -147,13 +143,10 @@ void main() {
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
     expect(find.byKey(const Key('hof-ride-out')), findsOneWidget);
     expect(find.text('Losfahren'), findsOneWidget);
-    expect(find.text('Deine Uhr'), findsOneWidget);
-    expect(find.text('Uhr koppeln'), findsNothing);
-    expect(find.byKey(const Key('hof-watch-bar')), findsNothing);
-    expect(find.byKey(const Key('hof-watch')), findsOneWidget);
+    expect(find.text('Deine Uhr'), findsNothing);
+    expect(find.byKey(const Key('hof-watch-bar')), findsOneWidget);
+    expect(find.byKey(const Key('hof-watch')), findsNothing);
     expect(tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
-        lessThan(h - 8));
-    expect(tester.getRect(find.byKey(const Key('hof-watch'))).bottom,
         lessThan(h - 8));
   });
 
@@ -167,8 +160,8 @@ void main() {
     expect(find.text('Einfach fahren'), findsNothing);
     expect(find.text('Rad anlegen'), findsOneWidget);
     expect(find.text('Ohne Rad fahren'), findsOneWidget);
-    expect(find.text('Uhr koppeln'), findsOneWidget);
-    expect(find.byKey(const Key('hof-watch-bar')), findsNothing);
+    expect(find.text('Puls-Sensor'), findsNothing);
+    expect(find.byKey(const Key('hof-watch-bar')), findsOneWidget);
     expect(find.textContaining('0 km'), findsNothing);
     final park = tester.widget<FilledButton>(
       find.byKey(const Key('hof-ride-out')),
@@ -277,10 +270,6 @@ void main() {
       tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
       lessThan(h - 24),
     );
-    expect(
-      tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
-      lessThan(tester.getRect(find.byKey(const Key('hof-watch'))).top + 1),
-    );
   });
 
   testWidgets('justBack: keine 0 km, Uhr-Hinweis eine Zeile, Noch mal raus',
@@ -307,6 +296,8 @@ void main() {
             bikeId: 'test',
             startedAt: now.subtract(const Duration(minutes: 40)),
             endedAt: now.subtract(const Duration(minutes: 5)),
+            distanceKm: 18.2,
+            movingTimeSec: 42 * 60,
           ),
         ],
       ),
@@ -317,7 +308,7 @@ void main() {
     expect(find.textContaining('gerade reingekommen'), findsOneWidget);
     expect(find.textContaining('0.0 km'), findsNothing);
     expect(find.text('Noch mal los'), findsOneWidget);
-    expect(find.text('Puls nur mit echtem Sensor.'), findsOneWidget);
+    expect(find.text('Puls nur mit echtem Sensor.'), findsNothing);
     expect(find.text('Was reinkam'), findsOneWidget);
     expect(find.textContaining('Apple Watch'), findsNothing);
     expect(find.byKey(const Key('hof-resident-meta')), findsOneWidget);
@@ -358,11 +349,40 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('hof-tafel-board')), findsOneWidget);
+    expect(find.byKey(const Key('hof-tafel-workshop')), findsNothing);
     expect(find.text('Touren'), findsOneWidget);
     expect(find.textContaining('Touren'), findsWidgets);
     final mappeLine = tester.widget<Text>(find.textContaining('2 Touren'));
     expect(mappeLine.style?.color, AppColors.chipIdleText);
     expect(find.byKey(const Key('hof-shop-replace')), findsNothing);
     expect(find.text('Cycling Parts'), findsNothing);
+  });
+
+  testWidgets('Platzhalter ist nicht Bewohner wenn ein Katalog-Rad da ist',
+      (tester) async {
+    await tester.pumpWidget(
+      _hofApp(
+        bikes: const [
+          Bike(
+            id: 'ph',
+            name: 'Mein Bike',
+            category: BikeCategory.urban,
+            isActive: true,
+          ),
+          Bike(
+            id: 'jam',
+            name: 'Focus JAM² 6.9',
+            category: BikeCategory.mtbTrail,
+            catalogBikeId: 'focus-jam2-69',
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Focus JAM² 6.9'), findsWidgets);
+    expect(find.text('Mein Bike'), findsNothing);
+    expect(find.text('Leerer Stand'), findsNothing);
   });
 }

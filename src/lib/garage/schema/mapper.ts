@@ -78,17 +78,35 @@ export function planBikeSchema(input: {
       template = "gravel";
       break;
     case "urban":
+      template = "urban";
+      break;
     case "etrekking":
+      template = "etrekking";
+      break;
     case "cargo":
+      template = "cargo";
+      break;
     case "folding":
+      template = "folding";
+      break;
     case "kids":
-      template = "city";
+      template = "kids";
       break;
     case "mtb_trail":
+      template = "mtb_trail";
+      break;
     case "mtb_am":
+      template = "mtb_am";
+      break;
     case "mtb_enduro":
+      template = "mtb_enduro";
+      break;
     case "dh":
+      template = "dh";
+      break;
     case "emtb":
+      template = "emtb";
+      break;
     default:
       template = "mtb";
       break;
@@ -97,10 +115,16 @@ export function planBikeSchema(input: {
   const categoryFully = (
     ["mtb_am", "mtb_enduro", "dh", "emtb"] as BikeCategory[]
   ).includes(category);
+  const mtbFamily =
+    template === "mtb" ||
+    template === "mtb_trail" ||
+    template === "mtb_am" ||
+    template === "mtb_enduro" ||
+    template === "dh" ||
+    template === "emtb";
   // Trail defaults hardtail unless shock installed; fully categories always show shock
   const showShock =
-    template === "mtb" &&
-    (categoryFully || input.hasRearShock === true);
+    mtbFamily && (categoryFully || input.hasRearShock === true);
 
   const hotspotSlots: ComponentSlot[] = [...CORE_SLOTS];
   if (showShock) hotspotSlots.push("rear_shock");

@@ -40,8 +40,10 @@ import '../../domain/community/map_place_merge.dart';
 import '../../domain/community/poi_from_vias.dart';
 import '../../domain/community/stimme_pin.dart';
 import '../../domain/community/filmstrip.dart';
+import '../../domain/community/ride_group_policy.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/browse_map_paint.dart';
 import '../../data/routing/naehe_seeds.dart';
 import '../../data/routing/public_tours_client.dart';
 import '../../data/routing/route_collections.dart';
@@ -77,6 +79,7 @@ import '../../domain/tours/add_route_start.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/saved_ride_start.dart';
 import '../../domain/tours/tour_akte.dart';
+import '../../domain/tours/tour_display_name.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
@@ -98,8 +101,8 @@ import 'discover_browse_sheet_snaps.dart';
 import 'discover_explore_chrome.dart';
 import 'discover_shell_mode.dart';
 import 'discover_map_line_style.dart';
-import 'bike_overlay_legend.dart';
 import 'widgets/discover_layer_chips.dart';
+import 'widgets/discover_peek_actions.dart';
 import 'widgets/ort_sheet.dart';
 import 'widgets/tour_akte_sheet.dart';
 import 'widgets/tour_community_section.dart';
@@ -406,7 +409,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _bikeOverlayKey;
   bool _bikeOverlayOn = true;
   final Set<BikeOverlayClass> _bikeOverlayExtra = {
-    ...overlayDefaultExtraOn(BikeOverlayFamily.urban),
+    ...overlayExploreAllClasses,
   };
   double _mapZoom = 12;
   int _drawGen = 0;
@@ -422,6 +425,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   MapPlace? _meetPlace;
   final Map<String, MapPlace> _placeBySymbolId = {};
   bool _showToursLayer = true;
+  bool _showTrailsLayer = true;
+  bool _showBikeWaysLayer = true;
+  bool _showHillshade = BrowseMapPaint.hillshadeOnByDefault;
   bool _showPlacesLayer = true;
   bool _showHeatLayer = true;
   final NavPuckOverlay _navPuck = NavPuckOverlay();
@@ -448,8 +454,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   double _joinAlongM = 0;
   bool _gravityComputed = false;
 
-  /// Default-Lens ~60 Min (D-60-01); 0 = egal.
-  int _minutes = 60;
+  /// Default: alle Dauer. 0 = egal — nicht still ~60 vom Rad.
+  int _minutes = DiscoverExploreChromeLogic.defaultDurationMin;
   bool _loading = false;
   String? _error;
   String? _status;
@@ -471,6 +477,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// GPS-Button: Kamera bleibt beim Standort. Auto-Fit auf Tour-Start/Bounds
   /// (Honesty, POI-Fahne, [_drawAll]) darf das nicht wieder wegziehen.
   bool _skipAutoCameraFit = false;
+  final GlobalKey _exploreChromeKey = GlobalKey();
+  double _exploreChromeHeight =
+      DiscoverExploreChromeLogic.exploreChromeBodyHeight;
   final List<LabeledVia> _vias = [];
   _PickMode _pick = _PickMode.none;
 
@@ -507,7 +516,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Filtert die Tourenliste auf Nähe zum Zeitbudget [_minutes].
   /// Default an: ~60-Min-Lens mit Band 45–75 (D-60-01).
-  bool _matchTourDuration = true;
+  bool _matchTourDuration = false;
   TourSurfaceKey? _surfaceFilter;
   TourEffortKey? _effortFilter;
   TourElevationKey? _elevationFilter;
@@ -577,6 +586,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   int _quickGen = 0;
   String? _selectedTourId;
 
+  /// Hof-/Deep-Link-Pin. Nähe-Ranking darf diese ID nicht überschreiben.
+  String? _hofPinLoopId;
+
   /// Nur Karten-Übersicht DACH+FR bis GPS da ist — nie Tour-Origin.
   static const _regionOverview = GeoPoint(47.2, 6.5);
 
@@ -596,6 +608,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   void initState() {
     super.initState();
     _locate();
+    _prefetchBikeOverlay();
     unawaited(_loadNavPuckStyle());
     _loadHeatmapConsent();
     unawaited(_reloadSavedMeta());
@@ -634,11 +647,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           _matchTourDuration = pendingLens > 0;
         });
       }
-      final pendingLoop = ref.read(discoverPendingLoopIdProvider);
-      if (pendingLoop != null) {
-        ref.read(discoverPendingLoopIdProvider.notifier).state = null;
-        setState(() => _selectedTourId = pendingLoop);
-      }
+      _pinPendingLoop(ref.read(discoverPendingLoopIdProvider));
       final pendingMine = ref.read(discoverPendingMineProvider);
       final launch = ref.read(discoverLaunchModeProvider);
       if (pendingMine || launch == DiscoverLaunchMode.mine) {
@@ -669,26 +678,36 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     super.dispose();
   }
 
+  bool get _hasExploreSelection => DiscoverExploreChromeLogic.showIdlePeek(
+        _hofPinLoopId ?? _selectedTourId,
+      );
+
   double get _discoverSheetExtent {
     if (_discoverSheetCtrl.isAttached) return _discoverSheetCtrl.size;
-    return _listBrowseMode
-        ? DiscoverBrowseSheetSnaps.half
-        : DiscoverBrowseSheetSnaps.peek;
+    if (_listBrowseMode) return DiscoverBrowseSheetSnaps.half;
+    return _hasExploreSelection
+        ? DiscoverBrowseSheetSnaps.peek
+        : DiscoverBrowseSheetSnaps.closed;
   }
 
   void _syncDiscoverSheetExtent(double extent) {
     final h = extent * MediaQuery.sizeOf(context).height;
     // Kamera-Padding live ohne Rebuild — FAB folgt über ListenableBuilder.
     _panelInset = h;
-    final wantList = !DiscoverBrowseSheetSnaps.isPeek(extent);
+    final wantList = DiscoverBrowseSheetSnaps.isHalf(extent) ||
+        DiscoverBrowseSheetSnaps.isFull(extent);
     if (_listBrowseMode == wantList) return;
     setState(() => _listBrowseMode = wantList);
   }
 
   Future<void> _snapDiscoverSheet(double size) async {
-    final target = DiscoverBrowseSheetSnaps.nearest(size);
+    final target = DiscoverBrowseSheetSnaps.nearest(
+      size,
+      hasSelection: _hasExploreSelection,
+    );
     setState(() {
-      _listBrowseMode = !DiscoverBrowseSheetSnaps.isPeek(target);
+      _listBrowseMode = DiscoverBrowseSheetSnaps.isHalf(target) ||
+          DiscoverBrowseSheetSnaps.isFull(target);
     });
     if (!_discoverSheetCtrl.isAttached) return;
     try {
@@ -701,6 +720,20 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   AppLocalizations get _l10n => AppLocalizations.of(context);
+
+  /// GPS-Abstand zur ausgewählten Tour — nicht die Loop-Länge.
+  double? get _selectedAwayKm {
+    final id = _hofPinLoopId ?? _selectedTourId;
+    if (id == null || !_hasRealOrigin) return null;
+    final tour = _tourById(id);
+    if (tour == null) return null;
+    return _distKm(
+      _origin.lat,
+      _origin.lng,
+      tour.center.latitude,
+      tour.center.longitude,
+    );
+  }
 
   bool _isLiveRateLimited(Object e) {
     final msg = e.toString().toLowerCase();
@@ -902,7 +935,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (_shellMode == DiscoverShellMode.mine) return true;
     if (_showRideBar && _rideBarExpanded) return true;
     if (_listBrowseMode) return true;
-    if (!DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent)) return true;
+    if (DiscoverBrowseSheetSnaps.isHalf(_discoverSheetExtent) ||
+        DiscoverBrowseSheetSnaps.isFull(_discoverSheetExtent)) {
+      return true;
+    }
+    if (DiscoverExploreChromeLogic.showIdlePeek(
+      _hofPinLoopId ?? _selectedTourId,
+    )) {
+      return true;
+    }
     return false;
   }
 
@@ -934,11 +975,46 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return true;
     }
     if (_listBrowseMode ||
-        !DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent)) {
-      unawaited(_snapDiscoverSheet(DiscoverBrowseSheetSnaps.peek));
+        DiscoverBrowseSheetSnaps.isHalf(_discoverSheetExtent) ||
+        DiscoverBrowseSheetSnaps.isFull(_discoverSheetExtent)) {
+      unawaited(
+        _snapDiscoverSheet(
+          DiscoverBrowseSheetSnaps.mapTarget(
+            hasSelection: _hasExploreSelection,
+          ),
+        ),
+      );
+      return true;
+    }
+    if (DiscoverExploreChromeLogic.backClearsSelection(
+      selectedTourId: _hofPinLoopId ?? _selectedTourId,
+      atPeek: true,
+    )) {
+      _clearExploreSelection();
+      return true;
+    }
+    if (DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent) &&
+        !_hasExploreSelection) {
+      unawaited(_snapDiscoverSheet(DiscoverBrowseSheetSnaps.closed));
       return true;
     }
     return false;
+  }
+
+  void _clearExploreSelection() {
+    setState(() {
+      _hofPinLoopId = null;
+      _selectedTourId = null;
+      _computed = null;
+      _label = null;
+      _approach = null;
+      _tourLayer = null;
+    });
+    ref.read(discoverPendingLoopIdProvider.notifier).state = null;
+    unawaited(_drawAll());
+    unawaited(
+      _snapDiscoverSheet(DiscoverBrowseSheetSnaps.closed),
+    );
   }
 
   void _scheduleAddressSearch(String target) {
@@ -2148,7 +2224,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
       );
       // S25: after seeds land, replace any A→B demo overlay with a real loop.
-      if (_loopOnlyActive) {
+      // Hof-/Deep-Link-Pin zuerst — erst dann Nähe-Default.
+      _pinPendingLoop(
+        ref.read(discoverPendingLoopIdProvider) ?? _selectedTourId,
+      );
+      final pin = _selectedTourId;
+      final pinned = pin != null ? _tourById(pin) : null;
+      if (pinned != null) {
+        await _drawSeedLoopPreview(pinned);
+      } else if (pin != null) {
+        // Pin steht, Seed noch nicht gemappt — nicht Karlsruhe wählen.
+      } else if (_loopOnlyActive) {
         await _ensureLoopMapHonesty();
       } else {
         await _drawAll();
@@ -2560,7 +2646,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       setState(() => _selectedTrailId = null);
       final tour = _tourById(id);
       if (tour == null) return;
-      await _openDetail(id, tour.center);
+      await _previewTourOnMap(tour);
       return;
     }
 
@@ -2733,16 +2819,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       unawaited(_fetchTrailforks());
       unawaited(_fetchPublicCatalog());
       unawaited(_fetchCoverage());
+      _prefetchBikeOverlay();
       // Explizit Near-me nach frischem GPS — Drift-Sync kann verzögern.
       // Rundkurs-Lens: nahen Seed auf die Karte, nie A→B / Fernstadt.
       if (_loopOnlyActive) {
         unawaited(_ensureLoopMapHonesty());
       }
-      try {
-        await _map?.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
-        );
-      } catch (_) {}
+      if (DiscoverExploreChromeLogic.gpsMayRecenterOnUser(
+        hofPinLoopId: _hofPinLoopId,
+        selectedTourId: _selectedTourId,
+      )) {
+        try {
+          await _map?.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 12.5),
+          );
+        } catch (_) {}
+      } else {
+        final pin = _hofPinLoopId ?? _selectedTourId;
+        final tour = _tourById(pin);
+        if (tour != null) unawaited(_focusCameraOnTour(tour));
+      }
       unawaited(_syncNavPuck());
     } catch (e) {
       if (mounted) {
@@ -3004,30 +3100,23 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }).toList();
 
     final covered = _applyTourCoverage(base);
-
-    if (rankingSports.isEmpty) {
-      final sorted = List<_RouteSuggestion>.from(covered);
-      sorted.sort(_byDistanceThenDurationFit);
-      return sorted;
-    }
-    // Nähe zuerst, innerhalb davon weiche Kategorie-/Familien-Präferenz.
-    final matched = <_RouteSuggestion>[];
-    final rest = <_RouteSuggestion>[];
-    for (final r in covered) {
-      if (TourFilters.softSportMatchAny(r.categories, rankingSports)) {
-        matched.add(r);
-      } else {
-        rest.add(r);
-      }
-    }
-    matched.sort(_byDistanceThenDurationFit);
-    rest.sort(_byDistanceThenDurationFit);
-    if (matched.isEmpty) {
-      final sorted = List<_RouteSuggestion>.from(covered);
-      sorted.sort(_byDistanceThenDurationFit);
-      return sorted;
-    }
-    return [...matched, ...rest];
+    final sorted = List<_RouteSuggestion>.from(covered);
+    sorted.sort((a, b) {
+      final o = _origin;
+      final n = TourCoverage.compareNearbyThenSport(
+        distanceKmA:
+            _distKm(o.lat, o.lng, a.center.latitude, a.center.longitude),
+        distanceKmB:
+            _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude),
+        sportMatchA: rankingSports.isEmpty ||
+            TourFilters.softSportMatchAny(a.categories, rankingSports),
+        sportMatchB: rankingSports.isEmpty ||
+            TourFilters.softSportMatchAny(b.categories, rankingSports),
+      );
+      if (n != 0) return n;
+      return _byDistanceThenDurationFit(a, b);
+    });
+    return sorted;
   }
 
   /// Seeds: nur 90 km Nähe — keine fremde Landschaft als Fill.
@@ -3142,6 +3231,34 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         final db = _distKm(o.lat, o.lng, b.center.latitude, b.center.longitude);
         return da.compareTo(db);
       });
+    final pinId = _hofPinLoopId ??
+        ref.read(discoverPendingLoopIdProvider) ??
+        _selectedTourId;
+    if (pinId != null && pinId.isNotEmpty && _selectedTourId != pinId) {
+      if (mounted) setState(() => _selectedTourId = pinId);
+    }
+    final sel = _tourById(pinId);
+    final selDist = sel == null
+        ? null
+        : _distKm(
+            o.lat,
+            o.lng,
+            sel.center.latitude,
+            sel.center.longitude,
+          );
+    final nearbyOk =
+        sel != null && (!_hasRealOrigin || selDist! <= seedRadiusKm);
+    if (DiscoverExploreChromeLogic.keepHofPin(
+      selectedTourId: pinId,
+      selectedFound: sel != null,
+      selectedNearby: nearbyOk,
+      loopsAvailable: loops.isNotEmpty,
+    )) {
+      if (sel != null && _isLoop(sel) && sel.hasTrack) {
+        await _drawSeedLoopPreview(sel);
+      }
+      return;
+    }
     if (loops.isEmpty) {
       // Far leftover selection (pre-GPS Zurich etc.) — clear map honesty.
       if (_selectedTourId != null || _computed != null) {
@@ -3161,35 +3278,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       return;
     }
-    final best = loops.first;
-    final bestDist = _distKm(
-      o.lat,
-      o.lng,
-      best.center.latitude,
-      best.center.longitude,
-    );
-    // Keep current only if it is still an honest nearby loop.
-    if (_selectedTourId != null) {
-      final sel = _tourById(_selectedTourId);
-      if (sel != null && _isLoop(sel) && sel.hasTrack) {
-        final selDist = _distKm(
-          o.lat,
-          o.lng,
-          sel.center.latitude,
-          sel.center.longitude,
-        );
-        final nearbyOk = !_hasRealOrigin || selDist <= seedRadiusKm;
-        final stillBest = sel.id == best.id || selDist <= bestDist + 0.05;
-        if (nearbyOk && stillBest) {
-          await _drawSeedLoopPreview(sel);
-          return;
-        }
-      }
-    }
-    if (mounted) {
-      setState(() => _selectedTourId = best.id);
-    }
-    await _drawSeedLoopPreview(best);
+    // Idle: Karte + Filter, keine ungewählte Nähe-Tour unterschieben.
+    if (mounted) await _drawAll();
   }
 
   Future<void> _drawSeedLoopPreview(_RouteSuggestion r) async {
@@ -3234,6 +3324,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _setStatus(null);
     });
     await _drawAll();
+    await _focusCameraOnTour(r);
     // Live-Upgrade nur wenn noch keine gebackene/routed Geometrie da ist.
     if (routed == null) {
       unawaited(_upgradeSeedLoopGeometry(r));
@@ -4055,11 +4146,65 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  /// Hof-/Deep-Link: Loop-ID merken, Provider erst löschen wenn die Tour da ist.
+  void pinFromHof(String id) => _pinPendingLoop(id);
+
+  void _pinPendingLoop(String? id) {
+    if (id == null || id.isEmpty) return;
+    debugPrint('HofPin: $id tours=${_tours.length}');
+    _hofPinLoopId = id;
+    _skipAutoCameraFit = false;
+    _listBrowseMode = false;
+    if (_selectedTourId != id) {
+      setState(() => _selectedTourId = id);
+    }
+    final tour = _tourById(id);
+    if (tour == null) return;
+    if (ref.read(discoverPendingLoopIdProvider) == id) {
+      ref.read(discoverPendingLoopIdProvider.notifier).state = null;
+    }
+    unawaited(_drawSeedLoopPreview(tour));
+  }
+
+  Future<void> _focusCameraOnTour(_RouteSuggestion r) async {
+    final map = _map;
+    if (map == null || !_styleReady) return;
+    _skipAutoCameraFit = true;
+    final track = r.trackLngLat;
+    if (track != null && track.length >= 2) {
+      final lats = [for (final c in track) c[1]];
+      final lngs = [for (final c in track) c[0]];
+      final swLat = lats.reduce((a, b) => a < b ? a : b);
+      final swLng = lngs.reduce((a, b) => a < b ? a : b);
+      final neLat = lats.reduce((a, b) => a > b ? a : b);
+      final neLng = lngs.reduce((a, b) => a > b ? a : b);
+      if ((neLat - swLat).abs() < 1e-5 && (neLng - swLng).abs() < 1e-5) {
+        await map.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(swLat, swLng), 13.5),
+        );
+      } else {
+        await map.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              southwest: LatLng(swLat, swLng),
+              northeast: LatLng(neLat, neLng),
+            ),
+            left: 40,
+            top: 110,
+            right: 40,
+            bottom: _panelInset + 40,
+          ),
+        );
+      }
+      return;
+    }
+    await map.animateCamera(
+      CameraUpdate.newLatLngZoom(r.center, 13.5),
+    );
+  }
+
   _RouteSuggestion? _tourById(String? id) {
     if (id == null) return null;
-    for (final r in _filtered) {
-      if (r.id == id) return r;
-    }
     for (final r in _tours) {
       if (r.id == id) return r;
     }
@@ -4190,12 +4335,52 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   void _applyBikeNavDefaults(BikeCategory? cat) {
     if (cat == null) return;
+    // Nur Navi-Profil. Overlay und Dauer folgen nicht still dem Rad.
     _profile = discoverNavProfile(routingProfileForBike(cat));
+  }
+
+  void _applyExploreOverlayLayers() {
     _bikeOverlayExtra
       ..clear()
-      ..addAll(overlayDefaultExtraOn(overlayFamilyForProfile(_profile)));
-    _minutes = DurationLens.defaultMinutesForSport(cat);
-    _matchTourDuration = _minutes > 0;
+      ..addAll(
+        DiscoverExploreChromeLogic.overlayClassesForLayers(
+          trailsOn: _showTrailsLayer,
+          waysOn: _showBikeWaysLayer,
+        ),
+      );
+    _bikeOverlayOn = _showTrailsLayer || _showBikeWaysLayer;
+  }
+
+  Future<void> _refreshExploreOverlay() async {
+    _applyExploreOverlayLayers();
+    final c = _map;
+    if (c != null && _bikeOverlayAttached) {
+      await applyBikeOverlayVisibility(
+        c,
+        family: _overlayFamily,
+        visible: _bikeOverlayOn,
+        extraOn: _bikeOverlayExtra,
+      );
+    }
+    unawaited(_refreshSGradeLive());
+  }
+
+  void _prefetchBikeOverlay() {
+    final c = _mapCenter;
+    unawaited(
+      prefetchBikeOverlay(
+        lng: c.lng,
+        lat: c.lat,
+        zoom: _hasRealOrigin ? _mapZoom : 12,
+      ),
+    );
+  }
+
+  Future<void> _applyHillshadeNow() async {
+    final c = _map;
+    if (c == null || !_styleReady) return;
+    if (!styleUsesCatalogHillshade(_mapStyle)) return;
+    await setHillshadeVisible(c, _showHillshade);
   }
 
   Future<void> _ensureBikeOverlay() async {
@@ -4227,7 +4412,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _bikeOverlayAttached = false;
     }
     _bikeOverlayKey = key;
-    final live = await attachLiveOsmNetworkLayers(c);
+    await ensureLiveOsmNetworkSource(c);
+    await attachLiveOsmNetworkLayers(c);
     await attachSGradeLiveLayer(c);
     if (data != null && mounted) {
       await attachBikeOverlayLayers(
@@ -4236,7 +4422,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
-        sGradeOnly: live,
+        sGradeOnly: false,
       );
     } else if (mounted) {
       await applyBikeOverlayVisibility(
@@ -4810,7 +4996,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             geometry: pinTf.center,
             iconImage: _pinImagesReady ? pin : null,
             iconSize: 1.0,
-            textField: 'TF',
+            textField: '',
             textSize: 11,
             textOffset: const Offset(0, 1.2),
           ),
@@ -4824,7 +5010,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ? (place.name.length > 14
                 ? '${place.name.substring(0, 13)}…'
                 : place.name)
-            : _l10n.mapPlaceKindLabel(place.kind);
+            : '';
         final sym = await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
@@ -4843,43 +5029,53 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       // [_drawAll] (keine blinden T-Pins à la leere Ideen-Punkte).
       if (_showToursLayer) {
       for (final tour in _filtered.take(DiscoverMapLineStyle.mapTourCap)) {
+        final cached = _routedLoopCache[tour.id];
         final hasLine =
-            tour.hasTrack || (_routedLoopCache[tour.id]?.length ?? 0) >= 4;
-        if (hasLine) continue;
+            tour.hasTrack || (cached != null && cached.length >= 4);
+        final selected = tour.id == _selectedTourId;
+        if (hasLine) {
+          if (selected || _mapZoom < 10) continue;
+          final start = cached != null && cached.isNotEmpty
+              ? LatLng(cached.first.lat, cached.first.lng)
+              : (tour.trackLngLat != null && tour.trackLngLat!.isNotEmpty
+                  ? LatLng(
+                      tour.trackLngLat!.first[1],
+                      tour.trackLngLat!.first[0],
+                    )
+                  : tour.center);
+          await c.addSymbol(
+            SymbolOptions(
+              fontNames: _symbolFonts,
+              geometry: start,
+              iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
+              iconSize: 0.62,
+              textField: '',
+              textSize: 10,
+            ),
+          );
+          continue;
+        }
         if (_isPinOnlyIdea(tour) && !_isLoop(tour)) {
-          // Explizite Pin-Ideen (oa-/idea- ohne Track) — ehrlich als Idee.
-          final sport = TourFilters.sportOf(tour.categories);
           await c.addSymbol(
             SymbolOptions(
               fontNames: _symbolFonts,
               geometry: tour.center,
               iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-              iconSize: 0.85,
-              textField: TourFilters.pinLabel(sport),
+              iconSize: 0.7,
+              textField: '',
               textSize: 10,
-              textColor: '#FFFFFF',
-              textHaloColor: TourFilters.pinHalo(sport),
-              textHaloWidth: 1.2,
-              textOffset: const Offset(0, 1.15),
             ),
           );
           continue;
         }
-        // Loop/Katalog ohne Track: Loading-Pin bis Warm-Routing fertig ist.
-        final pending = _routedLoopPending.contains(tour.id);
-        final sport = TourFilters.sportOf(tour.categories);
         await c.addSymbol(
           SymbolOptions(
             fontNames: _symbolFonts,
             geometry: tour.center,
             iconImage: _pinImagesReady ? pin : null,
-            iconSize: 0.85,
-            textField: pending ? '…' : TourFilters.pinLabel(sport),
-            textSize: 11,
-            textColor: '#FFFFFF',
-            textHaloColor: TourFilters.pinHalo(sport),
-            textHaloWidth: 1.2,
-            textOffset: const Offset(0, 1.15),
+            iconSize: 0.62,
+            textField: '',
+            textSize: 10,
           ),
         );
       }
@@ -4916,8 +5112,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         geometry: startLl,
         iconImage: _pinImagesReady ? 'aether-pin' : null,
         iconSize: 1.2,
-        textField: _l10n.navigateStartLabel,
-        textSize: 11,
+        textField: TourFilters.browseTourTimeLabel(sel.durationMin),
+        textSize: 12,
         textColor: '#FFFFFF',
         textHaloColor: '#1B5E20',
         textHaloWidth: 1.4,
@@ -6080,6 +6276,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pendingLoop = ref.watch(discoverPendingLoopIdProvider);
+    if (pendingLoop != null && pendingLoop.isNotEmpty) {
+      _hofPinLoopId = pendingLoop;
+    }
     ref.listen(discoverLaunchModeProvider, (prev, next) {
       if (next == null) return;
       _applyDiscoverLaunch(next);
@@ -6094,6 +6294,18 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ref.listen(discoverPendingAkteRouteIdProvider, (prev, next) {
       if (next == null || next.isEmpty) return;
       unawaited(_consumePendingAkte());
+    });
+    ref.listen(discoverPendingLoopIdProvider, (prev, next) {
+      if (next == null || next.isEmpty) return;
+      _pinPendingLoop(next);
+    });
+    ref.listen(discoverPendingLensMinutesProvider, (prev, next) {
+      if (next == null) return;
+      ref.read(discoverPendingLensMinutesProvider.notifier).state = null;
+      setState(() {
+        _minutes = next;
+        _matchTourDuration = next > 0;
+      });
     });
     ref.listen(discoverPendingStartRideRouteIdProvider, (prev, next) {
       if (next == null || next.isEmpty) return;
@@ -6168,106 +6380,50 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Positioned(
               top: MapOrnaments.compassMargins(
                 context,
-                extraBelowSafe: MapOrnaments.discoverHeaderClearance,
+                extraBelowSafe:
+                    DiscoverExploreChromeLogic.ornamentExtraBelowSafe(
+                  _exploreChromeHeight,
+                ),
               ).y.toDouble(),
               right: MapOrnaments.compassMargins(context).x.toDouble(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _discoverCompassFab(),
-                  const SizedBox(height: MapOrnaments.controlGap),
-                  _discoverLocateFab(),
-                ],
-              ),
+              child: _discoverLocateFab(),
             ),
-          if (_surface == _Surface.discover)
+          if (_surface == _Surface.discover &&
+              DiscoverExploreChromeLogic.showExploreLayerRow(
+                hasSelection: DiscoverExploreChromeLogic.showIdlePeek(
+                  _hofPinLoopId ?? _selectedTourId,
+                ),
+                planning: _shellMode == DiscoverShellMode.navigate,
+              ))
             Positioned(
               left: AppSpacing.m,
-              top: MediaQuery.paddingOf(context).top + 92,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  BikeOverlayLegend(
-                family: _overlayFamily,
-                visible: _bikeOverlayOn,
-                extraOn: _bikeOverlayExtra,
-                hasOverlayData: _bikeOverlayAttached ||
-                    overlayDataExpectedAt(
-                      _map?.cameraPosition?.target.longitude ?? _mapCenter.lng,
-                      _map?.cameraPosition?.target.latitude ?? _mapCenter.lat,
-                      zoom: _map?.cameraPosition?.zoom ??
-                          (_hasRealOrigin ? 12 : 5.5),
-                    ),
-                overlayKind: chooseOnlineBikeOverlay(
-                      lng: _map?.cameraPosition?.target.longitude ??
-                          _mapCenter.lng,
-                      lat: _map?.cameraPosition?.target.latitude ??
-                          _mapCenter.lat,
-                      zoom: _map?.cameraPosition?.zoom ??
-                          (_hasRealOrigin ? 12 : 5.5),
-                    ).kind ==
-                    OnlineBikeOverlayKind.ways
-                    ? OnlineBikeOverlayKind.ways
-                    : OnlineBikeOverlayKind.mesh,
-                onToggleVisible: () {
-                  setState(() => _bikeOverlayOn = !_bikeOverlayOn);
-                  final c = _map;
-                  if (c != null && _bikeOverlayAttached) {
-                    unawaited(
-                      applyBikeOverlayVisibility(
-                        c,
-                        family: _overlayFamily,
-                        visible: _bikeOverlayOn,
-                        extraOn: _bikeOverlayExtra,
-                      ),
-                    );
-                  }
-                  unawaited(_refreshSGradeLive());
-                },
-                onToggleClass: (cls) {
-                  setState(() {
-                    _bikeOverlayOn = true;
-                    if (_bikeOverlayExtra.contains(cls)) {
-                      _bikeOverlayExtra.remove(cls);
-                    } else {
-                      _bikeOverlayExtra.add(cls);
-                    }
-                  });
-                  final c = _map;
-                  if (c != null && _bikeOverlayAttached) {
-                    unawaited(
-                      applyBikeOverlayVisibility(
-                        c,
-                        family: _overlayFamily,
-                        visible: _bikeOverlayOn,
-                        extraOn: _bikeOverlayExtra,
-                      ),
-                    );
-                  }
-                  unawaited(_refreshSGradeLive());
-                },
+              right: AppSpacing.m,
+              top: DiscoverExploreChromeLogic.layerRowTop(
+                statusTop: MediaQuery.paddingOf(context).top,
+                chromeHeight: _exploreChromeHeight,
               ),
-                  const SizedBox(height: 8),
-                  DiscoverLayerChips(
-                    toursOn: _showToursLayer,
-                    placesOn: _showPlacesLayer,
-                    heatOn: _showHeatLayer,
-                    heatConsent: _heatmapConsent,
-                    onTours: (v) {
-                      setState(() => _showToursLayer = v);
-                      unawaited(_drawAll());
-                      unawaited(_syncMarkers());
-                    },
-                    onPlaces: (v) {
-                      setState(() => _showPlacesLayer = v);
-                      unawaited(_syncMarkers());
-                    },
-                    onHeat: () {
-                      unawaited(_onHeatLayerTapped());
-                    },
-                  ),
-                ],
+              child: DiscoverLayerChips(
+                toursOn: _showToursLayer,
+                trailsOn: _showTrailsLayer,
+                waysOn: _showBikeWaysLayer,
+                hillshadeOn: _showHillshade,
+                onTours: (v) {
+                  setState(() => _showToursLayer = v);
+                  unawaited(_drawAll());
+                  unawaited(_syncMarkers());
+                },
+                onTrails: (v) {
+                  setState(() => _showTrailsLayer = v);
+                  unawaited(_refreshExploreOverlay());
+                },
+                onWays: (v) {
+                  setState(() => _showBikeWaysLayer = v);
+                  unawaited(_refreshExploreOverlay());
+                },
+                onHillshade: (v) {
+                  setState(() => _showHillshade = v);
+                  unawaited(_applyHillshadeNow());
+                },
               ),
             ),
           if (!_hofChoice)
@@ -6317,7 +6473,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             ),
                             onPressed: () => unawaited(
                               _snapDiscoverSheet(
-                                DiscoverBrowseSheetSnaps.mapTarget,
+                                DiscoverBrowseSheetSnaps.mapTarget(
+                                  hasSelection: _hasExploreSelection,
+                                ),
                               ),
                             ),
                             icon: const Icon(Icons.map, size: 18),
@@ -6355,15 +6513,24 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 },
                 child: DraggableScrollableSheet(
                   // expand:false → Hit-Test nur Sheet-Höhe, Map darüber pannbar.
+                  key: ValueKey(
+                    _hasExploreSelection ? 'sheet-sel' : 'sheet-idle',
+                  ),
                   expand: false,
                   controller: _discoverSheetCtrl,
-                  initialChildSize: _listBrowseMode
-                      ? DiscoverBrowseSheetSnaps.half
-                      : DiscoverBrowseSheetSnaps.peek,
-                  minChildSize: DiscoverBrowseSheetSnaps.peek,
+                  initialChildSize: _hasExploreSelection
+                      ? DiscoverBrowseSheetSnaps.peek
+                      : (_listBrowseMode
+                          ? DiscoverBrowseSheetSnaps.half
+                          : DiscoverBrowseSheetSnaps.closed),
+                  minChildSize: DiscoverBrowseSheetSnaps.minSize(
+                    hasSelection: _hasExploreSelection,
+                  ),
                   maxChildSize: DiscoverBrowseSheetSnaps.full,
                   snap: true,
-                  snapSizes: DiscoverBrowseSheetSnaps.sheetSnapSizes,
+                  snapSizes: DiscoverBrowseSheetSnaps.sheetSnapSizes(
+                    hasSelection: _hasExploreSelection,
+                  ),
                   builder: (context, scrollController) {
                     return _buildBottomPanel(
                       scrollController: scrollController,
@@ -6441,13 +6608,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               } else {
                 await warmBasemapNatureFills(map);
               }
-              if (styleUsesCatalogHillshade(_mapStyle)) {
+              if (styleUsesCatalogHillshade(_mapStyle) && _showHillshade) {
                 await applyHillshade(map);
               }
               await _ensureBikeOverlay();
             }());
             unawaited(_attachNavPuck());
             unawaited(_drawAll());
+            final pin = _hofPinLoopId ?? _selectedTourId;
+            final tour = pin == null ? null : _tourById(pin);
+            if (tour != null) unawaited(_focusCameraOnTour(tour));
           },
       onUserLocationUpdated: _onUserLocationUpdated,
       // Kurzer Tipp setzt Punkte nur, wenn Planen offen ist — sonst bleiben
@@ -6745,13 +6915,48 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  void _rememberExploreChromeHeight() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box =
+          _exploreChromeKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) return;
+      final h = box.size.height;
+      if ((h - _exploreChromeHeight).abs() < 1) return;
+      setState(() => _exploreChromeHeight = h);
+    });
+  }
+
   /// Komoot-Chrome: Suche + „Route planen“, darunter Umkreis · Filter.
   Widget _komootExploreChrome(Color onMap) {
+    _rememberExploreChromeHeight();
     final l10n = AppLocalizations.of(context);
-    final aroundKm =
-        DiscoverExploreChromeLogic.aroundDisplayKm(_maxDistanceKm);
-    final aroundSet = DiscoverExploreChromeLogic.aroundIsSet(_maxDistanceKm);
+    final selectedAway = _selectedAwayKm;
+    final aroundKm = DiscoverExploreChromeLogic.aroundDisplayKm(
+      _maxDistanceKm,
+      selectedAwayKm: selectedAway,
+    );
+    final aroundSet = DiscoverExploreChromeLogic.aroundIsSet(
+      _maxDistanceKm,
+      selectedAwayKm: selectedAway,
+    );
+    final aroundUsesAway = DiscoverExploreChromeLogic.usesSelectedAway(
+      _maxDistanceKm,
+      selectedAway,
+    );
+    final hasSelection = DiscoverExploreChromeLogic.showIdlePeek(
+      _hofPinLoopId ?? _selectedTourId,
+    );
+    final compact = DiscoverExploreChromeLogic.compactExploreChrome(
+      hasSelection: hasSelection,
+      searching: _exploreQuery.trim().isNotEmpty,
+    );
+    final filterIconOnly = DiscoverExploreChromeLogic.filterChipIconOnly(
+      compact: compact,
+      aroundUsesAway: aroundUsesAway,
+    );
     return Material(
+      key: _exploreChromeKey,
       color: onMap.withValues(alpha: 0.96),
       borderRadius: BorderRadius.circular(AppRadius.card),
       elevation: 3,
@@ -6768,7 +6973,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     textInputAction: TextInputAction.search,
                     onChanged: (v) => setState(() {
                       _exploreQuery = v;
-                      _selectedTourId = null;
+                      if (v.trim().isNotEmpty &&
+                          DiscoverBrowseSheetSnaps.isPeek(
+                            _discoverSheetExtent,
+                          )) {
+                        unawaited(
+                          _snapDiscoverSheet(DiscoverBrowseSheetSnaps.half),
+                        );
+                      }
                     }),
                     decoration: InputDecoration(
                       isDense: true,
@@ -6791,39 +7003,43 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.chrome,
-                    foregroundColor: AppColors.onAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    minimumSize: const Size(0, 40),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                if (DiscoverExploreChromeLogic.chromeShowsPlanCta(
+                  hasSelection,
+                )) ...[
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.chrome,
+                      foregroundColor: AppColors.onAccent,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _vias.clear();
+                        if (_start == null && _hasRealOrigin) {
+                          _start = _origin;
+                          _startAddrCtrl.text = _l10n.discoverMyPosition;
+                        }
+                      });
+                      _setShellMode(
+                        DiscoverShellMode.navigate,
+                        pick: _PickMode.end,
+                      );
+                    },
+                    child: Text(
+                      l10n.planRouteCta,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _vias.clear();
-                      if (_start == null && _hasRealOrigin) {
-                        _start = _origin;
-                        _startAddrCtrl.text = _l10n.discoverMyPosition;
-                      }
-                    });
-                    _setShellMode(
-                      DiscoverShellMode.navigate,
-                      pick: _PickMode.end,
-                    );
-                  },
-                  child: Text(
-                    l10n.planRouteCta,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 8),
@@ -6848,7 +7064,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                 : AppColors.chipIdleText,
                           ),
                           label: Text(
-                            l10n.filterAroundKm(aroundKm),
+                            aroundUsesAway
+                                ? l10n.discoverAroundAwayKm(aroundKm)
+                                : aroundSet
+                                    ? l10n.filterAroundKm(aroundKm)
+                                    : l10n.discoverAroundIdle,
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -6877,6 +7097,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         const SizedBox(width: 6),
                         ActionChip(
                           key: const Key('discover-filter-chip'),
+                          tooltip: l10n.filter,
                           avatar: Icon(
                             Icons.tune,
                             size: 15,
@@ -6885,9 +7106,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                 : AppColors.chipIdleText,
                           ),
                           label: Text(
-                            _activeFilterCount > 0
-                                ? '${l10n.filter} $_activeFilterCount'
-                                : l10n.filter,
+                            filterIconOnly
+                                ? (_activeFilterCount > 0
+                                    ? '$_activeFilterCount'
+                                    : '')
+                                : (_activeFilterCount > 0
+                                    ? '${l10n.filter} $_activeFilterCount'
+                                    : l10n.filter),
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
@@ -6896,6 +7121,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                   : AppColors.chipIdleText,
                             ),
                           ),
+                          labelPadding: filterIconOnly && _activeFilterCount <= 0
+                              ? EdgeInsets.zero
+                              : null,
                           backgroundColor: _activeFilterCount > 0
                               ? AppColors.accent
                               : AppColors.chipIdle.withValues(alpha: 0.55),
@@ -6913,36 +7141,40 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        ActionChip(
+                          key: const Key('discover-mine-chip'),
+                          tooltip: l10n.discoverModeMine,
+                          avatar: const Icon(Icons.bookmark_outline, size: 15),
+                          label: const SizedBox.shrink(),
+                          labelPadding: EdgeInsets.zero,
+                          onPressed: () =>
+                              _setShellMode(DiscoverShellMode.mine),
+                          visualDensity: const VisualDensity(
+                              horizontal: -1, vertical: -2),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          side: BorderSide(
+                            color: AppColors.border.withValues(alpha: 0.9),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                ActionChip(
-                  key: const Key('discover-mine-chip'),
-                  avatar: const Icon(Icons.bookmark_outline, size: 15),
-                  label: Text(
-                    l10n.discoverModeMine,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  onPressed: () => _setShellMode(DiscoverShellMode.mine),
-                  visualDensity:
-                      const VisualDensity(horizontal: -1, vertical: -2),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  side: BorderSide(
-                    color: AppColors.border.withValues(alpha: 0.9),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 ),
                 PopupMenuButton<String>(
                   tooltip: l10n.moreActions,
                   onSelected: (v) {
                     switch (v) {
+                      case 'places':
+                        setState(() => _showPlacesLayer = !_showPlacesLayer);
+                        unawaited(_syncMarkers());
+                      case 'heat':
+                        unawaited(_onHeatLayerTapped());
                       case 'collections':
                         _collectionsSheet();
                       case 'trailview':
@@ -6959,6 +7191,20 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   itemBuilder: (menuCtx) {
                     final m = AppLocalizations.of(menuCtx);
                     return [
+                      CheckedPopupMenuItem(
+                        value: 'places',
+                        checked: _showPlacesLayer,
+                        child: Text(m.discoverLayerPlaces),
+                      ),
+                      CheckedPopupMenuItem(
+                        value: 'heat',
+                        checked: _heatmapConsent && _showHeatLayer,
+                        child: Text(
+                          _heatmapConsent
+                              ? m.discoverLayerHeat
+                              : m.discoverLayerHeatOff,
+                        ),
+                      ),
                       PopupMenuItem(
                         value: 'collections',
                         child: Text(m.discoverMenuCollections),
@@ -7298,7 +7544,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         child: Container(
           width: 36,
           height: 4,
-          margin: const EdgeInsets.only(top: AppSpacing.s, bottom: 2),
+          margin: EdgeInsets.only(
+            top: DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent)
+                ? 6
+                : AppSpacing.s,
+            bottom: DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent)
+                ? 6
+                : 2,
+          ),
           decoration: BoxDecoration(
             color: AppColors.muted.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(2),
@@ -7365,11 +7618,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  /// Produkt-Default Discover: ~60 Min, alle Formen, keine Extra-Filter.
+  /// Produkt-Default Discover: alle Dauer, alle Formen, kein Sport-Zwang.
   /// Distanz sitzt am Umkreis — hier nur Sheet-Filter.
   bool get _sheetFiltersAtDefaults =>
-      _matchTourDuration &&
-      _minutes == TourFilters.primaryQuickDurationMin &&
+      _minutes == DiscoverExploreChromeLogic.defaultDurationMin &&
+      !_matchTourDuration &&
       _formFilter == TourFormKey.all &&
       _sportFilter.isEmpty &&
       _surfaceFilter == null &&
@@ -7383,9 +7636,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Badge am Filter-Chip: Abweichungen vom Default. Distanz zählt am Umkreis.
   int get _activeFilterCount {
     var n = 0;
-    if (_matchTourDuration &&
-        _minutes > 0 &&
-        _minutes != TourFilters.primaryQuickDurationMin) {
+    if (_matchTourDuration && _minutes > 0) {
       n++;
     }
     if (_formFilter != TourFormKey.all) n++;
@@ -7399,8 +7650,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   void _resetSheetFilters() {
     setState(() {
-      _minutes = TourFilters.primaryQuickDurationMin;
-      _matchTourDuration = true;
+      _minutes = DiscoverExploreChromeLogic.defaultDurationMin;
+      _matchTourDuration = false;
       _formFilter = TourFormKey.all;
       _sportFilter.clear();
       _surfaceFilter = null;
@@ -7418,8 +7669,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   void _resetFilters() {
     setState(() {
-      _minutes = TourFilters.primaryQuickDurationMin;
-      _matchTourDuration = true;
+      _minutes = DiscoverExploreChromeLogic.defaultDurationMin;
+      _matchTourDuration = false;
       _formFilter = TourFormKey.all;
       _sportFilter.clear();
       _surfaceFilter = null;
@@ -7828,7 +8079,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                       _resetSheetFilters();
                                       setModal(() {});
                                     },
-                              child: Text(l10n.filterReset),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(l10n.filterReset),
+                              ),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.s),
@@ -7900,31 +8154,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  Widget _discoverCompassFab() {
-    return _discoverMapFab(
-      key: const Key('discover-compass'),
-      tooltip: AppLocalizations.of(context).rideNorthUp,
-      icon: Icons.explore,
-      onTap: () {
-        final c = _map;
-        if (c == null) return;
-        final cam = c.cameraPosition;
-        unawaited(
-          c.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: cam?.target ?? LatLng(_mapCenter.lat, _mapCenter.lng),
-                zoom: cam?.zoom ?? 13.5,
-                bearing: 0,
-                tilt: 0,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _discoverLocateFab() {
     return _discoverMapFab(
       key: const Key('nav-puck-discover-locate'),
@@ -7955,9 +8184,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       onSelected: (p) {
         setState(() {
           _profile = discoverNavProfile(p);
-          _bikeOverlayExtra
-            ..clear()
-            ..addAll(overlayDefaultExtraOn(_overlayFamily));
         });
         final c = _map;
         if (c != null && _bikeOverlayAttached) {
@@ -8047,41 +8273,25 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Mit [scrollController] vom Sheet: Drag am Handle/Liste bewegt Snaps;
   /// Primärchips (Dauer · Rundkurs · Asphalt · Distanz) bleiben sportneutral.
   Widget _buildDiscoverPanel({ScrollController? scrollController}) {
-    final l10n = AppLocalizations.of(context);
-    final peek = DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent);
+    final peek = DiscoverBrowseSheetSnaps.isPeek(_discoverSheetExtent) ||
+        DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent);
     final sections = <Widget>[
       ..._toursSection(),
     ];
 
-    final header = Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.m,
-        AppSpacing.s,
-        AppSpacing.m,
-        AppSpacing.xs,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (!peek) ...[
-            Text(
-              l10n.navDiscover,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-          ],
-        ],
-      ),
-    );
+    final header = const SizedBox.shrink();
 
+    final pinnedId = _hofPinLoopId ?? _selectedTourId;
     final peekId = CompassHeading.peekTourId(
-      selectedTourId: _selectedTourId,
+      selectedTourId: pinnedId,
       firstFilteredTourId: _filtered.isNotEmpty ? _filtered.first.id : null,
     );
     final peekTour = peekId != null ? _tourById(peekId) : null;
-    final pinnedTour =
-        _selectedTourId != null ? _tourById(_selectedTourId) : null;
-    final topCard = pinnedTour ?? (peek ? peekTour : null);
+    final pinnedTour = pinnedId != null ? _tourById(pinnedId) : null;
+    // Peek nur nach Pin oder Auswahl — nie die erste Nähe-Karte.
+    final topCard = DiscoverExploreChromeLogic.showIdlePeek(pinnedId)
+        ? (pinnedTour ?? peekTour)
+        : null;
 
     // Sheet-Modus: ein ScrollView steuert Drag + Liste (Handle mit drin).
     if (scrollController != null) {
@@ -8098,7 +8308,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 AppSpacing.m,
               ),
               sliver: SliverToBoxAdapter(
-                child: _tourListCard(topCard, _origin),
+                child: peek
+                    ? _tourPeekCard(topCard, _origin)
+                    : _tourListCard(topCard, _origin),
               ),
             ),
           if (!peek) ...[
@@ -9667,51 +9879,69 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final list = _filtered;
     final pinnedId = _selectedTourId;
     bool skip(_RouteSuggestion r) => pinnedId != null && r.id == pinnedId;
-    final catalog = list.where((r) => r.isCatalog && !skip(r)).toList();
+    final catalogAll = list.where((r) => r.isCatalog && !skip(r)).toList();
     final live =
         list.where((r) => !r.isCatalog && !r.isSeed && !skip(r)).toList();
     // Seed strip for ~60 / Rundkurs: honest loops only — never fill with A→B.
     final seedsAll = list.where((r) => r.isSeed && !skip(r)).toList();
     final seeds = _loopOnlyActive ? seedsAll.where(_isLoop).toList() : seedsAll;
     final o = _origin;
-    // Seeds immer zeigen, sobald welche durch Filter/Coverage kommen.
-    final showSeeds = seeds.isNotEmpty;
-    final seedLabel = _l10n.naeheLocationLabel(
-      hasOrigin: _hasRealOrigin,
-      raw: _hasRealOrigin
-          ? _seedsBundle?.labelWithLocation
-          : _seedsBundle?.labelWithoutLocation,
-    );
+    const seedRadiusKm = TourCoverage.nearbyRadiusKm;
+    // Katalog-Runden in GPS-Nähe gehören in dieselbe Liste wie Seeds —
+    // sonst fehlt z. B. Wiesloch Feierabend unter „in der Nähe“.
+    final nearbyCatalog = <_RouteSuggestion>[];
+    final catalog = <_RouteSuggestion>[];
+    for (final r in catalogAll) {
+      final away =
+          _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude);
+      final near = _hasRealOrigin && _isLoop(r) && away <= seedRadiusKm;
+      if (near) {
+        nearbyCatalog.add(r);
+      } else {
+        catalog.add(r);
+      }
+    }
+    final nearbyCards = [...seeds, ...nearbyCatalog]
+      ..sort(_byDistanceThenDurationFit);
+    final showSeeds = nearbyCards.isNotEmpty;
+    final seedLabel = _minutes == DiscoverExploreChromeLogic.defaultDurationMin
+        ? _l10n.discoverNearbySection
+        : _l10n.naeheLocationLabel(
+            hasOrigin: _hasRealOrigin,
+            raw: _hasRealOrigin
+                ? _seedsBundle?.labelWithLocation
+                : _seedsBundle?.labelWithoutLocation,
+          );
 
     final loopCount = list.where(_isLoop).length;
-    // Soft radius for empty-ort UI — Coverage nur ≤90 km, kein Fill.
-    const seedRadiusKm = TourCoverage.nearbyRadiusKm;
     final nearbyLoopCount = list.where((r) {
       if (!_isLoop(r)) return false;
       return _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude) <=
           seedRadiusKm;
     }).length;
 
+    final refresh = TextButton(
+      onPressed: _loading
+          ? null
+          : () {
+              unawaited(_fetchPublicCatalog());
+              unawaited(_fetchOsmRoutes());
+              unawaited(_fetchTrailNetwork());
+              unawaited(_loadNaeheSeeds());
+            },
+      child: Text(_l10n.discoverRefresh),
+    );
     return [
-      _sectionTitle(
-        list.isEmpty
-            ? _l10n.discoverTours
-            : _loopOnlyActive && loopCount > 0
-                ? _l10n.discoverToursLoops(loopCount)
-                : _l10n.discoverToursCount(list.length),
-        hint: _hasRealOrigin ? null : _l10n.discoverNoGpsCurated,
-        trailing: TextButton(
-          onPressed: _loading
-              ? null
-              : () {
-                  unawaited(_fetchPublicCatalog());
-                  unawaited(_fetchOsmRoutes());
-                  unawaited(_fetchTrailNetwork());
-                  unawaited(_loadNaeheSeeds());
-                },
-          child: Text(_l10n.discoverRefresh),
+      if (!showSeeds)
+        _sectionTitle(
+          list.isEmpty
+              ? _l10n.discoverTours
+              : _loopOnlyActive && loopCount > 0
+                  ? _l10n.discoverToursLoops(loopCount)
+                  : _l10n.discoverToursCount(list.length),
+          hint: _hasRealOrigin ? null : _l10n.discoverNoGpsCurated,
+          trailing: refresh,
         ),
-      ),
       // Eine Statuszeile statt Standort + Seeds + OA + Trailnetz + Heatmap.
       Builder(
         builder: (_) {
@@ -9722,9 +9952,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           if (!_hasRealOrigin) {
             line = _l10n.discoverGrantLocationNearby;
           } else if (showSeeds) {
-            line = nearbyLoopCount > 0
-                ? '${_l10n.discoverToursNearbyCount(nearbyLoopCount)}${_seedsStatus != null ? _l10n.discoverOfflineSuffix : ''}'
-                : _l10n.discoverCuratedLoops(seeds.length);
+            line = null;
           } else if (_oaIsDegraded) {
             line = _oaStatus;
             style = const TextStyle(fontSize: 11, color: AppColors.muted);
@@ -9803,20 +10031,23 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       else if (list.isEmpty)
         !_filtersAtDefaults ? _emptyFilterState() : _emptyOrtPicker()
       else if (nearbyLoopCount == 0 &&
-          _minutes == 60 &&
+          _minutes == DiscoverExploreChromeLogic.defaultDurationMin &&
           loopCount > 0 &&
           !showSeeds)
         _emptyOrtPicker(),
       if (showSeeds) ...[
         _sectionTitle(
-          '$seedLabel (${seeds.length})',
+          _seedsStatus != null
+              ? '$seedLabel (${nearbyCards.length}) · offline'
+              : '$seedLabel (${nearbyCards.length})',
           hint: _hasRealOrigin
               ? (nearbyLoopCount > 0
                   ? _l10n.discoverLoopsNearby
                   : _l10n.discoverNoLoop90)
               : _l10n.discoverRecommendedNoGps,
+          trailing: refresh,
         ),
-        for (final r in seeds) _tourListCard(r, o),
+        for (final r in nearbyCards) _tourListCard(r, o),
       ],
       if (catalog.isNotEmpty) ...[
         _sectionTitle(
@@ -10004,6 +10235,105 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  /// Peek: Name, Dauer, Runden-km und Abstand — kein Hero, der den Titel frisst.
+  Widget _tourPeekCard(_RouteSuggestion r, GeoPoint o) {
+    final l10n = AppLocalizations.of(context);
+    final loopKm = DiscoverExploreChromeLogic.formatLoopKm(r.distanceKm);
+    final awayKm = _hasRealOrigin
+        ? DiscoverExploreChromeLogic.formatAwayKm(
+            _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude),
+          )
+        : null;
+    final sport = TourFilters.honestSportLabel(
+      sportLabel: r.sportLabel,
+      surface: r.surface,
+    );
+    final meta = <String>[
+      _fmtRideDuration(r.durationMin, l10n),
+      l10n.discoverPeekLoopKm(loopKm),
+      if (sport != null) _l10n.sportTagLabel(sport),
+    ];
+    final away = awayKm == null
+        ? null
+        : (awayKm == 0
+            ? l10n.discoverPeekAwayNear
+            : l10n.discoverPeekAwayKm(awayKm));
+    return Material(
+      key: const Key('discover-peek-card'),
+      color: AppColors.surfaceDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: const BorderSide(color: AppColors.accent, width: 1.4),
+      ),
+      child: InkWell(
+        onTap: () => unawaited(
+          _snapDiscoverSheet(DiscoverBrowseSheetSnaps.half),
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.m,
+            AppSpacing.s,
+            AppSpacing.m,
+            AppSpacing.s,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                tourDisplayName(r.name),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  height: 1.2,
+                  color: AppColors.accent,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                meta.join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted,
+                ),
+              ),
+              if (away != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  away,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.muted.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              DiscoverPeekActions(
+                onNavigate: () {
+                  if (_isPinOnlyIdea(r)) {
+                    unawaited(_computeIdeaRoute(r));
+                  } else {
+                    unawaited(_startRide(suggestion: r));
+                  }
+                },
+                onSave: () => unawaited(_saveTourToLibrary(r)),
+                onAkte: () => unawaited(_openDetail(r.id, r.center)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _tourListCard(_RouteSuggestion r, GeoPoint o) {
     final l10n = AppLocalizations.of(context);
     final loop = _isLoop(r);
@@ -10022,6 +10352,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         : distKm < 10
             ? '${distKm.toStringAsFixed(1)} km'
             : '${distKm.round()} km';
+    final sport = TourFilters.honestSportLabel(
+      sportLabel: r.sportLabel,
+      surface: r.surface,
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.m),
       child: Material(
@@ -10063,12 +10397,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     InkWell(
-                      onTap: () => unawaited(_openDetail(r.id, r.center)),
+                      onTap: () => unawaited(_previewTourOnMap(r)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            r.name,
+                            tourDisplayName(r.name),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -10094,8 +10428,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '$nearLabel entfernt'
-                            '${r.sportLabel != null ? ' · ${_l10n.sportTagLabel(r.sportLabel)}' : ''}',
+                            sport == null
+                                ? '$nearLabel entfernt'
+                                : '$nearLabel entfernt · ${_l10n.sportTagLabel(sport)}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -10403,6 +10738,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           onShowOnMap: () {
             Navigator.pop(ctx);
             unawaited(_loadSaved(s));
+          },
+          onGoRide: () {
+            Navigator.pop(ctx);
+            unawaited(_startRideFromSaved(s));
+          },
+          onCreateGroup: () {
+            if (!RideGroupPolicy.canAttachSaved(s, _savedMeta[s.id])) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                SnackBar(content: Text(l10n.platzNeedSharedTour)),
+              );
+              return;
+            }
+            Navigator.pop(ctx);
+            ref.read(platzPendingCreateGroupRouteIdProvider.notifier).state =
+                s.id;
+            ref.read(shellTabIndexProvider.notifier).state = ShellTabs.platz;
           },
         );
       },

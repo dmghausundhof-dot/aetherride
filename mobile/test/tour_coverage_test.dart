@@ -69,6 +69,27 @@ void main() {
     expect(picked, isEmpty);
   });
 
+  test('nearby distance beats a farther sport match', () {
+    expect(
+      TourCoverage.compareNearbyThenSport(
+        distanceKmA: 2,
+        distanceKmB: 32,
+        sportMatchA: false,
+        sportMatchB: true,
+      ),
+      lessThan(0),
+    );
+    expect(
+      TourCoverage.compareNearbyThenSport(
+        distanceKmA: 10,
+        distanceKmB: 10,
+        sportMatchA: true,
+        sportMatchB: false,
+      ),
+      lessThan(0),
+    );
+  });
+
   test('fewer nearby than minCount returns all nearby', () {
     final picked = TourCoverage.pickNearbyThenFill(
       items: const [10.0, 20.0, 30.0],

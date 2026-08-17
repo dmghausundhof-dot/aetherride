@@ -7,6 +7,7 @@
 import dachRaw from "../../../data/routing/dach-regions.json";
 import {
   detailBikeOverlayPmtilesUrl,
+  extraDetailPackIdForPoint,
   ONLINE_PACK_CDN_ROOT,
   onlineCycleMeshGeojsonUrl,
   onlineCycleMeshPmtilesUrl,
@@ -90,8 +91,8 @@ export function detailOverlayRegionIdForPoint(
   const hits = DACH_PACK_REGIONS.filter(
     (r) => pointInBbox(lng, lat, r.bbox) && packHasDetailBikeOverlay(r.id)
   );
-  if (!hits.length) return null;
-  return smallestHit(hits).id;
+  if (hits.length) return smallestHit(hits).id;
+  return extraDetailPackIdForPoint(lng, lat);
 }
 
 export type OverlayMode = "region_pack" | "dach_live" | "live_osm";

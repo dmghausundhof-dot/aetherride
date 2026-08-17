@@ -57,10 +57,7 @@ function testDeFallback() {
   assert.notEqual(HOF_COPY.workshopBikes, HOF_COPY.workshopBikes.toUpperCase());
   assert.equal(HOF_COPY.agoHours(3), "vor 3 Std.");
   assert.equal(HOF_COPY.skyDry("14"), "14° · eher trocken");
-  assert.equal(
-    HOF_COPY.gpsUnknown,
-    "Kein Standort — Himmel und Tor warten auf GPS."
-  );
+  assert.equal(HOF_COPY.gpsUnknown, "Standort erlauben");
   assert.equal(
     HOF_COPY.gateWetClosed,
     "Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe"

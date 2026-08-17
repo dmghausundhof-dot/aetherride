@@ -100,7 +100,7 @@
   "werkstattSensorAnalog": "Sensore ruota — velocità e cadenza sulla bici.",
   "hofYourWatch": "Il tuo orologio",
   "hofWatchHint": "Fitness sul rider — non sulla bici. Polso solo con un sensore vero. Apple Watch spesso senza BLE standard.",
-  "hofWatchPair": "Associa orologio",
+  "hofWatchPair": "Sensore di polso",
   "hofWatchReconnect": "Collega",
   "hofWatchRemove": "Rimuovi",
   "hofWatchConnect": "Collega orologio",
@@ -156,7 +156,7 @@
   "hofAtGate": "davanti al cancello",
   "hofEmptyStand": "Posto vuoto",
   "hofSkyUnknown": "Cielo sconosciuto",
-  "hofNoHonestLoop": "Nessun anello trail onesto",
+  "hofNoHonestLoop": "Nessun giro qui vicino",
   "hofGateWetClosed": "Trail bagnati — nessun anello asfaltato onesto qui vicino",
   "hofNotYetOut": "non ancora fuori",
   "hofJustBack": "appena rientrato",
@@ -186,7 +186,11 @@
     }
   },
   "hofLastRideNoGps": "senza traccia GPS — niente di inventato",
-  "hofGpsUnknown": "Nessuna posizione — la mappa aspetta il GPS.",
+  "hofGpsUnknown": "Consenti posizione",
+  "hofAllowLocation": "Consenti posizione",
+  "hofHintsTitle": "Avvisi",
+  "hofHintsEmpty": "Niente di aperto.",
+  "hofHintsTooltip": "Avvisi",
   "rideGpsUnavailable": "Niente GPS — la traccia resta vuota. Niente di inventato.",
   "hofAtHof": "al posto",
   "hofGarageType": "Tipo {type}",
@@ -224,7 +228,7 @@
     }
   },
   "hofSensorAwake": "Sensore sveglio",
-  "hofOpenTours": "Apri i tour",
+  "hofOpenTours": "Tour sulla mappa",
   "hofSkyDry": "{temp}° · piuttosto secco",
   "@hofSkyDry": {
     "placeholders": {
@@ -365,6 +369,34 @@
       }
     }
   },
+  "discoverAroundIdle": "Dintorni",
+  "discoverAroundAwayKm": "a {km} km",
+  "@discoverAroundAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekLoopKm": "giro {km} km",
+  "@discoverPeekLoopKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPeekAwayKm": "{km} km fino al via",
+  "@discoverPeekAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekAwayNear": "meno di 1 km fino al via",
+  "discoverPeekSave": "Salva",
+  "discoverPeekAkte": "Scheda",
   "mapToggleFab": "Mappa",
   "communityWriteReview": "Scrivi una recensione",
   "discoverModeExplore": "Esplora",
@@ -629,6 +661,10 @@
   "rideLiveData": "Dati live",
   "rideMapReady": "Mappa pronta. Sensore facoltativo.",
   "rideClearRoute": "Rimuovi itinerario",
+  "rideDrawTour": "Disegna come tour",
+  "rideDrawingTour": "Nuovo tour · registra",
+  "postRideLiveTour": "Nuovo tour",
+  "postRideToMappe": "Nelle Tour",
   "postRideTitle": "Attività",
   "postRideFreeride": "Freeride",
   "postRideTrackMap": "Traccia percorsa",
@@ -755,6 +791,7 @@
   "billingMoreBikes": "Più bici, vantaggi sync e regioni offline.",
   "billingAlreadyPro": "Pro è già attivo — non serve ricomprare.",
   "billingForceProDebug": "Debug: Force-Pro. Stripe/Play restano nascosti.",
+  "billingCommerceClosed": "Build di sviluppo — nessun acquisto. Nessun abbonamento pubblico.",
   "billingStripeMonth": "Stripe — mensile",
   "billingStripeYear": "Stripe — annuale",
   "billingPlayMonth": "Google Play — mensile",
@@ -1268,11 +1305,11 @@
   },
   "platzTogetherKicker": "Gruppo",
   "platzTogetherTitle": "Uscire insieme",
-  "platzTogetherHint": "Invita condivide il link. I tuoi gruppi restano. Condiviso elenca anche i gruppi aperti — non un feed.",
+  "platzTogetherHint": "Invita condivide il link. I tuoi gruppi restano — non un feed.",
   "platzTogetherListHint": "Gruppo. Accesso: sul server. Altrimenti solo questo dispositivo — l’host non ti vede. Amici sulla mappa solo in uscita, dopo opt-in.",
   "platzCreateGroup": "Crea gruppo",
   "platzJoinCode": "Codice",
-  "platzNoGroup": "Ancora nessun gruppo. Solo codici veri — niente di recitato.",
+  "platzNoGroup": "Ancora nessun gruppo. Basta un link.",
   "platzHost": "Organizzatore",
   "platzGuest": "Ospite",
   "platzYou": "Tu",
@@ -1990,6 +2027,7 @@
   "discoverHeatmapConsent": "Dove si gira — dopo il consenso. Apri privacy",
   "discoverRideToStartShort": "Al via",
   "discoverLoopsNearby": "Anelli vicino a te",
+  "discoverNearbySection": "Vicino",
   "discoverNoLoop90": "Nessun anello entro 90 km — regioni successive",
   "discoverRecommendedNoGps": "Tour consigliati · anche senza GPS",
   "discoverRecommended": "Consigliati ({count})",
@@ -2470,6 +2508,17 @@
   "discoverEditorialHonesty": "Idee redazionali — non raccolte utente.",
   "discoverEditorialEmpty": "Questa regione è in catalogo; quei tour non sono in elenco ora.",
   "discoverLayerTours": "Tour",
+  "discoverLayerTrails": "Trail",
+  "discoverLayerWays": "Ciclovie",
+  "discoverLayerHeight": "Rilievo",
+  "discoverLayerHeightHint": "Solo rilievo — niente curve di livello.",
+  "browseMapLegendPaved": "Asfalto",
+  "browseMapLegendGravel": "Ghiaia",
+  "browseMapLegendTrail": "Sentiero",
+  "discoverDurationAll": "tutte",
+  "overlayLegendTrailsTitle": "Trail · OSM",
+  "overlayLegendWaysTitle": "Ciclovie · OSM",
+  "overlayLegendAllTitle": "Percorsi · OSM",
   "discoverLayerPlaces": "Luoghi",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat off",
@@ -3953,8 +4002,23 @@
   "filterVisibilityAll": "Tutte",
   "filterVisibilityPublic": "Condiviso",
   "mappeTitle": "Percorsi",
-  "mappeSubtitle": "Tenere uscite, scrivere breve, portare amici col link — le stesse della mappa.",
-  "mappeAddHint": "Nome + partenza (GPS, altrimenti ultimo centro mappa, altrimenti senza pin) — senza traccia inventata. GPX come opzione sotto.",
+  "mappeSubtitle": "Tenere uscite, Stimmen e amici sul percorso — le stesse della mappa.",
+  "mappeAddHint": "Nome, partenza GPS o ultimo centro mappa, altrimenti senza pin. GPX sotto — senza traccia inventata.",
+  "mappeKeep": "Tieni",
+  "mappeSearch": "Cerca un percorso",
+  "mappeSortRecent": "Recenti",
+  "mappeSortDistance": "Lunghezza",
+  "mappeSortName": "Nome",
+  "mappeKicker": "Mappe",
+  "mappeInviteFriends": "Porta gli amici",
+  "mappeActiveMeet": "{title} · {when}",
+  "@mappeActiveMeet": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "mappeCollectionNew": "Nuova raccolta",
   "mappeStartNone": "Partenza: ancora senza pin — apri GPS o la mappa.",
   "mappeStartPin": "Partenza: {lat}°N, {lng}°E",
   "@mappeStartPin": {
@@ -4000,7 +4064,7 @@
       }
     }
   },
-  "mappeEmpty": "Ancora nessuna traccia tua — aggiungi un percorso.",
+  "mappeEmpty": "Ancora nessuna uscita — tieni o importa un GPX.",
   "mappeStimmenEmpty": "Ancora nessun consiglio sui tuoi percorsi. Dopo la condivisione gli altri possono scrivere.",
   "myRoutesSourceOwn": "Proprie",
   "privacyZoneTitle": "Privacy-Zone",

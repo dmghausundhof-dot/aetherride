@@ -1,128 +1,108 @@
 {
-  "kind": "city",
+  "id": "urban",
+  "name": "City",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "urban",
+  "family": "urban",
+  "size": "M",
   "viewBox": "0 0 1000 500",
-  "groundY": 420,
-  "axleY": 420,
-  "bb": {
-    "x": 400,
-    "y": 372
-  },
-  "wheelbaseUnits": 430,
-  "params": {
-    "tire_stroke": 12,
-    "bar": "swept",
-    "fork_travel": false
+  "geometry": {
+    "reachMm": 400,
+    "stackMm": 605,
+    "headAngleDeg": 70.0,
+    "seatAngleEffectiveDeg": 73.0,
+    "chainstayMm": 450,
+    "wheelbaseMm": 1090,
+    "bbDropMm": 68,
+    "headTubeMm": 155,
+    "wheelSizeFront": "700c",
+    "wheelSizeRear": "700c",
+    "travelFrontMm": 0,
+    "travelRearMm": 0,
+    "isEbike": false,
+    "isFully": false,
+    "source": "category_silhouette"
   },
   "hotspots": {
     "tire_front": {
-      "cx": 220,
-      "cy": 420,
+      "cx": 673.3,
+      "cy": 320.4,
       "hitR": 28,
       "label_de": "Vorderrad"
     },
+    "tire_rear": {
+      "cx": 326.7,
+      "cy": 320.4,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
     "fork": {
-      "cx": 257,
-      "cy": 282.5,
+      "cx": 639.7,
+      "cy": 251.9,
       "hitR": 28,
       "label_de": "Gabel"
     },
     "brake_front": {
-      "cx": 242,
-      "cy": 365,
+      "cx": 666.0,
+      "cy": 305.4,
       "hitR": 28,
       "label_de": "Vorderradbremse"
     },
+    "brake_rear": {
+      "cx": 320.9,
+      "cy": 298.1,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
     "handlebar": {
-      "cx": 258,
-      "cy": 105,
+      "cx": 615.1,
+      "cy": 129.4,
       "hitR": 28,
       "label_de": "Lenker"
     },
     "stem": {
-      "cx": 276,
-      "cy": 125,
+      "cx": 602.1,
+      "cy": 134.7,
       "hitR": 28,
       "label_de": "Vorbau"
     },
     "frame": {
-      "cx": 370.7,
-      "cy": 212.3,
+      "cx": 513.4,
+      "cy": 185.6,
       "hitR": 28,
       "label_de": "Rahmen"
     },
     "seatpost": {
-      "cx": 418,
-      "cy": 246,
+      "cx": 424.8,
+      "cy": 200.2,
       "hitR": 28,
       "label_de": "Sattelstütze"
     },
     "saddle": {
-      "cx": 428,
-      "cy": 98,
+      "cx": 419.9,
+      "cy": 184.3,
       "hitR": 28,
       "label_de": "Sattel"
     },
     "crankset": {
-      "cx": 400,
-      "cy": 372,
+      "cx": 468.1,
+      "cy": 342.0,
       "hitR": 28,
       "label_de": "Kurbel"
     },
     "chain": {
-      "cx": 525,
-      "cy": 394,
+      "cx": 397.4,
+      "cy": 331.2,
       "hitR": 28,
       "label_de": "Kette"
     },
     "cassette": {
-      "cx": 664,
-      "cy": 408,
+      "cx": 329.2,
+      "cy": 320.4,
       "hitR": 28,
       "label_de": "Kassette"
-    },
-    "tire_rear": {
-      "cx": 650,
-      "cy": 420,
-      "hitR": 28,
-      "label_de": "Hinterrad"
-    },
-    "brake_rear": {
-      "cx": 622,
-      "cy": 362,
-      "hitR": 28,
-      "label_de": "Hinterradbremse"
-    },
-    "motor": {
-      "cx": 357,
-      "cy": 354,
-      "hitR": 28,
-      "label_de": "Motor"
-    },
-    "battery": {
-      "cx": 367,
-      "cy": 268.5,
-      "hitR": 28,
-      "label_de": "Akku"
     }
   },
-  "layers": {
-    "motor": {
-      "type": "rect",
-      "x": 372,
-      "y": 334,
-      "width": 56,
-      "height": 32,
-      "rx": 6,
-      "fill": "#FF6A00"
-    },
-    "battery": {
-      "type": "rect",
-      "x": 337,
-      "y": 238.5,
-      "width": 44,
-      "height": 22,
-      "rx": 4,
-      "fill": "#7A8B73"
-    }
-  }
+  "cue": "Aufrechter Lenker, Schutzbleche, Gepäckträger"
 }

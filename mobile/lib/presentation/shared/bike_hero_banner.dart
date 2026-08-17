@@ -12,6 +12,7 @@ import '../../domain/bike.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
+import 'bike_schema_view.dart';
 
 /// Foto-Banner + Name/Kategorie/Aktiv-Badge für ein Bike — gemeinsames
 /// visuelles Vokabular zwischen Home (Begrüßung/Fingerprint) und Garage
@@ -75,7 +76,7 @@ class BikeHeroBanner extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    child: _heroPhoto(photo),
+                    child: _heroPhoto(photo, photoHeight),
                   ),
                   if (showActiveBadge && bike.isActive)
                     Positioned(
@@ -172,13 +173,11 @@ class BikeHeroBanner extends ConsumerWidget {
     );
   }
 
-  Widget _heroPhoto(String? photo) {
+  Widget _heroPhoto(String? photo, double height) {
     final hasPhoto = photo != null &&
         (isRemotePhotoRef(photo) || File(photo).existsSync());
     if (!hasPhoto) {
-      return const Center(
-        child: Icon(Icons.pedal_bike, size: 56, color: Colors.white70),
-      );
+      return BikeSchemaView(bike: bike, height: height);
     }
     return isRemotePhotoRef(photo)
         ? Image.network(

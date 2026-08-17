@@ -1,0 +1,108 @@
+{
+  "id": "kids",
+  "name": "Kinder",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "kids",
+  "family": "kids",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 320,
+    "stackMm": 480,
+    "headAngleDeg": 69.0,
+    "seatAngleEffectiveDeg": 73.0,
+    "chainstayMm": 380,
+    "wheelbaseMm": 920,
+    "bbDropMm": 30,
+    "headTubeMm": 90,
+    "wheelSizeFront": "24",
+    "wheelSizeRear": "24",
+    "travelFrontMm": 80,
+    "travelRearMm": 0,
+    "isEbike": false,
+    "isFully": false,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 646.3,
+      "cy": 335.5,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 353.7,
+      "cy": 335.5,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 613.3,
+      "cy": 271.4,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 639.1,
+      "cy": 321.5,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 348.0,
+      "cy": 313.2,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 586.4,
+      "cy": 185.6,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 579.4,
+      "cy": 186.1,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 508.2,
+      "cy": 213.6,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 433.9,
+      "cy": 213.4,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 429.1,
+      "cy": 197.5,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 474.2,
+      "cy": 345.0,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 413.9,
+      "cy": 340.2,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 356.2,
+      "cy": 335.5,
+      "hitR": 28,
+      "label_de": "Kassette"
+    }
+  },
+  "cue": "24\"-Laufräder, kleiner Rahmen, Hardtail"
+}

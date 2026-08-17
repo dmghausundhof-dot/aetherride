@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/bike.dart';
+import '../../domain/garage/bike_schema_anchors.dart';
+import '../../domain/garage/bike_schema_mapper.dart';
 import '../../domain/garage/garage_primary_cta.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../l10n/app_localizations.dart';
@@ -91,6 +94,31 @@ class BikeOverviewCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.s),
             ],
+            Builder(builder: (context) {
+              final plan = planBikeSchema(
+                category: bike.category,
+                isEbike: bike.hasElectricAssist,
+              );
+              final asset = plan.assetKey == null
+                  ? null
+                  : schemaAssetPath[plan.assetKey!];
+              if (asset == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ColoredBox(
+                    color: const Color(0xFFF4F1EA),
+                    child: SvgPicture.asset(
+                      asset,
+                      height: compact ? 96 : 140,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              );
+            }),
             Wrap(
               spacing: AppSpacing.xs,
               runSpacing: AppSpacing.xs,

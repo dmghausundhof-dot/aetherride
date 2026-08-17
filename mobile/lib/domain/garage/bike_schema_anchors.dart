@@ -72,6 +72,16 @@ const schemaAssetPath = <String, String>{
   'gravel': 'assets/garage/silhouettes/gravel.svg',
   'mtb': 'assets/garage/silhouettes/mtb.svg',
   'city': 'assets/garage/silhouettes/city.svg',
+  'mtb_trail': 'assets/garage/silhouettes/mtb_trail.svg',
+  'mtb_am': 'assets/garage/silhouettes/mtb_am.svg',
+  'mtb_enduro': 'assets/garage/silhouettes/mtb_enduro.svg',
+  'dh': 'assets/garage/silhouettes/dh.svg',
+  'emtb': 'assets/garage/silhouettes/emtb.svg',
+  'urban': 'assets/garage/silhouettes/urban.svg',
+  'etrekking': 'assets/garage/silhouettes/etrekking.svg',
+  'cargo': 'assets/garage/silhouettes/cargo.svg',
+  'folding': 'assets/garage/silhouettes/folding.svg',
+  'kids': 'assets/garage/silhouettes/kids.svg',
 };
 
 const schemaHotspots = <String, Map<String, SchemaAnchor>>{

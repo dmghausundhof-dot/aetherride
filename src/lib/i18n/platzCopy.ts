@@ -105,6 +105,14 @@ export type PlatzCopy = {
   onServerNote: string;
   serverTableNote: string;
   addRoute: string;
+  keepRoute: string;
+  searchTours: string;
+  sortRecent: string;
+  sortDistance: string;
+  sortName: string;
+  inviteFriends: string;
+  goRide: string;
+  mappeKicker: string;
   addRouteHint: string;
   routeName: string;
   startGps: string;
@@ -206,7 +214,7 @@ const DE: PlatzCopy = {
   whenToday: (hm, dur) => `heute ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `morgen ${hm} · ${dur}`,
   whenOther: (wd, hm, dur) => `${wd} ${hm} · ${dur}`,
-  mappeEmpty: "Noch keine eigenen Strecken — Route hinzufügen.",
+  mappeEmpty: "Noch keine eigenen Touren — merken oder GPX importieren.",
   mappeFilterEmpty: "Keine Touren in diesem Filter.",
   shared: "freigegeben",
   privateTour: "privat",
@@ -242,8 +250,16 @@ const DE: PlatzCopy = {
   onServerNote: ON_SERVER_DE,
   serverTableNote: SERVER_TABLE_DE,
   addRoute: "Route hinzufügen",
+  keepRoute: "Merken",
+  searchTours: "Tour suchen",
+  sortRecent: "Zuletzt",
+  sortDistance: "Länge",
+  sortName: "Name",
+  inviteFriends: "Freunde mitnehmen",
+  goRide: "Losfahren",
+  mappeKicker: "Mappe",
   addRouteHint:
-    "Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX bleibt optional.",
+    "Name merken, Start von GPS oder letzter Karte, sonst ohne Pin. GPX darunter — ohne erfundenen Track.",
   routeName: "Name der Route",
   startGps: "Start: GPS, falls erlaubt — sonst letzte Kartenmitte, sonst ohne Pin.",
   startNone: "Start: noch ohne Pin — GPS oder Karte öffnen.",
@@ -347,7 +363,7 @@ const EN: PlatzCopy = {
   whenToday: (hm, dur) => `today ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `tomorrow ${hm} · ${dur}`,
   whenOther: (wd, hm, dur) => `${wd} ${hm} · ${dur}`,
-  mappeEmpty: "No routes of your own yet — add a route.",
+  mappeEmpty: "No tours yet — save one or import GPX.",
   mappeFilterEmpty: "No tours in this filter.",
   shared: "shared",
   privateTour: "private",
@@ -384,6 +400,14 @@ const EN: PlatzCopy = {
   onServerNote: "Group on the server.",
   serverTableNote: "Server table missing — local only.",
   addRoute: "Add a route",
+  keepRoute: "Save",
+  searchTours: "Search tours",
+  sortRecent: "Recent",
+  sortDistance: "Length",
+  sortName: "Name",
+  inviteFriends: "Bring friends",
+  goRide: "Let's ride",
+  mappeKicker: "Mappe",
   addRouteHint:
     "Name + start (GPS, else last map centre, else no pin) — no invented track. GPX stays optional.",
   routeName: "Route name",
@@ -490,7 +514,7 @@ const FR: PlatzCopy = {
   whenToday: (hm, dur) => `aujourd’hui ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `demain ${hm} · ${dur}`,
   whenOther: (wd, hm, dur) => `${wd} ${hm} · ${dur}`,
-  mappeEmpty: "Pas encore de tes propres parcours — ajoute une route.",
+  mappeEmpty: "Pas encore de sorties — garder ou importer un GPX.",
   mappeFilterEmpty: "Pas de sorties dans ce filtre.",
   shared: "partagé",
   privateTour: "privé",
@@ -527,6 +551,14 @@ const FR: PlatzCopy = {
   onServerNote: "Groupe sur le serveur.",
   serverTableNote: "Table serveur absente — local seulement.",
   addRoute: "Ajouter une route",
+  keepRoute: "Garder",
+  searchTours: "Chercher une sortie",
+  sortRecent: "Récent",
+  sortDistance: "Longueur",
+  sortName: "Nom",
+  inviteFriends: "Emmener des amis",
+  goRide: "On y va",
+  mappeKicker: "Mappe",
   addRouteHint:
     "Nom + départ (GPS, sinon dernier centre carte, sinon sans épingle) — sans trace inventée. GPX reste optionnel.",
   routeName: "Nom de la route",
@@ -633,7 +665,7 @@ const IT: PlatzCopy = {
   whenToday: (hm, dur) => `oggi ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `domani ${hm} · ${dur}`,
   whenOther: (wd, hm, dur) => `${wd} ${hm} · ${dur}`,
-  mappeEmpty: "Ancora nessun percorso tuo — aggiungi una route.",
+  mappeEmpty: "Ancora nessuna uscita — tieni o importa un GPX.",
   mappeFilterEmpty: "Nessuna uscita in questo filtro.",
   shared: "condiviso",
   privateTour: "privato",
@@ -670,6 +702,14 @@ const IT: PlatzCopy = {
   onServerNote: "Gruppo sul server.",
   serverTableNote: "Tabella server assente — solo locale.",
   addRoute: "Aggiungi una route",
+  keepRoute: "Tieni",
+  searchTours: "Cerca un percorso",
+  sortRecent: "Recenti",
+  sortDistance: "Lunghezza",
+  sortName: "Nome",
+  inviteFriends: "Porta gli amici",
+  goRide: "Si parte",
+  mappeKicker: "Mappe",
   addRouteHint:
     "Nome + partenza (GPS, altrimenti ultimo centro mappa, altrimenti senza pin) — senza traccia inventata. GPX resta opzionale.",
   routeName: "Nome della route",
@@ -776,7 +816,7 @@ const NL: PlatzCopy = {
   whenToday: (hm, dur) => `vandaag ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `morgen ${hm} · ${dur}`,
   whenOther: (wd, hm, dur) => `${wd} ${hm} · ${dur}`,
-  mappeEmpty: "Nog geen eigen routes — voeg een route toe.",
+  mappeEmpty: "Nog geen tochten — bewaren of GPX importeren.",
   mappeFilterEmpty: "Geen tochten in dit filter.",
   shared: "gedeeld",
   privateTour: "privé",
@@ -814,6 +854,14 @@ const NL: PlatzCopy = {
   onServerNote: "Groep op de server.",
   serverTableNote: "Servertabel ontbreekt — alleen lokaal.",
   addRoute: "Route toevoegen",
+  keepRoute: "Bewaren",
+  searchTours: "Tocht zoeken",
+  sortRecent: "Recent",
+  sortDistance: "Lengte",
+  sortName: "Naam",
+  inviteFriends: "Vrienden meenemen",
+  goRide: "Rijden maar",
+  mappeKicker: "Mappe",
   addRouteHint:
     "Naam + start (GPS, anders laatste kaartmidden, anders zonder pin) — zonder verzonnen track. GPX blijft optioneel.",
   routeName: "Naam van de route",

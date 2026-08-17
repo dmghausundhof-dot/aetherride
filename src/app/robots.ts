@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { isPublicIndexable } from "@/lib/config/appStage";
 
 function base(): string {
   return (
@@ -10,6 +11,11 @@ function base(): string {
 
 export default function robots(): MetadataRoute.Robots {
   const origin = base();
+  if (!isPublicIndexable()) {
+    return {
+      rules: [{ userAgent: "*", disallow: "/" }],
+    };
+  }
   return {
     rules: [
       {

@@ -276,6 +276,15 @@ export function overlayFamilyForBike(
   return "road";
 }
 
+/** Explore-Default: alle Klassen, unabhängig vom Rad. */
+export const overlayExploreAllClasses: BikeOverlayClass[] = [
+  "mtb",
+  "mtb_unrated",
+  "gravel",
+  "road",
+  "urban",
+];
+
 export function overlayClassesForFamily(
   family: BikeOverlayFamily
 ): BikeOverlayClass[] {

@@ -1,0 +1,91 @@
+{
+  "count": 12,
+  "viewBox": "0 0 1000 500",
+  "note": "Allgemeine Silhouette pro BikeCategory. Hiking bewusst ausgelassen.",
+  "categories": [
+    {
+      "id": "road",
+      "name": "Rennrad",
+      "file": "road.svg",
+      "hotspots": "hotspots/road.hotspots.json",
+      "cue": "Dropbar, schmale Reifen, steiler Lenkwinkel, kurzer Radstand"
+    },
+    {
+      "id": "gravel",
+      "name": "Gravel",
+      "file": "gravel.svg",
+      "hotspots": "hotspots/gravel.hotspots.json",
+      "cue": "Dropbar, dickere Reifen, mehr Reifenfreiheit"
+    },
+    {
+      "id": "mtb_trail",
+      "name": "Trail / Hardtail",
+      "file": "mtb_trail.svg",
+      "hotspots": "hotspots/mtb_trail.hotspots.json",
+      "cue": "Hardtail, Federgabel, Flatbar, keine Hinterbaudämpfung"
+    },
+    {
+      "id": "mtb_am",
+      "name": "All Mountain",
+      "file": "mtb_am.svg",
+      "hotspots": "hotspots/mtb_am.hotspots.json",
+      "cue": "Fully, mittlerer Federweg, Dämpfer im Hauptdreieck"
+    },
+    {
+      "id": "mtb_enduro",
+      "name": "Enduro",
+      "file": "mtb_enduro.svg",
+      "hotspots": "hotspots/mtb_enduro.hotspots.json",
+      "cue": "Langer Radstand, slacker Lenkwinkel, viel Federweg"
+    },
+    {
+      "id": "dh",
+      "name": "Downhill",
+      "file": "dh.svg",
+      "hotspots": "hotspots/dh.hotspots.json",
+      "cue": "Doppelbrücke, sehr slack, 27.5\", Coil-Dämpfer"
+    },
+    {
+      "id": "emtb",
+      "name": "E-MTB",
+      "file": "emtb.svg",
+      "hotspots": "hotspots/emtb.hotspots.json",
+      "cue": "Motor am Tretlager, Akku im Unterrohr, Fully"
+    },
+    {
+      "id": "urban",
+      "name": "City",
+      "file": "urban.svg",
+      "hotspots": "hotspots/urban.hotspots.json",
+      "cue": "Aufrechter Lenker, Schutzbleche, Gepäckträger"
+    },
+    {
+      "id": "etrekking",
+      "name": "E-Trekking",
+      "file": "etrekking.svg",
+      "hotspots": "hotspots/etrekking.hotspots.json",
+      "cue": "City-Silhouette plus Motor und Akku"
+    },
+    {
+      "id": "cargo",
+      "name": "Lastenrad",
+      "file": "cargo.svg",
+      "hotspots": "hotspots/cargo.hotspots.json",
+      "cue": "Frontlader: Lenksäule an der Kistenrückwand, Gestänge unter der Ladefläche"
+    },
+    {
+      "id": "folding",
+      "name": "Faltrad",
+      "file": "folding.svg",
+      "hotspots": "hotspots/folding.hotspots.json",
+      "cue": "20\"-Laufräder, kurze Bauweise, Scharniere"
+    },
+    {
+      "id": "kids",
+      "name": "Kinder",
+      "file": "kids.svg",
+      "hotspots": "hotspots/kids.hotspots.json",
+      "cue": "24\"-Laufräder, kleiner Rahmen, Hardtail"
+    }
+  ]
+}

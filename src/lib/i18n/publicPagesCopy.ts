@@ -16,6 +16,7 @@ export type PublicPagesCopy = {
     yearHint: string;
     unlockPro: string;
     checkoutHint: string;
+    devClosed: string;
     colFeature: string;
     included: string;
     notIncluded: string;
@@ -72,6 +73,8 @@ const DE: PublicPagesCopy = {
     yearHint: "oder 59,99 €/Jahr · Kündigung im Portal",
     unlockPro: "Pro freischalten",
     checkoutHint: "Checkout im Profil (Stripe) · Play Billing in der Android-App",
+    devClosed:
+      "Noch nicht kaufbar. Entwicklungsstand — kein öffentliches Angebot.",
     colFeature: "Funktion",
     included: "Enthalten",
     notIncluded: "Nicht enthalten",
@@ -159,6 +162,8 @@ const EN: PublicPagesCopy = {
     yearHint: "or 59.99 €/year · cancel in the portal",
     unlockPro: "Unlock Pro",
     checkoutHint: "Checkout in the profile (Stripe) · Play Billing in the Android app",
+    devClosed:
+      "Not for sale yet. Development build — not a public offer.",
     colFeature: "Feature",
     included: "Included",
     notIncluded: "Not included",
@@ -246,6 +251,8 @@ const FR: PublicPagesCopy = {
     yearHint: "ou 59,99 €/an · résiliation dans le portail",
     unlockPro: "Activer Pro",
     checkoutHint: "Checkout dans le profil (Stripe) · Play Billing dans l’appli Android",
+    devClosed:
+      "Pas encore à vendre. Version de développement — pas une offre publique.",
     colFeature: "Fonction",
     included: "Inclus",
     notIncluded: "Non inclus",
@@ -335,6 +342,8 @@ const IT: PublicPagesCopy = {
     yearHint: "oppure 59,99 €/anno · disdetta nel portale",
     unlockPro: "Attiva Pro",
     checkoutHint: "Checkout nel profilo (Stripe) · Play Billing nell’app Android",
+    devClosed:
+      "Non in vendita. Versione di sviluppo — non è un’offerta pubblica.",
     colFeature: "Funzione",
     included: "Incluso",
     notIncluded: "Non incluso",
@@ -424,6 +433,8 @@ const NL: PublicPagesCopy = {
     yearHint: "of 59,99 €/jaar · opzeggen in het portaal",
     unlockPro: "Pro vrijschakelen",
     checkoutHint: "Checkout in het profiel (Stripe) · Play Billing in de Android-app",
+    devClosed:
+      "Nog niet te koop. Ontwikkelstand — geen openbaar aanbod.",
     colFeature: "Functie",
     included: "Inbegrepen",
     notIncluded: "Niet inbegrepen",

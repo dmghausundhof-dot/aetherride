@@ -193,6 +193,13 @@ abstract final class AppConfig {
     defaultValue: true,
   );
 
+  /// Stripe/Play-Käufe. Default aus — erst nach Launch
+  /// `--dart-define=AETHER_COMMERCE_ENABLED=true`.
+  static const commerceEnabled = bool.fromEnvironment(
+    'AETHER_COMMERCE_ENABLED',
+    defaultValue: false,
+  );
+
   /// In-App-Laden (Werkstatt-Tür, Deep-Link `aetherride://shop`, ShopScreen).
   /// Default aus. Wieder an: `--dart-define=AETHER_SHOP_ENABLED=true`.
   /// Web-Katalog `/shop` ist ein anderer Schalter (`NEXT_PUBLIC_SHOP_ENABLED`).

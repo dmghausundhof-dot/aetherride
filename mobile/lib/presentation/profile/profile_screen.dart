@@ -13,10 +13,12 @@ import 'package:uuid/uuid.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/user_profile_store.dart';
+import '../../data/sensor/bike_ble_store.dart';
 import '../../data/sync/sync_engine.dart'
     show SyncConflictException, SyncConflictStrategy;
 import '../../domain/bike.dart';
 import '../../domain/home/greeting.dart';
+import '../../domain/home/hof_stand.dart';
 import '../../domain/ride.dart';
 import '../../domain/rider_profile.dart';
 import '../../domain/ai/coach_inbox.dart';
@@ -26,6 +28,8 @@ import '../../providers/app_providers.dart';
 import '../auth/auth_screen.dart';
 import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
+import '../garage/ble_pair_sheet.dart';
+import '../home/watch_pair_sheet.dart';
 import '../privacy/privacy_screen.dart';
 import '../shell/shell_tabs.dart';
 import 'hud_media_connection_tile.dart';
@@ -572,6 +576,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           const SizedBox(height: AppSpacing.xl),
           _SectionCard(
+            title: l10n.profileConnections,
+            padded: false,
+            child: const _ProfileConnectionsCard(),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _SectionCard(
             title: l10n.profilePublic,
             child: const PublicProfileSection(),
           ),
@@ -1075,7 +1085,9 @@ class _SubscriptionCard extends StatelessWidget {
             const SizedBox(width: AppSpacing.s),
             Expanded(
               child: Text(
-                l10n.profileProActive,
+                AppConfig.forcePro
+                    ? l10n.billingForceProDebug
+                    : l10n.profileProActive,
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
@@ -1409,6 +1421,125 @@ class _LegalLink extends StatelessWidget {
           decoration: TextDecoration.underline,
         ),
       ),
+    );
+  }
+}
+
+/// Uhr und Bosch/CSC — sonst nur in der Werkstatt bzw. unsichtbar auf Start.
+class _ProfileConnectionsCard extends ConsumerStatefulWidget {
+  const _ProfileConnectionsCard();
+
+  @override
+  ConsumerState<_ProfileConnectionsCard> createState() =>
+      _ProfileConnectionsCardState();
+}
+
+class _ProfileConnectionsCardState
+    extends ConsumerState<_ProfileConnectionsCard> {
+  BikeBleDevice? _watch;
+  BikeBleDevice? _bikeBle;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_reload());
+  }
+
+  Future<void> _reload() async {
+    final store = ref.read(bikeBleStoreProvider);
+    final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+    final bike = hofResidentBike(bikes);
+    BikeBleDevice? bikeBle;
+    if (bike != null) {
+      bikeBle = await store.deviceForBike(bike.id);
+    }
+    final watch = await store.savedWatch();
+    if (!mounted) return;
+    setState(() {
+      _watch = watch;
+      _bikeBle = bikeBle;
+    });
+  }
+
+  Future<void> _openWatch() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await showWatchPairSheet(context);
+      await _reload();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _openBikeBle() async {
+    if (_busy) return;
+    final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
+    final bike = hofResidentBike(bikes);
+    if (bike == null) {
+      ref.read(shellTabIndexProvider.notifier).state = ShellTabs.werkstatt;
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await showBlePairSheet(
+        context,
+        bikeId: bike.id,
+        isEbike: bike.hasElectricAssist,
+      );
+      await _reload();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final ble = ref.read(bleCoreProvider);
+    final watchLive = ble.isWatchConnected;
+    final watchName = (_watch?.name ?? '').trim();
+    final watchLabel =
+        watchName.isEmpty ? l10n.bleWordWatch : watchName;
+    final watchLine = _watch == null
+        ? l10n.profileWatchIdle
+        : (watchLive
+            ? l10n.bleConnectedNamed(watchLabel)
+            : l10n.garageBlePairedNamed(watchLabel));
+    final bikeName = (_bikeBle?.name ?? '').trim();
+    final bikeLabel =
+        bikeName.isEmpty ? l10n.profileBikeBleTitle : bikeName;
+    final bikeLine = _bikeBle == null
+        ? l10n.profileBikeBleIdle
+        : l10n.garageBlePairedNamed(bikeLabel);
+    final bikes = ref.watch(bikesProvider).valueOrNull ?? const <Bike>[];
+    final hasBike = hofResidentBike(bikes) != null;
+    return Column(
+      children: [
+        ListTile(
+          key: const Key('profile-watch'),
+          leading: Icon(
+            Icons.watch_outlined,
+            color: watchLive ? AppColors.chrome : AppColors.muted,
+          ),
+          title: Text(l10n.profileWatchTitle),
+          subtitle: Text(watchLine),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _busy ? null : () => unawaited(_openWatch()),
+        ),
+        ListTile(
+          key: const Key('profile-bike-ble'),
+          leading: const Icon(Icons.bluetooth),
+          title: Text(l10n.profileBikeBleTitle),
+          subtitle: Text(
+            hasBike ? bikeLine : l10n.profileBikeBleNeedBike,
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _busy ? null : () => unawaited(_openBikeBle()),
+        ),
+      ],
     );
   }
 }

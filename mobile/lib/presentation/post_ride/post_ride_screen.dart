@@ -21,6 +21,7 @@ import '../../domain/ebike/assist_log.dart';
 import '../../domain/post_ride/analyze.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/ride.dart';
+import '../../domain/ride_activity.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
@@ -100,6 +101,11 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       _bikeName = bike?.name;
       _photoPaths = _photosFromSummary(ride?.summary);
       if (ride != null) {
+        _savedAsTour = rideActivityKind(
+              routeId: ride.routeId,
+              liveTour: ride.summary['liveTour'] == true,
+            ) ==
+            RideActivityKind.liveTour;
         _analysis = analyzePostRide(ride: ride, bikeName: bike?.name);
         _assist = buildEstimatedAssistLog(
           durationSec: ride.movingTimeSec > 0 ? ride.movingTimeSec : 600,
@@ -481,6 +487,12 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     final track = ride?.track ?? const <Map<String, dynamic>>[];
     final isFreeride =
         ride != null && (ride.routeId == null || ride.routeId!.isEmpty);
+    final kind = ride == null
+        ? RideActivityKind.freeride
+        : rideActivityKind(
+            routeId: ride.routeId,
+            liveTour: ride.summary['liveTour'] == true || _savedAsTour,
+          );
     final pace = ride == null ? null : _fmtPaceKmh(ride);
 
     return Scaffold(
@@ -505,7 +517,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     Expanded(
                       child: Text(
                         ride.name ??
-                            (isFreeride
+                            (kind == RideActivityKind.freeride
                                 ? l10n.postRideFreeride
                                 : l10n.postRideDefaultName),
                         style:
@@ -514,25 +526,28 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                                 ),
                       ),
                     ),
-                    if (isFreeride)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                        ),
-                        child: Text(
-                          l10n.postRideFreeride,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(
+                        switch (kind) {
+                          RideActivityKind.liveTour => l10n.postRideLiveTour,
+                          RideActivityKind.following => l10n.postRideOpenTour,
+                          RideActivityKind.freeride => l10n.postRideFreeride,
+                        },
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.accent,
                         ),
                       ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.m),
@@ -601,60 +616,62 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     ),
                   ),
                 const SizedBox(height: AppSpacing.l),
-                _WeatherCard(
-                  loading: _weatherLoading,
-                  start: _weatherStart,
-                  end: _weatherEnd,
-                  title: l10n.postRideWeatherTitle,
-                  startLabel: l10n.postRideWeatherStart,
-                  endLabel: l10n.postRideWeatherEnd,
-                  unavailable: l10n.postRideWeatherUnavailable,
-                ),
-                const SizedBox(height: AppSpacing.l),
-                PostRidePhotosSection(
-                  photoPaths: _photoPaths,
-                  onChanged: (paths) => unawaited(_onPhotosChanged(paths)),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                FilledButton.icon(
-                  onPressed: (_savingAsTour || _savedAsTour)
-                      ? null
-                      : () => unawaited(_saveAsTour()),
-                  icon: _savingAsTour
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          _savedAsTour
-                              ? Icons.check
-                              : Icons.bookmark_add_outlined,
-                        ),
-                  label: Text(
-                    _savedAsTour
-                        ? l10n.postRideSaveAsTourDone
-                        : l10n.postRideSaveAsTour,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    l10n.postRideSaveAsTourHint,
-                    style:
-                        const TextStyle(fontSize: 11, color: AppColors.muted),
-                  ),
-                ),
-                if (ride.routeId != null && ride.routeId!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.s),
-                  OutlinedButton.icon(
+                if (kind == RideActivityKind.freeride)
+                  FilledButton.icon(
+                    key: const Key('post-ride-primary'),
+                    onPressed: (_savingAsTour || _savedAsTour)
+                        ? null
+                        : () => unawaited(_saveAsTour()),
+                    icon: _savingAsTour
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.bookmark_add_outlined),
+                    label: Text(l10n.postRideToMappe),
+                  )
+                else
+                  FilledButton.icon(
+                    key: const Key('post-ride-primary'),
                     onPressed: () =>
                         Navigator.pop(context, 'akte:${ride.routeId}'),
                     icon: const Icon(Icons.folder_open_outlined),
                     label: Text(l10n.postRideOpenTour),
                   ),
-                ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    kind == RideActivityKind.freeride
+                        ? l10n.postRideSaveAsTourHint
+                        : l10n.postRideSaveAsTourDone,
+                    style:
+                        const TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.l),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.moreActions,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  children: [
+                    PostRidePhotosSection(
+                      photoPaths: _photoPaths,
+                      onChanged: (paths) => unawaited(_onPhotosChanged(paths)),
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    _WeatherCard(
+                      loading: _weatherLoading,
+                      start: _weatherStart,
+                      end: _weatherEnd,
+                      title: l10n.postRideWeatherTitle,
+                      startLabel: l10n.postRideWeatherStart,
+                      endLabel: l10n.postRideWeatherEnd,
+                      unavailable: l10n.postRideWeatherUnavailable,
+                    ),
+                    const SizedBox(height: AppSpacing.s),
                 Row(
                   children: [
                     Expanded(
@@ -939,7 +956,10 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 if (_stimmeTourId != null)
                   PostRideStimmeCard(
                     tourId: _stimmeTourId!,

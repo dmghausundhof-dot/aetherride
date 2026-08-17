@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { isAppLaunched } from "@/lib/config/appStage";
 import { legalContactEmail, legalPrivacyOverride } from "@/lib/legal/siteLegal";
 
 export const metadata: Metadata = {
@@ -14,6 +15,11 @@ export default function LegalDatenschutzPage() {
   return (
     <div className="flex flex-col gap-4 pt-6">
       <h1 className="text-2xl font-bold">Datenschutzerklärung</h1>
+      {!isAppLaunched() ? (
+        <p className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-secondary">
+          Entwicklungsstand — kein öffentlicher Dienst, keine Zahlungen.
+        </p>
+      ) : null}
       {custom ? (
         <p className="whitespace-pre-wrap text-sm text-text-secondary">
           {custom}

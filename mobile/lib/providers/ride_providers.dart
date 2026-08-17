@@ -43,6 +43,10 @@ class PlatzPendingJoin {
 
 final platzPendingJoinProvider = StateProvider<PlatzPendingJoin?>((ref) => null);
 
+/// Akte / Karte → Touren legt eine Gruppe an dieser Strecke an.
+final platzPendingCreateGroupRouteIdProvider =
+    StateProvider<String?>((ref) => null);
+
 /// Platz-Gruppenkarte → Karte startet dieselbe Tour.
 final discoverPendingStartRideRouteIdProvider =
     StateProvider<String?>((ref) => null);

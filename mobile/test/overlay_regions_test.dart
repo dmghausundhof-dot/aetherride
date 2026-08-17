@@ -32,6 +32,11 @@ void main() {
     expect(detailOverlayPackIdForPoint(2.35, 48.86), 'paris');
     expect(detailOverlayPackIdForPoint(4.835, 45.76), 'lyon');
     expect(detailOverlayPackIdForPoint(6.13, 45.9), 'annecy');
+    expect(detailOverlayPackIdForPoint(4.9, 52.37), 'amsterdam');
+    expect(detailOverlayPackIdForPoint(4.3, 52.08), 'den-haag');
+    expect(detailOverlayPackIdForPoint(7.75, 48.58), 'strasbourg');
+    expect(detailOverlayPackIdForPoint(-0.58, 44.84), 'bordeaux');
+    expect(detailOverlayPackIdForPoint(12.5, 41.9), 'roma');
 
     final hdAtlas = chooseOnlineBikeOverlay(
       lng: 8.68,
@@ -109,6 +114,67 @@ void main() {
     expect(
       chooseOnlineBikeOverlay(lng: 16.7, lat: 40.2, zoom: 8).url,
       contains('cycle-routes-italy-south.pmtiles'),
+    );
+
+    final amsterdamWays = chooseOnlineBikeOverlay(
+      lng: 4.9,
+      lat: 52.37,
+      zoom: 13,
+    );
+    expect(amsterdamWays.kind, OnlineBikeOverlayKind.ways);
+    expect(amsterdamWays.url, contains('/amsterdam/bike-overlay.pmtiles'));
+
+    final utrechtCountry = chooseOnlineBikeOverlay(
+      lng: 5.3,
+      lat: 52.2,
+      zoom: 12,
+    );
+    expect(utrechtCountry.kind, OnlineBikeOverlayKind.ways);
+    expect(utrechtCountry.url, contains('nl-ways.pmtiles'));
+
+    final brusselsWays = chooseOnlineBikeOverlay(
+      lng: 4.35,
+      lat: 50.85,
+      zoom: 12,
+    );
+    expect(brusselsWays.kind, OnlineBikeOverlayKind.ways);
+    expect(brusselsWays.url, contains('be-ways.pmtiles'));
+
+    final milanCountry = chooseOnlineBikeOverlay(
+      lng: 9.19,
+      lat: 45.46,
+      zoom: 12,
+    );
+    expect(milanCountry.kind, OnlineBikeOverlayKind.ways);
+    expect(milanCountry.url, contains('/milano/bike-overlay.pmtiles'));
+
+    final naplesCountry = chooseOnlineBikeOverlay(
+      lng: 14.8,
+      lat: 40.85,
+      zoom: 12,
+    );
+    expect(naplesCountry.kind, OnlineBikeOverlayKind.ways);
+    expect(naplesCountry.url, contains('italy-ways.pmtiles'));
+
+    final bordeauxRural = chooseOnlineBikeOverlay(
+      lng: -0.2,
+      lat: 44.6,
+      zoom: 12,
+    );
+    expect(bordeauxRural.kind, OnlineBikeOverlayKind.mesh);
+    expect(browseUsesLiveNetworkFallback(bordeauxRural), isTrue);
+
+    final london = chooseOnlineBikeOverlay(
+      lng: -0.13,
+      lat: 51.51,
+      zoom: 12,
+    );
+    expect(london.kind, OnlineBikeOverlayKind.mesh);
+    expect(browseUsesLiveNetworkFallback(london), isTrue);
+
+    expect(
+      browseUsesLiveNetworkFallback(berlinWays),
+      isFalse,
     );
   });
 

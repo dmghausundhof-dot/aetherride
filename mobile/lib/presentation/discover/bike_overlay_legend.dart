@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/routing/bike_overlay.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../l10n/app_localizations.dart';
+import 'discover_explore_chrome.dart';
 
 class BikeOverlayLegend extends StatefulWidget {
   const BikeOverlayLegend({
@@ -14,6 +15,9 @@ class BikeOverlayLegend extends StatefulWidget {
     required this.onToggleClass,
     this.hasOverlayData = true,
     this.overlayKind = OnlineBikeOverlayKind.ways,
+    this.exploreAll = false,
+    this.trailsOn = true,
+    this.waysOn = true,
   });
 
   final BikeOverlayFamily family;
@@ -23,6 +27,9 @@ class BikeOverlayLegend extends StatefulWidget {
   final ValueChanged<BikeOverlayClass> onToggleClass;
   final bool hasOverlayData;
   final OnlineBikeOverlayKind overlayKind;
+  final bool exploreAll;
+  final bool trailsOn;
+  final bool waysOn;
 
   @override
   State<BikeOverlayLegend> createState() => _BikeOverlayLegendState();
@@ -58,10 +65,16 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
     final mesh = widget.overlayKind == OnlineBikeOverlayKind.mesh;
     final rows = mesh
         ? <OverlayLegendRow>[]
-        : overlayLegendRows(
-            family: widget.family,
-            expanded: _expanded,
-          );
+        : widget.exploreAll
+            ? overlayLegendRowsExplore(
+                trailsOn: widget.trailsOn,
+                waysOn: widget.waysOn,
+                expanded: _expanded,
+              )
+            : overlayLegendRows(
+                family: widget.family,
+                expanded: _expanded,
+              );
     final compact = overlayLegendCompactKey(widget.family);
     final compactLabel = switch (compact) {
       'mtb' => l10n.overlayLegendCompactMtb,
@@ -69,7 +82,24 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
       'road' => 'Asphalt',
       _ => l10n.overlayLegendCompactCity,
     };
-    final showNote = _expanded && overlayLegendShowsSScale(widget.family);
+    final exploreTitle = !widget.trailsOn && widget.waysOn
+        ? l10n.overlayLegendWaysTitle
+        : widget.trailsOn && !widget.waysOn
+            ? l10n.overlayLegendTrailsTitle
+            : l10n.overlayLegendAllTitle;
+    final title = mesh
+        ? l10n.overlayLegendMeshTitle
+        : widget.exploreAll
+            ? exploreTitle
+            : '${l10n.overlayLegendTitle} · $compactLabel';
+    final showNote = _expanded &&
+        (widget.exploreAll
+            ? widget.trailsOn
+            : overlayLegendShowsSScale(widget.family));
+    final showMeshNote = DiscoverExploreChromeLogic.legendShowsMeshNote(
+      isMesh: mesh,
+      expanded: _expanded,
+    );
 
     return Material(
       key: const Key('bike-overlay-legend'),
@@ -94,9 +124,7 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                           children: [
                             Expanded(
                               child: Text(
-                                mesh
-                                    ? l10n.overlayLegendMeshTitle
-                                    : '${l10n.overlayLegendTitle} · $compactLabel',
+                                title,
                                 key: const Key('bike-overlay-legend-title'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -176,10 +204,10 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                     ),
                   ),
                 ),
-              if (mesh || showNote) ...[
+              if (showMeshNote || showNote) ...[
                 const SizedBox(height: 4),
                 Text(
-                  mesh
+                  showMeshNote
                       ? l10n.overlayLegendMeshNote
                       : l10n.overlayScaleNote,
                   style: const TextStyle(

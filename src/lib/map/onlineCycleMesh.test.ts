@@ -7,10 +7,16 @@ import {
   BIKE_WAYS_MIN_ZOOM,
   DETAIL_BIKE_OVERLAY_PACKS,
   DACH_WAYS_PMTILES_URL,
+  NL_WAYS_PMTILES_URL,
+  BE_WAYS_PMTILES_URL,
+  ITALY_WAYS_PMTILES_URL,
   ONLINE_CYCLE_MESH_PMTILES_URL,
   ONLINE_PACK_CDN_ROOT,
+  browseUsesLiveNetworkFallback,
   chooseOnlineBikeOverlay,
+  countryWaysPmtilesUrl,
   detailBikeOverlayPmtilesUrl,
+  extraDetailPackIdForPoint,
   onlineCycleMeshPmtilesUrl,
   overlayHref,
   packHasDetailBikeOverlay,
@@ -22,6 +28,9 @@ assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("innsbruck"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("annecy"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("lyon"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("paris"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("amsterdam"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("roma"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("bordeaux"));
 assert.equal(packHasDetailBikeOverlay("berlin"), false);
 assert.equal(BIKE_WAYS_MIN_ZOOM, 10);
 
@@ -220,5 +229,47 @@ const freiburgWays = chooseOnlineBikeOverlay({
 });
 assert.equal(freiburgWays.kind, "ways");
 assert.ok(freiburgWays.url?.includes("/schwarzwald-nord/bike-overlay.pmtiles"));
+
+assert.equal(extraDetailPackIdForPoint(4.9, 52.37), "amsterdam");
+assert.equal(countryWaysPmtilesUrl(5.3, 52.2), NL_WAYS_PMTILES_URL);
+assert.equal(countryWaysPmtilesUrl(4.35, 50.85), BE_WAYS_PMTILES_URL);
+assert.equal(countryWaysPmtilesUrl(14.8, 40.85), ITALY_WAYS_PMTILES_URL);
+assert.equal(countryWaysPmtilesUrl(-0.2, 44.6), null, "no france-ways on CDN yet");
+
+const amsterdamWays = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 4.9,
+  lat: 52.37,
+  zoom: 13,
+});
+assert.equal(amsterdamWays.kind, "ways");
+assert.ok(amsterdamWays.url?.includes("/amsterdam/bike-overlay.pmtiles"));
+
+const nlCountry = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 5.3,
+  lat: 52.2,
+  zoom: 12,
+});
+assert.equal(nlCountry.kind, "ways");
+assert.equal(nlCountry.url, NL_WAYS_PMTILES_URL);
+
+const franceRural = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: -0.2,
+  lat: 44.6,
+  zoom: 12,
+});
+assert.equal(franceRural.kind, "mesh");
+assert.equal(browseUsesLiveNetworkFallback(franceRural.kind), true);
+assert.equal(browseUsesLiveNetworkFallback("ways"), false);
+
+const london = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: -0.13,
+  lat: 51.51,
+  zoom: 12,
+});
+assert.equal(london.kind, "mesh");
 
 console.log("onlineCycleMesh.test.ts ok");

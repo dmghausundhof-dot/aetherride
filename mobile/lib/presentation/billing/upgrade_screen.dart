@@ -89,6 +89,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
 
   Future<void> _stripeCheckout(String interval) async {
     final l10n = AppLocalizations.of(context);
+    if (!AppConfig.commerceEnabled) {
+      setState(() => _message = l10n.billingCommerceClosed);
+      return;
+    }
     final token = await _accessToken();
     if (token == null) {
       setState(() => _message = l10n.billingPleaseSignIn);
@@ -167,6 +171,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
 
   Future<void> _playBuy() async {
     final l10n = AppLocalizations.of(context);
+    if (!AppConfig.commerceEnabled) {
+      setState(() => _message = l10n.billingCommerceClosed);
+      return;
+    }
     final play = _play;
     if (play == null) {
       setState(() => _message = l10n.billingPlayOnlyAndroid);
@@ -282,6 +290,11 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                 style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),
             ],
+          ] else if (!AppConfig.commerceEnabled) ...[
+            Text(
+              l10n.billingCommerceClosed,
+              style: const TextStyle(color: AppColors.muted),
+            ),
           ] else ...[
             FilledButton(
               style: FilledButton.styleFrom(),

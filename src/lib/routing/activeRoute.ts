@@ -1,4 +1,4 @@
-import type { ActiveRoute } from "@/types/route";
+import type { ActiveRoute, SavedRoute } from "@/types/route";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import type { ClientRouteResult } from "@/lib/routing/profiles";
 import { stepsFromDemoGeometry } from "@/lib/routing/navSteps";
@@ -58,4 +58,22 @@ export function activeRouteFromEngine(
 export function formatRouteChip(route: ActiveRoute): string {
   const elev = sanitizeElevationM(route.elevationM, route.distanceKm);
   return `${route.name} · ${formatDistanceElevation(route.distanceKm, elev)}`;
+}
+
+/** HUD nur mit echtem Track — kein stiller Tab. */
+export function activeRouteFromSaved(route: SavedRoute): ActiveRoute | null {
+  const coords = route.geometry?.coordinates;
+  if (!coords || coords.length < 2) return null;
+  return {
+    id: route.id,
+    name: route.name,
+    distanceKm: route.distanceKm,
+    elevationM: route.elevationM,
+    durationMin: route.durationMin,
+    mtbScale: route.mtbScale,
+    surface: route.surface,
+    geometry: route.geometry ?? null,
+    source: route.source === "import" ? "import" : "engine",
+    setAt: new Date().toISOString(),
+  };
 }

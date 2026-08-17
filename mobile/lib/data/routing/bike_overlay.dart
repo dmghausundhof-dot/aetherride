@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/browse_map_paint.dart';
 import 'map_style_url.dart';
 import 'offline_tiles.dart';
 import 'overlay_regions.dart';
@@ -20,8 +21,8 @@ const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
 const kBikeOverlayPmtilesName = 'bike-overlay.pmtiles';
 const kBikeOverlaySampleAsset = 'assets/routing/bike-overlay-sample.geojson';
 
-/// Past atlas zoom: pack / DACH ways (tiles from z10) replace the signed mesh.
-const kBikeWaysMinZoom = 10.0;
+/// Past atlas zoom: pack / DACH ways replace the signed mesh.
+const kBikeWaysMinZoom = BrowseMapPaint.packMinZoom;
 
 /// Region packs that already publish a way-level bike-overlay on the CDN.
 const kDetailBikeOverlayPacks = <String>{
@@ -38,6 +39,36 @@ const kDetailBikeOverlayPacks = <String>{
   'annecy',
   'lyon',
   'paris',
+  'strasbourg',
+  'bordeaux',
+  'nantes',
+  'toulouse',
+  'nice',
+  'marseille',
+  'amsterdam',
+  'utrecht',
+  'rotterdam',
+  'den-haag',
+  'eindhoven',
+  'groningen',
+  'lille',
+  'montpellier',
+  'grenoble',
+  'dijon',
+  'chambery',
+  'clermont-ferrand',
+  'reims',
+  'rennes',
+  'rouen',
+  'alsace-vins',
+  'nancy-moselle',
+  'jura-fr',
+  'milano',
+  'torino',
+  'firenze',
+  'roma',
+  'napoli',
+  'bari',
 };
 
 enum OnlineBikeOverlayKind { ways, mesh, none }
@@ -88,6 +119,44 @@ bool pointInOnlineCycleMesh(double lng, double lat) =>
 bool pointInDachWays(double lng, double lat) =>
     lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
 
+class _CountryWaysSheet {
+  const _CountryWaysSheet(this.url, this.bbox);
+  final String url;
+  final List<double> bbox;
+  bool contains(double lng, double lat) =>
+      lng >= bbox[0] &&
+      lat >= bbox[1] &&
+      lng <= bbox[2] &&
+      lat <= bbox[3];
+}
+
+/// CDN ways that exist today. France/UK/Catalonia use live OSM until tiled.
+const kCountryWaysSheets = <_CountryWaysSheet>[
+  _CountryWaysSheet(kNlWaysPmtilesUrl, [3.2, 50.75, 7.25, 53.7]),
+  _CountryWaysSheet(kBeWaysPmtilesUrl, [2.4, 49.4, 6.45, 51.55]),
+  _CountryWaysSheet(kItalyWaysPmtilesUrl, [6.6, 36.6, 18.55, 47.1]),
+  _CountryWaysSheet(kDachWaysPmtilesUrl, [5.8, 45.75, 17.25, 55.15]),
+];
+
+bool pointInNlWays(double lng, double lat) {
+  if (lng < 3.2 || lng > 7.25 || lat > 53.7) return false;
+  if (lng >= 5.5) return lat >= 50.75;
+  return lat >= 51.15;
+}
+
+String? countryWaysPmtilesUrl(double lng, double lat) {
+  if (pointInNlWays(lng, lat)) return kNlWaysPmtilesUrl;
+  for (final s in kCountryWaysSheets) {
+    if (s.url == kNlWaysPmtilesUrl) continue;
+    if (s.contains(lng, lat)) return s.url;
+  }
+  return null;
+}
+
+/// Live OSM fills mesh-only / empty Blätter. Pack and country ways stay first.
+bool browseUsesLiveNetworkFallback(OnlineBikeOverlayChoice choice) =>
+    choice.kind != OnlineBikeOverlayKind.ways;
+
 String? detailOverlayPackIdForPoint(double lng, double lat) {
   final hits = [
     for (final r in kOverlayRegions)
@@ -114,11 +183,14 @@ OnlineBikeOverlayChoice chooseOnlineBikeOverlay({
       url: AppConfig.offlinePackObjectUrl(packId, kBikeOverlayPmtilesName),
     );
   }
-  if (zoom >= kBikeWaysMinZoom && pointInDachWays(lng, lat)) {
-    return const OnlineBikeOverlayChoice(
-      kind: OnlineBikeOverlayKind.ways,
-      url: kDachWaysPmtilesUrl,
-    );
+  if (zoom >= kBikeWaysMinZoom) {
+    final country = countryWaysPmtilesUrl(lng, lat);
+    if (country != null) {
+      return OnlineBikeOverlayChoice(
+        kind: OnlineBikeOverlayKind.ways,
+        url: country,
+      );
+    }
   }
   final meshUrl = onlineCycleMeshPmtilesUrlForPoint(lng, lat);
   if (meshUrl != null) {
@@ -142,7 +214,62 @@ bool _isPmtilesOverlay(Object data) {
   return u.contains('.pmtiles') || u.startsWith('pmtiles://');
 }
 
+class _OverlayResolveMemo {
+  static Future<Object?>? inflight;
+  static Object? last;
+  static double? lng;
+  static double? lat;
+  static double? zoom;
+}
+
+bool _sameOverlayQuery(double lng, double lat, double zoom) {
+  final a = _OverlayResolveMemo.lng;
+  final b = _OverlayResolveMemo.lat;
+  final z = _OverlayResolveMemo.zoom;
+  if (a == null || b == null || z == null) return false;
+  final sameBand = (z >= kBikeWaysMinZoom) == (zoom >= kBikeWaysMinZoom);
+  return sameBand && (a - lng).abs() < 0.08 && (b - lat).abs() < 0.08;
+}
+
+/// Warm CDN/pack lookup before the map style finishes attaching layers.
+Future<Object?> prefetchBikeOverlay({
+  required double lng,
+  required double lat,
+  double zoom = 12,
+}) =>
+    resolveBikeOverlayData(lng: lng, lat: lat, zoom: zoom);
+
 Future<Object?> resolveBikeOverlayData({
+  required double lng,
+  required double lat,
+  double zoom = 12,
+}) {
+  if (_sameOverlayQuery(lng, lat, zoom) && _OverlayResolveMemo.last != null) {
+    return Future<Object?>.value(_OverlayResolveMemo.last);
+  }
+  final inflight = _OverlayResolveMemo.inflight;
+  if (_sameOverlayQuery(lng, lat, zoom) && inflight != null) {
+    return inflight;
+  }
+  final future = _resolveBikeOverlayDataUncached(
+    lng: lng,
+    lat: lat,
+    zoom: zoom,
+  );
+  _OverlayResolveMemo.inflight = future;
+  _OverlayResolveMemo.lng = lng;
+  _OverlayResolveMemo.lat = lat;
+  _OverlayResolveMemo.zoom = zoom;
+  return future.then((value) {
+    if (identical(_OverlayResolveMemo.inflight, future)) {
+      _OverlayResolveMemo.inflight = null;
+      if (value != null) _OverlayResolveMemo.last = value;
+    }
+    return value;
+  });
+}
+
+Future<Object?> _resolveBikeOverlayDataUncached({
   required double lng,
   required double lat,
   double zoom = 12,
@@ -254,6 +381,27 @@ String? liveOsmNetworkSourceId(Iterable<String> sourceIds) {
   return null;
 }
 
+/// Catalog z11 styles only have `protomaps`. Add OpenFreeMap so live ways exist
+/// outside DACH/NL/BE/IT country tiles.
+Future<bool> ensureLiveOsmNetworkSource(MapLibreMapController c) async {
+  try {
+    final ids = [for (final raw in await c.getSourceIds()) raw.toString()];
+    if (liveOsmNetworkSourceId(ids) != null) return true;
+  } catch (_) {}
+  try {
+    await c.addSource(
+      kOsmLiveSourceCandidates.first,
+      const VectorSourceProperties(
+        url: kOpenFreeMapPlanetSourceUrl,
+        attribution: '© OpenStreetMap, OpenFreeMap',
+      ),
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// OpenFreeMap planet tiles — OSM path/track/cycleway for DACH + FR (and world).
 /// S-grade is live Overpass (`mtb:scale`) — OpenMapTiles has no scale tag.
 Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
@@ -277,8 +425,8 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
         layerId,
         LineLayerProperties(
           lineColor: color,
-          lineWidth: width,
-          lineOpacity: 0.88,
+          lineWidth: BrowseMapPaint.liveZoomWidth(width),
+          lineOpacity: BrowseMapPaint.lineOpacity,
           lineCap: 'round',
           lineJoin: 'round',
           visibility: 'visible',
@@ -294,8 +442,8 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
   await addLive(
     layerId: kOsmLiveCyclewayLayerId,
     color: BikeOverlayColors.road,
-    width: 2.2,
-    minzoom: 11,
+    width: BrowseMapPaint.liveCyclewayWidth,
+    minzoom: BrowseMapPaint.liveCyclewayMinZoom,
     filter: [
       'all',
       [
@@ -323,8 +471,8 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
   await addLive(
     layerId: kOsmLivePathLayerId,
     color: BikeOverlayColors.unrated,
-    width: 1.6,
-    minzoom: 12,
+    width: BrowseMapPaint.livePathWidth,
+    minzoom: BrowseMapPaint.livePathMinZoom,
     filter: [
       'all',
       [
@@ -349,8 +497,8 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
   await addLive(
     layerId: kOsmLiveTrackLayerId,
     color: BikeOverlayColors.gravel,
-    width: 2.0,
-    minzoom: 12,
+    width: BrowseMapPaint.liveTrackWidth,
+    minzoom: BrowseMapPaint.liveTrackMinZoom,
     filter: [
       'all',
       [
@@ -490,8 +638,8 @@ Future<void> attachBikeOverlayLayers(
         layerId,
         LineLayerProperties(
           lineColor: lineColor,
-          lineWidth: lineWidth,
-          lineOpacity: 0.88,
+          lineWidth: BrowseMapPaint.zoomWidth(lineWidth),
+          lineOpacity: BrowseMapPaint.lineOpacity,
           lineCap: 'round',
           lineJoin: 'round',
           lineDasharray: dash,
@@ -526,38 +674,38 @@ Future<void> attachBikeOverlayLayers(
       BikeOverlayColors.s3,
       BikeOverlayColors.unrated,
     ],
-    lineWidth: 2.4,
-    minzoom: 11,
+    lineWidth: BrowseMapPaint.mtbWidth,
+    minzoom: BrowseMapPaint.mtbMinZoom,
   );
   if (!sGradeOnly) {
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.mtbUnrated]!,
       classId: 'mtb_unrated',
       lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.unrated),
-      lineWidth: 1.6,
+      lineWidth: BrowseMapPaint.trailWidth,
       dash: const [2, 1.4],
-      minzoom: 12,
+      minzoom: BrowseMapPaint.unratedMinZoom,
     );
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.gravel]!,
       classId: 'gravel',
       lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.gravel),
-      lineWidth: 2.0,
-      minzoom: 12,
+      lineWidth: BrowseMapPaint.gravelWidth,
+      minzoom: BrowseMapPaint.gravelMinZoom,
     );
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.road]!,
       classId: 'road',
       lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.road),
-      lineWidth: 2.2,
-      minzoom: 11,
+      lineWidth: BrowseMapPaint.wayWidth,
+      minzoom: BrowseMapPaint.roadMinZoom,
     );
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.urban]!,
       classId: 'urban',
       lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.urban),
-      lineWidth: 1.8,
-      minzoom: 12,
+      lineWidth: BrowseMapPaint.urbanWidth,
+      minzoom: BrowseMapPaint.urbanMinZoom,
     );
   }
 
@@ -583,7 +731,9 @@ Future<void> applyBikeOverlayVisibility(
       if (on.contains(entry.key)) {
         await c.setLayerProperties(
           layerId,
-          const LineLayerProperties(lineOpacity: 0.88),
+          const LineLayerProperties(
+            lineOpacity: BrowseMapPaint.visibilityOpacity,
+          ),
         );
       }
     } catch (_) {}

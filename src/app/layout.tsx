@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { AppShell } from "@/components/app/AppShell";
+import { DevStageBanner } from "@/components/app/DevStageBanner";
+import { isPublicIndexable } from "@/lib/config/appStage";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -68,6 +70,9 @@ export const metadata: Metadata = {
     icon: "/brand/app-icon.png",
     apple: "/brand/app-icon.png",
   },
+  robots: isPublicIndexable()
+    ? { index: true, follow: true }
+    : { index: false, follow: false, nocache: true },
 };
 
 export const viewport: Viewport = {
@@ -89,6 +94,7 @@ export default function RootLayout({
     <html lang="de" className={`${inter.variable} h-full`}>
       <body className="min-h-full bg-background text-foreground antialiased">
         <Providers>
+          <DevStageBanner />
           <AppShell>{children}</AppShell>
         </Providers>
       </body>

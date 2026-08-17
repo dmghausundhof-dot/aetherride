@@ -101,6 +101,21 @@ class TourCommunityReview {
   final int? difficultyDelta;
   final CloudSubmitResult? cloudStatus;
 
+  /// Neueste Stimme zu einer Tour — für Karten-Teaser, kein Feed.
+  static TourCommunityReview? latestFor(
+    List<TourCommunityReview> reviews,
+    String tourId,
+  ) {
+    TourCommunityReview? best;
+    for (final r in reviews) {
+      if (r.tourId != tourId) continue;
+      if (best == null || r.createdAt.isAfter(best.createdAt)) best = r;
+    }
+    return best;
+  }
+
+  String? get conditionTag => tags.isEmpty ? null : tags.first;
+
   TourCommunityReview copyWith({CloudSubmitResult? cloudStatus}) {
     return TourCommunityReview(
       id: id,

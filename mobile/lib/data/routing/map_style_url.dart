@@ -38,9 +38,21 @@ const kOnlineCycleMeshPmtilesUrl =
 const kOnlineCycleMeshGeojsonUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/cycle-routes.geojson';
 
-/// DACH-wide OSM ways (cycleway/path/track) — whole Blatt, not Hausberg chips.
+/// Country-wide OSM ways (cycleway/path/track). Only files that exist on the CDN.
 const kDachWaysPmtilesUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/dach-ways.pmtiles';
+
+const kNlWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/nl-ways.pmtiles';
+
+const kBeWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/be-ways.pmtiles';
+
+const kItalyWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/italy-ways.pmtiles';
+
+/// OpenFreeMap planet TileJSON — live cycleway/path/track on catalog styles.
+const kOpenFreeMapPlanetSourceUrl = 'https://tiles.openfreemap.org/planet';
 
 /// OpenStreetMap street-level style (buildings, residential, paths).
 const kOpenFreeMapLibertyStyleUrl =

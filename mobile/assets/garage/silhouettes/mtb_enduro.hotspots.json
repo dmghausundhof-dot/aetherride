@@ -1,0 +1,114 @@
+{
+  "id": "mtb_enduro",
+  "name": "Enduro",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "mtb_enduro",
+  "family": "mtb_full",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 460,
+    "stackMm": 628,
+    "headAngleDeg": 63.8,
+    "seatAngleEffectiveDeg": 77.2,
+    "chainstayMm": 438,
+    "wheelbaseMm": 1250,
+    "bbDropMm": 27,
+    "headTubeMm": 108,
+    "wheelSizeFront": "29",
+    "wheelSizeRear": "29",
+    "travelFrontMm": 170,
+    "travelRearMm": 170,
+    "isEbike": false,
+    "isFully": true,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 698.8,
+      "cy": 312.7,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 301.2,
+      "cy": 313.7,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 645.4,
+      "cy": 225.1,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 687.1,
+      "cy": 293.6,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 295.5,
+      "cy": 291.4,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 597.1,
+      "cy": 116.0,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 589.8,
+      "cy": 116.5,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 498.9,
+      "cy": 158.6,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 406.3,
+      "cy": 172.7,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 402.6,
+      "cy": 156.5,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 440.3,
+      "cy": 322.3,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 370.7,
+      "cy": 318.0,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 303.8,
+      "cy": 313.7,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "rear_shock": {
+      "cx": 516.9,
+      "cy": 196.0,
+      "hitR": 28,
+      "label_de": "Dämpfer"
+    }
+  },
+  "cue": "Langer Radstand, slacker Lenkwinkel, viel Federweg"
+}

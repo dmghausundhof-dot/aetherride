@@ -1,0 +1,120 @@
+{
+  "id": "cargo",
+  "name": "Lastenrad",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "cargo",
+  "family": "cargo",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 360,
+    "stackMm": 680,
+    "headAngleDeg": 72.0,
+    "seatAngleEffectiveDeg": 73.0,
+    "chainstayMm": 460,
+    "wheelbaseMm": 1880,
+    "bbDropMm": 16,
+    "headTubeMm": 90,
+    "wheelSizeFront": "20",
+    "wheelSizeRear": "26",
+    "travelFrontMm": 0,
+    "travelRearMm": 0,
+    "isEbike": true,
+    "isFully": false,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 799.0,
+      "cy": 349.9,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 201.0,
+      "cy": 325.6,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 790.9,
+      "cy": 341.5,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 797.2,
+      "cy": 348.1,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 195.3,
+      "cy": 303.3,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 430.9,
+      "cy": 135.3,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 423.0,
+      "cy": 138.8,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 508.9,
+      "cy": 273.3,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 307.6,
+      "cy": 201.1,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 303.5,
+      "cy": 187.7,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 347.2,
+      "cy": 330.7,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 274.1,
+      "cy": 328.2,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 203.6,
+      "cy": 325.6,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "motor": {
+      "cx": 347.2,
+      "cy": 330.7,
+      "hitR": 28,
+      "label_de": "Motor"
+    },
+    "battery": {
+      "cx": 574.5,
+      "cy": 332.8,
+      "hitR": 28,
+      "label_de": "Akku"
+    }
+  },
+  "cue": "Frontlader: Lenksäule an der Kistenrückwand, Gestänge unter der Ladefläche"
+}

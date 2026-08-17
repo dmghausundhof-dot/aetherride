@@ -20,6 +20,18 @@ bool isUnnamedPlaceholderBike(Bike bike) {
   return noCatalog && noBrand && noModel;
 }
 
+/// Bewohner am Stand: benanntes/Katalog-Rad vor einem „Mein Bike“-Platzhalter.
+/// Nur Platzhalter → der aktive bzw. erste. Leere Liste → null.
+Bike? hofResidentBike(List<Bike> bikes) {
+  if (bikes.isEmpty) return null;
+  final named = [for (final b in bikes) if (!isUnnamedPlaceholderBike(b)) b];
+  final pool = named.isEmpty ? bikes : named;
+  for (final b in pool) {
+    if (b.isActive) return b;
+  }
+  return pool.first;
+}
+
 /// Andere Räder auf dem Hof — ohne Duplikate und ohne Default-Phantome,
 /// sobald ein benanntes/Katalog-Rad der Bewohner ist.
 List<Bike> hofStandOthers({

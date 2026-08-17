@@ -109,6 +109,34 @@ void main() {
     );
   });
 
+  test('Explore default paints every class, not the bike family', () {
+    expect(overlayExploreAllClasses, kAllPaintedOverlayClasses);
+    expect(
+      overlayLegendRowsExplore(
+        trailsOn: true,
+        waysOn: true,
+        expanded: false,
+      ),
+      isEmpty,
+    );
+    expect(
+      overlayLegendRowsExplore(
+        trailsOn: true,
+        waysOn: false,
+        expanded: true,
+      ).map((r) => r.cls),
+      isNot(contains(BikeOverlayClass.road)),
+    );
+    expect(
+      overlayLegendRowsExplore(
+        trailsOn: false,
+        waysOn: true,
+        expanded: true,
+      ).map((r) => r.cls),
+      isNot(contains(BikeOverlayClass.mtb)),
+    );
+  });
+
   test('Discover overlay default is all classes; off hides, never 16%', () {
     expect(kAllPaintedOverlayClasses, contains(BikeOverlayClass.mtbUnrated));
     expect(kAllPaintedOverlayClasses, contains(BikeOverlayClass.road));

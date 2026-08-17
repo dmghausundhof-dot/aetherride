@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { COMMERCE_CLOSED, isCommerceOpen } from "@/lib/config/appStage";
 import { appUrl, getStripe } from "@/lib/stripe";
 
 /** Marketplace one-time Checkout (physische Waren — kein IAP). */
 export async function POST(req: Request) {
+  if (!isCommerceOpen()) {
+    return NextResponse.json(COMMERCE_CLOSED, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const {

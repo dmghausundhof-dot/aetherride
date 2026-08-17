@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { Bookmark } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { parseGpx } from "@/lib/import/gpx";
 import { ShareCollectionButton } from "@/components/community/ShareCollectionButton";
@@ -22,34 +23,54 @@ import {
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { chromeLangFrom } from "@/lib/i18n/chromeLang";
-import { platzCopy, platzNote } from "@/lib/i18n/platzCopy";
+import { formatPlatzGroupWhen, platzCopy, platzNote } from "@/lib/i18n/platzCopy";
 import { resolveAkteSavedRoute } from "@/lib/tours/tourAkte";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import { RideGroupsPanel } from "@/components/community/RideGroupsPanel";
 import { groupInviteScheme } from "@/lib/community/rideGroupInvite";
-import { LOCAL_ONLY_NOTE, useRideGroupStore } from "@/store/useRideGroupStore";
+import { nextActiveMeeting } from "@/lib/community/rideGroup";
+import { LOCAL_ONLY_NOTE, listedRideGroups, useRideGroupStore } from "@/store/useRideGroupStore";
 import type { SavedRoute } from "@/types/route";
+import {
+  filterMappeQuery,
+  mappeCardStats,
+  savedRouteHasTrack,
+  sortMappe,
+  type MappeSort,
+} from "@/lib/tours/mappeList";
+import { activeRouteFromSaved } from "@/lib/routing/activeRoute";
 
 export default function LibraryPage() {
   const copy = useHofCopy();
   const lang = useChromeLang();
   const g = platzCopy(lang);
+  const router = useRouter();
 
   const savedRoutes = useAppStore((s) => s.savedRoutes);
   const saveRoute = useAppStore((s) => s.saveRoute);
+  const setActiveRoute = useAppStore((s) => s.setActiveRoute);
   const routeCollections = useAppStore((s) => s.routeCollections);
+  const createRouteCollection = useAppStore((s) => s.createRouteCollection);
   const myReviews = useCommunityStore((s) => s.myReviews);
   const markInboxSeen = useRideGroupStore((s) => s.markInboxSeen);
+  const groups = useRideGroupStore((s) => s.groups);
 
   const [msg, setMsg] = useState<string | null>(null);
   const [appJoinHref, setAppJoinHref] = useState<string | null>(null);
   const [openAkte, setOpenAkte] = useState<string | null>(null);
   const [visScope, setVisScope] = useState<VisibilityScope>("all_mine");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<MappeSort>("recent");
+  const [colName, setColName] = useState("");
   const [addStart, setAddStart] = useState<[number, number] | null>(null);
   const [addStartSource, setAddStartSource] = useState<"gps" | "map" | null>(
     null,
   );
-  const visibleRoutes = filterSavedByVisibility(savedRoutes, visScope);
+  const visibleRoutes = sortMappe(
+    filterMappeQuery(filterSavedByVisibility(savedRoutes, visScope), query),
+    sort,
+  );
+  const meet = nextActiveMeeting(listedRideGroups(groups));
   const akteRoute = resolveAkteSavedRoute(openAkte, savedRoutes);
   const stimmenInbox = myReviews.filter((r) =>
     savedRoutes.some((s) => stimmenTourIdOf(s) === r.tourId)
@@ -179,12 +200,37 @@ export default function LibraryPage() {
         </p>
       )}
 
+      {meet ? (
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-xl bg-surface-elevated px-3 py-2.5">
+          <p className="min-w-0 truncate text-sm font-semibold">
+            {meet.title} ·{" "}
+            {formatPlatzGroupWhen(
+              meet.startWindowStart,
+              meet.startWindowEnd,
+              lang,
+            )}
+          </p>
+          <button
+            type="button"
+            className="shrink-0 text-xs font-semibold text-accent"
+            onClick={() => {
+              const hit = savedRoutes.find((s) => s.id === meet.savedRouteId);
+              if (!hit) return;
+              const route = activeRouteFromSaved(hit);
+              if (!route) return;
+              setActiveRoute(route);
+              router.push("/ride");
+            }}
+          >
+            {g.goRide}
+          </button>
+        </div>
+      ) : null}
+
       <section className="mt-8">
         <h2 className="mb-3 text-sm font-semibold tracking-wide text-text-secondary">
-          {copy.libraryMappe}
-          {savedRoutes.length > 0
-            ? ` · ${visibleRoutes.length}`
-            : ""}
+          {g.mappeKicker}
+          {savedRoutes.length > 0 ? ` · ${visibleRoutes.length}` : ""}
         </h2>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <AddRouteForm
@@ -204,6 +250,14 @@ export default function LibraryPage() {
             }}
           />
         </div>
+        {savedRoutes.length >= 3 ? (
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={g.searchTours}
+            className="mb-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+        ) : null}
         {savedRoutes.length > 0 ? (
           <div className="mb-3 flex flex-wrap gap-1 rounded-xl bg-surface-elevated p-1 text-xs">
             {VISIBILITY_FILTER_OPTIONS.map(({ id }) => (
@@ -224,6 +278,22 @@ export default function LibraryPage() {
                     : g.visPublic}
               </button>
             ))}
+            {(["recent", "distance", "name"] as const).map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSort(id)}
+                className={`rounded-full px-2.5 py-1.5 font-semibold ${
+                  sort === id ? "bg-chrome text-on-accent" : "text-text-secondary"
+                }`}
+              >
+                {id === "recent"
+                  ? g.sortRecent
+                  : id === "distance"
+                    ? g.sortDistance
+                    : g.sortName}
+              </button>
+            ))}
           </div>
         ) : null}
 
@@ -238,33 +308,61 @@ export default function LibraryPage() {
           </p>
         ) : (
           <ul className="divide-y divide-border rounded-xl border border-border">
-            {visibleRoutes.map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
-                  onClick={() =>
-                    setOpenAkte((cur) => (cur === r.id ? null : r.id))
-                  }
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">
-                      {r.name}
-                    </span>
-                    <span className="mt-0.5 block text-xs tabular-nums text-text-secondary">
-                      {r.geometry ? `${r.distanceKm} km · ` : ""}
-                      {visibilityOf(r) === "shared" ? g.shared : g.privateTour}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-text-secondary">›</span>
-                </button>
-                {akteRoute?.id === r.id ? (
-                  <div className="border-t border-border px-3 py-3">
-                    <TourAkte route={r} />
+            {visibleRoutes.map((r) => {
+              const stats = mappeCardStats(r);
+              const vis =
+                visibilityOf(r) === "shared" ? g.shared : g.privateTour;
+              return (
+                <li key={r.id}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() =>
+                        setOpenAkte((cur) => (cur === r.id ? null : r.id))
+                      }
+                    >
+                      <span className="block truncate text-sm font-semibold">
+                        {r.name}
+                      </span>
+                      <span className="mt-0.5 block text-xs tabular-nums text-text-secondary">
+                        {stats ? `${stats} · ` : ""}
+                        {vis}
+                      </span>
+                    </button>
+                    {savedRouteHasTrack(r) ? (
+                      <button
+                        type="button"
+                        className="shrink-0 text-xs font-semibold text-accent"
+                        onClick={() => {
+                          const route = activeRouteFromSaved(r);
+                          if (!route) return;
+                          setActiveRoute(route);
+                          router.push("/ride");
+                        }}
+                      >
+                        {g.goRide}
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-text-secondary">›</span>
+                    )}
                   </div>
-                ) : null}
-              </li>
-            ))}
+                  {akteRoute?.id === r.id ? (
+                    <div className="border-t border-border px-3 py-3">
+                      <TourAkte
+                        route={r}
+                        onGoRide={() => {
+                          const route = activeRouteFromSaved(r);
+                          if (!route) return;
+                          setActiveRoute(route);
+                          router.push("/ride");
+                        }}
+                      />
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -310,12 +408,13 @@ export default function LibraryPage() {
 
       <RideGroupsPanel savedRoutes={savedRoutes} visibility={visScope} />
 
-      {routeCollections.length > 0 ? (
-        <section className="mt-10">
-          <h2 className="mb-1 text-sm font-semibold tracking-wide text-text-secondary">
-            {g.collectionsTitle}
-          </h2>
-          <p className="mb-3 text-xs text-text-secondary">{g.collectionsHint}</p>
+      <section className="mt-10">
+        <h2 className="mb-1 text-sm font-semibold tracking-wide text-text-secondary">
+          {g.collectionsTitle}
+          {routeCollections.length > 0 ? ` · ${routeCollections.length}` : ""}
+        </h2>
+        <p className="mb-3 text-xs text-text-secondary">{g.collectionsHint}</p>
+        {routeCollections.length > 0 ? (
           <ul className="space-y-2">
             {routeCollections.map((c) => (
               <li
@@ -332,8 +431,28 @@ export default function LibraryPage() {
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+        ) : null}
+        <div className="mt-3 flex gap-2">
+          <input
+            value={colName}
+            onChange={(e) => setColName(e.target.value)}
+            placeholder={g.collectionName}
+            className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+          />
+          <button
+            type="button"
+            className="rounded-lg border border-border px-2 py-1.5 text-[11px] font-semibold"
+            onClick={() => {
+              const name = colName.trim();
+              if (!name) return;
+              createRouteCollection(name);
+              setColName("");
+            }}
+          >
+            {g.collectionCreate}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

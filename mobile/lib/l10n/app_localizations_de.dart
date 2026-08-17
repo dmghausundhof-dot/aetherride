@@ -12,8 +12,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appTitle => 'FlowLine';
 
   @override
-  String get appTagline =>
-      'Ride further. Flow better — MTB, Gravel, Rennrad, City & E-Bike.';
+  String get appTagline => 'Outdoor Cycling, vereinfacht.';
 
   @override
   String get navHome => 'Start';
@@ -253,7 +252,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofWatchHint => 'Puls nur mit echtem Sensor.';
 
   @override
-  String get hofWatchPair => 'Uhr koppeln';
+  String get hofWatchPair => 'Puls-Sensor';
 
   @override
   String get hofWatchReconnect => 'Verbinden';
@@ -388,7 +387,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofSkyUnknown => 'Himmel unbekannt';
 
   @override
-  String get hofNoHonestLoop => 'Kein ehrlicher Trail-Rundkurs';
+  String get hofNoHonestLoop => 'Keine Runde in der Nähe';
 
   @override
   String get hofGateWetClosed =>
@@ -422,7 +421,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofLastRideNoGps => 'ohne GPS-Track — kein erfundener Verlauf';
 
   @override
-  String get hofGpsUnknown => 'Kein Standort — die Karte wartet auf GPS.';
+  String get hofGpsUnknown => 'Standort erlauben';
+
+  @override
+  String get hofAllowLocation => 'Standort erlauben';
+
+  @override
+  String get hofHintsTitle => 'Hinweise';
+
+  @override
+  String get hofHintsEmpty => 'Nichts offen.';
+
+  @override
+  String get hofHintsTooltip => 'Hinweise';
 
   @override
   String get rideGpsUnavailable =>
@@ -461,7 +472,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofSensorAwake => 'Sensor wach';
 
   @override
-  String get hofOpenTours => 'Touren öffnen';
+  String get hofOpenTours => 'Touren auf der Karte';
 
   @override
   String hofSkyDry(String temp) {
@@ -485,7 +496,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String hofGateAwayKm(int km) {
-    return '$km km';
+    return '$km km entfernt';
   }
 
   @override
@@ -707,8 +718,35 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String filterAroundKm(int km) {
-    return 'in $km km';
+    return 'Umkreis $km km';
   }
+
+  @override
+  String get discoverAroundIdle => 'Umkreis';
+
+  @override
+  String discoverAroundAwayKm(int km) {
+    return '$km km entfernt';
+  }
+
+  @override
+  String discoverPeekLoopKm(String km) {
+    return '$km km Runde';
+  }
+
+  @override
+  String discoverPeekAwayKm(int km) {
+    return '$km km entfernt';
+  }
+
+  @override
+  String get discoverPeekAwayNear => 'unter 1 km';
+
+  @override
+  String get discoverPeekSave => 'Merken';
+
+  @override
+  String get discoverPeekAkte => 'Akte';
 
   @override
   String get mapToggleFab => 'Karte';
@@ -1241,10 +1279,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideClearRoute => 'Route entfernen';
 
   @override
+  String get rideDrawTour => 'Als Tour zeichnen';
+
+  @override
+  String get rideDrawingTour => 'Neue Tour · zeichnet';
+
+  @override
   String get postRideTitle => 'Aktivität';
 
   @override
   String get postRideFreeride => 'Freeride';
+
+  @override
+  String get postRideLiveTour => 'Neue Tour';
+
+  @override
+  String get postRideToMappe => 'In die Mappe';
 
   @override
   String get postRideTrackMap => 'Gefahrener Track';
@@ -1544,6 +1594,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get billingForceProDebug =>
       'Debug: Force-Pro. Stripe/Play bleiben ausgeblendet.';
+
+  @override
+  String get billingCommerceClosed =>
+      'Entwicklungsstand — keine Käufe. Es gibt kein öffentliches Abo.';
 
   @override
   String get billingStripeMonth => 'Stripe — monatlich';
@@ -2074,6 +2128,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileAccountSync => 'Konto & Sync';
 
   @override
+  String get profileConnections => 'Verbindungen';
+
+  @override
+  String get profileWatchTitle => 'Uhr / Puls';
+
+  @override
+  String get profileWatchIdle => 'Keine Uhr gekoppelt — Garmin, Polar, Wahoo.';
+
+  @override
+  String get profileBikeBleTitle => 'Rad / Bosch LDI';
+
+  @override
+  String get profileBikeBleIdle => 'Display, Motor oder CSC am aktiven Rad.';
+
+  @override
+  String get profileBikeBleNeedBike =>
+      'Zuerst ein Rad in die Werkstatt stellen.';
+
+  @override
   String get profileCloudBilling => 'Cloud-Sync & Abo';
 
   @override
@@ -2437,7 +2510,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get platzTogetherHint =>
-      'Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen — kein Feed.';
+      'Einladen teilt den Link. Deine Gruppen bleiben — kein Feed.';
 
   @override
   String get platzTogetherListHint =>
@@ -2450,8 +2523,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get platzJoinCode => 'Code';
 
   @override
-  String get platzNoGroup =>
-      'Noch keine Gruppe. Einladen teilt den Link — nichts Vorgespieltes.';
+  String get platzNoGroup => 'Noch keine Gruppe. Ein Link reicht.';
 
   @override
   String get platzHost => 'Gastgeber';
@@ -3703,6 +3775,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get discoverLoopsNearby => 'Rundkurse in deiner Nähe';
 
   @override
+  String get discoverNearbySection => 'In der Nähe';
+
+  @override
   String get discoverNoLoop90 => 'Keine Runde in 90 km — nächste Regionen';
 
   @override
@@ -4354,14 +4429,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get overlayLegendEmpty =>
-      'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.';
+      'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 11 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.';
 
   @override
   String get overlayLegendMeshTitle => 'Radnetz · OSM';
 
   @override
   String get overlayLegendMeshNote =>
-      'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.';
+      'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 11 im ganzen DACH-Blatt.';
 
   @override
   String get overlayLegendCompactGravel => 'Gravel';
@@ -4608,6 +4683,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get discoverLayerTours => 'Touren';
+
+  @override
+  String get discoverLayerTrails => 'Trails';
+
+  @override
+  String get discoverLayerWays => 'Wege';
+
+  @override
+  String get discoverLayerHeight => 'Höhe';
+
+  @override
+  String get discoverLayerHeightHint =>
+      'Nur Relief — keine Höhenlinien in dieser Karte.';
+
+  @override
+  String get browseMapLegendPaved => 'Asphalt';
+
+  @override
+  String get browseMapLegendGravel => 'Schotter';
+
+  @override
+  String get browseMapLegendTrail => 'Pfad';
+
+  @override
+  String get discoverDurationAll => 'alle';
+
+  @override
+  String get overlayLegendTrailsTitle => 'Trails · OSM';
+
+  @override
+  String get overlayLegendWaysTitle => 'Radwege · OSM';
+
+  @override
+  String get overlayLegendAllTitle => 'Wege · OSM';
 
   @override
   String get discoverLayerPlaces => 'Orte';
@@ -5022,7 +5131,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideRestKm => 'noch km';
 
   @override
-  String get rideUntilJoin => 'km bis Route';
+  String get rideUntilJoin => 'bis zur Strecke';
 
   @override
   String get rideRestLoop => 'Rest Runde';
@@ -6964,11 +7073,40 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get mappeSubtitle =>
-      'Touren merken, kurz schreiben, Freunde per Link mitnehmen — dieselben Touren wie auf der Karte.';
+      'Touren merken, Stimmen und Freunde an der Strecke — dieselben wie auf der Karte.';
 
   @override
   String get mappeAddHint =>
-      'Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX als Option darunter.';
+      'Name merken, Start von GPS oder letzter Karte, sonst ohne Pin. GPX darunter — ohne erfundenen Track.';
+
+  @override
+  String get mappeKeep => 'Merken';
+
+  @override
+  String get mappeSearch => 'Tour suchen';
+
+  @override
+  String get mappeSortRecent => 'Zuletzt';
+
+  @override
+  String get mappeSortDistance => 'Länge';
+
+  @override
+  String get mappeSortName => 'Name';
+
+  @override
+  String get mappeKicker => 'Mappe';
+
+  @override
+  String get mappeInviteFriends => 'Freunde mitnehmen';
+
+  @override
+  String mappeActiveMeet(String title, String when) {
+    return '$title · $when';
+  }
+
+  @override
+  String get mappeCollectionNew => 'Sammlung anlegen';
 
   @override
   String get mappeStartNone => 'Start: noch ohne Pin — GPS oder Karte öffnen.';
@@ -7002,7 +7140,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get mappeEmpty => 'Noch keine eigenen Touren — Route hinzufügen.';
+  String get mappeEmpty =>
+      'Noch keine eigenen Touren — merken oder GPX importieren.';
 
   @override
   String get mappeStimmenEmpty =>

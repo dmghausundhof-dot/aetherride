@@ -106,6 +106,18 @@ const kOverlayRegions = <OverlayRegion>[
   OverlayRegion(id: 'reims', name: 'Reims / Champagne', bbox: [3.9, 49.18, 4.18, 49.35]),
   OverlayRegion(id: 'rouen', name: 'Rouen / Seine', bbox: [0.95, 49.35, 1.22, 49.52]),
   OverlayRegion(id: 'rennes', name: 'Rennes / Vilaine', bbox: [-1.78, 48.05, -1.55, 48.18]),
+  OverlayRegion(id: 'amsterdam', name: 'Amsterdam / Amstel', bbox: [4.75, 52.3, 5.02, 52.43]),
+  OverlayRegion(id: 'utrecht', name: 'Utrecht / Dom', bbox: [5.05, 52.04, 5.2, 52.15]),
+  OverlayRegion(id: 'rotterdam', name: 'Rotterdam / Maas', bbox: [4.4, 51.85, 4.58, 51.98]),
+  OverlayRegion(id: 'den-haag', name: 'Den Haag / Scheveningen', bbox: [4.22, 52.02, 4.4, 52.14]),
+  OverlayRegion(id: 'eindhoven', name: 'Eindhoven / Dommel', bbox: [5.4, 51.4, 5.55, 51.5]),
+  OverlayRegion(id: 'groningen', name: 'Groningen / Reitdiep', bbox: [6.5, 53.18, 6.65, 53.28]),
+  OverlayRegion(id: 'milano', name: 'Mailand / Navigli', bbox: [9.05, 45.38, 9.3, 45.55]),
+  OverlayRegion(id: 'torino', name: 'Turin / Po', bbox: [7.55, 45, 7.8, 45.15]),
+  OverlayRegion(id: 'firenze', name: 'Florenz / Arno', bbox: [11.15, 43.7, 11.35, 43.85]),
+  OverlayRegion(id: 'roma', name: 'Rom / Tiber', bbox: [12.35, 41.8, 12.65, 42]),
+  OverlayRegion(id: 'napoli', name: 'Neapel / Vesuv', bbox: [14.15, 40.8, 14.35, 40.92]),
+  OverlayRegion(id: 'bari', name: 'Bari / Adria', bbox: [16.8, 41.08, 17, 41.18]),
 ];
 
 const kOverlayPackCatalog = <OverlayPackRef>[
@@ -192,6 +204,18 @@ const kOverlayPackCatalog = <OverlayPackRef>[
   OverlayPackRef(id: 'reims', name: 'Reims / Champagne'),
   OverlayPackRef(id: 'rouen', name: 'Rouen / Seine'),
   OverlayPackRef(id: 'rennes', name: 'Rennes / Vilaine'),
+  OverlayPackRef(id: 'amsterdam', name: 'Amsterdam / Amstel'),
+  OverlayPackRef(id: 'utrecht', name: 'Utrecht / Dom'),
+  OverlayPackRef(id: 'rotterdam', name: 'Rotterdam / Maas'),
+  OverlayPackRef(id: 'den-haag', name: 'Den Haag / Scheveningen'),
+  OverlayPackRef(id: 'eindhoven', name: 'Eindhoven / Dommel'),
+  OverlayPackRef(id: 'groningen', name: 'Groningen / Reitdiep'),
+  OverlayPackRef(id: 'milano', name: 'Mailand / Navigli'),
+  OverlayPackRef(id: 'torino', name: 'Turin / Po'),
+  OverlayPackRef(id: 'firenze', name: 'Florenz / Arno'),
+  OverlayPackRef(id: 'roma', name: 'Rom / Tiber'),
+  OverlayPackRef(id: 'napoli', name: 'Neapel / Vesuv'),
+  OverlayPackRef(id: 'bari', name: 'Bari / Adria'),
 ];
 
 OverlayRegion? overlayRegionById(String id) {

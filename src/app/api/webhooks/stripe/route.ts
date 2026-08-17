@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { upsertSubscriptionTierInSyncSnapshot } from "@/lib/billing/syncTier";
+import { isCommerceOpen } from "@/lib/config/appStage";
 
 export const runtime = "nodejs";
 
@@ -50,6 +51,13 @@ async function setProFromSubscription(
 }
 
 export async function POST(req: Request) {
+  if (!isCommerceOpen()) {
+    return NextResponse.json({
+      ok: true,
+      ignored: true,
+      reason: "commerce_closed",
+    });
+  }
   const stripe = getStripe();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {

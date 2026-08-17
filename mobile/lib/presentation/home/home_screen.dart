@@ -12,9 +12,7 @@ import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/naehe_seeds.dart';
-import '../../data/routing/offline_maps_prefs.dart';
-import '../../data/routing/offline_pack_dirs.dart';
-import '../../data/routing/overlay_regions.dart';
+
 import '../../data/weather/weather_client.dart';
 import '../../domain/active_route.dart';
 import '../../domain/bike.dart';
@@ -22,12 +20,14 @@ import '../../domain/component.dart';
 import '../../domain/garage/die_box.dart';
 import '../../domain/home/greeting.dart';
 import '../../domain/home/hof_gate.dart';
-import '../../domain/home/hof_pack.dart';
+
 import '../../domain/home/hof_stand.dart';
 import '../../domain/maintenance/intervals.dart';
+import '../../domain/routing/duration_lens.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/tour_akte.dart';
+import '../../domain/tours/tour_display_name.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../domain/saved_route_note.dart';
 import '../../l10n/app_localizations.dart';
@@ -35,10 +35,11 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
-import '../discover/offline_maps_sheet.dart';
+
 import '../post_ride/post_ride_screen.dart';
 import '../profile/profile_screen.dart';
 import '../shared/bike_hero_banner.dart';
+import '../shared/bike_schema_view.dart';
 import '../shell/shell_tabs.dart';
 import 'hof_coach_banner.dart';
 import 'hof_watch_card.dart';
@@ -59,11 +60,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   double? _lng;
   NaeheSeedsBundle? _seeds;
   HofGatePick _gate = const HofGatePick();
+  int _gateMinutes = 60;
   TourCommunityCounts? _neighbors;
   String? _tafelStimmenText;
   String? _tafelStimmenRouteId;
   String? _tafelGroupText;
-  HofPackHint? _packHint;
+
 
   @override
   void initState() {
@@ -155,11 +157,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  Future<void> _loadPosition() async {
+  Future<void> _loadPosition({bool prompt = false}) async {
     try {
-      final perm = await Geolocator.checkPermission();
+      var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+        perm = await Geolocator.requestPermission();
+      }
+      if (prompt &&
+          (perm == LocationPermission.denied ||
+              perm == LocationPermission.deniedForever)) {
+        await Geolocator.openAppSettings();
+        perm = await Geolocator.checkPermission();
       }
       Position? pos;
       try {
@@ -182,37 +190,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _lat = pos!.latitude;
           _lng = pos.longitude;
         });
+        if (prompt) {
+          await _loadWeather();
+          if (mounted && _seeds != null) _recomputeGate();
+        }
       }
     } catch (_) {}
-  }
-
-  Future<void> _loadPackHint() async {
-    final lat = _gate.seed?.centerLat ?? _lat;
-    final lng = _gate.seed?.centerLng ?? _lng;
-    if (lat == null || lng == null) {
-      if (mounted) setState(() => _packHint = null);
-      return;
-    }
-    try {
-      final region = overlayRegionForPoint(lng, lat);
-      final ids = await OfflinePackDirs.legitimateIds();
-      final covered = await OfflineMapsPrefs.coversRoute(
-        fromLng: lng,
-        fromLat: lat,
-        toLng: lng,
-        toLat: lat,
-      );
-      final ready =
-          covered || (region != null && ids.contains(region.id));
-      final hint = hofMissingPack(
-        regionId: region?.id,
-        regionName: region?.name,
-        packReady: ready,
-      );
-      if (mounted) setState(() => _packHint = hint);
-    } catch (_) {
-      if (mounted) setState(() => _packHint = null);
-    }
   }
 
   Future<void> _loadWeather() async {
@@ -262,14 +245,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final saved = ref.read(savedRoutesProvider).valueOrNull ?? [];
     final wet = _weather?.trailHint == 'wet_likely';
     final bikes = ref.read(bikesProvider).valueOrNull ?? [];
-    Bike? active;
-    for (final b in bikes) {
-      if (b.isActive) {
-        active = b;
-        break;
-      }
-    }
-    active ??= bikes.isEmpty ? null : bikes.first;
+    final active = hofResidentBike(bikes);
     final store = ref.read(userProfileStoreProvider);
     final pick = pickHofGate(
       loops: bundle.loops,
@@ -277,11 +253,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       lat: _lat,
       lng: _lng,
       trailsWet: wet,
+      targetMin: _gateMinutes,
       preferred: active?.category ?? store.preferredSport,
       preferredSports: active != null ? const [] : store.preferredSports,
     );
     setState(() => _gate = pick);
-    unawaited(_loadPackHint());
     final id = pick.seed?.id;
     if (id != null) unawaited(_loadNeighbors(id));
   }
@@ -431,39 +407,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Future<void> _openOfflinePacks() async {
-    await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => OfflineMapsSheet(
-        userLng: _lng,
-        userLat: _lat,
-      ),
-    );
-    if (mounted) await _loadPackHint();
-  }
-
-  Widget _packMissingLine(AppLocalizations l10n) {
-    final hint = _packHint;
-    if (hint == null) return const SizedBox.shrink();
-    return _TafelLine(
-      key: const Key('hof-pack-missing'),
-      icon: Icons.download_outlined,
-      kicker: l10n.navKarte,
-      color: AppColors.chrome,
-      label: l10n.hofPackMissing(
-        l10n.overlayRegionNameFor(hint.regionId, hint.regionName),
-      ),
-      onTap: () => unawaited(_openOfflinePacks()),
-    );
+  void _openKarte() {
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
   }
 
   void _openGate() {
     final gate = _gate;
     if (gate.seed != null) {
+      final lens = DurationLens.nearestHofGateMinutes(
+        gate.durationMin > 0 ? gate.durationMin : _gateMinutes,
+      );
       ref.read(discoverPendingLoopIdProvider.notifier).state = gate.seed!.id;
-      ref.read(discoverPendingLensMinutesProvider.notifier).state = 60;
-      ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+      ref.read(discoverPendingLensMinutesProvider.notifier).state = lens;
+      _openKarte();
       return;
     }
     if (gate.saved != null) {
@@ -483,7 +439,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return;
       }
     }
-    _startRide();
+    _openKarte();
   }
 
   String _skyLine(AppLocalizations l10n) {
@@ -534,10 +490,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             syncStatus == SyncAuthStatus.unauthorized);
 
     final list = bikes.valueOrNull;
-    Bike? active;
-    if (list != null && list.isNotEmpty) {
-      active = list.firstWhere((b) => b.isActive, orElse: () => list.first);
-    }
+    final Bike? active = list == null ? null : hofResidentBike(list);
     final others = active == null
         ? const <Bike>[]
         : hofStandOthers(active: active, all: list ?? const <Bike>[]);
@@ -576,8 +529,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         const HofWatchBarButton(),
-        const HofCoachBellButton(),
-        if (showSupabaseWarning || showSyncWarning) ...[
+        HofCoachBellButton(
+          stimmenText: _tafelStimmenText,
+          groupText: _tafelGroupText,
+          onOpenCare: () {
+            final id = active?.id;
+            if (id != null) _openGarage(bikeId: id);
+          },
+          onOpenTours: _openMappe,
+        ),
+        const HofChatButton(),
+        if (showSupabaseWarning) ...[
           const SizedBox(width: AppSpacing.xs),
           _SystemStatusIcon(
             hasNotice: true,
@@ -590,21 +552,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
         const SizedBox(width: AppSpacing.xs),
-        Semantics(
-          button: true,
-          label: l10n.profile,
-          excludeSemantics: true,
-          child: Tooltip(
-            message: l10n.profile,
-            child: InkWell(
-              onTap: () => openProfileScreen(context),
-              borderRadius: BorderRadius.circular(24),
-              child: _HofProfileAvatar(
-                initials: initials,
-                photo: photo,
-                signedIn: session != null,
-              ),
-            ),
+        IconButton(
+          tooltip: l10n.profile,
+          onPressed: () => openProfileScreen(context),
+          icon: _HofProfileAvatar(
+            initials: initials,
+            photo: photo,
+            signedIn: session != null,
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -635,13 +589,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final gpsHonesty = (_weatherResolved && _lat == null)
         ? Padding(
             padding: const EdgeInsets.only(top: AppSpacing.s),
-            child: Text(
-              l10n.hofGpsUnknown,
+            child: InkWell(
               key: const Key('hof-gps-honesty'),
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              onTap: () => unawaited(_loadPosition(prompt: true)),
+              child: Text(
+                l10n.hofAllowLocation,
+                style: const TextStyle(
+                  color: AppColors.chrome,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           )
@@ -800,6 +757,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             l10n: l10n,
             pick: _gate,
             neighbors: _neighbors,
+            minutes: _gateMinutes,
+            onMinutes: (m) {
+              setState(() => _gateMinutes = m);
+              _recomputeGate();
+            },
             onTap: _openGate,
           )
         : null;
@@ -892,7 +854,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ],
                                   const SizedBox(height: AppSpacing.s),
                                   watch,
-                                  _packMissingLine(l10n),
                                 ],
                               ),
                             ),
@@ -915,8 +876,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
+            Flexible(
+              fit: FlexFit.loose,
               child: ListView(
+                shrinkWrap: true,
                 padding: EdgeInsets.zero,
                 children: [
                   ColoredBox(
@@ -943,12 +906,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         tafel,
-                        _packMissingLine(l10n),
                       ],
                     ),
                   ),
@@ -1224,14 +1186,10 @@ class _Resident extends StatelessWidget {
           ),
         if (hasPhoto) const SizedBox(height: AppSpacing.s),
         if (!hasPhoto) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              key: const Key('hof-parked-mark'),
-              width: photoHeight < 90 ? 88 : 128,
-              height: photoHeight < 90 ? 36 : 56,
-              child: const CustomPaint(painter: _ParkedMarkPainter()),
-            ),
+          BikeSchemaView(
+            key: const Key('hof-parked-mark'),
+            bike: bike,
+            height: photoHeight < 90 ? 88 : 140,
           ),
           const SizedBox(height: AppSpacing.s),
         ],
@@ -1314,60 +1272,6 @@ class _EmptyStand extends StatelessWidget {
   }
 }
 
-class _ParkedMarkPainter extends CustomPainter {
-  const _ParkedMarkPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bike = Paint()
-      ..color = AppColors.sageOnDark
-      ..strokeWidth = 2.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final stand = Paint()
-      ..color = AppColors.muted
-      ..strokeWidth = 1.6
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final cy = size.height * 0.62;
-    final r = size.height * 0.28;
-    final rear = Offset(size.width * 0.22, cy);
-    final front = Offset(size.width * 0.78, cy);
-    final bb = Offset(size.width * 0.42, cy);
-    final saddle = Offset(size.width * 0.36, size.height * 0.18);
-    final head = Offset(size.width * 0.68, size.height * 0.22);
-    canvas.drawCircle(rear, r, bike);
-    canvas.drawCircle(front, r, bike);
-    canvas.drawLine(rear, bb, bike);
-    canvas.drawLine(bb, front, bike);
-    canvas.drawLine(bb, saddle, bike);
-    canvas.drawLine(saddle, head, bike);
-    canvas.drawLine(bb, head, bike);
-    canvas.drawLine(front, head, bike);
-    canvas.drawLine(
-      Offset(size.width * 0.60, size.height * 0.12),
-      Offset(size.width * 0.80, size.height * 0.12),
-      bike,
-    );
-    final standY = size.height * 0.94;
-    canvas.drawLine(
-      Offset(size.width * 0.08, standY),
-      Offset(size.width * 0.92, standY),
-      stand,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.50, standY),
-      Offset(size.width * 0.50, size.height * 0.40),
-      stand,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
 class _StandPainter extends CustomPainter {
   const _StandPainter();
 
@@ -1399,6 +1303,8 @@ class _GateCard extends StatelessWidget {
     required this.l10n,
     required this.pick,
     required this.onTap,
+    required this.minutes,
+    required this.onMinutes,
     this.neighbors,
   });
 
@@ -1406,29 +1312,71 @@ class _GateCard extends StatelessWidget {
   final HofGatePick pick;
   final TourCommunityCounts? neighbors;
   final VoidCallback onTap;
+  final int minutes;
+  final ValueChanged<int> onMinutes;
+
+  Widget _lensChips() {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.s),
+      child: Wrap(
+        spacing: AppSpacing.s,
+        children: [
+          for (final m in DurationLens.hofGateMinutes)
+            ChoiceChip(
+              key: Key('hof-gate-lens-$m'),
+              label: Text('~$m'),
+              selected: minutes == m,
+              visualDensity: VisualDensity.compact,
+              onSelected: (_) => onMinutes(m),
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (pick.honesty == HofGateHonesty.none && !pick.hasLoop) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-          child: Text(
-            l10n.hofOpenTours,
-            style: const TextStyle(
-              color: AppColors.muted,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            key: const Key('hof-gate'),
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.chip),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.hofNoHonestLoop,
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.hofOpenTours,
+                    style: const TextStyle(
+                      color: AppColors.chrome,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          _lensChips(),
+        ],
       );
     }
 
     final title = pick.hasLoop
-        ? pick.title
+        ? tourDisplayName(pick.title)
         : hofGateEmptyTitle(
             honesty: pick.honesty,
             wetClosed: l10n.hofGateWetClosed,
@@ -1445,58 +1393,70 @@ class _GateCard extends StatelessWidget {
       km: l10n.hofGateAwayKm,
     );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: const Key('hof-gate'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.m),
-          decoration: BoxDecoration(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: const Key('hof-gate'),
+            onTap: onTap,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.hofAtGate,
-                style: const TextStyle(
-                  color: AppColors.muted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
-                ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.m),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(color: AppColors.border),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                duration == null ? title : '$title · $duration',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.hofAtGate,
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    duration == null ? title : '$title · $duration',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  if (away != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      away,
+                      key: const Key('hof-gate-away'),
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                  if (neighborLine != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      neighborLine,
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              if (away != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  away,
-                  key: const Key('hof-gate-away'),
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                ),
-              ],
-              if (neighborLine != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  neighborLine,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
-      ),
+        _lensChips(),
+      ],
     );
   }
 }

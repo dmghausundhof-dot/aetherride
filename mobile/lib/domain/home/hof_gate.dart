@@ -40,6 +40,9 @@ class HofGatePick {
   String? get id => seed?.id ?? saved?.id;
 }
 
+/// GPS-Abstand zum Loop vor dem Tor. Spürbar näher als eine 40-km-„Stunde“.
+const double kHofGateMaxDistanceKm = 15;
+
 /// One nearby ~60 min loop. GPS picks the region — never a Rhein-Neckar default.
 ///
 /// [maxDistanceKm] keeps Hamburg from seeing the Alps. Without GPS, seeds are
@@ -53,7 +56,7 @@ HofGatePick pickHofGate({
   double? lng,
   bool trailsWet = false,
   int targetMin = 60,
-  double maxDistanceKm = 80,
+  double maxDistanceKm = kHofGateMaxDistanceKm,
   BikeCategory? preferred,
   List<BikeCategory> preferredSports = const [],
 }) {
@@ -147,6 +150,18 @@ bool isTrailHeavyLoop(NaeheSeedRoute route) {
   return key == TourSurfaceKey.trail || key == TourSurfaceKey.gravel;
 }
 
+/// Unter dieser Distanz/Zeit zählt die Fahrt nicht als „gerade zurück“.
+const double kMinJustBackDistanceKm = 1.0;
+const int kMinJustBackMovingSec = 180;
+
+bool isCountableRide({
+  required double distanceKm,
+  required int movingTimeSec,
+}) {
+  return distanceKm >= kMinJustBackDistanceKm &&
+      movingTimeSec >= kMinJustBackMovingSec;
+}
+
 /// Last ride on this bike — return, not a kudos wall.
 RideReturn rideReturnForBike({
   required String bikeId,
@@ -164,7 +179,11 @@ RideReturn rideReturnForBike({
   }
   if (last == null) return const RideReturn(kind: RideReturnKind.neverOut);
   final end = last.endedAt ?? last.startedAt;
-  final justBack = clock.difference(end) <= justBackWindow;
+  final justBack = clock.difference(end) <= justBackWindow &&
+      isCountableRide(
+        distanceKm: last.distanceKm,
+        movingTimeSec: last.movingTimeSec,
+      );
   if (justBack) {
     return RideReturn(
       kind: RideReturnKind.justBack,
@@ -262,7 +281,7 @@ String? formatHofGateAway({
   final d = distanceKm;
   if (d == null || !d.isFinite || d <= 0) return null;
   if (d < 1) return underOne;
-  return km(d.round().clamp(1, 80));
+  return km(d.round().clamp(1, kHofGateMaxDistanceKm.round()));
 }
 
 String formatHofResidentMeta({

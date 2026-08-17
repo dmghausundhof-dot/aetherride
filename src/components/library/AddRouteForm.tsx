@@ -65,7 +65,7 @@ export function AddRouteForm({
               : "inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
           }
         >
-          <Plus className="h-3.5 w-3.5" /> {p.addRoute}
+          <Plus className="h-3.5 w-3.5" /> {p.keepRoute}
         </button>
         {msg && (
           <p className="mt-2 text-xs text-text-secondary" role="status">

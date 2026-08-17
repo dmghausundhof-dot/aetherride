@@ -10,21 +10,20 @@ function assert(cond: boolean, msg: string) {
 // Road / gravel / city templates
 assert(planBikeSchema({ category: "road" }).template === "road", "road");
 assert(planBikeSchema({ category: "gravel" }).template === "gravel", "gravel");
-assert(planBikeSchema({ category: "urban" }).template === "city", "urban→city");
-assert(planBikeSchema({ category: "cargo" }).template === "city", "cargo→city");
-assert(planBikeSchema({ category: "folding" }).template === "city", "folding→city");
-assert(planBikeSchema({ category: "kids" }).template === "city", "kids→city");
+assert(planBikeSchema({ category: "urban" }).template === "urban", "urban");
+assert(planBikeSchema({ category: "cargo" }).template === "cargo", "cargo");
+assert(planBikeSchema({ category: "folding" }).template === "folding", "folding");
+assert(planBikeSchema({ category: "kids" }).template === "kids", "kids");
 assert(
-  planBikeSchema({ category: "etrekking" }).template === "city",
-  "etrekking→city"
+  planBikeSchema({ category: "etrekking" }).template === "etrekking",
+  "etrekking"
 );
 
-// MTB family → mtb template
-assert(planBikeSchema({ category: "mtb_trail" }).template === "mtb", "trail");
-assert(planBikeSchema({ category: "mtb_am" }).template === "mtb", "am");
-assert(planBikeSchema({ category: "mtb_enduro" }).template === "mtb", "enduro");
-assert(planBikeSchema({ category: "dh" }).template === "mtb", "dh");
-assert(planBikeSchema({ category: "emtb" }).template === "mtb", "emtb");
+assert(planBikeSchema({ category: "mtb_trail" }).template === "mtb_trail", "trail");
+assert(planBikeSchema({ category: "mtb_am" }).template === "mtb_am", "am");
+assert(planBikeSchema({ category: "mtb_enduro" }).template === "mtb_enduro", "enduro");
+assert(planBikeSchema({ category: "dh" }).template === "dh", "dh");
+assert(planBikeSchema({ category: "emtb" }).template === "emtb", "emtb");
 
 // Hardtail vs fully
 const trailHt = planBikeSchema({ category: "mtb_trail" });

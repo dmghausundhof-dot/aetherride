@@ -358,6 +358,25 @@ void main() {
     });
   });
 
+  group('TourFilters honest sport label', () {
+    test('lone ebike on asphalt is city', () {
+      expect(
+        TourFilters.honestSportLabel(
+          sportLabel: 'ebike',
+          surface: 'asphalt/paved',
+        ),
+        'city',
+      );
+      expect(
+        TourFilters.honestSportLabel(
+          sportLabel: 'gravel',
+          surface: 'gravel/compacted',
+        ),
+        'gravel',
+      );
+    });
+  });
+
   group('TourFilters primary UX defaults', () {
     test('primary quick chips stay aligned with chip catalogs', () {
       expect(TourFilters.primaryQuickDurationMin, 60);
@@ -370,6 +389,22 @@ void main() {
       expect(
         TourFilters.surfaceChipLabel(TourFilters.primaryQuickSurface),
         'Asphalt',
+      );
+    });
+  });
+
+  group('browse tour markers', () {
+    test('map badge is minutes, never GR/RR', () {
+      expect(TourFilters.browseTourTimeLabel(55), '55′');
+      expect(TourFilters.browseTourTimeLabel(0), '');
+      expect(TourFilters.pinLabel(TourSportKey.gravel), 'GR');
+      expect(
+        TourFilters.browseTourShowsTime(selected: true, zoom: 12),
+        isTrue,
+      );
+      expect(
+        TourFilters.browseTourShowsTime(selected: false, zoom: 14),
+        isFalse,
       );
     });
   });

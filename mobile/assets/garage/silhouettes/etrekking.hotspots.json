@@ -1,0 +1,120 @@
+{
+  "id": "etrekking",
+  "name": "E-Trekking",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "etrekking",
+  "family": "urban",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 405,
+    "stackMm": 632,
+    "headAngleDeg": 69.5,
+    "seatAngleEffectiveDeg": 73.0,
+    "chainstayMm": 472,
+    "wheelbaseMm": 1142,
+    "bbDropMm": 60,
+    "headTubeMm": 165,
+    "wheelSizeFront": "700c",
+    "wheelSizeRear": "700c",
+    "travelFrontMm": 0,
+    "travelRearMm": 0,
+    "isEbike": true,
+    "isFully": false,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 681.6,
+      "cy": 317.2,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 318.4,
+      "cy": 317.2,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 644.7,
+      "cy": 244.2,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 673.6,
+      "cy": 301.2,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 312.7,
+      "cy": 294.9,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 617.2,
+      "cy": 114.5,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 603.5,
+      "cy": 120.2,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 513.0,
+      "cy": 174.7,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 423.4,
+      "cy": 192.5,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 418.5,
+      "cy": 176.7,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 467.3,
+      "cy": 336.3,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 392.8,
+      "cy": 326.7,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 320.9,
+      "cy": 317.2,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "motor": {
+      "cx": 467.3,
+      "cy": 336.3,
+      "hitR": 28,
+      "label_de": "Motor"
+    },
+    "battery": {
+      "cx": 543.8,
+      "cy": 257.3,
+      "hitR": 28,
+      "label_de": "Akku"
+    }
+  },
+  "cue": "City-Silhouette plus Motor und Akku"
+}

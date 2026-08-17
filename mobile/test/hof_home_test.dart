@@ -181,6 +181,38 @@ void main() {
       expect(pick.seed?.id, 'seed-loop-innsbruck-inn-road-60');
     });
 
+    test('loop beyond 15 km is not the hour at the gate', () {
+      final pick = pickHofGate(
+        loops: [
+          loop(
+            id: 'seed-loop-far-43',
+            lat: 53.55,
+            lng: 10.65,
+          ),
+        ],
+        lat: 53.55,
+        lng: 9.99,
+      );
+      expect(pick.hasLoop, isFalse);
+      expect(pick.honesty, HofGateHonesty.none);
+    });
+
+    test('loop under 15 km stays at the gate', () {
+      final pick = pickHofGate(
+        loops: [
+          loop(
+            id: 'seed-loop-near-11',
+            lat: 53.55,
+            lng: 10.12,
+          ),
+        ],
+        lat: 53.55,
+        lng: 9.99,
+      );
+      expect(pick.hasLoop, isTrue);
+      expect(pick.seed?.id, 'seed-loop-near-11');
+    });
+
     test('saved route fills the gate when no nearby seed', () {
       final pick = pickHofGate(
         loops: const [],
@@ -228,6 +260,26 @@ void main() {
       expect(r.distanceKm, 18.2);
       expect(r.rideId, 'r1');
       expect(r.usedGps, isFalse);
+    });
+
+    test('stub ride under 1 km does not hide the gate', () {
+      final now = DateTime(2026, 8, 12, 20);
+      final r = rideReturnForBike(
+        bikeId: 'b1',
+        now: now,
+        rides: [
+          RideRecord(
+            id: 'r-stub',
+            bikeId: 'b1',
+            startedAt: now.subtract(const Duration(minutes: 5)),
+            endedAt: now.subtract(const Duration(minutes: 4)),
+            distanceKm: 0.2,
+            movingTimeSec: 60,
+          ),
+        ],
+      );
+      expect(r.kind, RideReturnKind.atHof);
+      expect(r.hidesGate, isFalse);
     });
 
     test('summary usingGps true is recorded on return', () {

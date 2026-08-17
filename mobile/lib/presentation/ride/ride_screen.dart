@@ -18,6 +18,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/nav_hud_tokens.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/local/ride_prefs.dart';
+import '../../data/routing/ride_to_saved.dart';
 import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/offline_basemap.dart';
@@ -35,6 +36,7 @@ import '../../domain/ebike/range.dart';
 import '../../domain/hud_bike_peek.dart';
 import '../../domain/hud_media.dart';
 import '../../domain/ride.dart';
+import '../../domain/ride_activity.dart';
 import '../../domain/ride/gps_teleport.dart';
 import '../../domain/ride_auto_lock.dart';
 import '../../domain/routing/battery_preset.dart';
@@ -73,6 +75,7 @@ import 'widgets/ride_bike_peek.dart';
 import 'widgets/ride_compass_chip.dart';
 import 'widgets/ride_connectivity_chip.dart';
 import 'widgets/ride_data_strip.dart';
+import 'widgets/ride_draw_tour_chip.dart';
 import 'widgets/ride_media_chip.dart';
 import 'widgets/ride_network.dart';
 import 'widgets/ride_next_turn_banner.dart';
@@ -171,6 +174,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   /// Clean Mode mid-ride: max ~4 chrome elements (N-01). Pro via data-strip tap.
   bool _cleanMode = true;
+  bool _drawingTour = false;
 
   /// User-Toggle (zusätzlich zu dart-define AETHER_AUTO_REROUTE).
   bool _autoRerouteEnabled = AppConfig.autoReroute;
@@ -817,11 +821,12 @@ class RideScreenState extends ConsumerState<RideScreen> {
         // only for Freeride or after leaving the line.
         final drawGps = route == null || _offRoute;
         if (drawGps) {
+          final live = _drawingTour && route == null;
           await c.addLine(
             LineOptions(
               geometry: line,
               lineColor: NavMapColors.gpsCasing,
-              lineWidth: ribbon.gpsCasing,
+              lineWidth: ribbon.gpsCasing * (live ? 1.28 : 1),
               lineOpacity: 0.85,
               lineJoin: 'round',
             ),
@@ -831,7 +836,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
             LineOptions(
               geometry: line,
               lineColor: NavMapColors.gpsCore,
-              lineWidth: ribbon.gpsCore,
+              lineWidth: ribbon.gpsCore * (live ? 1.28 : 1),
               lineJoin: 'round',
             ),
           );
@@ -1543,6 +1548,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _northUp = false;
     }
     _cleanMode = true;
+    _drawingTour = false;
     _simDistanceM = 0;
     _simMotionUsed = false;
     _usingGps = false;
@@ -2192,6 +2198,13 @@ class RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
+  String _liveTourName(DateTime started) {
+    final d = started.toLocal();
+    final stamp =
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return 'Neue Tour $stamp';
+  }
+
   Future<void> _stop() async {
     if (_confirmStop == 0) {
       setState(() => _confirmStop = 1);
@@ -2253,7 +2266,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
         ? 'route'
         : (elevFromTrack > 0 ? 'gps_track' : 'none');
 
-    final record = await ref.read(rideRepositoryProvider).endRide(
+    final drawingTour = _drawingTour &&
+        route == null &&
+        rideActivityCanDrawTour(activeRouteId: route?.id);
+    var record = await ref.read(rideRepositoryProvider).endRide(
       id: _rideId,
       bikeId: bike?.id,
       setupId: setup?.id,
@@ -2261,7 +2277,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
       endedAt: ended,
       distanceKm: distanceM / 1000,
       movingTimeSec: elapsed,
-      name: route?.name ?? 'Freeride',
+      name: drawingTour
+          ? _liveTourName(started)
+          : (route?.name ?? 'Freeride'),
       routeId: route?.id,
       elevationM: elevHonest,
       track: track,
@@ -2273,10 +2291,27 @@ class RideScreenState extends ConsumerState<RideScreen> {
         'simDistanceM': _simDistanceM,
         'trackPoints': track.length,
         'elevationSource': elevSource,
+        'liveTour': drawingTour,
         if (_ldi?.batterySocPercent != null) 'soc': _ldi!.batterySocPercent,
         ..._bleSamples.toSummary(),
       },
     );
+    if (drawingTour && track.length >= 2) {
+      try {
+        final entry = await saveRideAsTour(
+          routes: ref.read(routeRepositoryProvider),
+          ride: record,
+          id: 'recorded-${record.id}',
+          name: record.name,
+        );
+        await ref
+            .read(rideRepositoryProvider)
+            .attachSavedRoute(record.id, entry.id);
+        ref.invalidate(savedRoutesProvider);
+        record = (await ref.read(rideRepositoryProvider).getById(record.id)) ??
+            record;
+      } catch (_) {}
+    }
 
     ref.invalidate(recentRidesProvider);
     ref.invalidate(coachWatchProvider);
@@ -2348,6 +2383,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _userChoseStay = false;
       _rejoinWhyLine = null;
       _cleanMode = true;
+      _drawingTour = false;
       _lastFollowLat = null;
       _lastFollowLng = null;
       _lastFollowCameraAt = null;
@@ -2818,6 +2854,23 @@ class RideScreenState extends ConsumerState<RideScreen> {
                         children: [
                           if (route != null)
                             Expanded(child: _tourNameChip(theme, route.name))
+                          else if (rideActivityCanDrawTour(
+                            activeRouteId: null,
+                          ))
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: RideDrawTourChip(
+                                  drawing: _drawingTour,
+                                  onToggle: () {
+                                    setState(
+                                      () => _drawingTour = !_drawingTour,
+                                    );
+                                    unawaited(_drawRideMap());
+                                  },
+                                ),
+                              ),
+                            )
                           else
                             const Spacer(),
                           const SizedBox(width: AppSpacing.xs),

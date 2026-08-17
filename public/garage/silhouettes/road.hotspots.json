@@ -1,128 +1,108 @@
 {
-  "kind": "road",
+  "id": "road",
+  "name": "Rennrad",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "road",
+  "family": "road",
+  "size": "M",
   "viewBox": "0 0 1000 500",
-  "groundY": 420,
-  "axleY": 420,
-  "bb": {
-    "x": 400,
-    "y": 372
-  },
-  "wheelbaseUnits": 384,
-  "params": {
-    "tire_stroke": 8,
-    "bar": "drop",
-    "fork_travel": false
+  "geometry": {
+    "reachMm": 386,
+    "stackMm": 552,
+    "headAngleDeg": 72.8,
+    "seatAngleEffectiveDeg": 73.5,
+    "chainstayMm": 410,
+    "wheelbaseMm": 992,
+    "bbDropMm": 72,
+    "headTubeMm": 145,
+    "wheelSizeFront": "700c",
+    "wheelSizeRear": "700c",
+    "travelFrontMm": 0,
+    "travelRearMm": 0,
+    "isEbike": false,
+    "isFully": false,
+    "source": "category_silhouette"
   },
   "hotspots": {
     "tire_front": {
-      "cx": 220,
-      "cy": 420,
+      "cx": 657.8,
+      "cy": 324.2,
       "hitR": 28,
       "label_de": "Vorderrad"
     },
+    "tire_rear": {
+      "cx": 342.2,
+      "cy": 324.2,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
     "fork": {
-      "cx": 254,
-      "cy": 289,
+      "cx": 629.9,
+      "cy": 264.4,
       "hitR": 28,
       "label_de": "Gabel"
     },
     "brake_front": {
-      "cx": 242,
-      "cy": 365,
+      "cx": 651.7,
+      "cy": 311.1,
       "hitR": 28,
       "label_de": "Vorderradbremse"
     },
+    "brake_rear": {
+      "cx": 336.5,
+      "cy": 301.9,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
     "handlebar": {
-      "cx": 232,
-      "cy": 128,
+      "cx": 623.7,
+      "cy": 169.5,
       "hitR": 28,
       "label_de": "Lenker"
     },
     "stem": {
-      "cx": 260,
-      "cy": 143,
+      "cx": 606.2,
+      "cy": 168.1,
       "hitR": 28,
       "label_de": "Vorbau"
     },
     "frame": {
-      "cx": 365.3,
-      "cy": 227.3,
+      "cx": 513.8,
+      "cy": 197.9,
       "hitR": 28,
       "label_de": "Rahmen"
     },
     "seatpost": {
-      "cx": 408,
-      "cy": 262,
+      "cx": 428.9,
+      "cy": 206.2,
       "hitR": 28,
       "label_de": "Sattelstütze"
     },
     "saddle": {
-      "cx": 418,
-      "cy": 130,
+      "cx": 425.4,
+      "cy": 194.4,
       "hitR": 28,
       "label_de": "Sattel"
     },
     "crankset": {
-      "cx": 400,
-      "cy": 372,
+      "cx": 470.6,
+      "cy": 347.1,
       "hitR": 28,
       "label_de": "Kurbel"
     },
     "chain": {
-      "cx": 502,
-      "cy": 394,
+      "cx": 406.4,
+      "cy": 335.6,
       "hitR": 28,
       "label_de": "Kette"
     },
     "cassette": {
-      "cx": 618,
-      "cy": 408,
+      "cx": 344.8,
+      "cy": 324.2,
       "hitR": 28,
       "label_de": "Kassette"
-    },
-    "tire_rear": {
-      "cx": 604,
-      "cy": 420,
-      "hitR": 28,
-      "label_de": "Hinterrad"
-    },
-    "brake_rear": {
-      "cx": 576,
-      "cy": 362,
-      "hitR": 28,
-      "label_de": "Hinterradbremse"
-    },
-    "motor": {
-      "cx": 354,
-      "cy": 354,
-      "hitR": 28,
-      "label_de": "Motor"
-    },
-    "battery": {
-      "cx": 364,
-      "cy": 275,
-      "hitR": 28,
-      "label_de": "Akku"
     }
   },
-  "layers": {
-    "motor": {
-      "type": "rect",
-      "x": 372,
-      "y": 334,
-      "width": 56,
-      "height": 32,
-      "rx": 6,
-      "fill": "#FF6A00"
-    },
-    "battery": {
-      "type": "rect",
-      "x": 334,
-      "y": 245,
-      "width": 44,
-      "height": 22,
-      "rx": 4,
-      "fill": "#7A8B73"
-    }
-  }
+  "cue": "Dropbar, schmale Reifen, steiler Lenkwinkel, kurzer Radstand"
 }

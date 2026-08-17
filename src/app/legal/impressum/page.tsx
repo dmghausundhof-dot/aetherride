@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { isAppLaunched } from "@/lib/config/appStage";
 import {
   hasTmgImprint,
   legalContactEmail,
@@ -21,6 +22,12 @@ export default function LegalImpressumPage() {
       <p className="text-sm text-text-secondary">
         Angaben gemäß § 5 TMG und § 18 MStV.
       </p>
+      {!isAppLaunched() ? (
+        <p className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-secondary">
+          Dies ist ein Entwicklungsstand, kein öffentliches Angebot und kein
+          geschäftsmäßiger Dienst.
+        </p>
+      ) : null}
 
       {imprint ? (
         <p className="whitespace-pre-wrap text-sm text-text-secondary">

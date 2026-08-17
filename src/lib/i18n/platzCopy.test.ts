@@ -18,6 +18,8 @@ function testDe() {
   assert.equal(g.visPublic, "Freigegeben");
   assert.equal(g.addRoute, "Route hinzufügen");
   assert.ok(g.addRouteHint.includes("ohne Pin"));
+  assert.equal(g.keepRoute, "Merken");
+  assert.equal(g.inviteFriends, "Freunde mitnehmen");
   assert.ok(g.startNone.includes("ohne Pin"));
   assert.ok(!g.addRouteHint.toLowerCase().includes("heidelberg"));
   assert.equal(g.intoMappe, "In die Mappe legen");

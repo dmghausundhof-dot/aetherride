@@ -1,0 +1,108 @@
+{
+  "id": "folding",
+  "name": "Faltrad",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "folding",
+  "family": "folding",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 380,
+    "stackMm": 560,
+    "headAngleDeg": 72.0,
+    "seatAngleEffectiveDeg": 73.0,
+    "chainstayMm": 420,
+    "wheelbaseMm": 1040,
+    "bbDropMm": 40,
+    "headTubeMm": 130,
+    "wheelSizeFront": "20",
+    "wheelSizeRear": "20",
+    "travelFrontMm": 0,
+    "travelRearMm": 0,
+    "isEbike": false,
+    "isFully": false,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 665.4,
+      "cy": 354.7,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 334.6,
+      "cy": 354.7,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 630.1,
+      "cy": 285.4,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 657.7,
+      "cy": 339.6,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 328.9,
+      "cy": 332.4,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 605.6,
+      "cy": 170.3,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 594.3,
+      "cy": 174.9,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 511.1,
+      "cy": 223.0,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 427.2,
+      "cy": 235.2,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 422.3,
+      "cy": 219.3,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 467.6,
+      "cy": 367.4,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 401.1,
+      "cy": 361.1,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 337.2,
+      "cy": 354.7,
+      "hitR": 28,
+      "label_de": "Kassette"
+    }
+  },
+  "cue": "20\"-Laufräder, kurze Bauweise, Scharniere"
+}

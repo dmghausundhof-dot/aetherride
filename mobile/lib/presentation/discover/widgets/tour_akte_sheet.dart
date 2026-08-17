@@ -33,12 +33,16 @@ class TourAkteSheet extends ConsumerStatefulWidget {
     required this.sourceBadge,
     required this.onShowOnMap,
     this.onRemoveFromMappe,
+    this.onGoRide,
+    this.onCreateGroup,
   });
 
   final SavedRouteEntry route;
   final String sourceBadge;
   final VoidCallback onShowOnMap;
   final VoidCallback? onRemoveFromMappe;
+  final VoidCallback? onGoRide;
+  final VoidCallback? onCreateGroup;
 
   @override
   ConsumerState<TourAkteSheet> createState() => _TourAkteSheetState();
@@ -234,13 +238,40 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
                       style: const TextStyle(color: AppColors.muted),
                     ),
             const SizedBox(height: 16),
-            if (_shelf == _AkteShelf.mein)
-              FilledButton.icon(
-                onPressed: widget.onShowOnMap,
-                icon: const Icon(Icons.map_outlined),
-                label: Text(l10n.showOnMap),
-              )
-            else
+            if (_shelf == _AkteShelf.mein) ...[
+              if (widget.onGoRide != null &&
+                  (widget.route.coordinates.length >= 2 ||
+                      widget.route.tour.length >= 2))
+                FilledButton.icon(
+                  onPressed: widget.onGoRide,
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(l10n.goRide),
+                )
+              else
+                FilledButton.icon(
+                  onPressed: widget.onShowOnMap,
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text(l10n.showOnMap),
+                ),
+              if (widget.onGoRide != null &&
+                  (widget.route.coordinates.length >= 2 ||
+                      widget.route.tour.length >= 2))
+                TextButton.icon(
+                  onPressed: widget.onShowOnMap,
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.muted,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  label: Text(l10n.showOnMap),
+                ),
+              if (widget.onCreateGroup != null)
+                OutlinedButton.icon(
+                  onPressed: widget.onCreateGroup,
+                  icon: const Icon(Icons.group_add_outlined, size: 18),
+                  label: Text(l10n.mappeInviteFriends),
+                ),
+            ] else
               TextButton.icon(
                 onPressed: widget.onShowOnMap,
                 icon: const Icon(Icons.map_outlined, size: 18),

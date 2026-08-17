@@ -19,8 +19,8 @@ abstract final class MapOrnaments {
   /// Luft unter Statusleiste / Punch-Hole.
   static const double gapBelowStatus = 8;
 
-  /// Discover-Suchleiste + Chip-Zeile — Kompass sitzt darunter, nicht auf Mehr.
-  static const double discoverHeaderClearance = 128;
+  /// Discover-Suchleiste + Chips + Dauer — Kompass sitzt darunter, nicht auf Mehr.
+  static const double discoverHeaderClearance = 168;
 
   /// Pre-Ride-Routenchip (ohne SafeArea, ~72 dp ab top: 12).
   static const double ridePreStartClearance = 80;

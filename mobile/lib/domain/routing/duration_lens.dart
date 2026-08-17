@@ -33,6 +33,7 @@ class DurationLens {
     if (targetMinutes <= 0) return true;
     if (durationMin <= 0) return false;
     return switch (targetMinutes) {
+      30 => durationMin >= 20 && durationMin <= 45,
       45 => durationMin >= 30 && durationMin <= 60,
       60 => durationMin >= 45 && durationMin <= 75,
       90 => durationMin >= 60 && durationMin <= 120,
@@ -46,6 +47,23 @@ class DurationLens {
   static int fitDelta(int durationMin, int targetMinutes) {
     if (targetMinutes <= 0) return 0;
     return (durationMin - targetMinutes).abs();
+  }
+
+  /// Hof-Tor: 30 / 60 / 90. Nächstes Band zur echten Loop-Dauer.
+  static const hofGateMinutes = [30, 60, 90];
+
+  static int nearestHofGateMinutes(int durationMin) {
+    if (durationMin <= 0) return 60;
+    var best = 60;
+    var delta = 1 << 30;
+    for (final m in hofGateMinutes) {
+      final d = (durationMin - m).abs();
+      if (d < delta) {
+        delta = d;
+        best = m;
+      }
+    }
+    return best;
   }
 
   static String chipLabel(int minutes) {

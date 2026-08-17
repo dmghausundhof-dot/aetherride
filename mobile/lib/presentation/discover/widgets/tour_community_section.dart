@@ -104,7 +104,6 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
       _crowd = TourCommunityStore.countsCache[widget.tourId]?.difficulty;
       _avg = avg;
       _loading = false;
-      if (list.isEmpty && !_compose) _compose = true;
     });
   }
 

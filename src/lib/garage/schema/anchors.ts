@@ -5,7 +5,38 @@
  * Keep in sync with public/garage/silhouettes/*.hotspots.json
  */
 
-export type BikeSchemaTemplate = "road" | "gravel" | "mtb" | "city";
+export type BikeSchemaFamily = "road" | "gravel" | "mtb" | "city";
+
+export type BikeSchemaTemplate =
+  | BikeSchemaFamily
+  | "mtb_trail"
+  | "mtb_am"
+  | "mtb_enduro"
+  | "dh"
+  | "emtb"
+  | "urban"
+  | "etrekking"
+  | "cargo"
+  | "folding"
+  | "kids";
+
+export function schemaFamilyOf(t: BikeSchemaTemplate): BikeSchemaFamily {
+  switch (t) {
+    case "road":
+      return "road";
+    case "gravel":
+      return "gravel";
+    case "urban":
+    case "etrekking":
+    case "cargo":
+    case "folding":
+    case "kids":
+    case "city":
+      return "city";
+    default:
+      return "mtb";
+  }
+}
 
 export type HotspotStatus = "ok" | "missing" | "maintenance";
 
@@ -62,10 +93,20 @@ export const SCHEMA_ASSET_PATH: Record<BikeSchemaTemplate, string> = {
   gravel: "/garage/silhouettes/gravel.svg",
   mtb: "/garage/silhouettes/mtb.svg",
   city: "/garage/silhouettes/city.svg",
+  mtb_trail: "/garage/silhouettes/mtb_trail.svg",
+  mtb_am: "/garage/silhouettes/mtb_am.svg",
+  mtb_enduro: "/garage/silhouettes/mtb_enduro.svg",
+  dh: "/garage/silhouettes/dh.svg",
+  emtb: "/garage/silhouettes/emtb.svg",
+  urban: "/garage/silhouettes/urban.svg",
+  etrekking: "/garage/silhouettes/etrekking.svg",
+  cargo: "/garage/silhouettes/cargo.svg",
+  folding: "/garage/silhouettes/folding.svg",
+  kids: "/garage/silhouettes/kids.svg",
 };
 
 export const SCHEMA_HOTSPOTS: Record<
-  BikeSchemaTemplate,
+  BikeSchemaFamily,
   Record<string, SchemaAnchor>
 > = {
   "road": {
@@ -445,7 +486,7 @@ export const SCHEMA_HOTSPOTS: Record<
 };
 
 export const SCHEMA_LAYERS: Record<
-  BikeSchemaTemplate,
+  BikeSchemaFamily,
   Record<string, SchemaLayer>
 > = {
   "road": {

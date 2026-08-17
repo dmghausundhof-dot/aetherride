@@ -47,10 +47,10 @@ class PlatzExtras extends ConsumerStatefulWidget {
   final Future<void> Function(SavedRouteEntry)? onOpenAkte;
 
   @override
-  ConsumerState<PlatzExtras> createState() => _PlatzExtrasState();
+  PlatzExtrasState createState() => PlatzExtrasState();
 }
 
-class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
+class PlatzExtrasState extends ConsumerState<PlatzExtras> {
   List<RideGroup> _groups = const [];
   List<RideGroup> _public = const [];
   Map<String, List<RideGroupMember>> _members = const {};
@@ -61,6 +61,9 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
   String? _syncNote;
   bool _signedIn = true;
   bool _collectionsOpen = false;
+  bool _collectionsToggled = false;
+  bool _groupsOpen = false;
+  bool _groupsToggled = false;
   bool _inviteNamePrompted = false;
 
   @override
@@ -122,6 +125,12 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
       _cols = cols;
       _selfIds = ids;
       _syncNote = widget.store.lastNote;
+      if (!_groupsToggled) {
+        _groupsOpen = groups.isNotEmpty;
+      }
+      if (!_collectionsToggled) {
+        _collectionsOpen = cols.isNotEmpty;
+      }
     });
   }
 
@@ -219,7 +228,10 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
     return chosen;
   }
 
-  Future<void> _createGroup() async {
+  Future<void> createGroup({SavedRouteEntry? attach}) =>
+      _createGroup(attach: attach);
+
+  Future<void> _createGroup({SavedRouteEntry? attach}) async {
     if (!_signedIn) {
       if (!mounted) return;
       openAuthScreen(context);
@@ -229,7 +241,24 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
       for (final s in widget.saved)
         if (RideGroupPolicy.canAttachSaved(s, widget.metas[s.id])) s,
     ];
-    if (attachable.isEmpty) {
+    if (attach != null) {
+      final ok = RideGroupPolicy.canAttachSaved(
+        attach,
+        widget.metas[attach.id],
+      );
+      if (!ok) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).platzNeedSharedTour)),
+        );
+        return;
+      }
+      attachable = [
+        attach,
+        for (final s in attachable)
+          if (s.id != attach.id) s,
+      ];
+    } else if (attachable.isEmpty) {
       final pending = await _promptShareTourFirst();
       if (pending == null || !mounted) return;
       await widget.onOpenAkte?.call(pending);
@@ -721,10 +750,82 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
     );
   }
 
+  Future<void> _createCollection() async {
+    final ctrl = TextEditingController();
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        final loc = AppLocalizations.of(ctx);
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: HofThresholdNav.sheetBottomInset(ctx) +
+                MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                loc.mappeCollectionNew,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: loc.platzCollectionDefaultName(
+                    DateTime.now().day,
+                    DateTime.now().month,
+                  ),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(loc.mappeCollectionNew),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    final name = ctrl.text.trim();
+    Future<void>.delayed(const Duration(milliseconds: 400), ctrl.dispose);
+    if (ok != true || name.isEmpty) return;
+    await RouteCollectionsStore.create(name);
+    setState(() {
+      _collectionsOpen = true;
+      _collectionsToggled = true;
+    });
+    await _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<PlatzPendingJoin?>(platzPendingJoinProvider, (prev, next) {
       _consumePendingJoin(next);
+    });
+    ref.listen<String?>(platzPendingCreateGroupRouteIdProvider, (prev, next) {
+      if (next == null || next.isEmpty) return;
+      ref.read(platzPendingCreateGroupRouteIdProvider.notifier).state = null;
+      SavedRouteEntry? hit;
+      for (final s in widget.saved) {
+        if (s.id == next) {
+          hit = s;
+          break;
+        }
+      }
+      if (hit != null) unawaited(createGroup(attach: hit));
     });
     final l10n = AppLocalizations.of(context);
     return Column(
@@ -732,16 +833,17 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 28, 16, 6),
-          child: Text(
-            l10n.platzTogetherKicker,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
-              color: AppColors.muted,
-            ),
+          child: PlatzFoldHeader(
+            label: l10n.platzTogetherKicker,
+            count: _groups.isEmpty ? null : _groups.length,
+            expanded: _groupsOpen,
+            onTap: () => setState(() {
+              _groupsToggled = true;
+              _groupsOpen = !_groupsOpen;
+            }),
           ),
         ),
+        if (_groupsOpen) ...[
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -1063,37 +1165,49 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
               ),
             ),
         ],
-        if (_cols.isNotEmpty) ...[
+        ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+          child: PlatzFoldHeader(
+            label: l10n.platzCollectionsKicker,
+            count: _cols.isEmpty ? null : _cols.length,
+            expanded: _collectionsOpen,
+            onTap: () => setState(() {
+              _collectionsToggled = true;
+              _collectionsOpen = !_collectionsOpen;
+            }),
+          ),
+        ),
+        if (_collectionsOpen) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
-            child: PlatzFoldHeader(
-              label: l10n.platzCollectionsKicker,
-              count: _cols.length,
-              expanded: _collectionsOpen,
-              onTap: () =>
-                  setState(() => _collectionsOpen = !_collectionsOpen),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              l10n.platzCollectionsHint,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
-          if (_collectionsOpen) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                l10n.platzCollectionsHint,
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          for (final c in _cols)
+            ListTile(
+              title: Text(c.name),
+              subtitle: Text(l10n.platzCollectionTours(c.routeIds.length)),
+              trailing: TextButton(
+                onPressed: () => unawaited(_shareCollection(c)),
+                child: Text(l10n.share),
               ),
             ),
-            for (final c in _cols)
-              ListTile(
-                title: Text(c.name),
-                subtitle: Text(l10n.platzCollectionTours(c.routeIds.length)),
-                trailing: TextButton(
-                  onPressed: () => unawaited(_shareCollection(c)),
-                  child: Text(l10n.share),
-                ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => unawaited(_createCollection()),
+                icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+                label: Text(l10n.mappeCollectionNew),
               ),
-          ],
+            ),
+          ),
         ],
-        const SizedBox(height: 48),
+        const SizedBox(height: 16),
       ],
     );
   }

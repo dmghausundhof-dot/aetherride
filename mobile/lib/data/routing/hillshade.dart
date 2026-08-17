@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../../domain/routing/browse_map_paint.dart';
+
 const kHillshadeSourceId = 'terrain-dem';
 const kHillshadeLayerId = 'hillshade';
 
@@ -50,10 +52,10 @@ Future<void> applyHillshade(MapLibreMapController c) async {
       kHillshadeSourceId,
       kHillshadeLayerId,
       const HillshadeLayerProperties(
-        hillshadeExaggeration: 0.38,
-        hillshadeShadowColor: '#3a4a42',
-        hillshadeHighlightColor: '#f4f7f4',
-        hillshadeAccentColor: '#6a7a72',
+        hillshadeExaggeration: BrowseMapPaint.hillshadeExaggeration,
+        hillshadeShadowColor: BrowseMapPaint.hillshadeShadowHex,
+        hillshadeHighlightColor: BrowseMapPaint.hillshadeHighlightHex,
+        hillshadeAccentColor: BrowseMapPaint.hillshadeAccentHex,
         hillshadeIlluminationDirection: 315,
       ),
       belowLayerId: below,
@@ -61,6 +63,16 @@ Future<void> applyHillshade(MapLibreMapController c) async {
   } catch (err) {
     debugPrint('hillshade: $err');
   }
+}
+
+Future<void> setHillshadeVisible(MapLibreMapController c, bool on) async {
+  if (on) {
+    await applyHillshade(c);
+    return;
+  }
+  try {
+    await c.removeLayer(kHillshadeLayerId);
+  } catch (_) {}
 }
 
 bool styleUsesCatalogHillshade(String styleUrl) {

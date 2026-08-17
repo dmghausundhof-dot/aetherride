@@ -1,0 +1,114 @@
+{
+  "id": "dh",
+  "name": "Downhill",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "dh",
+  "family": "dh",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 450,
+    "stackMm": 630,
+    "headAngleDeg": 63.0,
+    "seatAngleEffectiveDeg": 78.5,
+    "chainstayMm": 445,
+    "wheelbaseMm": 1260,
+    "bbDropMm": 18,
+    "headTubeMm": 115,
+    "wheelSizeFront": "27_5",
+    "wheelSizeRear": "27_5",
+    "travelFrontMm": 200,
+    "travelRearMm": 200,
+    "isEbike": false,
+    "isFully": true,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 700.4,
+      "cy": 318.1,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 299.6,
+      "cy": 318.1,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 645.6,
+      "cy": 229.0,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 688.4,
+      "cy": 298.7,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 293.9,
+      "cy": 295.9,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 594.0,
+      "cy": 117.1,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 587.0,
+      "cy": 117.5,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 499.5,
+      "cy": 159.3,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 410.4,
+      "cy": 173.1,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 407.1,
+      "cy": 156.8,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 441.0,
+      "cy": 323.9,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 370.3,
+      "cy": 321.0,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 302.2,
+      "cy": 318.1,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "rear_shock": {
+      "cx": 516.9,
+      "cy": 197.3,
+      "hitR": 28,
+      "label_de": "Dämpfer"
+    }
+  },
+  "cue": "Doppelbrücke, sehr slack, 27.5\", Coil-Dämpfer"
+}

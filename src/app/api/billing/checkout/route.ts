@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAuthedClient } from "@/lib/supabase/authed";
 import {
+  COMMERCE_CLOSED,
+  isCommerceOpen,
+} from "@/lib/config/appStage";
+import {
   appUrl,
   getStripe,
   STRIPE_PRICE_PRO_MONTHLY,
@@ -8,6 +12,9 @@ import {
 } from "@/lib/stripe";
 
 export async function POST(req: Request) {
+  if (!isCommerceOpen()) {
+    return NextResponse.json(COMMERCE_CLOSED, { status: 403 });
+  }
   try {
     const supabase = await createAuthedClient(req);
     const {

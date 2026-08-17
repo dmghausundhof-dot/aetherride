@@ -1,3 +1,4 @@
+import 'package:aetherride_mobile/data/routing/bike_overlay.dart';
 import 'package:aetherride_mobile/domain/routing/bike_overlay_class.dart';
 import 'package:aetherride_mobile/l10n/app_localizations.dart';
 import 'package:aetherride_mobile/presentation/discover/bike_overlay_legend.dart';
@@ -77,8 +78,28 @@ void main() {
     expect(find.textContaining('OSM-Wege nur ab Zoom 12'), findsNothing);
     expect(find.textContaining('Annecy'), findsNothing);
     expect(
-      find.textContaining('OSM-Wege gibt es ab Zoom 12'),
+      find.textContaining('OSM-Wege gibt es ab Zoom 11'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Mesh-ICN-Hinweis nur nach Aufklappen', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        BikeOverlayLegend(
+          family: BikeOverlayFamily.urban,
+          visible: true,
+          extraOn: overlayExploreAllClasses,
+          overlayKind: OnlineBikeOverlayKind.mesh,
+          exploreAll: true,
+          onToggleVisible: () {},
+          onToggleClass: (_) {},
+        ),
+      ),
+    );
+    expect(find.textContaining('ICN'), findsNothing);
+    await tester.tap(find.byKey(const Key('bike-overlay-legend-title')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('ICN'), findsOneWidget);
   });
 }

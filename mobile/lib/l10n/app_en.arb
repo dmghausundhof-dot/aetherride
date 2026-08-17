@@ -100,7 +100,7 @@
   "werkstattSensorAnalog": "Wheel sensor — speed and cadence on the bike.",
   "hofYourWatch": "Your watch",
   "hofWatchHint": "Heart rate from a real sensor.",
-  "hofWatchPair": "Pair watch",
+  "hofWatchPair": "Heart-rate sensor",
   "hofWatchReconnect": "Connect",
   "hofWatchRemove": "Remove",
   "hofWatchConnect": "Connect watch",
@@ -156,7 +156,7 @@
   "hofAtGate": "at the gate",
   "hofEmptyStand": "Empty stand",
   "hofSkyUnknown": "Sky unknown",
-  "hofNoHonestLoop": "No honest trail loop",
+  "hofNoHonestLoop": "No loop nearby",
   "hofGateWetClosed": "Trails wet — no honest paved loop nearby",
   "hofNotYetOut": "not out yet",
   "hofJustBack": "just back",
@@ -186,7 +186,11 @@
     }
   },
   "hofLastRideNoGps": "no GPS track — nothing invented",
-  "hofGpsUnknown": "No location — the map waits for GPS.",
+  "hofGpsUnknown": "Allow location",
+  "hofAllowLocation": "Allow location",
+  "hofHintsTitle": "Notices",
+  "hofHintsEmpty": "Nothing open.",
+  "hofHintsTooltip": "Notices",
   "rideGpsUnavailable": "No GPS — track stays empty. Nothing invented.",
   "hofAtHof": "at the stand",
   "hofGarageType": "Type {type}",
@@ -224,7 +228,7 @@
     }
   },
   "hofSensorAwake": "Sensor awake",
-  "hofOpenTours": "Open tours",
+  "hofOpenTours": "Tours on the map",
   "hofSkyDry": "{temp}° · rather dry",
   "@hofSkyDry": {
     "placeholders": {
@@ -257,7 +261,7 @@
       }
     }
   },
-  "hofGateAwayKm": "{km} km",
+  "hofGateAwayKm": "{km} km away",
   "@hofGateAwayKm": {
     "placeholders": {
       "km": {
@@ -358,6 +362,34 @@
   "planRouteCta": "Navigate",
   "discoverSearchHint": "Place or tour",
   "filterAroundKm": "within {km} km",
+  "discoverAroundIdle": "Around",
+  "discoverAroundAwayKm": "{km} km away",
+  "@discoverAroundAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekLoopKm": "{km} km loop",
+  "@discoverPeekLoopKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPeekAwayKm": "{km} km away",
+  "@discoverPeekAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekAwayNear": "under 1 km",
+  "discoverPeekSave": "Save",
+  "discoverPeekAkte": "File",
   "@filterAroundKm": {
     "placeholders": {
       "km": {
@@ -629,8 +661,12 @@
   "rideLiveData": "Live data",
   "rideMapReady": "Map ready. Sensor is optional.",
   "rideClearRoute": "Remove route",
+  "rideDrawTour": "Draw as tour",
+  "rideDrawingTour": "New tour · recording",
   "postRideTitle": "Activity",
   "postRideFreeride": "Freeride",
+  "postRideLiveTour": "New tour",
+  "postRideToMappe": "Save to Tours",
   "postRideTrackMap": "Ridden track",
   "postRideNoTrack": "No GPS track — map has nothing to show.",
   "postRideStatDistance": "Distance",
@@ -755,6 +791,7 @@
   "billingMoreBikes": "More bikes, sync perks, and offline regions.",
   "billingAlreadyPro": "Pro is already active — no need to buy again.",
   "billingForceProDebug": "Debug: Force-Pro. Stripe/Play stay hidden.",
+  "billingCommerceClosed": "Development build — purchases are off. There is no public subscription.",
   "billingStripeMonth": "Stripe — monthly",
   "billingStripeYear": "Stripe — yearly",
   "billingPlayMonth": "Google Play — monthly",
@@ -1071,6 +1108,12 @@
   "profileNameUnset": "No name yet",
   "profilePublic": "Public",
   "profileAccountSync": "Account & sync",
+  "profileConnections": "Connections",
+  "profileWatchTitle": "Watch / heart rate",
+  "profileWatchIdle": "No watch paired — Garmin, Polar, Wahoo.",
+  "profileBikeBleTitle": "Bike / Bosch LDI",
+  "profileBikeBleIdle": "Display, motor or CSC on the active bike.",
+  "profileBikeBleNeedBike": "Park a bike in the workshop first.",
   "profileCloudBilling": "Cloud sync & billing",
   "profileSignedIn": "Signed in",
   "profileFamilyGarage": "Family garage",
@@ -1268,11 +1311,11 @@
   },
   "platzTogetherKicker": "Group",
   "platzTogetherTitle": "Ride together",
-  "platzTogetherHint": "Invite shares the link. Your groups stay. Shared also lists open groups — not a feed.",
+  "platzTogetherHint": "Invite shares the link. Your groups stay — not a feed.",
   "platzTogetherListHint": "Group. Signed in: on the server. Otherwise this device only — the host cannot see you. Friends on the map only while riding, after opt-in.",
   "platzCreateGroup": "Create group",
   "platzJoinCode": "Code",
-  "platzNoGroup": "No group yet. Real codes only — nothing staged.",
+  "platzNoGroup": "No group yet. A link is enough.",
   "platzHost": "Host",
   "platzGuest": "Guest",
   "platzYou": "You",
@@ -1990,6 +2033,7 @@
   "discoverHeatmapConsent": "Where many ride — after you agree. Open privacy",
   "discoverRideToStartShort": "To the start",
   "discoverLoopsNearby": "Loops near you",
+  "discoverNearbySection": "Nearby",
   "discoverNoLoop90": "No loop within 90 km — next regions",
   "discoverRecommendedNoGps": "Recommended tours · also without GPS",
   "discoverRecommended": "Recommended ({count})",
@@ -2378,9 +2422,9 @@
   "overlayScaleNote": "S0–S3+ only when the trail is graded. Otherwise unrated.",
   "overlayRoadAsphalt": "Cycleway / asphalt",
   "overlayUnrated": "unrated",
-  "overlayLegendEmpty": "No overlay here. OSM ways from zoom 12 on the DACH sheet. The bike network follows the map underneath.",
+  "overlayLegendEmpty": "No overlay here. OSM ways from zoom 11 on the DACH sheet. The bike network follows the map underneath.",
   "overlayLegendMeshTitle": "Bike network · OSM",
-  "overlayLegendMeshNote": "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 across the DACH sheet.",
+  "overlayLegendMeshNote": "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 11 across the DACH sheet.",
   "overlayLegendCompactGravel": "Gravel",
   "discoverChipTooltip": "Tours and ways by bike type",
   "discoverLocateLongPress": "My location · long-press: nav symbol",
@@ -2470,6 +2514,17 @@
   "discoverEditorialHonesty": "Editorial ideas — not user collections.",
   "discoverEditorialEmpty": "This region is in the catalog; those tours are not in the list right now.",
   "discoverLayerTours": "Tours",
+  "discoverLayerTrails": "Trails",
+  "discoverLayerWays": "Cycleways",
+  "discoverLayerHeight": "Elevation",
+  "discoverLayerHeightHint": "Relief only — no contour lines on this map.",
+  "browseMapLegendPaved": "Paved",
+  "browseMapLegendGravel": "Gravel",
+  "browseMapLegendTrail": "Trail",
+  "discoverDurationAll": "all",
+  "overlayLegendTrailsTitle": "Trails · OSM",
+  "overlayLegendWaysTitle": "Cycleways · OSM",
+  "overlayLegendAllTitle": "Ways · OSM",
   "discoverLayerPlaces": "Places",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat off",
@@ -2593,7 +2648,7 @@
   "rideBatteryChip": "Battery",
   "rideWheelSpeed": "Wheel",
   "rideRestKm": "km left",
-  "rideUntilJoin": "km to route",
+  "rideUntilJoin": "to the route",
   "rideRestLoop": "loop left",
   "rideKmToRoute": "{km} km to the route",
   "@rideKmToRoute": {
@@ -3953,8 +4008,23 @@
   "filterVisibilityAll": "All",
   "filterVisibilityPublic": "Shared",
   "mappeTitle": "Tours",
-  "mappeSubtitle": "Keep tours, leave a short note, bring friends by link — the same tours as on the map.",
-  "mappeAddHint": "Name + start (GPS, else last map centre, else no pin) — no invented track. GPX as an option below.",
+  "mappeSubtitle": "Keep tours, notes and friends on the route — the same tours as on the map.",
+  "mappeAddHint": "Save a name, start from GPS or last map centre, else no pin. GPX below — no invented track.",
+  "mappeKeep": "Save",
+  "mappeSearch": "Search tours",
+  "mappeSortRecent": "Recent",
+  "mappeSortDistance": "Length",
+  "mappeSortName": "Name",
+  "mappeKicker": "Mappe",
+  "mappeInviteFriends": "Bring friends",
+  "mappeActiveMeet": "{title} · {when}",
+  "@mappeActiveMeet": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "mappeCollectionNew": "New collection",
   "mappeStartNone": "Start: no pin yet — open GPS or the map.",
   "mappeStartPin": "Start: {lat}°N, {lng}°E",
   "@mappeStartPin": {
@@ -4000,7 +4070,7 @@
       }
     }
   },
-  "mappeEmpty": "No saved tracks yet — add a route.",
+  "mappeEmpty": "No tours yet — save one or import GPX.",
   "mappeStimmenEmpty": "No tips on your tours yet. After you share, others can write.",
   "myRoutesSourceOwn": "Own",
   "privacyZoneTitle": "Privacy zone",

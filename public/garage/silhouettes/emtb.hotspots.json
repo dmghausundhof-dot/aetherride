@@ -1,0 +1,126 @@
+{
+  "id": "emtb",
+  "name": "E-MTB",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "emtb",
+  "family": "emtb",
+  "size": "M",
+  "viewBox": "0 0 1000 500",
+  "geometry": {
+    "reachMm": 455,
+    "stackMm": 635,
+    "headAngleDeg": 64.8,
+    "seatAngleEffectiveDeg": 76.5,
+    "chainstayMm": 450,
+    "wheelbaseMm": 1248,
+    "bbDropMm": 26,
+    "headTubeMm": 115,
+    "wheelSizeFront": "29",
+    "wheelSizeRear": "29",
+    "travelFrontMm": 160,
+    "travelRearMm": 150,
+    "isEbike": true,
+    "isFully": true,
+    "source": "category_silhouette"
+  },
+  "hotspots": {
+    "tire_front": {
+      "cx": 698.5,
+      "cy": 312.7,
+      "hitR": 28,
+      "label_de": "Vorderrad"
+    },
+    "tire_rear": {
+      "cx": 301.5,
+      "cy": 312.7,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
+    "fork": {
+      "cx": 646.9,
+      "cy": 224.4,
+      "hitR": 28,
+      "label_de": "Gabel"
+    },
+    "brake_front": {
+      "cx": 687.2,
+      "cy": 293.5,
+      "hitR": 28,
+      "label_de": "Vorderradbremse"
+    },
+    "brake_rear": {
+      "cx": 295.8,
+      "cy": 290.5,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
+    "handlebar": {
+      "cx": 600.7,
+      "cy": 112.4,
+      "hitR": 28,
+      "label_de": "Lenker"
+    },
+    "stem": {
+      "cx": 592.9,
+      "cy": 112.9,
+      "hitR": 28,
+      "label_de": "Vorbau"
+    },
+    "frame": {
+      "cx": 501.8,
+      "cy": 157.6,
+      "hitR": 28,
+      "label_de": "Rahmen"
+    },
+    "seatpost": {
+      "cx": 409.2,
+      "cy": 174.2,
+      "hitR": 28,
+      "label_de": "Sattelstütze"
+    },
+    "saddle": {
+      "cx": 405.3,
+      "cy": 158.1,
+      "hitR": 28,
+      "label_de": "Sattel"
+    },
+    "crankset": {
+      "cx": 444.4,
+      "cy": 321.0,
+      "hitR": 28,
+      "label_de": "Kurbel"
+    },
+    "chain": {
+      "cx": 373.0,
+      "cy": 316.9,
+      "hitR": 28,
+      "label_de": "Kette"
+    },
+    "cassette": {
+      "cx": 304.1,
+      "cy": 312.7,
+      "hitR": 28,
+      "label_de": "Kassette"
+    },
+    "rear_shock": {
+      "cx": 520.0,
+      "cy": 194.7,
+      "hitR": 28,
+      "label_de": "Dämpfer"
+    },
+    "motor": {
+      "cx": 444.4,
+      "cy": 321.0,
+      "hitR": 28,
+      "label_de": "Motor"
+    },
+    "battery": {
+      "cx": 527.8,
+      "cy": 233.2,
+      "hitR": 28,
+      "label_de": "Akku"
+    }
+  },
+  "cue": "Motor am Tretlager, Akku im Unterrohr, Fully"
+}

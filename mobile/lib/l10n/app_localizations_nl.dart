@@ -424,6 +424,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get hofGpsUnknown => 'Locatie toestaan';
 
   @override
+  String get hofAllowLocation => 'Locatie toestaan';
+
+  @override
+  String get hofHintsTitle => 'Meldingen';
+
+  @override
+  String get hofHintsEmpty => 'Niets open.';
+
+  @override
+  String get hofHintsTooltip => 'Meldingen';
+
+  @override
   String get rideGpsUnavailable =>
       'Geen GPS — track blijft leeg. Niets verzonnen.';
 
@@ -704,6 +716,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String filterAroundKm(int km) {
     return 'binnen $km km';
   }
+
+  @override
+  String get discoverAroundIdle => 'Omgeving';
+
+  @override
+  String discoverAroundAwayKm(int km) {
+    return '$km km verder';
+  }
+
+  @override
+  String discoverPeekLoopKm(String km) {
+    return '$km km lus';
+  }
+
+  @override
+  String discoverPeekAwayKm(int km) {
+    return '$km km naar de start';
+  }
+
+  @override
+  String get discoverPeekAwayNear => 'onder 1 km naar de start';
+
+  @override
+  String get discoverPeekSave => 'Bewaren';
+
+  @override
+  String get discoverPeekAkte => 'Dossier';
 
   @override
   String get mapToggleFab => 'Kaart';
@@ -1235,10 +1274,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get rideClearRoute => 'Route verwijderen';
 
   @override
+  String get rideDrawTour => 'Als tour tekenen';
+
+  @override
+  String get rideDrawingTour => 'Nieuwe tour · tekent';
+
+  @override
   String get postRideTitle => 'Activiteit';
 
   @override
   String get postRideFreeride => 'Freeride';
+
+  @override
+  String get postRideLiveTour => 'Nieuwe tour';
+
+  @override
+  String get postRideToMappe => 'Naar Tours';
 
   @override
   String get postRideTrackMap => 'Gereden track';
@@ -1537,6 +1588,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get billingForceProDebug =>
       'Debug: Force-Pro. Stripe/Play blijven verborgen.';
+
+  @override
+  String get billingCommerceClosed =>
+      'Ontwikkelstand — geen aankopen. Geen openbaar abonnement.';
 
   @override
   String get billingStripeMonth => 'Stripe — maandelijks';
@@ -2064,6 +2119,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileAccountSync => 'Account & sync';
+
+  @override
+  String get profileConnections => 'Verbindungen';
+
+  @override
+  String get profileWatchTitle => 'Uhr / Puls';
+
+  @override
+  String get profileWatchIdle => 'Keine Uhr gekoppelt — Garmin, Polar, Wahoo.';
+
+  @override
+  String get profileBikeBleTitle => 'Rad / Bosch LDI';
+
+  @override
+  String get profileBikeBleIdle => 'Display, Motor oder CSC am aktiven Rad.';
+
+  @override
+  String get profileBikeBleNeedBike =>
+      'Zuerst ein Rad in die Werkstatt stellen.';
 
   @override
   String get profileCloudBilling => 'Cloudsync & facturatie';
@@ -3698,6 +3772,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get discoverLoopsNearby => 'Lussen bij jou';
 
   @override
+  String get discoverNearbySection => 'Dichtbij';
+
+  @override
   String get discoverNoLoop90 => 'Geen lus binnen 90 km — volgende regio’s';
 
   @override
@@ -4601,6 +4678,40 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get discoverLayerTours => 'Tochten';
+
+  @override
+  String get discoverLayerTrails => 'Trails';
+
+  @override
+  String get discoverLayerWays => 'Fietspaden';
+
+  @override
+  String get discoverLayerHeight => 'Hoogte';
+
+  @override
+  String get discoverLayerHeightHint =>
+      'Alleen reliëf — geen hoogtelijnen op deze kaart.';
+
+  @override
+  String get browseMapLegendPaved => 'Asfalt';
+
+  @override
+  String get browseMapLegendGravel => 'Gravel';
+
+  @override
+  String get browseMapLegendTrail => 'Pad';
+
+  @override
+  String get discoverDurationAll => 'alle';
+
+  @override
+  String get overlayLegendTrailsTitle => 'Trails · OSM';
+
+  @override
+  String get overlayLegendWaysTitle => 'Fietspaden · OSM';
+
+  @override
+  String get overlayLegendAllTitle => 'Wegen · OSM';
 
   @override
   String get discoverLayerPlaces => 'Plekken';
@@ -6957,6 +7068,35 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get mappeAddHint =>
       'Naam bewaren, start via GPS of laatste kaartmidden, anders geen pin. GPX eronder — geen verzonnen track.';
+
+  @override
+  String get mappeKeep => 'Bewaren';
+
+  @override
+  String get mappeSearch => 'Tocht zoeken';
+
+  @override
+  String get mappeSortRecent => 'Recent';
+
+  @override
+  String get mappeSortDistance => 'Lengte';
+
+  @override
+  String get mappeSortName => 'Naam';
+
+  @override
+  String get mappeKicker => 'Mappe';
+
+  @override
+  String get mappeInviteFriends => 'Vrienden meenemen';
+
+  @override
+  String mappeActiveMeet(String title, String when) {
+    return '$title · $when';
+  }
+
+  @override
+  String get mappeCollectionNew => 'Verzameling maken';
 
   @override
   String get mappeStartNone => 'Start: nog geen pin — open GPS of de kaart.';

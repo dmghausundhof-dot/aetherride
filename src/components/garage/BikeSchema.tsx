@@ -11,10 +11,11 @@ import {
   garagePrimaryActionLabelDe,
   type GaragePrimaryAction,
 } from "@/lib/garage/primaryCta";
+import { planBikeSchema } from "@/lib/garage/schema/mapper";
+import { SCHEMA_ASSET_PATH } from "@/lib/garage/schema/anchors";
 
 /**
- * Einfache Bike-Übersicht (Einsteiger-Default).
- * Kein Komponenten-/Silhouette-Schema — Name, Typ, km und Wartungsstatus.
+ * Bike-Übersicht: Kategorie-Silhouette, Name, Typ, km und Wartungsstatus.
  * Technische Specs hinter „Technische Details“.
  */
 export function BikeSchema({
@@ -43,6 +44,13 @@ export function BikeSchema({
   const statusTone = dueCount === 0 ? "text-success" : "text-warning";
 
   const category = bikeCategoryLabel(bike.category);
+  const schema = planBikeSchema({
+    category: bike.category,
+    isEbike: bike.isEbike,
+  });
+  const silhouetteSrc = schema.template
+    ? SCHEMA_ASSET_PATH[schema.template]
+    : null;
   const showEbike =
     bike.isEbike ||
     bike.category === "emtb" ||
@@ -94,6 +102,15 @@ export function BikeSchema({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface p-4">
+      {silhouetteSrc ? (
+        <div className="mb-3 overflow-hidden rounded-xl bg-[#F4F1EA]">
+          <img
+            src={silhouetteSrc}
+            alt={`${bike.name} Seitenprofil`}
+            className="mx-auto h-auto w-full"
+          />
+        </div>
+      ) : null}
       <div className="mb-2 flex flex-wrap gap-1.5">
         <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-[11px] font-bold text-accent">
           {category}

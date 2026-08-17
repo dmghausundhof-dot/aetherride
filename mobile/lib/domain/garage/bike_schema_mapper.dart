@@ -5,7 +5,22 @@ import '../bike.dart';
 import '../component.dart';
 
 /// Base SVG templates under assets/garage/silhouettes/
-enum BikeSchemaTemplate { road, gravel, mtb, city }
+enum BikeSchemaTemplate {
+  road,
+  gravel,
+  mtb,
+  city,
+  mtbTrail,
+  mtbAm,
+  mtbEnduro,
+  dh,
+  emtb,
+  urban,
+  etrekking,
+  cargo,
+  folding,
+  kids,
+}
 
 class BikeSchemaPlan {
   const BikeSchemaPlan({
@@ -26,6 +41,16 @@ class BikeSchemaPlan {
         BikeSchemaTemplate.gravel => 'gravel',
         BikeSchemaTemplate.mtb => 'mtb',
         BikeSchemaTemplate.city => 'city',
+        BikeSchemaTemplate.mtbTrail => 'mtb_trail',
+        BikeSchemaTemplate.mtbAm => 'mtb_am',
+        BikeSchemaTemplate.mtbEnduro => 'mtb_enduro',
+        BikeSchemaTemplate.dh => 'dh',
+        BikeSchemaTemplate.emtb => 'emtb',
+        BikeSchemaTemplate.urban => 'urban',
+        BikeSchemaTemplate.etrekking => 'etrekking',
+        BikeSchemaTemplate.cargo => 'cargo',
+        BikeSchemaTemplate.folding => 'folding',
+        BikeSchemaTemplate.kids => 'kids',
         null => null,
       };
 }
@@ -74,16 +99,25 @@ BikeSchemaPlan planBikeSchema({
     case BikeCategory.gravel:
       template = BikeSchemaTemplate.gravel;
     case BikeCategory.urban:
+      template = BikeSchemaTemplate.urban;
     case BikeCategory.etrekking:
+      template = BikeSchemaTemplate.etrekking;
     case BikeCategory.cargo:
+      template = BikeSchemaTemplate.cargo;
     case BikeCategory.folding:
+      template = BikeSchemaTemplate.folding;
     case BikeCategory.kids:
-      template = BikeSchemaTemplate.city;
+      template = BikeSchemaTemplate.kids;
     case BikeCategory.mtbTrail:
+      template = BikeSchemaTemplate.mtbTrail;
     case BikeCategory.mtbAm:
+      template = BikeSchemaTemplate.mtbAm;
     case BikeCategory.mtbEnduro:
+      template = BikeSchemaTemplate.mtbEnduro;
     case BikeCategory.dh:
+      template = BikeSchemaTemplate.dh;
     case BikeCategory.emtb:
+      template = BikeSchemaTemplate.emtb;
     case BikeCategory.hiking:
       template = BikeSchemaTemplate.mtb;
   }
@@ -93,8 +127,15 @@ BikeSchemaPlan planBikeSchema({
       category == BikeCategory.dh ||
       category == BikeCategory.emtb;
 
-  final showShock =
-      template == BikeSchemaTemplate.mtb && (categoryFully || hasRearShock);
+  const mtbFamily = {
+    BikeSchemaTemplate.mtb,
+    BikeSchemaTemplate.mtbTrail,
+    BikeSchemaTemplate.mtbAm,
+    BikeSchemaTemplate.mtbEnduro,
+    BikeSchemaTemplate.dh,
+    BikeSchemaTemplate.emtb,
+  };
+  final showShock = mtbFamily.contains(template) && (categoryFully || hasRearShock);
 
   final slots = List<ComponentSlot>.of(_coreSlots);
   if (showShock) slots.add(ComponentSlot.rearShock);

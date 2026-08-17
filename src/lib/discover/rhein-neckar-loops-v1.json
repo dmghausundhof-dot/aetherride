@@ -18,7 +18,7 @@
       "ascent_m": 120,
       "duration_min": 60,
       "effort_label": "Leicht",
-      "sport_tags": ["ebike", "city"],
+      "sport_tags": ["city", "road"],
       "surface_mix": { "asphalt": 80, "gravel": 20, "trail": 0 },
       "is_loop": true,
       "duration_band": "60",

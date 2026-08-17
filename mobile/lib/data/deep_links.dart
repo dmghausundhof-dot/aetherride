@@ -292,7 +292,16 @@ class DeepLinkHandler {
 
   Future<void> _onUri(Uri uri) async {
     final key = uri.toString();
-    if (_lastHandled == key) return;
+    if (_lastHandled == key) {
+      if (DeepLinkParse.kindOf(uri) == DeepLinkKind.discover) {
+        final loopId = DeepLinkParse.loopIdOf(uri);
+        if (loopId != null && loopId.isNotEmpty) {
+          _ref.read(discoverPendingLoopIdProvider.notifier).state = loopId;
+          _ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+        }
+      }
+      return;
+    }
     debugPrint('DeepLink: $uri');
 
     final kind = DeepLinkParse.kindOf(uri);
@@ -373,12 +382,13 @@ class DeepLinkHandler {
       // Seed missing → Discover mit Highlight
     }
 
-    _ref.read(shellTabIndexProvider.notifier).state = 3;
-    _ref.read(discoverLaunchModeProvider.notifier).state =
-        DiscoverLaunchMode.discover;
+    // Loop vor Tab: Discover ist lazy und sieht den Pin beim ersten Build.
     if (loopId != null && loopId.isNotEmpty) {
       _ref.read(discoverPendingLoopIdProvider.notifier).state = loopId;
     }
+    _ref.read(shellTabIndexProvider.notifier).state = 3;
+    _ref.read(discoverLaunchModeProvider.notifier).state =
+        DiscoverLaunchMode.discover;
   }
 
   /// Bundled Nähe-Seeds → ActiveRoute + Ride-Tab.

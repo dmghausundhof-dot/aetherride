@@ -33,4 +33,21 @@ class TourCoverage {
     final want = math.min(maxItems, nearby.length);
     return nearby.take(want).toList();
   }
+
+  /// Nähe zuerst — Sport nur als Tie-Break bei gleichem Abstand.
+  ///
+  /// Sonst verdeckt eine 32-km-MTB-Runde eine 2-km-Feierabendrunde,
+  /// nur weil das aktive Rad E-MTB ist.
+  static int compareNearbyThenSport({
+    required double distanceKmA,
+    required double distanceKmB,
+    required bool sportMatchA,
+    required bool sportMatchB,
+  }) {
+    final d = distanceKmA.compareTo(distanceKmB);
+    if (d != 0) return d;
+    final sa = sportMatchA ? 0 : 1;
+    final sb = sportMatchB ? 0 : 1;
+    return sa.compareTo(sb);
+  }
 }

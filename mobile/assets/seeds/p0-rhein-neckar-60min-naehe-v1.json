@@ -19,7 +19,8 @@
       "duration_min": 60,
       "effort_label": "Leicht",
       "sport_tags": [
-        "ebike"
+        "city",
+        "road"
       ],
       "surface_mix": {
         "asphalt": 70,

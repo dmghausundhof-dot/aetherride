@@ -89,6 +89,25 @@ export function canJoinRideGroup(
   return now <= end;
 }
 
+/** Nächstes offenes Treffen — geschlossen oder abgelaufen fällt weg. */
+export function nextActiveMeeting<T extends {
+  status: RideGroupStatus;
+  startWindowStart: string;
+  startWindowEnd: string;
+}>(groups: T[], now = new Date()): T | null {
+  const open = groups.filter((g) => {
+    if (g.status === "closed") return false;
+    const end = Date.parse(g.startWindowEnd);
+    return Number.isFinite(end) && now.getTime() <= end;
+  });
+  if (open.length === 0) return null;
+  open.sort(
+    (a, b) =>
+      Date.parse(a.startWindowStart) - Date.parse(b.startWindowStart),
+  );
+  return open[0] ?? null;
+}
+
 export function parseRideGroupWindow(input: {
   startsAt?: unknown;
   duration?: unknown;

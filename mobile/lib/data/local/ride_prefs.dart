@@ -103,6 +103,16 @@ abstract final class RidePrefs {
     return v;
   }
 
+  /// Hof: ungepaarter Puls-Sensor nach Dismiss nicht wieder als Hero.
+  static Future<bool> hofWatchHeroDismissed() async {
+    final m = await read();
+    return m['hof_watch_hero_dismissed'] == true;
+  }
+
+  static Future<void> setHofWatchHeroDismissed(bool value) async {
+    await merge({'hof_watch_hero_dismissed': value ? true : null});
+  }
+
   static Future<void> setDiscoverViewport(DiscoverViewport view) async {
     if (!isLocalDiscoverZoom(view.zoom)) return;
     if (isPlaceholderDiscoverCenter(view.lat, view.lng)) return;

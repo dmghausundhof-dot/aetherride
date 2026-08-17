@@ -1,7 +1,7 @@
 {
   "@@locale": "de",
   "appTitle": "FlowLine",
-  "appTagline": "Ride further. Flow better — MTB, Gravel, Rennrad, City & E-Bike.",
+  "appTagline": "Outdoor Cycling, vereinfacht.",
   "navHome": "Start",
   "navGarage": "Garage",
   "navRide": "Fahren",
@@ -100,7 +100,7 @@
   "werkstattSensorAnalog": "Radsensor — Tempo und Trittfrequenz am Rad.",
   "hofYourWatch": "Deine Uhr",
   "hofWatchHint": "Puls nur mit echtem Sensor.",
-  "hofWatchPair": "Uhr koppeln",
+  "hofWatchPair": "Puls-Sensor",
   "hofWatchReconnect": "Verbinden",
   "hofWatchRemove": "Entfernen",
   "hofWatchConnect": "Uhr verbinden",
@@ -156,7 +156,7 @@
   "hofAtGate": "vor dem Tor",
   "hofEmptyStand": "Leerer Stand",
   "hofSkyUnknown": "Himmel unbekannt",
-  "hofNoHonestLoop": "Kein ehrlicher Trail-Rundkurs",
+  "hofNoHonestLoop": "Keine Runde in der Nähe",
   "hofGateWetClosed": "Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe",
   "hofNotYetOut": "noch nicht draußen",
   "hofJustBack": "gerade reingekommen",
@@ -186,7 +186,11 @@
     }
   },
   "hofLastRideNoGps": "ohne GPS-Track — kein erfundener Verlauf",
-  "hofGpsUnknown": "Kein Standort — die Karte wartet auf GPS.",
+  "hofGpsUnknown": "Standort erlauben",
+  "hofAllowLocation": "Standort erlauben",
+  "hofHintsTitle": "Hinweise",
+  "hofHintsEmpty": "Nichts offen.",
+  "hofHintsTooltip": "Hinweise",
   "rideGpsUnavailable": "Kein GPS — Track bleibt leer. Kein erfundener Verlauf.",
   "hofAtHof": "am Hof",
   "hofGarageType": "Typ {type}",
@@ -224,7 +228,7 @@
     }
   },
   "hofSensorAwake": "Sensor wach",
-  "hofOpenTours": "Touren öffnen",
+  "hofOpenTours": "Touren auf der Karte",
   "hofSkyDry": "{temp}° · eher trocken",
   "@hofSkyDry": {
     "placeholders": {
@@ -257,7 +261,7 @@
       }
     }
   },
-  "hofGateAwayKm": "{km} km",
+  "hofGateAwayKm": "{km} km entfernt",
   "@hofGateAwayKm": {
     "placeholders": {
       "km": {
@@ -357,7 +361,7 @@
   "planRouteTitle": "Route planen",
   "planRouteCta": "Navigieren",
   "discoverSearchHint": "Ort oder Tour",
-  "filterAroundKm": "in {km} km",
+  "filterAroundKm": "Umkreis {km} km",
   "@filterAroundKm": {
     "placeholders": {
       "km": {
@@ -365,6 +369,34 @@
       }
     }
   },
+  "discoverAroundIdle": "Umkreis",
+  "discoverAroundAwayKm": "{km} km entfernt",
+  "@discoverAroundAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekLoopKm": "{km} km Runde",
+  "@discoverPeekLoopKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverPeekAwayKm": "{km} km entfernt",
+  "@discoverPeekAwayKm": {
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverPeekAwayNear": "unter 1 km",
+  "discoverPeekSave": "Merken",
+  "discoverPeekAkte": "Akte",
   "mapToggleFab": "Karte",
   "communityWriteReview": "Bewertung schreiben",
   "discoverModeExplore": "Entdecken",
@@ -629,8 +661,12 @@
   "rideLiveData": "Live-Daten",
   "rideMapReady": "Karte bereit. Sensor ist optional.",
   "rideClearRoute": "Route entfernen",
+  "rideDrawTour": "Als Tour zeichnen",
+  "rideDrawingTour": "Neue Tour · zeichnet",
   "postRideTitle": "Aktivität",
   "postRideFreeride": "Freeride",
+  "postRideLiveTour": "Neue Tour",
+  "postRideToMappe": "In die Mappe",
   "postRideTrackMap": "Gefahrener Track",
   "postRideNoTrack": "Kein GPS-Track — Karte zeigt keinen Verlauf.",
   "postRideStatDistance": "Distanz",
@@ -755,6 +791,7 @@
   "billingMoreBikes": "Mehr Bikes, Sync-Vorteile und Offline-Regionen.",
   "billingAlreadyPro": "Pro ist bereits aktiv — kein erneuter Kauf nötig.",
   "billingForceProDebug": "Debug: Force-Pro. Stripe/Play bleiben ausgeblendet.",
+  "billingCommerceClosed": "Entwicklungsstand — keine Käufe. Es gibt kein öffentliches Abo.",
   "billingStripeMonth": "Stripe — monatlich",
   "billingStripeYear": "Stripe — jährlich",
   "billingPlayMonth": "Google Play — monatlich",
@@ -1071,6 +1108,12 @@
   "profileNameUnset": "Noch kein Name",
   "profilePublic": "Öffentlich",
   "profileAccountSync": "Konto & Sync",
+  "profileConnections": "Verbindungen",
+  "profileWatchTitle": "Uhr / Puls",
+  "profileWatchIdle": "Keine Uhr gekoppelt — Garmin, Polar, Wahoo.",
+  "profileBikeBleTitle": "Rad / Bosch LDI",
+  "profileBikeBleIdle": "Display, Motor oder CSC am aktiven Rad.",
+  "profileBikeBleNeedBike": "Zuerst ein Rad in die Werkstatt stellen.",
   "profileCloudBilling": "Cloud-Sync & Abo",
   "profileSignedIn": "Angemeldet",
   "profileFamilyGarage": "Familien-Garage",
@@ -1268,11 +1311,11 @@
   },
   "platzTogetherKicker": "Gruppe",
   "platzTogetherTitle": "Zusammen raus",
-  "platzTogetherHint": "Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen — kein Feed.",
+  "platzTogetherHint": "Einladen teilt den Link. Deine Gruppen bleiben — kein Feed.",
   "platzTogetherListHint": "Gruppe. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.",
   "platzCreateGroup": "Gruppe anlegen",
   "platzJoinCode": "Code",
-  "platzNoGroup": "Noch keine Gruppe. Einladen teilt den Link — nichts Vorgespieltes.",
+  "platzNoGroup": "Noch keine Gruppe. Ein Link reicht.",
   "platzHost": "Gastgeber",
   "platzGuest": "Gast",
   "platzYou": "Du",
@@ -1990,6 +2033,7 @@
   "discoverHeatmapConsent": "Wo viele fahren — nach Zustimmung. Privatsphäre öffnen",
   "discoverRideToStartShort": "Zum Startpunkt",
   "discoverLoopsNearby": "Rundkurse in deiner Nähe",
+  "discoverNearbySection": "In der Nähe",
   "discoverNoLoop90": "Keine Runde in 90 km — nächste Regionen",
   "discoverRecommendedNoGps": "Empfohlene Touren · auch ohne GPS",
   "discoverRecommended": "Empfohlen ({count})",
@@ -2378,9 +2422,9 @@
   "overlayScaleNote": "S0–S3+ nur wenn die Spur bewertet ist. Sonst unbewertet.",
   "overlayRoadAsphalt": "Radweg / Asphalt",
   "overlayUnrated": "unbewertet",
-  "overlayLegendEmpty": "Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.",
+  "overlayLegendEmpty": "Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 11 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.",
   "overlayLegendMeshTitle": "Radnetz · OSM",
-  "overlayLegendMeshNote": "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.",
+  "overlayLegendMeshNote": "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 11 im ganzen DACH-Blatt.",
   "overlayLegendCompactGravel": "Gravel",
   "discoverChipTooltip": "Touren und Wege nach Radtyp",
   "discoverLocateLongPress": "Mein Standort · lange drücken: Navi-Symbol",
@@ -2470,6 +2514,17 @@
   "discoverEditorialHonesty": "Redaktionelle Ideen — keine User-Sammlungen.",
   "discoverEditorialEmpty": "Diese Region ist im Katalog, die Touren sind gerade nicht in der Liste.",
   "discoverLayerTours": "Touren",
+  "discoverLayerTrails": "Trails",
+  "discoverLayerWays": "Wege",
+  "discoverLayerHeight": "Höhe",
+  "discoverLayerHeightHint": "Nur Relief — keine Höhenlinien in dieser Karte.",
+  "browseMapLegendPaved": "Asphalt",
+  "browseMapLegendGravel": "Schotter",
+  "browseMapLegendTrail": "Pfad",
+  "discoverDurationAll": "alle",
+  "overlayLegendTrailsTitle": "Trails · OSM",
+  "overlayLegendWaysTitle": "Radwege · OSM",
+  "overlayLegendAllTitle": "Wege · OSM",
   "discoverLayerPlaces": "Orte",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat aus",
@@ -2605,7 +2660,7 @@
   "rideBatteryChip": "Akku",
   "rideWheelSpeed": "Rad",
   "rideRestKm": "noch km",
-  "rideUntilJoin": "km bis Route",
+  "rideUntilJoin": "bis zur Strecke",
   "rideRestLoop": "Rest Runde",
   "rideKmToRoute": "{km} km zur Route",
   "@rideKmToRoute": {
@@ -3979,8 +4034,23 @@
   "filterVisibilityAll": "Alle",
   "filterVisibilityPublic": "Freigegeben",
   "mappeTitle": "Touren",
-  "mappeSubtitle": "Touren merken, kurz schreiben, Freunde per Link mitnehmen — dieselben Touren wie auf der Karte.",
-  "mappeAddHint": "Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX als Option darunter.",
+  "mappeSubtitle": "Touren merken, Stimmen und Freunde an der Strecke — dieselben wie auf der Karte.",
+  "mappeAddHint": "Name merken, Start von GPS oder letzter Karte, sonst ohne Pin. GPX darunter — ohne erfundenen Track.",
+  "mappeKeep": "Merken",
+  "mappeSearch": "Tour suchen",
+  "mappeSortRecent": "Zuletzt",
+  "mappeSortDistance": "Länge",
+  "mappeSortName": "Name",
+  "mappeKicker": "Mappe",
+  "mappeInviteFriends": "Freunde mitnehmen",
+  "mappeActiveMeet": "{title} · {when}",
+  "@mappeActiveMeet": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "mappeCollectionNew": "Sammlung anlegen",
   "mappeStartNone": "Start: noch ohne Pin — GPS oder Karte öffnen.",
   "mappeStartPin": "Start: {lat}°N, {lng}°E",
   "@mappeStartPin": {
@@ -4026,7 +4096,7 @@
       }
     }
   },
-  "mappeEmpty": "Noch keine eigenen Touren — Route hinzufügen.",
+  "mappeEmpty": "Noch keine eigenen Touren — merken oder GPX importieren.",
   "mappeStimmenEmpty": "Noch keine Tipps zu deinen Touren. Nach Freigabe können andere schreiben.",
   "myRoutesSourceOwn": "Eigene",
   "privacyZoneTitle": "Privacy-Zone",

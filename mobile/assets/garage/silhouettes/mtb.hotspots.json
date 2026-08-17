@@ -1,143 +1,114 @@
 {
-  "kind": "mtb",
+  "id": "mtb_am",
+  "name": "All Mountain",
+  "manufacturer": "AetherRide",
+  "year": 2026,
+  "category": "mtb_am",
+  "family": "mtb_full",
+  "size": "M",
   "viewBox": "0 0 1000 500",
-  "groundY": 420,
-  "axleY": 420,
-  "bb": {
-    "x": 400,
-    "y": 372
-  },
-  "wheelbaseUnits": 470,
-  "params": {
-    "tire_stroke": 22,
-    "bar": "flat",
-    "fork_travel": true
+  "geometry": {
+    "reachMm": 455,
+    "stackMm": 622,
+    "headAngleDeg": 64.6,
+    "seatAngleEffectiveDeg": 76.8,
+    "chainstayMm": 435,
+    "wheelbaseMm": 1232,
+    "bbDropMm": 30,
+    "headTubeMm": 105,
+    "wheelSizeFront": "29",
+    "wheelSizeRear": "29",
+    "travelFrontMm": 150,
+    "travelRearMm": 140,
+    "isEbike": false,
+    "isFully": true,
+    "source": "category_silhouette"
   },
   "hotspots": {
     "tire_front": {
-      "cx": 220,
-      "cy": 420,
+      "cx": 695.9,
+      "cy": 313.7,
       "hitR": 28,
       "label_de": "Vorderrad"
     },
+    "tire_rear": {
+      "cx": 304.1,
+      "cy": 314.6,
+      "hitR": 28,
+      "label_de": "Hinterrad"
+    },
     "fork": {
-      "cx": 269,
-      "cy": 297.5,
+      "cx": 643.8,
+      "cy": 227.2,
       "hitR": 28,
       "label_de": "Gabel"
     },
     "brake_front": {
-      "cx": 242,
-      "cy": 365,
+      "cx": 684.6,
+      "cy": 294.8,
       "hitR": 28,
       "label_de": "Vorderradbremse"
     },
+    "brake_rear": {
+      "cx": 298.4,
+      "cy": 292.4,
+      "hitR": 28,
+      "label_de": "Hinterradbremse"
+    },
     "handlebar": {
-      "cx": 298,
-      "cy": 168,
+      "cx": 598.4,
+      "cy": 119.7,
       "hitR": 28,
       "label_de": "Lenker"
     },
     "stem": {
-      "cx": 308,
-      "cy": 171.5,
+      "cx": 590.5,
+      "cy": 120.2,
       "hitR": 28,
       "label_de": "Vorbau"
     },
     "frame": {
-      "cx": 382.7,
-      "cy": 231.7,
+      "cx": 499.7,
+      "cy": 162.2,
       "hitR": 28,
       "label_de": "Rahmen"
     },
     "seatpost": {
-      "cx": 430,
-      "cy": 260,
+      "cx": 407.4,
+      "cy": 176.1,
       "hitR": 28,
       "label_de": "Sattelstütze"
     },
     "saddle": {
-      "cx": 440,
-      "cy": 126,
+      "cx": 403.6,
+      "cy": 159.9,
       "hitR": 28,
       "label_de": "Sattel"
     },
     "crankset": {
-      "cx": 400,
-      "cy": 372,
+      "cx": 442.1,
+      "cy": 324.2,
       "hitR": 28,
       "label_de": "Kurbel"
     },
     "chain": {
-      "cx": 545,
-      "cy": 394,
+      "cx": 373.1,
+      "cy": 319.4,
       "hitR": 28,
       "label_de": "Kette"
     },
     "cassette": {
-      "cx": 704,
-      "cy": 408,
+      "cx": 306.6,
+      "cy": 314.6,
       "hitR": 28,
       "label_de": "Kassette"
     },
-    "tire_rear": {
-      "cx": 690,
-      "cy": 420,
-      "hitR": 28,
-      "label_de": "Hinterrad"
-    },
-    "brake_rear": {
-      "cx": 662,
-      "cy": 362,
-      "hitR": 28,
-      "label_de": "Hinterradbremse"
-    },
     "rear_shock": {
-      "cx": 457,
-      "cy": 224,
+      "cx": 517.6,
+      "cy": 199.2,
       "hitR": 28,
       "label_de": "Dämpfer"
-    },
-    "motor": {
-      "cx": 369,
-      "cy": 354,
-      "hitR": 28,
-      "label_de": "Motor"
-    },
-    "battery": {
-      "cx": 379,
-      "cy": 283.5,
-      "hitR": 28,
-      "label_de": "Akku"
     }
   },
-  "layers": {
-    "rear_shock": {
-      "type": "line",
-      "x1": 432,
-      "y1": 198,
-      "x2": 482,
-      "y2": 350,
-      "stroke": "#FF6A00",
-      "strokeWidth": 10
-    },
-    "motor": {
-      "type": "rect",
-      "x": 372,
-      "y": 334,
-      "width": 56,
-      "height": 32,
-      "rx": 6,
-      "fill": "#FF6A00"
-    },
-    "battery": {
-      "type": "rect",
-      "x": 349,
-      "y": 253.5,
-      "width": 44,
-      "height": 22,
-      "rx": 4,
-      "fill": "#7A8B73"
-    }
-  }
+  "cue": "Fully, mittlerer Federweg, Dämpfer im Hauptdreieck"
 }

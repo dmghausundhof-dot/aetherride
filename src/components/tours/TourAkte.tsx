@@ -14,7 +14,13 @@ import type { SavedRoute } from "@/types/route";
 
 type Shelf = "mein" | "stimmen";
 
-export function TourAkte({ route }: { route: SavedRoute }) {
+export function TourAkte({
+  route,
+  onGoRide,
+}: {
+  route: SavedRoute;
+  onGoRide?: () => void;
+}) {
   const copy = useHofCopy();
   const lang = useChromeLang();
   const p = platzCopy(lang);
@@ -203,6 +209,15 @@ export function TourAkte({ route }: { route: SavedRoute }) {
               </div>
             ) : null}
           </div>
+          {onGoRide && hasTrack ? (
+            <button
+              type="button"
+              className="w-full rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
+              onClick={onGoRide}
+            >
+              {p.goRide}
+            </button>
+          ) : null}
           <label className="block text-xs text-text-secondary">
             {p.privateNote}
             <textarea

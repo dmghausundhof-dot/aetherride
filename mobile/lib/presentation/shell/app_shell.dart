@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
 import '../../data/deep_links.dart';
 import '../../core/config.dart';
+import '../../domain/home/onboarding_gate.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -82,6 +85,17 @@ class _AppShellState extends ConsumerState<AppShell> {
     final l10n = AppLocalizations.of(context);
     final index = ShellTabs.stackIndex(ref.watch(shellTabIndexProvider));
     final onboardingDone = ref.watch(onboardingDoneProvider);
+    final hasBike =
+        (ref.watch(bikesProvider).valueOrNull ?? const []).isNotEmpty;
+    final hasRide =
+        (ref.watch(recentRidesProvider).valueOrNull ?? const []).isNotEmpty;
+    if (onboardingDone == false && (hasBike || hasRide)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(onboardingDoneProvider.notifier).state = true;
+        unawaited(ref.read(userProfileStoreProvider).markOnboardingDone());
+      });
+    }
     final riding = ref.watch(isRidingProvider);
     final mountedTabs = {..._visited, index};
     if (!_visited.contains(index)) {
@@ -91,6 +105,13 @@ class _AppShellState extends ConsumerState<AppShell> {
       });
     }
 
+    ref.listen<String?>(discoverPendingLoopIdProvider, (prev, next) {
+      if (next == null || next.isEmpty) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _discoverKey.currentState?.pinFromHof(next);
+      });
+    });
     ref.listen<bool>(shopOpenRouteProvider, (prev, next) {
       if (next != true) return;
       if (!AppConfig.shopEnabled) {
@@ -107,8 +128,12 @@ class _AppShellState extends ConsumerState<AppShell> {
       });
     });
 
-    final hideNav = riding || index == ShellTabs.ride;
-    final onboardingOpen = onboardingDone == false;
+    final onboardingOpen = OnboardingGate.shouldShow(
+      flaggedDone: onboardingDone,
+      hasBike: hasBike,
+      hasRide: hasRide,
+    );
+    final hideNav = riding || index == ShellTabs.ride || onboardingOpen;
     final dueCount = ref.watch(fleetDueCountProvider).valueOrNull ?? 0;
     final platzInbox = ref.watch(platzInboxBadgeProvider).valueOrNull ?? 0;
     final tabHasInnerBack = switch (index) {

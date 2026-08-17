@@ -18,6 +18,7 @@ import { HofPageHeader } from "@/components/hof/HofPageHeader";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { SyncConflictPanel } from "@/components/sync/SyncConflictPanel";
 import { AuthCard } from "@/components/auth/AuthCard";
+import { isCommerceOpen } from "@/lib/config/appStage";
 
 type AuthUser = {
   id: string;
@@ -316,7 +317,12 @@ export default function ProfilePage() {
           Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}
           {authUser ? ` (${authUser.subscriptionStatus})` : " (lokal)"}
         </p>
-        {authUser ? (
+        {!isCommerceOpen() ? (
+          <p className="text-xs text-text-secondary">
+            Entwicklungsstand — Käufe sind gesperrt. Lokal kannst du die App
+            weiter testen; es gibt kein öffentliches Abo.
+          </p>
+        ) : authUser ? (
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"

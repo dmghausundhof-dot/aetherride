@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, Minus } from "lucide-react";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
 import { useChromeLang } from "@/hooks/useChromeLang";
+import { isCommerceOpen } from "@/lib/config/appStage";
 import { publicPagesCopy } from "@/lib/i18n/publicPagesCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
 
@@ -33,6 +34,7 @@ export function PricingPageBody() {
   const lang = useChromeLang();
   const p = publicPagesCopy(lang).pricing;
   const chrome = webChrome(lang);
+  const canBuy = isCommerceOpen();
 
   return (
     <div className="px-4 py-14 sm:px-6">
@@ -67,14 +69,20 @@ export function PricingPageBody() {
             </span>
           </p>
           <p className="text-sm text-text-secondary">{p.yearHint}</p>
-          <Link
-            href="/anmelden?next=/profile"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-chrome py-3 text-sm font-semibold text-on-accent"
-          >
-            {p.unlockPro}
-          </Link>
+          {canBuy ? (
+            <Link
+              href="/anmelden?next=/profile"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-chrome py-3 text-sm font-semibold text-on-accent"
+            >
+              {p.unlockPro}
+            </Link>
+          ) : (
+            <p className="mt-6 rounded-xl border border-border bg-surface-elevated px-3 py-3 text-center text-sm text-text-secondary">
+              {p.devClosed}
+            </p>
+          )}
           <p className="mt-2 text-center text-[11px] text-text-secondary">
-            {p.checkoutHint}
+            {canBuy ? p.checkoutHint : p.devClosed}
           </p>
         </div>
       </div>

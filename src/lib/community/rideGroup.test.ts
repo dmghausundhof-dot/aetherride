@@ -11,6 +11,7 @@ import {
   groupListedOnExplore,
   isEventWindowOpen,
   keepLocalRideGroupAfterCloud,
+  nextActiveMeeting,
   parseGroupListing,
   parseMeetingPoint,
   parseRideGroupWindow,
@@ -196,6 +197,40 @@ assert.equal(
 assert.equal(
   keepLocalRideGroupAfterCloud({ onServer: true, selfIsHost: true }),
   false
+);
+
+const now = new Date("2026-08-17T12:00:00.000Z");
+assert.equal(
+  nextActiveMeeting(
+    [
+      {
+        status: "closed" as const,
+        startWindowStart: "2026-08-17T11:00:00.000Z",
+        startWindowEnd: "2026-08-17T14:00:00.000Z",
+        id: "closed",
+      },
+      {
+        status: "open" as const,
+        startWindowStart: "2026-08-17T08:00:00.000Z",
+        startWindowEnd: "2026-08-17T11:00:00.000Z",
+        id: "ended",
+      },
+      {
+        status: "scheduled" as const,
+        startWindowStart: "2026-08-17T18:00:00.000Z",
+        startWindowEnd: "2026-08-17T21:00:00.000Z",
+        id: "later",
+      },
+      {
+        status: "open" as const,
+        startWindowStart: "2026-08-17T13:00:00.000Z",
+        startWindowEnd: "2026-08-17T16:00:00.000Z",
+        id: "soon",
+      },
+    ],
+    now,
+  )?.id,
+  "soon",
 );
 
 console.log("rideGroup policy ok");

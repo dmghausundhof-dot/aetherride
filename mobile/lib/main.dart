@@ -73,7 +73,6 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
       ref.read(onboardingDoneProvider.notifier).state = store.onboardingDone;
     } catch (e) {
       debugPrint('Bootstrap: $e');
-      ref.read(onboardingDoneProvider.notifier).state = false;
     }
   }
 

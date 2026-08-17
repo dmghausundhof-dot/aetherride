@@ -43,6 +43,7 @@ import {
 } from "@/lib/routing/profiles";
 import {
   overlayFamilyForBike,
+  overlayExploreAllClasses,
   type BikeOverlayClass,
 } from "@/lib/routing/bikeOverlayClass";
 import { detailOverlayRegionIdForPoint } from "@/lib/coverage/dachRegions";
@@ -417,7 +418,7 @@ function DiscoverPageInner() {
   const [showTrails, setShowTrails] = useState(true);
   const [bikeOverlayOn, setBikeOverlayOn] = useState(true);
   const [bikeOverlayExtra, setBikeOverlayExtra] = useState<BikeOverlayClass[]>(
-    []
+    () => [...overlayExploreAllClasses]
   );
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
   const [liveOsmTrails, setLiveOsmTrails] = useState<TrailSegment[]>([]);
@@ -665,7 +666,7 @@ function DiscoverPageInner() {
       trails: trailsForMap,
       showTrails: sheetMode === "tours" && trailsForMap.length > 0,
       rundkursOnly: rundkursActive,
-      rideProfileId,
+      rideProfileId: null,
     });
     const heat: MapRouteLayer[] = (communityHeat?.segments ?? [])
       .filter((s) => s.visible && s.coordinates.length >= 2)
@@ -691,7 +692,6 @@ function DiscoverPageInner() {
     trailsForMap,
     sheetMode,
     communityHeat,
-    rideProfileId,
   ]);
 
   useEffect(() => {
@@ -3004,7 +3004,7 @@ function DiscoverPageInner() {
           bikeOverlayFamily={bikeOverlayFamily}
           bikeOverlayVisible={bikeOverlayOn}
           bikeOverlayExtraOn={bikeOverlayExtra}
-          bikeOverlayRideProfileId={rideProfileId}
+          bikeOverlayRideProfileId={null}
           bikeOverlayMinZoom={bikeOverlaySpec?.overlayKind === "ways" ? 10 : 5}
           onViewChange={(view) => {
             setMapCenter(view.center);
@@ -3082,7 +3082,7 @@ function DiscoverPageInner() {
             family={bikeOverlayFamily}
             visible={bikeOverlayOn}
             extraOn={bikeOverlayExtra}
-            rideProfileId={rideProfileId}
+            rideProfileId={null}
             hasOverlayData={Boolean(bikeOverlaySpec)}
             overlayKind={bikeOverlaySpec?.overlayKind ?? "mesh"}
             onToggleVisible={() => setBikeOverlayOn((v) => !v)}

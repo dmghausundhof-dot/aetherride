@@ -164,6 +164,16 @@ class RideRepository {
     await _garage.touchLocalSync();
   }
 
+  /// Hängt die Fahrt an eine Mappe-Akte (Live-Tour nach Stopp).
+  Future<void> attachSavedRoute(String rideId, String routeId) async {
+    final id = routeId.trim();
+    if (id.isEmpty) return;
+    await (_db.update(_db.rides)..where((t) => t.id.equals(rideId))).write(
+      RidesCompanion(routeId: Value(id)),
+    );
+    await mergeSummary(rideId, {'savedRouteId': id, 'liveTour': true});
+  }
+
   /// Merges keys into [RideRecord.summary] (weather snapshot, photo paths, …).
   Future<void> mergeSummary(
     String rideId,
