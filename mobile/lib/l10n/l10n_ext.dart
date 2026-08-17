@@ -7,6 +7,7 @@ import '../domain/bike.dart';
 import '../domain/bike_assist.dart';
 import '../domain/compatibility/rules.dart';
 import '../domain/component.dart';
+import '../domain/community/difficulty_crowd.dart';
 import '../domain/community/map_place.dart';
 import '../domain/garage/die_box.dart';
 import '../domain/garage/werkstatt_setup.dart';
@@ -1389,6 +1390,21 @@ extension AetherL10n on AppLocalizations {
   String mapPlaceKindLabelRaw(String? raw) =>
       mapPlaceKindLabel(mapPlaceKindFromRaw(raw));
 
+  String difficultyCrowdLine(DifficultyCrowd crowd) {
+    if (!crowd.shown || crowd.label == null) return '';
+    return switch (crowd.label!) {
+      DifficultyCrowdLabel.easier => akteDifficultyCrowdEasier(crowd.n),
+      DifficultyCrowdLabel.asMarked => akteDifficultyCrowdAsMarked(crowd.n),
+      DifficultyCrowdLabel.harder => akteDifficultyCrowdHarder(crowd.n),
+    };
+  }
+
+  String stimmeDifficultyDeltaLabel(int delta) {
+    if (delta < 0) return stimmeDifficultyEasier;
+    if (delta > 0) return stimmeDifficultyHarder;
+    return stimmeDifficultyAsMarked;
+  }
+
   String stimmeTagLabel(String wire) => switch (wire) {
         'nass' => stimmeTagNass,
         'zu' => stimmeTagZu,
@@ -1396,6 +1412,12 @@ extension AetherL10n on AppLocalizations {
         'top' => stimmeTagTop,
         'baustelle' => stimmeTagBaustelle,
         _ => wire,
+      };
+
+  String weatherTrailHintLabel(String hint) => switch (hint) {
+        'wet_likely' => discoverTrailWet,
+        'damp_possible' => discoverTrailDamp,
+        _ => discoverTrailDry,
       };
 
   String _bleWho(String who) => switch (who.trim()) {

@@ -7,7 +7,7 @@
  * - Photos: auto-reject unsafe content; never auto-approve (queue).
  */
 
-export type ModerationKind = "review" | "photo";
+export type ModerationKind = "review" | "photo" | "place";
 export type ModerationAction = "approved" | "rejected" | "pending";
 export type ModerationSource = "ai" | "human" | "rule";
 
@@ -164,8 +164,8 @@ export function decideModeration(
     };
   }
 
-  // Photos: never auto-approve — queue even if AI likes the landscape.
-  if (kind === "photo") {
+  // Photos and user places: never auto-approve.
+  if (kind === "photo" || kind === "place") {
     return {
       action: "pending",
       source: "ai",

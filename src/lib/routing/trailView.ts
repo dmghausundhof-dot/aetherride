@@ -5,6 +5,8 @@
  * Token: MAPILLARY_ACCESS_TOKEN / NEXT_PUBLIC_MAPILLARY_ACCESS_TOKEN
  */
 
+import { projectOntoRoute } from "@/lib/routing/routeProgress";
+
 export interface TrailPhoto {
   id: string;
   source: "mapillary" | "user";
@@ -157,4 +159,76 @@ export async function fetchTrailViewNear(
   } catch {
     return getTrailViewNear(lat, lng);
   }
+}
+
+export function sampleAlongLine(
+  coords: [number, number][],
+  count = 4
+): [number, number][] {
+  if (coords.length === 0) return [];
+  if (coords.length <= count) return coords;
+  const out: [number, number][] = [];
+  const last = coords.length - 1;
+  for (let i = 0; i < count; i++) {
+    const idx = Math.round((i / (count - 1)) * last);
+    out.push(coords[idx]);
+  }
+  return out;
+}
+
+export function photosInCorridor(
+  photos: TrailPhoto[],
+  line: [number, number][],
+  maxOffM = 150,
+  limit = 6
+): TrailPhoto[] {
+  if (line.length < 2) return photos.filter((p) => !p.demo && p.imageUrl).slice(0, limit);
+  const seen = new Set<string>();
+  const hit: TrailPhoto[] = [];
+  for (const p of photos) {
+    if (p.demo || !p.imageUrl || seen.has(p.id)) continue;
+    if (projectOntoRoute(line, p.lat, p.lng).crossTrackM > maxOffM) continue;
+    seen.add(p.id);
+    hit.push(p);
+    if (hit.length >= limit) break;
+  }
+  return hit;
+}
+
+const EMPTY_HONEST: TrailViewResult = {
+  photos: [],
+  attribution:
+    "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
+  disclaimer: "Keine Mapillary-Bilder im Korridor.",
+  usingDemo: false,
+};
+
+/** Corridor fetch. honest=true never returns demo placeholders. */
+export async function fetchTrailViewAlong(
+  coords: [number, number][],
+  opts?: { honest?: boolean; token?: string }
+): Promise<TrailViewResult> {
+  const honest = opts?.honest !== false;
+  const samples = sampleAlongLine(coords, 4);
+  if (samples.length === 0) return EMPTY_HONEST;
+  const batches = await Promise.all(
+    samples.map(([lng, lat]) => fetchTrailViewNear(lat, lng, opts?.token))
+  );
+  const merged: TrailPhoto[] = [];
+  let live = false;
+  for (const b of batches) {
+    if (b.usingDemo) continue;
+    live = true;
+    merged.push(...b.photos);
+  }
+  const photos = photosInCorridor(merged, coords);
+  if (honest && !live) return EMPTY_HONEST;
+  if (photos.length === 0) return EMPTY_HONEST;
+  return {
+    photos,
+    attribution:
+      "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
+    disclaimer: "Live Mapillary (CC BY-SA) entlang der Linie.",
+    usingDemo: false,
+  };
 }

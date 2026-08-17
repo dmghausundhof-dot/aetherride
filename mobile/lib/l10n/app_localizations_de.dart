@@ -43,6 +43,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navPlatz => 'Platz';
 
   @override
+  String navTabOf(int index, int count) {
+    return 'Tab $index von $count';
+  }
+
+  @override
   String get hofJustRide => 'Einfach fahren';
 
   @override
@@ -63,6 +68,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get werkstattShopParts => 'Ersatzteile im Shop';
+
+  @override
+  String get werkstattPartsForBike => 'Teile für dein Rad';
+
+  @override
+  String get shopLookupInShop => 'Im Laden nachschlagen';
 
   @override
   String get shopGatewayKicker => 'Über den Hof';
@@ -91,21 +102,28 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kleidung und Kleinzeug. Unabhängig vom Rad, nie nach Fit gefiltert.';
 
   @override
+  String get shopMerchTitle => 'Kleidung';
+
+  @override
+  String get shopMerchEmpty =>
+      'Kein Merch im Regal. Kleidung bleibt im Shop, nie nach dem Rad gefiltert.';
+
+  @override
   String get shopNotConnected => 'Shop nicht verbunden';
 
   @override
   String get shopNotConnectedHint =>
-      'Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann führt dieser Tab in den Laden.';
+      'Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann öffnet die Werkstatt den Laden.';
 
   @override
   String get shopOpenFailed => 'Shop konnte nicht geöffnet werden.';
 
   @override
   String get shopPasswordWall =>
-      'Der Shopify-Shop ist noch Inhaber-Vorschau (Dev-Store). Externe Links können zur Passwort-Seite führen. Katalog kann hier in FlowLine stehen.';
+      'Der Shop draußen ist noch nicht öffentlich — manchmal steht ein Passwort. Das Regal hier bleibt.';
 
   @override
-  String get shopLockedTitle => 'Online Store gesperrt';
+  String get shopLockedTitle => 'Shop draußen noch zu';
 
   @override
   String get shopPasswordConfirm => 'Trotzdem öffnen';
@@ -114,10 +132,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shopPasswordCancel => 'Zurück';
 
   @override
-  String get shopCyclingParts => 'CYCLING PARTS';
+  String get shopCyclingParts => 'Teile';
 
   @override
-  String get shopSearchHint => 'Teile, Marken, Specs…';
+  String get shopSearchHint => 'Teile, Marken, Maße…';
 
   @override
   String get shopFeatured => 'Passende Teile';
@@ -381,6 +399,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofNoHonestLoop => 'Kein ehrlicher Trail-Rundkurs';
 
   @override
+  String get hofGateWetClosed =>
+      'Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe';
+
+  @override
   String get hofNotYetOut => 'noch nicht draußen';
 
   @override
@@ -609,7 +631,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get filterBikeTypeHonesty =>
-      'Farben filtern Touren. Navigation: Fahrrad (GraphHopper Basic), außer Zu Fuß.';
+      'Farben filtern die Touren. Navigieren: eine Rad-Route, außer zu Fuß.';
 
   @override
   String get filterSingletrail => 'Singletrail (S-Skala)';
@@ -635,14 +657,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get filterLoopsOnly => 'Rundkurs';
 
   @override
-  String get filterLoopsOnlyTooltip =>
-      'Nur ehrliche Rundkurse (Start≈Ziel). Keine A→B-Füllung.';
+  String get filterLoopsOnlyTooltip => 'Nur Rundkurse — Start und Ziel gleich.';
 
   @override
-  String get filterNetworkOn => 'Netz an';
+  String get filterNetworkOn => 'Wege auf der Karte';
 
   @override
-  String get filterNetworkOff => 'Netz aus';
+  String get filterNetworkOff => 'Wege ausblenden';
 
   @override
   String filterOsmScaleTooltip(String code) {
@@ -687,7 +708,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get planRouteTitle => 'Route planen';
 
   @override
-  String get planRouteCta => '+ Planen';
+  String get planRouteCta => 'Navigieren';
 
   @override
   String get discoverSearchHint => 'Ort oder Tour';
@@ -743,7 +764,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navigatePickEnd => 'Ziel auf Karte';
 
   @override
-  String get navigateAddVia => 'Via';
+  String get navigateAddVia => 'Zwischenstopp';
 
   @override
   String get navigateNeedStartEnd => 'Start und Ziel setzen';
@@ -812,7 +833,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get emptyToursNearbyBody =>
-      'Ort oder Dauer anpassen — oder Filter zurücksetzen. Keine A→B-Füllung.';
+      'Ort oder Dauer anpassen — oder Filter zurücksetzen.';
 
   @override
   String get showOnMap => 'Auf Karte';
@@ -1222,7 +1243,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideLiveData => 'Live-Daten';
 
   @override
-  String get rideMapReady => 'Karte bereit — Sensor optional nach Start';
+  String get rideMapReady => 'Karte liegt. Sensor danach, wenn du willst.';
 
   @override
   String get rideClearRoute => 'Route entfernen';
@@ -1641,6 +1662,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chatNoAnswer => 'Keine Antwort.';
+
+  @override
+  String get chatUnavailable =>
+      'Der Assistent ist gerade nicht erreichbar. Versuch\'s später noch einmal.';
 
   @override
   String chatNetworkError(String error) {
@@ -2427,7 +2452,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Gruppe. Einladen teilt den Link — nichts Vorgespieltes.';
 
   @override
-  String get platzHost => 'Host';
+  String get platzHost => 'Gastgeber';
 
   @override
   String get platzGuest => 'Gast';
@@ -2490,13 +2515,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get platzCreateCollection => 'Sammlung anlegen';
 
   @override
-  String get platzJoinWithCode => 'Mit Code beitreten';
+  String get platzJoinWithCode => 'Mit Link beitreten';
 
   @override
-  String get platzJoinCodeField => 'Join-Code';
+  String get platzJoinCodeField => 'Einladungslink';
+
+  @override
+  String get platzJoinLinkHint =>
+      'Link aus WhatsApp oder Messages einfügen. Privat braucht den Token im Link — kein Code zum Abtippen.';
+
+  @override
+  String get platzJoinEmpty => 'Link fehlt.';
+
+  @override
+  String get platzJoinInvalid => 'Kein gültiger Einladungslink.';
 
   @override
   String get platzJoin => 'Beitreten';
+
+  @override
+  String get platzStartLabel => 'Start';
+
+  @override
+  String get platzStartNow => 'Jetzt';
+
+  @override
+  String get platzStartIn1h => 'In 1 h';
+
+  @override
+  String get platzStartToday18 => 'Heute 18:00';
+
+  @override
+  String get platzStartTomorrow10 => 'Morgen 10:00';
+
+  @override
+  String get platzDurationLabel => 'Dauer';
+
+  @override
+  String get platzMeetingPlaceholder => 'Treffpunkt (optional)';
+
+  @override
+  String get platzMeetingHint => 'z. B. Parkplatz am Bad';
+
+  @override
+  String get platzPinsOnHud => 'Pins im HUD an';
+
+  @override
+  String get platzTourNotInMappe =>
+      'Tour nicht in der Mappe — auf der Karte öffnen.';
+
+  @override
+  String get platzCollectionsHint =>
+      'Teilen geht nur mit freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.';
+
+  @override
+  String get akteTourKicker => 'Tour';
+
+  @override
+  String get stimmenShareNeedRelease =>
+      'Erst unter Mein freigeben — sonst geht der Link ins Leere.';
 
   @override
   String get platzNeedSharedTour =>
@@ -2508,7 +2585,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String platzGroupCreated(String code) {
-    return 'Gruppe $code — Einladen teilt den Link, kein Explore.';
+    return 'Gruppe $code — Einladen teilt den Link.';
   }
 
   @override
@@ -3665,7 +3742,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get discoverOpenOsm => 'Auf OpenStreetMap öffnen';
 
   @override
-  String get discoverApproachTrailhead => 'Anfahrt zum Trailhead…';
+  String get discoverApproachTrailhead => 'Anfahrt zum Einstieg…';
 
   @override
   String discoverApproachPlusTrail(String km, String diff) {
@@ -3729,22 +3806,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get discoverSuggestEnd => 'Ziel-Vorschlag (anpassbar)';
 
   @override
-  String get discoverTourInPlan => 'Tour in Planen — Start/Ziel/Via editierbar';
+  String get discoverTourInPlan =>
+      'Tour in Navigieren — Start, Ziel oder Stopp ändern';
 
   @override
   String get discoverNeedLocationTours =>
       'Standort oder Start setzen für Touren';
 
   @override
-  String get discoverOaOffline => 'Outdooractive offline';
+  String get discoverOaOffline => 'Touren gerade nicht erreichbar';
 
   @override
-  String get discoverOaNoLive =>
-      'Outdooractive — keine Live-Touren in der Nähe';
+  String get discoverOaNoLive => 'Keine Live-Touren in der Nähe';
 
   @override
   String discoverOaCount(int count) {
-    return 'Outdooractive $count · OSM/Tracks folgen';
+    return '$count Touren in der Nähe';
   }
 
   @override
@@ -3805,14 +3882,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get discoverQuickRoute => 'Quick-Route';
+  String get discoverQuickRoute => 'Kurzroute';
 
   @override
   String get discoverRoutingLimit =>
       'Routing-Limit — Näherung genutzt. Später erneut berechnen.';
 
   @override
-  String get discoverNoQuickRoutes => 'Keine Quick-Routen';
+  String get discoverNoQuickRoutes => 'Keine Kurzrouten';
 
   @override
   String get discoverPartialApprox =>
@@ -3823,7 +3900,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get discoverStraightFallback =>
-      'Gerade Fallback — Live-Routing lieferte keine Geometrie';
+      'Keine Strecke von der Karte — Ziel neu setzen.';
 
   @override
   String get discoverSaved => 'Gespeichert';
@@ -3944,7 +4021,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String discoverViaN(int n) {
-    return 'Via $n';
+    return 'Stopp $n';
   }
 
   @override
@@ -4087,7 +4164,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get discoverNoRealPolyline =>
-      'Keine echte Track-Polyline — Route neu berechnen oder GPX.';
+      'Keine echte Strecke — Route neu berechnen oder GPX.';
 
   @override
   String get discoverPoiIdeaHint =>
@@ -4205,7 +4282,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get overlayLegendCompactMtb => 'MTB';
 
   @override
-  String get overlayScaleNote => 'S0–S3+ nur bei OSM-Tag. Sonst unbewertet.';
+  String get overlayScaleNote =>
+      'S0–S3+ nur wenn die Spur bewertet ist. Sonst unbewertet.';
 
   @override
   String get overlayRoadAsphalt => 'Radweg / Asphalt';
@@ -4214,12 +4292,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get overlayUnrated => 'unbewertet';
 
   @override
-  String get discoverChipTooltip =>
-      'Touren und Wege — nicht der Navigationsmotor';
+  String get overlayLegendEmpty =>
+      'An dieser Stelle kein Wege-Overlay. Das Radnetz folgt der Karte darunter.';
 
   @override
-  String get discoverNavHonestyBike =>
-      'Navi: Fahrrad — GraphHopper Basic, gleiche Route';
+  String get overlayLegendMeshTitle => 'Radnetz · OSM';
+
+  @override
+  String get overlayLegendMeshNote =>
+      'Beschilderte Radrouten auf dieser Karte.';
+
+  @override
+  String get overlayLegendCompactGravel => 'Gravel';
+
+  @override
+  String get discoverChipTooltip => 'Touren und Wege nach Radtyp';
+
+  @override
+  String get discoverLocateLongPress =>
+      'Mein Standort · lange drücken: Navi-Symbol';
+
+  @override
+  String get discoverNavHonestyBike => 'Rad-Profile: dieselbe Route';
 
   @override
   String get discoverNavHonestyFoot => 'Navi: Zu Fuß';
@@ -4363,6 +4457,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get postRideStimmeDone => 'Stimme gespeichert.';
 
   @override
+  String get postRideOrtTitle => 'Ort merken?';
+
+  @override
+  String get postRideOrtHint =>
+      'Immer privat an der Runde. Öffentlich nur mit Login, auf der Linie, nach Freigabe.';
+
+  @override
+  String get postRideOrtSkip => 'Jetzt nicht';
+
+  @override
+  String get postRideOrtDone => 'Ort gespeichert.';
+
+  @override
+  String get postRideOrtNameHint => 'Name des Orts';
+
+  @override
+  String get postRideOrtSave => 'Merken';
+
+  @override
+  String get postRideOrtOffTrack =>
+      'Kein Punkt auf der gefahrenen Linie — nur private Notiz, ohne Pin.';
+
+  @override
+  String get postRideOrtPrivateOnly =>
+      'Nur für dich — ohne Login oder ohne öffentliche Tour kein Community-Ort.';
+
+  @override
+  String get postRideOrtPending =>
+      'Ort merkt die Cloud nach Freigabe. Bis dahin nur auf dem Gerät.';
+
+  @override
+  String get postRideOrtFailed =>
+      'Cloud hat den Ort nicht genommen — bleibt privat auf dem Gerät.';
+
+  @override
+  String get stimmeDifficultyHint =>
+      'Schwierigkeit gegenüber der Markierung — optional';
+
+  @override
+  String get stimmeDifficultyEasier => 'leichter';
+
+  @override
+  String get stimmeDifficultyAsMarked => 'wie markiert';
+
+  @override
+  String get stimmeDifficultyHarder => 'härter';
+
+  @override
+  String akteDifficultyCrowdEasier(int n) {
+    return 'Fahrer: eher leichter als markiert ($n)';
+  }
+
+  @override
+  String akteDifficultyCrowdAsMarked(int n) {
+    return 'Fahrer: wie markiert ($n)';
+  }
+
+  @override
+  String akteDifficultyCrowdHarder(int n) {
+    return 'Fahrer: eher härter als markiert ($n)';
+  }
+
+  @override
+  String get akteAddToCollection => 'Zu Sammlung';
+
+  @override
+  String get discoverEditorialSets => 'Redaktion';
+
+  @override
+  String get discoverEditorialHonesty =>
+      'Redaktionelle Ideen — keine User-Sammlungen.';
+
+  @override
+  String get discoverEditorialEmpty =>
+      'Diese Region ist im Katalog, die Touren sind gerade nicht in der Liste.';
+
+  @override
   String get discoverLayerTours => 'Touren';
 
   @override
@@ -4375,13 +4546,53 @@ class AppLocalizationsDe extends AppLocalizations {
   String get discoverLayerHeatOff => 'Heat aus';
 
   @override
+  String get discoverVariantPlanned => 'Wie geplant';
+
+  @override
+  String get discoverVariantFlatter => 'Weniger hm';
+
+  @override
+  String get discoverVariantUnpaved => 'Mehr unpaved';
+
+  @override
+  String get discoverVariantValhallaOnly => 'Varianten nur mit Live-Valhalla';
+
+  @override
+  String get discoverTrailWet => 'eher nass';
+
+  @override
+  String get discoverTrailDamp => 'feucht möglich';
+
+  @override
+  String get discoverTrailDry => 'eher trocken';
+
+  @override
+  String discoverWeatherStart(String temp, String hint) {
+    return 'Start $temp° · $hint';
+  }
+
+  @override
+  String discoverWeatherSummit(String temp, String hint) {
+    return 'Gipfel $temp° · $hint';
+  }
+
+  @override
+  String get discoverFilmstripAttribution => 'Mapillary CC BY-SA';
+
+  @override
+  String get discoverOfflineAfterSave => 'Region für offline laden?';
+
+  @override
+  String get discoverOfflineAfterSaveAction => 'Packs';
+
+  @override
   String get discoverRoundTrip => 'Hin & zurück';
 
   @override
   String get discoverOutboundOnly => 'nur Hinweg';
 
   @override
-  String get discoverOsmNoHitsSuffix => ' · OSM keine Treffer';
+  String get discoverOsmNoHitsSuffix => ' · keine Wege-Treffer';
 
   @override
   String get discoverLiveRoutingUnavailable =>
@@ -4561,7 +4772,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get rideRunning => 'Fahrt läuft';
 
   @override
-  String get rideStop => 'Stop';
+  String get rideStop => 'Beenden';
 
   @override
   String get rideTapAgain => 'Nochmal tippen';
@@ -6394,12 +6605,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String discoverToursOsmStatus(int tours, int withTrack, int osm) {
-    return 'Touren $tours ($withTrack mit Track) · OSM $osm';
+    return 'Touren $tours · $withTrack mit Strecke';
   }
 
   @override
   String discoverElevationApprox(String hm) {
-    return '~$hm hm (Distanz-Schätzung — Höhen-API nicht erreichbar)';
+    return '~$hm hm (Schätzung — Höhe gerade nicht da)';
   }
 
   @override
@@ -6600,7 +6811,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get platzGroupPrivateHint =>
-      'Nur wer den Link hat, kann beitreten. Kein öffentliches Roster.';
+      'Nur wer den Link hat, kann beitreten. Kein öffentliches Verzeichnis.';
 
   @override
   String get platzNoPrivateGroups => 'Keine privaten Gruppen in diesem Filter.';

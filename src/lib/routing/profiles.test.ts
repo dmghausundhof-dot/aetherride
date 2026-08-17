@@ -10,6 +10,8 @@ import {
   accessCostingForRideProfile,
   approachCostingForBike,
   discoverNavProfile,
+  discoverNavProfileChipVisible,
+  discoverProfileMenuForSports,
   sessionCostingForBike,
   suggestedApproachKind,
   trailFitsBikeCategory,
@@ -154,6 +156,31 @@ assert.equal(discoverNavProfile("downhill"), "mtb_allmountain");
 assert.equal(discoverNavProfile("mtb_enduro"), "mtb_allmountain");
 assert.ok(!DISCOVER_PROFILE_CHIPS.includes("downhill"));
 assert.ok(!DISCOVER_PROFILE_CHIPS.includes("auto"));
+assert.equal(
+  discoverNavProfileChipVisible(discoverProfileMenuForSports({ primary: "road" })),
+  false,
+  "ein Sport → kein Navi-Chip",
+);
+assert.equal(
+  discoverNavProfileChipVisible(
+    discoverProfileMenuForSports({
+      primary: "road",
+      sports: ["road", "gravel"],
+    }),
+  ),
+  true,
+  "zwei Sportarten → ein Chip, keine Rainbow-Leiste",
+);
+assert.equal(
+  discoverProfileMenuForSports({
+    primary: "mtb_enduro",
+    sports: ["mtb_trail"],
+  }).length,
+  1,
+  "Enduro+Trail fallen auf ein Navi-Profil",
+);
+assert.equal(discoverProfileMenuForSports().length, DISCOVER_PROFILE_CHIPS.length);
+assert.ok(discoverNavProfileChipVisible(discoverProfileMenuForSports()));
 assert.equal(sessionCostingForBike("dh", "mtb_allmountain"), "auto");
 assert.equal(sessionCostingForBike("mtb_am", "mtb_allmountain"), "mtb_allmountain");
 assert.equal(approachCostingForBike("dh", "auto"), "auto");

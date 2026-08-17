@@ -7,7 +7,12 @@ export async function persistModeration(params: {
   result: ModerationResult;
 }) {
   const admin = createAdminClient();
-  const table = params.kind === "photo" ? "tour_photos" : "tour_reviews";
+  const table =
+    params.kind === "photo"
+      ? "tour_photos"
+      : params.kind === "place"
+        ? "map_places"
+        : "tour_reviews";
   const patch = {
     status: params.result.action,
     moderated_at: params.result.action === "pending" ? null : new Date().toISOString(),
@@ -17,7 +22,9 @@ export async function persistModeration(params: {
     ai_confidence: params.result.confidence,
     ai_model: params.result.model ?? null,
     updated_at:
-      params.kind === "review" ? new Date().toISOString() : undefined,
+      params.kind === "review" || params.kind === "place"
+        ? new Date().toISOString()
+        : undefined,
   };
   if (params.kind === "photo") {
     delete (patch as { updated_at?: string }).updated_at;

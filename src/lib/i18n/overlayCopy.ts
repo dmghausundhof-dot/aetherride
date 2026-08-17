@@ -9,6 +9,11 @@ export type OverlayCopy = {
   gravel: string;
   road: string;
   urban: string;
+  compactMtb: string;
+  compactGravel: string;
+  compactRoad: string;
+  compactCity: string;
+  empty: string;
   scaleNote: string;
   meshNote: string;
 };
@@ -22,6 +27,12 @@ const DE: OverlayCopy = {
   gravel: "Gravel",
   road: "Radweg / Asphalt",
   urban: "City",
+  compactMtb: "MTB",
+  compactGravel: "Gravel",
+  compactRoad: "Asphalt",
+  compactCity: "City",
+  empty:
+    "An dieser Stelle kein Wege-Overlay. Das Radnetz folgt der Karte darunter.",
   scaleNote:
     "S0–S3+ nur bei OSM-Tag mtb:scale. sac_scale wird nicht umgemünzt.",
   meshNote:
@@ -37,6 +48,12 @@ const EN: OverlayCopy = {
   gravel: "Gravel",
   road: "Cycleway / asphalt",
   urban: "City",
+  compactMtb: "MTB",
+  compactGravel: "Gravel",
+  compactRoad: "Asphalt",
+  compactCity: "City",
+  empty:
+    "No way overlay here. The bike network follows the map underneath.",
   scaleNote:
     "S0–S3+ only with OSM tag mtb:scale. sac_scale is not remapped.",
   meshNote:
@@ -51,6 +68,12 @@ const FR: OverlayCopy = {
   gravel: "Gravel",
   road: "Piste cyclable / asphalte",
   urban: "City",
+  compactMtb: "MTB",
+  compactGravel: "Gravel",
+  compactRoad: "Asphalte",
+  compactCity: "City",
+  empty:
+    "Pas de calque de chemins ici. Le réseau vélo suit la carte en dessous.",
   scaleNote:
     "S0–S3+ seulement avec le tag OSM mtb:scale. sac_scale n’est pas converti.",
   meshOsm: "Réseau cyclable · OSM",
@@ -66,6 +89,12 @@ const IT: OverlayCopy = {
   gravel: "Gravel",
   road: "Pista ciclabile / asfalto",
   urban: "City",
+  compactMtb: "MTB",
+  compactGravel: "Gravel",
+  compactRoad: "Asfalto",
+  compactCity: "City",
+  empty:
+    "Nessun overlay di vie qui. La rete bici segue la mappa sotto.",
   scaleNote:
     "S0–S3+ solo con tag OSM mtb:scale. sac_scale non viene convertito.",
   meshOsm: "Rete ciclabile · OSM",
@@ -91,4 +120,15 @@ export function overlayLegendLabel(key: string, lang: ChromeLang): string {
   if (key === "road") return o.road;
   if (key === "urban") return o.urban;
   return key;
+}
+
+export function overlayLegendCompactLabel(
+  family: "mtb" | "gravel" | "road" | "urban",
+  lang: ChromeLang
+): string {
+  const o = overlayCopy(lang);
+  if (family === "mtb") return o.compactMtb;
+  if (family === "gravel") return o.compactGravel;
+  if (family === "road") return o.compactRoad;
+  return o.compactCity;
 }

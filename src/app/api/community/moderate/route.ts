@@ -59,6 +59,15 @@ export async function GET(req: Request) {
         .order("created_at", { ascending: true })
         .limit(40),
     ]);
+  const placesRes = await admin
+    .from("map_places")
+    .select(
+      "id, tour_id, name, kind, lat, lng, tip, ride_id, status, created_at, moderation_note, ai_labels, ai_confidence"
+    )
+    .eq("status", status)
+    .order("created_at", { ascending: true })
+    .limit(40);
+  const places = placesRes.error ? [] : placesRes.data ?? [];
   if (rErr || pErr) {
     return NextResponse.json(
       { error: "query_failed", note: rErr?.message || pErr?.message },
@@ -79,6 +88,7 @@ export async function GET(req: Request) {
     status,
     reviews: reviews ?? [],
     photos: signed,
+    places,
   });
 }
 
@@ -86,7 +96,7 @@ export async function POST(req: Request) {
   const denied = await requireModerator(req);
   if (denied) return denied;
   const body = (await req.json()) as {
-    kind?: "review" | "photo";
+    kind?: "review" | "photo" | "place";
     id?: string;
     action?: "approved" | "rejected" | "hidden" | "pending";
     note?: string;
@@ -95,7 +105,8 @@ export async function POST(req: Request) {
 
   if (body.drainAi) {
     const admin = createAdminClient();
-    const [{ data: reviews }, { data: photos }] = await Promise.all([
+    const [{ data: reviews }, { data: photos }, { data: places }] =
+      await Promise.all([
       admin
         .from("tour_reviews")
         .select("id, body, rating")
@@ -106,6 +117,11 @@ export async function POST(req: Request) {
         .select("id, caption, storage_path")
         .eq("status", "pending")
         .limit(8),
+      admin
+        .from("map_places")
+        .select("id, name, tip")
+        .eq("status", "pending")
+        .limit(15),
     ]);
     const out: { id: string; kind: string; action: string }[] = [];
     for (const r of reviews ?? []) {
@@ -135,6 +151,14 @@ export async function POST(req: Request) {
       await persistModeration({ kind: "photo", id: p.id, result });
       out.push({ id: p.id, kind: "photo", action: result.action });
     }
+    for (const pl of places ?? []) {
+      const result = await moderateContent({
+        kind: "place",
+        text: `${pl.name || ""} ${pl.tip || ""}`.trim(),
+      });
+      await persistModeration({ kind: "place", id: pl.id, result });
+      out.push({ id: pl.id, kind: "place", action: result.action });
+    }
     return NextResponse.json({ ok: true, processed: out });
   }
 
@@ -142,7 +166,7 @@ export async function POST(req: Request) {
   const id = String(body.id || "").trim();
   const action = body.action;
   if (
-    (kind !== "review" && kind !== "photo") ||
+    (kind !== "review" && kind !== "photo" && kind !== "place") ||
     !id ||
     (action !== "approved" &&
       action !== "rejected" &&
@@ -164,7 +188,8 @@ export async function POST(req: Request) {
   });
   if (action === "hidden") {
     const admin = createAdminClient();
-    const table = kind === "photo" ? "tour_photos" : "tour_reviews";
+    const table =
+      kind === "photo" ? "tour_photos" : kind === "place" ? "map_places" : "tour_reviews";
     await admin.from(table).update({ status: "hidden" }).eq("id", id);
   }
   return NextResponse.json({ ok: true, id, action });

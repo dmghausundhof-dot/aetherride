@@ -10,12 +10,14 @@ class RoutingStatus {
     required this.engine,
     required this.liveVerified,
     this.notice,
+    this.valhalla = false,
   });
 
   final bool configured;
   final String engine;
   final bool liveVerified;
   final String? notice;
+  final bool valhalla;
 
   String get bannerText {
     if (notice != null && notice!.trim().isNotEmpty) return notice!;
@@ -45,6 +47,7 @@ Future<RoutingStatus?> fetchRoutingStatus() async {
       engine: (m['engine'] as String?) ?? 'demo',
       liveVerified: m['liveVerified'] == true,
       notice: m['notice'] as String?,
+      valhalla: m['valhalla'] == true,
     );
   } catch (_) {
     return null;

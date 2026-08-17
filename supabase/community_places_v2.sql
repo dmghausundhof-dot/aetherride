@@ -1,6 +1,7 @@
--- P1: Orte + Stimme-Pins. Additive. Apply when ready.
--- GET /api/community/places retries without this table (stub=true).
--- POST /api/community/places is P3; insert policy is ready.
+-- P1: Orte + Stimme-Pins. Additive.
+-- Applied remote 2026-08-17 as community_places_v2 (krmgatsugplouzrhhozn).
+-- GET /api/community/places: ohne Tabelle stub=true; mit Tabelle echte Rows.
+-- POST /api/community/places: insert pending + ride_id, Snap serverseitig.
 
 alter table public.tour_reviews
   add column if not exists tags text[] not null default '{}',
@@ -60,3 +61,12 @@ create policy "map_places insert pending"
 
 grant select on table public.map_places to anon, authenticated;
 grant insert on table public.map_places to authenticated;
+
+alter table public.map_places
+  add column if not exists moderated_at timestamptz,
+  add column if not exists moderation_source text,
+  add column if not exists moderation_note text,
+  add column if not exists ai_labels jsonb not null default '[]'::jsonb,
+  add column if not exists ai_confidence double precision,
+  add column if not exists ai_model text;
+

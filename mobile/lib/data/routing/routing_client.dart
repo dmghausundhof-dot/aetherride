@@ -10,6 +10,7 @@ import '../../domain/routing/bike_overlay_class.dart';
 import '../../domain/routing/live_engine.dart';
 import '../../domain/routing/nav_policy.dart';
 import '../../domain/routing/nav_cues.dart';
+import '../../domain/routing/route_variant.dart';
 import '../../domain/routing/street_from_instruction.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
 import '../../native/routing_core_ffi.dart';
@@ -199,6 +200,8 @@ class RouteResult {
     this.engine,
     this.steps = const [],
     this.warnings = const [],
+    this.variant = RouteVariant.planned,
+    this.variantApplied = false,
   });
 
   final List<GeoPoint> coordinates;
@@ -207,6 +210,8 @@ class RouteResult {
   final String? engine;
   final List<RouteStep> steps;
   final List<String> warnings;
+  final RouteVariant variant;
+  final bool variantApplied;
 
   /// First rider-facing warning (skips GraphHopper Basic / engine debug).
   String? get riderWarning {
@@ -273,8 +278,12 @@ class RoutingClient {
     List<GeoPoint> vias = const [],
     LiveRoutingEngine? engine,
     bool accessLeg = false,
+    RouteVariant variant = RouteVariant.planned,
   }) async {
     var offlineFirst = preferOffline || AppConfig.preferOfflineRouting;
+    if (variant != RouteVariant.planned) {
+      offlineFirst = false;
+    }
     if (!offlineFirst) {
       offlineFirst = await OfflineMapsPrefs.coversRoute(
         fromLng: from.lng,
@@ -320,8 +329,10 @@ class RoutingClient {
         vias: vias,
         engine: engine,
         accessLeg: accessLeg,
+        variant: variant,
       );
     } catch (_) {
+      if (variant != RouteVariant.planned) rethrow;
       final offline = await _tryOffline(from, to, profile);
       if (offline != null) return offline;
       rethrow;
@@ -372,6 +383,7 @@ class RoutingClient {
     List<GeoPoint> vias = const [],
     LiveRoutingEngine? engine,
     bool accessLeg = false,
+    RouteVariant variant = RouteVariant.planned,
   }) async {
     // Web-API: from=lng,lat&to=lng,lat&via=... (Spec /api/route)
     final choice = engine ?? await RidePrefs.routingEngine();
@@ -384,6 +396,7 @@ class RoutingClient {
     final engineId = choice.apiId;
     if (engineId != null) qp['engine'] = engineId;
     if (accessLeg) qp['access'] = '1';
+    if (variant != RouteVariant.planned) qp['variant'] = variant.apiId;
     var url = Uri.parse('${AppConfig.apiBaseUrl}/api/route').replace(
       queryParameters: qp,
     );
@@ -481,6 +494,8 @@ class RoutingClient {
       engine: usedFallback ? 'fallback-line' : data['engine'] as String?,
       steps: steps.isNotEmpty ? steps : stepsFromCoordinates(coords),
       warnings: warnings,
+      variant: parseRouteVariant(data['variant'] as String? ?? variant.apiId),
+      variantApplied: data['variantApplied'] == true,
     );
   }
 }

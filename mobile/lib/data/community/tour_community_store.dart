@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
+import '../../domain/community/difficulty_crowd.dart';
 import '../../domain/community/stimme_tags.dart';
 
 enum CloudSubmitResult { pending, approved, rejected, localOnly, failed }
@@ -20,11 +21,13 @@ class TourCommunityCounts {
     this.reviewCount = 0,
     this.photoCount = 0,
     this.averageRating,
+    this.difficulty,
   });
 
   final int reviewCount;
   final int photoCount;
   final double? averageRating;
+  final DifficultyCrowd? difficulty;
 
   bool get hasCommunity => reviewCount > 0 || photoCount > 0;
 
@@ -55,6 +58,7 @@ class TourCommunityCounts {
       reviewCount: reviewCount,
       photoCount: photoCount,
       averageRating: avg,
+      difficulty: DifficultyCrowd.fromJson(data['difficulty']),
     );
   }
 
@@ -79,6 +83,7 @@ class TourCommunityReview {
     this.alongM,
     this.pinLat,
     this.pinLng,
+    this.difficultyDelta,
   });
 
   final String id;
@@ -92,6 +97,7 @@ class TourCommunityReview {
   final double? alongM;
   final double? pinLat;
   final double? pinLng;
+  final int? difficultyDelta;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -105,6 +111,7 @@ class TourCommunityReview {
         if (alongM != null) 'alongM': alongM,
         if (pinLat != null) 'pinLat': pinLat,
         if (pinLng != null) 'pinLng': pinLng,
+        if (difficultyDelta != null) 'difficultyDelta': difficultyDelta,
       };
 
   static TourCommunityReview? fromJson(Object? raw) {
@@ -143,6 +150,9 @@ class TourCommunityReview {
       alongM: _finiteDouble(raw['alongM'] ?? raw['along_m']),
       pinLat: _finiteDouble(raw['pinLat'] ?? raw['pin_lat']),
       pinLng: _finiteDouble(raw['pinLng'] ?? raw['pin_lng']),
+      difficultyDelta: parseDifficultyDelta(
+        raw['difficultyDelta'] ?? raw['difficulty_delta'],
+      ),
     );
   }
 }
@@ -227,6 +237,7 @@ class TourCommunityStore {
     double? alongM,
     double? pinLat,
     double? pinLng,
+    int? difficultyDelta,
   }) async {
     final review = TourCommunityReview(
       id: const Uuid().v4(),
@@ -240,6 +251,7 @@ class TourCommunityStore {
       alongM: alongM,
       pinLat: pinLat,
       pinLng: pinLng,
+      difficultyDelta: parseDifficultyDelta(difficultyDelta),
     );
     final all = List<TourCommunityReview>.from(await _load())..add(review);
     await _save(all);
@@ -271,6 +283,7 @@ class TourCommunityStore {
       averageRating: ratings.isEmpty
           ? null
           : ratings.reduce((a, b) => a + b) / ratings.length,
+      difficulty: countsCache[tourId]?.difficulty,
     );
     revision.value++;
   }
@@ -413,6 +426,8 @@ class TourCommunityStore {
                   if (review.alongM != null) 'alongM': review.alongM,
                 },
               if (review.alongM != null) 'alongM': review.alongM,
+              if (review.difficultyDelta != null)
+                'difficultyDelta': review.difficultyDelta,
               'photos': [
                 for (final path in photoPaths) {'storagePath': path},
               ],
@@ -495,6 +510,9 @@ class TourCommunityStore {
             alongM: _finiteDouble(m['alongM'] ?? m['along_m']),
             pinLat: _finiteDouble(m['pinLat'] ?? m['pin_lat']),
             pinLng: _finiteDouble(m['pinLng'] ?? m['pin_lng']),
+            difficultyDelta: parseDifficultyDelta(
+              m['difficultyDelta'] ?? m['difficulty_delta'],
+            ),
           ),
         );
       }

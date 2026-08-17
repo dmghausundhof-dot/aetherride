@@ -27,6 +27,8 @@ function testParity() {
     assert.ok(c.region.toursIn("Heidelberg").includes("Heidelberg"), lang);
     assert.equal(typeof c.weather.precip(2, 40), "string", lang);
     assert.ok(!JSON.stringify(Object.values(c.tour)).includes("Musterstraße"), lang);
+    assert.ok(c.stimmen.crowdEasier(6).includes("6"), lang);
+    assert.ok(c.stimmen.pinOnLine.length > 0, lang);
     assert.ok(c.elevation.noteMeta.includes("km"), lang);
   }
   assert.notEqual(de.regions.lead, catalogCopy("en").regions.lead);

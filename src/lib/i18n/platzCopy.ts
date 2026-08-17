@@ -44,6 +44,19 @@ export type PlatzCopy = {
   pinsHud: string;
   join: string;
   joined: (title: string) => string;
+  joinWithLink: string;
+  joinField: string;
+  joinHint: string;
+  joinEmpty: string;
+  joinInvalid: string;
+  startLabel: string;
+  startNow: string;
+  startIn1h: string;
+  startToday18: string;
+  startTomorrow10: string;
+  durationLabel: string;
+  pinsOn: string;
+  collectionsHint: string;
   shareTitle: (title: string) => string;
   shareMeet: (point: string) => string;
   shareProfile: (url: string) => string;
@@ -98,6 +111,8 @@ export type PlatzCopy = {
   trackLocal: string;
   noTrackMappe: string;
   inCollections: (names: string) => string;
+  addToCollection: string;
+  collectionAdded: string;
   visibility: string;
   shareOut: string;
   privateNote: string;
@@ -149,6 +164,21 @@ const DE: PlatzCopy = {
   pinsHud: "Pins nur im HUD",
   join: "Beitreten",
   joined: (title) => `Dabei: ${title}`,
+  joinWithLink: "Mit Link beitreten",
+  joinField: "Einladungslink",
+  joinHint:
+    "Link aus WhatsApp oder Messages einfügen. Privat braucht den Token im Link — kein Code zum Abtippen.",
+  joinEmpty: "Link fehlt.",
+  joinInvalid: "Kein gültiger Einladungslink.",
+  startLabel: "Start",
+  startNow: "Jetzt",
+  startIn1h: "In 1 h",
+  startToday18: "Heute 18:00",
+  startTomorrow10: "Morgen 10:00",
+  durationLabel: "Dauer",
+  pinsOn: "Pins im HUD an",
+  collectionsHint:
+    "Teilen geht nur mit freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.",
   shareTitle: (title) => `Zusammen raus: ${title}`,
   shareMeet: (point) => `Treffpunkt: ${point}`,
   shareProfile: (url) => `Mein Platz-Profil: ${url}`,
@@ -211,6 +241,8 @@ const DE: PlatzCopy = {
   trackLocal: "Track liegt lokal. Sync zwischen deinen Geräten.",
   noTrackMappe: "Noch kein Track — nur der Eintrag in der Mappe.",
   inCollections: (names) => `In ${names}`,
+  addToCollection: "Zu Sammlung",
+  collectionAdded: "Zur Sammlung hinzugefügt",
   visibility: "Sichtbarkeit",
   shareOut: "Freigeben",
   privateNote: "Private Notiz",
@@ -265,6 +297,21 @@ const EN: PlatzCopy = {
   pinsHud: "Pins only in HUD",
   join: "Join",
   joined: (title) => `In: ${title}`,
+  joinWithLink: "Join with a link",
+  joinField: "Invite link",
+  joinHint:
+    "Paste the link from WhatsApp or Messages. Private groups need the token in the link — no code to type.",
+  joinEmpty: "Link missing.",
+  joinInvalid: "Not a valid invite link.",
+  startLabel: "Start",
+  startNow: "Now",
+  startIn1h: "In 1 h",
+  startToday18: "Today 18:00",
+  startTomorrow10: "Tomorrow 10:00",
+  durationLabel: "Duration",
+  pinsOn: "Pins on in HUD",
+  collectionsHint:
+    "Sharing only includes released or catalogue tours. Private GPX stays out.",
   shareTitle: (title) => `Ride together: ${title}`,
   shareMeet: (point) => `Meeting point: ${point}`,
   shareProfile: (url) => `My Platz profile: ${url}`,
@@ -328,6 +375,8 @@ const EN: PlatzCopy = {
   trackLocal: "Track is local. Sync between your devices.",
   noTrackMappe: "No track yet — only the entry in Die Mappe.",
   inCollections: (names) => `In ${names}`,
+  addToCollection: "Add to collection",
+  collectionAdded: "Added to collection",
   visibility: "Visibility",
   shareOut: "Share",
   privateNote: "Private note",
@@ -383,6 +432,21 @@ const FR: PlatzCopy = {
   pinsHud: "Pins seulement dans le HUD",
   join: "Rejoindre",
   joined: (title) => `Dedans : ${title}`,
+  joinWithLink: "Rejoindre avec un lien",
+  joinField: "Lien d’invitation",
+  joinHint:
+    "Colle le lien depuis WhatsApp ou Messages. Privé a besoin du jeton dans le lien — pas de code à taper.",
+  joinEmpty: "Lien manquant.",
+  joinInvalid: "Lien d’invitation invalide.",
+  startLabel: "Départ",
+  startNow: "Maintenant",
+  startIn1h: "Dans 1 h",
+  startToday18: "Aujourd’hui 18:00",
+  startTomorrow10: "Demain 10:00",
+  durationLabel: "Durée",
+  pinsOn: "Pins on dans le HUD",
+  collectionsHint:
+    "Le partage ne prend que les sorties partagées ou catalogue. Le GPX privé reste dehors.",
   shareTitle: (title) => `Sortir ensemble : ${title}`,
   shareMeet: (point) => `Rendez-vous : ${point}`,
   shareProfile: (url) => `Mon profil Platz : ${url}`,
@@ -446,6 +510,8 @@ const FR: PlatzCopy = {
   trackLocal: "La trace est locale. Sync entre tes appareils.",
   noTrackMappe: "Pas encore de trace — seulement l’entrée dans Die Mappe.",
   inCollections: (names) => `Dans ${names}`,
+  addToCollection: "Ajouter à une collection",
+  collectionAdded: "Ajouté à la collection",
   visibility: "Visibilité",
   shareOut: "Partager",
   privateNote: "Note privée",
@@ -501,6 +567,21 @@ const IT: PlatzCopy = {
   pinsHud: "Pin solo nell’HUD",
   join: "Entra",
   joined: (title) => `Dentro: ${title}`,
+  joinWithLink: "Entra con un link",
+  joinField: "Link d’invito",
+  joinHint:
+    "Incolla il link da WhatsApp o Messages. Il privato serve il token nel link — niente codice da digitare.",
+  joinEmpty: "Manca il link.",
+  joinInvalid: "Link d’invito non valido.",
+  startLabel: "Partenza",
+  startNow: "Ora",
+  startIn1h: "Tra 1 h",
+  startToday18: "Oggi 18:00",
+  startTomorrow10: "Domani 10:00",
+  durationLabel: "Durata",
+  pinsOn: "Pin on nell’HUD",
+  collectionsHint:
+    "Si condividono solo uscite condivise o di catalogo. Il GPX privato resta fuori.",
   shareTitle: (title) => `Uscire insieme: ${title}`,
   shareMeet: (point) => `Ritrovo: ${point}`,
   shareProfile: (url) => `Il mio profilo Platz: ${url}`,
@@ -564,6 +645,8 @@ const IT: PlatzCopy = {
   trackLocal: "La traccia è locale. Sync tra i tuoi dispositivi.",
   noTrackMappe: "Ancora nessuna traccia — solo la voce in Die Mappe.",
   inCollections: (names) => `In ${names}`,
+  addToCollection: "Aggiungi alla raccolta",
+  collectionAdded: "Aggiunto alla raccolta",
   visibility: "Visibilità",
   shareOut: "Condividi",
   privateNote: "Nota privata",

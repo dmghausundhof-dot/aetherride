@@ -71,6 +71,17 @@ function testPins() {
   assert.equal(discoverDraftLabel("Alster", "fr"), "Alster");
 }
 
+function testP2Copy() {
+  const de = discoverUi("de");
+  assert.equal(de.variantPlanned, "Wie geplant");
+  assert.equal(de.variantFlatter, "Weniger hm");
+  assert.equal(de.variantUnpaved, "Mehr unpaved");
+  assert.equal(de.openNativeApp, "In der App öffnen");
+  assert.equal(de.placeKind("cafe"), "Café");
+  assert.equal(de.placeKind("shop"), "Laden");
+  assert.equal(discoverUi("en").variantValhallaOnly.includes("Valhalla"), true);
+}
+
 function testSurface() {
   assert.equal(discoverSurfaceLabel("Schotter", "de"), "Schotter");
   assert.equal(discoverSurfaceLabel("Schotter", "en"), "Gravel");
@@ -81,5 +92,6 @@ testDeExact();
 testBrands();
 testStatusMap();
 testPins();
+testP2Copy();
 testSurface();
 console.log("discoverUi.test.ts OK");

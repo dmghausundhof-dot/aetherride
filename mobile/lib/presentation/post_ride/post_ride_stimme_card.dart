@@ -28,6 +28,7 @@ class _PostRideStimmeCardState extends State<PostRideStimmeCard> {
   final _bodyCtrl = TextEditingController();
   int _rating = 4;
   List<String> _tags = const [];
+  int? _difficultyDelta;
   bool _busy = false;
   bool _done = false;
   bool _skipped = false;
@@ -68,6 +69,7 @@ class _PostRideStimmeCardState extends State<PostRideStimmeCard> {
         alongM: pin?.alongM,
         pinLat: pin?.lat,
         pinLng: pin?.lng,
+        difficultyDelta: _difficultyDelta,
       );
       final cloud = await _store.submitToCloud(review);
       if (!mounted) return;
@@ -141,6 +143,10 @@ class _PostRideStimmeCardState extends State<PostRideStimmeCard> {
           StimmeTagChips(
             selected: _tags,
             onChanged: (next) => setState(() => _tags = next),
+          ),
+          StimmeDifficultyChips(
+            selected: _difficultyDelta,
+            onChanged: (next) => setState(() => _difficultyDelta = next),
           ),
           const SizedBox(height: 8),
           TextField(

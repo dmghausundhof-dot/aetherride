@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:aetherride_mobile/data/community/tour_community_store.dart';
+import 'package:aetherride_mobile/domain/community/difficulty_crowd.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -37,7 +38,44 @@ void main() {
     expect(parsed.reviews.first.tags, ['nass', 'top']);
     expect(parsed.reviews.first.pinLat, 49.41);
     expect(parsed.reviews.first.pinLng, 8.67);
+    expect(parsed.reviews.first.difficultyDelta, isNull);
     expect(parsed.photoUrls, ['https://cdn.example/tour.jpg']);
+  });
+
+  test('parseCloudPayload keeps difficulty_delta', () {
+    final parsed = TourCommunityStore.parseCloudPayload(
+      {
+        'reviews': [
+          {
+            'id': 'r2',
+            'rating': 4,
+            'body': 'steil',
+            'author_label': 'Lia',
+            'difficulty_delta': 1,
+          },
+        ],
+        'difficulty': {
+          'n': 6,
+          'mean': 0.8,
+          'shown': true,
+          'label': 'harder',
+        },
+      },
+      't1',
+    );
+    expect(parsed.reviews.single.difficultyDelta, 1);
+    final counts = TourCommunityCounts.fromPayload({
+      'reviewCount': 6,
+      'photoCount': 0,
+      'difficulty': {
+        'n': 6,
+        'mean': 0.8,
+        'shown': true,
+        'label': 'harder',
+      },
+    });
+    expect(counts.difficulty?.shown, isTrue);
+    expect(counts.difficulty?.label, DifficultyCrowdLabel.harder);
   });
 
   test('parseCloudPayload ignores stub / missing tables', () {

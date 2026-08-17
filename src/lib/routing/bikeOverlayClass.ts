@@ -337,3 +337,70 @@ export const BIKE_OVERLAY_LEGEND_DE: {
     bikeClass: "urban",
   },
 ];
+
+/** S0–S3+ nur bei MTB/Trail — nicht als permanente City-Legende. */
+export function overlayLegendShowsSScale(family: BikeOverlayFamily): boolean {
+  return family === "mtb";
+}
+
+export type OverlayLegendRow = {
+  key: string;
+  bikeClass: BikeOverlayClass;
+};
+
+/** Ausgeklappt: S-Skala nur bei MTB; City/Rennrad/Gravel ohne S0–S3+. */
+export function overlayLegendRows(opts: {
+  family: BikeOverlayFamily;
+  expanded: boolean;
+}): OverlayLegendRow[] {
+  if (!opts.expanded) return [];
+  if (overlayLegendShowsSScale(opts.family)) {
+    return [
+      { bikeClass: "mtb", key: "S0" },
+      { bikeClass: "mtb", key: "S1" },
+      { bikeClass: "mtb", key: "S2" },
+      { bikeClass: "mtb", key: "S3+" },
+      { bikeClass: "mtb_unrated", key: "unrated" },
+    ];
+  }
+  switch (opts.family) {
+    case "urban":
+      return [
+        { bikeClass: "urban", key: "urban" },
+        { bikeClass: "road", key: "road" },
+      ];
+    case "road":
+      return [
+        { bikeClass: "road", key: "road" },
+        { bikeClass: "urban", key: "urban" },
+      ];
+    case "gravel":
+      return [
+        { bikeClass: "gravel", key: "gravel" },
+        { bikeClass: "road", key: "road" },
+      ];
+    default:
+      return [];
+  }
+}
+
+export function overlayLegendColor(key: string): string {
+  switch (key) {
+    case "S0":
+      return BIKE_OVERLAY_COLORS.S0;
+    case "S1":
+      return BIKE_OVERLAY_COLORS.S1;
+    case "S2":
+      return BIKE_OVERLAY_COLORS.S2;
+    case "S3+":
+      return BIKE_OVERLAY_COLORS.S3;
+    case "unrated":
+      return BIKE_OVERLAY_COLORS.unrated;
+    case "gravel":
+      return BIKE_OVERLAY_COLORS.gravel;
+    case "road":
+      return BIKE_OVERLAY_COLORS.road;
+    default:
+      return BIKE_OVERLAY_COLORS.urban;
+  }
+}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { listEditorialSets } from "@/lib/catalog/editorialSets";
 import { listPublicTours } from "@/lib/catalog/publicTours";
 
 /**
@@ -56,6 +57,8 @@ export async function GET(req: Request) {
       ok: true,
       count: items.length,
       tours: items,
+      sets: listEditorialSets(3),
+      honesty: "Redaktionelle Ideen — keine User-Sammlungen.",
     },
     {
       headers: {

@@ -47,6 +47,20 @@ const noInvented = countsFromPayload({
 assert.equal(noInvented.reviewCount, 0);
 assert.equal(noInvented.averageRating, null);
 
+const crowd = countsFromPayload({
+  reviewCount: 6,
+  photoCount: 0,
+  reviews: [{ rating: 4 }],
+  difficulty: { n: 6, mean: 0.7, shown: true, label: "harder" },
+});
+assert.equal(crowd.difficulty?.shown, true);
+assert.equal(crowd.difficulty?.label, "harder");
+
+const thinCrowd = countsFromPayload({
+  difficulty: { n: 2, shown: true, label: "harder" },
+});
+assert.equal(thinCrowd.difficulty?.shown, false);
+
 const batch = countsMapFromBatch({
   counts: {
     a: { reviewCount: 1, photoCount: 0 },

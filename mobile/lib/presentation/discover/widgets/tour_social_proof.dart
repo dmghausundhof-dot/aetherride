@@ -70,6 +70,7 @@ class _TourSocialProofState extends State<TourSocialProof> {
         bundle.photoUrls.length,
       ),
       averageRating: avg,
+      difficulty: fromCloud?.difficulty,
     );
     // Local-only reviews still count (honest device data).
     final withLocal = next.reviewCount == 0 && local.isNotEmpty
@@ -78,6 +79,7 @@ class _TourSocialProofState extends State<TourSocialProof> {
             photoCount: next.photoCount,
             averageRating:
                 local.fold<int>(0, (a, r) => a + r.rating) / local.length,
+            difficulty: next.difficulty,
           )
         : next;
     TourCommunityStore.countsCache[widget.tourId] = withLocal;

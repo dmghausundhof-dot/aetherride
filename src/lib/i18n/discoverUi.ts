@@ -221,6 +221,12 @@ export type DiscoverUi = {
   save: string;
   saved: string;
   startInApp: string;
+  variantPlanned: string;
+  variantFlatter: string;
+  variantUnpaved: string;
+  variantValhallaOnly: string;
+  openNativeApp: string;
+  placeKind: (kind: string) => string;
   overview: string;
   popular: string;
   photos: string;
@@ -471,6 +477,23 @@ const DE: DiscoverUi = {
   save: "Speichern",
   saved: "Gespeichert",
   startInApp: "In App starten",
+  variantPlanned: "Wie geplant",
+  variantFlatter: "Weniger hm",
+  variantUnpaved: "Mehr unpaved",
+  variantValhallaOnly: "Varianten nur mit Live-Valhalla",
+  openNativeApp: "In der App öffnen",
+  placeKind: (kind) =>
+    kind === "cafe"
+      ? "Café"
+      : kind === "water"
+        ? "Quelle"
+        : kind === "shop"
+          ? "Laden"
+          : kind === "repair"
+            ? "Werkstatt"
+            : kind === "viewpoint"
+              ? "Blick"
+              : "Ort",
   overview: "Überblick",
   popular: "Beliebt",
   photos: "Fotos",
@@ -727,6 +750,23 @@ const EN: DiscoverUi = {
   save: "Save",
   saved: "Saved",
   startInApp: "Start in app",
+  variantPlanned: "As planned",
+  variantFlatter: "Less climb",
+  variantUnpaved: "More unpaved",
+  variantValhallaOnly: "Variants need live Valhalla",
+  openNativeApp: "Open in the app",
+  placeKind: (kind) =>
+    kind === "cafe"
+      ? "Café"
+      : kind === "water"
+        ? "Water"
+        : kind === "shop"
+          ? "Shop"
+          : kind === "repair"
+            ? "Repair"
+            : kind === "viewpoint"
+              ? "View"
+              : "Place",
   overview: "Overview",
   popular: "Popular",
   photos: "Photos",
@@ -987,6 +1027,23 @@ const FR: DiscoverUi = {
   save: "Enregistrer",
   saved: "Enregistré",
   startInApp: "Démarrer dans l’app",
+  variantPlanned: "Comme prévu",
+  variantFlatter: "Moins de dénivelé",
+  variantUnpaved: "Plus de non bitumé",
+  variantValhallaOnly: "Variantes seulement avec Valhalla live",
+  openNativeApp: "Ouvrir dans l’app",
+  placeKind: (kind) =>
+    kind === "cafe"
+      ? "Café"
+      : kind === "water"
+        ? "Eau"
+        : kind === "shop"
+          ? "Magasin"
+          : kind === "repair"
+            ? "Atelier"
+            : kind === "viewpoint"
+              ? "Vue"
+              : "Lieu",
   overview: "Aperçu",
   popular: "Populaire",
   photos: "Photos",
@@ -1247,6 +1304,23 @@ const IT: DiscoverUi = {
   save: "Salva",
   saved: "Salvato",
   startInApp: "Parti nell’app",
+  variantPlanned: "Come previsto",
+  variantFlatter: "Meno dislivello",
+  variantUnpaved: "Più sterrato",
+  variantValhallaOnly: "Varianti solo con Valhalla live",
+  openNativeApp: "Apri nell’app",
+  placeKind: (kind) =>
+    kind === "cafe"
+      ? "Caffè"
+      : kind === "water"
+        ? "Acqua"
+        : kind === "shop"
+          ? "Negozio"
+          : kind === "repair"
+            ? "Officina"
+            : kind === "viewpoint"
+              ? "Vista"
+              : "Luogo",
   overview: "Panoramica",
   popular: "Popolare",
   photos: "Foto",

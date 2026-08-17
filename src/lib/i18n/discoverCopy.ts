@@ -14,6 +14,11 @@ export type DiscoverCopy = {
   loop: string;
   mappe: string;
   reset: string;
+  searchHint: string;
+  planRouteCta: string;
+  filter: string;
+  aroundKm: (km: number) => string;
+  showTours: (n: number) => string;
   visAll: string;
   visPrivate: string;
   visPublic: string;
@@ -40,6 +45,11 @@ const DE: DiscoverCopy = {
   loop: "Rundkurs",
   mappe: "Mappe",
   reset: "Zurücksetzen",
+  searchHint: "Ort oder Tour",
+  planRouteCta: "Navigieren",
+  filter: "Filter",
+  aroundKm: (km) => `in ${km} km`,
+  showTours: (n) => (n === 1 ? "1 Tour zeigen" : `${n} Touren zeigen`),
   visAll: "Alle",
   visPrivate: "Privat",
   visPublic: "Öffentlich",
@@ -80,6 +90,11 @@ const EN: DiscoverCopy = {
   loop: "Loop",
   mappe: "Die Mappe",
   reset: "Reset",
+  searchHint: "Place or tour",
+  planRouteCta: "Navigate",
+  filter: "Filter",
+  aroundKm: (km) => `within ${km} km`,
+  showTours: (n) => (n === 1 ? "Show 1 tour" : `Show ${n} tours`),
   visAll: "All",
   visPrivate: "Private",
   visPublic: "Public",
@@ -120,6 +135,11 @@ const FR: DiscoverCopy = {
   loop: "Boucle",
   mappe: "Die Mappe",
   reset: "Réinitialiser",
+  searchHint: "Lieu ou tour",
+  planRouteCta: "Naviguer",
+  filter: "Filtres",
+  aroundKm: (km) => `dans ${km} km`,
+  showTours: (n) => (n === 1 ? "Afficher 1 tour" : `Afficher ${n} tours`),
   visAll: "Tous",
   visPrivate: "Privé",
   visPublic: "Public",
@@ -160,6 +180,11 @@ const IT: DiscoverCopy = {
   loop: "Anello",
   mappe: "Die Mappe",
   reset: "Azzera",
+  searchHint: "Luogo o tour",
+  planRouteCta: "Naviga",
+  filter: "Filtri",
+  aroundKm: (km) => `entro ${km} km`,
+  showTours: (n) => (n === 1 ? "Mostra 1 tour" : `Mostra ${n} tour`),
   visAll: "Tutti",
   visPrivate: "Privato",
   visPublic: "Pubblico",

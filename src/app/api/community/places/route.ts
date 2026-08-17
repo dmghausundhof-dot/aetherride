@@ -1,11 +1,16 @@
 /**
  * GET /api/community/places?lat=&lng=&tourId=&west=&south=&east=&north=
+ * POST /api/community/places — Auth, pending, rideId + Track-Snap (P3).
  *
  * Approved map_places + Stimme-Pins der Tour. Coverage bleibt beim Client.
  * Tabelle fehlt → stub=true, leere Liste, ehrliche Copy.
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createAuthedClient } from "@/lib/supabase/authed";
+import { moderateContent } from "@/lib/community/moderate";
+import { persistModeration } from "@/lib/community/persistModeration";
+import { parseTrackSamples, snapPlaceOntoTrack } from "@/lib/community/placeOnTrack";
 import {
   isMissingMapPlacesTable,
   mergeCommunityPlaces,
@@ -155,5 +160,102 @@ export async function GET(req: Request) {
     honesty: stub
       ? "Nur Coverage-Orte — Community-Tabelle noch nicht da."
       : merged.honesty,
+  });
+}
+
+export async function POST(req: Request) {
+  let supabase;
+  try {
+    supabase = await createAuthedClient(req);
+  } catch {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const body = (await req.json()) as {
+    name?: string;
+    kind?: string;
+    lat?: number;
+    lng?: number;
+    rideId?: string;
+    tourId?: string;
+    tip?: string;
+    track?: unknown;
+  };
+  const name = String(body.name || "").trim().slice(0, 80);
+  const rideId = String(body.rideId || "").trim();
+  const tourId = String(body.tourId || "").trim() || null;
+  const tip = String(body.tip || "").trim().slice(0, 200);
+  const kind = normalizePlaceKind(body.kind);
+  const lat = Number(body.lat);
+  const lng = Number(body.lng);
+  if (name.length < 2 || !rideId) {
+    return NextResponse.json({ error: "name_ride_required" }, { status: 400 });
+  }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return NextResponse.json({ error: "lat_lng_required" }, { status: 400 });
+  }
+  const track = parseTrackSamples(body.track);
+  const snap = snapPlaceOntoTrack(lat, lng, track);
+  if (!snap) {
+    return NextResponse.json(
+      { error: "off_track", honesty: "Ort nur auf der gefahrenen Linie." },
+      { status: 400 }
+    );
+  }
+  const insert = await supabase
+    .from("map_places")
+    .insert({
+      source: "user",
+      kind,
+      name,
+      lat: snap.lat,
+      lng: snap.lng,
+      tour_id: tourId,
+      tip,
+      along_m: snap.alongM,
+      status: "pending",
+      author_id: user.id,
+      ride_id: rideId,
+    })
+    .select("id")
+    .maybeSingle();
+  if (insert.error || !insert.data?.id) {
+    const missing = isMissingMapPlacesTable(insert.error);
+    return NextResponse.json(
+      {
+        error: missing ? "table_missing" : "insert_failed",
+        note: insert.error?.message,
+        honesty: missing
+          ? "Community-Orte-Tabelle noch nicht da — Ort bleibt privat auf dem Gerät."
+          : undefined,
+      },
+      { status: missing ? 501 : 500 }
+    );
+  }
+  const reviewMod = await moderateContent({
+    kind: "place",
+    text: `${name} ${tip}`.trim(),
+  });
+  try {
+    await persistModeration({
+      kind: "place",
+      id: insert.data.id,
+      result: reviewMod,
+    });
+  } catch (e) {
+    console.error("[community/places] persist", e);
+  }
+  return NextResponse.json({
+    id: insert.data.id,
+    status: "pending",
+    kind,
+    lat: snap.lat,
+    lng: snap.lng,
+    alongM: snap.alongM,
   });
 }

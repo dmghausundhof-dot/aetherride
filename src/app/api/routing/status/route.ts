@@ -33,6 +33,7 @@ export async function GET(req: Request) {
   const payload: RoutingStatusPayload & {
     publicOsrm?: boolean;
     openrouteservice?: boolean;
+    valhalla?: boolean;
     probe?: { ok: boolean; ms?: number; detail?: string };
   } = {
     configured,
@@ -41,6 +42,7 @@ export async function GET(req: Request) {
     notice,
     publicOsrm,
     openrouteservice: ors,
+    valhalla: Boolean(process.env.VALHALLA_URL?.trim()),
   };
 
   const url = new URL(req.url);

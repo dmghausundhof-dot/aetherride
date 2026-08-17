@@ -10,6 +10,12 @@ type QueueItem = {
   rating?: number;
   author_label?: string;
   url?: string | null;
+  name?: string;
+  kind?: string;
+  lat?: number;
+  lng?: number;
+  tip?: string;
+  ride_id?: string;
   ai_labels?: string[];
   ai_confidence?: number;
   moderation_note?: string;
@@ -19,6 +25,7 @@ export default function CommunityModerationPage() {
   const [key, setKey] = useState("");
   const [reviews, setReviews] = useState<QueueItem[]>([]);
   const [photos, setPhotos] = useState<QueueItem[]>([]);
+  const [places, setPlaces] = useState<QueueItem[]>([]);
   const [msg, setMsg] = useState("");
 
   async function load() {
@@ -34,13 +41,14 @@ export default function CommunityModerationPage() {
     }
     setReviews(data.reviews || []);
     setPhotos(data.photos || []);
+    setPlaces(data.places || []);
     setMsg(
-      `${(data.reviews || []).length} Reviews, ${(data.photos || []).length} Fotos`
+      `${(data.reviews || []).length} Reviews, ${(data.photos || []).length} Fotos, ${(data.places || []).length} Orte`
     );
   }
 
   async function act(
-    kind: "review" | "photo",
+    kind: "review" | "photo" | "place",
     id: string,
     action: "approved" | "rejected"
   ) {
@@ -84,8 +92,8 @@ export default function CommunityModerationPage() {
     <main className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="text-2xl font-bold">Community-Moderation</h1>
       <p className="mt-2 text-sm text-text-secondary">
-        Queue für pending Reviews/Fotos. AI kann vorentscheiden; Fotos werden
-        nie automatisch veröffentlicht.
+        Queue für pending Reviews, Fotos und User-Orte. AI kann vorentscheiden;
+        Fotos und Orte werden nie automatisch veröffentlicht.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <input
@@ -171,6 +179,39 @@ export default function CommunityModerationPage() {
                 type="button"
                 className="text-xs font-semibold text-error"
                 onClick={() => void act("photo", p.id, "rejected")}
+              >
+                Ablehnen
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <h2 className="mt-8 text-lg font-semibold">Orte</h2>
+      <ul className="mt-3 space-y-3">
+        {places.map((p) => (
+          <li key={p.id} className="rounded-xl border border-border p-4 text-sm">
+            <p className="font-medium">
+              {p.name} · {p.kind} · {p.tour_id || "ohne Tour"}
+            </p>
+            <p className="mt-1 text-text-secondary">
+              {p.lat?.toFixed(4)}, {p.lng?.toFixed(4)}
+              {p.tip ? ` · ${p.tip}` : ""}
+            </p>
+            <p className="mt-1 text-xs text-text-secondary">
+              ride {p.ride_id || "—"} · {(p.ai_labels || []).join(", ")}
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                className="text-xs font-semibold text-accent"
+                onClick={() => void act("place", p.id, "approved")}
+              >
+                Freigeben
+              </button>
+              <button
+                type="button"
+                className="text-xs font-semibold text-error"
+                onClick={() => void act("place", p.id, "rejected")}
               >
                 Ablehnen
               </button>

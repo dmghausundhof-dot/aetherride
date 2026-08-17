@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/saved_route_note.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/l10n_ext.dart';
 
 /// Lokale Notizen an einer eigenen Strecke (kein Feed, keine Stimme).
 class SavedRouteNotesSection extends StatefulWidget {
@@ -89,6 +90,22 @@ class _SavedRouteNotesSectionState extends State<SavedRouteNotesSection> {
                         ),
                         const SizedBox(height: 2),
                         Text(n.text, style: const TextStyle(fontSize: 14)),
+                        if (n.hasPin ||
+                            (n.kind != null && n.kind!.trim().isNotEmpty)) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            [
+                              if (n.kind != null && n.kind!.trim().isNotEmpty)
+                                l10n.mapPlaceKindLabelRaw(n.kind),
+                              if (n.hasPin)
+                                '${n.lat!.toStringAsFixed(4)}, ${n.lng!.toStringAsFixed(4)}',
+                            ].join(' · '),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

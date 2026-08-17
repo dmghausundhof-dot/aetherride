@@ -88,6 +88,16 @@ export type CatalogCopy = {
     thanksPublished: string;
     thanksPending: string;
     savedLocalCloud: string;
+    tagsHint: string;
+    tagLabel: (wire: string) => string;
+    difficultyHint: string;
+    difficultyEasier: string;
+    difficultyAsMarked: string;
+    difficultyHarder: string;
+    crowdEasier: (n: number) => string;
+    crowdAsMarked: (n: number) => string;
+    crowdHarder: (n: number) => string;
+    pinOnLine: string;
   };
 };
 
@@ -187,6 +197,23 @@ const DE: CatalogCopy = {
     thanksPending:
       "Danke — in Prüfung, bis zur Freigabe nur für dich sichtbar.",
     savedLocalCloud: "Gespeichert lokal — Cloud gerade nicht erreichbar.",
+    tagsHint: "Zustand — optional, max. drei",
+    tagLabel: (wire) =>
+      ({
+        nass: "nass",
+        zu: "zu",
+        viel_los: "viel los",
+        top: "top",
+        baustelle: "Baustelle",
+      }[wire] ?? wire),
+    difficultyHint: "Schwierigkeit gegenüber der Markierung — optional",
+    difficultyEasier: "leichter",
+    difficultyAsMarked: "wie markiert",
+    difficultyHarder: "härter",
+    crowdEasier: (n) => `Fahrer: eher leichter als markiert (${n})`,
+    crowdAsMarked: (n) => `Fahrer: wie markiert (${n})`,
+    crowdHarder: (n) => `Fahrer: eher härter als markiert (${n})`,
+    pinOnLine: "Pin auf der Linie",
   },
 };
 
@@ -284,6 +311,23 @@ const EN: CatalogCopy = {
     thanksPublished: "Thanks — published.",
     thanksPending: "Thanks — in review, visible only to you until approved.",
     savedLocalCloud: "Saved locally — cloud unreachable right now.",
+    tagsHint: "Condition — optional, max three",
+    tagLabel: (wire) =>
+      ({
+        nass: "wet",
+        zu: "closed",
+        viel_los: "busy",
+        top: "top",
+        baustelle: "works",
+      }[wire] ?? wire),
+    difficultyHint: "Difficulty vs the marked grade — optional",
+    difficultyEasier: "easier",
+    difficultyAsMarked: "as marked",
+    difficultyHarder: "harder",
+    crowdEasier: (n) => `Riders: easier than marked (${n})`,
+    crowdAsMarked: (n) => `Riders: as marked (${n})`,
+    crowdHarder: (n) => `Riders: harder than marked (${n})`,
+    pinOnLine: "Pin on the line",
   },
 };
 
@@ -383,6 +427,23 @@ const FR: CatalogCopy = {
     thanksPending:
       "Merci — en relecture, visible seulement pour toi jusqu’à validation.",
     savedLocalCloud: "Enregistré en local — cloud injoignable pour l’instant.",
+    tagsHint: "État — optionnel, max. trois",
+    tagLabel: (wire) =>
+      ({
+        nass: "mouillé",
+        zu: "fermé",
+        viel_los: "fréquenté",
+        top: "top",
+        baustelle: "travaux",
+      }[wire] ?? wire),
+    difficultyHint: "Difficulté par rapport au niveau indiqué — optionnel",
+    difficultyEasier: "plus facile",
+    difficultyAsMarked: "comme indiqué",
+    difficultyHarder: "plus dur",
+    crowdEasier: (n) => `Coureurs : plus facile que marqué (${n})`,
+    crowdAsMarked: (n) => `Coureurs : comme indiqué (${n})`,
+    crowdHarder: (n) => `Coureurs : plus dur que marqué (${n})`,
+    pinOnLine: "Pin sur la ligne",
   },
 };
 
@@ -482,6 +543,23 @@ const IT: CatalogCopy = {
     thanksPending:
       "Grazie — in revisione, visibile solo a te fino all’approvazione.",
     savedLocalCloud: "Salvato in locale — cloud non raggiungibile ora.",
+    tagsHint: "Stato — opzionale, max tre",
+    tagLabel: (wire) =>
+      ({
+        nass: "bagnato",
+        zu: "chiuso",
+        viel_los: "affollato",
+        top: "top",
+        baustelle: "cantiere",
+      }[wire] ?? wire),
+    difficultyHint: "Difficoltà rispetto al grado indicato — opzionale",
+    difficultyEasier: "più facile",
+    difficultyAsMarked: "come indicato",
+    difficultyHarder: "più duro",
+    crowdEasier: (n) => `Rider: più facile del segnato (${n})`,
+    crowdAsMarked: (n) => `Rider: come indicato (${n})`,
+    crowdHarder: (n) => `Rider: più duro del segnato (${n})`,
+    pinOnLine: "Pin sulla linea",
   },
 };
 

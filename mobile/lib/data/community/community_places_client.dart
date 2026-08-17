@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config.dart';
 import '../../domain/community/map_place.dart';
 import '../../domain/community/map_place_merge.dart';
+import '../../domain/community/place_on_track.dart';
 
 class CommunityPlacesSnapshot {
   const CommunityPlacesSnapshot({
@@ -77,4 +79,64 @@ class CommunityPlacesClient {
       );
     }
   }
+
+  /// POST pending User-Ort. Ohne Token: localOnly. Off-track: 400.
+  Future<PlaceSubmitResult> submitPending({
+    required String name,
+    required String kind,
+    required double lat,
+    required double lng,
+    required String rideId,
+    String? tourId,
+    String? tip,
+    required List<List<double>> track,
+  }) async {
+    try {
+      String? token;
+      try {
+        token = Supabase.instance.client.auth.currentSession?.accessToken;
+      } catch (_) {
+        token = null;
+      }
+      if (token == null || token.isEmpty) return PlaceSubmitResult.localOnly;
+      final samples = sampleTrackLngLat(track);
+      final res = await _http
+          .post(
+            Uri.parse('${AppConfig.apiBaseUrl}/api/community/places'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({
+              'name': name.trim(),
+              'kind': kind,
+              'lat': lat,
+              'lng': lng,
+              'rideId': rideId,
+              if (tourId != null && tourId.trim().isNotEmpty) 'tourId': tourId.trim(),
+              if (tip != null && tip.trim().isNotEmpty) 'tip': tip.trim(),
+              'track': samples,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+      if (res.statusCode == 401) return PlaceSubmitResult.localOnly;
+      if (res.statusCode == 400) return PlaceSubmitResult.offTrack;
+      if (res.statusCode == 501) return PlaceSubmitResult.tableMissing;
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return PlaceSubmitResult.pending;
+      }
+      return PlaceSubmitResult.failed;
+    } catch (_) {
+      return PlaceSubmitResult.failed;
+    }
+  }
+}
+
+enum PlaceSubmitResult {
+  pending,
+  localOnly,
+  offTrack,
+  tableMissing,
+  failed,
 }

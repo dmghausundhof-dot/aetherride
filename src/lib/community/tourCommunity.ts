@@ -3,12 +3,15 @@
  * Keine Stub-Sterne: leere API → Count 0, kein erfundenes Rating.
  */
 
+import { parseDifficultyCrowd, type DifficultyCrowd } from "./difficultyAggregate";
+
 export const COMMUNITY_EMPTY_COPY = "Noch keine Stimmen.";
 
 export type TourCommunityCounts = {
   reviewCount: number;
   photoCount: number;
   averageRating: number | null;
+  difficulty?: DifficultyCrowd;
 };
 
 export const EMPTY_COMMUNITY_COUNTS: TourCommunityCounts = {
@@ -53,7 +56,12 @@ export function countsFromPayload(data: unknown): TourCommunityCounts {
       : Math.round(
           (ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10
         ) / 10;
-  return { reviewCount, photoCount, averageRating };
+  return {
+    reviewCount,
+    photoCount,
+    averageRating,
+    difficulty: parseDifficultyCrowd(m.difficulty),
+  };
 }
 
 export function countsMapFromBatch(data: unknown): Record<string, TourCommunityCounts> {

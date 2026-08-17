@@ -11,6 +11,13 @@
   "navWorkshop": "Werkstatt",
   "navShop": "Laden",
   "navPlatz": "Platz",
+  "navTabOf": "Tab {index} von {count}",
+  "@navTabOf": {
+    "placeholders": {
+      "index": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
   "hofJustRide": "Einfach fahren",
   "hofShowTours": "Touren anzeigen",
   "hofMapChoiceHint": "Ohne Touren losfahren, oder Touren auf der Karte zeigen.",
@@ -18,6 +25,8 @@
   "werkstattForYourBike": "Für dein Rad",
   "werkstattMerch": "Merchandise",
   "werkstattShopParts": "Ersatzteile im Shop",
+  "werkstattPartsForBike": "Teile für dein Rad",
+  "shopLookupInShop": "Im Laden nachschlagen",
   "shopGatewayKicker": "Über den Hof",
   "shopGatewayTitle": "Der Laden",
   "shopGatewayHint": "Hier wohnt das Rad nicht. FlowLine zeigt ehrliche Teile — Kauf und Kasse bei Shopify, nicht in der App.",
@@ -32,15 +41,17 @@
   },
   "shopForYourBikeEmpty": "Stell ein Rad in der Werkstatt ab — dann öffnen wir die passenden Teile im Shop.",
   "shopMerchHint": "Kleidung und Kleinzeug. Unabhängig vom Rad, nie nach Fit gefiltert.",
+  "shopMerchTitle": "Kleidung",
+  "shopMerchEmpty": "Kein Merch im Regal. Kleidung bleibt im Shop, nie nach dem Rad gefiltert.",
   "shopNotConnected": "Shop nicht verbunden",
-  "shopNotConnectedHint": "Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann führt dieser Tab in den Laden.",
+  "shopNotConnectedHint": "Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann öffnet die Werkstatt den Laden.",
   "shopOpenFailed": "Shop konnte nicht geöffnet werden.",
-  "shopPasswordWall": "Der Shopify-Shop ist noch Inhaber-Vorschau (Dev-Store). Externe Links können zur Passwort-Seite führen. Katalog kann hier in FlowLine stehen.",
-  "shopLockedTitle": "Online Store gesperrt",
+  "shopPasswordWall": "Der Shop draußen ist noch nicht öffentlich — manchmal steht ein Passwort. Das Regal hier bleibt.",
+  "shopLockedTitle": "Shop draußen noch zu",
   "shopPasswordConfirm": "Trotzdem öffnen",
   "shopPasswordCancel": "Zurück",
-  "shopCyclingParts": "CYCLING PARTS",
-  "shopSearchHint": "Teile, Marken, Specs…",
+  "shopCyclingParts": "Teile",
+  "shopSearchHint": "Teile, Marken, Maße…",
   "shopFeatured": "Passende Teile",
   "shopOpenProduct": "Im Shop öffnen",
   "shopAllParts": "Alle Teile",
@@ -148,6 +159,7 @@
   "hofEmptyStand": "Leerer Stand",
   "hofSkyUnknown": "Himmel unbekannt",
   "hofNoHonestLoop": "Kein ehrlicher Trail-Rundkurs",
+  "hofGateWetClosed": "Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe",
   "hofNotYetOut": "noch nicht draußen",
   "hofJustBack": "gerade reingekommen",
   "hofAgoMinutes": "vor {minutes} min",
@@ -310,7 +322,7 @@
   "filterFormDownhill": "Downhill",
   "filterFormDownhillTooltip": "Abfahrten, Bikepark, Enduro A→B. Rundkurse nicht automatisch DH.",
   "filterBikeType": "Fahrradtyp",
-  "filterBikeTypeHonesty": "Farben filtern Touren. Navigation: Fahrrad (GraphHopper Basic), außer Zu Fuß.",
+  "filterBikeTypeHonesty": "Farben filtern die Touren. Navigieren: eine Rad-Route, außer zu Fuß.",
   "filterSingletrail": "Singletrail (S-Skala)",
   "filterSingletrailHint": "Nur Touren/Wege mit ehrlicher Skala. Ohne Tag: keine Treffer.",
   "filterNoDownhillTours": "Keine Downhill-Touren in der Nähe",
@@ -318,9 +330,9 @@
   "filterNoScaleTours": "Keine Tour mit dieser S-Stufe",
   "filterTrailNetwork": "Trailnetz (Karte)",
   "filterLoopsOnly": "Rundkurs",
-  "filterLoopsOnlyTooltip": "Nur ehrliche Rundkurse (Start≈Ziel). Keine A→B-Füllung.",
-  "filterNetworkOn": "Netz an",
-  "filterNetworkOff": "Netz aus",
+  "filterLoopsOnlyTooltip": "Nur Rundkurse — Start und Ziel gleich.",
+  "filterNetworkOn": "Wege auf der Karte",
+  "filterNetworkOff": "Wege ausblenden",
   "filterOsmScaleTooltip": "OSM-Skala: {code}",
   "@filterOsmScaleTooltip": {
     "placeholders": {
@@ -345,7 +357,7 @@
   "adaptTourTitle": "Tour anpassen",
   "adaptTourHint": "Start, Ziel oder Stopp ändern — dann Route berechnen.",
   "planRouteTitle": "Route planen",
-  "planRouteCta": "+ Planen",
+  "planRouteCta": "Navigieren",
   "discoverSearchHint": "Ort oder Tour",
   "filterAroundKm": "in {km} km",
   "@filterAroundKm": {
@@ -370,7 +382,7 @@
   "navigateSwap": "Start und Ziel tauschen",
   "navigatePickStart": "Start auf Karte",
   "navigatePickEnd": "Ziel auf Karte",
-  "navigateAddVia": "Via",
+  "navigateAddVia": "Zwischenstopp",
   "navigateNeedStartEnd": "Start und Ziel setzen",
   "navigateComputeNeedBoth": "Route berechnen (Start & Ziel nötig)",
   "navigateBackToExplore": "Zurück zu Entdecken",
@@ -392,7 +404,7 @@
   "rideBarPointToPoint": "Strecke",
   "emptyToursTitle": "Keine Touren gefunden",
   "emptyToursFiltersBody": "Filter zurücksetzen — dann siehst du wieder Touren in der Nähe.",
-  "emptyToursNearbyBody": "Ort oder Dauer anpassen — oder Filter zurücksetzen. Keine A→B-Füllung.",
+  "emptyToursNearbyBody": "Ort oder Dauer anpassen — oder Filter zurücksetzen.",
   "showOnMap": "Auf Karte",
   "tourDetails": "Details",
   "moreFilters": "Mehr Filter",
@@ -617,7 +629,7 @@
   "rideMap": "Karte",
   "rideData": "Daten",
   "rideLiveData": "Live-Daten",
-  "rideMapReady": "Karte bereit — Sensor optional nach Start",
+  "rideMapReady": "Karte liegt. Sensor danach, wenn du willst.",
   "rideClearRoute": "Route entfernen",
   "postRideTitle": "Aktivität",
   "postRideFreeride": "Freeride",
@@ -805,6 +817,7 @@
   "chatAsk": "Fragen",
   "chatSnooze7": "7 Tage still",
   "chatNoAnswer": "Keine Antwort.",
+  "chatUnavailable": "Der Assistent ist gerade nicht erreichbar. Versuch's später noch einmal.",
   "chatNetworkError": "Netzwerkfehler: {error}",
   "@chatNetworkError": {
     "placeholders": {
@@ -1261,7 +1274,7 @@
   "platzCreateGroup": "Gruppe anlegen",
   "platzJoinCode": "Code",
   "platzNoGroup": "Noch keine Gruppe. Einladen teilt den Link — nichts Vorgespieltes.",
-  "platzHost": "Host",
+  "platzHost": "Gastgeber",
   "platzGuest": "Gast",
   "platzYou": "Du",
   "platzInvite": "Einladen",
@@ -1304,12 +1317,28 @@
     }
   },
   "platzCreateCollection": "Sammlung anlegen",
-  "platzJoinWithCode": "Mit Code beitreten",
-  "platzJoinCodeField": "Join-Code",
+  "platzJoinWithCode": "Mit Link beitreten",
+  "platzJoinCodeField": "Einladungslink",
+  "platzJoinLinkHint": "Link aus WhatsApp oder Messages einfügen. Privat braucht den Token im Link — kein Code zum Abtippen.",
+  "platzJoinEmpty": "Link fehlt.",
+  "platzJoinInvalid": "Kein gültiger Einladungslink.",
   "platzJoin": "Beitreten",
+  "platzStartLabel": "Start",
+  "platzStartNow": "Jetzt",
+  "platzStartIn1h": "In 1 h",
+  "platzStartToday18": "Heute 18:00",
+  "platzStartTomorrow10": "Morgen 10:00",
+  "platzDurationLabel": "Dauer",
+  "platzMeetingPlaceholder": "Treffpunkt (optional)",
+  "platzMeetingHint": "z. B. Parkplatz am Bad",
+  "platzPinsOnHud": "Pins im HUD an",
+  "platzTourNotInMappe": "Tour nicht in der Mappe — auf der Karte öffnen.",
+  "platzCollectionsHint": "Teilen geht nur mit freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.",
+  "akteTourKicker": "Tour",
+  "stimmenShareNeedRelease": "Erst unter Mein freigeben — sonst geht der Link ins Leere.",
   "platzNeedSharedTour": "Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.",
   "platzNoSharedTours": "Keine freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.",
-  "platzGroupCreated": "Gruppe {code} — Einladen teilt den Link, kein Explore.",
+  "platzGroupCreated": "Gruppe {code} — Einladen teilt den Link.",
   "@platzGroupCreated": {
     "placeholders": {
       "code": {
@@ -1999,7 +2028,7 @@
   "discoverTrailStartUphillUnknown": "Höhe unklar — näherer Einstieg",
   "discoverPutOnRoute": "Auf Route legen",
   "discoverOpenOsm": "Auf OpenStreetMap öffnen",
-  "discoverApproachTrailhead": "Anfahrt zum Trailhead…",
+  "discoverApproachTrailhead": "Anfahrt zum Einstieg…",
   "discoverApproachPlusTrail": "Anfahrt + Trail · {km} km · {diff}",
   "@discoverApproachPlusTrail": {
     "placeholders": {
@@ -2054,11 +2083,11 @@
   },
   "discoverIdeaStartSet": "Tour-Idee: Start = Ortspunkt, Ziel-Vorschlag gesetzt — Route berechnen.",
   "discoverSuggestEnd": "Ziel-Vorschlag (anpassbar)",
-  "discoverTourInPlan": "Tour in Planen — Start/Ziel/Via editierbar",
+  "discoverTourInPlan": "Tour in Navigieren — Start, Ziel oder Stopp ändern",
   "discoverNeedLocationTours": "Standort oder Start setzen für Touren",
-  "discoverOaOffline": "Outdooractive offline",
-  "discoverOaNoLive": "Outdooractive — keine Live-Touren in der Nähe",
-  "discoverOaCount": "Outdooractive {count} · OSM/Tracks folgen",
+  "discoverOaOffline": "Touren gerade nicht erreichbar",
+  "discoverOaNoLive": "Keine Live-Touren in der Nähe",
+  "discoverOaCount": "{count} Touren in der Nähe",
   "@discoverOaCount": {
     "placeholders": {
       "count": {
@@ -2095,12 +2124,12 @@
       }
     }
   },
-  "discoverQuickRoute": "Quick-Route",
+  "discoverQuickRoute": "Kurzroute",
   "discoverRoutingLimit": "Routing-Limit — Näherung genutzt. Später erneut berechnen.",
-  "discoverNoQuickRoutes": "Keine Quick-Routen",
+  "discoverNoQuickRoutes": "Keine Kurzrouten",
   "discoverPartialApprox": "Teilweise Näherung — Live-Routing eingeschränkt",
   "discoverPlannedRoute": "Geplante Route",
-  "discoverStraightFallback": "Gerade Fallback — Live-Routing lieferte keine Geometrie",
+  "discoverStraightFallback": "Keine Strecke von der Karte — Ziel neu setzen.",
   "discoverSaved": "Gespeichert",
   "discoverSavedNamed": "Gespeichert: {name}",
   "@discoverSavedNamed": {
@@ -2179,7 +2208,7 @@
   "discoverStartSavedNoTrack": "Startpunkt gespeichert — noch keine Strecke. Navigieren oder GPX.",
   "discoverComputedRoute": "Berechnete Route",
   "discoverSavedRoute": "Gespeicherte Route",
-  "discoverViaN": "Via {n}",
+  "discoverViaN": "Stopp {n}",
   "@discoverViaN": {
     "placeholders": {
       "n": {
@@ -2262,7 +2291,7 @@
   "discoverNoClosedLoop": "Kein geschlossener Rundkurs-Track — Tour erneut wählen oder Anpassen.",
   "discoverNoLiveTrackPlan": "Kein Live-Track — Route berechnen öffnet Planen mit Ziel-Vorschlag.",
   "discoverNotClosedLoopNav": "Geometrie ist keine geschlossene Runde — Navigation abgebrochen.",
-  "discoverNoRealPolyline": "Keine echte Track-Polyline — Route neu berechnen oder GPX.",
+  "discoverNoRealPolyline": "Keine echte Strecke — Route neu berechnen oder GPX.",
   "discoverPoiIdeaHint": "Anfahrt zum Ortspunkt — kein Tour-Track. Ziel weiterplanen oder GPX.",
   "discoverHybridKm": "Hybrid · {km} km",
   "@discoverHybridKm": {
@@ -2329,11 +2358,16 @@
   "overlayLegendTitle": "Wege · OSM",
   "overlayLegendCompactCity": "City",
   "overlayLegendCompactMtb": "MTB",
-  "overlayScaleNote": "S0–S3+ nur bei OSM-Tag. Sonst unbewertet.",
+  "overlayScaleNote": "S0–S3+ nur wenn die Spur bewertet ist. Sonst unbewertet.",
   "overlayRoadAsphalt": "Radweg / Asphalt",
   "overlayUnrated": "unbewertet",
-  "discoverChipTooltip": "Touren und Wege — nicht der Navigationsmotor",
-  "discoverNavHonestyBike": "Navi: Fahrrad — GraphHopper Basic, gleiche Route",
+  "overlayLegendEmpty": "An dieser Stelle kein Wege-Overlay. Das Radnetz folgt der Karte darunter.",
+  "overlayLegendMeshTitle": "Radnetz · OSM",
+  "overlayLegendMeshNote": "Beschilderte Radrouten auf dieser Karte.",
+  "overlayLegendCompactGravel": "Gravel",
+  "discoverChipTooltip": "Touren und Wege nach Radtyp",
+  "discoverLocateLongPress": "Mein Standort · lange drücken: Navi-Symbol",
+  "discoverNavHonestyBike": "Rad-Profile: dieselbe Route",
   "discoverNavHonestyFoot": "Navi: Zu Fuß",
   "stimmenTitle": "Stimmen",
   "stimmenHint": "Sterne, Text und Fotos — Cloud nach Freigabe. Keine erfundenen Stimmen.",
@@ -2378,13 +2412,73 @@
   "postRideStimmeHint": "Nur diese Tour, kein Track im Text. Skip ist in Ordnung.",
   "postRideStimmeSkip": "Jetzt nicht",
   "postRideStimmeDone": "Stimme gespeichert.",
+  "postRideOrtTitle": "Ort merken?",
+  "postRideOrtHint": "Immer privat an der Runde. Öffentlich nur mit Login, auf der Linie, nach Freigabe.",
+  "postRideOrtSkip": "Jetzt nicht",
+  "postRideOrtDone": "Ort gespeichert.",
+  "postRideOrtNameHint": "Name des Orts",
+  "postRideOrtSave": "Merken",
+  "postRideOrtOffTrack": "Kein Punkt auf der gefahrenen Linie — nur private Notiz, ohne Pin.",
+  "postRideOrtPrivateOnly": "Nur für dich — ohne Login oder ohne öffentliche Tour kein Community-Ort.",
+  "postRideOrtPending": "Ort merkt die Cloud nach Freigabe. Bis dahin nur auf dem Gerät.",
+  "postRideOrtFailed": "Cloud hat den Ort nicht genommen — bleibt privat auf dem Gerät.",
+  "stimmeDifficultyHint": "Schwierigkeit gegenüber der Markierung — optional",
+  "stimmeDifficultyEasier": "leichter",
+  "stimmeDifficultyAsMarked": "wie markiert",
+  "stimmeDifficultyHarder": "härter",
+  "akteDifficultyCrowdEasier": "Fahrer: eher leichter als markiert ({n})",
+  "@akteDifficultyCrowdEasier": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "akteDifficultyCrowdAsMarked": "Fahrer: wie markiert ({n})",
+  "@akteDifficultyCrowdAsMarked": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "akteDifficultyCrowdHarder": "Fahrer: eher härter als markiert ({n})",
+  "@akteDifficultyCrowdHarder": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "akteAddToCollection": "Zu Sammlung",
+  "discoverEditorialSets": "Redaktion",
+  "discoverEditorialHonesty": "Redaktionelle Ideen — keine User-Sammlungen.",
+  "discoverEditorialEmpty": "Diese Region ist im Katalog, die Touren sind gerade nicht in der Liste.",
   "discoverLayerTours": "Touren",
   "discoverLayerPlaces": "Orte",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat aus",
+  "discoverVariantPlanned": "Wie geplant",
+  "discoverVariantFlatter": "Weniger hm",
+  "discoverVariantUnpaved": "Mehr unpaved",
+  "discoverVariantValhallaOnly": "Varianten nur mit Live-Valhalla",
+  "discoverTrailWet": "eher nass",
+  "discoverTrailDamp": "feucht möglich",
+  "discoverTrailDry": "eher trocken",
+  "discoverWeatherStart": "Start {temp}° · {hint}",
+  "discoverWeatherSummit": "Gipfel {temp}° · {hint}",
+  "discoverFilmstripAttribution": "Mapillary CC BY-SA",
+  "discoverOfflineAfterSave": "Region für offline laden?",
+  "discoverOfflineAfterSaveAction": "Packs",
+  "@discoverWeatherStart": {
+    "placeholders": {
+      "temp": {"type": "String"},
+      "hint": {"type": "String"}
+    }
+  },
+  "@discoverWeatherSummit": {
+    "placeholders": {
+      "temp": {"type": "String"},
+      "hint": {"type": "String"}
+    }
+  },
   "discoverRoundTrip": "Hin & zurück",
   "discoverOutboundOnly": "nur Hinweg",
-  "discoverOsmNoHitsSuffix": " · OSM keine Treffer",
+  "discoverOsmNoHitsSuffix": " · keine Wege-Treffer",
   "discoverLiveRoutingUnavailable": " · Live-Routing nicht verfügbar",
   "discoverUnplausibleLive": " · Live-Routing lieferte kein plausibles Ergebnis",
   "discoverTapEndCompute": "Ziel tippen oder Adresse — dann Route berechnen.",
@@ -2436,7 +2530,7 @@
   "ridePause": "Pause",
   "rideResume": "Weiter",
   "rideRunning": "Fahrt läuft",
-  "rideStop": "Stop",
+  "rideStop": "Beenden",
   "rideTapAgain": "Nochmal tippen",
   "rideStopNeedsTwo": "Beenden erfordert 2 Tipps",
   "rideQuietDisplay": "Ruhige Anzeige",
@@ -3642,8 +3736,8 @@
   },
   "discoverCatalogTours": "Katalog {count} Touren",
   "discoverCatalogToursSuffix": " · Katalog {count}",
-  "discoverToursOsmStatus": "Touren {tours} ({withTrack} mit Track) · OSM {osm}",
-  "discoverElevationApprox": "~{hm} hm (Distanz-Schätzung — Höhen-API nicht erreichbar)",
+  "discoverToursOsmStatus": "Touren {tours} · {withTrack} mit Strecke",
+  "discoverElevationApprox": "~{hm} hm (Schätzung — Höhe gerade nicht da)",
   "discoverElevationGainLoss": "+{gain} / −{loss} hm",
   "discoverElevationGainLossSource": "+{gain} / −{loss} hm · {source}",
   "discoverDurationMin": "{n} Min",
@@ -3843,7 +3937,7 @@
   },
   "platzCreateGroupHint": "Tour wählen, Sichtbarkeit, dann den Link teilen.",
   "platzGroupPublicHint": "Wer den Link hat, kann beitreten. Die Gruppe kann auf dem Platz unter Öffentlich stehen.",
-  "platzGroupPrivateHint": "Nur wer den Link hat, kann beitreten. Kein öffentliches Roster.",
+  "platzGroupPrivateHint": "Nur wer den Link hat, kann beitreten. Kein öffentliches Verzeichnis.",
   "platzNoPrivateGroups": "Keine privaten Gruppen in diesem Filter.",
   "platzMakePrivate": "Privat machen",
   "platzMakePublic": "Öffentlich machen",

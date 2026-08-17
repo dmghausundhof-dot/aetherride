@@ -13,6 +13,7 @@ import '../../../data/community/public_profile_store.dart';
 import '../../../data/community/tour_community_store.dart';
 import '../../../data/community/tour_share.dart';
 import '../../../data/local/user_profile_store.dart';
+import '../../../domain/community/difficulty_crowd.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import 'stimme_tag_chips.dart';
@@ -42,9 +43,11 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
   final _nameCtrl = TextEditingController();
   List<TourCommunityReview> _reviews = const [];
   List<String> _cloudPhotos = const [];
+  DifficultyCrowd? _crowd;
   double? _avg;
   int _rating = 4;
   List<String> _tags = const [];
+  int? _difficultyDelta;
   bool _loading = true;
   bool _saving = false;
   bool _compose = false;
@@ -98,6 +101,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
     setState(() {
       _reviews = list;
       _cloudPhotos = bundle.photoUrls;
+      _crowd = TourCommunityStore.countsCache[widget.tourId]?.difficulty;
       _avg = avg;
       _loading = false;
     });
@@ -132,11 +136,13 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
         authorLabel: _nameCtrl.text,
         photoUris: List<String>.from(_draftPhotos),
         tags: _tags,
+        difficultyDelta: _difficultyDelta,
       );
       final cloud = await _store.submitToCloud(review);
       _bodyCtrl.clear();
       _draftPhotos.clear();
       _tags = const [];
+      _difficultyDelta = null;
       _compose = false;
       await _reload();
       if (mounted) {
@@ -208,6 +214,14 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.muted,
+            ),
+          ),
+        if (_crowd != null && _crowd!.shown)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l10n.difficultyCrowdLine(_crowd!),
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
         if (!_compose) ...[
@@ -321,6 +335,10 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
           StimmeTagChips(
             selected: _tags,
             onChanged: (next) => setState(() => _tags = next),
+          ),
+          StimmeDifficultyChips(
+            selected: _difficultyDelta,
+            onChanged: (next) => setState(() => _difficultyDelta = next),
           ),
           const SizedBox(height: AppSpacing.s),
           TextField(
@@ -481,6 +499,21 @@ class _ReviewTile extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
+          ],
+          if (review.difficultyDelta != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              AppLocalizations.of(context)
+                  .stimmeDifficultyDeltaLabel(review.difficultyDelta!),
+              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+          ],
+          if (review.pinLat != null && review.pinLng != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${review.pinLat!.toStringAsFixed(4)}, ${review.pinLng!.toStringAsFixed(4)}',
+              style: const TextStyle(fontSize: 11, color: AppColors.muted),
             ),
           ],
           if (review.photoUris.isNotEmpty) ...[

@@ -26,6 +26,7 @@ export function FilterChips({
   onChange,
   profile = "road",
   showTime = true,
+  showReset = true,
 }: {
   minutes: number;
   onMinutes: (m: number) => void;
@@ -34,6 +35,8 @@ export function FilterChips({
   /** Aktives Routing-Profil steuert Schwierigkeits-Labels */
   profile?: RoutingProfile;
   showTime?: boolean;
+  /** Native-Sheet hat eigenen Reset-Fuß — dann hier aus. */
+  showReset?: boolean;
 }) {
   const lang = useChromeLang();
   const d = discoverCopy(lang);
@@ -159,23 +162,25 @@ export function FilterChips({
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {(filters.loopOnly ||
-          filters.scale !== "any" ||
-          filters.elevation !== "any" ||
-          filters.surfaceQuery ||
-          filters.maxDistanceKm != null ||
-          filters.sport !== "all" ||
-          (filters.visibility ?? "all_mine") !== "all_mine") && (
-          <button
-            type="button"
-            className="rounded-full px-2.5 py-1 text-[11px] text-text-secondary underline"
-            onClick={() => onChange(DEFAULT_ROUTE_FILTERS)}
-          >
-            {d.reset}
-          </button>
-        )}
-      </div>
+      {showReset && (
+        <div className="flex flex-wrap gap-1.5">
+          {(filters.loopOnly ||
+            filters.scale !== "any" ||
+            filters.elevation !== "any" ||
+            filters.surfaceQuery ||
+            filters.maxDistanceKm != null ||
+            filters.sport !== "all" ||
+            (filters.visibility ?? "all_mine") !== "all_mine") && (
+            <button
+              type="button"
+              className="rounded-full px-2.5 py-1 text-[11px] text-text-secondary underline"
+              onClick={() => onChange(DEFAULT_ROUTE_FILTERS)}
+            >
+              {d.reset}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

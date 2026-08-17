@@ -110,6 +110,8 @@ export type PlanDraft = {
   hybrid?: { strategy: HybridStrategy };
   computed?: ClientRouteResult | null;
   label?: string;
+  /** planned | flatter | unpaved */
+  variant?: "planned" | "flatter" | "unpaved";
   /** Separate geometries for map layers (hybrid / trail attach) */
   layers?: {
     approach?: GeoJSON.LineString;
@@ -799,7 +801,10 @@ export async function resolvePointToPointDraft(
     from,
     to,
     viasOf(draft),
-    { accessLeg: costing === "auto" }
+    {
+      accessLeg: costing === "auto",
+      variant: draft.variant,
+    }
   );
   if (!engine) return null;
 

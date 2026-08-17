@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { moderateContent } from "@/lib/community/moderate";
 import { persistModeration } from "@/lib/community/persistModeration";
 import { parseStimmeTags } from "@/lib/community/stimmeTags";
+import { aggregateDifficulty } from "@/lib/community/difficultyAggregate";
 
 export const dynamic = "force-dynamic";
 
@@ -123,7 +124,7 @@ export async function GET(req: Request) {
         client
           .from("tour_reviews")
           .select(
-            "id, tour_id, author_label, rating, body, status, created_at, tags, pin_lat, pin_lng, along_m"
+            "id, tour_id, author_label, rating, body, status, created_at, tags, pin_lat, pin_lng, along_m, difficulty_delta"
           )
           .eq("tour_id", tourId)
           .eq("status", "approved")
@@ -152,12 +153,17 @@ export async function GET(req: Request) {
     }
     if (!rErr && !pErr) {
       const signed = await signTourPhotoUrls(client, photos ?? []);
+      const list = reviews ?? [];
+      const difficulty = aggregateDifficulty(
+        list.map((r) => (r as { difficulty_delta?: unknown }).difficulty_delta)
+      );
       return NextResponse.json({
         tourId,
-        reviews: reviews ?? [],
+        reviews: list,
         photos: signed,
-        reviewCount: (reviews ?? []).length,
+        reviewCount: list.length,
         photoCount: signed.length,
+        difficulty,
         stub: false,
       });
     }

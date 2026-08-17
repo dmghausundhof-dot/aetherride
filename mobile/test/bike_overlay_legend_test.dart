@@ -59,4 +59,26 @@ void main() {
     expect(find.text('S0'), findsOneWidget);
     expect(find.text('S3+'), findsOneWidget);
   });
+
+  testWidgets('Leere Overlay-Stelle nutzt kurze Hof-Copy, kein Orts-Essay',
+      (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        BikeOverlayLegend(
+          family: BikeOverlayFamily.urban,
+          visible: true,
+          extraOn: overlayDefaultExtraOn(BikeOverlayFamily.urban),
+          onToggleVisible: () {},
+          onToggleClass: (_) {},
+          hasOverlayData: false,
+        ),
+      ),
+    );
+    expect(find.textContaining('OSM-Wege nur ab Zoom 12'), findsNothing);
+    expect(find.textContaining('Annecy'), findsNothing);
+    expect(
+      find.textContaining('An dieser Stelle kein Wege-Overlay'),
+      findsOneWidget,
+    );
+  });
 }

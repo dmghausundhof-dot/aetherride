@@ -36,15 +36,16 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
     final l10n = AppLocalizations.of(context);
     if (!widget.hasOverlayData) {
       return Material(
+        key: const Key('bike-overlay-legend-empty'),
         color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 168),
-            child: const Text(
-              'Kein Overlay an dieser Stelle. OSM-Wege nur ab Zoom 12 in Hausbergen, Annecy, Lyon und Paris — das Radnetz folgt dem Blatt darunter.',
-              style: TextStyle(
+            child: Text(
+              l10n.overlayLegendEmpty,
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 10,
                 height: 1.3,
@@ -64,7 +65,7 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
     final compact = overlayLegendCompactKey(widget.family);
     final compactLabel = switch (compact) {
       'mtb' => l10n.overlayLegendCompactMtb,
-      'gravel' => 'Gravel',
+      'gravel' => l10n.overlayLegendCompactGravel,
       'road' => 'Asphalt',
       _ => l10n.overlayLegendCompactCity,
     };
@@ -94,7 +95,7 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                             Expanded(
                               child: Text(
                                 mesh
-                                    ? 'Radnetz · OSM'
+                                    ? l10n.overlayLegendMeshTitle
                                     : '${l10n.overlayLegendTitle} · $compactLabel',
                                 key: const Key('bike-overlay-legend-title'),
                                 maxLines: 1,
@@ -179,7 +180,7 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                 const SizedBox(height: 4),
                 Text(
                   mesh
-                      ? 'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 in ausgewählten Städten.'
+                      ? l10n.overlayLegendMeshNote
                       : l10n.overlayScaleNote,
                   style: const TextStyle(
                     color: Colors.white54,
@@ -200,7 +201,7 @@ String _labelFor(AppLocalizations l10n, String key) => switch (key) {
       'unrated' => l10n.overlayUnrated,
       'road' => l10n.overlayRoadAsphalt,
       'urban' => l10n.overlayLegendCompactCity,
-      'gravel' => 'Gravel',
+      'gravel' => l10n.overlayLegendCompactGravel,
       _ => key,
     };
 

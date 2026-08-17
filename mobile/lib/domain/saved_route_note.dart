@@ -11,6 +11,9 @@ class SavedRouteNote {
     required this.createdAt,
     this.authorLabel = 'Du',
     this.authorUserId,
+    this.lat,
+    this.lng,
+    this.kind,
   });
 
   final String id;
@@ -18,6 +21,17 @@ class SavedRouteNote {
   final DateTime createdAt;
   final String authorLabel;
   final String? authorUserId;
+  final double? lat;
+  final double? lng;
+  final String? kind;
+
+  bool get hasPin =>
+      lat != null &&
+      lng != null &&
+      lat!.isFinite &&
+      lng!.isFinite &&
+      lat!.abs() <= 90 &&
+      lng!.abs() <= 180;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -25,6 +39,9 @@ class SavedRouteNote {
         'createdAt': createdAt.toUtc().toIso8601String(),
         'authorLabel': authorLabel,
         if (authorUserId != null) 'authorUserId': authorUserId,
+        if (hasPin) 'lat': lat,
+        if (hasPin) 'lng': lng,
+        if (kind != null && kind!.trim().isNotEmpty) 'kind': kind!.trim(),
       };
 
   factory SavedRouteNote.fromJson(Map<String, dynamic> json) {
@@ -37,6 +54,9 @@ class SavedRouteNote {
           ? (json['authorLabel'] as String).trim()
           : 'Du',
       authorUserId: json['authorUserId'] as String?,
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
+      kind: (json['kind'] as String?)?.trim(),
     );
   }
 
@@ -44,6 +64,9 @@ class SavedRouteNote {
     required String text,
     String authorLabel = 'Du',
     String? authorUserId,
+    double? lat,
+    double? lng,
+    String? kind,
   }) {
     return SavedRouteNote(
       id: 'note-${const Uuid().v4()}',
@@ -51,6 +74,9 @@ class SavedRouteNote {
       createdAt: DateTime.now().toUtc(),
       authorLabel: authorLabel,
       authorUserId: authorUserId,
+      lat: lat,
+      lng: lng,
+      kind: kind,
     );
   }
 }

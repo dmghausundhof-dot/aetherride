@@ -27,12 +27,11 @@ import { BikeOverlayLegend } from "@/components/BikeOverlayLegend";
 import { BikeChip } from "@/components/BikeChip";
 import {
   profileForBikeCategory,
-  ROUTING_PROFILES,
   DEFAULT_DISCOVER_PROFILE,
-  DISCOVER_PROFILE_CHIPS,
   isRideProfileId,
   profileLabel,
   discoverNavProfile,
+  discoverProfileMenuForSports,
   navSessionForBike,
   sessionCostingForBike,
   suggestedApproachKind,
@@ -71,7 +70,7 @@ import {
 } from "@/lib/routing/routeFilters";
 import { demoCenterLngLat } from "@/lib/routing/demoGeometry";
 import { RouteCard } from "@/components/discover/RouteCard";
-import { FilterChips } from "@/components/discover/FilterChips";
+import { DiscoverExploreChrome } from "@/components/discover/DiscoverExploreChrome";
 import { RouteDetail } from "@/components/discover/RouteDetail";
 import { OfflinePacksPanel } from "@/components/discover/OfflinePacksPanel";
 import {
@@ -103,6 +102,9 @@ import {
   type PlanMode,
   type QuickOption,
 } from "@/lib/routing/planDraft";
+import { snapPointOntoTrails } from "@/lib/routing/snapTrailCorridor";
+import { normalizePlaceKind } from "@/lib/community/placesMerger";
+import { httpsAppLink, rideOpenPath } from "@/lib/web/appLinks";
 import {
   fetchEndpointElevations,
   trailAccessHaversineKm,
@@ -136,6 +138,11 @@ import {
   isOutAndBackQuickOption,
   sanitizeDraftForRundkurs,
 } from "@/lib/discover/loopHonesty";
+import {
+  aroundKmDisplay,
+  countActiveRouteFilters,
+  matchesExploreQuery,
+} from "@/lib/discover/discoverExploreChrome";
 import { RideOutChoice } from "@/components/discover/RideOutChoice";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
@@ -220,6 +227,7 @@ function DiscoverPageInner() {
   const lensParam = searchParams.get("lens");
   const modeParam = searchParams.get("mode");
   const sheetParam = searchParams.get("sheet");
+  const panelParam = searchParams.get("panel");
   const queryMinutes = (() => {
     const raw = minutesParam ?? (lensParam === "60" ? "60" : null);
     if (!raw) return null;
@@ -237,6 +245,8 @@ function DiscoverPageInner() {
 
   const activeBikeId = useAppStore((s) => s.activeBikeId);
   const bikes = useAppStore((s) => s.bikes);
+  const preferredSport = useAppStore((s) => s.preferredSport);
+  const preferredSports = useAppStore((s) => s.preferredSports);
   const rides = useAppStore((s) => s.rides);
   const privacyZones = useAppStore((s) => s.privacyZones);
   const profile = useAppStore((s) => s.riderProfile);
@@ -386,9 +396,13 @@ function DiscoverPageInner() {
   const [googlePlacesWarning, setGooglePlacesWarning] = useState<string | null>(
     null
   );
+  const [valhallaLive, setValhallaLive] = useState(false);
+  const [lastSavedId, setLastSavedId] = useState<string | null>(null);
   const [manualProfile, setManualProfile] = useState<RoutingProfile | null>(
     null
   );
+  const [exploreQuery, setExploreQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
   const [bikeOverlayOn, setBikeOverlayOn] = useState(true);
   const [bikeOverlayExtra, setBikeOverlayExtra] = useState<BikeOverlayClass[]>(
@@ -411,9 +425,40 @@ function DiscoverPageInner() {
   const planCosting = sessionCostingForBike(activeBike?.category, activeProfile);
   const categoryHint = categoryForRoutingProfile(activeProfile);
   const rideProfileId = isRideProfileId(activeProfile) ? activeProfile : null;
-  // Overlay-Familie folgt dem Sport-Chip, nicht dem Garage-Bike — sonst bleibt
-  // Downhill auf Family „road“, wenn kein MTB in der Garage liegt.
+  // Overlay-Familie folgt dem Navi-Profil (Chip nur bei ≥2, sonst Filter-Sheet).
   const bikeOverlayFamily = overlayFamilyForBike(activeProfile);
+  const navProfileMenu = useMemo(
+    () =>
+      discoverProfileMenuForSports({
+        primary: preferredSport ?? activeBike?.category ?? null,
+        sports: [...preferredSports, ...bikes.map((b) => b.category)],
+      }),
+    [preferredSport, preferredSports, activeBike, bikes]
+  );
+  const activeFilterCount = countActiveRouteFilters(filters, minutes);
+  const aroundKm = aroundKmDisplay(filters.maxDistanceKm);
+
+  const applyRouteFilters = useCallback(
+    (next: RouteFilterState) => {
+      setFilters(next);
+      if (next.sport === filters.sport) return;
+      if (next.sport === "road") setManualProfile("road");
+      else if (next.sport === "gravel") setManualProfile("gravel");
+      else if (next.sport === "mtb") {
+        if (
+          activeProfile === "mtb_allmountain" ||
+          activeProfile === "emtb"
+        ) {
+          return;
+        }
+        setManualProfile("mtb_allmountain");
+      } else if (next.sport === "urban") setManualProfile("urban");
+      else if (next.sport === "ebike") setManualProfile("emtb");
+      else if (next.sport === "touring") setManualProfile("ebike");
+      else if (next.sport === "hiking") setManualProfile("hiking");
+    },
+    [filters.sport, activeProfile]
+  );
 
   const heatmapConsent =
     consents.find((c) => c.purpose === "heatmap_contribution")?.granted ??
@@ -505,8 +550,11 @@ function DiscoverPageInner() {
   );
 
   const filtered = useMemo(
-    () => filterRouteSuggestions(routes, honestyFilters),
-    [routes, honestyFilters]
+    () =>
+      filterRouteSuggestions(routes, honestyFilters).filter((r) =>
+        matchesExploreQuery(r, exploreQuery)
+      ),
+    [routes, honestyFilters, exploreQuery]
   );
 
   /**
@@ -639,9 +687,23 @@ function DiscoverPageInner() {
   }, [modeParam]);
 
   useEffect(() => {
-    if (sheetParam === "plan") setSheetMode("plan");
-    if (sheetParam === "tours") setSheetMode("tours");
-  }, [sheetParam]);
+    if (sheetParam === "plan" || panelParam === "plan") setSheetMode("plan");
+    if (sheetParam === "tours" || panelParam === "tours") setSheetMode("tours");
+  }, [sheetParam, panelParam]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/routing/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setValhallaLive(data.valhalla === true);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (queryMinutes != null) setMinutes(queryMinutes);
@@ -1154,6 +1216,7 @@ function DiscoverPageInner() {
         : undefined,
     };
     saveRoute(entry);
+    setLastSavedId(id);
   }, [draft, saveRoute]);
 
   const importGpxFile = useCallback(
@@ -1644,6 +1707,11 @@ function DiscoverPageInner() {
 
   const onMapClick = (lngLat: [number, number]) => {
     if (!pickTarget) return;
+    const trails = liveOsmTrails.map(
+      (t) => t.geometry.coordinates as [number, number][]
+    );
+    const snapped =
+      pickTarget === "via" ? snapPointOntoTrails(lngLat, trails) : lngLat;
     setDraft((prev) => {
       let next = prev;
       if (pickTarget === "start") {
@@ -1652,7 +1720,7 @@ function DiscoverPageInner() {
       } else if (pickTarget === "end") {
         next = setEnd(prev, lngLat, DISCOVER_PIN_DE.endMap);
       } else {
-        next = addVia(prev, lngLat);
+        next = addVia(prev, snapped);
       }
       schedulePlanRecompute(next);
       return next;
@@ -1722,14 +1790,14 @@ function DiscoverPageInner() {
       if (pinIds.has(key)) continue;
       pinIds.add(key);
       m.push({
-        id: p.id,
+        id: `place-${p.id}`,
         lngLat: [p.lng, p.lat],
         color: "#5E35B1",
-        label: p.kind === "bike_shop" ? "Laden" : "POI",
+        label: d.placeKind(normalizePlaceKind(p.kind)),
       });
     }
     return m;
-  }, [draft, nearbyRoutes, googlePlaces]);
+  }, [draft, nearbyRoutes, googlePlaces, d]);
 
   if (detailRoute) {
     return (
@@ -1893,48 +1961,37 @@ function DiscoverPageInner() {
               </Link>
             </p>
           ) : null}
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 rounded-lg bg-surface-elevated px-2 py-1 text-[11px]">
-              <span className="text-text-secondary">{d.time}</span>
-              <input
-                type="range"
-                min={45}
-                max={240}
-                step={15}
-                value={minutes}
-                onChange={(e) => setMinutesLens(Number(e.target.value))}
-                className="w-24"
-              />
-              <span className="font-medium tabular-nums">{minutes} min</span>
-            </label>
-          </div>
-          {/* Sport-Chips — Parität zur Flutter-App: Overlay-Familie, kein DH/Auto-Costing */}
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {DISCOVER_PROFILE_CHIPS.map((pid) => {
-              const p = ROUTING_PROFILES[pid];
-              const selected = activeProfile === pid;
-              return (
-                <button
-                  key={pid}
-                  type="button"
-                  onClick={() => {
-                    setManualProfile(pid);
-                    setFilters((f) => ({
-                      ...f,
-                      sport: sportFilterFromProfile(pid),
-                    }));
-                  }}
-                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
-                    selected
-                      ? "border-chrome bg-chrome/15 text-chrome"
-                      : "border-border bg-surface text-text-secondary hover:border-chrome/40"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
+          <DiscoverExploreChrome
+            searchQuery={exploreQuery}
+            onSearchQuery={(q) => {
+              setExploreQuery(q);
+              if (q.trim().length >= 2) setSheetMode("tours");
+            }}
+            onPlanRoute={() => {
+              setFilterOpen(false);
+              setSheetMode("plan");
+            }}
+            aroundKm={aroundKm}
+            filterCount={activeFilterCount}
+            filterOpen={filterOpen}
+            onOpenFilters={() => setFilterOpen(true)}
+            onCloseFilters={() => setFilterOpen(false)}
+            profileMenu={navProfileMenu}
+            activeProfile={activeProfile}
+            onProfile={(p) => {
+              setManualProfile(p);
+              setFilters((f) => ({
+                ...f,
+                sport: sportFilterFromProfile(p),
+              }));
+            }}
+            minutes={minutes}
+            onMinutes={setMinutesLens}
+            filters={filters}
+            onFilters={applyRouteFilters}
+            routingProfile={activeProfile}
+            resultCount={filtered.length}
+          />
         </header>
 
         <div className="grid shrink-0 grid-cols-3 gap-1 border-b border-border p-2">
@@ -2353,6 +2410,37 @@ function DiscoverPageInner() {
               >
                 {routingBusy ? d.computingRoute : d.computeRoute}
               </button>
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    ["planned", d.variantPlanned],
+                    ["flatter", d.variantFlatter],
+                    ["unpaved", d.variantUnpaved],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={!valhallaLive && id !== "planned"}
+                    onClick={() => {
+                      const next = { ...draft, variant: id };
+                      schedulePlanRecompute(next);
+                    }}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                      (draft.variant ?? "planned") === id
+                        ? "border-chrome bg-chrome/10"
+                        : "border-border bg-surface"
+                    } disabled:opacity-40`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {!valhallaLive ? (
+                <p className="text-[11px] text-text-secondary">
+                  {d.variantValhallaOnly}
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -2461,33 +2549,6 @@ function DiscoverPageInner() {
                   </article>
                 ))
               )}
-
-              <FilterChips
-                minutes={minutes}
-                onMinutes={setMinutesLens}
-                filters={filters}
-                onChange={(next) => {
-                  setFilters(next);
-                  // Nur bei Disziplin-Wechsel Profil setzen — sonst überschreibt
-                  // z. B. „Leicht“ ein aktives Downhill mit Allmountain.
-                  if (next.sport === filters.sport) return;
-                  if (next.sport === "road") setManualProfile("road");
-                  else if (next.sport === "gravel") setManualProfile("gravel");
-                  else if (next.sport === "mtb") {
-                    if (
-                      activeProfile === "mtb_allmountain" ||
-                      activeProfile === "emtb"
-                    ) {
-                      return;
-                    }
-                    setManualProfile("mtb_allmountain");
-                  } else if (next.sport === "urban") setManualProfile("urban");
-                  else if (next.sport === "ebike") setManualProfile("emtb");
-                  else if (next.sport === "touring") setManualProfile("ebike");
-                  else if (next.sport === "hiking") setManualProfile("hiking");
-                }}
-                profile={activeProfile}
-              />
 
               {activeBike?.isEbike && range && (
                 <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs">
@@ -2909,6 +2970,26 @@ function DiscoverPageInner() {
           onOverlayClick={(hit) => void onOverlayWayClick(hit)}
           onZoomChange={setMapZoom}
           onMarkerClick={(id) => {
+            if (id.startsWith("place-")) {
+              const placeId = id.slice("place-".length);
+              const place = googlePlaces.find((p) => p.id === placeId);
+              if (!place) return;
+              const trails = liveOsmTrails.map(
+                (t) => t.geometry.coordinates as [number, number][]
+              );
+              const snapped = snapPointOntoTrails(
+                [place.lng, place.lat],
+                trails
+              );
+              setDraft((prev) => {
+                const next = addVia(prev, snapped, place.name);
+                schedulePlanRecompute(next);
+                return next;
+              });
+              setSheetMode("plan");
+              setPickTarget(null);
+              return;
+            }
             if (!id.startsWith("tour-")) return;
             const tourId = id.slice("tour-".length);
             const r =
@@ -3116,6 +3197,14 @@ function DiscoverPageInner() {
               >
                 <Bookmark className="h-3.5 w-3.5" />
               </button>
+              {lastSavedId ? (
+                <a
+                  href={httpsAppLink(rideOpenPath(lastSavedId))}
+                  className="rounded-lg bg-white/15 px-2 py-1 text-[10px] font-semibold"
+                >
+                  {d.openNativeApp}
+                </a>
+              ) : null}
               <button
                 type="button"
                 onClick={() =>

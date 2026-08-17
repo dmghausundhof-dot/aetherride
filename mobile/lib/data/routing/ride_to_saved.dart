@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/ride.dart';
 import '../../domain/saved_route.dart';
-import '../../domain/saved_route_note.dart';
 import 'route_repository.dart';
 import 'saved_route_meta_store.dart';
 
@@ -49,10 +48,11 @@ Future<SavedRouteEntry> saveRideAsTour({
   required RouteRepository routes,
   required RideRecord ride,
   String? name,
+  String? id,
   List<String> photoPaths = const [],
   String? description,
 }) async {
-  final entry = rideRecordToSavedEntry(ride, name: name);
+  final entry = rideRecordToSavedEntry(ride, name: name, id: id);
   await routes.saveEntry(entry);
   final photos = [
     for (final path in photoPaths)
@@ -60,13 +60,13 @@ Future<SavedRouteEntry> saveRideAsTour({
   ];
   final desc = description?.trim() ?? '';
   if (photos.isNotEmpty || desc.isNotEmpty || ride.id.isNotEmpty) {
+    final cur = await SavedRouteMetaStore.get(entry.id);
     await SavedRouteMetaStore.put(
       entry.id,
-      SavedRouteMeta(
-        description: desc,
-        photoPaths: photos,
+      cur.copyWith(
+        description: desc.isNotEmpty ? desc : null,
+        photoPaths: photos.isNotEmpty ? photos : null,
         rideId: ride.id,
-        updatedAt: DateTime.now().toUtc(),
       ),
     );
   }

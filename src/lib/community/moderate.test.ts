@@ -30,6 +30,9 @@ assert.equal(auto.source, "ai");
 const photoOk = decideModeration("photo", null, parsed, "grok-2-vision-1212");
 assert.equal(photoOk.action, "pending", "Fotos nie auto-approve");
 
+const placeOk = decideModeration("place", null, parsed, "grok-3-mini");
+assert.equal(placeOk.action, "pending", "User-Orte nie auto-approve");
+
 const aiReject = decideModeration(
   "review",
   null,

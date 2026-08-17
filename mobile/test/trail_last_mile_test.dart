@@ -58,4 +58,18 @@ void main() {
     expect(n.lat, lessThan(49.401));
     expect(n.lng, lessThan(8.75));
   });
+
+  test('via snaps onto nearby trail, far point stays', () {
+    final hit = snapPointOntoTrails(
+      trails: [s3],
+      lat: 49.4014,
+      lng: 8.76,
+    );
+    expect(hit, isNotNull);
+    expect(hit!.lat, closeTo(49.401, 0.0003));
+    expect(
+      snapPointOntoTrails(trails: [s3], lat: 49.5, lng: 8.76),
+      isNull,
+    );
+  });
 }

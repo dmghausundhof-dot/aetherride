@@ -10,8 +10,9 @@ import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 /**
  * GET /api/route?profile=mtb_enduro&from=12.15,47.45&to=12.20,47.48&via=12.17,47.46
  *     &engine=graphhopper|openrouteservice|ors|valhalla|osrm
+ *     &variant=planned|flatter|unpaved
  *     &access=1  — gravity/access leg: no OSM trail splice
- * POST { profile, from, to, vias?, engine?, access? }
+ * POST { profile, from, to, vias?, engine?, variant?, access? }
  * Costing comes from `profile` (auto = car, hiking = foot). Engine only
  * translates that costing. Live A–B may splice a nearby OSM trail (MTB/Gravel)
  * or a separate cycleway (urban/ebike, gated) unless access=1.
@@ -56,12 +57,14 @@ export async function GET(req: Request) {
     );
   }
   const vias = parseVias(searchParams);
-  const lang = chromeLangFrom(searchParams.get("lang"));
-  try {
-    const route = await computeRoute(profile, from, to, vias, lang, {
-      engine: searchParams.get("engine"),
-      accessLeg: parseAccessFlag(searchParams.get("access")),
-    });
+    const lang = chromeLangFrom(searchParams.get("lang"));
+    const variant = searchParams.get("variant");
+    try {
+      const route = await computeRoute(profile, from, to, vias, lang, {
+        engine: searchParams.get("engine"),
+        accessLeg: parseAccessFlag(searchParams.get("access")),
+        variant,
+      });
     return NextResponse.json(route);
   } catch (e) {
     return NextResponse.json(
@@ -99,10 +102,11 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json({ error: "invalid from/to" }, { status: 400 });
     }
-    const route = await computeRoute(profile, from, to, vias, lang, {
-      engine: typeof body.engine === "string" ? body.engine : null,
-      accessLeg: parseAccessFlag(body.access ?? body.accessLeg),
-    });
+      const route = await computeRoute(profile, from, to, vias, lang, {
+        engine: typeof body.engine === "string" ? body.engine : null,
+        accessLeg: parseAccessFlag(body.access ?? body.accessLeg),
+        variant: typeof body.variant === "string" ? body.variant : null,
+      });
     return NextResponse.json(route);
   } catch (e) {
     return NextResponse.json(

@@ -171,6 +171,25 @@ TrailLastMile? lastMileTowardDestination({
   return best;
 }
 
+/// Snap a via/place onto the nearest trail. Null if none within [maxOffM].
+({double lat, double lng, double offM})? snapPointOntoTrails({
+  required Iterable<List<List<double>>> trails,
+  required double lat,
+  required double lng,
+  double maxOffM = kTrailDestMaxOffM,
+}) {
+  ({double lat, double lng, double offM})? best;
+  for (final g in trails) {
+    if (g.length < 2) continue;
+    final p = projectOntoRoute(coordinates: g, lat: lat, lng: lng);
+    if (p.crossTrackM > maxOffM) continue;
+    if (best != null && p.crossTrackM >= best.offM) continue;
+    final pt = pointAlongRoute(g, p.distanceAlongM);
+    best = (lat: pt[1], lng: pt[0], offM: p.crossTrackM);
+  }
+  return best;
+}
+
 /// Nudge the GH target off a hard trail toward the rider so `bike` does not
 /// enter at a distant trailhead and follow the whole S-grade line.
 ({double lat, double lng}) nudgeJoinTowardRider({

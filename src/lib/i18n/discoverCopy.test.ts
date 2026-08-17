@@ -14,6 +14,11 @@ const langs = ["de", "en", "fr", "it"] as const;
 function testDe() {
   const d = discoverCopy("de");
   assert.equal(d.loop, "Rundkurs");
+  assert.equal(d.searchHint, "Ort oder Tour");
+  assert.equal(d.planRouteCta, "Navigieren");
+  assert.equal(d.filter, "Filter");
+  assert.equal(d.aroundKm(35), "in 35 km");
+  assert.equal(d.showTours(3), "3 Touren zeigen");
   assert.equal(d.sport.road, "Rennrad");
   assert.equal(d.sport.mtb, "MTB");
   assert.equal(d.sport.gravel, "Gravel");
@@ -31,10 +36,14 @@ function testParity() {
     assert.equal(d.sport.ebike, "E-MTB", lang);
     assert.equal(d.surface.trail, "Trail", lang);
     assert.ok(d.dist(40).includes("km"), lang);
+    assert.ok(d.aroundKm(35).includes("km"), lang);
+    assert.ok(d.searchHint.length > 0, lang);
     assert.ok(d.elevAlpine.includes("hm"), lang);
     assert.ok(d.mappe.includes("Mappe"), lang);
   }
   assert.notEqual(discoverCopy("de").reset, discoverCopy("en").reset);
+  assert.notEqual(discoverCopy("de").searchHint, discoverCopy("en").searchHint);
+  assert.notEqual(discoverCopy("de").planRouteCta, discoverCopy("en").planRouteCta);
 }
 
 function testDifficultyIdsMatchDomain() {

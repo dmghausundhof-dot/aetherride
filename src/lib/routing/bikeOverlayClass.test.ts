@@ -7,6 +7,8 @@ import {
   classifyBikeWay,
   overlayFamilyForBike,
   overlayClassesForFamily,
+  overlayLegendRows,
+  overlayLegendShowsSScale,
   parseOsmMtbScale,
 } from "./bikeOverlayClass";
 
@@ -125,6 +127,25 @@ function testFamilyDefaults() {
   assert.equal(overlayFamilyForBike("dh"), "mtb");
 }
 
+function testLegendCompact() {
+  assert.equal(overlayLegendShowsSScale("urban"), false);
+  assert.equal(overlayLegendShowsSScale("mtb"), true);
+  assert.deepEqual(overlayLegendRows({ family: "urban", expanded: false }), []);
+  assert.deepEqual(
+    overlayLegendRows({ family: "urban", expanded: true }).map((r) => r.key),
+    ["urban", "road"]
+  );
+  assert.ok(
+    !overlayLegendRows({ family: "urban", expanded: true }).some((r) =>
+      r.key.startsWith("S")
+    )
+  );
+  assert.deepEqual(
+    overlayLegendRows({ family: "mtb", expanded: true }).map((r) => r.key),
+    ["S0", "S1", "S2", "S3+", "unrated"]
+  );
+}
+
 testParseScale();
 testMtbTagged();
 testImbaTagged();
@@ -137,4 +158,5 @@ testRoadCycleway();
 testUrbanLivingStreet();
 testUrbanCycleLane();
 testFamilyDefaults();
+testLegendCompact();
 console.log("bikeOverlayClass.test.ts: ok");

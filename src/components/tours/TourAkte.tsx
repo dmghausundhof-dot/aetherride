@@ -24,6 +24,10 @@ export function TourAkte({ route }: { route: SavedRoute }) {
   const rides = useAppStore((s) => s.rides);
   const updateSavedRoute = useAppStore((s) => s.updateSavedRoute);
   const collections = useAppStore((s) => s.routeCollections);
+  const addRouteToCollection = useAppStore((s) => s.addRouteToCollection);
+  const createRouteCollection = useAppStore((s) => s.createRouteCollection);
+  const [colName, setColName] = useState("");
+  const [colMsg, setColMsg] = useState("");
 
   const catalogId = catalogTourIdOf(route);
   const visibility = visibilityOf(route);
@@ -98,6 +102,62 @@ export function TourAkte({ route }: { route: SavedRoute }) {
               )}
             </p>
           ) : null}
+          <div className="rounded-xl border border-border bg-background p-3">
+            <p className="text-xs font-semibold text-text-secondary">
+              {p.addToCollection}
+            </p>
+            {collections.length > 0 ? (
+              <select
+                className="mt-2 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-xs"
+                defaultValue=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id) return;
+                  addRouteToCollection(id, route.id);
+                  e.target.value = "";
+                  setColMsg(p.collectionAdded);
+                }}
+              >
+                <option value="" disabled>
+                  {p.addToCollection}
+                </option>
+                {collections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="mt-1 text-[11px] text-text-secondary">
+                {p.collectionEmpty}
+              </p>
+            )}
+            <div className="mt-2 flex gap-2">
+              <input
+                value={colName}
+                onChange={(e) => setColName(e.target.value)}
+                placeholder={p.collectionName}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+              />
+              <button
+                type="button"
+                className="rounded-lg border border-border px-2 py-1.5 text-[11px] font-semibold"
+                onClick={() => {
+                  const name = colName.trim();
+                  if (!name) return;
+                  const id = createRouteCollection(name);
+                  addRouteToCollection(id, route.id);
+                  setColName("");
+                  setColMsg(p.collectionAdded);
+                }}
+              >
+                {p.collectionCreate}
+              </button>
+            </div>
+            {colMsg ? (
+              <p className="mt-1 text-[11px] text-text-secondary">{colMsg}</p>
+            ) : null}
+          </div>
           <div className="rounded-xl border border-border bg-background p-3">
             <p className="text-xs font-semibold text-text-secondary">
               {p.visibility}

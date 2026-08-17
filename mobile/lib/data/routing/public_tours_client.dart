@@ -101,6 +101,53 @@ class CatalogTourGeometryHit {
   final String? engine;
 }
 
+/// Redaktionelle Region-Gruppe aus GET `/api/tours/catalog` `sets`.
+class EditorialSetHit {
+  const EditorialSetHit({
+    required this.id,
+    required this.regionSlug,
+    required this.name,
+    required this.tourIds,
+    required this.count,
+  });
+
+  final String id;
+  final String regionSlug;
+  final String name;
+  final List<String> tourIds;
+  final int count;
+
+  factory EditorialSetHit.fromJson(Map<String, dynamic> m) {
+    final ids = <String>[];
+    final raw = m['tourIds'];
+    if (raw is List) {
+      for (final e in raw) {
+        final id = '$e'.trim();
+        if (id.isNotEmpty) ids.add(id);
+      }
+    }
+    return EditorialSetHit(
+      id: (m['id'] as String?) ?? '',
+      regionSlug: (m['regionSlug'] as String?) ?? '',
+      name: (m['name'] as String?) ?? '',
+      tourIds: ids,
+      count: (m['count'] as num?)?.round() ?? ids.length,
+    );
+  }
+}
+
+class PublicCatalogSnapshot {
+  const PublicCatalogSnapshot({
+    required this.tours,
+    this.sets = const [],
+    this.honesty = '',
+  });
+
+  final List<PublicTourHit> tours;
+  final List<EditorialSetHit> sets;
+  final String honesty;
+}
+
 class PublicToursClient {
   PublicToursClient({http.Client? httpClient})
       : _http = httpClient ?? http.Client();
@@ -112,6 +159,14 @@ class PublicToursClient {
     String sport = 'all',
     String? region,
   }) async {
+    final snap = await fetchCatalogSnapshot(sport: sport, region: region);
+    return snap.tours;
+  }
+
+  Future<PublicCatalogSnapshot> fetchCatalogSnapshot({
+    String sport = 'all',
+    String? region,
+  }) async {
     final q = <String, String>{'sport': sport};
     if (region != null && region.isNotEmpty) q['region'] = region;
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/tours/catalog')
@@ -120,22 +175,38 @@ class PublicToursClient {
       final res = await _http
           .get(uri, headers: {'Accept': 'application/json'})
           .timeout(const Duration(seconds: 20));
-      if (res.statusCode != 200) return const [];
+      if (res.statusCode != 200) return const PublicCatalogSnapshot(tours: []);
       final data = jsonDecode(res.body);
-      if (data is! Map) return const [];
+      if (data is! Map) return const PublicCatalogSnapshot(tours: []);
       final raw = data['tours'];
-      if (raw is! List) return const [];
       final out = <PublicTourHit>[];
-      for (final item in raw) {
-        if (item is Map) {
-          final hit =
-              PublicTourHit.fromJson(Map<String, dynamic>.from(item));
-          if (hit.id.isNotEmpty && hit.name.isNotEmpty) out.add(hit);
+      if (raw is List) {
+        for (final item in raw) {
+          if (item is Map) {
+            final hit =
+                PublicTourHit.fromJson(Map<String, dynamic>.from(item));
+            if (hit.id.isNotEmpty && hit.name.isNotEmpty) out.add(hit);
+          }
         }
       }
-      return out;
+      final sets = <EditorialSetHit>[];
+      final rawSets = data['sets'];
+      if (rawSets is List) {
+        for (final item in rawSets) {
+          if (item is Map) {
+            final set =
+                EditorialSetHit.fromJson(Map<String, dynamic>.from(item));
+            if (set.id.isNotEmpty && set.tourIds.length >= 3) sets.add(set);
+          }
+        }
+      }
+      return PublicCatalogSnapshot(
+        tours: out,
+        sets: sets,
+        honesty: '${data['honesty'] ?? ''}'.trim(),
+      );
     } catch (_) {
-      return const [];
+      return const PublicCatalogSnapshot(tours: []);
     }
   }
 

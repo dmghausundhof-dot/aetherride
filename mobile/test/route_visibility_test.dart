@@ -69,6 +69,8 @@ void main() {
       ),
       'r-bodensee-road',
     );
+    expect(RouteVisibility.allowsStimmen('recorded-abc'), isFalse);
+    expect(RouteVisibility.stimmenTourIdOf('recorded-abc'), isNull);
   });
 
   test('filter chips respect visibility', () {

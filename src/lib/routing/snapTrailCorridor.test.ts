@@ -9,6 +9,7 @@ import {
   destLiesOnTrail,
   pickCyclewaysAlongRoute,
   pickTrailAlongRoute,
+  snapPointOntoTrails,
   spliceTrailIntoRoute,
 } from "./snapTrailCorridor";
 import type { ClientRouteResult } from "./profiles";
@@ -420,5 +421,15 @@ const snapLngs = (lastMileSnap.geometry.coordinates as [number, number][]).map(
   (c) => c[0],
 );
 assert.ok(Math.max(...snapLngs) < 8.765, "spliced last mile stops at the tap");
+
+const trailLine: [number, number][] = [
+  [8.7, 49.401],
+  [8.73, 49.401],
+  [8.76, 49.401],
+];
+const snappedVia = snapPointOntoTrails([8.73, 49.4014], [trailLine]);
+assert.ok(Math.abs(snappedVia[1] - 49.401) < 0.0002, "via snaps onto trail");
+const farVia = snapPointOntoTrails([8.73, 49.5], [trailLine]);
+assert.equal(farVia[1], 49.5, "far via stays put");
 
 console.log("snapTrailCorridor.test.ts OK");

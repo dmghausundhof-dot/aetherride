@@ -58,6 +58,10 @@ assert.equal(stimmenTourIdOf(shared), "gpx-2");
 assert.equal(allowsStimmen(catalog), true);
 assert.equal(stimmenTourIdOf(catalog), "r-bodensee-road");
 
+const recorded = route({ id: "recorded-abc", source: "import" });
+assert.equal(allowsStimmen(recorded), false);
+assert.equal(stimmenTourIdOf(recorded), null);
+
 const list = [priv, shared, catalog];
 assert.equal(filterSavedByVisibility(list, "all_mine").length, 3);
 assert.deepEqual(

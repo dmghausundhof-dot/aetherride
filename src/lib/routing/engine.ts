@@ -47,6 +47,13 @@ import {
   profileWantsCorridorTrails,
 } from "@/lib/routing/snapTrailCorridor";
 import type { TrailSegment } from "@/lib/routing/trailSegments";
+import {
+  applyRouteVariant,
+  parseRouteVariant,
+  VARIANT_VALHALLA_ONLY,
+  variantNeedsValhalla,
+  type RouteVariant,
+} from "@/lib/routing/routeVariant";
 
 export type RoutingEngineKind =
   | "valhalla"
@@ -72,6 +79,8 @@ export type ComputeRouteOptions = {
    * a walk/drive does not become the DH trail.
    */
   accessLeg?: boolean;
+  /** planned | flatter | unpaved — Valhalla costing only. */
+  variant?: string | null;
 };
 
 export type ResolvedRouteEngine = {
@@ -93,6 +102,9 @@ export type RouteResult = {
   orsExtras?: OrsExtras;
   /** GraphHopper road_class vertex shares — snap gate, not shown in UI. */
   roadClassShares?: Record<string, number>;
+  /** Costing variant. Absent = planned. */
+  variant?: RouteVariant;
+  variantApplied?: boolean;
 };
 
 /** Öffentlicher OSRM (nur mit explizitem Opt-in oder Dev-Fallback) */
@@ -185,28 +197,6 @@ export function engineIsConfigured(kind: RoutingEngineKind): boolean {
       return Boolean(process.env.OSRM_URL?.trim()) || publicOsrmAllowed();
     default:
       return false;
-  }
-}
-
-/**
- * Native costing name for a sport/access profile on one engine.
- * Profile (what) is chosen first; engine (who) only translates it.
- */
-export function nativeCostingFor(
-  profile: RoutingProfile,
-  engineKind: RoutingEngineKind
-): string {
-  switch (engineKind) {
-    case "graphhopper":
-      return graphhopperProfile(profile);
-    case "openrouteservice":
-      return orsProfileFor(profile);
-    case "valhalla":
-      return valhallaCosting(profile).costing;
-    case "osrm":
-      return osrmProfile(profile);
-    default:
-      return profile;
   }
 }
 
@@ -310,6 +300,28 @@ export function graphhopperProfile(profile: RoutingProfile): string {
   return profile === "hiking" ? "foot" : "bike";
 }
 
+/**
+ * Native costing name for a sport/access profile on one engine.
+ * Profile (what) is chosen first; engine (who) only translates it.
+ */
+export function nativeCostingFor(
+  profile: RoutingProfile,
+  engineKind: RoutingEngineKind
+): string {
+  switch (engineKind) {
+    case "graphhopper":
+      return graphhopperProfile(profile);
+    case "openrouteservice":
+      return orsProfileFor(profile);
+    case "valhalla":
+      return valhallaCosting(profile).costing;
+    case "osrm":
+      return osrmProfile(profile);
+    default:
+      return profile;
+  }
+}
+
 function graphhopperCustomModelAllowed(): boolean {
   const v = process.env.GRAPHHOPPER_ALLOW_CUSTOM_MODEL;
   return v === "1" || v === "true";
@@ -381,11 +393,15 @@ async function routeValhalla(
   profile: RoutingProfile,
   from: [number, number],
   to: [number, number],
-  lang: ChromeLang = "de"
+  lang: ChromeLang = "de",
+  variant: RouteVariant = "planned"
 ): Promise<RouteResult> {
   const base = baseUrl("valhalla");
   if (!base) throw new Error("VALHALLA_URL missing");
-  const { costing, costing_options } = valhallaCosting(profile);
+  const { costing, costing_options } = applyRouteVariant(
+    valhallaCosting(profile),
+    variant
+  );
   const body = {
     locations: [
       { lon: from[0], lat: from[1] },
@@ -423,6 +439,8 @@ async function routeValhalla(
     engine: "valhalla",
     profile,
     steps: steps.length ? steps : stepsFromDemoGeometry(coordinates),
+    variant,
+    variantApplied: variant !== "planned",
   };
 }
 
@@ -844,11 +862,19 @@ export async function computeRoute(
 ): Promise<RouteResult> {
   const language = chromeLangFrom(lang);
   const points = [from, ...vias, to];
-  const resolved = resolveRouteEngine(
+  const variant = parseRouteVariant(opts?.variant);
+  const forceValhalla =
+    variantNeedsValhalla(variant) && engineIsConfigured("valhalla");
+  let resolved = resolveRouteEngine(
     profile,
     parseRoutingEngineParam(opts?.engine)
   );
+  if (forceValhalla) {
+    resolved = { kind: "valhalla", requested: "valhalla", fallback: false };
+  }
   const kind = resolved.kind;
+  const effectiveVariant =
+    variantNeedsValhalla(variant) && kind !== "valhalla" ? "planned" : variant;
   if (kind === "demo") {
     if (allowDemoContent()) return demoRoute(profile, from, to);
     throw new Error(
@@ -886,12 +912,20 @@ export async function computeRoute(
       result = await routeGraphhopper(profile, points, language);
     } else if (kind === "valhalla") {
       if (vias.length === 0) {
-        result = await routeValhalla(profile, from, to, language);
+        result = await routeValhalla(
+          profile,
+          from,
+          to,
+          language,
+          effectiveVariant
+        );
       } else {
         const parts: RouteResult[] = [];
         let prev = from;
         for (const p of [...vias, to]) {
-          parts.push(await routeValhalla(profile, prev, p, language));
+          parts.push(
+            await routeValhalla(profile, prev, p, language, effectiveVariant)
+          );
           prev = p;
         }
         result = {
@@ -909,6 +943,8 @@ export async function computeRoute(
           profile,
           steps: parts.flatMap((p) => p.steps ?? []),
           warnings: parts.flatMap((p) => p.warnings ?? []),
+          variant: effectiveVariant,
+          variantApplied: effectiveVariant !== "planned",
         };
       }
     } else {
@@ -924,6 +960,19 @@ export async function computeRoute(
         ],
       };
     }
+    const variantApplied =
+      effectiveVariant !== "planned" && result.engine === "valhalla";
+    result = {
+      ...result,
+      variant,
+      variantApplied,
+      warnings: [
+        ...(variantNeedsValhalla(variant) && !variantApplied
+          ? [VARIANT_VALHALLA_ONLY]
+          : []),
+        ...(result.warnings ?? []),
+      ],
+    };
     return await maybeEnrichCorridorTrail(
       result,
       from,

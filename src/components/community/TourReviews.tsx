@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Camera, Star, Trash2 } from "lucide-react";
-import {
-  useCommunityStore,
-} from "@/store/useCommunityStore";
+import { Camera, MapPin, Star, Trash2 } from "lucide-react";
+import { useCommunityStore } from "@/store/useCommunityStore";
 import {
   countsFromPayload,
   hasCommunity,
   type TourCommunityCounts,
 } from "@/lib/community/tourCommunity";
+import { parseStimmeTags, STIMME_TAG_WIRES } from "@/lib/community/stimmeTags";
+import { parseDifficultyDelta } from "@/lib/community/difficultyAggregate";
 import {
   createClient,
   isSupabaseConfigured,
@@ -25,6 +25,10 @@ type CloudReview = {
   rating?: number;
   body?: string;
   created_at?: string;
+  tags?: unknown;
+  pin_lat?: unknown;
+  pin_lng?: unknown;
+  difficulty_delta?: unknown;
 };
 
 type CloudPhoto = {
@@ -32,6 +36,25 @@ type CloudPhoto = {
   url?: string | null;
   caption?: string | null;
 };
+
+function crowdLine(
+  counts: TourCommunityCounts,
+  s: ReturnType<typeof catalogCopy>["stimmen"],
+): string | null {
+  const d = counts.difficulty;
+  if (!d?.shown || !d.label) return null;
+  if (d.label === "easier") return s.crowdEasier(d.n);
+  if (d.label === "harder") return s.crowdHarder(d.n);
+  return s.crowdAsMarked(d.n);
+}
+
+function pinOf(r: CloudReview): { lat: number; lng: number } | null {
+  const lat = Number(r.pin_lat);
+  const lng = Number(r.pin_lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
 
 export function TourReviews({
   tourId,
@@ -50,6 +73,8 @@ export function TourReviews({
   const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(4);
   const [body, setBody] = useState("");
   const [name, setName] = useState(publicProfile.displayName || "");
+  const [tags, setTags] = useState<string[]>([]);
+  const [difficultyDelta, setDifficultyDelta] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ text: string; profile?: boolean } | null>(
     null,
   );
@@ -91,6 +116,12 @@ export function TourReviews({
     };
   }, [tourId]);
 
+  const toggleTag = (wire: string) => {
+    setTags((cur) => parseStimmeTags(
+      cur.includes(wire) ? cur.filter((t) => t !== wire) : [...cur, wire],
+    ));
+  };
+
   const onSubmit = async () => {
     const local = submitReview({
       tourId,
@@ -127,6 +158,7 @@ export function TourReviews({
           if (!up.error) photos = [{ storagePath: path }];
         }
       }
+      const delta = parseDifficultyDelta(difficultyDelta);
       const res = await fetch("/api/community/tour", {
         method: "POST",
         credentials: "include",
@@ -136,10 +168,14 @@ export function TourReviews({
           rating,
           body: local.body,
           authorLabel: local.authorLabel,
+          tags,
+          ...(delta != null ? { difficultyDelta: delta } : {}),
           photos,
         }),
       });
       setPhotoFile(null);
+      setTags([]);
+      setDifficultyDelta(null);
       if (res.status === 401) {
         setMsg({ text: s.savedLocalSignIn, profile: true });
         return;
@@ -161,6 +197,7 @@ export function TourReviews({
   };
 
   const liveEmpty = !hasCommunity(counts) && mine.length === 0;
+  const crowd = crowdLine(counts, s);
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
@@ -178,6 +215,9 @@ export function TourReviews({
         )}
       </div>
       <p className="mt-1 text-[11px] text-text-secondary">{s.liveHint}</p>
+      {crowd ? (
+        <p className="mt-1 text-xs text-text-secondary">{crowd}</p>
+      ) : null}
 
       {liveEmpty && (
         <p className="mt-4 text-sm text-text-secondary">{s.empty}</p>
@@ -201,28 +241,53 @@ export function TourReviews({
       )}
 
       <ul className="mt-4 space-y-3">
-        {cloudReviews.map((r) => (
-          <li
-            key={r.id}
-            className="rounded-xl border border-border bg-background/50 p-3"
-          >
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-semibold text-foreground">
-                {r.author_label || "Rider"}
-              </span>
-              {typeof r.rating === "number" && r.rating >= 1 && r.rating <= 5 && (
-                <span className="flex items-center gap-0.5 text-accent">
-                  {Array.from({ length: r.rating }).map((_, i) => (
-                    <Star key={i} className="h-3 w-3 fill-current" />
-                  ))}
+        {cloudReviews.map((r) => {
+          const pin = pinOf(r);
+          const rowTags = parseStimmeTags(r.tags);
+          const delta = parseDifficultyDelta(r.difficulty_delta);
+          return (
+            <li
+              key={r.id}
+              className="rounded-xl border border-border bg-background/50 p-3"
+            >
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-foreground">
+                  {r.author_label || "Rider"}
                 </span>
-              )}
-            </div>
-            {r.body ? (
-              <p className="mt-1.5 text-sm text-text-secondary">{r.body}</p>
-            ) : null}
-          </li>
-        ))}
+                {typeof r.rating === "number" && r.rating >= 1 && r.rating <= 5 && (
+                  <span className="flex items-center gap-0.5 text-accent">
+                    {Array.from({ length: r.rating }).map((_, i) => (
+                      <Star key={i} className="h-3 w-3 fill-current" />
+                    ))}
+                  </span>
+                )}
+              </div>
+              {r.body ? (
+                <p className="mt-1.5 text-sm text-text-secondary">{r.body}</p>
+              ) : null}
+              {rowTags.length > 0 ? (
+                <p className="mt-1 text-[11px] text-text-secondary">
+                  {rowTags.map((t) => s.tagLabel(t)).join(" · ")}
+                </p>
+              ) : null}
+              {delta != null ? (
+                <p className="mt-0.5 text-[11px] text-text-secondary">
+                  {delta < 0
+                    ? s.difficultyEasier
+                    : delta > 0
+                      ? s.difficultyHarder
+                      : s.difficultyAsMarked}
+                </p>
+              ) : null}
+              {pin ? (
+                <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-text-secondary">
+                  <MapPin className="h-3 w-3" />
+                  {s.pinOnLine} · {pin.lat.toFixed(4)}, {pin.lng.toFixed(4)}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
         {mine.map((r) => (
           <li
             key={r.id}
@@ -273,6 +338,46 @@ export function TourReviews({
                     : "text-text-secondary"
                 }`}
               />
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-text-secondary">{s.tagsHint}</p>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {STIMME_TAG_WIRES.map((wire) => (
+            <button
+              key={wire}
+              type="button"
+              onClick={() => toggleTag(wire)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                tags.includes(wire)
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-border text-text-secondary"
+              }`}
+            >
+              {s.tagLabel(wire)}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-text-secondary">{s.difficultyHint}</p>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {([-1, 0, 1] as const).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() =>
+                setDifficultyDelta((cur) => (cur === d ? null : d))
+              }
+              className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                difficultyDelta === d
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-border text-text-secondary"
+              }`}
+            >
+              {d < 0
+                ? s.difficultyEasier
+                : d > 0
+                  ? s.difficultyHarder
+                  : s.difficultyAsMarked}
             </button>
           ))}
         </div>

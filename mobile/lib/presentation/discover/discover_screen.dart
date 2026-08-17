@@ -20,7 +20,9 @@ import '../../core/errors/friendly_error.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/community/tour_community_store.dart';
 import '../../data/community/community_places_client.dart';
+import '../../data/community/filmstrip_client.dart';
 import '../../data/community/ride_group_store.dart';
+import '../../data/weather/weather_client.dart';
 import '../../data/local/ride_prefs.dart';
 import '../../data/import/gpx_import.dart';
 import '../../data/routing/elevation_client.dart';
@@ -36,6 +38,7 @@ import '../../domain/community/map_place.dart';
 import '../../domain/community/map_place_merge.dart';
 import '../../domain/community/poi_from_vias.dart';
 import '../../domain/community/stimme_pin.dart';
+import '../../domain/community/filmstrip.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../data/routing/naehe_seeds.dart';
@@ -65,6 +68,8 @@ import '../../domain/routing/trail_last_mile.dart';
 import '../../domain/routing/trail_access.dart';
 import '../../domain/routing/nav_policy.dart';
 import '../../domain/routing/trail_view.dart';
+import '../../domain/routing/plan_line_points.dart';
+import '../../domain/routing/route_variant.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
 import '../../domain/tours/route_visibility.dart';
@@ -85,6 +90,7 @@ import '../map/nav_puck_overlay.dart';
 import '../map/nav_puck_style_sheet.dart';
 import '../shared/map_ornaments.dart';
 import '../shared/status_bar_scrim.dart';
+import 'add_to_collection_sheet.dart';
 import 'discover_browse_sheet_snaps.dart';
 import 'discover_shell_mode.dart';
 import 'discover_map_line_style.dart';
@@ -94,6 +100,8 @@ import 'widgets/ort_sheet.dart';
 import 'widgets/tour_akte_sheet.dart';
 import 'widgets/tour_community_section.dart';
 import 'widgets/tour_social_proof.dart';
+import 'widgets/route_variant_chips.dart';
+import 'widgets/plan_filmstrip.dart';
 import 'offline_maps_sheet.dart';
 
 /// MapLibre in Flutter braucht Eager-Gesten, sonst frisst Parent/PlatformView Zoom/Pan.
@@ -477,6 +485,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final Map<String, List<String>> _communityHeroUrls = {};
 
   List<_RouteSuggestion> _tours = <_RouteSuggestion>[];
+  List<EditorialSetHit> _editorialSets = [];
+  String _editorialHonesty = '';
+  final Map<String, _RouteSuggestion> _catalogById = {};
   List<OsmTrailSegment> _trailNetwork = [];
   List<OsmTrailSegment> _sGradeTrails = [];
   OsmTrailSegment? _destinationTrail;
@@ -533,6 +544,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   String? _elevationSummary;
   double? _elevationGainM;
+  WeatherSnapshot? _weatherStart;
+  WeatherSnapshot? _weatherSummit;
+  List<FilmstripShot> _filmstripShots = const [];
+  RouteVariant _routeVariant = RouteVariant.planned;
+  bool _valhallaLive = false;
 
   /// Höhenprofil je Tour fürs Detail-Panel — getrennt vom globalen
   /// [_elevationSummary] (der gehört zur zuletzt berechneten Route und kann
@@ -573,6 +589,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   RouteRepository get _routes => ref.read(routeRepositoryProvider);
   final _elevationClient = ElevationClient();
+  final _filmstripClient = FilmstripClient();
 
   @override
   void initState() {
@@ -1121,30 +1138,45 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _fetchRoutingStatus() async {
+    final s = await fetchRoutingStatus();
+    if (!mounted) return;
+    final valhalla = s?.valhalla == true;
     // Prod: no Demo-Geometrie / Routing-Key chrome (Q-BAR-DIS-01 / S25).
     if (!AppConfig.showRoutingDebug || !AppConfig.allowDemoContent) {
-      if (mounted && _routingStatusNote != null) {
-        setState(() => _routingStatusNote = null);
-      }
+      setState(() {
+        _valhallaLive = valhalla;
+        if (!valhalla) _routeVariant = RouteVariant.planned;
+        _routingStatusNote = null;
+      });
       return;
     }
-    final s = await fetchRoutingStatus();
-    if (!mounted || s == null) return;
+    if (s == null) {
+      setState(() => _valhallaLive = false);
+      return;
+    }
     final text = s.bannerText;
     if (_suppressDemoGeometryBanner(text)) {
-      setState(() => _routingStatusNote = null);
+      setState(() {
+        _valhallaLive = valhalla;
+        if (!valhalla) _routeVariant = RouteVariant.planned;
+        _routingStatusNote = null;
+      });
       return;
     }
-    setState(() => _routingStatusNote = text);
+    setState(() {
+      _valhallaLive = valhalla;
+      if (!valhalla) _routeVariant = RouteVariant.planned;
+      _routingStatusNote = text;
+    });
   }
 
-  Future<void> _openOfflineMaps() async {
+  Future<void> _openOfflineMaps({GeoPoint? focus}) async {
     final changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (_) => OfflineMapsSheet(
-        userLng: _mapCenter.lng,
-        userLat: _mapCenter.lat,
+        userLng: focus?.lng ?? _mapCenter.lng,
+        userLat: focus?.lat ?? _mapCenter.lat,
       ),
     );
     if (!mounted) return;
@@ -2128,7 +2160,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _fetchPublicCatalog() async {
     final l10n = _l10n;
     try {
-      final hits = await PublicToursClient().fetchCatalog(sport: 'all');
+      final snap = await PublicToursClient().fetchCatalogSnapshot(sport: 'all');
+      final hits = snap.tours;
       if (!mounted || hits.isEmpty) return;
       final o = _originOrNull;
       final parsed = <_RouteSuggestion>[];
@@ -2209,6 +2242,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           }
         }
         _tours = _catalogEnrichedWithSeeds(byId.values.toList());
+        _editorialSets = snap.sets;
+        _editorialHonesty = snap.honesty;
+        for (final p in parsed) {
+          _catalogById[p.id] = p;
+        }
         final base = _oaStatus;
         _oaStatus = base == null || base.isEmpty
             ? l10n.discoverCatalogTours(toMerge.length)
@@ -2324,6 +2362,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       setState(() {
         _elevationSummary = null;
         _elevationGainM = null;
+        _weatherStart = null;
+        _weatherSummit = null;
+        _filmstripShots = const [];
       });
       return;
     }
@@ -2335,6 +2376,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _elevationGainM = result.distanceM * 0.03;
         _elevationSummary = l10n.discoverElevationApprox('$approx');
       });
+      await _refreshPlanExtras(result, null);
       return;
     }
     setState(() {
@@ -2349,6 +2391,77 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               '${profile.gainM.round()}',
               '${profile.lossM.round()}',
             );
+    });
+    await _refreshPlanExtras(result, profile);
+  }
+
+  Future<void> _refreshPlanExtras(
+    RouteResult result,
+    ElevationProfile? profile,
+  ) async {
+    final line = [
+      for (final p in result.coordinates) [p.lng, p.lat],
+    ];
+    WeatherSnapshot? startW;
+    WeatherSnapshot? summitW;
+    try {
+      final start = result.coordinates.first;
+      startW = await ref.read(weatherClientProvider).fetch(
+            lat: start.lat,
+            lon: start.lng,
+          );
+      final summit = profile == null
+          ? null
+          : maxElevAlong(line: line, points: profile.points);
+      if (summit != null) {
+        final off = haversineM(start.lat, start.lng, summit.lat, summit.lng);
+        if (off > 400) {
+          summitW = await ref.read(weatherClientProvider).fetch(
+                lat: summit.lat,
+                lon: summit.lng,
+              );
+        }
+      }
+    } catch (_) {}
+    final shots = <FilmstripShot>[
+      ...await _filmstripClient.fetchAlong(result.coordinates),
+    ];
+    final tourId = _selectedTourId;
+    if (tourId != null && tourId.isNotEmpty) {
+      try {
+        final bundle = await TourCommunityStore().mergeCloudBundle(tourId);
+        for (final r in bundle.reviews) {
+          var lat = r.pinLat;
+          var lng = r.pinLng;
+          if ((lat == null || lng == null) &&
+              r.alongM != null &&
+              line.length >= 2) {
+            final pt = pointAlongRoute(line, r.alongM!);
+            lng = pt[0];
+            lat = pt[1];
+          }
+          if (lat == null || lng == null) continue;
+          for (final url in r.photoUris) {
+            if (!url.startsWith('http')) continue;
+            shots.add(
+              FilmstripShot(
+                id: '${r.id}-$url',
+                imageUrl: url,
+                lat: lat,
+                lng: lng,
+                source: 'stimme',
+              ),
+            );
+          }
+        }
+      } catch (_) {}
+    }
+    final along = filmstripAlongLine(shots: shots, line: line);
+    if (!mounted) return;
+    setState(() {
+      _weatherStart = startW;
+      _weatherSummit = summitW;
+      _filmstripShots = along;
     });
   }
 
@@ -2513,11 +2626,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   void _addPlaceAsVia(MapPlace place) {
+    final snapped = _snapViaPoint(GeoPoint(place.lat, place.lng));
     setState(() {
       _vias.add(
         LabeledVia(
-          lat: place.lat,
-          lng: place.lng,
+          lat: snapped.lat,
+          lng: snapped.lng,
           label: place.name,
           placeId: place.id,
           kind: place.kindWire,
@@ -3223,6 +3337,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  GeoPoint _snapViaPoint(GeoPoint p) {
+    final hit = snapPointOntoTrails(
+      trails: [for (final t in _trailsForLastMile) t.geometry],
+      lat: p.lat,
+      lng: p.lng,
+    );
+    if (hit == null) return p;
+    return GeoPoint(hit.lat, hit.lng);
+  }
+
   bool _isAbDetour(RouteResult r, GeoPoint from, GeoPoint to) {
     return isImplausibleAbDetour(
       distanceM: r.distanceM,
@@ -3242,6 +3366,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     List<GeoPoint> vias = const [],
     RoutingProfile? profile,
     bool accessLeg = false,
+    RouteVariant variant = RouteVariant.planned,
   }) async {
     final p = profile ?? _abCosting;
     final access = accessLeg || p == RoutingProfile.driving;
@@ -3251,6 +3376,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       profile: p,
       vias: vias,
       accessLeg: access,
+      variant: variant,
     );
     if (p == RoutingProfile.driving || p == RoutingProfile.hiking) {
       return result;
@@ -3262,6 +3388,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       profile: p,
       vias: vias,
       accessLeg: access,
+      variant: variant,
     );
     return _routes.planRoute(
       from: from,
@@ -3269,6 +3396,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       profile: p,
       vias: vias,
       accessLeg: access,
+      variant: variant,
     );
   }
 
@@ -3307,11 +3435,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _weatherStart = null;
+      _weatherSummit = null;
+      _filmstripShots = const [];
     });
     final gen = ++_calcAbGen;
     try {
       final vias = List<GeoPoint>.from(_viaPoints);
-      final mile = vias.isEmpty ? _lastMileForDest(from, to) : null;
+      final mile = vias.isEmpty && _routeVariant == RouteVariant.planned
+          ? _lastMileForDest(from, to)
+          : null;
       late RouteResult result;
       RouteResult? approach;
       List<GeoPoint>? trailOverlay;
@@ -3366,6 +3499,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           vias: vias,
           profile: _abCosting,
           accessLeg: _navPolicy.isGravity,
+          variant: _routeVariant,
         );
         if (!mounted || gen != _calcAbGen) return;
         if (_isAbDetour(result, from, to)) {
@@ -5041,6 +5175,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           profile: _abCosting,
           vias: List<GeoPoint>.from(_viaPoints),
           accessLeg: _navPolicy.isGravity,
+          variant: _routeVariant,
         );
         await _calcAb();
         if (!mounted) return;
@@ -5147,6 +5282,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     ref.invalidate(savedRoutesProvider);
     if (!mounted) return;
     setState(() => _setStatus(_l10n.discoverSaved));
+    final mid = r.coordinates[r.coordinates.length ~/ 2];
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_l10n.discoverOfflineAfterSave),
+        action: SnackBarAction(
+          label: _l10n.discoverOfflineAfterSaveAction,
+          onPressed: () => unawaited(_openOfflineMaps(focus: mid)),
+        ),
+      ),
+    );
   }
 
   Future<void> _openTourOverflow(_RouteSuggestion r) async {
@@ -5187,6 +5332,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 title: Text(l10n.discoverToMyTours),
                 onTap: () => Navigator.pop(ctx, 'save'),
               ),
+              ListTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(l10n.akteAddToCollection),
+                onTap: () => Navigator.pop(ctx, 'collection'),
+              ),
             ],
           ),
         );
@@ -5204,6 +5354,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _openTrailView(near: r.center);
       case 'save':
         await _saveTourToLibrary(r);
+      case 'collection':
+        await _saveTourToLibrary(r, quiet: true);
+        if (!mounted) return;
+        final added = await showAddToCollectionSheet(context, routeId: r.id);
+        if (added && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_l10n.discoverAddedToCollection)),
+          );
+        }
     }
   }
 
@@ -5517,6 +5676,70 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     style:
                         const TextStyle(fontSize: 12, color: AppColors.muted),
                   ),
+                  if (_editorialSets.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.m),
+                    Text(
+                      AppLocalizations.of(ctx).discoverEditorialSets,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _editorialHonesty.isNotEmpty
+                          ? _editorialHonesty
+                          : AppLocalizations.of(ctx).discoverEditorialHonesty,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    for (final s in _editorialSets.take(8))
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.auto_stories_outlined),
+                        title: Text(s.name),
+                        subtitle: Text(
+                          AppLocalizations.of(ctx)
+                              .collectionRouteCount(s.count),
+                        ),
+                        onTap: () async {
+                          final tours = [
+                            for (final id in s.tourIds)
+                              if (_catalogById[id] != null) _catalogById[id]!,
+                          ];
+                          if (tours.isEmpty) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(ctx)
+                                      .discoverEditorialEmpty,
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          final pick = await showDialog<_RouteSuggestion>(
+                            context: ctx,
+                            builder: (dCtx) => SimpleDialog(
+                              title: Text(s.name),
+                              children: [
+                                for (final t in tours.take(20))
+                                  SimpleDialogOption(
+                                    onPressed: () => Navigator.pop(dCtx, t),
+                                    child: Text(
+                                      '${t.name} · ${t.distanceKm.toStringAsFixed(1)} km',
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                          if (pick != null && ctx.mounted) {
+                            Navigator.pop(ctx);
+                            await _previewTourOnMap(pick);
+                          }
+                        },
+                      ),
+                    const Divider(),
+                  ],
                   const SizedBox(height: AppSpacing.m),
                   for (final c in cols)
                     ListTile(
@@ -6190,6 +6413,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             }
           }
         }
+        if (_pick == _PickMode.via) {
+          p = _snapViaPoint(p);
+        }
         final wasWithoutOrigin = !_hasRealOrigin;
         setState(() {
           switch (_pick) {
@@ -6263,7 +6489,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         final wasWithoutOrigin = !_hasRealOrigin;
         if (_surface == _Surface.plan ||
             _shellMode == DiscoverShellMode.navigate) {
-          setState(() => _vias.add(LabeledVia(lat: p.lat, lng: p.lng)));
+          setState(() {
+            final snapped = _snapViaPoint(p);
+            _vias.add(LabeledVia(lat: snapped.lat, lng: snapped.lng));
+          });
           await _syncMarkers();
           if (_start != null && _end != null) await _calcAb();
           return;
@@ -8860,6 +9089,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     : l10n.computeRoute),
           ),
         ),
+        const SizedBox(height: AppSpacing.s),
+        RouteVariantChips(
+          value: _routeVariant,
+          enabled: _valhallaLive,
+          onChanged: (v) {
+            setState(() => _routeVariant = v);
+            if (_start != null && _end != null) unawaited(_calcAb());
+          },
+        ),
         if (_computed != null && _start != null && _end != null) ...[
           const SizedBox(height: AppSpacing.s),
           Text(
@@ -8872,6 +9110,37 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               fontWeight: FontWeight.w600,
               color: AppColors.muted,
             ),
+          ),
+          if (_weatherStart != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.discoverWeatherStart(
+                '${_weatherStart!.tempC.round()}',
+                l10n.weatherTrailHintLabel(_weatherStart!.trailHint),
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+          ],
+          if (_weatherSummit != null)
+            Text(
+              l10n.discoverWeatherSummit(
+                '${_weatherSummit!.tempC.round()}',
+                l10n.weatherTrailHintLabel(_weatherSummit!.trailHint),
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+          const SizedBox(height: AppSpacing.s),
+          PlanFilmstrip(
+            shots: _filmstripShots,
+            onTap: (s) {
+              final map = _map;
+              if (map == null) return;
+              map.animateCamera(
+                CameraUpdate.newLatLngZoom(LatLng(s.lat, s.lng), 15),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.s),
           FilledButton.icon(

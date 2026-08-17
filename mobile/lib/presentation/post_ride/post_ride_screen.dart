@@ -24,6 +24,7 @@ import '../../domain/ride.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
+import 'post_ride_ort_card.dart';
 import 'post_ride_photos.dart';
 import 'post_ride_stimme_card.dart';
 import 'post_ride_track_map.dart';
@@ -246,6 +247,9 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
       final entry = await saveRideAsTour(
         routes: ref.read(routeRepositoryProvider),
         ride: ride,
+        id: (ride.routeId == null || ride.routeId!.trim().isEmpty)
+            ? 'recorded-${ride.id}'
+            : null,
         photoPaths: _photoPaths,
       );
       ref.invalidate(savedRoutesProvider);
@@ -937,6 +941,10 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     tourId: _stimmeTourId!,
                     track: ride.track,
                   ),
+                PostRideOrtCard(
+                  ride: ride,
+                  stimmeTourId: _stimmeTourId,
+                ),
                 FilledButton(
                   style: FilledButton.styleFrom(),
                   onPressed: _saving ? null : () => _submit(),

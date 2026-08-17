@@ -710,3 +710,21 @@ export function applyCorridorCyclewaySnap<T extends CorridorRouteShape>(opts: {
     warnings: [summary, ...(next.warnings ?? []).filter(dropStaleRoadWarnings)],
   };
 }
+
+/** Snap a via/place onto the nearest trail. Unchanged if none within maxOffM. */
+export function snapPointOntoTrails(
+  point: [number, number],
+  trails: [number, number][][],
+  maxOffM = DEST_ON_TRAIL_M
+): [number, number] {
+  let bestOff = maxOffM + 1;
+  let best: [number, number] | null = null;
+  for (const coords of trails) {
+    if (coords.length < 2) continue;
+    const p = projectOntoRoute(coords, point[1], point[0]);
+    if (p.crossTrackM > maxOffM || p.crossTrackM >= bestOff) continue;
+    bestOff = p.crossTrackM;
+    best = pointAlongRoute(coords, p.distanceAlongM);
+  }
+  return best ?? point;
+}

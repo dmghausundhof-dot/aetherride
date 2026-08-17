@@ -30,6 +30,7 @@ export function TourLiveMap({
   const [data, setData] = useState<GeometryPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [placeMarkers, setPlaceMarkers] = useState<MapMarker[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +60,43 @@ export function TourLiveMap({
     };
   }, [tourId, profile]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const q = new URLSearchParams({
+      lat: String(center[1]),
+      lng: String(center[0]),
+      tourId,
+    });
+    void fetch(`/api/community/places?${q}`)
+      .then(async (r) => {
+        if (!r.ok) return;
+        const j = (await r.json()) as {
+          places?: { id?: string; lat?: number; lng?: number; kind?: string; source?: string; name?: string }[];
+        };
+        if (cancelled || !Array.isArray(j.places)) return;
+        const extra: MapMarker[] = [];
+        for (const p of j.places.slice(0, 24)) {
+          const lat = Number(p.lat);
+          const lng = Number(p.lng);
+          const id = String(p.id || "").trim();
+          if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+          extra.push({
+            id: `place-${id}`,
+            lngLat: [lng, lat],
+            color: p.source === "stimme" ? "#7C5CFF" : "#2BB0ED",
+            label: (p.kind || p.name || "·").slice(0, 1).toUpperCase(),
+          });
+        }
+        setPlaceMarkers(extra);
+      })
+      .catch(() => {
+        if (!cancelled) setPlaceMarkers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tourId, center]);
+
   const hasLine =
     data?.geometry?.coordinates && data.geometry.coordinates.length >= 2;
 
@@ -82,6 +120,7 @@ export function TourLiveMap({
       color: "#FF6A00",
       label: "T",
     },
+    ...placeMarkers,
   ];
 
   return (

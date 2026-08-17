@@ -19,7 +19,9 @@ function testDe() {
   assert.equal(g.addRoute, "Route hinzufügen");
   assert.equal(g.intoMappe, "In die Mappe legen");
   assert.ok(g.inviteHint.includes("HUD"));
-  assert.ok(g.noTrackMappe.includes("Mappe"));
+  assert.equal(g.joinWithLink, "Mit Link beitreten");
+  assert.ok(g.joinHint.includes("Token"));
+  assert.ok(g.collectionsHint.includes("Katalog"));
 }
 
 function testParity() {
@@ -30,6 +32,7 @@ function testParity() {
     assert.ok(g.shareProfile("https://x").includes("Platz"), lang);
     assert.ok(g.created("x").includes("x"), lang);
     assert.ok(g.collectionTours(3).includes("3"), lang);
+    assert.ok(g.addToCollection.length > 0, lang);
     assert.ok(g.intoMappe.includes("Mappe"), lang);
     assert.ok(g.importGpx.includes("GPX"), lang);
     assert.ok(g.notePlaceholder.includes("Stimme"), lang);

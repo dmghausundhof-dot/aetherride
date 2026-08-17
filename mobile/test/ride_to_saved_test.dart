@@ -56,4 +56,36 @@ void main() {
     expect(decoded.notes.single.text, 'Schöner Flow');
     expect(decoded.rideId, 'ride-1');
   });
+
+  test('SavedRouteNote pin + kind roundtrip', () {
+    final note = SavedRouteNote.create(
+      text: 'Café am Neckar',
+      lat: 49.41,
+      lng: 8.67,
+      kind: 'cafe',
+    );
+    final decoded = SavedRouteNote.fromJson(note.toJson());
+    expect(decoded.hasPin, isTrue);
+    expect(decoded.lat, 49.41);
+    expect(decoded.lng, 8.67);
+    expect(decoded.kind, 'cafe');
+  });
+
+  test('rideRecordToSavedEntry keeps optional id', () {
+    final ride = RideRecord(
+      id: 'ride-stable',
+      bikeId: 'bike-1',
+      startedAt: DateTime.utc(2026, 8, 12, 10),
+      endedAt: DateTime.utc(2026, 8, 12, 11),
+      distanceKm: 8,
+      movingTimeSec: 1800,
+      elevationM: 80,
+      track: [
+        {'lat': 48.4, 'lng': 9.9},
+        {'lat': 48.41, 'lng': 9.91},
+      ],
+    );
+    final entry = rideRecordToSavedEntry(ride, id: 'recorded-${ride.id}');
+    expect(entry.id, 'recorded-ride-stable');
+  });
 }

@@ -693,6 +693,8 @@ export type ClientRouteResult = {
   profile: RoutingProfile;
   warnings?: string[];
   steps?: import("@/lib/routing/navSteps").NavStep[];
+  variant?: string;
+  variantApplied?: boolean;
 };
 
 export type RequestRouteFailure = {
@@ -710,6 +712,7 @@ export type RequestRouteSuccess = {
 export type RequestRouteOptions = {
   engine?: string | null;
   accessLeg?: boolean;
+  variant?: string | null;
 };
 
 /** Client-Call an /api/route (mit Rate-Limit-Erkennung) */
@@ -730,6 +733,9 @@ export async function requestRouteDetailed(
   }
   if (opts?.engine) qs.set("engine", opts.engine);
   if (opts?.accessLeg) qs.set("access", "1");
+  if (opts?.variant && opts.variant !== "planned") {
+    qs.set("variant", opts.variant);
+  }
   const res = await fetch(`/api/route?${qs}`);
   if (!res.ok) {
     const text = await res.text();
@@ -832,6 +838,39 @@ export const DISCOVER_PROFILE_CHIPS: RoutingProfile[] = [
   "emtb",
   "hiking",
 ];
+
+/**
+ * Discover-Profilmenü: Haupt zuerst, dann übrige Vorlieben — nicht die
+ * volle Liste inkl. Downhill/Wandern, wenn nicht gewählt.
+ * Parität: mobile routing_client.discoverProfileMenuForSports.
+ */
+export function discoverProfileMenuForSports(opts?: {
+  primary?: string | null;
+  sports?: Iterable<string>;
+}): RoutingProfile[] {
+  const ordered: string[] = [];
+  if (opts?.primary) ordered.push(opts.primary);
+  for (const s of opts?.sports ?? []) {
+    if (!ordered.includes(s)) ordered.push(s);
+  }
+  if (ordered.length === 0) return [...DISCOVER_PROFILE_CHIPS];
+  const out: RoutingProfile[] = [];
+  const seen = new Set<RoutingProfile>();
+  for (const c of ordered) {
+    const p = discoverNavProfile(profileForBikeCategory(c));
+    if (seen.has(p)) continue;
+    seen.add(p);
+    out.push(p);
+  }
+  return out.length === 0 ? [...DISCOVER_PROFILE_CHIPS] : out;
+}
+
+/** Ein Chip ohne Alternative ist keine Filterung — nur bei ≥2 Profilen. */
+export function discoverNavProfileChipVisible(
+  menu: readonly RoutingProfile[],
+): boolean {
+  return menu.length >= 2;
+}
 
 export const kGravityWalkMaxKm = 1.5;
 export const kGravityAtStartMaxKm = 0.08;

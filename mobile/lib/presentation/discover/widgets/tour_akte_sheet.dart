@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../data/community/tour_share_codec.dart';
+import '../../../data/community/tour_share.dart';
 import '../../../data/community/tour_share_revoke.dart';
 import '../../../data/routing/saved_route_meta_store.dart';
 import '../../../domain/bike.dart';
@@ -20,6 +21,7 @@ import '../../../providers/app_providers.dart';
 import '../../shell/hof_threshold_nav.dart';
 import '../saved_route_notes_section.dart';
 import 'tour_community_section.dart';
+import '../add_to_collection_sheet.dart';
 
 enum _AkteShelf { mein, stimmen }
 
@@ -86,6 +88,17 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
     setState(() => _meta = next);
   }
 
+  String _stimmenShareBody(String? catalogId, String visibility) {
+    if (visibility == RouteVisibility.shared) {
+      final encoded = encodeTourShareToken(widget.route, meta: _meta);
+      return shareTourUrl(encoded.token);
+    }
+    if (catalogId != null && catalogId.isNotEmpty) {
+      return TourShare.text(catalogId);
+    }
+    return '';
+  }
+
   Future<void> _copyShareLink() async {
     final encoded = encodeTourShareToken(widget.route, meta: _meta);
     final url = shareTourUrl(encoded.token);
@@ -128,9 +141,9 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'TOUR',
-              style: TextStyle(
+            Text(
+              l10n.akteTourKicker.toUpperCase(),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.7,
@@ -214,6 +227,7 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
                   ? TourCommunitySection(
                       tourId: stimmenId,
                       showHeading: false,
+                      shareBody: _stimmenShareBody(catalogId, visibility),
                     )
                   : Text(
                       l10n.discoverPrivateCommentHint,
@@ -316,6 +330,14 @@ class _MeinShelf extends StatelessWidget {
             label: Text(l10n.discoverCopyLink),
           ),
         ],
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => unawaited(
+            showAddToCollectionSheet(context, routeId: route.id),
+          ),
+          icon: const Icon(Icons.folder_outlined, size: 18),
+          label: Text(l10n.akteAddToCollection),
+        ),
         if (meta.description.trim().isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(meta.description),

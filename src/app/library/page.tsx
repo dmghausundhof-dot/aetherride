@@ -281,9 +281,10 @@ export default function LibraryPage() {
       <RideGroupsPanel savedRoutes={savedRoutes} visibility={visScope} />
 
       <section className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-text-secondary">
           {g.collectionsTitle}
         </h2>
+        <p className="mb-3 text-xs text-text-secondary">{g.collectionsHint}</p>
         <div className="mb-3 flex gap-2">
           <input
             value={collectionName}
