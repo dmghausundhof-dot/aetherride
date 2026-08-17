@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Full brand splash artwork — never cropped, always entirely on screen.
+/// Official FlowLine boot (vector GIF, portrait lockup, never cropped).
 class HofSplash extends StatelessWidget {
   const HofSplash({super.key});
 
-  static const _bg = Color(0xFFFAFAFA);
+  static const Color bg = Color(0xFFFAFAFA);
+  static const Duration motion = Duration(milliseconds: 3000);
 
   @override
   Widget build(BuildContext context) {
@@ -15,23 +16,18 @@ class HofSplash extends StatelessWidget {
         statusBarBrightness: Brightness.light,
         statusBarIconBrightness: Brightness.dark,
         systemStatusBarContrastEnforced: false,
-        systemNavigationBarColor: _bg,
+        systemNavigationBarColor: bg,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: ColoredBox(
-        color: _bg,
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-            child: SizedBox.expand(
-              child: Image(
-                image: AssetImage('assets/brand/splash.png'),
-                fit: BoxFit.contain,
-                alignment: Alignment.center,
-                filterQuality: FilterQuality.high,
-                gaplessPlayback: true,
-              ),
-            ),
+        color: bg,
+        child: SizedBox.expand(
+          child: Image(
+            image: AssetImage('assets/brand/boot.gif'),
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.high,
+            gaplessPlayback: true,
           ),
         ),
       ),

@@ -13,7 +13,7 @@ import 'providers/app_providers.dart';
 import 'providers/ride_providers.dart';
 
 /// Time the lockup stays on screen after Flutter's first frame.
-const _minSplash = Duration(milliseconds: 1600);
+const _minSplash = Duration(milliseconds: 3000);
 
 /// Dart HttpClient has no Happy Eyeballs: a broken IPv6 SYN hangs until the
 /// Future timeout, so Vercel never falls back to IPv4 (A54 WiFi is dual-stack).
