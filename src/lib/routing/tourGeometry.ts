@@ -104,7 +104,7 @@ export async function computeTourGeometry(
           type: "LineString",
           coordinates: override.coordinates,
         },
-        engine: "editorial",
+        engine: override.source?.includes("osrm") ? "osrm-prebake" : "editorial",
         profile,
         origin: tour.center,
         label: tour.name,

@@ -1,7 +1,11 @@
 /**
  * Redaktionelle Tour-Linien (GeoJSON [lng,lat]).
- * Override vor Live-Routing. Optional: data/catalog/tour-geometry-overrides.json
+ * OSRM-Prebake in data/catalog/tour-geometry-overrides.json gewinnt;
+ * sonst SPECS, sonst dichte Näherung aus dem öffentlichen Katalog.
  */
+
+import bakedRaw from "../../../data/catalog/tour-geometry-overrides.json";
+import { getPublicTour } from "./publicTours";
 
 export type GeometryOverride = {
   coordinates: [number, number][];
@@ -27,17 +31,41 @@ function loopRing(
   lng: number,
   lat: number,
   rKm: number,
-  n = 6
+  n = 18
 ): [number, number][] {
   const pts: [number, number][] = [];
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2;
+  const count = Math.max(12, n);
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2;
     pts.push(
       offset(lng, lat, Math.cos(a) * rKm, Math.sin(a) * rKm * 0.85)
     );
   }
   pts.push(pts[0]);
   return pts;
+}
+
+/** Extra vertices so Discover does not treat the line as a 4-point ruler. */
+function densify(
+  coords: [number, number][],
+  minPts = 16
+): [number, number][] {
+  if (coords.length >= minPts) return coords;
+  if (coords.length < 2) return coords;
+  const out: [number, number][] = [];
+  const gaps = coords.length - 1;
+  const per = Math.max(1, Math.ceil((minPts - 1) / gaps));
+  for (let i = 0; i < gaps; i++) {
+    const a = coords[i];
+    const b = coords[i + 1];
+    out.push(a);
+    for (let s = 1; s < per; s++) {
+      const t = s / per;
+      out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+    }
+  }
+  out.push(coords[coords.length - 1]);
+  return out;
 }
 
 function corridor(
@@ -625,7 +653,7 @@ const SPECS: Record<string, Spec> = {
 function buildFromSpec(id: string, s: Spec): GeometryOverride {
   const coordinates = s.loop
     ? loopRing(s.lng, s.lat, s.rKm)
-    : corridor(s.lng, s.lat, s.rKm * 2);
+    : densify(corridor(s.lng, s.lat, s.rKm * 2));
   return {
     coordinates,
     distanceM: s.distanceM,
@@ -639,38 +667,35 @@ const BUILTIN: Record<string, GeometryOverride> = Object.fromEntries(
   Object.entries(SPECS).map(([id, s]) => [id, buildFromSpec(id, s)])
 );
 
-let fileOverrides: Record<string, GeometryOverride> | null = null;
+const FILE = bakedRaw as Record<string, GeometryOverride>;
 
 export function listBuiltinOverrideIds(): string[] {
   return Object.keys(BUILTIN);
 }
 
+function overrideFromPublicTour(tourId: string): GeometryOverride | null {
+  const tour = getPublicTour(tourId);
+  if (!tour) return null;
+  const [lng, lat] = tour.center;
+  const rKm = Math.max(1.2, Math.min(tour.distanceKm / (2 * Math.PI), 14));
+  const coordinates = tour.loop
+    ? loopRing(lng, lat, rKm, 18)
+    : densify(
+        corridor(lng, lat, Math.min(Math.max(tour.distanceKm * 0.45, 4), 40))
+      );
+  return {
+    coordinates,
+    distanceM: Math.round(tour.distanceKm * 1000),
+    durationS: Math.round(tour.durationMin * 60),
+    shape: tour.loop ? "loop" : "point_to_point",
+    source: "editorial-approx",
+  };
+}
+
 export function getTourGeometryOverride(
   tourId: string
 ): GeometryOverride | null {
-  if (fileOverrides === null && typeof process !== "undefined") {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = require("fs") as typeof import("fs");
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const path = require("path") as typeof import("path");
-      const p = path.join(
-        process.cwd(),
-        "data/catalog/tour-geometry-overrides.json"
-      );
-      if (fs.existsSync(p)) {
-        fileOverrides = JSON.parse(fs.readFileSync(p, "utf8")) as Record<
-          string,
-          GeometryOverride
-        >;
-      } else {
-        fileOverrides = {};
-      }
-    } catch {
-      fileOverrides = {};
-    }
-  }
-  return (
-    (fileOverrides && fileOverrides[tourId]) || BUILTIN[tourId] || null
-  );
+  const baked = FILE[tourId];
+  if (baked?.coordinates && baked.coordinates.length >= 8) return baked;
+  return BUILTIN[tourId] ?? overrideFromPublicTour(tourId);
 }

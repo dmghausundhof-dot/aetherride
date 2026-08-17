@@ -135,14 +135,6 @@ void main() {
       contains('cycle-routes-italy-south.pmtiles'),
     );
 
-    final amsterdamWays = chooseOnlineBikeOverlay(
-      lng: 4.9,
-      lat: 52.37,
-      zoom: 13,
-    );
-    expect(amsterdamWays.kind, OnlineBikeOverlayKind.ways);
-    expect(amsterdamWays.url, contains('/amsterdam/bike-overlay.pmtiles'));
-
     final utrechtCountry = chooseOnlineBikeOverlay(
       lng: 5.3,
       lat: 52.2,

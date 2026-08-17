@@ -44,6 +44,8 @@ import '../../domain/community/ride_group_policy.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../domain/routing/browse_map_paint.dart';
+import '../../domain/routing/browse_place_search.dart';
+import '../../data/routing/catalog_tour_geometry.dart';
 import '../../data/routing/naehe_seeds.dart';
 import '../../data/routing/public_tours_client.dart';
 import '../../data/routing/route_collections.dart';
@@ -502,6 +504,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<EditorialSetHit> _editorialSets = [];
   String _editorialHonesty = '';
   final Map<String, _RouteSuggestion> _catalogById = {};
+  /// Browse-Suche / Kameraschwenk — Nähe folgt diesem Punkt statt nur GPS.
+  GeoPoint? _browseAnchor;
+  List<GeocodeHit> _placeHits = const [];
+  Timer? _placeSearchDebounce;
   List<OsmTrailSegment> _trailNetwork = [];
   List<OsmTrailSegment> _sGradeTrails = [];
   OsmTrailSegment? _destinationTrail;
@@ -669,6 +675,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _addrDebounce?.cancel();
     _sGradeDebounce?.cancel();
     _viewportDebounce?.cancel();
+    _placeSearchDebounce?.cancel();
     _discoverSheetCtrl.dispose();
     _startAddrCtrl.dispose();
     _startAddrFocus.dispose();
@@ -2256,12 +2263,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final hits = snap.tours;
       if (!mounted || hits.isEmpty) return;
       final o = _originOrNull;
+      final baked = await CatalogTourGeometryStore.load();
+      if (!mounted) return;
       final parsed = <_RouteSuggestion>[];
       for (final h in hits) {
         final surface = TourFilters.normalizeStoredSurface(
           h.surface,
           fallbackTitle: h.name,
         );
+        final track = baked[h.id];
         parsed.add(
           _RouteSuggestion(
             id: h.id,
@@ -2276,10 +2286,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               if (h.summary != null && h.summary!.isNotEmpty) h.summary!,
               'Katalog · ${h.regionSlug} · redaktionell',
               if (h.loop) 'Rundkurs-Idee',
-              'Losfahren lädt Live-/Override-Geometrie',
+              if (track != null)
+                'Straßen-Geometrie (Katalog)'
+              else
+                'Losfahren lädt Live-/Override-Geometrie',
             ],
             center: LatLng(h.centerLat, h.centerLng),
             categories: h.categories,
+            trackLngLat: track,
             sourceKind: 'catalog',
             isLoopHint: h.loop ? true : null,
             apiTags: [
@@ -2288,6 +2302,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ],
           ),
         );
+        if (track != null && isUsableMapTrack(track)) {
+          _routedLoopCache[h.id] = [
+            for (final c in track) GeoPoint(c[1], c[0]),
+          ];
+        }
       }
       if (o != null) {
         parsed.sort((a, b) {
@@ -2353,6 +2372,132 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       ));
     } catch (_) {
       // Katalog optional — Discover bleibt mit OA/OSM nutzbar.
+    }
+  }
+
+  void _mergeCatalogNearOrigin() {
+    final parsed = _catalogById.values.toList();
+    if (parsed.isEmpty) return;
+    final o = _originOrNull;
+    final toMerge = o == null
+        ? parsed
+        : (List<_RouteSuggestion>.from(parsed)
+              ..sort((a, b) {
+                final da = _distKm(
+                  o.lat,
+                  o.lng,
+                  a.center.latitude,
+                  a.center.longitude,
+                );
+                final db = _distKm(
+                  o.lat,
+                  o.lng,
+                  b.center.latitude,
+                  b.center.longitude,
+                );
+                return da.compareTo(db);
+              }))
+            .where((p) {
+              final d = _distKm(
+                o.lat,
+                o.lng,
+                p.center.latitude,
+                p.center.longitude,
+              );
+              return d <= 120;
+            })
+            .take(40)
+            .toList();
+    setState(() {
+      final byId = <String, _RouteSuggestion>{
+        for (final t in _tours) t.id: t,
+      };
+      final keepIds = toMerge.map((e) => e.id).toSet();
+      byId.removeWhere(
+        (id, t) => t.isCatalog && !keepIds.contains(id),
+      );
+      for (final p in toMerge) {
+        final existing = byId[p.id];
+        if (existing == null || existing.matchScore <= p.matchScore) {
+          byId[p.id] = p;
+        }
+      }
+      _tours = _catalogEnrichedWithSeeds(byId.values.toList());
+    });
+    unawaited(_drawAll());
+  }
+
+  Future<void> _flyBrowsePlace(GeocodeHit hit) async {
+    setState(() {
+      _browseAnchor = GeoPoint(hit.lat, hit.lng);
+      _exploreQuery = '';
+      _exploreSearchCtrl.value = TextEditingValue(
+        text: hit.label,
+        selection: TextSelection.collapsed(offset: hit.label.length),
+      );
+      _placeHits = const [];
+    });
+    final map = _map;
+    if (map != null) {
+      try {
+        await map.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(hit.lat, hit.lng), 12),
+        );
+      } catch (_) {}
+    }
+    _mergeCatalogNearOrigin();
+    unawaited(_ensureBikeOverlay());
+    unawaited(_fetchOsmRoutes());
+    unawaited(_fetchTrailNetwork());
+  }
+
+  void _schedulePlaceHits(String query) {
+    _placeSearchDebounce?.cancel();
+    if (!BrowsePlaceSearch.shouldOfferPlaceHits(query)) {
+      if (_placeHits.isNotEmpty) setState(() => _placeHits = const []);
+      return;
+    }
+    _placeSearchDebounce = Timer(const Duration(milliseconds: 420), () {
+      unawaited(_loadPlaceHits(query));
+    });
+  }
+
+  Future<void> _loadPlaceHits(String query) async {
+    final o = _origin;
+    try {
+      final hits = await _geocode.search(query, biasLat: o.lat, biasLng: o.lng);
+      if (!mounted) return;
+      if (_exploreSearchCtrl.text.trim() != query.trim()) return;
+      setState(() => _placeHits = hits.take(5).toList());
+    } catch (_) {}
+  }
+
+  Future<void> _submitBrowseSearch(String query) async {
+    final q = query.trim();
+    if (q.length < 2) return;
+    final names = _filtered.map((t) => t.name);
+    final o = _origin;
+    try {
+      final hits = await _geocode.search(q, biasLat: o.lat, biasLng: o.lng);
+      if (!mounted) return;
+      if (hits.isEmpty) {
+        setState(() => _setStatus(_l10n.discoverNoHitsFor(q)));
+        return;
+      }
+      if (!BrowsePlaceSearch.shouldFlyToPlace(
+            query: q,
+            visibleTourNames: names,
+          ) &&
+          hits.length > 1) {
+        setState(() => _placeHits = hits.take(5).toList());
+        return;
+      }
+      await _flyBrowsePlace(hits.first);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _setStatus(friendlyErrorMessage(e, context: _l10n.discoverGeocodeFailed));
+      });
     }
   }
 
@@ -2809,6 +2954,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       _skipAutoCameraFit = true;
       setState(() {
         _userPos = p;
+        _browseAnchor = null;
         _start = p;
         _startAddrCtrl.text = _l10n.discoverMyPosition;
         _setStatus(_l10n.discoverLocationReady);
@@ -2849,12 +2995,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  /// Tour-/API-Origin nur mit echtem Start oder GPS — kein Stadt-Fake.
-  GeoPoint? get _originOrNull => _userPos ?? _start;
+  /// Tour-/API-Origin: Suche/Kamera, sonst GPS/Start — kein Stadt-Fake.
+  GeoPoint? get _originOrNull => _browseAnchor ?? _userPos ?? _start;
 
   GeoPoint get _origin => _originOrNull ?? _regionOverview;
 
-  bool get _hasRealOrigin => _userPos != null || _start != null;
+  bool get _hasRealOrigin =>
+      _browseAnchor != null || _userPos != null || _start != null;
 
   /// Start-A liegt auf dem GPS-Fix — dann nur der Puck, kein grüner A-Kreis.
   bool _startOverlapsUser() {
@@ -3936,6 +4083,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (bundled != null && bundled.length >= 4) {
       return (
         points: [for (final c in bundled) GeoPoint(c[1], c[0])],
+        demo: false,
+      );
+    }
+
+    final catalogBake = await CatalogTourGeometryStore.geometryFor(tour.id);
+    if (catalogBake != null && isUsableMapTrack(catalogBake)) {
+      return (
+        points: [for (final c in catalogBake) GeoPoint(c[1], c[0])],
         demo: false,
       );
     }
@@ -6738,6 +6893,27 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         _viewportDebounce?.cancel();
         _viewportDebounce = Timer(const Duration(milliseconds: 800), () {
           _persistDiscoverViewport();
+          final cam = _map?.cameraPosition?.target;
+          if (cam == null || !mounted) return;
+          final gps = _userPos;
+          if (gps != null) {
+            final d = _distKm(gps.lat, gps.lng, cam.latitude, cam.longitude);
+            if (d < 25) {
+              if (_browseAnchor != null) {
+                setState(() => _browseAnchor = null);
+                _mergeCatalogNearOrigin();
+              }
+              return;
+            }
+          }
+          final next = GeoPoint(cam.latitude, cam.longitude);
+          final prev = _browseAnchor;
+          if (prev != null &&
+              _distKm(prev.lat, prev.lng, next.lat, next.lng) < 8) {
+            return;
+          }
+          setState(() => _browseAnchor = next);
+          _mergeCatalogNearOrigin();
         });
         unawaited(_syncNavPuck());
       },
@@ -6971,17 +7147,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   child: TextField(
                     controller: _exploreSearchCtrl,
                     textInputAction: TextInputAction.search,
-                    onChanged: (v) => setState(() {
-                      _exploreQuery = v;
-                      if (v.trim().isNotEmpty &&
-                          DiscoverBrowseSheetSnaps.isPeek(
-                            _discoverSheetExtent,
-                          )) {
-                        unawaited(
-                          _snapDiscoverSheet(DiscoverBrowseSheetSnaps.half),
-                        );
-                      }
-                    }),
+                    onSubmitted: _submitBrowseSearch,
+                    onChanged: (v) {
+                      setState(() {
+                        _exploreQuery = v;
+                        if (v.trim().isNotEmpty &&
+                            DiscoverBrowseSheetSnaps.isPeek(
+                              _discoverSheetExtent,
+                            )) {
+                          unawaited(
+                            _snapDiscoverSheet(DiscoverBrowseSheetSnaps.half),
+                          );
+                        }
+                      });
+                      _schedulePlaceHits(v);
+                    },
                     decoration: InputDecoration(
                       isDense: true,
                       filled: true,
@@ -7042,6 +7222,29 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ],
               ],
             ),
+            if (_placeHits.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _placeHits.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (ctx, i) {
+                    final hit = _placeHits[i];
+                    return ActionChip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text(
+                        hit.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onPressed: () => unawaited(_flyBrowsePlace(hit)),
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [

@@ -420,6 +420,10 @@ Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
     required double minzoom,
   }) async {
     try {
+      final ids = [for (final raw in await c.getLayerIds()) raw.toString()];
+      if (ids.contains(layerId)) return;
+    } catch (_) {}
+    try {
       await c.addLineLayer(
         sourceId!,
         layerId,
