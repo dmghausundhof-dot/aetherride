@@ -47,6 +47,8 @@ export const ONLINE_CYCLE_MESH_FILES: Partial<Record<OnlineBasemapId, string>> =
     "alps-south-z11": "cycle-routes-alps-south.pmtiles",
     "benelux-z11": "cycle-routes-benelux.pmtiles",
     "italy-north-z11": "cycle-routes-italy-north.pmtiles",
+    "italy-center-z11": "cycle-routes-italy-center.pmtiles",
+    "italy-south-z11": "cycle-routes-italy-south.pmtiles",
     "catalonia-pyrenees-z11": "cycle-routes-catalonia-pyrenees.pmtiles",
     "uk-south-z11": "cycle-routes-uk-south.pmtiles",
   };
