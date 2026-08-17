@@ -26,6 +26,13 @@ export function timeOfDayGreeting(
     if (h < 22) return "Buonasera";
     return "Buona notte";
   }
+  if (lang.startsWith("nl")) {
+    if (h < 5) return "Goedenacht";
+    if (h < 12) return "Goedemorgen";
+    if (h < 18) return "Goedemiddag";
+    if (h < 22) return "Goedenavond";
+    return "Goedenacht";
+  }
   if (h < 5) return "Gute Nacht";
   if (h < 11) return "Guten Morgen";
   if (h < 17) return "Guten Tag";

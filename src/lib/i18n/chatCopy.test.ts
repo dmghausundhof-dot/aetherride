@@ -15,7 +15,7 @@ function testDe() {
 }
 
 function testParity() {
-  for (const lang of ["de", "en", "fr", "it"] as const) {
+  for (const lang of ["de", "en", "fr", "it", "nl"] as const) {
     const c = chatCopy(lang);
     assert.equal(c.prompts.length, 7, lang);
     assert.ok(c.freeProFoot.includes("Free"), lang);
@@ -23,6 +23,7 @@ function testParity() {
   }
   assert.notEqual(chatCopy("de").send, chatCopy("en").send);
   assert.ok(chatCopy("fr").welcome.includes("Demande"));
+  assert.equal(chatCopy("nl").send, "Versturen");
 }
 
 testDe();

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { COMMUNITY_FEATURES, COMMUNITY_OUT } from "../content/communityMap";
 import { communityCopy } from "./communityCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const c = communityCopy("de");
@@ -35,6 +35,7 @@ function testParity() {
       `${lang} eventsLead should say the events are not in the app`,
     );
   }
+  assert.ok(communityCopy("nl").joinTitle.includes("je"));
 }
 
 testDe();

@@ -93,11 +93,29 @@ const IT: PlannerCopy = {
   navOffline: "Navigazione live e offline solo nell’app nativa.",
 };
 
+const NL: PlannerCopy = {
+  tourIdeaLoaded: (name) =>
+    `Tochtidee „${name}“ geladen — start bij de pin. Tik het doel en bereken.`,
+  geocodeFail: "Geocoding mislukt",
+  needStartEnd: "Zet start en finish",
+  noRoute: "Geen route — check profiel of punten",
+  inMappe: "In Die Mappe",
+  hitFallback: "Resultaat",
+  exploreLead: "Zelfde Explore-model: ",
+  routingProfile: "Routingprofiel",
+  addrSearch: "Adres zoeken…",
+  ok: "OK",
+  via: "Via",
+  pickTap: (what) => `Tik op de kaart: ${what}`,
+  navOffline: "Live-navigatie en offline alleen in de native app.",
+};
+
 const BY_LANG: Record<ChromeLang, PlannerCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function plannerCopy(lang: ChromeLang): PlannerCopy {

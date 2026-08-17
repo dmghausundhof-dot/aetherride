@@ -9,7 +9,7 @@ import {
   platzShareHonesty,
 } from "./platzCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const g = platzCopy("de");
@@ -48,7 +48,10 @@ function testParity() {
   for (const lang of langs) {
     const g = platzCopy(lang);
     assert.equal(g.stimmenTitle, "Stimmen", lang);
-    assert.ok(g.shareProfile("https://x").toLowerCase().includes("profil"), lang);
+    assert.ok(
+      /profi[e]?l/.test(g.shareProfile("https://x").toLowerCase()),
+      lang,
+    );
     assert.ok(g.created("x").includes("x"), lang);
     assert.ok(g.collectionTours(3).includes("3"), lang);
     assert.notEqual(g.collectionTours(1), g.collectionTours(2), lang);

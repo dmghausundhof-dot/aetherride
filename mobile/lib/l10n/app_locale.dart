@@ -6,9 +6,9 @@ import 'package:flutter/widgets.dart';
 class AppLocaleBinding {
   AppLocaleBinding._();
 
-  static const chromeLanguages = {'de', 'en', 'fr', 'it'};
+  static const chromeLanguages = {'de', 'en', 'fr', 'it', 'nl'};
 
-  /// Resolved UI language: `de`, `en`, `fr`, or `it`.
+  /// Resolved UI language: `de`, `en`, `fr`, `it`, or `nl`.
   static String chromeLanguageCode = 'de';
 
   static String? chromeCountryCode;
@@ -59,6 +59,9 @@ class AppLocaleBinding {
       case 'it':
         if (c == 'CH') return 'it-CH';
         return 'it-IT';
+      case 'nl':
+        if (c == 'BE') return 'nl-BE';
+        return 'nl-NL';
       default:
         if (c == 'AT') return 'de-AT';
         if (c == 'CH') return 'de-CH';

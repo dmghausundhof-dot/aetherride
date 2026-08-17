@@ -218,7 +218,70 @@ const IT: AboutCopy = {
   },
 };
 
-const BY_LANG: Record<ChromeLang, AboutCopy> = { de: DE, en: EN, fr: FR, it: IT };
+const NL: AboutCopy = {
+  brand: {
+    kicker: "Merk",
+    title: "De fiets woont hier.",
+    lead: "FlowLine is outdoorfietsen, vereenvoudigd: Home in de browser, de rit in de app. Vier deuren, één oranje knop, geen timeline.",
+    madeFor:
+      "Gebouwd voor fietsers. Getekend voor focus. Gemaakt voor de rit — niet voor de timeline.",
+    pillarsTitle: "Drie zinnen uit de style guide",
+    pillars: [
+      {
+        title: "Voor fietsers",
+        body: "Geen KPI-balk, geen feed, geen nepkilometers. Wat ontbreekt, blijft leeg.",
+      },
+      {
+        title: "Voor focus",
+        body: "Eén oppervlak, één deur. Ride is geen tab. De winkel rekent hier niet af.",
+      },
+      {
+        title: "Voor de rit",
+        body: "Plan en verzorg de fiets aan het bureau. HUD, sensoren en offline alleen native.",
+      },
+    ],
+  },
+  story: {
+    kicker: "Waarom een Home",
+    title: "Niet nóg een timeline op twee wielen.",
+    paragraphs: [
+      "De meeste fietsapps stapelen kaarten: Explore, Club, Shop, Activity. Uiteindelijk is het startscherm een feed, de rit een statistiek, de fiets een SKU. FlowLine draait dat om. Home is de stand. Vier deuren. Eén oranje knop.",
+      "Web is het bureau: tochten vinden, plannen, de fiets verzorgen, een Mappe delen. De app is de rit: HUD, GPS op de achtergrond, offline packs, sensoren, horloge. Wat de browser niet betrouwbaar kan, wordt niet als live GPS in de tab verkocht.",
+      "De naam is de houding: Flow voor de snede, Line voor de lijn. Outdoor · Cycling · Flow. Geen klassement dat je doordeweekse lus scoort. Geen nepkilometer die Home vol laat lijken.",
+    ],
+  },
+  refusalsTitle: "Wat we niet bouwen",
+  refusalsLead:
+    "Bewust, geen feature-achterstand. De homepage zegt het in klare taal.",
+  refusals: [
+    {
+      title: "Geen feed",
+      body: "Community zit op de tocht. Stimmen zijn korte tekst. Collecties zijn links. Groepen hebben een code — live-pins alleen in de app-HUD, met opt-in.",
+    },
+    {
+      title: "Geen tweede kassa",
+      body: "De winkel is voorlopig uit. De werkplaats blijft voor pasvorm en zorg. We verzinnen geen adres voor een checkout.",
+    },
+    {
+      title: "Geen nep",
+      body: "Lege vlakken blijven leeg. Store-knoppen verschijnen als listings live zijn. Routinglijnen verschijnen als je plant, niet als nep-Alpen in Hamburg.",
+    },
+  ],
+  doorsTitle: "Vier deuren, geen vijfde",
+  doorsLead: "Dezelfde IA als in de app. Ride blijft de knop, niet de tab.",
+  status: {
+    title: "Wie we zijn — en wat er nog ontbreekt",
+    body: "FlowLine wordt gebouwd door dmg hausundhof. Contact loopt via e-mail. Naam en een betekenbaar adres staan in het Impressum zodra ze op dossier zijn — niet eerder, niet verzonnen. Tot die tijd is de aanbiedervermelding volgens TMG onvolledig, en marketplace-checkout blijft op slot.",
+  },
+};
+
+const BY_LANG: Record<ChromeLang, AboutCopy> = {
+  de: DE,
+  en: EN,
+  fr: FR,
+  it: IT,
+  nl: NL,
+};
 
 export function aboutCopy(lang: ChromeLang): AboutCopy {
   return BY_LANG[lang];

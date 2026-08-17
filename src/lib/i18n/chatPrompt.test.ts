@@ -25,6 +25,7 @@ function testLangs() {
   assert.ok(chatSystemPrompt("en", "1 km", "x").includes("English"));
   assert.ok(chatSystemPrompt("fr", "1 km", "x").startsWith("Tu es"));
   assert.ok(chatSystemPrompt("it", "1 km", "x").startsWith("Sei il"));
+  assert.ok(chatSystemPrompt("nl", "1 km", "x").startsWith("Je bent"));
   assert.ok(chatUserMessage("en", "Q", "A").startsWith("User question:"));
   assert.ok(chatSystemPrompt("en", "", "").includes("none"));
   assert.ok(chatSystemPrompt("fr", "1", "f").includes("allemand"));
@@ -33,7 +34,7 @@ function testLangs() {
 function testSanitize() {
   assert.equal(chatLangFromBody("fr-CH"), "fr");
   assert.equal(chatLangFromBody("en_US"), "en");
-  assert.equal(chatLangFromBody("nl"), "de");
+  assert.equal(chatLangFromBody("nl"), "nl");
   assert.equal(chatLangFromBody(undefined), "de");
   assert.equal(chatLangFromBody(1), "de");
 }

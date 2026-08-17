@@ -33,14 +33,17 @@ export async function GET(req: Request) {
             ? "Au moins 2 caractères."
             : lang === "it"
               ? "Almeno 2 caratteri."
-              : "Mindestens 2 Zeichen.",
+              : lang === "nl"
+                ? "Minstens 2 tekens."
+                : "Mindestens 2 Zeichen.",
     });
   }
 
   try {
     const photon = new URL("https://photon.komoot.io/api/");
     photon.searchParams.set("q", q);
-    photon.searchParams.set("lang", lang);
+    // Photon: default/en/de/fr. nl is not a Photon lang — use en.
+    photon.searchParams.set("lang", lang === "nl" ? "en" : lang);
     photon.searchParams.set("limit", String(limit));
     // DACH bias (override with lat/lon near user)
     const biasLat = url.searchParams.get("lat") ?? "48.0";

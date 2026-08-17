@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { FAQ_ITEMS } from "../content/faq";
 import { faqItems } from "./faqCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDeIsSource() {
   const items = faqItems("de");
@@ -45,6 +45,7 @@ function testChromeLangs() {
   assert.equal(faqItems("en").find((i) => i.id === "was")?.q, "What is FlowLine?");
   assert.ok(faqItems("fr").find((i) => i.id === "konto")?.a.includes("Non."));
   assert.ok(faqItems("it").find((i) => i.id === "preise")?.a.includes("€"));
+  assert.equal(faqItems("nl").find((i) => i.id === "was")?.q, "Wat is FlowLine?");
 }
 
 testDeIsSource();

@@ -13,6 +13,7 @@ assert.notEqual(
 assert.equal(hofCopy("en").ridePlannedKicker, "Planned tour");
 assert.equal(hofCopy("fr").ridePlannedKicker, "Tour prévu");
 assert.equal(hofCopy("it").ridePlannedKicker, "Tour pianificato");
+assert.equal(hofCopy("nl").ridePlannedKicker, "Geplande tocht");
 
 const page = readFileSync("src/app/ride/page.tsx", "utf8");
 assert(

@@ -563,11 +563,128 @@ const IT: CatalogCopy = {
   },
 };
 
+const NL: CatalogCopy = {
+  regions: {
+    title: "Regio's",
+    lead: "Redactionele tochtideeën per gebied: Baden-Württemberg, Schwarzwald, Bayern, Bodensee, Noord-Duitsland, Berlin, NRW, Oostenrijk, Zwitserland. Het uur voor de poort komt uit echte nabijheid-seeds — Hamburg Alster, niet generiek de Alpen. Waar nog geen tochten staan, geldt de kaart ter plaatse. Geen vulroutes om de lijst vol te laten lijken.",
+    noneOnMap: "Nog geen tochten · zoek op de kaart",
+    toursLine: (n, sports) => `${n} tochten · ${sports}`,
+  },
+  region: {
+    openMap: "Openen op de kaart",
+    empty:
+      "Nog geen redactionele tochten in deze regio. Op de kaart zie je nabijheid — zonder dummy-routes.",
+    openMapCta: "Kaart openen →",
+    planCta: "Plannen →",
+    toursIn: (name) => `Tochten in ${name}`,
+    voicesTitle: "Stimmen uit de regio",
+    voicesLead: "Editorial-profielen, geen GPS-sporen.",
+    datesTitle: "Data",
+    datesLead: "Redactioneel — geen verzonnen RSVP.",
+    allDates: "Alle data →",
+    guidesTitle: "Passende guides",
+    neighborsTitle: "Buurregio's",
+    neighborsLead: "Verder lezen in de buurt — niet als GPS-vulling.",
+  },
+  tour: {
+    atGate: "Voor de poort",
+    loop: "Lus",
+    stage: "Etappe",
+    distance: "Afstand",
+    elevation: "Hoogtemeters",
+    duration: "Duur",
+    difficulty: "Moeilijkheid",
+    roadPath: "Weg/pad",
+    about: "Over deze tocht",
+    honestTitle: "Eerlijke noot",
+    honestBody:
+      "Dit is een redactioneel tochtidee, geen community-track met gemeten GPS-lijn. Onder Plannen of Tochten wordt de route berekend met het gekozen sportprofiel. Navigatie en offline alleen in de native app. Stimmen zijn gemodereerd en dragen geen tracks.",
+    region: "Regio",
+    allToursIn: (name) => `Alle tochten in ${name} →`,
+    disciplines: "Disciplines",
+    similar: "Vergelijkbare tochten",
+    startInApp: "Starten in app",
+    saved: "Opgeslagen",
+    save: "Opslaan",
+    openPlanner: "In de planner openen",
+    inTours: "In Tochten",
+    flashSaved: "In Die Mappe",
+    flashRemoved: "Uit Die Mappe gehaald",
+    copyLink: "Tochtlink kopiëren",
+    linkCopied: "Link gekopieerd",
+    noTrackHint: "Zonder track. Catalogustocht, al gedeeld.",
+  },
+  weather: {
+    loading: "Weer wordt geladen…",
+    unreachable: "Weer niet bereikbaar",
+    none: "Geen weerdata",
+    status: (code) => `Weer ${code}`,
+    wet: "Nat waarschijnlijk — trails kunnen glad zijn",
+    damp: "Licht vochtig mogelijk",
+    dry: "Eerder droog",
+    precip: (mm, pct) =>
+      `Neerslag vandaag ~${mm} mm${pct != null ? ` · max. ${pct} %` : ""}`,
+  },
+  elevation: {
+    title: "Hoogteprofiel",
+    apiSample: "API-steekproef",
+    fromMeta: "Uit tochtmetadata",
+    noteApi: "Hoogtepunten via Open-Elevation (steekproef rond de pin)",
+    noteMeta:
+      "Geschat profiel uit km/hm — geen gemeten track. Live-routing onder Plannen geeft de echte lijn.",
+  },
+  stimmen: {
+    heading: "Stimmen",
+    liveHint: "Live uit de Stimmen-API — geen stub-sterren.",
+    empty: "Nog geen Stimmen.",
+    countLine: (avg, n, photos) =>
+      `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} foto's` : ""}`,
+    write: "Stimme schrijven",
+    starsAria: (n) => `${n} sterren`,
+    namePlaceholder: "Leeg blijft Jij",
+    nameAria: "Weergavenaam — leeg blijft Jij",
+    bodyPlaceholder:
+      "Hoe was de tocht? Ondergrond, verkeer, tips… (geen privéplekken)",
+    photo: "Foto",
+    photoAlt: "Stimmen-foto",
+    counter: (n) => `${n}/500 · foto na login`,
+    submit: "Versturen",
+    pending: "In beoordeling",
+    remove: "Verwijderen",
+    minChars: "Schrijf minstens 8 tekens.",
+    ratingRange: "Beoordeling 1–5.",
+    savedLocalSignIn:
+      "Lokaal opgeslagen — meld je aan (Profiel) voor cloud en foto.",
+    thanksPublished: "Dank — gepubliceerd.",
+    thanksPending:
+      "Dank — in beoordeling, tot vrijgave alleen voor jou zichtbaar.",
+    savedLocalCloud: "Lokaal opgeslagen — cloud nu niet bereikbaar.",
+    tagsHint: "Staat — optioneel, max. drie",
+    tagLabel: (wire) =>
+      ({
+        nass: "nat",
+        zu: "dicht",
+        viel_los: "druk",
+        top: "top",
+        baustelle: "werkzaamheden",
+      }[wire] ?? wire),
+    difficultyHint: "Moeilijkheid t.o.v. de markering — optioneel",
+    difficultyEasier: "lichter",
+    difficultyAsMarked: "zoals gemarkeerd",
+    difficultyHarder: "zwaarder",
+    crowdEasier: (n) => `Rijders: eerder lichter dan gemarkeerd (${n})`,
+    crowdAsMarked: (n) => `Rijders: zoals gemarkeerd (${n})`,
+    crowdHarder: (n) => `Rijders: eerder zwaarder dan gemarkeerd (${n})`,
+    pinOnLine: "Pin op de lijn",
+  },
+};
+
 const BY_LANG: Record<ChromeLang, CatalogCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function catalogCopy(lang: ChromeLang): CatalogCopy {

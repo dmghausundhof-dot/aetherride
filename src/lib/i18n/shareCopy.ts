@@ -222,11 +222,57 @@ const IT: ShareCopy = {
   sharedSuffix: (name) => `${name} (condiviso)`,
 };
 
+const NL: ShareCopy = {
+  kicker: "Delen",
+  title: "Een link, geen feed",
+  lead: "Wie de link heeft, kan de tocht in de eigen Mappe leggen. Er is geen timeline en geen stille GPS-bijlagen.",
+  tourTitle: "Tochtlink",
+  tourBody:
+    "Eén tocht, naam en stats. Een trace alleen als die bewust in de link zit — anders blijft het pin en catalogus.",
+  openSampleTour: "Voorbeeldtocht openen →",
+  mappeTitle: "Mappe",
+  mappeBody:
+    "Meerdere catalogustochten als collectie. Altijd zonder tracks. Aanmaken op Platz.",
+  openSampleMappe: "Voorbeeld-Mappe openen →",
+  step1Before: "Open een tocht op de",
+  step1Regions: "regiopagina",
+  step1Mid: "of op",
+  step1After: ".",
+  step2: "Kopieer de link. De ontvanger heeft geen account nodig.",
+  step3: "Overnemen legt de tocht lokaal in deze browser in Die Mappe.",
+  foot: "Groepen en Stimmen blijven op Platz. Publieke profielen zijn opt-in.",
+  guideShare: "Guide: Delen",
+  invalid: "Link ongeldig",
+  invalidTour:
+    "De gedeelde tocht kon niet worden gelezen. Geen feed, geen stille track.",
+  invalidCollection: "De gedeelde collectie kon niet worden gelezen.",
+  howToShare: "Zo deel je",
+  toPlatz: "Naar Platz",
+  demoLink: "Voorbeeldlink",
+  sharedTour: "Gedeelde tocht",
+  by: (author) => `Van ${author}`,
+  trackInLink: "De link bevat een vereenvoudigde trace.",
+  catalogNoTrack: "Geen extra track in de link — catalogustocht, al gedeeld.",
+  nameStatsOnly: "Alleen naam en stats in de link — geen GPS-track.",
+  openCatalog: "In de catalogus openen",
+  inMappe: "In Die Mappe",
+  adoptMappe: "In Die Mappe leggen",
+  savesTour: "Slaat de tocht lokaal op in deze browser.",
+  savesCollection: "Slaat de collectie lokaal op in deze browser.",
+  loadingCollection: "Collectie wordt geladen…",
+  demoMappe: "Voorbeeld-Mappe",
+  sharedCollection: "Gedeelde collectie",
+  toursNoGps: (n) => `${n} tochten · zonder GPS-tracks`,
+  open: "Openen",
+  sharedSuffix: (name) => `${name} (gedeeld)`,
+};
+
 const BY_LANG: Record<ChromeLang, ShareCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function shareCopy(lang: ChromeLang): ShareCopy {

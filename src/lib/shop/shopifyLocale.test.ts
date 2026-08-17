@@ -15,16 +15,18 @@ assert.equal(shopifyLanguageCode("de"), "DE");
 assert.equal(shopifyLanguageCode("en"), "EN");
 assert.equal(shopifyLanguageCode("fr"), "FR");
 assert.equal(shopifyLanguageCode("it"), "IT");
+assert.equal(shopifyLanguageCode("nl"), "NL");
 
 assert.equal(shopifyLangFromSearch("fr-CH"), "fr");
 assert.equal(shopifyLangFromSearch("en_US"), "en");
 assert.equal(shopifyLangFromSearch(null), "de");
-assert.equal(shopifyLangFromSearch("nl"), "de");
+assert.equal(shopifyLangFromSearch("nl"), "nl");
 
 assert.equal(shopifyLocalePrefix("de"), "");
 assert.equal(shopifyLocalePrefix("en"), "/en");
 assert.equal(shopifyLocalePrefix("fr"), "/fr");
 assert.equal(shopifyLocalePrefix("it"), "/it");
+assert.equal(shopifyLocalePrefix("nl"), "/nl");
 
 const home = `${SHOPIFY_STORE_BASE}/`;
 assert.equal(withShopifyLocale(home, "de"), home);

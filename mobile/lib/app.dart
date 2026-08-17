@@ -35,7 +35,7 @@ class FlowLineApp extends StatelessWidget {
         theme: AppTheme.dark,
         darkTheme: AppTheme.dark,
         themeMode: ThemeMode.dark,
-        // Chrome: de/en/fr/it. Land bleibt am Locale. Gerätesprache → Hof-Titel
+        // Chrome: de/en/fr/it/nl. Land bleibt am Locale. Gerätesprache → Hof-Titel
         // (AppLocaleBinding), nicht der UI-Fallback.
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: const [

@@ -706,11 +706,157 @@ const IT: PlatzCopy = {
   linkNoTrack: "Link senza traccia — nome e stats.",
 };
 
+const NL: PlatzCopy = {
+  inviteHint:
+    "Uitnodigen deelt de link. Je groepen blijven. Gedeeld zet ook open groepen op Platz — geen feed. Vrienden op de kaart alleen in de app, na opt-in.",
+  pickTour: "Tocht kiezen",
+  visPrivate: "Privé",
+  visPublic: "Gedeeld",
+  visAll: "Alle",
+  meetingPlaceholder: "Trefpunt (optioneel)",
+  createGroup: "Groep aanmaken",
+  needSignIn:
+    "Aanmelden — anders ziet je vriend de groep niet op de server.",
+  needSharedTour:
+    "Groep alleen bij een gedeelde of catalogustocht. Privé-GPX blijft privé.",
+  created: (note) =>
+    `Groep aangemaakt — uitnodigen deelt de link${note ? ` — ${note}` : ""}`,
+  localOnlyFoot:
+    " — anders blijft de groep op dit apparaat. Je vriend ziet je niet.",
+  emptyPublic: "Geen open groepen.",
+  emptyPrivate: "Geen privégroepen in dit filter.",
+  emptyAll: "Nog geen groep. Uitnodigen deelt de link.",
+  host: "Host",
+  guest: "Gast",
+  you: "Jij",
+  selfSuffix: " · jij",
+  along: (n) => `${n} mee`,
+  onServer: "op de server",
+  onDevice: "alleen op dit apparaat",
+  invite: "Uitnodigen",
+  dissolve: "Opheffen",
+  leave: "Verlaten",
+  copyLink: "Link kopiëren",
+  copiedInvite:
+    "Link gekopieerd. Wie hem heeft, kan meedoen zolang de groep open is.",
+  makePrivate: "Privé maken",
+  makePublic: "Op Platz zetten",
+  listedNote: "Op Platz gezet — wie de link heeft, kan meedoen.",
+  unlistedNote: "Alleen via link — niet op Platz.",
+  pinsOff: "Vrienden op de kaart · uit",
+  pinsHud: "Vrienden alleen tijdens de rit",
+  pinsHint: "Alleen tijdens de rit, niet op de openbare kaart.",
+  join: "Meedoen",
+  joined: (title) => `Erbij: ${title}`,
+  joinWithLink: "Meedoen met een link",
+  joinLocalCta: "Op dit apparaat onthouden",
+  joinUnsignedHint: "Zonder aanmelden ziet de host je niet.",
+  joinField: "Uitnodigingslink",
+  joinHint:
+    "Plak de link uit WhatsApp of Messages. Privé heeft de uitnodigingslink nodig — geen code om over te tikken.",
+  joinEmpty: "Link ontbreekt.",
+  joinInvalid: "Geen geldige uitnodigingslink.",
+  startLabel: "Start",
+  startNow: "Nu",
+  startIn1h: "Over 1 h",
+  startToday18: "Vandaag 18:00",
+  startTomorrow10: "Morgen 10:00",
+  durationLabel: "Duur",
+  pinsOn: "Vrienden op de kaart · aan",
+  collectionsHint:
+    "Aanmaken onder Delen. Delen alleen met gedeelde of catalogustochten — privé-GPX blijft buiten.",
+  shareTitle: (title) => `Samen eruit: ${title}`,
+  shareMeet: (point) => `Trefpunt: ${point}`,
+  shareProfile: (url) => `Mijn profiel: ${url}`,
+  shareVisPublic:
+    "Gedeeld: wie de link heeft, kan meedoen. De groep kan onder Gedeeld staan.",
+  shareVisPrivate:
+    "Privé: alleen wie deze link heeft, kan meedoen. Niet openbaar gezet.",
+  whenClosed: (wd, hm) => `dicht — ${wd} ${hm}`,
+  whenToday: (hm, dur) => `vandaag ${hm} · ${dur}`,
+  whenTomorrow: (hm, dur) => `morgen ${hm} · ${dur}`,
+  whenOther: (wd, hm, dur) => `${wd} ${hm} · ${dur}`,
+  mappeEmpty: "Nog geen eigen routes — voeg een route toe.",
+  mappeFilterEmpty: "Geen tochten in dit filter.",
+  shared: "gedeeld",
+  privateTour: "privé",
+  openInApp: "Openen in de app",
+  joinOnDevice:
+    " — In de app onthouden. Zonder aanmelden ziet de host je niet.",
+  stimmenTitle: "Stimmen",
+  stimmenEmpty:
+    "Nog geen Stimmen bij je tochten. Na delen kunnen anderen schrijven.",
+  pending: "In beoordeling",
+  collectionsTitle: "Verzamelingen",
+  collectionName: "Naam van de verzameling",
+  collectionCreate: "Aanmaken",
+  collectionCreated: "Verzameling aangemaakt",
+  collectionEmpty:
+    "Nog geen verzameling — onder Delen bij een tocht aanmaken.",
+  collectionTours: (n) => (n === 1 ? "1 tocht" : `${n} tochten`),
+  gpxNoTrack: "GPX zonder track",
+  gpxUnreadable: "GPX kon niet worden gelezen",
+  gpxImported: (name) => `Geïmporteerd: ${name}`,
+  joinNotOnServer: (note) =>
+    `Niet op de server — ${note} Onder Profiel aanmelden, daarna de link opnieuw openen. Anders ziet de host je niet.`,
+  joinOk: (title, note) =>
+    `Erbij: ${title}${note ? ` — ${note}` : ""}. Wie de link heeft, kan meedoen zolang de groep open is.`,
+  shareCopied: "Gekopieerd",
+  share: "Delen",
+  shareEmpty: "Verzameling is leeg — eerst tochten toevoegen.",
+  shareNoPublic:
+    "Geen gedeelde of catalogustocht in de verzameling. Privé-GPX blijft buiten.",
+  shareTooBig: "Verzameling te groot voor URL-share — minder tochten kiezen.",
+  shareRevoke: "Server-link intrekken",
+  shareRevokeFail: "Link kon niet worden ingetrokken — aangemeld?",
+  localOnlyNote:
+    "Niet aangemeld — alleen op dit apparaat. Meedoen op de server vraagt login.",
+  onServerNote: "Groep op de server.",
+  serverTableNote: "Servertabel ontbreekt — alleen lokaal.",
+  addRoute: "Route toevoegen",
+  addRouteHint:
+    "Naam + start (GPS, anders laatste kaartmidden, anders zonder pin) — zonder verzonnen track. GPX blijft optioneel.",
+  routeName: "Naam van de route",
+  startGps:
+    "Start: GPS als toegestaan — anders laatste kaartmidden, anders zonder pin.",
+  startNone: "Start: nog zonder pin — GPS of kaart openen.",
+  startFromGps: (coords) => `Start: jouw locatie (${coords})`,
+  startFromMap: (coords) => `Start: laatste kaartmidden (${coords})`,
+  startPin: (lat, lng) => `Start: ${lat}°N, ${lng}°E`,
+  savedNamed: (name) => `Opgeslagen: ${name}`,
+  intoMappe: "In Die Mappe leggen",
+  cancel: "Annuleren",
+  importGpx: "GPX importeren",
+  tourKicker: "Tocht",
+  catalogTag: "Catalogus",
+  riddenWith: (name) => `gereden met ${name}`,
+  trackLocal: "Track ligt lokaal. Sync tussen je apparaten.",
+  noTrackMappe: "Nog geen track — alleen het item in Die Mappe.",
+  inCollections: (names) => `In ${names}`,
+  addToCollection: "Naar verzameling",
+  collectionAdded: "Aan verzameling toegevoegd",
+  visibility: "Delen",
+  shareOut: "Delen",
+  privateNote: "Privénotitie",
+  notePlaceholder: "Alleen voor jou — geen Stimme.",
+  honestyCatalog:
+    "Catalogustocht is al gedeeld. Delen maakt jouw tocht deelbaar — de link toont naam en stats, geen extra privé-track.",
+  honestyTrack:
+    "Delen maakt een link. De link bevat een vereenvoudigd spoor (coördinaten), niet alleen de naam. Terug naar privé haalt de tocht uit filters en bewaart de intrekking op de server als je bent aangemeld. Zonder login geldt het alleen in deze browser.",
+  honestyNoTrack:
+    "Delen maakt een link met naam en stats — zonder track, omdat er geen is opgeslagen.",
+  linkNoTrackLong:
+    "Link zonder spoor — te lang voor de URL. Naam en stats, geen GPS.",
+  linkHasTrack: "Link bevat een vereenvoudigd spoor.",
+  linkNoTrack: "Link zonder track — naam en stats.",
+};
+
 const BY_LANG: Record<ChromeLang, PlatzCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function platzCopy(lang: ChromeLang): PlatzCopy {

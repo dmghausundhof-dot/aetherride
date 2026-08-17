@@ -362,11 +362,130 @@ const IT: FaqItem[] = [
   },
 ];
 
+const NL: FaqItem[] = [
+  {
+    id: "was",
+    q: "Wat is FlowLine?",
+    a: "FlowLine is outdoor cycling met een Home: plannen, verzorgen, delen in de browser — rijden in de app. Vier deuren, geen feed, geen tweede kassa.",
+    links: [
+      { href: "/produkt", label: "Productkaart" },
+      { href: "/ueber", label: "Over FlowLine" },
+    ],
+  },
+  {
+    id: "fuer-wen",
+    q: "Voor wie is FlowLine?",
+    a: "Voor race, gravel, MTB, e-bike, touring en stad. Eén app, vier deuren — geen vier apps. Zoek je een feed of een klassement, dan ben je hier verkeerd. Wil je tochten plannen, de fiets verzorgen en delen zonder tijdlijn, dan ben je goed.",
+    links: [
+      { href: "/regions", label: "Regio’s" },
+      { href: "/karten", label: "Kaarten" },
+      { href: "/produkt", label: "Product" },
+    ],
+  },
+  {
+    id: "web-app",
+    q: "Wat draait in de browser, wat in de app?",
+    a: "Op het web: Home, Kaart, plannen, Platz, werkplaats. In de app: Ride-HUD, offline-packs, GPS-registratie, sensoren en horloge. Live-navigatie in de tab is er niet.",
+    links: [
+      { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "konto",
+    q: "Heb ik een account nodig?",
+    a: "Nee. Home blijft lokaal bruikbaar. Een account synchroniseert met de app en schakelt Pro vrij in het profiel.",
+    links: [{ href: "/anmelden", label: "Aanmelden" }],
+  },
+  {
+    id: "ohne-app",
+    q: "Werkt FlowLine alleen in de browser?",
+    a: "Plannen, Kaart, Platz en werkplaats: ja. Navigatie, offline, GPS-registratie, sensoren en horloge hebben de native app nodig. Live-navigatie in de tab is er niet — en geen namaak die dat veinst.",
+    links: [
+      { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "karten",
+    q: "Waar kan ik rijden met een echte kaart?",
+    a: "Online in negen regio’s: DACH, Frankrijk, zuidelijke Alpen, Benelux, Noord-, Midden- en Zuid-Italië, Catalonië/Pyreneeën, Zuid-Engeland. In DACH de atlas en vanaf zoom 12 de paden voor DE, AT, CH en LI — niet alleen in tien steden. De kaart volgt het kader. Offline zijn het stadspacks voor routing in de app — geen landkaart. Sicilië, Sardinië, Scandinavië, Polen, de rest van het UK en Iberia zijn gaten.",
+    links: [
+      { href: "/karten", label: "Kaarten" },
+      { href: "/discover", label: "Kaart openen" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "preise",
+    q: "Wat kost Pro?",
+    a: "Free plant en navigeert in de app. Pro kost 6,99 €/maand of 59,99 €/jaar — multi-fiets, bracketing, actieradius als interval, hogere chatlimieten. Checkout in het profiel (Stripe) of Play Billing op Android. Geen abo midden in de tocht.",
+    links: [{ href: "/pricing", label: "Prijzen" }],
+  },
+  {
+    id: "community",
+    q: "Is er een community / een feed?",
+    a: "Community hangt aan de tocht: Stimmen, Mappe-links, uitnodigingslinks, optioneel publiek profiel. Geen tijdlijn bij Home, geen klassement en geen live-GPS bij de poort.",
+    links: [
+      { href: "/community", label: "Community" },
+      { href: "/library", label: "Platz" },
+    ],
+  },
+  {
+    id: "teilen",
+    q: "Hoe deel ik een tocht of een Mappe?",
+    a: "Via een link, niet via een feed. Wie de link heeft, slaat de tocht lokaal op in de Mappe — geen account verplicht. Stimmen en groepen blijven op de Platz. Publieke profielen zijn opt-in en dragen geen GPS-sporen.",
+    links: [
+      { href: "/share", label: "Delen" },
+      { href: "/share/t/demo", label: "Voorbeeldtocht" },
+      { href: "/guides/teilen-per-link", label: "Guide: Delen" },
+    ],
+  },
+  {
+    id: "shop",
+    q: "Kan ik hier onderdelen kopen?",
+    a: "Nee. De winkel en Shopify staan voorlopig uit. De werkplaats blijft voor fiets, setup en onderhoud — geen kassa in FlowLine.",
+    links: [{ href: "/garage", label: "Werkplaats" }],
+  },
+  {
+    id: "regionen",
+    q: "Zijn de tochten echte GPS-sporen?",
+    a: "Openbare tochtpagina’s zijn redactionele ideeën met een pin. De lijn ontstaat als je plant met het routingprofiel — geen gegarandeerd GPX-bestand en geen nepalpen als je in Hamburg staat.",
+    links: [
+      { href: "/regions", label: "Regio’s" },
+      { href: "/karten", label: "Kaarten" },
+      { href: "/discover", label: "Kaart" },
+    ],
+  },
+  {
+    id: "daten",
+    q: "Wat gebeurt er met mijn data?",
+    a: "Offline-first, AVG, export in het profiel. Stimmen zonder track erbij. Publiek profiel alleen met opt-in. Sync en navigatie blijven vrij.",
+    links: [{ href: "/legal/datenschutz", label: "Privacy" }],
+  },
+  {
+    id: "app-stores",
+    q: "Waar haal ik de app?",
+    a: "Store-links verschijnen zodra de listings live zijn. Tot dan draaien Home, Kaart, Platz en werkplaats in de browser. HUD, offline en sensoren komen met de native app.",
+    links: [{ href: "/download", label: "App" }],
+  },
+  {
+    id: "kontakt",
+    q: "Hoe bereik ik jullie?",
+    a: "Per e-mail. Naam en een geldig adres staan in het Impressum zodra ze zijn vastgelegd — we verzinnen ze niet.",
+    links: [
+      { href: "/kontakt", label: "Contact" },
+      { href: "/legal/impressum", label: "Impressum" },
+    ],
+  },
+];
+
 const BY_LANG: Record<ChromeLang, FaqItem[]> = {
   de: FAQ_ITEMS,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function faqItems(lang: ChromeLang): FaqItem[] {

@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { catalogCopy } from "./catalogCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const c = catalogCopy("de");
@@ -32,6 +32,8 @@ function testParity() {
     assert.ok(c.elevation.noteMeta.includes("km"), lang);
   }
   assert.notEqual(de.regions.lead, catalogCopy("en").regions.lead);
+  assert.equal(catalogCopy("nl").regions.title, "Regio's");
+  assert.equal(catalogCopy("nl").tour.atGate, "Voor de poort");
 }
 
 testDe();

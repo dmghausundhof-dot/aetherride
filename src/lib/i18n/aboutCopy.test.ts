@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { ABOUT_REFUSALS, ABOUT_STORY } from "../content/aboutPage";
 import { aboutCopy } from "./aboutCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const a = aboutCopy("de");
@@ -27,6 +27,12 @@ function testParity() {
   }
 }
 
+function testNl() {
+  const a = aboutCopy("nl");
+  assert.equal(a.brand.title, "De fiets woont hier.");
+}
+
 testDe();
 testParity();
+testNl();
 console.log("aboutCopy.test.ts OK");

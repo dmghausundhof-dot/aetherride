@@ -414,11 +414,101 @@ const IT: PublicPagesCopy = {
   },
 };
 
+const NL: PublicPagesCopy = {
+  pricing: {
+    title: "Free plant. Pro gaat dieper.",
+    lead: "Tochten op de kaart en plannen zijn voor iedereen. Multi-fiets, bracketing en eerlijke actieradius als interval zijn Pro — navigatie draait in de app op beide niveaus.",
+    freeHint: "Tochten, plannen, 1 fiets, app-navigatie",
+    recommended: "Aanbevolen",
+    perMonth: "/mnd",
+    yearHint: "of 59,99 €/jaar · opzeggen in het portaal",
+    unlockPro: "Pro vrijschakelen",
+    checkoutHint: "Checkout in het profiel (Stripe) · Play Billing in de Android-app",
+    colFeature: "Functie",
+    included: "Inbegrepen",
+    notIncluded: "Niet inbegrepen",
+    appTitle: "App onderweg",
+    appLead: "Free en Pro navigeren in de native app — niet in de browser.",
+    legalBefore: "Details over data en abo:",
+    rows: [
+      { feature: "Kaart & openbare routes", free: true, pro: true },
+      { feature: "Plannen op de kaart", free: true, pro: true },
+      { feature: "Platz: Mappe, Stimmen, groepen", free: true, pro: true },
+      { feature: "1 fiets in de werkplaats", free: true, pro: true },
+      { feature: "Meerdere fietsen", free: false, pro: true },
+      { feature: "Compatibiliteit & setup-basis", free: true, pro: true },
+      { feature: "Bracketing-evaluatie", free: false, pro: true },
+      { feature: "E-bike-actieradius (interval)", free: false, pro: true },
+      { feature: "Uitgebreide offline-packs", free: false, pro: true },
+      { feature: "AI-chat (hoger limiet)", free: "5/dag", pro: "50/dag" },
+      { feature: "App-navigatie & sensoren", free: true, pro: true },
+    ],
+  },
+  download: {
+    title: "De app voor onderweg",
+    lead: "Home, Kaart, Platz en de werkplaats draaien in de browser. Eruit met HUD, horloge en sensoren koppelen — alleen in de native app.",
+    noStore:
+      "Nog geen store-links. Home, Kaart, Platz en de werkplaats draaien in de browser. HUD, offline en sensoren komen met de native app.",
+    splitTitle: "Web en app, eerlijk gescheiden",
+    openMap: "Eerst de kaart op het web openen",
+    reasons: [
+      {
+        title: "Navigatie",
+        body: "Turn-by-turn en kaart tijdens de tocht — stabiel op de achtergrond.",
+      },
+      {
+        title: "Offline",
+        body: "Kaart- en routingpacks zonder netwerk. In de browser niet zinvol.",
+      },
+      {
+        title: "Sensoren & BLE",
+        body: "Horloge en fietssensor op de renner of de fiets. Koppelen alleen native.",
+      },
+      {
+        title: "Registratie",
+        body: "Betrouwbare ritregistratie, ook met vergrendeld scherm.",
+      },
+    ],
+  },
+  contact: {
+    kicker: "Contact",
+    title: "Schrijf ons",
+    lead: "Geen formulierbot, geen nephotline. Eén adres is genoeg.",
+    emailLabel: "E-mail",
+    workshopHint:
+      "Werkplaats-interesse bij de service-check: hetzelfde adres, onderwerp „Werkstatt-Interesse”.",
+    imprintPending:
+      " — naam en adres verschijnen zodra ze zijn vastgelegd.",
+  },
+  serviceCheck: {
+    kicker: "Service-check",
+    title: "Jouw fiets zegt wat eraan komt.",
+    lead: "FlowLine rekent onderhoudsintervallen uit je kilometers en uren — met bronnen uit fabrikant- en industriepraktijk (RockShox, Fox, Park Tool e.a.). Geen black box, geen nep-partners.",
+    free: "Status in de werkplaats — altijd gratis",
+    sources: "Bronnen zichtbaar per interval (geen „de AI zei het”)",
+    deepLink: "Deep link: dezelfde status als in de app-werkplaats",
+    toWorkshop: "Naar de werkplaats",
+    toMaintenance: "Naar de werkplaats · onderhoud",
+    demoKicker: "Onderhoudsstatus · voorbeeld",
+    demoTitle: "Ketting · 180 km · binnenkort checken",
+    demoBody: "Kettingslijtage checken · bron: Park Tool / industriepraktijk",
+    demoFoot:
+      "Demo-weergave — echte waarden komen van jouw fiets in de werkplaats.",
+    ownStatus: "Eigen status bekijken",
+    shopsTitle: "Werkplaatsen: interesse melden",
+    shopsBodyBefore: "We bouwen een wachtlijst voor werkplaats-partners. Er is",
+    shopsBodyStrong: "nog geen live-partnerboeking",
+    shopsBodyAfter: "— bij interesse mail je vrijblijvend.",
+    shopsMail: "Interesse per e-mail",
+  },
+};
+
 const BY_LANG: Record<ChromeLang, PublicPagesCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function publicPagesCopy(lang: ChromeLang): PublicPagesCopy {

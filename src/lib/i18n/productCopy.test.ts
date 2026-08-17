@@ -10,7 +10,7 @@ import {
 } from "../content/productMap";
 import { productCopy } from "./productCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDeMatchesSource() {
   const p = productCopy("de");
@@ -41,6 +41,7 @@ function testParity() {
       en: "Tours",
       fr: "Parcours",
       it: "Percorsi",
+      nl: "Tochten",
     } as const;
     assert.equal(p.doors[2]?.title, doorTour[lang], `${lang} tours door`);
     assert.equal(p.matrix.length, de.matrix.length, lang);

@@ -4,6 +4,7 @@ import 'package:aetherride_mobile/l10n/app_localizations_de.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_en.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_fr.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_it.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_nl.dart';
 import 'package:aetherride_mobile/l10n/l10n_ext.dart';
 import 'package:aetherride_mobile/presentation/discover/widgets/route_variant_chips.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +25,13 @@ void main() {
       AppLocalizationsEn().discoverVariantValhallaOnly,
       AppLocalizationsFr().discoverVariantValhallaOnly,
       AppLocalizationsIt().discoverVariantValhallaOnly,
+      AppLocalizationsNl().discoverVariantValhallaOnly,
     ];
     expect(lines[0], 'Ohne Live-Strecke keine Varianten');
     expect(lines[1], 'No variants without a live route');
     expect(lines[2], 'Sans route live, pas de variantes');
     expect(lines[3], 'Senza route live, niente varianti');
+    expect(lines[4], 'Geen varianten zonder live-route');
     for (final line in lines) {
       final lower = line.toLowerCase();
       expect(lower, isNot(contains('valhalla')));
@@ -43,6 +46,7 @@ void main() {
       AppLocalizationsEn().discoverGhMinuteLimit,
       AppLocalizationsFr().discoverGhMinuteLimit,
       AppLocalizationsIt().discoverGhMinuteLimit,
+      AppLocalizationsNl().discoverGhMinuteLimit,
     ];
     expect(
       lines[0],
@@ -59,6 +63,10 @@ void main() {
     expect(
       lines[3],
       'Suggerimenti e tempi limitati — aspetta un po’ o pianifica con parsimonia.',
+    );
+    expect(
+      lines[4],
+      'Suggesties en tijden zijn beperkt — wacht even of plan spaarzaam.',
     );
     for (final line in lines) {
       final lower = line.toLowerCase();

@@ -819,11 +819,235 @@ const IT: HomepageCopy = {
   },
 };
 
+const NL: HomepageCopy = {
+  intro: {
+    kicker: "Wat FlowLine is",
+    title: "Outdoor cycling, zonder tijdlijn.",
+    lead: "FlowLine is de dagelijkse app tussen de doordeweekse ronde en de weekendetappe. In de browser plan je, verzorg je de fiets en deel je een Mappe. In de app rijd je: HUD, GPS, offline, sensoren.",
+    paragraphs: [
+      "Home is de stand — geen feed. Vier deuren: Home, Kaart, Platz, Werkplaats. Onderdelen zitten aan de fiets, niet als vijfde tab. Ride is de oranje knop, niet de vijfde tab. Wat ontbreekt blijft leeg: geen dummy-kilometers, geen klassement, geen tweede kassa in de browser.",
+      "Openbare tochtpagina’s zijn redactionele ideeën met een pin. De lijn ontstaat als je plant — de Alster in Hamburg, niet standaard de Alpen. Community hangt aan de tocht: Stimmen, Mappe-links, uitnodigingslinks. Publieke profielen alleen met opt-in, zonder GPS-sporen.",
+    ],
+  },
+  disciplines: [
+    {
+      title: "Race",
+      href: "/discover?sport=road",
+      body: "Asfalt, hoogtemeters, vlakke oevers. Filters en nabije ronden op de kaart — zonder verkeer als spel.",
+    },
+    {
+      title: "Gravel",
+      href: "/discover?sport=gravel",
+      body: "Boswegen en mix. Het profiel „Gravel“ mijdt harde trails. Na regen blijft het eerlijk: glad is glad.",
+    },
+    {
+      title: "MTB",
+      href: "/discover?sport=mtb",
+      body: "S-schalen in plaats van sterreninflatie. Navigatie in de app. Redactionele ideeën zoals Königstuhl — geen verzonnen downhill-GPX.",
+    },
+    {
+      title: "E-Bike",
+      href: "/guides/ebike-reichweite",
+      body: "Actieradius als interval, niet als punt. Assist en kalibratie in Pro. Bosch live alleen native, niet in de tab.",
+    },
+    {
+      title: "Touring & stad",
+      href: "/discover?sport=urban",
+      body: "Etappes, rustplekken, na het werk. Dezelfde tochten in de Mappe als op de kaart — geen tweede app voor alledag.",
+    },
+  ],
+  doors: [
+    {
+      href: "/home",
+      title: "Start",
+      kicker: "Rijden",
+      body: "Jouw fiets, het weer, wat er binnenkwam. Eén oranje knop. Geen KPI-balk, geen stories. Rijden start de app — de kaart is om te plannen.",
+    },
+    {
+      href: "/discover",
+      title: "Kaart",
+      kicker: "Bij de poort",
+      body: "OpenStreetMap, echte tochten in de buurt, sportfilters. Je plant op de desktop: start, via, finish. Live-navigatie in de browser is er niet — en we doen niet alsof.",
+    },
+    {
+      href: "/library",
+      title: "Tochten",
+      kicker: "Opgeslagen en gedeeld",
+      body: "Jouw ritten, tips, uitnodigingslinks. Delen via link, niet via tijdlijn. Wie de link heeft, slaat de tocht lokaal op — geen account verplicht, geen track in de reactie.",
+    },
+    {
+      href: "/garage",
+      title: "Fiets",
+      kicker: "Deze fiets",
+      body: "Stallen, setup, onderhoudsintervallen met bron. Bracketing en actieradius als interval zijn Pro. De winkel staat stil — de werkplaats blijft zonder kassa.",
+    },
+  ],
+  split: {
+    kicker: "Twee oppervlakken",
+    title: "Web is Home. De app rijdt.",
+    webLead:
+      "Inspiratie, plannen, onderhoud en delen horen aan het bureau. De browser mag leeg blijven waar GPS en sensoren thuishoren.",
+    appLead:
+      "Onderweg tellen een vergrendeld scherm, offline-packs en een horloge op de renner. Daar is geen web-namaak voor.",
+  },
+  tours: {
+    kicker: "Bij de poort",
+    title: "Ideeën uit de buurt, niet uit de Alpenvoorraad.",
+    lead: "Vier redactionele tochten als start — Hamburg Alster, Heidelberg, Schwarzwald Gravel, Bodensee. Het zijn ideeën met een pin, geen ingemeten community-tracks. De lijn reken je onder Plannen.",
+  },
+  journey: {
+    kicker: "Volgorde",
+    title: "Zo ga je eruit — en kom je terug.",
+    lead: "Aankomen, fiets aan de stand, een uur bij de poort, eruit, terug bij Home. Geen onboardingtheater, geen demofiets die kilometers faket.",
+  },
+  voices: {
+    kicker: "Stimmen",
+    title: "Aan de tocht, niet in een feed.",
+    lead: "Redactioneel, duidelijk gemarkeerd. Korte tekst zonder track erbij. Nieuwe Stimmen starten in beoordeling.",
+  },
+  guides: {
+    kicker: "Guides",
+    title: "Lees na voor je weggaat.",
+    lead: "Plannen, actieradius, setup, Home en delen — geen affiliate-clickbait. Wat het product mist, beloven we hier ook niet.",
+    slugs: HOME_GUIDES.slugs,
+  },
+  pricing: {
+    kicker: "Prijzen",
+    title: "Free plant. Pro gaat dieper.",
+    lead: "Kaart, plannen, één fiets, app-navigatie: gratis. Multi-fiets, bracketing, actieradius als interval en hogere chatlimieten: Pro. Checkout in het profiel, niet midden in een tocht. Store-listings volgen zodra ze live zijn.",
+    free: "0 € — Home, Kaart, Platz, één fiets, navigatie in de app.",
+    pro: "6,99 €/maand of 59,99 €/jaar. Opzeggen in het portaal of via Play.",
+  },
+  honesty: {
+    kicker: "Stand",
+    title: "Compleet waar het staat — leeg waar het ontbreekt.",
+    lead: "Een homepage mag niet doen alsof de winkel open is of de store al gelist. Daarom de eerlijke stand:",
+    live: [
+      "Home, Kaart, plannen, Platz, werkplaats in de browser",
+      "Redactionele tochten en regio’s in DACH",
+      "Stimmen, Mappe-links, redactionele profielen",
+      "Free en Pro beschreven, checkout in het profiel (Stripe)",
+    ],
+    notYet: [
+      "Een geldig adres in het Impressum — daarom shop-checkout geblokkeerd",
+      "App Store- en Play-listings — HUD en sensoren komen met de native app",
+      "Live-partnerboeking voor werkplaatsen — interesse per e-mail",
+    ],
+  },
+  cta: {
+    title: "De fiets staat. Jij komt terug.",
+    body: "Open Home in de browser. De app neemt navigatie, offline en horloge over zodra de listings er zijn — tot dan blijft de stand eerlijk leeg in plaats van gevuld.",
+  },
+  webSurfaces: [
+    {
+      title: "Home, Kaart, plannen",
+      body: "Inspiratie, nabije ronden, desktopplanner. Opslaan in de Mappe.",
+    },
+    {
+      title: "Fiets",
+      body: "Fietsen, onderdelen, setup, onderhoud — ook zonder de app.",
+    },
+    {
+      title: "Tochten",
+      body: "GPX, verzamelingen, tips, groepen. Delen zonder feed.",
+    },
+  ],
+  appSurfaces: [
+    {
+      title: "Eruit",
+      body: "Ride-HUD, turn-by-turn, GPS op de achtergrond, vergrendeld scherm.",
+    },
+    {
+      title: "Offline",
+      body: "Kaart- en routingpacks zonder netwerk. In de browser niet zinvol.",
+    },
+    {
+      title: "Sensoren & horloge",
+      body: "BLE, CSC, horloge op de renner. Koppelen alleen native — niet in de browser.",
+    },
+    {
+      title: "Registratie",
+      body: "Echte ritten ontstaan in de app. Home toont wat er binnenkwam.",
+    },
+  ],
+  journeySteps: [
+    {
+      n: "1",
+      title: "Aankomen",
+      body: "Sport en gewicht — of overslaan. Geen demofiets, geen nepkilometers.",
+    },
+    {
+      n: "2",
+      title: "Fiets aan de stand",
+      body: "Stallen in de werkplaats — of rijden zonder fiets.",
+    },
+    {
+      n: "3",
+      title: "Een uur bij de poort",
+      body: "De kaart toont echte ronden in de buurt. Ontbreekt er een, dan blijft de poort leeg.",
+    },
+    {
+      n: "4",
+      title: "Eruit",
+      body: "Eén oranje knop. Navigatie en sensoren draaien in de app.",
+    },
+    {
+      n: "5",
+      title: "Terug bij Home",
+      body: "Wat er binnenkwam: analyse, setup-hint, onderhoud. Stimmen op de Platz.",
+    },
+  ],
+  ui: {
+    productMap: "Productkaart",
+    bikesTitle: "Voor welke fietsen",
+    bikesLead:
+      "Eén app, vier deuren — geen vier apps. Sportfilters op de kaart, setup in de werkplaats.",
+    doorsTitle: "Vier deuren bij Home",
+    doorsLead:
+      "Home is de stand. Al het andere is een deur — geen stapel kaarten. Ride is geen tab.",
+    onWebsite: "Op de website",
+    inApp: "In de app",
+    allRegions: "Alle regio’s",
+    allGuides: "Alle guides",
+    allQuestions: "Alle vragen",
+    faqKicker: "FAQ",
+    faqTitle: "Kort en eerlijk",
+    faqLead: "Geen store-beloftes, geen verzonnen adressen.",
+    alreadyHere: "Al hier",
+    notYetTitle: "Nog niet — en niet verzonnen",
+    editorial: "Redactioneel",
+    free: "Free",
+    pro: "Pro",
+    pricesDetail: "Prijzen in detail",
+    community: "Community",
+    readMin: (n) => `${n} min`,
+    readMinLong: (n) => `${n} min leestijd`,
+    heroTagline: "De fiets woont hier.",
+    heroLead: (rideOut) =>
+      `Outdoor cycling, vereenvoudigd: plannen en verzorgen in de browser, rijden in de app. Drie seconden — de lucht, een uur bij de poort, één knop: ${rideOut}.`,
+    heroFair: "Zo blijft het eerlijk",
+    heroFoot: "Geen feed, geen KPI-balk, geen tweede kassa in de browser.",
+    trustClose: "Sluiten",
+    trustTitle: "Eerlijk vanaf het begin.",
+    trustBody:
+      "Sync, navigatie en export blijven vrij — geen verrassingen midden in de tocht.",
+    trustOffline: "Offline ✓ vrij",
+    trustOk: "Begrepen",
+    faqPageLead:
+      "Geen store-beloftes, geen verzonnen adressen, geen feed bij Home.",
+    faqPageMoreBefore: "Meer schermen en flows staan onder",
+    guidesIndexLead:
+      "Guides voor race, gravel, MTB en e-bike: tochten plannen, actieradius als interval, setup naar gewicht, Home met vier deuren, delen via link, onderdelen uit de werkplaats. Geen affiliate-clickbait — wat het product mist, beloven we hier niet.",
+    related: "Verder",
+  },
+};
+
 const BY_LANG: Record<ChromeLang, HomepageCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function homepageCopy(lang: ChromeLang): HomepageCopy {

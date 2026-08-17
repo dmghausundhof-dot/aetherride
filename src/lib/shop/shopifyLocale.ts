@@ -6,7 +6,7 @@ import {
 import { SHOPIFY_STORE_BASE } from "@/lib/shop/catalog";
 
 /** Shopify Storefront LanguageCode for @inContext. */
-export type ShopifyLanguageCode = "DE" | "EN" | "FR" | "IT";
+export type ShopifyLanguageCode = "DE" | "EN" | "FR" | "IT" | "NL";
 
 export function shopifyLanguageCode(lang: ChromeLang): ShopifyLanguageCode {
   switch (lang) {
@@ -16,6 +16,8 @@ export function shopifyLanguageCode(lang: ChromeLang): ShopifyLanguageCode {
       return "FR";
     case "it":
       return "IT";
+    case "nl":
+      return "NL";
     default:
       return "DE";
   }
@@ -42,12 +44,12 @@ export function formatShopPrice(
   }
 }
 
-/** DACH shop primary language — no prefix. en/fr/it use /en /fr /it. */
+/** DACH shop primary language — no prefix. en/fr/it/nl use /en /fr /it /nl. */
 export function shopifyLocalePrefix(lang: ChromeLang): string {
   return lang === "de" ? "" : `/${lang}`;
 }
 
-const LOCALE_SEG = /^(de|en|fr|it)(-[a-z]{2})?$/i;
+const LOCALE_SEG = /^(de|en|fr|it|nl)(-[a-z]{2})?$/i;
 
 /**
  * Insert or swap the Online Store locale path on FlowLine’s Shopify origin.

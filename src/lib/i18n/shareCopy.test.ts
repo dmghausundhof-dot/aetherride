@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { shareCopy } from "./shareCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const s = shareCopy("de");
@@ -25,6 +25,11 @@ function testParity() {
   }
 }
 
+function testNl() {
+  assert.equal(shareCopy("nl").kicker, "Delen");
+}
+
 testDe();
 testParity();
+testNl();
 console.log("shareCopy.test.ts OK");

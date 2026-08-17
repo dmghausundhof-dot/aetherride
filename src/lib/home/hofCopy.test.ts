@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { hofCopy, HOF_COPY } from "./hofCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testParity() {
   const keys = Object.keys(HOF_COPY).sort();
@@ -20,6 +20,7 @@ function testDeFallback() {
   assert.equal(hofCopy("en").shopTitle, "The shop");
   assert.equal(hofCopy("fr").shopTitle, "Le magasin");
   assert.equal(hofCopy("it").shopTitle, "Il negozio");
+  assert.equal(hofCopy("nl").shopTitle, "De winkel");
   assert.equal(HOF_COPY.shopKicker, "Über den Hof");
   assert.equal(HOF_COPY.shopPartsForBike, "Teile für dein Rad");
   assert.equal(HOF_COPY.shopLookupInShop, "Im Laden nachschlagen");
@@ -71,9 +72,11 @@ function testChromeLangs() {
   assert.equal(hofCopy("en").rideOut, "Ride out");
   assert.equal(hofCopy("fr").rideOut, "Sortir");
   assert.equal(hofCopy("it").rideOut, "Esci");
+  assert.equal(hofCopy("nl").rideOut, "Eruit");
   assert.equal(hofCopy("en").libraryMappe, "Die Mappe");
   assert.equal(hofCopy("fr").workshopTabBox, "Die Box");
   assert.equal(hofCopy("it").akteStimmen, "Stimmen");
+  assert.equal(hofCopy("nl").akteStimmen, "Stimmen");
   assert.equal(HOF_COPY.shopNoImage, "Kein Bild");
   assert.equal(HOF_COPY.shopGuideHow, "Wie der Laden funktioniert");
   assert.equal(hofCopy("en").shopNoImage, "No image");
@@ -83,6 +86,7 @@ function testChromeLangs() {
   assert.equal(hofCopy("en").shopCyclingParts, "Parts");
   assert.equal(hofCopy("fr").shopCyclingParts, "Pièces");
   assert.equal(hofCopy("it").shopCyclingParts, "Pezzi");
+  assert.equal(hofCopy("nl").shopCyclingParts, "Onderdelen");
   for (const lang of langs) {
     const c = hofCopy(lang);
     assert.notEqual(c.shopCyclingParts, "Cycling Parts", lang);

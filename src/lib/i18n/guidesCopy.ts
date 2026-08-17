@@ -38,6 +38,14 @@ const CATEGORY_IT: Record<Guide["category"], string> = {
   safety: "Piattaforma",
 };
 
+const CATEGORY_NL: Record<Guide["category"], string> = {
+  planning: "Plannen",
+  bike: "Fiets en onderhoud",
+  ebike: "E-Bike",
+  setup: "Setup",
+  safety: "Platform",
+};
+
 const EN: Record<string, Overlay> = {
   "gravel-touren-planen": {
     title: "Planning gravel tours: surface, profiles and honest expectations",
@@ -419,10 +427,138 @@ const IT: Record<string, Overlay> = {
   },
 };
 
+const NL: Record<string, Overlay> = {
+  "gravel-touren-planen": {
+    title: "Graveltochten plannen: ondergrond, profielen en eerlijke verwachtingen",
+    teaser:
+      "Waarom gravelrouting vaak “hallucineert”, en hoe je onder Plannen betere tochten bouwt met ondergrond en profielen.",
+    body: [
+      "Gravel leeft op gemengde ondergrond: asfalt, grind, bospaden. Veel apps duwen te hard naar trails of weg — en sturen je op singletracks die niet bestaan of op pure snelwegalternatieven.",
+      "In FlowLine kies je het profiel “Gravel” onder Plannen. Routing geeft voorkeur aan tracks en unpaved, maar vermijdt harde MTB-schalen. Toch: zonder live-motor (demomodus) zijn lijnen schattingen — check kritieke stukken op de kaart en sla GPX op.",
+      "Tip: plan op de desktop, sla op in Platz, navigeer in de app. Voor meerdaagse tochten knip je etappes met de hand (start/via/finish) en gebruik je vlakke langeafstandsfietspaden als backup.",
+      "Communitywens: transparante ondergrondlagen en waarschuwingen in plaats van stille omwegen. Dat is onze honesty-aanpak — demo duidelijk labelen, live-status tonen.",
+    ],
+    relatedLabels: ["Plannen openen", "Gravel in tochten", "Regio Schwarzwald"],
+  },
+  "rennrad-hoehenmeter": {
+    title: "Weg: hoogtemeters en fietspaden realistisch inschatten",
+    teaser:
+      "Hoogtemeters, fietsinfrastructuur, en waarom vlakke oeverroutes en Kaiserstuhl-lussen anders trainen.",
+    body: [
+      "Wegtochten hebben andere filters dan MTB: aandeel asfalt, verkeer en cumulatieve hoogtemeters tellen meer dan S-schalen.",
+      "Onder tochten gebruik je het sportfilter “Weg” en moeilijkheid “Rustig” vs. “Sportief”. Publieke tochtpagina’s tonen weer en een hoogteprofiel — het metadataprofiel is een schatting tot je live routet.",
+      "De zuidoever van de Bodensee en het Inn-fietspad passen bij lange, vlakke dagen. Kaiserstuhl en het Alpenvoorland leveren intervallen. Sla varianten op in Platz en start in de app.",
+    ],
+    relatedLabels: ["Wegtochten", "Bodensee-tocht", "Kaiserstuhl"],
+  },
+  "ebike-reichweite": {
+    title: "E-bike-actieradius inschatten (spreidingen, geen puntwaarden)",
+    teaser:
+      "Waarom een “80 km-display” liegt — en hoe FlowLine werkt met fysica, assist en kalibratie.",
+    body: [
+      "Actieradius hangt af van gewicht, wind, temperatuur, hoogtemeters, bandenspanning, assist-modus en batterijconditie. Eén kilometertal is marketing — serieuze systemen tonen spreidingen.",
+      "FlowLine Pro schat een band (kmLow–kmHigh) en kan kalibreren over ritten. Bosch LDI levert live SOC in de app — niet in de browser.",
+      "Plan veeleisende tochten (bijv. e-MTB alpin) met reserve: mik onder 70–80 % van de bovenste spreiding. Denk aan laadinfra en Eco-modi voor de terugweg.",
+      "Onder tochten tonen e-bikes actieradiusnotities bij tochtideeën. Navigatie en sensoren blijven app-only.",
+    ],
+    relatedLabels: ["Pro & actieradius", "App downloaden", "E-bike in de werkplaats"],
+  },
+  "setup-koerpergewicht": {
+    title: "Setup naar lichaamsgewicht — eerlijk, en als startpunt",
+    teaser:
+      "OEM-tabellen, SAG en bracketing: hoe je vering zet zonder valse precisie.",
+    body: [
+      "Druk en rebound hangen af van systeemgewicht (rijder + packs + fiets) en veerweg. Fabrikanttabellen zijn startpunten, geen wetten.",
+      "In de werkplaats vind je SAG-hints en setup-versies. Bracketing (Pro) vergelijkt series systematisch — met de regel dat “geen significant verschil” eerlijk getoond wordt.",
+      "Feedback na de rit (≤3 taps in de app) voedt suggesties. Op de desktop verdiep je setups en exporteer je servicerapporten voor de werkplaats.",
+    ],
+    relatedLabels: ["Werkplaats", "Pro voor bracketing", "Activiteiten"],
+  },
+  "wartung-intervalle": {
+    title: "Onderhoudsintervallen, helder: ketting, remblokken, vork",
+    teaser:
+      "Kilometers vs. uren, slijtagespreidingen, en wanneer de winkel helpt met een compatibiliteitsverdict.",
+    body: [
+      "Kettingen: vaak vervangen vanaf ~0,5 % rek (fabrikant/Park Tool). Remblokken: resterende compound en geluid. Vork/demper: service-intervallen in uren of seizoenen.",
+      "FlowLine slaat intervallen per fiets op en waarschuwt in de werkplaats. De winkel stelt onderdelen voor — alleen met toestemming en met een compatibiliteitsverdict voor de actieve fiets.",
+      "Weg en city hebben andere accenten (lekken, ketting, remmen) dan enduro (vering, remblokken, banden). Disciplinefilters in de winkel helpen.",
+    ],
+    relatedLabels: ["Onderhoud", "Winkel: vervangen"],
+  },
+  "web-vs-app": {
+    title: "Website vs. app: wat hoort waar",
+    teaser:
+      "Het Komoot-patroon, uitgelegd: desktop plant, telefoon navigeert — en waarom de browser geen GPS-rit is.",
+    body: [
+      "Grote outdoorproducten splitsen helder: web voor inspiratie, SEO-tochten en desktopplanning; app voor offline, turn-by-turn en sensoren.",
+      "FlowLine volgt dat: tochten, plannen, tochtpagina’s, werkplaats en Platz in de browser. Live rijden, BLE en achtergrond-GPS alleen native.",
+      "Als je “Naar buiten” ziet, land je op de app-brug — sla de tocht op en open hem op het apparaat.",
+    ],
+    relatedLabels: [
+      "App downloaden",
+      "Product: Web vs. App",
+      "Plannen",
+      "Kaart",
+      "Community / Platz",
+    ],
+  },
+  "hof-fuenf-tueren": {
+    title: "Home: vier deuren, geen Ride-tab",
+    teaser:
+      "Waarom FlowLine niet op een feed lijkt — en waarvoor Home, Kaart, Platz en werkplaats zijn.",
+    body: [
+      "Veel fietsapps stapelen kaarten: Home, Explore, Activity, Club, Shop. FlowLine heeft vier deuren bij Home. Ride is de oranje knop, geen vijfde tab. De winkel is geen deur in de balk.",
+      "Home is de stand: lucht, een uur bij de poort, naar buiten. De kaart toont nabij en plannen. Platz houdt Mappe, Stimmen en groepen. De werkplaats kent de fiets. De winkel is voorlopig uit.",
+      "Wat in de browser ontbreekt, blijft leeg: geen live GPS, geen HUD, geen nepkilometers. De app neemt navigatie, offline en sensoren.",
+    ],
+    relatedLabels: ["Naar Home", "Productkaart", "Over FlowLine", "De winkel"],
+  },
+  "platz-ohne-feed": {
+    title: "Platz in plaats van een timeline: Stimmen, Mappe, groepen",
+    teaser:
+      "Community zit op de tocht. Geen feed bij Home, geen tracks in comments.",
+    body: [
+      "Platz is de community-deur. Dezelfde tochten als op de kaart zitten in de Mappe. Stimmen zijn korte tekst op de tocht — nieuwe starten in review, redactioneel is gemarkeerd.",
+      "Je deelt collecties als link. Wie de link heeft, legt de tochten in de eigen Mappe, zonder verplicht account. Groepen lopen via code bij de poort; live-pins bestaan alleen in de app-HUD en alleen met opt-in.",
+      "Publiek profiel is bewust: handle, sport, optionele ritten — geen GPS-traces. Events en clubs op de website zijn redactioneel, geen nep-RSVP.",
+    ],
+    relatedLabels: [
+      "Naar Platz",
+      "Community",
+      "Delen",
+      "Voorbeeldprofiel",
+      "Guide: Delen",
+    ],
+  },
+  "teilen-per-link": {
+    title: "Delen per link: tocht, Mappe, geen feed",
+    teaser:
+      "Wie de link heeft, legt de tocht in de eigen Mappe. Geen verplicht account, geen stille GPS-bijlagen.",
+    body: [
+      "FlowLine deelt niet via een timeline. Een tocht of een Mappe wordt een link. Wie hem opent, kan het idee lokaal overnemen — zonder account, zonder follow, zonder heatmap.",
+      "De tochtlink draagt naam en stats. Een trace zit er alleen in als die expres in de token zit; catalogusvoorbeelden blijven pin en tekst. De Mappe verzamelt meerdere catalogustochten, altijd zonder tracks.",
+      "Stimmen en groepen blijven op Platz. Publieke profielen zijn opt-in en slaan geen ruwe GPS-data op. Er is geen live-locatie bij de poort.",
+    ],
+    relatedLabels: ["Zo deel je", "Voorbeeldtocht", "Voorbeeld-Mappe", "Community"],
+  },
+  "laden-ohne-zweite-kasse": {
+    title: "De winkel: gepauzeerd, geen tweede kassa",
+    teaser:
+      "Onderdelen en merch zitten achter een deur — voorlopig dicht. Geen kassa in FlowLine.",
+    body: [
+      "De winkel is geen vijfde deur in de balk. De werkplaats blijft voor de fiets, setup en onderhoud. Catalogus en kassa zijn voorlopig uit — er is hier geen winkelwagen die afrekent.",
+      "Zonder Impressum op dossier (naam en een betekenbaar adres) blijft checkout sowieso op slot. Dat is bewust: we verzinnen geen TMG-gegevens zodat iets “kopen” kan zeggen.",
+      "Als de winkel heropent, zit de kassa buiten FlowLine. Onderdelen zouden bij de geparkeerde fiets passen, geen verzonnen SKUs. App-storelistings zijn daarvan onafhankelijk en verschijnen zodra ze live zijn.",
+    ],
+    relatedLabels: ["Naar de werkplaats", "Werkplaats", "Impressum", "Productkaart"],
+  },
+};
+
 const OVERLAY: Record<Exclude<ChromeLang, "de">, Record<string, Overlay>> = {
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 const CATEGORY: Record<ChromeLang, Record<Guide["category"], string>> = {
@@ -430,6 +566,7 @@ const CATEGORY: Record<ChromeLang, Record<Guide["category"], string>> = {
   en: CATEGORY_EN,
   fr: CATEGORY_FR,
   it: CATEGORY_IT,
+  nl: CATEGORY_NL,
 };
 
 export function guideCategoryLabel(

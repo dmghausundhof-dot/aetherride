@@ -23,11 +23,13 @@ void main() {
       expect(hofTitleFor(languageCode: 'en'), 'Start');
     });
 
-    test('French / Italian', () {
+    test('French / Italian / Dutch', () {
       expect(hofTitleFor(countryCode: 'CH', languageCode: 'fr'), 'Accueil');
       expect(hofTitleFor(countryCode: 'FR', languageCode: 'fr'), 'Accueil');
       expect(hofTitleFor(countryCode: 'CH', languageCode: 'it'), 'Inizio');
       expect(hofTitleFor(countryCode: 'IT', languageCode: 'it'), 'Inizio');
+      expect(hofTitleFor(countryCode: 'NL', languageCode: 'nl'), 'Start');
+      expect(hofTitleFor(countryCode: 'BE', languageCode: 'nl'), 'Start');
     });
   });
 

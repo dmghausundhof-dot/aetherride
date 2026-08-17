@@ -9,6 +9,7 @@ export function hofTitleFor(
   const lang = languageCode.trim().toLowerCase();
   if (lang === "fr") return "Accueil";
   if (lang === "it") return "Inizio";
+  if (lang === "nl") return "Start";
   return "Start";
 }
 

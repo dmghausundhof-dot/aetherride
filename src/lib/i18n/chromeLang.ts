@@ -1,11 +1,12 @@
 /** UI chrome languages shipped in the Flutter ARB. APIs default to `de`. */
-export type ChromeLang = "de" | "en" | "fr" | "it";
+export type ChromeLang = "de" | "en" | "fr" | "it" | "nl";
 
 export function chromeLangFrom(raw?: string | null): ChromeLang {
   const s = (raw ?? "").trim().toLowerCase().replace("_", "-");
   if (s === "en" || s.startsWith("en-")) return "en";
   if (s === "fr" || s.startsWith("fr-")) return "fr";
   if (s === "it" || s.startsWith("it-")) return "it";
+  if (s === "nl" || s.startsWith("nl-")) return "nl";
   return "de";
 }
 
@@ -29,6 +30,7 @@ export function chromeLangFromAcceptLanguage(
     if (tag === "en" || tag.startsWith("en-")) return "en";
     if (tag === "fr" || tag.startsWith("fr-")) return "fr";
     if (tag === "it" || tag.startsWith("it-")) return "it";
+    if (tag === "nl" || tag.startsWith("nl-")) return "nl";
     if (tag === "de" || tag.startsWith("de-")) return "de";
   }
   return "de";
@@ -43,6 +45,8 @@ export function chromeDateLocale(lang: ChromeLang): string {
       return "fr-FR";
     case "it":
       return "it-IT";
+    case "nl":
+      return "nl-NL";
     default:
       return "de-DE";
   }
@@ -50,7 +54,7 @@ export function chromeDateLocale(lang: ChromeLang): string {
 
 export function valhallaLanguage(
   lang: ChromeLang
-): "de-DE" | "en-US" | "fr-FR" | "it-IT" {
+): "de-DE" | "en-US" | "fr-FR" | "it-IT" | "nl-NL" {
   switch (lang) {
     case "en":
       return "en-US";
@@ -58,6 +62,8 @@ export function valhallaLanguage(
       return "fr-FR";
     case "it":
       return "it-IT";
+    case "nl":
+      return "nl-NL";
     default:
       return "de-DE";
   }

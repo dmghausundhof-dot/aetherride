@@ -16,7 +16,7 @@ import {
   discoverUi,
 } from "./discoverUi";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDeExact() {
   const d = discoverUi("de");

@@ -273,11 +273,75 @@ const IT: ChatCopy = {
   ],
 };
 
+const NL: ChatCopy = {
+  title: "Meer vragen",
+  welcome:
+    "Vraag wat er aan de beurt is, of naar garage, setup, actieradius, routes of onderdelen. Cijfers komen uit je app-data — niet uit het chatmodel.",
+  lockedRiding: "Tijdens de rit is chat geblokkeerd.",
+  hint: "Bericht…",
+  send: "Versturen",
+  noAnswer: "Geen antwoord.",
+  networkError: "Netwerkfout",
+  limitReached: "Limiet bereikt.",
+  limitFreeMore: "Pro onder Profiel vrijschakelen voor meer antwoorden.",
+  limitTomorrow: "Morgen weer beschikbaar.",
+  quota: (used, limit, remaining) =>
+    `Quota: ${used} / ${limit} · nog ${remaining}`,
+  quotaToday: (tier, used, limit, remaining) =>
+    `Quota (${tier}): ${used}/${limit} vandaag${
+      remaining != null ? ` · ${remaining} over` : ""
+    }`,
+  loginForCloud: "Aanmelden nodig voor cloud-AI",
+  tariffLine: (tier) => `Tarief: ${tier} — daglimieten na aanmelden`,
+  freeLimit: "Free-limiet opgebruikt.",
+  upgradePro: "Upgraden naar Pro",
+  freeProFoot: "Free: 5/dag · Pro: 50/dag",
+  checkedOnData: "Antwoord gecontroleerd op je garage-/ritdata",
+  prompts: [
+    {
+      label: "Wat is er aan de beurt?",
+      query: "Wat is er aan de beurt?",
+      tool: "watch",
+    },
+    {
+      label: "Garage",
+      query: "Wat zit er in mijn garage?",
+      tool: "garage",
+    },
+    {
+      label: "Actieradius",
+      query: "Welke actieradius heb ik met de huidige accu?",
+      tool: "range",
+    },
+    {
+      label: "Setups",
+      query: "Welke setups had ik en wat is er veranderd?",
+      tool: "setup_history",
+    },
+    {
+      label: "Ritten",
+      query: "Samenvatting van mijn laatste ritten",
+      tool: "ride_stats",
+    },
+    {
+      label: "Routes",
+      query: "Welke routes passen bij mij?",
+      tool: "route_search",
+    },
+    {
+      label: "Slijtage / winkel",
+      query: "Heb ik binnenkort nieuwe slijtdelen nodig?",
+      tool: "product_search",
+    },
+  ],
+};
+
 const BY_LANG: Record<ChromeLang, ChatCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function chatCopy(lang: ChromeLang): ChatCopy {

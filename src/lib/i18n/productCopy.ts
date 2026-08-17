@@ -644,11 +644,203 @@ const IT: ProductCopy = {
   },
 };
 
+const NL: ProductCopy = {
+  doors: [
+    {
+      href: "/home",
+      title: "Start",
+      body: "Jouw fiets en één knop — Rijden. Geen feed.",
+    },
+    {
+      href: "/discover",
+      title: "Kaart",
+      body: "OpenStreetMap, ronden in de buurt, sportfilters, plannen op de desktop. Geen live-GPS in de tab.",
+    },
+    {
+      href: "/library",
+      title: "Tochten",
+      body: "Opgeslagen ritten, tips, uitnodigingslinks. Dezelfde tochten als op de kaart — delen via link, niet via tijdlijn.",
+    },
+    {
+      href: "/garage",
+      title: "Fiets",
+      body: "Fiets toevoegen, setup, onderhoud met bron. Geen winkeltab, geen kassa.",
+    },
+  ],
+  matrix: [
+    { feature: "Home, Kaart, Platz, werkplaats", web: "volledig", app: "volledig" },
+    { feature: "Een tocht plannen en opslaan", web: "volledig", app: "volledig" },
+    { feature: "SEO-tochten & regio’s", web: "volledig", app: "Deep Link" },
+    { feature: "Live-navigatie / HUD", web: "Brug naar app", app: "volledig" },
+    { feature: "Offline-kaarten", web: "—", app: "Packs" },
+    { feature: "GPS-registratie", web: "na sync", app: "native" },
+    { feature: "Sensoren, horloge, BLE", web: "hint", app: "koppelen" },
+    { feature: "Winkel / kassa", web: "gepauzeerd", app: "gepauzeerd" },
+    { feature: "Tips op de tocht", web: "volledig", app: "volledig" },
+    { feature: "Mappe en verzamelingen delen", web: "volledig", app: "Deep Link" },
+    { feature: "Groepen / samen eruit", web: "Roster + link", app: "HUD-pins" },
+    { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
+  ],
+  workflows: [
+    {
+      id: "first",
+      title: "Eerste bezoek",
+      hint: "De website vertelt. Home haalt je binnen.",
+      steps: [
+        { label: "Start", href: "/" },
+        { label: "Product", href: "/produkt" },
+        { label: "Aanmelden", href: "/anmelden" },
+        { label: "Home", href: "/home" },
+      ],
+    },
+    {
+      id: "plan-ride",
+      title: "Plannen en rijden",
+      hint: "Web plant. De app rijdt.",
+      steps: [
+        { label: "Kaart", href: "/discover" },
+        { label: "Plannen", href: "/discover?panel=plan" },
+        { label: "Platz / Mappe", href: "/library" },
+        { label: "App-brug", href: "/ride" },
+      ],
+    },
+    {
+      id: "return",
+      title: "Na de tocht",
+      hint: "Registratie blijft native. Analyse mag in de browser.",
+      steps: [
+        { label: "Wat er binnenkwam", href: "/activities" },
+        { label: "Na de tocht", href: "/post-ride" },
+        { label: "Die Tafel", href: "/home" },
+        { label: "Werkplaats", href: "/garage" },
+      ],
+    },
+    {
+      id: "garage-shop",
+      title: "Onderhoud en onderdelen",
+      hint: "De werkplaats kent de fiets. De winkel rekent hier niet af.",
+      steps: [
+        { label: "Fiets stallen", href: "/garage?wizard=basic" },
+        { label: "Onderhoud", href: "/garage?tab=maintenance" },
+      ],
+    },
+    {
+      id: "platz",
+      title: "Platz en Stimmen",
+      hint: "Geen feed bij Home. Community hangt aan de tocht.",
+      steps: [
+        { label: "Platz", href: "/library" },
+        { label: "Delen", href: "/share" },
+        { label: "Community", href: "/community" },
+        { label: "Voorbeeldprofiel", href: "/u/mara_road" },
+      ],
+    },
+    {
+      id: "pro",
+      title: "Account en Pro",
+      hint: "Free plant. Pro gaat dieper. Navigatie in de app op beide niveaus.",
+      steps: [
+        { label: "Aanmelden", href: "/anmelden" },
+        { label: "Prijzen", href: "/pricing" },
+        { label: "Profiel / abo", href: "/profile" },
+        { label: "Data", href: "/privacy" },
+      ],
+    },
+  ],
+  screenGroups: [
+    {
+      title: "Openbare website",
+      hint: "Verhaal, SEO, vertrouwen. Geen vijf app-tabs in de header.",
+      screens: [
+        { href: "/", name: "Start", role: "Hero, deuren, verloop" },
+        { href: "/produkt", name: "Product", role: "Schermen en flows" },
+        { href: "/karten", name: "Kaarten", role: "Bladen online, packs offline" },
+        { href: "/regions", name: "Regio’s", role: "DACH-ideeën, buurt" },
+        { href: "/guides", name: "Guides", role: "Plannen, setup, e-bike" },
+        { href: "/guides/teilen-per-link", name: "Guide delen", role: "Link in plaats van feed" },
+        { href: "/guides/laden-ohne-zweite-kasse", name: "Guide winkel", role: "Geen tweede kassa" },
+        { href: "/community", name: "Community", role: "Events light, Platz" },
+        { href: "/pricing", name: "Prijzen", role: "Free / Pro" },
+        { href: "/download", name: "App", role: "Waarom native" },
+        { href: "/anmelden", name: "Aanmelden", role: "Account, dan Home" },
+        { href: "/faq", name: "FAQ", role: "Web, app, prijzen" },
+        { href: "/ueber", name: "Over", role: "Merk, vier deuren" },
+        { href: "/kontakt", name: "Contact", role: "E-mail, geen bot" },
+        { href: "/share", name: "Delen", role: "Tochtlink en Mappe" },
+        { href: "/u/mara_road", name: "Profiel", role: "Redactioneel voorbeeld" },
+      ],
+    },
+    {
+      title: "Vier deuren (web-app)",
+      hint: "Dezelfde IA als in de native app. Ride is geen tab. Onderdelen komen uit de werkplaats.",
+      screens: [
+        { href: "/home", name: "Home", role: "Stand, lucht, poort" },
+        { href: "/discover", name: "Kaart", role: "OSM, ronden, filters" },
+        { href: "/discover?panel=plan", name: "Plannen", role: "Start, via, finish" },
+        { href: "/library", name: "Platz", role: "Mappe, Stimmen, groepen" },
+        { href: "/garage", name: "Werkplaats", role: "Die Box, setup, onderhoud, onderdelen" },
+      ],
+    },
+    {
+      title: "Tocht en terug",
+      hint: "HUD alleen in de app. Web toont de brug, daarna het dossier.",
+      screens: [
+        { href: "/ride", name: "App-brug", role: "Deep Link, geen live-GPS" },
+        { href: "/activities", name: "Wat er binnenkwam", role: "Lijst na sync" },
+        { href: "/post-ride", name: "Na de tocht", role: "Feedback, setup" },
+      ],
+    },
+    {
+      title: "Account, Coach, winkel",
+      hint: "Naast de deuren — bereikbaar, niet als feed.",
+      screens: [
+        { href: "/profile", name: "Profiel", role: "Account, rijstijl, abo" },
+        { href: "/privacy", name: "Data", role: "Export, zones, gezin" },
+        { href: "/chat", name: "Coach", role: "Power user, limieten" },
+      ],
+    },
+    {
+      title: "Delen en juridisch",
+      hint: "Links zonder verplicht account. Juridisch zonder overlay.",
+      screens: [
+        { href: "/share/t/demo", name: "Tochtlink", role: "Naar de Mappe" },
+        { href: "/share/c/demo", name: "Verzameling", role: "Gedeelde Mappe" },
+        { href: "/legal/impressum", name: "Impressum", role: "Aanbieder" },
+        { href: "/legal/datenschutz", name: "Privacy", role: "AVG" },
+        { href: "/legal/agb", name: "Voorwaarden", role: "Contract" },
+        { href: "/legal/widerruf", name: "Herroeping", role: "Abo / winkel" },
+      ],
+    },
+  ],
+  ui: {
+    kicker: "Product",
+    title: "Web is Home. De app rijdt.",
+    lead: "Dezelfde app, twee oppervlakken. In de browser plan je, verzorg je en deel je: Home, Kaart, Platz, werkplaats. Op het apparaat navigeer, registreer en koppel je. Geen feed, geen kassa, geen nep-GPS in de tab — lege vlakken blijven leeg.",
+    doorsLead:
+      "Ride is geen tab. De winkel staat stil — de werkplaats blijft zonder kassa.",
+    galleryHeading: "Schermen",
+    galleryHint:
+      "Designsysteem uit Logo und Bilder, gekoppeld aan de deuren. Ride-HUD blijft de app.",
+    whereRuns: "Wat waar draait",
+    colSurface: "Oppervlak",
+    colWeb: "Web",
+    colApp: "App",
+    journeyTitle: "Zo ga je eruit",
+    processes: "Flows",
+    processesLead:
+      "Elke flow eindigt bij een echte deur — niet op een lege pagina.",
+    allScreens: "Alle schermen",
+    allScreensLead: "Openbare website en Home-app. Ride-HUD blijft native.",
+    ctaLead: "Open Home in de browser, of haal de app voor navigatie en horloge.",
+  },
+};
+
 const BY_LANG: Record<ChromeLang, ProductCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function productCopy(lang: ChromeLang): ProductCopy {

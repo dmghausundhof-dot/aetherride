@@ -32,12 +32,13 @@ abstract final class ShopifyStorefront {
     if (s == 'en' || s.startsWith('en-')) return 'en';
     if (s == 'fr' || s.startsWith('fr-')) return 'fr';
     if (s == 'it' || s.startsWith('it-')) return 'it';
+    if (s == 'nl' || s.startsWith('nl-')) return 'nl';
     return 'de';
   }
 
-  static final _localeSeg = RegExp(r'^(de|en|fr|it)(-[a-z]{2})?$', caseSensitive: false);
+  static final _localeSeg = RegExp(r'^(de|en|fr|it|nl)(-[a-z]{2})?$', caseSensitive: false);
 
-  /// DACH shop is primary German — en/fr/it get `/en` `/fr` `/it`.
+  /// DACH shop is primary German — en/fr/it/nl get `/en` `/fr` `/it` `/nl`.
   /// Other hosts are left unchanged.
   static Uri withLocale(Uri uri, String languageCode) {
     final shop = Uri.tryParse(origin);

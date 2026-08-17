@@ -16,7 +16,7 @@ function testDe() {
 }
 
 function testParity() {
-  for (const lang of ["de", "en", "fr", "it"] as const) {
+  for (const lang of ["de", "en", "fr", "it", "nl"] as const) {
     const p = plannerCopy(lang);
     assert.ok(p.inMappe.includes("Mappe"), lang);
     assert.equal(p.via, "Via", lang);

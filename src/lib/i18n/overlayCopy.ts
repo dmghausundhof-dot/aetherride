@@ -131,11 +131,39 @@ const IT: OverlayCopy = {
     "Colore da OSM surface. Senza tag resta il colore di classe.",
 };
 
+const NL: OverlayCopy = {
+  waysOsm: "Paden · OSM",
+  meshOsm: "Fietsnet · OSM",
+  on: "aan",
+  off: "uit",
+  unrated: "niet beoordeeld",
+  gravel: "Gravel",
+  road: "Fietspad / asfalt",
+  urban: "City",
+  compactMtb: "MTB",
+  compactGravel: "Gravel",
+  compactRoad: "Asfalt",
+  compactCity: "City",
+  empty:
+    "Geen overlay hier. OSM-paden vanaf zoom 12 op het DACH-blad. Het fietsnet volgt de kaart eronder.",
+  scaleNote:
+    "S0–S3+ alleen met OSM-tag mtb:scale. sac_scale wordt niet omgezet.",
+  meshNote:
+    "Bewegwijzerde fietsroutes (ICN/NCN/RCN) op dit blad. Paden vanaf zoom 12 over het hele DACH-blad.",
+  surfacePaved: "Asfalt",
+  surfaceGravel: "Grind",
+  surfaceDirt: "Natuurpad",
+  surfaceUnknown: "zonder tag",
+  surfaceNote:
+    "Kleur volgens OSM surface. Zonder tag blijft de klassekleur.",
+};
+
 const BY_LANG: Record<ChromeLang, OverlayCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function overlayCopy(lang: ChromeLang): OverlayCopy {

@@ -481,11 +481,107 @@ const IT: DieBoxCopy = {
     `${name} · ${travel}${drive} · pronto`,
 };
 
+const NL: DieBoxCopy = {
+  ready: "Klaar",
+  almost: "Bijna klaar",
+  unknown: "Nieuw hier",
+  nothingDueMonday: "Maandag-klaar — licht en ketting zitten.",
+  nothingDue: "Klaar — niets te doen.",
+  emptyHint:
+    "Nog niets ingevuld. Naam en type volstaan — onderdelen alleen als ze echt op de fiets zitten.",
+  addMore: "Meer invullen",
+  batteryHint:
+    "Accustand verschijnt zodra een sensor op de fiets koppelt. Tot dan geen getal.",
+  partLogged: "ingevuld",
+  cancel: "Annuleren",
+  done: "Gedaan",
+  pressureTitle: "Druk noteren",
+  pressureHint: "Voor en achter bij het ventiel aflezen.",
+  pressureFront: "Voor",
+  pressureRear: "Achter",
+  sagTitle: "Vering noteren",
+  sagHint:
+    "Procent op vork en demper. SAG is hoe ver de vering inzakt met jou erop.",
+  sagFork: "Vork SAG %",
+  sagShock: "Demper SAG %",
+  travelTitle: "Veerweg invullen",
+  travelHint: "Alleen de veerweg die op de fiets staat.",
+  travelFront: "Voor mm",
+  travelRear: "Achter mm",
+  travelSave: "Invullen",
+  setActiveTitle: "Deze fiets naar voren",
+  setActiveHint: "Eén fiets staat in de box — wisselen haalt hem naar voren.",
+  setActiveCta: "Als actief zetten",
+  lightsTitle: "Licht invullen",
+  lightsHint: "Alleen als licht echt op de fiets zit.",
+  lightsCta: "Licht invullen",
+  lockTitle: "Slot invullen",
+  lockHint: "Alleen als er een slot op de fiets zit.",
+  lockCta: "Slot invullen",
+  rackTitle: "Rek invullen",
+  rackHint: "Alleen als de fiets een bagagerek heeft.",
+  rackCta: "Rek invullen",
+  bagsTitle: "Tassen invullen",
+  bagsHint: "Alleen als er tassen op de fiets zitten.",
+  bagsCta: "Tassen invullen",
+  pressureMissingTitle: "Druk noteren",
+  pressureMissingHint: "Voor en achter bij het ventiel aflezen.",
+  pressureMissingCta: "Druk noteren",
+  tirePressureTitle: "Bandendruk noteren",
+  tirePressureHint: "Voor en achter bij het ventiel aflezen.",
+  travelMissingTitle: "Veerweg invullen",
+  travelMissingHint: "Alleen de veerweg die op de fiets staat.",
+  travelMissingCta: "Veerweg invullen",
+  sagMissingTitle: "Vering noteren",
+  sagMissingHint: "Eén getal op vork en demper, afgelezen op de fiets.",
+  sagMissingCta: "Vering noteren",
+  chainTitle: "Ketting noteren",
+  chainHint: "Met de meter meten, dan hier noteren.",
+  chainCta: "Ketting gemeten",
+  brakesTitle: "Remmen invullen",
+  brakesHint: "Alleen als er blokken op de fiets zitten.",
+  brakesCta: "Rem invullen",
+  chainDueTitle: "Ketting met de meter checken",
+  chainDueHint: "Kijken en met de meter meten.",
+  parkTrailTitle: "Park of trail",
+  parkTrailHint: "Beide setups zijn er — wissel als je wilt.",
+  parkTrailCta: "Wisselen",
+  chipLight: "Licht",
+  chipLock: "Slot",
+  chipRack: "Rek",
+  chipBags: "Tassen",
+  chipTires: "Banden",
+  chipDropper: "Dropper",
+  chipBrakes: "Remmen",
+  chipParkTrail: "Park | Trail",
+  chipTravel: "Veerweg",
+  chipCsc: "CSC",
+  chipSag: "SAG",
+  chipChain: "Ketting",
+  chipPressure: "Druk",
+  chipCockpit: "Cockpit",
+  bitPressureLogged: "Druk genoteerd",
+  bitBagsYes: "Tassen erop",
+  bitChainYes: "Ketting gemeten",
+  sentencePark: "Park-setup",
+  driveAssist: " · e-assist",
+  lastRideNoGps: "Laatst onderweg — zonder GPS-track",
+  lastRideKm: (km) => `Laatst ${km} km`,
+  sentenceEverydayReady: (name) => `${name} woont hier · maandag-klaar`,
+  sentenceHome: (name) => `${name} woont hier`,
+  sentenceBits: (name, bits) => `${name} · ${bits}`,
+  sentenceReadyBits: (name, bits) => `${name} · ${bits} · klaar`,
+  sentenceMtb: (name, travel, drive) => `${name} · ${travel}${drive}`,
+  sentenceMtbReady: (name, travel, drive) =>
+    `${name} · ${travel}${drive} · klaar`,
+};
+
 const BY_LANG: Record<ChromeLang, DieBoxCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 const MAINT: Record<ChromeLang, Record<string, string>> = {
@@ -541,6 +637,20 @@ const MAINT: Record<ChromeLang, Record<string, string>> = {
     "Tubeless-Milch erneuern": "Rinnova latte tubeless",
     "Dropper Lower-Post Service": "Service lower-post dropper",
   },
+  nl: {
+    "Gabel Lower-Leg Service": "Voorvork lower-leg service",
+    "Gabel Vollservice (Feder/Dämpfer)":
+      "Voorvork volledige service (veer/demper)",
+    "Dämpfer Air-Can Service": "Demper air-can service",
+    "Dämpfer Vollservice": "Demper volledige service",
+    "Kettenverschleiß prüfen": "Check kettingslijtage",
+    "Kassette prüfen (nach 2–3 Ketten)":
+      "Check cassette (na 2–3 kettingen)",
+    "Bremsbeläge vorne prüfen": "Check voorremblokken",
+    "Bremsbeläge hinten prüfen": "Check achterremblokken",
+    "Tubeless-Milch erneuern": "Tubeless-melk vernieuwen",
+    "Dropper Lower-Post Service": "Dropper lower-post service",
+  },
 };
 
 const DAYS: Record<ChromeLang, (n: string) => string> = {
@@ -548,6 +658,7 @@ const DAYS: Record<ChromeLang, (n: string) => string> = {
   en: (n) => `${n} days`,
   fr: (n) => `${n} jours`,
   it: (n) => `${n} giorni`,
+  nl: (n) => `${n} dagen`,
 };
 
 export function dieBoxCopy(lang: ChromeLang = "de"): DieBoxCopy {
@@ -613,7 +724,9 @@ function maintRemaining(raw: string | undefined, lang: ChromeLang): string {
         ? "Pas d’intervalle"
         : lang === "it"
           ? "Nessun intervallo"
-          : raw;
+          : lang === "nl"
+            ? "Geen interval"
+            : raw;
   }
   return raw
     .split(" · ")

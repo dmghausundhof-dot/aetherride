@@ -61,11 +61,12 @@ void main() {
     expect(ShopifyStorefront.fitTags(bike), isEmpty);
   });
 
-  test('withLocale hängt en/fr/it an, de bleibt ohne Prefix', () {
+  test('withLocale hängt en/fr/it/nl an, de bleibt ohne Prefix', () {
     final origin = Uri.parse('${ShopifyStorefront.origin}/');
     expect(ShopifyStorefront.withLocale(origin, 'de').path, '/');
     expect(ShopifyStorefront.withLocale(origin, 'en').path, '/en');
     expect(ShopifyStorefront.withLocale(origin, 'fr-CH').path, '/fr');
+    expect(ShopifyStorefront.withLocale(origin, 'nl-NL').path, '/nl');
     final parts = ShopifyStorefront.collectionUri(
       ShopifyStorefront.merchCollection,
     );

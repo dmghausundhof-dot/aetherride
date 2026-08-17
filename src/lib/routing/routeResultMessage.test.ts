@@ -37,7 +37,7 @@ const withHonesty = routeResultMessage(
 assert.equal(withHonesty, `12.3 km · 45 min · ${HONESTY_CYCLEWAY_DE}`);
 assertNoEngine(withHonesty, "honesty");
 
-for (const lang of ["de", "en", "fr", "it"] as const) {
+for (const lang of ["de", "en", "fr", "it", "nl"] as const) {
   const mapped = discoverStatus(withHonesty, lang);
   assert.ok(mapped.includes(discoverUi(lang).honestyCycleway), lang);
   assertNoEngine(mapped, `mapped-${lang}`);

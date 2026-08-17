@@ -333,11 +333,95 @@ const IT: CommunityCopy = {
   join3All: "tutti gli esempi",
 };
 
+const NL: CommunityCopy = {
+  kicker: "Community",
+  title: "Op de Platz, niet in een feed",
+  lead: "FlowLine deelt tochten, Stimmen en groepen. Geen tijdlijn bij Home en geen live-GPS bij de poort. De deur heet Platz: Mappe, korte tekst aan de tocht, uitnodigingslink. Publieke profielen zijn opt-in en dragen geen sporen. Redactionele Stimmen zijn gemarkeerd, nieuwe Stimmen starten in beoordeling.",
+  features: [
+    {
+      title: "Platz",
+      body: "De deur. Mappe, zichtbaarheid, GPX, Stimmen en groepen — dezelfde tochten als op de kaart.",
+      href: "/library",
+      cta: "Naar de Platz",
+    },
+    {
+      title: "Stimmen",
+      body: "Korte tekst aan de tocht, geen tracks in de reactie. Nieuwe starten in beoordeling, redactioneel is gemarkeerd.",
+      href: "/tours/r-heidelberg-city",
+      cta: "Voorbeeldtocht",
+    },
+    {
+      title: "Een Mappe delen",
+      body: "Een verzameling als link. Wie de link heeft, zet de tochten in de eigen Mappe — geen account verplicht.",
+      href: "/share",
+      cta: "Zo delen",
+    },
+    {
+      title: "Samen eruit",
+      body: "Een groep met uitnodigingslink bij de poort. Web houdt roster en uitnodiging. Live-pins alleen in de app-HUD, met opt-in.",
+      href: "/library",
+      cta: "Hoe groepen werken",
+    },
+    {
+      title: "Public Profile",
+      body: "Alleen met opt-in. Handle, sport, optioneel aantal ritten — geen GPS-sporen.",
+      href: "/u/mara_road",
+      cta: "Voorbeeld mara_road",
+    },
+    {
+      title: "Events & clubs",
+      body: "Redactioneel op de website, niet in de app. Geen nep-RSVP, geen live-locatieplicht.",
+      href: "/community#events",
+      cta: "Datums",
+    },
+  ],
+  privacyTitle: "Privacy-first",
+  privacyBody: "Geen tracks in Stimmen. Publiek profiel alleen met opt-in.",
+  moderationTitle: "Moderatie",
+  moderationBody:
+    "Nieuwe Stimmen starten „in beoordeling”. Redactioneel is gemarkeerd.",
+  linkTitle: "Link in plaats van feed",
+  linkBody: "Verzameling of groep via link. Wie hem heeft, is erbij.",
+  outTitle: "Wat community hier niet is",
+  out: [
+    "Geen feed bij Home",
+    "Geen klassement, geen level",
+    "Geen live-GPS op de kaart bij de poort",
+    "Ride is geen tab",
+    "Stimmen zonder track erbij",
+  ],
+  eventsTitle: "Komende events",
+  eventsLead: "Redactioneel op deze pagina, niet in de app. Geen verzonnen RSVP.",
+  regionCta: "Regio bekijken",
+  clubsTitle: "Clubs light",
+  clubsLead: "Oriëntatie op de website — geen lidmaatschap in de app.",
+  clubsCta: "Tochten in de regio",
+  groupsTitle: "Samen eruit",
+  groupsBody:
+    "Groepen leven op de Platz: uitnodigingslink, roster in de browser. Live-pins alleen in de app-HUD en alleen met opt-in — niet op de openbare kaart. Een website-uitleg zonder tweede tijdlijn.",
+  toPlatz: "Naar de Platz",
+  shareLinks: "Tocht- en Mappe-links",
+  profilesTitle: "Voorbeeldprofielen",
+  profilesLead:
+    "Redactioneel, duidelijk gemarkeerd. Geen GPS-sporen, geen verzonnen kilometers.",
+  openProfile: "Profiel openen",
+  joinTitle: "Zo doe je mee",
+  join1Before: "Open een tocht op de",
+  join1Link: "kaart of regio",
+  join1After: "en laat een Stimme achter.",
+  join2Before: "Op de",
+  join2After: "een verzameling delen of een groep starten via een link.",
+  join3Before: "Optioneel een",
+  join3Mid: "aanmaken — voorbeeld:",
+  join3All: "alle voorbeelden",
+};
+
 const BY_LANG: Record<ChromeLang, CommunityCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function communityCopy(lang: ChromeLang): CommunityCopy {

@@ -9,7 +9,7 @@ import {
   discoverElevationLabel,
 } from "./discoverCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const d = discoverCopy("de");
@@ -92,6 +92,10 @@ function testParity() {
   assert.equal(discoverCopy("it").toursNearby(2), "2 tour nelle vicinanze");
   assert.equal(discoverCopy("it").oaCount(1), "1 tour qui vicino");
   assert.equal(discoverCopy("it").oaCount(2), "2 tour qui vicino");
+  assert.equal(discoverCopy("nl").catalogTours(1), "Catalogus 1 tocht");
+  assert.equal(discoverCopy("nl").catalogTours(2), "Catalogus 2 tochten");
+  assert.equal(discoverCopy("nl").toursNearby(1), "1 tocht in de buurt");
+  assert.equal(discoverCopy("nl").toursNearby(2), "2 tochten in de buurt");
 }
 
 function testDifficultyIdsMatchDomain() {

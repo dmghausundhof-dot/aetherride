@@ -12,6 +12,8 @@ function noneWord(lang: ChromeLang): string {
       return "aucun";
     case "it":
       return "nessuno";
+    case "nl":
+      return "geen";
     default:
       return "keine";
   }
@@ -45,6 +47,12 @@ Regole: non inventare NESSUN numero. Usa solo questi numeri whitelist: ${w}.
 Fatti: ${f}.
 I fatti possono essere in tedesco; rispondi in italiano.
 Rispondi brevemente in italiano (max 3 frasi). Niente nuove metriche.`;
+    case "nl":
+      return `Je bent de FlowLine AI-coach. Je herformuleert ALLEEN de gegeven motorresultaten.
+Regels: verzin GEEN getallen. Gebruik alleen deze whitelist-getallen: ${w}.
+Feiten: ${f}.
+Feiten kunnen in het Duits zijn; antwoord in het Nederlands.
+Antwoord kort in het Nederlands (max 3 zinnen). Geen nieuwe metriek.`;
     default:
       return `Du bist FlowLine KI-Coach. Du formulierst NUR die gegebenen Engine-Ergebnisse um.
 Regeln: Erfinde KEINE Zahlen. Verwende ausschließlich diese Whitelist-Zahlen: ${w}.
@@ -65,6 +73,8 @@ export function chatUserMessage(
       return `Question : ${query}\nRéponse brute du moteur : ${rawAnswer}`;
     case "it":
       return `Domanda: ${query}\nRisposta grezza del motore: ${rawAnswer}`;
+    case "nl":
+      return `Vraag: ${query}\nRuwe motorantwoord: ${rawAnswer}`;
     default:
       return `Nutzerfrage: ${query}\nEngine-Rohantwort: ${rawAnswer}`;
   }

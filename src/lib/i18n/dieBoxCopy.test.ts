@@ -15,7 +15,7 @@ import type { Bike } from "@/types";
 
 function testParity() {
   const keys = Object.keys(dieBoxCopy("de")).sort();
-  for (const lang of ["de", "en", "fr", "it"] as const) {
+  for (const lang of ["de", "en", "fr", "it", "nl"] as const) {
     assert.deepEqual(Object.keys(dieBoxCopy(lang)).sort(), keys, lang);
   }
 }

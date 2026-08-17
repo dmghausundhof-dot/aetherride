@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { SCREEN_GALLERY } from "../content/screenGallery";
 import { screenGalleryCopy } from "./screenGalleryCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const g = screenGalleryCopy("de");
@@ -28,6 +28,11 @@ function testParity() {
   }
 }
 
+function testNl() {
+  assert.equal(screenGalleryCopy("nl").shots[1].door, "Kaart");
+}
+
 testDe();
 testParity();
+testNl();
 console.log("screenGalleryCopy.test.ts OK");

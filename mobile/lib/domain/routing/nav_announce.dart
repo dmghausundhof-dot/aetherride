@@ -21,7 +21,7 @@ String announceKey(String stepId, int tierM) => '$stepId@$tierM';
 
 /// Welche Ansage-Stufe gerade fällig ist (Port `pickAnnounce`).
 /// Glue follows chrome language: DE auf/Metern, EN onto/meters,
-/// FR sur/mètres, IT su/metri.
+/// FR sur/mètres, IT su/metri, NL op/meter.
 String? pickAnnounce({
   required String stepId,
   required String instruction,
@@ -39,7 +39,9 @@ String? pickAnnounce({
           ? _AnnounceGlue.fr
           : lang.startsWith('it')
               ? _AnnounceGlue.it
-              : _AnnounceGlue.de;
+              : lang.startsWith('nl')
+                  ? _AnnounceGlue.nl
+                  : _AnnounceGlue.de;
   final tiers = announceDistancesForSpeed(speedKmh)
     ..sort((a, b) => b.compareTo(a));
   for (final tier in tiers) {
@@ -95,6 +97,11 @@ class _AnnounceGlue {
     onto: ' su',
     meters: 'metri',
     namedNeedles: [' su '],
+  );
+  static const nl = _AnnounceGlue(
+    onto: ' op',
+    meters: 'meter',
+    namedNeedles: [' op ', ' naar '],
   );
 }
 

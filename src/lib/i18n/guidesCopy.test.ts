@@ -9,7 +9,7 @@ import {
   listGuidesGroupedFor,
 } from "./guidesCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDePassthrough() {
   for (const slug of listGuideSlugs()) {
@@ -52,6 +52,9 @@ function testChromeLangs() {
   assert.ok(fr?.title.includes("Stimmen"));
   const it = guideFor("laden-ohne-zweite-kasse", "it");
   assert.ok(/paus/i.test(it?.title ?? ""));
+  const nl = guideFor("hof-fuenf-tueren", "nl");
+  assert.ok(nl?.title.includes("Home"));
+  assert.ok(nl?.title.includes("Ride"));
 }
 
 testDePassthrough();

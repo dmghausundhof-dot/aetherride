@@ -245,11 +245,62 @@ const IT: DiscoverCopy = {
   diffRoadMid: "Sportivo",
 };
 
+const NL: DiscoverCopy = {
+  timeWindow: "Tijdvenster · ",
+  minutes: (n) => `${n} min`,
+  sportPref: "Discipline (voorkeur)",
+  loop: "Lus",
+  mappe: "Die Mappe",
+  reset: "Resetten",
+  searchHint: "Plaats of tocht",
+  planRouteCta: "Navigeren",
+  filter: "Filter",
+  distance: "Afstand",
+  aroundKm: (km) => `binnen ${km} km`,
+  showTours: (n) => (n === 1 ? "1 tocht tonen" : `${n} tochten tonen`),
+  catalogTours: (n) => (n === 1 ? "Catalogus 1 tocht" : `Catalogus ${n} tochten`),
+  toursNearby: (n) =>
+    n === 1 ? "1 tocht in de buurt" : `${n} tochten in de buurt`,
+  oaCount: (n) => (n === 1 ? "1 tocht in de buurt" : `${n} tochten in de buurt`),
+  visAll: "Alle",
+  visPrivate: "Privé",
+  visPublic: "Gedeeld",
+  sport: {
+    all: "Alle",
+    road: "Weg",
+    gravel: "Gravel",
+    mtb: "MTB",
+    urban: "City",
+    ebike: "E-MTB",
+    touring: "Touring",
+    hiking: "Wandelen",
+  },
+  dist: (km) => `≤ ${km} km`,
+  elevFlat: "< 400 hm",
+  elevHilly: "400–1100",
+  elevAlpine: "1100+ hm",
+  surface: {
+    asphalt: "Asfalt",
+    gravel: "Grind",
+    trail: "Trail",
+    mixed: "Gemengd",
+  },
+  diffAny: "Alle",
+  diffEasy: "Licht",
+  diffMid: "Middel",
+  diffHard: "Zwaar",
+  diffGravelMid: "Gemengd",
+  diffGravelHard: "Ruw",
+  diffRoadEasy: "Relaxed",
+  diffRoadMid: "Sportief",
+};
+
 const BY_LANG: Record<ChromeLang, DiscoverCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function discoverCopy(lang: ChromeLang): DiscoverCopy {

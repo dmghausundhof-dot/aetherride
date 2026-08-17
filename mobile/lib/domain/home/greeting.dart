@@ -31,6 +31,13 @@ String timeOfDayGreeting(int hour, String languageCode) {
     if (hour < 22) return 'Buonasera';
     return 'Buona notte';
   }
+  if (lang.startsWith('nl')) {
+    if (hour < 5) return 'Goedenacht';
+    if (hour < 12) return 'Goedemorgen';
+    if (hour < 18) return 'Goedemiddag';
+    if (hour < 22) return 'Goedenavond';
+    return 'Goedenacht';
+  }
   if (hour < 5) return 'Gute Nacht';
   if (hour < 11) return 'Guten Morgen';
   if (hour < 17) return 'Guten Tag';

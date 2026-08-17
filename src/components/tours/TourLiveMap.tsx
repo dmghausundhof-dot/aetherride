@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import { tourLiveMapStatus } from "@/lib/tours/tourLiveMapStatus";
 
 type GeometryPayload = {
   distanceM: number;
@@ -27,6 +29,7 @@ export function TourLiveMap({
   name: string;
   profile?: RoutingProfile;
 }) {
+  const lang = useChromeLang();
   const [data, setData] = useState<GeometryPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -147,11 +150,7 @@ export function TourLiveMap({
         )}
         {!loading && hasLine && data && (
           <p className="rounded-lg bg-black/70 px-3 py-1.5 text-[11px] text-white">
-            {(data.distanceM / 1000).toFixed(1)} km ·{" "}
-            {Math.round(data.durationS / 60)} min · {data.engine}
-            {data.cached ? " · Cache" : ""}
-            {data.shape ? ` · ${data.shape}` : ""}
-            {data.warnings?.[0] ? ` · ${data.warnings[0].slice(0, 80)}…` : ""}
+            {tourLiveMapStatus(data, lang)}
           </p>
         )}
       </div>

@@ -14,12 +14,13 @@ void main() {
     AppLocaleBinding.deviceCountryCode = null;
   });
 
-  test('resolve matches de/en/fr/it and falls unknown languages to de', () {
+  test('resolve matches de/en/fr/it/nl and falls unknown languages to de', () {
     const supported = [
       Locale('de'),
       Locale('en'),
       Locale('fr'),
       Locale('it'),
+      Locale('nl'),
     ];
     expect(
       AppLocaleBinding.resolve(const Locale('fr', 'CH'), supported),
@@ -35,7 +36,11 @@ void main() {
     );
     expect(
       AppLocaleBinding.resolve(const Locale('nl', 'NL'), supported),
-      const Locale('de', 'NL'),
+      const Locale('nl', 'NL'),
+    );
+    expect(
+      AppLocaleBinding.resolve(const Locale('pl', 'PL'), supported),
+      const Locale('de', 'PL'),
     );
   });
 
@@ -49,6 +54,7 @@ void main() {
     );
     expect(greetingLine(now: morning, languageCode: 'fr'), 'Bonjour');
     expect(greetingLine(now: morning, languageCode: 'it'), 'Buongiorno');
+    expect(greetingLine(now: morning, languageCode: 'nl'), 'Goedemorgen');
   });
 
   test('friendlyError follows chrome language', () {
@@ -74,6 +80,11 @@ void main() {
     expect(
       friendlyErrorMessage(TimeoutException('x')),
       contains('Tempo scaduto'),
+    );
+    AppLocaleBinding.chromeLanguageCode = 'nl';
+    expect(
+      friendlyErrorMessage(TimeoutException('x')),
+      contains('Time-out'),
     );
   });
 
@@ -103,5 +114,10 @@ void main() {
     AppLocaleBinding.chromeLanguageCode = 'it';
     AppLocaleBinding.chromeCountryCode = 'IT';
     expect(AppLocaleBinding.ttsLanguageTag(), 'it-IT');
+    AppLocaleBinding.chromeLanguageCode = 'nl';
+    AppLocaleBinding.chromeCountryCode = 'NL';
+    expect(AppLocaleBinding.ttsLanguageTag(), 'nl-NL');
+    AppLocaleBinding.chromeCountryCode = 'BE';
+    expect(AppLocaleBinding.ttsLanguageTag(), 'nl-BE');
   });
 }

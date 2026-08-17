@@ -9,6 +9,8 @@ String hofTitleFor({
       return 'Accueil';
     case 'it':
       return 'Inizio';
+    case 'nl':
+      return 'Start';
     default:
       return 'Start';
   }

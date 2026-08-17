@@ -8,6 +8,7 @@ import 'package:aetherride_mobile/l10n/app_localizations_de.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_en.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_fr.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_it.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_nl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -176,6 +177,14 @@ void main() {
     );
     expect(
       AppLocalizationsIt().platzJoinLinkHint.toLowerCase(),
+      isNot(contains('token')),
+    );
+    expect(
+      AppLocalizationsNl().platzJoinLinkHint,
+      contains('uitnodigingslink'),
+    );
+    expect(
+      AppLocalizationsNl().platzJoinLinkHint.toLowerCase(),
       isNot(contains('token')),
     );
     const fail = RideGroupJoinOut.fail(RideGroupJoinFail.unknown);

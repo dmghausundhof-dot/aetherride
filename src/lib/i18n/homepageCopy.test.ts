@@ -11,7 +11,7 @@ import {
 } from "../content/homepage";
 import { homepageCopy } from "./homepageCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDeMatchesSource() {
   const h = homepageCopy("de");
@@ -56,6 +56,7 @@ function testParity() {
     assert.equal(homepageCopy("en").doors[2]?.title, "Tours");
     assert.equal(homepageCopy("fr").doors[2]?.title, "Parcours");
     assert.equal(homepageCopy("it").doors[2]?.title, "Percorsi");
+    assert.equal(homepageCopy("nl").doors[2]?.title, "Tochten");
     assert.equal(h.voices.kicker, "Stimmen", `${lang} Stimmen stays brand`);
     assert.ok(h.ui.heroLead("X").includes("X"));
     assert.ok(!JSON.stringify(h.honesty).includes("Musterstraße"), lang);
@@ -68,6 +69,7 @@ function testChromeLangs() {
   assert.equal(homepageCopy("it").cta.title.includes("bici"), true);
   assert.ok(homepageCopy("en").pricing.pro.includes("€"));
   assert.ok(homepageCopy("fr").intro.lead.includes("tu "));
+  assert.ok(homepageCopy("nl").intro.lead.includes("je "));
 }
 
 testDeMatchesSource();

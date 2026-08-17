@@ -189,11 +189,68 @@ const IT: ScreenGalleryCopy = {
   ],
 };
 
+const NL: ScreenGalleryCopy = {
+  heading: "Zo ziet FlowLine eruit",
+  hint: "Merk en schermen uit het design system. De vier deuren blijven: Home, Kaart, Platz, Werkplaats. Onderdelen zitten aan de fiets.",
+  shots: [
+    {
+      src: "/landing/screens/onboarding.jpg",
+      alt: "FlowLine-onboarding: welkom en sport",
+      title: "Aankomen",
+      door: "Home",
+      note: "Kies een sport of sla over. Geen demofiets.",
+    },
+    {
+      src: "/landing/screens/karte.jpg",
+      alt: "FlowLine-kaart met een oranje lijn",
+      title: "Kaart",
+      door: "Kaart",
+      note: "OSM, nabij, filters. Plannen is dezelfde deur.",
+    },
+    {
+      src: "/landing/screens/hud.jpg",
+      alt: "FlowLine Ride-HUD op de weg",
+      title: "Naar buiten",
+      door: "App",
+      note: "HUD alleen native. Ride is geen tab bij Home.",
+    },
+    {
+      src: "/landing/screens/rueckkehr.jpg",
+      alt: "FlowLine na de rit",
+      title: "Wat er binnenkwam",
+      door: "Home",
+      note: "Analyse in de browser. Opname blijft in de app.",
+    },
+    {
+      src: "/landing/screens/werkstatt.jpg",
+      alt: "FlowLine-werkplaatskaart",
+      title: "Werkplaats",
+      door: "Werkplaats",
+      note: "Fiets, kilometers, zorg. De winkel is voorlopig uit.",
+    },
+    {
+      src: "/landing/screens/laden.jpg",
+      alt: "FlowLine-winkel — voorlopig gepauzeerd",
+      title: "Winkel gepauzeerd",
+      door: "Werkplaats",
+      note: "Geen tab. Geen kassa in FlowLine zolang de winkel dicht is.",
+    },
+    {
+      src: "/landing/screens/profil.jpg",
+      alt: "FlowLine-profiel",
+      title: "Profiel",
+      door: "Account",
+      note: "Rijstijl en opt-ins. Publiek profiel alleen bewust.",
+    },
+  ],
+};
+
 const BY_LANG: Record<ChromeLang, ScreenGalleryCopy> = {
   de: DE,
   en: EN,
   fr: FR,
   it: IT,
+  nl: NL,
 };
 
 export function screenGalleryCopy(lang: ChromeLang): ScreenGalleryCopy {

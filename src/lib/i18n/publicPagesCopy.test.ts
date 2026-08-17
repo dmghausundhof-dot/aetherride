@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { publicPagesCopy } from "./publicPagesCopy";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testDe() {
   const p = publicPagesCopy("de");
@@ -25,6 +25,11 @@ function testParity() {
   }
 }
 
+function testChromeLangs() {
+  assert.equal(publicPagesCopy("nl").contact.title, "Schrijf ons");
+}
+
 testDe();
 testParity();
+testChromeLangs();
 console.log("publicPagesCopy.test.ts OK");

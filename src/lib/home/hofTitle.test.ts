@@ -11,6 +11,8 @@ const cases: Array<[string | null, string, string]> = [
   ["CA", "en", "Start"],
   ["FR", "fr", "Accueil"],
   ["IT", "it", "Inizio"],
+  ["NL", "nl", "Start"],
+  ["BE", "nl", "Start"],
   ["US", "en", "Start"],
   ["US", "de", "Start"],
   [null, "de", "Start"],

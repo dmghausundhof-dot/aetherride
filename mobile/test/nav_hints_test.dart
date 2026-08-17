@@ -106,6 +106,22 @@ void main() {
     expect(text, contains('metri'));
   });
 
+  test('pickAnnounce Dutch glue uses op / meter', () {
+    final spoken = <String>{};
+    final text = pickAnnounce(
+      stepId: 's7',
+      instruction: 'Sla rechtsaf',
+      isArrive: false,
+      remainingM: 145,
+      speedKmh: 18,
+      spoken: spoken,
+      street: 'Kalverstraat',
+      languageCode: 'nl',
+    );
+    expect(text, contains('op Kalverstraat'));
+    expect(text, contains('meter'));
+  });
+
   test('hintsFromMetrics stand and impact streak', () {
     final hints = hintsFromMetrics(
       speedKmh: 1,

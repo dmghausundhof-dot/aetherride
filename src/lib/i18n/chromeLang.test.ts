@@ -11,7 +11,9 @@ const cases: Array<[string | null, string]> = [
   ["fr", "fr"],
   ["it-IT", "it"],
   ["it-CH", "it"],
-  ["nl-NL", "de"],
+  ["nl-NL", "nl"],
+  ["nl", "nl"],
+  ["nl-BE", "nl"],
 ];
 
 for (const [raw, want] of cases) {
@@ -24,8 +26,11 @@ for (const [raw, want] of cases) {
 if (chromeLangFromAcceptLanguage(null) !== "de") {
   throw new Error("accept empty");
 }
-if (chromeLangFromAcceptLanguage("nl-NL,en;q=0.9") !== "en") {
-  throw new Error("accept skip nl");
+if (chromeLangFromAcceptLanguage("nl-NL,en;q=0.9") !== "nl") {
+  throw new Error("accept nl");
+}
+if (chromeLangFromAcceptLanguage("pl-PL,en;q=0.9") !== "en") {
+  throw new Error("accept skip unknown");
 }
 if (chromeLangFromAcceptLanguage("fr-CH,fr;q=0.9") !== "fr") {
   throw new Error("accept fr-CH");
@@ -45,6 +50,9 @@ if (valhallaLanguage("fr") !== "fr-FR") {
 }
 if (valhallaLanguage("it") !== "it-IT") {
   throw new Error("valhalla it");
+}
+if (valhallaLanguage("nl") !== "nl-NL") {
+  throw new Error("valhalla nl");
 }
 
 console.log("chromeLang.test.ts ok");

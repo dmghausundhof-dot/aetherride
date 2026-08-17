@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { webChrome } from "./webChrome";
 import { MARKETING_NAV } from "../nav/marketingNav";
 
-const langs = ["de", "en", "fr", "it"] as const;
+const langs = ["de", "en", "fr", "it", "nl"] as const;
 
 function testParity() {
   const de = webChrome("de");
@@ -17,7 +17,14 @@ function testParity() {
       assert.ok(c.marketingNav[item.href], `${lang} ${item.href}`);
     }
     assert.ok(c.hofNav.karte);
-    assert.equal(c.hofNav.platz, lang === "de" ? "Touren" : lang === "en" ? "Tours" : lang === "fr" ? "Parcours" : "Percorsi", `${lang} tours tab`);
+    const platz = {
+      de: "Touren",
+      en: "Tours",
+      fr: "Parcours",
+      it: "Percorsi",
+      nl: "Tochten",
+    } as const;
+    assert.equal(c.hofNav.platz, platz[lang], `${lang} tours tab`);
   }
 }
 
@@ -45,6 +52,9 @@ function testEnFrItChrome() {
   assert.equal(webChrome("fr").hofNav.werkstatt, "Vélo");
   assert.equal(webChrome("it").profile, "Profilo");
   assert.equal(webChrome("it").hofNav.karte, "Mappa");
+  assert.equal(webChrome("nl").hofNav.karte, "Kaart");
+  assert.equal(webChrome("nl").profile, "Profiel");
+  assert.equal(webChrome("nl").toHof, "Naar Home");
   assert.equal(webChrome("de").loading, "Laden…");
 }
 

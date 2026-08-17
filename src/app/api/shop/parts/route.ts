@@ -7,7 +7,7 @@ import { isShopEnabled, isShopifyCommerceEnabled, SHOP_DISABLED_BODY } from "@/l
 /**
  * GET /api/shop/parts?lang=
  * Werkstatt-Regal (garage-fit) + Merchandise (ungefiltert) aus Storefront.
- * lang: Chrome-Sprache (de/en/fr/it). Default de — kein Accept-Language.
+ * lang: Chrome-Sprache (de/en/fr/it/nl). Default de — kein Accept-Language.
  */
 export async function GET(req: Request) {
   if (!isShopEnabled()) {
