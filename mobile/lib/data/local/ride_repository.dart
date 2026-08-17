@@ -65,7 +65,7 @@ class RideRepository {
     var totalKm = row.read(kmExp) ?? 0.0;
     if (rideCount > 0) {
       final zeros = await (_db.select(_db.rides)
-            ..where((t) => t.distanceKm.isSmallerOrEqualValue(0)))
+            ..where((t) => t.distanceKm.isSmallerThanValue(0.05)))
           .get();
       var fromTrack = 0.0;
       for (final z in zeros) {

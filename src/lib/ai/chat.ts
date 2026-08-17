@@ -14,6 +14,7 @@ import {
 import { suggestRoutes } from "@/lib/routing/suggestions";
 import { SHOP_PRODUCTS } from "@/lib/shop/catalog";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
+import { isShopEnabled } from "@/lib/shop/shopEnabled";
 import { estimateRange } from "@/lib/ebike/range";
 import {
   buildCoachWatch,
@@ -326,6 +327,16 @@ function buildChatRecommendationInner(
       break;
     }
     case "product_search": {
+      if (!isShopEnabled()) {
+        set = {
+          toolName: tool,
+          facts: ["Laden pausiert"],
+          numbers: [],
+          rawAnswer:
+            "Der Teile-Shop ist vorerst aus. Pflege und Setup bleiben in der Werkstatt.",
+        };
+        break;
+      }
       if (!bike) {
         set = {
           toolName: tool,

@@ -30,7 +30,7 @@ export const FAQ_ITEMS: {
   {
     id: "web-app",
     q: "Was läuft im Browser, was in der App?",
-    a: "Im Web: Hof, Karte, Planen, Platz, Werkstatt. Teile aus der Werkstatt, nicht als Tab. In der App: Ride-HUD, Offline-Packs, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
+    a: "Im Web: Hof, Karte, Planen, Platz, Werkstatt. In der App: Ride-HUD, Offline-Packs, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -45,7 +45,7 @@ export const FAQ_ITEMS: {
   {
     id: "ohne-app",
     q: "Geht FlowLine nur im Browser?",
-    a: "Planen, Karte, Platz, Werkstatt und die Laden-Tür ja. Navigation, Offline, GPS-Aufzeichnung, Sensoren und Uhr brauchen die native App. Es gibt keine Live-Navigation im Tab — und keine Attrappe, die so tut.",
+    a: "Planen, Karte, Platz und Werkstatt ja. Navigation, Offline, GPS-Aufzeichnung, Sensoren und Uhr brauchen die native App. Es gibt keine Live-Navigation im Tab — und keine Attrappe, die so tut.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -89,11 +89,9 @@ export const FAQ_ITEMS: {
   {
     id: "shop",
     q: "Kann ich hier Ersatzteile kaufen?",
-    a: "Der Laden ist eine Tür zu Shopify. Es gibt keinen zweiten Warenkorb und keine Kasse in FlowLine. Ohne hinterlegtes Impressum bleibt der Checkout gesperrt.",
+    a: "Nein. Der Laden und Shopify sind vorerst aus. Die Werkstatt bleibt für Rad, Setup und Wartung — ohne Kasse in FlowLine.",
     links: [
-      { href: "/shop", label: "Laden" },
-      { href: "/guides/laden-ohne-zweite-kasse", label: "Guide: Laden" },
-      { href: "/legal/impressum", label: "Impressum" },
+      { href: "/garage", label: "Werkstatt" },
     ],
   },
   {

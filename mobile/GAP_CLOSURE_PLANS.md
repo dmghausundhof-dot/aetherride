@@ -1,7 +1,7 @@
 # Android Gap-Closure Plans — Status
 
 Ziel: Jede dokumentierte Web↔Android-Lücke schließen (sinnvoll im Produktkontext).
-Bosch LDI echtes Protokoll bleibt hinter G-1; UX/Shell geschlossen.
+Bosch LDI UX/Shell geschlossen; Android Accessory (Spec V1.0) verdrahtet, iOS und Hardware-QA offen.
 
 ## Plan A — Shell / Profil / Legal / Sync-Identität — DONE
 - ProfileScreen: Rider-Profil, Familie, Sync, Stripe-Portal, Legal-Links

@@ -35,7 +35,7 @@ export interface BoschLDIClient {
  * (aus der Bosch LDI Spec PDF – hier abstrahiert).
  * Die echte Implementierung mapped die BLE Notifications 1:1.
  */
-export const BOSCH_LDI_SERVICE = "00000010-eaa2-11e9-81b4-2a2ae2dbcce4"; // Beispiel aus Community + Spec-Nähe
+export const BOSCH_LDI_SERVICE = "0000eb20-eaa2-11e9-81b4-2a2ae2dbcce4";
 
 /**
  * Web-Simulator — kein echtes Bosch-BLE. Nur Demo-Werte für UI/Flow.

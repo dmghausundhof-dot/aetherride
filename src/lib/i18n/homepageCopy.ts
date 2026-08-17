@@ -190,9 +190,9 @@ const EN: HomepageCopy = {
   doors: [
     {
       href: "/home",
-      title: "Home",
-      kicker: "The stand",
-      body: "The bike lives here. Sky, an hour at the gate, what came in. No KPI bar, no stories. Ride out is a button — then the app takes over.",
+      title: "Start",
+      kicker: "Ride",
+      body: "Your bike, weather, what came in. One orange button. No KPI bar, no stories. Ride starts the app — the map is for planning.",
     },
     {
       href: "/discover",
@@ -202,15 +202,15 @@ const EN: HomepageCopy = {
     },
     {
       href: "/library",
-      title: "Platz",
-      kicker: "Community on the tour",
-      body: "Mappe, Stimmen, invite links. Share by link, not by timeline. Whoever has the link saves the tour locally — no account required, no track in the comment.",
+      title: "Tours",
+      kicker: "Saved and shared",
+      body: "Your rides, tips, invite links. Share by link, not by timeline. Whoever has the link saves the tour locally — no account required, no track in the comment.",
     },
     {
       href: "/garage",
-      title: "Workshop",
-      kicker: "The bike",
-      body: "Park, setup, service intervals with a source. Bracketing and range spans are Pro. Look up parts here — cassette, chain, pads, tire size. The shop is the Shopify door, not a fifth tab and not a second cart.",
+      title: "Bike",
+      kicker: "This bike",
+      body: "Park, setup, service intervals with a source. Bracketing and range spans are Pro. The shop is paused — the workshop stays without a till.",
     },
   ],
   split: {
@@ -275,16 +275,12 @@ const EN: HomepageCopy = {
       body: "Inspiration, nearby loops, desktop planner. Save to the Mappe.",
     },
     {
-      title: "Workshop",
+      title: "Bike",
       body: "Bikes, components, setup, service — also without the app.",
     },
     {
-      title: "Platz",
-      body: "GPX, collections, Stimmen, groups. Share without a feed.",
-    },
-    {
-      title: "Shop",
-      body: "Matching parts from the workshop. Checkout only at Shopify.",
+      title: "Tours",
+      body: "GPX, collections, tips, groups. Share without a feed.",
     },
   ],
   appSurfaces: [
@@ -417,9 +413,9 @@ const FR: HomepageCopy = {
   doors: [
     {
       href: "/home",
-      title: "Home",
-      kicker: "Le stand",
-      body: "Le vélo habite ici. Ciel, une heure devant la porte, ce qui est rentré. Pas de barre KPI, pas de stories. Sortir est un bouton — ensuite l’appli prend le relais.",
+      title: "Accueil",
+      kicker: "Rouler",
+      body: "Ton vélo, la météo, ce qui est rentré. Un bouton orange. Pas de barre KPI, pas de stories. Rouler lance l’appli — la carte sert à planifier.",
     },
     {
       href: "/discover",
@@ -429,15 +425,15 @@ const FR: HomepageCopy = {
     },
     {
       href: "/library",
-      title: "Platz",
-      kicker: "Communauté sur la sortie",
-      body: "Mappe, Stimmen, liens d’invitation. Partage par lien, pas par fil. Qui a le lien enregistre la sortie en local — sans compte obligatoire, sans trace dans le commentaire.",
+      title: "Parcours",
+      kicker: "Enregistré et partagé",
+      body: "Tes sorties, astuces, liens d’invitation. Partage par lien, pas par fil. Qui a le lien enregistre la sortie en local — sans compte obligatoire, sans trace dans le commentaire.",
     },
     {
       href: "/garage",
-      title: "Atelier",
-      kicker: "Le vélo",
-      body: "Garer, setup, intervalles d’entretien avec source. Bracketing et fourchettes d’autonomie sont Pro. Tu cherches les pièces ici — cassette, chaîne, plaquettes, dimension. Le magasin est la porte Shopify, pas un cinquième onglet et pas un deuxième panier.",
+      title: "Vélo",
+      kicker: "Ce vélo",
+      body: "Garer, setup, intervalles d’entretien avec source. Bracketing et fourchettes d’autonomie sont Pro. Le magasin est en pause — l’atelier reste sans caisse.",
     },
   ],
   split: {
@@ -502,16 +498,12 @@ const FR: HomepageCopy = {
       body: "Inspiration, boucles proches, planificateur bureau. Enregistrer dans la Mappe.",
     },
     {
-      title: "Atelier",
+      title: "Vélo",
       body: "Vélos, composants, setup, entretien — aussi sans l’appli.",
     },
     {
-      title: "Platz",
-      body: "GPX, collections, Stimmen, groupes. Partager sans fil.",
-    },
-    {
-      title: "Magasin",
-      body: "Pièces adaptées depuis l’atelier. Checkout seulement chez Shopify.",
+      title: "Parcours",
+      body: "GPX, collections, astuces, groupes. Partager sans fil.",
     },
   ],
   appSurfaces: [
@@ -599,7 +591,7 @@ const FR: HomepageCopy = {
       "Pas de promesses store, pas d’adresses inventées, pas de fil à Home.",
     faqPageMoreBefore: "Plus d’écrans et de parcours sous",
     guidesIndexLead:
-      "Guides pour la route, le gravel, le MTB et l’e-bike : planifier des sorties, autonomie en fourchette, setup selon le poids, Home avec cinq portes, partage par lien, magasin sans deuxième caisse. Pas de clickbait affilié — ce qui manque au produit n’est pas promis ici.",
+      "Guides pour la route, le gravel, le MTB et l’e-bike : planifier des sorties, autonomie en fourchette, setup selon le poids, Home avec quatre portes, partage par lien, pièces depuis l’atelier. Pas de clickbait affilié — ce qui manque au produit n’est pas promis ici.",
     related: "Suite",
   },
 };
@@ -644,9 +636,9 @@ const IT: HomepageCopy = {
   doors: [
     {
       href: "/home",
-      title: "Home",
-      kicker: "Lo stand",
-      body: "La bici abita qui. Cielo, un’ora davanti al cancello, ciò che è rientrato. Niente barra KPI, niente stories. Uscire è un pulsante — poi l’app prende il posto.",
+      title: "Inizio",
+      kicker: "Pedala",
+      body: "La tua bici, il tempo, ciò che è rientrato. Un pulsante arancione. Niente barra KPI, niente stories. Pedala avvia l’app — la mappa serve a pianificare.",
     },
     {
       href: "/discover",
@@ -656,15 +648,15 @@ const IT: HomepageCopy = {
     },
     {
       href: "/library",
-      title: "Platz",
-      kicker: "Community sull’uscita",
-      body: "Mappe, Stimmen, link di invito. Condividi per link, non per timeline. Chi ha il link salva l’uscita in locale — senza account obbligatorio, senza traccia nel commento.",
+      title: "Percorsi",
+      kicker: "Salvato e condiviso",
+      body: "Le tue uscite, consigli, link di invito. Condividi per link, non per timeline. Chi ha il link salva l’uscita in locale — senza account obbligatorio, senza traccia nel commento.",
     },
     {
       href: "/garage",
-      title: "Officina",
-      kicker: "La bici",
-      body: "Parcheggiare, setup, intervalli di manutenzione con fonte. Bracketing e fasce di autonomia sono Pro. Cerchi i pezzi qui — cassetta, catena, pastiglie, misura. Il negozio è la porta Shopify, non una quinta scheda e non un secondo carrello.",
+      title: "Bici",
+      kicker: "Questa bici",
+      body: "Parcheggiare, setup, intervalli di manutenzione con fonte. Bracketing e fasce di autonomia sono Pro. Il negozio è in pausa — l’officina resta senza cassa.",
     },
   ],
   split: {
@@ -729,16 +721,12 @@ const IT: HomepageCopy = {
       body: "Ispirazione, anelli vicini, planner desktop. Salva nella Mappe.",
     },
     {
-      title: "Officina",
+      title: "Bici",
       body: "Bici, componenti, setup, manutenzione — anche senza app.",
     },
     {
-      title: "Platz",
-      body: "GPX, raccolte, Stimmen, gruppi. Condividi senza feed.",
-    },
-    {
-      title: "Negozio",
-      body: "Ricambi adatti dall’officina. Checkout solo da Shopify.",
+      title: "Percorsi",
+      body: "GPX, raccolte, consigli, gruppi. Condividi senza feed.",
     },
   ],
   appSurfaces: [
@@ -826,7 +814,7 @@ const IT: HomepageCopy = {
       "Niente promesse store, niente indirizzi inventati, niente feed a Home.",
     faqPageMoreBefore: "Altre schermate e flussi sotto",
     guidesIndexLead:
-      "Guide per strada, gravel, MTB ed e-bike: pianificare uscite, autonomia come fascia, setup in base al peso, Home con cinque porte, condivisione per link, negozio senza seconda cassa. Niente clickbait affiliato — ciò che manca al prodotto non è promesso qui.",
+      "Guide per strada, gravel, MTB ed e-bike: pianificare uscite, autonomia come fascia, setup in base al peso, Home con quattro porte, condivisione per link, pezzi dall’officina. Niente clickbait affiliato — ciò che manca al prodotto non è promesso qui.",
     related: "Avanti",
   },
 };

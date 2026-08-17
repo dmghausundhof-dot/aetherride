@@ -852,6 +852,10 @@ extension AetherL10n on AppLocalizations {
   String bleStatusDetailFor(String raw) {
     final t = raw.trim();
     final exact = switch (t) {
+      'ldi_waiting_flow' => bleLdiWaitingFlow,
+      'ldi_need_android12' => bleLdiNeedAndroid12,
+      'ldi_ios_pending' => bleLdiIosPending,
+      'ldi_timeout' => bleLdiTimeout,
       'Bluetooth aus' => bleStatusBtOff,
       'Radsensor-Suche fehlgeschlagen' => bleStatusScanFailed,
       'Kein Radsensor gefunden' => bleStatusNoSensor,
@@ -1030,6 +1034,17 @@ extension AetherL10n on AppLocalizations {
         'hiking' => bikeCatHiking,
         _ => bikeCatMtb,
       };
+
+  /// Live-Route honesty from the API (canonical DE) → chrome copy.
+  String discoverRiderHonestyFor(String raw) {
+    if (raw.startsWith('Route folgt überwiegend Straßen')) {
+      return discoverHonestyRoad;
+    }
+    if (raw.startsWith('Wenig eigener Radweg')) {
+      return discoverHonestyCycleway;
+    }
+    return raw;
+  }
 
   String bikeAssistModeLabel(BikeAssistMode mode) =>
       mode == BikeAssistMode.ebike ? garageEbikeBadge : garageMuscle;

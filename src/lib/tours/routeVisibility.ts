@@ -94,7 +94,7 @@ export function shareHonesty(route: SavedRoute): string {
   const catalog = catalogTourIdOf(route);
   const hasTrack = Boolean(route.geometry?.coordinates && route.geometry.coordinates.length >= 2);
   if (catalog && !hasTrack) {
-    return "Katalog-Tour ist schon öffentlich. Freigeben macht deine Akte teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.";
+    return "Katalog-Tour ist schon freigegeben. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.";
   }
   if (hasTrack) {
     return "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur in diesem Browser.";

@@ -3,6 +3,8 @@
  */
 import assert from "node:assert/strict";
 import {
+  HONESTY_CYCLEWAY_DE,
+  HONESTY_ROAD_DE,
   cityCyclewaySnapWanted,
   detailShares,
   graphhopperSurfaceWarnings,
@@ -90,5 +92,16 @@ assert.equal(
 );
 
 assert.equal(cityCyclewaySnapWanted(isar), false);
+
+const mtbWarn = graphhopperSurfaceWarnings("mtb_allmountain", schauinsland);
+assert.equal(mtbWarn[0], HONESTY_ROAD_DE);
+const cityWarn = graphhopperSurfaceWarnings("urban", cityRoad);
+assert.equal(cityWarn[0], HONESTY_CYCLEWAY_DE);
+for (const line of [...mtbWarn, ...cityWarn, HONESTY_ROAD_DE, HONESTY_CYCLEWAY_DE]) {
+  const lower = line.toLowerCase();
+  assert.ok(!lower.includes("graphhopper"), line);
+  assert.ok(!lower.includes("valhalla"), line);
+  assert.ok(!lower.includes("osrm"), line);
+}
 
 console.log("graphhopperHints.test.ts OK");

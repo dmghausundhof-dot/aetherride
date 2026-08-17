@@ -38,7 +38,7 @@ Stand: Aug 2026 · Version-Ziel Launch: `0.9.0+…` (Internal) → `1.0.0` (Prod
 
 | ID | Ticket | Status |
 |----|--------|--------|
-| P2-1 | Bosch LDI echtes Protokoll (G-1 / NDA) | blockiert |
+| P2-1 | Bosch LDI echtes Protokoll (G-1 / NDA) | Android Accessory (Spec V1.0); iOS + Hardware-QA offen |
 | P2-2 | iOS Native-Parität (FGS, Ambient, LDI) | später |
 | P2-3 | Health Connect | später |
 | P2-4 | Auto-Reroute default on nach Smoke | später |
@@ -49,7 +49,7 @@ Stand: Aug 2026 · Version-Ziel Launch: `0.9.0+…` (Internal) → `1.0.0` (Prod
 
 1. **Kein Demo-Content** in Release: keine Seed-Touren, keine Seed-Trails, kein Freiburg-Fallback ohne GPS, keine OA/Trail-Demo-Fotos.
 2. **Kein Fake-Sensor**: LDI/Sensor-Sim nur Debug + explizites `--dart-define`.
-3. **Bosch nicht bewerben**, bis G-1 grün — UI bleibt „LDI folgt G-1“.
+3. **Bosch LDI**: nicht als fertig bewerben, bis Hardware-QA (Flow-Komponente, Firmware ≥19) durch ist. iOS folgt.
 4. **Billing**: Play-Verify nur mit Publisher-API in Production.
 
 ## Release-Build (Vorlage)

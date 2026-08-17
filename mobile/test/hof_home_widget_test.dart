@@ -60,9 +60,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Der Hof'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
     expect(find.text('Luna'), findsWidgets);
-    expect(find.text('Rausfahren'), findsOneWidget);
+    expect(find.text('Losfahren'), findsOneWidget);
     expect(find.text('Rad öffnen'), findsOneWidget);
     expect(find.text('Uhr koppeln'), findsOneWidget);
     expect(
@@ -108,7 +108,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('hof-ride-out')), findsOneWidget);
-    expect(find.text('Rausfahren'), findsOneWidget);
+    expect(find.text('Losfahren'), findsOneWidget);
     expect(find.text('Uhr koppeln'), findsOneWidget);
     expect(tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
         lessThan(tester.view.physicalSize.height / tester.view.devicePixelRatio));
@@ -146,7 +146,7 @@ void main() {
     final h =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
     expect(find.byKey(const Key('hof-ride-out')), findsOneWidget);
-    expect(find.text('Rausfahren'), findsOneWidget);
+    expect(find.text('Losfahren'), findsOneWidget);
     expect(find.text('Deine Uhr'), findsOneWidget);
     expect(find.text('Uhr koppeln'), findsNothing);
     expect(find.byKey(const Key('hof-watch-bar')), findsNothing);
@@ -162,10 +162,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Der Hof'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
     expect(find.text('Leerer Stand'), findsOneWidget);
     expect(find.text('Einfach fahren'), findsNothing);
-    expect(find.text('Rad abstellen'), findsOneWidget);
+    expect(find.text('Rad anlegen'), findsOneWidget);
     expect(find.text('Ohne Rad fahren'), findsOneWidget);
     expect(find.text('Uhr koppeln'), findsOneWidget);
     expect(find.byKey(const Key('hof-watch-bar')), findsNothing);
@@ -179,7 +179,7 @@ void main() {
     );
   });
 
-  testWidgets('English UI in Germany keeps title Der Hof', (tester) async {
+  testWidgets('English UI shows Start and Ride', (tester) async {
     await tester.pumpWidget(
       _hofApp(
         locale: const Locale('en', 'DE'),
@@ -196,11 +196,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Der Hof'), findsOneWidget);
-    expect(find.text('Ride out'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
+    expect(find.text('Ride'), findsOneWidget);
   });
 
-  testWidgets('fr-CH shows Le local vélo and French chrome',
+  testWidgets('fr-CH shows Accueil and French chrome',
       (tester) async {
     tester.platformDispatcher.localeTestValue = const Locale('fr', 'CH');
     tester.platformDispatcher.localesTestValue = const [Locale('fr', 'CH')];
@@ -240,10 +240,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text('Le local vélo'), findsOneWidget);
-    expect(find.text('Sortir'), findsOneWidget);
-    expect(find.text('Rausfahren'), findsNothing);
-    expect(find.text('Ride out'), findsNothing);
+    expect(find.text('Accueil'), findsOneWidget);
+    expect(find.text('Rouler'), findsOneWidget);
+    expect(find.text('Losfahren'), findsNothing);
+    expect(find.text('Ride'), findsNothing);
   });
 
   testWidgets('Hochformat: Rausfahren ohne Scroll, keine SAG-Tafel',
@@ -270,7 +270,7 @@ void main() {
 
     final h =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
-    expect(find.text('Rausfahren'), findsOneWidget);
+    expect(find.text('Losfahren'), findsOneWidget);
     expect(find.byKey(const Key('coach-hof-banner')), findsNothing);
     expect(find.textContaining('SAG'), findsNothing);
     expect(
@@ -316,7 +316,7 @@ void main() {
 
     expect(find.textContaining('gerade reingekommen'), findsOneWidget);
     expect(find.textContaining('0.0 km'), findsNothing);
-    expect(find.text('Noch mal raus'), findsOneWidget);
+    expect(find.text('Noch mal los'), findsOneWidget);
     expect(find.text('Puls nur mit echtem Sensor.'), findsOneWidget);
     expect(find.text('Was reinkam'), findsOneWidget);
     expect(find.textContaining('Apple Watch'), findsNothing);
@@ -358,9 +358,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('hof-tafel-board')), findsOneWidget);
-    expect(find.text('Die Tafel'), findsOneWidget);
-    expect(find.textContaining('in der Mappe'), findsOneWidget);
-    final mappeLine = tester.widget<Text>(find.textContaining('in der Mappe'));
+    expect(find.text('Touren'), findsOneWidget);
+    expect(find.textContaining('Touren'), findsWidgets);
+    final mappeLine = tester.widget<Text>(find.textContaining('2 Touren'));
     expect(mappeLine.style?.color, AppColors.chipIdleText);
     expect(find.byKey(const Key('hof-shop-replace')), findsNothing);
     expect(find.text('Cycling Parts'), findsNothing);

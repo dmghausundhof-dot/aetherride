@@ -72,7 +72,7 @@ export function LandingFooter() {
                 </Link>
               ))}
               <Link
-                href="/planner"
+                href="/discover?panel=plan"
                 className="text-text-secondary hover:text-foreground"
               >
                 {copy.plan}

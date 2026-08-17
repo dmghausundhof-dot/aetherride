@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
@@ -228,6 +229,23 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
         Navigator.of(context).pop(true);
         return;
       }
+      if (!ok && hit.kind == BikeBleKind.bosch) {
+        setState(() => _pairStatus = 'ldi_waiting_flow');
+        final ldiOk = await ble.startLdiAccessory(pairing: true);
+        if (ldiOk) {
+          await store.saveForBike(
+            bikeId,
+            BikeBleDevice(
+              deviceId: boschLdiAccessoryId,
+              name: 'Bosch LDI',
+              kind: bikeBleKindToStorage(BikeBleKind.bosch),
+            ),
+          );
+          if (!mounted) return;
+          Navigator.of(context).pop(true);
+          return;
+        }
+      }
       if (!ok) {
         if (!mounted) return;
         setState(() {
@@ -280,6 +298,56 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
     Navigator.of(context).pop(true);
   }
 
+  Future<void> _pairBoschLdi() async {
+    if (_pairingId != null) return;
+    final ble = _ble;
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _pairingId = boschLdiAccessoryId;
+      _pairStatus = 'ldi_waiting_flow';
+      _error = null;
+    });
+    try {
+      await ble.stopBikeScan();
+      if (!mounted) return;
+      setState(() => _scanning = false);
+      final ok = await ble.startLdiAccessory(
+        pairing: true,
+        onProgress: (s) {
+          if (!mounted) return;
+          setState(() => _pairStatus = s);
+        },
+      );
+      if (!mounted) return;
+      if (ok) {
+        await _store.saveForBike(
+          widget.bikeId,
+          BikeBleDevice(
+            deviceId: boschLdiAccessoryId,
+            name: 'Bosch LDI',
+            kind: bikeBleKindToStorage(BikeBleKind.bosch),
+          ),
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop(true);
+        return;
+      }
+      setState(() {
+        _pairingId = null;
+        _pairStatus = null;
+        _error = ble.statusDetail ?? l10n.bleLdiTimeout;
+      });
+    } catch (e) {
+      debugPrint('ble ldi pair: $e');
+      if (!mounted) return;
+      setState(() {
+        _pairingId = null;
+        _pairStatus = null;
+        _error = l10n.bleLdiTimeout;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -314,6 +382,22 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
                       height: 1.35,
                     ),
               ),
+              const SizedBox(height: AppSpacing.s),
+              if (widget.isEbike)
+                OutlinedButton(
+                  onPressed: _pairingId != null ? null : () => unawaited(_pairBoschLdi()),
+                  child: Text(l10n.bleLdiPairCta),
+                ),
+              if (widget.isEbike) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.bleLdiPairHint,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.muted,
+                        height: 1.35,
+                      ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.s),
               _HowToConnect(
                 isEbike: widget.isEbike,

@@ -6,8 +6,8 @@
 export const PRODUCT_DOORS = [
   {
     href: "/home",
-    title: "Der Hof",
-    body: "Der Stand: Himmel, eine Stunde vor dem Tor, was reinkam. Ein Knopf — Rausfahren. Kein Feed.",
+    title: "Start",
+    body: "Dein Rad, ein Knopf — Losfahren. Kein Feed.",
   },
   {
     href: "/discover",
@@ -16,38 +16,34 @@ export const PRODUCT_DOORS = [
   },
   {
     href: "/library",
-    title: "Platz",
-    body: "Mappe, Stimmen, Einladungslinks. Dieselben Touren wie auf der Karte — teilen per Link, nicht per Timeline.",
+    title: "Touren",
+    body: "Gespeicherte Strecken, Tipps, Einladungslinks. Dieselben Touren wie auf der Karte — teilen per Link, nicht per Timeline.",
   },
   {
     href: "/garage",
-    title: "Werkstatt",
-    body: "Rad abstellen, Setup, Wartung mit Quelle. Teile für dieses Rad — ohne Shop-Tab, ohne zweite Kasse.",
+    title: "Rad",
+    body: "Rad anlegen, Setup, Wartung mit Quelle. Ohne Shop-Tab, ohne Kasse.",
   },
 ] as const;
 
 export const WEB_SURFACES = [
   {
-    title: "Hof, Karte, Planen",
-    body: "Inspiration, Nähe-Loops, Desktop-Planer. Speichern in der Mappe.",
+    title: "Start, Karte, Planen",
+    body: "Inspiration, Nähe-Loops, Desktop-Planer. Speichern unter Touren.",
   },
   {
-    title: "Werkstatt",
+    title: "Rad",
     body: "Räder, Komponenten, Setup, Wartung — auch ohne App. Teile am Rad nachschlagen.",
   },
   {
-    title: "Platz",
-    body: "GPX, Sammlungen, Stimmen, Gruppen. Teilen ohne Feed.",
-  },
-  {
-    title: "Teile (aus der Werkstatt)",
-    body: "Passende Teile zum abgestellten Rad. Checkout nur bei Shopify.",
+    title: "Touren",
+    body: "GPX, Sammlungen, Tipps, Gruppen. Teilen ohne Feed.",
   },
 ] as const;
 
 export const APP_SURFACES = [
   {
-    title: "Rausfahren",
+    title: "Losfahren",
     body: "Ride-HUD, Turn-by-turn, GPS im Hintergrund, gesperrtes Display.",
   },
   {
@@ -69,17 +65,17 @@ export const WEB_APP_MATRIX: {
   web: string;
   app: string;
 }[] = [
-  { feature: "Hof, Karte, Platz, Werkstatt", web: "voll", app: "voll" },
+  { feature: "Start, Karte, Touren, Rad", web: "voll", app: "voll" },
   { feature: "Tour planen & speichern", web: "voll", app: "voll" },
   { feature: "SEO-Touren & Regionen", web: "voll", app: "Deep Link" },
   { feature: "Live-Navigation / HUD", web: "Bridge zur App", app: "voll" },
   { feature: "Offline-Karten", web: "—", app: "Packs" },
   { feature: "GPS-Aufzeichnung", web: "nach Sync", app: "nativ" },
   { feature: "Sensoren, Uhr, BLE", web: "Hinweis", app: "koppeln" },
-  { feature: "Laden / Kasse", web: "Gateway", app: "Gateway" },
-  { feature: "Stimmen an der Tour", web: "voll", app: "voll" },
-  { feature: "Mappe & Sammlungen teilen", web: "voll", app: "Deep Link" },
-  { feature: "Gruppen / Zusammen raus", web: "Roster + Link", app: "HUD-Pins" },
+  { feature: "Laden / Kasse", web: "pausiert", app: "pausiert" },
+  { feature: "Tipps an der Tour", web: "voll", app: "voll" },
+  { feature: "Touren & Sammlungen teilen", web: "voll", app: "Deep Link" },
+  { feature: "Gruppen", web: "Roster + Link", app: "HUD-Pins" },
   { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
 ];
 
@@ -134,7 +130,7 @@ export const WORKFLOWS: {
     hint: "Web plant. Die App fährt.",
     steps: [
       { label: "Karte", href: "/discover" },
-      { label: "Planen", href: "/planner" },
+      { label: "Planen", href: "/discover?panel=plan" },
       { label: "Platz / Mappe", href: "/library" },
       { label: "App-Brücke", href: "/ride" },
     ],
@@ -153,12 +149,10 @@ export const WORKFLOWS: {
   {
     id: "garage-shop",
     title: "Pflege und Teile",
-    hint: "Die Werkstatt kennt das Rad. Der Laden kassiert nicht.",
+    hint: "Die Werkstatt kennt das Rad. Der Laden ist vorerst aus.",
     steps: [
       { label: "Rad abstellen", href: "/garage?wizard=basic" },
       { label: "Wartung", href: "/garage?tab=maintenance" },
-      { label: "Laden", href: "/shop" },
-      { label: "Teile", href: "/shop/parts" },
     ],
   },
   {
@@ -218,14 +212,14 @@ export const SCREEN_GROUPS: {
     screens: [
       { href: "/home", name: "Der Hof", role: "Stand, Himmel, Tor" },
       { href: "/discover", name: "Karte", role: "OSM, Loops, Filter" },
-      { href: "/planner", name: "Planen", role: "Start, Via, Ziel" },
+      { href: "/discover?panel=plan", name: "Planen", role: "Start, Via, Ziel" },
       { href: "/library", name: "Platz", role: "Mappe, Stimmen, Gruppen" },
       { href: "/garage", name: "Werkstatt", role: "Box, Setup, Pflege, Teile" },
     ],
   },
   {
     title: "Fahrt und Rückkehr",
-    hint: "HUD nur in der App. Web zeigt die Brücke und danach die Akte.",
+    hint: "HUD nur in der App. Web zeigt die Brücke und danach die Tour.",
     screens: [
       { href: "/ride", name: "App-Brücke", role: "Deep Link, keine Live-GPS" },
       { href: "/activities", name: "Was reinkam", role: "Liste nach Sync" },
@@ -239,8 +233,6 @@ export const SCREEN_GROUPS: {
       { href: "/profile", name: "Profil", role: "Konto, Fahrstil, Abo" },
       { href: "/privacy", name: "Daten", role: "Export, Zonen, Familie" },
       { href: "/chat", name: "Coach", role: "Power-User, Limits" },
-      { href: "/shop/parts", name: "Teile", role: "Fit zur Werkstatt" },
-      { href: "/checkout", name: "Kasse", role: "Verweis auf Shopify" },
     ],
   },
   {

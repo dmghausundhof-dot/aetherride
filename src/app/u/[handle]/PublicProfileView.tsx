@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Public Profile light — Opt-in aus local store oder Editorial-Handle.
+ * Public Profile light — Opt-in aus Store, Server oder Editorial-Handle.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -12,11 +12,23 @@ import { getEditorialProfile } from "@/lib/community/editorialProfiles";
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import { User } from "lucide-react";
 
+type ViewProfile = {
+  displayName: string;
+  handle: string;
+  bio: string;
+  sports: string[];
+  showRideCount: boolean;
+  rideCount: number;
+  regionLabel?: string;
+  editorial: boolean;
+};
+
 export function PublicProfileView({ handle }: { handle: string }) {
   const publicProfile = useCommunityStore((s) => s.publicProfile);
   const myReviews = useCommunityStore((s) => s.myReviews);
   const rides = useAppStore((s) => s.rides);
   const preferredSport = useAppStore((s) => s.preferredSport);
+  const [remote, setRemote] = useState<ViewProfile | null>(null);
 
   const isSelf =
     publicProfile.enabled &&
@@ -25,7 +37,37 @@ export function PublicProfileView({ handle }: { handle: string }) {
 
   const editorial = getEditorialProfile(handle);
 
-  const profile = isSelf
+  useEffect(() => {
+    if (isSelf || editorial) return;
+    let cancelled = false;
+    void fetch(
+      `/api/community/profile?handle=${encodeURIComponent(handle)}`,
+      { credentials: "include" },
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.profile) return;
+        const raw = data.profile as Record<string, unknown>;
+        setRemote({
+          displayName: String(raw.display_name ?? raw.displayName ?? handle),
+          handle: String(raw.handle ?? handle),
+          bio: String(raw.bio ?? ""),
+          sports: Array.isArray(raw.sports)
+            ? raw.sports.filter((s: unknown): s is string => typeof s === "string")
+            : [],
+          showRideCount: raw.show_ride_count === true || raw.showRideCount === true,
+          rideCount: 0,
+          regionLabel: String(raw.region_label ?? raw.regionLabel ?? "") || undefined,
+          editorial: false,
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [handle, isSelf, editorial]);
+
+  const profile: ViewProfile | null = isSelf
     ? {
         displayName: publicProfile.displayName || publicProfile.handle,
         handle: publicProfile.handle,
@@ -51,7 +93,7 @@ export function PublicProfileView({ handle }: { handle: string }) {
           regionLabel: editorial.regionLabel,
           editorial: true,
         }
-      : null;
+      : remote;
 
   const reviewsByAuthor = useMemo(() => {
     const fromEditorial = EDITORIAL_REVIEWS.filter(

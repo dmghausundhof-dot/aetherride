@@ -16,9 +16,10 @@ class HofCoachBellButton extends ConsumerWidget {
     final unread = unreadCoachCount(items);
     if (unread <= 0) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
+    final label = l10n.coachHintsTooltip(unread);
     return IconButton(
       key: const Key('coach-bell'),
-      tooltip: l10n.coachHintsTooltip(unread),
+      tooltip: label,
       onPressed: () => openChatScreen(context),
       icon: Badge(
         isLabelVisible: true,

@@ -68,5 +68,8 @@ class BoschLiveData {
   }
 }
 
-/// Beispiel-UUID Nähe Spec/Community — echte UUIDs aus Bosch-LDI-PDF.
-const boschLdiServiceUuid = '00000010-eaa2-11e9-81b4-2a2ae2dbcce4';
+/// Bosch LDI GATT service (Spec V1.0): 0000eb20-eaa2-11e9-81b4-2a2ae2dbcce4.
+const boschLdiServiceUuid = '0000eb20-eaa2-11e9-81b4-2a2ae2dbcce4';
+const boschLdiLiveCharUuid = '0000eb21-eaa2-11e9-81b4-2a2ae2dbcce4';
+/// Saved when the bike bonded via Flow → Komponenten, not a display MAC.
+const boschLdiAccessoryId = 'ldi:bosch';

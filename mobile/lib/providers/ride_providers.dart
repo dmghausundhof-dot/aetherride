@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/active_route.dart';
 import '../domain/bike.dart';
+import '../domain/routing/tour_filters.dart';
 import '../data/sync/sync_engine.dart' show SyncAuthStatus;
 
 export '../data/sync/sync_engine.dart' show SyncAuthStatus;
@@ -10,8 +11,7 @@ final activeRouteProvider = StateProvider<ActiveRoute?>((ref) => null);
 
 /// Discover-Einstieg: einmalig in DiscoverScreen konsumieren.
 /// `discover` ist Browse (Deep-Link). `plan` öffnet das Planen-Panel.
-/// `rideOut` ist Rausfahren: Wahl Einfach fahren / Touren anzeigen
-/// (Hof-CTA und Karte-Tab). `mine` ist Tafel/Post-Ride → Mappe, nie Explore.
+/// `rideOut` ist Losfahren: direkt HUD (Hof-CTA). `mine` ist Tafel → Touren.
 enum DiscoverLaunchMode { discover, plan, rideOut, mine }
 
 final discoverLaunchModeProvider =
@@ -20,8 +20,12 @@ final discoverLaunchModeProvider =
 /// Deep-Link: Discover mit Loop-Highlight (`?loop=<id>` ohne start=1).
 final discoverPendingLoopIdProvider = StateProvider<String?>((ref) => null);
 
-/// Hof-Tafel → Karte in „Meine / Mappe“.
+/// Hof-Tafel → Karte in „Touren“.
 final discoverPendingMineProvider = StateProvider<bool>((ref) => false);
+
+/// Sichtbarkeit der eigenen Touren — dieselbe Quelle für Tab und Karte.
+final tourVisibilityProvider =
+    StateProvider<TourVisibilityKey>((ref) => TourVisibilityKey.allMine);
 
 /// Nach Meine: diese SavedRoute-Akte öffnen (Post-Ride / Tafel-Stimmen).
 final discoverPendingAkteRouteIdProvider = StateProvider<String?>((ref) => null);

@@ -117,7 +117,7 @@ abstract class AppLocalizations {
   /// No description provided for @navHome.
   ///
   /// In de, this message translates to:
-  /// **'Home'**
+  /// **'Start'**
   String get navHome;
 
   /// No description provided for @navGarage.
@@ -153,7 +153,7 @@ abstract class AppLocalizations {
   /// No description provided for @navWorkshop.
   ///
   /// In de, this message translates to:
-  /// **'Werkstatt'**
+  /// **'Rad'**
   String get navWorkshop;
 
   /// No description provided for @navShop.
@@ -165,7 +165,7 @@ abstract class AppLocalizations {
   /// No description provided for @navPlatz.
   ///
   /// In de, this message translates to:
-  /// **'Platz'**
+  /// **'Touren'**
   String get navPlatz;
 
   /// No description provided for @navTabOf.
@@ -243,7 +243,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopGatewayHint.
   ///
   /// In de, this message translates to:
-  /// **'Hier wohnt das Rad nicht. FlowLine zeigt ehrliche Teile — Kauf und Kasse bei Shopify, nicht in der App.'**
+  /// **'Hier wohnt das Rad nicht. FlowLine zeigt Teile — kaufen tust du beim Händler, nicht in der App. Shopify-Kasse ist vorerst aus.'**
   String get shopGatewayHint;
 
   /// No description provided for @shopZumShop.
@@ -369,7 +369,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopCatalogEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Teile im Regal. Der Laden bleibt die Tür zu Shopify.'**
+  /// **'Noch keine Teile im Regal.'**
   String get shopCatalogEmpty;
 
   /// No description provided for @shopFitOnly.
@@ -399,7 +399,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopZumHaendler.
   ///
   /// In de, this message translates to:
-  /// **'Zum Händler'**
+  /// **'Beim Händler kaufen'**
   String get shopZumHaendler;
 
   /// No description provided for @shopOpenInApp.
@@ -417,7 +417,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopCatalogFailed.
   ///
   /// In de, this message translates to:
-  /// **'Katalog gerade nicht erreichbar. Der Laden bleibt die Tür zu Shopify.'**
+  /// **'Katalog gerade nicht erreichbar. Versuche es später noch einmal.'**
   String get shopCatalogFailed;
 
   /// No description provided for @shopRetry.
@@ -429,7 +429,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopSheetCheckout.
   ///
   /// In de, this message translates to:
-  /// **'Kauf und Kasse bei Shopify, nicht in FlowLine.'**
+  /// **'Der Händler ist Verkäufer und Vertragspartner — nicht FlowLine.'**
   String get shopSheetCheckout;
 
   /// No description provided for @shopDetails.
@@ -513,7 +513,7 @@ abstract class AppLocalizations {
   /// No description provided for @werkstattBatteryHonestHint.
   ///
   /// In de, this message translates to:
-  /// **'Kein Prozent ohne gekoppelten Sensor. Bosch LDI bleibt G-1.'**
+  /// **'Kein Prozent ohne gekoppelten Sensor. Bosch-SoC über LDI (Flow → Komponenten) oder Standard-GATT.'**
   String get werkstattBatteryHonestHint;
 
   /// No description provided for @werkstattSensorEbike.
@@ -693,7 +693,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverMenuPrivacy.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap & Privatsphäre'**
+  /// **'Daten & Privatsphäre'**
   String get discoverMenuPrivacy;
 
   /// No description provided for @partsTitle.
@@ -747,7 +747,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofRideOut.
   ///
   /// In de, this message translates to:
-  /// **'Rausfahren'**
+  /// **'Losfahren'**
   String get hofRideOut;
 
   /// No description provided for @hofOpenBike.
@@ -759,7 +759,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofParkBike.
   ///
   /// In de, this message translates to:
-  /// **'Rad abstellen'**
+  /// **'Rad anlegen'**
   String get hofParkBike;
 
   /// No description provided for @hofRideWithoutBike.
@@ -771,7 +771,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofRideOutAgain.
   ///
   /// In de, this message translates to:
-  /// **'Noch mal raus'**
+  /// **'Noch mal los'**
   String get hofRideOutAgain;
 
   /// No description provided for @hofAtGate.
@@ -849,7 +849,7 @@ abstract class AppLocalizations {
   /// No description provided for @hofGpsUnknown.
   ///
   /// In de, this message translates to:
-  /// **'Kein Standort — Himmel und Tor warten auf GPS.'**
+  /// **'Kein Standort — die Karte wartet auf GPS.'**
   String get hofGpsUnknown;
 
   /// No description provided for @rideGpsUnavailable.
@@ -1341,7 +1341,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverModeMine.
   ///
   /// In de, this message translates to:
-  /// **'Meine'**
+  /// **'Touren'**
   String get discoverModeMine;
 
   /// No description provided for @navigateTitle.
@@ -1431,7 +1431,7 @@ abstract class AppLocalizations {
   /// No description provided for @mineSheetHint.
   ///
   /// In de, this message translates to:
-  /// **'Deine Aufzeichnungen, Importe und gespeicherten Strecken'**
+  /// **'Dieselbe Liste wie unter Touren — hier auf der Karte.'**
   String get mineSheetHint;
 
   /// No description provided for @mineEmptyCtaNavigate.
@@ -1455,7 +1455,7 @@ abstract class AppLocalizations {
   /// No description provided for @sheetDragHandleMine.
   ///
   /// In de, this message translates to:
-  /// **'Meine-Strecken-Leiste ziehen'**
+  /// **'Touren-Leiste ziehen'**
   String get sheetDragHandleMine;
 
   /// No description provided for @sheetDragHandleNavigate.
@@ -1797,7 +1797,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageEmptyMessage.
   ///
   /// In de, this message translates to:
-  /// **'Name und Typ reichen. Katalog ist Suche — Serienteile nur wenn du sie übernimmst.'**
+  /// **'Name und Typ reichen. Der Katalog ist Suche — Serienteile nur wenn du sie übernimmst.'**
   String get garageEmptyMessage;
 
   /// No description provided for @garageAddBike.
@@ -2283,7 +2283,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideMapReady.
   ///
   /// In de, this message translates to:
-  /// **'Karte liegt. Sensor danach, wenn du willst.'**
+  /// **'Karte bereit. Sensor ist optional.'**
   String get rideMapReady;
 
   /// No description provided for @rideClearRoute.
@@ -2433,7 +2433,7 @@ abstract class AppLocalizations {
   /// No description provided for @postRideSaveAsTourDone.
   ///
   /// In de, this message translates to:
-  /// **'In Meine Strecken gespeichert'**
+  /// **'Unter Touren gespeichert'**
   String get postRideSaveAsTourDone;
 
   /// No description provided for @postRideSaveAsTourNeedTrack.
@@ -2451,13 +2451,13 @@ abstract class AppLocalizations {
   /// No description provided for @myRoutesTitle.
   ///
   /// In de, this message translates to:
-  /// **'Meine Strecken'**
+  /// **'Touren'**
   String get myRoutesTitle;
 
   /// No description provided for @myRoutesEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine eigenen Strecken — GPX importieren oder eine Fahrt aufzeichnen.'**
+  /// **'Noch keine eigenen Touren — GPX importieren oder eine Fahrt aufzeichnen.'**
   String get myRoutesEmpty;
 
   /// No description provided for @myRoutesSourceImport.
@@ -2499,7 +2499,7 @@ abstract class AppLocalizations {
   /// No description provided for @myRouteNotesHint.
   ///
   /// In de, this message translates to:
-  /// **'Nur für dich. Öffentliche Stimmen erst nach Freigabe, unter Stimmen.'**
+  /// **'Nur für dich. Tipps nach Freigabe unter Tipps.'**
   String get myRouteNotesHint;
 
   /// No description provided for @myRouteNotesEmpty.
@@ -3213,7 +3213,7 @@ abstract class AppLocalizations {
   /// No description provided for @coachHintsTooltip.
   ///
   /// In de, this message translates to:
-  /// **'{count} Hinweise'**
+  /// **'{count, plural, =1{1 Hinweis vom Assistenten} other{{count} Hinweise vom Assistenten}}'**
   String coachHintsTooltip(int count);
 
   /// No description provided for @privacyTitle.
@@ -3393,13 +3393,13 @@ abstract class AppLocalizations {
   /// No description provided for @privacyHeatmapCells.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap: {n} Zellen beigetragen (sichtbar erst ab k≥5).'**
+  /// **'Wo viele fahren: {n} Zellen beigetragen (sichtbar erst ab 5).'**
   String privacyHeatmapCells(int n);
 
   /// No description provided for @privacyHeatmapNone.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap: kein Beitrag (Login/Consent/Track prüfen).'**
+  /// **'Wo viele fahren: kein Beitrag — anmelden, zustimmen, oder die Tour ist privat.'**
   String get privacyHeatmapNone;
 
   /// No description provided for @privacyUploadNow.
@@ -3477,13 +3477,13 @@ abstract class AppLocalizations {
   /// No description provided for @consentHeatmapTitle.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap (eigene Fahrten, anonym)'**
+  /// **'Wo viele fahren (anonym, erst ab 5)'**
   String get consentHeatmapTitle;
 
   /// No description provided for @consentHeatmapBody.
   ///
   /// In de, this message translates to:
-  /// **'Lokal: deine Fahrten. Mit Konto: anonymisierte Zellen ohne Zeitstempel. Die Beliebtheitskarte erscheint erst, wenn genug Fahrer in einer Zelle unterwegs waren (k≥5).'**
+  /// **'Lokal: deine Fahrten. Mit Konto: anonymisierte Zellen ohne Zeitstempel. Die Karte erscheint erst, wenn 5 Fahrer in einer Zelle unterwegs waren.'**
   String get consentHeatmapBody;
 
   /// No description provided for @consentRecoTitle.
@@ -3531,7 +3531,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyZoneRadiusHint.
   ///
   /// In de, this message translates to:
-  /// **'Radius gilt für Export und Heatmap.'**
+  /// **'Radius gilt für Export und wo viele fahren.'**
   String get privacyZoneRadiusHint;
 
   /// No description provided for @privacyZoneLabel.
@@ -3719,6 +3719,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Fahrerprofil'**
   String get profileRiderCard;
+
+  /// No description provided for @profileNameUnset.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch kein Name'**
+  String get profileNameUnset;
 
   /// No description provided for @profilePublic.
   ///
@@ -4095,7 +4101,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardWeightHint.
   ///
   /// In de, this message translates to:
-  /// **'Für Setup, SAG & Reichweite — nur lokal, jederzeit änderbar. Auch ohne Federgabel sinnvoll (z. B. City).'**
+  /// **'Für Setup und Reichweite — nur lokal, jederzeit änderbar.'**
   String get onboardWeightHint;
 
   /// No description provided for @onboardGpsHint.
@@ -4143,7 +4149,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardSensorsHint.
   ///
   /// In de, this message translates to:
-  /// **'Standort für den GPS-Track. Bluetooth-Sensoren später in der Werkstatt — gilt für alle Bike-Typen.'**
+  /// **'Standort für den GPS-Track. Bluetooth-Sensoren später unter Rad — gilt für alle Bike-Typen.'**
   String get onboardSensorsHint;
 
   /// No description provided for @onboardNextRide.
@@ -4227,19 +4233,19 @@ abstract class AppLocalizations {
   /// No description provided for @offlineNoPacks.
   ///
   /// In de, this message translates to:
-  /// **'Keine ladbaren Packs. Stubs unten — kein Demo-Graph unter fremdem Namen.'**
+  /// **'Gerade keine Packs zum Laden. Unten stehen Regionen, die noch nicht fertig sind.'**
   String get offlineNoPacks;
 
   /// No description provided for @offlineNotBuilt.
   ///
   /// In de, this message translates to:
-  /// **'Noch nicht gebaut ({count})'**
+  /// **'Noch nicht fertig ({count})'**
   String offlineNotBuilt(int count);
 
   /// No description provided for @offlineStubsHint.
   ///
   /// In de, this message translates to:
-  /// **'Catalog-Stubs — Download deaktiviert'**
+  /// **'Noch nicht zum Laden frei.'**
   String get offlineStubsHint;
 
   /// No description provided for @offlineRemoveRegion.
@@ -4359,7 +4365,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzTogetherKicker.
   ///
   /// In de, this message translates to:
-  /// **'Zusammen raus'**
+  /// **'Gruppe'**
   String get platzTogetherKicker;
 
   /// No description provided for @platzTogetherTitle.
@@ -4371,13 +4377,13 @@ abstract class AppLocalizations {
   /// No description provided for @platzTogetherHint.
   ///
   /// In de, this message translates to:
-  /// **'Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen auf dem Platz — kein Feed.'**
+  /// **'Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen — kein Feed.'**
   String get platzTogetherHint;
 
   /// No description provided for @platzTogetherListHint.
   ///
   /// In de, this message translates to:
-  /// **'Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.'**
+  /// **'Gruppe. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.'**
   String get platzTogetherListHint;
 
   /// No description provided for @platzCreateGroup.
@@ -4449,7 +4455,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzInviteSharesProfile.
   ///
   /// In de, this message translates to:
-  /// **' und dein Platz-Profil'**
+  /// **' und dein Profil'**
   String get platzInviteSharesProfile;
 
   /// No description provided for @platzInviteAsYou.
@@ -4515,7 +4521,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzNoCollection.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Sammlung — in der Akte einer Tour anlegen.'**
+  /// **'Noch keine Sammlung — unter Freigeben bei einer Tour anlegen.'**
   String get platzNoCollection;
 
   /// No description provided for @platzCollectionTours.
@@ -4629,19 +4635,19 @@ abstract class AppLocalizations {
   /// No description provided for @platzTourNotInMappe.
   ///
   /// In de, this message translates to:
-  /// **'Tour nicht in der Mappe.'**
+  /// **'Tour nicht unter Touren.'**
   String get platzTourNotInMappe;
 
   /// No description provided for @platzTourNotInMappeHint.
   ///
   /// In de, this message translates to:
-  /// **'Katalog-Touren legt Losfahren in die Mappe. Private GPX braucht den Link vom Gastgeber — kein erfundener Track.'**
+  /// **'Katalog-Touren legt Losfahren unter Touren. Private GPX braucht den Link vom Gastgeber — kein erfundener Track.'**
   String get platzTourNotInMappeHint;
 
   /// No description provided for @platzCollectionsHint.
   ///
   /// In de, this message translates to:
-  /// **'Anlegen in der Akte. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.'**
+  /// **'Anlegen unter Freigeben. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.'**
   String get platzCollectionsHint;
 
   /// No description provided for @akteTourKicker.
@@ -4653,7 +4659,7 @@ abstract class AppLocalizations {
   /// No description provided for @stimmenShareNeedRelease.
   ///
   /// In de, this message translates to:
-  /// **'Erst unter Mein freigeben — sonst geht der Link ins Leere.'**
+  /// **'Erst auf Freigeben tippen — sonst geht der Link ins Leere.'**
   String get stimmenShareNeedRelease;
 
   /// No description provided for @platzNeedSharedTour.
@@ -4671,7 +4677,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzShareTourFirstHint.
   ///
   /// In de, this message translates to:
-  /// **'Ohne Freigabe bleibt die Gruppe unsichtbar für Freunde. Tippe eine Tour — in der Akte unter Mein auf Freigeben, dann Gruppe anlegen.'**
+  /// **'Ohne Freigabe bleibt die Gruppe unsichtbar für Freunde. Tippe eine Tour, dann Freigeben, dann Gruppe anlegen.'**
   String get platzShareTourFirstHint;
 
   /// No description provided for @platzHostCannotSee.
@@ -4683,8 +4689,20 @@ abstract class AppLocalizations {
   /// No description provided for @platzJoinLocal.
   ///
   /// In de, this message translates to:
-  /// **'Lokal dabei: {title}. Der Host sieht dich nicht — anmelden.'**
+  /// **'Nur auf diesem Gerät: {title}. Der Host sieht dich nicht — anmelden.'**
   String platzJoinLocal(String title);
+
+  /// No description provided for @platzJoinLocalCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Gerät merken'**
+  String get platzJoinLocalCta;
+
+  /// No description provided for @platzJoinUnsignedHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Anmeldung sieht der Host dich nicht.'**
+  String get platzJoinUnsignedHint;
 
   /// No description provided for @platzNoSharedTours.
   ///
@@ -6579,7 +6597,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverHeatmapConsent.
   ///
   /// In de, this message translates to:
-  /// **'Heatmaps nach Consent — Privatsphäre öffnen'**
+  /// **'Wo viele fahren — nach Zustimmung. Privatsphäre öffnen'**
   String get discoverHeatmapConsent;
 
   /// No description provided for @discoverRideToStartShort.
@@ -7071,7 +7089,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverAlreadyInMappe.
   ///
   /// In de, this message translates to:
-  /// **'Schon in der Mappe'**
+  /// **'Schon unter Touren'**
   String get discoverAlreadyInMappe;
 
   /// No description provided for @discoverInMappeNamed.
@@ -7611,13 +7629,13 @@ abstract class AppLocalizations {
   /// No description provided for @discoverNoTrackEntry.
   ///
   /// In de, this message translates to:
-  /// **'Noch kein Track — nur der Eintrag in der Mappe.'**
+  /// **'Noch kein Track — nur der Eintrag unter Touren.'**
   String get discoverNoTrackEntry;
 
   /// No description provided for @discoverVisibility.
   ///
   /// In de, this message translates to:
-  /// **'Sichtbarkeit'**
+  /// **'Freigabe'**
   String get discoverVisibility;
 
   /// No description provided for @discoverCopyLink.
@@ -7725,13 +7743,13 @@ abstract class AppLocalizations {
   /// No description provided for @stimmenTitle.
   ///
   /// In de, this message translates to:
-  /// **'Stimmen'**
+  /// **'Tipps'**
   String get stimmenTitle;
 
   /// No description provided for @stimmenHint.
   ///
   /// In de, this message translates to:
-  /// **'Sterne, Text und Fotos — Cloud nach Freigabe. Keine erfundenen Stimmen.'**
+  /// **'Sterne, Text und Fotos — Cloud nach Freigabe. Keine erfundenen Tipps.'**
   String get stimmenHint;
 
   /// No description provided for @stimmenWrite.
@@ -7773,7 +7791,7 @@ abstract class AppLocalizations {
   /// No description provided for @stimmenEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Stimmen.'**
+  /// **'Noch keine Tipps.'**
   String get stimmenEmpty;
 
   /// No description provided for @stimmenLabel.
@@ -7785,7 +7803,7 @@ abstract class AppLocalizations {
   /// No description provided for @stimmenCloudApproved.
   ///
   /// In de, this message translates to:
-  /// **'Gespeichert — veröffentlicht (AI-Freigabe)'**
+  /// **'Gespeichert — sichtbar (AI-Freigabe)'**
   String get stimmenCloudApproved;
 
   /// No description provided for @stimmenCloudRejected.
@@ -7812,10 +7830,22 @@ abstract class AppLocalizations {
   /// **'Gespeichert lokal — Cloud gerade nicht erreichbar'**
   String get stimmenCloudFailed;
 
+  /// No description provided for @stimmenStatusPending.
+  ///
+  /// In de, this message translates to:
+  /// **'In Prüfung'**
+  String get stimmenStatusPending;
+
+  /// No description provided for @stimmenStatusLocal.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur dieses Gerät'**
+  String get stimmenStatusLocal;
+
   /// No description provided for @akteHonestyCatalog.
   ///
   /// In de, this message translates to:
-  /// **'Katalog-Tour ist schon öffentlich. Freigeben macht deine Akte teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.'**
+  /// **'Katalog-Tour ist schon freigegeben. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.'**
   String get akteHonestyCatalog;
 
   /// No description provided for @akteHonestyTrack.
@@ -7971,13 +8001,13 @@ abstract class AppLocalizations {
   /// No description provided for @postRideStimmePrivate.
   ///
   /// In de, this message translates to:
-  /// **'Stimme erst nach Freigabe. Die Tour ist privat — in der Akte unter Mein teilen.'**
+  /// **'Stimme erst nach Freigabe. Die Tour ist privat — öffnen und auf Freigeben tippen.'**
   String get postRideStimmePrivate;
 
   /// No description provided for @postRideStimmePrivateCta.
   ///
   /// In de, this message translates to:
-  /// **'In der Akte freigeben'**
+  /// **'Öffnen und freigeben'**
   String get postRideStimmePrivateCta;
 
   /// No description provided for @postRideStimmeSkip.
@@ -8001,7 +8031,7 @@ abstract class AppLocalizations {
   /// No description provided for @postRideOrtHint.
   ///
   /// In de, this message translates to:
-  /// **'Immer privat an der Runde. Öffentlich nur mit Login, auf der Linie, nach Freigabe.'**
+  /// **'Immer privat an der Runde. Auf der Karte nur mit Login, auf der Linie, nach Freigabe.'**
   String get postRideOrtHint;
 
   /// No description provided for @postRideOrtSkip.
@@ -8037,7 +8067,7 @@ abstract class AppLocalizations {
   /// No description provided for @postRideOrtPrivateOnly.
   ///
   /// In de, this message translates to:
-  /// **'Nur für dich — ohne Login oder ohne öffentliche Tour kein Community-Ort.'**
+  /// **'Nur für dich — ohne Login oder ohne freigegebene Tour kein Community-Ort.'**
   String get postRideOrtPrivateOnly;
 
   /// No description provided for @postRideOrtPending.
@@ -8157,14 +8187,32 @@ abstract class AppLocalizations {
   /// No description provided for @discoverVariantUnpaved.
   ///
   /// In de, this message translates to:
-  /// **'Mehr unpaved'**
+  /// **'Mehr Schotter'**
   String get discoverVariantUnpaved;
 
   /// No description provided for @discoverVariantValhallaOnly.
   ///
   /// In de, this message translates to:
-  /// **'Varianten nur mit Live-Valhalla'**
+  /// **'Ohne Live-Strecke keine Varianten'**
   String get discoverVariantValhallaOnly;
+
+  /// No description provided for @discoverGhMinuteLimit.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschläge und Zeit gerade gedrosselt — kurz warten oder sparsam planen.'**
+  String get discoverGhMinuteLimit;
+
+  /// No description provided for @discoverHonestyRoad.
+  ///
+  /// In de, this message translates to:
+  /// **'Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.'**
+  String get discoverHonestyRoad;
+
+  /// No description provided for @discoverHonestyCycleway.
+  ///
+  /// In de, this message translates to:
+  /// **'Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.'**
+  String get discoverHonestyCycleway;
 
   /// No description provided for @discoverTrailWet.
   ///
@@ -8271,7 +8319,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverHeatmapOffline.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap offline'**
+  /// **'Wo viele fahren: offline'**
   String get discoverHeatmapOffline;
 
   /// No description provided for @discoverCreate.
@@ -8847,7 +8895,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideUntilJoin.
   ///
   /// In de, this message translates to:
-  /// **'bis Route'**
+  /// **'km bis Route'**
   String get rideUntilJoin;
 
   /// No description provided for @rideRestLoop.
@@ -10108,7 +10156,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleTipBosch.
   ///
   /// In de, this message translates to:
-  /// **'Flow komplett schließen · 10–20 cm am Display'**
+  /// **'Flow: Komponenten → FlowLine hinzufügen · Firmware ≥19'**
   String get bleTipBosch;
 
   /// No description provided for @bleTipShimano.
@@ -10168,7 +10216,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleNoteBoschLine.
   ///
   /// In de, this message translates to:
-  /// **'Flow komplett schließen (nicht nur Hintergrund). Display an, 10–20 cm.'**
+  /// **'SoC: Flow öffnen → Komponenten → FlowLine hinzufügen (Steuerung ≥19). CSC weiter über die Liste, Flow dabei zu.'**
   String get bleNoteBoschLine;
 
   /// No description provided for @bleNoteShimanoLine.
@@ -10237,10 +10285,46 @@ abstract class AppLocalizations {
   /// **'Verbindung abgelehnt — Bosch Flow / Shimano E-TUBE schließen, Display an, nah halten.'**
   String get bleGattRejectedGeneric;
 
+  /// No description provided for @bleLdiPairCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Bosch LDI — in Flow hinzufügen'**
+  String get bleLdiPairCta;
+
+  /// No description provided for @bleLdiPairHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad an, Flow öffnen → Einstellungen → Komponenten → Neues Gerät. Display bestätigt. Steuerungseinheit ab Version 19.'**
+  String get bleLdiPairHint;
+
+  /// No description provided for @bleLdiTimeout.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein LDI-Link. Firmware ≥19? In Flow unter Komponenten erneut hinzufügen.'**
+  String get bleLdiTimeout;
+
+  /// No description provided for @bleLdiWaitingFlow.
+  ///
+  /// In de, this message translates to:
+  /// **'Warten aufs Rad — in Flow „FlowLine“ hinzufügen.'**
+  String get bleLdiWaitingFlow;
+
+  /// No description provided for @bleLdiNeedAndroid12.
+  ///
+  /// In de, this message translates to:
+  /// **'Bosch LDI braucht Android 12 oder neuer.'**
+  String get bleLdiNeedAndroid12;
+
+  /// No description provided for @bleLdiIosPending.
+  ///
+  /// In de, this message translates to:
+  /// **'Bosch LDI auf diesem Gerät noch nicht verdrahtet.'**
+  String get bleLdiIosPending;
+
   /// No description provided for @bleGattTimeoutBosch.
   ///
   /// In de, this message translates to:
-  /// **'Timeout — Display wecken, Flow zu, nah halten. Motorwerte nur mit CSC oder offiziellem LDI.'**
+  /// **'Timeout — Display wecken. SoC über LDI in Flow, Tempo über CSC.'**
   String get bleGattTimeoutBosch;
 
   /// No description provided for @bleGattTimeoutShimano.
@@ -10264,7 +10348,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleDriveFailBosch.
   ///
   /// In de, this message translates to:
-  /// **'Bosch erkannt, keine Live-Motorwerte. Als Nächstes einen Radsensor (CSC) koppeln.'**
+  /// **'Bosch ohne Live-SoC. In Flow unter Komponenten FlowLine hinzufügen, oder einen Radsensor (CSC) koppeln.'**
   String get bleDriveFailBosch;
 
   /// No description provided for @bleDriveFailShimano.
@@ -11482,7 +11566,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineNoRemotePack.
   ///
   /// In de, this message translates to:
-  /// **'Kein Remote-Pack für {name}. Catalog-Stubs aktivieren keinen fremden Demo-Graph.'**
+  /// **'Für {name} gibt\'s noch kein Pack zum Laden.'**
   String offlineNoRemotePack(String name);
 
   /// No description provided for @offlineDownloadEmpty.
@@ -11861,13 +11945,13 @@ abstract class AppLocalizations {
   /// No description provided for @postRideHeatmapPrivate.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap: Tour ist privat — Track nicht beigetragen.'**
+  /// **'Wo viele fahren: private Tour — Spur nicht beigetragen.'**
   String get postRideHeatmapPrivate;
 
   /// No description provided for @postRideHeatmapError.
   ///
   /// In de, this message translates to:
-  /// **'Heatmap: {error}'**
+  /// **'Wo viele fahren: {error}'**
   String postRideHeatmapError(String error);
 
   /// No description provided for @postRideSetupSaved.
@@ -12059,7 +12143,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzCreateGroupHint.
   ///
   /// In de, this message translates to:
-  /// **'Tour wählen, Sichtbarkeit, dann den Link teilen.'**
+  /// **'Tour wählen, privat oder sichtbar, dann den Link teilen.'**
   String get platzCreateGroupHint;
 
   /// No description provided for @platzGroupPublicHint.
@@ -12071,7 +12155,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzGroupPrivateHint.
   ///
   /// In de, this message translates to:
-  /// **'Nur wer den Link hat, kann beitreten. Kein öffentliches Verzeichnis.'**
+  /// **'Nur wer den Link hat, kann beitreten. Nicht gelistet.'**
   String get platzGroupPrivateHint;
 
   /// No description provided for @platzNoPrivateGroups.
@@ -12091,6 +12175,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Auf dem Platz listen'**
   String get platzMakePublic;
+
+  /// No description provided for @platzGroupListedNote.
+  ///
+  /// In de, this message translates to:
+  /// **'Sichtbar gelistet — wer den Link hat, kann beitreten.'**
+  String get platzGroupListedNote;
+
+  /// No description provided for @platzGroupUnlistedNote.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur per Link — nicht auf dem Platz.'**
+  String get platzGroupUnlistedNote;
 
   /// No description provided for @platzNoPublicGroups.
   ///
@@ -12125,7 +12221,7 @@ abstract class AppLocalizations {
   /// No description provided for @mappeTitle.
   ///
   /// In de, this message translates to:
-  /// **'Die Mappe'**
+  /// **'Touren'**
   String get mappeTitle;
 
   /// No description provided for @mappeSubtitle.
@@ -12185,13 +12281,13 @@ abstract class AppLocalizations {
   /// No description provided for @mappeEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine eigenen Strecken — Route hinzufügen.'**
+  /// **'Noch keine eigenen Touren — Route hinzufügen.'**
   String get mappeEmpty;
 
   /// No description provided for @mappeStimmenEmpty.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Stimmen zu deinen Touren. Nach Freigabe können andere schreiben.'**
+  /// **'Noch keine Tipps zu deinen Touren. Nach Freigabe können andere schreiben.'**
   String get mappeStimmenEmpty;
 
   /// No description provided for @myRoutesSourceOwn.
@@ -12299,25 +12395,31 @@ abstract class AppLocalizations {
   /// No description provided for @hofTafelTitle.
   ///
   /// In de, this message translates to:
-  /// **'Die Tafel'**
+  /// **'Offen'**
   String get hofTafelTitle;
+
+  /// No description provided for @hofTafelHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Tipp oder eine Gruppe — kein Feed.'**
+  String get hofTafelHint;
 
   /// No description provided for @hofTafelVoiceOne.
   ///
   /// In de, this message translates to:
-  /// **'Neue Stimme zu {name}'**
+  /// **'Neuer Tipp zu {name}'**
   String hofTafelVoiceOne(String name);
 
   /// No description provided for @hofTafelVoices.
   ///
   /// In de, this message translates to:
-  /// **'{count} Stimmen zu {name}'**
+  /// **'{count} Tipps zu {name}'**
   String hofTafelVoices(int count, String name);
 
   /// No description provided for @hofTafelGroup.
   ///
   /// In de, this message translates to:
-  /// **'Gruppe vor dem Tor · {title}'**
+  /// **'Gruppe · {title}'**
   String hofTafelGroup(String title);
 
   /// No description provided for @ridePuckSemantics.

@@ -4,7 +4,7 @@ import '../maintenance/intervals.dart';
 import '../setup.dart';
 import 'werkstatt_setup.dart';
 
-/// Die Box — Werkstatt-IA. Tab stays Werkstatt; this is the resident's stall.
+/// Die Box — stall for the active bike. Tab label is the bike name.
 enum DieBoxReadiness { ready, almost, unknown }
 
 enum DieBoxItemId {
@@ -161,6 +161,25 @@ bool _isTrail(BikeSetup s) {
       blob.contains('mixed');
 }
 
+/// Teile-Tab and Am Rad: addable slots plus rider-typed parts.
+/// Catalog OEM dump (headset, saddle with model id) stays off the stall.
+List<BikeComponent> listedWorkshopParts({
+  required List<BikeComponent> installed,
+  required List<ComponentSlot> addable,
+}) {
+  final listed = <BikeComponent>[
+    for (final s in addable)
+      if (installed.any((c) => c.slot == s))
+        installed.firstWhere((c) => c.slot == s),
+  ];
+  for (final c in installed) {
+    if (listed.any((x) => x.id == c.id)) continue;
+    final explicit = c.catalogModelId == null;
+    if (explicit) listed.add(c);
+  }
+  return listed;
+}
+
 /// Slots the rider may add for this bike — never the full 25-ghost catalog.
 List<ComponentSlot> addableSlotsFor(WerkstattSetupPlan plan) {
   final slots = <ComponentSlot>{
@@ -181,8 +200,9 @@ List<ComponentSlot> addableSlotsFor(WerkstattSetupPlan plan) {
   if (plan.kind == WerkstattKind.gravel) {
     slots.add(ComponentSlot.bags);
   }
-  if (plan.hasSuspension) {
-    slots.addAll([ComponentSlot.fork, ComponentSlot.rearShock]);
+  if (plan.showsFahrwerk) {
+    slots.add(ComponentSlot.fork);
+    if (plan.hasRearShock) slots.add(ComponentSlot.rearShock);
   }
   if (plan.hasElectricAssist) {
     slots.addAll([
@@ -217,7 +237,7 @@ DieBoxPlan planDieBox({
       _hasSlot(installed, ComponentSlot.brakeRear);
   final pressureKnown =
       _userLoggedPressure(setups) || _logMentions(logs, bike.id, 'druck');
-  final sagKnown = setup.hasSuspension && _userLoggedSag(setups);
+  final sagKnown = setup.showsFahrwerk && _userLoggedSag(setups);
   final chainMeasured = _logMentions(logs, bike.id, 'kette gemessen') ||
       _logMentions(logs, bike.id, 'chain_measured');
 
@@ -261,17 +281,17 @@ DieBoxPlan planDieBox({
     if (hasCockpit) chips.add(const DieBoxChip(label: 'Cockpit'));
   }
   if (mtb) {
-    if (setup.hasSuspension &&
-        ((bike.travelFrontMm ?? 0) > 0 || (bike.travelRearMm ?? 0) > 0)) {
-      final t = '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'} mm';
-      chips.add(DieBoxChip(label: t));
-    }
-    if (sagKnown) chips.add(const DieBoxChip(label: 'SAG'));
     if (pressureKnown) chips.add(const DieBoxChip(label: 'Reifen'));
     if (setup.hasDropper) chips.add(const DieBoxChip(label: 'Vario'));
     if (hasBrakes) chips.add(const DieBoxChip(label: 'Bremsen'));
     if (showParkTrail) chips.add(const DieBoxChip(label: 'Park | Trail'));
   }
+  if (setup.showsFahrwerk &&
+      ((bike.travelFrontMm ?? 0) > 0 || (bike.travelRearMm ?? 0) > 0)) {
+    final t = '${bike.travelFrontMm ?? '–'}/${bike.travelRearMm ?? '–'} mm';
+    chips.add(DieBoxChip(label: t));
+  }
+  if (sagKnown) chips.add(const DieBoxChip(label: 'SAG'));
   if (setup.hasElectricAssist && cscPaired) {
     chips.add(const DieBoxChip(label: 'CSC'));
   }
@@ -312,7 +332,7 @@ DieBoxPlan planDieBox({
       ),
     );
   }
-  if (mtb && setup.hasSuspension && !pressureKnown) {
+  if (mtb && setup.showsFahrwerk && !pressureKnown) {
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.pressureUnknown,
@@ -332,7 +352,7 @@ DieBoxPlan planDieBox({
       ),
     );
   }
-  if (mtb && setup.hasSuspension && !sagKnown) {
+  if (setup.showsFahrwerk && !sagKnown) {
     today.add(
       const DieBoxTodayItem(
         id: DieBoxItemId.sagUnknown,
@@ -426,16 +446,10 @@ DieBoxPlan planDieBox({
   );
 
   final priority = addableSlotsFor(setup);
-  final onBike = <BikeComponent>[
-    for (final s in priority)
-      if (installed.any((c) => c.slot == s))
-        installed.firstWhere((c) => c.slot == s),
-  ];
-  for (final c in installed) {
-    if (onBike.any((x) => x.id == c.id)) continue;
-    final explicit = c.catalogModelId == null;
-    if (explicit) onBike.add(c);
-  }
+  final onBike = listedWorkshopParts(
+    installed: installed,
+    addable: priority,
+  );
 
   return DieBoxPlan(
     setup: setup,

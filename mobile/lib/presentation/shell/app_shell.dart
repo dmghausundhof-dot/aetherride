@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
 import '../../data/deep_links.dart';
-import '../../domain/home/hof_title.dart';
-import '../../l10n/app_locale.dart';
+import '../../core/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
@@ -94,6 +93,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     ref.listen<bool>(shopOpenRouteProvider, (prev, next) {
       if (next != true) return;
+      if (!AppConfig.shopEnabled) {
+        ref.read(shopOpenRouteProvider.notifier).state = false;
+        return;
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (ref.read(shopOpenRouteProvider) != true) return;
@@ -103,12 +106,6 @@ class _AppShellState extends ConsumerState<AppShell> {
         );
       });
     });
-
-    final locale = Localizations.localeOf(context);
-    final homeLabel = hofTitleFor(
-      countryCode: locale.countryCode,
-      languageCode: AppLocaleBinding.hofLanguageCode(),
-    );
 
     final hideNav = riding || index == ShellTabs.ride;
     final onboardingOpen = onboardingDone == false;
@@ -152,27 +149,13 @@ class _AppShellState extends ConsumerState<AppShell> {
                 onDestinationSelected: (nav) {
                   final stack = ShellTabs.stackFromNav(nav);
                   setState(() => _visited.add(stack));
-                  final pendingTarget = ref.read(discoverPendingMineProvider) ||
-                      ref.read(discoverPendingLoopIdProvider) != null ||
-                      ref.read(discoverPendingLensMinutesProvider) != null;
-                  if (onboardingDone != false &&
-                      ShellTabs.shouldOfferRideOutOnKarteNav(
-                        fromStack: index,
-                        toStack: stack,
-                        hasLaunchIntent:
-                            ref.read(discoverLaunchModeProvider) != null,
-                        hasPendingDiscoverTarget: pendingTarget,
-                      )) {
-                    ref.read(discoverLaunchModeProvider.notifier).state =
-                        DiscoverLaunchMode.rideOut;
-                  }
                   ref.read(shellTabIndexProvider.notifier).state = stack;
                 },
                 destinations: [
                   HofThresholdDestination(
                     icon: Icons.home_outlined,
                     selectedIcon: Icons.home,
-                    label: homeLabel.isEmpty ? 'Hof' : homeLabel,
+                    label: l10n.navHome,
                   ),
                   HofThresholdDestination(
                     icon: Icons.map_outlined,
@@ -186,8 +169,8 @@ class _AppShellState extends ConsumerState<AppShell> {
                     showBadge: platzInbox > 0,
                   ),
                   HofThresholdDestination(
-                    icon: Icons.handyman_outlined,
-                    selectedIcon: Icons.handyman,
+                    icon: Icons.pedal_bike_outlined,
+                    selectedIcon: Icons.pedal_bike,
                     label: l10n.navWorkshop,
                     showBadge: dueCount > 0,
                   ),

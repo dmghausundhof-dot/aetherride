@@ -28,7 +28,7 @@ export async function contributeHeatmapTrack(input: {
     return {
       upserted: 0,
       ok: false,
-      message: "Heatmap: zu wenig Track-Punkte nach Privacy-Trim",
+      message: "Wo viele fahren: zu wenig Spur nach Privatbereich",
     };
   }
   const points = trimmed
@@ -43,7 +43,7 @@ export async function contributeHeatmapTrack(input: {
     return {
       upserted: 0,
       ok: false,
-      message: "Heatmap: keine gültigen GPS-Punkte",
+      message: "Wo viele fahren: keine gültigen GPS-Punkte",
     };
   }
 
@@ -60,7 +60,7 @@ export async function contributeHeatmapTrack(input: {
       return {
         upserted: 0,
         ok: false,
-        message: "Heatmap: eingeloggt nötig für den Beitrag",
+        message: "Wo viele fahren: Anmelden nötig für den Beitrag",
       };
     }
     if (!res.ok) {
@@ -74,7 +74,7 @@ export async function contributeHeatmapTrack(input: {
       return {
         upserted: 0,
         ok: false,
-        message: `Heatmap-Beitrag fehlgeschlagen (${detail})`,
+        message: `Wo viele fahren: Beitrag fehlgeschlagen (${detail})`,
       };
     }
     const m = (await res.json()) as { upserted?: number };
@@ -83,19 +83,19 @@ export async function contributeHeatmapTrack(input: {
       return {
         upserted: 0,
         ok: false,
-        message: "Heatmap: keine neuen Zellen (bereits beigetragen?)",
+        message: "Wo viele fahren: keine neuen Zellen (bereits beigetragen?)",
       };
     }
     return {
       upserted: n,
       ok: true,
-      message: `Heatmap: ${n} Zellen beigetragen (sichtbar ab k≥${HEATMAP_K_THRESHOLD})`,
+      message: `Wo viele fahren: ${n} Zellen beigetragen (sichtbar erst ab ${HEATMAP_K_THRESHOLD}).`,
     };
   } catch (e) {
     return {
       upserted: 0,
       ok: false,
-      message: `Heatmap offline (${e instanceof Error ? e.message : "Netzwerk"})`,
+      message: `Wo viele fahren: offline (${e instanceof Error ? e.message : "Netzwerk"})`,
     };
   }
 }
@@ -158,7 +158,7 @@ export async function fetchCommunityHeatmap(
         m.attribution ?? "© OpenStreetMap · FlowLine k≥5 Aggregate",
       disclaimer:
         m.disclaimer ??
-        `Heatmap (k≥${m.kThreshold ?? HEATMAP_K_THRESHOLD}), anonym, ohne Zeitstempel.`,
+        `Wo viele fahren (erst ab ${m.kThreshold ?? HEATMAP_K_THRESHOLD}), anonym, ohne Zeitstempel.`,
     };
   } catch {
     return null;

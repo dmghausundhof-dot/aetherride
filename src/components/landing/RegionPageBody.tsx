@@ -65,7 +65,7 @@ export function RegionPageBody({ slug }: { slug: string }) {
               {copy.region.openMap}
             </Link>
             <Link
-              href="/planner"
+              href="/discover?panel=plan"
               className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium"
             >
               {chrome.plan}
@@ -90,7 +90,7 @@ export function RegionPageBody({ slug }: { slug: string }) {
                 {copy.region.openMapCta}
               </Link>
               <Link
-                href="/planner"
+                href="/discover?panel=plan"
                 className="text-sm font-semibold text-text-secondary hover:text-chrome hover:underline"
               >
                 {copy.region.planCta}

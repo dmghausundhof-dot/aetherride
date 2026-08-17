@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../shop/shop_screen.dart';
 
 /// Ruhige Zeile in der Werkstatt-Liste: Tür zum Laden, gebunden ans Rad.
-/// Kein Hero, kein Grid, kein Preis.
+/// Kein Banner, kein Grid, kein Preis.
 class WerkstattPartsDoor extends ConsumerWidget {
   const WerkstattPartsDoor({
     super.key,
@@ -23,6 +24,7 @@ class WerkstattPartsDoor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!AppConfig.shopEnabled) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
     final title = lookupOnly ? l10n.shopLookupInShop : l10n.werkstattPartsForBike;
     return Material(

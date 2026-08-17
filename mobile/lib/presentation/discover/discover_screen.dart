@@ -500,7 +500,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   /// Eigene SavedRoutes dauerhaft als Accent-Layer (nicht nur nach Tap).
   bool _showOwnTracks = true;
-  TourVisibilityKey _mineVisibility = TourVisibilityKey.allMine;
   Map<String, SavedRouteMeta> _savedMeta = {};
   String? _selectedTrailId;
   String? _trailNetworkStatus;
@@ -703,6 +702,19 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   AppLocalizations get _l10n => AppLocalizations.of(context);
 
+  bool _isLiveRateLimited(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('429') ||
+        msg.contains('too many requests') ||
+        msg.contains('rate limit') ||
+        msg.contains('minutely');
+  }
+
+  String _liveRouteError(Object e) {
+    if (_isLiveRateLimited(e)) return _l10n.discoverGhMinuteLimit;
+    return friendlyErrorMessage(e, context: _l10n.computeRoute);
+  }
+
   void _setStatus(String? text, {bool warm = false, bool approx = false}) {
     _status = text;
     _statusIsWarm = text != null && warm;
@@ -743,13 +755,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return;
     }
     if (launch == DiscoverLaunchMode.rideOut) {
-      setState(() {
-        _hofChoice = true;
-        _detailId = null;
-        _selectedTourId = null;
-        _surface = _Surface.discover;
-        _shellMode = DiscoverShellMode.explore;
-      });
+      _hofJustRide();
+      return;
     }
   }
 
@@ -1109,7 +1116,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = friendlyErrorMessage(e, context: _l10n.computeRoute);
+          _error = _liveRouteError(e);
         });
       }
     }
@@ -1861,7 +1868,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = friendlyErrorMessage(e, context: _l10n.computeRoute);
+          _error = _liveRouteError(e);
         });
       }
     }
@@ -3272,8 +3279,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       } else {
         await _drawAll();
       }
-    } catch (_) {
+    } catch (e) {
       // Organische Seed-Näherung bleibt — Live-Routing optional.
+      if (mounted &&
+          _isLiveRateLimited(e) &&
+          (_status == null || _status!.isEmpty || _statusIsWarm)) {
+        setState(() => _setStatus(_l10n.discoverGhMinuteLimit));
+      }
     } finally {
       _routedLoopPending.remove(r.id);
     }
@@ -3562,7 +3574,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         if (result.engine == 'fallback-line') {
           _setStatus(_l10n.discoverStraightFallback, approx: true);
         } else if (result.riderWarning != null) {
-          _setStatus(result.riderWarning);
+          _setStatus(_l10n.discoverRiderHonestyFor(result.riderWarning!));
         }
       });
       await _drawAll();
@@ -3571,7 +3583,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     } catch (e) {
       if (mounted && gen == _calcAbGen) {
         setState(
-          () => _error = friendlyErrorMessage(e, context: _l10n.computeRoute),
+          () => _error = _liveRouteError(e),
         );
       }
     } finally {
@@ -3665,7 +3677,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error = friendlyErrorMessage(e, context: _l10n.computeRoute),
+          () => _error = _liveRouteError(e),
         );
       }
     } finally {
@@ -4136,7 +4148,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = friendlyErrorMessage(e, context: _l10n.computeRoute);
+          _error = _liveRouteError(e);
           _setStatus(_l10n.discoverRoutingFailedRetry);
           _surface = _Surface.plan;
           _shellMode = DiscoverShellMode.navigate;
@@ -7316,7 +7328,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _panelMessages() {
     final status = _status;
-    final hideStatus = status != null && _suppressDemoGeometryBanner(status);
+    final hideStaleNearby =
+        status == _l10n.discoverLocationReady && _tours.isNotEmpty;
+    final hideStatus = hideStaleNearby ||
+        (status != null && _suppressDemoGeometryBanner(status));
     if (_error == null && (status == null || hideStatus)) {
       return const SizedBox.shrink();
     }
@@ -8131,11 +8146,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  /// Meine Strecken — UGC / Import / Recorded als eigener Shell-Modus.
+  /// Touren — dieselbe Liste wie der Tab, kartenfirst.
   Widget _buildMinePanel({ScrollController? scrollController}) {
     final l10n = AppLocalizations.of(context);
     final savedList =
         ref.watch(savedRoutesProvider).valueOrNull ?? const <SavedRouteEntry>[];
+    final visibility = ref.watch(tourVisibilityProvider);
     final header = Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.m,
@@ -8150,12 +8166,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             children: [
               Expanded(
                 child: Text(
-                  l10n.myRoutesTitle,
+                  l10n.navPlatz,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+              ),
+              IconButton(
+                tooltip: l10n.browseList,
+                visualDensity: VisualDensity.compact,
+                onPressed: () {
+                  ref.read(shellTabIndexProvider.notifier).state =
+                      ShellTabs.platz;
+                },
+                icon: const Icon(Icons.list, size: 20),
               ),
               FilterChip(
                 label: Text(
@@ -8185,9 +8210,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     l10n.tourVisibilityChip(chip.id),
                     style: const TextStyle(fontSize: 11),
                   ),
-                  selected: _mineVisibility == chip.id,
+                  selected: visibility == chip.id,
                   onSelected: (_) {
-                    setState(() => _mineVisibility = chip.id);
+                    ref.read(tourVisibilityProvider.notifier).state = chip.id;
                     unawaited(_reloadSavedMeta());
                   },
                 ),
@@ -10143,14 +10168,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ref.watch(savedRoutesProvider).valueOrNull ?? const <SavedRouteEntry>[];
     final savedList = RouteVisibility.filter(
       allSaved,
-      _mineVisibility,
+      ref.watch(tourVisibilityProvider),
       _savedMeta,
     );
     return [
       if (includeTitle) ...[
         const SizedBox(height: AppSpacing.s),
         Text(
-          l10n.myRoutesTitle,
+          l10n.navPlatz,
           style: const TextStyle(
               fontWeight: FontWeight.w700, color: AppColors.muted),
         ),

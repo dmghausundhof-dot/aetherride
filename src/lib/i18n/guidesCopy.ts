@@ -119,7 +119,7 @@ const EN: Record<string, Overlay> = {
       "Why FlowLine does not look like a feed — and what Home, Map, Platz and workshop are for.",
     body: [
       "Many cycling apps stack cards: Home, Explore, Activity, Club, Shop. FlowLine has four doors at Home. Ride is the orange button, not a fifth tab. The shop is not a door in the bar.",
-      "Home is the stand: sky, an hour at the gate, ride out. The map shows nearby and planning. Platz holds Mappe, Stimmen and groups. The workshop knows the bike — and opens the Shopify door when a part fits this bike.",
+      "Home is the stand: sky, an hour at the gate, ride out. The map shows nearby and planning. Platz holds Mappe, Stimmen and groups. The workshop knows the bike. The shop is off for now.",
       "What is missing in the browser stays empty: no live GPS, no HUD, no dummy kilometres. The app takes navigation, offline and sensors.",
     ],
     relatedLabels: ["To Home", "Product map", "About FlowLine", "The shop"],
@@ -153,15 +153,15 @@ const EN: Record<string, Overlay> = {
     relatedLabels: ["How to share", "Sample tour", "Sample Mappe", "Community"],
   },
   "laden-ohne-zweite-kasse": {
-    title: "The shop: a door to Shopify, no second till",
+    title: "The shop: paused, no second till",
     teaser:
-      "Parts and merch sit behind a door. The purchase contract and checkout happen at Shopify — or not at all, as long as the imprint is missing.",
+      "Parts and merch sit behind a door — closed for now. No till in FlowLine.",
     body: [
-      "The shop is not a fifth door in the bar. Catalogue and fit come from the workshop, bound to slot and bike. The till sits at Shopify — there is no cart that charges here.",
-      "Without an imprint on file (name and a serviceable address), checkout stays locked. That is intentional: we do not invent TMG details so something can say “buy”.",
-      "Merchandise is not filtered by fit to the bike. Spare parts are: category and wheel size to the parked bike, no invented SKUs. App store listings are independent of that and appear once they are live.",
+      "The shop is not a fifth door in the bar. The workshop stays for the bike, setup and service. Catalogue and till are off for now — there is no cart that charges here.",
+      "Without an imprint on file (name and a serviceable address), checkout stays locked anyway. That is intentional: we do not invent TMG details so something can say “buy”.",
+      "When the shop reopens, the till sits outside FlowLine. Spare parts would match the parked bike, no invented SKUs. App store listings are independent of that and appear once they are live.",
     ],
-    relatedLabels: ["To the shop", "Workshop", "Imprint", "Product map"],
+    relatedLabels: ["To the workshop", "Workshop", "Imprint", "Product map"],
   },
 };
 
@@ -246,7 +246,7 @@ const FR: Record<string, Overlay> = {
       "Pourquoi FlowLine ne ressemble pas à un fil — et à quoi servent Home, Carte, Platz et atelier.",
     body: [
       "Beaucoup d’applis vélo empilent des cartes : Home, Explore, Activity, Club, Shop. FlowLine a quatre portes à Home. Ride est le bouton orange, pas un cinquième onglet. Le magasin n’est pas une porte dans la barre.",
-      "Home est le stand : ciel, une heure devant la porte, sortir. La carte montre le proche et Planifier. Le Platz tient Mappe, Stimmen et groupes. L’atelier connaît le vélo — et ouvre la porte Shopify quand une pièce va à ce vélo.",
+      "Home est le stand : ciel, une heure devant la porte, sortir. La carte montre le proche et Planifier. Le Platz tient Mappe, Stimmen et groupes. L’atelier connaît le vélo. Le magasin est coupé pour l’instant.",
       "Ce qui manque dans le navigateur reste vide : pas de GPS live, pas de HUD, pas de kilomètres fictifs. L’appli prend navigation, hors ligne et capteurs.",
     ],
     relatedLabels: ["Vers Home", "Carte produit", "À propos de FlowLine", "Le magasin"],
@@ -280,15 +280,15 @@ const FR: Record<string, Overlay> = {
     relatedLabels: ["Comment partager", "Exemple de sortie", "Exemple de Mappe", "Community"],
   },
   "laden-ohne-zweite-kasse": {
-    title: "Le magasin : porte vers Shopify, pas de deuxième caisse",
+    title: "Le magasin : en pause, pas de deuxième caisse",
     teaser:
-      "Pièces et merch sont derrière une porte. Le contrat d’achat et le checkout naissent chez Shopify — ou pas du tout, tant que les mentions légales manquent.",
+      "Pièces et merch sont derrière une porte — fermée pour l’instant. Pas de caisse dans FlowLine.",
     body: [
-      "Le magasin n’est pas une cinquième porte dans la barre. Catalogue et fit viennent de l’atelier, liés au slot et au vélo. La caisse est chez Shopify — il n’y a pas de panier qui encaisse ici.",
-      "Sans mentions légales déposées (nom et adresse de signification), le checkout reste bloqué. C’est voulu : on n’invente pas d’indications TMG pour que quelque chose dise « acheter ».",
-      "Le merch n’est pas filtré par le fit au vélo. Les pièces oui : catégorie et roue au vélo garé, pas de SKU inventés. Les listings store de l’appli sont indépendants et apparaissent dès qu’ils sont en ligne.",
+      "Le magasin n’est pas une cinquième porte dans la barre. L’atelier reste pour le vélo, le setup et l’entretien. Catalogue et caisse sont coupés pour l’instant — il n’y a pas de panier qui encaisse ici.",
+      "Sans mentions légales déposées (nom et adresse de signification), le checkout reste bloqué de toute façon. C’est voulu : on n’invente pas d’indications TMG pour que quelque chose dise « acheter ».",
+      "Quand le magasin rouvre, la caisse reste hors de FlowLine. Les pièces iraient au vélo garé, pas de SKU inventés. Les listings store de l’appli sont indépendants et apparaissent dès qu’ils sont en ligne.",
     ],
-    relatedLabels: ["Vers le magasin", "Atelier", "Mentions légales", "Carte produit"],
+    relatedLabels: ["Vers l’atelier", "Atelier", "Mentions légales", "Carte produit"],
   },
 };
 
@@ -373,7 +373,7 @@ const IT: Record<string, Overlay> = {
       "Perché FlowLine non sembra un feed — e a cosa servono Home, Mappa, Platz e officina.",
     body: [
       "Molte app bici impilano schede: Home, Explore, Activity, Club, Shop. FlowLine ha quattro porte a Home. Ride è il pulsante arancione, non la quinta scheda. Il negozio non è una porta nella barra.",
-      "Home è lo stand: cielo, un’ora davanti al cancello, esci. La mappa mostra il vicino e Pianifica. Il Platz tiene Mappe, Stimmen e gruppi. L’officina conosce la bici — e apre la porta Shopify quando un pezzo sta a questa bici.",
+      "Home è lo stand: cielo, un’ora davanti al cancello, esci. La mappa mostra il vicino e Pianifica. Il Platz tiene Mappe, Stimmen e gruppi. L’officina conosce la bici. Il negozio è spento per ora.",
       "Ciò che manca nel browser resta vuoto: niente GPS live, niente HUD, niente chilometri finti. L’app prende navigazione, offline e sensori.",
     ],
     relatedLabels: ["Verso Home", "Mappa prodotto", "Su FlowLine", "Il negozio"],
@@ -407,15 +407,15 @@ const IT: Record<string, Overlay> = {
     relatedLabels: ["Come condividere", "Uscita esempio", "Mappe esempio", "Community"],
   },
   "laden-ohne-zweite-kasse": {
-    title: "Il negozio: porta verso Shopify, niente seconda cassa",
+    title: "Il negozio: in pausa, niente seconda cassa",
     teaser:
-      "Ricambi e merch stanno dietro una porta. Il contratto d’acquisto e il checkout nascono da Shopify — o per niente, finché manca l’Impressum.",
+      "Ricambi e merch stanno dietro una porta — chiusa per ora. Niente cassa in FlowLine.",
     body: [
-      "Il negozio non è una quinta porta nella barra. Catalogo e fit vengono dall’officina, legati a slot e bici. La cassa è da Shopify — non c’è un carrello che incassa qui.",
-      "Senza Impressum depositato (nome e indirizzo notificabile) il checkout resta bloccato. È voluto: non inventiamo dati TMG perché qualcosa dica «compra».",
-      "Il merch non è filtrato sul fit alla bici. I ricambi sì: categoria e ruota alla bici parcheggiata, niente SKU inventati. I listing store dell’app sono indipendenti e compaiono quando sono live.",
+      "Il negozio non è una quinta porta nella barra. L’officina resta per bici, setup e manutenzione. Catalogo e cassa sono spenti per ora — non c’è un carrello che incassa qui.",
+      "Senza Impressum depositato (nome e indirizzo notificabile) il checkout resta bloccato comunque. È voluto: non inventiamo dati TMG perché qualcosa dica «compra».",
+      "Quando il negozio riapre, la cassa resta fuori da FlowLine. I ricambi andrebbero alla bici parcheggiata, niente SKU inventati. I listing store dell’app sono indipendenti e compaiono quando sono live.",
     ],
-    relatedLabels: ["Verso il negozio", "Officina", "Impressum", "Mappa prodotto"],
+    relatedLabels: ["Verso l’officina", "Officina", "Impressum", "Mappa prodotto"],
   },
 };
 

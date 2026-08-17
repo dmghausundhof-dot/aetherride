@@ -6,6 +6,7 @@ import { buildValhallaCosting, getProfile, isTrailSuitable } from "./profiles";
 import {
   applyRouteVariant,
   parseRouteVariant,
+  VARIANT_VALHALLA_ONLY,
   variantNeedsValhalla,
 } from "./routeVariant";
 
@@ -40,6 +41,11 @@ assert.equal(isTrailSuitable("mtb_allmountain", { mtb_scale: 4 }), false);
 
 assert.equal(variantNeedsValhalla("planned"), false);
 assert.equal(variantNeedsValhalla("flatter"), true);
+assert.equal(
+  VARIANT_VALHALLA_ONLY,
+  "Ohne Live-Strecke keine Varianten — Route wie geplant.",
+);
+assert.ok(!VARIANT_VALHALLA_ONLY.toLowerCase().includes("valhalla"));
 
 const hike = applyRouteVariant(buildValhallaCosting("hiking"), "flatter");
 assert.ok(

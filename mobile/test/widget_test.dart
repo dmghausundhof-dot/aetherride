@@ -40,16 +40,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Werkstatt'), findsWidgets);
+    expect(find.text('Rad'), findsWidgets);
     expect(find.text('Karte'), findsWidgets);
-    expect(find.text('Platz'), findsWidgets);
+    expect(find.text('Touren'), findsWidgets);
     expect(find.text('Laden'), findsNothing);
-    expect(find.text('Der Hof'), findsWidgets);
+    expect(find.text('Start'), findsWidgets);
     expect(find.byKey(const Key('hof-threshold-nav')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('Home'), findsNothing);
     expect(find.text('Fahren'), findsNothing);
     expect(find.text('Garage'), findsNothing);
+    expect(find.text('Platz'), findsNothing);
+    expect(find.text('Der Hof'), findsNothing);
     expect(find.byKey(const Key('hof-title')), findsOneWidget);
     expect(find.byKey(const Key('hof-ride-out')), findsOneWidget);
     expect(find.text('Trail E-MTB'), findsWidgets);
@@ -96,28 +98,60 @@ void main() {
       find
           .descendant(
             of: find.byKey(const Key('hof-threshold-nav')),
-            matching: find.text('Werkstatt'),
+              matching: find.text('Rad'),
           )
           .first,
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byKey(const Key('werkstatt-parts-row')), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('werkstatt-parts-row')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('werkstatt-parts-row')));
+    expect(find.byKey(const Key('werkstatt-parts-row')), findsNothing);
+    expect(find.byKey(const Key('shop-gateway')), findsNothing);
+    expect(find.byKey(const Key('hof-threshold-nav')), findsOneWidget);
+  });
+
+  testWidgets('shopOpenRoute öffnet ShopScreen nicht, wenn Laden pausiert',
+      (tester) async {
+    tester.platformDispatcher.localeTestValue = const Locale('de', 'DE');
+    tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
+    addTearDown(() {
+      tester.platformDispatcher.clearLocaleTestValue();
+      tester.platformDispatcher.clearLocalesTestValue();
+    });
+
+    final container = ProviderContainer(
+      overrides: [
+        onboardingDoneProvider.overrideWith((ref) => true),
+        bikesProvider.overrideWith(
+          (ref) async => [
+            const Bike(
+              id: 'test',
+              name: 'Trail E-MTB',
+              category: BikeCategory.emtb,
+            ),
+          ],
+        ),
+        shopShelvesProvider.overrideWith(
+          (ref) async => const ShopShelves(ok: false),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const FlowLineApp(),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byKey(const Key('shop-gateway')), findsOneWidget);
-    expect(find.text('Laden'), findsNothing);
 
-    final handled = await tester.binding.handlePopRoute();
-    expect(handled, isTrue);
-    await tester.pumpAndSettle();
+    container.read(shopOpenRouteProvider.notifier).state = true;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('shop-gateway')), findsNothing);
-    expect(find.byKey(const Key('werkstatt-parts-row')), findsOneWidget);
-    expect(find.byKey(const Key('hof-threshold-nav')), findsOneWidget);
+    expect(container.read(shopOpenRouteProvider), isFalse);
   });
 }

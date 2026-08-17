@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { syncFeaturedCatalog } from "@/lib/shop/featuredSync";
+import { isShopEnabled, SHOP_DISABLED_BODY } from "@/lib/shop/shopEnabled";
 
 /**
  * GET /api/shop/featured
  * Live featured-parts + Storefront-confirmed bike handles (404s omitted).
  */
 export async function GET() {
+  if (!isShopEnabled()) {
+    return NextResponse.json(SHOP_DISABLED_BODY, { status: 410 });
+  }
   const result = await syncFeaturedCatalog();
   const status = result.error ? (result.configured ? 502 : 503) : 200;
 

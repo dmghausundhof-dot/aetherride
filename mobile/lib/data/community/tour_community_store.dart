@@ -84,6 +84,7 @@ class TourCommunityReview {
     this.pinLat,
     this.pinLng,
     this.difficultyDelta,
+    this.cloudStatus,
   });
 
   final String id;
@@ -98,6 +99,25 @@ class TourCommunityReview {
   final double? pinLat;
   final double? pinLng;
   final int? difficultyDelta;
+  final CloudSubmitResult? cloudStatus;
+
+  TourCommunityReview copyWith({CloudSubmitResult? cloudStatus}) {
+    return TourCommunityReview(
+      id: id,
+      tourId: tourId,
+      rating: rating,
+      body: body,
+      authorLabel: authorLabel,
+      createdAt: createdAt,
+      photoUris: photoUris,
+      tags: tags,
+      alongM: alongM,
+      pinLat: pinLat,
+      pinLng: pinLng,
+      difficultyDelta: difficultyDelta,
+      cloudStatus: cloudStatus ?? this.cloudStatus,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -112,6 +132,7 @@ class TourCommunityReview {
         if (pinLat != null) 'pinLat': pinLat,
         if (pinLng != null) 'pinLng': pinLng,
         if (difficultyDelta != null) 'difficultyDelta': difficultyDelta,
+        if (cloudStatus != null) 'cloudStatus': cloudStatus!.name,
       };
 
   static TourCommunityReview? fromJson(Object? raw) {
@@ -153,8 +174,17 @@ class TourCommunityReview {
       difficultyDelta: parseDifficultyDelta(
         raw['difficultyDelta'] ?? raw['difficulty_delta'],
       ),
+      cloudStatus: _cloudStatusFromJson(raw['cloudStatus']),
     );
   }
+}
+
+CloudSubmitResult? _cloudStatusFromJson(Object? raw) {
+  if (raw is! String) return null;
+  for (final v in CloudSubmitResult.values) {
+    if (v.name == raw) return v;
+  }
+  return null;
 }
 
 double? _finiteDouble(Object? raw) {
@@ -400,7 +430,10 @@ class TourCommunityStore {
       } catch (_) {
         token = null;
       }
-      if (token == null || token.isEmpty) return CloudSubmitResult.localOnly;
+      if (token == null || token.isEmpty) {
+        await _setCloudStatus(review.id, CloudSubmitResult.localOnly);
+        return CloudSubmitResult.localOnly;
+      }
       final photoPaths = await _uploadTourPhotos(
         tourId: review.tourId,
         localPaths: review.photoUris,
@@ -438,15 +471,32 @@ class TourCommunityStore {
         try {
           final data = jsonDecode(res.body);
           final st = data is Map ? data['status'] : null;
-          if (st == 'approved') return CloudSubmitResult.approved;
-          if (st == 'rejected') return CloudSubmitResult.rejected;
+          if (st == 'approved') {
+            await _setCloudStatus(review.id, CloudSubmitResult.approved);
+            return CloudSubmitResult.approved;
+          }
+          if (st == 'rejected') {
+            await _setCloudStatus(review.id, CloudSubmitResult.rejected);
+            return CloudSubmitResult.rejected;
+          }
         } catch (_) {}
+        await _setCloudStatus(review.id, CloudSubmitResult.pending);
         return CloudSubmitResult.pending;
       }
+      await _setCloudStatus(review.id, CloudSubmitResult.failed);
       return CloudSubmitResult.failed;
     } catch (_) {
+      await _setCloudStatus(review.id, CloudSubmitResult.failed);
       return CloudSubmitResult.failed;
     }
+  }
+
+  Future<void> _setCloudStatus(String id, CloudSubmitResult status) async {
+    final all = List<TourCommunityReview>.from(await _load());
+    final i = all.indexWhere((r) => r.id == id);
+    if (i < 0) return;
+    all[i] = all[i].copyWith(cloudStatus: status);
+    await _save(all);
   }
 
   /// Batch-Counts für Tour-Karten (`GET ?ids=`).

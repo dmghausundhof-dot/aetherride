@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Der Hof",
+  title: "Start",
   description:
-    "Das Rad wohnt hier. Himmel, eine Stunde vor dem Tor, Rausfahren.",
+    "Dein Rad und ein Knopf: Losfahren. Kein Feed.",
 };
 
 export default function HomeLayout({

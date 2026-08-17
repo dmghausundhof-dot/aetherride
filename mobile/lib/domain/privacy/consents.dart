@@ -40,11 +40,10 @@ const consentLabels = <ConsentPurpose, ConsentLabel>{
         'Jederzeit widerrufbar.',
   ),
   ConsentPurpose.heatmapContribution: ConsentLabel(
-    title: 'Heatmap (eigene Fahrten, anonym)',
+    title: 'Wo viele fahren (anonym, erst ab 5)',
     description:
         'Lokal: deine Fahrten. Mit Konto: anonymisierte Zellen ohne Zeitstempel. '
-        'Die Beliebtheitskarte erscheint erst, wenn genug Fahrer in einer '
-        'Zelle unterwegs waren (k≥5).',
+        'Die Karte erscheint erst, wenn 5 Fahrer in einer Zelle unterwegs waren.',
   ),
   ConsentPurpose.productRecommendations: ConsentLabel(
     title: 'Produktempfehlungen',

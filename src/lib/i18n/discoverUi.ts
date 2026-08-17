@@ -2,6 +2,10 @@ import {
   DEMO_ROUTING_NOTICE,
   UNVERIFIED_ROUTING_NOTICE,
 } from "@/lib/routing/routingStatus";
+import {
+  HONESTY_CYCLEWAY_DE,
+  HONESTY_ROAD_DE,
+} from "@/lib/routing/graphhopperHints";
 import type { ChromeLang } from "./chromeLang";
 import { discoverCopy } from "./discoverCopy";
 
@@ -38,7 +42,7 @@ export const DISCOVER_STATUS_DE = {
   trailFail: "Trail konnte nicht verbunden werden",
   searchStart: "Adresse suchen — Start setzen",
   changePlace: "Ort ändern — Stadt oder Adresse suchen",
-  heatmapOffline: "Heatmap offline",
+  heatmapOffline: "Wo viele fahren: offline",
   packsEmpty: "Keine Packs im Katalog — Region-Build lokal ausführen.",
   packsUnreachable: "Offline-Katalog nicht erreichbar.",
 } as const;
@@ -74,6 +78,8 @@ export type DiscoverUi = {
   recompute: string;
   moreOption: string;
   ghMinuteLimit: string;
+  honestyRoad: string;
+  honestyCycleway: string;
   sixtyTitle: string;
   sixtyLead: string;
   noLoopsNearby: string;
@@ -252,6 +258,8 @@ export type DiscoverUi = {
   privacyLink: string;
   heatOwn: string;
   heatSection: string;
+  heatCell: string;
+  heatSegments: (n: number) => string;
   riders: (n: number, pct: string) => string;
   noSegments: string;
   heading: (deg: number) => string;
@@ -315,7 +323,11 @@ const DE: DiscoverUi = {
   recompute: "Neu berechnen",
   moreOption: "Weitere Option",
   ghMinuteLimit:
-    "GraphHopper-Minutenlimit — warte kurz oder nutze den Planer sparsam.",
+    "Vorschläge und Zeit gerade gedrosselt — kurz warten oder sparsam planen.",
+  honestyRoad:
+    "Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.",
+  honestyCycleway:
+    "Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.",
   sixtyTitle: "~60 Min Rundkurse",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar & kuratierte Feierabend-Loops — unabhängig vom Live-Routing.",
@@ -479,8 +491,8 @@ const DE: DiscoverUi = {
   startInApp: "In App starten",
   variantPlanned: "Wie geplant",
   variantFlatter: "Weniger hm",
-  variantUnpaved: "Mehr unpaved",
-  variantValhallaOnly: "Varianten nur mit Live-Valhalla",
+  variantUnpaved: "Mehr Schotter",
+  variantValhallaOnly: "Ohne Live-Strecke keine Varianten",
   openNativeApp: "In der App öffnen",
   placeKind: (kind) =>
     kind === "cafe"
@@ -514,15 +526,17 @@ const DE: DiscoverUi = {
   offlineMapsAfter: ".",
   savedLink: "Gespeichert",
   heatCold: (k) =>
-    `Noch wenig Heatmap-Daten (k≥${k}) — eigene Rides und mehr Fahrer füllen die Karte.`,
+    `Noch wenig, wo viele fahren (erst ab ${k}) — eigene Fahrten und mehr Fahrer füllen die Karte.`,
   heatConsent: (k) =>
-    `Eigene Beiträge unter Privatsphäre aktivieren. Heatmap-Segmente (k≥${k}) sind trotzdem sichtbar, sobald genug Fahrer da sind.`,
+    `Eigene Beiträge unter Privatsphäre aktivieren. Abschnitte (erst ab ${k}) sind sichtbar, sobald genug Fahrer da sind.`,
   heatConsentBefore: "Eigene Beiträge unter ",
   heatConsentAfter: (k) =>
-    ` aktivieren. Heatmap-Segmente (k≥${k}) sind trotzdem sichtbar, sobald genug Fahrer da sind.`,
+    ` aktivieren. Abschnitte (erst ab ${k}) sind sichtbar, sobald genug Fahrer da sind.`,
   privacyLink: "Privatsphäre",
-  heatOwn: "Eigene Ride",
+  heatOwn: "Eigene Fahrt",
   heatSection: "Abschnitt",
+  heatCell: "Wo viele fahren",
+  heatSegments: (n) => `${n} Abschnitte, wo viele fahren`,
   riders: (n, pct) => `${n} Fahrer · Intensität ${pct} %`,
   noSegments: "Keine sichtbaren Segmente in diesem Ausschnitt.",
   heading: (deg) => `Blickrichtung ${deg}°`,
@@ -590,7 +604,11 @@ const EN: DiscoverUi = {
   recompute: "Recompute",
   moreOption: "Another option",
   ghMinuteLimit:
-    "GraphHopper minute limit — wait a bit or use the planner sparingly.",
+    "Suggestions and times are limited — wait a bit or plan sparingly.",
+  honestyRoad:
+    "Route mostly follows roads — tap a trail on the map and attach it.",
+  honestyCycleway:
+    "Little dedicated bike path — the live route often stays on the road.",
   sixtyTitle: "~60 min loops",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar and curated after-work loops — independent of live routing.",
@@ -701,7 +719,7 @@ const EN: DiscoverUi = {
   trailFail: "Trail could not be connected",
   searchStart: "Search address — set start",
   changePlace: "Change place — search city or address",
-  heatmapOffline: "Heatmap offline",
+  heatmapOffline: "Where many ride: offline",
   demoRegion: (name) => `Demo region: ${name}`,
   demoRegionLoops: (name) => `Demo region: ${name} · 60 min loops`,
   noHits: (q) => `No hits for “${q}”`,
@@ -753,7 +771,7 @@ const EN: DiscoverUi = {
   variantPlanned: "As planned",
   variantFlatter: "Less climb",
   variantUnpaved: "More unpaved",
-  variantValhallaOnly: "Variants need live Valhalla",
+  variantValhallaOnly: "No variants without a live route",
   openNativeApp: "Open in the app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -787,15 +805,17 @@ const EN: DiscoverUi = {
   offlineMapsAfter: ".",
   savedLink: "Saved",
   heatCold: (k) =>
-    `Little heatmap data yet (k≥${k}) — your rides and more riders fill the map.`,
+    `Little of where many ride yet (from ${k} up) — your rides and more riders fill the map.`,
   heatConsent: (k) =>
-    `Turn on your traces under Privacy. Heatmap segments (k≥${k}) still show once enough riders are there.`,
+    `Turn on your traces under Privacy. Sections (from ${k} up) still show once enough riders are there.`,
   heatConsentBefore: "Turn on your traces under ",
   heatConsentAfter: (k) =>
-    `. Heatmap segments (k≥${k}) still show once enough riders are there.`,
+    `. Sections (from ${k} up) still show once enough riders are there.`,
   privacyLink: "Privacy",
   heatOwn: "Own ride",
   heatSection: "Segment",
+  heatCell: "Where many ride",
+  heatSegments: (n) => `${n} stretches where many ride`,
   riders: (n, pct) => `${n} riders · intensity ${pct} %`,
   noSegments: "No visible segments in this view.",
   heading: (deg) => `Heading ${deg}°`,
@@ -863,7 +883,11 @@ const FR: DiscoverUi = {
   recompute: "Recalculer",
   moreOption: "Autre option",
   ghMinuteLimit:
-    "Limite minutes GraphHopper — attends un peu ou utilise le planificateur avec parcimonie.",
+    "Suggestions et durées limitées — attends un peu ou planifie avec parcimonie.",
+  honestyRoad:
+    "L’itinéraire suit surtout la route — touche un sentier sur la carte et accroche-le.",
+  honestyCycleway:
+    "Peu de piste cyclable — la route live reste souvent sur la chaussée.",
   sixtyTitle: "Boucles ~60 min",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar et boucles after-work — indépendant du routing live.",
@@ -977,7 +1001,7 @@ const FR: DiscoverUi = {
   trailFail: "Trail non connecté",
   searchStart: "Chercher une adresse — poser le départ",
   changePlace: "Changer de lieu — ville ou adresse",
-  heatmapOffline: "Heatmap hors ligne",
+  heatmapOffline: "Là où on roule : hors ligne",
   demoRegion: (name) => `Région démo : ${name}`,
   demoRegionLoops: (name) => `Région démo : ${name} · boucles 60 min`,
   noHits: (q) => `Aucun résultat pour « ${q} »`,
@@ -1030,7 +1054,7 @@ const FR: DiscoverUi = {
   variantPlanned: "Comme prévu",
   variantFlatter: "Moins de dénivelé",
   variantUnpaved: "Plus de non bitumé",
-  variantValhallaOnly: "Variantes seulement avec Valhalla live",
+  variantValhallaOnly: "Sans route live, pas de variantes",
   openNativeApp: "Ouvrir dans l’app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -1064,15 +1088,17 @@ const FR: DiscoverUi = {
   offlineMapsAfter: ".",
   savedLink: "Enregistré",
   heatCold: (k) =>
-    `Peu de données heatmap (k≥${k}) — tes rides et plus de riders remplissent la carte.`,
+    `Encore peu, là où on roule (dès ${k}) — tes sorties et plus de riders remplissent la carte.`,
   heatConsent: (k) =>
-    `Active tes traces sous Confidentialité. Les segments heatmap (k≥${k}) restent visibles dès qu’il y a assez de riders.`,
+    `Active tes traces sous Confidentialité. Les sections (dès ${k}) restent visibles dès qu’il y a assez de riders.`,
   heatConsentBefore: "Active tes traces sous ",
   heatConsentAfter: (k) =>
-    `. Les segments heatmap (k≥${k}) restent visibles dès qu’il y a assez de riders.`,
+    `. Les sections (dès ${k}) restent visibles dès qu’il y a assez de riders.`,
   privacyLink: "Confidentialité",
   heatOwn: "Ton ride",
   heatSection: "Segment",
+  heatCell: "Là où on roule",
+  heatSegments: (n) => `${n} tronçons là où on roule`,
   riders: (n, pct) => `${n} riders · intensité ${pct} %`,
   noSegments: "Pas de segments visibles dans cette vue.",
   heading: (deg) => `Direction ${deg}°`,
@@ -1142,7 +1168,11 @@ const IT: DiscoverUi = {
   recompute: "Ricalcola",
   moreOption: "Altra opzione",
   ghMinuteLimit:
-    "Limite minuti GraphHopper — aspetta un po’ o usa il planner con parsimonia.",
+    "Suggerimenti e tempi limitati — aspetta un po’ o pianifica con parsimonia.",
+  honestyRoad:
+    "Il percorso segue soprattutto la strada — tocca un trail sulla mappa e aggancialo.",
+  honestyCycleway:
+    "Poco percorso ciclabile — la route live resta spesso sulla carreggiata.",
   sixtyTitle: "Anelli ~60 min",
   sixtyLead:
     "Tempelhofer, Rhein-Neckar e anelli after-work — indipendente dal routing live.",
@@ -1254,7 +1284,7 @@ const IT: DiscoverUi = {
   trailFail: "Trail non collegato",
   searchStart: "Cerca indirizzo — imposta partenza",
   changePlace: "Cambia luogo — città o indirizzo",
-  heatmapOffline: "Heatmap offline",
+  heatmapOffline: "Dove si gira: offline",
   demoRegion: (name) => `Regione demo: ${name}`,
   demoRegionLoops: (name) => `Regione demo: ${name} · anelli 60 min`,
   noHits: (q) => `Nessun risultato per «${q}»`,
@@ -1307,7 +1337,7 @@ const IT: DiscoverUi = {
   variantPlanned: "Come previsto",
   variantFlatter: "Meno dislivello",
   variantUnpaved: "Più sterrato",
-  variantValhallaOnly: "Varianti solo con Valhalla live",
+  variantValhallaOnly: "Senza route live, niente varianti",
   openNativeApp: "Apri nell’app",
   placeKind: (kind) =>
     kind === "cafe"
@@ -1341,15 +1371,17 @@ const IT: DiscoverUi = {
   offlineMapsAfter: ".",
   savedLink: "Salvato",
   heatCold: (k) =>
-    `Pochi dati heatmap (k≥${k}) — i tuoi ride e più rider riempiono la mappa.`,
+    `Ancora poco, dove si gira (da ${k} in su) — le tue uscite e più rider riempiono la mappa.`,
   heatConsent: (k) =>
-    `Attiva le tue tracce sotto Privacy. I segmenti heatmap (k≥${k}) restano visibili quando ci sono abbastanza rider.`,
+    `Attiva le tue tracce sotto Privacy. Le sezioni (da ${k} in su) restano visibili quando ci sono abbastanza rider.`,
   heatConsentBefore: "Attiva le tue tracce sotto ",
   heatConsentAfter: (k) =>
-    `. I segmenti heatmap (k≥${k}) restano visibili quando ci sono abbastanza rider.`,
+    `. Le sezioni (da ${k} in su) restano visibili quando ci sono abbastanza rider.`,
   privacyLink: "Privacy",
   heatOwn: "Tuo ride",
   heatSection: "Segmento",
+  heatCell: "Dove si gira",
+  heatSegments: (n) => `${n} tratti dove si gira`,
   riders: (n, pct) => `${n} rider · intensità ${pct} %`,
   noSegments: "Nessun segmento visibile in questa vista.",
   heading: (deg) => `Direzione ${deg}°`,
@@ -1451,7 +1483,15 @@ const PIN_KEY: Record<string, keyof DiscoverUi> = {
   [DISCOVER_PIN_DE.planned]: "plannedRoute",
 };
 
-/** Map stored DE status to chrome. Unknown (engine lines, tour names) stay. */
+/** Backend names that must not reach rider chrome. Outdooractive stays. */
+const ENGINE_STATUS_TAIL =
+  /\s·\s(?:graphhopper|valhalla|osrm|openrouteservice|ors)$/i;
+
+function stripEngineStatusTail(raw: string): string {
+  return raw.replace(ENGINE_STATUS_TAIL, "");
+}
+
+/** Map stored DE status to chrome. Tour names stay; engine tails are stripped. */
 export function discoverStatus(
   raw: string | null | undefined,
   lang: ChromeLang,
@@ -1487,7 +1527,11 @@ export function discoverStatus(
   if (hybrid) return d.hybridStats(hybrid[1], hybrid[2]);
   const inserted = raw.match(/^(.+) eingefügt$/);
   if (inserted) return d.trailInserted(inserted[1]);
-  return raw;
+  return stripEngineStatusTail(
+    raw
+      .replaceAll(HONESTY_ROAD_DE, d.honestyRoad)
+      .replaceAll(HONESTY_CYCLEWAY_DE, d.honestyCycleway),
+  );
 }
 
 export function discoverPinLabel(

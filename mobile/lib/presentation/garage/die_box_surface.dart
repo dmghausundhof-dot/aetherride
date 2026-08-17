@@ -16,7 +16,7 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../shared/bike_hero_banner.dart';
 
-/// Die Box — four zones, one resident bike. Tab name stays Werkstatt.
+/// Die Box — four zones, one resident bike. Tab title is the bike name.
 class DieBoxSurface extends ConsumerStatefulWidget {
   const DieBoxSurface({
     super.key,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { loadShopShelves } from "@/lib/shop/shopCatalog";
 import { FEATURED_PARTS_COLLECTION } from "@/lib/shop/shopifyStorefront";
 import { shopifyLangFromSearch } from "@/lib/shop/shopifyLocale";
+import { isShopEnabled, isShopifyCommerceEnabled, SHOP_DISABLED_BODY } from "@/lib/shop/shopEnabled";
 
 /**
  * GET /api/shop/parts?lang=
@@ -9,6 +10,9 @@ import { shopifyLangFromSearch } from "@/lib/shop/shopifyLocale";
  * lang: Chrome-Sprache (de/en/fr/it). Default de — kein Accept-Language.
  */
 export async function GET(req: Request) {
+  if (!isShopEnabled()) {
+    return NextResponse.json(SHOP_DISABLED_BODY, { status: 410 });
+  }
   const lang = shopifyLangFromSearch(new URL(req.url).searchParams.get("lang"));
   const result = await loadShopShelves(lang);
 
@@ -42,6 +46,7 @@ export async function GET(req: Request) {
       collectionTitle: result.collectionTitle,
       merchCollectionHandle: result.merchCollectionHandle,
       source: result.source,
+      shopifyCommerceEnabled: isShopifyCommerceEnabled(),
       count: result.parts.length,
       merchCount: result.merch.length,
       bikeCount: result.bikes.length,

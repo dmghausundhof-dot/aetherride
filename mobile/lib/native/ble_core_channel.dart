@@ -28,7 +28,7 @@ final _powerServiceGuid = Guid('00001818-0000-1000-8000-00805f9b34fb');
 final _batteryServiceGuid = Guid('0000180f-0000-1000-8000-00805f9b34fb');
 
 /// Standard BLE CSC (0x1816) + optional HR (0x180D) / Power (0x1818) / Battery (0x180F).
-/// Bosch LDI remains G-1 (native plugin returns false). Never invent SoC/HR/W.
+/// Bosch LDI: phone is accessory (advertise), bike is central. Never invent SoC/HR/W.
 class BleCoreChannel {
   BleCoreChannel({
     MethodChannel? method,
@@ -170,10 +170,13 @@ class BleCoreChannel {
       if (!kIsWeb && Platform.isAndroid) {
         final scan = await ph.Permission.bluetoothScan.request();
         final connect = await ph.Permission.bluetoothConnect.request();
+        final advertise = await ph.Permission.bluetoothAdvertise.request();
         if (scan.isDenied ||
             scan.isPermanentlyDenied ||
             connect.isDenied ||
-            connect.isPermanentlyDenied) {
+            connect.isPermanentlyDenied ||
+            advertise.isDenied ||
+            advertise.isPermanentlyDenied) {
           return BlePermissionResult.denied;
         }
       } else if (!kIsWeb && Platform.isIOS) {
@@ -257,11 +260,10 @@ class BleCoreChannel {
     } catch (e) {
       debugPrint('ble_core standard BLE: $e');
       _statusDetail ??= 'Radsensor-Suche fehlgeschlagen';
-    } finally {
-      _onProgress = null;
     }
 
     if (!tryLdi) {
+      _onProgress = null;
       debugPrint(
         'ble_core connect: standard BLE failed, skip LDI '
         '(kind=${kindHint?.name} id=$deviceId status=$_statusDetail)',
@@ -270,15 +272,34 @@ class BleCoreChannel {
     }
 
     try {
+      return await startLdiAccessory(pairing: !scanIfMissing);
+    } finally {
+      _onProgress = null;
+    }
+  }
+
+  /// Bosch LDI accessory: advertise, wait for the bike (Flow → Komponenten).
+  Future<bool> startLdiAccessory({
+    bool pairing = false,
+    void Function(String status)? onProgress,
+  }) async {
+    final prev = _onProgress;
+    if (onProgress != null) _onProgress = onProgress;
+    _statusDetail = 'ldi_waiting_flow';
+    _onProgress?.call(_statusDetail!);
+    _sub ??=
+        _events.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+    try {
       final ok = await _method.invokeMethod<bool>('connect', {
-        'deviceId': deviceId,
-        'serviceUuid': boschLdiServiceUuid,
+        'pairing': pairing,
       });
       _ldiConnected = ok ?? false;
       if (_ldiConnected) {
         _cscOnly = false;
-        _sub ??=
-            _events.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+        _connectedKind = BikeBleKind.bosch;
+        _lastRemoteId = boschLdiAccessoryId;
+      } else {
+        _statusDetail ??= 'ldi_timeout';
       }
       return _ldiConnected;
     } on MissingPluginException {
@@ -287,15 +308,14 @@ class BleCoreChannel {
         debugPrint('ble_core: LDI Plugin fehlt — Simulator (AETHER_LDI_SIM)');
         _ldiConnected = true;
         _cscOnly = false;
+        _connectedKind = BikeBleKind.bosch;
         _startStub();
         return true;
       }
-      debugPrint(
-        'ble_core: LDI unavailable (G-1 pending) — stay disconnected',
-      );
-      _ldiConnected = false;
-      _statusDetail ??= 'Kein Radsensor gefunden';
+      _statusDetail = 'ldi_ios_pending';
       return false;
+    } finally {
+      if (onProgress != null) _onProgress = prev;
     }
   }
 
@@ -306,6 +326,9 @@ class BleCoreChannel {
     BikeBleKind? kindHint,
   }) async {
     if (deviceId.isEmpty) return false;
+    if (deviceId == boschLdiAccessoryId || kindHint == BikeBleKind.bosch) {
+      return startLdiAccessory(pairing: false);
+    }
     if (isRemoteLive(deviceId)) return true;
     final prevHint = _kindHint;
     final prevAllow = _allowBondPrompt;
@@ -1503,7 +1526,7 @@ class BleCoreChannel {
     try {
       await _method.invokeMethod<void>('disconnect');
     } on MissingPluginException {
-      // LDI G-1: native plugin may be absent.
+      // LDI accessory may be absent on iOS.
     }
     await _cancelAuxListeners();
     for (final d in List<BluetoothDevice>.from(_auxDevices)) {
@@ -1689,7 +1712,14 @@ class BleCoreChannel {
 
   void _onEvent(dynamic event) {
     if (event is! Map) return;
+    final status = event['status'];
+    if (status is String && status.isNotEmpty) {
+      _statusDetail = status;
+      _onProgress?.call(status);
+      return;
+    }
     _cscOnly = false;
+    _connectedKind ??= BikeBleKind.bosch;
     _emit(BoschLiveData.fromMap(Map<Object?, Object?>.from(event)));
   }
 

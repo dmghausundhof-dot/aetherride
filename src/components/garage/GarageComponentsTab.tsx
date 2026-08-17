@@ -4,12 +4,11 @@ import { Wrench, Package, ArrowRightLeft, Plus } from "lucide-react";
 import { SLOT_GROUPS } from "@/types";
 import { slotLabel } from "@/lib/catalog/slots";
 import { getComponentModel, modelDisplayName } from "@/lib/catalog/components";
-import { addableSlotsFor, werkstattKindFor } from "@/lib/garage/dieBox";
+import { addableSlotsFor, planDieBox, werkstattKindFor } from "@/lib/garage/dieBox";
 import type { Bike, ComponentSlot, BikeComponent, Ride } from "@/types";
 
 interface Props {
   selected: Bike;
-  activeComponents: BikeComponent[];
   spareParts: BikeComponent[];
   rides: Ride[];
   bikes: Bike[];
@@ -36,7 +35,6 @@ function defaultInstallSlot(bike: Bike, active: BikeComponent[]): ComponentSlot 
 
 export function GarageComponentsTab({
   selected,
-  activeComponents,
   spareParts,
   rides,
   bikes,
@@ -47,8 +45,9 @@ export function GarageComponentsTab({
   reinstallComponent,
   moveComponent,
 }: Props) {
+  const listed = planDieBox({ bike: selected }).onBike;
   const groups = SLOT_GROUPS.filter((g) =>
-    g.slots.some((slot) => activeComponents.some((c) => c.slot === slot))
+    g.slots.some((slot) => listed.some((c) => c.slot === slot))
   );
 
   return (
@@ -56,13 +55,13 @@ export function GarageComponentsTab({
               <button
                 type="button"
                 onClick={() =>
-                  setInstallSlot(defaultInstallSlot(selected, activeComponents))
+                  setInstallSlot(defaultInstallSlot(selected, listed))
                 }
                 className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm font-medium text-chrome hover:border-chrome/40"
               >
                 <Plus className="h-4 w-4" /> Teil selbst anlegen
               </button>
-              {activeComponents.length === 0 && (
+              {listed.length === 0 && (
                 <p className="text-sm text-text-secondary">
                   Noch keine Teile. Katalog ist Suche — nichts muss vollständig
                   sein.
@@ -76,7 +75,7 @@ export function GarageComponentsTab({
                     </h3>
                     <div className="flex flex-col gap-2">
                       {group.slots.map((slot) => {
-                        const comp = activeComponents.find(
+                        const comp = listed.find(
                           (c) => c.slot === slot
                         );
                         if (!comp) return null;

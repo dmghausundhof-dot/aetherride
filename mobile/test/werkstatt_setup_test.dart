@@ -67,6 +67,7 @@ void main() {
   test('MTB with travel shows Fahrwerk', () {
     final plan = planWerkstattSetup(bike: mtbTravel);
     expect(plan.hasSuspension, isTrue);
+    expect(plan.showsFahrwerk, isTrue);
     expect(plan.hasRearShock, isTrue);
     expect(plan.emphasis, contains(WerkstattEmphasis.suspension));
     expect(plan.primaryAdjusterKey, 'fork.rebound');
@@ -136,6 +137,22 @@ void main() {
       ],
     );
     expect(plan.hasSuspension, isTrue);
+    expect(plan.showsFahrwerk, isTrue);
     expect(plan.hasRearShock, isFalse);
+  });
+
+  test('city with typed travel does not show Fahrwerk UX', () {
+    const cityTravel = Bike(
+      id: 'u2',
+      name: 'City',
+      category: BikeCategory.urban,
+      travelFrontMm: 80,
+    );
+    final plan = planWerkstattSetup(bike: cityTravel);
+    expect(plan.hasSuspension, isTrue);
+    expect(plan.showsFahrwerk, isFalse);
+    expect(plan.emphasis, isNot(contains(WerkstattEmphasis.suspension)));
+    expect(plan.primaryAdjusterKey, 'tire_front.pressure_psi');
+    expect(plan.emphasisSlots, isNot(contains(ComponentSlot.fork)));
   });
 }

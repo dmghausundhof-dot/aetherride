@@ -68,6 +68,10 @@ const SLOT_TAG_ALIASES: Record<string, string> = {
   reifen: "tire",
   bar_tape: "bar_tape",
   lenkerband: "bar_tape",
+  rear_shock: "shock",
+  shock: "shock",
+  seatpost: "seatpost",
+  dropper: "seatpost",
 };
 
 /** Browse chips for /shop/parts — slot filter contract */

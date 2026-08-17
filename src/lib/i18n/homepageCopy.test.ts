@@ -52,7 +52,10 @@ function testParity() {
       lang,
     );
     assert.deepEqual([...h.guides.slugs], [...de.guides.slugs], lang);
-    assert.equal(h.doors[2]?.title, "Platz", `${lang} Platz stays brand`);
+    assert.equal(homepageCopy("de").doors[2]?.title, "Touren");
+    assert.equal(homepageCopy("en").doors[2]?.title, "Tours");
+    assert.equal(homepageCopy("fr").doors[2]?.title, "Parcours");
+    assert.equal(homepageCopy("it").doors[2]?.title, "Percorsi");
     assert.equal(h.voices.kicker, "Stimmen", `${lang} Stimmen stays brand`);
     assert.ok(h.ui.heroLead("X").includes("X"));
     assert.ok(!JSON.stringify(h.honesty).includes("Musterstraße"), lang);

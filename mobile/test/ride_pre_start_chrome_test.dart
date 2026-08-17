@@ -63,9 +63,11 @@ void main() {
       expect(find.byKey(const Key('ride-primary-start')), findsOneWidget);
       expect(find.text('Tempelhofer 60'), findsOneWidget);
       expect(
-        find.text('Karte liegt. Sensor danach, wenn du willst.'),
+        find.text('Karte bereit. Sensor ist optional.'),
         findsOneWidget,
       );
+      expect(find.text('Geplante Tour'), findsNothing);
+      expect(find.text('GEPLANTE TOUR'), findsNothing);
 
       // Sensor / Nearby / BLE must never gate the map (regression from checklist UI).
       expect(find.textContaining('Radsensor'), findsNothing);

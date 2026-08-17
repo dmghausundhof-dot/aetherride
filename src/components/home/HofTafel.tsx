@@ -40,6 +40,9 @@ export function HofTafel({ items }: { items: TafelItem[] }) {
           <p className="text-[11px] font-bold tracking-wide text-text-secondary">
             {copy.tafelKicker}
           </p>
+          <p className="mt-0.5 text-[11px] text-text-secondary">
+            {copy.tafelHint}
+          </p>
           <ul className="mt-2 space-y-1.5">
             {tour.map((item) => (
               <li key={item.id}>

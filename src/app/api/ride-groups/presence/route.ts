@@ -44,10 +44,10 @@ async function tryAdmin() {
 }
 
 async function loadGroup(
-  admin: ReturnType<typeof createAdminClient>,
+  client: ReturnType<typeof createAdminClient>,
   groupId: string
 ) {
-  const { data, error } = await admin
+  const { data, error } = await client
     .from("ride_groups")
     .select(
       "id, host_user_id, saved_route_id, catalog_tour_id, title, start_window_start, start_window_end, join_code, status, live_pins_allowed, created_at"
@@ -74,11 +74,11 @@ async function loadGroup(
 }
 
 async function isMember(
-  admin: ReturnType<typeof createAdminClient>,
+  client: ReturnType<typeof createAdminClient>,
   groupId: string,
   userId: string
 ): Promise<boolean> {
-  const { data } = await admin
+  const { data } = await client
     .from("ride_group_members")
     .select("user_id")
     .eq("group_id", groupId)
@@ -95,13 +95,13 @@ function ageMsOf(updatedAt: string, nowIso: string): number {
 }
 
 async function visibleBundle(
-  admin: ReturnType<typeof createAdminClient>,
+  client: ReturnType<typeof createAdminClient>,
   groupRow: RideGroupSqlRow,
   nowIso: string
 ) {
   const group = rowToRideGroup(groupRow);
   const groupId = group.id;
-  const { data: memRows, error: memErr } = await admin
+  const { data: memRows, error: memErr } = await client
     .from("ride_group_members")
     .select("group_id, user_id, display_label, joined_at, live_opt_in")
     .eq("group_id", groupId);
@@ -119,7 +119,7 @@ async function visibleBundle(
     group.status
   );
 
-  const { data: presRows, error: pErr } = await admin
+  const { data: presRows, error: pErr } = await client
     .from("ride_group_presence")
     .select("group_id, user_id, lng, lat, updated_at, visibility")
     .eq("group_id", groupId);
@@ -155,7 +155,7 @@ async function visibleBundle(
     );
   }
   if (staleIds.length > 0) {
-    await admin
+    await client
       .from("ride_group_presence")
       .delete()
       .eq("group_id", groupId)
@@ -178,16 +178,16 @@ export async function GET(req: Request) {
     }
 
     const admin = await tryAdmin();
-    if (!admin) return stub("Service-Role fehlt — Presence bleibt lokal.");
+    const reader = admin ?? supabase;
 
-    const loaded = await loadGroup(admin, groupId);
+    const loaded = await loadGroup(reader, groupId);
     if (loaded.error) return loaded.error;
-    if (!(await isMember(admin, groupId, user.id))) {
+    if (!(await isMember(reader, groupId, user.id))) {
       return NextResponse.json({ error: "unknown" }, { status: 404 });
     }
 
     const nowIso = new Date().toISOString();
-    const bundle = await visibleBundle(admin, loaded.row, nowIso);
+    const bundle = await visibleBundle(reader, loaded.row, nowIso);
     return NextResponse.json({
       me: user.id,
       groupId,
@@ -221,16 +221,16 @@ export async function POST(req: Request) {
     }
 
     const admin = await tryAdmin();
-    if (!admin) return stub("Service-Role fehlt — Presence bleibt lokal.");
+    const writer = admin ?? supabase;
 
-    const loaded = await loadGroup(admin, groupId);
+    const loaded = await loadGroup(writer, groupId);
     if (loaded.error) return loaded.error;
-    if (!(await isMember(admin, groupId, user.id))) {
+    if (!(await isMember(writer, groupId, user.id))) {
       return NextResponse.json({ error: "unknown" }, { status: 404 });
     }
 
     if (typeof body.liveOptIn === "boolean") {
-      const { error } = await admin
+      const { error } = await writer
         .from("ride_group_members")
         .update({ live_opt_in: body.liveOptIn })
         .eq("group_id", groupId)
@@ -243,7 +243,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data: mem } = await admin
+    const { data: mem } = await writer
       .from("ride_group_members")
       .select("live_opt_in")
       .eq("group_id", groupId)
@@ -276,7 +276,7 @@ export async function POST(req: Request) {
     });
     const pin = vis === "live" || vis === "stale";
 
-    const { error: upErr } = await admin.from("ride_group_presence").upsert(
+    const { error: upErr } = await writer.from("ride_group_presence").upsert(
       {
         group_id: groupId,
         user_id: user.id,
@@ -297,7 +297,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const bundle = await visibleBundle(admin, loaded.row, nowIso);
+    const bundle = await visibleBundle(writer, loaded.row, nowIso);
     return NextResponse.json({
       me: user.id,
       groupId,

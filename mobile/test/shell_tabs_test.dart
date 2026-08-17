@@ -3,7 +3,7 @@ import 'package:aetherride_mobile/providers/ride_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Nav hat vier Ziele: Hof, Karte, Platz, Werkstatt', () {
+  test('Nav hat vier Ziele: Start, Karte, Touren, Rad', () {
     expect(ShellTabs.navCount, 4);
     expect(ShellTabs.stackFromNav(0), ShellTabs.hof);
     expect(ShellTabs.stackFromNav(1), ShellTabs.karte);
@@ -24,27 +24,27 @@ void main() {
     expect(DiscoverLaunchMode.values, contains(DiscoverLaunchMode.mine));
   });
 
-  test('Karte-Tab öffnen bietet dieselbe Wahl wie Hof Rausfahren', () {
+  test('Karte-Tab öffnet ohne Choice-Sheet', () {
     expect(
       ShellTabs.shouldOfferRideOutOnKarteNav(
         fromStack: ShellTabs.hof,
         toStack: ShellTabs.karte,
       ),
-      isTrue,
+      isFalse,
     );
     expect(
       ShellTabs.shouldOfferRideOutOnKarteNav(
         fromStack: ShellTabs.werkstatt,
         toStack: ShellTabs.karte,
       ),
-      isTrue,
+      isFalse,
     );
     expect(
       ShellTabs.shouldOfferRideOutOnKarteNav(
         fromStack: ShellTabs.platz,
         toStack: ShellTabs.karte,
       ),
-      isTrue,
+      isFalse,
     );
   });
 

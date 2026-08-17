@@ -17,8 +17,26 @@ function testDeFallback() {
   assert.equal(HOF_COPY.rideOut, "Rausfahren");
   assert.equal(HOF_COPY.emptyStand, "Leerer Stand");
   assert.equal(HOF_COPY.shopTitle, "Der Laden");
+  assert.equal(hofCopy("en").shopTitle, "The shop");
+  assert.equal(hofCopy("fr").shopTitle, "Le magasin");
+  assert.equal(hofCopy("it").shopTitle, "Il negozio");
+  assert.equal(HOF_COPY.shopKicker, "Über den Hof");
+  assert.equal(HOF_COPY.shopPartsForBike, "Teile für dein Rad");
+  assert.equal(HOF_COPY.shopLookupInShop, "Im Laden nachschlagen");
+  assert.equal(HOF_COPY.workshopEmpty, "Noch kein Rad hier");
+  assert.equal(
+    HOF_COPY.workshopEmptyHint,
+    "Name und Typ reichen. Der Katalog ist Suche — Serienteile nur wenn du sie übernimmst.",
+  );
+  assert.notEqual(HOF_COPY.shopKicker, HOF_COPY.shopKicker.toUpperCase());
+  assert.equal(HOF_COPY.ridePlannedKicker, "Geplante Tour");
+  assert.notEqual(
+    HOF_COPY.ridePlannedKicker,
+    HOF_COPY.ridePlannedKicker.toUpperCase(),
+  );
   assert.equal(HOF_COPY.libraryMappe, "Die Mappe");
   assert.equal(HOF_COPY.tafelKicker, "Die Tafel");
+  assert.ok(HOF_COPY.tafelHint.includes("kein Feed"));
   assert.equal(HOF_COPY.togetherOut, "Zusammen raus");
   assert.notEqual(HOF_COPY.togetherOut, HOF_COPY.togetherOut.toUpperCase());
   assert.equal(HOF_COPY.akteStimmen, "Stimmen");
@@ -66,8 +84,9 @@ function testChromeLangs() {
   assert.equal(hofCopy("fr").shopCyclingParts, "Pièces");
   assert.equal(hofCopy("it").shopCyclingParts, "Pezzi");
   for (const lang of langs) {
-    assert.notEqual(hofCopy(lang).shopCyclingParts, "Cycling Parts", lang);
     const c = hofCopy(lang);
+    assert.notEqual(c.shopCyclingParts, "Cycling Parts", lang);
+    assert.notEqual(c.shopTitle, c.shopCyclingParts, lang);
     assert.notEqual(c.workshopZoneToday, c.workshopZoneToday.toUpperCase(), lang);
     assert.notEqual(
       c.workshopZoneOnBike,
@@ -75,6 +94,12 @@ function testChromeLangs() {
       lang,
     );
     assert.notEqual(c.workshopBikes, c.workshopBikes.toUpperCase(), lang);
+    assert.notEqual(c.shopKicker, c.shopKicker.toUpperCase(), lang);
+    assert.notEqual(
+      c.ridePlannedKicker,
+      c.ridePlannedKicker.toUpperCase(),
+      lang,
+    );
   }
 }
 

@@ -1,0 +1,29 @@
+// SPDX-Copyright-Text: 2026 Robert Bosch GmbH
+// SPDX-License-Identifier: Apache-2.0
+//
+// Bosch eBike Live Data Interface V1.0 (2026-04-28).
+// Source: public LDI specification, Apache-2.0.
+syntax = "proto3";
+package com.bosch.ebike;
+
+enum LightState {
+  LIGHT_STATE_INVALID = 0;
+  LIGHT_STATE_OFF = 1;
+  LIGHT_STATE_ON = 2;
+}
+
+message LiveData {
+  optional uint32 speed = 1;                 // 1/100 km/h
+  optional int32 cadence = 2;                // rpm
+  optional uint32 rider_power = 5;           // W
+  optional uint32 ambient_brightness = 9;    // 1/1000 lux
+  optional uint32 battery_soc = 10;          // %
+  optional int64 time = 11;                  // unix seconds
+  optional uint32 odometer = 12;             // meters
+  optional LightState bike_light = 17;
+  optional bool system_locked = 21;
+  optional bool charger_connected = 22;
+  optional bool light_reserve_state = 23;
+  optional bool diagnosis_program_active = 24;
+  optional bool bike_not_driving = 25;
+}

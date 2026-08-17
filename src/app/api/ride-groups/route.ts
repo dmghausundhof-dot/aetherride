@@ -45,13 +45,13 @@ async function tryAdmin() {
 }
 
 async function memberBundle(
-  admin: ReturnType<typeof createAdminClient>,
+  client: ReturnType<typeof createAdminClient>,
   groupIds: string[]
 ) {
   if (groupIds.length === 0) {
     return { members: [] as ReturnType<typeof rowToMember>[] };
   }
-  const { data: rows, error } = await admin
+  const { data: rows, error } = await client
     .from("ride_group_members")
     .select("group_id, user_id, display_label, joined_at, live_opt_in")
     .in("group_id", groupIds);
@@ -61,7 +61,7 @@ async function memberBundle(
   ];
   let profiles: PublicProfileLabelRow[] = [];
   if (userIds.length > 0) {
-    const { data: prof } = await admin
+    const { data: prof } = await client
       .from("public_profiles")
       .select("user_id, enabled, display_name, handle")
       .in("user_id", userIds);
@@ -85,13 +85,11 @@ export async function GET(req: Request) {
     if (!user) return unauthorized();
 
     const admin = await tryAdmin();
-    if (!admin) {
-      return stub(501, "Service-Role fehlt — Join/Roster nicht auf dem Server.");
-    }
+    const roster = admin ?? supabase;
 
     const url = new URL(req.url);
     if (url.searchParams.get("scope") === "public") {
-      const { data: rows, error: pubErr } = await admin
+      const { data: rows, error: pubErr } = await roster
         .from("ride_groups")
         .select(RIDE_GROUP_SELECT)
         .eq("visibility", "public")
@@ -113,7 +111,7 @@ export async function GET(req: Request) {
       const ids = mapped.map((g) => g.id);
       const counts: Record<string, number> = {};
       if (ids.length > 0) {
-        const { data: mems } = await admin
+        const { data: mems } = await roster
           .from("ride_group_members")
           .select("group_id")
           .in("group_id", ids);
@@ -148,7 +146,7 @@ export async function GET(req: Request) {
     }
     const mapped = (groups ?? []).map((g) => rowToRideGroup(g as RideGroupSqlRow));
     const { members } = await memberBundle(
-      admin,
+      roster,
       mapped.map((g) => g.id)
     );
     return NextResponse.json({
@@ -187,9 +185,7 @@ export async function POST(req: Request) {
     }
 
     const admin = await tryAdmin();
-    if (!admin) {
-      return stub(501, "Service-Role fehlt — Gruppe bleibt lokal.");
-    }
+    const writer = admin ?? supabase;
 
     const window = parseRideGroupWindow({
       startsAt: body.startsAt,
@@ -206,7 +202,7 @@ export async function POST(req: Request) {
     let inserted: RideGroupSqlRow | null = null;
     let lastError: { code?: string; message?: string } | null = null;
     for (let i = 0; i < 4; i++) {
-      const { data, error } = await admin
+      const { data, error } = await writer
         .from("ride_groups")
         .insert({
           host_user_id: user.id,
@@ -247,14 +243,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: profile } = await admin
+    const { data: profile } = await writer
       .from("public_profiles")
       .select("user_id, enabled, display_name, handle")
       .eq("user_id", user.id)
       .maybeSingle();
     const label = profileDisplayLabel(profile as PublicProfileLabelRow | null);
 
-    const { error: memErr } = await admin.from("ride_group_members").insert({
+    const { error: memErr } = await writer.from("ride_group_members").insert({
       group_id: inserted.id,
       user_id: user.id,
       display_label: label,
@@ -267,7 +263,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { members } = await memberBundle(admin, [String(inserted.id)]);
+    const { members } = await memberBundle(writer, [String(inserted.id)]);
     return NextResponse.json({
       me: user.id,
       group: rowToRideGroup(inserted),

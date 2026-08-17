@@ -28,7 +28,7 @@ export const GUIDES: Guide[] = [
       "Community-Wunsch: transparente Surface-Layer und Warnungen statt stiller Umleitungen. Genau das ist unser Honesty-Ansatz — Demo klar labeln, Live-Status anzeigen.",
     ],
     relatedHrefs: [
-      { href: "/planner", label: "Planen öffnen" },
+      { href: "/discover?panel=plan", label: "Planen öffnen" },
       { href: "/discover?sport=gravel", label: "Gravel in Touren" },
       { href: "/regions/schwarzwald", label: "Region Schwarzwald" },
     ],
@@ -102,7 +102,6 @@ export const GUIDES: Guide[] = [
     ],
     relatedHrefs: [
       { href: "/garage?tab=maintenance", label: "Wartung" },
-      { href: "/shop?job=replace", label: "Shop: ersetzen" },
     ],
   },
   {
@@ -120,7 +119,7 @@ export const GUIDES: Guide[] = [
     relatedHrefs: [
       { href: "/download", label: "App laden" },
       { href: "/produkt", label: "Produkt: Web vs. App" },
-      { href: "/planner", label: "Planen" },
+      { href: "/discover?panel=plan", label: "Planen" },
       { href: "/discover", label: "Karte" },
       { href: "/community", label: "Community / Platz" },
     ],
@@ -134,7 +133,7 @@ export const GUIDES: Guide[] = [
     readMin: 4,
     body: [
       "Viele Rad-Apps stapeln Karten: Home, Explore, Activity, Club, Shop. FlowLine hat vier Türen am Hof. Ride ist der orange Knopf, nicht der fünfte Tab. Der Laden ist keine Tür in der Leiste.",
-      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Der Platz hält Mappe, Stimmen und Gruppen. Die Werkstatt kennt das Rad — und öffnet die Tür zu Shopify, wenn ein Teil zu diesem Rad passt.",
+      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Der Platz hält Mappe, Stimmen und Gruppen. Die Werkstatt kennt das Rad. Der Laden ist vorerst aus.",
       "Was im Browser fehlt, bleibt leer: kein Live-GPS, kein HUD, keine Dummy-Kilometer. Die App übernimmt Navigation, Offline und Sensoren.",
     ],
     relatedHrefs: [
@@ -185,18 +184,18 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "laden-ohne-zweite-kasse",
-    title: "Der Laden: Tür zu Shopify, keine zweite Kasse",
+    title: "Der Laden: pausiert, keine zweite Kasse",
     teaser:
-      "Teile und Merch liegen hinter einer Tür. Kaufvertrag und Checkout entstehen bei Shopify — oder gar nicht, solange das Impressum fehlt.",
+      "Teile und Merch liegen hinter einer Tür — die vorerst zu ist. Keine Kasse in FlowLine.",
     category: "safety",
     readMin: 4,
     body: [
-      "Der Laden ist keine fünfte Tür in der Leiste. Katalog und Fit kommen aus der Werkstatt, gebunden an Slot und Rad. Die Kasse liegt bei Shopify — es gibt keinen Warenkorb, der hier kassiert.",
-      "Ohne hinterlegtes Impressum (Name und ladungsfähige Anschrift) bleibt der Checkout gesperrt. Das ist Absicht: wir erfinden keine TMG-Angaben, damit etwas „kaufen“ heißt.",
-      "Merchandise wird nicht über den Fit zum Rad gefiltert. Ersatzteile schon: Kategorie und Laufrad zum abgestellten Rad, keine erfundenen SKUs. Store-Listings der App sind unabhängig davon und stehen, sobald sie live sind.",
+      "Der Laden ist keine fünfte Tür in der Leiste. Die Werkstatt bleibt für Rad, Setup und Wartung. Katalog und Kasse sind vorerst aus — es gibt keinen Warenkorb, der hier kassiert.",
+      "Ohne hinterlegtes Impressum (Name und ladungsfähige Anschrift) bleibt ein Checkout sowieso gesperrt. Das ist Absicht: wir erfinden keine TMG-Angaben, damit etwas „kaufen“ heißt.",
+      "Wenn der Laden wieder öffnet, sitzt die Kasse außerhalb von FlowLine. Ersatzteile würden zum abgestellten Rad passen, keine erfundenen SKUs. Store-Listings der App sind unabhängig davon und stehen, sobald sie live sind.",
     ],
     relatedHrefs: [
-      { href: "/shop", label: "Zum Laden" },
+      { href: "/garage", label: "Zur Werkstatt" },
       { href: "/garage", label: "Werkstatt" },
       { href: "/legal/impressum", label: "Impressum" },
       { href: "/produkt", label: "Produktkarte" },

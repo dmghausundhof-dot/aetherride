@@ -193,6 +193,28 @@ abstract final class AppConfig {
     defaultValue: true,
   );
 
+  /// In-App-Laden (Werkstatt-Tür, Deep-Link `aetherride://shop`, ShopScreen).
+  /// Default aus. Wieder an: `--dart-define=AETHER_SHOP_ENABLED=true`.
+  /// Web-Katalog `/shop` ist ein anderer Schalter (`NEXT_PUBLIC_SHOP_ENABLED`).
+  static const shopEnabled = bool.fromEnvironment(
+    'AETHER_SHOP_ENABLED',
+    defaultValue: false,
+  );
+
+  /// Shopify-Kasse, Custom Tabs auf myshopify, Garage-Fit-Hook.
+  /// Default aus. Die App-Tür braucht zusätzlich [shopEnabled].
+  /// Wieder an: `--dart-define=SHOPIFY_COMMERCE_ENABLED=true`.
+  static const shopifyCommerceEnabled = bool.fromEnvironment(
+    'SHOPIFY_COMMERCE_ENABLED',
+    defaultValue: false,
+  );
+
+  /// Optional Awin/Uppr click prefix for Bike24. Empty = raw merchant URL.
+  static const bike24DeepLinkPrefix = String.fromEnvironment(
+    'BIKE24_DEEP_LINK_PREFIX',
+    defaultValue: '',
+  );
+
   /// Legal pages on the API/web origin.
   static String get privacyPolicyUrl => '$apiBaseUrl/legal/datenschutz';
   static String get impressumUrl => '$apiBaseUrl/legal/impressum';

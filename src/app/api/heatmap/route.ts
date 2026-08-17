@@ -90,7 +90,7 @@ export async function GET(req: Request) {
     attribution: "© OpenStreetMap · FlowLine k≥5 Aggregate",
     disclaimer:
       segments.length === 0
-        ? "Noch keine Heatmap-Segmente mit ≥5 Fahrern in diesem Ausschnitt."
-        : `Heatmap (k≥${HEATMAP_K_THRESHOLD}), anonym, ohne Zeitstempel.`,
+        ? "Noch keine Abschnitte, wo viele fahren — erst ab 5 Fahrern in diesem Ausschnitt."
+        : `Wo viele fahren (erst ab ${HEATMAP_K_THRESHOLD}), anonym, ohne Zeitstempel.`,
   });
 }

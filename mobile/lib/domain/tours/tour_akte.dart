@@ -122,7 +122,7 @@ List<HofTafelItem> buildHofTafel({
       HofTafelItem(
         id: 'mappe',
         kind: HofTafelKind.mappe,
-        text: formatTourCount(savedCount, suffix: 'in der Mappe'),
+        text: formatTourCount(savedCount),
       ),
     );
   }

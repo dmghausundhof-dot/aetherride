@@ -23,7 +23,8 @@ abstract final class ShopifyStorefront {
     return raw.replaceAll(RegExp(r'/$'), '');
   }
 
-  static bool get isConfigured => origin.isNotEmpty;
+  static bool get isConfigured =>
+      origin.isNotEmpty && AppConfig.shopifyCommerceEnabled;
 
   /// Chrome langs shipped in the ARB. Unknown codes fall back to de (no prefix).
   static String chromeLang(String raw) {

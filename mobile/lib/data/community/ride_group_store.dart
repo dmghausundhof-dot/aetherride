@@ -433,8 +433,8 @@ class RideGroupStore {
     if (cloud != null && cloud.ok && cloud.bundle!.groups.isNotEmpty) {
       updated = cloud.bundle!.groups.first;
       lastNote = visibility == RideGroupVisibility.public
-          ? 'Gruppe öffentlich — wer den Link hat, kann beitreten.'
-          : 'Gruppe privat — nur der Link.';
+          ? 'Auf dem Platz gelistet — wer den Link hat, kann beitreten.'
+          : 'Nur per Link — nicht auf dem Platz.';
     }
     await _save(
       snap.copyWith(

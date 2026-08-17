@@ -118,7 +118,7 @@ export function RouteDetail({
       if (cancelled) return;
       if (r == null) {
         setCommunity(null);
-        setCommunityErr("Heatmap offline");
+        setCommunityErr(d.heatmapOffline);
         return;
       }
       setCommunity(r);
@@ -341,7 +341,7 @@ export function RouteDetail({
                   className="rounded-xl border border-accent/30 bg-accent/5 px-3 py-2"
                 >
                   {s.id.startsWith("cell-")
-                    ? "Heatmap"
+                    ? d.heatCell
                     : s.id.startsWith("ride-")
                       ? d.heatOwn
                       : d.heatSection}
@@ -457,7 +457,7 @@ export function RouteDetail({
             {d.publicTour}
           </Link>
           <Link
-            href={`/planner?tour=${encodeURIComponent(route.id)}`}
+            href={`/discover?panel=plan&tour=${encodeURIComponent(route.id)}`}
             className="text-xs font-medium text-accent hover:underline"
           >
             {d.openPlanner}

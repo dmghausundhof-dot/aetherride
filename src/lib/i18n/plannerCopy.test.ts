@@ -33,7 +33,8 @@ function testStatus() {
   assert.ok(plannerStatus(PLANNER_STATUS_DE.inMappe, "en").includes("Mappe"));
   const de = plannerCopy("de").tourIdeaLoaded("Neckar");
   assert.ok(plannerStatus(de, "en").includes("Neckar"));
-  assert.equal(plannerStatus("12.3 km · valhalla", "fr"), "12.3 km · valhalla");
+  assert.equal(plannerStatus("12.3 km · valhalla", "fr"), "12.3 km");
+  assert.ok(!plannerStatus("12.3 km · graphhopper", "en").toLowerCase().includes("graphhopper"));
 }
 
 testDe();

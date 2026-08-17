@@ -369,7 +369,7 @@ export default function PrivacyExportPage() {
           <MapIcon className="h-4 w-4 text-chrome" /> Privatsphärenzonen
         </h3>
         <p className="mb-2 text-xs text-text-secondary">
-          Tracks werden in diesen Radien für Heatmap/Export gekappt (Strava-Lehre).
+          Tracks werden in diesen Radien gekappt — für Export und wo viele fahren.
         </p>
         {privacyZones.map((z) => (
           <div

@@ -94,7 +94,7 @@ function PostRideContent() {
     if (!mayContributeRideTrack(saved)) {
       heatmapTriedRef.current = ride.id;
       setHeatmapNote(
-        "Heatmap: Tour ist privat — Track nicht beigetragen."
+        "Wo viele fahren: private Tour — Spur nicht beigetragen."
       );
       return;
     }
@@ -112,7 +112,7 @@ function PostRideContent() {
         setHeatmapNote(r.message);
       } catch (e) {
         setHeatmapNote(
-          `Heatmap: ${e instanceof Error ? e.message : "Fehler"}`
+          `Wo viele fahren: ${e instanceof Error ? e.message : "Fehler"}`
         );
       }
     })();

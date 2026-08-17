@@ -40,7 +40,7 @@ String bikeBleKindLabel(BikeBleKind kind) => switch (kind) {
 
 String bikeBleKindHint(BikeBleKind kind) => switch (kind) {
       BikeBleKind.bosch =>
-        'Smart System erkannt. Akku/Assist nur mit Standard-GATT oder offiziellem LDI — nichts erfinden.',
+        'Smart System erkannt. SoC über LDI (Flow → Komponenten, Firmware ≥19) oder Standard-GATT — nichts erfinden.',
       BikeBleKind.shimano =>
         'STEPS / E-TUBE erkannt. Live-Daten nur, wenn das Display Standard-Services anbietet.',
       BikeBleKind.yamaha =>
@@ -54,7 +54,7 @@ String bikeBleKindHint(BikeBleKind kind) => switch (kind) {
 /// One-line action on a scan row — how to connect, not capability legal copy.
 String bikeBleConnectTip(BikeBleKind kind) => switch (kind) {
       BikeBleKind.bosch =>
-        'Flow komplett schließen · 10–20 cm am Display',
+        'Flow: Komponenten → FlowLine hinzufügen · Firmware ≥19',
       BikeBleKind.shimano =>
         'E-TUBE schließen · in 15 s nach Power/Taster tippen',
       BikeBleKind.yamaha =>
@@ -89,7 +89,7 @@ List<BikeBleConnectNote> bikeBleConnectNotes({required bool isEbike}) {
   return const [
     BikeBleConnectNote(
       brand: 'Bosch',
-      line: 'Flow komplett schließen (nicht nur Hintergrund). Display an, 10–20 cm.',
+      line: 'SoC: Flow öffnen → Komponenten → FlowLine hinzufügen (Steuerung ≥19). CSC weiter über die Liste.',
     ),
     BikeBleConnectNote(
       brand: 'Shimano',

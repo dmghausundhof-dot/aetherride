@@ -66,7 +66,15 @@ function testStatusMap() {
     discoverStatus("Demo-Region: Berlin · 60 min Rundkurse", "en"),
     discoverUi("en").demoRegionLoops("Berlin"),
   );
-  assert.ok(discoverStatus("12.3 km · 45 min · valhalla", "fr").includes("valhalla"));
+  assert.equal(
+    discoverStatus("12.3 km · 45 min · valhalla", "fr"),
+    "12.3 km · 45 min",
+  );
+  assert.ok(
+    !discoverStatus("12.3 km · 45 min · osrm", "en")
+      .toLowerCase()
+      .includes("osrm"),
+  );
   assert.equal(discoverStatus(DEMO_ROUTING_NOTICE, "de"), DEMO_ROUTING_NOTICE);
   assert.notEqual(
     discoverStatus(UNVERIFIED_ROUTING_NOTICE, "en"),
@@ -88,11 +96,78 @@ function testP2Copy() {
   const de = discoverUi("de");
   assert.equal(de.variantPlanned, "Wie geplant");
   assert.equal(de.variantFlatter, "Weniger hm");
-  assert.equal(de.variantUnpaved, "Mehr unpaved");
+  assert.equal(de.variantUnpaved, "Mehr Schotter");
+  assert.ok(!de.variantUnpaved.toLowerCase().includes("unpaved"));
   assert.equal(de.openNativeApp, "In der App öffnen");
   assert.equal(de.placeKind("cafe"), "Café");
   assert.equal(de.placeKind("shop"), "Laden");
-  assert.equal(discoverUi("en").variantValhallaOnly.includes("Valhalla"), true);
+  assert.equal(de.variantValhallaOnly, "Ohne Live-Strecke keine Varianten");
+  assert.equal(
+    discoverUi("en").variantValhallaOnly,
+    "No variants without a live route",
+  );
+  for (const lang of langs) {
+    const line = discoverUi(lang).variantValhallaOnly.toLowerCase();
+    assert.ok(!line.includes("valhalla"), lang);
+    assert.ok(!line.includes("osrm"), lang);
+    assert.ok(!line.includes("graphhopper"), lang);
+  }
+}
+
+function testGhMinuteLimit() {
+  const de = discoverUi("de");
+  assert.equal(
+    de.ghMinuteLimit,
+    "Vorschläge und Zeit gerade gedrosselt — kurz warten oder sparsam planen.",
+  );
+  assert.equal(
+    discoverUi("en").ghMinuteLimit,
+    "Suggestions and times are limited — wait a bit or plan sparingly.",
+  );
+  for (const lang of langs) {
+    const line = discoverUi(lang).ghMinuteLimit.toLowerCase();
+    assert.ok(!line.includes("graphhopper"), lang);
+    assert.ok(!line.includes("valhalla"), lang);
+    assert.ok(!line.includes("osrm"), lang);
+  }
+}
+
+function testHonestyCopy() {
+  const de = discoverUi("de");
+  assert.equal(
+    de.honestyRoad,
+    "Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.",
+  );
+  assert.equal(
+    de.honestyCycleway,
+    "Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.",
+  );
+  assert.equal(
+    discoverUi("en").honestyRoad,
+    "Route mostly follows roads — tap a trail on the map and attach it.",
+  );
+  assert.equal(
+    discoverUi("en").honestyCycleway,
+    "Little dedicated bike path — the live route often stays on the road.",
+  );
+  for (const lang of langs) {
+    const d = discoverUi(lang);
+    for (const line of [d.honestyRoad, d.honestyCycleway]) {
+      const lower = line.toLowerCase();
+      assert.ok(!lower.includes("graphhopper"), `${lang}: ${line}`);
+      assert.ok(!lower.includes("valhalla"), `${lang}: ${line}`);
+      assert.ok(!lower.includes("osrm"), `${lang}: ${line}`);
+    }
+  }
+  const mapped = discoverStatus(
+    `12.3 km · 45 min · ${de.honestyCycleway}`,
+    "en",
+  );
+  assert.ok(mapped.includes("Little dedicated bike path"));
+  assert.ok(!mapped.toLowerCase().includes("graphhopper"));
+  assert.ok(!mapped.toLowerCase().includes("valhalla"));
+  assert.ok(!mapped.toLowerCase().includes("osrm"));
+  assert.ok(de.outdooractive(3).includes("Outdooractive"));
 }
 
 function testSurface() {
@@ -101,10 +176,27 @@ function testSurface() {
   assert.equal(discoverSurfaceLabel("unknown", "it"), "unknown");
 }
 
+function testHeatCopy() {
+  const de = discoverUi("de");
+  assert.equal(de.heatCell, "Wo viele fahren");
+  assert.ok(de.heatSegments(3).includes("3"));
+  assert.ok(!de.heatCold(5).toLowerCase().includes("heatmap"));
+  assert.ok(!de.heatConsent(5).includes("k≥"));
+  assert.ok(!de.heatmapOffline.toLowerCase().includes("heatmap"));
+  for (const lang of langs) {
+    const d = discoverUi(lang);
+    assert.ok(!d.heatCell.toLowerCase().includes("heatmap"), lang);
+    assert.ok(d.heatSegments(2).includes("2"), lang);
+  }
+}
+
 testDeExact();
 testBrands();
 testStatusMap();
 testPins();
 testP2Copy();
+testGhMinuteLimit();
+testHonestyCopy();
 testSurface();
+testHeatCopy();
 console.log("discoverUi.test.ts OK");

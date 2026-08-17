@@ -25,7 +25,7 @@ import '../add_to_collection_sheet.dart';
 
 enum _AkteShelf { mein, stimmen }
 
-/// Tour-Detail: Mein / Stimmen. Das Rad bleibt in der Werkstatt.
+/// Tour-Detail: Freigeben / Stimmen. Das Rad bleibt in der Werkstatt.
 class TourAkteSheet extends ConsumerStatefulWidget {
   const TourAkteSheet({
     super.key,

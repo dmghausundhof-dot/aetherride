@@ -9,44 +9,25 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('hofTitleFor', () {
-    test('DE / AT → Der Hof', () {
-      expect(hofTitleFor(countryCode: 'DE', languageCode: 'de'), 'Der Hof');
-      expect(hofTitleFor(countryCode: 'AT', languageCode: 'de'), 'Der Hof');
+    test('language, not country', () {
+      expect(hofTitleFor(countryCode: 'DE', languageCode: 'de'), 'Start');
+      expect(hofTitleFor(countryCode: 'AT', languageCode: 'de'), 'Start');
+      expect(hofTitleFor(countryCode: 'CH', languageCode: 'de'), 'Start');
+      expect(hofTitleFor(countryCode: 'US', languageCode: 'de'), 'Start');
+      expect(hofTitleFor(languageCode: 'de'), 'Start');
     });
 
-    test('English in Germany → Der Hof (country, not UI language)', () {
-      expect(hofTitleFor(countryCode: 'DE', languageCode: 'en'), 'Der Hof');
+    test('English chrome → Start', () {
+      expect(hofTitleFor(countryCode: 'DE', languageCode: 'en'), 'Start');
+      expect(hofTitleFor(countryCode: 'US', languageCode: 'en'), 'Start');
+      expect(hofTitleFor(languageCode: 'en'), 'Start');
     });
 
-    test('German in Zürich → Velokeller', () {
-      expect(hofTitleFor(countryCode: 'CH', languageCode: 'de'), 'Velokeller');
-    });
-
-    test('CH language regions', () {
-      expect(hofTitleFor(countryCode: 'CH', languageCode: 'fr'), 'Le local vélo');
-      expect(hofTitleFor(countryCode: 'CH', languageCode: 'it'), 'La rimessa');
-      expect(hofTitleFor(countryCode: 'CH', languageCode: 'en'), 'Velokeller');
-    });
-
-    test('FR / IT / EN countries', () {
-      expect(hofTitleFor(countryCode: 'FR', languageCode: 'fr'), 'La remise');
-      expect(hofTitleFor(countryCode: 'IT', languageCode: 'it'), 'La rimessa');
-      expect(hofTitleFor(countryCode: 'US', languageCode: 'en'), 'The Stand');
-      expect(hofTitleFor(countryCode: 'GB', languageCode: 'en'), 'The Stand');
-    });
-
-    test('CA splits French / English', () {
-      expect(hofTitleFor(countryCode: 'CA', languageCode: 'fr'), 'La remise');
-      expect(hofTitleFor(countryCode: 'CA', languageCode: 'en'), 'The Stand');
-    });
-
-    test('German UI in the US → The Stand', () {
-      expect(hofTitleFor(countryCode: 'US', languageCode: 'de'), 'The Stand');
-    });
-
-    test('DE default when country missing', () {
-      expect(hofTitleFor(languageCode: 'de'), 'Der Hof');
-      expect(hofTitleFor(languageCode: 'en'), 'The Stand');
+    test('French / Italian', () {
+      expect(hofTitleFor(countryCode: 'CH', languageCode: 'fr'), 'Accueil');
+      expect(hofTitleFor(countryCode: 'FR', languageCode: 'fr'), 'Accueil');
+      expect(hofTitleFor(countryCode: 'CH', languageCode: 'it'), 'Inizio');
+      expect(hofTitleFor(countryCode: 'IT', languageCode: 'it'), 'Inizio');
     });
   });
 

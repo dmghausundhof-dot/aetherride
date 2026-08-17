@@ -43,7 +43,7 @@ void main() {
         classifyBikeBle(
           platformName: '',
           advertisedServiceUuids: const [
-            '00000010-eaa2-11e9-81b4-2a2ae2dbcce4',
+            '0000eb20-eaa2-11e9-81b4-2a2ae2dbcce4',
           ],
         ),
         BikeBleKind.bosch,

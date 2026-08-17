@@ -150,7 +150,7 @@ const DE: CatalogCopy = {
     flashRemoved: "Aus der Mappe genommen",
     copyLink: "Tour-Link kopieren",
     linkCopied: "Link kopiert",
-    noTrackHint: "Ohne Track. Katalog-Tour, schon öffentlich.",
+    noTrackHint: "Ohne Track. Katalog-Tour, schon freigegeben.",
   },
   weather: {
     loading: "Wetter wird geladen…",
@@ -266,7 +266,7 @@ const EN: CatalogCopy = {
     flashRemoved: "Removed from Die Mappe",
     copyLink: "Copy tour link",
     linkCopied: "Link copied",
-    noTrackHint: "No track. Catalogue tour, already public.",
+    noTrackHint: "No track. Catalogue tour, already shared.",
   },
   weather: {
     loading: "Loading weather…",
@@ -380,7 +380,7 @@ const FR: CatalogCopy = {
     flashRemoved: "Retiré de Die Mappe",
     copyLink: "Copier le lien de sortie",
     linkCopied: "Lien copié",
-    noTrackHint: "Sans trace. Sortie catalogue, déjà publique.",
+    noTrackHint: "Sans trace. Sortie catalogue, déjà partagée.",
   },
   weather: {
     loading: "Météo en cours de chargement…",
@@ -496,7 +496,7 @@ const IT: CatalogCopy = {
     flashRemoved: "Tolto da Die Mappe",
     copyLink: "Copia link uscita",
     linkCopied: "Link copiato",
-    noTrackHint: "Senza traccia. Uscita catalogo, già pubblica.",
+    noTrackHint: "Senza traccia. Uscita catalogo, già condivisa.",
   },
   weather: {
     loading: "Meteo in caricamento…",

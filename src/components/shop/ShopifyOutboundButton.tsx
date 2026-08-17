@@ -9,8 +9,8 @@ import { withShopifyLocale } from "@/lib/shop/shopifyLocale";
 import { isShopifyOnlineStoreUrl } from "@/lib/shop/storeStatus";
 
 /**
- * External myshopify link — never a silent password dead-end.
- * When Online Store is locked, opens an explicit Owner-Preview dialog.
+ * External link. Shopify Online Store only when commerce is enabled.
+ * Merchant / affiliate URLs always open as-is (after allowlist).
  */
 export function ShopifyOutboundButton({
   href,
@@ -28,6 +28,7 @@ export function ShopifyOutboundButton({
   const hrefOut = withShopifyLocale(href, lang);
   const shown = label ?? copy.shopExternalLink;
   const [locked, setLocked] = useState(true);
+  const [commerce, setCommerce] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -35,10 +36,19 @@ export function ShopifyOutboundButton({
     (async () => {
       try {
         const res = await fetch("/api/shop/status", { cache: "no-store" });
-        const json = (await res.json()) as { onlineStoreLocked?: boolean };
-        if (!cancelled) setLocked(json.onlineStoreLocked !== false);
+        const json = (await res.json()) as {
+          onlineStoreLocked?: boolean;
+          shopifyCommerceEnabled?: boolean;
+        };
+        if (!cancelled) {
+          setLocked(json.onlineStoreLocked !== false);
+          setCommerce(json.shopifyCommerceEnabled === true);
+        }
       } catch {
-        if (!cancelled) setLocked(true);
+        if (!cancelled) {
+          setLocked(true);
+          setCommerce(false);
+        }
       }
     })();
     return () => {
@@ -46,7 +56,10 @@ export function ShopifyOutboundButton({
     };
   }, []);
 
-  const needsOwnerPreview = locked && isShopifyOnlineStoreUrl(hrefOut);
+  const shopifyUrl = isShopifyOnlineStoreUrl(hrefOut);
+  if (shopifyUrl && !commerce) return null;
+
+  const needsOwnerPreview = locked && shopifyUrl;
 
   const base =
     variant === "primary"

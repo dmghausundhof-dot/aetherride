@@ -111,7 +111,7 @@ const EN: CommunityCopy = {
     {
       title: "Ride together",
       body: "A group with an invite link at the gate. Web holds roster and invite. Live pins only in the app HUD, with opt-in.",
-      href: "/community#gruppen",
+      href: "/library",
       cta: "How groups work",
     },
     {
@@ -193,7 +193,7 @@ const FR: CommunityCopy = {
     {
       title: "Sortir ensemble",
       body: "Un groupe avec lien d’invitation devant la porte. Le web tient roster et invitation. Pins live seulement dans le HUD de l’appli, avec opt-in.",
-      href: "/community#gruppen",
+      href: "/library",
       cta: "Comment marchent les groupes",
     },
     {
@@ -276,7 +276,7 @@ const IT: CommunityCopy = {
     {
       title: "Uscire insieme",
       body: "Un gruppo con link di invito davanti al cancello. Il web tiene roster e invito. Pin live solo nell’HUD dell’app, con opt-in.",
-      href: "/community#gruppen",
+      href: "/library",
       cta: "Come funzionano i gruppi",
     },
     {

@@ -32,14 +32,14 @@ Future<HeatmapContributeResult> contributeHeatmapTrack({
   if (token == null) {
     return const HeatmapContributeResult(
       upserted: 0,
-      message: 'Heatmap: eingeloggt nötig für den Beitrag',
+      message: 'Wo viele fahren: Anmelden nötig für den Beitrag',
     );
   }
   final trimmed = trimTrackForPrivacyZones(track, privacyZones);
   if (trimmed.length < 4) {
     return const HeatmapContributeResult(
       upserted: 0,
-      message: 'Heatmap: zu wenig Track-Punkte nach Privacy-Trim',
+      message: 'Wo viele fahren: zu wenig Spur nach Privatbereich',
     );
   }
   final points = <Map<String, double>>[];
@@ -54,7 +54,7 @@ Future<HeatmapContributeResult> contributeHeatmapTrack({
   if (points.length < 4) {
     return const HeatmapContributeResult(
       upserted: 0,
-      message: 'Heatmap: keine gültigen GPS-Punkte',
+      message: 'Wo viele fahren: keine gültigen GPS-Punkte',
     );
   }
 
@@ -79,7 +79,7 @@ Future<HeatmapContributeResult> contributeHeatmapTrack({
       } catch (_) {}
       return HeatmapContributeResult(
         upserted: 0,
-        message: 'Heatmap-Beitrag fehlgeschlagen ($detail)',
+        message: 'Wo viele fahren: Beitrag fehlgeschlagen ($detail)',
       );
     }
     final m = jsonDecode(res.body);
@@ -89,18 +89,18 @@ Future<HeatmapContributeResult> contributeHeatmapTrack({
     if (n <= 0) {
       return const HeatmapContributeResult(
         upserted: 0,
-        message: 'Heatmap: keine neuen Zellen (bereits beigetragen?)',
+        message: 'Wo viele fahren: keine neuen Zellen (bereits beigetragen?)',
       );
     }
     return HeatmapContributeResult(
       upserted: n,
       ok: true,
-      message: 'Heatmap: $n Zellen beigetragen (sichtbar ab k≥$kHeatmapThreshold)',
+      message: 'Wo viele fahren: $n Zellen beigetragen (sichtbar erst ab $kHeatmapThreshold).',
     );
   } catch (e) {
     return HeatmapContributeResult(
       upserted: 0,
-      message: 'Heatmap offline ($e)',
+      message: 'Wo viele fahren: offline ($e)',
     );
   }
 }
@@ -164,7 +164,7 @@ Future<HeatmapResult?> fetchCommunityHeatmap({
       attribution: (m['attribution'] as String?) ??
           '© OpenStreetMap · FlowLine k≥5',
       disclaimer: (m['disclaimer'] as String?) ??
-          'Heatmap (k≥$kHeatmapThreshold), anonym, ohne Zeitstempel.',
+          'Wo viele fahren (erst ab $kHeatmapThreshold), anonym, ohne Zeitstempel.',
     );
   } catch (_) {
     return null;

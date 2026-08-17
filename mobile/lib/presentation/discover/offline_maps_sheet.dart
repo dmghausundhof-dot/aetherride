@@ -1151,45 +1151,48 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                       onPressed: _busy ? null : _clearActivatedPack,
                       child: Text(l10n.offlineRemoveRegion),
                     ),
-                  const SizedBox(height: 8),
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      childrenPadding: EdgeInsets.zero,
-                      title: Text(
-                        l10n.offlineStyleTitle,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                  if (AppConfig.showRoutingDebug) ...[
+                    const SizedBox(height: 8),
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
                       ),
-                      subtitle: Text(
-                        l10n.offlineStyleHint,
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 12,
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: EdgeInsets.zero,
+                        title: Text(
+                          l10n.offlineStyleTitle,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                      ),
-                      children: [
-                        TextField(
-                          controller: _urlCtrl,
-                          decoration: InputDecoration(
-                            labelText: l10n.offlineStyleUrl,
-                            hintText: 'https://…/basemap/dach-z11-style.json',
-                            border: const OutlineInputBorder(),
+                        subtitle: Text(
+                          l10n.offlineStyleHint,
+                          style: const TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 12,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.chrome,
+                        children: [
+                          TextField(
+                            controller: _urlCtrl,
+                            decoration: InputDecoration(
+                              labelText: l10n.offlineStyleUrl,
+                              hintText:
+                                  'https://…/basemap/dach-z11-style.json',
+                              border: const OutlineInputBorder(),
+                            ),
                           ),
-                          onPressed: _busy ? null : _saveStyleUrl,
-                          child: Text(l10n.offlineSaveStyle),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.chrome,
+                            ),
+                            onPressed: _busy ? null : _saveStyleUrl,
+                            child: Text(l10n.offlineSaveStyle),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

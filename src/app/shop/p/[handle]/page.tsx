@@ -194,13 +194,22 @@ function ProductPageInner() {
       ) : null}
       <div className="pt-2">
         {load.externalUrl ? (
-          <ShopifyOutboundButton
-            href={load.externalUrl}
-            label={
-              shopifyCta ? copy.shopOpenProduct : copy.shopZumHaendler
-            }
-            variant="primary"
-          />
+          <>
+            <ShopifyOutboundButton
+              href={load.externalUrl}
+              label={
+                shopifyCta ? copy.shopOpenProduct : copy.shopZumHaendler
+              }
+              variant="primary"
+            />
+            <p className="mt-2 text-center text-[11px] text-text-secondary">
+              {load.onlineStoreLocked && shopifyCta
+                ? copy.shopLockedTitle
+                : shopifyCta
+                  ? copy.shopCheckoutElsewhere
+                  : copy.shopMerchantDisclosure}
+            </p>
+          </>
         ) : (
           <Link
             href="/shop"
@@ -209,11 +218,6 @@ function ProductPageInner() {
             {copy.shopBack}
           </Link>
         )}
-        <p className="mt-2 text-center text-[11px] text-text-secondary">
-          {load.onlineStoreLocked && shopifyCta
-            ? copy.shopLockedTitle
-            : copy.shopCheckoutElsewhere}
-        </p>
       </div>
         </div>
       </article>

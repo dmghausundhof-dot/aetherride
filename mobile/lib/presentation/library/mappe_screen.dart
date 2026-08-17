@@ -29,7 +29,7 @@ import '../shell/hof_threshold_nav.dart';
 import '../shell/shell_tabs.dart';
 import 'platz_extras.dart';
 
-/// Platz-Tab: Mappe, Stimmen-Inbox, Zusammen raus. Keine zweite Datenbank.
+/// Touren-Tab: Liste, Tipps, Gruppen. Dieselbe Quelle wie die Karte.
 class MappeScreen extends ConsumerStatefulWidget {
   const MappeScreen({super.key});
 
@@ -40,7 +40,6 @@ class MappeScreen extends ConsumerStatefulWidget {
 class MappeScreenState extends ConsumerState<MappeScreen> {
   final _store = TourCommunityStore();
   final _groups = RideGroupStore();
-  TourVisibilityKey _visibility = TourVisibilityKey.allMine;
   Map<String, SavedRouteMeta> _metas = const {};
   List<TourCommunityReview> _inbox = const [];
   bool _akteBusy = false;
@@ -368,7 +367,8 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
     });
     final savedAsync = ref.watch(savedRoutesProvider);
     final allSaved = savedAsync.valueOrNull ?? const <SavedRouteEntry>[];
-    final visible = RouteVisibility.filter(allSaved, _visibility, _metas);
+    final visibility = ref.watch(tourVisibilityProvider);
+    final visible = RouteVisibility.filter(allSaved, visibility, _metas);
     const chipDensity = VisualDensity(horizontal: -2, vertical: -3);
 
     return Scaffold(
@@ -396,8 +396,6 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                       style: const TextStyle(fontSize: 13, color: AppColors.muted),
                     ),
                     const SizedBox(height: 22),
-                    _PlatzSectionLabel(l10n.mappeTitle),
-                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
@@ -415,9 +413,10 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                               l10n.tourVisibilityChip(chip.id),
                               style: const TextStyle(fontSize: 12),
                             ),
-                            selected: _visibility == chip.id,
+                            selected: visibility == chip.id,
                             onSelected: (_) {
-                              setState(() => _visibility = chip.id);
+                              ref.read(tourVisibilityProvider.notifier).state =
+                                  chip.id;
                               unawaited(_reloadMeta());
                             },
                           ),
@@ -442,6 +441,15 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: PlatzExtras(
+                saved: allSaved,
+                metas: _metas,
+                store: _groups,
+                visibility: visibility,
+                onOpenAkte: _openAkte,
               ),
             ),
             if (savedAsync.isLoading && allSaved.isEmpty)
@@ -579,7 +587,14 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        r.body,
+                        [
+                          if (r.cloudStatus == CloudSubmitResult.pending)
+                            l10n.stimmenStatusPending,
+                          if (r.cloudStatus == CloudSubmitResult.localOnly)
+                            l10n.stimmenStatusLocal,
+                          r.authorLabel,
+                          r.body,
+                        ].join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -600,37 +615,9 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                   childCount: _inbox.length.clamp(0, 8),
                 ),
               ),
-            SliverToBoxAdapter(
-              child: PlatzExtras(
-                saved: allSaved,
-                metas: _metas,
-                store: _groups,
-                visibility: _visibility,
-                onOpenAkte: (s) => unawaited(_openAkte(s)),
-              ),
-            ),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PlatzSectionLabel extends StatelessWidget {
-  const _PlatzSectionLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.4,
-        color: AppColors.muted,
       ),
     );
   }

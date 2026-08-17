@@ -1,18 +1,30 @@
 import { NextResponse } from "next/server";
 import { FEATURED_PARTS_IN_APP_HREF } from "@/lib/shop/catalog";
-import { mapStorefrontProduct } from "@/lib/shop/partsCatalog";
-import { merchantCtaUrl } from "@/lib/shop/merchantLinks";
+import {
+  getEditorialProductByHandle,
+  mapStorefrontProduct,
+} from "@/lib/shop/partsCatalog";
+import { dealerCtaUrl, merchantCtaUrl } from "@/lib/shop/merchantLinks";
 import { fetchProductByHandle } from "@/lib/shop/shopifyStorefront";
 import { shopifyLangFromSearch } from "@/lib/shop/shopifyLocale";
 import { getShopStoreStatus, inAppProductHref } from "@/lib/shop/storeStatus";
+import {
+  isShopEnabled,
+  isShopifyCommerceEnabled,
+  SHOP_DISABLED_BODY,
+} from "@/lib/shop/shopEnabled";
 
 type Params = { params: Promise<{ handle: string }> };
 
 /**
  * GET /api/shop/products/[handle]
- * Storefront-only. Missing/404 → redirectTo /shop/parts (no dead card).
+ * Affiliate-editorial when Shopify commerce is off.
+ * Storefront when SHOPIFY_COMMERCE_ENABLED=true. Missing → redirectTo /shop.
  */
 export async function GET(req: Request, { params }: Params) {
+  if (!isShopEnabled()) {
+    return NextResponse.json(SHOP_DISABLED_BODY, { status: 410 });
+  }
   const { handle: raw } = await params;
   const handle = decodeURIComponent(raw || "").trim();
   const lang = shopifyLangFromSearch(new URL(req.url).searchParams.get("lang"));
@@ -24,6 +36,35 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   const status = getShopStoreStatus();
+  const shopifyLive = isShopifyCommerceEnabled();
+
+  if (!shopifyLive) {
+    const editorial = getEditorialProductByHandle(handle);
+    if (!editorial) {
+      return NextResponse.json(
+        {
+          ok: false,
+          configured: true,
+          code: "not_found",
+          error: `Produkt „${handle}“ nicht im Affiliate-Regal.`,
+          redirectTo: FEATURED_PARTS_IN_APP_HREF,
+          onlineStoreLocked: status.onlineStoreLocked,
+          shopifyCommerceEnabled: false,
+        },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({
+      ok: true,
+      source: "affiliate",
+      product: editorial,
+      href: inAppProductHref(editorial.handle),
+      onlineStoreLocked: status.onlineStoreLocked,
+      shopifyCommerceEnabled: false,
+      externalUrl: dealerCtaUrl(editorial.affiliateUrl),
+    });
+  }
+
   const live = await fetchProductByHandle(handle, lang);
 
   if (live.ok) {
@@ -34,6 +75,7 @@ export async function GET(req: Request, { params }: Params) {
       product,
       href: inAppProductHref(product.handle),
       onlineStoreLocked: status.onlineStoreLocked,
+      shopifyCommerceEnabled: true,
       externalUrl: merchantCtaUrl(product.affiliateUrl),
     });
   }

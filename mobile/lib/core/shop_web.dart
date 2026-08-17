@@ -50,16 +50,31 @@ bool isShopifyOnlineStoreUri(Uri uri) {
   return host.endsWith('.myshopify.com') || host.contains('shopify.com');
 }
 
+/// Custom Tabs: myshopify nur mit Shopify-Kasse. Händler- und FlowLine-URLs bleiben.
+bool allowInAppShopOutbound(Uri uri) {
+  if (isShopifyOnlineStoreUri(uri)) return AppConfig.shopifyCommerceEnabled;
+  return true;
+}
+
 /// S-FLOW-04: echte Produkt- oder Produktsuche-URLs, keine Händler-Homepages.
 bool isDeepProductUri(Uri uri) {
   if (uri.scheme != 'http' && uri.scheme != 'https') return false;
   final path = uri.path.replaceAll(RegExp(r'/+$'), '');
+  final host = uri.host.toLowerCase();
   if (isShopifyOnlineStoreUri(uri)) {
     return RegExp(r'/products/[^/]+').hasMatch(path);
   }
   if (path.isEmpty) return false;
   if (RegExp(r'/products?/', caseSensitive: false).hasMatch(path)) return true;
   if (RegExp(r'/(dp|gp|item|p)/', caseSensitive: false).hasMatch(path)) {
+    return true;
+  }
+  // Bike24 DE: /p2391234.html (no slash after p)
+  if (RegExp(r'/p\d+(\.html)?$', caseSensitive: false).hasMatch(path)) {
+    return true;
+  }
+  if (host.contains('bike24.') &&
+      RegExp(r'p\d+(\.html)?$', caseSensitive: false).hasMatch(path)) {
     return true;
   }
   if (RegExp(r'/product/', caseSensitive: false).hasMatch(path)) return true;
@@ -70,6 +85,16 @@ bool isDeepProductUri(Uri uri) {
   return false;
 }
 
+Uri trackedMerchantUri(Uri uri) {
+  final host = uri.host.toLowerCase();
+  final isBike24 = host.contains('bike24.');
+  final prefix = AppConfig.bike24DeepLinkPrefix.trim();
+  if (!isBike24 || prefix.isEmpty) return uri;
+  final raw = uri.toString();
+  if (raw.startsWith(prefix)) return uri;
+  return Uri.parse('$prefix${Uri.encodeComponent(raw)}');
+}
+
 /// Händler-CTA oder null (Shopify-Kasse bleibt [ShopifyStorefront.productUri]).
 Uri? merchantCtaUri(String? raw) {
   final t = raw?.trim() ?? '';
@@ -77,5 +102,5 @@ Uri? merchantCtaUri(String? raw) {
   final uri = Uri.tryParse(t);
   if (uri == null || !isDeepProductUri(uri)) return null;
   if (isShopifyOnlineStoreUri(uri)) return null;
-  return uri;
+  return trackedMerchantUri(uri);
 }

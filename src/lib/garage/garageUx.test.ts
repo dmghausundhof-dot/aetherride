@@ -6,7 +6,7 @@ import { estimateAirPsi } from "../setup/sagGuide";
 import { setupConditionLabel } from "../setup/conditionLabels";
 import { weeklyRideKm, verdictSummaryDe } from "./readiness";
 import { resolveGaragePrimaryAction } from "./primaryCta";
-import { planDieBox } from "./dieBox";
+import { planDieBox, listedWorkshopParts } from "./dieBox";
 import { slotLabel } from "../catalog/slots";
 import type { Bike } from "../../types/garage";
 
@@ -181,6 +181,11 @@ const jam2: Bike = {
 const jamPlan = planDieBox({ bike: jam2 });
 assert(jamPlan.onBike.some((c) => c.slot === "tire_front"), "jam2 core tire");
 assert(!jamPlan.onBike.some((c) => c.slot === "headset"), "jam2 no oem dump");
+assert(
+  jamPlan.onBike.map((c) => c.id).join() ===
+    listedWorkshopParts(jam2Parts, jamPlan.addableSlots).map((c) => c.id).join(),
+  "Teile-Tab listing is Am Rad, not OEM dump"
+);
 assert(jamPlan.onBike.some((c) => c.slot === "lock"), "jam2 explicit lock");
 assert(jamPlan.sentence.includes("150/150"), "jam2 travel in sentence");
 assert(jamPlan.sentence.includes("E-Antrieb"), "jam2 assist named honestly");
@@ -210,6 +215,25 @@ assert(
   "slotLabel stays sentence case"
 );
 
+const partsDoor = readFileSync("src/components/garage/GaragePartsCta.tsx", "utf8");
+assert(partsDoor.includes("<Link"), "parts door is a full-row link");
+assert(
+  partsDoor.includes('data-testid={lookupOnly ? "garage-parts-lookup" : "garage-parts-cta"}'),
+  "parts door keys match native lookup vs row",
+);
+assert(partsDoor.includes("shopPartsForBike"), "list door copy");
+assert(partsDoor.includes("shopLookupInShop"), "lookup door copy");
+assert(!partsDoor.includes("<Hero"), "no shop hero");
+assert(!partsDoor.includes("€"), "no euro on the door");
+assert(partsDoor.includes("ArrowUpRight"), "northeast door mark");
+
+const garagePage = readFileSync("src/app/garage/page.tsx", "utf8");
+assert(garagePage.includes("dueSlot"), "maintenance lookup carries due slot");
+assert(
+  garagePage.includes("getMaintenanceSummary"),
+  "due slot comes from intervals, not a guessed SKU",
+);
+
 const kickerFiles = [
   "src/components/garage/DieBoxSurface.tsx",
   "src/app/garage/page.tsx",
@@ -227,5 +251,11 @@ for (const path of kickerFiles) {
     `${path} tracking stays`
   );
 }
+const teileTab = readFileSync(
+  "src/components/garage/GarageComponentsTab.tsx",
+  "utf8"
+);
+assert(teileTab.includes("planDieBox"), "Teile-Tab lists via Die Box");
+assert(teileTab.includes(".onBike"), "Teile-Tab hides catalog OEM dump");
 
 console.log("garageUx.test.ts OK");

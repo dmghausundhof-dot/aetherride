@@ -140,9 +140,11 @@ double distanceKmFromTrack(Iterable<Map<String, dynamic>> track) {
   double? prevLat;
   double? prevLng;
   for (final p in track) {
-    final lat = (p['lat'] as num?)?.toDouble();
+    final lat = (p['lat'] as num?)?.toDouble() ??
+        (p['latitude'] as num?)?.toDouble();
     final lng = (p['lng'] as num?)?.toDouble() ??
-        (p['lon'] as num?)?.toDouble();
+        (p['lon'] as num?)?.toDouble() ??
+        (p['longitude'] as num?)?.toDouble();
     if (lat == null || lng == null) continue;
     if (prevLat != null && prevLng != null) {
       meters += haversineM(prevLat, prevLng, lat, lng);

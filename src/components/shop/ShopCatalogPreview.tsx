@@ -10,6 +10,8 @@ import { softFitInputsFromBikes } from "@/lib/shop/garageFit";
 import { inAppProductHref } from "@/lib/shop/storeStatus";
 import { PARTS_BROWSE_SLOTS, parseSoftFitTags } from "@/lib/shop/softFit";
 import { formatShopPrice } from "@/lib/shop/shopifyLocale";
+import { partsDealerCtaUrl } from "@/lib/shop/partsCatalog";
+import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { PartsSkeleton } from "@/components/shop/PartsSkeleton";
@@ -210,8 +212,9 @@ export function ShopCatalogPreview({
         <ul className="space-y-3">
           {visible.slice(0, 24).map((row) => {
             const p = row.product;
+            const dealerUrl = partsDealerCtaUrl(p);
             return (
-              <li key={p.id}>
+              <li key={p.id} className="space-y-2">
                 <Link
                   href={inAppProductHref(p.handle)}
                   className="flex gap-3 rounded-2xl border border-border bg-surface p-3 hover:border-accent/40"
@@ -246,10 +249,23 @@ export function ShopCatalogPreview({
                       {formatShopPrice(p.priceEur, p.currencyCode, lang)}
                     </p>
                     <p className="mt-1 text-xs font-extrabold text-accent">
-                      {copy.shopOpenProduct}
+                      {copy.shopDetails}
                     </p>
                   </div>
                 </Link>
+                {dealerUrl ? (
+                  <div className="px-1">
+                    <ShopifyOutboundButton
+                      href={dealerUrl}
+                      label={copy.shopZumHaendler}
+                      variant="ghost"
+                      className="py-2 text-xs font-medium"
+                    />
+                    <p className="mt-1 text-center text-[11px] text-text-secondary">
+                      {copy.shopMerchantDisclosure}
+                    </p>
+                  </div>
+                ) : null}
               </li>
             );
           })}

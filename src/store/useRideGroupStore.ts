@@ -276,8 +276,8 @@ export const useRideGroupStore = create<RideGroupState>()(
             set((s) => ({
               lastNote:
                 visibility === "public"
-                  ? "Gruppe öffentlich — wer den Link hat, kann beitreten."
-                  : "Gruppe privat — nur der Link.",
+                  ? "Auf dem Platz gelistet — wer den Link hat, kann beitreten."
+                  : "Nur per Link — nicht auf dem Platz.",
               groups: s.groups.map((g) =>
                 g.id === id ? { ...g, ...cloud.group, visibility } : g
               ),

@@ -78,7 +78,7 @@ HeatmapResult buildHeatmapFromRides({
         visible: consentHeatmap,
         hideReason: consentHeatmap
             ? null
-            : 'Beitrag zur Beliebtheitskarte ist aus — unter Privatsphäre aktivierbar',
+            : 'Beitrag zu wo viele fahren ist aus — unter Privatsphäre aktivierbar',
       ),
     );
   }
@@ -97,11 +97,11 @@ HeatmapResult buildHeatmapFromRides({
     disclaimer: fromRides.isNotEmpty
         ? (consentHeatmap
             ? 'Lokal aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet) '
-                '— keine Nutzerzahl; k≥$kHeatmapThreshold gilt nur serverseitig.'
-            : 'Deine Strecken sind ausgeblendet — Consent unter Privatsphäre.')
+                '— wo viele fahren, erst ab $kHeatmapThreshold Fahrern auf dem Server.'
+            : 'Deine Strecken sind ausgeblendet — Beitrag unter Privatsphäre.')
         : (useSeed
             ? 'Noch wenig eigene Daten — Beispielabschnitte bis genug Rides da sind.'
-            : 'Noch keine eigenen Tracks für die Beliebtheitskarte — kein Demo.'),
+            : 'Noch keine eigenen Tracks für wo viele fahren — kein Demo.'),
   );
 }
 

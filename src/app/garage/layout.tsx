@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Werkstatt",
+  title: "Rad",
   description:
     "Dein Rad: Setup nach Typ, Pflege, Komponenten. Uhr koppeln nur in der App.",
 };

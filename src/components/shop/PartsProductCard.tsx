@@ -95,12 +95,17 @@ export function PartsProductCard({
           {copy.shopDetails} <ChevronRight className="h-4 w-4" />
         </Link>
         {dealerUrl ? (
-          <ShopifyOutboundButton
-            href={dealerUrl}
-            label={copy.shopZumHaendler}
-            variant="ghost"
-            className="py-2 text-xs font-medium"
-          />
+          <>
+            <ShopifyOutboundButton
+              href={dealerUrl}
+              label={copy.shopZumHaendler}
+              variant="ghost"
+              className="py-2 text-xs font-medium"
+            />
+            <p className="text-center text-[11px] text-text-secondary">
+              {copy.shopMerchantDisclosure}
+            </p>
+          </>
         ) : null}
       </div>
     </article>

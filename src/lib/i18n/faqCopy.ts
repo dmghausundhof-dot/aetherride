@@ -24,13 +24,14 @@ const EN: FaqItem[] = [
     a: "For road, gravel, MTB, e-bike, touring and city. One app, four doors — not four apps. If you want a feed or a leaderboard, this is the wrong place. If you want to plan tours, look after the bike and share without a timeline, this is the right place.",
     links: [
       { href: "/regions", label: "Regions" },
+      { href: "/karten", label: "Maps" },
       { href: "/produkt", label: "Product" },
     ],
   },
   {
     id: "web-app",
     q: "What runs in the browser, what in the app?",
-    a: "On the web: Home, Map, planning, Platz, workshop, shop door. In the app: Ride HUD, offline packs, GPS recording, sensors and watch. There is no live navigation in the tab.",
+    a: "On the web: Home, Map, planning, Platz, workshop. In the app: Ride HUD, offline packs, GPS recording, sensors and watch. There is no live navigation in the tab.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },
@@ -45,9 +46,19 @@ const EN: FaqItem[] = [
   {
     id: "ohne-app",
     q: "Does FlowLine work only in the browser?",
-    a: "Planning, Map, Platz, workshop and the shop door: yes. Navigation, offline, GPS recording, sensors and watch need the native app. There is no live navigation in the tab — and no dummy that pretends there is.",
+    a: "Planning, Map, Platz and workshop: yes. Navigation, offline, GPS recording, sensors and watch need the native app. There is no live navigation in the tab — and no dummy that pretends there is.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "karten",
+    q: "Where can I ride with a real map?",
+    a: "Online in nine regions: DACH, France, southern Alps, Benelux, northern, central and southern Italy, Catalonia/Pyrenees, southern England. In DACH the atlas and from zoom 12 the ways for DE, AT, CH and LI — not only in ten cities. The map follows the viewport. Offline these are city packs for routing in the app — not a country map. Sicily, Sardinia, Scandinavia, Poland, the rest of the UK and Iberia are holes.",
+    links: [
+      { href: "/karten", label: "Maps" },
+      { href: "/discover", label: "Open the map" },
       { href: "/download", label: "App" },
     ],
   },
@@ -79,12 +90,8 @@ const EN: FaqItem[] = [
   {
     id: "shop",
     q: "Can I buy spare parts here?",
-    a: "The shop is a door to Shopify. There is no second cart and no till in FlowLine. Without an imprint on file, checkout stays locked.",
-    links: [
-      { href: "/shop", label: "Shop" },
-      { href: "/guides/laden-ohne-zweite-kasse", label: "Guide: Shop" },
-      { href: "/legal/impressum", label: "Imprint" },
-    ],
+    a: "No. The shop and Shopify are off for now. The workshop stays for the bike, setup and service — no till in FlowLine.",
+    links: [{ href: "/garage", label: "Workshop" }],
   },
   {
     id: "regionen",
@@ -92,6 +99,7 @@ const EN: FaqItem[] = [
     a: "Public tour pages are editorial ideas with a pin. The line appears when you plan with the routing profile — no guaranteed GPX file and no dummy Alps if you are standing in Hamburg.",
     links: [
       { href: "/regions", label: "Regions" },
+      { href: "/karten", label: "Maps" },
       { href: "/discover", label: "Map" },
     ],
   },
@@ -134,13 +142,14 @@ const FR: FaqItem[] = [
     a: "Pour la route, le gravel, le MTB, l’e-bike, le touring et la ville. Une appli, quatre portes — pas quatre applis. Si tu cherches un fil ou un classement, tu n’es pas au bon endroit. Si tu veux planifier des sorties, soigner le vélo et partager sans timeline, tu es au bon.",
     links: [
       { href: "/regions", label: "Régions" },
+      { href: "/karten", label: "Cartes" },
       { href: "/produkt", label: "Produit" },
     ],
   },
   {
     id: "web-app",
     q: "Qu’est-ce qui tourne dans le navigateur, qu’est-ce qui tourne dans l’appli ?",
-    a: "Sur le web : Home, Carte, planifier, Platz, atelier, porte magasin. Dans l’appli : Ride-HUD, packs hors ligne, enregistrement GPS, capteurs et montre. Il n’y a pas de navigation live dans l’onglet.",
+    a: "Sur le web : Home, Carte, planifier, Platz, atelier. Dans l’appli : Ride-HUD, packs hors ligne, enregistrement GPS, capteurs et montre. Il n’y a pas de navigation live dans l’onglet.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide : Web vs. App" },
       { href: "/download", label: "App" },
@@ -155,9 +164,19 @@ const FR: FaqItem[] = [
   {
     id: "ohne-app",
     q: "FlowLine marche seulement dans le navigateur ?",
-    a: "Planifier, Carte, Platz, atelier et la porte magasin : oui. Navigation, hors ligne, enregistrement GPS, capteurs et montre ont besoin de l’appli native. Il n’y a pas de navigation live dans l’onglet — et pas de simulacre qui fait semblant.",
+    a: "Planifier, Carte, Platz et atelier : oui. Navigation, hors ligne, enregistrement GPS, capteurs et montre ont besoin de l’appli native. Il n’y a pas de navigation live dans l’onglet — et pas de simulacre qui fait semblant.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide : Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "karten",
+    q: "Où puis-je rouler avec une vraie carte ?",
+    a: "En ligne dans neuf régions : DACH, France, Alpes sud, Benelux, Italie nord, centre et sud, Catalogne/Pyrénées, sud de l’Angleterre. En DACH l’atlas et dès le zoom 12 les voies pour DE, AT, CH et LI — pas seulement dans dix villes. La carte suit le cadre. Hors ligne ce sont des packs ville pour le routing dans l’appli — pas une carte pays. Sicile, Sardaigne, Scandinavie, Pologne, le reste du UK et de l’Ibérie sont des trous.",
+    links: [
+      { href: "/karten", label: "Cartes" },
+      { href: "/discover", label: "Ouvrir la carte" },
       { href: "/download", label: "App" },
     ],
   },
@@ -189,12 +208,8 @@ const FR: FaqItem[] = [
   {
     id: "shop",
     q: "Est-ce que je peux acheter des pièces ici ?",
-    a: "Le magasin est une porte vers Shopify. Il n’y a pas de deuxième panier ni de caisse dans FlowLine. Sans mentions légales déposées, le checkout reste bloqué.",
-    links: [
-      { href: "/shop", label: "Magasin" },
-      { href: "/guides/laden-ohne-zweite-kasse", label: "Guide : Magasin" },
-      { href: "/legal/impressum", label: "Mentions légales" },
-    ],
+    a: "Non. Le magasin et Shopify sont coupés pour l’instant. L’atelier reste pour le vélo, le setup et l’entretien — pas de caisse dans FlowLine.",
+    links: [{ href: "/garage", label: "Atelier" }],
   },
   {
     id: "regionen",
@@ -202,6 +217,7 @@ const FR: FaqItem[] = [
     a: "Les pages publiques sont des idées éditoriales avec une épingle. La ligne apparaît quand tu planifies avec le profil de routing — pas de fichier GPX garanti et pas d’Alpes fictives si tu es à Hamburg.",
     links: [
       { href: "/regions", label: "Régions" },
+      { href: "/karten", label: "Cartes" },
       { href: "/discover", label: "Carte" },
     ],
   },
@@ -244,13 +260,14 @@ const IT: FaqItem[] = [
     a: "Per strada, gravel, MTB, e-bike, touring e città. Un’app, quattro porte — non quattro app. Se cerchi un feed o una classifica, sei nel posto sbagliato. Se vuoi pianificare uscite, curare la bici e condividere senza timeline, sei nel posto giusto.",
     links: [
       { href: "/regions", label: "Regioni" },
+      { href: "/karten", label: "Carte" },
       { href: "/produkt", label: "Prodotto" },
     ],
   },
   {
     id: "web-app",
     q: "Cosa gira nel browser, cosa nell’app?",
-    a: "Sul web: Home, Mappa, pianifica, Platz, officina, porta negozio. Nell’app: Ride-HUD, pack offline, registrazione GPS, sensori e orologio. Non c’è navigazione live nel tab.",
+    a: "Sul web: Home, Mappa, pianifica, Platz, officina. Nell’app: Ride-HUD, pack offline, registrazione GPS, sensori e orologio. Non c’è navigazione live nel tab.",
     links: [
       { href: "/guides/web-vs-app", label: "Guida: Web vs. App" },
       { href: "/download", label: "App" },
@@ -265,9 +282,19 @@ const IT: FaqItem[] = [
   {
     id: "ohne-app",
     q: "FlowLine funziona solo nel browser?",
-    a: "Pianificare, Mappa, Platz, officina e la porta negozio: sì. Navigazione, offline, registrazione GPS, sensori e orologio hanno bisogno dell’app nativa. Non c’è navigazione live nel tab — e nessun finto che faccia finta.",
+    a: "Pianificare, Mappa, Platz e officina: sì. Navigazione, offline, registrazione GPS, sensori e orologio hanno bisogno dell’app nativa. Non c’è navigazione live nel tab — e nessun finto che faccia finta.",
     links: [
       { href: "/guides/web-vs-app", label: "Guida: Web vs. App" },
+      { href: "/download", label: "App" },
+    ],
+  },
+  {
+    id: "karten",
+    q: "Dove posso pedalare con una mappa vera?",
+    a: "Online in nove regioni: DACH, Francia, Alpi sud, Benelux, Italia nord, centro e sud, Catalogna/Pirenei, Inghilterra sud. In DACH l’atlante e dallo zoom 12 le vie per DE, AT, CH e LI — non solo in dieci città. La mappa segue l’inquadratura. Offline sono pack città per il routing nell’app — non una carta nazionale. Sicilia, Sardegna, Scandinavia, Polonia, il resto del UK e dell’Iberia sono buchi.",
+    links: [
+      { href: "/karten", label: "Carte" },
+      { href: "/discover", label: "Apri la mappa" },
       { href: "/download", label: "App" },
     ],
   },
@@ -299,12 +326,8 @@ const IT: FaqItem[] = [
   {
     id: "shop",
     q: "Posso comprare ricambi qui?",
-    a: "Il negozio è una porta verso Shopify. Non c’è un secondo carrello né una cassa in FlowLine. Senza Impressum depositato, il checkout resta bloccato.",
-    links: [
-      { href: "/shop", label: "Negozio" },
-      { href: "/guides/laden-ohne-zweite-kasse", label: "Guida: Negozio" },
-      { href: "/legal/impressum", label: "Impressum" },
-    ],
+    a: "No. Il negozio e Shopify sono spenti per ora. L’officina resta per bici, setup e manutenzione — niente cassa in FlowLine.",
+    links: [{ href: "/garage", label: "Officina" }],
   },
   {
     id: "regionen",
@@ -312,6 +335,7 @@ const IT: FaqItem[] = [
     a: "Le pagine pubbliche sono idee editoriali con un pin. La linea nasce quando pianifichi con il profilo di routing — niente file GPX garantito e niente Alpi fittizie se sei ad Hamburg.",
     links: [
       { href: "/regions", label: "Regioni" },
+      { href: "/karten", label: "Carte" },
       { href: "/discover", label: "Mappa" },
     ],
   },

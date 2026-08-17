@@ -49,6 +49,7 @@ export type HofCopy = {
   libraryTitle: string;
   libraryMappe: string;
   tafelKicker: string;
+  tafelHint: string;
   togetherOut: string;
   watchHint: string;
   watchOpenApp: string;
@@ -89,6 +90,8 @@ export type HofCopy = {
   workshopNoWatch: string;
   careFallback: string;
   shopHint: string;
+  shopPausedTitle: string;
+  shopPausedHint: string;
   shopLockedBody: string;
   shopLockedOpen: string;
   shopLockedCatalog: string;
@@ -115,6 +118,7 @@ export type HofCopy = {
   shopFitBannerAll: string;
   shopOpenInBrowser: string;
   shopZumHaendler: string;
+  shopMerchantDisclosure: string;
   shopCatalogEmpty: string;
   shopReplaceHint: string;
   shopShelfEmpty: string;
@@ -131,6 +135,7 @@ export type HofCopy = {
   notFoundHint: string;
   rideBridgeTitle: string;
   rideBridgeHint: string;
+  ridePlannedKicker: string;
   rideBackToMap: string;
   downloadTitle: string;
   downloadHint: string;
@@ -224,6 +229,7 @@ const DE: HofCopy = {
   libraryTitle: "Platz",
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
+  tafelHint: "Eine Stimme oder eine Gruppe — kein Feed.",
   togetherOut: "Zusammen raus",
   watchHint: "Puls nur mit echtem Sensor.",
   watchOpenApp: "In der App koppeln",
@@ -263,7 +269,10 @@ const DE: HofCopy = {
   workshopBikes: "Deine Räder",
   workshopNoWatch: "Sensoren am Rad koppeln geht in der App. Die Uhr bleibt beim Fahren.",
   careFallback: "Pflege",
-  shopHint: "Hier wohnt das Rad nicht. FlowLine zeigt ehrliche Teile — Kauf und Kasse bei Shopify, nicht auf dieser Seite.",
+  shopHint: "Hier wohnt das Rad nicht. FlowLine zeigt Teile — kaufen tust du beim Händler, nicht hier. Shopify-Kasse ist vorerst aus.",
+  shopPausedTitle: "Der Laden pausiert",
+  shopPausedHint:
+    "Der Laden ist vorerst zu. Die Werkstatt bleibt — Rad, Setup und Wartung.",
   shopLockedBody: "Der Shop draußen ist noch nicht öffentlich — der Link kann auf ein Passwort treffen. Kasse bleibt bei Shopify, nicht hier.",
   shopLockedOpen: "Trotzdem öffnen (Passwort-Seite)",
   shopLockedCatalog: "Katalog in FlowLine. Kasse nur bei Shopify.",
@@ -274,28 +283,30 @@ const DE: HofCopy = {
   shopNoImage: "Kein Bild",
   shopGuideHow: "Wie der Laden funktioniert",
   shopCancel: "Zurück",
-  shopExternalLink: "Externer Shopify-Link",
+  shopExternalLink: "Externer Händler-Link",
   shopNetworkError: "Netzwerkfehler.",
   shopProductUnavailable: "Produkt nicht verfügbar",
-  shopCheckoutElsewhere: "Checkout nur bei Shopify, nicht in FlowLine.",
+  shopCheckoutElsewhere: "Der Händler ist Verkäufer und Vertragspartner — nicht FlowLine.",
   shopProductMissing: "Dieses Produkt liegt nicht im Laden.",
   shopBack: "Zurück zum Laden",
   shopCyclingParts: "Teile",
   shopCatalogFailed:
-    "Katalog gerade nicht erreichbar. Der Laden bleibt die Tür zu Shopify.",
+    "Katalog gerade nicht erreichbar. Versuche es später noch einmal.",
   shopRetry: "Erneut laden",
   shopFitOnly: "Nur passende",
   shopFitAllBikes: "Alle Räder",
   shopFitBannerAll: "Teile passend zu deinen Rädern",
   shopCatalogEmpty:
-    "Noch keine Teile im Regal. Der Laden bleibt die Tür zu Shopify.",
+    "Noch keine Teile im Regal.",
   shopReplaceHint:
     "Ersatz — FlowLine filtert nach deinem Rad, ohne SKUs zu erfinden.",
   shopFeaturedBikes: "Räder im Laden",
   shopDetails: "Details",
   shopOpenInApp: "Im Laden ansehen",
   shopOpenInBrowser: "Im Browser öffnen",
-  shopZumHaendler: "Zum Händler",
+  shopZumHaendler: "Beim Händler kaufen",
+  shopMerchantDisclosure:
+    "Verkäufer ist der Händler (Bike24, bike-components, bike-discount) — nicht FlowLine.",
   shopShelfEmpty: "Keine Teile zu dieser Suche.",
   profileKicker: "Du",
   profileTitle: "Profil",
@@ -310,6 +321,7 @@ const DE: HofCopy = {
   notFoundHint: "Leerer Stand. Zurück zum Hof, oder eine der vier Türen.",
   rideBridgeTitle: "Die Straße ist die App",
   rideBridgeHint: "Live-GPS, Offline-Karten, Sensoren und Hintergrund-Aufzeichnung laufen nur nativ — nicht im Browser.",
+  ridePlannedKicker: "Geplante Tour",
   rideBackToMap: "Zurück zur Karte",
   downloadTitle: "Die App für unterwegs",
   downloadHint: "Der Hof, die Karte und die Werkstatt laufen im Browser. Rausfahren mit HUD — nur in der App.",
@@ -326,7 +338,7 @@ const DE: HofCopy = {
   plannerTitle: "Planen",
   plannerHint: "Dieselbe Tür wie die Karte. Navigation startet in der App.",
   checkoutTitle: "Kasse ist der Laden",
-  checkoutHint: "Kein Warenkorb in FlowLine. Kauf und Kasse liegen bei Shopify.",
+  checkoutHint: "Kein Warenkorb in FlowLine. Kauf liegt beim Händler, nicht hier.",
   chatHint: "Power-User. Kein Feed auf dem Hof. Die Werkstatt bleibt die Werkstatt.",
   coachBell: "Hinweise",
   privacyKicker: "Du",
@@ -403,6 +415,7 @@ const EN: HofCopy = {
   libraryTitle: "Platz",
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
+  tafelHint: "One voice or one group — not a feed.",
   togetherOut: "Ride together",
   watchHint: "Heart rate only with a real sensor.",
   watchOpenApp: "Pair in the app",
@@ -442,7 +455,10 @@ const EN: HofCopy = {
   workshopBikes: "Your bikes",
   workshopNoWatch: "Pairing sensors on the bike is in the app. The watch stays for the ride.",
   careFallback: "Care",
-  shopHint: "The bike does not live here. FlowLine shows honest parts — checkout on Shopify, not on this page.",
+  shopHint: "The bike does not live here. FlowLine shows parts — you buy at the merchant, not here. Shopify checkout is off for now.",
+  shopPausedTitle: "The shop is paused",
+  shopPausedHint:
+    "The shop is closed for now. The workshop stays — bike, setup and service.",
   shopLockedBody: "The shop outside is not public yet — the link may hit a password. Checkout stays on Shopify, not here.",
   shopLockedOpen: "Open anyway (password page)",
   shopLockedCatalog: "Catalog in FlowLine. Checkout only on Shopify.",
@@ -453,24 +469,26 @@ const EN: HofCopy = {
   shopNoImage: "No image",
   shopGuideHow: "How the shop works",
   shopCancel: "Back",
-  shopExternalLink: "External Shopify link",
+  shopExternalLink: "External merchant link",
   shopNetworkError: "Network error.",
   shopProductUnavailable: "Product unavailable",
-  shopCheckoutElsewhere: "Checkout only on Shopify, not in FlowLine.",
+  shopCheckoutElsewhere: "The merchant is the seller and contract partner — not FlowLine.",
   shopProductMissing: "This product is not in the shop.",
   shopBack: "Back to the shop",
   shopCyclingParts: "Parts",
   shopFeaturedBikes: "Bikes in the shop",
   shopDetails: "Details",
-  shopCatalogFailed: "Catalog unreachable right now. The shop stays the door to Shopify.",
+  shopCatalogFailed: "Catalog unreachable right now. Try again later.",
   shopRetry: "Reload",
   shopOpenInApp: "View in the shop",
   shopFitOnly: "Fit only",
   shopFitAllBikes: "All bikes",
   shopFitBannerAll: "Parts that fit your bikes",
   shopOpenInBrowser: "Open in the browser",
-  shopZumHaendler: "To the dealer",
-  shopCatalogEmpty: "No parts on the shelf yet. The shop stays the door to Shopify.",
+  shopZumHaendler: "Buy from the merchant",
+  shopMerchantDisclosure:
+    "The merchant (Bike24, bike-components, bike-discount) is the seller — not FlowLine.",
+  shopCatalogEmpty: "No parts on the shelf yet.",
   shopReplaceHint: "Spares — FlowLine filters by your bike, without inventing SKUs.",
   shopShelfEmpty: "No parts for this search.",
   profileKicker: "You",
@@ -486,6 +504,7 @@ const EN: HofCopy = {
   notFoundHint: "Empty stand. Back to Home, or one of the four doors.",
   rideBridgeTitle: "The road is the app",
   rideBridgeHint: "Live GPS, offline maps, sensors and background recording run native only — not in the browser.",
+  ridePlannedKicker: "Planned tour",
   rideBackToMap: "Back to the map",
   downloadTitle: "The app for the road",
   downloadHint: "Home, map and workshop run in the browser. Ride out with HUD — only in the app.",
@@ -502,7 +521,7 @@ const EN: HofCopy = {
   plannerTitle: "Plan",
   plannerHint: "The same door as the map. Navigation starts in the app.",
   checkoutTitle: "Checkout is the shop",
-  checkoutHint: "No cart in FlowLine. Purchase and checkout live on Shopify.",
+  checkoutHint: "No cart in FlowLine. You buy at the merchant, not here.",
   chatHint: "Power user. No feed at Home. The workshop stays the workshop.",
   coachBell: "Notes",
   privacyKicker: "You",
@@ -579,6 +598,7 @@ const FR: HofCopy = {
   libraryTitle: "Platz",
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
+  tafelHint: "Une voix ou un groupe — pas de fil.",
   togetherOut: "Sortir ensemble",
   watchHint: "Pouls seulement avec un vrai capteur.",
   watchOpenApp: "Appairer dans l'app",
@@ -618,7 +638,10 @@ const FR: HofCopy = {
   workshopBikes: "Tes vélos",
   workshopNoWatch: "Appairer les capteurs sur le vélo se fait dans l'app. La montre reste pour la sortie.",
   careFallback: "Entretien",
-  shopHint: "Le vélo n'habite pas ici. FlowLine montre des pièces honnêtes — achat et caisse chez Shopify, pas sur cette page.",
+  shopHint: "Le vélo n'habite pas ici. FlowLine montre des pièces — tu achètes chez le revendeur, pas ici. La caisse Shopify est coupée pour l’instant.",
+  shopPausedTitle: "Le magasin est en pause",
+  shopPausedHint:
+    "Shopify et le magasin de pièces sont coupés pour l’instant. L’atelier reste — vélo, setup et entretien sans caisse.",
   shopLockedBody: "Le magasin dehors n'est pas encore public — le lien peut tomber sur un mot de passe. La caisse reste chez Shopify, pas ici.",
   shopLockedOpen: "Ouvrir quand même (page mot de passe)",
   shopLockedCatalog: "Catalogue dans FlowLine. Caisse seulement chez Shopify.",
@@ -629,24 +652,26 @@ const FR: HofCopy = {
   shopNoImage: "Pas d’image",
   shopGuideHow: "Comment le magasin marche",
   shopCancel: "Retour",
-  shopExternalLink: "Lien Shopify externe",
+  shopExternalLink: "Lien revendeur externe",
   shopNetworkError: "Erreur réseau.",
   shopProductUnavailable: "Produit indisponible",
-  shopCheckoutElsewhere: "Caisse seulement chez Shopify, pas dans FlowLine.",
+  shopCheckoutElsewhere: "Le revendeur est vendeur et partenaire contractuel — pas FlowLine.",
   shopProductMissing: "Ce produit n'est pas dans le magasin.",
   shopBack: "Retour au magasin",
   shopCyclingParts: "Pièces",
   shopFeaturedBikes: "Vélos dans le magasin",
   shopDetails: "Détails",
-  shopCatalogFailed: "Catalogue injoignable pour l'instant. Le magasin reste la porte vers Shopify.",
+  shopCatalogFailed: "Catalogue injoignable pour l'instant. Réessaie plus tard.",
   shopRetry: "Recharger",
   shopOpenInApp: "Voir dans le magasin",
   shopFitOnly: "Seulement ce qui colle",
   shopFitAllBikes: "Tous les vélos",
   shopFitBannerAll: "Pièces qui vont à tes vélos",
   shopOpenInBrowser: "Ouvrir dans le navigateur",
-  shopZumHaendler: "Chez le revendeur",
-  shopCatalogEmpty: "Pas encore de pièces en rayon. Le magasin reste la porte vers Shopify.",
+  shopZumHaendler: "Acheter chez le revendeur",
+  shopMerchantDisclosure:
+    "Le revendeur (Bike24, bike-components, bike-discount) est le vendeur — pas FlowLine.",
+  shopCatalogEmpty: "Pas encore de pièces en rayon.",
   shopReplaceHint: "Rechange — FlowLine filtre selon ton vélo, sans inventer de SKU.",
   shopShelfEmpty: "Aucune pièce pour cette recherche.",
   profileKicker: "Toi",
@@ -662,6 +687,7 @@ const FR: HofCopy = {
   notFoundHint: "Stand vide. Retour à Home, ou une des quatre portes.",
   rideBridgeTitle: "La route, c'est l'app",
   rideBridgeHint: "GPS live, cartes hors-ligne, capteurs et enregistrement en arrière-plan tournent seulement en natif — pas dans le navigateur.",
+  ridePlannedKicker: "Tour prévu",
   rideBackToMap: "Retour à la carte",
   downloadTitle: "L'app pour la route",
   downloadHint: "Home, carte et atelier tournent dans le navigateur. Sortir avec HUD — seulement dans l'app.",
@@ -678,7 +704,7 @@ const FR: HofCopy = {
   plannerTitle: "Planifier",
   plannerHint: "La même porte que la carte. La navigation démarre dans l'app.",
   checkoutTitle: "La caisse, c'est le magasin",
-  checkoutHint: "Pas de panier dans FlowLine. Achat et caisse sont chez Shopify.",
+  checkoutHint: "Pas de panier dans FlowLine. L'achat est chez le revendeur, pas ici.",
   chatHint: "Power-user. Pas de feed à Home. L'atelier reste l'atelier.",
   coachBell: "Notes",
   privacyKicker: "Toi",
@@ -755,6 +781,7 @@ const IT: HofCopy = {
   libraryTitle: "Platz",
   libraryMappe: "Die Mappe",
   tafelKicker: "Die Tafel",
+  tafelHint: "Una voce o un gruppo — non un feed.",
   togetherOut: "Uscire insieme",
   watchHint: "Battito solo con un vero sensore.",
   watchOpenApp: "Accoppia nell'app",
@@ -794,7 +821,10 @@ const IT: HofCopy = {
   workshopBikes: "Le tue bici",
   workshopNoWatch: "Accoppiare i sensori sulla bici si fa nell'app. L'orologio resta per l'uscita.",
   careFallback: "Cura",
-  shopHint: "La bici non vive qui. FlowLine mostra pezzi onesti — acquisto e cassa su Shopify, non in questa pagina.",
+  shopHint: "La bici non vive qui. FlowLine mostra pezzi — compri dal rivenditore, non qui. La cassa Shopify è spenta per ora.",
+  shopPausedTitle: "Il negozio è in pausa",
+  shopPausedHint:
+    "Shopify e il negozio pezzi sono spenti per ora. L’officina resta — bici, setup e manutenzione senza cassa.",
   shopLockedBody: "Il negozio fuori non è ancora pubblico — il link può finire su una password. La cassa resta su Shopify, non qui.",
   shopLockedOpen: "Apri lo stesso (pagina password)",
   shopLockedCatalog: "Catalogo in FlowLine. Cassa solo su Shopify.",
@@ -805,24 +835,26 @@ const IT: HofCopy = {
   shopNoImage: "Nessuna immagine",
   shopGuideHow: "Come funziona il negozio",
   shopCancel: "Indietro",
-  shopExternalLink: "Link Shopify esterno",
+  shopExternalLink: "Link rivenditore esterno",
   shopNetworkError: "Errore di rete.",
   shopProductUnavailable: "Prodotto non disponibile",
-  shopCheckoutElsewhere: "Cassa solo su Shopify, non in FlowLine.",
+  shopCheckoutElsewhere: "Il rivenditore è venditore e contraente — non FlowLine.",
   shopProductMissing: "Questo prodotto non è nel negozio.",
   shopBack: "Torna al negozio",
   shopCyclingParts: "Pezzi",
   shopFeaturedBikes: "Bici nel negozio",
   shopDetails: "Dettagli",
-  shopCatalogFailed: "Catalogo irraggiungibile al momento. Il negozio resta la porta verso Shopify.",
+  shopCatalogFailed: "Catalogo irraggiungibile al momento. Riprova più tardi.",
   shopRetry: "Ricarica",
   shopOpenInApp: "Vedi nel negozio",
   shopFitOnly: "Solo ciò che calza",
   shopFitAllBikes: "Tutte le bici",
   shopFitBannerAll: "Pezzi che stanno alle tue bici",
   shopOpenInBrowser: "Apri nel browser",
-  shopZumHaendler: "Dal rivenditore",
-  shopCatalogEmpty: "Ancora nessun pezzo in scaffale. Il negozio resta la porta verso Shopify.",
+  shopZumHaendler: "Compra dal rivenditore",
+  shopMerchantDisclosure:
+    "Il rivenditore (Bike24, bike-components, bike-discount) è il venditore — non FlowLine.",
+  shopCatalogEmpty: "Ancora nessun pezzo in scaffale.",
   shopReplaceHint: "Ricambi — FlowLine filtra sulla tua bici, senza inventare SKU.",
   shopShelfEmpty: "Nessun pezzo per questa ricerca.",
   profileKicker: "Tu",
@@ -838,6 +870,7 @@ const IT: HofCopy = {
   notFoundHint: "Stand vuoto. Torna a Home, o una delle quattro porte.",
   rideBridgeTitle: "La strada è l'app",
   rideBridgeHint: "GPS live, mappe offline, sensori e registrazione in background girano solo in nativo — non nel browser.",
+  ridePlannedKicker: "Tour pianificato",
   rideBackToMap: "Torna alla mappa",
   downloadTitle: "L'app per la strada",
   downloadHint: "Home, mappa e officina girano nel browser. Esci con HUD — solo nell'app.",
@@ -854,7 +887,7 @@ const IT: HofCopy = {
   plannerTitle: "Pianifica",
   plannerHint: "La stessa porta della mappa. La navigazione parte nell'app.",
   checkoutTitle: "La cassa è il negozio",
-  checkoutHint: "Niente carrello in FlowLine. Acquisto e cassa stanno su Shopify.",
+  checkoutHint: "Niente carrello in FlowLine. L'acquisto è dal rivenditore, non qui.",
   chatHint: "Power user. Niente feed a Home. L'officina resta l'officina.",
   coachBell: "Note",
   privacyKicker: "Tu",

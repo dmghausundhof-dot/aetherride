@@ -268,20 +268,28 @@ export function RideGroupsPanel({
               return;
             }
             void joinFromInviteAsync(parsed.ref, parsed.token).then((out) => {
+              const note = useRideGroupStore.getState().lastNote;
               setMsg(
                 "error" in out
                   ? platzNote(out.error, lang)
-                  : g.joined(out.title),
+                  : out.onServer
+                    ? g.joined(out.title)
+                    : g.joinNotOnServer(
+                        platzNote(note ?? LOCAL_ONLY_NOTE, lang),
+                      ),
               );
               setJoinPaste("");
               void pullCloud();
             });
           }}
         >
-          {g.joinWithLink}
+          {signedIn ? g.joinWithLink : g.joinLocalCta}
         </button>
       </div>
       <p className="mb-3 text-[11px] text-text-secondary">{g.joinHint}</p>
+      {!signedIn ? (
+        <p className="mb-3 text-[11px] text-warning">{g.joinUnsignedHint}</p>
+      ) : null}
       {msg ? (
         <p className="mb-3 text-xs text-text-secondary">{msg}</p>
       ) : shownNote ? (
@@ -341,13 +349,15 @@ export function RideGroupsPanel({
                   </p>
                 ) : null}
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
-                    onClick={() => void shareInvite(group, setMsg, g, lang)}
-                  >
-                    {g.invite}
-                  </button>
+                  {host ? (
+                    <button
+                      type="button"
+                      className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+                      onClick={() => void shareInvite(group, setMsg, g, lang)}
+                    >
+                      {g.invite}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="text-xs font-medium text-text-secondary"
@@ -355,13 +365,15 @@ export function RideGroupsPanel({
                   >
                     {host ? g.dissolve : g.leave}
                   </button>
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-text-secondary"
-                    onClick={() => void copyInvite(group, setMsg, g)}
-                  >
-                    {g.copyLink}
-                  </button>
+                  {host || group.onServer ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-text-secondary"
+                      onClick={() => void copyInvite(group, setMsg, g)}
+                    >
+                      {g.copyLink}
+                    </button>
+                  ) : null}
                   {host ? (
                     <button
                       type="button"
@@ -379,13 +391,19 @@ export function RideGroupsPanel({
                     </button>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  className="mt-1 text-[11px] text-text-secondary"
-                  onClick={() => setLiveOptIn(group.id, !me?.liveOptIn)}
-                >
-                  {me?.liveOptIn ? g.pinsOff : g.pinsHud}
-                </button>
+                {group.onServer ? (
+                  <button
+                    type="button"
+                    className="mt-1 text-[11px] text-text-secondary"
+                    onClick={() => {
+                      const next = !me?.liveOptIn;
+                      setLiveOptIn(group.id, next);
+                      if (next) setMsg(g.pinsHint);
+                    }}
+                  >
+                    {me?.liveOptIn ? g.pinsOff : g.pinsHud}
+                  </button>
+                ) : null}
               </li>
             );
           })}
@@ -417,7 +435,7 @@ export function RideGroupsPanel({
                   });
                 }}
               >
-                {g.join}
+                {signedIn ? g.join : g.joinLocalCta}
               </button>
             </li>
           ))}

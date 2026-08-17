@@ -35,9 +35,9 @@ export const CONSENT_LABELS: Record<
       "Sensor-Rohdaten nur bei WLAN und Opt-in (Spec F-SEN-006). Widerruf jederzeit.",
   },
   heatmap_contribution: {
-    title: "Heatmap-Beitrag",
+    title: "Wo viele fahren",
     description:
-      "Anonymisierte Zellen ohne Zeitstempel; Community-Overlay erst ab k≥5 (F-NAV-005).",
+      "Anonymisierte Zellen ohne Zeitstempel; die Karte erscheint erst ab 5 Fahrern.",
   },
   product_recommendations: {
     title: "Produktempfehlungen",

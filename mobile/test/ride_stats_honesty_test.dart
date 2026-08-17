@@ -73,6 +73,14 @@ void main() {
     expect(km, closeTo(1.11, 0.05));
   });
 
+  test('distanceKmFromTrack reads latitude/longitude keys', () {
+    final km = distanceKmFromTrack(const [
+      {'latitude': 49.40, 'longitude': 8.67},
+      {'latitude': 49.41, 'longitude': 8.67},
+    ]);
+    expect(km, closeTo(1.11, 0.05));
+  });
+
   group('RideRepository.statsSummary', () {
     late AppDatabase db;
     late RideRepository rides;

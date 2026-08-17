@@ -7,6 +7,12 @@ import type { RoutingProfile } from "@/lib/routing/profiles";
 
 export type GhDetailRange = [number, number, string | number | boolean];
 
+/** Canonical DE honesty — rider UI localizes from these prefixes. */
+export const HONESTY_ROAD_DE =
+  "Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.";
+export const HONESTY_CYCLEWAY_DE =
+  "Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.";
+
 const OFFROAD = new Set(["cycleway", "path", "track", "footway", "bridleway"]);
 const BUSY = new Set(["motorway", "trunk", "primary", "secondary"]);
 /** City: tertiary is the usual German street next to a separate cycleway. */
@@ -83,17 +89,13 @@ export function graphhopperSurfaceWarnings(
   const cityish = profile === "urban" || profile === "ebike";
 
   if (trailSport && offroad < 0.18 && busy > 0.45) {
-    warnings.push(
-      "Route folgt überwiegend Straßen. Singletrails liegen im GraphHopper-Bike-Profil oft nicht im Graph — Trail auf der Karte antippen und anhängen."
-    );
+    warnings.push(HONESTY_ROAD_DE);
   } else if (gravelish && offroad < 0.2 && busy > 0.5) {
     warnings.push(
       "Wenig Track/Schotter auf dieser Linie. Gravel-Wege in OSM als track/path tippen und an die Route hängen."
     );
   } else if (cityish && cityCyclewaySnapWanted(roadClass)) {
-    warnings.push(
-      "Wenig eigener Radweg — GraphHopper bleibt oft auf der Fahrbahn (auch tertiary), wenn der Radweg nicht als cycleway daneben liegt."
-    );
+    warnings.push(HONESTY_CYCLEWAY_DE);
   }
 
   return warnings;

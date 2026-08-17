@@ -897,7 +897,7 @@ class _ProfileHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                name.isEmpty ? l10n.profileRiderCard : name,
+                name.isEmpty ? l10n.profileNameUnset : name,
                 style:
                     const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
                 overflow: TextOverflow.ellipsis,

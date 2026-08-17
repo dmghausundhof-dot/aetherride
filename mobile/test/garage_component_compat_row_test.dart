@@ -67,6 +67,13 @@ void main() {
         model: '350',
         attributes: const {'freehub_standard': 'xd'},
       );
+      await components.install(
+        bikeId: bike.id,
+        slot: ComponentSlot.headset,
+        manufacturer: 'Cane Creek',
+        model: 'Hellbender OEM',
+        catalogModelId: 'cm-headset',
+      );
 
       tester.platformDispatcher.localeTestValue = const Locale('de', 'DE');
       tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
@@ -91,7 +98,7 @@ void main() {
         find
             .descendant(
               of: find.byKey(const Key('hof-threshold-nav')),
-              matching: find.text('Werkstatt'),
+              matching: find.text('Rad'),
             )
             .first,
       );
@@ -125,6 +132,8 @@ void main() {
       expect(find.text('Nabe hinten'), findsWidgets);
       expect(find.text('DT Swiss 350'), findsOneWidget);
       expect(find.text('Passt nicht'), findsWidgets);
+      expect(find.textContaining('Hellbender OEM'), findsNothing);
+      expect(find.text('Steuersatz'), findsNothing);
 
       await tester.tap(find.text('Kassette').last);
       await _settle(tester);

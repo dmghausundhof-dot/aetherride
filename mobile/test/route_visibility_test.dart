@@ -135,6 +135,17 @@ void main() {
     expect(text, contains('eingeloggt'));
   });
 
+  test('catalog honesty avoids öffentlich and Akte', () {
+    final text = RouteVisibility.shareHonesty(
+      routeId: 'r-bodensee-road',
+      hasTrack: false,
+      meta: const SavedRouteMeta(catalogTourId: 'r-bodensee-road'),
+    );
+    expect(text, contains('freigegeben'));
+    expect(text, isNot(contains('öffentlich')));
+    expect(text, isNot(contains('Akte')));
+  });
+
   test('collection share drops private GPX ids', () {
     expect(
       RouteVisibility.shareableRouteIds(

@@ -4,6 +4,9 @@
 import assert from "node:assert/strict";
 import {
   filterAndRankParts,
+  getEditorialPartsCatalog,
+  getEditorialProductByHandle,
+  mapEditorialProduct,
   mapStorefrontProduct,
   shopPartsHref,
   shopReplaceHref,
@@ -41,6 +44,35 @@ assert.equal(mapped.priceEur, 29.9);
 assert.equal(mapped.softFit.maguraShape, "8");
 assert.ok(mapped.affiliateUrl.includes("/products/magura-8p-pads"));
 assert.ok(mapped.imageUrl?.includes("cdn.shopify.com"));
+
+const editorial = getEditorialPartsCatalog();
+assert.ok(editorial.length >= 8, "affiliate editorial shelf");
+assert.ok(
+  editorial.every((p) => !p.id.startsWith("sp-shopify-")),
+  "editorial overflow excludes Shopify featured bikes"
+);
+const chain = getEditorialProductByHandle("sram-xx-chain");
+assert.ok(chain, "seed chain is addressable by handle");
+assert.ok(
+  chain?.affiliateUrl.includes("bike-components.de"),
+  "seed chain keeps merchant URL, no invented Bike24 link"
+);
+assert.equal(
+  mapEditorialProduct({
+    id: "sp-demo",
+    name: "Demo",
+    manufacturer: "Demo",
+    slot: "chain",
+    componentModelId: "cm",
+    priceEur: 1,
+    description: "",
+    affiliateUrl: "https://www.bike24.de/p2391234.html",
+    merchantName: "Bike24",
+    visualHint: "chain",
+    sports: ["mtb"],
+  }).handle,
+  "demo"
+);
 
 const grip = mapStorefrontProduct({
   ...sample,

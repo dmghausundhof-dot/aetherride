@@ -29,6 +29,7 @@ Future<void> notifyGarageBikeShopify(
   List<BikeComponent> components = const [],
   http.Client? httpClient,
 }) async {
+  if (!AppConfig.shopEnabled || !AppConfig.shopifyCommerceEnabled) return;
   if (!isRideableGarageBike(bike.category)) return;
   final client = httpClient ?? http.Client();
   final owned = httpClient == null;

@@ -122,7 +122,7 @@ export function TourActions({ tour }: { tour: PublicTour }) {
           GPX
         </a>
         <Link
-          href={`/planner?tour=${encodeURIComponent(tour.id)}`}
+          href={`/discover?panel=plan&tour=${encodeURIComponent(tour.id)}`}
           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:border-accent/40"
         >
           <Route className="h-3.5 w-3.5 text-accent" />

@@ -24,14 +24,12 @@ import '../../domain/home/greeting.dart';
 import '../../domain/home/hof_gate.dart';
 import '../../domain/home/hof_pack.dart';
 import '../../domain/home/hof_stand.dart';
-import '../../domain/home/hof_title.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../domain/routing/tour_nav_geometry.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/tour_akte.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../domain/saved_route_note.dart';
-import '../../l10n/app_locale.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
@@ -46,7 +44,7 @@ import 'hof_coach_banner.dart';
 import 'hof_watch_card.dart';
 import 'hof_watch_bar_button.dart';
 
-/// Der Hof — das Rad wohnt hier. Intern `hof`; Titel folgt dem Land.
+/// Start — Status und Losfahren. Intern weiter `hof`.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -416,9 +414,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _startRide() {
     final done = ref.read(onboardingDoneProvider);
     if (done == false) return;
-    ref.read(discoverLaunchModeProvider.notifier).state =
-        DiscoverLaunchMode.rideOut;
-    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+    ref.read(rideAutostartProvider.notifier).state = true;
+    ref.read(shellTabIndexProvider.notifier).state = ShellTabs.ride;
   }
 
   Future<void> _openPostRide(String rideId) async {
@@ -444,6 +441,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
     if (mounted) await _loadPackHint();
+  }
+
+  Widget _packMissingLine(AppLocalizations l10n) {
+    final hint = _packHint;
+    if (hint == null) return const SizedBox.shrink();
+    return _TafelLine(
+      key: const Key('hof-pack-missing'),
+      icon: Icons.download_outlined,
+      kicker: l10n.navKarte,
+      color: AppColors.chrome,
+      label: l10n.hofPackMissing(
+        l10n.overlayRegionNameFor(hint.regionId, hint.regionName),
+      ),
+      onTap: () => unawaited(_openOfflinePacks()),
+    );
   }
 
   void _openGate() {
@@ -488,13 +500,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String _hofTitle(BuildContext context) {
-    final locale = Localizations.localeOf(context);
-    final seedCountry =
-        _gate.seed != null ? countryFromSeedId(_gate.seed!.id) : null;
-    return hofTitleFor(
-      countryCode: seedCountry ?? locale.countryCode,
-      languageCode: AppLocaleBinding.hofLanguageCode(),
-    );
+    return AppLocalizations.of(context).navHome;
   }
 
   @override
@@ -736,7 +742,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (tourLines.isNotEmpty)
             _TafelBoard(
               key: const Key('hof-tafel-board'),
-              kicker: l10n.hofTafelTitle,
+              kicker: l10n.navPlatz,
               children: [
                 for (final item in tourLines) tafelLine(item, overdue: false),
               ],
@@ -886,18 +892,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ],
                                   const SizedBox(height: AppSpacing.s),
                                   watch,
-                                  if (_packHint != null)
-                                    _TafelLine(
-                                      key: const Key('hof-pack-missing'),
-                                      label: l10n.hofPackMissing(
-                                        l10n.overlayRegionNameFor(
-                                          _packHint!.regionId,
-                                          _packHint!.regionName,
-                                        ),
-                                      ),
-                                      onTap: () =>
-                                          unawaited(_openOfflinePacks()),
-                                    ),
+                                  _packMissingLine(l10n),
                                 ],
                               ),
                             ),
@@ -953,17 +948,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         tafel,
-                        if (_packHint != null)
-                          _TafelLine(
-                            key: const Key('hof-pack-missing'),
-                            label: l10n.hofPackMissing(
-                              l10n.overlayRegionNameFor(
-                                _packHint!.regionId,
-                                _packHint!.regionName,
-                              ),
-                            ),
-                            onTap: () => unawaited(_openOfflinePacks()),
-                          ),
+                        _packMissingLine(l10n),
                       ],
                     ),
                   ),
@@ -994,10 +979,12 @@ class _TafelBoard extends StatelessWidget {
   const _TafelBoard({
     super.key,
     required this.kicker,
+    this.hint,
     required this.children,
   });
 
   final String kicker;
+  final String? hint;
   final List<Widget> children;
 
   @override
@@ -1027,6 +1014,17 @@ class _TafelBoard extends StatelessWidget {
               color: AppColors.muted,
             ),
           ),
+          if (hint != null && hint!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 2),
+              child: Text(
+                hint!,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
           ...children,
         ],
       ),
@@ -1041,19 +1039,48 @@ class _TafelLine extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.kicker,
+    this.icon,
     this.color = AppColors.chipIdleText,
   });
 
   final String label;
   final VoidCallback onTap;
   final String? kicker;
+  final IconData? icon;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (kicker != null)
+          Text(
+            kicker!,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.7,
+              color: AppColors.muted,
+            ),
+          ),
+        if (kicker != null) const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
     return Semantics(
       button: true,
-      label: label.replaceAll('\n', ', '),
+      label: [
+        if (kicker != null) kicker,
+        label.replaceAll('\n', ', '),
+      ].join(', '),
       excludeSemantics: true,
       container: true,
       child: Material(
@@ -1069,30 +1096,20 @@ class _TafelLine extends StatelessWidget {
                   top: AppSpacing.s,
                   bottom: AppSpacing.s,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (kicker != null)
-                      Text(
-                        kicker!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.7,
-                          color: AppColors.muted,
-                        ),
+                child: icon == null
+                    ? body
+                    : Row(
+                        children: [
+                          Icon(icon, size: 20, color: color),
+                          const SizedBox(width: 10),
+                          Expanded(child: body),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: color.withValues(alpha: 0.7),
+                          ),
+                        ],
                       ),
-                    if (kicker != null) const SizedBox(height: 4),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { runGarageBikeShopifyWorkflow } from "@/lib/shop/garageBikeWorkflow";
+import { isShopEnabled, isShopifyCommerceEnabled, SHOP_DISABLED_BODY } from "@/lib/shop/shopEnabled";
 import type { BikeCategory } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,19 @@ type Body = {
  * Startet den Garage→Shopify Fit-Hook Workflow (idempotent per bikeId).
  */
 export async function POST(req: Request) {
+  if (!isShopEnabled()) {
+    return NextResponse.json(SHOP_DISABLED_BODY, { status: 410 });
+  }
+  if (!isShopifyCommerceEnabled()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "shopify_commerce_disabled",
+        error: "Shopify-Fit-Hook ist aus. Wieder an: SHOPIFY_COMMERCE_ENABLED=true",
+      },
+      { status: 503 }
+    );
+  }
   let body: Body;
   try {
     body = (await req.json()) as Body;

@@ -3,6 +3,7 @@
 import type { Bike } from "@/types";
 import { findCatalogBike } from "@/lib/catalog/bikes";
 import type { GarageBikeTagInput } from "@/lib/shop/garageBikeTags";
+import { isShopEnabled, isShopifyCommerceEnabled } from "@/lib/shop/shopEnabled";
 
 export function garageBikeInputFromBike(bike: Bike): GarageBikeTagInput {
   const catalog = bike.catalogBikeId
@@ -29,6 +30,7 @@ export function garageBikeInputFromBike(bike: Bike): GarageBikeTagInput {
 /** Fire-and-forget nach Bike-Create. Fehler bleiben serverseitig ehrlich. */
 export function notifyGarageBikeShopify(input: GarageBikeTagInput): void {
   if (typeof window === "undefined") return;
+  if (!isShopEnabled() || !isShopifyCommerceEnabled()) return;
   void fetch("/api/shop/garage-bike", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

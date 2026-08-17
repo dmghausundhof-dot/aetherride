@@ -164,4 +164,26 @@ void main() {
     final loaded = await store.reviewsForTour('seed-loop-x');
     expect(loaded.single.tags, ['nass', 'top', 'zu']);
   });
+
+  test('review json keeps cloudStatus', () {
+    final review = TourCommunityReview(
+      id: 'r1',
+      tourId: 't1',
+      rating: 4,
+      body: 'nass',
+      authorLabel: 'Du',
+      createdAt: DateTime.parse('2026-08-17T10:00:00Z'),
+      cloudStatus: CloudSubmitResult.pending,
+    );
+    final round = TourCommunityReview.fromJson(review.toJson());
+    expect(round, isNotNull);
+    expect(round!.cloudStatus, CloudSubmitResult.pending);
+    expect(
+      TourCommunityReview.fromJson({
+        ...review.toJson(),
+        'cloudStatus': 'localOnly',
+      })!.cloudStatus,
+      CloudSubmitResult.localOnly,
+    );
+  });
 }

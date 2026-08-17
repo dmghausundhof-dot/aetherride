@@ -71,8 +71,8 @@ export default function RideAppBridgePage() {
                 <Navigation className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-                  Geplante Tour
+                <p className="text-xs font-medium tracking-wide text-text-secondary">
+                  {copy.ridePlannedKicker}
                 </p>
                 <h2 className="truncate text-lg font-semibold">
                   {activeRoute.name}

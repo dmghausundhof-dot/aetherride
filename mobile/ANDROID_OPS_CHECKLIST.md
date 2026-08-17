@@ -106,8 +106,8 @@ Schritt-für-Schritt-Runbook (Keystore ist bereits generiert):
 
 ## LDI / Bosch (Hardware)
 
-- [ ] NDA / Partner-Zugang (Gates G-1 in `packages/ble_core/README.md`)
-- [x] Kein Fake-SDK in Release — Ride-UI „LDI folgt G-1“; Sim nur Debug
+- [x] Bosch LDI Spec V1.0 (öffentlich, Apache-2.0) — Android Accessory verdrahtet; iOS folgt; Pairing über Flow → Komponenten
+- [x] Kein Fake-SDK in Release — LDI nur echte eb21-Frames; Sim nur Debug + `AETHER_LDI_SIM`
 
 ## Community-Heatmap
 

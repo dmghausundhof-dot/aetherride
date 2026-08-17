@@ -7,6 +7,10 @@
  */
 
 import type { RoutingProfile } from "@/lib/routing/profiles";
+import {
+  HONESTY_CYCLEWAY_DE,
+  HONESTY_ROAD_DE,
+} from "@/lib/routing/graphhopperHints";
 import { pointInDach } from "@/lib/coverage/dach";
 import {
   stepsFromDemoGeometry,
@@ -360,9 +364,7 @@ function extrasWarnings(
       profile === "downhill" ||
       profile === "emtb";
     if (trailSport && off < 0.18 && bus > 0.45) {
-      w.push(
-        "Route folgt überwiegend Straßen. Trail auf der Karte antippen und anhängen."
-      );
+      w.push(HONESTY_ROAD_DE);
     } else if (profile === "gravel" && off < 0.2 && bus > 0.5) {
       w.push(
         "Wenig Track/Schotter auf dieser Linie — OSM-Wege antippen und anhängen."
@@ -372,9 +374,7 @@ function extrasWarnings(
       cy < 0.08 &&
       bus > 0.55
     ) {
-      w.push(
-        "Wenig eigener Radweg — getrennte Cycleways in OSM fehlen oder die Engine nimmt die Fahrbahn."
-      );
+      w.push(HONESTY_CYCLEWAY_DE);
     }
   }
   return w;

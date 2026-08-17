@@ -159,12 +159,12 @@ export function groupInviteShareText(input: {
     lines.push(`Treffpunkt: ${input.meetingPoint.trim()}`);
   }
   if (input.profileUrl?.trim()) {
-    lines.push("", `Mein Platz-Profil: ${input.profileUrl.trim()}`);
+    lines.push("", `Mein Profil: ${input.profileUrl.trim()}`);
   }
   const vis =
     input.visibility === "public"
-      ? "Freigegeben: wer den Link hat, kann beitreten. Die Gruppe kann unter Freigegeben auf dem Platz stehen."
-      : "Privat: nur wer diesen Link hat, kann beitreten. Kein öffentliches Roster.";
+      ? "Freigegeben: wer den Link hat, kann beitreten. Die Gruppe kann unter Freigegeben stehen."
+      : "Privat: nur wer diesen Link hat, kann beitreten. Nicht gelistet.";
   lines.push("", vis);
   return lines.join("\n");
 }

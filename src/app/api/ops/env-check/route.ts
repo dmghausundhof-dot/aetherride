@@ -5,6 +5,7 @@ import {
   isUsingPublicOsrm,
 } from "@/lib/routing/engine";
 import { hasStoreLinks, siteOrigin, ANDROID_PACKAGE } from "@/lib/web/appLinks";
+import { isShopifyCommerceEnabled } from "@/lib/shop/shopEnabled";
 
 /**
  * GET /api/ops/env-check
@@ -69,6 +70,7 @@ export async function GET() {
         (process.env.SHOPIFY_ONLINE_STORE_LOCKED || "true")
           .trim()
           .toLowerCase() !== "false",
+      shopifyCommerceEnabled: isShopifyCommerceEnabled(),
     },
   };
 

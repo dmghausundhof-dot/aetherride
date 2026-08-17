@@ -80,6 +80,28 @@ export function exploreHref(state: ExploreUrlState): string {
   return q ? `/discover?${q}` : "/discover";
 }
 
+/** Canonical plan URL — /planner redirects here. */
+export function plannerHref(opts?: { tour?: string; profile?: string }): string {
+  return plannerHrefFromSearch({
+    tour: opts?.tour,
+    profile: opts?.profile,
+  });
+}
+
+export function plannerHrefFromSearch(
+  sp: Record<string, string | string[] | undefined>,
+): string {
+  const p = new URLSearchParams();
+  p.set("panel", "plan");
+  const tour = typeof sp.tour === "string" ? sp.tour : "";
+  const route = typeof sp.route === "string" ? sp.route : "";
+  const profile = typeof sp.profile === "string" ? sp.profile : "";
+  if (tour) p.set("tour", tour);
+  if (route) p.set("route", route);
+  if (profile) p.set("profile", profile);
+  return `/discover?${p.toString()}`;
+}
+
 /** Map PlanMode (internal) ↔ ExplorePanel */
 export function panelFromPlanMode(mode: PlanMode): ExplorePanel {
   if (mode === "point_to_point" || mode === "hybrid") return "plan";

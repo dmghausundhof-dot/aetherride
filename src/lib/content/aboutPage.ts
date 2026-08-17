@@ -19,7 +19,7 @@ export const ABOUT_REFUSALS: { title: string; body: string }[] = [
   },
   {
     title: "Keine zweite Kasse",
-    body: "Der Laden ist eine Tür zu Shopify. Fit kommt aus der Werkstatt. Ohne Impressum bleibt der Checkout zu. Wir erfinden keine Anschrift.",
+    body: "Der Laden ist vorerst aus. Die Werkstatt bleibt für Fit und Pflege. Wir erfinden keine Anschrift für einen Checkout.",
   },
   {
     title: "Keine Attrappe",

@@ -133,6 +133,24 @@ export function wheelLabel(bike: Bike): string | undefined {
   return bike.wheelSizeFront;
 }
 
+/** Teile-Tab and Am Rad: addable slots plus rider-typed parts. Catalog OEM dump stays off. */
+export function listedWorkshopParts(
+  parts: BikeComponent[],
+  addable: ComponentSlot[]
+): BikeComponent[] {
+  const listed: BikeComponent[] = [];
+  for (const s of addable) {
+    const hit = parts.find((c) => c.slot === s);
+    if (hit) listed.push(hit);
+  }
+  for (const c of parts) {
+    if (listed.some((x) => x.id === c.id)) continue;
+    const explicit = Boolean(c.freeText) && !c.componentModelId;
+    if (explicit) listed.push(c);
+  }
+  return listed;
+}
+
 export function addableSlotsFor(input: {
   kind: WerkstattKind;
   hasSuspension: boolean;
@@ -380,16 +398,7 @@ export function planDieBox(input: {
   });
 
   const addable = addableSlotsFor({ kind, hasSuspension, hasElectricAssist });
-  const onBike: BikeComponent[] = [];
-  for (const s of addable) {
-    const hit = parts.find((c) => c.slot === s);
-    if (hit) onBike.push(hit);
-  }
-  for (const c of parts) {
-    if (onBike.some((x) => x.id === c.id)) continue;
-    const explicit = Boolean(c.freeText) && !c.componentModelId;
-    if (explicit) onBike.push(c);
-  }
+  const onBike = listedWorkshopParts(parts, addable);
 
   return {
     kind,

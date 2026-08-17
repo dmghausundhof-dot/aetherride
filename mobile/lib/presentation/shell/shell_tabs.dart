@@ -1,6 +1,6 @@
 /// Interne IndexedStack-Indizes. Die Leiste hat vier Ziele:
-/// Hof, Karte, Platz, Werkstatt. Ride (HUD) ist kein Tab.
-/// Shop ist eine Route aus der Werkstatt, kein fünfter Reiter.
+/// Start, Karte, Touren, Rad. Ride (HUD) ist kein Tab.
+/// Shop ist eine Route aus dem Rad, kein fünfter Reiter.
 class ShellTabs {
   static const hof = 0;
   static const werkstatt = 1;
@@ -16,7 +16,7 @@ class ShellTabs {
     return raw;
   }
 
-  /// 0 Hof · 1 Karte · 2 Platz · 3 Werkstatt. Ride-HUD wirkt wie Karte.
+  /// 0 Start · 1 Karte · 2 Touren · 3 Rad. Ride-HUD wirkt wie Karte.
   static int navIndex(int stack) {
     return switch (stackIndex(stack)) {
       hof => 0,
@@ -37,21 +37,13 @@ class ShellTabs {
     };
   }
 
-  /// Karte-Tab aus der Leiste: gleiche Wahl wie Hof „Rausfahren“ /
-  /// „Noch mal raus“ (Einfach fahren / Touren anzeigen).
-  ///
-  /// Nicht bei erneutem Tap auf Karte, HUD-Rückkehr, gesetztem Launch
-  /// (Hof-CTA, Deep-Link, Planen) oder pending Loop/Mappe/Lens.
+  /// Losfahren sitzt auf Start → HUD. Karte merkt den letzten Modus.
   static bool shouldOfferRideOutOnKarteNav({
-    required int fromStack,
-    required int toStack,
+    int fromStack = 0,
+    int toStack = 0,
     bool hasLaunchIntent = false,
     bool hasPendingDiscoverTarget = false,
   }) {
-    if (toStack != karte) return false;
-    final from = stackIndex(fromStack);
-    if (from == karte || from == ride) return false;
-    if (hasLaunchIntent || hasPendingDiscoverTarget) return false;
-    return true;
+    return false;
   }
 }

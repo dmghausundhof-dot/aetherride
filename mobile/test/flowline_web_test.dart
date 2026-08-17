@@ -15,6 +15,20 @@ void main() {
     expect(parts.host.contains('myshopify'), isFalse);
   });
 
+  test('myshopify bleibt in der App zu ohne Shopify-Kasse', () {
+    final shopify = Uri.parse(
+      'https://dmg-haus-und-hof-shop.myshopify.com/products/sram-kette',
+    );
+    expect(allowInAppShopOutbound(shopify), isFalse);
+    expect(allowInAppShopOutbound(FlowLineWeb.hub()), isTrue);
+    expect(
+      allowInAppShopOutbound(
+        Uri.parse('https://oneupcomponents.com/products/v3-dropper-post'),
+      ),
+      isTrue,
+    );
+  });
+
   test('Zum Händler nur bei tiefer Nicht-Shopify-URL', () {
     expect(
       isShopifyOnlineStoreUri(
@@ -36,7 +50,15 @@ void main() {
           ?.host,
       'oneupcomponents.com',
     );
-    expect(isDeepProductUri(Uri.parse('https://www.sram.com/')), isFalse);
+    expect(
+      isDeepProductUri(Uri.parse('https://www.bike24.de/p2391234.html')),
+      isTrue,
+    );
+    expect(isDeepProductUri(Uri.parse('https://www.bike24.de/')), isFalse);
+    expect(
+      merchantCtaUri('https://www.bike24.de/p2391234.html')?.host,
+      'www.bike24.de',
+    );
     expect(
       isDeepProductUri(
         Uri.parse(

@@ -27,6 +27,12 @@ import {
   PARTS_BROWSE_SLOTS,
 } from "@/lib/shop/softFit";
 import { isPartsProduct } from "@/lib/shop/shopShelf";
+import {
+  getFeaturedPartsProducts,
+  shopifyHandleFromProductId,
+  type ShopProduct,
+} from "@/lib/shop/catalog";
+import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 
 export type PartsProduct = {
   id: string;
@@ -45,6 +51,8 @@ export type PartsProduct = {
   softFit: SoftFitTags;
   /** Primary browse slot if tagged */
   slotKey: string;
+  /** Händler-Name für Disclosure (Affiliate-Overflow) */
+  merchantName?: string;
 };
 
 export type PartsCatalogResult =
@@ -98,6 +106,57 @@ export function mapStorefrontProduct(p: ShopifyStorefrontProduct): PartsProduct 
     softFit,
     slotKey: slotKey === "all" ? "other" : slotKey,
   };
+}
+
+/** Editorial seed handle — never a live Shopify SKU invent. */
+export function editorialProductHandle(p: ShopProduct): string {
+  return shopifyHandleFromProductId(p.id) ?? p.id.replace(/^sp-/, "");
+}
+
+/** Seed parts for affiliate overflow (no Shopify checkout). */
+export function mapEditorialProduct(p: ShopProduct): PartsProduct {
+  const handle = editorialProductHandle(p);
+  const slotKey = normalizePartsSlot(p.slot);
+  const tags =
+    slotKey && slotKey !== "all" ? [`slot:${slotKey}`] : [];
+  return {
+    id: p.id,
+    handle,
+    name: p.name,
+    manufacturer: p.manufacturer,
+    productType: p.slot,
+    description: p.description,
+    priceEur: p.priceEur,
+    currencyCode: "EUR",
+    imageUrl: p.imageUrl,
+    availableForSale: true,
+    affiliateUrl: p.affiliateUrl || "",
+    tags,
+    softFit: parseSoftFitTags(tags),
+    slotKey: slotKey === "all" ? "other" : slotKey,
+    merchantName: p.merchantName,
+  };
+}
+
+export function getEditorialPartsCatalog(): PartsProduct[] {
+  return getFeaturedPartsProducts()
+    .filter((p) => !p.id.startsWith("sp-shopify-"))
+    .map(mapEditorialProduct);
+}
+
+export function getEditorialProductByHandle(
+  handle: string
+): PartsProduct | undefined {
+  const h = handle.trim();
+  if (!h) return undefined;
+  return getEditorialPartsCatalog().find(
+    (p) => p.handle === h || p.id === h || p.id === `sp-${h}`
+  );
+}
+
+/** Merchant CTA for a parts row — undefined when Shopify or not deep. */
+export function partsDealerCtaUrl(p: PartsProduct): string | undefined {
+  return dealerCtaUrl(p.affiliateUrl);
 }
 
 export async function loadFeaturedParts(

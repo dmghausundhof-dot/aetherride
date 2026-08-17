@@ -69,7 +69,7 @@ abstract final class RouteVisibility {
   }) {
     final catalog = catalogTourIdOf(routeId, meta ?? SavedRouteMeta.empty);
     if (catalog != null && !hasTrack) {
-      return 'Katalog-Tour ist schon öffentlich. Freigeben macht deine Akte '
+      return 'Katalog-Tour ist schon freigegeben. Freigeben macht deine Tour '
           'teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.';
     }
     if (hasTrack) {

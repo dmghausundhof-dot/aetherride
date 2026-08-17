@@ -53,27 +53,27 @@ export const HOME_DOOR_STORIES: {
 }[] = [
   {
     href: "/home",
-    title: "Der Hof",
-    kicker: "Der Stand",
-    body: "Hier wohnt das Rad. Himmel, eine Stunde vor dem Tor, was reinkam. Keine KPI-Leiste, keine Stories. Rausfahren ist ein Knopf — danach übernimmt die App.",
+    title: "Start",
+    kicker: "Losfahren",
+    body: "Hier steht das Rad. Wetter, was reinkam, ein oranger Knopf. Keine KPI-Leiste, keine Stories. Losfahren startet die App — die Karte bleibt zum Planen.",
   },
   {
     href: "/discover",
     title: "Karte",
-    kicker: "Vor dem Tor",
+    kicker: "Entdecken oder Ziel",
     body: "OpenStreetMap und Protomaps, echte Nähe, Filter nach Sport. Du planst am Desktop: Start, Via, Ziel. Live-Navigation im Browser gibt es nicht — und wird nicht vorgetäuscht.",
   },
   {
     href: "/library",
-    title: "Platz",
-    kicker: "Community an der Tour",
-    body: "Mappe, Stimmen, Einladungslinks. Teilen per Link, nicht per Timeline. Wer den Link hat, legt die Tour lokal ab — ohne Account-Zwang, ohne Track im Kommentar.",
+    title: "Touren",
+    kicker: "Gespeichert und geteilt",
+    body: "Deine Strecken, Tipps, Einladungslinks. Teilen per Link, nicht per Timeline. Wer den Link hat, legt die Tour lokal ab — ohne Account-Zwang, ohne Track im Kommentar.",
   },
   {
     href: "/garage",
-    title: "Werkstatt",
-    kicker: "Das Rad",
-    body: "Abstellen, Setup, Wartungsintervalle mit Quelle. Bracketing und Reichweiten-Spannen sind Pro. Teile schlägst du hier nach — passend zu Kassette, Kette, Belägen, Reifengröße. Der Laden ist die Tür zu Shopify, kein fünfter Tab und kein zweiter Warenkorb.",
+    title: "Rad",
+    kicker: "Dieses Rad",
+    body: "Anlegen, Setup, Wartungsintervalle mit Quelle. Bracketing und Reichweiten-Spannen sind Pro. Der Laden ist vorerst aus — ohne zweite Kasse.",
   },
 ];
 

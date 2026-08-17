@@ -1,43 +1,17 @@
-/// Internal product name is `hof`. The on-screen Home title follows **country**,
-/// not UI language. Chrome/CTAs stay on l10n; this map is country → name.
-///
-/// CH splits by language region (CH-DE / CH-FR / CH-IT).
-/// Callers must pass the **device** language (`AppLocaleBinding.hofLanguageCode`),
-/// not the chrome fallback (`de`/`en`). Otherwise fr-CH becomes Velokeller.
-/// Default is DE: Der Hof.
+/// Internal product name remains `hof`. On-screen title is the job word
+/// (Start / Accueil / Inizio), by UI language — not country poetry.
 String hofTitleFor({
   String? countryCode,
   String languageCode = 'de',
 }) {
-  final country = countryCode?.trim().toUpperCase();
-  final lang = languageCode.trim().toLowerCase();
-
-  if (country == 'CH') {
-    if (lang == 'fr') return 'Le local vélo';
-    if (lang == 'it') return 'La rimessa';
-    return 'Velokeller';
+  switch (languageCode.trim().toLowerCase()) {
+    case 'fr':
+      return 'Accueil';
+    case 'it':
+      return 'Inizio';
+    default:
+      return 'Start';
   }
-  if (country == 'IT') return 'La rimessa';
-  if (country == 'FR') return 'La remise';
-  if (country == 'AT' || country == 'DE') return 'Der Hof';
-  if (country == 'GB' ||
-      country == 'UK' ||
-      country == 'US' ||
-      country == 'AU' ||
-      country == 'NZ' ||
-      country == 'IE') {
-    return 'The Stand';
-  }
-  if (country == 'CA') {
-    return lang == 'fr' ? 'La remise' : 'The Stand';
-  }
-  if (country == null || country.isEmpty) {
-    if (lang == 'fr') return 'La remise';
-    if (lang == 'it') return 'La rimessa';
-    if (lang == 'en') return 'The Stand';
-    return 'Der Hof';
-  }
-  return 'Der Hof';
 }
 
 /// Country of a Nähe-Seed from its id (GPS hour-at-the-gate), not from locale.

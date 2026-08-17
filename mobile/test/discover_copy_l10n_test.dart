@@ -1,8 +1,155 @@
+import 'package:aetherride_mobile/domain/routing/route_variant.dart';
 import 'package:aetherride_mobile/l10n/app_localizations.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_de.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_en.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_fr.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_it.dart';
+import 'package:aetherride_mobile/l10n/l10n_ext.dart';
+import 'package:aetherride_mobile/presentation/discover/widgets/route_variant_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('Navigieren variant chip is German, not unpaved', () {
+    final de = AppLocalizationsDe();
+    expect(de.discoverVariantUnpaved, 'Mehr Schotter');
+    expect(de.discoverVariantUnpaved.toLowerCase(), isNot(contains('unpaved')));
+    expect(de.discoverVariantPlanned, 'Wie geplant');
+    expect(de.discoverVariantFlatter, 'Weniger hm');
+  });
+
+  test('variant hint is Hof copy, no routing engine', () {
+    final lines = <String>[
+      AppLocalizationsDe().discoverVariantValhallaOnly,
+      AppLocalizationsEn().discoverVariantValhallaOnly,
+      AppLocalizationsFr().discoverVariantValhallaOnly,
+      AppLocalizationsIt().discoverVariantValhallaOnly,
+    ];
+    expect(lines[0], 'Ohne Live-Strecke keine Varianten');
+    expect(lines[1], 'No variants without a live route');
+    expect(lines[2], 'Sans route live, pas de variantes');
+    expect(lines[3], 'Senza route live, niente varianti');
+    for (final line in lines) {
+      final lower = line.toLowerCase();
+      expect(lower, isNot(contains('valhalla')));
+      expect(lower, isNot(contains('osrm')));
+      expect(lower, isNot(contains('graphhopper')));
+    }
+  });
+
+  test('quick-limit hint is Hof copy, no routing engine', () {
+    final lines = <String>[
+      AppLocalizationsDe().discoverGhMinuteLimit,
+      AppLocalizationsEn().discoverGhMinuteLimit,
+      AppLocalizationsFr().discoverGhMinuteLimit,
+      AppLocalizationsIt().discoverGhMinuteLimit,
+    ];
+    expect(
+      lines[0],
+      'Vorschläge und Zeit gerade gedrosselt — kurz warten oder sparsam planen.',
+    );
+    expect(
+      lines[1],
+      'Suggestions and times are limited — wait a bit or plan sparingly.',
+    );
+    expect(
+      lines[2],
+      'Suggestions et durées limitées — attends un peu ou planifie avec parcimonie.',
+    );
+    expect(
+      lines[3],
+      'Suggerimenti e tempi limitati — aspetta un po’ o pianifica con parsimonia.',
+    );
+    for (final line in lines) {
+      final lower = line.toLowerCase();
+      expect(lower, isNot(contains('valhalla')));
+      expect(lower, isNot(contains('osrm')));
+      expect(lower, isNot(contains('graphhopper')));
+    }
+  });
+
+  test('live-route honesty is Hof copy, no routing engine', () {
+    final de = AppLocalizationsDe();
+    final en = AppLocalizationsEn();
+    final fr = AppLocalizationsFr();
+    final it = AppLocalizationsIt();
+    expect(
+      de.discoverHonestyRoad,
+      'Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.',
+    );
+    expect(
+      de.discoverHonestyCycleway,
+      'Wenig eigener Radweg — Live-Strecke oft auf der Fahrbahn.',
+    );
+    expect(
+      en.discoverHonestyRoad,
+      'Route mostly follows roads — tap a trail on the map and attach it.',
+    );
+    expect(
+      en.discoverHonestyCycleway,
+      'Little dedicated bike path — the live route often stays on the road.',
+    );
+    expect(
+      fr.discoverHonestyCycleway,
+      'Peu de piste cyclable — la route live reste souvent sur la chaussée.',
+    );
+    expect(
+      it.discoverHonestyCycleway,
+      'Poco percorso ciclabile — la route live resta spesso sulla carreggiata.',
+    );
+    expect(
+      de.discoverRiderHonestyFor(de.discoverHonestyRoad),
+      de.discoverHonestyRoad,
+    );
+    expect(
+      en.discoverRiderHonestyFor(de.discoverHonestyCycleway),
+      en.discoverHonestyCycleway,
+    );
+    expect(
+      fr.discoverRiderHonestyFor(
+        'Route folgt überwiegend Straßen — Trail auf der Karte antippen und anhängen.',
+      ),
+      fr.discoverHonestyRoad,
+    );
+    final lines = <String>[
+      de.discoverHonestyRoad,
+      de.discoverHonestyCycleway,
+      en.discoverHonestyRoad,
+      en.discoverHonestyCycleway,
+      fr.discoverHonestyRoad,
+      fr.discoverHonestyCycleway,
+      it.discoverHonestyRoad,
+      it.discoverHonestyCycleway,
+    ];
+    for (final line in lines) {
+      final lower = line.toLowerCase();
+      expect(lower, isNot(contains('valhalla')));
+      expect(lower, isNot(contains('osrm')));
+      expect(lower, isNot(contains('graphhopper')));
+    }
+    expect(fr.discoverOaOffline, contains('Outdooractive'));
+  });
+
+  testWidgets('RouteVariantChips shows live-route hint when disabled',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: RouteVariantChips(
+            value: RouteVariant.planned,
+            enabled: false,
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Ohne Live-Strecke keine Varianten'), findsOneWidget);
+    expect(find.textContaining('Valhalla'), findsNothing);
+  });
+
   testWidgets('discoverCatalogTours is singular for one', (tester) async {
     late AppLocalizations de;
     late AppLocalizations en;

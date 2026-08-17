@@ -15,6 +15,7 @@ import {
 } from "./snapTrailCorridor";
 import type { ClientRouteResult } from "./profiles";
 import type { TrailSegment } from "./trailSegments";
+import { HONESTY_CYCLEWAY_DE } from "./graphhopperHints";
 
 const from: [number, number] = [8.7, 49.4];
 const to: [number, number] = [8.72, 49.4];
@@ -282,9 +283,7 @@ const citySnapped = applyCorridorCyclewaySnap({
   to,
   route: {
     ...cityRoute,
-    warnings: [
-      "Wenig eigener Radweg — GraphHopper bleibt oft auf der Fahrbahn.",
-    ],
+    warnings: [HONESTY_CYCLEWAY_DE],
   },
   trails: [west, east],
 });

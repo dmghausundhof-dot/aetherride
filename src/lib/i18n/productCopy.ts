@@ -55,7 +55,7 @@ const DE: ProductCopy = {
     title: "Web ist der Hof. Die App fährt.",
     lead: "Dieselbe Anwendung, zwei Oberflächen. Im Browser planst, pflegst und teilst du: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad. Auf dem Gerät navigierst, zeichnest und koppelst du. Es gibt keinen Feed, keine zweite Kasse und kein Fake-GPS im Tab — leere Flächen bleiben leer.",
     doorsLead:
-      "Ride ist kein Tab. Der Laden ist eine Tür aus der Werkstatt zu Shopify, kein fünfter Reiter.",
+      "Ride ist kein Tab. Der Laden ist vorerst aus — die Werkstatt bleibt ohne Kasse.",
     galleryHeading: "Screens",
     galleryHint:
       "Design-System aus Logo und Bilder, zugeordnet zu den Türen. Ride-HUD bleibt die App.",
@@ -77,8 +77,8 @@ const EN: ProductCopy = {
   doors: [
     {
       href: "/home",
-      title: "Home",
-      body: "The stand: sky, an hour at the gate, what came in. One button — Ride out. No feed.",
+      title: "Start",
+      body: "Your bike and one button — Ride. No feed.",
     },
     {
       href: "/discover",
@@ -87,13 +87,13 @@ const EN: ProductCopy = {
     },
     {
       href: "/library",
-      title: "Platz",
-      body: "Mappe, Stimmen, invite links. The same tours as on the map — share by link, not by timeline.",
+      title: "Tours",
+      body: "Saved rides, tips, invite links. The same tours as on the map — share by link, not by timeline.",
     },
     {
       href: "/garage",
-      title: "Workshop",
-      body: "Park the bike, setup, service with a source. Parts for this bike — no shop tab, no second till.",
+      title: "Bike",
+      body: "Add a bike, setup, service with a source. No shop tab, no till.",
     },
   ],
   matrix: [
@@ -104,8 +104,8 @@ const EN: ProductCopy = {
     { feature: "Offline maps", web: "—", app: "Packs" },
     { feature: "GPS recording", web: "after sync", app: "native" },
     { feature: "Sensors, watch, BLE", web: "hint", app: "pair" },
-    { feature: "Shop / till", web: "Gateway", app: "Gateway" },
-    { feature: "Stimmen on the tour", web: "full", app: "full" },
+    { feature: "Shop / till", web: "paused", app: "paused" },
+    { feature: "Tips on the tour", web: "full", app: "full" },
     { feature: "Share Mappe & collections", web: "full", app: "Deep Link" },
     { feature: "Groups / ride together", web: "Roster + link", app: "HUD pins" },
     { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
@@ -128,7 +128,7 @@ const EN: ProductCopy = {
       hint: "Web plans. The app rides.",
       steps: [
         { label: "Map", href: "/discover" },
-        { label: "Plan", href: "/planner" },
+        { label: "Plan", href: "/discover?panel=plan" },
         { label: "Platz / Mappe", href: "/library" },
         { label: "App bridge", href: "/ride" },
       ],
@@ -151,8 +151,6 @@ const EN: ProductCopy = {
       steps: [
         { label: "Park the bike", href: "/garage?wizard=basic" },
         { label: "Service", href: "/garage?tab=maintenance" },
-        { label: "Shop", href: "/shop" },
-        { label: "Parts", href: "/shop/parts" },
       ],
     },
     {
@@ -185,6 +183,7 @@ const EN: ProductCopy = {
       screens: [
         { href: "/", name: "Start", role: "Hero, doors, journey" },
         { href: "/produkt", name: "Product", role: "Screens and flows" },
+        { href: "/karten", name: "Maps", role: "Sheets online, packs offline" },
         { href: "/regions", name: "Regions", role: "DACH ideas, nearby" },
         { href: "/guides", name: "Guides", role: "Planning, setup, e-bike" },
         { href: "/guides/teilen-per-link", name: "Share guide", role: "Link instead of feed" },
@@ -206,7 +205,7 @@ const EN: ProductCopy = {
       screens: [
         { href: "/home", name: "Home", role: "Stand, sky, gate" },
         { href: "/discover", name: "Map", role: "OSM, loops, filters" },
-        { href: "/planner", name: "Plan", role: "Start, via, destination" },
+        { href: "/discover?panel=plan", name: "Plan", role: "Start, via, destination" },
         { href: "/library", name: "Platz", role: "Mappe, Stimmen, groups" },
         { href: "/garage", name: "Workshop", role: "Die Box, setup, care, parts" },
       ],
@@ -227,8 +226,6 @@ const EN: ProductCopy = {
         { href: "/profile", name: "Profile", role: "Account, riding style, plan" },
         { href: "/privacy", name: "Data", role: "Export, zones, family" },
         { href: "/chat", name: "Coach", role: "Power user, limits" },
-        { href: "/shop/parts", name: "Parts", role: "Fit to the workshop" },
-        { href: "/checkout", name: "Checkout", role: "Pointer to Shopify" },
       ],
     },
     {
@@ -247,8 +244,8 @@ const EN: ProductCopy = {
   ui: {
     kicker: "Product",
     title: "Web is Home. The app rides.",
-    lead: "The same app, two surfaces. In the browser you plan, look after the bike and share: Home, Map, Platz, workshop, shop door. On the device you navigate, record and pair. There is no feed, no second till and no fake GPS in the tab — empty areas stay empty.",
-    doorsLead: "Ride is not a tab. The shop is a door to Shopify, not a second shop.",
+    lead: "The same app, two surfaces. In the browser you plan, look after the bike and share: Home, Map, Platz, workshop. On the device you navigate, record and pair. There is no feed, no till and no fake GPS in the tab — empty areas stay empty.",
+    doorsLead: "Ride is not a tab. The shop is paused — the workshop stays without a till.",
     galleryHeading: "Screens",
     galleryHint:
       "Design system from Logo und Bilder, mapped to the doors. Ride HUD stays the app.",
@@ -269,8 +266,8 @@ const FR: ProductCopy = {
   doors: [
     {
       href: "/home",
-      title: "Home",
-      body: "Le stand : ciel, une heure devant la porte, ce qui est rentré. Un bouton — Sortir. Pas de fil.",
+      title: "Accueil",
+      body: "Ton vélo et un bouton — Rouler. Pas de fil.",
     },
     {
       href: "/discover",
@@ -279,13 +276,13 @@ const FR: ProductCopy = {
     },
     {
       href: "/library",
-      title: "Platz",
-      body: "Mappe, Stimmen, liens d’invitation. Les mêmes sorties que sur la carte — partager par lien, pas par fil.",
+      title: "Parcours",
+      body: "Sorties enregistrées, astuces, liens d’invitation. Les mêmes parcours que sur la carte — partager par lien, pas par fil.",
     },
     {
       href: "/garage",
-      title: "Atelier",
-      body: "Garer le vélo, setup, entretien avec source. Pièces pour ce vélo — pas d’onglet magasin, pas de deuxième caisse.",
+      title: "Vélo",
+      body: "Ajouter un vélo, setup, entretien avec source. Pas d’onglet magasin, pas de caisse.",
     },
   ],
   matrix: [
@@ -296,8 +293,8 @@ const FR: ProductCopy = {
     { feature: "Cartes hors ligne", web: "—", app: "Packs" },
     { feature: "Enregistrement GPS", web: "après sync", app: "natif" },
     { feature: "Capteurs, montre, BLE", web: "indice", app: "coupler" },
-    { feature: "Magasin / caisse", web: "Gateway", app: "Gateway" },
-    { feature: "Stimmen sur la sortie", web: "complet", app: "complet" },
+    { feature: "Magasin / caisse", web: "en pause", app: "en pause" },
+    { feature: "Astuces sur la sortie", web: "complet", app: "complet" },
     { feature: "Partager Mappe et collections", web: "complet", app: "Deep Link" },
     { feature: "Groupes / sortir ensemble", web: "Roster + lien", app: "Pins HUD" },
     { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
@@ -320,7 +317,7 @@ const FR: ProductCopy = {
       hint: "Le web planifie. L’appli roule.",
       steps: [
         { label: "Carte", href: "/discover" },
-        { label: "Planifier", href: "/planner" },
+        { label: "Planifier", href: "/discover?panel=plan" },
         { label: "Platz / Mappe", href: "/library" },
         { label: "Pont appli", href: "/ride" },
       ],
@@ -343,8 +340,6 @@ const FR: ProductCopy = {
       steps: [
         { label: "Garer le vélo", href: "/garage?wizard=basic" },
         { label: "Entretien", href: "/garage?tab=maintenance" },
-        { label: "Magasin", href: "/shop" },
-        { label: "Pièces", href: "/shop/parts" },
       ],
     },
     {
@@ -377,6 +372,7 @@ const FR: ProductCopy = {
       screens: [
         { href: "/", name: "Accueil", role: "Hero, portes, parcours" },
         { href: "/produkt", name: "Produit", role: "Écrans et parcours" },
+        { href: "/karten", name: "Cartes", role: "Feuilles en ligne, packs hors ligne" },
         { href: "/regions", name: "Régions", role: "Idées DACH, proximité" },
         { href: "/guides", name: "Guides", role: "Planification, setup, e-bike" },
         { href: "/guides/teilen-per-link", name: "Guide partager", role: "Lien plutôt que fil" },
@@ -386,7 +382,7 @@ const FR: ProductCopy = {
         { href: "/download", name: "App", role: "Pourquoi natif" },
         { href: "/anmelden", name: "Se connecter", role: "Compte, puis Home" },
         { href: "/faq", name: "FAQ", role: "Web, appli, prix" },
-        { href: "/ueber", name: "À propos", role: "Marque, cinq portes" },
+        { href: "/ueber", name: "À propos", role: "Marque, quatre portes" },
         { href: "/kontakt", name: "Contact", role: "E-mail, pas de bot" },
         { href: "/share", name: "Partager", role: "Lien de sortie et Mappe" },
         { href: "/u/mara_road", name: "Profil", role: "Exemple éditorial" },
@@ -398,7 +394,7 @@ const FR: ProductCopy = {
       screens: [
         { href: "/home", name: "Home", role: "Stand, ciel, porte" },
         { href: "/discover", name: "Carte", role: "OSM, boucles, filtres" },
-        { href: "/planner", name: "Planifier", role: "Départ, via, arrivée" },
+        { href: "/discover?panel=plan", name: "Planifier", role: "Départ, via, arrivée" },
         { href: "/library", name: "Platz", role: "Mappe, Stimmen, groupes" },
         { href: "/garage", name: "Atelier", role: "Die Box, setup, entretien, pièces" },
       ],
@@ -419,8 +415,6 @@ const FR: ProductCopy = {
         { href: "/profile", name: "Profil", role: "Compte, style, abo" },
         { href: "/privacy", name: "Données", role: "Export, zones, famille" },
         { href: "/chat", name: "Coach", role: "Power-user, limites" },
-        { href: "/shop/parts", name: "Pièces", role: "Fit à l’atelier" },
-        { href: "/checkout", name: "Caisse", role: "Renvoi vers Shopify" },
       ],
     },
     {
@@ -439,9 +433,9 @@ const FR: ProductCopy = {
   ui: {
     kicker: "Produit",
     title: "Le web est Home. L’appli roule.",
-    lead: "La même appli, deux surfaces. Dans le navigateur tu planifies, tu soignes et tu partages : Home, Carte, Platz, atelier, porte magasin. Sur l’appareil tu navigues, tu enregistres et tu couples. Pas de fil, pas de deuxième caisse, pas de GPS fictif dans l’onglet — les surfaces vides restent vides.",
+    lead: "La même appli, deux surfaces. Dans le navigateur tu planifies, tu soignes et tu partages : Home, Carte, Platz, atelier. Sur l’appareil tu navigues, tu enregistres et tu couples. Pas de fil, pas de caisse, pas de GPS fictif dans l’onglet — les surfaces vides restent vides.",
     doorsLead:
-      "Ride n’est pas un onglet. Le magasin est une porte vers Shopify, pas un deuxième shop.",
+      "Ride n’est pas un onglet. Le magasin est en pause — l’atelier reste sans caisse.",
     galleryHeading: "Écrans",
     galleryHint:
       "Système de design issu de Logo und Bilder, associé aux portes. Le Ride-HUD reste l’appli.",
@@ -463,8 +457,8 @@ const IT: ProductCopy = {
   doors: [
     {
       href: "/home",
-      title: "Home",
-      body: "Lo stand: cielo, un’ora davanti al cancello, ciò che è rientrato. Un pulsante — Esci. Niente feed.",
+      title: "Inizio",
+      body: "La tua bici e un pulsante — Pedala. Niente feed.",
     },
     {
       href: "/discover",
@@ -473,13 +467,13 @@ const IT: ProductCopy = {
     },
     {
       href: "/library",
-      title: "Platz",
-      body: "Mappe, Stimmen, link di invito. Le stesse uscite della mappa — condividi per link, non per timeline.",
+      title: "Percorsi",
+      body: "Uscite salvate, consigli, link di invito. Gli stessi percorsi della mappa — condividi per link, non per timeline.",
     },
     {
       href: "/garage",
-      title: "Officina",
-      body: "Parcheggiare la bici, setup, manutenzione con fonte. Pezzi per questa bici — niente tab negozio, niente seconda cassa.",
+      title: "Bici",
+      body: "Aggiungi una bici, setup, manutenzione con fonte. Niente tab negozio, niente cassa.",
     },
   ],
   matrix: [
@@ -490,8 +484,8 @@ const IT: ProductCopy = {
     { feature: "Mappe offline", web: "—", app: "Packs" },
     { feature: "Registrazione GPS", web: "dopo sync", app: "nativo" },
     { feature: "Sensori, orologio, BLE", web: "hint", app: "accoppia" },
-    { feature: "Negozio / cassa", web: "Gateway", app: "Gateway" },
-    { feature: "Stimmen sull’uscita", web: "pieno", app: "pieno" },
+    { feature: "Negozio / cassa", web: "in pausa", app: "in pausa" },
+    { feature: "Consigli sull’uscita", web: "pieno", app: "pieno" },
     { feature: "Condividere Mappe e raccolte", web: "pieno", app: "Deep Link" },
     { feature: "Gruppi / uscire insieme", web: "Roster + link", app: "Pin HUD" },
     { feature: "Public Profile", web: "Opt-in", app: "Opt-in" },
@@ -514,7 +508,7 @@ const IT: ProductCopy = {
       hint: "Il web pianifica. L’app pedala.",
       steps: [
         { label: "Mappa", href: "/discover" },
-        { label: "Pianifica", href: "/planner" },
+        { label: "Pianifica", href: "/discover?panel=plan" },
         { label: "Platz / Mappe", href: "/library" },
         { label: "Ponte app", href: "/ride" },
       ],
@@ -537,8 +531,6 @@ const IT: ProductCopy = {
       steps: [
         { label: "Parcheggia la bici", href: "/garage?wizard=basic" },
         { label: "Manutenzione", href: "/garage?tab=maintenance" },
-        { label: "Negozio", href: "/shop" },
-        { label: "Ricambi", href: "/shop/parts" },
       ],
     },
     {
@@ -571,6 +563,7 @@ const IT: ProductCopy = {
       screens: [
         { href: "/", name: "Inizio", role: "Hero, porte, percorso" },
         { href: "/produkt", name: "Prodotto", role: "Schermate e flussi" },
+        { href: "/karten", name: "Carte", role: "Fogli online, pack offline" },
         { href: "/regions", name: "Regioni", role: "Idee DACH, vicino" },
         { href: "/guides", name: "Guide", role: "Pianificazione, setup, e-bike" },
         { href: "/guides/teilen-per-link", name: "Guida condividi", role: "Link invece del feed" },
@@ -580,7 +573,7 @@ const IT: ProductCopy = {
         { href: "/download", name: "App", role: "Perché nativa" },
         { href: "/anmelden", name: "Accedi", role: "Account, poi Home" },
         { href: "/faq", name: "FAQ", role: "Web, app, prezzi" },
-        { href: "/ueber", name: "Info", role: "Marca, cinque porte" },
+        { href: "/ueber", name: "Info", role: "Marca, quattro porte" },
         { href: "/kontakt", name: "Contatto", role: "E-mail, niente bot" },
         { href: "/share", name: "Condividi", role: "Link uscita e Mappe" },
         { href: "/u/mara_road", name: "Profilo", role: "Esempio editoriale" },
@@ -592,7 +585,7 @@ const IT: ProductCopy = {
       screens: [
         { href: "/home", name: "Home", role: "Stand, cielo, cancello" },
         { href: "/discover", name: "Mappa", role: "OSM, anelli, filtri" },
-        { href: "/planner", name: "Pianifica", role: "Partenza, via, arrivo" },
+        { href: "/discover?panel=plan", name: "Pianifica", role: "Partenza, via, arrivo" },
         { href: "/library", name: "Platz", role: "Mappe, Stimmen, gruppi" },
         { href: "/garage", name: "Officina", role: "Die Box, setup, cura, pezzi" },
       ],
@@ -613,8 +606,6 @@ const IT: ProductCopy = {
         { href: "/profile", name: "Profilo", role: "Account, stile, abbonamento" },
         { href: "/privacy", name: "Dati", role: "Export, zone, famiglia" },
         { href: "/chat", name: "Coach", role: "Power user, limiti" },
-        { href: "/shop/parts", name: "Ricambi", role: "Fit all’officina" },
-        { href: "/checkout", name: "Cassa", role: "Rinvio a Shopify" },
       ],
     },
     {
@@ -633,9 +624,9 @@ const IT: ProductCopy = {
   ui: {
     kicker: "Prodotto",
     title: "Il web è Home. L’app pedala.",
-    lead: "La stessa app, due superfici. Nel browser pianifichi, curi e condividi: Home, Mappa, Platz, officina, porta negozio. Sul dispositivo navighi, registri e accoppi. Niente feed, niente seconda cassa, niente GPS finto nel tab — le superfici vuote restano vuote.",
+    lead: "La stessa app, due superfici. Nel browser pianifichi, curi e condividi: Home, Mappa, Platz, officina. Sul dispositivo navighi, registri e accoppi. Niente feed, niente cassa, niente GPS finto nel tab — le superfici vuote restano vuote.",
     doorsLead:
-      "Ride non è una scheda. Il negozio è una porta verso Shopify, non un secondo shop.",
+      "Ride non è una scheda. Il negozio è in pausa — l’officina resta senza cassa.",
     galleryHeading: "Schermate",
     galleryHint:
       "Design system da Logo und Bilder, assegnato alle porte. Il Ride-HUD resta l’app.",

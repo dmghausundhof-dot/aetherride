@@ -36,7 +36,13 @@ function testParity() {
       de.doors.map((d) => d.href),
       lang,
     );
-    assert.equal(p.doors[2]?.title, "Platz", `${lang} Platz`);
+    const doorTour = {
+      de: "Touren",
+      en: "Tours",
+      fr: "Parcours",
+      it: "Percorsi",
+    } as const;
+    assert.equal(p.doors[2]?.title, doorTour[lang], `${lang} tours door`);
     assert.equal(p.matrix.length, de.matrix.length, lang);
     assert.deepEqual(
       p.workflows.map((w) => w.id),
@@ -58,7 +64,10 @@ function testParity() {
         `${lang} group ${g}`,
       );
     }
-    assert.ok(p.matrix.some((row) => row.feature.includes("Stimmen")), lang);
+    assert.ok(
+      p.matrix.some((row) => /Tipp|Tip|Astuce|Consigli/i.test(row.feature)),
+      lang,
+    );
   }
 }
 

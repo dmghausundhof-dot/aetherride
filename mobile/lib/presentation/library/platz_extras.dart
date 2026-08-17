@@ -13,6 +13,7 @@ import '../../data/community/ride_group_invite.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/local/user_profile_store.dart';
 import '../../data/routing/route_collections.dart';
+import '../../data/routing/saved_route_meta_store.dart';
 import '../../domain/community/ride_group.dart';
 import '../../domain/community/ride_group_policy.dart';
 import '../../domain/saved_route.dart';
@@ -43,7 +44,7 @@ class PlatzExtras extends ConsumerStatefulWidget {
   final Map<String, SavedRouteMeta> metas;
   final RideGroupStore store;
   final TourVisibilityKey visibility;
-  final ValueChanged<SavedRouteEntry>? onOpenAkte;
+  final Future<void> Function(SavedRouteEntry)? onOpenAkte;
 
   @override
   ConsumerState<PlatzExtras> createState() => _PlatzExtrasState();
@@ -88,8 +89,7 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
     super.dispose();
   }
 
-  /// Offene Gruppen anderer: nur unter Mappe-Chip „Freigegeben“.
-  /// Eigene Gruppen filtert der Chip nicht — der gilt für die Mappe.
+  /// Offene Gruppen anderer: nur unter Chip „Freigegeben“.
   bool get _listPublic => widget.visibility == TourVisibilityKey.sharedOnly;
 
   List<RideGroup> get _listedPublic {
@@ -160,18 +160,18 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
     }
   }
 
-  Future<void> _promptShareTourFirst() async {
+  Future<SavedRouteEntry?> _promptShareTourFirst() async {
     final l10n = AppLocalizations.of(context);
     final locked = [
       for (final s in widget.saved)
         if (!RideGroupPolicy.canAttachSaved(s, widget.metas[s.id])) s,
     ];
     if (locked.isEmpty) {
-      if (!mounted) return;
+      if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.platzNeedSharedTour)),
       );
-      return;
+      return null;
     }
     final chosen = await showModalBottomSheet<SavedRouteEntry>(
       context: context,
@@ -216,7 +216,7 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
         );
       },
     );
-    if (chosen != null) widget.onOpenAkte?.call(chosen);
+    return chosen;
   }
 
   Future<void> _createGroup() async {
@@ -225,13 +225,19 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
       openAuthScreen(context);
       return;
     }
-    final attachable = [
+    var attachable = [
       for (final s in widget.saved)
         if (RideGroupPolicy.canAttachSaved(s, widget.metas[s.id])) s,
     ];
     if (attachable.isEmpty) {
-      await _promptShareTourFirst();
-      return;
+      final pending = await _promptShareTourFirst();
+      if (pending == null || !mounted) return;
+      await widget.onOpenAkte?.call(pending);
+      if (!mounted) return;
+      final meta = await SavedRouteMetaStore.get(pending.id);
+      if (!mounted) return;
+      if (!RideGroupPolicy.canAttachSaved(pending, meta)) return;
+      attachable = [pending];
     }
     SavedRouteEntry chosen = attachable.first;
     var listing = RideGroupVisibility.private;
@@ -654,6 +660,27 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
     );
   }
 
+  Future<void> _setPins(String groupId, bool on) async {
+    await widget.store.setLiveOptIn(groupId, on);
+    if (!mounted) return;
+    setState(() => _localOptIn = {..._localOptIn, groupId: on});
+    if (on) _toast(AppLocalizations.of(context).platzPinsHint);
+  }
+
+  Future<void> _toggleListing(RideGroup g) async {
+    final next = g.visibility == RideGroupVisibility.public
+        ? RideGroupVisibility.private
+        : RideGroupVisibility.public;
+    await widget.store.setVisibility(g.id, next);
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    _toast(
+      next == RideGroupVisibility.public
+          ? l10n.platzGroupListedNote
+          : l10n.platzGroupUnlistedNote,
+    );
+  }
+
   Future<void> _copyInvite(RideGroup g) async {
     final token = RideGroupInvite.encode(g);
     final url = RideGroupInvite.httpsUrl(groupId: g.id, token: token);
@@ -885,14 +912,25 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
                       runSpacing: 0,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        FilledButton(
-                          key: Key('platz-group-invite-${g.id}'),
-                          style: FilledButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
+                        if (_selfIds.contains(g.hostUserId))
+                          FilledButton(
+                            key: Key('platz-group-invite-${g.id}'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () => unawaited(_invite(g)),
+                            child: Text(l10n.platzInvite),
+                          )
+                        else
+                          FilledButton(
+                            key: Key('platz-group-ride-${g.id}'),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () =>
+                                unawaited(_startRideFromGroup(g)),
+                            child: Text(l10n.goRide),
                           ),
-                          onPressed: () => unawaited(_invite(g)),
-                          child: Text(l10n.platzInvite),
-                        ),
                         TextButton(
                           onPressed: () => unawaited(_leaveOrClose(g)),
                           style: TextButton.styleFrom(
@@ -904,23 +942,17 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
                                 : l10n.platzLeave,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => unawaited(_copyInvite(g)),
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
+                        if (_selfIds.contains(g.hostUserId) || g.onServer)
+                          TextButton(
+                            onPressed: () => unawaited(_copyInvite(g)),
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            child: Text(l10n.platzCopyLink),
                           ),
-                          child: Text(l10n.platzCopyLink),
-                        ),
                         if (_selfIds.contains(g.hostUserId))
                           TextButton(
-                            onPressed: () => unawaited(
-                              widget.store.setVisibility(
-                                g.id,
-                                g.visibility == RideGroupVisibility.public
-                                    ? RideGroupVisibility.private
-                                    : RideGroupVisibility.public,
-                              ),
-                            ),
+                            onPressed: () => unawaited(_toggleListing(g)),
                             style: TextButton.styleFrom(
                               visualDensity: VisualDensity.compact,
                             ),
@@ -932,43 +964,46 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        FilterChip(
-                          key: Key('platz-group-pins-${g.id}'),
-                          selected: _localOptIn[g.id] ?? false,
-                          showCheckmark: false,
-                          visualDensity: VisualDensity.compact,
-                          label: Text(
-                            (_localOptIn[g.id] ?? false)
-                                ? l10n.platzPinsOnHud
-                                : l10n.platzPinsOff,
-                          ),
-                          onSelected: (on) => unawaited(
-                            widget.store.setLiveOptIn(g.id, on),
-                          ),
-                        ),
-                        FilledButton.tonal(
-                          key: Key('platz-group-ride-${g.id}'),
-                          style: FilledButton.styleFrom(
+                    if (_selfIds.contains(g.hostUserId) || g.onServer) ...[
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          FilterChip(
+                            key: Key('platz-group-pins-${g.id}'),
+                            selected: _localOptIn[g.id] ?? false,
+                            showCheckmark: false,
                             visualDensity: VisualDensity.compact,
+                            label: Text(
+                              (_localOptIn[g.id] ?? false)
+                                  ? l10n.platzPinsOnHud
+                                  : l10n.platzPinsOff,
+                            ),
+                            onSelected: (on) =>
+                                unawaited(_setPins(g.id, on)),
                           ),
-                          onPressed: () => unawaited(_startRideFromGroup(g)),
-                          child: Text(l10n.goRide),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.platzPinsHint,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.muted,
+                          if (_selfIds.contains(g.hostUserId))
+                            FilledButton.tonal(
+                              key: Key('platz-group-ride-${g.id}'),
+                              style: FilledButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              onPressed: () =>
+                                  unawaited(_startRideFromGroup(g)),
+                              child: Text(l10n.goRide),
+                            ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.platzPinsHint,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1019,7 +1054,9 @@ class _PlatzExtrasState extends ConsumerState<PlatzExtras> {
                       onPressed: () => unawaited(
                         _applyJoin(g.id, token: null),
                       ),
-                      child: Text(l10n.platzJoin),
+                      child: Text(
+                        _signedIn ? l10n.platzJoin : l10n.platzJoinLocalCta,
+                      ),
                     ),
                   ],
                 ),

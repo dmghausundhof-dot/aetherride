@@ -89,7 +89,7 @@ const EN: AboutCopy = {
     },
     {
       title: "No second till",
-      body: "The shop is a door to Shopify. Fit comes from the workshop. Without an imprint, checkout stays closed. We do not invent an address.",
+      body: "The shop is off for now. The workshop stays for fit and care. We do not invent an address for a checkout.",
     },
     {
       title: "No dummy",
@@ -146,7 +146,7 @@ const FR: AboutCopy = {
     },
     {
       title: "Pas de deuxième caisse",
-      body: "Le magasin est une porte vers Shopify. Le fit vient de l’atelier. Sans mentions légales, le checkout reste fermé. On n’invente pas d’adresse.",
+      body: "Le magasin est coupé pour l’instant. L’atelier reste pour le fit et l’entretien. On n’invente pas d’adresse pour un checkout.",
     },
     {
       title: "Pas de simulacre",
@@ -203,7 +203,7 @@ const IT: AboutCopy = {
     },
     {
       title: "Niente seconda cassa",
-      body: "Il negozio è una porta verso Shopify. Il fit viene dall’officina. Senza Impressum il checkout resta chiuso. Non inventiamo un indirizzo.",
+      body: "Il negozio è spento per ora. L’officina resta per fit e cura. Non inventiamo un indirizzo per un checkout.",
     },
     {
       title: "Niente finto",

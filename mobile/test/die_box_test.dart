@@ -263,22 +263,27 @@ void main() {
       wheel: WheelSize.w29,
       ebike: true,
     );
-    final plan = planDieBox(
-      bike: bike,
-      components: [
-        _part('j1', ComponentSlot.tireFront, catalogModelId: 'cm-tire'),
-        _part('j1', ComponentSlot.headset, catalogModelId: 'cm-headset'),
-        _part('j1', ComponentSlot.saddle, catalogModelId: 'cm-saddle'),
-        _part('j1', ComponentSlot.motor, catalogModelId: 'cm-motor'),
-        _part('j1', ComponentSlot.lock, model: 'Abus'),
-      ],
-    );
+    final parts = [
+      _part('j1', ComponentSlot.tireFront, catalogModelId: 'cm-tire'),
+      _part('j1', ComponentSlot.headset, catalogModelId: 'cm-headset'),
+      _part('j1', ComponentSlot.saddle, catalogModelId: 'cm-saddle'),
+      _part('j1', ComponentSlot.motor, catalogModelId: 'cm-motor'),
+      _part('j1', ComponentSlot.lock, model: 'Abus'),
+    ];
+    final plan = planDieBox(bike: bike, components: parts);
     final slots = plan.onBike.map((c) => c.slot).toList();
     expect(slots, contains(ComponentSlot.tireFront));
     expect(slots, contains(ComponentSlot.motor));
     expect(slots, contains(ComponentSlot.lock));
     expect(slots, isNot(contains(ComponentSlot.headset)));
     expect(slots, isNot(contains(ComponentSlot.saddle)));
+    expect(
+      listedWorkshopParts(
+        installed: parts,
+        addable: plan.addableSlots,
+      ).map((c) => c.id),
+      plan.onBike.map((c) => c.id),
+    );
     expect(plan.sentence.toLowerCase(), contains('e-antrieb'));
     expect(plan.chips.where((c) => !c.known), isEmpty);
   });
@@ -369,5 +374,29 @@ void main() {
       defaultSetupValuesFor(mtb).any((v) => v.adjusterKey.contains('fork')),
       isFalse,
     );
+  });
+
+  test('Gravel with fork asks for SAG; city with typed travel does not', () {
+    final gravelPlan = planDieBox(
+      bike: _bike(id: 'g2', name: 'Kora', category: BikeCategory.gravel),
+      components: [_part('g2', ComponentSlot.fork)],
+    );
+    expect(gravelPlan.setup.showsFahrwerk, isTrue);
+    expect(gravelPlan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isTrue);
+    expect(gravelPlan.addableSlots, contains(ComponentSlot.fork));
+    expect(gravelPlan.addableSlots, isNot(contains(ComponentSlot.rearShock)));
+
+    final cityPlan = planDieBox(
+      bike: _bike(
+        id: 'c2',
+        name: 'City',
+        category: BikeCategory.urban,
+        travelF: 80,
+      ),
+    );
+    expect(cityPlan.setup.hasSuspension, isTrue);
+    expect(cityPlan.setup.showsFahrwerk, isFalse);
+    expect(cityPlan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isFalse);
+    expect(cityPlan.addableSlots, isNot(contains(ComponentSlot.fork)));
   });
 }

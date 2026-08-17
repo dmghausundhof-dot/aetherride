@@ -422,7 +422,7 @@ export async function computePointToPoint(
   return next?.computed ?? null;
 }
 
-/** Rider-facing one-liner for a computed route (engine + first honesty warning). */
+/** Rider-facing one-liner: km · time, plus first honesty warning. No engine name. */
 export function routeResultMessage(result: ClientRouteResult): string {
   const km = (result.distanceM / 1000).toFixed(1);
   const min = Math.round(result.durationS / 60);
@@ -437,7 +437,7 @@ export function routeResultMessage(result: ClientRouteResult): string {
       !w.startsWith("Öffentliches OSRM")
   );
   if (rider) return `${head} · ${rider}`;
-  return `${head} · ${result.engine}`;
+  return head;
 }
 
 /** Adopt tour geometry as-is. Without geometry: empty result (pin-only UI). */

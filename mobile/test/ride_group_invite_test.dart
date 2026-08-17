@@ -53,7 +53,7 @@ void main() {
     );
     expect(share, contains('aetherride://platz?group=${group.id}'));
     expect(share,
-        contains('Mein Platz-Profil: https://aetherride.vercel.app/u/luka'));
+        contains('Mein Profil: https://aetherride.vercel.app/u/luka'));
     expect(share, isNot(contains('Code K7M2NP')));
     expect(share, contains('Privat:'));
     expect(
@@ -214,6 +214,20 @@ void main() {
           url: 'https://x',
           visibility: RideGroupVisibility.public),
       contains('Freigegeben:'),
+    );
+    expect(
+      RideGroupInvite.shareText(
+          title: 'Bodensee',
+          url: 'https://x',
+          visibility: RideGroupVisibility.private),
+      isNot(contains('öffentlich')),
+    );
+    expect(
+      RideGroupInvite.shareText(
+          title: 'Bodensee',
+          url: 'https://x',
+          visibility: RideGroupVisibility.private),
+      contains('Nicht gelistet'),
     );
   });
 }

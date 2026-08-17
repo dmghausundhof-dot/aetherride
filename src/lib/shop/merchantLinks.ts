@@ -1,9 +1,20 @@
 /**
- * "Zum Händler" / external CTA rules:
+ * "Beim Händler kaufen" / external CTA rules:
  * - Real product (or product-search) URLs only
  * - Never bare merchant homepages
  * - Omit CTA if unknown / not deep enough
+ * - Bike24 DE: /p123456.html (no slash after p) is a product URL
  */
+
+import { trackedMerchantUrl } from "@/lib/shop/affiliateTracking";
+
+function isBike24Host(host: string): boolean {
+  return /(^|\.)bike24\.(de|com|at|ch|nl|fr|it|es)$/i.test(host);
+}
+
+function isShopifyHost(host: string): boolean {
+  return host.endsWith(".myshopify.com") || host.includes("shopify.com");
+}
 
 export function isDeepProductUrl(url: string | null | undefined): boolean {
   if (!url || !url.trim()) return false;
@@ -16,7 +27,7 @@ export function isDeepProductUrl(url: string | null | undefined): boolean {
     const host = u.hostname.toLowerCase();
 
     // Shopify Online Store — only concrete product handles
-    if (host.endsWith(".myshopify.com") || host.includes("shopify.com")) {
+    if (isShopifyHost(host)) {
       return /\/products\/[^/]+$/i.test(path) || /\/products\/[^/]+/i.test(path);
     }
 
@@ -26,6 +37,10 @@ export function isDeepProductUrl(url: string | null | undefined): boolean {
     // Explicit product paths
     if (/\/products?\//i.test(path)) return true;
     if (/\/(dp|gp|item|p)\//i.test(path)) return true;
+    // Bike24: /p2391234.html (p + digits, no slash after p)
+    if (/\/p\d+(\.html)?$/i.test(path)) return true;
+    // Bike24 SEO slug: /sram-xx-eagle-chain-p2391234.html
+    if (isBike24Host(host) && /p\d+(\.html)?$/i.test(path)) return true;
     // Manufacturer product tree (e.g. shimano .../product/component/...)
     if (/\/product\//i.test(path)) return true;
 
@@ -53,8 +68,8 @@ export function merchantCtaUrl(
 }
 
 /**
- * „Zum Händler“ — tiefe Nicht-Shopify-URLs.
- * Shopify bleibt „Im Shop öffnen“ (Owner-Preview), kein zweiter Händler-Button.
+ * „Beim Händler kaufen“ — tiefe Nicht-Shopify-URLs, optional tracking wrap.
+ * Shopify bleibt hinter SHOPIFY_COMMERCE_ENABLED, kein zweiter Händler-Button.
  */
 export function dealerCtaUrl(
   url: string | null | undefined
@@ -63,11 +78,11 @@ export function dealerCtaUrl(
   if (!cta) return undefined;
   try {
     const host = new URL(cta).hostname.toLowerCase();
-    if (host.endsWith(".myshopify.com") || host.includes("shopify.com")) {
+    if (isShopifyHost(host)) {
       return undefined;
     }
   } catch {
     return undefined;
   }
-  return cta;
+  return trackedMerchantUrl(cta);
 }

@@ -85,16 +85,16 @@ abstract final class RideGroupInvite {
     if (profileUrl != null && profileUrl.trim().isNotEmpty) {
       buf
         ..writeln()
-        ..writeln('Mein Platz-Profil: ${profileUrl.trim()}');
+        ..writeln('Mein Profil: ${profileUrl.trim()}');
     }
     buf
       ..writeln()
       ..write(
         visibility == RideGroupVisibility.public
             ? 'Freigegeben: wer den Link hat, kann beitreten. '
-                'Die Gruppe kann unter Freigegeben auf dem Platz stehen.'
+                'Die Gruppe kann unter Freigegeben stehen.'
             : 'Privat: nur wer diesen Link hat, kann beitreten. '
-                'Kein öffentliches Roster.',
+                'Nicht gelistet.',
       );
     return buf.toString();
   }

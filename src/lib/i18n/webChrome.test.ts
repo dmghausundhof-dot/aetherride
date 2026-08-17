@@ -17,7 +17,7 @@ function testParity() {
       assert.ok(c.marketingNav[item.href], `${lang} ${item.href}`);
     }
     assert.ok(c.hofNav.karte);
-    assert.ok(c.hofNav.platz === "Platz", `${lang} Platz stays brand`);
+    assert.equal(c.hofNav.platz, lang === "de" ? "Touren" : lang === "en" ? "Tours" : lang === "fr" ? "Parcours" : "Percorsi", `${lang} tours tab`);
   }
 }
 
@@ -27,7 +27,7 @@ function testDeMatchesCurrentChrome() {
   assert.equal(c.toHof, "Zum Hof");
   assert.equal(c.signIn, "Anmelden");
   assert.equal(c.arriveAtHof, "Am Hof ankommen");
-  assert.equal(c.hofNav.werkstatt, "Werkstatt");
+  assert.equal(c.hofNav.werkstatt, "Rad");
   assert.equal(c.fourDoors, "Vier Türen");
   assert.equal(c.tabOf(2, 4), "Tab 2 von 4");
   assert.equal(c.dataPrivacy, "Daten & Privatsphäre");
@@ -42,7 +42,7 @@ function testEnFrItChrome() {
   assert.equal(webChrome("en").profile, "Profile");
   assert.equal(webChrome("en").stillToHof, "To Home anyway");
   assert.equal(webChrome("fr").arriveAtHof, "Arriver");
-  assert.equal(webChrome("fr").hofNav.werkstatt, "Atelier");
+  assert.equal(webChrome("fr").hofNav.werkstatt, "Vélo");
   assert.equal(webChrome("it").profile, "Profilo");
   assert.equal(webChrome("it").hofNav.karte, "Mappa");
   assert.equal(webChrome("de").loading, "Laden…");

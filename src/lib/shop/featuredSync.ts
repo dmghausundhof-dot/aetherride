@@ -11,6 +11,7 @@ import {
   type ShopProduct,
 } from "@/lib/shop/catalog";
 import {
+  getEditorialPartsCatalog,
   mapStorefrontProduct,
   type PartsProduct,
 } from "@/lib/shop/partsCatalog";
@@ -23,6 +24,7 @@ import {
 import { getShopStoreStatus } from "@/lib/shop/storeStatus";
 import { dealerCtaUrl } from "@/lib/shop/merchantLinks";
 import { isPartsProduct } from "@/lib/shop/shopShelf";
+import { isShopifyCommerceEnabled } from "@/lib/shop/shopEnabled";
 
 export type LiveFeaturedBike = {
   id?: string;
@@ -116,6 +118,17 @@ export async function syncFeaturedCatalog(
   lang: ChromeLang = "de"
 ): Promise<FeaturedSyncResult> {
   const status = getShopStoreStatus();
+  if (!isShopifyCommerceEnabled()) {
+    return {
+      configured: false,
+      onlineStoreLocked: status.onlineStoreLocked,
+      collectionHandle: "affiliate-editorial",
+      parts: getEditorialPartsCatalog(),
+      bikes: [],
+      skippedHandles: [...FEATURED_BIKE_HANDLE_CANDIDATES],
+    };
+  }
+
   const partsResult = await fetchCollectionProducts(FEATURED_PARTS_COLLECTION, {
     lang,
   });

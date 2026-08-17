@@ -155,7 +155,7 @@ void main() {
     final mappeOnly = buildHofTafel(savedCount: 1);
     expect(mappeOnly, hasLength(1));
     expect(mappeOnly.first.kind, HofTafelKind.mappe);
-    expect(mappeOnly.first.text, '1 Tour in der Mappe');
+    expect(mappeOnly.first.text, '1 Tour');
   });
 
   test('shouldAssignRideWear rejects unknown and empty', () {

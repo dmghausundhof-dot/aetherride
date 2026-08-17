@@ -1,19 +1,19 @@
 import { hofTitleFor } from "./hofTitle";
 
 const cases: Array<[string | null, string, string]> = [
-  ["DE", "de", "Der Hof"],
-  ["DE", "en", "Der Hof"],
-  ["AT", "de", "Der Hof"],
-  ["CH", "de", "Velokeller"],
-  ["CH", "fr", "Le local vélo"],
-  ["CH", "it", "La rimessa"],
-  ["CA", "fr", "La remise"],
-  ["CA", "en", "The Stand"],
-  ["FR", "fr", "La remise"],
-  ["IT", "it", "La rimessa"],
-  ["US", "en", "The Stand"],
-  ["US", "de", "The Stand"],
-  [null, "de", "Der Hof"],
+  ["DE", "de", "Start"],
+  ["DE", "en", "Start"],
+  ["AT", "de", "Start"],
+  ["CH", "de", "Start"],
+  ["CH", "fr", "Accueil"],
+  ["CH", "it", "Inizio"],
+  ["CA", "fr", "Accueil"],
+  ["CA", "en", "Start"],
+  ["FR", "fr", "Accueil"],
+  ["IT", "it", "Inizio"],
+  ["US", "en", "Start"],
+  ["US", "de", "Start"],
+  [null, "de", "Start"],
 ];
 
 for (const [country, lang, want] of cases) {

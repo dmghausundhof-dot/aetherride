@@ -103,6 +103,17 @@ create policy "ride_group_members member read"
 
 drop policy if exists "ride_group_members self insert" on public.ride_group_members;
 
+drop policy if exists "ride_group_members host self insert" on public.ride_group_members;
+create policy "ride_group_members host self insert"
+  on public.ride_group_members for insert
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.ride_groups g
+      where g.id = group_id and g.host_user_id = auth.uid()
+    )
+  );
+
 drop policy if exists "ride_group_members self update" on public.ride_group_members;
 create policy "ride_group_members self update"
   on public.ride_group_members for update
@@ -126,6 +137,6 @@ create policy "ride_group_presence self write"
 -- Heatmap (heatmap_cells, k≥5, no timestamps) stays a separate pipeline.
 
 grant select, insert, update on table public.ride_groups to authenticated;
-grant select, update on table public.ride_group_members to authenticated;
+grant select, insert, update on table public.ride_group_members to authenticated;
 grant select, insert, update, delete on table public.ride_group_presence to authenticated;
 grant execute on function public.is_ride_group_member(uuid) to authenticated;

@@ -65,8 +65,8 @@ const DE: WebChrome = {
   },
   hofNav: {
     karte: "Karte",
-    platz: "Platz",
-    werkstatt: "Werkstatt",
+    platz: "Touren",
+    werkstatt: "Rad",
   },
   toHof: "Zum Hof",
   toWebsite: "Zur Website",
@@ -127,8 +127,8 @@ const EN: WebChrome = {
   },
   hofNav: {
     karte: "Map",
-    platz: "Platz",
-    werkstatt: "Workshop",
+    platz: "Tours",
+    werkstatt: "Bike",
   },
   toHof: "To Home",
   toWebsite: "To the website",
@@ -189,8 +189,8 @@ const FR: WebChrome = {
   },
   hofNav: {
     karte: "Carte",
-    platz: "Platz",
-    werkstatt: "Atelier",
+    platz: "Parcours",
+    werkstatt: "Vélo",
   },
   toHof: "Vers Home",
   toWebsite: "Vers le site",
@@ -251,8 +251,8 @@ const IT: WebChrome = {
   },
   hofNav: {
     karte: "Mappa",
-    platz: "Platz",
-    werkstatt: "Officina",
+    platz: "Percorsi",
+    werkstatt: "Bici",
   },
   toHof: "Verso Home",
   toWebsite: "Al sito",

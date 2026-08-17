@@ -43,14 +43,14 @@ export const SCREEN_GALLERY: {
     alt: "FlowLine Werkstatt-Karte",
     title: "Werkstatt",
     door: "Werkstatt",
-    note: "Rad, Kilometer, Pflege. Teile nachschlagen am Rad — Tür zu Shopify.",
+    note: "Rad, Kilometer, Pflege. Der Laden ist vorerst aus.",
   },
   {
     src: "/landing/screens/laden.jpg",
-    alt: "FlowLine Laden als Shopify-Tür",
-    title: "Im Laden nachschlagen",
+    alt: "FlowLine Laden — vorerst pausiert",
+    title: "Laden pausiert",
     door: "Werkstatt",
-    note: "Kein Tab. Kasse bleibt Shopify — kein zweiter Warenkorb.",
+    note: "Kein Tab. Keine Kasse in FlowLine, solange der Laden zu ist.",
   },
   {
     src: "/landing/screens/profil.jpg",

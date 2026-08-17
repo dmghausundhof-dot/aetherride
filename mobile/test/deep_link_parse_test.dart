@@ -245,4 +245,25 @@ void main() {
       expect(DeepLinkParse.shopFitBikeOf(Uri.parse('aetherride://shop')), isFalse);
     });
   });
+
+  test('Shop-Deep-Link öffnet ShopScreen nicht, solange der Laden pausiert', () {
+    expect(
+      DeepLinkParse.kindOf(Uri.parse('aetherride://shop')),
+      DeepLinkKind.shop,
+    );
+    expect(
+      DeepLinkParse.opensShopScreen(Uri.parse('aetherride://shop')),
+      isFalse,
+    );
+    expect(
+      DeepLinkParse.opensShopScreen(
+        Uri.parse('https://aetherride.app/shop/p/sram-kette'),
+      ),
+      isFalse,
+    );
+    expect(
+      DeepLinkParse.opensShopScreen(Uri.parse('aetherride://ride')),
+      isFalse,
+    );
+  });
 }

@@ -55,29 +55,33 @@ class RideDataStrip extends StatelessWidget {
 
   Widget _stat(String value, String label, Color ink) {
     return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: NavHudTokens.statValueDp,
-              fontWeight: NavHudTokens.statValueWeight,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              height: 1.05,
-              color: ink,
+      child: Semantics(
+        label: '$value $label',
+        excludeSemantics: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: NavHudTokens.statValueDp,
+                fontWeight: NavHudTokens.statValueWeight,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                height: 1.05,
+                color: ink,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: NavHudTokens.statLabelDp,
-              fontWeight: NavHudTokens.statLabelWeight,
-              color: ink.withValues(alpha: 0.78),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: NavHudTokens.statLabelDp,
+                fontWeight: NavHudTokens.statLabelWeight,
+                color: ink.withValues(alpha: 0.78),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

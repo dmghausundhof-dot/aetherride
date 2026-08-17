@@ -70,7 +70,7 @@ class WerkstattSetupSurface extends StatelessWidget {
   }
 
   static String _hint(AppLocalizations l10n, WerkstattSetupPlan plan) {
-    if (plan.hasSuspension) return l10n.garageSetupTabHint;
+    if (plan.showsFahrwerk) return l10n.garageSetupTabHint;
     return l10n.garageSetupTabHintTires;
   }
 

@@ -113,7 +113,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
       current?.adjusterMap ??
           {for (final v in fallback) v.adjusterKey: v.valueNum},
     );
-    final seed = base[key] ?? (plan.hasSuspension ? 8.0 : 36.0);
+    final seed = base[key] ?? (plan.showsFahrwerk ? 8.0 : 36.0);
     final ctrl = TextEditingController(text: seed.toStringAsFixed(0));
     final labelCtrl = TextEditingController(
       text: l10n.setupNewVersionDefaultName(_setups.length + 1),
@@ -138,7 +138,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
               controller: ctrl,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: plan.hasSuspension
+                labelText: plan.showsFahrwerk
                     ? l10n.setupForkReboundLabel
                     : l10n.setupTirePressureLabel,
               ),
@@ -159,7 +159,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
     );
     if (!mounted || ok != true) return;
     final next = double.tryParse(ctrl.text) ?? seed;
-    base[key] = plan.hasSuspension ? next.clamp(0, 14) : next.clamp(15, 130);
+    base[key] = plan.showsFahrwerk ? next.clamp(0, 14) : next.clamp(15, 130);
     final values = [
       for (final e in base.entries)
         SetupValue(
@@ -193,16 +193,16 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
         .map((v) => v.valueNum);
     final seed = fromCurrent ??
         (fromFallback.isEmpty
-            ? (plan.hasSuspension ? 8.0 : 36.0)
+            ? (plan.showsFahrwerk ? 8.0 : 36.0)
             : fromFallback.first);
     final series = createBlindPair(
       adjusterKey: key,
       currentValue: seed,
     );
-    final a = plan.hasSuspension
+    final a = plan.showsFahrwerk
         ? series.rangeFrom.clamp(0, 14)
         : series.rangeFrom.clamp(15, 130);
-    final b = plan.hasSuspension
+    final b = plan.showsFahrwerk
         ? series.rangeTo.clamp(0, 14)
         : series.rangeTo.clamp(15, 130);
     final baseValues = current?.values ?? fallback;
@@ -349,7 +349,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          plan.hasSuspension
+          plan.showsFahrwerk
               ? l10n.setupCompareHint
               : l10n.setupCompareHintTires,
           style: const TextStyle(fontSize: 12, color: AppColors.muted),
@@ -445,7 +445,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
                                   l10n.setupVersionMeta(s.version),
                                   _formatDate(s.createdAt, locale),
                                   _createdByLabel(l10n, s.createdBy),
-                                  if (plan.hasSuspension &&
+                                  if (plan.showsFahrwerk &&
                                       s.valueFor('fork.rebound') != null)
                                     l10n.setupForkReboundValue(
                                       s.valueFor('fork.rebound')!

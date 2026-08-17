@@ -10,6 +10,9 @@ const NEED_SIGNIN_DE =
   "Anmelden — sonst sieht der Freund die Gruppe nicht auf dem Server.";
 const NEED_TOUR_DE =
   "Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.";
+const LISTED_DE =
+  "Auf dem Platz gelistet — wer den Link hat, kann beitreten.";
+const UNLISTED_DE = "Nur per Link — nicht auf dem Platz.";
 
 export type PlatzCopy = {
   inviteHint: string;
@@ -40,11 +43,16 @@ export type PlatzCopy = {
   copiedInvite: string;
   makePrivate: string;
   makePublic: string;
+  listedNote: string;
+  unlistedNote: string;
   pinsOff: string;
   pinsHud: string;
+  pinsHint: string;
   join: string;
   joined: (title: string) => string;
   joinWithLink: string;
+  joinLocalCta: string;
+  joinUnsignedHint: string;
   joinField: string;
   joinHint: string;
   joinEmpty: string;
@@ -163,11 +171,16 @@ const DE: PlatzCopy = {
     "Link kopiert. Wer ihn hat, kann beitreten, solange die Gruppe offen ist.",
   makePrivate: "Privat machen",
   makePublic: "Auf dem Platz listen",
+  listedNote: "Auf dem Platz gelistet — wer den Link hat, kann beitreten.",
+  unlistedNote: "Nur per Link — nicht auf dem Platz.",
   pinsOff: "Freunde auf der Karte · aus",
   pinsHud: "Freunde nur während der Fahrt",
+  pinsHint: "Nur während der Fahrt, nicht auf der öffentlichen Karte.",
   join: "Beitreten",
   joined: (title) => `Dabei: ${title}`,
   joinWithLink: "Mit Link beitreten",
+  joinLocalCta: "Auf diesem Gerät merken",
+  joinUnsignedHint: "Ohne Anmeldung sieht der Host dich nicht.",
   joinField: "Einladungslink",
   joinHint:
     "Link aus WhatsApp oder Messages einfügen. Privat braucht den Einladungslink — kein Code zum Abtippen.",
@@ -184,11 +197,11 @@ const DE: PlatzCopy = {
     "Anlegen unter Freigeben. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.",
   shareTitle: (title) => `Zusammen raus: ${title}`,
   shareMeet: (point) => `Treffpunkt: ${point}`,
-  shareProfile: (url) => `Mein Platz-Profil: ${url}`,
+  shareProfile: (url) => `Mein Profil: ${url}`,
   shareVisPublic:
-    "Freigegeben: wer den Link hat, kann beitreten. Die Gruppe kann unter Freigegeben auf dem Platz stehen.",
+    "Freigegeben: wer den Link hat, kann beitreten. Die Gruppe kann unter Freigegeben stehen.",
   shareVisPrivate:
-    "Privat: nur wer diesen Link hat, kann beitreten. Kein öffentliches Roster.",
+    "Privat: nur wer diesen Link hat, kann beitreten. Nicht gelistet.",
   whenClosed: (wd, hm) => `zu — ${wd} ${hm}`,
   whenToday: (hm, dur) => `heute ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `morgen ${hm} · ${dur}`,
@@ -249,12 +262,12 @@ const DE: PlatzCopy = {
   inCollections: (names) => `In ${names}`,
   addToCollection: "Zu Sammlung",
   collectionAdded: "Zur Sammlung hinzugefügt",
-  visibility: "Sichtbarkeit",
+  visibility: "Freigabe",
   shareOut: "Freigeben",
   privateNote: "Private Notiz",
   notePlaceholder: "Nur für dich — keine Stimme.",
   honestyCatalog:
-    "Katalog-Tour ist schon öffentlich. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.",
+    "Katalog-Tour ist schon freigegeben. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.",
   honestyTrack:
     "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur in diesem Browser.",
   honestyNoTrack:
@@ -299,11 +312,16 @@ const EN: PlatzCopy = {
     "Link copied. Whoever has it can join while the group is open.",
   makePrivate: "Make private",
   makePublic: "List on Platz",
+  listedNote: "Listed on Platz — whoever has the link can join.",
+  unlistedNote: "Link only — not listed on Platz.",
   pinsOff: "Friends on the map · off",
   pinsHud: "Friends only while riding",
+  pinsHint: "Only while riding, not on the public map.",
   join: "Join",
   joined: (title) => `In: ${title}`,
   joinWithLink: "Join with a link",
+  joinLocalCta: "Save on this device",
+  joinUnsignedHint: "Without signing in, the host cannot see you.",
   joinField: "Invite link",
   joinHint:
     "Paste the link from WhatsApp or Messages. Private groups need the invitation link — no code to type.",
@@ -320,11 +338,11 @@ const EN: PlatzCopy = {
     "Create under Share. Sharing only includes released or catalogue tours — private GPX stays out.",
   shareTitle: (title) => `Ride together: ${title}`,
   shareMeet: (point) => `Meeting point: ${point}`,
-  shareProfile: (url) => `My Platz profile: ${url}`,
+  shareProfile: (url) => `My profile: ${url}`,
   shareVisPublic:
-    "Shared: whoever has the link can join. The group can sit on Platz under Shared.",
+    "Shared: whoever has the link can join. The group can sit under Shared.",
   shareVisPrivate:
-    "Private: only whoever has this link can join. No public roster.",
+    "Private: only whoever has this link can join. Not listed publicly.",
   whenClosed: (wd, hm) => `closed — ${wd} ${hm}`,
   whenToday: (hm, dur) => `today ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `tomorrow ${hm} · ${dur}`,
@@ -386,12 +404,12 @@ const EN: PlatzCopy = {
   inCollections: (names) => `In ${names}`,
   addToCollection: "Add to collection",
   collectionAdded: "Added to collection",
-  visibility: "Visibility",
+  visibility: "Share",
   shareOut: "Share",
   privateNote: "Private note",
   notePlaceholder: "Just for you — not a Stimme.",
   honestyCatalog:
-    "Catalogue tour is already public. Sharing makes your tour shareable — the link shows name and stats, no extra private track.",
+    "Catalogue tour is already shared. Sharing makes your tour shareable — the link shows name and stats, no extra private track.",
   honestyTrack:
     "Sharing creates a link. The link holds a simplified trace (coordinates), not just the name. Back to private drops the tour from filters and stores the revoke on the server if you are signed in. Without login it only holds in this browser.",
   honestyNoTrack:
@@ -437,11 +455,16 @@ const FR: PlatzCopy = {
     "Lien copié. Qui l’a peut rejoindre tant que le groupe est ouvert.",
   makePrivate: "Rendre privé",
   makePublic: "Afficher sur le Platz",
+  listedNote: "Listé sur Platz — qui a le lien peut rejoindre.",
+  unlistedNote: "Lien seulement — pas sur Platz.",
   pinsOff: "Amis sur la carte · off",
   pinsHud: "Amis seulement pendant la sortie",
+  pinsHint: "Seulement pendant la sortie, pas sur la carte publique.",
   join: "Rejoindre",
   joined: (title) => `Dedans : ${title}`,
   joinWithLink: "Rejoindre avec un lien",
+  joinLocalCta: "Garder sur cet appareil",
+  joinUnsignedHint: "Sans connexion, l’hôte ne te voit pas.",
   joinField: "Lien d’invitation",
   joinHint:
     "Colle le lien depuis WhatsApp ou Messages. Privé a besoin du lien d’invitation — pas de code à taper.",
@@ -458,11 +481,11 @@ const FR: PlatzCopy = {
     "Créer sous Partager. Le partage ne prend que les sorties partagées ou catalogue — le GPX privé reste dehors.",
   shareTitle: (title) => `Sortir ensemble : ${title}`,
   shareMeet: (point) => `Rendez-vous : ${point}`,
-  shareProfile: (url) => `Mon profil Platz : ${url}`,
+  shareProfile: (url) => `Mon profil : ${url}`,
   shareVisPublic:
-    "Partagé : qui a le lien peut rejoindre. Le groupe peut figurer sur Platz sous Partagé.",
+    "Partagé : qui a le lien peut rejoindre. Le groupe peut figurer sous Partagé.",
   shareVisPrivate:
-    "Privé : seulement qui a ce lien peut rejoindre. Pas de roster public.",
+    "Privé : seulement qui a ce lien peut rejoindre. Pas de listing public.",
   whenClosed: (wd, hm) => `fermé — ${wd} ${hm}`,
   whenToday: (hm, dur) => `aujourd’hui ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `demain ${hm} · ${dur}`,
@@ -524,12 +547,12 @@ const FR: PlatzCopy = {
   inCollections: (names) => `Dans ${names}`,
   addToCollection: "Ajouter à une collection",
   collectionAdded: "Ajouté à la collection",
-  visibility: "Visibilité",
+  visibility: "Partage",
   shareOut: "Partager",
   privateNote: "Note privée",
   notePlaceholder: "Rien que pour toi — pas une Stimme.",
   honestyCatalog:
-    "La sortie catalogue est déjà publique. Partager rend ta sortie partageable — le lien montre nom et stats, pas de trace privée en plus.",
+    "La sortie catalogue est déjà partagée. Partager rend ta sortie partageable — le lien montre nom et stats, pas de trace privée en plus.",
   honestyTrack:
     "Partager crée un lien. Le lien contient une trace simplifiée (coordonnées), pas seulement le nom. Revenir en privé retire la sortie des filtres et enregistre le retrait sur le serveur si tu es connecté. Sans login, ça ne vaut que dans ce navigateur.",
   honestyNoTrack:
@@ -575,11 +598,16 @@ const IT: PlatzCopy = {
     "Link copiato. Chi ce l’ha può entrare finché il gruppo è aperto.",
   makePrivate: "Rendi privato",
   makePublic: "Mostra sul Platz",
+  listedNote: "In elenco sul Platz — chi ha il link può entrare.",
+  unlistedNote: "Solo link — non sul Platz.",
   pinsOff: "Amici sulla mappa · off",
   pinsHud: "Amici solo in uscita",
+  pinsHint: "Solo in uscita, non sulla mappa pubblica.",
   join: "Entra",
   joined: (title) => `Dentro: ${title}`,
   joinWithLink: "Entra con un link",
+  joinLocalCta: "Tieni su questo dispositivo",
+  joinUnsignedHint: "Senza accesso l’host non ti vede.",
   joinField: "Link d’invito",
   joinHint:
     "Incolla il link da WhatsApp o Messages. Il privato serve il link di invito — niente codice da digitare.",
@@ -596,11 +624,11 @@ const IT: PlatzCopy = {
     "Crea sotto Condividi. Si condividono solo uscite condivise o di catalogo — il GPX privato resta fuori.",
   shareTitle: (title) => `Uscire insieme: ${title}`,
   shareMeet: (point) => `Ritrovo: ${point}`,
-  shareProfile: (url) => `Il mio profilo Platz: ${url}`,
+  shareProfile: (url) => `Il mio profilo: ${url}`,
   shareVisPublic:
-    "Condiviso: chi ha il link può entrare. Il gruppo può stare sul Platz sotto Condiviso.",
+    "Condiviso: chi ha il link può entrare. Il gruppo può stare sotto Condiviso.",
   shareVisPrivate:
-    "Privato: solo chi ha questo link può entrare. Niente roster pubblico.",
+    "Privato: solo chi ha questo link può entrare. Niente elenco pubblico.",
   whenClosed: (wd, hm) => `chiuso — ${wd} ${hm}`,
   whenToday: (hm, dur) => `oggi ${hm} · ${dur}`,
   whenTomorrow: (hm, dur) => `domani ${hm} · ${dur}`,
@@ -662,12 +690,12 @@ const IT: PlatzCopy = {
   inCollections: (names) => `In ${names}`,
   addToCollection: "Aggiungi alla raccolta",
   collectionAdded: "Aggiunto alla raccolta",
-  visibility: "Visibilità",
+  visibility: "Condivisione",
   shareOut: "Condividi",
   privateNote: "Nota privata",
   notePlaceholder: "Solo per te — non una Stimme.",
   honestyCatalog:
-    "L’uscita catalogo è già pubblica. Condividere rende la tua uscita condivisibile — il link mostra nome e stats, nessuna traccia privata in più.",
+    "L’uscita catalogo è già condivisa. Condividere rende la tua uscita condivisibile — il link mostra nome e stats, nessuna traccia privata in più.",
   honestyTrack:
     "Condividere crea un link. Il link contiene una traccia semplificata (coordinate), non solo il nome. Tornare a privato toglie l’uscita dai filtri e salva la revoca sul server se sei dentro. Senza login vale solo in questo browser.",
   honestyNoTrack:
@@ -707,6 +735,8 @@ export function platzNote(
   if (noteKey) return g[noteKey];
   if (raw === NEED_SIGNIN_DE) return g.needSignIn;
   if (raw === NEED_TOUR_DE) return g.needSharedTour;
+  if (raw === LISTED_DE) return g.listedNote;
+  if (raw === UNLISTED_DE) return g.unlistedNote;
   return raw;
 }
 

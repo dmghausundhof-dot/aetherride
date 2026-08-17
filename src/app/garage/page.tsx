@@ -13,11 +13,9 @@ import { DieBoxSurface } from "@/components/garage/DieBoxSurface";
 import { BikeRideLog } from "@/components/garage/BikeRideLog";
 import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { getMaintenanceSummary } from "@/lib/maintenance/summary";
 import { buildServiceReport, downloadServiceReport } from "@/lib/garage/serviceReport";
-import {
-  getActiveComponents,
-  useAppStore,
-} from "@/store/useAppStore";
+import { useAppStore } from "@/store/useAppStore";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import type { ComponentSlot, SetupCondition } from "@/types";
@@ -112,7 +110,6 @@ function GaragePageInner() {
   const selected =
     bikes.find((b) => b.id === (selectedId || activeBikeId)) || bikes[0];
 
-  const activeComponents = selected ? getActiveComponents(selected) : [];
   const spareParts = selected
     ? selected.components.filter((c) => !!c.removedAt)
     : [];
@@ -123,6 +120,10 @@ function GaragePageInner() {
   const logs = selected
     ? maintenanceLogs.filter((l) => l.bikeId === selected.id)
     : [];
+  const dueSlot =
+    selected && tab === "maintenance"
+      ? getMaintenanceSummary(selected, maintenanceIntervals).topItem?.slot
+      : undefined;
 
   const selectBike = (id: string) => {
     setSelectedId(id);
@@ -278,6 +279,7 @@ function GaragePageInner() {
           <GaragePartsCta
             bikeId={selected.id}
             lookupOnly
+            slot={dueSlot}
           />
           <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-elevated p-1 text-xs sm:text-sm">
             {(
@@ -303,7 +305,6 @@ function GaragePageInner() {
           {tab === "components" && (
             <GarageComponentsTab
               selected={selected}
-              activeComponents={activeComponents}
               spareParts={spareParts}
               rides={rides}
               bikes={bikes}

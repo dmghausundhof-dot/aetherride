@@ -10,12 +10,17 @@ import {
   fetchProductsByQuery,
   type ShopifyStorefrontProduct,
 } from "@/lib/shop/shopifyStorefront";
-import { mapStorefrontProduct, type PartsProduct } from "@/lib/shop/partsCatalog";
+import {
+  getEditorialPartsCatalog,
+  mapStorefrontProduct,
+  type PartsProduct,
+} from "@/lib/shop/partsCatalog";
 import { syncLiveFeaturedBikes, type LiveFeaturedBike } from "@/lib/shop/featuredSync";
 import {
   classifyShopProduct,
   splitShopProducts,
 } from "@/lib/shop/shopShelf";
+import { isShopifyCommerceEnabled } from "@/lib/shop/shopEnabled";
 
 export type ShopShelvesResult =
   | {
@@ -26,7 +31,7 @@ export type ShopShelvesResult =
       collectionHandle: string;
       collectionTitle: string;
       merchCollectionHandle: string;
-      source: "storefront";
+      source: "storefront" | "affiliate";
       bikes: LiveFeaturedBike[];
     }
   | {
@@ -63,6 +68,21 @@ function withCollection(
 export async function loadShopShelves(
   lang: ChromeLang = "de"
 ): Promise<ShopShelvesResult> {
+  if (!isShopifyCommerceEnabled()) {
+    const parts = getEditorialPartsCatalog();
+    return {
+      ok: true,
+      configured: true,
+      parts,
+      merch: [],
+      bikes: [],
+      collectionHandle: "affiliate-editorial",
+      collectionTitle: "Beim Händler",
+      merchCollectionHandle: "",
+      source: "affiliate",
+    };
+  }
+
   const merchHandle =
     (process.env.SHOPIFY_MERCH_COLLECTION || MERCHANDISE_COLLECTION).trim() ||
     MERCHANDISE_COLLECTION;

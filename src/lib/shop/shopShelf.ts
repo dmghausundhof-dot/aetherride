@@ -39,6 +39,7 @@ const PARTS_SLOT_KEYS = new Set([
   "brake",
   "fork",
   "shock",
+  "seatpost",
   "battery",
   "motor",
   "display",

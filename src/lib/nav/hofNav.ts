@@ -1,14 +1,14 @@
 /**
- * Four destinations — same IA as Flutter HofThresholdNav.
- * Ride HUD is not a tab. Shop is a gateway from the workshop, not a fifth tab.
- * Platz orchestrates Mappe/Stimmen — not a Community feed.
+ * Product chrome stays in hofNav.ts (Flutter parity).
+ * Ride HUD is not a tab. Shop is a gateway from Bike, not a fifth tab.
+ * Touren holds saved rides, tips and groups — not a community feed.
  */
 
 export const HOF_NAV = [
-  { id: "hof", href: "/home", label: "Der Hof" },
+  { id: "hof", href: "/home", label: "Start" },
   { id: "karte", href: "/discover", label: "Karte" },
-  { id: "platz", href: "/library", label: "Platz" },
-  { id: "werkstatt", href: "/garage", label: "Werkstatt" },
+  { id: "platz", href: "/library", label: "Touren" },
+  { id: "werkstatt", href: "/garage", label: "Rad" },
 ] as const;
 
 export type HofNavId = (typeof HOF_NAV)[number]["id"];

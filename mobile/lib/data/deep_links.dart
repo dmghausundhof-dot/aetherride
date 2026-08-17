@@ -46,7 +46,7 @@ class DeepLinkParse {
       if (host == 'discover' || path.contains('discover')) {
         return DeepLinkKind.discover;
       }
-      // S-FLOW-01: aetherride://shop | aetherride://teile | aetherride://parts → Shop tab
+      // S-FLOW-01: aetherride://shop | aetherride://teile | aetherride://parts → Shop-Route
       if (host == 'shop' ||
           host == 'teile' ||
           host == 'parts' ||
@@ -234,6 +234,10 @@ class DeepLinkParse {
     final job = uri.queryParameters['job']?.trim().toLowerCase();
     return job == 'replace';
   }
+
+  /// ShopScreen nur mit Laden-Tür. Parse bleibt, Routing landet in der Werkstatt.
+  static bool opensShopScreen(Uri uri) =>
+      kindOf(uri) == DeepLinkKind.shop && AppConfig.shopEnabled;
 }
 
 /// Handles:
@@ -242,7 +246,7 @@ class DeepLinkParse {
 /// - aetherride://discover
 /// - aetherride://platz?code=ABC234&g=…  → Platz + Join
 /// - https://aetherride.vercel.app/library?group=ABC234&g=…
-/// - aetherride://shop | aetherride://teile | aetherride://parts → Shop tab
+/// - aetherride://shop | aetherride://teile | aetherride://parts → Shop-Route
 /// - aetherride://shop?slot=chain&bike=&fit=bike
 /// - https://aetherride.app/shop/p/{handle}
 /// - aetherride://discover?lens=60&loop=SEED_ID&start=1  (D-60-05 → Ride)
@@ -309,6 +313,7 @@ class DeepLinkHandler {
 
     if (kind == DeepLinkKind.shop) {
       _ref.read(shellTabIndexProvider.notifier).state = ShellTabs.werkstatt;
+      if (!DeepLinkParse.opensShopScreen(uri)) return;
       final slot = DeepLinkParse.shopSlotOf(uri);
       final bike = DeepLinkParse.shopBikeOf(uri);
       final handle = DeepLinkParse.shopHandleOf(uri);

@@ -29,6 +29,14 @@ function testDe() {
   assert.equal(g.stimmenTitle, "Stimmen");
   assert.notEqual(g.collectionsTitle, g.collectionsTitle.toUpperCase());
   assert.equal(g.joinWithLink, "Mit Link beitreten");
+  assert.equal(g.joinLocalCta, "Auf diesem Gerät merken");
+  assert.ok(g.joinUnsignedHint.includes("sieht der Host dich nicht"));
+  assert.ok(!g.joinNotOnServer("x").includes("Dabei"));
+  assert.ok(!g.honestyCatalog.includes("öffentlich"));
+  assert.ok(!g.honestyCatalog.includes("Akte"));
+  assert.ok(g.shareVisPrivate.includes("gelistet"));
+  assert.equal(g.visibility, "Freigabe");
+  assert.ok(g.pinsHint.includes("öffentlichen Karte"));
   assert.equal(g.joinField, "Einladungslink");
   assert.ok(g.joinHint.includes("Einladungslink"));
   assert.ok(!g.joinHint.toLowerCase().includes("token"));
@@ -40,7 +48,7 @@ function testParity() {
   for (const lang of langs) {
     const g = platzCopy(lang);
     assert.equal(g.stimmenTitle, "Stimmen", lang);
-    assert.ok(g.shareProfile("https://x").includes("Platz"), lang);
+    assert.ok(g.shareProfile("https://x").toLowerCase().includes("profil"), lang);
     assert.ok(g.created("x").includes("x"), lang);
     assert.ok(g.collectionTours(3).includes("3"), lang);
     assert.notEqual(g.collectionTours(1), g.collectionTours(2), lang);
@@ -65,6 +73,9 @@ function testNotes() {
   assert.equal(platzNote(de, "de"), de);
   assert.ok(platzNote(de, "en").toLowerCase().includes("signed"));
   assert.equal(platzNote("unknown-de-error", "fr"), "unknown-de-error");
+  const listed =
+    "Auf dem Platz gelistet — wer den Link hat, kann beitreten.";
+  assert.ok(platzNote(listed, "en").toLowerCase().includes("listed"));
 }
 
 function testWhen() {

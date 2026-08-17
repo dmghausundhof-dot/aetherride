@@ -51,7 +51,7 @@ function testChromeLangs() {
   assert.ok(fr?.title.includes("Platz"));
   assert.ok(fr?.title.includes("Stimmen"));
   const it = guideFor("laden-ohne-zweite-kasse", "it");
-  assert.ok(it?.title.includes("Shopify"));
+  assert.ok(/paus/i.test(it?.title ?? ""));
 }
 
 testDePassthrough();

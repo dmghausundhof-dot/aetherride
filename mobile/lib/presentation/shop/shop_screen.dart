@@ -20,6 +20,7 @@ import '../shell/shell_tabs.dart';
 import 'shop_product_sheet.dart';
 
 /// Laden-Gateway: FlowLine-Regal + Tür zu Shopify. Kein Tab, keine In-App-Kasse.
+/// Push nur über [openShopGateway] / Deep-Link, und nur wenn [AppConfig.shopEnabled].
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
 
@@ -156,6 +157,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 Localizations.localeOf(context).languageCode,
               )
             : uri;
+    if (localized != null && !allowInAppShopOutbound(localized)) {
+      return;
+    }
     final ok = await openShopifyStorefront(localized);
     if (ok || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -177,7 +181,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
       l10n: l10n,
       fitLabel: _fitLabel(product, fitBikes),
       onOpenShop:
-          connected ? () => _open(context, l10n, _productUri(product)) : null,
+          connected && AppConfig.shopifyCommerceEnabled
+              ? () => _open(context, l10n, _productUri(product))
+              : null,
       onOpenWeb: () =>
           _openWeb(context, l10n, FlowLineWeb.product(product.handle)),
       onOpenDealer:
@@ -329,7 +335,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           children: [
             const FlowLineWordmark(fontSize: 18, markSize: 22),
             Text(
-              l10n.shopCyclingParts,
+              l10n.shopGatewayTitle,
+              key: const Key('shop-appbar-title'),
               style: const TextStyle(
                 color: AppColors.muted,
                 fontSize: 10,
@@ -385,7 +392,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (AppConfig.shopifyOnlineStoreLocked) ...[
+                if (AppConfig.shopifyCommerceEnabled &&
+                    AppConfig.shopifyOnlineStoreLocked) ...[
                   const SizedBox(height: AppSpacing.m),
                   Text(
                     l10n.shopPasswordWall,
@@ -603,7 +611,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 ],
                 ],
                 const SizedBox(height: AppSpacing.xl),
-                if (!connected) ...[
+                if (AppConfig.shopifyCommerceEnabled && !connected) ...[
                   Text(
                     l10n.shopNotConnected,
                     style: const TextStyle(fontWeight: FontWeight.w800),
@@ -617,7 +625,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       height: 1.35,
                     ),
                   ),
-                ] else ...[
+                ] else if (AppConfig.shopifyCommerceEnabled) ...[
                   FilledButton(
                     key: const Key('shop-go'),
                     style: FilledButton.styleFrom(
@@ -1018,6 +1026,7 @@ void openShopGateway(
   String? slot,
   bool fitOnly = true,
 }) {
+  if (!AppConfig.shopEnabled) return;
   if (bikeId != null && bikeId.isNotEmpty) {
     ref.read(shopPendingBikeIdProvider.notifier).state = bikeId;
   }

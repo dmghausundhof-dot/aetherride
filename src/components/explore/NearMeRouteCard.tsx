@@ -115,11 +115,7 @@ export function NearMeRouteCard({
         geometry: result.geometry,
         loop: isLoop,
       });
-      setMsg(
-        d.savedEngine(
-          `${formatDistanceElevation(distanceKm, elev)} · ${result.engine}`,
-        ),
-      );
+      setMsg(d.savedEngine(formatDistanceElevation(distanceKm, elev)));
       if (isLoop) {
         onLoopPreview?.(result, name);
       }
@@ -199,7 +195,7 @@ export function NearMeRouteCard({
       {preview && (
         <p className="mt-1 text-[11px] tabular-nums text-accent">
           {(preview.distanceM / 1000).toFixed(1)} km ·{" "}
-          {Math.round(preview.durationS / 60)} min · {preview.engine}
+          {Math.round(preview.durationS / 60)} min
         </p>
       )}
     </div>

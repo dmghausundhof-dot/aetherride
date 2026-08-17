@@ -1,3 +1,5 @@
+import 'package:aetherride_mobile/core/config.dart';
+import 'package:aetherride_mobile/core/shopify_storefront.dart';
 import 'package:aetherride_mobile/domain/bike.dart';
 import 'package:aetherride_mobile/domain/shop/shop_product.dart';
 import 'package:aetherride_mobile/l10n/app_localizations.dart';
@@ -13,6 +15,7 @@ Widget _shopApp({
   required List<Bike> bikes,
   ShopShelves shelves = const ShopShelves(ok: false),
   List<Override> extra = const [],
+  Locale locale = const Locale('de', 'DE'),
 }) {
   return ProviderScope(
     overrides: [
@@ -22,7 +25,7 @@ Widget _shopApp({
       ...extra,
     ],
     child: MaterialApp(
-      locale: const Locale('de', 'DE'),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: const ShopScreen(),
@@ -68,22 +71,70 @@ const _assegai = ShopProduct(
 );
 
 void main() {
+  test('Laden-Tür und Shopify-Kasse sind default aus', () {
+    expect(AppConfig.shopEnabled, isFalse);
+    expect(AppConfig.shopifyCommerceEnabled, isFalse);
+    expect(ShopifyStorefront.isConfigured, isFalse);
+  });
+
   testWidgets('Shop-Gateway, kein Produktgrid', (tester) async {
     await tester.pumpWidget(_shopApp(bikes: const [_luna]));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('shop-gateway')), findsOneWidget);
-    expect(find.text('Der Laden'), findsOneWidget);
-    expect(find.text('Zum Shop'), findsOneWidget);
+    expect(find.byKey(const Key('shop-appbar-title')), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('shop-appbar-title'))).data,
+      'Der Laden',
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Teile'),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Der Laden'), findsWidgets);
+    expect(find.text('Zum Shop'), findsNothing);
     expect(find.text('Für dein Rad'), findsWidgets);
-    expect(find.text('Teile'), findsOneWidget);
     expect(find.text('Cycling Parts'), findsNothing);
     expect(find.byKey(const Key('shop-merch')), findsNothing);
-    expect(find.textContaining('Kasse bei Shopify'), findsOneWidget);
+    expect(find.textContaining('beim Händler'), findsOneWidget);
     expect(find.byKey(const Key('shop-catalog-failed')), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
     expect(find.byType(GridView), findsNothing);
     expect(find.textContaining('€'), findsNothing);
+  });
+
+  testWidgets('AppBar heißt wie die Tür, nicht das Sortiment', (tester) async {
+    const cases = [
+      (Locale('de', 'DE'), 'Der Laden', 'Teile'),
+      (Locale('en'), 'The shop', 'Parts'),
+      (Locale('fr'), 'Le magasin', 'Pièces'),
+      (Locale('it'), 'Il negozio', 'Pezzi'),
+    ];
+    for (final (locale, door, parts) in cases) {
+      await tester.pumpWidget(
+        _shopApp(bikes: const [_luna], locale: locale),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        tester.widget<Text>(find.byKey(const Key('shop-appbar-title'))).data,
+        door,
+        reason: locale.languageCode,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text(parts),
+        ),
+        findsNothing,
+        reason: locale.languageCode,
+      );
+    }
   });
 
   testWidgets('Ohne Rad: ehrlicher Leerstand, Merch bleibt', (tester) async {
@@ -138,9 +189,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('shop-product-sheet')), findsOneWidget);
-    expect(find.byKey(const Key('shop-sheet-open')), findsOneWidget);
+    expect(find.byKey(const Key('shop-sheet-open')), findsNothing);
     expect(find.byKey(const Key('shop-sheet-web')), findsOneWidget);
-    expect(find.text('Im Shop öffnen'), findsOneWidget);
+    expect(find.text('Im Shop öffnen'), findsNothing);
     expect(find.text('Im Browser öffnen'), findsWidgets);
     expect(find.text('Add to Cart'), findsNothing);
     expect(find.byKey(const Key('shop-sheet-dealer')), findsNothing);
@@ -177,7 +228,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('shop-sheet-dealer')), findsOneWidget);
-    expect(find.text('Zum Händler'), findsOneWidget);
+    expect(find.text('Beim Händler kaufen'), findsOneWidget);
   });
 
   testWidgets('Werkstatt-Slot filtert das Regal', (tester) async {
@@ -223,8 +274,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('shop-catalog-empty')), findsOneWidget);
-    expect(find.byKey(const Key('shop-go')), findsOneWidget);
+    expect(find.byKey(const Key('shop-go')), findsNothing);
     expect(find.byKey(const Key('shop-catalog-failed')), findsNothing);
+    expect(find.byType(TextField), findsNothing);
     expect(find.text('Add to Cart'), findsNothing);
   });
 
@@ -267,7 +319,7 @@ void main() {
 
     expect(find.byKey(const Key('shop-product-sheet')), findsOneWidget);
     expect(find.byKey(const Key('shop-sheet-web')), findsOneWidget);
-    expect(find.text('Im Shop öffnen'), findsOneWidget);
+    expect(find.text('Im Shop öffnen'), findsNothing);
   });
 
   testWidgets('Mehrere Räder: Union, Chip filtert Fit', (tester) async {

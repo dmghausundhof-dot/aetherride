@@ -61,6 +61,7 @@ import {
   activeRouteFromSuggestion,
 } from "@/lib/routing/activeRoute";
 import { parseGpx } from "@/lib/import/gpx";
+import { getPublicTour } from "@/lib/catalog/publicTours";
 import {
   DEFAULT_ROUTE_FILTERS,
   filterRouteSuggestions,
@@ -230,6 +231,7 @@ function DiscoverPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightRouteId = searchParams.get("route");
+  const tourParam = searchParams.get("tour");
   const sportParam = searchParams.get("sport") as SportFilter | null;
   const latParam = searchParams.get("lat");
   const lngParam = searchParams.get("lng");
@@ -494,10 +496,10 @@ function DiscoverPageInner() {
           showRoutingDebugUi()
             ? r.coldStart
               ? r.disclaimer
-              : `${r.segments.length} Heatmap-Segmente · ${r.disclaimer}`
+              : `${d.heatSegments(r.segments.length)} · ${r.disclaimer}`
             : r.coldStart
               ? null
-              : `${r.segments.length} Heatmap-Segmente`
+              : d.heatSegments(r.segments.length)
         );
       });
     }, 400);
@@ -707,6 +709,31 @@ function DiscoverPageInner() {
     if (sheetParam === "plan" || panelParam === "plan") setSheetMode("plan");
     if (sheetParam === "tours" || panelParam === "tours") setSheetMode("tours");
   }, [sheetParam, panelParam]);
+
+  useEffect(() => {
+    if (!tourParam) return;
+    const tour = getPublicTour(tourParam);
+    if (!tour) return;
+    setMapCenter(tour.center);
+    setSheetMode("plan");
+    setDraft((d) => ({
+      ...setStart(d, tour.center, tour.name),
+      label: tour.name,
+      baseTour: {
+        id: tour.id,
+        name: tour.name,
+        provider: "seed",
+        geometry: null,
+        distanceKm: tour.distanceKm,
+        elevationM: tour.elevationM,
+        durationMin: tour.durationMin,
+        mtbScale: tour.difficulty,
+        surface: tour.surface,
+        loop: tour.loop,
+        center: tour.center,
+      },
+    }));
+  }, [tourParam]);
 
   useEffect(() => {
     let cancelled = false;

@@ -90,7 +90,6 @@ const DE: PublicPagesCopy = {
       { feature: "Erweiterte Offline-Packs", free: false, pro: true },
       { feature: "KI-Chat (höheres Limit)", free: "5/Tag", pro: "50/Tag" },
       { feature: "App-Navigation & Sensoren", free: true, pro: true },
-      { feature: "Shop-Gateway (Shopify)", free: true, pro: true },
     ],
   },
   download: {
@@ -178,7 +177,6 @@ const EN: PublicPagesCopy = {
       { feature: "Extended offline packs", free: false, pro: true },
       { feature: "AI chat (higher limit)", free: "5/day", pro: "50/day" },
       { feature: "App navigation & sensors", free: true, pro: true },
-      { feature: "Shop gateway (Shopify)", free: true, pro: true },
     ],
   },
   download: {
@@ -266,7 +264,6 @@ const FR: PublicPagesCopy = {
       { feature: "Packs hors ligne étendus", free: false, pro: true },
       { feature: "Chat IA (limite plus haute)", free: "5/jour", pro: "50/jour" },
       { feature: "Navigation appli et capteurs", free: true, pro: true },
-      { feature: "Gateway magasin (Shopify)", free: true, pro: true },
     ],
   },
   download: {
@@ -356,7 +353,6 @@ const IT: PublicPagesCopy = {
       { feature: "Pack offline estesi", free: false, pro: true },
       { feature: "Chat IA (limite più alto)", free: "5/giorno", pro: "50/giorno" },
       { feature: "Navigazione app e sensori", free: true, pro: true },
-      { feature: "Gateway negozio (Shopify)", free: true, pro: true },
     ],
   },
   download: {

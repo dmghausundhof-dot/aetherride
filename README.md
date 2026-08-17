@@ -182,7 +182,7 @@ bash scripts/ops-android-auth.sh
 - [ ] `NEXT_PUBLIC_LEGAL_*` für Marketplace (Affiliate braucht das nicht)  
 - [ ] Vercel-Deploy + Stripe Webhook Prod  
 - [ ] Mobile: `./scripts/mobile-with-env.sh` + Emulator **aether_api34**  
-- [ ] Bosch LDI Hardware (G-1) — bewusst Ops/HW  
+- [ ] Bosch LDI Hardware-QA (Flow-Komponente, Firmware ≥19) — iOS folgt  
 
 ### UX-Fixes (Code, Aug 2026)
 

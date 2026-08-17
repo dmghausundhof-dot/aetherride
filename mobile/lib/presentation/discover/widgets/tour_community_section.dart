@@ -104,6 +104,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
       _crowd = TourCommunityStore.countsCache[widget.tourId]?.difficulty;
       _avg = avg;
       _loading = false;
+      if (list.isEmpty && !_compose) _compose = true;
     });
   }
 
@@ -467,6 +468,30 @@ class _ReviewTile extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
+              if (review.cloudStatus == CloudSubmitResult.pending)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Text(
+                    AppLocalizations.of(context).stimmenStatusPending,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                )
+              else if (review.cloudStatus == CloudSubmitResult.localOnly)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Text(
+                    AppLocalizations.of(context).stimmenStatusLocal,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
               Text(
                 '★' * review.rating,
                 style: const TextStyle(color: AppColors.accent, fontSize: 12),

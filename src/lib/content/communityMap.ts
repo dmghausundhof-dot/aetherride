@@ -11,7 +11,7 @@ export const COMMUNITY_FEATURES: {
 }[] = [
   {
     title: "Platz",
-    body: "Die Tür. Mappe, Sichtbarkeit, GPX, Stimmen und Gruppen — dieselben Touren wie auf der Karte.",
+    body: "Die Tür. Mappe, Freigabe, GPX, Stimmen und Gruppen — dieselben Touren wie auf der Karte.",
     href: "/library",
     cta: "Zum Platz",
   },
@@ -30,8 +30,8 @@ export const COMMUNITY_FEATURES: {
   {
     title: "Zusammen raus",
     body: "Gruppe mit Einladungslink vor dem Tor. Web hält Roster und Einladung. Live-Pins nur im App-HUD, mit Opt-in.",
-    href: "/community#gruppen",
-    cta: "Wie Gruppen laufen",
+    href: "/library",
+    cta: "Zum Platz",
   },
   {
     title: "Public Profile",

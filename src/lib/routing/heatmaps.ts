@@ -178,7 +178,7 @@ export function buildHeatmap(input?: {
       visible: consent,
       hideReason: consent
         ? undefined
-        : "Beitrag zur Beliebtheitskarte ist aus — unter Privatsphäre aktivierbar",
+        : "Beitrag zu wo viele fahren ist aus — unter Privatsphäre aktivierbar",
       osmWayId: undefined,
     });
   }
@@ -218,10 +218,10 @@ export function buildHeatmap(input?: {
     attribution: "© OpenStreetMap Mitwirkende · FlowLine eigene Aggregate",
     disclaimer: fromRides.length
       ? consent
-        ? `Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet). Beliebte Heatmap-Abschnitte erst ab ${K} verschiedenen Fahrern.`
+        ? `Aus deinen Rides (Start/Ziel und Privatbereiche ausgeblendet). Wo viele fahren, erst ab ${K} verschiedenen Fahrern.`
         : `Deine Strecken sind ausgeblendet — Beitrag unter Privatsphäre einschalten.`
       : useSeed
         ? `Noch wenig eigene Daten — Beispielabschnitte. Sichtbar erst ab ${K} verschiedenen Fahrern (Privatsphäre).`
-        : `Noch keine eigenen Tracks für die Beliebtheitskarte — fahre Touren, dann erscheint deine Heatmap hier (kein Demo).`,
+        : `Noch keine eigenen Tracks für wo viele fahren — fahre Touren, dann erscheint die Karte hier (kein Demo).`,
   };
 }

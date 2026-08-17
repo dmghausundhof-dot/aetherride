@@ -9,7 +9,7 @@ const langs = ["de", "en", "fr", "it"] as const;
 function testDe() {
   const p = publicPagesCopy("de");
   assert.equal(p.pricing.title, "Free plant. Pro vertieft.");
-  assert.equal(p.pricing.rows.length, 12);
+  assert.equal(p.pricing.rows.length, 11);
   assert.ok(p.contact.workshopHint.includes("Werkstatt-Interesse"));
 }
 

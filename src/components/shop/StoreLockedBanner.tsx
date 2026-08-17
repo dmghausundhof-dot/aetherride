@@ -8,6 +8,7 @@ import { useHofCopy } from "@/hooks/useHofCopy";
 type Status = {
   storefrontApiConfigured: boolean;
   onlineStoreLocked: boolean;
+  shopifyCommerceEnabled?: boolean;
 };
 
 export function StoreLockedBanner({ className }: { className?: string }) {
@@ -24,6 +25,7 @@ export function StoreLockedBanner({ className }: { className?: string }) {
           setStatus({
             storefrontApiConfigured: Boolean(json.storefrontApiConfigured),
             onlineStoreLocked: Boolean(json.onlineStoreLocked),
+            shopifyCommerceEnabled: json.shopifyCommerceEnabled === true,
           });
         }
       } catch {
@@ -35,7 +37,8 @@ export function StoreLockedBanner({ className }: { className?: string }) {
     };
   }, []);
 
-  if (!status?.onlineStoreLocked) return null;
+  if (!status?.shopifyCommerceEnabled) return null;
+  if (!status.onlineStoreLocked) return null;
 
   return (
     <div

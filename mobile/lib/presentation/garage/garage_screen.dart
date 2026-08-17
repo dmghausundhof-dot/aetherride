@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../data/garage/bike_photo_sync.dart';
@@ -90,7 +91,7 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.navWorkshop),
+        title: Text(focused?.name ?? l10n.navWorkshop),
         actionsPadding: const EdgeInsets.only(right: AppSpacing.m),
         actions: [
           if (focused != null)
@@ -1037,7 +1038,9 @@ class _AddBikeSheetState extends ConsumerState<_AddBikeSheet> {
       }
       final comps =
           await ref.read(componentRepositoryProvider).listInstalled(bike.id);
-      unawaited(notifyGarageBikeShopify(bike, components: comps));
+      if (AppConfig.shopEnabled) {
+        unawaited(notifyGarageBikeShopify(bike, components: comps));
+      }
       if (!mounted) return;
       Navigator.of(context).pop(bike.id);
     } catch (e) {
@@ -1779,6 +1782,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
     }
     final due = listDueMaintenance(bike: bike, components: _components);
     final plan = planWerkstattSetup(bike: bike, components: _components);
+    final listed = planDieBox(bike: bike, components: _components).onBike;
     final bySlot = _groupCompatBySlot(_compat);
     final installedSlots = _components.map((c) => c.slot).toSet();
     final missingSlots = addableSlotsFor(plan)
@@ -1852,7 +1856,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                     Expanded(
                       child: _TabChip(
                         label: l10n.garageParts,
-                        badge: _components.length,
+                        badge: listed.length,
                         active: _tab == _DetailTab.teile,
                         onTap: () => setState(() => _tab = _DetailTab.teile),
                       ),
@@ -1925,7 +1929,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.s),
-                  if (_components.isEmpty)
+                  if (listed.isEmpty)
                     Padding(
                       padding:
                           const EdgeInsets.symmetric(vertical: AppSpacing.s),
@@ -1937,7 +1941,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                     )
                   else ...[
                     for (final g in ComponentGroup.values)
-                      if (_components.any((c) => c.slot.group == g))
+                      if (listed.any((c) => c.slot.group == g))
                         Theme(
                           data: Theme.of(context).copyWith(
                             dividerColor: Colors.transparent,
@@ -1947,7 +1951,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                                   (s) => s.group == g,
                                 ) ||
                                 g == ComponentGroup.wheels ||
-                                _components.any(
+                                listed.any(
                                   (c) =>
                                       c.slot.group == g &&
                                       (bySlot[c.slot]?.isNotEmpty ?? false),
@@ -1957,7 +1961,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                             title: Text(
                               l10n.garageGroupCount(
                                 l10n.componentGroupLabel(g),
-                                _components
+                                listed
                                     .where((c) => c.slot.group == g)
                                     .length,
                               ),
@@ -1967,7 +1971,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                               ),
                             ),
                             children: [
-                              for (final c in _components.where(
+                              for (final c in listed.where(
                                 (c) => c.slot.group == g,
                               ))
                                 _ComponentRow(
@@ -2042,7 +2046,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    plan.hasSuspension
+                    plan.showsFahrwerk
                         ? l10n.garageSetupTabHint
                         : l10n.garageSetupTabHintTires,
                     style:
@@ -2726,7 +2730,7 @@ class _SagAndOdometerCard extends ConsumerWidget {
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
-        if (plan.hasSuspension) ...[
+        if (plan.showsFahrwerk) ...[
           Text(
             l10n.werkstattSetupSuspension,
             style: const TextStyle(fontWeight: FontWeight.w700),

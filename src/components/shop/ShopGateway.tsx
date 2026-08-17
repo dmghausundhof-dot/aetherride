@@ -27,6 +27,7 @@ type Shelves = {
   products: PartsProduct[];
   merch: PartsProduct[];
   bikes: LiveFeaturedBike[];
+  shopifyCommerceEnabled: boolean;
 };
 
 /**
@@ -71,7 +72,9 @@ export function ShopGateway() {
   const bikesLive = shelves?.bikes ?? [];
   const catalogReady = Boolean(shelves?.ok && shelves.products.length > 0);
   const highlightParts = door === "parts";
-  const showPartsFallback = Boolean(bike) && !loading && !catalogReady;
+  const shopifyLive = shelves?.shopifyCommerceEnabled === true;
+  const showPartsFallback =
+    Boolean(bike) && !loading && !catalogReady && shopifyLive;
 
   const [reload, setReload] = useState(0);
 
@@ -88,6 +91,7 @@ export function ShopGateway() {
           products?: PartsProduct[];
           merch?: PartsProduct[];
           bikes?: LiveFeaturedBike[];
+          shopifyCommerceEnabled?: boolean;
         };
         if (cancelled) return;
         setShelves({
@@ -95,10 +99,17 @@ export function ShopGateway() {
           products: json.products ?? [],
           merch: json.merch ?? [],
           bikes: json.bikes ?? [],
+          shopifyCommerceEnabled: json.shopifyCommerceEnabled === true,
         });
       } catch {
         if (!cancelled) {
-          setShelves({ ok: false, products: [], merch: [], bikes: [] });
+          setShelves({
+            ok: false,
+            products: [],
+            merch: [],
+            bikes: [],
+            shopifyCommerceEnabled: false,
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -145,11 +156,13 @@ export function ShopGateway() {
         </p>
       ) : null}
 
-      <ShopifyOutboundButton
-        href={shopifyHomeUrl()}
-        label={copy.shopGo}
-        variant="primary"
-      />
+      {shopifyLive ? (
+        <ShopifyOutboundButton
+          href={shopifyHomeUrl()}
+          label={copy.shopGo}
+          variant="primary"
+        />
+      ) : null}
 
       {shelves && !shelves.ok && !loading ? (
         <div className="rounded-2xl border border-border bg-surface px-4 py-3">
