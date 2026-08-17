@@ -6,8 +6,10 @@ import assert from "node:assert/strict";
 import { overlayFamilyForBike } from "./bikeOverlayClass";
 import {
   bikeOverlayLayerFilter,
+  bikeOverlaySurfaceLineColor,
   overlayClassesOn,
 } from "./bikeOverlayMap";
+import { BIKE_OVERLAY_COLORS } from "./bikeOverlayClass";
 
 function testDownhillFiltersS1ToS3() {
   const mtb = bikeOverlayLayerFilter("mtb", "downhill");
@@ -92,9 +94,28 @@ function testGravelKeepsS0S1() {
   assert.ok(on.has("road"), "gravel touring also sees signed cycle routes");
 }
 
+function testSurfaceLineColorReadyWithoutField() {
+  const expr = bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.road);
+  const json = JSON.stringify(expr);
+  assert.equal(expr[0], "case");
+  assert.ok(json.includes('["has","surface"]'), "old tiles without field keep class color");
+  assert.ok(json.includes('["coalesce",["get","surface"],""]'));
+  assert.ok(json.includes("asphalt"));
+  assert.ok(json.includes("compacted"));
+  assert.ok(json.includes("fine_gravel"));
+  assert.ok(json.includes("dirt"));
+  assert.ok(json.includes("unpaved"));
+  assert.ok(json.includes(BIKE_OVERLAY_COLORS.road));
+  assert.ok(json.includes(BIKE_OVERLAY_COLORS.gravel));
+  assert.ok(json.includes(BIKE_OVERLAY_COLORS.dirt));
+  assert.ok(json.includes(BIKE_OVERLAY_COLORS.unrated));
+  assert.ok(!json.includes("france-latest"));
+}
+
 testDownhillFiltersS1ToS3();
 testAllmountainKeepsS0AndOpen();
 testOverlayFamilyFollowsRideProfile();
 testRoadHidesMtb();
 testGravelKeepsS0S1();
+testSurfaceLineColorReadyWithoutField();
 console.log("bikeOverlayMap.test.ts OK");

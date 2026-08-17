@@ -11,6 +11,11 @@ export type OverlayCopy = {
   urban: string;
   scaleNote: string;
   meshNote: string;
+  surfacePaved: string;
+  surfaceGravel: string;
+  surfaceDirt: string;
+  surfaceUnknown: string;
+  surfaceNote: string;
 };
 
 const DE: OverlayCopy = {
@@ -26,6 +31,12 @@ const DE: OverlayCopy = {
     "S0–S3+ nur bei OSM-Tag mtb:scale. sac_scale wird nicht umgemünzt.",
   meshNote:
     "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.",
+  surfacePaved: "Asphalt",
+  surfaceGravel: "Schotter",
+  surfaceDirt: "Naturweg",
+  surfaceUnknown: "ohne Tag",
+  surfaceNote:
+    "Farbe nach OSM-surface, wo die Kachel den Tag trägt. Ältere DACH-Wege ohne das Feld bleiben in der Klassenfarbe.",
 };
 
 const EN: OverlayCopy = {
@@ -41,6 +52,12 @@ const EN: OverlayCopy = {
     "S0–S3+ only with OSM tag mtb:scale. sac_scale is not remapped.",
   meshNote:
     "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 across the DACH sheet.",
+  surfacePaved: "Asphalt",
+  surfaceGravel: "Gravel",
+  surfaceDirt: "Dirt",
+  surfaceUnknown: "no tag",
+  surfaceNote:
+    "Color follows OSM surface where the tile has the tag. Older DACH ways without the field keep class colors.",
 };
 
 const FR: OverlayCopy = {
@@ -56,6 +73,12 @@ const FR: OverlayCopy = {
   meshOsm: "Réseau cyclable · OSM",
   meshNote:
     "Itinéraires cyclables signés (ICN/NCN/RCN) sur cette feuille. Chemins dès le zoom 12 sur toute la feuille DACH.",
+  surfacePaved: "Asphalte",
+  surfaceGravel: "Gravier",
+  surfaceDirt: "Chemin naturel",
+  surfaceUnknown: "sans tag",
+  surfaceNote:
+    "Couleur selon OSM surface quand la tuile porte le tag. Les chemins DACH plus anciens sans ce champ gardent la couleur de classe.",
 };
 
 const IT: OverlayCopy = {
@@ -71,6 +94,12 @@ const IT: OverlayCopy = {
   meshOsm: "Rete ciclabile · OSM",
   meshNote:
     "Percorsi ciclabili segnalati (ICN/NCN/RCN) su questo foglio. Vie dal zoom 12 su tutto il foglio DACH.",
+  surfacePaved: "Asfalto",
+  surfaceGravel: "Ghiaia",
+  surfaceDirt: "Sterrato",
+  surfaceUnknown: "senza tag",
+  surfaceNote:
+    "Colore da OSM surface dove la tessera ha il tag. Le vie DACH più vecchie senza il campo restano nel colore di classe.",
 };
 
 const BY_LANG: Record<ChromeLang, OverlayCopy> = {
@@ -90,5 +119,9 @@ export function overlayLegendLabel(key: string, lang: ChromeLang): string {
   if (key === "gravel") return o.gravel;
   if (key === "road") return o.road;
   if (key === "urban") return o.urban;
+  if (key === "paved") return o.surfacePaved;
+  if (key === "dirt") return o.surfaceDirt;
+  if (key === "unknown") return o.surfaceUnknown;
+  if (key === "surfaceGravel") return o.surfaceGravel;
   return key;
 }

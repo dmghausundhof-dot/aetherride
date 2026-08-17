@@ -7,7 +7,8 @@
  *     --in bike-ways.geojsonseq --out bike-overlay.geojson
  *
  * Next rebuild (optional props — Discover already Overpass-looks up by osm_id):
- * - `surface` / `tracktype` on each feature so overlay tap sheets skip Overpass.
+ * - Keep writing `surface` / `tracktype` so overlay coloring and tap sheets
+ *   can skip Overpass.
  * - Keep writing `mtb_scale` as S0/S1/S2/S3+ (3–6 collapsed to S3+, never sac_scale).
  * Vector maxzoom is typically 14; Discover hit-tests overlay layers past that
  * and can show named Overpass ways when overzoomed.

@@ -149,4 +149,19 @@ void main() {
     expect(keepSignedCycleMesh({'route': 'bicycle', 'ref': 'EV6'}), isTrue);
     expect(keepSignedCycleMesh({'route': 'mtb'}), isFalse);
   });
+
+  test('surface kind and line-color keep class fallback without field', () {
+    expect(bikeOverlaySurfaceKind('asphalt'), BikeOverlaySurfaceKind.paved);
+    expect(bikeOverlaySurfaceKind('compacted'), BikeOverlaySurfaceKind.gravel);
+    expect(bikeOverlaySurfaceKind('dirt'), BikeOverlaySurfaceKind.dirt);
+    expect(bikeOverlaySurfaceKind('unpaved'), BikeOverlaySurfaceKind.dirt);
+    expect(bikeOverlaySurfaceKind(''), BikeOverlaySurfaceKind.unknown);
+    final expr = bikeOverlaySurfaceLineColor(BikeOverlayColors.road);
+    expect(expr.first, 'case');
+    expect(expr.toString(), contains('has'));
+    expect(expr.toString(), contains('surface'));
+    expect(expr.toString(), contains('asphalt'));
+    expect(expr.toString(), contains(BikeOverlayColors.dirt));
+    expect(expr.toString(), contains(BikeOverlayColors.road));
+  });
 }
