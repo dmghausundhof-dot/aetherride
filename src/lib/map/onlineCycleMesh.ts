@@ -3,7 +3,7 @@
  * Not a contraction-hierarchy “mesh” and not a named OSM-Mesh product —
  * a visual route mesh on the live basemap catalog.
  *
- * At atlas zoom the signed mesh stays on (per Blatt). Past z11, DACH-wide
+ * At atlas zoom the signed mesh stays on (per Blatt). From z10, DACH-wide
  * ways (cycleway/path/track) cover the whole DACH Blatt; pack PMTiles still
  * win when they are denser.
  */
@@ -32,8 +32,8 @@ export const ONLINE_CYCLE_MESH_BBOX: [number, number, number, number] = [
   5.8, 45.75, 17.25, 55.15,
 ];
 
-/** Past the z11 atlas: pack ways (path/track/cycleway) replace the signed mesh. */
-export const BIKE_WAYS_MIN_ZOOM = 12;
+/** Ways tiles start at z10 — switch from signed mesh as soon as they exist. */
+export const BIKE_WAYS_MIN_ZOOM = 10;
 
 /**
  * Signed icn/ncn/rcn PMTiles per online Blatt.
@@ -131,7 +131,7 @@ export function cycleMeshGeojsonUrlForArchive(
 }
 
 /**
- * Mesh at atlas zoom. At z ≥ 12: pack ways if denser, else DACH-wide ways
+ * Mesh at atlas zoom. At z ≥ 10: pack ways if denser, else DACH-wide ways
  * everywhere in the Blatt — not only ten Hausberg chips.
  */
 export function chooseOnlineBikeOverlay(opts: {

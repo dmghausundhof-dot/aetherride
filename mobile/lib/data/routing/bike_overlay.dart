@@ -20,9 +20,8 @@ const kBikeOverlayGeojsonName = 'bike-overlay.geojson';
 const kBikeOverlayPmtilesName = 'bike-overlay.pmtiles';
 const kBikeOverlaySampleAsset = 'assets/routing/bike-overlay-sample.geojson';
 
-/// Past the z11 atlas: pack ways replace the signed cycle mesh when denser;
-/// otherwise DACH-wide ways cover the whole Blatt.
-const kBikeWaysMinZoom = 12.0;
+/// Past atlas zoom: pack / DACH ways (tiles from z10) replace the signed mesh.
+const kBikeWaysMinZoom = 10.0;
 
 /// Region packs that already publish a way-level bike-overlay on the CDN.
 const kDetailBikeOverlayPacks = <String>{
@@ -229,7 +228,12 @@ Future<Object?> resolveBikeOverlayData({
   return null;
 }
 
-const kOsmLiveSourceCandidates = <String>['openmaptiles', 'protomaps'];
+/// OpenFreeMap / OSM planet — has `transportation` with path/track/cycleway.
+/// Catalog `protomaps` (dach-z11) must NOT be listed: it only has `roads`,
+/// paths are absent at z11, and a false "live" success sets `sGradeOnly` so
+/// the CDN bike-overlay (road/urban/gravel/paths) never attaches — riders
+/// then see only Autobahn from the basemap.
+const kOsmLiveSourceCandidates = <String>['openmaptiles'];
 const kOsmLiveCyclewayLayerId = 'osm-live-cycleway';
 const kOsmLivePathLayerId = 'osm-live-path';
 const kOsmLiveTrackLayerId = 'osm-live-track';
@@ -241,18 +245,22 @@ const kOsmLiveLayerClass = <String, BikeOverlayClass>{
   kOsmSGradeLayerId: BikeOverlayClass.mtb,
 };
 
+/// Which basemap source can feed live path/cycleway layers (not catalog PMTiles).
+String? liveOsmNetworkSourceId(Iterable<String> sourceIds) {
+  final ids = sourceIds.toSet();
+  for (final candidate in kOsmLiveSourceCandidates) {
+    if (ids.contains(candidate)) return candidate;
+  }
+  return null;
+}
+
 /// OpenFreeMap planet tiles — OSM path/track/cycleway for DACH + FR (and world).
 /// S-grade is live Overpass (`mtb:scale`) — OpenMapTiles has no scale tag.
 Future<bool> attachLiveOsmNetworkLayers(MapLibreMapController c) async {
   String? sourceId;
   try {
-    final ids = await c.getSourceIds();
-    for (final candidate in kOsmLiveSourceCandidates) {
-      if (ids.contains(candidate)) {
-        sourceId = candidate;
-        break;
-      }
-    }
+    final ids = [for (final raw in await c.getSourceIds()) raw.toString()];
+    sourceId = liveOsmNetworkSourceId(ids);
   } catch (_) {}
   if (sourceId == null) return false;
 

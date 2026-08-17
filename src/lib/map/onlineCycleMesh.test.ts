@@ -23,7 +23,7 @@ assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("annecy"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("lyon"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("paris"));
 assert.equal(packHasDetailBikeOverlay("berlin"), false);
-assert.equal(BIKE_WAYS_MIN_ZOOM, 12);
+assert.equal(BIKE_WAYS_MIN_ZOOM, 10);
 
 assert.equal(
   onlineCycleMeshPmtilesUrl(8.54, 47.37),
@@ -123,6 +123,24 @@ const berlinZ13 = chooseOnlineBikeOverlay({
 });
 assert.equal(berlinZ13.kind, "ways");
 assert.equal(berlinZ13.url, DACH_WAYS_PMTILES_URL);
+
+const berlinZ10 = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 13.405,
+  lat: 52.52,
+  zoom: 10,
+});
+assert.equal(berlinZ10.kind, "ways");
+assert.equal(berlinZ10.url, DACH_WAYS_PMTILES_URL);
+
+const berlinZ9 = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 13.405,
+  lat: 52.52,
+  zoom: 9,
+});
+assert.equal(berlinZ9.kind, "mesh");
+assert.equal(berlinZ9.url, ONLINE_CYCLE_MESH_PMTILES_URL);
 
 const wienZ13 = chooseOnlineBikeOverlay({
   regionId: null,
