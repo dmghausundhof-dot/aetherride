@@ -64,6 +64,13 @@ assert.ok(
   "Paris pack streams ways, not the DACH mesh"
 );
 
+const amsterdam = overlayHintFromRegistry(4.9, 52.37);
+assert.equal(amsterdam.mode, "region_pack");
+assert.ok(
+  amsterdam.pmtilesPath?.includes("/amsterdam/bike-overlay.pmtiles"),
+  "Amsterdam pack streams ways over Benelux atlas mesh"
+);
+
 assert.equal(pointInDach(51.34, 12.37), true);
 
 for (const p of DACH_COMPLETENESS_PROBES) {

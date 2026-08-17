@@ -32,6 +32,9 @@ void main() {
     expect(detailOverlayPackIdForPoint(2.35, 48.86), 'paris');
     expect(detailOverlayPackIdForPoint(4.835, 45.76), 'lyon');
     expect(detailOverlayPackIdForPoint(6.13, 45.9), 'annecy');
+    expect(detailOverlayPackIdForPoint(4.9, 52.37), 'amsterdam');
+    expect(detailOverlayPackIdForPoint(4.3, 52.08), 'den-haag');
+    expect(detailOverlayPackIdForPoint(7.75, 48.58), 'strasbourg');
 
     final hdAtlas = chooseOnlineBikeOverlay(
       lng: 8.68,
@@ -96,6 +99,25 @@ void main() {
     );
     expect(parisWays.kind, OnlineBikeOverlayKind.ways);
     expect(parisWays.url, contains('/paris/bike-overlay.pmtiles'));
+
+    final amsterdamAtlas = chooseOnlineBikeOverlay(
+      lng: 4.9,
+      lat: 52.37,
+      zoom: 8,
+    );
+    expect(amsterdamAtlas.kind, OnlineBikeOverlayKind.mesh);
+    expect(amsterdamAtlas.url, contains('cycle-routes-benelux.pmtiles'));
+
+    final amsterdamWays = chooseOnlineBikeOverlay(
+      lng: 4.9,
+      lat: 52.37,
+      zoom: 13,
+    );
+    expect(amsterdamWays.kind, OnlineBikeOverlayKind.ways);
+    expect(amsterdamWays.url, contains('/amsterdam/bike-overlay.pmtiles'));
+
+    expect(overlayRegionById('amsterdam')?.name, contains('Amstel'));
+    expect(overlayRegionById('den-haag')?.name, contains('Den Haag'));
 
     expect(pointInOnlineCycleMesh(12.5, 41.9), isTrue);
     expect(

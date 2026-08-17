@@ -7,10 +7,11 @@
     1.6,
     43.72
   ],
-  "builtAt": "2026-08-15T12:57:57Z",
+  "builtAt": "2026-08-17T12:14:32.894Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2757541,
       "sha256": "543691b185df6a701903b2c645d6cdafaf81cd8f50cafc8a6ed4cc0dfb981fd3",
       "sha256_16": "543691b185df6a70"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 4185723,
+      "sha256": "dc86e1cea3e2896a393b1f0d453e2123b092efeca27feb6bea53912c97da0fbd",
+      "sha256_16": "dc86e1cea3e2896a"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1567270,
+      "sha256": "b3e46b25c820708beffb920d0b23d516d62a24e93c45d909bb770c9b6214a5b2",
+      "sha256_16": "b3e46b25c820708b"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/toulouse",
     "pack": "toulouse.tar.zst",
     "packGz": "toulouse.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

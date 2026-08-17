@@ -1,0 +1,27 @@
+{
+  "id": "groningen",
+  "name": "Groningen / Reitdiep",
+  "bbox": [
+    6.5,
+    53.18,
+    6.65,
+    53.28
+  ],
+  "osm": {
+    "geofabrik": "",
+    "note": "NL extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/groningen",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "groningen.tar.zst"
+  }
+}

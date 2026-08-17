@@ -1,0 +1,43 @@
+{
+  "id": "amsterdam",
+  "name": "Amsterdam / Amstel",
+  "bbox": [
+    4.75,
+    52.3,
+    5.02,
+    52.43
+  ],
+  "builtAt": "2026-08-17T12:17:35.174Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false,
+    "bike_overlay": true
+  },
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 3056744,
+      "sha256": "b598d28ad2943910883ff1b7d943b9bb83fc15059e4d9f8c796f41e020631643",
+      "sha256_16": "b598d28ad2943910"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1105024,
+      "sha256": "672844a7bbc4108a8ea8f6965c3ac32a8524f1ac03699cc65fd20837e0647493",
+      "sha256_16": "672844a7bbc4108a"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/amsterdam",
+    "pack": "amsterdam.tar.zst",
+    "packGz": "amsterdam.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "den-haag",
+  "name": "Den Haag / Scheveningen",
+  "bbox": [
+    4.22,
+    52.02,
+    4.4,
+    52.14
+  ],
+  "builtAt": "2026-08-17T12:21:21.406Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false,
+    "bike_overlay": true
+  },
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 1615732,
+      "sha256": "131da954bcb59b475c6ed1d80b55f07b541fedbae0ef1f9f34c6612dbfd45a83",
+      "sha256_16": "131da954bcb59b47"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 621403,
+      "sha256": "68c7c4cbaa73caa4ddd7dfeeca413ae78271087c21e2655db211e58b8ac76151",
+      "sha256_16": "68c7c4cbaa73caa4"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/den-haag",
+    "pack": "den-haag.tar.zst",
+    "packGz": "den-haag.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
+  }
+}

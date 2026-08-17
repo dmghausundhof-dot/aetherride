@@ -68,6 +68,18 @@ export const DETAIL_BIKE_OVERLAY_PACKS = new Set([
   "annecy",
   "lyon",
   "paris",
+  "strasbourg",
+  "bordeaux",
+  "nantes",
+  "toulouse",
+  "nice",
+  "marseille",
+  "amsterdam",
+  "utrecht",
+  "rotterdam",
+  "den-haag",
+  "eindhoven",
+  "groningen",
 ]);
 
 export type OnlineBikeOverlayKind = "ways" | "mesh" | "none";

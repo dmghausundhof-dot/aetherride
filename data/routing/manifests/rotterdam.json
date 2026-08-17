@@ -1,0 +1,43 @@
+{
+  "id": "rotterdam",
+  "name": "Rotterdam / Maas",
+  "bbox": [
+    4.4,
+    51.85,
+    4.58,
+    51.98
+  ],
+  "builtAt": "2026-08-17T12:20:17.775Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false,
+    "bike_overlay": true
+  },
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 1728170,
+      "sha256": "41ebee8727d5b2d58c3175c2ee66618483932f294af7cb28843cf1e5a348c4bc",
+      "sha256_16": "41ebee8727d5b2d5"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 663099,
+      "sha256": "bde17f2aaaec12413425fd279a0361a9fd7be9f162bf4dbb7c853d98d4cf517b",
+      "sha256_16": "bde17f2aaaec1241"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/rotterdam",
+    "pack": "rotterdam.tar.zst",
+    "packGz": "rotterdam.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
+  }
+}
