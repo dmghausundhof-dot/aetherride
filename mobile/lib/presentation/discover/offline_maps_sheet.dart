@@ -22,6 +22,7 @@ import '../../data/routing/offline_tiles.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/overlay_regions.dart';
+import '../../data/routing/valhalla_regions.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 
@@ -876,16 +877,43 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     ];
   }
 
+  /// Hof voice (kartenCopy): stubs are envelopes without an offline graph.
+  static const _stubEnvelopeSubtitle =
+      'Envelope ohne Graph — online-only, nichts zum Laden';
+
+  static const _stubsSectionHint =
+      'Benannte Flächen ohne Graph — Routing bleibt online-only, nichts zum Herunterladen.';
+
   Widget _regionTile(OfflinePackRow r) {
     final active = _isActive(r);
     final installed = _installed.contains(r.id);
     final enabled = !_busy &&
         (r.isReady || installed || r.id == kBundledOfflineGraphRegionId);
-    final subtitle = AppLocalizations.of(context).offlinePackSubtitleFor(
-      r,
-      active: active,
-      installed: installed,
-    );
+    final l10n = AppLocalizations.of(context);
+    final String subtitle;
+    if (active) {
+      subtitle = l10n.offlineSubActive;
+    } else if (installed) {
+      subtitle = l10n.offlineSubInstalled;
+    } else if (!r.isReady) {
+      subtitle = r.id == kBundledOfflineGraphRegionId
+          ? l10n.offlineSubDemoGraph
+          : _stubEnvelopeSubtitle;
+    } else {
+      // Ready pack: Graph (offline_graph) is the download — Valhalla tiles are separate.
+      final size = formatPackBytes(r.bytes);
+      final base = size.isEmpty
+          ? 'Graph + Karte laden'
+          : '$size · Graph + Karte';
+      final valhallaId = suggestedValhallaRegionId(
+        mapLng: widget.userLng,
+        mapLat: widget.userLat,
+        regionBbox: r.bbox,
+      );
+      subtitle = valhallaId == null
+          ? base
+          : '$base · Valhalla optional: $valhallaId';
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -1047,7 +1075,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                                   _valhallaStatus != null) ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  l10n.offlineEngineStatusLineFor(
+                                  // Graph-Engine vs Valhalla-Tiles — distinct labels.
+                                  l10n.honestOfflineEngineCopyFor(
                                     valhallaStatus: _valhallaStatus!,
                                     engineHint: _engineHint,
                                   ),
@@ -1137,7 +1166,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(
-                          l10n.offlineStubsHint,
+                          _stubsSectionHint,
                           style: const TextStyle(
                             color: AppColors.muted,
                             fontSize: 12,

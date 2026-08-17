@@ -1,0 +1,27 @@
+{
+  "id": "firenze",
+  "name": "Florenz / Arno",
+  "bbox": [
+    11.15,
+    43.7,
+    11.35,
+    43.85
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf",
+    "note": "IT regional extract, clip auf Stadt-bbox."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/firenze",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "firenze.tar.zst"
+  }
+}

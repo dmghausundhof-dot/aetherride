@@ -1,0 +1,26 @@
+{
+  "id": "fr-ile-de-france",
+  "name": "Île-de-France",
+  "bbox": [
+    1.45,
+    48.12,
+    3.55,
+    49.25
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/ile-de-france-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/fr-ile-de-france",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "fr-ile-de-france.tar.zst"
+  }
+}

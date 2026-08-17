@@ -1,0 +1,27 @@
+{
+  "id": "bari",
+  "name": "Bari / Adria",
+  "bbox": [
+    16.8,
+    41.08,
+    17,
+    41.18
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf",
+    "note": "IT regional extract, clip auf Stadt-bbox."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/bari",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bari.tar.zst"
+  }
+}

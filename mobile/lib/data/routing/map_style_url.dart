@@ -42,6 +42,21 @@ const kOnlineCycleMeshGeojsonUrl =
 const kDachWaysPmtilesUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/dach-ways.pmtiles';
 
+const kNlWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/nl-ways.pmtiles';
+
+const kBeWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/be-ways.pmtiles';
+
+const kFranceWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/france-ways.pmtiles';
+
+const kItalyWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/italy-ways.pmtiles';
+
+const kUkSouthWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/uk-south-ways.pmtiles';
+
 /// OpenStreetMap street-level style (buildings, residential, paths).
 const kOpenFreeMapLibertyStyleUrl =
     'https://tiles.openfreemap.org/styles/liberty';

@@ -1,0 +1,26 @@
+{
+  "id": "fr-bretagne",
+  "name": "Bretagne",
+  "bbox": [
+    -5.15,
+    47.25,
+    -1,
+    48.9
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/bretagne-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/fr-bretagne",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "fr-bretagne.tar.zst"
+  }
+}

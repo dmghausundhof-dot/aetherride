@@ -1,0 +1,26 @@
+{
+  "id": "it-centro",
+  "name": "Centro",
+  "bbox": [
+    9.7,
+    41.2,
+    14.05,
+    44.5
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/it-centro",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "it-centro.tar.zst"
+  }
+}

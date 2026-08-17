@@ -1,0 +1,24 @@
+{
+  "id": "firenze",
+  "name": "Florenz / Arno",
+  "bbox": [
+    11.15,
+    43.7,
+    11.35,
+    43.85
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "firenze.tar.zst",
+    "packGz": "firenze.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

@@ -173,10 +173,11 @@ String offlinePackSubtitle(
     if (r.id == kBundledOfflineGraphRegionId) {
       return 'Demo-Graph in der App (kein Remote-Pack)';
     }
-    return 'Noch nicht gebaut';
+    return 'Envelope ohne Graph — online-only, nichts zum Laden';
   }
+  // Graph pack download; Valhalla tiles (if any) are a separate engine path.
   final size = formatPackBytes(r.bytes);
-  return size.isEmpty ? 'Routing + Karte laden' : '$size · Routing + Karte';
+  return size.isEmpty ? 'Graph + Karte laden' : '$size · Graph + Karte';
 }
 
 /// Normalize MapLibre offline progress (0–1 or 0–100) to 0–1.

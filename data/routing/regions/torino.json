@@ -1,0 +1,27 @@
+{
+  "id": "torino",
+  "name": "Turin / Po",
+  "bbox": [
+    7.55,
+    45,
+    7.8,
+    45.15
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/nord-ovest-latest.osm.pbf",
+    "note": "IT regional extract, clip auf Stadt-bbox."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/torino",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "torino.tar.zst"
+  }
+}

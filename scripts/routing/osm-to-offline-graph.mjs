@@ -184,14 +184,15 @@ out skel qt;
         });
         if (res.status === 429 || res.status === 504) {
           lastErr = new Error(`${url} ${res.status}`);
-          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+          // Overpass rate limits: back off hard before next try/endpoint
+          await new Promise((r) => setTimeout(r, 20_000 * (attempt + 1)));
           continue;
         }
         if (!res.ok) throw new Error(`${url} ${res.status}`);
         return await res.json();
       } catch (err) {
         lastErr = err;
-        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        await new Promise((r) => setTimeout(r, 5_000 * (attempt + 1)));
       }
     }
   }

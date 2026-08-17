@@ -1,0 +1,26 @@
+{
+  "id": "be-belgium",
+  "name": "Belgien",
+  "bbox": [
+    2.4,
+    49.45,
+    6.45,
+    51.55
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/belgium-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/be-belgium",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "be-belgium.tar.zst"
+  }
+}
