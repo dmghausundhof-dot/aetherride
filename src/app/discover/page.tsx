@@ -523,7 +523,8 @@ function DiscoverPageInner() {
 
   const origin = userPos ?? mapCenter;
   const addRouteStart = useMemo(() => {
-    const persisted = readDiscoverViewport()?.lngLat ?? null;
+    const vp = readDiscoverViewport();
+    const persisted = vp ? ([vp.lng, vp.lat] as [number, number]) : null;
     const map =
       isLocalDiscoverZoom(mapZoom) && !isPlaceholderMapCenter(mapCenter)
         ? mapCenter

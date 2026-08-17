@@ -24,7 +24,8 @@ const ENDPOINTS = [
 ];
 
 const CELL = 0.18;
-const FORBIDDEN = /planet-latest|planet\.osm|(^|\/)france-latest\.osm\.pbf/i;
+const FORBIDDEN =
+  /planet-latest|planet\.osm|(^|\/)france-latest\.osm\.pbf|(^|\/)netherlands-latest\.osm\.pbf/i;
 
 function parseArgs(argv) {
   const ids = [];

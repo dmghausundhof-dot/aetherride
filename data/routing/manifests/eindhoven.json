@@ -1,0 +1,43 @@
+{
+  "id": "eindhoven",
+  "name": "Eindhoven / Dommel",
+  "bbox": [
+    5.4,
+    51.4,
+    5.55,
+    51.5
+  ],
+  "builtAt": "2026-08-17T12:22:10.990Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false,
+    "bike_overlay": true
+  },
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 1338345,
+      "sha256": "54aed82c90628890227e8f2e6518a2f54e319fb33137c68e95260e56c9d8244a",
+      "sha256_16": "54aed82c90628890"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 535697,
+      "sha256": "0148c3e25db297c0f959b5fa9a1da25b10e7c9e82ea58ce86e9cd5f7d287d5e4",
+      "sha256_16": "0148c3e25db297c0"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/eindhoven",
+    "pack": "eindhoven.tar.zst",
+    "packGz": "eindhoven.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
+  }
+}

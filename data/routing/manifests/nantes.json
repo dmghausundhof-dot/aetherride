@@ -7,10 +7,11 @@
     -1.4,
     47.32
   ],
-  "builtAt": "2026-08-15T13:15:22Z",
+  "builtAt": "2026-08-17T12:11:17.073Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2672965,
       "sha256": "70b0b56e5c1a46d4d7b5dec8025c6a394df5e7bc2ad72e7c5bafeb180f32368d",
       "sha256_16": "70b0b56e5c1a46d4"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 4556630,
+      "sha256": "79a86d50b51776b83d50010e75c8d9dffdb34f3dfe4b9ffad1585ac2bb5653be",
+      "sha256_16": "79a86d50b51776b8"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1635394,
+      "sha256": "c5c714a6141fc1c2806a96f1223ac00b2977f877b7bb18545399e82dcfd4a1f4",
+      "sha256_16": "c5c714a6141fc1c2"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nantes",
     "pack": "nantes.tar.zst",
     "packGz": "nantes.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

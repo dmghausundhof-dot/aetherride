@@ -7,10 +7,11 @@
     -0.4,
     44.95
   ],
-  "builtAt": "2026-08-15T12:36:13Z",
+  "builtAt": "2026-08-17T12:08:15.111Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2716146,
       "sha256": "adf6b296f5d57eb53e1f43356c4cf76b208ddcc81a5cef108767b2ebbc0b6d1d",
       "sha256_16": "adf6b296f5d57eb5"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 3007503,
+      "sha256": "15f873b721b2509888d5c971699abc98b3739e389690b57bc6b24e7dcf4bf12a",
+      "sha256_16": "15f873b721b25098"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1094093,
+      "sha256": "45759521d89267ca32592dfcb572bc2418c41ba5a54b95c331965d71da7fc5c8",
+      "sha256_16": "45759521d89267ca"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/bordeaux",
     "pack": "bordeaux.tar.zst",
     "packGz": "bordeaux.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

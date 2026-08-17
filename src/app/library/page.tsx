@@ -82,7 +82,8 @@ export default function LibraryPage() {
   }, []);
   useEffect(() => {
     let cancelled = false;
-    const map = readDiscoverViewport()?.lngLat ?? null;
+    const vp = readDiscoverViewport();
+    const map = vp ? ([vp.lng, vp.lat] as [number, number]) : null;
     const apply = (gps: [number, number] | null) => {
       if (cancelled) return;
       const hit = resolveAddRouteStart({ gps, map });

@@ -1,16 +1,17 @@
 {
   "id": "strasbourg",
-  "name": "Stra\u00dfburg / Ill",
+  "name": "Straßburg / Ill",
   "bbox": [
     7.65,
     48.5,
     7.85,
     48.65
   ],
-  "builtAt": "2026-08-15T10:42:24Z",
+  "builtAt": "2026-08-17T12:05:42.207Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2712436,
       "sha256": "e0b4428a334ca93fe090fcf01283af513b9a5a9eea77718a85f684ff063fd7fd",
       "sha256_16": "e0b4428a334ca93f"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2017537,
+      "sha256": "ee043791477fbc6835d8d5cadad903572c1f52859852febc072376313cda6bc2",
+      "sha256_16": "ee043791477fbc68"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 801345,
+      "sha256": "05ac0ecc7c65ab5396d2fe223a21b70c73f7cffd69f4e03ea89abaac8ebbc492",
+      "sha256_16": "05ac0ecc7c65ab53"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/strasbourg",
     "pack": "strasbourg.tar.zst",
     "packGz": "strasbourg.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

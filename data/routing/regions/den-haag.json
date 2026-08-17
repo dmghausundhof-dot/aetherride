@@ -1,0 +1,27 @@
+{
+  "id": "den-haag",
+  "name": "Den Haag / Scheveningen",
+  "bbox": [
+    4.22,
+    52.02,
+    4.4,
+    52.14
+  ],
+  "osm": {
+    "geofabrik": "",
+    "note": "NL extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/den-haag",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "den-haag.tar.zst"
+  }
+}

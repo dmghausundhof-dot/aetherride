@@ -1,0 +1,43 @@
+{
+  "id": "groningen",
+  "name": "Groningen / Reitdiep",
+  "bbox": [
+    6.5,
+    53.18,
+    6.65,
+    53.28
+  ],
+  "builtAt": "2026-08-17T12:22:51.208Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false,
+    "bike_overlay": true
+  },
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 852360,
+      "sha256": "a0309f0d2214146b423795cb675a5ae41b16397c3ed3a68cfb4833d8dbd3fefd",
+      "sha256_16": "a0309f0d2214146b"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 345128,
+      "sha256": "eeb3e5bdea475a6fb4cf9c7534a32420eb4368744304c3cdf4db922b95c5576a",
+      "sha256_16": "eeb3e5bdea475a6f"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/groningen",
+    "pack": "groningen.tar.zst",
+    "packGz": "groningen.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
+  }
+}

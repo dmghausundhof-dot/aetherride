@@ -1,0 +1,43 @@
+{
+  "id": "utrecht",
+  "name": "Utrecht / Dom",
+  "bbox": [
+    5.05,
+    52.04,
+    5.2,
+    52.15
+  ],
+  "builtAt": "2026-08-17T12:19:07.844Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false,
+    "bike_overlay": true
+  },
+  "files": {
+    "bike-overlay.geojson": {
+      "bytes": 1112109,
+      "sha256": "12d2a42e24864f8a63e4c5fe54d7aa41c86a53be615f7fa9da2a961d9136fa94",
+      "sha256_16": "12d2a42e24864f8a"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 461960,
+      "sha256": "09e90555174c55c68edf61edf384516b953d9942d59a537e460b46ec9eabf57f",
+      "sha256_16": "09e90555174c55c6"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/utrecht",
+    "pack": "utrecht.tar.zst",
+    "packGz": "utrecht.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
+  }
+}

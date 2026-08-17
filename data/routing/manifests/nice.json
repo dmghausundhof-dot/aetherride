@@ -7,10 +7,11 @@
     7.4,
     43.78
   ],
-  "builtAt": "2026-08-15T12:26:44Z",
+  "builtAt": "2026-08-17T12:24:24.184Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2683209,
       "sha256": "a864a6c4e2cbc98fb0151d026c3d3ece4c8f5a4ecd10cd34c572ae9f85aca6f6",
       "sha256_16": "a864a6c4e2cbc98f"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 1447269,
+      "sha256": "cc1df52be9701c0bfb9d128f87a5e729186768165c87a31d435a77609faa2c5b",
+      "sha256_16": "cc1df52be9701c0b"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 472913,
+      "sha256": "ec0cf2f85d14c47afaf679419b07ce580deb2d564133b6cf6157c1472e65aa29",
+      "sha256_16": "ec0cf2f85d14c47a"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nice",
     "pack": "nice.tar.zst",
     "packGz": "nice.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

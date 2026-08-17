@@ -148,7 +148,8 @@ export async function GET(req: Request) {
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(50);
-      reviews = retry.data;
+      // Legacy rows without tags/pin_*/along_m/difficulty_delta — cast to full shape.
+      reviews = retry.data as typeof reviews;
       rErr = retry.error;
     }
     if (!rErr && !pErr) {

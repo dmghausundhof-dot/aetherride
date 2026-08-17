@@ -30,7 +30,15 @@ assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("lyon"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("paris"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("amsterdam"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("roma"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("utrecht"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("rotterdam"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("den-haag"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("strasbourg"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("bordeaux"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("nantes"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("toulouse"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("nice"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("marseille"));
 assert.equal(packHasDetailBikeOverlay("berlin"), false);
 assert.equal(BIKE_WAYS_MIN_ZOOM, 10);
 
@@ -205,6 +213,42 @@ const annecyWays = chooseOnlineBikeOverlay({
 assert.equal(annecyWays.kind, "ways");
 assert.ok(annecyWays.url?.includes("/annecy/bike-overlay.pmtiles"));
 
+const amsterdamAtlas = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 4.9,
+  lat: 52.37,
+  zoom: 8,
+});
+assert.equal(amsterdamAtlas.kind, "mesh");
+assert.ok(amsterdamAtlas.url?.includes("cycle-routes-benelux.pmtiles"));
+
+const amsterdamWays = chooseOnlineBikeOverlay({
+  regionId: "amsterdam",
+  lng: 4.9,
+  lat: 52.37,
+  zoom: 13,
+});
+assert.equal(amsterdamWays.kind, "ways");
+assert.ok(amsterdamWays.url?.includes("/amsterdam/bike-overlay.pmtiles"));
+
+const denHaagWays = chooseOnlineBikeOverlay({
+  regionId: detailOverlayRegionIdForPoint(4.3, 52.08),
+  lng: 4.3,
+  lat: 52.08,
+  zoom: 12,
+});
+assert.equal(denHaagWays.kind, "ways");
+assert.ok(denHaagWays.url?.includes("/den-haag/bike-overlay.pmtiles"));
+
+const strasbourgWays = chooseOnlineBikeOverlay({
+  regionId: "strasbourg",
+  lng: 7.75,
+  lat: 48.58,
+  zoom: 13,
+});
+assert.equal(strasbourgWays.kind, "ways");
+assert.ok(strasbourgWays.url?.includes("/strasbourg/bike-overlay.pmtiles"));
+
 const zermattWays = chooseOnlineBikeOverlay({
   regionId: "zermatt",
   lng: 7.75,
@@ -220,6 +264,9 @@ assert.equal(detailOverlayRegionIdForPoint(13.405, 52.52), null);
 assert.equal(detailOverlayRegionIdForPoint(2.35, 48.86), "paris");
 assert.equal(detailOverlayRegionIdForPoint(4.835, 45.76), "lyon");
 assert.equal(detailOverlayRegionIdForPoint(6.13, 45.9), "annecy");
+assert.equal(detailOverlayRegionIdForPoint(4.9, 52.37), "amsterdam");
+assert.equal(detailOverlayRegionIdForPoint(4.3, 52.08), "den-haag");
+assert.equal(detailOverlayRegionIdForPoint(7.75, 48.58), "strasbourg");
 
 const freiburgWays = chooseOnlineBikeOverlay({
   regionId: detailOverlayRegionIdForPoint(7.85, 47.99),
