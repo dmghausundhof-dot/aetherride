@@ -6,12 +6,19 @@ void main() {
   testWidgets('HofSplash zeigt die offizielle Boot-Animation', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: HofSplash()));
     expect(find.byType(HofSplash), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
+    expect(find.byType(ColoredBox), findsWidgets);
 
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    });
+    await tester.pump();
     expect(find.byType(HofSplash), findsOneWidget);
+    expect(find.byType(RawImage), findsOneWidget);
 
-    await tester.pump(HofSplash.motion);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pump();
     expect(find.byType(HofSplash), findsOneWidget);
   });
 }

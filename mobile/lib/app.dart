@@ -9,9 +9,14 @@ import 'presentation/shared/hof_splash.dart';
 import 'presentation/shell/app_shell.dart';
 
 class FlowLineApp extends StatelessWidget {
-  const FlowLineApp({super.key, this.ready = true});
+  const FlowLineApp({
+    super.key,
+    this.ready = true,
+    this.onSplashFinished,
+  });
 
   final bool ready;
+  final VoidCallback? onSplashFinished;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +55,10 @@ class FlowLineApp extends StatelessWidget {
           switchOutCurve: Curves.easeIn,
           child: ready
               ? const AppShell(key: ValueKey('app'))
-              : const HofSplash(key: ValueKey('splash')),
+              : HofSplash(
+                  key: const ValueKey('splash'),
+                  onFinished: onSplashFinished,
+                ),
         ),
       ),
     );

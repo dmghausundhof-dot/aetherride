@@ -12,9 +12,6 @@ import 'core/crash_reporting.dart';
 import 'providers/app_providers.dart';
 import 'providers/ride_providers.dart';
 
-/// Time the lockup stays on screen after Flutter's first frame.
-const _minSplash = Duration(milliseconds: 3000);
-
 /// Dart HttpClient has no Happy Eyeballs: a broken IPv6 SYN hangs until the
 /// Future timeout, so Vercel never falls back to IPv4 (A54 WiFi is dual-stack).
 class _ApiHttpOverrides extends HttpOverrides {
@@ -42,6 +39,7 @@ class _Bootstrap extends ConsumerStatefulWidget {
 
 class _BootstrapState extends ConsumerState<_Bootstrap> {
   bool _ready = false;
+  final Completer<void> _splashDone = Completer<void>();
 
   @override
   void initState() {
@@ -49,13 +47,20 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
     unawaited(_open());
   }
 
+  void _onSplashFinished() {
+    if (!_splashDone.isCompleted) _splashDone.complete();
+  }
+
   Future<void> _open() async {
-    final started = DateTime.now();
     unawaited(_initSupabase());
-    await _bootLocal();
+    await Future.wait<void>([
+      _bootLocal(),
+      _splashDone.future.timeout(
+        const Duration(seconds: 12),
+        onTimeout: () {},
+      ),
+    ]);
     unawaited(_startSync());
-    final left = _minSplash - DateTime.now().difference(started);
-    if (left > Duration.zero) await Future<void>.delayed(left);
     if (mounted) setState(() => _ready = true);
   }
 
@@ -95,6 +100,9 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
 
   @override
   Widget build(BuildContext context) {
-    return FlowLineApp(ready: _ready);
+    return FlowLineApp(
+      ready: _ready,
+      onSplashFinished: _onSplashFinished,
+    );
   }
 }
