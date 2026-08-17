@@ -198,6 +198,13 @@ abstract final class AppConfig {
         stadiaApiKey: stadiaApiKey,
       );
 
+  /// Karte / Discover browse: same CDN catalog as /karten.
+  static String get browseMapStyleUrl => catalogBrowseMapStyleUrl(
+        pmtilesOrStyleUrl: pmtilesUrl,
+        lng: 9.2,
+        lat: 49.0,
+      );
+
   /// Runtime: Prefs-Override → lokale PMTiles-Style-Datei → CDN (DACH/FR).
   static Future<String> resolveMapStyleUrl() async {
     try {
@@ -216,6 +223,25 @@ abstract final class AppConfig {
       );
     } catch (_) {}
     return mapStyleUrl;
+  }
+
+  static Future<String> resolveBrowseMapStyleUrl() async {
+    try {
+      final m = await OfflineMapsPrefs.read();
+      final override = (m['pmtilesUrl'] as String?)?.trim() ?? '';
+      if (override.isNotEmpty &&
+          (override.endsWith('.json') ||
+              override.contains('/styles/') ||
+              override.contains('style.json'))) {
+        return override;
+      }
+      final bbox = OfflineMapsPrefs.packBboxFrom(m);
+      return await OfflinePmtilesStore.resolveStyleUrl(
+        remoteFallback: browseMapStyleUrl,
+        packBbox: bbox,
+      );
+    } catch (_) {}
+    return browseMapStyleUrl;
   }
 
   static bool get usingFreeBasemap => mapStyleUrl.contains('openfreemap.org');

@@ -33,7 +33,7 @@ export const KARTEN_PAGE = {
   waysHint:
     "Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.",
   attributionNote:
-    "Kartenmaterial: OpenStreetMap-Mitwirkende, aufbereitet mit Protomaps. Kein Google-Layer.",
+    "Kartenmaterial: OpenStreetMap-Mitwirkende, aufbereitet mit Protomaps. Relief: AWS Terrain / Mapzen. Kein Google-Layer.",
 } as const;
 
 export function offlinePacksSentence(opts: {
