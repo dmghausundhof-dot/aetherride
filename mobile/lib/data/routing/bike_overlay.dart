@@ -525,7 +525,7 @@ Future<void> attachBikeOverlayLayers(
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.mtbUnrated]!,
       classId: 'mtb_unrated',
-      lineColor: BikeOverlayColors.unrated,
+      lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.unrated),
       lineWidth: 1.6,
       dash: const [2, 1.4],
       minzoom: 12,
@@ -533,21 +533,21 @@ Future<void> attachBikeOverlayLayers(
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.gravel]!,
       classId: 'gravel',
-      lineColor: BikeOverlayColors.gravel,
+      lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.gravel),
       lineWidth: 2.0,
       minzoom: 12,
     );
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.road]!,
       classId: 'road',
-      lineColor: BikeOverlayColors.road,
+      lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.road),
       lineWidth: 2.2,
       minzoom: 11,
     );
     await addClassLayer(
       layerId: kBikeOverlayLayerIds[BikeOverlayClass.urban]!,
       classId: 'urban',
-      lineColor: BikeOverlayColors.urban,
+      lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.urban),
       lineWidth: 1.8,
       minzoom: 12,
     );

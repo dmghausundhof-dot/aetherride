@@ -358,4 +358,76 @@ abstract final class BikeOverlayColors {
   static const gravel = '#C49A3C';
   static const road = '#1E88E5';
   static const urban = '#00897B';
+  static const dirt = '#9A5B32';
 }
+
+const kOverlaySurfacePaved = [
+  'asphalt',
+  'paved',
+  'concrete',
+  'concrete:plates',
+  'concrete:lanes',
+  'chipseal',
+  'paving_stones',
+  'sett',
+  'cobblestone',
+];
+
+const kOverlaySurfaceGravel = [
+  'compacted',
+  'gravel',
+  'fine_gravel',
+  'pebblestone',
+];
+
+const kOverlaySurfaceDirt = [
+  'dirt',
+  'ground',
+  'grass',
+  'unpaved',
+  'earth',
+  'mud',
+  'sand',
+];
+
+enum BikeOverlaySurfaceKind { paved, gravel, dirt, unknown }
+
+BikeOverlaySurfaceKind bikeOverlaySurfaceKind(String? surface) {
+  final s = (surface ?? '').trim().toLowerCase();
+  if (s.isEmpty) return BikeOverlaySurfaceKind.unknown;
+  if (kOverlaySurfacePaved.contains(s)) return BikeOverlaySurfaceKind.paved;
+  if (kOverlaySurfaceGravel.contains(s)) return BikeOverlaySurfaceKind.gravel;
+  if (kOverlaySurfaceDirt.contains(s)) return BikeOverlaySurfaceKind.dirt;
+  return BikeOverlaySurfaceKind.unknown;
+}
+
+/// MapLibre color: OSM `surface` when the tile has the field, else [fallback].
+List<dynamic> bikeOverlaySurfaceLineColor(String fallback) => [
+      'case',
+      [
+        '!',
+        ['has', 'surface'],
+      ],
+      fallback,
+      [
+        'match',
+        [
+          'downcase',
+          [
+            'to-string',
+            [
+              'coalesce',
+              ['get', 'surface'],
+              '',
+            ],
+          ],
+        ],
+        kOverlaySurfacePaved,
+        BikeOverlayColors.road,
+        kOverlaySurfaceGravel,
+        BikeOverlayColors.gravel,
+        kOverlaySurfaceDirt,
+        BikeOverlayColors.dirt,
+        BikeOverlayColors.unrated,
+      ],
+    ];

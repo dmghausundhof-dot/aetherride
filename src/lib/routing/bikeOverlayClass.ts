@@ -300,7 +300,68 @@ export const BIKE_OVERLAY_COLORS = {
   gravel: "#C49A3C",
   road: "#1E88E5",
   urban: "#00897B",
+  /** Dirt/ground/grass/unpaved — distinct from gravel gold on hillshade. */
+  dirt: "#9A5B32",
 } as const;
+
+/** OSM `surface` values that read as paved for overlay coloring. */
+export const BIKE_OVERLAY_SURFACE_PAVED = [
+  "asphalt",
+  "paved",
+  "concrete",
+  "concrete:plates",
+  "concrete:lanes",
+  "chipseal",
+  "paving_stones",
+  "sett",
+  "cobblestone",
+] as const;
+
+/** Compacted / gravel — distinct from dirt. `unpaved` is dirt, not gravel. */
+export const BIKE_OVERLAY_SURFACE_GRAVEL = [
+  "compacted",
+  "gravel",
+  "fine_gravel",
+  "pebblestone",
+] as const;
+
+export const BIKE_OVERLAY_SURFACE_DIRT = [
+  "dirt",
+  "ground",
+  "grass",
+  "unpaved",
+  "earth",
+  "mud",
+  "sand",
+] as const;
+
+export type BikeOverlaySurfaceKind = "paved" | "gravel" | "dirt" | "unknown";
+
+const SURFACE_PAVED_SET = new Set<string>(BIKE_OVERLAY_SURFACE_PAVED);
+const SURFACE_GRAVEL_SET = new Set<string>(BIKE_OVERLAY_SURFACE_GRAVEL);
+const SURFACE_DIRT_SET = new Set<string>(BIKE_OVERLAY_SURFACE_DIRT);
+
+/** Rideability bucket from OSM `surface`. Empty / unknown → `unknown`. */
+export function bikeOverlaySurfaceKind(
+  surface: string | null | undefined
+): BikeOverlaySurfaceKind {
+  const s = (surface ?? "").trim().toLowerCase();
+  if (!s) return "unknown";
+  if (SURFACE_PAVED_SET.has(s)) return "paved";
+  if (SURFACE_GRAVEL_SET.has(s)) return "gravel";
+  if (SURFACE_DIRT_SET.has(s)) return "dirt";
+  return "unknown";
+}
+
+export const BIKE_OVERLAY_SURFACE_LEGEND: {
+  key: BikeOverlaySurfaceKind;
+  color: string;
+}[] = [
+  { key: "paved", color: BIKE_OVERLAY_COLORS.road },
+  { key: "gravel", color: BIKE_OVERLAY_COLORS.gravel },
+  { key: "dirt", color: BIKE_OVERLAY_COLORS.dirt },
+  { key: "unknown", color: BIKE_OVERLAY_COLORS.unrated },
+];
 
 export const BIKE_OVERLAY_LEGEND_DE: {
   key: string;
