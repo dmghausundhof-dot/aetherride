@@ -38,7 +38,18 @@ extension WheelSizeLabel on WheelSize {
         WheelSize.c700 => '700c',
         WheelSize.b650 => '650b',
       };
+
+  /// Typical rolling circumference for CSC speed. Shared by garage and HUD.
+  double get circumferenceM => switch (this) {
+        WheelSize.w275 => 2.070,
+        WheelSize.w29 => 2.105,
+        WheelSize.c700 => 2.130,
+        WheelSize.b650 => 1.935,
+      };
 }
+
+/// Default ~29×2.25 gravel-ish when the bike has no wheel size yet.
+double wheelCircumferenceM(WheelSize? size) => size?.circumferenceM ?? 2.105;
 
 enum CompatibilityVerdict {
   compatible,

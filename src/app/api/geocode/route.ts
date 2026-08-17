@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { chromeLangFrom } from "@/lib/i18n/chromeLang";
+import {
+  dedupeGeocodeHits,
+  rankGeocodeHits,
+} from "@/lib/geocode/photonRank";
 
 export type GeocodeHit = {
   label: string;
   lat: number;
   lng: number;
   kind?: string;
+  name?: string;
 };
 
 /**
@@ -40,25 +45,39 @@ export async function GET(req: Request) {
   }
 
   try {
-    const photon = new URL("https://photon.komoot.io/api/");
-    photon.searchParams.set("q", q);
-    // Photon: default/en/de/fr. nl is not a Photon lang — use en.
-    photon.searchParams.set("lang", lang === "nl" ? "en" : lang);
-    photon.searchParams.set("limit", String(limit));
+    const photonLang = lang === "nl" ? "en" : lang;
     // DACH bias (override with lat/lon near user)
     const biasLat = url.searchParams.get("lat") ?? "48.0";
     const biasLon =
       url.searchParams.get("lon") ?? url.searchParams.get("lng") ?? "10.0";
-    photon.searchParams.set("lat", biasLat);
-    photon.searchParams.set("lon", biasLon);
 
-    const res = await fetch(photon.toString(), {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
-      },
-      next: { revalidate: 3600 },
-    });
+    const photonUrl = (osmTag?: string) => {
+      const photon = new URL("https://photon.komoot.io/api/");
+      photon.searchParams.set("q", q);
+      // Photon: default/en/de/fr. nl is not a Photon lang — use en.
+      photon.searchParams.set("lang", photonLang);
+      photon.searchParams.set("limit", String(Math.min(8, limit + 3)));
+      photon.searchParams.set("lat", biasLat);
+      photon.searchParams.set("lon", biasLon);
+      if (osmTag) photon.searchParams.set("osm_tag", osmTag);
+      return photon.toString();
+    };
+
+    const photonHeaders = {
+      Accept: "application/json",
+      "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
+    } as const;
+
+    const [res, placeRes] = await Promise.all([
+      fetch(photonUrl(), {
+        headers: photonHeaders,
+        next: { revalidate: 3600 },
+      }),
+      fetch(photonUrl("place"), {
+        headers: photonHeaders,
+        next: { revalidate: 3600 },
+      }).catch(() => null),
+    ]);
 
     if (!res.ok) {
       const { fetchGoogleGeocode } = await import("@/lib/coverage/google");
@@ -93,38 +112,54 @@ export async function GET(req: Request) {
       );
     }
 
-    const data = (await res.json()) as {
-      features?: Array<{
-        geometry?: { coordinates?: number[] };
-        properties?: Record<string, unknown>;
-      }>;
+    type PhotonFeature = {
+      geometry?: { coordinates?: number[] };
+      properties?: Record<string, unknown>;
+    };
+    const parseHits = (data: { features?: PhotonFeature[] }): GeocodeHit[] => {
+      const hits: GeocodeHit[] = [];
+      for (const f of data.features ?? []) {
+        const coords = f.geometry?.coordinates;
+        if (!coords || coords.length < 2) continue;
+        const p = f.properties ?? {};
+        const name = typeof p.name === "string" ? p.name.trim() : "";
+        const parts = [
+          name,
+          p.street,
+          p.housenumber,
+          p.postcode,
+          p.city ?? p.town ?? p.village ?? p.county,
+          p.state,
+          p.country,
+        ]
+          .map((x) => (typeof x === "string" ? x.trim() : ""))
+          .filter(Boolean);
+        const label = [...new Set(parts)].join(", ");
+        if (!label) continue;
+        hits.push({
+          label,
+          lng: coords[0],
+          lat: coords[1],
+          kind: typeof p.type === "string" ? p.type : undefined,
+          ...(name ? { name } : {}),
+        });
+      }
+      return hits;
     };
 
-    const hits: GeocodeHit[] = [];
-    for (const f of data.features ?? []) {
-      const coords = f.geometry?.coordinates;
-      if (!coords || coords.length < 2) continue;
-      const p = f.properties ?? {};
-      const parts = [
-        p.name,
-        p.street,
-        p.housenumber,
-        p.postcode,
-        p.city ?? p.town ?? p.village ?? p.county,
-        p.state,
-        p.country,
-      ]
-        .map((x) => (typeof x === "string" ? x.trim() : ""))
-        .filter(Boolean);
-      const label = [...new Set(parts)].join(", ");
-      if (!label) continue;
-      hits.push({
-        label,
-        lng: coords[0],
-        lat: coords[1],
-        kind: typeof p.type === "string" ? p.type : undefined,
-      });
+    const data = (await res.json()) as { features?: PhotonFeature[] };
+    let hits = parseHits(data);
+    if (placeRes?.ok) {
+      try {
+        const placeData = (await placeRes.json()) as {
+          features?: PhotonFeature[];
+        };
+        hits = [...parseHits(placeData), ...hits];
+      } catch {
+        /* keep default hits */
+      }
     }
+    hits = rankGeocodeHits(q, dedupeGeocodeHits(hits)).slice(0, limit);
 
     if (hits.length > 0) {
       return NextResponse.json({

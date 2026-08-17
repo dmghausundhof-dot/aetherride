@@ -15,6 +15,11 @@ import '../../data/garage/bike_photo_sync.dart';
 import '../../data/import/gpx_import.dart';
 import '../../data/local/app_database.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../domain/ble.dart';
+import '../../domain/ble/bike_ble_kind.dart';
+import '../../domain/ble/ble_link_status.dart';
+import '../../domain/ble/garage_ble_live.dart';
+import '../../domain/hud_bike_peek.dart';
 import '../../data/shop/garage_bike_shopify.dart';
 import '../../domain/bike.dart';
 import '../../domain/bike_assist.dart';
@@ -98,6 +103,7 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
             WerkstattCscBarButton(
               bikeId: focused.id,
               isEbike: focused.isEbike,
+              wheelSize: focused.wheelSize,
             ),
           if (garageList.isNotEmpty)
             IconButton(
@@ -164,8 +170,7 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
                           components: comps,
                           due: due,
                           compact: true,
-                          onOpenDetail: () =>
-                              _openDetail(context, ref, active),
+                          onOpenDetail: () => _openDetail(context, ref, active),
                           onInstallSlot: (slot) => _installOnBike(
                             context,
                             ref,
@@ -180,6 +185,12 @@ class _GarageScreenState extends ConsumerState<GarageScreen> {
                             existing: c,
                           ),
                           sensorChild: _BleSensorTile(
+                            bikeId: active.id,
+                            isEbike: active.hasElectricAssist,
+                            wheelSize: active.wheelSize,
+                          ),
+                          onPairSensor: () => showBlePairSheet(
+                            context,
                             bikeId: active.id,
                             isEbike: active.hasElectricAssist,
                           ),
@@ -1802,7 +1813,11 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
         title: Text(bike.name),
         actionsPadding: const EdgeInsets.only(right: AppSpacing.m),
         actions: [
-          WerkstattCscBarButton(bikeId: bike.id, isEbike: bike.isEbike),
+          WerkstattCscBarButton(
+            bikeId: bike.id,
+            isEbike: bike.isEbike,
+            wheelSize: bike.wheelSize,
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (v) {
@@ -1832,6 +1847,12 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
             onInstallSlot: (slot) => _installComponent(initialSlot: slot),
             onEditComponent: (c) => _installComponent(existing: c),
             sensorChild: _BleSensorTile(
+              bikeId: bike.id,
+              isEbike: bike.hasElectricAssist,
+              wheelSize: bike.wheelSize,
+            ),
+            onPairSensor: () => showBlePairSheet(
+              context,
               bikeId: bike.id,
               isEbike: bike.hasElectricAssist,
             ),
@@ -1961,9 +1982,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                             title: Text(
                               l10n.garageGroupCount(
                                 l10n.componentGroupLabel(g),
-                                listed
-                                    .where((c) => c.slot.group == g)
-                                    .length,
+                                listed.where((c) => c.slot.group == g).length,
                               ),
                               style: const TextStyle(
                                 fontSize: 14,
@@ -2033,8 +2052,7 @@ class _BikeDetailSheetState extends ConsumerState<_BikeDetailSheet> {
                           ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    for (final a in due.take(5))
-                      _MaintenanceBarRow(alert: a),
+                    for (final a in due.take(5)) _MaintenanceBarRow(alert: a),
                   ],
                 ],
                 if (_tab == _DetailTab.setup) ...[
@@ -3949,7 +3967,8 @@ class _AttrChipField extends StatelessWidget {
                 labelStyle: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: value == o ? AppColors.onAccent : AppColors.chipIdleText,
+                  color:
+                      value == o ? AppColors.onAccent : AppColors.chipIdleText,
                 ),
                 backgroundColor: AppColors.chipIdle,
                 side: BorderSide(
@@ -4063,10 +4082,12 @@ class _BleSensorTile extends ConsumerStatefulWidget {
   const _BleSensorTile({
     required this.bikeId,
     this.isEbike = false,
+    this.wheelSize,
   });
 
   final String bikeId;
   final bool isEbike;
+  final WheelSize? wheelSize;
 
   @override
   ConsumerState<_BleSensorTile> createState() => _BleSensorTileState();
@@ -4076,15 +4097,39 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
   BikeBleBinding _binding = const BikeBleBinding();
   bool _busy = false;
   String? _status;
-  StreamSubscription<dynamic>? _liveSub;
+  BoschLiveData? _data;
+  bool _hasCrank = false;
+  StreamSubscription<BoschLiveData>? _liveSub;
+  bool _waking = false;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_reload());
-    _liveSub = ref.read(bleCoreProvider).liveData.listen((_) {
-      if (mounted) setState(() {});
+    unawaited(_reload(wake: true));
+    _liveSub = ref.read(bleCoreProvider).liveData.listen((d) {
+      if (!mounted) return;
+      setState(() {
+        _data = d;
+        _hasCrank = HudBikePeek.crankLive(
+          bikeConnected: ref.read(bleCoreProvider).hasWheelLive,
+          previouslySeen: _hasCrank,
+          cadenceRpm: d.cadenceRpm,
+        );
+      });
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant _BleSensorTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bikeId != widget.bikeId) {
+      _hasCrank = false;
+      _data = null;
+      unawaited(_reload(wake: true));
+    } else if (oldWidget.wheelSize != widget.wheelSize) {
+      ref.read(bleCoreProvider).wheelCircumferenceM =
+          wheelCircumferenceM(widget.wheelSize);
+    }
   }
 
   @override
@@ -4093,17 +4138,58 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
     super.dispose();
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload({bool wake = false}) async {
     final b =
         await ref.read(bikeBleStoreProvider).bindingForBike(widget.bikeId);
     if (mounted) setState(() => _binding = b);
+    if (wake) unawaited(_wakeSaved());
   }
 
   bool get _live {
     final ble = ref.read(bleCoreProvider);
-    if (!ble.hasBikeLiveMetrics) return false;
-    return ble.isRemoteLive(_binding.wheel?.deviceId) ||
-        ble.isRemoteLive(_binding.drive?.deviceId);
+    return ble.isBindingLive(
+      wheelId: _binding.wheel?.deviceId,
+      driveId: _binding.drive?.deviceId,
+      driveKind: _binding.drive?.kind,
+    );
+  }
+
+  Future<void> _wakeSaved() async {
+    if (_waking || _binding.isEmpty) return;
+    final ble = ref.read(bleCoreProvider);
+    if (ble.isBikeScanning) return;
+    final plan = garageBleWakePlan(_binding);
+    final wheelId = plan.wheelId;
+    final needWheel = wheelId != null && !ble.isRemoteLive(wheelId);
+    final driveId = _binding.drive?.deviceId;
+    final needLdi = plan.startLdi &&
+        driveId != null &&
+        driveId.isNotEmpty &&
+        !ble.isRemoteLive(driveId);
+    if (!needWheel && !needLdi) return;
+    _waking = true;
+    ble.wheelCircumferenceM = wheelCircumferenceM(widget.wheelSize);
+    try {
+      if (needWheel && wheelId != null) {
+        await ble.connect(
+          deviceId: wheelId,
+          scanIfMissing: false,
+          tryLdi: false,
+          kindHint: plan.wheelKind,
+        );
+      }
+      if (needLdi && mounted && driveId != null) {
+        await ble.attachSavedDrive(
+          deviceId: driveId,
+          kindHint: bikeBleKindFromStorage(_binding.drive?.kind),
+        );
+      }
+    } catch (e) {
+      debugPrint('garage ble wake: $e');
+    } finally {
+      _waking = false;
+      if (mounted) setState(() {});
+    }
   }
 
   Future<void> _pair() async {
@@ -4122,6 +4208,7 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
+        ble.wheelCircumferenceM = wheelCircumferenceM(widget.wheelSize);
         final name = ble.connectedDeviceName ??
             _binding.wheel?.name ??
             _binding.drive?.name;
@@ -4165,89 +4252,167 @@ class _BleSensorTileState extends ConsumerState<_BleSensorTile> {
     }
     await _reload();
     if (mounted) {
-      setState(() => _status = AppLocalizations.of(context).garageBleRemoved);
+      setState(() {
+        _status = AppLocalizations.of(context).garageBleRemoved;
+        _data = null;
+        _hasCrank = false;
+      });
     }
+  }
+
+  Future<void> _onTap() async {
+    if (_busy) return;
+    if (_binding.isEmpty) {
+      await _pair();
+      return;
+    }
+    final choice = await showBikeBleManageSheet(
+      context,
+      hasWheel: _binding.wheel != null,
+      hasDrive: _binding.drive != null,
+      wheelName: bleWheelDisplayName(storedName: _binding.wheel?.name),
+      driveName: bleDriveDisplayName(
+        storedName: _binding.drive?.name,
+        deviceId: _binding.drive?.deviceId,
+      ),
+    );
+    if (!mounted) return;
+    await _applyManage(choice);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final names = [
-      _binding.drive?.name?.trim(),
-      _binding.wheel?.name?.trim(),
-    ].whereType<String>().where((n) => n.isNotEmpty).toList();
-    final line = _binding.isEmpty
-        ? l10n.dieBoxCscHint
-        : (names.isEmpty ? l10n.garageBlePaired : names.join(' · '));
-    final hint = _binding.isEmpty && widget.isEbike
-        ? l10n.garageBleHintEbike
-        : (!_binding.isEmpty && !_live ? l10n.bleTooltipSaved : null);
+      if (_binding.drive != null)
+        bleDriveDisplayName(
+          storedName: _binding.drive?.name,
+          deviceId: _binding.drive?.deviceId,
+        ),
+      if (_binding.wheel != null)
+        bleWheelDisplayName(storedName: _binding.wheel?.name),
+    ];
     final live = _live;
+    final data = _data;
+    final chips = data == null
+        ? const <String>[]
+        : garageBleLiveChipsFromData(
+            live: live,
+            hasCrank: _hasCrank,
+            data: data,
+          );
+    final spin = garageBleShowSpinHint(live: live, chips: chips);
+    final line = _binding.isEmpty
+        ? l10n.bleLinkEmpty
+        : (names.isEmpty
+            ? l10n.garageBlePaired
+            : live
+                ? l10n.bleLinkLiveNamed(names.join(' · '))
+                : l10n.bleLinkSavedNamed(names.join(' · ')));
+    final honesty = garageBleShowBatteryHonesty(
+      isEbike: widget.isEbike,
+      hasBinding: !_binding.isEmpty,
+      batterySocPercent: data?.batterySocPercent,
+    );
+    final hint = _binding.isEmpty
+        ? l10n.garageBleHintFor(isEbike: widget.isEbike)
+        : spin
+            ? l10n.garageBleLiveWaiting
+            : honesty
+                ? l10n.dieBoxBatteryHint
+                : (!live ? l10n.bleTooltipSaved : null);
 
-    return InkWell(
-      onTap: _busy ? null : () => unawaited(_pair()),
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
-        child: Row(
-          children: [
-            Icon(
-              Icons.bluetooth,
-              size: 18,
-              color: live ? AppColors.chrome : AppColors.muted,
-            ),
-            const SizedBox(width: AppSpacing.s),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    line,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (hint != null)
+    return Semantics(
+      button: true,
+      label: [
+        line,
+        if (chips.isNotEmpty) chips.join(', '),
+        if (hint != null) hint,
+      ].join('. '),
+      child: InkWell(
+        onTap: _busy ? null : () => unawaited(_onTap()),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+          child: Row(
+            children: [
+              Icon(
+                Icons.bluetooth,
+                size: 18,
+                color: live ? AppColors.chrome : AppColors.muted,
+              ),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      hint,
+                      line,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         color: AppColors.muted,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  if (_status != null)
-                    Text(
-                      _status!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted,
+                    if (chips.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        chips.join(' · '),
+                        key: const Key('garage-ble-live'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
-                ],
+                    ],
+                    if (hint != null)
+                      Text(
+                        hint,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    if (_status != null)
+                      Text(
+                        _status!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            if (_busy)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (!_binding.isEmpty)
-              TextButton(
-                onPressed: () async {
-                  final choice = await showBikeBleManageSheet(
-                    context,
-                    hasWheel: _binding.wheel != null,
-                    hasDrive: _binding.drive != null,
-                  );
-                  if (!mounted) return;
-                  await _applyManage(choice);
-                },
-                child: Text(l10n.remove),
-              ),
-          ],
+              if (_busy)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (!_binding.isEmpty)
+                TextButton(
+                  onPressed: () async {
+                    final choice = await showBikeBleManageSheet(
+                      context,
+                      hasWheel: _binding.wheel != null,
+                      hasDrive: _binding.drive != null,
+                      wheelName: bleWheelDisplayName(
+                        storedName: _binding.wheel?.name,
+                      ),
+                      driveName: bleDriveDisplayName(
+                        storedName: _binding.drive?.name,
+                        deviceId: _binding.drive?.deviceId,
+                      ),
+                    );
+                    if (!mounted) return;
+                    await _applyManage(choice);
+                  },
+                  child: Text(l10n.remove),
+                ),
+            ],
+          ),
         ),
       ),
     );

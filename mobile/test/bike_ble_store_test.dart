@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:aetherride_mobile/data/sensor/bike_ble_store.dart';
+import 'package:aetherride_mobile/domain/ble.dart';
 import 'package:aetherride_mobile/domain/ble/bike_ble_kind.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -81,6 +82,34 @@ void main() {
       drive: BikeBleDevice(deviceId: 'D', kind: 'bosch'),
     );
     expect(rideBlePreferredTarget(driveOnly).deviceId, isNull);
+  });
+
+  test('garage wake reconnects CSC and offers Bosch LDI', () {
+    const both = BikeBleBinding(
+      wheel: BikeBleDevice(deviceId: 'W', kind: 'csc'),
+      drive: BikeBleDevice(deviceId: boschLdiAccessoryId, kind: 'bosch'),
+    );
+    final bothPlan = garageBleWakePlan(both);
+    expect(bothPlan.wheelId, 'W');
+    expect(bothPlan.wheelKind, BikeBleKind.csc);
+    expect(bothPlan.startLdi, isTrue);
+
+    const cscOnly = BikeBleBinding(
+      wheel: BikeBleDevice(deviceId: 'W', kind: 'csc'),
+    );
+    expect(garageBleWakePlan(cscOnly).startLdi, isFalse);
+    expect(garageBleWakePlan(cscOnly).wheelId, 'W');
+
+    const driveOnly = BikeBleBinding(
+      drive: BikeBleDevice(deviceId: boschLdiAccessoryId, kind: 'bosch'),
+    );
+    expect(garageBleWakePlan(driveOnly).wheelId, isNull);
+    expect(garageBleWakePlan(driveOnly).startLdi, isTrue);
+
+    const shimano = BikeBleBinding(
+      drive: BikeBleDevice(deviceId: 'SH-1', kind: 'shimano'),
+    );
+    expect(garageBleWakePlan(shimano).startLdi, isFalse);
   });
 
   test('watch is rider kit, not stored on the bike', () async {

@@ -2791,7 +2791,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get watchNoDeviceId => 'Connected, but no device ID';
 
   @override
-  String get bleBikeTitle => 'Pair bike';
+  String get bleBikeTitle => 'Connect';
+
+  @override
+  String get blePairLeadAny => 'Tap a display, motor or sensor.';
+
+  @override
+  String get bleFlowRowName => 'Bosch';
+
+  @override
+  String get bleFlowRowKind => 'Flow';
 
   @override
   String get bleBikeHint =>
@@ -2835,6 +2844,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pair the bike sensor here. The watch stays with you when you ride.';
 
   @override
+  String get dieBoxPairCscTitle => 'Pair a speed sensor';
+
+  @override
+  String get dieBoxPairCscHint =>
+      'STEPS only remembers the name. Speed comes from the sensor on the wheel.';
+
+  @override
+  String get dieBoxPairCscCta => 'Pair';
+
+  @override
   String get dieBoxEmptyHint =>
       'Nothing logged yet. Name and type are enough — parts only if they’re really on the bike.';
 
@@ -2846,7 +2865,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dieBoxBatteryHint =>
-      'Charge appears once a sensor on the bike pairs. No number until then.';
+      'Charge comes from Intuvia or the drive, not the wheel sensor. No number until then.';
 
   @override
   String get dieBoxPressureTitle => 'Log pressure';
@@ -3667,7 +3686,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Bosch, Shimano STEPS or CSC. Turn the display on.';
 
   @override
-  String get garageBleHintSensor => 'Sensor on the bike, not on the rider.';
+  String get garageBleHintSensor =>
+      'Magnet or crank, hold close — not the watch.';
+
+  @override
+  String get garageBleLiveWaiting => 'Spin the wheel — speed shows up here.';
 
   @override
   String get discoverRefresh => 'Refresh';
@@ -5903,7 +5926,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connection refused — close Bosch Flow / Shimano E-TUBE, display on, hold close.';
 
   @override
-  String get bleLdiPairCta => 'Bosch LDI — add in Flow';
+  String get bleLdiPairCta => 'Via Flow';
 
   @override
   String get bleLdiPairHint =>
@@ -6164,13 +6187,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bleRemoveWheel => 'Remove wheel sensor';
 
   @override
-  String get bleRemoveDrive => 'Remove drive';
+  String get bleRemoveDrive => 'Remove Intuvia';
 
   @override
-  String get bleSemanticsLive => 'Bluetooth live';
+  String bleRemoveDriveNamed(String name) {
+    return 'Remove Intuvia ($name)';
+  }
 
   @override
-  String get bleTooltipSaved => 'Paired, not connected';
+  String bleRemoveWheelNamed(String name) {
+    return 'Remove speed sensor ($name)';
+  }
+
+  @override
+  String get bleSemanticsLive => 'Intuvia live';
+
+  @override
+  String get bleTooltipSaved => 'Saved, not live';
+
+  @override
+  String bleLinkLiveNamed(String name) {
+    return '$name · live';
+  }
+
+  @override
+  String bleLinkSavedNamed(String name) {
+    return '$name · saved, not live';
+  }
+
+  @override
+  String get bleLinkEmpty => 'Pair Intuvia or a speed sensor';
+
+  @override
+  String get bleLdiWizardTitle => 'Bosch Intuvia';
+
+  @override
+  String get bleLdiWizardLead =>
+      'Three steps. FlowLine becomes visible to the display.';
+
+  @override
+  String get bleLdiStep1 => 'Turn Intuvia 100 on, phone close';
+
+  @override
+  String get bleLdiStep2 => 'Bosch Flow: Settings → Components → FlowLine';
+
+  @override
+  String get bleLdiStep3 => 'Confirm on the display';
+
+  @override
+  String get bleLdiWizardWaitingHint =>
+      'Now tap “FlowLine” in Flow. The display will ask.';
+
+  @override
+  String get bleLdiWizardRetry => 'Try again';
+
+  @override
+  String get rideLdiWaiting => 'Waiting for Intuvia — add FlowLine in Flow';
 
   @override
   String get watchOtherWatch => 'Another watch';

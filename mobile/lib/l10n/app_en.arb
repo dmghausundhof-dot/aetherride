@@ -1475,7 +1475,10 @@
   "watchEmptyHint": "Broadcast on, phone close. Apple Watch does not send standard HR.",
   "watchNoHr": "No heart-rate signal — check broadcast on the watch.",
   "watchNoDeviceId": "Connected, but no device ID",
-  "bleBikeTitle": "Pair bike",
+  "bleBikeTitle": "Connect",
+  "blePairLeadAny": "Tap a display, motor or sensor.",
+  "bleFlowRowName": "Bosch",
+  "bleFlowRowKind": "Flow",
   "bleBikeHint": "Battery and assist only with real GATT — nothing invented.",
   "bleRememberAnyway": "Remember anyway",
   "bleScanningDrive": "Looking for drive and sensors…",
@@ -1488,10 +1491,13 @@
   "dieBoxNothingDueMonday": "Monday-ready — lights and chain are set.",
   "dieBoxNothingDue": "Ready — nothing waiting.",
   "dieBoxCscHint": "Pair the bike sensor here. The watch stays with you when you ride.",
+  "dieBoxPairCscTitle": "Pair a speed sensor",
+  "dieBoxPairCscHint": "STEPS only remembers the name. Speed comes from the sensor on the wheel.",
+  "dieBoxPairCscCta": "Pair",
   "dieBoxEmptyHint": "Nothing logged yet. Name and type are enough — parts only if they’re really on the bike.",
   "dieBoxAddSomething": "Log something",
   "dieBoxAddMore": "Log more",
-  "dieBoxBatteryHint": "Charge appears once a sensor on the bike pairs. No number until then.",
+  "dieBoxBatteryHint": "Charge comes from Intuvia or the drive, not the wheel sensor. No number until then.",
   "dieBoxPressureTitle": "Log pressure",
   "dieBoxPressureHint": "Read front and rear at the valve.",
   "dieBoxPressureFront": "Front",
@@ -1968,7 +1974,8 @@
   "garageBleRemoved": "Sensor removed",
   "garageBleDisconnected": "Bluetooth not connected",
   "garageBleHintEbike": "Bosch, Shimano STEPS or CSC. Turn the display on.",
-  "garageBleHintSensor": "Sensor on the bike, not on the rider.",
+  "garageBleHintSensor": "Magnet or crank, hold close — not the watch.",
+  "garageBleLiveWaiting": "Spin the wheel — speed shows up here.",
   "discoverRefresh": "Refresh",
   "discoverChangePlace": "Change place",
   "discoverSuggestDuration": "Suggest duration",
@@ -3233,7 +3240,7 @@
   "bleGattRejectedBosch": "Connection refused — close Bosch Flow, display on, 10–20 cm.",
   "bleGattRejectedShimano": "Connection refused — close E-TUBE, display on, hold close.",
   "bleGattRejectedGeneric": "Connection refused — close Bosch Flow / Shimano E-TUBE, display on, hold close.",
-  "bleLdiPairCta": "Bosch LDI — add in Flow",
+  "bleLdiPairCta": "Via Flow",
   "bleLdiPairHint": "Bike on, open Flow → Settings → Components → Add device. Confirm on the display. Control unit firmware 19+.",
   "bleLdiTimeout": "No LDI link. Firmware ≥19? Add FlowLine again under Components in Flow.",
   "bleLdiWaitingFlow": "Waiting for the bike — add “FlowLine” in Flow.",
@@ -3397,9 +3404,50 @@
   "bleSemanticsPair": "Pair Bluetooth",
   "bleTooltipPair": "Pair drive or sensor",
   "bleRemoveWheel": "Remove wheel sensor",
-  "bleRemoveDrive": "Remove drive",
-  "bleSemanticsLive": "Bluetooth live",
-  "bleTooltipSaved": "Paired, not connected",
+  "bleRemoveDrive": "Remove Intuvia",
+  "bleRemoveDriveNamed": "Remove Intuvia ({name})",
+  "@bleRemoveDriveNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bleRemoveWheelNamed": "Remove speed sensor ({name})",
+  "@bleRemoveWheelNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bleSemanticsLive": "Intuvia live",
+  "bleTooltipSaved": "Saved, not live",
+  "bleLinkLiveNamed": "{name} · live",
+  "@bleLinkLiveNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bleLinkSavedNamed": "{name} · saved, not live",
+  "@bleLinkSavedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "bleLinkEmpty": "Pair Intuvia or a speed sensor",
+  "bleLdiWizardTitle": "Bosch Intuvia",
+  "bleLdiWizardLead": "Three steps. FlowLine becomes visible to the display.",
+  "bleLdiStep1": "Turn Intuvia 100 on, phone close",
+  "bleLdiStep2": "Bosch Flow: Settings → Components → FlowLine",
+  "bleLdiStep3": "Confirm on the display",
+  "bleLdiWizardWaitingHint": "Now tap “FlowLine” in Flow. The display will ask.",
+  "bleLdiWizardRetry": "Try again",
+  "rideLdiWaiting": "Waiting for Intuvia — add FlowLine in Flow",
   "watchOtherWatch": "Another watch",
   "bikeCatMtbTrail": "MTB trail",
   "bikeCatMtb": "MTB",

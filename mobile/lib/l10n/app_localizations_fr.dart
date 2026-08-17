@@ -2143,10 +2143,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileWatchIdle => 'Keine Uhr gekoppelt — Garmin, Polar, Wahoo.';
 
   @override
-  String get profileBikeBleTitle => 'Rad / Bosch LDI';
+  String get profileBikeBleTitle => 'Rad / Intuvia';
 
   @override
-  String get profileBikeBleIdle => 'Display, Motor oder CSC am aktiven Rad.';
+  String get profileBikeBleIdle => 'Intuvia oder Tempo-Sensor am aktiven Rad.';
 
   @override
   String get profileBikeBleNeedBike =>
@@ -2819,6 +2819,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bleBikeTitle => 'Appairer le vélo';
 
   @override
+  String get blePairLeadAny => 'Display, Motor oder Sensor tippen.';
+
+  @override
+  String get bleFlowRowName => 'Bosch';
+
+  @override
+  String get bleFlowRowKind => 'Flow';
+
+  @override
   String get bleBikeHint =>
       'Batterie et assist seulement avec un vrai GATT — rien inventer.';
 
@@ -2860,6 +2869,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Couple le capteur du vélo ici. La montre reste sur toi en sortie.';
 
   @override
+  String get dieBoxPairCscTitle => 'Appairer un capteur de vitesse';
+
+  @override
+  String get dieBoxPairCscHint =>
+      'STEPS ne retient que le nom. L’allure vient du capteur sur la roue.';
+
+  @override
+  String get dieBoxPairCscCta => 'Appairer';
+
+  @override
   String get dieBoxEmptyHint =>
       'Rien d’inscrit. Nom et type suffisent — des pièces seulement si elles sont vraiment sur le vélo.';
 
@@ -2871,7 +2890,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dieBoxBatteryHint =>
-      'La charge apparaît dès qu’un capteur sur le vélo est couplé. Pas de chiffre avant.';
+      'La charge vient de l’Intuvia ou du moteur, pas du capteur de roue. Pas de chiffre avant.';
 
   @override
   String get dieBoxPressureTitle => 'Noter la pression';
@@ -3697,7 +3716,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Bosch, Shimano STEPS ou CSC. Allume le display.';
 
   @override
-  String get garageBleHintSensor => 'Capteur sur le vélo, pas sur le cycliste.';
+  String get garageBleHintSensor =>
+      'Aimant ou pédalier, tout près — pas la montre.';
+
+  @override
+  String get garageBleLiveWaiting =>
+      'Fais tourner la roue — l’allure apparaît ici.';
 
   @override
   String get discoverRefresh => 'Nouveau';
@@ -6220,10 +6244,61 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bleRemoveDrive => 'Retirer le moteur';
 
   @override
+  String bleRemoveDriveNamed(String name) {
+    return 'Intuvia entfernen ($name)';
+  }
+
+  @override
+  String bleRemoveWheelNamed(String name) {
+    return 'Tempo-Sensor entfernen ($name)';
+  }
+
+  @override
   String get bleSemanticsLive => 'Bluetooth en direct';
 
   @override
   String get bleTooltipSaved => 'Couplé, pas connecté';
+
+  @override
+  String bleLinkLiveNamed(String name) {
+    return '$name · live';
+  }
+
+  @override
+  String bleLinkSavedNamed(String name) {
+    return '$name · gemerkt, nicht live';
+  }
+
+  @override
+  String get bleLinkEmpty => 'Appairer Intuvia ou un capteur de vitesse';
+
+  @override
+  String get bleLdiWizardTitle => 'Bosch Intuvia';
+
+  @override
+  String get bleLdiWizardLead =>
+      'Drei Schritte. FlowLine wird für das Display sichtbar.';
+
+  @override
+  String get bleLdiStep1 => 'Intuvia 100 einschalten, Handy nah';
+
+  @override
+  String get bleLdiStep2 =>
+      'Bosch Flow: Einstellungen → Komponenten → FlowLine';
+
+  @override
+  String get bleLdiStep3 => 'Am Display bestätigen';
+
+  @override
+  String get bleLdiWizardWaitingHint =>
+      'Jetzt in Flow „FlowLine“ tippen. Das Display fragt nach.';
+
+  @override
+  String get bleLdiWizardRetry => 'Noch einmal versuchen';
+
+  @override
+  String get rideLdiWaiting =>
+      'Warte auf Intuvia — in Flow FlowLine hinzufügen';
 
   @override
   String get watchOtherWatch => 'Une autre montre';

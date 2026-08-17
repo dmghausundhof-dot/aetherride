@@ -169,7 +169,6 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ble = ref.read(bleCoreProvider);
-    if (!widget.compact) return const SizedBox.shrink();
     if (widget.compact) {
       if (ble.isWatchConnected) return const SizedBox.shrink();
       return Align(
@@ -189,6 +188,10 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
           label: Text(l10n.hofWatchConnect),
         ),
       );
+    }
+
+    if (_saved == null && !ble.isWatchConnected) {
+      return const SizedBox.shrink();
     }
 
     final name = _saved?.name?.trim();

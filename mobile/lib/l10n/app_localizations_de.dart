@@ -235,11 +235,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get werkstattBatteryHonestHint =>
-      'Kein Prozent ohne gekoppelten Sensor. Bosch-SoC über LDI (Flow → Komponenten) oder Standard-GATT.';
+      'Kein Prozent ohne gekoppelten Sensor. Akku vom Intuvia über Flow → Komponenten → FlowLine.';
 
   @override
   String get werkstattSensorEbike =>
-      'Radsensor (CSC) — Tempo und Trittfrequenz. Akku-Stand nur mit echtem Sensor.';
+      'Tempo-Sensor — Tempo und Trittfrequenz. Akku nur mit echtem Display.';
 
   @override
   String get werkstattSensorAnalog =>
@@ -2137,10 +2137,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileWatchIdle => 'Keine Uhr gekoppelt — Garmin, Polar, Wahoo.';
 
   @override
-  String get profileBikeBleTitle => 'Rad / Bosch LDI';
+  String get profileBikeBleTitle => 'Rad / Intuvia';
 
   @override
-  String get profileBikeBleIdle => 'Display, Motor oder CSC am aktiven Rad.';
+  String get profileBikeBleIdle => 'Intuvia oder Tempo-Sensor am aktiven Rad.';
 
   @override
   String get profileBikeBleNeedBike =>
@@ -2808,25 +2808,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get watchNoDeviceId => 'Verbunden, aber ohne Geräte-ID';
 
   @override
-  String get bleBikeTitle => 'Rad koppeln';
+  String get bleBikeTitle => 'Verbinden';
+
+  @override
+  String get blePairLeadAny => 'Display, Motor oder Sensor tippen.';
+
+  @override
+  String get bleFlowRowName => 'Bosch';
+
+  @override
+  String get bleFlowRowKind => 'Flow';
 
   @override
   String get bleBikeHint =>
-      'Akku und Assist nur bei echtem GATT — nichts erfinden.';
+      'Akku nur vom Intuvia, Tempo vom Sensor am Rad — nichts erfinden.';
 
   @override
   String get bleRememberAnyway => 'Trotzdem merken';
 
   @override
-  String get bleScanningDrive => 'Suche Antrieb und Sensoren …';
+  String get bleScanningDrive => 'Suche …';
 
   @override
   String get bleEmptyEbike =>
-      'Display wecken, Flow oder E-TUBE zu, Handy nah halten.';
+      'Intuvia an, Flow nur zum Hinzufügen öffnen, Handy nah halten.';
 
   @override
   String get bleEmptySensor =>
-      'Sensor in die Nähe legen und am Rad aktivieren (Magnet/Kurbel).';
+      'Intuvia an, oder Sensor am Rad aktivieren (Magnet/Kurbel).';
 
   @override
   String get bleConnectFailed => 'Verbindung fehlgeschlagen';
@@ -2849,7 +2858,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dieBoxCscHint =>
-      'Tacho am Rad koppeln. Die Uhr bleibt beim Fahren.';
+      'Intuvia oder Tempo-Sensor koppeln. Die Uhr bleibt beim Fahren.';
+
+  @override
+  String get dieBoxPairCscTitle => 'Tempo-Sensor koppeln';
+
+  @override
+  String get dieBoxPairCscHint =>
+      'STEPS merkt nur den Namen. Tempo kommt vom Sensor am Rad.';
+
+  @override
+  String get dieBoxPairCscCta => 'Koppeln';
 
   @override
   String get dieBoxEmptyHint =>
@@ -2863,7 +2882,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dieBoxBatteryHint =>
-      'Akkustand erscheint, sobald ein Sensor am Rad koppelt. Bis dahin keine Zahl.';
+      'Akkustand kommt vom Intuvia oder vom Antrieb, nicht vom Tacho. Bis dahin keine Zahl.';
 
   @override
   String get dieBoxPressureTitle => 'Druck merken';
@@ -3680,10 +3699,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get garageBleHintEbike =>
-      'Bosch, Shimano STEPS oder CSC. Display einschalten.';
+      'Intuvia an. In Flow unter Komponenten FlowLine hinzufügen.';
 
   @override
-  String get garageBleHintSensor => 'Sensor am Rad, nicht am Fahrer.';
+  String get garageBleHintSensor =>
+      'Magnet oder Kurbel, nah an den Sensor — nicht die Uhr.';
+
+  @override
+  String get garageBleLiveWaiting => 'Rad drehen — Tempo erscheint hier.';
 
   @override
   String get discoverRefresh => 'Neu';
@@ -4898,8 +4921,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nearby/Bluetooth verweigert — GPS-Navigation läuft ohne Sensor.';
 
   @override
-  String get rideNoBikeSensor =>
-      'Kein Radsensor gefunden — GPS-Track läuft weiter.';
+  String get rideNoBikeSensor => 'Kein Tempo-Sensor — GPS-Track läuft weiter.';
 
   @override
   String get rideOfflineRerouteToast =>
@@ -5854,14 +5876,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get bleTipBosch =>
-      'Flow: Komponenten → FlowLine hinzufügen · Firmware ≥19';
+      'Intuvia an · in Flow unter Komponenten FlowLine hinzufügen';
 
   @override
   String get bleTipShimano =>
       'E-TUBE schließen · in 15 s nach Power/Taster tippen';
 
   @override
-  String get bleTipYamaha => 'e-Sync schließen · Tempo über CSC-Sensor';
+  String get bleTipYamaha => 'e-Sync schließen · Tempo über den Sensor am Rad';
 
   @override
   String get bleTipOtherDrive =>
@@ -5875,11 +5897,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get blePairLeadEbike =>
-      'Display an, Hersteller-App zu, Handy nah — dann antippen.';
+      'Intuvia an, Handy nah — dann in Flow FlowLine hinzufügen.';
 
   @override
   String get blePairLeadSensor =>
-      'Sensor am Rad wecken, nicht die Uhr am Handgelenk.';
+      'Intuvia an, oder Tempo-Sensor am Rad wecken — nicht die Uhr.';
 
   @override
   String get bleNoteSensorBrand => 'Sensor';
@@ -5890,7 +5912,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get bleNoteBoschLine =>
-      'SoC: Flow öffnen → Komponenten → FlowLine hinzufügen (Steuerung ≥19). CSC weiter über die Liste, Flow dabei zu.';
+      'Display an. In Flow: Einstellungen → Komponenten → FlowLine. Dann am Display bestätigen.';
 
   @override
   String get bleNoteShimanoLine =>
@@ -5898,11 +5920,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get bleNoteYamahaLine =>
-      'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über CSC-Sensor.';
+      'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über den Sensor am Rad.';
 
   @override
   String get bleNoteFazuaLine =>
-      'Remote an — CSC und Power wie ein normaler Sensor.';
+      'Remote an — Tempo und Leistung wie ein normaler Sensor.';
 
   @override
   String get bleNoteOtherBrand => 'Andere';
@@ -5935,30 +5957,30 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verbindung abgelehnt — Bosch Flow / Shimano E-TUBE schließen, Display an, nah halten.';
 
   @override
-  String get bleLdiPairCta => 'Bosch LDI — in Flow hinzufügen';
+  String get bleLdiPairCta => 'Über Flow';
 
   @override
   String get bleLdiPairHint =>
-      'Rad an, Flow öffnen → Einstellungen → Komponenten → Neues Gerät. Display bestätigt. Steuerungseinheit ab Version 19.';
+      'Drei Schritte: Display an, in Flow FlowLine hinzufügen, am Display bestätigen.';
 
   @override
   String get bleLdiTimeout =>
-      'Kein LDI-Link. Firmware ≥19? In Flow unter Komponenten erneut hinzufügen.';
+      'Kein Link. Display an und in der App erneut hinzufügen.';
 
   @override
-  String get bleLdiWaitingFlow =>
-      'Warten aufs Rad — in Flow „FlowLine“ hinzufügen.';
+  String get bleLdiWaitingFlow => 'Warten aufs Display …';
 
   @override
-  String get bleLdiNeedAndroid12 => 'Bosch LDI braucht Android 12 oder neuer.';
+  String get bleLdiNeedAndroid12 =>
+      'Die Intuvia-Verbindung braucht Android 12 oder neuer.';
 
   @override
   String get bleLdiIosPending =>
-      'Bosch LDI auf diesem Gerät noch nicht verdrahtet.';
+      'Die Intuvia-Verbindung ist auf diesem Gerät noch nicht verdrahtet.';
 
   @override
   String get bleGattTimeoutBosch =>
-      'Timeout — Display wecken. SoC über LDI in Flow, Tempo über CSC.';
+      'Timeout — Intuvia wecken. Akku über Flow, Tempo über den Sensor am Rad.';
 
   @override
   String get bleGattTimeoutShimano =>
@@ -5966,49 +5988,48 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get bleGattTimeoutDrive =>
-      'Timeout — Hersteller-App zu, Display an. Tempo über CSC-Sensor.';
+      'Timeout — Hersteller-App zu, Display an. Tempo über den Sensor am Rad.';
 
   @override
   String get bleGattTimeoutSensor => 'Timeout — Sensor wecken, näher rangehen.';
 
   @override
   String get bleDriveFailBosch =>
-      'Bosch ohne Live-SoC. In Flow unter Komponenten FlowLine hinzufügen, oder einen Radsensor (CSC) koppeln.';
+      'Intuvia erkannt, noch keine Live-Werte. In Flow unter Komponenten FlowLine hinzufügen.';
 
   @override
   String get bleDriveFailShimano =>
-      'Shimano erkannt, keine Live-Motorwerte. Als Nächstes einen Radsensor (CSC) koppeln.';
+      'Shimano erkannt, keine Live-Werte. Als Nächstes einen Tempo-Sensor koppeln.';
 
   @override
   String get bleDriveFailYamaha =>
-      'Yamaha erkannt, keine Live-Motorwerte. Tempo über CSC-Sensor koppeln.';
+      'Yamaha erkannt, keine Live-Werte. Tempo über den Sensor am Rad koppeln.';
 
   @override
   String get bleDriveFailGeneric =>
-      'Antrieb erkannt, keine Live-Motorwerte. Als Nächstes einen Radsensor (CSC) koppeln.';
+      'Antrieb erkannt, keine Live-Werte. Als Nächstes einen Tempo-Sensor koppeln.';
 
   @override
   String get bleStatusBtOff => 'Bluetooth aus';
 
   @override
-  String get bleStatusScanFailed => 'Radsensor-Suche fehlgeschlagen';
+  String get bleStatusScanFailed => 'Suche fehlgeschlagen';
 
   @override
-  String get bleStatusNoSensor => 'Kein Radsensor gefunden';
+  String get bleStatusNoSensor => 'Kein Tempo-Sensor gefunden';
 
   @override
-  String get bleStatusNoneInRange =>
-      'Kein Rad, Antrieb oder Sensor in Reichweite';
+  String get bleStatusNoneInRange => 'Kein Rad oder Sensor in Reichweite';
 
   @override
   String get bleStatusDriveSeen =>
-      'Antrieb gesehen — in der Werkstatt koppeln (Bosch/Shimano)';
+      'Intuvia gesehen — in der Werkstatt über Flow verbinden';
 
   @override
-  String get bleStatusNoCscInRange => 'Kein Radsensor in Reichweite';
+  String get bleStatusNoCscInRange => 'Kein Tempo-Sensor in Reichweite';
 
   @override
-  String get bleStatusSensorDisconnected => 'Radsensor getrennt';
+  String get bleStatusSensorDisconnected => 'Sensor getrennt';
 
   @override
   String get bleStatusReconnectLost =>
@@ -6031,12 +6052,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String bleStatusDriveNoLive(String who) {
-    return '$who · erkannt — Tempo über CSC, Akku nur mit Standard-GATT';
+    return '$who · erkannt — Tempo über den Sensor am Rad';
   }
 
   @override
   String get bleStatusNeedBond =>
-      'Display braucht Bluetooth-Kopplung für den Akku.';
+      'Display braucht eine Bluetooth-Bestätigung für den Akku.';
 
   @override
   String get bleStatusBonding => 'System-Kopplung …';
@@ -6195,16 +6216,67 @@ class AppLocalizationsDe extends AppLocalizations {
   String get bleTooltipPair => 'Antrieb oder Sensor koppeln';
 
   @override
-  String get bleRemoveWheel => 'Radsensor entfernen';
+  String get bleRemoveWheel => 'Tempo-Sensor entfernen';
 
   @override
   String get bleRemoveDrive => 'Antrieb entfernen';
 
   @override
-  String get bleSemanticsLive => 'Bluetooth live';
+  String bleRemoveDriveNamed(String name) {
+    return 'Intuvia entfernen ($name)';
+  }
 
   @override
-  String get bleTooltipSaved => 'Gekoppelt, nicht verbunden';
+  String bleRemoveWheelNamed(String name) {
+    return 'Tempo-Sensor entfernen ($name)';
+  }
+
+  @override
+  String get bleSemanticsLive => 'Verbunden';
+
+  @override
+  String get bleTooltipSaved => 'Gemerkt, nicht live';
+
+  @override
+  String bleLinkLiveNamed(String name) {
+    return '$name · live';
+  }
+
+  @override
+  String bleLinkSavedNamed(String name) {
+    return '$name · gemerkt, nicht live';
+  }
+
+  @override
+  String get bleLinkEmpty => 'Verbinden';
+
+  @override
+  String get bleLdiWizardTitle => 'Bosch Intuvia';
+
+  @override
+  String get bleLdiWizardLead =>
+      'Drei Schritte. FlowLine wird für das Display sichtbar.';
+
+  @override
+  String get bleLdiStep1 => 'Intuvia 100 einschalten, Handy nah';
+
+  @override
+  String get bleLdiStep2 =>
+      'Bosch Flow: Einstellungen → Komponenten → FlowLine';
+
+  @override
+  String get bleLdiStep3 => 'Am Display bestätigen';
+
+  @override
+  String get bleLdiWizardWaitingHint =>
+      'Jetzt in Flow „FlowLine“ tippen. Das Display fragt nach.';
+
+  @override
+  String get bleLdiWizardRetry => 'Noch einmal versuchen';
+
+  @override
+  String get rideLdiWaiting =>
+      'Warte auf Intuvia — in Flow FlowLine hinzufügen';
 
   @override
   String get watchOtherWatch => 'Andere Uhr';

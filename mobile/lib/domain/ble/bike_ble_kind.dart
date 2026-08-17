@@ -15,6 +15,7 @@ enum BikeBleCap {
   power,
   battery,
   heartRate,
+
   /// Identified proprietary drive (Bosch LDI / Shimano E-TUBE). Not decoded.
   proprietaryDrive,
 }
@@ -40,25 +41,23 @@ String bikeBleKindLabel(BikeBleKind kind) => switch (kind) {
 
 String bikeBleKindHint(BikeBleKind kind) => switch (kind) {
       BikeBleKind.bosch =>
-        'Smart System erkannt. SoC über LDI (Flow → Komponenten, Firmware ≥19) oder Standard-GATT — nichts erfinden.',
+        'Intuvia / Smart System. Akku und Tempo über FlowLine in Bosch Flow, nicht raten.',
       BikeBleKind.shimano =>
-        'STEPS / E-TUBE erkannt. Live-Daten nur, wenn das Display Standard-Services anbietet.',
+        'STEPS erkannt. Live-Daten nur, wenn das Display sie sendet.',
       BikeBleKind.yamaha =>
-        'Yamaha PW erkannt. Tempo/Kadenz über CSC, wenn das System sie sendet.',
-      BikeBleKind.csc => 'Tempo und Trittfrequenz (CSC 0x1816).',
-      BikeBleKind.power => 'Leistung (Cycling Power 0x1818).',
-      BikeBleKind.otherDrive =>
-        'E-Antrieb erkannt. Kein erfundenes SoC.',
+        'Yamaha PW erkannt. Tempo über den Sensor am Rad, wenn das System ihn sendet.',
+      BikeBleKind.csc => 'Tempo und Trittfrequenz vom Sensor am Rad.',
+      BikeBleKind.power => 'Leistung vom Powermeter.',
+      BikeBleKind.otherDrive => 'E-Antrieb erkannt. Kein erfundener Akku.',
     };
 
 /// One-line action on a scan row — how to connect, not capability legal copy.
 String bikeBleConnectTip(BikeBleKind kind) => switch (kind) {
       BikeBleKind.bosch =>
-        'Flow: Komponenten → FlowLine hinzufügen · Firmware ≥19',
+        'Intuvia an · in Flow unter Komponenten FlowLine hinzufügen',
       BikeBleKind.shimano =>
         'E-TUBE schließen · in 15 s nach Power/Taster tippen',
-      BikeBleKind.yamaha =>
-        'e-Sync schließen · Tempo über CSC-Sensor',
+      BikeBleKind.yamaha => 'e-Sync schließen · Tempo über den Sensor am Rad',
       BikeBleKind.otherDrive =>
         'Hersteller-App schließen · Display an, nah halten',
       BikeBleKind.csc => 'Sensor am Rad wecken, nah halten',
@@ -66,8 +65,8 @@ String bikeBleConnectTip(BikeBleKind kind) => switch (kind) {
     };
 
 String bikeBlePairLead({required bool isEbike}) => isEbike
-    ? 'Display an, Hersteller-App zu, Handy nah — dann antippen.'
-    : 'Sensor am Rad wecken, nicht die Uhr am Handgelenk.';
+    ? 'Intuvia an, Handy nah — dann in Flow FlowLine hinzufügen.'
+    : 'Intuvia an, oder Tempo-Sensor am Rad wecken — nicht die Uhr.';
 
 class BikeBleConnectNote {
   const BikeBleConnectNote({required this.brand, required this.line});
@@ -76,10 +75,15 @@ class BikeBleConnectNote {
   final String line;
 }
 
-/// Compact pairing notes for the sheet. Ebike: makers first, sensor last.
+/// Compact pairing notes. Intuvia first — that is the hardware we support live.
 List<BikeBleConnectNote> bikeBleConnectNotes({required bool isEbike}) {
   if (!isEbike) {
     return const [
+      BikeBleConnectNote(
+        brand: 'Intuvia',
+        line:
+            'Display an. In Flow: Komponenten → FlowLine, dann am Display bestätigen.',
+      ),
       BikeBleConnectNote(
         brand: 'Sensor',
         line: 'Magnet oder Kurbel, nah an den Sensor — nicht die Uhr.',
@@ -88,20 +92,23 @@ List<BikeBleConnectNote> bikeBleConnectNotes({required bool isEbike}) {
   }
   return const [
     BikeBleConnectNote(
-      brand: 'Bosch',
-      line: 'SoC: Flow öffnen → Komponenten → FlowLine hinzufügen (Steuerung ≥19). CSC weiter über die Liste.',
+      brand: 'Intuvia',
+      line:
+          'Display an. In Flow: Einstellungen → Komponenten → FlowLine. Dann am Display bestätigen.',
     ),
     BikeBleConnectNote(
       brand: 'Shimano',
-      line: 'E-TUBE schließen. Nach Power oder Taster oft nur 15 s — dann tippen.',
+      line:
+          'E-TUBE schließen. Nach Power oder Taster oft nur 15 s — dann tippen.',
     ),
     BikeBleConnectNote(
       brand: 'Yamaha / TQ',
-      line: 'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über CSC-Sensor.',
+      line:
+          'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über den Sensor am Rad.',
     ),
     BikeBleConnectNote(
       brand: 'Fazua',
-      line: 'Remote an — CSC und Power wie ein normaler Sensor.',
+      line: 'Remote an — Tempo und Leistung wie ein normaler Sensor.',
     ),
     BikeBleConnectNote(
       brand: 'Andere',
@@ -122,6 +129,7 @@ const kBoschNameHints = <String>[
   'kiox',
   'nyon',
   'purion',
+  'intuvia 100',
   'intuvia',
   'bes3',
 ];
@@ -130,7 +138,6 @@ const kShimanoNameHints = <String>[
   'shimano steps',
   'shimano',
   'steps e',
-  'steps',
   'e-tube',
   'etube',
   'sc-e6100',
@@ -138,24 +145,15 @@ const kShimanoNameHints = <String>[
   'sc-e8000',
   'sc-em800',
   'sc-en600',
-  'sc-e',
-  'sc-en',
-  'sc-em',
   'du-e8000',
   'du-ep800',
   'du-ep801',
   'du-ep600',
-  'du-e',
   'ep801',
-  'ep8',
-  'ep6',
   'ew-en100',
   'ew-en101',
-  'ew-en',
   'sm-btr1',
   'sm-btr2',
-  'sm-btr',
-  'sw-e',
 ];
 
 /// Android GATT_CONN_FAILED_ESTABLISHMENT — often Flow/E-TUBE already holding the link.
@@ -297,7 +295,11 @@ bool nameLooksLikeBosch(String platformName) {
 bool nameLooksLikeShimano(String platformName) {
   final n = platformName.trim().toLowerCase();
   if (n.isEmpty) return false;
-  return kShimanoNameHints.any(n.contains);
+  if (kShimanoNameHints.any(n.contains)) return true;
+  // Exact short motor names — not the substring "ep8" inside other words.
+  if (n == 'ep8' || n.startsWith('ep8 ')) return true;
+  if (n == 'ep6' || n.startsWith('ep6 ')) return true;
+  return false;
 }
 
 bool nameLooksLikeYamaha(String platformName) {
@@ -423,6 +425,20 @@ bool bikeBleKindIsDrive(BikeBleKind kind) => switch (kind) {
       BikeBleKind.csc || BikeBleKind.power => false,
     };
 
+/// STEPS / Yamaha / generic drive: identity only. Tempo needs a wheel CSC.
+/// Bosch LDI can stream speed without a separate sensor.
+bool bleDriveNeedsWheelSensor(BikeBleKind? kind) => switch (kind) {
+      BikeBleKind.shimano ||
+      BikeBleKind.yamaha ||
+      BikeBleKind.otherDrive =>
+        true,
+      BikeBleKind.bosch ||
+      BikeBleKind.csc ||
+      BikeBleKind.power ||
+      null =>
+        false,
+    };
+
 /// Identität darf gemerkt werden (Drive ohne GATT, opt-in „Trotzdem merken“).
 /// Das Pair-Sheet poppt damit NICHT — dafür [blePairSheetSuccess] / `ok`.
 bool blePairAccepted({
@@ -508,23 +524,43 @@ bool isTransientGattError(int? code) {
       code == kFbpConnectTimeoutCode;
 }
 
-String bleGattStatusHint(int? code) {
+String bleGattStatusHint(int? code, {BikeBleKind? kind}) {
   if (code == kGattConnFailedEstablishment) {
+    if (kind == BikeBleKind.shimano) {
+      return 'Verbindung abgelehnt — E-TUBE schließen, Display an, nah halten.';
+    }
+    if (kind == BikeBleKind.bosch) {
+      return 'Verbindung abgelehnt — Bosch Flow schließen, Display an, 10–20 cm.';
+    }
     return 'Verbindung abgelehnt — Bosch Flow / Shimano E-TUBE schließen, '
         'Display an, nah halten.';
   }
   if (code == kGattConnectionTimeout || code == kFbpConnectTimeoutCode) {
-    return 'Timeout — Display wecken, 15s-Fenster (Shimano), näher rangehen.';
+    if (kind == BikeBleKind.shimano) {
+      return 'Timeout — E-TUBE zu, in 15 s nach Power/Taster tippen.';
+    }
+    if (kind == BikeBleKind.bosch) {
+      return 'Timeout — Display wecken, Flow zu, nah halten. '
+          'Motorwerte nur mit CSC oder offiziellem LDI.';
+    }
+    if (kind != null && bikeBleKindIsDrive(kind)) {
+      return 'Timeout — Hersteller-App zu, Display an. Tempo über CSC-Sensor.';
+    }
+    if (kind == BikeBleKind.csc || kind == BikeBleKind.power) {
+      return 'Timeout — Sensor wecken, näher rangehen.';
+    }
+    return 'Timeout — Display wecken, näher rangehen.';
   }
   if (bleIsUntrustedDrop(code)) {
-    return 'Display braucht Bluetooth-Kopplung für den Akku.';
+    return 'Display braucht eine Bluetooth-Bestätigung für den Akku.';
   }
   return 'Verbindung fehlgeschlagen';
 }
 
 int? parseGattErrorCode(Object error) {
   if (error is int) return error;
-  final m = RegExp(r'(?:android-code|fbp-code|code):\s*(-?\d+)').firstMatch('$error');
+  final m =
+      RegExp(r'(?:android-code|fbp-code|code):\s*(-?\d+)').firstMatch('$error');
   return m == null ? null : int.tryParse(m.group(1)!);
 }
 

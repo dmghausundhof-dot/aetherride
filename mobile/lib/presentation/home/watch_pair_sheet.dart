@@ -33,7 +33,6 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
   List<WatchBleScanHit> _hits = const [];
   bool _scanning = false;
   bool _busy = false;
-  bool _guideOpen = false;
   String? _error;
   String? _pairingId;
   String? _pairStatus;
@@ -183,7 +182,7 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final height = MediaQuery.sizeOf(context).height * 0.78;
+    final height = MediaQuery.sizeOf(context).height * 0.52;
     return SafeArea(
       child: SizedBox(
         height: height,
@@ -203,21 +202,7 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
                       fontWeight: FontWeight.w800,
                     ),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                l10n.watchPairLeadText,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
-                      height: 1.35,
-                    ),
-              ),
               const SizedBox(height: AppSpacing.s),
-              _HowToConnect(
-                open: _hits.isEmpty || _guideOpen,
-                toggleable: _hits.isNotEmpty,
-                onToggle: () => setState(() => _guideOpen = !_guideOpen),
-              ),
-              const SizedBox(height: AppSpacing.m),
               if (_scanning || _busy || _pairingId != null)
                 const LinearProgressIndicator(minHeight: 2),
               if (_pairStatus != null) ...[
@@ -259,15 +244,6 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
                         ],
                       ),
               ),
-              const SizedBox(height: AppSpacing.s),
-              Text(
-                l10n.watchPairHint,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
-                      height: 1.35,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.s),
               Row(
                 children: [
                   TextButton(
@@ -290,114 +266,6 @@ class _WatchPairSheetState extends ConsumerState<WatchPairSheet> {
   }
 }
 
-class _HowToConnect extends StatelessWidget {
-  const _HowToConnect({
-    required this.open,
-    required this.toggleable,
-    required this.onToggle,
-  });
-
-  final bool open;
-  final bool toggleable;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final notes = AppLocalizations.of(context).watchConnectNotesFor();
-    return Material(
-      color: AppColors.chipIdle,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: toggleable ? onToggle : null,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.m,
-                vertical: AppSpacing.s,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.watch_outlined,
-                    size: 16,
-                    color: AppColors.chrome.withValues(alpha: 0.85),
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context).bleHowTo,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                  if (toggleable)
-                    Icon(
-                      open
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: AppColors.muted,
-                    ),
-                ],
-              ),
-            ),
-          ),
-          if (open) ...[
-            const Divider(height: 1, color: AppColors.border),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.m,
-                AppSpacing.s,
-                AppSpacing.m,
-                AppSpacing.m,
-              ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < notes.length; i++) ...[
-                    if (i > 0) const SizedBox(height: AppSpacing.s),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 108,
-                          child: Text(
-                            notes[i].brand,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                              color: AppColors.chrome,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            notes[i].line,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              height: 1.35,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 class _EmptyScan extends StatelessWidget {
   const _EmptyScan({required this.scanning});
@@ -408,37 +276,25 @@ class _EmptyScan extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              scanning ? Icons.bluetooth_searching : Icons.watch_off_outlined,
-              size: 36,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            scanning ? Icons.bluetooth_searching : Icons.watch_off_outlined,
+            size: 28,
+            color: AppColors.muted,
+          ),
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            scanning ? l10n.watchScanning : l10n.bleNothingFound,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
               color: AppColors.muted,
             ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              scanning ? l10n.watchScanning : l10n.bleNothingFound,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              l10n.watchEmptyHint,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                height: 1.4,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -462,14 +318,6 @@ class _HitTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final rssi = hit.rssi;
-    final bars = rssi >= -60
-        ? 3
-        : rssi >= -75
-            ? 2
-            : 1;
-    final blocked =
-        hit.honesty == WatchHonesty.appleUnsupported && !hit.hasHrService;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.s),
       child: Material(
@@ -479,83 +327,31 @@ class _HitTile extends StatelessWidget {
           onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.m),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s + 2,
+            ),
             child: Row(
               children: [
                 Icon(
                   Icons.watch_outlined,
-                  color: blocked ? AppColors.muted : AppColors.chrome,
+                  color: enabled ? AppColors.chrome : AppColors.muted,
                 ),
                 const SizedBox(width: AppSpacing.m),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.watchScanName(hit),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        [
-                          l10n.watchHonestyLabelFor(hit.honesty),
-                          '$rssi dBm',
-                        ].join(' · '),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n.watchConnectTipFor(hit.honesty),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.muted,
-                          height: 1.3,
-                        ),
-                      ),
-                      if (pairing && pairingLabel != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.bleStatusDetailFor(pairingLabel!),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    l10n.watchScanName(hit),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
                 if (pairing)
                   const SizedBox(
-                    width: 22,
-                    height: 22,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < 3; i++)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: Container(
-                            width: 3,
-                            height: 6.0 + i * 4,
-                            decoration: BoxDecoration(
-                              color: i < bars
-                                  ? AppColors.chrome
-                                  : AppColors.border,
-                              borderRadius: BorderRadius.circular(1),
-                            ),
-                          ),
-                        ),
-                    ],
                   ),
               ],
             ),

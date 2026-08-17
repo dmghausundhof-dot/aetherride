@@ -223,6 +223,7 @@ DieBoxPlan planDieBox({
   List<MaintenanceAlert> due = const [],
   List<Map<String, dynamic>> logs = const [],
   bool cscPaired = false,
+  bool driveNeedsWheelSensor = false,
 }) {
   final setup = planWerkstattSetup(bike: bike, components: components);
   final installed = components.where((c) => c.isInstalled).toList();
@@ -310,6 +311,17 @@ DieBoxPlan planDieBox({
       ),
     );
   }
+  // Identity-only drive (STEPS / Yamaha): next step is a wheel CSC, not a hero nag.
+  if (setup.hasElectricAssist && driveNeedsWheelSensor && !cscPaired) {
+    today.add(
+      const DieBoxTodayItem(
+        id: DieBoxItemId.pairCsc,
+        title: 'Tempo-Sensor koppeln',
+        hint: 'STEPS merkt nur den Namen. Tempo kommt vom Sensor am Rad.',
+        cta: 'Koppeln',
+      ),
+    );
+  }
   if (everyday && !hasLights) {
     today.add(
       const DieBoxTodayItem(
@@ -384,7 +396,8 @@ DieBoxPlan planDieBox({
       ),
     );
   }
-  // CSC pairing lives in the Werkstatt bar — never a Heute/primary CTA.
+  // CSC pairing lives in the Werkstatt bar — never a Heute/primary CTA
+  // except when a proprietary drive is saved and the wheel slot is empty.
   for (final a in due.take(4)) {
     final teachChain = a.slot == ComponentSlot.chain;
     today.add(
@@ -417,7 +430,8 @@ DieBoxPlan planDieBox({
         (t) =>
             t.id != DieBoxItemId.setActive &&
             t.id != DieBoxItemId.dueCare &&
-            t.id != DieBoxItemId.parkTrail,
+            t.id != DieBoxItemId.parkTrail &&
+            t.id != DieBoxItemId.pairCsc,
       )
       .length;
   final hasDue = today.any((t) => t.id == DieBoxItemId.dueCare);

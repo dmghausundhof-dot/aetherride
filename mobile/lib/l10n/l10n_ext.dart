@@ -300,7 +300,11 @@ extension AetherL10n on AppLocalizations {
           cta: dieBoxParkTrailCta,
         );
       case DieBoxItemId.pairCsc:
-        return item;
+        return item.copyWith(
+          title: dieBoxPairCscTitle,
+          hint: dieBoxPairCscHint,
+          cta: dieBoxPairCscCta,
+        );
     }
   }
 
@@ -790,6 +794,9 @@ extension AetherL10n on AppLocalizations {
   String blePairLeadFor({required bool isEbike}) =>
       isEbike ? blePairLeadEbike : blePairLeadSensor;
 
+  String garageBleHintFor({required bool isEbike}) =>
+      isEbike ? garageBleHintEbike : garageBleHintSensor;
+
   String bleScanName(BikeBleScanHit hit) {
     final n = hit.name.trim();
     return n.isEmpty ? bleKindLabel(hit.kind) : n;
@@ -798,15 +805,15 @@ extension AetherL10n on AppLocalizations {
   List<({String brand, String line})> bleConnectNotesFor({
     required bool isEbike,
   }) {
-    if (!isEbike) {
-      return [(brand: bleNoteSensorBrand, line: bleNoteSensorLine)];
-    }
     return [
-      (brand: 'Bosch', line: bleNoteBoschLine),
-      (brand: 'Shimano', line: bleNoteShimanoLine),
-      (brand: 'Yamaha / TQ', line: bleNoteYamahaLine),
-      (brand: 'Fazua', line: bleNoteFazuaLine),
-      (brand: bleNoteOtherBrand, line: bleNoteOtherLine),
+      (brand: 'Intuvia', line: bleNoteBoschLine),
+      if (isEbike) ...[
+        (brand: 'Shimano', line: bleNoteShimanoLine),
+        (brand: 'Yamaha / TQ', line: bleNoteYamahaLine),
+        (brand: 'Fazua', line: bleNoteFazuaLine),
+        (brand: bleNoteOtherBrand, line: bleNoteOtherLine),
+      ],
+      (brand: bleNoteSensorBrand, line: bleNoteSensorLine),
     ];
   }
 
@@ -858,12 +865,19 @@ extension AetherL10n on AppLocalizations {
       'ldi_timeout' => bleLdiTimeout,
       'Bluetooth aus' => bleStatusBtOff,
       'Radsensor-Suche fehlgeschlagen' => bleStatusScanFailed,
+      'Suche fehlgeschlagen' => bleStatusScanFailed,
       'Kein Radsensor gefunden' => bleStatusNoSensor,
+      'Kein Tempo-Sensor gefunden' => bleStatusNoSensor,
       'Kein Rad, Antrieb oder Sensor in Reichweite' => bleStatusNoneInRange,
+      'Kein Rad oder Sensor in Reichweite' => bleStatusNoneInRange,
       'Antrieb gesehen — in der Werkstatt koppeln (Bosch/Shimano)' =>
         bleStatusDriveSeen,
+      'Intuvia gesehen — in der Werkstatt über Flow verbinden' =>
+        bleStatusDriveSeen,
       'Kein Radsensor in Reichweite' => bleStatusNoCscInRange,
+      'Kein Tempo-Sensor in Reichweite' => bleStatusNoCscInRange,
       'Radsensor getrennt' => bleStatusSensorDisconnected,
+      'Sensor getrennt' => bleStatusSensorDisconnected,
       'Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, in der Werkstatt erneut koppeln.' =>
         bleStatusReconnectLost,
       'Verbindung abgelehnt — andere Fitness-App schließen, Uhr nah halten.' =>
@@ -884,8 +898,11 @@ extension AetherL10n on AppLocalizations {
       'Timeout — Hersteller-App zu, Display an. Tempo über CSC-Sensor.' =>
         bleGattTimeoutDrive,
       'Timeout — Sensor wecken, näher rangehen.' => bleGattTimeoutSensor,
+      'Timeout — Display wecken, näher rangehen.' => bleGattTimeoutSensor,
       'Verbindung fehlgeschlagen' => bleConnectFailed,
       'Display braucht Bluetooth-Kopplung für den Akku.' => bleStatusNeedBond,
+      'Display braucht eine Bluetooth-Bestätigung für den Akku.' =>
+        bleStatusNeedBond,
       'System-Kopplung …' => bleStatusBonding,
       'Uhr in der Liste wählen' => watchStatusPickFromList,
       'Uhr-Suche fehlgeschlagen' => watchStatusScanFailed,

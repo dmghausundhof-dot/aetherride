@@ -14,6 +14,23 @@ void main() {
       );
     });
 
+    test('Intuvia 100 is Bosch Smart System', () {
+      expect(
+        classifyBikeBle(
+          platformName: 'Intuvia 100',
+          advertisedServiceUuids: const [],
+        ),
+        BikeBleKind.bosch,
+      );
+      expect(
+        classifyBikeBle(
+          platformName: 'BOSCH Intuvia',
+          advertisedServiceUuids: const [],
+        ),
+        BikeBleKind.bosch,
+      );
+    });
+
     test('Bosch Kiox / Nyon / Purion names', () {
       expect(
         classifyBikeBle(
@@ -79,6 +96,13 @@ void main() {
         ),
         BikeBleKind.shimano,
       );
+      expect(
+        classifyBikeBle(
+          platformName: 'EP8',
+          advertisedServiceUuids: const [],
+        ),
+        BikeBleKind.shimano,
+      );
     });
 
     test('Shimano public component names', () {
@@ -104,6 +128,30 @@ void main() {
           reason: name,
         );
       }
+    });
+
+    test('short Shimano substrings do not steal other devices', () {
+      expect(
+        classifyBikeBle(
+          platformName: 'Footsteps',
+          advertisedServiceUuids: const [],
+        ),
+        isNull,
+      );
+      expect(
+        classifyBikeBle(
+          platformName: 'disc-e',
+          advertisedServiceUuids: const [],
+        ),
+        isNull,
+      );
+      expect(
+        classifyBikeBle(
+          platformName: 'Help8',
+          advertisedServiceUuids: const [],
+        ),
+        isNull,
+      );
     });
 
     test('CSC advertisement is a wheel sensor, not a watch', () {
@@ -197,6 +245,10 @@ void main() {
     expect(blePairGattRequired(BikeBleKind.power), isTrue);
     expect(blePairGattRequired(BikeBleKind.bosch), isFalse);
     expect(blePairGattRequired(BikeBleKind.shimano), isFalse);
+    expect(bleDriveNeedsWheelSensor(BikeBleKind.shimano), isTrue);
+    expect(bleDriveNeedsWheelSensor(BikeBleKind.yamaha), isTrue);
+    expect(bleDriveNeedsWheelSensor(BikeBleKind.bosch), isFalse);
+    expect(bleDriveNeedsWheelSensor(null), isFalse);
     expect(blePairSheetSuccess(connected: false), isFalse);
     expect(blePairSheetSuccess(connected: true), isTrue);
     expect(
@@ -255,8 +307,20 @@ void main() {
       contains('Flow'),
     );
     expect(
+      bleGattStatusHint(133, kind: BikeBleKind.shimano),
+      contains('E-TUBE'),
+    );
+    expect(
+      bleGattStatusHint(133, kind: BikeBleKind.bosch),
+      contains('Flow'),
+    );
+    expect(
       bleGattStatusHint(147),
-      contains('15s'),
+      contains('Timeout'),
+    );
+    expect(
+      bleGattStatusHint(147, kind: BikeBleKind.shimano),
+      contains('15 s'),
     );
     expect(
       parseGattErrorCode(
@@ -299,19 +363,22 @@ void main() {
       ),
       isTrue,
     );
-    expect(bleGattStatusHint(8), contains('Kopplung'));
+    expect(bleGattStatusHint(8), contains('Akku'));
   });
 
   test('connect notes stay short and maker-specific', () {
-    expect(bikeBlePairLead(isEbike: true), contains('Display an'));
+    expect(bikeBlePairLead(isEbike: true), contains('Intuvia'));
     expect(bikeBlePairLead(isEbike: false), contains('Sensor'));
     expect(bikeBleConnectTip(BikeBleKind.bosch), contains('Flow'));
     expect(bikeBleConnectTip(BikeBleKind.shimano), contains('15 s'));
     expect(bikeBleConnectTip(BikeBleKind.yamaha), contains('e-Sync'));
     final ebike = bikeBleConnectNotes(isEbike: true);
-    expect(ebike.map((n) => n.brand), containsAll(['Bosch', 'Shimano']));
-    expect(ebike.every((n) => n.line.length < 120), isTrue);
-    expect(bikeBleConnectNotes(isEbike: false).single.brand, 'Sensor');
+    expect(ebike.map((n) => n.brand), containsAll(['Intuvia', 'Shimano']));
+    expect(ebike.every((n) => n.line.length < 140), isTrue);
+    expect(
+      bikeBleConnectNotes(isEbike: false).map((n) => n.brand),
+      containsAll(['Intuvia', 'Sensor']),
+    );
   });
 
   test('parseBatteryLevelPercent stays in 0–100', () {

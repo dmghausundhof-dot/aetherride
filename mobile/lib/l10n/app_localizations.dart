@@ -515,13 +515,13 @@ abstract class AppLocalizations {
   /// No description provided for @werkstattBatteryHonestHint.
   ///
   /// In de, this message translates to:
-  /// **'Kein Prozent ohne gekoppelten Sensor. Bosch-SoC über LDI (Flow → Komponenten) oder Standard-GATT.'**
+  /// **'Kein Prozent ohne gekoppelten Sensor. Akku vom Intuvia über Flow → Komponenten → FlowLine.'**
   String get werkstattBatteryHonestHint;
 
   /// No description provided for @werkstattSensorEbike.
   ///
   /// In de, this message translates to:
-  /// **'Radsensor (CSC) — Tempo und Trittfrequenz. Akku-Stand nur mit echtem Sensor.'**
+  /// **'Tempo-Sensor — Tempo und Trittfrequenz. Akku nur mit echtem Display.'**
   String get werkstattSensorEbike;
 
   /// No description provided for @werkstattSensorAnalog.
@@ -3857,13 +3857,13 @@ abstract class AppLocalizations {
   /// No description provided for @profileBikeBleTitle.
   ///
   /// In de, this message translates to:
-  /// **'Rad / Bosch LDI'**
+  /// **'Rad / Intuvia'**
   String get profileBikeBleTitle;
 
   /// No description provided for @profileBikeBleIdle.
   ///
   /// In de, this message translates to:
-  /// **'Display, Motor oder CSC am aktiven Rad.'**
+  /// **'Intuvia oder Tempo-Sensor am aktiven Rad.'**
   String get profileBikeBleIdle;
 
   /// No description provided for @profileBikeBleNeedBike.
@@ -5021,13 +5021,31 @@ abstract class AppLocalizations {
   /// No description provided for @bleBikeTitle.
   ///
   /// In de, this message translates to:
-  /// **'Rad koppeln'**
+  /// **'Verbinden'**
   String get bleBikeTitle;
+
+  /// No description provided for @blePairLeadAny.
+  ///
+  /// In de, this message translates to:
+  /// **'Display, Motor oder Sensor tippen.'**
+  String get blePairLeadAny;
+
+  /// No description provided for @bleFlowRowName.
+  ///
+  /// In de, this message translates to:
+  /// **'Bosch'**
+  String get bleFlowRowName;
+
+  /// No description provided for @bleFlowRowKind.
+  ///
+  /// In de, this message translates to:
+  /// **'Flow'**
+  String get bleFlowRowKind;
 
   /// No description provided for @bleBikeHint.
   ///
   /// In de, this message translates to:
-  /// **'Akku und Assist nur bei echtem GATT — nichts erfinden.'**
+  /// **'Akku nur vom Intuvia, Tempo vom Sensor am Rad — nichts erfinden.'**
   String get bleBikeHint;
 
   /// No description provided for @bleRememberAnyway.
@@ -5039,19 +5057,19 @@ abstract class AppLocalizations {
   /// No description provided for @bleScanningDrive.
   ///
   /// In de, this message translates to:
-  /// **'Suche Antrieb und Sensoren …'**
+  /// **'Suche …'**
   String get bleScanningDrive;
 
   /// No description provided for @bleEmptyEbike.
   ///
   /// In de, this message translates to:
-  /// **'Display wecken, Flow oder E-TUBE zu, Handy nah halten.'**
+  /// **'Intuvia an, Flow nur zum Hinzufügen öffnen, Handy nah halten.'**
   String get bleEmptyEbike;
 
   /// No description provided for @bleEmptySensor.
   ///
   /// In de, this message translates to:
-  /// **'Sensor in die Nähe legen und am Rad aktivieren (Magnet/Kurbel).'**
+  /// **'Intuvia an, oder Sensor am Rad aktivieren (Magnet/Kurbel).'**
   String get bleEmptySensor;
 
   /// No description provided for @bleConnectFailed.
@@ -5093,8 +5111,26 @@ abstract class AppLocalizations {
   /// No description provided for @dieBoxCscHint.
   ///
   /// In de, this message translates to:
-  /// **'Tacho am Rad koppeln. Die Uhr bleibt beim Fahren.'**
+  /// **'Intuvia oder Tempo-Sensor koppeln. Die Uhr bleibt beim Fahren.'**
   String get dieBoxCscHint;
+
+  /// No description provided for @dieBoxPairCscTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Tempo-Sensor koppeln'**
+  String get dieBoxPairCscTitle;
+
+  /// No description provided for @dieBoxPairCscHint.
+  ///
+  /// In de, this message translates to:
+  /// **'STEPS merkt nur den Namen. Tempo kommt vom Sensor am Rad.'**
+  String get dieBoxPairCscHint;
+
+  /// No description provided for @dieBoxPairCscCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Koppeln'**
+  String get dieBoxPairCscCta;
 
   /// No description provided for @dieBoxEmptyHint.
   ///
@@ -5117,7 +5153,7 @@ abstract class AppLocalizations {
   /// No description provided for @dieBoxBatteryHint.
   ///
   /// In de, this message translates to:
-  /// **'Akkustand erscheint, sobald ein Sensor am Rad koppelt. Bis dahin keine Zahl.'**
+  /// **'Akkustand kommt vom Intuvia oder vom Antrieb, nicht vom Tacho. Bis dahin keine Zahl.'**
   String get dieBoxBatteryHint;
 
   /// No description provided for @dieBoxPressureTitle.
@@ -6605,14 +6641,20 @@ abstract class AppLocalizations {
   /// No description provided for @garageBleHintEbike.
   ///
   /// In de, this message translates to:
-  /// **'Bosch, Shimano STEPS oder CSC. Display einschalten.'**
+  /// **'Intuvia an. In Flow unter Komponenten FlowLine hinzufügen.'**
   String get garageBleHintEbike;
 
   /// No description provided for @garageBleHintSensor.
   ///
   /// In de, this message translates to:
-  /// **'Sensor am Rad, nicht am Fahrer.'**
+  /// **'Magnet oder Kurbel, nah an den Sensor — nicht die Uhr.'**
   String get garageBleHintSensor;
+
+  /// No description provided for @garageBleLiveWaiting.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad drehen — Tempo erscheint hier.'**
+  String get garageBleLiveWaiting;
 
   /// No description provided for @discoverRefresh.
   ///
@@ -8669,7 +8711,7 @@ abstract class AppLocalizations {
   /// No description provided for @rideNoBikeSensor.
   ///
   /// In de, this message translates to:
-  /// **'Kein Radsensor gefunden — GPS-Track läuft weiter.'**
+  /// **'Kein Tempo-Sensor — GPS-Track läuft weiter.'**
   String get rideNoBikeSensor;
 
   /// No description provided for @rideOfflineRerouteToast.
@@ -10362,7 +10404,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleTipBosch.
   ///
   /// In de, this message translates to:
-  /// **'Flow: Komponenten → FlowLine hinzufügen · Firmware ≥19'**
+  /// **'Intuvia an · in Flow unter Komponenten FlowLine hinzufügen'**
   String get bleTipBosch;
 
   /// No description provided for @bleTipShimano.
@@ -10374,7 +10416,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleTipYamaha.
   ///
   /// In de, this message translates to:
-  /// **'e-Sync schließen · Tempo über CSC-Sensor'**
+  /// **'e-Sync schließen · Tempo über den Sensor am Rad'**
   String get bleTipYamaha;
 
   /// No description provided for @bleTipOtherDrive.
@@ -10398,13 +10440,13 @@ abstract class AppLocalizations {
   /// No description provided for @blePairLeadEbike.
   ///
   /// In de, this message translates to:
-  /// **'Display an, Hersteller-App zu, Handy nah — dann antippen.'**
+  /// **'Intuvia an, Handy nah — dann in Flow FlowLine hinzufügen.'**
   String get blePairLeadEbike;
 
   /// No description provided for @blePairLeadSensor.
   ///
   /// In de, this message translates to:
-  /// **'Sensor am Rad wecken, nicht die Uhr am Handgelenk.'**
+  /// **'Intuvia an, oder Tempo-Sensor am Rad wecken — nicht die Uhr.'**
   String get blePairLeadSensor;
 
   /// No description provided for @bleNoteSensorBrand.
@@ -10422,7 +10464,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleNoteBoschLine.
   ///
   /// In de, this message translates to:
-  /// **'SoC: Flow öffnen → Komponenten → FlowLine hinzufügen (Steuerung ≥19). CSC weiter über die Liste, Flow dabei zu.'**
+  /// **'Display an. In Flow: Einstellungen → Komponenten → FlowLine. Dann am Display bestätigen.'**
   String get bleNoteBoschLine;
 
   /// No description provided for @bleNoteShimanoLine.
@@ -10434,13 +10476,13 @@ abstract class AppLocalizations {
   /// No description provided for @bleNoteYamahaLine.
   ///
   /// In de, this message translates to:
-  /// **'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über CSC-Sensor.'**
+  /// **'e-Sync bzw. TQ-App zu. Live-Tempo meist nur über den Sensor am Rad.'**
   String get bleNoteYamahaLine;
 
   /// No description provided for @bleNoteFazuaLine.
   ///
   /// In de, this message translates to:
-  /// **'Remote an — CSC und Power wie ein normaler Sensor.'**
+  /// **'Remote an — Tempo und Leistung wie ein normaler Sensor.'**
   String get bleNoteFazuaLine;
 
   /// No description provided for @bleNoteOtherBrand.
@@ -10494,43 +10536,43 @@ abstract class AppLocalizations {
   /// No description provided for @bleLdiPairCta.
   ///
   /// In de, this message translates to:
-  /// **'Bosch LDI — in Flow hinzufügen'**
+  /// **'Über Flow'**
   String get bleLdiPairCta;
 
   /// No description provided for @bleLdiPairHint.
   ///
   /// In de, this message translates to:
-  /// **'Rad an, Flow öffnen → Einstellungen → Komponenten → Neues Gerät. Display bestätigt. Steuerungseinheit ab Version 19.'**
+  /// **'Drei Schritte: Display an, in Flow FlowLine hinzufügen, am Display bestätigen.'**
   String get bleLdiPairHint;
 
   /// No description provided for @bleLdiTimeout.
   ///
   /// In de, this message translates to:
-  /// **'Kein LDI-Link. Firmware ≥19? In Flow unter Komponenten erneut hinzufügen.'**
+  /// **'Kein Link. Display an und in der App erneut hinzufügen.'**
   String get bleLdiTimeout;
 
   /// No description provided for @bleLdiWaitingFlow.
   ///
   /// In de, this message translates to:
-  /// **'Warten aufs Rad — in Flow „FlowLine“ hinzufügen.'**
+  /// **'Warten aufs Display …'**
   String get bleLdiWaitingFlow;
 
   /// No description provided for @bleLdiNeedAndroid12.
   ///
   /// In de, this message translates to:
-  /// **'Bosch LDI braucht Android 12 oder neuer.'**
+  /// **'Die Intuvia-Verbindung braucht Android 12 oder neuer.'**
   String get bleLdiNeedAndroid12;
 
   /// No description provided for @bleLdiIosPending.
   ///
   /// In de, this message translates to:
-  /// **'Bosch LDI auf diesem Gerät noch nicht verdrahtet.'**
+  /// **'Die Intuvia-Verbindung ist auf diesem Gerät noch nicht verdrahtet.'**
   String get bleLdiIosPending;
 
   /// No description provided for @bleGattTimeoutBosch.
   ///
   /// In de, this message translates to:
-  /// **'Timeout — Display wecken. SoC über LDI in Flow, Tempo über CSC.'**
+  /// **'Timeout — Intuvia wecken. Akku über Flow, Tempo über den Sensor am Rad.'**
   String get bleGattTimeoutBosch;
 
   /// No description provided for @bleGattTimeoutShimano.
@@ -10542,7 +10584,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleGattTimeoutDrive.
   ///
   /// In de, this message translates to:
-  /// **'Timeout — Hersteller-App zu, Display an. Tempo über CSC-Sensor.'**
+  /// **'Timeout — Hersteller-App zu, Display an. Tempo über den Sensor am Rad.'**
   String get bleGattTimeoutDrive;
 
   /// No description provided for @bleGattTimeoutSensor.
@@ -10554,25 +10596,25 @@ abstract class AppLocalizations {
   /// No description provided for @bleDriveFailBosch.
   ///
   /// In de, this message translates to:
-  /// **'Bosch ohne Live-SoC. In Flow unter Komponenten FlowLine hinzufügen, oder einen Radsensor (CSC) koppeln.'**
+  /// **'Intuvia erkannt, noch keine Live-Werte. In Flow unter Komponenten FlowLine hinzufügen.'**
   String get bleDriveFailBosch;
 
   /// No description provided for @bleDriveFailShimano.
   ///
   /// In de, this message translates to:
-  /// **'Shimano erkannt, keine Live-Motorwerte. Als Nächstes einen Radsensor (CSC) koppeln.'**
+  /// **'Shimano erkannt, keine Live-Werte. Als Nächstes einen Tempo-Sensor koppeln.'**
   String get bleDriveFailShimano;
 
   /// No description provided for @bleDriveFailYamaha.
   ///
   /// In de, this message translates to:
-  /// **'Yamaha erkannt, keine Live-Motorwerte. Tempo über CSC-Sensor koppeln.'**
+  /// **'Yamaha erkannt, keine Live-Werte. Tempo über den Sensor am Rad koppeln.'**
   String get bleDriveFailYamaha;
 
   /// No description provided for @bleDriveFailGeneric.
   ///
   /// In de, this message translates to:
-  /// **'Antrieb erkannt, keine Live-Motorwerte. Als Nächstes einen Radsensor (CSC) koppeln.'**
+  /// **'Antrieb erkannt, keine Live-Werte. Als Nächstes einen Tempo-Sensor koppeln.'**
   String get bleDriveFailGeneric;
 
   /// No description provided for @bleStatusBtOff.
@@ -10584,37 +10626,37 @@ abstract class AppLocalizations {
   /// No description provided for @bleStatusScanFailed.
   ///
   /// In de, this message translates to:
-  /// **'Radsensor-Suche fehlgeschlagen'**
+  /// **'Suche fehlgeschlagen'**
   String get bleStatusScanFailed;
 
   /// No description provided for @bleStatusNoSensor.
   ///
   /// In de, this message translates to:
-  /// **'Kein Radsensor gefunden'**
+  /// **'Kein Tempo-Sensor gefunden'**
   String get bleStatusNoSensor;
 
   /// No description provided for @bleStatusNoneInRange.
   ///
   /// In de, this message translates to:
-  /// **'Kein Rad, Antrieb oder Sensor in Reichweite'**
+  /// **'Kein Rad oder Sensor in Reichweite'**
   String get bleStatusNoneInRange;
 
   /// No description provided for @bleStatusDriveSeen.
   ///
   /// In de, this message translates to:
-  /// **'Antrieb gesehen — in der Werkstatt koppeln (Bosch/Shimano)'**
+  /// **'Intuvia gesehen — in der Werkstatt über Flow verbinden'**
   String get bleStatusDriveSeen;
 
   /// No description provided for @bleStatusNoCscInRange.
   ///
   /// In de, this message translates to:
-  /// **'Kein Radsensor in Reichweite'**
+  /// **'Kein Tempo-Sensor in Reichweite'**
   String get bleStatusNoCscInRange;
 
   /// No description provided for @bleStatusSensorDisconnected.
   ///
   /// In de, this message translates to:
-  /// **'Radsensor getrennt'**
+  /// **'Sensor getrennt'**
   String get bleStatusSensorDisconnected;
 
   /// No description provided for @bleStatusReconnectLost.
@@ -10644,13 +10686,13 @@ abstract class AppLocalizations {
   /// No description provided for @bleStatusDriveNoLive.
   ///
   /// In de, this message translates to:
-  /// **'{who} · erkannt — Tempo über CSC, Akku nur mit Standard-GATT'**
+  /// **'{who} · erkannt — Tempo über den Sensor am Rad'**
   String bleStatusDriveNoLive(String who);
 
   /// No description provided for @bleStatusNeedBond.
   ///
   /// In de, this message translates to:
-  /// **'Display braucht Bluetooth-Kopplung für den Akku.'**
+  /// **'Display braucht eine Bluetooth-Bestätigung für den Akku.'**
   String get bleStatusNeedBond;
 
   /// No description provided for @bleStatusBonding.
@@ -10920,7 +10962,7 @@ abstract class AppLocalizations {
   /// No description provided for @bleRemoveWheel.
   ///
   /// In de, this message translates to:
-  /// **'Radsensor entfernen'**
+  /// **'Tempo-Sensor entfernen'**
   String get bleRemoveWheel;
 
   /// No description provided for @bleRemoveDrive.
@@ -10929,17 +10971,95 @@ abstract class AppLocalizations {
   /// **'Antrieb entfernen'**
   String get bleRemoveDrive;
 
+  /// No description provided for @bleRemoveDriveNamed.
+  ///
+  /// In de, this message translates to:
+  /// **'Intuvia entfernen ({name})'**
+  String bleRemoveDriveNamed(String name);
+
+  /// No description provided for @bleRemoveWheelNamed.
+  ///
+  /// In de, this message translates to:
+  /// **'Tempo-Sensor entfernen ({name})'**
+  String bleRemoveWheelNamed(String name);
+
   /// No description provided for @bleSemanticsLive.
   ///
   /// In de, this message translates to:
-  /// **'Bluetooth live'**
+  /// **'Verbunden'**
   String get bleSemanticsLive;
 
   /// No description provided for @bleTooltipSaved.
   ///
   /// In de, this message translates to:
-  /// **'Gekoppelt, nicht verbunden'**
+  /// **'Gemerkt, nicht live'**
   String get bleTooltipSaved;
+
+  /// No description provided for @bleLinkLiveNamed.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · live'**
+  String bleLinkLiveNamed(String name);
+
+  /// No description provided for @bleLinkSavedNamed.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · gemerkt, nicht live'**
+  String bleLinkSavedNamed(String name);
+
+  /// No description provided for @bleLinkEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbinden'**
+  String get bleLinkEmpty;
+
+  /// No description provided for @bleLdiWizardTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Bosch Intuvia'**
+  String get bleLdiWizardTitle;
+
+  /// No description provided for @bleLdiWizardLead.
+  ///
+  /// In de, this message translates to:
+  /// **'Drei Schritte. FlowLine wird für das Display sichtbar.'**
+  String get bleLdiWizardLead;
+
+  /// No description provided for @bleLdiStep1.
+  ///
+  /// In de, this message translates to:
+  /// **'Intuvia 100 einschalten, Handy nah'**
+  String get bleLdiStep1;
+
+  /// No description provided for @bleLdiStep2.
+  ///
+  /// In de, this message translates to:
+  /// **'Bosch Flow: Einstellungen → Komponenten → FlowLine'**
+  String get bleLdiStep2;
+
+  /// No description provided for @bleLdiStep3.
+  ///
+  /// In de, this message translates to:
+  /// **'Am Display bestätigen'**
+  String get bleLdiStep3;
+
+  /// No description provided for @bleLdiWizardWaitingHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt in Flow „FlowLine“ tippen. Das Display fragt nach.'**
+  String get bleLdiWizardWaitingHint;
+
+  /// No description provided for @bleLdiWizardRetry.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch einmal versuchen'**
+  String get bleLdiWizardRetry;
+
+  /// No description provided for @rideLdiWaiting.
+  ///
+  /// In de, this message translates to:
+  /// **'Warte auf Intuvia — in Flow FlowLine hinzufügen'**
+  String get rideLdiWaiting;
 
   /// No description provided for @watchOtherWatch.
   ///

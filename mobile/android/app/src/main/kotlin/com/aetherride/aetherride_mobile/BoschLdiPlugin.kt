@@ -155,8 +155,10 @@ class BoschLdiPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
             .setTimeout(0)
             .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
             .build()
+        // Solicitation UUID must stay in the primary packet. The local name
+        // ("FlowLine") goes in the scan response so Samsung does not drop eb20.
         val data = AdvertiseData.Builder()
-            .setIncludeDeviceName(true)
+            .setIncludeDeviceName(false)
             .apply {
                 if (pairing) {
                     addServiceSolicitationUuid(ParcelUuid(SERVICE_UUID))

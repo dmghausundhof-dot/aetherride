@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/ble/bike_ble_kind.dart';
+import '../../domain/ble/ble_link_status.dart';
 
 /// Gekoppelter BLE-Sensor je Bike (Komoot-Klasse-UX: Rad auswählen ⇒ Sensor
 /// verbindet automatisch). JSON-Datei statt Drift-Migration — das Mapping ist
@@ -14,6 +15,7 @@ class BikeBleDevice {
 
   final String deviceId;
   final String? name;
+
   /// `bosch` | `shimano` | `yamaha` | `csc` | `power` | `otherDrive`
   final String? kind;
 
@@ -99,6 +101,23 @@ bool bikeBleDeviceIsDrive(BikeBleDevice device) {
   return (
     deviceId: wheel.deviceId,
     kindHint: bikeBleKindFromStorage(wheel.kind),
+  );
+}
+
+/// Werkstatt: gespeicherten CSC wecken, Bosch-LDI zusätzlich anbieten.
+/// Kein Scan — sonst klaut die Suche die Kopplungs-Sheet-Session.
+({String? wheelId, BikeBleKind? wheelKind, bool startLdi}) garageBleWakePlan(
+  BikeBleBinding binding,
+) {
+  final wheel = binding.wheel;
+  final drive = binding.drive;
+  final wheelId =
+      (wheel != null && wheel.deviceId.isNotEmpty) ? wheel.deviceId : null;
+  return (
+    wheelId: wheelId,
+    wheelKind: wheel == null ? null : bikeBleKindFromStorage(wheel.kind),
+    startLdi: drive != null &&
+        bleDriveIsBoschLdi(deviceId: drive.deviceId, kind: drive.kind),
   );
 }
 

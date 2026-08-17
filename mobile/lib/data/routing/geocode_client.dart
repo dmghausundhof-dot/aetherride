@@ -40,25 +40,67 @@ class GeocodeHit {
     required this.lat,
     required this.lng,
     this.kind,
+    this.name,
   });
 
   final String label;
   final double lat;
   final double lng;
   final String? kind;
+  final String? name;
+
+  String get matchName => (name ?? label.split(',').first).trim();
+}
+
+/// Prefix match only when the next character is not another letter
+/// ("Berlin" matches, "Berlingen" does not).
+bool geocodeNameMatchesQuery(String name, String query) {
+  final n = name.trim().toLowerCase();
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty || !n.startsWith(q)) return false;
+  if (n.length == q.length) return true;
+  final next = n[q.length];
+  return next == ' ' || next == '-' || next == '/' || next == ',';
+}
+
+int geocodeHitScore(String query, GeocodeHit hit) {
+  final q = query.trim().toLowerCase();
+  final name = hit.matchName.toLowerCase();
+  var s = 0;
+  if (name == q) {
+    s += 100;
+  } else if (geocodeNameMatchesQuery(name, q)) {
+    s += 45;
+  }
+  final kind = hit.kind ?? '';
+  if (kind == 'city' || kind == 'locality') s += 25;
+  if (kind == 'street' || kind == 'house') s -= 15;
+  return s;
+}
+
+List<GeocodeHit> rankGeocodeHits(String query, List<GeocodeHit> hits) {
+  final copy = [...hits];
+  copy.sort(
+    (a, b) => geocodeHitScore(query, b).compareTo(geocodeHitScore(query, a)),
+  );
+  return copy;
 }
 
 /// Adresssuche über Next `/api/geocode` (Photon).
 class GeocodeClient {
-  GeocodeClient({http.Client? httpClient}) : _http = httpClient ?? http.Client();
+  GeocodeClient({http.Client? httpClient})
+      : _http = httpClient ?? http.Client();
 
   final http.Client _http;
+
+  static const _photonUa = 'AetherRide/1.0 (browse-geocode)';
 
   Future<List<GeocodeHit>> search(
     String query, {
     int limit = 5,
     double? biasLat,
     double? biasLng,
+    bool preferPlaces = false,
   }) async {
     var q = query.trim();
     // Adb/%-Eingaben und Copy-Paste mit Encoding robust machen.
@@ -69,6 +111,20 @@ class GeocodeClient {
     if (q.length < 2) return const [];
     final coords = geocodeHitFromCoordinates(q);
     if (coords != null) return [coords];
+    if (preferPlaces) {
+      try {
+        final places = await _photon(
+          q,
+          limit: limit,
+          biasLat: biasLat,
+          biasLng: biasLng,
+          osmTag: 'place',
+        );
+        if (places.isNotEmpty) {
+          return rankGeocodeHits(q, places).take(limit).toList();
+        }
+      } catch (_) {}
+    }
     final params = <String, String>{
       'q': q,
       'limit': '$limit',
@@ -78,12 +134,13 @@ class GeocodeClient {
       params['lat'] = biasLat.toStringAsFixed(5);
       params['lon'] = biasLng.toStringAsFixed(5);
     }
+    if (preferPlaces) params['prefer'] = 'place';
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/geocode').replace(
       queryParameters: params,
     );
-    final res = await _http
-        .get(uri, headers: {'Accept': 'application/json'})
-        .timeout(const Duration(seconds: 10));
+    final res = await _http.get(uri, headers: {
+      'Accept': 'application/json'
+    }).timeout(const Duration(seconds: 10));
     if (res.statusCode != 200) {
       throw StateError('Geocode ${res.statusCode}');
     }
@@ -91,7 +148,7 @@ class GeocodeClient {
     if (data is! Map) return const [];
     final raw = data['hits'];
     if (raw is! List) return const [];
-    return [
+    final hits = [
       for (final e in raw)
         if (e is Map)
           GeocodeHit(
@@ -99,6 +156,7 @@ class GeocodeClient {
             lat: (e['lat'] as num?)?.toDouble() ?? 0,
             lng: (e['lng'] as num?)?.toDouble() ?? 0,
             kind: e['kind'] as String?,
+            name: (e['name'] as String?)?.trim(),
           ),
     ]
         .where(
@@ -109,5 +167,85 @@ class GeocodeClient {
               h.lng.abs() <= 180,
         )
         .toList();
+    return preferPlaces ? rankGeocodeHits(q, hits).take(limit).toList() : hits;
+  }
+
+  Future<List<GeocodeHit>> _photon(
+    String q, {
+    required int limit,
+    double? biasLat,
+    double? biasLng,
+    String? osmTag,
+  }) async {
+    final lang = AppLocaleBinding.chromeLanguageCode;
+    final params = <String, String>{
+      'q': q,
+      'limit': '$limit',
+      'lang': lang == 'nl' ? 'en' : lang,
+    };
+    if (biasLat != null && biasLng != null) {
+      params['lat'] = biasLat.toStringAsFixed(5);
+      params['lon'] = biasLng.toStringAsFixed(5);
+    }
+    if (osmTag != null) params['osm_tag'] = osmTag;
+    final uri = Uri.https('photon.komoot.io', '/api/', params);
+    final res = await _http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': _photonUa,
+      },
+    ).timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) return const [];
+    final data = jsonDecode(res.body);
+    if (data is! Map) return const [];
+    final raw = data['features'];
+    if (raw is! List) return const [];
+    final hits = <GeocodeHit>[];
+    for (final e in raw) {
+      if (e is! Map) continue;
+      final geometry = e['geometry'];
+      final properties = e['properties'];
+      if (geometry is! Map || properties is! Map) continue;
+      final coords = geometry['coordinates'];
+      if (coords is! List || coords.length < 2) continue;
+      final lng = (coords[0] as num?)?.toDouble();
+      final lat = (coords[1] as num?)?.toDouble();
+      if (lat == null || lng == null) continue;
+      final name = (properties['name'] as String?)?.trim() ?? '';
+      final parts = <String>[
+        name,
+        if (properties['street'] is String)
+          (properties['street'] as String).trim(),
+        if (properties['housenumber'] is String)
+          (properties['housenumber'] as String).trim(),
+        if (properties['postcode'] is String)
+          (properties['postcode'] as String).trim(),
+        if (properties['city'] is String)
+          (properties['city'] as String).trim()
+        else if (properties['town'] is String)
+          (properties['town'] as String).trim()
+        else if (properties['village'] is String)
+          (properties['village'] as String).trim()
+        else if (properties['county'] is String)
+          (properties['county'] as String).trim(),
+        if (properties['state'] is String)
+          (properties['state'] as String).trim(),
+        if (properties['country'] is String)
+          (properties['country'] as String).trim(),
+      ].where((p) => p.isNotEmpty).toList();
+      final label = <String>{...parts}.join(', ');
+      if (label.isEmpty) continue;
+      hits.add(
+        GeocodeHit(
+          label: label,
+          lat: lat,
+          lng: lng,
+          kind: properties['type'] as String?,
+          name: name.isEmpty ? null : name,
+        ),
+      );
+    }
+    return hits;
   }
 }

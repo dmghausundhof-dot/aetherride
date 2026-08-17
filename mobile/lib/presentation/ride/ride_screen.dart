@@ -1382,12 +1382,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       active ??= bikes.isEmpty ? null : bikes.first;
       final wheel = active?.wheelSize;
       if (wheel != null) {
-        ble.wheelCircumferenceM = switch (wheel) {
-          WheelSize.w275 => 2.070,
-          WheelSize.w29 => 2.105,
-          WheelSize.c700 => 2.130,
-          WheelSize.b650 => 1.935,
-        };
+        ble.wheelCircumferenceM = wheelCircumferenceM(wheel);
       }
 
       // Garage-Kopplung: nur der Radsensor ist Ride-GATT. Drive-Identität
@@ -2648,6 +2643,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     required bool locked,
   }) {
     final l10n = AppLocalizations.of(context);
+    final ble = ref.read(bleCoreProvider);
     ({
       String distance,
       String instruction,
@@ -3174,6 +3170,22 @@ class RideScreenState extends ConsumerState<RideScreen> {
                 if (bikePeek.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.s),
                   RideBikePeek(chips: bikePeek),
+                ],
+                if (!ble.hasWheelLive &&
+                    (ble.statusDetail == 'ldi_waiting_flow' ||
+                        ble.statusDetail == l10n.bleLdiWaitingFlow)) ...[
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    l10n.rideLdiWaiting,
+                    key: const Key('ride-ldi-waiting'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: AppColors.meta(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
                 if (paused || !_cleanMode) ...[
                   const SizedBox(height: AppSpacing.s),

@@ -31,17 +31,17 @@ internal data class BoschLdiSnapshot(
 
     fun toEventMap(): Map<String, Any?> {
         val m = HashMap<String, Any?>()
-        m["speedKmh"] = speedKmh ?: 0.0
-        m["cadenceRpm"] = cadenceRpm ?: 0.0
-        m["odometerKm"] = odometerKm ?: 0.0
-        m["lightStatus"] = lightStatus == true
-        m["ambientBrightness"] = ambientBrightness ?: 0.0
-        m["systemLock"] = systemLock == true
-        m["bikeNotDriving"] = bikeNotDriving == true
-        m["chargerConnected"] = chargerConnected == true
-        m["timestampMs"] = System.currentTimeMillis()
+        speedKmh?.let { m["speedKmh"] = it }
+        cadenceRpm?.let { m["cadenceRpm"] = it }
+        odometerKm?.let { m["odometerKm"] = it }
+        lightStatus?.let { m["lightStatus"] = it }
+        ambientBrightness?.let { m["ambientBrightness"] = it }
+        systemLock?.let { m["systemLock"] = it }
+        bikeNotDriving?.let { m["bikeNotDriving"] = it }
+        chargerConnected?.let { m["chargerConnected"] = it }
         batterySocPercent?.let { m["batterySocPercent"] = it }
         riderPowerW?.let { m["riderPowerW"] = it }
+        m["timestampMs"] = System.currentTimeMillis()
         return m
     }
 }

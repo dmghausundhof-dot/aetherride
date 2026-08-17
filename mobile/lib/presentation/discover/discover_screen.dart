@@ -504,6 +504,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<EditorialSetHit> _editorialSets = [];
   String _editorialHonesty = '';
   final Map<String, _RouteSuggestion> _catalogById = {};
+
   /// Browse-Suche / Kameraschwenk — Nähe folgt diesem Punkt statt nur GPS.
   GeoPoint? _browseAnchor;
   List<GeocodeHit> _placeHits = const [];
@@ -1469,8 +1470,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final groups = await RideGroupStore().activeGroups();
       MapPlace? meet;
       for (final g in groups) {
-        final onTour =
-            g.catalogTourId == tourId || g.savedRouteId == tourId;
+        final onTour = g.catalogTourId == tourId || g.savedRouteId == tourId;
         if (!onTour) continue;
         final parsed = parseMeetingLatLng(g.meetingPoint);
         if (parsed == null) continue;
@@ -2430,6 +2430,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _flyBrowsePlace(GeocodeHit hit) async {
     setState(() {
       _browseAnchor = GeoPoint(hit.lat, hit.lng);
+      _hofPinLoopId = null;
+      _selectedTourId = null;
+      _computed = null;
+      _label = null;
+      _approach = null;
+      _tourLayer = null;
       _exploreQuery = '';
       _exploreSearchCtrl.value = TextEditingValue(
         text: hit.label,
@@ -2465,7 +2471,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Future<void> _loadPlaceHits(String query) async {
     final o = _origin;
     try {
-      final hits = await _geocode.search(query, biasLat: o.lat, biasLng: o.lng);
+      final hits = await _geocode.search(
+        query,
+        biasLat: o.lat,
+        biasLng: o.lng,
+        preferPlaces: true,
+      );
       if (!mounted) return;
       if (_exploreSearchCtrl.text.trim() != query.trim()) return;
       setState(() => _placeHits = hits.take(5).toList());
@@ -2478,7 +2489,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final names = _filtered.map((t) => t.name);
     final o = _origin;
     try {
-      final hits = await _geocode.search(q, biasLat: o.lat, biasLng: o.lng);
+      final hits = await _geocode.search(
+        q,
+        biasLat: o.lat,
+        biasLng: o.lng,
+        preferPlaces: true,
+      );
       if (!mounted) return;
       if (hits.isEmpty) {
         setState(() => _setStatus(_l10n.discoverNoHitsFor(q)));
@@ -2496,7 +2512,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _setStatus(friendlyErrorMessage(e, context: _l10n.discoverGeocodeFailed));
+        _setStatus(
+            friendlyErrorMessage(e, context: _l10n.discoverGeocodeFailed));
       });
     }
   }
@@ -2769,9 +2786,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
       if (trail == null) return;
       final target = _map?.cameraPosition?.target;
-      final at = target == null
-          ? null
-          : GeoPoint(target.latitude, target.longitude);
+      final at =
+          target == null ? null : GeoPoint(target.latitude, target.longitude);
       setState(() {
         _selectedTrailId = trail!.id;
         _selectedTourId = null;
@@ -3722,11 +3738,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ) !=
           null;
       // Trail-Last-Mile nur bei Karten-Tap auf den Trail — nicht Café/Adresse.
-      final mile = !namedDest &&
-              vias.isEmpty &&
-              _routeVariant == RouteVariant.planned
-          ? _lastMileForDest(from, to)
-          : null;
+      final mile =
+          !namedDest && vias.isEmpty && _routeVariant == RouteVariant.planned
+              ? _lastMileForDest(from, to)
+              : null;
       late RouteResult result;
       RouteResult? approach;
       List<GeoPoint>? trailOverlay;
@@ -4809,39 +4824,39 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         return 0;
       });
       if (_showToursLayer) {
-      for (final tour in trackTours) {
-        if (gen != _drawGen) return;
-        final cached = _routedLoopCache[tour.id];
-        final List<LatLng> geom;
-        final bool routed;
-        if (cached != null && cached.length >= 4) {
-          geom = [for (final p in cached) LatLng(p.lat, p.lng)];
-          routed = true;
-        } else {
-          geom = [for (final p in tour.trackLngLat!) LatLng(p[1], p[0])];
-          routed = false;
+        for (final tour in trackTours) {
+          if (gen != _drawGen) return;
+          final cached = _routedLoopCache[tour.id];
+          final List<LatLng> geom;
+          final bool routed;
+          if (cached != null && cached.length >= 4) {
+            geom = [for (final p in cached) LatLng(p.lat, p.lng)];
+            routed = true;
+          } else {
+            geom = [for (final p in tour.trackLngLat!) LatLng(p[1], p[0])];
+            routed = false;
+          }
+          final isSelected = tour.id == _selectedTourId;
+          final sport = TourFilters.sportOf(tour.categories);
+          final scale = parseTrailDifficulty(tour.mtbScale);
+          await _addKomootLine(
+            c,
+            geom,
+            active: isSelected && routed,
+            casing: routed,
+            lineColor: DiscoverMapLineStyle.ribbonForTour(
+              sport: sport,
+              scale: scale,
+              selected: isSelected,
+              routed: routed,
+            ),
+            data: {
+              'kind': 'tour',
+              'id': tour.id,
+              'engine': routed ? 'seed-loop-routed' : 'seed-loop',
+            },
+          );
         }
-        final isSelected = tour.id == _selectedTourId;
-        final sport = TourFilters.sportOf(tour.categories);
-        final scale = parseTrailDifficulty(tour.mtbScale);
-        await _addKomootLine(
-          c,
-          geom,
-          active: isSelected && routed,
-          casing: routed,
-          lineColor: DiscoverMapLineStyle.ribbonForTour(
-            sport: sport,
-            scale: scale,
-            selected: isSelected,
-            routed: routed,
-          ),
-          data: {
-            'kind': 'tour',
-            'id': tour.id,
-            'engine': routed ? 'seed-loop-routed' : 'seed-loop',
-          },
-        );
-      }
       }
       // Sichtbare Pins ohne Track → Background-Routing (ehrlicher Loading-Status).
       unawaited(_warmVisibleMapTourGeometries(visible));
@@ -5143,22 +5158,22 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         );
       }
       if (_showToursLayer) {
-      for (final pinTf in _tfPins.take(12)) {
-        if (!shouldDrawTrailforksMapPin()) continue;
-        final sym = await c.addSymbol(
-          SymbolOptions(
-            fontNames: _symbolFonts,
-            geometry: pinTf.center,
-            iconImage: _pinImagesReady ? pin : null,
-            iconSize: 1.0,
-            textField: '',
-            textSize: 11,
-            textOffset: const Offset(0, 1.2),
-          ),
-        );
-        _tfSymbols.add(sym);
-        _tfBySymbolId[sym.id] = pinTf;
-      }
+        for (final pinTf in _tfPins.take(12)) {
+          if (!shouldDrawTrailforksMapPin()) continue;
+          final sym = await c.addSymbol(
+            SymbolOptions(
+              fontNames: _symbolFonts,
+              geometry: pinTf.center,
+              iconImage: _pinImagesReady ? pin : null,
+              iconSize: 1.0,
+              textField: '',
+              textSize: 11,
+              textOffset: const Offset(0, 1.2),
+            ),
+          );
+          _tfSymbols.add(sym);
+          _tfBySymbolId[sym.id] = pinTf;
+        }
       }
       for (final place in _visibleMapPlaces.take(24)) {
         final label = place.source == MapPlaceSource.stimme
@@ -5183,57 +5198,57 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       // Background-Routing läuft. Fertige Tracks haben bereits eine Line in
       // [_drawAll] (keine blinden T-Pins à la leere Ideen-Punkte).
       if (_showToursLayer) {
-      for (final tour in _filtered.take(DiscoverMapLineStyle.mapTourCap)) {
-        final cached = _routedLoopCache[tour.id];
-        final hasLine =
-            tour.hasTrack || (cached != null && cached.length >= 4);
-        final selected = tour.id == _selectedTourId;
-        if (hasLine) {
-          if (selected || _mapZoom < 10) continue;
-          final start = cached != null && cached.isNotEmpty
-              ? LatLng(cached.first.lat, cached.first.lng)
-              : (tour.trackLngLat != null && tour.trackLngLat!.isNotEmpty
-                  ? LatLng(
-                      tour.trackLngLat!.first[1],
-                      tour.trackLngLat!.first[0],
-                    )
-                  : tour.center);
+        for (final tour in _filtered.take(DiscoverMapLineStyle.mapTourCap)) {
+          final cached = _routedLoopCache[tour.id];
+          final hasLine =
+              tour.hasTrack || (cached != null && cached.length >= 4);
+          final selected = tour.id == _selectedTourId;
+          if (hasLine) {
+            if (selected || _mapZoom < 10) continue;
+            final start = cached != null && cached.isNotEmpty
+                ? LatLng(cached.first.lat, cached.first.lng)
+                : (tour.trackLngLat != null && tour.trackLngLat!.isNotEmpty
+                    ? LatLng(
+                        tour.trackLngLat!.first[1],
+                        tour.trackLngLat!.first[0],
+                      )
+                    : tour.center);
+            await c.addSymbol(
+              SymbolOptions(
+                fontNames: _symbolFonts,
+                geometry: start,
+                iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
+                iconSize: 0.62,
+                textField: '',
+                textSize: 10,
+              ),
+            );
+            continue;
+          }
+          if (_isPinOnlyIdea(tour) && !_isLoop(tour)) {
+            await c.addSymbol(
+              SymbolOptions(
+                fontNames: _symbolFonts,
+                geometry: tour.center,
+                iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
+                iconSize: 0.7,
+                textField: '',
+                textSize: 10,
+              ),
+            );
+            continue;
+          }
           await c.addSymbol(
             SymbolOptions(
               fontNames: _symbolFonts,
-              geometry: start,
-              iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
+              geometry: tour.center,
+              iconImage: _pinImagesReady ? pin : null,
               iconSize: 0.62,
               textField: '',
               textSize: 10,
             ),
           );
-          continue;
         }
-        if (_isPinOnlyIdea(tour) && !_isLoop(tour)) {
-          await c.addSymbol(
-            SymbolOptions(
-              fontNames: _symbolFonts,
-              geometry: tour.center,
-              iconImage: _pinImagesReady ? 'aether-pin-idea' : null,
-              iconSize: 0.7,
-              textField: '',
-              textSize: 10,
-            ),
-          );
-          continue;
-        }
-        await c.addSymbol(
-          SymbolOptions(
-            fontNames: _symbolFonts,
-            geometry: tour.center,
-            iconImage: _pinImagesReady ? pin : null,
-            iconSize: 0.62,
-            textField: '',
-            textSize: 10,
-          ),
-        );
-      }
       }
       if (_showToursLayer) await _syncPoiStopMarkers(c);
       await _ensureSymbolTextFont(c);
@@ -6774,189 +6789,190 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             final tour = pin == null ? null : _tourById(pin);
             if (tour != null) unawaited(_focusCameraOnTour(tour));
           },
-      onUserLocationUpdated: _onUserLocationUpdated,
-      // Kurzer Tipp setzt Punkte nur, wenn Planen offen ist — sonst bleiben
-      // Tipps für Trails/Touren/Routen auf der Karte reserviert.
-      onMapClick: (point, latLng) async {
-        if (_surface != _Surface.plan) {
-          final trail = await _hitTestBikeOverlay(point);
-          if (trail != null) {
-            await _openOverlayTrail(
-              trail,
-              at: GeoPoint(latLng.latitude, latLng.longitude),
-            );
-          }
-          return;
-        }
-        // Typing a destination: a map tap must not steal B (16 km Umweg).
-        if (!mapTapMaySetAbPoint(
-          addressFieldFocused:
-              _startAddrFocus.hasFocus || _endAddrFocus.hasFocus,
-          startSet: _start != null,
-          endSet: _end != null,
-          explicitlyPicking: _pick != _PickMode.none,
-        )) {
-          return;
-        }
-        var p = GeoPoint(latLng.latitude, latLng.longitude);
-        OsmTrailSegment? trailHit;
-        if (_pick == _PickMode.end ||
-            (_pick == _PickMode.none && _start != null)) {
-          trailHit = await _hitTestBikeOverlay(point);
-          if (trailHit != null) {
-            var resolved = trailHit;
-            for (final t in _trailsForLastMile) {
-              if (t.id == trailHit.id) {
-                resolved = t;
-                break;
-              }
-            }
-            final mile = clipTrailLastMile(
-              trailLngLat: resolved.geometry,
-              fromLat: (_start ?? _origin).lat,
-              fromLng: (_start ?? _origin).lng,
-              toLat: p.lat,
-              toLng: p.lng,
-            );
-            if (mile != null) {
-              p = GeoPoint(mile.destLat, mile.destLng);
-              trailHit = resolved;
-            }
-          }
-        }
-        if (_pick == _PickMode.via) {
-          p = _snapViaPoint(p);
-        }
-        final wasWithoutOrigin = !_hasRealOrigin;
-        setState(() {
-          switch (_pick) {
-            case _PickMode.via:
-              _vias.add(LabeledVia(lat: p.lat, lng: p.lng));
-              break;
-            case _PickMode.end:
-              _end = p;
-              _endAddrCtrl.text = _fmtPoint(p);
-              _pick = _PickMode.none;
-              _destinationTrail = trailHit;
-              break;
-            case _PickMode.start:
-              _start = p;
-              _startAddrCtrl.text = _fmtPoint(p);
-              _pick = _PickMode.end;
-              break;
-            case _PickMode.none:
-              if (_start == null) {
-                _start = p;
-                _startAddrCtrl.text = _fmtPoint(p);
-                _pick = _PickMode.end;
-              } else {
-                _end = p;
-                _endAddrCtrl.text = _fmtPoint(p);
-                _destinationTrail = trailHit;
-              }
-              break;
-          }
-        });
-        await _syncMarkers();
-        if (wasWithoutOrigin && _hasRealOrigin) {
-          _refreshNearbyDataSources();
-        }
-        if (_start != null && _end != null) {
-          await _calcAb();
-        }
-      },
-      onCameraIdle: () {
-        final cam = _map?.cameraPosition;
-        final t = cam?.target;
-        if (t != null) {
-          unawaited(_ensureBikeOverlay());
-          final next = nextOnlineBasemapStyleUrl(
-            currentStyle: _mapStyle,
-            lng: t.longitude,
-            lat: t.latitude,
-          );
-          if (next != null && next != _mapStyle && mounted) {
-            setState(() => _mapStyle = next);
-          }
-        }
-        final z = cam?.zoom ?? _mapZoom;
-        final crossed = (z > kBikeOverlayVectorMaxZoom) !=
-            (_mapZoom > kBikeOverlayVectorMaxZoom);
-        _mapZoom = z;
-        if (crossed && _bikeOverlayAttached && _showTrailNetwork) {
-          unawaited(_drawAll());
-        }
-        _sGradeDebounce?.cancel();
-        _sGradeDebounce = Timer(const Duration(milliseconds: 450), () {
-          unawaited(_refreshSGradeLive());
-        });
-        _viewportDebounce?.cancel();
-        _viewportDebounce = Timer(const Duration(milliseconds: 800), () {
-          _persistDiscoverViewport();
-          final cam = _map?.cameraPosition?.target;
-          if (cam == null || !mounted) return;
-          final gps = _userPos;
-          if (gps != null) {
-            final d = _distKm(gps.lat, gps.lng, cam.latitude, cam.longitude);
-            if (d < 25) {
-              if (_browseAnchor != null) {
-                setState(() => _browseAnchor = null);
-                _mergeCatalogNearOrigin();
+          onUserLocationUpdated: _onUserLocationUpdated,
+          // Kurzer Tipp setzt Punkte nur, wenn Planen offen ist — sonst bleiben
+          // Tipps für Trails/Touren/Routen auf der Karte reserviert.
+          onMapClick: (point, latLng) async {
+            if (_surface != _Surface.plan) {
+              final trail = await _hitTestBikeOverlay(point);
+              if (trail != null) {
+                await _openOverlayTrail(
+                  trail,
+                  at: GeoPoint(latLng.latitude, latLng.longitude),
+                );
               }
               return;
             }
-          }
-          final next = GeoPoint(cam.latitude, cam.longitude);
-          final prev = _browseAnchor;
-          if (prev != null &&
-              _distKm(prev.lat, prev.lng, next.lat, next.lng) < 8) {
-            return;
-          }
-          setState(() => _browseAnchor = next);
-          _mergeCatalogNearOrigin();
-        });
-        unawaited(_syncNavPuck());
-      },
-      // Langer Druck → Navigieren (A→B). Im Detail unberührt; im Navigieren
-      // fügt Langdruck einen Via-Punkt hinzu.
-      onMapLongClick: (point, latLng) async {
-        if (_surface == _Surface.detail) return;
-        final p = GeoPoint(latLng.latitude, latLng.longitude);
-        final wasWithoutOrigin = !_hasRealOrigin;
-        if (_surface == _Surface.plan ||
-            _shellMode == DiscoverShellMode.navigate) {
-          setState(() {
-            final snapped = _snapViaPoint(p);
-            _vias.add(LabeledVia(lat: snapped.lat, lng: snapped.lng));
-          });
-          await _syncMarkers();
-          if (_start != null && _end != null) await _calcAb();
-          return;
-        }
-        final asStart = _start == null;
-        setState(() {
-          if (asStart) {
-            _start = p;
-            _startAddrCtrl.text = _fmtPoint(p);
-          } else {
-            _end = p;
-            _endAddrCtrl.text = _fmtPoint(p);
-          }
-        });
-        _openPlan(
-          status: asStart
-              ? _l10n.discoverStartSetPickEnd
-              : _l10n.discoverEndSetComputing,
-          pick: asStart ? _PickMode.end : _PickMode.none,
-        );
-        await _syncMarkers();
-        if (wasWithoutOrigin && _hasRealOrigin) {
-          _refreshNearbyDataSources();
-        }
-        if (_start != null && _end != null) {
-          await _calcAb();
-        }
-      },
+            // Typing a destination: a map tap must not steal B (16 km Umweg).
+            if (!mapTapMaySetAbPoint(
+              addressFieldFocused:
+                  _startAddrFocus.hasFocus || _endAddrFocus.hasFocus,
+              startSet: _start != null,
+              endSet: _end != null,
+              explicitlyPicking: _pick != _PickMode.none,
+            )) {
+              return;
+            }
+            var p = GeoPoint(latLng.latitude, latLng.longitude);
+            OsmTrailSegment? trailHit;
+            if (_pick == _PickMode.end ||
+                (_pick == _PickMode.none && _start != null)) {
+              trailHit = await _hitTestBikeOverlay(point);
+              if (trailHit != null) {
+                var resolved = trailHit;
+                for (final t in _trailsForLastMile) {
+                  if (t.id == trailHit.id) {
+                    resolved = t;
+                    break;
+                  }
+                }
+                final mile = clipTrailLastMile(
+                  trailLngLat: resolved.geometry,
+                  fromLat: (_start ?? _origin).lat,
+                  fromLng: (_start ?? _origin).lng,
+                  toLat: p.lat,
+                  toLng: p.lng,
+                );
+                if (mile != null) {
+                  p = GeoPoint(mile.destLat, mile.destLng);
+                  trailHit = resolved;
+                }
+              }
+            }
+            if (_pick == _PickMode.via) {
+              p = _snapViaPoint(p);
+            }
+            final wasWithoutOrigin = !_hasRealOrigin;
+            setState(() {
+              switch (_pick) {
+                case _PickMode.via:
+                  _vias.add(LabeledVia(lat: p.lat, lng: p.lng));
+                  break;
+                case _PickMode.end:
+                  _end = p;
+                  _endAddrCtrl.text = _fmtPoint(p);
+                  _pick = _PickMode.none;
+                  _destinationTrail = trailHit;
+                  break;
+                case _PickMode.start:
+                  _start = p;
+                  _startAddrCtrl.text = _fmtPoint(p);
+                  _pick = _PickMode.end;
+                  break;
+                case _PickMode.none:
+                  if (_start == null) {
+                    _start = p;
+                    _startAddrCtrl.text = _fmtPoint(p);
+                    _pick = _PickMode.end;
+                  } else {
+                    _end = p;
+                    _endAddrCtrl.text = _fmtPoint(p);
+                    _destinationTrail = trailHit;
+                  }
+                  break;
+              }
+            });
+            await _syncMarkers();
+            if (wasWithoutOrigin && _hasRealOrigin) {
+              _refreshNearbyDataSources();
+            }
+            if (_start != null && _end != null) {
+              await _calcAb();
+            }
+          },
+          onCameraIdle: () {
+            final cam = _map?.cameraPosition;
+            final t = cam?.target;
+            if (t != null) {
+              unawaited(_ensureBikeOverlay());
+              final next = nextOnlineBasemapStyleUrl(
+                currentStyle: _mapStyle,
+                lng: t.longitude,
+                lat: t.latitude,
+              );
+              if (next != null && next != _mapStyle && mounted) {
+                setState(() => _mapStyle = next);
+              }
+            }
+            final z = cam?.zoom ?? _mapZoom;
+            final crossed = (z > kBikeOverlayVectorMaxZoom) !=
+                (_mapZoom > kBikeOverlayVectorMaxZoom);
+            _mapZoom = z;
+            if (crossed && _bikeOverlayAttached && _showTrailNetwork) {
+              unawaited(_drawAll());
+            }
+            _sGradeDebounce?.cancel();
+            _sGradeDebounce = Timer(const Duration(milliseconds: 450), () {
+              unawaited(_refreshSGradeLive());
+            });
+            _viewportDebounce?.cancel();
+            _viewportDebounce = Timer(const Duration(milliseconds: 800), () {
+              _persistDiscoverViewport();
+              final cam = _map?.cameraPosition?.target;
+              if (cam == null || !mounted) return;
+              final gps = _userPos;
+              if (gps != null) {
+                final d =
+                    _distKm(gps.lat, gps.lng, cam.latitude, cam.longitude);
+                if (d < 25) {
+                  if (_browseAnchor != null) {
+                    setState(() => _browseAnchor = null);
+                    _mergeCatalogNearOrigin();
+                  }
+                  return;
+                }
+              }
+              final next = GeoPoint(cam.latitude, cam.longitude);
+              final prev = _browseAnchor;
+              if (prev != null &&
+                  _distKm(prev.lat, prev.lng, next.lat, next.lng) < 8) {
+                return;
+              }
+              setState(() => _browseAnchor = next);
+              _mergeCatalogNearOrigin();
+            });
+            unawaited(_syncNavPuck());
+          },
+          // Langer Druck → Navigieren (A→B). Im Detail unberührt; im Navigieren
+          // fügt Langdruck einen Via-Punkt hinzu.
+          onMapLongClick: (point, latLng) async {
+            if (_surface == _Surface.detail) return;
+            final p = GeoPoint(latLng.latitude, latLng.longitude);
+            final wasWithoutOrigin = !_hasRealOrigin;
+            if (_surface == _Surface.plan ||
+                _shellMode == DiscoverShellMode.navigate) {
+              setState(() {
+                final snapped = _snapViaPoint(p);
+                _vias.add(LabeledVia(lat: snapped.lat, lng: snapped.lng));
+              });
+              await _syncMarkers();
+              if (_start != null && _end != null) await _calcAb();
+              return;
+            }
+            final asStart = _start == null;
+            setState(() {
+              if (asStart) {
+                _start = p;
+                _startAddrCtrl.text = _fmtPoint(p);
+              } else {
+                _end = p;
+                _endAddrCtrl.text = _fmtPoint(p);
+              }
+            });
+            _openPlan(
+              status: asStart
+                  ? _l10n.discoverStartSetPickEnd
+                  : _l10n.discoverEndSetComputing,
+              pick: asStart ? _PickMode.end : _PickMode.none,
+            );
+            await _syncMarkers();
+            if (wasWithoutOrigin && _hasRealOrigin) {
+              _refreshNearbyDataSources();
+            }
+            if (_start != null && _end != null) {
+              await _calcAb();
+            }
+          },
         ),
         if (!_styleReady) const Positioned.fill(child: MapLoadingScrim()),
       ],
@@ -7324,9 +7340,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                   : AppColors.chipIdleText,
                             ),
                           ),
-                          labelPadding: filterIconOnly && _activeFilterCount <= 0
-                              ? EdgeInsets.zero
-                              : null,
+                          labelPadding:
+                              filterIconOnly && _activeFilterCount <= 0
+                                  ? EdgeInsets.zero
+                                  : null,
                           backgroundColor: _activeFilterCount > 0
                               ? AppColors.accent
                               : AppColors.chipIdle.withValues(alpha: 0.55),
@@ -7353,16 +7370,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           labelPadding: EdgeInsets.zero,
                           onPressed: () =>
                               _setShellMode(DiscoverShellMode.mine),
-                          visualDensity: const VisualDensity(
-                              horizontal: -1, vertical: -2),
+                          visualDensity:
+                              const VisualDensity(horizontal: -1, vertical: -2),
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                           side: BorderSide(
                             color: AppColors.border.withValues(alpha: 0.9),
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.pill),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                         ),
                       ],
@@ -7751,9 +7767,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             top: DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent)
                 ? 6
                 : AppSpacing.s,
-            bottom: DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent)
-                ? 6
-                : 2,
+            bottom:
+                DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent) ? 6 : 2,
           ),
           decoration: BoxDecoration(
             color: AppColors.muted.withValues(alpha: 0.4),
@@ -7924,8 +7939,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           ),
                         ),
                         IconButton(
-                          tooltip: MaterialLocalizations.of(ctx)
-                              .closeButtonTooltip,
+                          tooltip:
+                              MaterialLocalizations.of(ctx).closeButtonTooltip,
                           onPressed: () => Navigator.pop(ctx),
                           icon: const Icon(Icons.close),
                           visualDensity: VisualDensity.compact,
@@ -10095,8 +10110,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final nearbyCatalog = <_RouteSuggestion>[];
     final catalog = <_RouteSuggestion>[];
     for (final r in catalogAll) {
-      final away =
-          _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude);
+      final away = _distKm(o.lat, o.lng, r.center.latitude, r.center.longitude);
       final near = _hasRealOrigin && _isLoop(r) && away <= seedRadiusKm;
       if (near) {
         nearbyCatalog.add(r);

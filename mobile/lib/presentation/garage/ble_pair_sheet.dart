@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
+import '../../domain/ble/garage_ble_live.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
@@ -21,6 +22,8 @@ Future<bool> showBlePairSheet(
   final result = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true,
+    useSafeArea: true,
     showDragHandle: true,
     builder: (ctx) => BlePairSheet(bikeId: bikeId, isEbike: isEbike),
   );
@@ -32,12 +35,22 @@ Future<String?> showBikeBleManageSheet(
   BuildContext context, {
   required bool hasWheel,
   required bool hasDrive,
+  String? wheelName,
+  String? driveName,
 }) {
   return showModalBottomSheet<String>(
     context: context,
+    useRootNavigator: true,
+    useSafeArea: true,
     showDragHandle: true,
     builder: (ctx) {
       final l10n = AppLocalizations.of(ctx);
+      final driveLabel = (driveName != null && driveName.trim().isNotEmpty)
+          ? l10n.bleRemoveDriveNamed(driveName.trim())
+          : l10n.bleRemoveDrive;
+      final wheelLabel = (wheelName != null && wheelName.trim().isNotEmpty)
+          ? l10n.bleRemoveWheelNamed(wheelName.trim())
+          : l10n.bleRemoveWheel;
       return SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -50,13 +63,13 @@ Future<String?> showBikeBleManageSheet(
             if (hasWheel)
               ListTile(
                 leading: const Icon(Icons.speed),
-                title: Text(l10n.bleRemoveWheel),
+                title: Text(wheelLabel),
                 onTap: () => Navigator.pop(ctx, 'unlinkWheel'),
               ),
             if (hasDrive)
               ListTile(
                 leading: const Icon(Icons.electric_bike),
-                title: Text(l10n.bleRemoveDrive),
+                title: Text(driveLabel),
                 onTap: () => Navigator.pop(ctx, 'unlinkDrive'),
               ),
             if (hasWheel && hasDrive)
@@ -95,7 +108,6 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
   String? _pairingId;
   String? _pairStatus;
   BikeBleScanHit? _rememberHit;
-  bool _guideOpen = false;
   late final BleCoreChannel _ble;
   late final BikeBleStore _store;
 
@@ -237,7 +249,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
             bikeId,
             BikeBleDevice(
               deviceId: boschLdiAccessoryId,
-              name: 'Bosch LDI',
+              name: ble.connectedDeviceName ?? 'Intuvia',
               kind: bikeBleKindToStorage(BikeBleKind.bosch),
             ),
           );
@@ -324,7 +336,7 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
           widget.bikeId,
           BikeBleDevice(
             deviceId: boschLdiAccessoryId,
-            name: 'Bosch LDI',
+            name: ble.connectedDeviceName ?? 'Intuvia',
             kind: bikeBleKindToStorage(BikeBleKind.bosch),
           ),
         );
@@ -351,303 +363,111 @@ class _BlePairSheetState extends ConsumerState<BlePairSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final height = MediaQuery.sizeOf(context).height * 0.78;
-    final drives = _hits.where((h) => bikeBleKindIsDrive(h.kind)).toList();
-    final sensors = _hits.where((h) => !bikeBleKindIsDrive(h.kind)).toList();
+    final media = MediaQuery.of(context);
+    final bottomInset = media.viewPadding.bottom;
+    final height = blePairSheetBodyHeight(
+      screenHeight: media.size.height,
+      safeTop: media.viewPadding.top,
+      safeBottom: bottomInset,
+    );
+    final ldiBusy = _pairingId == boschLdiAccessoryId;
+    final status = ldiBusy ? (_pairStatus ?? 'ldi_waiting_flow') : _error;
+    final bottomPad = bottomInset > AppSpacing.l ? bottomInset : AppSpacing.l;
 
-    return SafeArea(
-      child: SizedBox(
-        height: height,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.l,
-            0,
-            AppSpacing.l,
-            AppSpacing.l,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                l10n.bleBikeTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                l10n.blePairLeadFor(isEbike: widget.isEbike),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
-                      height: 1.35,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              if (widget.isEbike)
-                OutlinedButton(
-                  onPressed: _pairingId != null ? null : () => unawaited(_pairBoschLdi()),
-                  child: Text(l10n.bleLdiPairCta),
-                ),
-              if (widget.isEbike) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  l10n.bleLdiPairHint,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.muted,
-                        height: 1.35,
-                      ),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s),
-              _HowToConnect(
-                isEbike: widget.isEbike,
-                open: _hits.isEmpty || _guideOpen,
-                toggleable: _hits.isNotEmpty,
-                onToggle: () => setState(() => _guideOpen = !_guideOpen),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              if (_scanning || _busy || _pairingId != null)
-                const LinearProgressIndicator(minHeight: 2),
-              if (_pairStatus != null) ...[
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  l10n.bleStatusDetailFor(_pairStatus!),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+    return SizedBox(
+      key: const Key('ble-pair-sheet'),
+      height: height,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.l,
+          0,
+          AppSpacing.l,
+          bottomPad,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.bleBikeTitle,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.s),
-                Text(
-                  l10n.bleStatusDetailFor(_error!),
-                  style: const TextStyle(
-                    color: AppColors.error,
-                    fontSize: 13,
-                    height: 1.35,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              l10n.blePairLeadAny,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.muted,
                   ),
-                ),
-              ],
-              if (_rememberHit != null) ...[
-                const SizedBox(height: AppSpacing.s),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: _pairingId != null
-                        ? null
-                        : () => unawaited(_rememberWithoutGatt(_rememberHit!)),
-                    child: Text(l10n.bleRememberAnyway),
-                  ),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.s),
-              Expanded(
-                child: _hits.isEmpty && !_busy
-                    ? _EmptyScan(scanning: _scanning, isEbike: widget.isEbike)
-                    : ListView(
-                        children: [
-                          if (drives.isNotEmpty) ...[
-                            _SectionLabel(l10n.bleSectionDrive),
-                            for (final h in drives)
-                              _HitTile(
-                                hit: h,
-                                pairing: _pairingId == h.deviceId,
-                                pairingLabel: _pairingId == h.deviceId
-                                    ? _pairStatus
-                                    : null,
-                                enabled: _pairingId == null,
-                                onTap: () => unawaited(_pair(h)),
-                              ),
-                            const SizedBox(height: AppSpacing.m),
-                          ],
-                          if (sensors.isNotEmpty) ...[
-                            _SectionLabel(l10n.bleSectionSensors),
-                            for (final h in sensors)
-                              _HitTile(
-                                hit: h,
-                                pairing: _pairingId == h.deviceId,
-                                pairingLabel: _pairingId == h.deviceId
-                                    ? _pairStatus
-                                    : null,
-                                enabled: _pairingId == null,
-                                onTap: () => unawaited(_pair(h)),
-                              ),
-                          ],
-                        ],
-                      ),
-              ),
+            ),
+            if (status != null) ...[
               const SizedBox(height: AppSpacing.s),
               Text(
-                l10n.bleBikeHint,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
-                      height: 1.35,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Row(
-                children: [
-                  TextButton(
-                    onPressed:
-                        _pairingId != null ? null : () => unawaited(_start()),
-                    child: Text(l10n.bleScanAgain),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text(l10n.cancel),
-                  ),
-                ],
+                l10n.bleStatusDetailFor(status),
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.3,
+                  color: _error != null && !ldiBusy
+                      ? AppColors.error
+                      : AppColors.muted,
+                ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HowToConnect extends StatelessWidget {
-  const _HowToConnect({
-    required this.isEbike,
-    required this.open,
-    required this.toggleable,
-    required this.onToggle,
-  });
-
-  final bool isEbike;
-  final bool open;
-  final bool toggleable;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final notes = AppLocalizations.of(context).bleConnectNotesFor(
-      isEbike: isEbike,
-    );
-    return Material(
-      color: AppColors.chipIdle,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: toggleable ? onToggle : null,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.m,
-                vertical: AppSpacing.s,
+            if (_rememberHit != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _pairingId != null
+                      ? null
+                      : () => unawaited(_rememberWithoutGatt(_rememberHit!)),
+                  child: Text(l10n.bleRememberAnyway),
+                ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.bluetooth,
-                    size: 16,
-                    color: AppColors.chrome.withValues(alpha: 0.85),
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(
-                    child: Text(
-                      AppLocalizations.of(context).bleHowTo,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
+            const SizedBox(height: AppSpacing.s),
+            if (_scanning || _busy || _pairingId != null)
+              const LinearProgressIndicator(minHeight: 2),
+            Expanded(
+              child: _hits.isEmpty && !_busy
+                  ? _EmptyScan(scanning: _scanning)
+                  : ListView(
+                      children: [
+                        for (final h in _hits)
+                          _HitTile(
+                            hit: h,
+                            pairing: _pairingId == h.deviceId,
+                            enabled: _pairingId == null,
+                            onTap: () => unawaited(_pair(h)),
+                          ),
+                      ],
                     ),
-                  ),
-                  if (toggleable)
-                    Icon(
-                      open
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: AppColors.muted,
-                    ),
-                ],
-              ),
             ),
-          ),
-          if (open) ...[
-            const Divider(height: 1, color: AppColors.border),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.m,
-                AppSpacing.s,
-                AppSpacing.m,
-                AppSpacing.m,
-              ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < notes.length; i++) ...[
-                    if (i > 0) const SizedBox(height: AppSpacing.s),
-                    _ConnectNoteRow(brand: notes[i].brand, line: notes[i].line),
-                  ],
-                ],
-              ),
+            Row(
+              children: [
+                TextButton(
+                  onPressed:
+                      _pairingId != null ? null : () => unawaited(_start()),
+                  child: Text(l10n.bleScanAgain),
+                ),
+                TextButton(
+                  onPressed: _pairingId != null
+                      ? null
+                      : () => unawaited(_pairBoschLdi()),
+                  child: ldiBusy
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.bleLdiPairCta),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(l10n.cancel),
+                ),
+              ],
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ConnectNoteRow extends StatelessWidget {
-  const _ConnectNoteRow({required this.brand, required this.line});
-
-  final String brand;
-  final String line;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            brand,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
-              color: AppColors.chrome,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            line,
-            style: const TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: AppColors.muted,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.s, top: AppSpacing.xs),
-      child: Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 11,
-          letterSpacing: 0.8,
-          fontWeight: FontWeight.w700,
-          color: AppColors.muted,
         ),
       ),
     );
@@ -655,46 +475,33 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _EmptyScan extends StatelessWidget {
-  const _EmptyScan({required this.scanning, required this.isEbike});
+  const _EmptyScan({required this.scanning});
 
   final bool scanning;
-  final bool isEbike;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              scanning ? Icons.bluetooth_searching : Icons.bluetooth_disabled,
-              size: 36,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            scanning ? Icons.bluetooth_searching : Icons.bluetooth_disabled,
+            size: 28,
+            color: AppColors.muted,
+          ),
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            scanning ? l10n.bleScanningDrive : l10n.bleNothingFound,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
               color: AppColors.muted,
             ),
-            const SizedBox(height: AppSpacing.m),
-            Text(
-              scanning ? l10n.bleScanningDrive : l10n.bleNothingFound,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              isEbike ? l10n.bleEmptyEbike : l10n.bleEmptySensor,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.muted,
-                height: 1.4,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -706,24 +513,21 @@ class _HitTile extends StatelessWidget {
     required this.pairing,
     required this.enabled,
     required this.onTap,
-    this.pairingLabel,
   });
 
   final BikeBleScanHit hit;
   final bool pairing;
   final bool enabled;
   final VoidCallback onTap;
-  final String? pairingLabel;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final rssi = hit.rssi;
-    final bars = rssi >= -60
-        ? 3
-        : rssi >= -75
-            ? 2
-            : 1;
+    final kind = bikeBleKindIsDrive(hit.kind)
+        ? l10n.bleSectionDrive
+        : hit.kind == BikeBleKind.power
+            ? l10n.bleKindPower
+            : l10n.bleWordSensor;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.s),
       child: Material(
@@ -733,7 +537,10 @@ class _HitTile extends StatelessWidget {
           onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.m),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s + 2,
+            ),
             child: Row(
               children: [
                 Icon(
@@ -754,72 +561,30 @@ class _HitTile extends StatelessWidget {
                           fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 2),
                       Text(
-                        [
-                          l10n.bleKindLabel(hit.kind),
-                          if (hit.caps.contains(BikeBleCap.csc)) 'CSC',
-                          if (hit.caps.contains(BikeBleCap.power)) 'Power',
-                          if (hit.caps.contains(BikeBleCap.battery))
-                            l10n.rideBatteryChip,
-                          '$rssi dBm',
-                        ].join(' · '),
+                        l10n.bleConnectTipFor(hit.kind),
                         style: const TextStyle(
                           fontSize: 12,
+                          height: 1.3,
                           color: AppColors.muted,
                         ),
                       ),
-                      if (bikeBleKindIsDrive(hit.kind) ||
-                          hit.kind == BikeBleKind.csc ||
-                          hit.kind == BikeBleKind.power) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.bleConnectTipFor(hit.kind),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.muted,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                      if (pairing && pairingLabel != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.bleStatusDetailFor(pairingLabel!),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
                 if (pairing)
                   const SizedBox(
-                    width: 22,
-                    height: 22,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 else
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < 3; i++)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: Container(
-                            width: 3,
-                            height: 6.0 + i * 4,
-                            decoration: BoxDecoration(
-                              color: i < bars
-                                  ? AppColors.chrome
-                                  : AppColors.border,
-                              borderRadius: BorderRadius.circular(1),
-                            ),
-                          ),
-                        ),
-                    ],
+                  Text(
+                    kind,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
                   ),
               ],
             ),

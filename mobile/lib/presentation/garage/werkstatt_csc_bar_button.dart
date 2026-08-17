@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../domain/bike.dart';
+import '../../domain/ble/ble_link_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import 'ble_pair_sheet.dart';
@@ -15,10 +17,12 @@ class WerkstattCscBarButton extends ConsumerStatefulWidget {
     super.key,
     required this.bikeId,
     this.isEbike = false,
+    this.wheelSize,
   });
 
   final String bikeId;
   final bool isEbike;
+  final WheelSize? wheelSize;
 
   @override
   ConsumerState<WerkstattCscBarButton> createState() =>
@@ -59,9 +63,11 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
 
   bool get _live {
     final ble = ref.read(bleCoreProvider);
-    if (!ble.hasBikeLiveMetrics) return false;
-    return ble.isRemoteLive(_binding.wheel?.deviceId) ||
-        ble.isRemoteLive(_binding.drive?.deviceId);
+    return ble.isBindingLive(
+      wheelId: _binding.wheel?.deviceId,
+      driveId: _binding.drive?.deviceId,
+      driveKind: _binding.drive?.kind,
+    );
   }
 
   Future<void> _pair() async {
@@ -78,6 +84,7 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
       if (!mounted) return;
       if (ok) {
         final ble = ref.read(bleCoreProvider);
+        ble.wheelCircumferenceM = wheelCircumferenceM(widget.wheelSize);
         final name = ble.connectedDeviceName ??
             _binding.wheel?.name ??
             _binding.drive?.name;
@@ -132,6 +139,11 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
       context,
       hasWheel: _binding.wheel != null,
       hasDrive: _binding.drive != null,
+      wheelName: bleWheelDisplayName(storedName: _binding.wheel?.name),
+      driveName: bleDriveDisplayName(
+        storedName: _binding.drive?.name,
+        deviceId: _binding.drive?.deviceId,
+      ),
     );
     await _applyManage(choice);
   }
@@ -142,13 +154,21 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
     final live = _live;
     final saved = !_binding.isEmpty;
     final names = [
-      _binding.drive?.name,
-      _binding.wheel?.name,
-    ].whereType<String>().where((n) => n.trim().isNotEmpty).toList();
+      if (_binding.drive != null)
+        bleDriveDisplayName(
+          storedName: _binding.drive?.name,
+          deviceId: _binding.drive?.deviceId,
+        ),
+      if (_binding.wheel != null)
+        bleWheelDisplayName(storedName: _binding.wheel?.name),
+    ];
+    final label = names.isEmpty ? null : names.join(' · ');
     final tooltip = live
-        ? (names.isEmpty ? l10n.bleSemanticsLive : names.join(' · '))
+        ? (label == null ? l10n.bleSemanticsLive : l10n.bleLinkLiveNamed(label))
         : saved
-            ? l10n.bleTooltipSaved
+            ? (label == null
+                ? l10n.bleTooltipSaved
+                : l10n.bleLinkSavedNamed(label))
             : l10n.bleTooltipPair;
     return Semantics(
       button: true,
@@ -177,9 +197,7 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
                       Icon(
                         Icons.bluetooth,
                         size: 22,
-                        color: live
-                            ? AppColors.chrome
-                            : AppColors.muted,
+                        color: live ? AppColors.chrome : AppColors.muted,
                       ),
                       if (live)
                         Positioned(

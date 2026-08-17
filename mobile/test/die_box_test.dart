@@ -151,7 +151,8 @@ void main() {
         ),
       ],
     );
-    expect(catalog.today.any((t) => t.id == DieBoxItemId.pressureUnknown), isTrue);
+    expect(
+        catalog.today.any((t) => t.id == DieBoxItemId.pressureUnknown), isTrue);
 
     final user = planDieBox(
       bike: bike,
@@ -169,7 +170,8 @@ void main() {
         ),
       ],
     );
-    expect(user.today.any((t) => t.id == DieBoxItemId.pressureUnknown), isFalse);
+    expect(
+        user.today.any((t) => t.id == DieBoxItemId.pressureUnknown), isFalse);
   });
 
   test('Empty honesty: no trophy sentence, no ghost fork for city', () {
@@ -253,6 +255,43 @@ void main() {
     expect(plan.chips.map((c) => c.label), isNot(contains('CSC')));
   });
 
+  test('STEPS without a wheel sensor asks to pair CSC', () {
+    final plan = planDieBox(
+      bike: _bike(
+        id: 'e2',
+        name: 'EP8',
+        category: BikeCategory.emtb,
+        travelF: 140,
+        travelR: 140,
+        ebike: true,
+      ),
+      cscPaired: false,
+      driveNeedsWheelSensor: true,
+    );
+    expect(plan.today.any((t) => t.id == DieBoxItemId.pairCsc), isTrue);
+    expect(
+      plan.today.where((t) => t.id == DieBoxItemId.pairCsc).first.cta,
+      'Koppeln',
+    );
+  });
+
+  test('STEPS with CSC does not nag again', () {
+    final plan = planDieBox(
+      bike: _bike(
+        id: 'e3',
+        name: 'EP8',
+        category: BikeCategory.emtb,
+        travelF: 140,
+        travelR: 140,
+        ebike: true,
+      ),
+      cscPaired: true,
+      driveNeedsWheelSensor: true,
+    );
+    expect(plan.today.any((t) => t.id == DieBoxItemId.pairCsc), isFalse);
+    expect(plan.chips.map((c) => c.label), contains('CSC'));
+  });
+
   test('Am Rad lists core slots, not the OEM dump', () {
     final bike = _bike(
       id: 'j1',
@@ -315,9 +354,7 @@ void main() {
       ebike: true,
     );
     expect(
-      planDieBox(bike: bike, cscPaired: false)
-          .chips
-          .map((c) => c.label),
+      planDieBox(bike: bike, cscPaired: false).chips.map((c) => c.label),
       isNot(contains('CSC')),
     );
     expect(
@@ -382,7 +419,8 @@ void main() {
       components: [_part('g2', ComponentSlot.fork)],
     );
     expect(gravelPlan.setup.showsFahrwerk, isTrue);
-    expect(gravelPlan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isTrue);
+    expect(
+        gravelPlan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isTrue);
     expect(gravelPlan.addableSlots, contains(ComponentSlot.fork));
     expect(gravelPlan.addableSlots, isNot(contains(ComponentSlot.rearShock)));
 
