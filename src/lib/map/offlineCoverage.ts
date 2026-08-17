@@ -1,14 +1,16 @@
 /**
  * Offline routing packs vs named envelopes — counts from catalog + registry.
  * Never hardcode “83 packs” on the website.
+ *
+ * CDN fetch only — do not import offlinePacks.ts (Node fs). Local dist/
+ * scanning stays on /api/offline/packs.
  */
 
 import { DACH_ENVELOPE_REGIONS } from "@/lib/coverage/dachRegions";
 import {
   fetchPublishedCatalog,
-  listMergedOfflineCatalog,
   summarizeOfflinePacks,
-} from "@/lib/routing/offlinePacks";
+} from "@/lib/routing/offlinePackCatalog";
 
 export type OfflineCoverageStats = {
   catalogOk: boolean;
@@ -33,20 +35,10 @@ export async function loadOfflineCoverageStats(): Promise<OfflineCoverageStats> 
         envelopeRegions,
       };
     }
-    const merged = await listMergedOfflineCatalog();
-    if (!merged.length) {
-      return {
-        catalogOk: false,
-        readyPacks: null,
-        stubPacks: null,
-        envelopeRegions,
-      };
-    }
-    const summary = summarizeOfflinePacks(merged);
     return {
-      catalogOk: true,
-      readyPacks: summary.ready,
-      stubPacks: summary.stub,
+      catalogOk: false,
+      readyPacks: null,
+      stubPacks: null,
       envelopeRegions,
     };
   } catch {

@@ -1,12 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { Suspense } from "react";
 import { AppDownloadButtons } from "@/components/landing/AppDownloadButtons";
-import {
-  KartenCoverageFallback,
-  KartenCoverageSection,
-} from "@/components/landing/KartenCoverageSection";
 import { Home, Map, BookOpen, Smartphone, Store, Wrench } from "lucide-react";
 import { HOME_FAQ_IDS } from "@/lib/content/homepage";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
@@ -30,7 +26,11 @@ const REGION_CHIPS = [
   { slug: "schweiz", name: "Schweiz" },
 ] as const;
 
-export function HomePageBody() {
+export function HomePageBody({
+  mapsCoverage,
+}: {
+  mapsCoverage: ReactNode;
+}) {
   const lang = useChromeLang();
   const h = useHomepageCopy();
   const chrome = webChrome(lang);
@@ -142,9 +142,7 @@ export function HomePageBody() {
         </div>
       </section>
 
-      <Suspense fallback={<KartenCoverageFallback />}>
-        <KartenCoverageSection />
-      </Suspense>
+      {mapsCoverage}
 
       <section className="px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
