@@ -54,6 +54,20 @@ const NON_DACH_SHEETS = [
     bbox: [11.5, 43.5, 14.1, 46.15],
   },
   {
+    id: "italy-center",
+    archiveId: "italy-center-z11",
+    file: "cycle-routes-italy-center",
+    name: "Mitteitalien Radnetz",
+    bbox: [10.15, 40.62, 14.9, 43.85],
+  },
+  {
+    id: "italy-south",
+    archiveId: "italy-south-z11",
+    file: "cycle-routes-italy-south",
+    name: "Süditalien Radnetz",
+    bbox: [14.7, 37.95, 18.55, 41.3],
+  },
+  {
     id: "catalonia-pyrenees",
     archiveId: "catalonia-pyrenees-z11",
     file: "cycle-routes-catalonia-pyrenees",

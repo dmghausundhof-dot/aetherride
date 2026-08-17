@@ -62,15 +62,15 @@ assert.ok(
     "cycle-routes-alps-south.pmtiles"
   )
 );
-assert.equal(
-  onlineCycleMeshPmtilesUrl(12.5, 41.9),
-  null,
-  "Rome has no mesh file on CDN yet"
+assert.ok(
+  onlineCycleMeshPmtilesUrl(12.5, 41.9)?.includes(
+    "cycle-routes-italy-center.pmtiles"
+  )
 );
-assert.equal(
-  onlineCycleMeshPmtilesUrl(16.7, 40.2),
-  null,
-  "Puglia has no mesh file on CDN yet"
+assert.ok(
+  onlineCycleMeshPmtilesUrl(16.7, 40.2)?.includes(
+    "cycle-routes-italy-south.pmtiles"
+  )
 );
 
 assert.equal(
