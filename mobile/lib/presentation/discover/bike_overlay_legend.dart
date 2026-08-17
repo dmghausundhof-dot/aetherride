@@ -189,6 +189,17 @@ class _BikeOverlayLegendState extends State<BikeOverlayLegend> {
                   ),
                 ),
               ],
+              if (!mesh && _expanded) ...[
+                const SizedBox(height: 4),
+                const Text(
+                  'Asphalt blau, Schotter gold, Natur braun. Ohne Tag grau — DACH-Wege noch ohne surface-Feld.',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 9,
+                    height: 1.25,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

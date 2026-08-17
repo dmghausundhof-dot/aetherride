@@ -354,6 +354,9 @@ async function ingestSeq(inputPath: string, seqPath: string) {
             highway: tags.highway || "",
             name: tags.name || tags["name:de"] || "",
             osm_id: osmId,
+            // Style colors by OSM surface; tracktype backs gravel when surface is empty.
+            surface: tags.surface || "",
+            tracktype: tags.tracktype || "",
           },
           geometry: { type: "LineString", coordinates: coords },
         })
@@ -398,6 +401,7 @@ async function tileAndMaybeUpload(upload: boolean) {
     sourceLayer: "bike",
     bbox: DACH_BBOX,
     highways: ["cycleway", "path", "track"],
+    properties: ["bike_class", "mtb_scale", "highway", "name", "osm_id", "surface", "tracktype"],
     minzoom: 10,
     maxzoom: 13,
     builtAt: new Date().toISOString(),

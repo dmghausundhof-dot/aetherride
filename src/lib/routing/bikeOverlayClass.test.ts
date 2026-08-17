@@ -10,6 +10,7 @@ import {
   overlayLegendRows,
   overlayLegendShowsSScale,
   parseOsmMtbScale,
+  bikeOverlaySurfaceKind,
 } from "./bikeOverlayClass";
 
 function testParseScale() {
@@ -146,6 +147,19 @@ function testLegendCompact() {
   );
 }
 
+function testSurfaceKindRideability() {
+  assert.equal(bikeOverlaySurfaceKind("asphalt"), "paved");
+  assert.equal(bikeOverlaySurfaceKind("concrete"), "paved");
+  assert.equal(bikeOverlaySurfaceKind("compacted"), "gravel");
+  assert.equal(bikeOverlaySurfaceKind("fine_gravel"), "gravel");
+  assert.equal(bikeOverlaySurfaceKind("dirt"), "dirt");
+  assert.equal(bikeOverlaySurfaceKind("ground"), "dirt");
+  assert.equal(bikeOverlaySurfaceKind("unpaved"), "dirt");
+  assert.equal(bikeOverlaySurfaceKind(""), "unknown");
+  assert.equal(bikeOverlaySurfaceKind(undefined), "unknown");
+  assert.equal(bikeOverlaySurfaceKind("woodchips"), "unknown");
+}
+
 testParseScale();
 testMtbTagged();
 testImbaTagged();
@@ -159,4 +173,5 @@ testUrbanLivingStreet();
 testUrbanCycleLane();
 testFamilyDefaults();
 testLegendCompact();
+testSurfaceKindRideability();
 console.log("bikeOverlayClass.test.ts: ok");

@@ -110,6 +110,8 @@ const kOnlineCycleMeshFiles = <String, String>{
   kAlpsSouthBasemapId: 'cycle-routes-alps-south.pmtiles',
   kBeneluxBasemapId: 'cycle-routes-benelux.pmtiles',
   kItalyNorthBasemapId: 'cycle-routes-italy-north.pmtiles',
+  kItalyCenterBasemapId: 'cycle-routes-italy-center.pmtiles',
+  kItalySouthBasemapId: 'cycle-routes-italy-south.pmtiles',
   kCataloniaPyreneesBasemapId: 'cycle-routes-catalonia-pyrenees.pmtiles',
   kUkSouthBasemapId: 'cycle-routes-uk-south.pmtiles',
 };

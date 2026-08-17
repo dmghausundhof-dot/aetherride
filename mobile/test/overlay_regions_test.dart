@@ -82,10 +82,18 @@ void main() {
     expect(parisWays.kind, OnlineBikeOverlayKind.ways);
     expect(parisWays.url, contains('/paris/bike-overlay.pmtiles'));
 
-    expect(pointInOnlineCycleMesh(12.5, 41.9), isFalse);
+    expect(pointInOnlineCycleMesh(12.5, 41.9), isTrue);
     expect(
       chooseOnlineBikeOverlay(lng: 12.5, lat: 41.9, zoom: 8).kind,
-      OnlineBikeOverlayKind.none,
+      OnlineBikeOverlayKind.mesh,
+    );
+    expect(
+      chooseOnlineBikeOverlay(lng: 12.5, lat: 41.9, zoom: 8).url,
+      contains('cycle-routes-italy-center.pmtiles'),
+    );
+    expect(
+      chooseOnlineBikeOverlay(lng: 16.7, lat: 40.2, zoom: 8).url,
+      contains('cycle-routes-italy-south.pmtiles'),
     );
   });
 }

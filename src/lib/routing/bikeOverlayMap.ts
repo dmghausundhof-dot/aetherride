@@ -1,6 +1,9 @@
 import type { BikeOverlayClass, BikeOverlayFamily } from "./bikeOverlayClass";
 import {
   BIKE_OVERLAY_COLORS,
+  BIKE_OVERLAY_SURFACE_DIRT,
+  BIKE_OVERLAY_SURFACE_GRAVEL,
+  BIKE_OVERLAY_SURFACE_PAVED,
   overlayClassesForFamily,
 } from "./bikeOverlayClass";
 import {
@@ -41,6 +44,30 @@ const MTB_COLOR: unknown = [
   BIKE_OVERLAY_COLORS.unrated,
 ];
 
+/**
+ * Color cycleway/path/track by OSM `surface` when the tile has the field.
+ * Missing field (older DACH ways / some city packs) keeps [fallback]
+ * so class colors from PR #66/#70 still read. Empty tag → muted unknown.
+ */
+export function bikeOverlaySurfaceLineColor(fallback: string): unknown[] {
+  return [
+    "case",
+    ["!", ["has", "surface"]],
+    fallback,
+    [
+      "match",
+      ["downcase", ["to-string", ["coalesce", ["get", "surface"], ""]]],
+      [...BIKE_OVERLAY_SURFACE_PAVED],
+      BIKE_OVERLAY_COLORS.road,
+      [...BIKE_OVERLAY_SURFACE_GRAVEL],
+      BIKE_OVERLAY_COLORS.gravel,
+      [...BIKE_OVERLAY_SURFACE_DIRT],
+      BIKE_OVERLAY_COLORS.dirt,
+      BIKE_OVERLAY_COLORS.unrated,
+    ],
+  ];
+}
+
 type LinePaint = {
   id: string;
   cls: Exclude<BikeOverlayClass, "hidden">;
@@ -62,7 +89,7 @@ const LAYER_PAINT: LinePaint[] = [
     id: BIKE_OVERLAY_LAYER_IDS.mtb_unrated,
     cls: "mtb_unrated",
     filter: ["==", ["get", "bike_class"], "mtb_unrated"],
-    color: BIKE_OVERLAY_COLORS.unrated,
+    color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.unrated),
     width: 1.6,
     dasharray: [2, 1.4],
   },
@@ -70,21 +97,21 @@ const LAYER_PAINT: LinePaint[] = [
     id: BIKE_OVERLAY_LAYER_IDS.gravel,
     cls: "gravel",
     filter: ["==", ["get", "bike_class"], "gravel"],
-    color: BIKE_OVERLAY_COLORS.gravel,
+    color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.gravel),
     width: 2,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.road,
     cls: "road",
     filter: ["==", ["get", "bike_class"], "road"],
-    color: BIKE_OVERLAY_COLORS.road,
+    color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.road),
     width: 2.2,
   },
   {
     id: BIKE_OVERLAY_LAYER_IDS.urban,
     cls: "urban",
     filter: ["==", ["get", "bike_class"], "urban"],
-    color: BIKE_OVERLAY_COLORS.urban,
+    color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.urban),
     width: 1.8,
   },
 ];
@@ -298,6 +325,7 @@ export function applyBikeOverlayVisibility(
 
     map.setFilter(layer.id, resolvedFilter);
     map.setLayoutProperty(layer.id, "visibility", "visible");
+    map.setPaintProperty(layer.id, "line-color", layer.color);
     map.setPaintProperty(layer.id, "line-opacity", 0.88);
     const width =
       highlightMtb && layer.cls === "mtb" ? layer.width * 1.25 : layer.width;

@@ -8,6 +8,7 @@ import {
   overlayLegendLabel,
 } from "@/lib/i18n/overlayCopy";
 import {
+  BIKE_OVERLAY_SURFACE_LEGEND,
   overlayClassesForFamily,
   overlayLegendColor,
   overlayLegendRows,
@@ -137,6 +138,31 @@ export function BikeOverlayLegend({
             );
           })}
         </ul>
+      ) : null}
+      {!mesh ? (
+        <ul className="mt-1.5 flex flex-col gap-0.5">
+          {BIKE_OVERLAY_SURFACE_LEGEND.map((row) => (
+            <li
+              key={row.key}
+              className="flex items-center gap-1.5 text-[9px] text-white/70"
+            >
+              <span
+                className="inline-block h-0.5 w-3.5 rounded-full"
+                style={{ background: row.color }}
+              />
+              <span>
+                {row.key === "gravel"
+                  ? o.surfaceGravel
+                  : overlayLegendLabel(row.key, lang)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {!mesh ? (
+        <p className="mt-1 max-w-[11rem] text-[9px] leading-snug text-white/55">
+          {o.surfaceNote}
+        </p>
       ) : null}
       {showNote ? (
         <p className="mt-1.5 max-w-[11rem] text-[9px] leading-snug text-white/55">

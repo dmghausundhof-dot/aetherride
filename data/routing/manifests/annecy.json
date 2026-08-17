@@ -7,10 +7,11 @@
     6.25,
     45.98
   ],
-  "builtAt": "2026-08-15T10:55:48Z",
+  "builtAt": "2026-08-17T07:37:46Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,37 @@
       "bytes": 2654577,
       "sha256": "2eec88d21a6a4bedb46cf68cd1615f566f10164de92ee7df9d6351e8b0d816a1",
       "sha256_16": "2eec88d21a6a4bed"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2324210,
+      "sha256": "f265bf140fd0b1762b04ef4a1923fca4a38c4303a1b07389199d44af6fc77995",
+      "sha256_16": "f265bf140fd0b176"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 751084,
+      "sha256": "bff37e73b2130e72d727ac696df3e79d8002a7ba29f147bc5dabb94fdd30188b",
+      "sha256_16": "bff37e73b2130e72"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/annecy",
     "pack": "annecy.tar.zst",
     "packGz": "annecy.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class",
+    "properties": [
+      "bike_class",
+      "mtb_scale",
+      "highway",
+      "name",
+      "osm_id",
+      "surface",
+      "tracktype"
+    ]
   }
 }

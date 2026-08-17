@@ -127,9 +127,13 @@ if [[ "$TILE_ONLY" -eq 0 ]]; then
     echo "==> classify append $name"
     npx tsx "$ROOT/scripts/routing/build-dach-ways-overlay.ts" \
       --ingest-seq "$WORK/${name}-bike.geojsonseq"
-    rm -f "$CACHE/${name}.osm.pbf" \
-      "$WORK/${name}-bike.osm.pbf" \
-      "$WORK/${name}-bike.geojsonseq"
+    rm -f "$WORK/${name}-bike.osm.pbf" "$WORK/${name}-bike.geojsonseq"
+    # Keep the Geofabrik extract when disk allows — next surface rebuild
+    # should not re-download. Drop it only under pressure or KEEP_EXTRACTS=0.
+    avail="$(df -BG / | awk 'NR==2{gsub("G","",$4); print $4}')"
+    if [[ "${KEEP_EXTRACTS:-1}" != "1" || "$avail" -lt 20 ]]; then
+      rm -f "$CACHE/${name}.osm.pbf"
+    fi
     echo "$name" >> "$PROGRESS"
     echo "==> done $name seq=$(wc -c < "$SEQ") bytes"
   done

@@ -13,6 +13,7 @@ assert.ok(KARTEN_PAGE.onlineLead.includes("ganzen DACH"));
 assert.ok(KARTEN_PAGE.pathsNote.includes("Zoom 11"));
 assert.ok(KARTEN_PAGE.pathsNote.includes("Zoom 12"));
 assert.ok(KARTEN_PAGE.pathsNote.includes("Berlin"));
+assert.ok(KARTEN_PAGE.pathsNote.includes("surface"));
 assert.ok(!KARTEN_PAGE.waysHint.includes("Hausbergen"));
 assert.ok(KARTEN_PAGE.waysHint.includes("DACH"));
 assert.ok(KARTEN_PAGE.offlineLead.includes("Routing"));

@@ -226,7 +226,11 @@ void main() {
     );
     expect(
       onlineCycleMeshPmtilesUrlForPoint(12.5, 41.9),
-      isNull,
+      contains('cycle-routes-italy-center.pmtiles'),
+    );
+    expect(
+      onlineCycleMeshPmtilesUrlForPoint(16.7, 40.2),
+      contains('cycle-routes-italy-south.pmtiles'),
     );
     expect(styleUsesCatalogHillshade(dach), isTrue);
     expect(
