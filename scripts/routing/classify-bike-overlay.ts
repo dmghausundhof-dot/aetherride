@@ -184,6 +184,7 @@ async function main() {
           name: feat.properties?.name || feat.properties?.["name:de"] || "",
           osm_id: id != null ? String(id) : "",
           surface: tags.surface || "",
+          tracktype: tags.tracktype || "",
         },
         geometry: { type: "LineString", coordinates: coords },
       };

@@ -36,7 +36,7 @@ const DE: OverlayCopy = {
   surfaceDirt: "Naturweg",
   surfaceUnknown: "ohne Tag",
   surfaceNote:
-    "Farbe nach OSM-surface, wo die Kachel den Tag trägt. Ältere DACH-Wege ohne das Feld bleiben in der Klassenfarbe.",
+    "Farbe nach OSM-surface. Fehlt der Tag, bleibt die Klassenfarbe.",
 };
 
 const EN: OverlayCopy = {
@@ -57,7 +57,7 @@ const EN: OverlayCopy = {
   surfaceDirt: "Dirt",
   surfaceUnknown: "no tag",
   surfaceNote:
-    "Color follows OSM surface where the tile has the tag. Older DACH ways without the field keep class colors.",
+    "Color follows OSM surface. Untagged ways keep class colors.",
 };
 
 const FR: OverlayCopy = {
@@ -78,7 +78,7 @@ const FR: OverlayCopy = {
   surfaceDirt: "Chemin naturel",
   surfaceUnknown: "sans tag",
   surfaceNote:
-    "Couleur selon OSM surface quand la tuile porte le tag. Les chemins DACH plus anciens sans ce champ gardent la couleur de classe.",
+    "Couleur selon OSM surface. Sans tag, la couleur de classe reste.",
 };
 
 const IT: OverlayCopy = {
@@ -99,7 +99,7 @@ const IT: OverlayCopy = {
   surfaceDirt: "Sterrato",
   surfaceUnknown: "senza tag",
   surfaceNote:
-    "Colore da OSM surface dove la tessera ha il tag. Le vie DACH più vecchie senza il campo restano nel colore di classe.",
+    "Colore da OSM surface. Senza tag resta il colore di classe.",
 };
 
 const BY_LANG: Record<ChromeLang, OverlayCopy> = {

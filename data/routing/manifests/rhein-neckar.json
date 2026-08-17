@@ -7,7 +7,7 @@
     9.0,
     49.6
   ],
-  "builtAt": "2026-08-12T21:56:21Z",
+  "builtAt": "2026-08-17T07:37:21Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": false,
@@ -30,14 +30,14 @@
       "sha256_16": "61bdebf59f915d20"
     },
     "bike-overlay.geojson": {
-      "bytes": 13723164,
-      "sha256": "352d99b936cbee74ec061da8615f4ce040c4aa689f1056491421c167234c1f2e",
-      "sha256_16": "352d99b936cbee74"
+      "bytes": 15073023,
+      "sha256": "3e9d55d9e6179cb669e008e8027f60453108e2a041727d2b12d238c8009ff27a",
+      "sha256_16": "3e9d55d9e6179cb6"
     },
     "bike-overlay.pmtiles": {
-      "bytes": 5412530,
-      "sha256": "1e5c7b36a7b704571cf85fde0f306d5f8d63e2e58e6ba72f114a12764226f951",
-      "sha256_16": "1e5c7b36a7b70457"
+      "bytes": 5839919,
+      "sha256": "c08b235e4e8fb327d006ed8e9fa8b867f3a0cb7a7950a7dcf51770bcde5432c2",
+      "sha256_16": "c08b235e4e8fb327"
     }
   },
   "cdn": {
@@ -50,6 +50,15 @@
     "pmtiles": "bike-overlay.pmtiles",
     "geojson": "bike-overlay.geojson",
     "sourceLayer": "bike",
-    "property": "bike_class"
+    "property": "bike_class",
+    "properties": [
+      "bike_class",
+      "mtb_scale",
+      "highway",
+      "name",
+      "osm_id",
+      "surface",
+      "tracktype"
+    ]
   }
 }

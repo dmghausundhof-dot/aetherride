@@ -7,10 +7,11 @@
     5.05,
     45.9
   ],
-  "builtAt": "2026-08-15T11:48:05Z",
+  "builtAt": "2026-08-17T07:37:38Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,37 @@
       "bytes": 2765806,
       "sha256": "1dd69fdcbac493e869ad7a9c4f2dd6ab94b32033e8b910cbef8e7f62b99a16c4",
       "sha256_16": "1dd69fdcbac493e8"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 4094850,
+      "sha256": "26e5b70fe73de5c428c2a31395ff5a1f10fae27cb7982ed423e20c6b8e387f7e",
+      "sha256_16": "26e5b70fe73de5c4"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1612107,
+      "sha256": "f11773935561c95d23ced69fde56e9d524c6fcf2e80b792a504d1ec2a2695c0d",
+      "sha256_16": "f11773935561c95d"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/lyon",
     "pack": "lyon.tar.zst",
     "packGz": "lyon.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class",
+    "properties": [
+      "bike_class",
+      "mtb_scale",
+      "highway",
+      "name",
+      "osm_id",
+      "surface",
+      "tracktype"
+    ]
   }
 }

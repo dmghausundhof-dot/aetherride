@@ -7,7 +7,7 @@
     8.2,
     48.15
   ],
-  "builtAt": "2026-08-15T11:33:51Z",
+  "builtAt": "2026-08-17T07:37:33Z",
   "engines": {
     "offline_graph": true,
     "valhalla_tiles": true,
@@ -38,14 +38,14 @@
       "sha256_16": "0180a0872051244c"
     },
     "bike-overlay.geojson": {
-      "bytes": 15226941,
-      "sha256": "c834019d78e0fdaf6056fc72ca97fa0d1b33828af7b319026a4e12f5aca89124",
-      "sha256_16": "c834019d78e0fdaf"
+      "bytes": 15889642,
+      "sha256": "ce60491d4076764850b0541c2edba9d66dd982313edf4684c0cb3ef99d7203f0",
+      "sha256_16": "ce60491d40767648"
     },
     "bike-overlay.pmtiles": {
-      "bytes": 5678026,
-      "sha256": "1e926cdff2459df6097f5deb56992e149bd75b6c0f16f7521e21ea941cc3e46e",
-      "sha256_16": "1e926cdff2459df6"
+      "bytes": 5815151,
+      "sha256": "181dd9e6cd4e9618ffa89d307fff7038409434f541ccb366c7321e1568953ca4",
+      "sha256_16": "181dd9e6cd4e9618"
     },
     "schwarzwald-nord.tar.zst": {
       "bytes": 21915940,
@@ -63,6 +63,15 @@
     "pmtiles": "bike-overlay.pmtiles",
     "geojson": "bike-overlay.geojson",
     "sourceLayer": "bike",
-    "property": "bike_class"
+    "property": "bike_class",
+    "properties": [
+      "bike_class",
+      "mtb_scale",
+      "highway",
+      "name",
+      "osm_id",
+      "surface",
+      "tracktype"
+    ]
   }
 }
