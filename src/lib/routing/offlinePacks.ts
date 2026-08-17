@@ -38,6 +38,8 @@ export {
   parsePublishedCatalog,
   pickPreferredManifest,
   publicOfflinePackObjectUrl,
+  publicValhallaTilesObjectUrl,
+  publicValhallaTilesUrlForPoint,
   sortCatalogPacks,
   summarizeOfflinePacks,
 } from "./offlinePackCatalog";

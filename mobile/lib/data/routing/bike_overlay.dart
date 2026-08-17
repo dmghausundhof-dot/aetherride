@@ -50,6 +50,24 @@ const kDetailBikeOverlayPacks = <String>{
   'den-haag',
   'eindhoven',
   'groningen',
+  'lille',
+  'montpellier',
+  'grenoble',
+  'dijon',
+  'chambery',
+  'clermont-ferrand',
+  'reims',
+  'rennes',
+  'rouen',
+  'alsace-vins',
+  'nancy-moselle',
+  'jura-fr',
+  'milano',
+  'torino',
+  'firenze',
+  'roma',
+  'napoli',
+  'bari',
 };
 
 enum OnlineBikeOverlayKind { ways, mesh, none }
@@ -100,6 +118,43 @@ bool pointInOnlineCycleMesh(double lng, double lat) =>
 bool pointInDachWays(double lng, double lat) =>
     lng >= 5.8 && lng <= 17.25 && lat >= 45.75 && lat <= 55.15;
 
+class _CountryWaysSheet {
+  const _CountryWaysSheet(this.url, this.bbox);
+  final String url;
+  final List<double> bbox; // W,S,E,N
+  bool contains(double lng, double lat) =>
+      lng >= bbox[0] &&
+      lat >= bbox[1] &&
+      lng <= bbox[2] &&
+      lat <= bbox[3];
+  double get area => (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]);
+}
+
+/// Smallest country/sheet ways file that covers the point (CDN).
+const kCountryWaysSheets = <_CountryWaysSheet>[
+  _CountryWaysSheet(kNlWaysPmtilesUrl, [3.2, 50.75, 7.25, 53.7]),
+  _CountryWaysSheet(kBeWaysPmtilesUrl, [2.4, 49.4, 6.45, 51.55]),
+  _CountryWaysSheet(kUkSouthWaysPmtilesUrl, [-1.5, 50.5, 1.8, 52.5]),
+  _CountryWaysSheet(kItalyWaysPmtilesUrl, [6.6, 36.6, 18.55, 47.1]),
+  _CountryWaysSheet(kFranceWaysPmtilesUrl, [-5.3, 42.3, 8.5, 51.15]),
+  _CountryWaysSheet(kDachWaysPmtilesUrl, [5.8, 45.75, 17.25, 55.15]),
+];
+
+bool pointInNlWays(double lng, double lat) {
+  if (lng < 3.2 || lng > 7.25 || lat > 53.7) return false;
+  if (lng >= 5.5) return lat >= 50.75;
+  return lat >= 51.15;
+}
+
+String? countryWaysPmtilesUrl(double lng, double lat) {
+  if (pointInNlWays(lng, lat)) return kNlWaysPmtilesUrl;
+  for (final s in kCountryWaysSheets) {
+    if (s.url == kNlWaysPmtilesUrl) continue;
+    if (s.contains(lng, lat)) return s.url;
+  }
+  return null;
+}
+
 String? detailOverlayPackIdForPoint(double lng, double lat) {
   final hits = [
     for (final r in kOverlayRegions)
@@ -126,11 +181,14 @@ OnlineBikeOverlayChoice chooseOnlineBikeOverlay({
       url: AppConfig.offlinePackObjectUrl(packId, kBikeOverlayPmtilesName),
     );
   }
-  if (zoom >= kBikeWaysMinZoom && pointInDachWays(lng, lat)) {
-    return const OnlineBikeOverlayChoice(
-      kind: OnlineBikeOverlayKind.ways,
-      url: kDachWaysPmtilesUrl,
-    );
+  if (zoom >= kBikeWaysMinZoom) {
+    final country = countryWaysPmtilesUrl(lng, lat);
+    if (country != null) {
+      return OnlineBikeOverlayChoice(
+        kind: OnlineBikeOverlayKind.ways,
+        url: country,
+      );
+    }
   }
   final meshUrl = onlineCycleMeshPmtilesUrlForPoint(lng, lat);
   if (meshUrl != null) {

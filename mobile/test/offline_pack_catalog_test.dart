@@ -15,7 +15,7 @@ void main() {
     expect(stub!.isReady, isFalse);
     expect(
       offlinePackSubtitle(stub, active: false, installed: false),
-      'Noch nicht gebaut',
+      'Envelope ohne Graph — online-only, nichts zum Laden',
     );
   });
 
@@ -32,7 +32,7 @@ void main() {
     expect(formatPackBytes(row.bytes), '10.5 MB');
     expect(
       offlinePackSubtitle(row, active: false, installed: false),
-      '10.5 MB · Routing + Karte',
+      '10.5 MB · Graph + Karte',
     );
   });
 

@@ -1,16 +1,17 @@
 {
   "id": "chambery",
-  "name": "Chamb\u00e9ry / Lac du Bourget",
+  "name": "Chambéry / Lac du Bourget",
   "bbox": [
     5.8,
     45.48,
     6.05,
     45.68
   ],
-  "builtAt": "2026-08-15T11:47:29Z",
+  "builtAt": "2026-08-17T13:19:00.934Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2660859,
       "sha256": "af559e4b8f0e864355e16ad05dcf41901045db04d3926c2aed852fa00d63de56",
       "sha256_16": "af559e4b8f0e8643"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 3111963,
+      "sha256": "580b20c9db3835ad985489f2a947554036208e45f3861af6e33c1592cccb7090",
+      "sha256_16": "580b20c9db3835ad"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1017265,
+      "sha256": "a877e3f886439ffa8394515d14105ce047991923e0bd989a16e872e793197a59",
+      "sha256_16": "a877e3f886439ffa"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/chambery",
     "pack": "chambery.tar.zst",
     "packGz": "chambery.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

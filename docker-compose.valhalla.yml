@@ -1,5 +1,10 @@
-# Local Valhalla for FlowLine (Schwarzwald-Nord demo tiles).
-# Start: docker compose -f docker-compose.valhalla.yml up -d
+# Local Valhalla — serves tiles from data/routing/dist/<id>/custom_files
+#
+# VALHALLA_REGION = pack id (must match a built dist folder + valhallaRegions.ts id).
+# Default: schwarzwald-nord
+# Examples: nl-netherlands, be-belgium, de-bayern, de-nrw, fr-ile-de-france, it-centro
+#
+# Start: VALHALLA_REGION=nl-netherlands docker compose -f docker-compose.valhalla.yml up -d
 # Health: curl -s http://127.0.0.1:8002/status
 services:
   valhalla:
@@ -8,7 +13,8 @@ services:
     ports:
       - "8002:8002"
     volumes:
-      - ./data/routing/dist/schwarzwald-nord/custom_files:/custom_files
+      # VALHALLA_REGION selects which region's custom_files mount
+      - ./data/routing/dist/${VALHALLA_REGION:-schwarzwald-nord}/custom_files:/custom_files
     environment:
       # Existing tiles already in custom_files — do not rebuild from PBF
       use_tiles_ignore_pbf: "True"

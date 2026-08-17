@@ -1,0 +1,27 @@
+{
+  "id": "roma",
+  "name": "Rom / Tiber",
+  "bbox": [
+    12.35,
+    41.8,
+    12.65,
+    42
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf",
+    "note": "IT regional extract, clip auf Stadt-bbox."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/roma",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "roma.tar.zst"
+  }
+}

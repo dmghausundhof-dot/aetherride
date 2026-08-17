@@ -7,10 +7,11 @@
     6.3,
     48.78
   ],
-  "builtAt": "2026-08-15T11:05:03Z",
+  "builtAt": "2026-08-17T13:26:58.123Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2690375,
       "sha256": "23526506cdbda42ed3073cedc05f34f7d2837d2cb0075b87bbc452469aca1b60",
       "sha256_16": "23526506cdbda42e"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2758078,
+      "sha256": "8257d7137dbc5a1dbe29a497211927be4ac030cdcc1159420dcf03518af5fa23",
+      "sha256_16": "8257d7137dbc5a1d"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1041617,
+      "sha256": "28bbc481ea178157723473222f982cd0db36fc509844be45ba2e645db5fe4db7",
+      "sha256_16": "28bbc481ea178157"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/nancy-moselle",
     "pack": "nancy-moselle.tar.zst",
     "packGz": "nancy-moselle.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

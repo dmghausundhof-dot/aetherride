@@ -8,8 +8,8 @@
     51.98
   ],
   "osm": {
-    "geofabrik": "",
-    "note": "NL extract, auf bbox clippen. Graph-only via Overpass."
+    "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
+    "note": "NL extract clip auf bbox. Graph via Geofabrik PBF (shared netherlands-latest)."
   },
   "graph": {
     "maxNodes": 80000,

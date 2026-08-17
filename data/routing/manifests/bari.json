@@ -1,0 +1,24 @@
+{
+  "id": "bari",
+  "name": "Bari / Adria",
+  "bbox": [
+    16.8,
+    41.08,
+    17,
+    41.18
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "bari.tar.zst",
+    "packGz": "bari.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

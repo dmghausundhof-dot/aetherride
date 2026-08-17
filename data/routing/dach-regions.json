@@ -1461,6 +1461,27 @@
       ]
     },
     {
+      "id": "clermont-ferrand",
+      "name": "Clermont-Ferrand / Puy de Dôme",
+      "country": "FR",
+      "kind": "pack",
+      "bbox": [
+        2.9,
+        45.68,
+        3.22,
+        45.9
+      ],
+      "center": [
+        3.06,
+        45.79
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/france/auvergne-latest.osm.pbf",
+      "sports": [
+        "urban",
+        "road"
+      ]
+    },
+    {
       "id": "grenoble",
       "name": "Grenoble / Isère",
       "country": "FR",
@@ -1546,6 +1567,48 @@
       ]
     },
     {
+      "id": "rouen",
+      "name": "Rouen / Seine",
+      "country": "FR",
+      "kind": "pack",
+      "bbox": [
+        0.95,
+        49.35,
+        1.22,
+        49.52
+      ],
+      "center": [
+        1.085,
+        49.435
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/france/haute-normandie-latest.osm.pbf",
+      "sports": [
+        "urban",
+        "road"
+      ]
+    },
+    {
+      "id": "reims",
+      "name": "Reims / Champagne",
+      "country": "FR",
+      "kind": "pack",
+      "bbox": [
+        3.9,
+        49.18,
+        4.18,
+        49.35
+      ],
+      "center": [
+        4.04,
+        49.265
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/france/champagne-ardenne-latest.osm.pbf",
+      "sports": [
+        "urban",
+        "road"
+      ]
+    },
+    {
       "id": "lille",
       "name": "Lille / Citadelle",
       "country": "FR",
@@ -1603,6 +1666,27 @@
         43.28
       ],
       "geofabrik": "https://download.geofabrik.de/europe/france/provence-alpes-cote-d-azur-latest.osm.pbf",
+      "sports": [
+        "urban",
+        "road"
+      ]
+    },
+    {
+      "id": "montpellier",
+      "name": "Montpellier / Lez",
+      "country": "FR",
+      "kind": "pack",
+      "bbox": [
+        3.75,
+        43.52,
+        4.02,
+        43.7
+      ],
+      "center": [
+        3.885,
+        43.61
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/france/languedoc-roussillon-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -1672,6 +1756,27 @@
       ]
     },
     {
+      "id": "rennes",
+      "name": "Rennes / Vilaine",
+      "country": "FR",
+      "kind": "pack",
+      "bbox": [
+        -1.78,
+        48.05,
+        -1.55,
+        48.18
+      ],
+      "center": [
+        -1.665,
+        48.115
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/france/bretagne-latest.osm.pbf",
+      "sports": [
+        "urban",
+        "road"
+      ]
+    },
+    {
       "id": "amsterdam",
       "name": "Amsterdam / Amstel",
       "country": "NL",
@@ -1686,7 +1791,7 @@
         4.9,
         52.37
       ],
-      "geofabrik": "",
+      "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -1708,7 +1813,7 @@
         5.12,
         52.09
       ],
-      "geofabrik": "",
+      "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -1730,7 +1835,7 @@
         4.48,
         51.92
       ],
-      "geofabrik": "",
+      "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -1752,7 +1857,7 @@
         4.3,
         52.08
       ],
-      "geofabrik": "",
+      "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -1774,7 +1879,7 @@
         5.47,
         51.44
       ],
-      "geofabrik": "",
+      "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -1796,7 +1901,7 @@
         6.57,
         53.22
       ],
-      "geofabrik": "",
+      "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf",
       "sports": [
         "urban",
         "road"
@@ -2499,6 +2604,84 @@
         "road",
         "mtb"
       ]
+    },
+    {
+      "id": "milano",
+      "name": "Mailand / Navigli",
+      "country": "IT",
+      "kind": "pack",
+      "bbox": [
+        9.05,
+        45.38,
+        9.3,
+        45.55
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/italy/nord-ovest-latest.osm.pbf"
+    },
+    {
+      "id": "torino",
+      "name": "Turin / Po",
+      "country": "IT",
+      "kind": "pack",
+      "bbox": [
+        7.55,
+        45.0,
+        7.8,
+        45.15
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/italy/nord-ovest-latest.osm.pbf"
+    },
+    {
+      "id": "firenze",
+      "name": "Florenz / Arno",
+      "country": "IT",
+      "kind": "pack",
+      "bbox": [
+        11.15,
+        43.7,
+        11.35,
+        43.85
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf"
+    },
+    {
+      "id": "roma",
+      "name": "Rom / Tiber",
+      "country": "IT",
+      "kind": "pack",
+      "bbox": [
+        12.35,
+        41.8,
+        12.65,
+        42.0
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/italy/centro-latest.osm.pbf"
+    },
+    {
+      "id": "napoli",
+      "name": "Neapel / Vesuv",
+      "country": "IT",
+      "kind": "pack",
+      "bbox": [
+        14.15,
+        40.8,
+        14.35,
+        40.92
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf"
+    },
+    {
+      "id": "bari",
+      "name": "Bari / Adria",
+      "country": "IT",
+      "kind": "pack",
+      "bbox": [
+        16.8,
+        41.08,
+        17.0,
+        41.18
+      ],
+      "geofabrik": "https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf"
     }
   ]
 }

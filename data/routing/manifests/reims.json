@@ -7,10 +7,11 @@
     4.18,
     49.35
   ],
-  "builtAt": "2026-08-15T13:22:35Z",
+  "builtAt": "2026-08-17T13:20:56.426Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2699547,
       "sha256": "863b449b89f3086aaf78646bde83618c95e1d84ef70654afdb6acea0d802f12b",
       "sha256_16": "863b449b89f3086a"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 1439955,
+      "sha256": "5ab4f18ff4ed6f494bd4ac71b671a52befd3b2aa636e416a753a6720aec94a3a",
+      "sha256_16": "5ab4f18ff4ed6f49"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 594348,
+      "sha256": "fb5cc67ceccdf8bc15bfab5e1bfbdc15bd61ee1cd44380948caf56b0f2c066ca",
+      "sha256_16": "fb5cc67ceccdf8bc"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/reims",
     "pack": "reims.tar.zst",
     "packGz": "reims.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

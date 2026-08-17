@@ -1,0 +1,26 @@
+{
+  "id": "it-nord-ovest",
+  "name": "Nord-Ovest",
+  "bbox": [
+    6.6,
+    43.75,
+    10.6,
+    46.55
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/nord-ovest-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/it-nord-ovest",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "it-nord-ovest.tar.zst"
+  }
+}

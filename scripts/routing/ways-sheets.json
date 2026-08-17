@@ -1,0 +1,99 @@
+{
+  "sheets": [
+    {
+      "id": "dach",
+      "file": "dach-ways",
+      "name": "DACH Wege",
+      "bbox": [5.8, 45.75, 17.25, 55.15],
+      "extracts": [
+        "europe/liechtenstein-latest.osm.pbf",
+        "europe/germany/berlin-latest.osm.pbf",
+        "europe/germany/hamburg-latest.osm.pbf",
+        "europe/germany/bremen-latest.osm.pbf",
+        "europe/germany/saarland-latest.osm.pbf",
+        "europe/germany/schleswig-holstein-latest.osm.pbf",
+        "europe/germany/mecklenburg-vorpommern-latest.osm.pbf",
+        "europe/germany/sachsen-anhalt-latest.osm.pbf",
+        "europe/germany/thueringen-latest.osm.pbf",
+        "europe/germany/sachsen-latest.osm.pbf",
+        "europe/germany/brandenburg-latest.osm.pbf",
+        "europe/germany/rheinland-pfalz-latest.osm.pbf",
+        "europe/germany/hessen-latest.osm.pbf",
+        "europe/germany/niedersachsen-latest.osm.pbf",
+        "europe/germany/nordrhein-westfalen-latest.osm.pbf",
+        "europe/germany/baden-wuerttemberg-latest.osm.pbf",
+        "europe/germany/bayern-latest.osm.pbf",
+        "europe/switzerland-latest.osm.pbf",
+        "europe/austria-latest.osm.pbf"
+      ]
+    },
+    {
+      "id": "nl",
+      "file": "nl-ways",
+      "name": "Niederlande Wege",
+      "bbox": [3.2, 50.75, 7.25, 53.7],
+      "extracts": ["europe/netherlands-latest.osm.pbf"]
+    },
+    {
+      "id": "be",
+      "file": "be-ways",
+      "name": "Belgien Luxemburg Wege",
+      "bbox": [2.4, 49.4, 6.45, 51.55],
+      "extracts": [
+        "europe/belgium-latest.osm.pbf",
+        "europe/luxembourg-latest.osm.pbf"
+      ]
+    },
+    {
+      "id": "fr",
+      "file": "france-ways",
+      "name": "Frankreich Wege",
+      "bbox": [-5.3, 42.3, 8.5, 51.15],
+      "extracts": [
+        "europe/france/alsace-latest.osm.pbf",
+        "europe/france/aquitaine-latest.osm.pbf",
+        "europe/france/auvergne-latest.osm.pbf",
+        "europe/france/basse-normandie-latest.osm.pbf",
+        "europe/france/bourgogne-latest.osm.pbf",
+        "europe/france/bretagne-latest.osm.pbf",
+        "europe/france/centre-latest.osm.pbf",
+        "europe/france/champagne-ardenne-latest.osm.pbf",
+        "europe/france/franche-comte-latest.osm.pbf",
+        "europe/france/haute-normandie-latest.osm.pbf",
+        "europe/france/ile-de-france-latest.osm.pbf",
+        "europe/france/languedoc-roussillon-latest.osm.pbf",
+        "europe/france/limousin-latest.osm.pbf",
+        "europe/france/lorraine-latest.osm.pbf",
+        "europe/france/midi-pyrenees-latest.osm.pbf",
+        "europe/france/nord-pas-de-calais-latest.osm.pbf",
+        "europe/france/pays-de-la-loire-latest.osm.pbf",
+        "europe/france/picardie-latest.osm.pbf",
+        "europe/france/poitou-charentes-latest.osm.pbf",
+        "europe/france/provence-alpes-cote-d-azur-latest.osm.pbf",
+        "europe/france/rhone-alpes-latest.osm.pbf"
+      ]
+    },
+    {
+      "id": "it",
+      "file": "italy-ways",
+      "name": "Italien Wege",
+      "bbox": [6.6, 36.6, 18.55, 47.1],
+      "extracts": [
+        "europe/italy/nord-ovest-latest.osm.pbf",
+        "europe/italy/nord-est-latest.osm.pbf",
+        "europe/italy/centro-latest.osm.pbf",
+        "europe/italy/sud-latest.osm.pbf"
+      ]
+    },
+    {
+      "id": "uk-south",
+      "file": "uk-south-ways",
+      "name": "Südengland Wege",
+      "bbox": [-1.5, 50.5, 1.8, 52.5],
+      "extracts": [
+        "europe/great-britain/england/greater-london-latest.osm.pbf",
+        "europe/great-britain/england/south-east-england-latest.osm.pbf"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "napoli",
+  "name": "Neapel / Vesuv",
+  "bbox": [
+    14.15,
+    40.8,
+    14.35,
+    40.92
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf",
+    "note": "IT regional extract, clip auf Stadt-bbox."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/napoli",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "napoli.tar.zst"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "nl-netherlands",
+  "name": "Niederlande",
+  "bbox": [
+    3.2,
+    50.75,
+    7.25,
+    53.7
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/netherlands-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/nl-netherlands",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "nl-netherlands.tar.zst"
+  }
+}

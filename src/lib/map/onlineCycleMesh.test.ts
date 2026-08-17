@@ -7,9 +7,13 @@ import {
   BIKE_WAYS_MIN_ZOOM,
   DETAIL_BIKE_OVERLAY_PACKS,
   DACH_WAYS_PMTILES_URL,
+  NL_WAYS_PMTILES_URL,
+  BE_WAYS_PMTILES_URL,
+  FRANCE_WAYS_PMTILES_URL,
   ONLINE_CYCLE_MESH_PMTILES_URL,
   ONLINE_PACK_CDN_ROOT,
   chooseOnlineBikeOverlay,
+  countryWaysPmtilesUrl,
   detailBikeOverlayPmtilesUrl,
   onlineCycleMeshPmtilesUrl,
   overlayHref,
@@ -32,6 +36,18 @@ assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("nantes"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("toulouse"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("nice"));
 assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("marseille"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("lille"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("montpellier"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("grenoble"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("dijon"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("chambery"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("clermont-ferrand"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("reims"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("rennes"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("rouen"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("alsace-vins"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("nancy-moselle"));
+assert.ok(DETAIL_BIKE_OVERLAY_PACKS.has("jura-fr"));
 assert.equal(packHasDetailBikeOverlay("berlin"), false);
 assert.equal(BIKE_WAYS_MIN_ZOOM, 10);
 
@@ -224,6 +240,18 @@ const amsterdamWays = chooseOnlineBikeOverlay({
 assert.equal(amsterdamWays.kind, "ways");
 assert.ok(amsterdamWays.url?.includes("/amsterdam/bike-overlay.pmtiles"));
 
+const amsterdamCountry = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 5.1,
+  lat: 52.1,
+  zoom: 12,
+});
+assert.equal(amsterdamCountry.kind, "ways");
+assert.equal(amsterdamCountry.url, NL_WAYS_PMTILES_URL);
+assert.equal(countryWaysPmtilesUrl(4.9, 52.37), NL_WAYS_PMTILES_URL);
+assert.equal(countryWaysPmtilesUrl(4.35, 50.85), BE_WAYS_PMTILES_URL);
+assert.equal(countryWaysPmtilesUrl(2.35, 48.86), FRANCE_WAYS_PMTILES_URL);
+
 const denHaagWays = chooseOnlineBikeOverlay({
   regionId: detailOverlayRegionIdForPoint(4.3, 52.08),
   lng: 4.3,
@@ -241,6 +269,24 @@ const strasbourgWays = chooseOnlineBikeOverlay({
 });
 assert.equal(strasbourgWays.kind, "ways");
 assert.ok(strasbourgWays.url?.includes("/strasbourg/bike-overlay.pmtiles"));
+
+const lilleWays = chooseOnlineBikeOverlay({
+  regionId: "lille",
+  lng: 3.07,
+  lat: 50.635,
+  zoom: 13,
+});
+assert.equal(lilleWays.kind, "ways");
+assert.ok(lilleWays.url?.includes("/lille/bike-overlay.pmtiles"));
+
+const montpellierWays = chooseOnlineBikeOverlay({
+  regionId: "montpellier",
+  lng: 3.885,
+  lat: 43.61,
+  zoom: 13,
+});
+assert.equal(montpellierWays.kind, "ways");
+assert.ok(montpellierWays.url?.includes("/montpellier/bike-overlay.pmtiles"));
 
 const zermattWays = chooseOnlineBikeOverlay({
   regionId: "zermatt",
@@ -260,6 +306,9 @@ assert.equal(detailOverlayRegionIdForPoint(6.13, 45.9), "annecy");
 assert.equal(detailOverlayRegionIdForPoint(4.9, 52.37), "amsterdam");
 assert.equal(detailOverlayRegionIdForPoint(4.3, 52.08), "den-haag");
 assert.equal(detailOverlayRegionIdForPoint(7.75, 48.58), "strasbourg");
+assert.equal(detailOverlayRegionIdForPoint(3.07, 50.635), "lille");
+assert.equal(detailOverlayRegionIdForPoint(3.885, 43.61), "montpellier");
+assert.equal(detailOverlayRegionIdForPoint(5.74, 45.2), "grenoble");
 
 const freiburgWays = chooseOnlineBikeOverlay({
   regionId: detailOverlayRegionIdForPoint(7.85, 47.99),

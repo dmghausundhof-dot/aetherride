@@ -7,10 +7,11 @@
     -1.55,
     48.18
   ],
-  "builtAt": "2026-08-15T13:37:44Z",
+  "builtAt": "2026-08-17T13:21:46.117Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2751280,
       "sha256": "6ec9959825aa1ab5f47bab34f7e81766cdbedb4338b7179712e190e8336113b8",
       "sha256_16": "6ec9959825aa1ab5"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 1502175,
+      "sha256": "e4ef854467d2fa80b324f423fde59b3f4bbf783b74c380b495efc4159463b5fc",
+      "sha256_16": "e4ef854467d2fa80"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 559855,
+      "sha256": "06dc2eefdfe8eedb93c14a72f628847ae544dee6a58b6e4f2f55f348f61fd6a4",
+      "sha256_16": "06dc2eefdfe8eedb"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/rennes",
     "pack": "rennes.tar.zst",
     "packGz": "rennes.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

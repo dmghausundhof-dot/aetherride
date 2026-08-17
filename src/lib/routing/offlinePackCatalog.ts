@@ -1,7 +1,15 @@
 /**
  * Catalog types, CDN URLs, merge/parse — no Node fs.
  * Client/marketing pages must import from here, not offlinePacks.ts.
+ *
+ * Valhalla tile region for a map point: use `valhallaRegionForPoint` /
+ * `publicValhallaTilesUrlForPoint` from `./valhallaRegions` (wired below) —
+ * do not hardcode pack ids like schwarzwald-nord.
  */
+import {
+  valhallaRegionForPoint,
+  valhallaTilesCdnPath,
+} from "./valhallaRegions";
 
 export type OfflinePackManifest = {
   id: string;
@@ -141,6 +149,24 @@ export function publicOfflinePackObjectUrl(
   const safeFile = file.replace(/\.\./g, "").replace(/^\/+/, "").split("/").pop();
   if (!root || !SAFE_ID.test(safeId) || !safeFile) return null;
   return `${root}/${safeId}/${safeFile}`;
+}
+
+/** CDN object URL for `valhalla_tiles.tar` of a known region id. */
+export function publicValhallaTilesObjectUrl(regionId: string): string | null {
+  return publicOfflinePackObjectUrl(regionId, valhallaTilesCdnPath(regionId));
+}
+
+/**
+ * Resolve Valhalla tile CDN URL for a map point (Discover / offline pack API).
+ * No separate web tile picker yet — call sites use this instead of hardcoding.
+ */
+export function publicValhallaTilesUrlForPoint(
+  lng: number,
+  lat: number
+): string | null {
+  const region = valhallaRegionForPoint(lng, lat);
+  if (!region) return null;
+  return publicValhallaTilesObjectUrl(region.id);
 }
 
 export function applyPackCdn(

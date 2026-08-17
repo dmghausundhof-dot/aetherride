@@ -1,16 +1,17 @@
 {
   "id": "grenoble",
-  "name": "Grenoble / Is\u00e8re",
+  "name": "Grenoble / Isère",
   "bbox": [
     5.58,
     45.08,
     5.9,
     45.32
   ],
-  "builtAt": "2026-08-15T11:47:46Z",
+  "builtAt": "2026-08-17T13:15:33.164Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2846534,
       "sha256": "3e077dd6ad1f8793ee6e3ded04cea0d87a056b8dd9475a7b8837aa4bf800caa6",
       "sha256_16": "3e077dd6ad1f8793"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 6698936,
+      "sha256": "c74f0569f0d0a6b800703bc7b6c64290b66adf4c69a2888677440307c5dbb97d",
+      "sha256_16": "c74f0569f0d0a6b8"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 2098199,
+      "sha256": "6a729e779039a4e83fe53b88a797bcf61595c0c29eceb388734f451f783ac261",
+      "sha256_16": "6a729e779039a4e8"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/grenoble",
     "pack": "grenoble.tar.zst",
     "packGz": "grenoble.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

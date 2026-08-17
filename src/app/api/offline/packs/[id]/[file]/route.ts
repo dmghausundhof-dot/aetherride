@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   publicOfflinePackObjectUrl,
+  publicValhallaTilesObjectUrl,
   readOfflinePackFile,
 } from "@/lib/routing/offlinePacks";
 
@@ -33,7 +34,11 @@ export async function GET(req: Request, ctx: Ctx) {
   }
   const found = await readOfflinePackFile(id, base);
   if (!found) {
-    const cdn = publicOfflinePackObjectUrl(id, base);
+    // Valhalla tiles: path via valhallaTilesCdnPath (publicValhallaTilesObjectUrl).
+    const cdn =
+      base === "valhalla_tiles.tar"
+        ? publicValhallaTilesObjectUrl(id)
+        : publicOfflinePackObjectUrl(id, base);
     if (cdn) {
       return NextResponse.redirect(cdn, 302);
     }

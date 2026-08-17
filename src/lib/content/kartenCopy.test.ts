@@ -8,11 +8,10 @@ import { FAQ_ITEMS } from "./faq";
 
 assert.ok(KARTEN_PAGE.lead.length > 60);
 assert.ok(KARTEN_PAGE.onlineLead.includes("Radnetz"));
-assert.ok(KARTEN_PAGE.onlineLead.includes("Paris"));
-assert.ok(KARTEN_PAGE.onlineLead.includes("ganzen DACH"));
+assert.ok(KARTEN_PAGE.onlineLead.includes("Zoom 10"));
 assert.ok(KARTEN_PAGE.pathsNote.includes("Zoom 11"));
-assert.ok(KARTEN_PAGE.pathsNote.includes("Zoom 12"));
-assert.ok(KARTEN_PAGE.pathsNote.includes("Berlin"));
+assert.ok(KARTEN_PAGE.pathsNote.includes("Zoom 10"));
+assert.ok(KARTEN_PAGE.pathsNote.includes("Berlin") || KARTEN_PAGE.pathsNote.includes("Amsterdam"));
 assert.ok(KARTEN_PAGE.pathsNote.includes("surface"));
 assert.ok(!KARTEN_PAGE.waysHint.includes("Hausbergen"));
 assert.ok(KARTEN_PAGE.waysHint.includes("DACH"));

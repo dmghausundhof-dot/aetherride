@@ -1,0 +1,26 @@
+{
+  "id": "fr-rhone-alpes",
+  "name": "Rhône-Alpes",
+  "bbox": [
+    3.85,
+    44.1,
+    7.25,
+    46.4
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/fr-rhone-alpes",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "fr-rhone-alpes.tar.zst"
+  }
+}

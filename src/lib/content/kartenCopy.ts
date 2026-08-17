@@ -6,16 +6,16 @@ export const KARTEN_PAGE = {
   kicker: "Abdeckung",
   title: "Wo die Karte liegt — und wo ein Loch ist.",
   description:
-    "Online-Basemap in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen und Südengland. In DACH liegen Atlas und Wege für alle. Offline sind Stadt-Packs zum Routing, keine Länderkarte.",
-  lead: "Die Karte vor dem Tor ist kein Download von Europa. Online streamt MapLibre benannte Blätter. In DACH siehst du das Radnetz und ab Zoom 12 Wege — nicht nur in zehn Städten. Offline lädst du Stadt-Packs zum Routing. Was fehlt, bleibt leer.",
+    "Online-Basemap in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen und Südengland. Wege ab Zoom 10 in DACH, NL, BE und (wenn gebaut) FR/IT — Offline bleiben Stadt-Packs zum Routing.",
+  lead: "Die Karte vor dem Tor ist kein Download von Europa. Online streamt MapLibre benannte Blätter. Ab Zoom 10 siehst du Radwege in DACH und den Benelux-Ländern, nicht nur Autobahn. Offline lädst du Stadt-Packs zum Routing. Was fehlt, bleibt leer.",
   onlineTitle: "Online: neun Blätter",
   onlineLead:
-    "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land. Auf jedem Blatt liegt das passende Radnetz — OSM-Radrouten (EuroVelo, national, regional), nicht das DACH-Netz über Paris. Ab Zoom 12 liegen OSM-Wege (Pfad, Radweg, Track) im ganzen DACH-Ausschnitt.",
+    "Mit Netz folgt die Karte dem Ausschnitt: das kleinste Blatt, das die Mitte trifft. Das sind Kacheln, kein Graph fürs ganze Land. Auf jedem Blatt liegt das passende Radnetz — OSM-Radrouten (EuroVelo, national, regional). Ab Zoom 10 liegen OSM-Wege (Pfad, Radweg, Track) in DACH und den Ländern Wege-Dateien (NL, BE, FR, IT), sobald sie auf dem CDN liegen.",
   pathsNote:
-    "Der Überblick endet bei Zoom 11: in den Kacheln gibt es keine Pfade. Signierte Radrouten liegen auf dem Blatt unter der Kamera. OSM-Wege streamen ab Zoom 12 überall im DACH-Blatt — Berlin, Wien, Zürich, Vaduz, nicht nur Heidelberg. Stadt-Packs bleiben dichter, wo sie existieren. Asphalt, Schotter und Naturwege sind getrennt gefärbt, wenn OSM surface in der Overlay-Kachel liegt.",
+    "Der Überblick endet bei Zoom 11: in den Basemap-Kacheln gibt es keine Pfade. Signierte Radrouten liegen auf dem Blatt unter der Kamera. OSM-Wege streamen ab Zoom 10 aus den Länder-Dateien — Berlin, Amsterdam, Brüssel, Paris, Rom — und Stadt-Packs bleiben dichter, wo sie existieren. Asphalt, Schotter und Naturwege sind getrennt gefärbt, wenn OSM surface in der Overlay-Kachel liegt.",
   offlineTitle: "Offline: Städte, keine Länder",
   offlineLead:
-    "In der App liegen Routing-Packs für Städte und Hausberge. Das ist Offline-Routing, kein Atlas-Download und keine Länderhülle. Es gibt keine 33 Länder-Downloads.",
+    "In der App liegen Routing-Packs für Städte und Hausberge. Das ist Offline-Routing, kein Atlas-Download und keine Länderhülle. Envelope-Flächen ohne Graph bleiben online-only.",
   holesTitle: "Löcher, ehrlich",
   holesLead:
     "Außerhalb der neun Blätter bleibt die Fläche leer. Wir füllen sie nicht mit einem Fake-Globus.",
@@ -29,9 +29,9 @@ export const KARTEN_PAGE = {
   splitNote:
     "Unter Regionen stehen Tour-Ideen mit Pin. Unter Karten steht, welches Blatt MapLibre wirklich streamt.",
   previewHint:
-    "Tippe ein Blatt. Das Radnetz folgt dem Blatt; auf DACH zeigt Zoom 12 Wege im ganzen Ausschnitt.",
+    "Tippe ein Blatt. Das Radnetz folgt dem Blatt; ab Zoom 10 kommen Wege wo die Länder-Datei liegt.",
   waysHint:
-    "Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.",
+    "Kein Stadt-Overlay hier. OSM-Wege ab Zoom 10 aus der Länder-Datei (DACH/NL/BE/FR/IT), sonst nur das Radnetz des Blatts.",
   attributionNote:
     "Kartenmaterial: OpenStreetMap-Mitwirkende, aufbereitet mit Protomaps. Relief: AWS Terrain / Mapzen. Kein Google-Layer.",
 } as const;

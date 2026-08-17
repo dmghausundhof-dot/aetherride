@@ -1,0 +1,26 @@
+{
+  "id": "it-sud",
+  "name": "Sud",
+  "bbox": [
+    12.9,
+    37.9,
+    18.55,
+    42.15
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/italy/sud-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/it-sud",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "it-sud.tar.zst"
+  }
+}

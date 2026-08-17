@@ -1,0 +1,24 @@
+{
+  "id": "torino",
+  "name": "Turin / Po",
+  "bbox": [
+    7.55,
+    45,
+    7.8,
+    45.15
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "torino.tar.zst",
+    "packGz": "torino.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

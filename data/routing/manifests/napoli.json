@@ -1,0 +1,24 @@
+{
+  "id": "napoli",
+  "name": "Neapel / Vesuv",
+  "bbox": [
+    14.15,
+    40.8,
+    14.35,
+    40.92
+  ],
+  "builtAt": "2026-08-13T00:00:00Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {},
+  "cdn": {
+    "baseUrl": "",
+    "pack": "napoli.tar.zst",
+    "packGz": "napoli.tar.gz"
+  },
+  "shipped": {
+    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
+  }
+}

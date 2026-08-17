@@ -7,37 +7,31 @@
     5.2,
     52.15
   ],
-  "builtAt": "2026-08-17T12:19:07.844Z",
+  "builtAt": "2026-08-17T14:06:57Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false,
-    "bike_overlay": true
+    "valhalla_tiles": false
   },
   "files": {
-    "bike-overlay.geojson": {
-      "bytes": 1112109,
-      "sha256": "12d2a42e24864f8a63e4c5fe54d7aa41c86a53be615f7fa9da2a961d9136fa94",
-      "sha256_16": "12d2a42e24864f8a"
+    "offline_graph.json": {
+      "bytes": 19163816,
+      "sha256": "7166865ed0078566e25d892309a9267f96af3510a92e7524bd2404504887fa3b",
+      "sha256_16": "7166865ed0078566"
     },
-    "bike-overlay.pmtiles": {
-      "bytes": 461960,
-      "sha256": "09e90555174c55c68edf61edf384516b953d9942d59a537e460b46ec9eabf57f",
-      "sha256_16": "09e90555174c55c6"
+    "utrecht.tar.gz": {
+      "bytes": 2605735,
+      "sha256": "1829a6a6476b735b1c3ca1578957d1efcb95766ddf59c84c8ab0d8701b79adb5",
+      "sha256_16": "1829a6a6476b735b"
+    },
+    "utrecht.tar.zst": {
+      "bytes": 2833699,
+      "sha256": "df61d6b08a9ac109cf94af3c1aba5e3cbb352d0be8f802f427fd5baf8ce418ac",
+      "sha256_16": "df61d6b08a9ac109"
     }
   },
   "cdn": {
-    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/utrecht",
+    "baseUrl": "",
     "pack": "utrecht.tar.zst",
     "packGz": "utrecht.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
-  },
-  "overlay": {
-    "layer": "bike",
-    "pmtiles": "bike-overlay.pmtiles",
-    "geojson": "bike-overlay.geojson",
-    "sourceLayer": "bike",
-    "property": "bike_class"
   }
 }

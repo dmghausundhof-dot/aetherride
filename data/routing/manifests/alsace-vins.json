@@ -7,10 +7,11 @@
     7.55,
     48.25
   ],
-  "builtAt": "2026-08-15T10:41:41Z",
+  "builtAt": "2026-08-17T13:25:30.166Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2760979,
       "sha256": "9b863fe27f94ee6eb1f0363e35e0f58c42c885e8d5da0aef8428d22d5448bd1b",
       "sha256_16": "9b863fe27f94ee6e"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 7016194,
+      "sha256": "0cbc1fecdaa3ef0cda7dca0bce931cbd75c3b8f84bda15a47533e5c1bd228073",
+      "sha256_16": "0cbc1fecdaa3ef0c"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 2657560,
+      "sha256": "ad408a302bea017b3ff7de27c5e23200cab4ba6ed2d6f6cfd5ca3cdbcc7919fe",
+      "sha256_16": "ad408a302bea017b"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/alsace-vins",
     "pack": "alsace-vins.tar.zst",
     "packGz": "alsace-vins.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

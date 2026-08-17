@@ -1,0 +1,37 @@
+{
+  "id": "milano",
+  "name": "Mailand / Navigli",
+  "bbox": [
+    9.05,
+    45.38,
+    9.3,
+    45.55
+  ],
+  "builtAt": "2026-08-17T13:44:31Z",
+  "engines": {
+    "offline_graph": true,
+    "valhalla_tiles": false
+  },
+  "files": {
+    "offline_graph.json": {
+      "bytes": 10608891,
+      "sha256": "91f4fdecc6756863365a6e928bff505b061af2a36a84452cb95cf31301a6789f",
+      "sha256_16": "91f4fdecc6756863"
+    },
+    "milano.tar.gz": {
+      "bytes": 1269538,
+      "sha256": "2ec72eb09bc7f245eedf91d0e3da4e1a4da18bf69545a488382e98ea95ff2238",
+      "sha256_16": "2ec72eb09bc7f245"
+    },
+    "milano.tar.zst": {
+      "bytes": 1425386,
+      "sha256": "8ff1683d0c87011a6730f48778e2ea0c74b489c8661716e5d715e56b7c3d2821",
+      "sha256_16": "8ff1683d0c87011a"
+    }
+  },
+  "cdn": {
+    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/milano",
+    "pack": "milano.tar.zst",
+    "packGz": "milano.tar.gz"
+  }
+}

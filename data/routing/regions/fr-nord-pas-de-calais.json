@@ -1,0 +1,26 @@
+{
+  "id": "fr-nord-pas-de-calais",
+  "name": "Nord-Pas-de-Calais",
+  "bbox": [
+    1.55,
+    50,
+    4.25,
+    51.1
+  ],
+  "osm": {
+    "geofabrik": "https://download.geofabrik.de/europe/france/nord-pas-de-calais-latest.osm.pbf"
+  },
+  "graph": {
+    "maxNodes": 200000,
+    "maxEdges": 400000
+  },
+  "outputDir": "data/routing/dist/fr-nord-pas-de-calais",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "fr-nord-pas-de-calais.tar.zst"
+  }
+}
