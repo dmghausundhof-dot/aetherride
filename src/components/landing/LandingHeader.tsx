@@ -26,7 +26,7 @@ export function LandingHeader() {
         >
           <FlowLineWordmark
             className="text-[0.95rem] font-semibold tracking-tight text-foreground sm:text-base"
-            markClassName="h-5 w-5"
+            markClassName="h-5 w-auto"
           />
         </Link>
 

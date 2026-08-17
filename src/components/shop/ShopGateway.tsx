@@ -6,7 +6,6 @@ import { Bike, ExternalLink } from "lucide-react";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { FLOWLINE_TAGLINE_DOTS } from "@/lib/content/brand";
-import { FlowLineWordmark } from "@/components/brand/FlowLineWordmark";
 import { StoreLockedBanner } from "@/components/shop/StoreLockedBanner";
 import { ShopifyOutboundButton } from "@/components/shop/ShopifyOutboundButton";
 import { ShopCatalogPreview } from "@/components/shop/ShopCatalogPreview";
@@ -113,16 +112,15 @@ export function ShopGateway() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-5 pb-10 pt-6 lg:max-w-3xl lg:px-10 lg:pt-10">
       <header className="space-y-3">
-        <div className="overflow-hidden rounded-2xl bg-white px-4 py-3">
-          {/* eslint-disable-next-line @next/next/no-img-element -- brand lockup from Logo und Bilder */}
+        <div className="overflow-hidden rounded-2xl bg-white px-4 py-5">
+          {/* eslint-disable-next-line @next/next/no-img-element -- official lockup SVG */}
           <img
-            src="/shop/banner.jpg"
+            src="/brand/logo.svg"
             alt="FlowLine — Outdoor · Cycling · Flow"
-            className="mx-auto h-16 w-auto object-contain sm:h-20"
+            className="mx-auto h-20 w-auto object-contain sm:h-24"
           />
         </div>
-        <FlowLineWordmark />
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary">
+        <p className="text-[11px] font-bold tracking-[0.18em] text-text-secondary">
           {FLOWLINE_TAGLINE_DOTS}
         </p>
         <p className="text-[11px] font-bold tracking-wide text-text-secondary">

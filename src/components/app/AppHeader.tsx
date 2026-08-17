@@ -44,7 +44,7 @@ export function AppHeader() {
           href="/home"
           className="text-lg font-bold tracking-tight text-foreground"
         >
-          <FlowLineWordmark className="text-lg font-bold tracking-tight text-foreground" markClassName="h-6 w-6" />
+          <FlowLineWordmark className="text-lg font-bold tracking-tight text-foreground" markClassName="h-6 w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label={hofTitle}>

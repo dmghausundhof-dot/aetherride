@@ -143,7 +143,7 @@ function ProductPageInner() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 pt-6">
       <FlowLineWordmark
         className="text-base font-bold tracking-tight text-foreground"
-        markClassName="h-5 w-5"
+        markClassName="h-5 w-auto"
       />
       <Link
         href="/shop"
