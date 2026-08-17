@@ -711,6 +711,14 @@ export function applyCorridorCyclewaySnap<T extends CorridorRouteShape>(opts: {
   };
 }
 
+/** Named Ort/Photon stays put. Unlabeled map via may snap onto a trail. */
+export function viaMaySnapOntoTrail(label?: string | null): boolean {
+  const t = (label ?? "").trim();
+  if (!t) return true;
+  if (/^-?\d+[.,]\d+/.test(t)) return true;
+  return false;
+}
+
 /** Snap a via/place onto the nearest trail. Unchanged if none within maxOffM. */
 export function snapPointOntoTrails(
   point: [number, number],

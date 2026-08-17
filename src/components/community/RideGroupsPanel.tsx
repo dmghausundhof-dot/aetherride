@@ -14,6 +14,7 @@ import type { VisibilityScope } from "@/lib/tours/routeVisibility";
 import {
   encodeGroupInvite,
   groupInviteHttps,
+  parsePastedGroupJoin,
   publicProfileShareUrl,
 } from "@/lib/community/rideGroupInvite";
 import {
@@ -131,14 +132,11 @@ export function RideGroupsPanel({
   const [startsLocal, setStartsLocal] = useState("");
   const [durationH, setDurationH] = useState(3);
   const [meeting, setMeeting] = useState("");
+  const [joinPaste, setJoinPaste] = useState("");
   const [signedIn, setSignedIn] = useState(true);
   const [publicGroups, setPublicGroups] = useState<RideGroup[]>([]);
   const attachable = savedRoutes.filter((r) => canAttachCourse(r));
-  const open = listedRideGroups(groups).filter((group) => {
-    if (visibility === "private") return group.visibility !== "public";
-    if (visibility === "shared") return group.visibility === "public";
-    return true;
-  });
+  const open = listedRideGroups(groups);
   const mineIds = new Set(open.map((group) => group.id));
   const listedPublic = publicGroups.filter((group) => !mineIds.has(group.id));
   const shownNote = lastNote ? platzNote(lastNote, lang) : "";
@@ -159,7 +157,7 @@ export function RideGroupsPanel({
 
   return (
     <section className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+      <h2 className="mb-1 text-sm font-semibold tracking-wide text-text-secondary">
         {hof.togetherOut}
       </h2>
       <p className="mb-3 text-xs text-text-secondary">{g.inviteHint}</p>
@@ -246,6 +244,44 @@ export function RideGroupsPanel({
           {g.createGroup}
         </button>
       </div>
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <input
+          type="text"
+          data-testid="platz-join-field"
+          value={joinPaste}
+          onChange={(e) => setJoinPaste(e.target.value)}
+          placeholder={g.joinField}
+          className="min-w-[12rem] flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+        />
+        <button
+          type="button"
+          data-testid="platz-join-submit"
+          className="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-foreground"
+          onClick={() => {
+            const parsed = parsePastedGroupJoin(joinPaste);
+            if (!joinPaste.trim()) {
+              setMsg(g.joinEmpty);
+              return;
+            }
+            if (!parsed) {
+              setMsg(g.joinInvalid);
+              return;
+            }
+            void joinFromInviteAsync(parsed.ref, parsed.token).then((out) => {
+              setMsg(
+                "error" in out
+                  ? platzNote(out.error, lang)
+                  : g.joined(out.title),
+              );
+              setJoinPaste("");
+              void pullCloud();
+            });
+          }}
+        >
+          {g.joinWithLink}
+        </button>
+      </div>
+      <p className="mb-3 text-[11px] text-text-secondary">{g.joinHint}</p>
       {msg ? (
         <p className="mb-3 text-xs text-text-secondary">{msg}</p>
       ) : shownNote ? (
@@ -260,13 +296,7 @@ export function RideGroupsPanel({
         </p>
       ) : null}
       {open.length === 0 && listedPublic.length === 0 ? (
-        <p className="text-sm text-text-secondary">
-          {visibility === "shared"
-            ? g.emptyPublic
-            : visibility === "private"
-              ? g.emptyPrivate
-              : g.emptyAll}
-        </p>
+        <p className="text-sm text-text-secondary">{g.emptyAll}</p>
       ) : (
         <ul className="space-y-2">
           {open.map((group) => {
@@ -373,10 +403,15 @@ export function RideGroupsPanel({
                 className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
                 onClick={() => {
                   void joinFromInviteAsync(group.id).then((out) => {
+                    const note = useRideGroupStore.getState().lastNote;
                     setMsg(
                       "error" in out
                         ? platzNote(out.error, lang)
-                        : g.joined(out.title),
+                        : out.onServer
+                          ? g.joined(out.title)
+                          : g.joinNotOnServer(
+                              platzNote(note ?? LOCAL_ONLY_NOTE, lang),
+                            ),
                     );
                     void pullCloud();
                   });

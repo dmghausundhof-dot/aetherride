@@ -12,7 +12,7 @@ export const FLOWLINE_PILLAR =
 export const FLOWLINE_ABOUT = {
   kicker: "Marke",
   title: "Das Rad wohnt hier.",
-  lead: "FlowLine ist Outdoor Cycling, vereinfacht: Hof im Browser, Fahrt in der App. Fünf Türen, ein oranger Knopf, keine Timeline.",
+  lead: "FlowLine ist Outdoor Cycling, vereinfacht: Hof im Browser, Fahrt in der App. Vier Türen, ein oranger Knopf, keine Timeline.",
   pillars: [
     {
       title: "Für Fahrerinnen und Fahrer",

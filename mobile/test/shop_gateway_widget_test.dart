@@ -68,7 +68,7 @@ const _assegai = ShopProduct(
 );
 
 void main() {
-  testWidgets('Shop-Tab ist Gateway, kein Produktgrid', (tester) async {
+  testWidgets('Shop-Gateway, kein Produktgrid', (tester) async {
     await tester.pumpWidget(_shopApp(bikes: const [_luna]));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -77,6 +77,8 @@ void main() {
     expect(find.text('Der Laden'), findsOneWidget);
     expect(find.text('Zum Shop'), findsOneWidget);
     expect(find.text('Für dein Rad'), findsWidgets);
+    expect(find.text('Teile'), findsOneWidget);
+    expect(find.text('Cycling Parts'), findsNothing);
     expect(find.byKey(const Key('shop-merch')), findsNothing);
     expect(find.textContaining('Kasse bei Shopify'), findsOneWidget);
     expect(find.byKey(const Key('shop-catalog-failed')), findsOneWidget);
@@ -221,7 +223,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byKey(const Key('shop-catalog-empty')), findsOneWidget);
-    expect(find.byKey(const Key('shop-open-web')), findsOneWidget);
+    expect(find.byKey(const Key('shop-go')), findsOneWidget);
     expect(find.byKey(const Key('shop-catalog-failed')), findsNothing);
     expect(find.text('Add to Cart'), findsNothing);
   });
@@ -296,6 +298,23 @@ void main() {
     expect(find.text('SRAM Kette PC-1110'), findsOneWidget);
     expect(find.text('Maxxis Assegai'), findsNothing);
     expect(find.textContaining('Teile passend zu Luna'), findsOneWidget);
+  });
+
+  testWidgets('Merch-Leere ist ehrlich, keine Merchandise-Tür', (tester) async {
+    await tester.pumpWidget(
+      _shopApp(
+        bikes: const [_luna],
+        shelves: const ShopShelves(ok: true, parts: [_kette]),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byKey(const Key('shop-merch')), findsNothing);
+    expect(find.byKey(const Key('shop-merch-empty')), findsOneWidget);
+    expect(find.text('Kleidung'), findsOneWidget);
+    expect(find.textContaining('Kein Merch im Regal'), findsOneWidget);
+    expect(find.text('Merchandise'), findsNothing);
   });
 
   testWidgets('Live-Räder nur Storefront, kein Snapshot-SKU', (tester) async {

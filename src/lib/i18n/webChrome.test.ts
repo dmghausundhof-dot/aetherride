@@ -27,7 +27,9 @@ function testDeMatchesCurrentChrome() {
   assert.equal(c.toHof, "Zum Hof");
   assert.equal(c.signIn, "Anmelden");
   assert.equal(c.arriveAtHof, "Am Hof ankommen");
-  assert.equal(c.hofNav.shop, "Laden");
+  assert.equal(c.hofNav.werkstatt, "Werkstatt");
+  assert.equal(c.fourDoors, "Vier Türen");
+  assert.equal(c.tabOf(2, 4), "Tab 2 von 4");
   assert.equal(c.dataPrivacy, "Daten & Privatsphäre");
   assert.equal(c.profile, "Profil");
   assert.equal(c.emptyStand, "Leerer Stand");

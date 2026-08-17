@@ -97,7 +97,7 @@ export function GarageComponentsTab({
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <div className="text-xs uppercase tracking-wide text-text-secondary">
+                                <div className="text-xs tracking-wide text-text-secondary">
                                   {slotLabel(slot)}
                                 </div>
                                 <div className="font-medium">
@@ -212,7 +212,7 @@ export function GarageComponentsTab({
                         key={comp.id}
                         className="rounded-xl border border-dashed border-border bg-surface p-3"
                       >
-                        <div className="text-xs uppercase tracking-wide text-text-secondary">
+                        <div className="text-xs tracking-wide text-text-secondary">
                           {slotLabel(comp.slot)}
                         </div>
                         <div className="font-medium">

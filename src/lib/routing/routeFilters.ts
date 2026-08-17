@@ -54,7 +54,7 @@ export const VISIBILITY_FILTER_OPTIONS: {
 }[] = [
   { id: "all_mine", label: "Alle" },
   { id: "private", label: "Privat" },
-  { id: "shared", label: "Öffentlich" },
+  { id: "shared", label: "Freigegeben" },
 ];
 
 export const SPORT_FILTER_OPTIONS: { id: SportFilter; label: string }[] = [

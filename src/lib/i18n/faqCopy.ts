@@ -12,7 +12,7 @@ const EN: FaqItem[] = [
   {
     id: "was",
     q: "What is FlowLine?",
-    a: "FlowLine is outdoor cycling with a Home: plan, look after the bike, share in the browser — ride in the app. Five doors, no feed, no second till.",
+    a: "FlowLine is outdoor cycling with a Home: plan, look after the bike, share in the browser — ride in the app. Four doors, no feed, no second till.",
     links: [
       { href: "/produkt", label: "Product map" },
       { href: "/ueber", label: "About FlowLine" },
@@ -21,7 +21,7 @@ const EN: FaqItem[] = [
   {
     id: "fuer-wen",
     q: "Who is FlowLine for?",
-    a: "For road, gravel, MTB, e-bike, touring and city. One app, five doors — not five apps. If you want a feed or a leaderboard, this is the wrong place. If you want to plan tours, look after the bike and share without a timeline, this is the right place.",
+    a: "For road, gravel, MTB, e-bike, touring and city. One app, four doors — not four apps. If you want a feed or a leaderboard, this is the wrong place. If you want to plan tours, look after the bike and share without a timeline, this is the right place.",
     links: [
       { href: "/regions", label: "Regions" },
       { href: "/produkt", label: "Product" },
@@ -122,7 +122,7 @@ const FR: FaqItem[] = [
   {
     id: "was",
     q: "Qu’est-ce que FlowLine ?",
-    a: "FlowLine est le vélo dehors avec un Home : planifier, soigner, partager dans le navigateur — rouler dans l’appli. Cinq portes, pas de fil, pas de deuxième caisse.",
+    a: "FlowLine est le vélo dehors avec un Home : planifier, soigner, partager dans le navigateur — rouler dans l’appli. Quatre portes, pas de fil, pas de deuxième caisse.",
     links: [
       { href: "/produkt", label: "Carte produit" },
       { href: "/ueber", label: "À propos de FlowLine" },
@@ -131,7 +131,7 @@ const FR: FaqItem[] = [
   {
     id: "fuer-wen",
     q: "Pour qui est FlowLine ?",
-    a: "Pour la route, le gravel, le MTB, l’e-bike, le touring et la ville. Une appli, cinq portes — pas cinq applis. Si tu cherches un fil ou un classement, tu n’es pas au bon endroit. Si tu veux planifier des sorties, soigner le vélo et partager sans timeline, tu es au bon.",
+    a: "Pour la route, le gravel, le MTB, l’e-bike, le touring et la ville. Une appli, quatre portes — pas quatre applis. Si tu cherches un fil ou un classement, tu n’es pas au bon endroit. Si tu veux planifier des sorties, soigner le vélo et partager sans timeline, tu es au bon.",
     links: [
       { href: "/regions", label: "Régions" },
       { href: "/produkt", label: "Produit" },
@@ -232,7 +232,7 @@ const IT: FaqItem[] = [
   {
     id: "was",
     q: "Cos’è FlowLine?",
-    a: "FlowLine è ciclismo outdoor con una Home: pianificare, curare, condividere nel browser — pedalare nell’app. Cinque porte, niente feed, niente seconda cassa.",
+    a: "FlowLine è ciclismo outdoor con una Home: pianificare, curare, condividere nel browser — pedalare nell’app. Quattro porte, niente feed, niente seconda cassa.",
     links: [
       { href: "/produkt", label: "Mappa prodotto" },
       { href: "/ueber", label: "Su FlowLine" },
@@ -241,7 +241,7 @@ const IT: FaqItem[] = [
   {
     id: "fuer-wen",
     q: "Per chi è FlowLine?",
-    a: "Per strada, gravel, MTB, e-bike, touring e città. Un’app, cinque porte — non cinque app. Se cerchi un feed o una classifica, sei nel posto sbagliato. Se vuoi pianificare uscite, curare la bici e condividere senza timeline, sei nel posto giusto.",
+    a: "Per strada, gravel, MTB, e-bike, touring e città. Un’app, quattro porte — non quattro app. Se cerchi un feed o una classifica, sei nel posto sbagliato. Se vuoi pianificare uscite, curare la bici e condividere senza timeline, sei nel posto giusto.",
     links: [
       { href: "/regions", label: "Regioni" },
       { href: "/produkt", label: "Prodotto" },

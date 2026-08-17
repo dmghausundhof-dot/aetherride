@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -10,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/export/export_trimmed.dart';
 import '../../data/export/json_export.dart';
@@ -554,7 +554,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
             label: Text(l10n.privacyExportJson),
           ),
           const SizedBox(height: 8),
-          if (kDebugMode)
+          if (AppConfig.showRoutingDebug)
             OutlinedButton.icon(
               onPressed: _busy ? null : _exportStravaStub,
               icon: const Icon(Icons.upload_outlined),

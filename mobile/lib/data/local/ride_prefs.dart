@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../domain/routing/battery_preset.dart';
 import '../../domain/routing/live_engine.dart';
+import '../../domain/tours/add_route_start.dart';
 
 /// Light mid-ride preferences (battery preset, first-ask flag).
 /// JSON file under app support — no SharedPreferences plugin required.
@@ -89,5 +90,22 @@ abstract final class RidePrefs {
     await merge({
       'routingEngine': engine == LiveRoutingEngine.hybrid ? null : engine.apiId,
     });
+  }
+
+  static const _viewportKey = 'discoverViewport';
+
+  /// Letzte lokale Discover-Kartenmitte — kein DACH-Übersichtspin.
+  static Future<DiscoverViewport?> discoverViewport() async {
+    final m = await read();
+    final v = DiscoverViewport.fromJson(m[_viewportKey]);
+    if (v == null || !isLocalDiscoverZoom(v.zoom)) return null;
+    if (isPlaceholderDiscoverCenter(v.lat, v.lng)) return null;
+    return v;
+  }
+
+  static Future<void> setDiscoverViewport(DiscoverViewport view) async {
+    if (!isLocalDiscoverZoom(view.zoom)) return;
+    if (isPlaceholderDiscoverCenter(view.lat, view.lng)) return;
+    await merge({_viewportKey: view.toJson()});
   }
 }

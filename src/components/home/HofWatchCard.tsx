@@ -15,7 +15,7 @@ export function HofWatchCard() {
     <Link
       href="/download"
       data-testid="hof-watch"
-      className="mt-2 flex items-center gap-2 py-2 text-text-secondary hover:text-chrome"
+      className="mt-3 flex items-center gap-2 py-2 text-text-secondary hover:text-chrome"
     >
       <Watch className="h-[18px] w-[18px] shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">

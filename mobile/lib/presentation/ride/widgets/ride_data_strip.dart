@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/nav_hud_tokens.dart';
 
 /// Bottom data strip: Tempo · noch km · Ziel (N-HUD-01 / nav-hud-tokens-v1).
-/// Together with next-turn these are the only four Clean Mode HUD elements.
+/// Charcoal on orange — same chrome as next-turn / Pause, with or without a route.
 class RideDataStrip extends StatelessWidget {
   const RideDataStrip({
     super.key,
@@ -27,10 +27,11 @@ class RideDataStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final fill = AppColors.chromeFill(context);
+    final ink = AppColors.inkOnChrome(context);
     return Material(
       borderRadius: BorderRadius.circular(AppRadius.card),
-      color: theme.cardColor.withValues(alpha: 0.78),
+      color: fill,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -42,9 +43,9 @@ class RideDataStrip extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _stat(context, speedLabel, speedCaption),
-              _stat(context, midValue, midLabel),
-              _stat(context, rightValue, rightLabel),
+              _stat(speedLabel, speedCaption, ink),
+              _stat(midValue, midLabel, ink),
+              _stat(rightValue, rightLabel, ink),
             ],
           ),
         ),
@@ -52,18 +53,19 @@ class RideDataStrip extends StatelessWidget {
     );
   }
 
-  Widget _stat(BuildContext context, String value, String label) {
+  Widget _stat(String value, String label, Color ink) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: NavHudTokens.statValueDp,
               fontWeight: NavHudTokens.statValueWeight,
-              fontFeatures: [FontFeature.tabularFigures()],
+              fontFeatures: const [FontFeature.tabularFigures()],
               height: 1.05,
+              color: ink,
             ),
           ),
           const SizedBox(height: 2),
@@ -72,7 +74,7 @@ class RideDataStrip extends StatelessWidget {
             style: TextStyle(
               fontSize: NavHudTokens.statLabelDp,
               fontWeight: NavHudTokens.statLabelWeight,
-              color: AppColors.meta(context),
+              color: ink.withValues(alpha: 0.78),
             ),
           ),
         ],

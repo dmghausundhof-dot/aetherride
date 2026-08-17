@@ -249,7 +249,7 @@ function buildChatRecommendationInner(
         };
         break;
       }
-      const setups = [...bike.setups].sort((a, b) => b.version - a.version);
+      const setups = [...(bike.setups ?? [])].sort((a, b) => b.version - a.version);
       set = {
         toolName: tool,
         facts: setups.map(
@@ -335,7 +335,7 @@ function buildChatRecommendationInner(
         };
         break;
       }
-      const current = bike.setups.find((s) => s.isCurrent);
+      const current = (bike.setups ?? []).find((s) => s.isCurrent);
       const recs = allProductRecommendations({
         bike,
         rides,

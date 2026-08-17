@@ -301,39 +301,7 @@ DieBoxPlan planDieBox({
       ),
     );
   }
-  if (everyday && !hasLock) {
-    today.add(
-      const DieBoxTodayItem(
-        id: DieBoxItemId.lockMissing,
-        title: 'Schloss eintragen',
-        hint: 'Nur wenn ein Schloss am Rad ist.',
-        cta: 'Schloss eintragen',
-        slot: ComponentSlot.lock,
-      ),
-    );
-  }
-  if (everyday && !hasRack) {
-    today.add(
-      const DieBoxTodayItem(
-        id: DieBoxItemId.rackMissing,
-        title: 'Träger eintragen',
-        hint: 'Nur wenn das Rad einen Gepäckträger hat.',
-        cta: 'Träger eintragen',
-        slot: ComponentSlot.rack,
-      ),
-    );
-  }
-  if (gravel && !hasBags) {
-    today.add(
-      const DieBoxTodayItem(
-        id: DieBoxItemId.bagsMissing,
-        title: 'Taschen eintragen',
-        hint: 'Nur wenn Taschen am Rad sind.',
-        cta: 'Taschen eintragen',
-        slot: ComponentSlot.bags,
-      ),
-    );
-  }
+  // Schloss, Träger, Taschen: addable, not Heute-nags on an empty stall.
   if ((everyday || gravel || road) && !pressureKnown) {
     today.add(
       const DieBoxTodayItem(

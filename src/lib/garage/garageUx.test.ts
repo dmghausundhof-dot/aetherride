@@ -1,11 +1,13 @@
 /**
  * Garage-UX Helpers — Ausführen: npx tsx src/lib/garage/garageUx.test.ts
  */
+import { readFileSync } from "node:fs";
 import { estimateAirPsi } from "../setup/sagGuide";
 import { setupConditionLabel } from "../setup/conditionLabels";
 import { weeklyRideKm, verdictSummaryDe } from "./readiness";
 import { resolveGaragePrimaryAction } from "./primaryCta";
 import { planDieBox } from "./dieBox";
+import { slotLabel } from "../catalog/slots";
 import type { Bike } from "../../types/garage";
 
 function assert(cond: boolean, msg: string) {
@@ -80,6 +82,8 @@ assert(!city.sentence.toLowerCase().includes("sag"), "city no sag");
 assert(city.addableSlots.includes("light"), "city can add light");
 assert(!city.addableSlots.includes("fork"), "city no ghost fork");
 assert(city.today.some((t) => t.id === "lightsMissing"), "city lights today");
+assert(!city.today.some((t) => t.id === "lockMissing"), "city lock not heute nag");
+assert(!city.today.some((t) => t.id === "rackMissing"), "city rack not heute nag");
 assert(!city.chips.some((c) => !c.known), "city chips are known facts");
 assert(!city.sentence.toLowerCase().includes("nicht"), "city sentence not a deficit");
 
@@ -88,6 +92,17 @@ const cargo = planDieBox({ bike: cargoBike });
 assert(cargo.kind === "urban", "cargo lives in city box");
 assert(!cargo.sentence.toLowerCase().includes("sag"), "cargo no sag");
 assert(cargo.addableSlots.includes("light"), "cargo can add light");
+
+const gravelBike: Bike = {
+  ...cityBike,
+  id: "g1",
+  name: "Kora",
+  category: "gravel",
+};
+const gravel = planDieBox({ bike: gravelBike });
+assert(!gravel.today.some((t) => t.id === "bagsMissing"), "gravel bags not heute nag");
+assert(!gravel.today.some((t) => t.id === "sagUnknown"), "gravel no sag heute");
+assert(gravel.addableSlots.includes("bags"), "gravel can add bags");
 
 const dhBike: Bike = {
   ...cityBike,
@@ -187,5 +202,30 @@ assert(
   "hiking only kit slots"
 );
 assert(!hike.addableSlots.includes("fork"), "hiking no fork");
+
+assert(slotLabel("chain") === "Kette", "slotLabel Kette");
+assert(slotLabel("fork") === "Gabel", "slotLabel Gabel");
+assert(
+  slotLabel("chain") !== slotLabel("chain").toUpperCase(),
+  "slotLabel stays sentence case"
+);
+
+const kickerFiles = [
+  "src/components/garage/DieBoxSurface.tsx",
+  "src/app/garage/page.tsx",
+  "src/components/garage/AddBikeWizard.tsx",
+  "src/components/garage/GarageComponentsTab.tsx",
+];
+for (const path of kickerFiles) {
+  const src = readFileSync(path, "utf8");
+  assert(
+    !src.includes("uppercase tracking"),
+    `${path} section kickers stay sentence case`
+  );
+  assert(
+    src.includes("tracking-wide"),
+    `${path} tracking stays`
+  );
+}
 
 console.log("garageUx.test.ts OK");

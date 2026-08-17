@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Bike, Locate, Search, SlidersHorizontal } from "lucide-react";
-import { FilterChips } from "@/components/discover/FilterChips";
 import {
-  DISCOVER_LENS_FILTERS,
+  DistanceMaxChips,
+  FilterChips,
+} from "@/components/discover/FilterChips";
+import {
   DEFAULT_FILTER_MINUTES,
+  aroundFilterActive,
+  resetDiscoverAround,
+  resetDiscoverSheetFilters,
 } from "@/lib/discover/discoverExploreChrome";
 import { discoverCopy } from "@/lib/i18n/discoverCopy";
 import { discoverUi } from "@/lib/i18n/discoverUi";
@@ -17,9 +22,12 @@ import {
 } from "@/lib/routing/profiles";
 import type { RouteFilterState } from "@/lib/routing/routeFilters";
 
+type ExploreSheet = "around" | "filter";
+
 /**
  * Komoot-Chrome wie Native: Suche + Navigieren, darunter optional ein
- * Navi-Profilchip (≥2), Umkreis, Filter mit Badge. Disziplin liegt im Sheet.
+ * Navi-Profilchip (≥2), Umkreis, Filter mit Badge. Distanz und Filter
+ * sind zwei Flächen. Disziplin liegt im Filter-Sheet.
  */
 export function DiscoverExploreChrome({
   searchQuery,
@@ -27,9 +35,6 @@ export function DiscoverExploreChrome({
   onPlanRoute,
   aroundKm,
   filterCount,
-  filterOpen,
-  onOpenFilters,
-  onCloseFilters,
   profileMenu,
   activeProfile,
   onProfile,
@@ -45,9 +50,6 @@ export function DiscoverExploreChrome({
   onPlanRoute: () => void;
   aroundKm: number;
   filterCount: number;
-  filterOpen: boolean;
-  onOpenFilters: () => void;
-  onCloseFilters: () => void;
   profileMenu: RoutingProfile[];
   activeProfile: RoutingProfile;
   onProfile: (p: RoutingProfile) => void;
@@ -61,28 +63,31 @@ export function DiscoverExploreChrome({
   const lang = useChromeLang();
   const d = discoverCopy(lang);
   const closeLabel = discoverUi(lang).close;
-  const titleId = useId();
+  const aroundTitleId = useId();
+  const filterTitleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [sheet, setSheet] = useState<ExploreSheet | null>(null);
   const profileVisible = discoverNavProfileChipVisible(profileMenu);
   const filterActive = filterCount > 0;
+  const aroundActive = aroundFilterActive(filters.maxDistanceKm);
   const profileOptions = profileMenu.includes(activeProfile)
     ? profileMenu
     : [activeProfile, ...profileMenu];
 
   useEffect(() => {
-    if (!filterOpen) return;
+    if (!sheet) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseFilters();
+      if (e.key === "Escape") setSheet(null);
     };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [filterOpen, onCloseFilters]);
+  }, [sheet]);
 
   return (
     <div data-testid="discover-explore-chrome" className="space-y-2">
@@ -102,7 +107,10 @@ export function DiscoverExploreChrome({
           <button
             type="button"
             data-testid="discover-plan-route"
-            onClick={onPlanRoute}
+            onClick={() => {
+              setSheet(null);
+              onPlanRoute();
+            }}
             className="shrink-0 rounded-full bg-accent px-3 py-2 text-[12.5px] font-extrabold text-on-accent hover:bg-accent-hover"
           >
             {d.planRouteCta}
@@ -132,8 +140,13 @@ export function DiscoverExploreChrome({
           <button
             type="button"
             data-testid="discover-around-chip"
-            onClick={onOpenFilters}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[12.5px] font-semibold text-text-secondary"
+            aria-expanded={sheet === "around"}
+            onClick={() => setSheet("around")}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-semibold ${
+              aroundActive
+                ? "border-accent bg-accent text-on-accent"
+                : "border-border bg-background text-text-secondary"
+            }`}
           >
             <Locate className="h-3.5 w-3.5" />
             {d.aroundKm(aroundKm)}
@@ -141,8 +154,8 @@ export function DiscoverExploreChrome({
           <button
             type="button"
             data-testid="discover-filter-chip"
-            onClick={onOpenFilters}
-            aria-expanded={filterOpen}
+            aria-expanded={sheet === "filter"}
+            onClick={() => setSheet("filter")}
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-bold ${
               filterActive
                 ? "border-accent bg-accent text-on-accent"
@@ -155,54 +168,60 @@ export function DiscoverExploreChrome({
         </div>
       </div>
 
-      {filterOpen ? (
-        <div
-          className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center"
-          role="presentation"
-        >
-          <button
-            type="button"
-            aria-label={closeLabel}
-            className="absolute inset-0 bg-background/55"
-            onClick={onCloseFilters}
-          />
-          <div
-            data-testid="discover-filter-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="relative z-10 flex max-h-[78vh] w-full max-w-lg flex-col rounded-t-xl border border-border bg-surface sm:m-4 sm:rounded-xl"
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-              <h2 id={titleId} className="text-lg font-extrabold">
-                {d.filter}
-              </h2>
+      {sheet === "around" ? (
+        <ExploreSheetFrame
+          testId="discover-around-sheet"
+          titleId={aroundTitleId}
+          title={d.distance}
+          closeLabel={closeLabel}
+          closeRef={closeRef}
+          compact
+          onClose={() => setSheet(null)}
+          footer={
+            <>
               <button
-                ref={closeRef}
                 type="button"
-                onClick={onCloseFilters}
-                className="rounded-xl px-2 py-1 text-sm text-text-secondary"
+                disabled={!aroundActive}
+                onClick={() => onFilters(resetDiscoverAround(filters))}
+                className="min-h-12 flex-1 rounded-full border border-border text-sm font-semibold disabled:opacity-40"
               >
-                {closeLabel}
+                {d.reset}
               </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              <FilterChips
-                minutes={minutes}
-                onMinutes={onMinutes}
-                filters={filters}
-                onChange={onFilters}
-                profile={routingProfile}
-                showReset={false}
-              />
-            </div>
-            <div className="flex gap-2 border-t border-border px-4 py-3">
               <button
                 type="button"
-                disabled={filterCount === 0 && minutes === DEFAULT_FILTER_MINUTES}
+                onClick={() => setSheet(null)}
+                className="min-h-12 flex-[2] rounded-full bg-accent text-sm font-extrabold text-on-accent hover:bg-accent-hover"
+              >
+                {d.showTours(resultCount)}
+              </button>
+            </>
+          }
+        >
+          <DistanceMaxChips
+            maxDistanceKm={filters.maxDistanceKm}
+            onChange={(km) => onFilters({ ...filters, maxDistanceKm: km })}
+          />
+        </ExploreSheetFrame>
+      ) : null}
+
+      {sheet === "filter" ? (
+        <ExploreSheetFrame
+          testId="discover-filter-sheet"
+          titleId={filterTitleId}
+          title={d.filter}
+          closeLabel={closeLabel}
+          closeRef={closeRef}
+          onClose={() => setSheet(null)}
+          footer={
+            <>
+              <button
+                type="button"
+                disabled={
+                  filterCount === 0 && minutes === DEFAULT_FILTER_MINUTES
+                }
                 onClick={() => {
                   onMinutes(DEFAULT_FILTER_MINUTES);
-                  onFilters(DISCOVER_LENS_FILTERS);
+                  onFilters(resetDiscoverSheetFilters(filters));
                 }}
                 className="min-h-12 flex-1 rounded-full border border-border text-sm font-semibold disabled:opacity-40"
               >
@@ -210,15 +229,92 @@ export function DiscoverExploreChrome({
               </button>
               <button
                 type="button"
-                onClick={onCloseFilters}
+                onClick={() => setSheet(null)}
                 className="min-h-12 flex-[2] rounded-full bg-accent text-sm font-extrabold text-on-accent hover:bg-accent-hover"
               >
                 {d.showTours(resultCount)}
               </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <FilterChips
+            minutes={minutes}
+            onMinutes={onMinutes}
+            filters={filters}
+            onChange={onFilters}
+            profile={routingProfile}
+            showReset={false}
+            showDistance={false}
+          />
+        </ExploreSheetFrame>
       ) : null}
+    </div>
+  );
+}
+
+function ExploreSheetFrame({
+  testId,
+  titleId,
+  title,
+  closeLabel,
+  closeRef,
+  compact,
+  onClose,
+  footer,
+  children,
+}: {
+  testId: string;
+  titleId: string;
+  title: string;
+  closeLabel: string;
+  closeRef: RefObject<HTMLButtonElement | null>;
+  compact?: boolean;
+  onClose: () => void;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center"
+      role="presentation"
+    >
+      <button
+        type="button"
+        aria-label={closeLabel}
+        className="absolute inset-0 bg-background/55"
+        onClick={onClose}
+      />
+      <div
+        data-testid={testId}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`relative z-10 flex w-full max-w-lg flex-col rounded-t-xl border border-border bg-surface sm:m-4 sm:rounded-xl ${
+          compact ? "" : "max-h-[78vh]"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <h2 id={titleId} className="text-lg font-extrabold">
+            {title}
+          </h2>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className="rounded-xl px-2 py-1 text-sm text-text-secondary"
+          >
+            {closeLabel}
+          </button>
+        </div>
+        <div
+          className={`px-4 py-3 ${compact ? "" : "min-h-0 flex-1 overflow-y-auto"}`}
+        >
+          {children}
+        </div>
+        <div className="flex gap-2 border-t border-border px-4 py-3">
+          {footer}
+        </div>
+      </div>
     </div>
   );
 }

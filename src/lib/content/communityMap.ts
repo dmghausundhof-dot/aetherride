@@ -41,7 +41,7 @@ export const COMMUNITY_FEATURES: {
   },
   {
     title: "Events & Clubs",
-    body: "Redaktionelle Treffen und Orientierung. Kein RSVP-Fake, kein Live-Standort-Zwang.",
+    body: "Redaktionell auf der Website, nicht in der App. Kein RSVP-Fake, kein Live-Standort-Zwang.",
     href: "/community#events",
     cta: "Termine",
   },

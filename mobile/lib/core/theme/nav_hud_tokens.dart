@@ -36,6 +36,9 @@ abstract final class NavHudTokens {
   static const String labelRestKm = 'noch km';
   static const String labelEta = 'Ziel';
 
+  /// Empty rest / Ziel when there is no ActiveRoute (Einfach fahren).
+  static const String emptyStat = '—';
+
   // --- Upcoming rail (not a 5th Clean stat); keep in sync with domain ---
   static const int upcomingRailMaxEtaMin = 15; // == kUpcomingRailMaxEtaMin
 

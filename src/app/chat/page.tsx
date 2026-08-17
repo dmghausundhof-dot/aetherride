@@ -238,7 +238,7 @@ export default function ChatPage() {
               type="button"
               onClick={() => setTool(t)}
               className={`rounded-full px-2 py-1 ${
-                tool === t ? "bg-chrome/20 text-chrome" : "bg-surface-elevated"
+                tool === t ? "bg-chrome text-on-accent" : "bg-surface-elevated"
               }`}
             >
               {t}

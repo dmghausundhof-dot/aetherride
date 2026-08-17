@@ -1,5 +1,5 @@
 /**
- * Public website IA — not the five Hof doors.
+ * Public website IA — not the four Hof doors.
  * Product chrome stays in hofNav.ts (Flutter parity).
  */
 

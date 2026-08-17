@@ -155,27 +155,15 @@ WerkstattSetupPlan planWerkstattSetup({
   );
 }
 
+/// Empty until the rider logs a number. Fox/psi tables live in opt-in
+/// templates — never as the bike's current setup.
 List<SetupValue> defaultSetupValuesFor(WerkstattSetupPlan plan) {
-  if (plan.hasSuspension) {
-    return BikeSetup.defaultValues();
-  }
-  final front = switch (plan.kind) {
-    WerkstattKind.gravel => 36.0,
-    WerkstattKind.road => 72.0,
-    WerkstattKind.urban => 45.0,
-    WerkstattKind.mtb || WerkstattKind.hiking => 22.0,
+  return switch (plan.kind) {
+    WerkstattKind.mtb ||
+    WerkstattKind.gravel ||
+    WerkstattKind.road ||
+    WerkstattKind.urban ||
+    WerkstattKind.hiking =>
+      const [],
   };
-  final rear = front + (plan.kind == WerkstattKind.road ? 4 : 2);
-  return [
-    SetupValue(
-      adjusterKey: 'tire_front.pressure_psi',
-      valueNum: front,
-      unit: 'psi',
-    ),
-    SetupValue(
-      adjusterKey: 'tire_rear.pressure_psi',
-      valueNum: rear,
-      unit: 'psi',
-    ),
-  ];
 }

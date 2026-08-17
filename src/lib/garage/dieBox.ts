@@ -277,33 +277,7 @@ export function planDieBox(input: {
       slot: "light",
     });
   }
-  if (everyday && !hasLock) {
-    today.push({
-      id: "lockMissing",
-      title: "Schloss eintragen",
-      hint: "Nur wenn ein Schloss am Rad ist.",
-      cta: "Schloss eintragen",
-      slot: "lock",
-    });
-  }
-  if (everyday && !hasRack) {
-    today.push({
-      id: "rackMissing",
-      title: "Träger eintragen",
-      hint: "Nur wenn das Rad einen Gepäckträger hat.",
-      cta: "Träger eintragen",
-      slot: "rack",
-    });
-  }
-  if (gravel && !hasBags) {
-    today.push({
-      id: "bagsMissing",
-      title: "Taschen eintragen",
-      hint: "Nur wenn Taschen am Rad sind.",
-      cta: "Taschen eintragen",
-      slot: "bags",
-    });
-  }
+  // Schloss, Träger, Taschen: addable, not Heute-nags on an empty stall.
   if ((everyday || gravel || road) && !pressureKnown) {
     today.push({
       id: "pressureUnknown",

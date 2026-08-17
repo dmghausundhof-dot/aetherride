@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 
+import '../domain/ride/gps_teleport.dart';
+
 /// GPS / Fused-Location für Ride-Tracking.
 /// Android: natives Foreground Service via Platform Channel; sonst Geolocator-Fallback.
 class LocationFix {
@@ -196,6 +198,18 @@ class LocationCoreChannel {
         fix.lat,
         fix.lng,
       );
+      final dtSec = fix.timestamp.difference(_last!.timestamp).inMilliseconds /
+          1000.0;
+      if (isGpsTeleport(
+        distanceM: d,
+        dtSec: dtSec,
+        accuracyM: fix.accuracyM,
+      )) {
+        _last = fix;
+        _fixCount += 1;
+        if (!_controller.isClosed) _controller.add(fix);
+        return;
+      }
       // Ignoriere Micro-Jitter < 1 m
       if (d >= 1) _distanceM += d;
     }

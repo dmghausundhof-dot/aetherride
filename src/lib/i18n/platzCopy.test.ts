@@ -15,12 +15,23 @@ function testDe() {
   const g = platzCopy("de");
   assert.equal(g.createGroup, "Gruppe anlegen");
   assert.equal(g.stimmenTitle, "Stimmen");
-  assert.equal(g.visAll, "Alle");
+  assert.equal(g.visPublic, "Freigegeben");
   assert.equal(g.addRoute, "Route hinzufügen");
+  assert.ok(g.addRouteHint.includes("ohne Pin"));
+  assert.ok(g.startNone.includes("ohne Pin"));
+  assert.ok(!g.addRouteHint.toLowerCase().includes("heidelberg"));
   assert.equal(g.intoMappe, "In die Mappe legen");
-  assert.ok(g.inviteHint.includes("HUD"));
+  assert.ok(g.inviteHint.includes("Freunde"));
+  assert.ok(g.inviteHint.includes("Deine Gruppen bleiben"));
+  assert.equal(g.collectionTours(1), "1 Tour");
+  assert.equal(g.collectionTours(2), "2 Touren");
+  assert.equal(g.collectionsTitle, "Sammlungen");
+  assert.equal(g.stimmenTitle, "Stimmen");
+  assert.notEqual(g.collectionsTitle, g.collectionsTitle.toUpperCase());
   assert.equal(g.joinWithLink, "Mit Link beitreten");
-  assert.ok(g.joinHint.includes("Token"));
+  assert.equal(g.joinField, "Einladungslink");
+  assert.ok(g.joinHint.includes("Einladungslink"));
+  assert.ok(!g.joinHint.toLowerCase().includes("token"));
   assert.ok(g.collectionsHint.includes("Katalog"));
 }
 
@@ -32,11 +43,19 @@ function testParity() {
     assert.ok(g.shareProfile("https://x").includes("Platz"), lang);
     assert.ok(g.created("x").includes("x"), lang);
     assert.ok(g.collectionTours(3).includes("3"), lang);
+    assert.notEqual(g.collectionTours(1), g.collectionTours(2), lang);
     assert.ok(g.addToCollection.length > 0, lang);
     assert.ok(g.intoMappe.includes("Mappe"), lang);
+    assert.ok(g.startNone.length > 8, lang);
+    assert.ok(g.startFromGps("1").includes("1"), lang);
+    assert.ok(g.startFromMap("1").includes("1"), lang);
     assert.ok(g.importGpx.includes("GPX"), lang);
     assert.ok(g.notePlaceholder.includes("Stimme"), lang);
+    assert.ok(!/\b(token|jeton)\b/i.test(g.joinHint), lang);
   }
+  assert.ok(platzCopy("en").joinHint.includes("invitation link"));
+  assert.ok(platzCopy("fr").joinHint.includes("lien d’invitation"));
+  assert.ok(platzCopy("it").joinHint.includes("link di invito"));
   assert.notEqual(de.inviteHint, platzCopy("en").inviteHint);
 }
 

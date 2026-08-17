@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/ai/chat_context.dart';
+import '../../domain/ai/chat_surface.dart';
 import '../../domain/ai/coach_inbox.dart';
 import '../../domain/ai/coach_watch.dart';
 import '../../domain/component.dart';
@@ -135,7 +135,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           for (final e in store.chatHistory)
             ChatMessage(
               role: (e['role'] as String?) ?? 'assistant',
-              text: (e['text'] as String?) ?? '',
+              text: _historyText(
+                role: (e['role'] as String?) ?? 'assistant',
+                text: (e['text'] as String?) ?? '',
+                fallback: l10n.chatUnavailable,
+              ),
             ),
         ]);
       if (_messages.isEmpty) {
@@ -150,6 +154,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     await ref.read(userProfileStoreProvider).appendChat(role, text);
   }
 
+  String _historyText({
+    required String role,
+    required String text,
+    required String fallback,
+  }) {
+    if (role != 'assistant') return text;
+    return sanitizeStoredAssistantText(text, fallback: fallback);
+  }
+
+  String _assistantSurface({
+    required AppLocalizations l10n,
+    required int statusCode,
+    String? jsonText,
+    String? jsonError,
+  }) {
+    final fault = chatSurfaceFault(
+      statusCode: statusCode,
+      jsonText: jsonText,
+      jsonError: jsonError,
+    );
+    switch (fault) {
+      case ChatSurfaceFault.limit:
+        return l10n.chatLimitReached;
+      case ChatSurfaceFault.unavailable:
+        return l10n.chatUnavailable;
+      case null:
+        final t = jsonText?.trim() ?? '';
+        return t.isEmpty ? l10n.chatNoAnswer : t;
+    }
+  }
+
   @override
   void dispose() {
     _input.dispose();
@@ -159,6 +194,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _send({String? query, String? tool}) async {
     final l10n = AppLocalizations.of(context);
+    final lang = Localizations.localeOf(context).languageCode;
     final riding = ref.read(isRidingProvider);
     if (riding || _busy) return;
     final q = (query ?? _input.text).trim();
@@ -203,7 +239,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         rides: rides,
         calibration: store.rangeCalibration,
         notices: [for (final i in coachItems) i.notice],
-        lang: Localizations.localeOf(context).languageCode,
+        lang: lang,
       );
 
       final headers = <String, String>{
@@ -225,12 +261,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         headers: headers,
         body: jsonEncode(body),
       );
-      String text;
+      String? jsonText;
+      String? jsonError;
       try {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        text = (data['text'] as String?) ??
-            (data['error'] as String?) ??
-            l10n.chatNoAnswer;
+        jsonText = data['text'] as String?;
+        jsonError = data['error'] as String?;
         final quota = data['quota'];
         if (quota is Map) {
           final remaining = quota['remaining'];
@@ -244,22 +280,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             );
           }
         }
-        if (res.statusCode == 429) {
-          text = '$text\n\n${l10n.chatLimitReached}';
-        }
-      } catch (_) {
-        text = res.statusCode >= 400
-            ? l10n.chatErrorStatus(res.statusCode)
-            : l10n.chatNoAnswer;
-      }
+      } catch (_) {}
+      final text = _assistantSurface(
+        l10n: l10n,
+        statusCode: res.statusCode,
+        jsonText: jsonText,
+        jsonError: jsonError,
+      );
       if (mounted) {
         setState(() {
           _messages.add(ChatMessage(role: 'assistant', text: text));
         });
         await _persist('assistant', text);
       }
-    } catch (e) {
-      final err = l10n.chatNetworkError('$e');
+    } catch (_) {
+      final err = l10n.chatUnavailable;
       if (mounted) {
         setState(() {
           _messages.add(ChatMessage(role: 'assistant', text: err));
@@ -336,7 +371,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  if (kDebugMode) ...[
+                  if (AppConfig.showChatDevTools) ...[
                     DropdownButtonFormField<String>(
                       initialValue: _tool,
                       isDense: true,
@@ -462,8 +497,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: isUser
-                                    ? AppColors.accent.withValues(alpha: 0.15)
-                                    : AppColors.charcoal.withValues(alpha: 0.06),
+                                    ? AppColors.accent.withValues(alpha: 0.22)
+                                    : AppColors.elevated,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(m.text),
@@ -546,7 +581,7 @@ class _CoachInboxStrip extends ConsumerWidget {
               child: Material(
                 color: item.notice.severity == CoachSeverity.overdue
                     ? AppColors.accent.withValues(alpha: 0.12)
-                    : AppColors.charcoal.withValues(alpha: 0.06),
+                    : AppColors.elevated,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),

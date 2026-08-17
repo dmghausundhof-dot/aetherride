@@ -2,11 +2,11 @@
  * Regression: Numeric-Guard + Produktempfehlungen + Heatmap k.
  * npx tsx src/lib/ai/chat.test.ts
  */
-import { numericGuard, type RecommendationSet } from "./chat";
+import { numericGuard, type RecommendationSet, buildChatRecommendation } from "./chat";
 import { buildHeatmap } from "@/lib/routing/heatmaps";
 import { allProductRecommendations } from "@/lib/shop/recommendations";
 import { buildEstimatedAssistLog } from "@/lib/ebike/assistLog";
-import type { Bike, Ride } from "@/types";
+import type { Bike, Ride, RiderProfile } from "@/types";
 
 function assert(c: boolean, m: string) {
   if (!c) throw new Error(m);
@@ -96,6 +96,46 @@ const assist = buildEstimatedAssistLog({
 });
 assert(assist.hasEstimates, "Schätzung markiert");
 assert(assist.disclaimer.includes("Keine Motorsteuerung"), "F-EBK-000");
+
+const profile: RiderProfile = {
+  style: "flow",
+  skillLevel: 3,
+  preferences: {
+    preferSteep: false,
+    preferTechnical: true,
+    preferFlow: true,
+    eBikeAssistPreference: "tour",
+  },
+  fitnessIndicators: { avgRideDurationMin: 90, weeklyDistanceKm: 40 },
+  riderWeightKg: 78,
+};
+
+const bikeWithoutSetups = {
+  ...bike,
+  setups: undefined,
+} as unknown as Bike;
+
+const hist = buildChatRecommendation("setup_history", "Setups", {
+  bike: bikeWithoutSetups,
+  bikes: [bikeWithoutSetups],
+  rides,
+  profile,
+});
+assert(
+  !/iterable|typeerror/i.test(hist.rawAnswer),
+  "setup_history ohne setups kein Dump"
+);
+
+const shop = buildChatRecommendation("product_search", "Kette", {
+  bike: bikeWithoutSetups,
+  bikes: [bikeWithoutSetups],
+  rides,
+  profile,
+});
+assert(
+  !/iterable|typeerror/i.test(shop.rawAnswer),
+  "product_search ohne setups kein Dump"
+);
 
 console.log("chat.test.ts OK", {
   guardReject: bad.rejectedNumbers,

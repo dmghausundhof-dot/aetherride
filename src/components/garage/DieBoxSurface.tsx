@@ -5,7 +5,6 @@ import { slotLabel } from "@/lib/catalog/slots";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { planDieBox, type DieBoxTodayItem } from "@/lib/garage/dieBox";
 import { BikePhotoControl } from "@/components/garage/BikePhotoControl";
-import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import {
@@ -213,7 +212,7 @@ export function DieBoxSurface({
 
       {rest.length > 0 && (
       <section>
-        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+        <h3 className="mb-2 text-[11px] font-bold tracking-wide text-text-secondary">
           {copy.workshopZoneToday}
         </h3>
           <div className="space-y-2">
@@ -261,7 +260,7 @@ export function DieBoxSurface({
       )}
 
       <section>
-        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+        <h3 className="mb-2 text-[11px] font-bold tracking-wide text-text-secondary">
           {copy.workshopZoneOnBike}
         </h3>
         {plan.onBike.length === 0 ? (
@@ -302,8 +301,6 @@ export function DieBoxSurface({
           {box.batteryHint}
         </p>
       )}
-
-      <GaragePartsCta bikeId={bike.id} bikeName={bike.name} />
 
       {measure && measureSpec && (
         <div

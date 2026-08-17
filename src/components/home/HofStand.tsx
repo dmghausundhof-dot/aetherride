@@ -7,6 +7,7 @@ import { hofSkyLine, isSkyWet } from "@/lib/home/hofSky";
 import {
   formatHofGateAway,
   hofGateDurationMin,
+  hofGateEmptyTitle,
   hofGateHasLoop,
   hofGateId,
   hofGateTitle,
@@ -30,6 +31,7 @@ import {
   useRideGroupStore,
 } from "@/store/useRideGroupStore";
 import { cn } from "@/lib/utils";
+import { HOF_TOKENS } from "@/lib/hof/tokens";
 
 type WeatherPayload = {
   current?: { temperature_2m?: number };
@@ -151,8 +153,11 @@ export function HofStand() {
     };
   }, [gateId, justBack]);
 
-  const sky =
-    weatherResolved || geoResolved
+  const noGps = geoResolved && !geo;
+  const gpsHonesty = noGps ? copy.gpsUnknown : "";
+  const sky = noGps
+    ? ""
+    : weatherResolved || geoResolved
       ? geo && weather?.current?.temperature_2m != null
         ? hofSkyLine(weather.trailHint, weather.current.temperature_2m, copy)
         : weatherResolved
@@ -233,9 +238,18 @@ export function HofStand() {
           {sky ? (
             <p
               data-testid="hof-sky"
-              className="mt-2 text-[13px] font-semibold text-sage lg:text-base"
+              className="mt-2 text-[15px] font-bold lg:text-lg"
+              style={{ color: HOF_TOKENS.sageOnDark }}
             >
               {sky}
+            </p>
+          ) : null}
+          {gpsHonesty ? (
+            <p
+              data-testid="hof-gps-honesty"
+              className="mt-2 text-xs font-semibold text-text-secondary"
+            >
+              {gpsHonesty}
             </p>
           ) : null}
 
@@ -339,31 +353,31 @@ export function HofStand() {
               </p>
             </section>
           )}
+
+          {!justBack ? (
+            <GateCard
+              pickTitle={
+                hofGateHasLoop(gate)
+                  ? hofGateTitle(gate)
+                  : hofGateEmptyTitle(gate.honesty, copy)
+              }
+              durationMin={hofGateHasLoop(gate) ? hofGateDurationMin(gate) : 0}
+              hasLoop={hofGateHasLoop(gate)}
+              honesty={gate.honesty}
+              href={
+                gateId
+                  ? `/discover?route=${encodeURIComponent(gateId)}`
+                  : "/discover"
+              }
+              neighbors={neighborCount}
+              awayKm={gate.distanceKm}
+            />
+          ) : null}
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-2xl px-5 pb-12 pt-4 lg:max-w-3xl lg:px-10 lg:pb-16 lg:pt-6">
       <HofTafel items={tafel} />
-
-      {!justBack ? (
-        <GateCard
-          pickTitle={
-            hofGateHasLoop(gate) ? hofGateTitle(gate) : copy.noHonestLoop
-          }
-          durationMin={hofGateHasLoop(gate) ? hofGateDurationMin(gate) : 0}
-          hasLoop={hofGateHasLoop(gate)}
-          honesty={gate.honesty}
-          href={
-            gateId
-              ? `/discover?route=${encodeURIComponent(gateId)}`
-              : "/discover"
-          }
-          neighbors={neighborCount}
-          awayKm={gate.distanceKm}
-        />
-      ) : null}
-
-      <HofWatchCard />
 
       <Link
         href={primaryHref}
@@ -385,6 +399,7 @@ export function HofStand() {
           {secondaryLabel}
         </Link>
       </div>
+      <HofWatchCard />
       </div>
     </div>
   );
@@ -421,7 +436,7 @@ function GateCard({
 
   const line = hasLoop
     ? `${pickTitle} · ${copy.loopDuration(durationMin)}`
-    : copy.noHonestLoop;
+    : pickTitle;
   const away = formatHofGateAway(awayKm, {
     near: copy.gateAwayNear,
     km: copy.gateAwayKm,

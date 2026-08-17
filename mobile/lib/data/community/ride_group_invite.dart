@@ -91,8 +91,8 @@ abstract final class RideGroupInvite {
       ..writeln()
       ..write(
         visibility == RideGroupVisibility.public
-            ? 'Öffentlich: wer den Link hat, kann beitreten. '
-                'Die Gruppe kann auf dem Platz unter Öffentlich stehen.'
+            ? 'Freigegeben: wer den Link hat, kann beitreten. '
+                'Die Gruppe kann unter Freigegeben auf dem Platz stehen.'
             : 'Privat: nur wer diesen Link hat, kann beitreten. '
                 'Kein öffentliches Roster.',
       );
@@ -152,6 +152,51 @@ abstract final class RideGroupInvite {
   }
 
   static String _code(String raw) => raw.trim().toUpperCase();
+
+  /// Paste from WhatsApp / Messages: HTTPS, App-Scheme, or bare id.
+  /// Prefers the URL that carries `g=` (private groups need the token).
+  static PlatzPastedJoin? parsePastedJoin(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return null;
+    PlatzPastedJoin? withoutToken;
+    final urlRe = RegExp(
+      r'(?:https?://|aetherride://)[^\s]+',
+      caseSensitive: false,
+    );
+    for (final m in urlRe.allMatches(text)) {
+      final uri = Uri.tryParse(m.group(0)!);
+      if (uri == null) continue;
+      final group =
+          (uri.queryParameters['group'] ?? uri.queryParameters['code'] ?? '')
+              .trim();
+      if (group.isEmpty) continue;
+      final token = uri.queryParameters['g']?.trim();
+      final hit = PlatzPastedJoin(
+        code: group,
+        token: (token == null || token.isEmpty) ? null : token,
+      );
+      if (hit.token != null) return hit;
+      withoutToken ??= hit;
+    }
+    if (withoutToken != null) return withoutToken;
+    final compact = text.replaceAll(RegExp(r'\s+'), '');
+    if (RideGroupPolicy.isGroupId(compact)) {
+      return PlatzPastedJoin(code: compact);
+    }
+    final upper = compact.toUpperCase();
+    if (upper.length == RideGroupPolicy.joinCodeLen &&
+        RegExp(r'^[A-Z0-9]+$').hasMatch(upper)) {
+      return PlatzPastedJoin(code: upper);
+    }
+    return null;
+  }
+}
+
+class PlatzPastedJoin {
+  const PlatzPastedJoin({required this.code, this.token});
+
+  final String code;
+  final String? token;
 }
 
 class RideGroupInvitePayload {

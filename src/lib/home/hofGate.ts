@@ -171,6 +171,14 @@ export function hofGateHasLoop(pick: HofGatePick): boolean {
   return pick.seed != null || pick.saved != null;
 }
 
+/** Title when the gate has no loop. Wet-closed is not “no loop exists”. */
+export function hofGateEmptyTitle(
+  honesty: HofGateHonesty,
+  copy: { gateWetClosed: string; noHonestLoop: string }
+): string {
+  return honesty === "wetClosed" ? copy.gateWetClosed : copy.noHonestLoop;
+}
+
 export function hofGateTitle(pick: HofGatePick): string {
   return pick.seed?.name ?? pick.saved?.name ?? "";
 }

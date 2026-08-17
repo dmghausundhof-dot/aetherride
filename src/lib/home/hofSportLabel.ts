@@ -42,3 +42,21 @@ export function hofSportLabel(
   };
   return map[category];
 }
+
+/** Name beim Anlegen ohne Spitzname: Kategorie, kein Fake „Mein Bike“. */
+export function fallbackBikeName(
+  category: BikeCategory,
+  isEbike = false
+): string {
+  return hofSportLabel(category, isEbike);
+}
+
+/** Gesetzter Name bleibt. Leer/Whitespace wird zur Kategorie. */
+export function resolvedBikeName(
+  name: string | undefined,
+  category: BikeCategory,
+  isEbike = false
+): string {
+  const trimmed = (name ?? "").trim();
+  return trimmed || fallbackBikeName(category, isEbike);
+}

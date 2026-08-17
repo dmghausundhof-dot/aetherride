@@ -64,6 +64,17 @@ void main() {
     expect(pinOnly.waypoints, hasLength(1));
   });
 
+  test('fromStart without coords has no pin and no invented km', () {
+    final entry = SimpleAddRoute.fromStart(
+      name: 'Nur Name',
+      now: DateTime.utc(2026, 8, 17, 8),
+      id: 'library-nopin',
+    );
+    expect(entry.waypoints, isEmpty);
+    expect(entry.coordinates, isEmpty);
+    expect(entry.distanceKm, 0);
+  });
+
   test('empty library list is safe to iterate', () {
     const saved = <Object>[];
     expect(() => saved.map((e) => e).toList(), returnsNormally);

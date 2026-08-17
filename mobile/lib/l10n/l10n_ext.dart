@@ -888,6 +888,8 @@ extension AetherL10n on AppLocalizations {
       'Uhr verbunden (Sim)' => watchStatusConnectedSim,
       'Uhr getrennt' => watchStatusDisconnected,
       'Uhr gefunden, aber ohne Standard-Puls-Service' => watchStatusNoHrService,
+      'Kein Heart Rate 0x180D auf diesem Gerät' => watchNoHr,
+      'Kein Puls-Signal auf diesem Gerät' => watchNoHr,
       'Uhr getrennt — Broadcast prüfen, in der Nähe erneut koppeln.' =>
         watchStatusReconnectLost,
       _ => null,

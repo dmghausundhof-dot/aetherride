@@ -6,7 +6,7 @@ export const ABOUT_STORY = {
   kicker: "Warum ein Hof",
   title: "Nicht noch eine Timeline auf zwei Rädern.",
   paragraphs: [
-    "Die meisten Rad-Apps stapeln Karten: Explore, Club, Shop, Activity. Irgendwann ist die Startseite ein Feed, die Fahrt eine Statistik, das Rad ein SKU. FlowLine kehrt das um. Der Hof ist der Stand. Fünf Türen. Ein oranger Knopf.",
+    "Die meisten Rad-Apps stapeln Karten: Explore, Club, Shop, Activity. Irgendwann ist die Startseite ein Feed, die Fahrt eine Statistik, das Rad ein SKU. FlowLine kehrt das um. Der Hof ist der Stand. Vier Türen. Ein oranger Knopf.",
     "Web ist der Schreibtisch: Touren finden, planen, das Rad pflegen, eine Mappe teilen. Die App ist die Fahrt: HUD, GPS im Hintergrund, Offline-Packs, Sensoren, Uhr. Was im Browser nicht zuverlässig geht, wird nicht als Live-GPS im Tab verkauft.",
     "Der Name sagt die Haltung: Flow für den Schnitt, Line für die Linie. Outdoor · Cycling · Flow. Kein Leaderboard, das dich in der Feierabendrunde bewertet. Kein Demo-Kilometer, der den Hof voll erscheinen lässt.",
   ],

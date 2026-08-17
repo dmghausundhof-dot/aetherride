@@ -19,7 +19,7 @@ import '../../providers/shop_providers.dart';
 import '../shell/shell_tabs.dart';
 import 'shop_product_sheet.dart';
 
-/// Laden-Tab: FlowLine-Regal (Storefront) + Tür zu Shopify. Keine In-App-Kasse.
+/// Laden-Gateway: FlowLine-Regal + Tür zu Shopify. Kein Tab, keine In-App-Kasse.
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
 
@@ -148,28 +148,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     AppLocalizations l10n,
     Uri? uri,
   ) async {
-    if (uri != null &&
-        isShopifyOnlineStoreUri(uri) &&
-        AppConfig.shopifyOnlineStoreLocked) {
-      final go = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(l10n.shopLockedTitle),
-          content: Text(l10n.shopPasswordWall),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.shopPasswordCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l10n.shopPasswordConfirm),
-            ),
-          ],
-        ),
-      );
-      if (go != true) return;
-    }
     final localized = uri == null
         ? null
         : isShopifyOnlineStoreUri(uri)
@@ -436,14 +414,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      key: const Key('shop-open-web'),
-                      onPressed: () => _openWeb(context, l10n, FlowLineWeb.hub()),
-                      child: Text(l10n.shopOpenInBrowser),
-                    ),
-                  ),
                 ],
                 if (catalog != null && !catalog.ok && !shelves.isLoading) ...[
                   const SizedBox(height: AppSpacing.m),
@@ -465,15 +435,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                       child: Text(l10n.shopRetry),
                     ),
                   ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      key: const Key('shop-open-web'),
-                      onPressed: () => _openWeb(context, l10n, FlowLineWeb.hub()),
-                      child: Text(l10n.shopOpenInBrowser),
-                    ),
-                  ),
                 ],
+                if (catalog != null && catalog.hasParts) ...[
                 const SizedBox(height: AppSpacing.l),
                 TextField(
                   controller: _search,
@@ -592,7 +555,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     ),
                   ),
                 ],
-                if (fitBikes.isNotEmpty && (catalog?.hasParts ?? false)) ...[
+                if (fitBikes.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.m),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -638,6 +601,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     ),
                   ),
                 ],
+                ],
                 const SizedBox(height: AppSpacing.xl),
                 if (!connected) ...[
                   Text(
@@ -669,25 +633,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      key: const Key('shop-hub-web'),
-                      onPressed: () => _openWeb(
-                        context,
-                        l10n,
-                        FlowLineWeb.parts(
-                          bikeId: _focusBikeId ??
-                              (rideable.length == 1 ? rideable.first.id : null),
-                          slot: _slot == 'all' ? null : _slot,
-                          fit: _fitOnly || _focusBikeId != null
-                              ? 'bike'
-                              : 'all',
-                        ),
-                      ),
-                      child: Text(l10n.shopOpenInBrowser),
                     ),
                   ),
                 ],
@@ -756,7 +701,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 if (merch.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
-                    l10n.werkstattMerch,
+                    l10n.shopMerchTitle,
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
@@ -774,6 +719,29 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                         openLabel: l10n.shopDetails,
                       ),
                     ),
+                ] else if (catalog != null &&
+                    catalog.ok &&
+                    catalog.hasParts &&
+                    !shelves.isLoading) ...[
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    l10n.shopMerchTitle,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Text(
+                    l10n.shopMerchEmpty,
+                    key: const Key('shop-merch-empty'),
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 13,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: AppSpacing.xxl),
                 if (doorBike == null)
@@ -785,6 +753,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                     onTap: () {
                       ref.read(garageOpenAddPendingProvider.notifier).state =
                           true;
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
                       ref.read(shellTabIndexProvider.notifier).state =
                           ShellTabs.werkstatt;
                     },
@@ -1037,4 +1008,26 @@ class _ShopDoor extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Werkstatt → Laden. Push, kein Tab. Fit und Slot sitzen in den Pending-Providern.
+void openShopGateway(
+  BuildContext context,
+  WidgetRef ref, {
+  String? bikeId,
+  String? slot,
+  bool fitOnly = true,
+}) {
+  if (bikeId != null && bikeId.isNotEmpty) {
+    ref.read(shopPendingBikeIdProvider.notifier).state = bikeId;
+  }
+  if (slot != null && slot.isNotEmpty) {
+    ref.read(shopPendingSlotProvider.notifier).state = slot;
+  }
+  if (fitOnly) {
+    ref.read(shopPendingFitOnlyProvider.notifier).state = true;
+  }
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+  );
 }

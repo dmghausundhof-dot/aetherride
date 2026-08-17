@@ -20,7 +20,7 @@ function testHomepageHasProse() {
   assert.ok(HOME_INTRO.lead.length > 80);
   assert.ok(HOME_INTRO.paragraphs.every((p) => p.length > 80));
   assert.equal(HOME_DISCIPLINES.length, 5);
-  assert.equal(HOME_DOOR_STORIES.length, 5);
+  assert.equal(HOME_DOOR_STORIES.length, 4);
   assert.ok(HOME_DOOR_STORIES.every((d) => d.body.length > 60));
   assert.ok(HOME_HONESTY.notYet.some((line) => /Impressum/i.test(line)));
   assert.ok(!JSON.stringify(HOME_HONESTY).includes("Musterstraße"));

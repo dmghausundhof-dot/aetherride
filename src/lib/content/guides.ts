@@ -127,14 +127,14 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "hof-fuenf-tueren",
-    title: "Der Hof: fünf Türen, kein Ride-Tab",
+    title: "Der Hof: vier Türen, kein Ride-Tab",
     teaser:
-      "Warum FlowLine nicht wie ein Feed aussieht — und wozu Hof, Karte, Platz, Werkstatt und Laden da sind.",
+      "Warum FlowLine nicht wie ein Feed aussieht — und wozu Hof, Karte, Platz und Werkstatt da sind.",
     category: "safety",
     readMin: 4,
     body: [
-      "Viele Rad-Apps stapeln Karten: Home, Explore, Activity, Club, Shop. FlowLine hat fünf Türen am Hof. Ride ist der oranger Knopf, nicht der sechste Tab.",
-      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Der Platz hält Mappe, Stimmen und Gruppen. Die Werkstatt kennt das Rad. Der Laden ist die Tür zu Shopify — ohne zweite Kasse.",
+      "Viele Rad-Apps stapeln Karten: Home, Explore, Activity, Club, Shop. FlowLine hat vier Türen am Hof. Ride ist der orange Knopf, nicht der fünfte Tab. Der Laden ist keine Tür in der Leiste.",
+      "Der Hof ist der Stand: Himmel, eine Stunde vor dem Tor, Rausfahren. Die Karte zeigt Nähe und Planen. Der Platz hält Mappe, Stimmen und Gruppen. Die Werkstatt kennt das Rad — und öffnet die Tür zu Shopify, wenn ein Teil zu diesem Rad passt.",
       "Was im Browser fehlt, bleibt leer: kein Live-GPS, kein HUD, keine Dummy-Kilometer. Die App übernimmt Navigation, Offline und Sensoren.",
     ],
     relatedHrefs: [
@@ -191,7 +191,7 @@ export const GUIDES: Guide[] = [
     category: "safety",
     readMin: 4,
     body: [
-      "Der Laden ist die fünfte Tür am Hof, kein zweiter Shop in FlowLine. Katalog und Fit kommen aus der Werkstatt. Die Kasse liegt bei Shopify — es gibt keinen Warenkorb, der hier kassiert.",
+      "Der Laden ist keine fünfte Tür in der Leiste. Katalog und Fit kommen aus der Werkstatt, gebunden an Slot und Rad. Die Kasse liegt bei Shopify — es gibt keinen Warenkorb, der hier kassiert.",
       "Ohne hinterlegtes Impressum (Name und ladungsfähige Anschrift) bleibt der Checkout gesperrt. Das ist Absicht: wir erfinden keine TMG-Angaben, damit etwas „kaufen“ heißt.",
       "Merchandise wird nicht über den Fit zum Rad gefiltert. Ersatzteile schon: Kategorie und Laufrad zum abgestellten Rad, keine erfundenen SKUs. Store-Listings der App sind unabhängig davon und stehen, sobald sie live sind.",
     ],

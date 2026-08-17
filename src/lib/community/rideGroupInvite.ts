@@ -7,6 +7,10 @@
 
 import { siteOrigin, appDeepLink } from "@/lib/web/appLinks";
 import type { RideGroup } from "@/lib/community/types";
+import {
+  isRideGroupId,
+  RIDE_GROUP_JOIN_CODE_LEN,
+} from "@/lib/community/rideGroup";
 
 export type RideGroupInvitePayload = {
   v: 1;
@@ -106,6 +110,38 @@ export function groupInviteScheme(groupRef: string, token?: string): string {
   return appDeepLink(`platz?${q.toString()}`);
 }
 
+export type PastedGroupJoin = { ref: string; token?: string };
+
+/** Paste from WhatsApp / Messages. Prefers the URL that carries `g=`. */
+export function parsePastedGroupJoin(raw: string): PastedGroupJoin | null {
+  const text = raw.trim();
+  if (!text) return null;
+  let withoutToken: PastedGroupJoin | null = null;
+  const urlRe = /(?:https?:\/\/|aetherride:\/\/)[^\s]+/gi;
+  let m: RegExpExecArray | null;
+  while ((m = urlRe.exec(text)) !== null) {
+    try {
+      const uri = new URL(m[0]);
+      const group = (uri.searchParams.get("group") || uri.searchParams.get("code") || "").trim();
+      if (!group) continue;
+      const token = uri.searchParams.get("g")?.trim() || undefined;
+      const hit: PastedGroupJoin = { ref: group, token };
+      if (hit.token) return hit;
+      withoutToken ??= hit;
+    } catch {
+      /* not a URL */
+    }
+  }
+  if (withoutToken) return withoutToken;
+  const compact = text.replace(/\s+/g, "");
+  if (isRideGroupId(compact)) return { ref: compact };
+  const upper = compact.toUpperCase();
+  if (upper.length === RIDE_GROUP_JOIN_CODE_LEN && /^[A-Z0-9]+$/.test(upper)) {
+    return { ref: upper };
+  }
+  return null;
+}
+
 export function groupInviteShareText(input: {
   title: string;
   url: string;
@@ -127,7 +163,7 @@ export function groupInviteShareText(input: {
   }
   const vis =
     input.visibility === "public"
-      ? "Öffentlich: wer den Link hat, kann beitreten. Die Gruppe kann auf dem Platz unter Öffentlich stehen."
+      ? "Freigegeben: wer den Link hat, kann beitreten. Die Gruppe kann unter Freigegeben auf dem Platz stehen."
       : "Privat: nur wer diesen Link hat, kann beitreten. Kein öffentliches Roster.";
   lines.push("", vis);
   return lines.join("\n");

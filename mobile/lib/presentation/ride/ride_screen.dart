@@ -35,6 +35,7 @@ import '../../domain/ebike/range.dart';
 import '../../domain/hud_bike_peek.dart';
 import '../../domain/hud_media.dart';
 import '../../domain/ride.dart';
+import '../../domain/ride/gps_teleport.dart';
 import '../../domain/ride_auto_lock.dart';
 import '../../domain/routing/battery_preset.dart';
 import '../../domain/routing/camera_follow_smooth.dart';
@@ -1584,6 +1585,20 @@ class RideScreenState extends ConsumerState<RideScreen> {
       } else {
         _gpsStatus = _l10n.rideGpsFixN(_gpsFixCount);
       }
+      final lastPt = _track.isNotEmpty ? _track.last : null;
+      if (lastPt != null) {
+        final hopM = haversineM(lastPt.lat, lastPt.lng, fix.lat, fix.lng);
+        final dtSec =
+            (fix.timestamp.millisecondsSinceEpoch - lastPt.timeMs) / 1000.0;
+        if (isGpsTeleport(
+          distanceM: hopM,
+          dtSec: dtSec,
+          accuracyM: fix.accuracyM,
+        )) {
+          if (mounted) setState(() {});
+          return;
+        }
+      }
       _track.add(
         _liveTrackPoint(
           lat: fix.lat,
@@ -2395,8 +2410,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final mount = ref.watch(mountCheckProvider);
     final sunlight = ref.watch(sunlightModeProvider);
     final locked = ref.watch(autoLockedProvider);
-    final elapsed = ref.watch(rideElapsedSecProvider);
-    final distanceM = ref.watch(rideDistanceMProvider);
+    // Tick the HUD (ETA clock / Pro km·Zeit) even when Clean strip hides them.
+    ref.watch(rideElapsedSecProvider);
+    ref.watch(rideDistanceMProvider);
 
     final theme = sunlight ? AppTheme.sunlight : Theme.of(context);
     final l10n = AppLocalizations.of(context);
@@ -2522,8 +2538,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
                   mount: mount,
                   paused: paused,
                   locked: locked,
-                  elapsed: elapsed,
-                  distanceM: distanceM,
                 )
               : _buildPreRideMap(route: route),
         ),
@@ -2596,8 +2610,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
     required MountCheck mount,
     required bool paused,
     required bool locked,
-    required int elapsed,
-    required double distanceM,
   }) {
     final l10n = AppLocalizations.of(context);
     ({
@@ -2676,15 +2688,19 @@ class RideScreenState extends ConsumerState<RideScreen> {
           );
     final splitRest = rest?.mode == RideRestHudMode.splitToJoin;
     final speed = _effectiveSpeedKmh;
+    // Same Tempo · noch km · Ziel chrome with or without ActiveRoute.
+    // Ohne Route: rest/Ziel stay empty — no km/h · km · Zeit light HUD.
     String etaLabel;
-    if (splitRest) {
-      etaLabel = formatHudKm(rest!.restLoopKm ?? 0);
-    } else if (rest?.restKm != null && speed > 3) {
-      final etaMin = (rest!.restKm! / speed * 60).round();
+    if (rest == null) {
+      etaLabel = NavHudTokens.emptyStat;
+    } else if (splitRest) {
+      etaLabel = formatHudKm(rest.restLoopKm ?? 0);
+    } else if (rest.restKm != null && speed > 3) {
+      final etaMin = (rest.restKm! / speed * 60).round();
       final etaAt = DateTime.now().add(Duration(minutes: etaMin));
       etaLabel =
           '${etaAt.hour.toString().padLeft(2, '0')}:${etaAt.minute.toString().padLeft(2, '0')}';
-    } else if (rest?.restKm != null && route!.durationMin > 0) {
+    } else if (rest.restKm != null && route!.durationMin > 0) {
       final frac = route.distanceKm > 0
           ? (_alongRouteM / 1000 / route.distanceKm).clamp(0.0, 1.0)
           : 0.0;
@@ -2693,13 +2709,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
       etaLabel =
           '${etaAt.hour.toString().padLeft(2, '0')}:${etaAt.minute.toString().padLeft(2, '0')}';
     } else {
-      etaLabel = _fmt(elapsed);
+      etaLabel = NavHudTokens.emptyStat;
     }
 
     final midValue = rest == null
-        ? (distanceM < 1000
-            ? (distanceM / 1000).toStringAsFixed(2)
-            : (distanceM / 1000).toStringAsFixed(1))
+        ? NavHudTokens.emptyStat
         : formatHudKm(
             splitRest ? (rest.untilJoinKm ?? 0) : (rest.restKm ?? 0),
           );
@@ -2708,7 +2722,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final speedCaption = l10n.hudSpeedCaptionFor(
       HudBikePeek.speedCaption(
         wheelDrives: HudBikePeek.wheelDrivesSpeed(_ldi?.speedKmh),
-        hasRouteRest: rest != null,
       ),
     );
     final bikePeek = HudBikePeek.chips(
@@ -2722,12 +2735,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
       leanAngleDeg: _metrics?.leanAngleDeg,
       showChassis: _showsChassisUx(ref),
     );
-    final midLabel = rest == null
-        ? l10n.rideKm
-        : (splitRest ? l10n.rideUntilJoin : l10n.rideRestKm);
-    final rightLabel = rest == null
-        ? l10n.rideTime
-        : (splitRest ? l10n.rideRestLoop : l10n.rideEta);
+    final midLabel = splitRest ? l10n.rideUntilJoin : l10n.rideRestKm;
+    final rightLabel = splitRest ? l10n.rideRestLoop : l10n.rideEta;
 
     return Stack(
       children: [

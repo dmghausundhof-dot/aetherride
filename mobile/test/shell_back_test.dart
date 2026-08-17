@@ -23,12 +23,11 @@ void main() {
       );
     });
 
-    test('Karte / Platz / Werkstatt / Shop at root go to Hof, never exit', () {
+    test('Karte / Platz / Werkstatt at root go to Hof, never exit', () {
       for (final tab in [
         ShellTabs.karte,
         ShellTabs.platz,
         ShellTabs.werkstatt,
-        ShellTabs.shop,
         ShellTabs.ride,
       ]) {
         expect(

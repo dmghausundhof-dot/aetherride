@@ -9,12 +9,14 @@ import { platzCopy } from "@/lib/i18n/platzCopy";
 
 export function AddRouteForm({
   defaultStart,
+  startSource = null,
   onSaved,
   onPickGpx,
   compact = false,
 }: {
   /** [lng, lat] Kartenmitte / GPS */
   defaultStart?: [number, number] | null;
+  startSource?: "gps" | "map" | null;
   onSaved?: (name: string) => void;
   onPickGpx?: () => void;
   compact?: boolean;
@@ -86,9 +88,13 @@ export function AddRouteForm({
         maxLength={80}
       />
       <p className="mt-1 text-[11px] text-text-secondary">
-        {defaultStart
-          ? p.startPin(defaultStart[1].toFixed(3), defaultStart[0].toFixed(3))
-          : p.startGps}
+        {(() => {
+          if (!defaultStart) return p.startNone;
+          const coords = `${defaultStart[1].toFixed(3)}°N, ${defaultStart[0].toFixed(3)}°E`;
+          if (startSource === "gps") return p.startFromGps(coords);
+          if (startSource === "map") return p.startFromMap(coords);
+          return p.startPin(defaultStart[1].toFixed(3), defaultStart[0].toFixed(3));
+        })()}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         <button

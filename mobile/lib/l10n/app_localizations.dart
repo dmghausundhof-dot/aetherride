@@ -564,18 +564,6 @@ abstract class AppLocalizations {
   /// **'Uhr verbinden'**
   String get hofWatchConnect;
 
-  /// No description provided for @hofYou.
-  ///
-  /// In de, this message translates to:
-  /// **'Du'**
-  String get hofYou;
-
-  /// No description provided for @hofYouSheetHint.
-  ///
-  /// In de, this message translates to:
-  /// **'Du und deine Uhr. Der Radsensor bleibt am Rad in der Werkstatt.'**
-  String get hofYouSheetHint;
-
   /// No description provided for @werkstattWatchEbike.
   ///
   /// In de, this message translates to:
@@ -4185,7 +4173,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineMapsHint.
   ///
   /// In de, this message translates to:
-  /// **'Lädt Routing-Graph und Kartenkacheln für die Region. Ohne Netz: geladene Karte + Graph-Routing in der Bounding Box. Valhalla-Kacheln sind noch nicht Teil der Packs.'**
+  /// **'Lädt Routing und Kartenkacheln für die Region. Ohne Netz: geladene Karte und Routing im Gebiet.'**
   String get offlineMapsHint;
 
   /// No description provided for @offlineRegionActive.
@@ -4371,7 +4359,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzTogetherKicker.
   ///
   /// In de, this message translates to:
-  /// **'ZUSAMMEN RAUS'**
+  /// **'Zusammen raus'**
   String get platzTogetherKicker;
 
   /// No description provided for @platzTogetherTitle.
@@ -4383,13 +4371,13 @@ abstract class AppLocalizations {
   /// No description provided for @platzTogetherHint.
   ///
   /// In de, this message translates to:
-  /// **'Einladen teilt den Link. Filter Alle, Privat, Öffentlich gilt auch für Gruppen.'**
+  /// **'Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen auf dem Platz — kein Feed.'**
   String get platzTogetherHint;
 
   /// No description provided for @platzTogetherListHint.
   ///
   /// In de, this message translates to:
-  /// **'Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — kein Demo-User. Pins nur im HUD nach Opt-in.'**
+  /// **'Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.'**
   String get platzTogetherListHint;
 
   /// No description provided for @platzCreateGroup.
@@ -4464,6 +4452,24 @@ abstract class AppLocalizations {
   /// **' und dein Platz-Profil'**
   String get platzInviteSharesProfile;
 
+  /// No description provided for @platzInviteAsYou.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf der Einladung stehst du als Du. Namen im Profil festlegen?'**
+  String get platzInviteAsYou;
+
+  /// No description provided for @platzInviteAsYouLater.
+  ///
+  /// In de, this message translates to:
+  /// **'Später'**
+  String get platzInviteAsYouLater;
+
+  /// No description provided for @platzInviteOpenProfile.
+  ///
+  /// In de, this message translates to:
+  /// **'Zum Profil'**
+  String get platzInviteOpenProfile;
+
   /// No description provided for @platzMembersCount.
   ///
   /// In de, this message translates to:
@@ -4491,31 +4497,31 @@ abstract class AppLocalizations {
   /// No description provided for @platzPinsOff.
   ///
   /// In de, this message translates to:
-  /// **'Pins aus'**
+  /// **'Freunde auf der Karte · aus'**
   String get platzPinsOff;
 
   /// No description provided for @platzPinsHudOnly.
   ///
   /// In de, this message translates to:
-  /// **'Pins nur im HUD'**
+  /// **'Freunde nur während der Fahrt'**
   String get platzPinsHudOnly;
 
   /// No description provided for @platzCollectionsKicker.
   ///
   /// In de, this message translates to:
-  /// **'SAMMLUNGEN'**
+  /// **'Sammlungen'**
   String get platzCollectionsKicker;
 
   /// No description provided for @platzNoCollection.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Sammlung — hier anlegen.'**
+  /// **'Noch keine Sammlung — in der Akte einer Tour anlegen.'**
   String get platzNoCollection;
 
   /// No description provided for @platzCollectionTours.
   ///
   /// In de, this message translates to:
-  /// **'{count} Touren'**
+  /// **'{count, plural, =1{1 Tour} other{{count} Touren}}'**
   String platzCollectionTours(int count);
 
   /// No description provided for @platzCreateCollection.
@@ -4539,7 +4545,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzJoinLinkHint.
   ///
   /// In de, this message translates to:
-  /// **'Link aus WhatsApp oder Messages einfügen. Privat braucht den Token im Link — kein Code zum Abtippen.'**
+  /// **'Link aus WhatsApp oder Messages einfügen. Privat braucht den Einladungslink — kein Code zum Abtippen.'**
   String get platzJoinLinkHint;
 
   /// No description provided for @platzJoinEmpty.
@@ -4611,19 +4617,31 @@ abstract class AppLocalizations {
   /// No description provided for @platzPinsOnHud.
   ///
   /// In de, this message translates to:
-  /// **'Pins im HUD an'**
+  /// **'Freunde auf der Karte · an'**
   String get platzPinsOnHud;
+
+  /// No description provided for @platzPinsHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur während der Fahrt, nicht auf der öffentlichen Karte.'**
+  String get platzPinsHint;
 
   /// No description provided for @platzTourNotInMappe.
   ///
   /// In de, this message translates to:
-  /// **'Tour nicht in der Mappe — auf der Karte öffnen.'**
+  /// **'Tour nicht in der Mappe.'**
   String get platzTourNotInMappe;
+
+  /// No description provided for @platzTourNotInMappeHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Katalog-Touren legt Losfahren in die Mappe. Private GPX braucht den Link vom Gastgeber — kein erfundener Track.'**
+  String get platzTourNotInMappeHint;
 
   /// No description provided for @platzCollectionsHint.
   ///
   /// In de, this message translates to:
-  /// **'Teilen geht nur mit freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.'**
+  /// **'Anlegen in der Akte. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.'**
   String get platzCollectionsHint;
 
   /// No description provided for @akteTourKicker.
@@ -4643,6 +4661,30 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.'**
   String get platzNeedSharedTour;
+
+  /// No description provided for @platzShareTourFirst.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuerst eine Tour freigeben'**
+  String get platzShareTourFirst;
+
+  /// No description provided for @platzShareTourFirstHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Freigabe bleibt die Gruppe unsichtbar für Freunde. Tippe eine Tour — in der Akte unter Mein auf Freigeben, dann Gruppe anlegen.'**
+  String get platzShareTourFirstHint;
+
+  /// No description provided for @platzHostCannotSee.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur auf diesem Gerät. Der Host sieht dich nicht — anmelden.'**
+  String get platzHostCannotSee;
+
+  /// No description provided for @platzJoinLocal.
+  ///
+  /// In de, this message translates to:
+  /// **'Lokal dabei: {title}. Der Host sieht dich nicht — anmelden.'**
+  String platzJoinLocal(String title);
 
   /// No description provided for @platzNoSharedTours.
   ///
@@ -4797,7 +4839,7 @@ abstract class AppLocalizations {
   /// No description provided for @watchPairHint.
   ///
   /// In de, this message translates to:
-  /// **'Puls nur mit 0x180D. Uhr-Akku ist nicht der Rad-Akku.'**
+  /// **'Puls nur mit echtem Sensor. Uhr-Akku ist nicht der Rad-Akku.'**
   String get watchPairHint;
 
   /// No description provided for @watchScanning.
@@ -4815,7 +4857,7 @@ abstract class AppLocalizations {
   /// No description provided for @watchNoHr.
   ///
   /// In de, this message translates to:
-  /// **'Kein Heart Rate 0x180D — Broadcast prüfen.'**
+  /// **'Kein Puls-Signal — Broadcast an der Uhr prüfen.'**
   String get watchNoHr;
 
   /// No description provided for @watchNoDeviceId.
@@ -6081,7 +6123,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageNicknameHint.
   ///
   /// In de, this message translates to:
-  /// **'z. B. Trail-Bike'**
+  /// **'z. B. Trail'**
   String get garageNicknameHint;
 
   /// No description provided for @garageTravelFrontMm.
@@ -6177,7 +6219,7 @@ abstract class AppLocalizations {
   /// No description provided for @garageNameHint.
   ///
   /// In de, this message translates to:
-  /// **'z. B. Alltagsrad'**
+  /// **'z. B. Gravel, City, MTB'**
   String get garageNameHint;
 
   /// No description provided for @garagePhoto.
@@ -6519,7 +6561,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverToursNearbyCount.
   ///
   /// In de, this message translates to:
-  /// **'{count} Touren in der Nähe'**
+  /// **'{count, plural, =1{1 Tour in der Nähe} other{{count} Touren in der Nähe}}'**
   String discoverToursNearbyCount(int count);
 
   /// No description provided for @discoverCuratedLoops.
@@ -6849,7 +6891,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverOaCount.
   ///
   /// In de, this message translates to:
-  /// **'{count} Touren in der Nähe'**
+  /// **'{count, plural, =1{1 Tour in der Nähe} other{{count} Touren in der Nähe}}'**
   String discoverOaCount(int count);
 
   /// No description provided for @discoverLocationOff.
@@ -7925,6 +7967,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Nur diese Tour, kein Track im Text. Skip ist in Ordnung.'**
   String get postRideStimmeHint;
+
+  /// No description provided for @postRideStimmePrivate.
+  ///
+  /// In de, this message translates to:
+  /// **'Stimme erst nach Freigabe. Die Tour ist privat — in der Akte unter Mein teilen.'**
+  String get postRideStimmePrivate;
+
+  /// No description provided for @postRideStimmePrivateCta.
+  ///
+  /// In de, this message translates to:
+  /// **'In der Akte freigeben'**
+  String get postRideStimmePrivateCta;
 
   /// No description provided for @postRideStimmeSkip.
   ///
@@ -10468,13 +10522,13 @@ abstract class AppLocalizations {
   /// No description provided for @watchHonestyGalaxy.
   ///
   /// In de, this message translates to:
-  /// **'Galaxy: meist kein 0x180D'**
+  /// **'Galaxy: meist kein Standard-Puls'**
   String get watchHonestyGalaxy;
 
   /// No description provided for @watchHonestyUnknown.
   ///
   /// In de, this message translates to:
-  /// **'Nur mit Heart Rate 0x180D'**
+  /// **'Nur mit sichtbarem Puls-Broadcast'**
   String get watchHonestyUnknown;
 
   /// No description provided for @watchTipHr.
@@ -10498,13 +10552,13 @@ abstract class AppLocalizations {
   /// No description provided for @watchTipGalaxy.
   ///
   /// In de, this message translates to:
-  /// **'Nur wenn die Uhr Heart Rate 0x180D sendet — sonst Samsung Health'**
+  /// **'Nur wenn die Uhr Puls per Bluetooth sendet — sonst Samsung Health'**
   String get watchTipGalaxy;
 
   /// No description provided for @watchTipUnknown.
   ///
   /// In de, this message translates to:
-  /// **'Heart Rate 0x180D muss aktiv sein'**
+  /// **'Puls-Broadcast an der Uhr muss aktiv sein'**
   String get watchTipUnknown;
 
   /// No description provided for @watchNotePolarBrand.
@@ -10516,7 +10570,7 @@ abstract class AppLocalizations {
   /// No description provided for @watchNotePolarLine.
   ///
   /// In de, this message translates to:
-  /// **'Sensor-Modus an. Standard-Puls 0x180D — das koppeln wir.'**
+  /// **'Sensor-Modus an. Standard-Puls — das koppeln wir.'**
   String get watchNotePolarLine;
 
   /// No description provided for @watchNoteGarminLine.
@@ -10534,13 +10588,13 @@ abstract class AppLocalizations {
   /// No description provided for @watchNoteGalaxyLine.
   ///
   /// In de, this message translates to:
-  /// **'Meist nur Samsung Health. Nur mit sichtbarem 0x180D.'**
+  /// **'Meist nur Samsung Health. Nur mit sichtbarem Puls-Broadcast.'**
   String get watchNoteGalaxyLine;
 
   /// No description provided for @watchPairLeadText.
   ///
   /// In de, this message translates to:
-  /// **'Puls am Fahrer, nicht am Rad. Nur echter Heart-Rate-Service 0x180D.'**
+  /// **'Puls am Fahrer, nicht am Rad. Nur ein echter Herzfrequenz-Sensor.'**
   String get watchPairLeadText;
 
   /// No description provided for @blePairAgain.
@@ -11680,7 +11734,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverCatalogTours.
   ///
   /// In de, this message translates to:
-  /// **'Katalog {count} Touren'**
+  /// **'{count, plural, =1{Katalog 1 Tour} other{Katalog {count} Touren}}'**
   String discoverCatalogTours(int count);
 
   /// No description provided for @discoverCatalogToursSuffix.
@@ -12011,7 +12065,7 @@ abstract class AppLocalizations {
   /// No description provided for @platzGroupPublicHint.
   ///
   /// In de, this message translates to:
-  /// **'Wer den Link hat, kann beitreten. Die Gruppe kann auf dem Platz unter Öffentlich stehen.'**
+  /// **'Wer den Link hat, kann beitreten. Unter Freigegeben können andere die Gruppe auf dem Platz sehen.'**
   String get platzGroupPublicHint;
 
   /// No description provided for @platzGroupPrivateHint.
@@ -12035,25 +12089,25 @@ abstract class AppLocalizations {
   /// No description provided for @platzMakePublic.
   ///
   /// In de, this message translates to:
-  /// **'Öffentlich machen'**
+  /// **'Auf dem Platz listen'**
   String get platzMakePublic;
 
   /// No description provided for @platzNoPublicGroups.
   ///
   /// In de, this message translates to:
-  /// **'Keine öffentlichen Gruppen auf dem Server.'**
+  /// **'Keine offenen Gruppen auf dem Server.'**
   String get platzNoPublicGroups;
 
   /// No description provided for @platzPublicGroupsHint.
   ///
   /// In de, this message translates to:
-  /// **'Öffentliche Gruppen — Beitritt mit Login, kein Explore-GPS.'**
+  /// **'Offene Gruppen — Beitritt mit Login, kein Explore-GPS.'**
   String get platzPublicGroupsHint;
 
   /// No description provided for @platzListedPublic.
   ///
   /// In de, this message translates to:
-  /// **'öffentlich'**
+  /// **'auf dem Platz'**
   String get platzListedPublic;
 
   /// No description provided for @filterVisibilityAll.
@@ -12065,7 +12119,7 @@ abstract class AppLocalizations {
   /// No description provided for @filterVisibilityPublic.
   ///
   /// In de, this message translates to:
-  /// **'Öffentlich'**
+  /// **'Freigegeben'**
   String get filterVisibilityPublic;
 
   /// No description provided for @mappeTitle.
@@ -12077,14 +12131,38 @@ abstract class AppLocalizations {
   /// No description provided for @mappeSubtitle.
   ///
   /// In de, this message translates to:
-  /// **'Deine Touren, Stimmen und Gruppen. Dieselben wie auf der Karte.'**
+  /// **'Touren merken, kurz schreiben, Freunde per Link mitnehmen — dieselben Touren wie auf der Karte.'**
   String get mappeSubtitle;
 
   /// No description provided for @mappeAddHint.
   ///
   /// In de, this message translates to:
-  /// **'Name + Start — ohne erfundenen Track. GPX als Option darunter.'**
+  /// **'Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX als Option darunter.'**
   String get mappeAddHint;
+
+  /// No description provided for @mappeStartNone.
+  ///
+  /// In de, this message translates to:
+  /// **'Start: noch ohne Pin — GPS oder Karte öffnen.'**
+  String get mappeStartNone;
+
+  /// No description provided for @mappeStartPin.
+  ///
+  /// In de, this message translates to:
+  /// **'Start: {lat}°N, {lng}°E'**
+  String mappeStartPin(String lat, String lng);
+
+  /// No description provided for @mappeStartGps.
+  ///
+  /// In de, this message translates to:
+  /// **'Start: dein Standort ({coords})'**
+  String mappeStartGps(String coords);
+
+  /// No description provided for @mappeStartMap.
+  ///
+  /// In de, this message translates to:
+  /// **'Start: letzte Kartenmitte ({coords})'**
+  String mappeStartMap(String coords);
 
   /// No description provided for @mappePutIn.
   ///

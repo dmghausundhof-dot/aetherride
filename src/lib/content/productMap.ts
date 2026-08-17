@@ -22,12 +22,7 @@ export const PRODUCT_DOORS = [
   {
     href: "/garage",
     title: "Werkstatt",
-    body: "Rad abstellen, Setup, Wartung mit Quelle. Ersatzteile führen in den Laden — ohne zweite Kasse hier.",
-  },
-  {
-    href: "/shop",
-    title: "Laden",
-    body: "Tür zu Shopify. Fit aus der Werkstatt. Checkout nur dort — und nur mit hinterlegtem Impressum.",
+    body: "Rad abstellen, Setup, Wartung mit Quelle. Teile für dieses Rad — ohne Shop-Tab, ohne zweite Kasse.",
   },
 ] as const;
 
@@ -38,15 +33,15 @@ export const WEB_SURFACES = [
   },
   {
     title: "Werkstatt",
-    body: "Räder, Komponenten, Setup, Wartung — auch ohne App.",
+    body: "Räder, Komponenten, Setup, Wartung — auch ohne App. Teile am Rad nachschlagen.",
   },
   {
     title: "Platz",
     body: "GPX, Sammlungen, Stimmen, Gruppen. Teilen ohne Feed.",
   },
   {
-    title: "Laden",
-    body: "Passende Teile aus der Werkstatt. Checkout nur bei Shopify.",
+    title: "Teile (aus der Werkstatt)",
+    body: "Passende Teile zum abgestellten Rad. Checkout nur bei Shopify.",
   },
 ] as const;
 
@@ -197,7 +192,7 @@ export const SCREEN_GROUPS: {
 }[] = [
   {
     title: "Öffentliche Website",
-    hint: "Geschichte, SEO, Trust. Keine fünf App-Tabs in der Kopfzeile.",
+    hint: "Geschichte, SEO, Trust. Keine vier App-Tabs in der Kopfzeile der Website.",
     screens: [
       { href: "/", name: "Start", role: "Hero, Türen, Reise" },
       { href: "/produkt", name: "Produkt", role: "Screens und Abläufe" },
@@ -211,22 +206,21 @@ export const SCREEN_GROUPS: {
       { href: "/download", name: "App", role: "Warum nativ" },
       { href: "/anmelden", name: "Anmelden", role: "Konto, dann Hof" },
       { href: "/faq", name: "FAQ", role: "Web, App, Preise" },
-      { href: "/ueber", name: "Über", role: "Marke, fünf Türen" },
+      { href: "/ueber", name: "Über", role: "Marke, vier Türen" },
       { href: "/kontakt", name: "Kontakt", role: "E-Mail, kein Bot" },
       { href: "/share", name: "Teilen", role: "Tour-Link und Mappe" },
       { href: "/u/mara_road", name: "Profil", role: "Editorial-Beispiel" },
     ],
   },
   {
-    title: "Fünf Türen (Web-App)",
-    hint: "Dieselbe IA wie in der nativen App. Ride ist kein Tab.",
+    title: "Vier Türen (Web-App)",
+    hint: "Dieselbe IA wie in der nativen App. Ride ist kein Tab. Teile kommen aus der Werkstatt.",
     screens: [
       { href: "/home", name: "Der Hof", role: "Stand, Himmel, Tor" },
       { href: "/discover", name: "Karte", role: "OSM, Loops, Filter" },
       { href: "/planner", name: "Planen", role: "Start, Via, Ziel" },
       { href: "/library", name: "Platz", role: "Mappe, Stimmen, Gruppen" },
-      { href: "/garage", name: "Werkstatt", role: "Box, Setup, Pflege" },
-      { href: "/shop", name: "Laden", role: "Shopify-Tür" },
+      { href: "/garage", name: "Werkstatt", role: "Box, Setup, Pflege, Teile" },
     ],
   },
   {

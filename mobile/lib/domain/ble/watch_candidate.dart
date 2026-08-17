@@ -98,8 +98,8 @@ String watchHonestyLabel(WatchHonesty h) => switch (h) {
       WatchHonesty.hrBroadcast => 'Puls per Standard-BLE',
       WatchHonesty.garminNeedsBroadcast => 'Garmin: Broadcast-HR einschalten',
       WatchHonesty.appleUnsupported => 'Apple Watch: kein Standard-BLE-Puls',
-      WatchHonesty.galaxyLimited => 'Galaxy: meist kein 0x180D',
-      WatchHonesty.unknown => 'Nur mit Heart Rate 0x180D',
+      WatchHonesty.galaxyLimited => 'Galaxy: meist kein Standard-Puls',
+      WatchHonesty.unknown => 'Nur mit sichtbarem Puls-Broadcast',
     };
 
 String watchConnectTip(WatchHonesty h) => switch (h) {
@@ -109,8 +109,8 @@ String watchConnectTip(WatchHonesty h) => switch (h) {
       WatchHonesty.appleUnsupported =>
         'Kein BLE-Puls zu Android — HealthKit nur auf iPhone',
       WatchHonesty.galaxyLimited =>
-        'Nur wenn die Uhr Heart Rate 0x180D sendet — sonst Samsung Health',
-      WatchHonesty.unknown => 'Heart Rate 0x180D muss aktiv sein',
+        'Nur wenn die Uhr Puls per Bluetooth sendet — sonst Samsung Health',
+      WatchHonesty.unknown => 'Puls-Broadcast an der Uhr muss aktiv sein',
     };
 
 bool watchHonestyPairable(WatchHonesty h) => switch (h) {
@@ -132,7 +132,7 @@ class WatchBleConnectNote {
 List<WatchBleConnectNote> watchBleConnectNotes() => const [
       WatchBleConnectNote(
         brand: 'Polar / Gurt',
-        line: 'Sensor-Modus an. Standard-Puls 0x180D — das koppeln wir.',
+        line: 'Sensor-Modus an. Standard-Puls — das koppeln wir.',
       ),
       WatchBleConnectNote(
         brand: 'Garmin',
@@ -144,12 +144,12 @@ List<WatchBleConnectNote> watchBleConnectNotes() => const [
       ),
       WatchBleConnectNote(
         brand: 'Galaxy',
-        line: 'Meist nur Samsung Health. Nur mit sichtbarem 0x180D.',
+        line: 'Meist nur Samsung Health. Nur mit sichtbarem Puls-Broadcast.',
       ),
     ];
 
 String watchBlePairLead() =>
-    'Puls am Fahrer, nicht am Rad. Nur echter Heart-Rate-Service 0x180D.';
+    'Puls am Fahrer, nicht am Rad. Nur ein echter Herzfrequenz-Sensor.';
 
 /// True if the advertisement is a Heart Rate device or a watch-like name.
 /// CSC/Power boxes are never watches, even if the brand says Garmin.

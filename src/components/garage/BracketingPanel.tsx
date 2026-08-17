@@ -5,16 +5,28 @@ import { useAppStore } from "@/store/useAppStore";
 import type { Bike, BracketingParameter } from "@/types";
 import { allowDemoContent } from "@/lib/config/allowDemoContent";
 
-const PARAMS: { id: BracketingParameter; label: string }[] = [
+const SUSPENSION_PARAMS: { id: BracketingParameter; label: string }[] = [
   { id: "fork.rebound", label: "Gabel Zugstufe" },
   { id: "fork.lsc", label: "Gabel LSC" },
   { id: "fork.sag_pct", label: "Gabel SAG %" },
   { id: "fork.air_pressure_psi", label: "Gabel Luftdruck" },
   { id: "shock.rebound", label: "Dämpfer Zugstufe" },
   { id: "shock.sag_pct", label: "Dämpfer SAG %" },
-  { id: "tire.front_psi", label: "Reifen vorn psi" },
-  { id: "tire.rear_psi", label: "Reifen hinten psi" },
 ];
+
+const TIRE_PARAMS: { id: BracketingParameter; label: string }[] = [
+  { id: "tire.front_psi", label: "Reifen vorn" },
+  { id: "tire.rear_psi", label: "Reifen hinten" },
+];
+
+function bikeHasSuspension(bike: Bike): boolean {
+  const travel =
+    (bike.travelFrontMm ?? 0) > 0 || (bike.travelRearMm ?? 0) > 0;
+  if (travel) return true;
+  return bike.components.some(
+    (c) => !c.removedAt && (c.slot === "fork" || c.slot === "rear_shock")
+  );
+}
 
 export function BracketingPanel({ bike }: { bike: Bike }) {
   const bracketingSeries = useAppStore((s) => s.bracketingSeries);
@@ -24,8 +36,13 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
   const evaluateBracketing = useAppStore((s) => s.evaluateBracketing);
   const canUseProFeature = useAppStore((s) => s.canUseProFeature);
   const pro = canUseProFeature("bracketing");
+  const params = bikeHasSuspension(bike)
+    ? [...SUSPENSION_PARAMS, ...TIRE_PARAMS]
+    : TIRE_PARAMS;
 
-  const [parameter, setParameter] = useState<BracketingParameter>("fork.rebound");
+  const [parameter, setParameter] = useState<BracketingParameter>(
+    params[0]?.id ?? "tire.front_psi"
+  );
   const [from, setFrom] = useState(6);
   const [to, setTo] = useState(10);
   const [step, setStep] = useState(2);
@@ -33,7 +50,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
 
   const active = seriesList[0];
   const paramLabel =
-    PARAMS.find((p) => p.id === active?.parameter)?.label ?? active?.parameter;
+    params.find((p) => p.id === active?.parameter)?.label ?? active?.parameter;
 
   const create = () => {
     if (!pro) return;
@@ -85,7 +102,7 @@ export function BracketingPanel({ bike }: { bike: Bike }) {
             }
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2 disabled:opacity-50"
           >
-            {PARAMS.map((p) => (
+            {params.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
               </option>

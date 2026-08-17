@@ -266,13 +266,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hofWatchConnect => 'Uhr verbinden';
 
   @override
-  String get hofYou => 'Du';
-
-  @override
-  String get hofYouSheetHint =>
-      'Du und deine Uhr. Der Radsensor bleibt am Rad in der Werkstatt.';
-
-  @override
   String get werkstattWatchEbike =>
       'Smartwatch — Puls neben CSC. Kein erfundener SoC.';
 
@@ -2318,7 +2311,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get offlineMapsHint =>
-      'Lädt Routing-Graph und Kartenkacheln für die Region. Ohne Netz: geladene Karte + Graph-Routing in der Bounding Box. Valhalla-Kacheln sind noch nicht Teil der Packs.';
+      'Lädt Routing und Kartenkacheln für die Region. Ohne Netz: geladene Karte und Routing im Gebiet.';
 
   @override
   String get offlineRegionActive => 'Region aktiv';
@@ -2428,18 +2421,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get platzTogetherKicker => 'ZUSAMMEN RAUS';
+  String get platzTogetherKicker => 'Zusammen raus';
 
   @override
   String get platzTogetherTitle => 'Zusammen raus';
 
   @override
   String get platzTogetherHint =>
-      'Einladen teilt den Link. Filter Alle, Privat, Öffentlich gilt auch für Gruppen.';
+      'Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen auf dem Platz — kein Feed.';
 
   @override
   String get platzTogetherListHint =>
-      'Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — kein Demo-User. Pins nur im HUD nach Opt-in.';
+      'Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.';
 
   @override
   String get platzCreateGroup => 'Gruppe anlegen';
@@ -2479,6 +2472,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get platzInviteSharesProfile => ' und dein Platz-Profil';
 
   @override
+  String get platzInviteAsYou =>
+      'Auf der Einladung stehst du als Du. Namen im Profil festlegen?';
+
+  @override
+  String get platzInviteAsYouLater => 'Später';
+
+  @override
+  String get platzInviteOpenProfile => 'Zum Profil';
+
+  @override
   String platzMembersCount(int count) {
     return '$count dabei';
   }
@@ -2495,20 +2498,27 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get platzPinsOff => 'Pins aus';
+  String get platzPinsOff => 'Freunde auf der Karte · aus';
 
   @override
-  String get platzPinsHudOnly => 'Pins nur im HUD';
+  String get platzPinsHudOnly => 'Freunde nur während der Fahrt';
 
   @override
-  String get platzCollectionsKicker => 'SAMMLUNGEN';
+  String get platzCollectionsKicker => 'Sammlungen';
 
   @override
-  String get platzNoCollection => 'Noch keine Sammlung — hier anlegen.';
+  String get platzNoCollection =>
+      'Noch keine Sammlung — in der Akte einer Tour anlegen.';
 
   @override
   String platzCollectionTours(int count) {
-    return '$count Touren';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Touren',
+      one: '1 Tour',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2522,7 +2532,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get platzJoinLinkHint =>
-      'Link aus WhatsApp oder Messages einfügen. Privat braucht den Token im Link — kein Code zum Abtippen.';
+      'Link aus WhatsApp oder Messages einfügen. Privat braucht den Einladungslink — kein Code zum Abtippen.';
 
   @override
   String get platzJoinEmpty => 'Link fehlt.';
@@ -2558,15 +2568,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get platzMeetingHint => 'z. B. Parkplatz am Bad';
 
   @override
-  String get platzPinsOnHud => 'Pins im HUD an';
+  String get platzPinsOnHud => 'Freunde auf der Karte · an';
 
   @override
-  String get platzTourNotInMappe =>
-      'Tour nicht in der Mappe — auf der Karte öffnen.';
+  String get platzPinsHint =>
+      'Nur während der Fahrt, nicht auf der öffentlichen Karte.';
+
+  @override
+  String get platzTourNotInMappe => 'Tour nicht in der Mappe.';
+
+  @override
+  String get platzTourNotInMappeHint =>
+      'Katalog-Touren legt Losfahren in die Mappe. Private GPX braucht den Link vom Gastgeber — kein erfundener Track.';
 
   @override
   String get platzCollectionsHint =>
-      'Teilen geht nur mit freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.';
+      'Anlegen in der Akte. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.';
 
   @override
   String get akteTourKicker => 'Tour';
@@ -2578,6 +2595,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get platzNeedSharedTour =>
       'Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.';
+
+  @override
+  String get platzShareTourFirst => 'Zuerst eine Tour freigeben';
+
+  @override
+  String get platzShareTourFirstHint =>
+      'Ohne Freigabe bleibt die Gruppe unsichtbar für Freunde. Tippe eine Tour — in der Akte unter Mein auf Freigeben, dann Gruppe anlegen.';
+
+  @override
+  String get platzHostCannotSee =>
+      'Nur auf diesem Gerät. Der Host sieht dich nicht — anmelden.';
+
+  @override
+  String platzJoinLocal(String title) {
+    return 'Lokal dabei: $title. Der Host sieht dich nicht — anmelden.';
+  }
 
   @override
   String get platzNoSharedTours =>
@@ -2671,7 +2704,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get watchPairHint =>
-      'Puls nur mit 0x180D. Uhr-Akku ist nicht der Rad-Akku.';
+      'Puls nur mit echtem Sensor. Uhr-Akku ist nicht der Rad-Akku.';
 
   @override
   String get watchScanning => 'Suche Uhr und Puls-Gurt …';
@@ -2681,7 +2714,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Broadcast an, Handy nah. Apple Watch sendet keinen Standard-Puls.';
 
   @override
-  String get watchNoHr => 'Kein Heart Rate 0x180D — Broadcast prüfen.';
+  String get watchNoHr => 'Kein Puls-Signal — Broadcast an der Uhr prüfen.';
 
   @override
   String get watchNoDeviceId => 'Verbunden, aber ohne Geräte-ID';
@@ -3370,7 +3403,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get garageNickname => 'Spitzname (optional)';
 
   @override
-  String get garageNicknameHint => 'z. B. Trail-Bike';
+  String get garageNicknameHint => 'z. B. Trail';
 
   @override
   String get garageTravelFrontMm => 'Federweg vorn (mm)';
@@ -3420,7 +3453,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get garageName => 'Name';
 
   @override
-  String get garageNameHint => 'z. B. Alltagsrad';
+  String get garageNameHint => 'z. B. Gravel, City, MTB';
 
   @override
   String get garagePhoto => 'Foto';
@@ -3626,7 +3659,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String discoverToursNearbyCount(int count) {
-    return '$count Touren in der Nähe';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Touren in der Nähe',
+      one: '1 Tour in der Nähe',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3821,7 +3860,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String discoverOaCount(int count) {
-    return '$count Touren in der Nähe';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Touren in der Nähe',
+      one: '1 Tour in der Nähe',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4449,6 +4494,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get postRideStimmeHint =>
       'Nur diese Tour, kein Track im Text. Skip ist in Ordnung.';
+
+  @override
+  String get postRideStimmePrivate =>
+      'Stimme erst nach Freigabe. Die Tour ist privat — in der Akte unter Mein teilen.';
+
+  @override
+  String get postRideStimmePrivateCta => 'In der Akte freigeben';
 
   @override
   String get postRideStimmeSkip => 'Jetzt nicht';
@@ -5916,10 +5968,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get watchHonestyApple => 'Apple Watch: kein Standard-BLE-Puls';
 
   @override
-  String get watchHonestyGalaxy => 'Galaxy: meist kein 0x180D';
+  String get watchHonestyGalaxy => 'Galaxy: meist kein Standard-Puls';
 
   @override
-  String get watchHonestyUnknown => 'Nur mit Heart Rate 0x180D';
+  String get watchHonestyUnknown => 'Nur mit sichtbarem Puls-Broadcast';
 
   @override
   String get watchTipHr => 'Sensor- oder Broadcast-Modus an, nah halten';
@@ -5934,17 +5986,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get watchTipGalaxy =>
-      'Nur wenn die Uhr Heart Rate 0x180D sendet — sonst Samsung Health';
+      'Nur wenn die Uhr Puls per Bluetooth sendet — sonst Samsung Health';
 
   @override
-  String get watchTipUnknown => 'Heart Rate 0x180D muss aktiv sein';
+  String get watchTipUnknown => 'Puls-Broadcast an der Uhr muss aktiv sein';
 
   @override
   String get watchNotePolarBrand => 'Polar / Gurt';
 
   @override
   String get watchNotePolarLine =>
-      'Sensor-Modus an. Standard-Puls 0x180D — das koppeln wir.';
+      'Sensor-Modus an. Standard-Puls — das koppeln wir.';
 
   @override
   String get watchNoteGarminLine =>
@@ -5956,11 +6008,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get watchNoteGalaxyLine =>
-      'Meist nur Samsung Health. Nur mit sichtbarem 0x180D.';
+      'Meist nur Samsung Health. Nur mit sichtbarem Puls-Broadcast.';
 
   @override
   String get watchPairLeadText =>
-      'Puls am Fahrer, nicht am Rad. Nur echter Heart-Rate-Service 0x180D.';
+      'Puls am Fahrer, nicht am Rad. Nur ein echter Herzfrequenz-Sensor.';
 
   @override
   String get blePairAgain => 'Neu koppeln';
@@ -6595,7 +6647,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String discoverCatalogTours(int count) {
-    return 'Katalog $count Touren';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Katalog $count Touren',
+      one: 'Katalog 1 Tour',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -6807,7 +6865,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get platzGroupPublicHint =>
-      'Wer den Link hat, kann beitreten. Die Gruppe kann auf dem Platz unter Öffentlich stehen.';
+      'Wer den Link hat, kann beitreten. Unter Freigegeben können andere die Gruppe auf dem Platz sehen.';
 
   @override
   String get platzGroupPrivateHint =>
@@ -6820,35 +6878,52 @@ class AppLocalizationsDe extends AppLocalizations {
   String get platzMakePrivate => 'Privat machen';
 
   @override
-  String get platzMakePublic => 'Öffentlich machen';
+  String get platzMakePublic => 'Auf dem Platz listen';
 
   @override
-  String get platzNoPublicGroups =>
-      'Keine öffentlichen Gruppen auf dem Server.';
+  String get platzNoPublicGroups => 'Keine offenen Gruppen auf dem Server.';
 
   @override
   String get platzPublicGroupsHint =>
-      'Öffentliche Gruppen — Beitritt mit Login, kein Explore-GPS.';
+      'Offene Gruppen — Beitritt mit Login, kein Explore-GPS.';
 
   @override
-  String get platzListedPublic => 'öffentlich';
+  String get platzListedPublic => 'auf dem Platz';
 
   @override
   String get filterVisibilityAll => 'Alle';
 
   @override
-  String get filterVisibilityPublic => 'Öffentlich';
+  String get filterVisibilityPublic => 'Freigegeben';
 
   @override
   String get mappeTitle => 'Die Mappe';
 
   @override
   String get mappeSubtitle =>
-      'Deine Touren, Stimmen und Gruppen. Dieselben wie auf der Karte.';
+      'Touren merken, kurz schreiben, Freunde per Link mitnehmen — dieselben Touren wie auf der Karte.';
 
   @override
   String get mappeAddHint =>
-      'Name + Start — ohne erfundenen Track. GPX als Option darunter.';
+      'Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX als Option darunter.';
+
+  @override
+  String get mappeStartNone => 'Start: noch ohne Pin — GPS oder Karte öffnen.';
+
+  @override
+  String mappeStartPin(String lat, String lng) {
+    return 'Start: $lat°N, $lng°E';
+  }
+
+  @override
+  String mappeStartGps(String coords) {
+    return 'Start: dein Standort ($coords)';
+  }
+
+  @override
+  String mappeStartMap(String coords) {
+    return 'Start: letzte Kartenmitte ($coords)';
+  }
 
   @override
   String get mappePutIn => 'In die Mappe legen';

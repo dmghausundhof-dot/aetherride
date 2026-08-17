@@ -53,9 +53,9 @@ const DE: ProductCopy = {
   ui: {
     kicker: "Produkt",
     title: "Web ist der Hof. Die App fährt.",
-    lead: "Dieselbe Anwendung, zwei Oberflächen. Im Browser planst, pflegst und teilst du: Hof, Karte, Platz, Werkstatt, Laden-Tür. Auf dem Gerät navigierst, zeichnest und koppelst du. Es gibt keinen Feed, keine zweite Kasse und kein Fake-GPS im Tab — leere Flächen bleiben leer.",
+    lead: "Dieselbe Anwendung, zwei Oberflächen. Im Browser planst, pflegst und teilst du: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad. Auf dem Gerät navigierst, zeichnest und koppelst du. Es gibt keinen Feed, keine zweite Kasse und kein Fake-GPS im Tab — leere Flächen bleiben leer.",
     doorsLead:
-      "Ride ist kein Tab. Der Laden ist eine Tür zu Shopify, kein zweiter Shop.",
+      "Ride ist kein Tab. Der Laden ist eine Tür aus der Werkstatt zu Shopify, kein fünfter Reiter.",
     galleryHeading: "Screens",
     galleryHint:
       "Design-System aus Logo und Bilder, zugeordnet zu den Türen. Ride-HUD bleibt die App.",
@@ -93,12 +93,7 @@ const EN: ProductCopy = {
     {
       href: "/garage",
       title: "Workshop",
-      body: "Park the bike, setup, service with a source. Spare parts lead to the shop — no second till here.",
-    },
-    {
-      href: "/shop",
-      title: "Shop",
-      body: "Door to Shopify. Fit from the workshop. Checkout only there — and only with an imprint on file.",
+      body: "Park the bike, setup, service with a source. Parts for this bike — no shop tab, no second till.",
     },
   ],
   matrix: [
@@ -199,22 +194,21 @@ const EN: ProductCopy = {
         { href: "/download", name: "App", role: "Why native" },
         { href: "/anmelden", name: "Sign in", role: "Account, then Home" },
         { href: "/faq", name: "FAQ", role: "Web, app, prices" },
-        { href: "/ueber", name: "About", role: "Brand, five doors" },
+        { href: "/ueber", name: "About", role: "Brand, four doors" },
         { href: "/kontakt", name: "Contact", role: "Email, no bot" },
         { href: "/share", name: "Share", role: "Tour link and Mappe" },
         { href: "/u/mara_road", name: "Profile", role: "Editorial sample" },
       ],
     },
     {
-      title: "Five doors (web app)",
-      hint: "The same IA as in the native app. Ride is not a tab.",
+      title: "Four doors (web app)",
+      hint: "The same IA as in the native app. Ride is not a tab. Parts come from the workshop.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, sky, gate" },
         { href: "/discover", name: "Map", role: "OSM, loops, filters" },
         { href: "/planner", name: "Plan", role: "Start, via, destination" },
         { href: "/library", name: "Platz", role: "Mappe, Stimmen, groups" },
-        { href: "/garage", name: "Workshop", role: "Die Box, setup, care" },
-        { href: "/shop", name: "Shop", role: "Shopify door" },
+        { href: "/garage", name: "Workshop", role: "Die Box, setup, care, parts" },
       ],
     },
     {
@@ -291,12 +285,7 @@ const FR: ProductCopy = {
     {
       href: "/garage",
       title: "Atelier",
-      body: "Garer le vélo, setup, entretien avec source. Les pièces mènent au magasin — pas de deuxième caisse ici.",
-    },
-    {
-      href: "/shop",
-      title: "Magasin",
-      body: "Porte vers Shopify. Fit depuis l’atelier. Checkout seulement là — et seulement avec mentions légales déposées.",
+      body: "Garer le vélo, setup, entretien avec source. Pièces pour ce vélo — pas d’onglet magasin, pas de deuxième caisse.",
     },
   ],
   matrix: [
@@ -404,15 +393,14 @@ const FR: ProductCopy = {
       ],
     },
     {
-      title: "Cinq portes (appli web)",
-      hint: "La même IA que dans l’appli native. Ride n’est pas un onglet.",
+      title: "Quatre portes (appli web)",
+      hint: "La même IA que dans l’appli native. Ride n’est pas un onglet. Les pièces viennent de l’atelier.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, ciel, porte" },
         { href: "/discover", name: "Carte", role: "OSM, boucles, filtres" },
         { href: "/planner", name: "Planifier", role: "Départ, via, arrivée" },
         { href: "/library", name: "Platz", role: "Mappe, Stimmen, groupes" },
-        { href: "/garage", name: "Atelier", role: "Die Box, setup, entretien" },
-        { href: "/shop", name: "Magasin", role: "Porte Shopify" },
+        { href: "/garage", name: "Atelier", role: "Die Box, setup, entretien, pièces" },
       ],
     },
     {
@@ -491,12 +479,7 @@ const IT: ProductCopy = {
     {
       href: "/garage",
       title: "Officina",
-      body: "Parcheggiare la bici, setup, manutenzione con fonte. I ricambi portano al negozio — niente seconda cassa qui.",
-    },
-    {
-      href: "/shop",
-      title: "Negozio",
-      body: "Porta verso Shopify. Fit dall’officina. Checkout solo lì — e solo con Impressum depositato.",
+      body: "Parcheggiare la bici, setup, manutenzione con fonte. Pezzi per questa bici — niente tab negozio, niente seconda cassa.",
     },
   ],
   matrix: [
@@ -604,15 +587,14 @@ const IT: ProductCopy = {
       ],
     },
     {
-      title: "Cinque porte (app web)",
-      hint: "La stessa IA dell’app nativa. Ride non è una scheda.",
+      title: "Quattro porte (app web)",
+      hint: "La stessa IA dell’app nativa. Ride non è una scheda. I pezzi vengono dall’officina.",
       screens: [
         { href: "/home", name: "Home", role: "Stand, cielo, cancello" },
         { href: "/discover", name: "Mappa", role: "OSM, anelli, filtri" },
         { href: "/planner", name: "Pianifica", role: "Partenza, via, arrivo" },
         { href: "/library", name: "Platz", role: "Mappe, Stimmen, gruppi" },
-        { href: "/garage", name: "Officina", role: "Die Box, setup, cura" },
-        { href: "/shop", name: "Negozio", role: "Porta Shopify" },
+        { href: "/garage", name: "Officina", role: "Die Box, setup, cura, pezzi" },
       ],
     },
     {

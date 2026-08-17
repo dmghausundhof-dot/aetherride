@@ -1,13 +1,18 @@
 import '../bike.dart';
 
-/// Fallback-Name aus [GarageRepository.addBikeBasic], wenn der Fahrer
-/// keinen Namen setzt. Kein zweites Produkt neben dem Bewohner.
+/// Legacy-Default aus älteren Ständen. Neue Räder nutzen
+/// [fallbackBikeName] (Kategorie). Nicht umbenennen, nur erkennen.
 const kDefaultBikeName = 'Mein Bike';
 
-/// Leerer Platzhalter: Default-Name, kein Katalog, keine Marke/Modell.
+/// Leerer Platzhalter: Legacy-Default, Import, oder noch kein Name.
+/// Kein Katalog, keine Marke/Modell.
 bool isUnnamedPlaceholderBike(Bike bike) {
   final name = bike.name.trim();
-  if (name != kDefaultBikeName && name != 'Import-Bike') return false;
+  final isLegacyDefault = name.isEmpty ||
+      name == kDefaultBikeName ||
+      name == 'Mein Rad' ||
+      name == 'Import-Bike';
+  if (!isLegacyDefault) return false;
   final noCatalog =
       bike.catalogBikeId == null || bike.catalogBikeId!.trim().isEmpty;
   final noBrand = bike.brand == null || bike.brand!.trim().isEmpty;

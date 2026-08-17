@@ -1128,7 +1128,7 @@ class BleCoreChannel {
         if (hasHrService || nameLooksLikeWatch(device.platformName)) {
           _watchStatusDetail = 'Uhr gefunden, aber ohne Standard-Puls-Service';
         } else {
-          _watchStatusDetail ??= 'Kein Heart Rate 0x180D auf diesem Gerät';
+          _watchStatusDetail ??= 'Kein Puls-Signal auf diesem Gerät';
         }
         if (_watchDevice?.remoteId.str != id && _device?.remoteId.str != id) {
           await _closeGattQuietly(device);

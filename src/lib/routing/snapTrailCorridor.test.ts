@@ -11,6 +11,7 @@ import {
   pickTrailAlongRoute,
   snapPointOntoTrails,
   spliceTrailIntoRoute,
+  viaMaySnapOntoTrail,
 } from "./snapTrailCorridor";
 import type { ClientRouteResult } from "./profiles";
 import type { TrailSegment } from "./trailSegments";
@@ -431,5 +432,13 @@ const snappedVia = snapPointOntoTrails([8.73, 49.4014], [trailLine]);
 assert.ok(Math.abs(snappedVia[1] - 49.401) < 0.0002, "via snaps onto trail");
 const farVia = snapPointOntoTrails([8.73, 49.5], [trailLine]);
 assert.equal(farVia[1], 49.5, "far via stays put");
+assert.equal(viaMaySnapOntoTrail(), true, "unlabeled map tap may snap");
+assert.equal(viaMaySnapOntoTrail("  "), true);
+assert.equal(viaMaySnapOntoTrail("49.41, 8.69"), true, "coord label may snap");
+assert.equal(
+  viaMaySnapOntoTrail("Café am Markt, Heidelberg"),
+  false,
+  "named place stays put"
+);
 
 console.log("snapTrailCorridor.test.ts OK");

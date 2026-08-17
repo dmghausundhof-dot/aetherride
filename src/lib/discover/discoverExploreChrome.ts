@@ -1,7 +1,7 @@
 /**
  * Web Discover-Chrome — Parität zu Flutter `_komootExploreChrome`.
- * Eine Filterleiste: Suche, Navigieren, Umkreis, Filter.
- * Kein Sport-Rainbow. Disziplin sitzt im Filter-Sheet.
+ * Suche, Navigieren, Umkreis, Filter. Zwei Chips, zwei Flächen.
+ * Kein Sport-Rainbow. Disziplin sitzt im Filter-Sheet, Distanz im Umkreis.
  */
 import {
   DEFAULT_ROUTE_FILTERS,
@@ -26,9 +26,27 @@ export function aroundKmDisplay(maxDistanceKm: number | null): number {
   return DEFAULT_AROUND_KM;
 }
 
+/** Distanz-Max sitzt am Umkreis-Chip, nicht im Filter-Badge. */
+export function aroundFilterActive(maxDistanceKm: number | null): boolean {
+  return maxDistanceKm != null && maxDistanceKm > 0;
+}
+
+/** Filter zurücksetzen lässt den Umkreis in Ruhe. */
+export function resetDiscoverSheetFilters(
+  current: RouteFilterState,
+): RouteFilterState {
+  return { ...DISCOVER_LENS_FILTERS, maxDistanceKm: current.maxDistanceKm };
+}
+
+export function resetDiscoverAround(
+  current: RouteFilterState,
+): RouteFilterState {
+  return { ...current, maxDistanceKm: null };
+}
+
 /**
  * Badge am Filter-Chip. Die 60-Min-Rundkurs-Linse zählt nicht als aktiv —
- * sonst stünde immer „Filter 1“ auf dem Hof.
+ * sonst stünde immer „Filter 1“ auf dem Hof. Distanz zählt am Umkreis.
  */
 export function countActiveRouteFilters(
   filters: RouteFilterState,
@@ -43,7 +61,6 @@ export function countActiveRouteFilters(
   if (filters.elevation !== "any") n++;
   if (filters.surfaceQuery) n++;
   if (filters.sport !== "all") n++;
-  if (filters.maxDistanceKm != null) n++;
   if ((filters.visibility ?? "all_mine") !== "all_mine") n++;
   return n;
 }

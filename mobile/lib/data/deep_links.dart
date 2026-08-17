@@ -308,7 +308,7 @@ class DeepLinkHandler {
     }
 
     if (kind == DeepLinkKind.shop) {
-      _ref.read(shellTabIndexProvider.notifier).state = ShellTabs.shop;
+      _ref.read(shellTabIndexProvider.notifier).state = ShellTabs.werkstatt;
       final slot = DeepLinkParse.shopSlotOf(uri);
       final bike = DeepLinkParse.shopBikeOf(uri);
       final handle = DeepLinkParse.shopHandleOf(uri);
@@ -324,6 +324,7 @@ class DeepLinkHandler {
       if (DeepLinkParse.shopFitBikeOf(uri)) {
         _ref.read(shopPendingFitOnlyProvider.notifier).state = true;
       }
+      _ref.read(shopOpenRouteProvider.notifier).state = true;
       return;
     }
 

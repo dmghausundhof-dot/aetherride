@@ -70,6 +70,39 @@ void main() {
       expect(stops.first.kind, 'cafe');
     });
 
+    test('appends geocoded destination once, short label', () {
+      final stops = poiStopsFromVias(
+        vias: const [
+          LabeledVia(lat: 49.403, lng: 8.67, label: 'Quelle'),
+        ],
+        coordinates: line,
+        durationMin: 40,
+        destinationLabel:
+            "Strohauer's Cafe Alt Heidelberg, Hauptstraße, 69117 Heidelberg",
+      );
+      expect(stops.map((e) => e.title).toList(), [
+        'Quelle',
+        "Strohauer's Cafe Alt Heidelberg",
+      ]);
+      expect(stops.last.atMin, 40);
+    });
+
+    test('namedPlaceHudTitle drops coords and empty', () {
+      expect(namedPlaceHudTitle('Café am Markt, Heidelberg'), 'Café am Markt');
+      expect(namedPlaceHudTitle('49.41, 8.69'), isNull);
+      expect(namedPlaceHudTitle('Ziel-Vorschlag (anpassbar)',
+          skipExact: 'Ziel-Vorschlag (anpassbar)'), isNull);
+    });
+
+    test('named via stays put, unlabeled map tap may snap', () {
+      expect(viaMaySnapOntoTrail(label: 'Café am Markt, Heidelberg'), isFalse);
+      expect(viaMaySnapOntoTrail(label: "Strohauer's Cafe Alt Heidelberg"),
+          isFalse);
+      expect(viaMaySnapOntoTrail(), isTrue);
+      expect(viaMaySnapOntoTrail(label: '  '), isTrue);
+      expect(viaMaySnapOntoTrail(label: '49.41, 8.69'), isTrue);
+    });
+
     test('skips unlabeled and far-off vias', () {
       final stops = poiStopsFromVias(
         vias: const [

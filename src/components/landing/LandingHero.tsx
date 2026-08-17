@@ -19,7 +19,6 @@ const HERO_DOORS = [
   { id: "karte" as const, href: "/discover" },
   { id: "platz" as const, href: "/library" },
   { id: "werkstatt" as const, href: "/garage" },
-  { id: "shop" as const, href: "/shop" },
 ];
 
 export function LandingHero() {
@@ -104,7 +103,7 @@ export function LandingHero() {
 
           <ul
             className="mt-10 flex flex-wrap gap-2 sm:mt-12"
-            aria-label={chrome.fiveDoors}
+            aria-label={chrome.fourDoors}
           >
             {HERO_DOORS.map((item) => (
               <li key={item.href}>

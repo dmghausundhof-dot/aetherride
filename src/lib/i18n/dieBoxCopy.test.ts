@@ -29,6 +29,9 @@ function testDeFallback() {
   assert.equal(dieBoxChipLabel("Kette", "de"), "Kette");
   assert.equal(dieBoxChipLabel("700c", "de"), "700c");
   assert.equal(dieBoxReadinessUi("unknown", "de"), "Neu hier");
+  assert.equal(dieBoxChipLabel("Kette", "de"), "Kette");
+  assert.equal(dieBoxChipLabel("700c", "de"), "700c");
+  assert.equal(dieBoxReadinessUi("unknown", "de"), "Neu hier");
 }
 
 function testChrome() {

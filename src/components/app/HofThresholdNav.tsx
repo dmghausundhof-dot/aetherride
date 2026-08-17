@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Map, BookOpen, Wrench, Store } from "lucide-react";
+import { Home, Map, BookOpen, Wrench } from "lucide-react";
 import { HOF_NAV, isHofNavActive } from "@/lib/nav/hofNav";
 import { useHofTitle } from "@/hooks/useHofTitle";
 import { useChromeLang } from "@/hooks/useChromeLang";
@@ -20,7 +20,6 @@ const ICONS = {
   karte: Map,
   platz: BookOpen,
   werkstatt: Wrench,
-  shop: Store,
 } as const;
 
 /**
@@ -54,17 +53,19 @@ export function HofThresholdNav() {
       aria-label={hofTitle}
     >
       <div className="flex h-14 items-stretch">
-        {HOF_NAV.map((item) => {
+        {HOF_NAV.map((item, i) => {
           const active = isHofNavActive(pathname, item.href);
           const Icon = ICONS[item.id];
           const label = item.id === "hof" ? hofTitle : copy.hofNav[item.id];
           const showDue = item.id === "werkstatt" && dueTotal > 0;
           const showPlatz = item.id === "platz" && platzUnseen;
+          const tabOf = copy.tabOf(i + 1, HOF_NAV.length);
           return (
             <Link
               key={item.id}
               href={item.href}
               aria-current={active ? "page" : undefined}
+              aria-label={`${label}, ${tabOf}`}
               className={cn(
                 "relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] tracking-wide",
                 active

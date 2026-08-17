@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Schwelle zum Hof — Haarlinie, FlowLine-Orange als aktiver Chrome.
@@ -97,10 +98,11 @@ class _HofThresholdTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected ? AppColors.chrome : AppColors.muted;
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       button: true,
       selected: selected,
-      label: '${destination.label}, Tab $semanticIndex von $semanticCount',
+      label: '${destination.label}, ${l10n.navTabOf(semanticIndex, semanticCount)}',
       child: InkWell(
         onTap: onTap,
         splashColor: AppColors.charcoal.withValues(alpha: 0.10),

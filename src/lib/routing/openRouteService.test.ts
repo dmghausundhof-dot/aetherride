@@ -29,6 +29,8 @@ assert.equal(orsPreferredForGraphhopperBasic("mtb_enduro"), true);
 assert.equal(orsPreferredForGraphhopperBasic("downhill"), true);
 assert.equal(orsPreferredForGraphhopperBasic("road"), false);
 assert.equal(orsPreferredForGraphhopperBasic("urban"), false);
+assert.equal(orsPreferredForGraphhopperBasic("auto"), false);
+assert.equal(orsPreferredForGraphhopperBasic("hiking"), false);
 
 assert.equal(orsTypeToNav(11), "start");
 assert.equal(orsTypeToNav(10), "arrive");

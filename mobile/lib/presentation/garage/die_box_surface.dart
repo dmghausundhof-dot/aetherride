@@ -28,7 +28,6 @@ class DieBoxSurface extends ConsumerStatefulWidget {
     this.onInstallSlot,
     this.onEditComponent,
     this.sensorChild,
-    this.shopChild,
   });
 
   final Bike bike;
@@ -39,7 +38,6 @@ class DieBoxSurface extends ConsumerStatefulWidget {
   final Future<void> Function(ComponentSlot slot)? onInstallSlot;
   final Future<void> Function(BikeComponent component)? onEditComponent;
   final Widget? sensorChild;
-  final Widget? shopChild;
 
   @override
   ConsumerState<DieBoxSurface> createState() => _DieBoxSurfaceState();
@@ -507,10 +505,6 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
         if (plan.setup.hasElectricAssist) ...[
           const SizedBox(height: AppSpacing.s),
           const _BatteryHonestyCard(),
-        ],
-        if (widget.shopChild != null) ...[
-          const SizedBox(height: AppSpacing.m),
-          widget.shopChild!,
         ],
       ],
     );

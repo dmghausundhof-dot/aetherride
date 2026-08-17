@@ -230,7 +230,10 @@ impl Profile {
                 }
             }
             Self::Auto => {
-                if matches!(highway, "path" | "footway" | "steps") {
+                if matches!(
+                    highway,
+                    "path" | "footway" | "steps" | "cycleway" | "bridleway" | "pedestrian"
+                ) {
                     return None;
                 }
                 if highway == "track" {
@@ -316,5 +319,10 @@ mod tests {
         let gravel = Profile::Gravel;
         assert_eq!(gravel.edge_factor("track", None, "gravel"), Some(0.75));
         assert_eq!(gravel.edge_factor("cycleway", None, "asphalt"), Some(0.9));
+        let auto = Profile::Auto;
+        assert!(auto.edge_factor("cycleway", None, "asphalt").is_none());
+        assert!(auto.edge_factor("bridleway", None, "").is_none());
+        assert!(auto.edge_factor("path", None, "dirt").is_none());
+        assert_eq!(auto.edge_factor("primary", None, "asphalt"), Some(0.8));
     }
 }

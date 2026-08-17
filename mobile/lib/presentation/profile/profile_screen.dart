@@ -313,13 +313,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       if (res.statusCode != 200) {
         final body = jsonDecode(res.body);
-        final err = body is Map
-            ? (body['message'] as String? ?? body['error'] as String?)
-            : null;
+        final map = body is Map ? body : const {};
+        final code = map['error'] as String?;
+        if (code == 'no_stripe_customer') {
+          if (!mounted) return;
+          openUpgradeScreen(context);
+          return;
+        }
         _notify(
-          err == 'no_stripe_customer'
-              ? l10n.profileNoStripeSub
-              : (err ?? l10n.profilePortalError(res.statusCode)),
+          (map['message'] as String?) ??
+              code ??
+              l10n.profilePortalError(res.statusCode),
         );
         return;
       }

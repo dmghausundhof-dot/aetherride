@@ -1,5 +1,10 @@
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
-import { formatHofGateAway, isTrailHeavyLoop, pickHofGate } from "./hofGate";
+import {
+  formatHofGateAway,
+  hofGateEmptyTitle,
+  isTrailHeavyLoop,
+  pickHofGate,
+} from "./hofGate";
 
 function loop(
   partial: Partial<RouteSuggestion> & { id: string; name: string }
@@ -141,6 +146,17 @@ if (formatHofGateAway(0.4, awayCopy) !== "unter 1 km") {
 }
 if (formatHofGateAway(6.4, awayCopy) !== "6 km") {
   throw new Error(`6.4 km should round to 6 km, got ${formatHofGateAway(6.4, awayCopy)}`);
+}
+
+const emptyCopy = {
+  gateWetClosed: "Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe",
+  noHonestLoop: "Kein ehrlicher Trail-Rundkurs",
+};
+if (hofGateEmptyTitle("wetClosed", emptyCopy) !== emptyCopy.gateWetClosed) {
+  throw new Error("wet-closed must not say no loop exists");
+}
+if (hofGateEmptyTitle("none", emptyCopy) !== emptyCopy.noHonestLoop) {
+  throw new Error("none must keep no-loop copy");
 }
 
 console.log("hofGate.test.ts ok");

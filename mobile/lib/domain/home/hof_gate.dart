@@ -130,6 +130,15 @@ HofGatePick pickHofGate({
   return const HofGatePick(honesty: HofGateHonesty.none);
 }
 
+/// Title when the gate has no loop. Wet-closed is not “no loop exists”.
+String hofGateEmptyTitle({
+  required HofGateHonesty honesty,
+  required String wetClosed,
+  required String noLoop,
+}) {
+  return honesty == HofGateHonesty.wetClosed ? wetClosed : noLoop;
+}
+
 /// Trail/MTB loops are not an honest gate hour when the ground is wet.
 bool isTrailHeavyLoop(NaeheSeedRoute route) {
   final id = route.id.toLowerCase();

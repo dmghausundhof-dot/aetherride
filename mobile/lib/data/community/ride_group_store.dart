@@ -342,7 +342,7 @@ class RideGroupStore {
       return RideGroupJoinOut.fail(
         RideGroupJoinFail.unknown,
         note: cloud.note ??
-            'Kein offener Code auf dem Server. Nur lokal angelegte Gruppen brauchen das Token.',
+            'Kein offener Link auf dem Server. Nur lokal angelegte Gruppen brauchen den Einladungslink.',
       );
     }
     final snap = await _load();

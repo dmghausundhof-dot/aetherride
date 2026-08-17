@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import type { TafelItem } from "@/lib/tours/tourAkte";
-import { cn } from "@/lib/utils";
 
 /** Zwei Zeilen-Typen: Pflege → Werkstatt, Mappe/Stimmen → Tour. Kein Hybrid. */
 export function HofTafel({ items }: { items: TafelItem[] }) {
@@ -46,10 +45,7 @@ export function HofTafel({ items }: { items: TafelItem[] }) {
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className={cn(
-                    "block text-[13px] font-semibold hover:text-chrome",
-                    "text-text-secondary"
-                  )}
+                  className="block text-[13px] font-semibold text-foreground hover:text-chrome"
                 >
                   {item.text}
                 </Link>

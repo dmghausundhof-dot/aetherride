@@ -60,6 +60,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
   bool _savingAsTour = false;
   bool _savedAsTour = false;
   String? _stimmeTourId;
+  bool _stimmePrivate = false;
 
   @override
   void initState() {
@@ -274,7 +275,10 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
     final meta = await SavedRouteMetaStore.get(id);
     final stimmeId = RouteVisibility.stimmenTourIdOf(id, meta);
     if (!mounted) return;
-    setState(() => _stimmeTourId = stimmeId);
+    setState(() {
+      _stimmeTourId = stimmeId;
+      _stimmePrivate = stimmeId == null;
+    });
   }
 
   Future<void> _postRideSideEffects(RideRecord ride) async {
@@ -940,6 +944,28 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   PostRideStimmeCard(
                     tourId: _stimmeTourId!,
                     track: ride.track,
+                  )
+                else if (_stimmePrivate)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          l10n.postRideStimmePrivate,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: () =>
+                              Navigator.pop(context, 'akte:${ride.routeId}'),
+                          child: Text(l10n.postRideStimmePrivateCta),
+                        ),
+                      ],
+                    ),
                   ),
                 PostRideOrtCard(
                   ride: ride,

@@ -29,6 +29,7 @@ void main() {
       expect(NavHudTokens.labelSpeed, 'Tempo');
       expect(NavHudTokens.labelRestKm, 'noch km');
       expect(NavHudTokens.labelEta, 'Ziel');
+      expect(NavHudTokens.emptyStat, '—');
       expect(NavHudTokens.upcomingRailMaxEtaMin, kUpcomingRailMaxEtaMin);
       expect(NavHudTokens.upcomingRailMaxEtaMin, 15);
       expect(NavHudTokens.pauseFabDp, 56);
@@ -125,10 +126,44 @@ void main() {
       final value = tester.widget<Text>(find.text('22'));
       expect(value.style?.fontSize, NavHudTokens.statValueDp);
       expect(value.style?.fontWeight, NavHudTokens.statValueWeight);
+      expect(value.style?.color, AppColors.hofGround);
 
       final label = tester.widget<Text>(find.text(NavHudTokens.labelSpeed));
       expect(label.style?.fontSize, NavHudTokens.statLabelDp);
       expect(label.style?.fontWeight, NavHudTokens.statLabelWeight);
+
+      final fill = tester.widget<Material>(
+        find.descendant(
+          of: find.byType(RideDataStrip),
+          matching: find.byType(Material),
+        ).first,
+      );
+      expect(fill.color, AppColors.accent);
+    });
+
+    testWidgets('freeride strip keeps Tempo · noch km · Ziel chrome',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: RideDataStrip(
+              speedLabel: '0',
+              midValue: NavHudTokens.emptyStat,
+              midLabel: NavHudTokens.labelRestKm,
+              rightValue: NavHudTokens.emptyStat,
+              rightLabel: NavHudTokens.labelEta,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(NavHudTokens.labelSpeed), findsOneWidget);
+      expect(find.text(NavHudTokens.labelRestKm), findsOneWidget);
+      expect(find.text(NavHudTokens.labelEta), findsOneWidget);
+      expect(find.text('km/h'), findsNothing);
+      expect(find.text('km'), findsNothing);
+      expect(find.text('Zeit'), findsNothing);
+      expect(find.text(NavHudTokens.emptyStat), findsNWidgets(2));
     });
 
     testWidgets('primary Losfahren CTA is green', (tester) async {

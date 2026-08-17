@@ -165,19 +165,25 @@ class RideGroupJoinOut {
   String get message {
     if (note != null && note!.isNotEmpty) return note!;
     if (already && group != null) {
-      return 'Schon dabei: ${group!.title}. Derselbe Speicher — kein zweites Konto.';
+      return group!.onServer
+          ? 'Schon dabei: ${group!.title}. Derselbe Speicher — kein zweites Konto.'
+          : 'Nur auf diesem Gerät: ${group!.title}. Der Host sieht dich nicht — anmelden.';
     }
     return switch (fail) {
       RideGroupJoinFail.invalidCode => 'Beitritt nur über den Einladungslink.',
       RideGroupJoinFail.needLink =>
         'Privat — nur mit Einladungslink. Kein Code zum Abtippen.',
       RideGroupJoinFail.unknown =>
-        'Kein offener Link. Ohne Login gilt nur dieser Speicher; sonst braucht der Link das Token.',
+        'Kein offener Link. Ohne Login gilt nur dieser Speicher; sonst den Einladungslink einfügen.',
       RideGroupJoinFail.expired => 'Fenster zu — der Link gilt nicht mehr.',
       RideGroupJoinFail.needLogin =>
         'Anmelden — sonst sieht der Host dich nicht.',
       RideGroupJoinFail.closed => 'Gruppe ist aufgelöst.',
-      null => group != null ? 'Dabei: ${group!.title}' : 'Beitritt fehlgeschlagen.',
+      null => group != null
+          ? (group!.onServer
+              ? 'Dabei: ${group!.title}'
+              : 'Nur auf diesem Gerät: ${group!.title}. Der Host sieht dich nicht — anmelden.')
+          : 'Beitritt fehlgeschlagen.',
     };
   }
 }

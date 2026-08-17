@@ -4,6 +4,10 @@ import 'package:aetherride_mobile/data/community/ride_group_invite.dart';
 import 'package:aetherride_mobile/data/community/ride_group_store.dart';
 import 'package:aetherride_mobile/domain/community/ride_group.dart';
 import 'package:aetherride_mobile/domain/saved_route_note.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_de.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_en.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_fr.dart';
+import 'package:aetherride_mobile/l10n/app_localizations_it.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -48,7 +52,8 @@ void main() {
       profileUrl: 'https://aetherride.vercel.app/u/luka',
     );
     expect(share, contains('aetherride://platz?group=${group.id}'));
-    expect(share, contains('Mein Platz-Profil: https://aetherride.vercel.app/u/luka'));
+    expect(share,
+        contains('Mein Platz-Profil: https://aetherride.vercel.app/u/luka'));
     expect(share, isNot(contains('Code K7M2NP')));
     expect(share, contains('Privat:'));
     expect(
@@ -62,6 +67,44 @@ void main() {
       RideGroupInvite.shareOrigin(origin: 'http://10.0.2.2:3001'),
       'https://aetherride.vercel.app',
     );
+  });
+
+  test('parsePastedJoin nimmt HTTPS mit Token, Share-Text und weist Müll ab',
+      () {
+    final group = RideGroup(
+      id: '11111111-1111-1111-1111-111111111111',
+      hostUserId: 'host-1',
+      savedRouteId: 'r-bodensee-road',
+      catalogTourId: 'r-bodensee-road',
+      title: 'Bodensee',
+      startWindowStart: DateTime.utc(2026, 8, 15, 8),
+      startWindowEnd: DateTime.utc(2026, 8, 15, 12),
+      joinCode: 'K7M2NP',
+      status: RideGroupStatus.open,
+      livePinsAllowed: true,
+      createdAt: DateTime.utc(2026, 8, 15, 8),
+    );
+    final token = RideGroupInvite.encode(group);
+    final https = RideGroupInvite.httpsUrl(
+      groupId: group.id,
+      token: token,
+      origin: 'https://aetherride.vercel.app',
+    );
+    final app =
+        RideGroupInvite.customSchemeUrl(groupId: group.id, token: token);
+    final share = RideGroupInvite.shareText(
+      title: 'Bodensee',
+      url: https,
+      appUrl: app,
+    );
+    final fromShare = RideGroupInvite.parsePastedJoin(share);
+    expect(fromShare?.code, group.id);
+    expect(fromShare?.token, token);
+    expect(RideGroupInvite.parsePastedJoin(https)?.token, token);
+    expect(RideGroupInvite.parsePastedJoin(app)?.code, group.id);
+    expect(RideGroupInvite.parsePastedJoin(''), isNull);
+    expect(RideGroupInvite.parsePastedJoin('xyz'), isNull);
+    expect(RideGroupInvite.parsePastedJoin('AB'), isNull);
   });
 
   test('joinFromInvite importiert ohne lokales Original', () async {
@@ -103,5 +146,74 @@ void main() {
     expect(bad.fail, RideGroupJoinFail.needLink);
     final unknown = await store.tryJoin(code: 'XXXXXX');
     expect(unknown.fail, RideGroupJoinFail.unknown);
+    expect(unknown.message.toLowerCase(), isNot(contains('token')));
+  });
+
+  test('Join-Hint spricht Einladungslink, nicht Token', () {
+    final de = AppLocalizationsDe();
+    expect(de.platzJoinCodeField, 'Einladungslink');
+    expect(de.platzJoinLinkHint, contains('Einladungslink'));
+    expect(de.platzJoinLinkHint.toLowerCase(), isNot(contains('token')));
+    expect(
+      AppLocalizationsEn().platzJoinLinkHint,
+      contains('invitation link'),
+    );
+    expect(
+      AppLocalizationsEn().platzJoinLinkHint.toLowerCase(),
+      isNot(contains('token')),
+    );
+    expect(
+      AppLocalizationsFr().platzJoinLinkHint,
+      contains('lien d’invitation'),
+    );
+    expect(
+      AppLocalizationsFr().platzJoinLinkHint.toLowerCase(),
+      isNot(contains('jeton')),
+    );
+    expect(
+      AppLocalizationsIt().platzJoinLinkHint,
+      contains('link di invito'),
+    );
+    expect(
+      AppLocalizationsIt().platzJoinLinkHint.toLowerCase(),
+      isNot(contains('token')),
+    );
+    const fail = RideGroupJoinOut.fail(RideGroupJoinFail.unknown);
+    expect(fail.message, contains('Einladungslink'));
+    expect(fail.message.toLowerCase(), isNot(contains('token')));
+  });
+
+  test('lokaler Join sagt, dass der Host dich nicht sieht', () {
+    final group = RideGroup(
+      id: '11111111-1111-1111-1111-111111111111',
+      hostUserId: 'host-1',
+      savedRouteId: 'r-bodensee-road',
+      title: 'Bodensee',
+      startWindowStart: DateTime.utc(2026, 8, 15, 8),
+      startWindowEnd: DateTime.utc(2026, 8, 15, 12),
+      joinCode: 'K7M2NP',
+      status: RideGroupStatus.open,
+      livePinsAllowed: true,
+      createdAt: DateTime.utc(2026, 8, 15, 8),
+    );
+    expect(
+        RideGroupJoinOut.ok(group).message, contains('Host sieht dich nicht'));
+    expect(RideGroupJoinOut.ok(group).message, contains('Nur auf diesem Gerät'));
+    expect(RideGroupJoinOut.ok(group).message, isNot(contains('Lokal dabei')));
+    expect(
+      RideGroupJoinOut.ok(group.copyWith(onServer: true)).message,
+      'Dabei: Bodensee',
+    );
+    final de = AppLocalizationsDe();
+    expect(de.filterVisibilityPublic, 'Freigegeben');
+    expect(de.platzPinsOff, contains('Freunde auf der Karte'));
+    expect(de.mappeSubtitle, contains('Touren merken'));
+    expect(
+      RideGroupInvite.shareText(
+          title: 'Bodensee',
+          url: 'https://x',
+          visibility: RideGroupVisibility.public),
+      contains('Freigegeben:'),
+    );
   });
 }

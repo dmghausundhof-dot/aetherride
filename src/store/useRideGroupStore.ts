@@ -244,7 +244,7 @@ export const useRideGroupStore = create<RideGroupState>()(
         if (!hit) {
           return {
             error:
-              "Kein offener Code. Ohne Login gilt nur dieser Speicher; sonst braucht der Link das Token.",
+              "Kein offener Link. Ohne Login gilt nur dieser Speicher; sonst den Einladungslink einfügen.",
           };
         }
         const now = new Date();

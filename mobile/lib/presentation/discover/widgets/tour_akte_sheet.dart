@@ -142,7 +142,7 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.akteTourKicker.toUpperCase(),
+              l10n.akteTourKicker,
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -183,7 +183,7 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
               child: Row(
                 children: [
                   for (final entry in [
-                    (_AkteShelf.mein, l10n.discoverOwn),
+                    (_AkteShelf.mein, l10n.discoverShareRelease),
                     (_AkteShelf.stimmen, l10n.stimmenTitle),
                   ])
                     Expanded(

@@ -84,7 +84,7 @@ class GarageRepository {
         category == BikeCategory.etrekking;
     final bike = Bike(
       id: id,
-      name: name.trim().isEmpty ? 'Mein Bike' : name.trim(),
+      name: resolvedBikeName(name, category, isEbike: electric),
       category: category,
       brand: brand?.trim().isEmpty == true ? null : brand?.trim(),
       model: model?.trim().isEmpty == true ? null : model?.trim(),
@@ -588,7 +588,14 @@ class GarageRepository {
           await _db.into(_db.bikes).insertOnConflictUpdate(
                 BikesCompanion.insert(
                   id: id,
-                  name: (m['name'] as String?) ?? 'Bike',
+                  name: resolvedBikeName(
+                    (m['name'] as String?) ?? '',
+                    BikeCategory.values.firstWhere(
+                      (c) => c.name == catName,
+                      orElse: () => BikeCategory.urban,
+                    ),
+                    isEbike: syncIsEbike,
+                  ),
                   category: catName,
                   brand: Value(m['brand'] as String?),
                   model: Value(m['model'] as String?),

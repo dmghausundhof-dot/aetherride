@@ -19,6 +19,59 @@ import {
   discoverElevationLabel,
 } from "@/lib/i18n/discoverCopy";
 
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+        active
+          ? "bg-accent text-on-accent"
+          : "bg-surface-elevated text-text-secondary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function DistanceMaxChips({
+  maxDistanceKm,
+  onChange,
+}: {
+  maxDistanceKm: number | null;
+  onChange: (km: number | null) => void;
+}) {
+  const lang = useChromeLang();
+  const d = discoverCopy(lang);
+  return (
+    <div
+      className="flex flex-wrap gap-1.5"
+      data-testid="discover-around-chips"
+    >
+      {DISTANCE_MAX_OPTIONS.filter((o) => o.id != null).map((o) => (
+        <Chip
+          key={o.id!}
+          active={maxDistanceKm === o.id}
+          onClick={() =>
+            onChange(maxDistanceKm === o.id ? null : (o.id as number))
+          }
+        >
+          {d.dist(o.id as number)}
+        </Chip>
+      ))}
+    </div>
+  );
+}
+
 export function FilterChips({
   minutes,
   onMinutes,
@@ -27,6 +80,7 @@ export function FilterChips({
   profile = "road",
   showTime = true,
   showReset = true,
+  showDistance = true,
 }: {
   minutes: number;
   onMinutes: (m: number) => void;
@@ -37,6 +91,8 @@ export function FilterChips({
   showTime?: boolean;
   /** Native-Sheet hat eigenen Reset-Fuß — dann hier aus. */
   showReset?: boolean;
+  /** Distanz sitzt am Umkreis-Chip, im Filter-Sheet aus. */
+  showDistance?: boolean;
 }) {
   const lang = useChromeLang();
   const d = discoverCopy(lang);
@@ -61,7 +117,7 @@ export function FilterChips({
       )}
 
       <div className="flex flex-wrap gap-1.5">
-        <span className="w-full text-[10px] font-medium uppercase tracking-wide text-text-secondary">
+        <span className="w-full text-[10px] font-medium tracking-wide text-text-secondary">
           {d.sportPref}
         </span>
         {SPORT_FILTER_OPTIONS.map((o) => (
@@ -112,20 +168,12 @@ export function FilterChips({
             {discoverElevationLabel(o.id, lang)}
           </Chip>
         ))}
-        {DISTANCE_MAX_OPTIONS.filter((o) => o.id != null).map((o) => (
-          <Chip
-            key={o.id!}
-            active={filters.maxDistanceKm === o.id}
-            onClick={() =>
-              onChange({
-                ...filters,
-                maxDistanceKm: filters.maxDistanceKm === o.id ? null : o.id,
-              })
-            }
-          >
-            {d.dist(o.id as number)}
-          </Chip>
-        ))}
+        {showDistance ? (
+          <DistanceMaxChips
+            maxDistanceKm={filters.maxDistanceKm}
+            onChange={(km) => onChange({ ...filters, maxDistanceKm: km })}
+          />
+        ) : null}
         {SURFACE_OPTIONS.filter((o) => o.id != null).map((o) => (
           <Chip
             key={o.id!}
@@ -144,7 +192,7 @@ export function FilterChips({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        <span className="w-full text-[10px] font-medium uppercase tracking-wide text-text-secondary">
+        <span className="w-full text-[10px] font-medium tracking-wide text-text-secondary">
           {d.mappe}
         </span>
         {VISIBILITY_FILTER_OPTIONS.map((o) => (
@@ -168,7 +216,7 @@ export function FilterChips({
             filters.scale !== "any" ||
             filters.elevation !== "any" ||
             filters.surfaceQuery ||
-            filters.maxDistanceKm != null ||
+            (showDistance && filters.maxDistanceKm != null) ||
             filters.sport !== "all" ||
             (filters.visibility ?? "all_mine") !== "all_mine") && (
             <button
@@ -182,29 +230,5 @@ export function FilterChips({
         </div>
       )}
     </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-        active
-          ? "bg-accent text-on-accent"
-          : "bg-surface-elevated text-text-secondary"
-      }`}
-    >
-      {children}
-    </button>
   );
 }

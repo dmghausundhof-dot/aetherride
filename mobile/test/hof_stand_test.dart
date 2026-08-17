@@ -62,6 +62,27 @@ void main() {
     );
   });
 
+  test('empty name is also an unnamed placeholder', () {
+    expect(
+      isUnnamedPlaceholderBike(
+        const Bike(id: 'e', name: '', category: BikeCategory.urban),
+      ),
+      isTrue,
+    );
+    expect(
+      isUnnamedPlaceholderBike(
+        const Bike(id: 'g', name: 'Gravel', category: BikeCategory.gravel),
+      ),
+      isFalse,
+    );
+    expect(
+      isUnnamedPlaceholderBike(
+        const Bike(id: 'web', name: 'Mein Rad', category: BikeCategory.urban),
+      ),
+      isTrue,
+    );
+  });
+
   test('riddenWithLabel prefers real preferred, else active Aeroad', () {
     expect(
       riddenWithLabel(

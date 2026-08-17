@@ -65,6 +65,10 @@ void main() {
     expect(find.text('Rausfahren'), findsOneWidget);
     expect(find.text('Rad öffnen'), findsOneWidget);
     expect(find.text('Uhr koppeln'), findsOneWidget);
+    expect(
+      tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
+      lessThan(tester.getRect(find.byKey(const Key('hof-watch'))).top + 1),
+    );
     expect(find.text('?'), findsNothing);
     expect(find.textContaining('Tour finden'), findsNothing);
     expect(find.textContaining('HEUTE FAHREN'), findsNothing);
@@ -273,6 +277,10 @@ void main() {
       tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
       lessThan(h - 24),
     );
+    expect(
+      tester.getRect(find.byKey(const Key('hof-ride-out'))).bottom,
+      lessThan(tester.getRect(find.byKey(const Key('hof-watch'))).top + 1),
+    );
   });
 
   testWidgets('justBack: keine 0 km, Uhr-Hinweis eine Zeile, Noch mal raus',
@@ -352,6 +360,9 @@ void main() {
     expect(find.byKey(const Key('hof-tafel-board')), findsOneWidget);
     expect(find.text('Die Tafel'), findsOneWidget);
     expect(find.textContaining('in der Mappe'), findsOneWidget);
+    final mappeLine = tester.widget<Text>(find.textContaining('in der Mappe'));
+    expect(mappeLine.style?.color, AppColors.chipIdleText);
     expect(find.byKey(const Key('hof-shop-replace')), findsNothing);
+    expect(find.text('Cycling Parts'), findsNothing);
   });
 }

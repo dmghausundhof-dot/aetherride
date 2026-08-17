@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
+import { fallbackBikeName } from "@/lib/home/hofSportLabel";
 import { findCatalogBike } from "@/lib/catalog/bikes";
 import { getComponentModel } from "@/lib/catalog/components";
 import {
@@ -18,7 +19,6 @@ import { evaluateBracketingSeries } from "@/lib/setup/bracketing";
 import {
   buildSetupValuesFromBike,
   createImmutableSetup,
-  recommendedSagPct,
 } from "@/lib/setup/ranges";
 import { templatesForCategory } from "@/lib/setup/templates";
 import {
@@ -350,8 +350,12 @@ function emptyBikeBase(
 ): Bike {
   const id = partial.id ?? uuidv4();
   const now = new Date().toISOString();
+  const name =
+    (partial.name ?? "").trim() ||
+    fallbackBikeName(partial.category, partial.isEbike ?? false);
   return {
     ...partial,
+    name,
     id,
     isActive: false,
     createdAt: now,
@@ -601,29 +605,6 @@ export const useAppStore = create<AppState>()(
               0,
               0
             );
-            // SAG-Defaults nach Kategorie
-            if (slot === "fork") {
-              c.currentSettings.sag_pct = recommendedSagPct(
-                cat.category,
-                "fork"
-              ).target;
-              c.currentSettings.air_pressure_psi = 75;
-              c.currentSettings.rebound = 8;
-              c.currentSettings.lsc = 6;
-              c.currentSettings.hsc = 4;
-            }
-            if (slot === "rear_shock") {
-              c.currentSettings.sag_pct = recommendedSagPct(
-                cat.category,
-                "shock"
-              ).target;
-              c.currentSettings.air_pressure_psi = 180;
-              c.currentSettings.rebound = 10;
-              c.currentSettings.lsc = 5;
-              c.currentSettings.hsc = 3;
-            }
-            if (slot === "tire_front") c.currentSettings.pressure_psi = 22;
-            if (slot === "tire_rear") c.currentSettings.pressure_psi = 24;
             components.push(c);
           }
         }
@@ -635,10 +616,11 @@ export const useAppStore = create<AppState>()(
           label: includeOemKit ? "OEM Basis-Setup" : "Katalog-Identität",
           conditions: "general",
           description: includeOemKit
-            ? "Aus Katalog-Vorbefüllung"
+            ? "Serienteile als Identität, ohne erfundene psi/SAG"
             : "Modell zugeordnet, ohne Serien-Kit",
           riderWeightKg: get().riderProfile.riderWeightKg,
           createdBy: "catalog",
+          values: [],
         });
         bike = { ...bike, setups: [setup] };
 

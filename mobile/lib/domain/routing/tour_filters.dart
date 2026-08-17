@@ -125,7 +125,7 @@ class TourFilters {
   static const visibilityChips = <TourFilterChip<TourVisibilityKey>>[
     TourFilterChip(TourVisibilityKey.allMine, 'Alle'),
     TourFilterChip(TourVisibilityKey.privateOnly, 'Privat'),
-    TourFilterChip(TourVisibilityKey.sharedOnly, 'Öffentlich'),
+    TourFilterChip(TourVisibilityKey.sharedOnly, 'Freigegeben'),
   ];
 
   static bool visibilityMatches(String? visibility, TourVisibilityKey filter) {

@@ -25,6 +25,14 @@ function testDeExact() {
   assert.equal(d.noLoopsNearby, "Keine Rundkurse in der Nähe");
   assert.equal(d.saveAria, "Speichern");
   assert.equal(d.mappeHeading, "Die Mappe");
+  assert.equal(d.waysNearby, "Wege in der Nähe");
+  assert.equal(d.outdooractive(3), "Outdooractive (3)");
+  assert.equal(d.collectionsTitle, "Sammlungen");
+  assert.notEqual(d.sixtyTitle, d.sixtyTitle.toUpperCase());
+  assert.notEqual(d.waysNearby, d.waysNearby.toUpperCase());
+  assert.notEqual(d.outdooractive(1), d.outdooractive(1).toUpperCase());
+  assert.notEqual(d.mappeHeading, d.mappeHeading.toUpperCase());
+  assert.notEqual(d.collectionsTitle, d.collectionsTitle.toUpperCase());
   assert.ok(d.sixtyLead.includes("Tempelhofer"));
 }
 
@@ -36,6 +44,11 @@ function testBrands() {
     assert.ok(d.nearbyLiveHint.includes("MTB"), lang);
     assert.ok(d.rangeLine(40, 80).includes("km"), lang);
     assert.ok(d.elevEst(200).includes("hm"), lang);
+    assert.notEqual(d.sixtyTitle, d.sixtyTitle.toUpperCase(), lang);
+    assert.notEqual(d.waysNearby, d.waysNearby.toUpperCase(), lang);
+    assert.notEqual(d.outdooractive(2), d.outdooractive(2).toUpperCase(), lang);
+    assert.notEqual(d.mappeHeading, d.mappeHeading.toUpperCase(), lang);
+    assert.notEqual(d.collectionsTitle, d.collectionsTitle.toUpperCase(), lang);
   }
 }
 

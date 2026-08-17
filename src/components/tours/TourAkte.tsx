@@ -46,7 +46,7 @@ export function TourAkte({ route }: { route: SavedRoute }) {
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+          <p className="text-[11px] font-bold tracking-wide text-text-secondary">
             {p.tourKicker}
           </p>
           <h3 className="text-lg font-semibold">{route.name}</h3>
@@ -78,7 +78,7 @@ export function TourAkte({ route }: { route: SavedRoute }) {
             type="button"
             onClick={() => setShelf(id)}
             className={`rounded-lg py-2 font-semibold ${
-              shelf === id ? "bg-chrome/20 text-chrome" : "text-text-secondary"
+              shelf === id ? "bg-chrome text-on-accent" : "text-text-secondary"
             }`}
           >
             {label}
@@ -186,7 +186,7 @@ export function TourAkte({ route }: { route: SavedRoute }) {
                   }}
                   className={`rounded-md py-1.5 text-xs font-semibold ${
                     visibility === id
-                      ? "bg-chrome/20 text-chrome"
+                      ? "bg-chrome text-on-accent"
                       : "text-text-secondary"
                   }`}
                 >

@@ -12,16 +12,18 @@ class SimpleAddRoute {
   }
 
   /// Pin-only Bibliothekseintrag — Strecke später berechnen oder GPX.
+  /// Ohne lat/lng: Name ohne Fake-Pin.
   static SavedRouteEntry fromStart({
     required String name,
-    required double lat,
-    required double lng,
+    double? lat,
+    double? lng,
     DateTime? now,
     String? id,
   }) {
     final at = now ?? DateTime.now();
     final trimmed = name.trim();
     final label = trimmed.isEmpty ? defaultName(at) : trimmed;
+    final hasPin = lat != null && lng != null;
     return SavedRouteEntry(
       id: id ?? 'library-${const Uuid().v4()}',
       name: label,
@@ -31,9 +33,16 @@ class SimpleAddRoute {
       savedAt: at.toUtc(),
       source: 'library',
       coordinates: const [],
-      waypoints: [
-        SavedWaypoint(role: 'start', lng: lng, lat: lat, label: 'Start'),
-      ],
+      waypoints: hasPin
+          ? [
+              SavedWaypoint(
+                role: 'start',
+                lng: lng,
+                lat: lat,
+                label: 'Start',
+              ),
+            ]
+          : const [],
     );
   }
 

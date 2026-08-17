@@ -11,7 +11,7 @@ export const FAQ_ITEMS: {
   {
     id: "was",
     q: "Was ist FlowLine?",
-    a: "FlowLine ist Outdoor Cycling mit Hof: planen, pflegen, teilen im Browser — fahren in der App. Fünf Türen, kein Feed, keine zweite Kasse.",
+    a: "FlowLine ist Outdoor Cycling mit Hof: planen, pflegen, teilen im Browser — fahren in der App. Vier Türen, kein Feed, keine zweite Kasse.",
     links: [
       { href: "/produkt", label: "Produktkarte" },
       { href: "/ueber", label: "Über FlowLine" },
@@ -20,7 +20,7 @@ export const FAQ_ITEMS: {
   {
     id: "fuer-wen",
     q: "Für wen ist FlowLine?",
-    a: "Für Rennrad, Gravel, MTB, E-Bike, Touring und City. Eine Anwendung, fünf Türen — nicht fünf Apps. Wer einen Feed oder ein Leaderboard sucht, ist hier falsch. Wer Touren planen, das Rad pflegen und ohne Timeline teilen will, ist richtig.",
+    a: "Für Rennrad, Gravel, MTB, E-Bike, Touring und City. Eine Anwendung, vier Türen — nicht vier Apps. Wer einen Feed oder ein Leaderboard sucht, ist hier falsch. Wer Touren planen, das Rad pflegen und ohne Timeline teilen will, ist richtig.",
     links: [
       { href: "/regions", label: "Regionen" },
       { href: "/karten", label: "Karten" },
@@ -30,7 +30,7 @@ export const FAQ_ITEMS: {
   {
     id: "web-app",
     q: "Was läuft im Browser, was in der App?",
-    a: "Im Web: Hof, Karte, Planen, Platz, Werkstatt, Laden-Tür. In der App: Ride-HUD, Offline-Packs, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
+    a: "Im Web: Hof, Karte, Planen, Platz, Werkstatt. Teile aus der Werkstatt, nicht als Tab. In der App: Ride-HUD, Offline-Packs, GPS-Aufzeichnung, Sensoren und Uhr. Live-Navigation im Tab gibt es nicht.",
     links: [
       { href: "/guides/web-vs-app", label: "Guide: Web vs. App" },
       { href: "/download", label: "App" },

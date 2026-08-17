@@ -44,12 +44,10 @@ abstract final class HudBikePeek {
     return previouslySeen || cadenceRpm > 0.5;
   }
 
-  static String speedCaption({
-    required bool wheelDrives,
-    required bool hasRouteRest,
-  }) {
+  /// GPS slot is always Tempo — same chrome as a routed HUD (Einfach fahren).
+  static String speedCaption({required bool wheelDrives}) {
     if (wheelDrives) return 'Rad';
-    return hasRouteRest ? NavHudTokens.labelSpeed : 'km/h';
+    return NavHudTokens.labelSpeed;
   }
 
   static List<HudBikePeekChip> chips({

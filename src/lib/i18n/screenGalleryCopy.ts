@@ -17,13 +17,13 @@ export type ScreenGalleryCopy = {
 
 const DE: ScreenGalleryCopy = {
   heading: "So sieht FlowLine aus",
-  hint: "Marke und Screens aus dem Design-System. Die fünf Türen bleiben: Hof, Karte, Platz, Werkstatt, Laden.",
+  hint: "Marke und Screens aus dem Design-System. Die vier Türen bleiben: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad.",
   shots: SCREEN_GALLERY,
 };
 
 const EN: ScreenGalleryCopy = {
   heading: "What FlowLine looks like",
-  hint: "Brand and screens from the design system. The five doors stay: Home, Map, Platz, Workshop, Shop.",
+  hint: "Brand and screens from the design system. The four doors stay: Home, Map, Platz, Workshop. Parts sit on the bike.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",
@@ -58,14 +58,14 @@ const EN: ScreenGalleryCopy = {
       alt: "FlowLine workshop card",
       title: "Workshop",
       door: "Workshop",
-      note: "Bike, kilometres, care. Parts lead to the shop.",
+      note: "Bike, kilometres, care. Look up parts on the bike — door to Shopify.",
     },
     {
       src: "/landing/screens/laden.jpg",
       alt: "FlowLine shop as a Shopify door",
-      title: "Shop",
-      door: "Shop",
-      note: "A shelf in FlowLine. The till stays Shopify — no second cart.",
+      title: "Look up in the shop",
+      door: "Workshop",
+      note: "Not a tab. The till stays Shopify — no second cart.",
     },
     {
       src: "/landing/screens/profil.jpg",
@@ -79,7 +79,7 @@ const EN: ScreenGalleryCopy = {
 
 const FR: ScreenGalleryCopy = {
   heading: "À quoi ressemble FlowLine",
-  hint: "Marque et écrans du design system. Les cinq portes restent : Home, Carte, Platz, Atelier, Magasin.",
+  hint: "Marque et écrans du design system. Les quatre portes restent : Home, Carte, Platz, Atelier. Les pièces tiennent au vélo.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",
@@ -135,7 +135,7 @@ const FR: ScreenGalleryCopy = {
 
 const IT: ScreenGalleryCopy = {
   heading: "Come si presenta FlowLine",
-  hint: "Marca e schermate dal design system. Le cinque porte restano: Home, Mappa, Platz, Officina, Negozio.",
+  hint: "Marca e schermate dal design system. Le quattro porte restano: Home, Mappa, Platz, Officina. I pezzi stanno sulla bici.",
   shots: [
     {
       src: "/landing/screens/onboarding.jpg",

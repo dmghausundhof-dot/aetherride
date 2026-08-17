@@ -1,3 +1,5 @@
+import 'package:http/http.dart' as http;
+
 /// Public pack bucket (not a secret). Used by local PMTiles download.
 const kOfflinePacksPublicCdnRoot =
     'https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs';
@@ -413,4 +415,14 @@ Map<String, dynamic> rewriteStyleLocalAssets(
   style['glyphs'] = 'file://${root}assets/fonts/{fontstack}/{range}.pbf';
   style['sprite'] = 'file://${root}assets/sprites/v4/light';
   return style;
+}
+
+/// Warm HTTP cache for MapLibre style JSON before the Karte tab mounts.
+Future<void> prefetchMapStyleJson(String url) async {
+  final u = url.trim();
+  if (u.isEmpty || u.startsWith('file:') || u.startsWith('asset:')) return;
+  if (!u.startsWith('http://') && !u.startsWith('https://')) return;
+  try {
+    await http.get(Uri.parse(u)).timeout(const Duration(seconds: 8));
+  } catch (_) {}
 }

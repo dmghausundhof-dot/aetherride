@@ -10,6 +10,7 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
+import '../../data/routing/map_style_url.dart';
 import '../../data/routing/naehe_seeds.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_pack_dirs.dart';
@@ -91,9 +92,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _bootHof() async {
+    unawaited(prefetchMapStyleJson(AppConfig.browseMapStyleUrl));
+    unawaited(prefetchMapStyleJson(AppConfig.mapStyleUrl));
+    final gate = _loadGate();
     await _loadPosition();
     if (!mounted) return;
-    await Future.wait([_loadWeather(), _loadGate()]);
+    await Future.wait([_loadWeather(), gate]);
     if (mounted) {
       unawaited(_loadTafelStimmen());
       unawaited(_loadTafelGroup());
@@ -417,12 +421,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
   }
 
-  void _openPostRide(String rideId) {
-    Navigator.of(context).push(
+  Future<void> _openPostRide(String rideId) async {
+    final result = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => PostRideScreen(rideId: rideId),
       ),
     );
+    if (!mounted) return;
+    if (result != null && result.startsWith('akte:')) {
+      final routeId = result.substring(5);
+      _openMappe(akteRouteId: routeId.isEmpty ? null : routeId);
+    }
   }
 
   Future<void> _openOfflinePacks() async {
@@ -467,6 +476,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _skyLine(AppLocalizations l10n) {
     if (!_weatherResolved) return '';
+    if (_lat == null) return '';
     final w = _weather;
     if (w == null) return l10n.hofSkyUnknown;
     final temp = w.tempC.round().toString();
@@ -611,8 +621,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             key: const Key('hof-sky'),
             style: const TextStyle(
               color: AppColors.sageOnDark,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
             ),
           );
 
@@ -683,7 +693,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         label: item.text,
         color: item.kind == HofTafelKind.care && overdue
             ? AppColors.error
-            : AppColors.muted,
+            : AppColors.chipIdleText,
         onTap: item.kind == HofTafelKind.care
             ? () {
                 final id = active?.id;
@@ -870,12 +880,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   cta,
                                   const SizedBox(height: AppSpacing.s),
                                   secondary,
-                                  const SizedBox(height: AppSpacing.s),
-                                  watch,
                                   if (gate != null) ...[
                                     const SizedBox(height: AppSpacing.s),
                                     gate,
                                   ],
+                                  const SizedBox(height: AppSpacing.s),
+                                  watch,
                                   if (_packHint != null)
                                     _TafelLine(
                                       key: const Key('hof-pack-missing'),
@@ -929,6 +939,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           if (gpsHonesty != null) gpsHonesty,
                           const SizedBox(height: AppSpacing.l),
                           resident,
+                          if (gate != null) ...[
+                            const SizedBox(height: AppSpacing.m),
+                            gate,
+                          ],
                         ],
                       ),
                     ),
@@ -939,10 +953,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         tafel,
-                        if (gate != null) ...[
-                          const SizedBox(height: AppSpacing.m),
-                          gate,
-                        ],
                         if (_packHint != null)
                           _TafelLine(
                             key: const Key('hof-pack-missing'),
@@ -965,10 +975,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const HofWatchCard(),
                   cta,
                   const SizedBox(height: AppSpacing.s),
                   secondary,
+                  const HofWatchCard(),
                 ],
               ),
             ),
@@ -1031,7 +1041,7 @@ class _TafelLine extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.kicker,
-    this.color = AppColors.muted,
+    this.color = AppColors.chipIdleText,
   });
 
   final String label;
@@ -1400,7 +1410,13 @@ class _GateCard extends StatelessWidget {
       );
     }
 
-    final title = pick.hasLoop ? pick.title : l10n.hofNoHonestLoop;
+    final title = pick.hasLoop
+        ? pick.title
+        : hofGateEmptyTitle(
+            honesty: pick.honesty,
+            wetClosed: l10n.hofGateWetClosed,
+            noLoop: l10n.hofNoHonestLoop,
+          );
     final duration =
         pick.hasLoop ? l10n.hofLoopDuration(pick.durationMin) : null;
     final neighborLine = (neighbors != null && neighbors!.hasCommunity)

@@ -140,6 +140,14 @@ void main() {
       );
       expect(pick.hasLoop, isFalse);
       expect(pick.honesty, HofGateHonesty.wetClosed);
+      expect(
+        hofGateEmptyTitle(
+          honesty: pick.honesty,
+          wetClosed: 'Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe',
+          noLoop: 'Kein ehrlicher Trail-Rundkurs',
+        ),
+        'Trails nass — kein ehrlicher Asphalt-Rundkurs in der Nähe',
+      );
     });
 
     test('preferred MTB picks a trail over nearer asphalt', () {

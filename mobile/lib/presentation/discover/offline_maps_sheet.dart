@@ -989,7 +989,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                     style:
                         const TextStyle(color: AppColors.muted, fontSize: 13),
                   ),
-                  if (kDebugMode) ...[
+                  if (AppConfig.showRoutingDebug) ...[
                     const SizedBox(height: 6),
                     Text(
                       'API ${AppConfig.apiBaseUrl}',
@@ -1043,20 +1043,8 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                                   color: AppColors.muted,
                                 ),
                               ),
-                              if (_valhallaStatus != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  l10n.honestOfflineEngineCopyFor(
-                                    valhallaStatus: _valhallaStatus!,
-                                    engineHint: _engineHint,
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.muted,
-                                  ),
-                                ),
-                              ],
-                              if (kDebugMode && _valhallaStatus != null) ...[
+                              if (AppConfig.showRoutingDebug &&
+                                  _valhallaStatus != null) ...[
                                 const SizedBox(height: 2),
                                 Text(
                                   l10n.offlineEngineStatusLineFor(

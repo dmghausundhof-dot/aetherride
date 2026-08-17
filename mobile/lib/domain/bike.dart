@@ -163,3 +163,26 @@ class Bike {
     );
   }
 }
+
+/// Name beim Anlegen ohne Spitzname: Kategorie (Gravel, City, MTB),
+/// kein Fake „Mein Bike“.
+String fallbackBikeName(BikeCategory category, {bool isEbike = false}) {
+  return Bike(
+    id: '',
+    name: '',
+    category: category,
+    isEbike: isEbike,
+  ).categoryLabel;
+}
+
+/// Gesetzter Name bleibt. Leer/Whitespace wird zur Kategorie.
+String resolvedBikeName(
+  String name,
+  BikeCategory category, {
+  bool isEbike = false,
+}) {
+  final trimmed = name.trim();
+  return trimmed.isEmpty
+      ? fallbackBikeName(category, isEbike: isEbike)
+      : trimmed;
+}

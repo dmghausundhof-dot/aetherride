@@ -17,8 +17,12 @@ export type DiscoverCopy = {
   searchHint: string;
   planRouteCta: string;
   filter: string;
+  distance: string;
   aroundKm: (km: number) => string;
   showTours: (n: number) => string;
+  catalogTours: (n: number) => string;
+  toursNearby: (n: number) => string;
+  oaCount: (n: number) => string;
   visAll: string;
   visPrivate: string;
   visPublic: string;
@@ -48,11 +52,16 @@ const DE: DiscoverCopy = {
   searchHint: "Ort oder Tour",
   planRouteCta: "Navigieren",
   filter: "Filter",
+  distance: "Distanz",
   aroundKm: (km) => `in ${km} km`,
   showTours: (n) => (n === 1 ? "1 Tour zeigen" : `${n} Touren zeigen`),
+  catalogTours: (n) => (n === 1 ? "Katalog 1 Tour" : `Katalog ${n} Touren`),
+  toursNearby: (n) =>
+    n === 1 ? "1 Tour in der Nähe" : `${n} Touren in der Nähe`,
+  oaCount: (n) => (n === 1 ? "1 Tour in der Nähe" : `${n} Touren in der Nähe`),
   visAll: "Alle",
   visPrivate: "Privat",
-  visPublic: "Öffentlich",
+  visPublic: "Freigegeben",
   sport: {
     all: "Alle",
     road: "Rennrad",
@@ -93,11 +102,15 @@ const EN: DiscoverCopy = {
   searchHint: "Place or tour",
   planRouteCta: "Navigate",
   filter: "Filter",
+  distance: "Distance",
   aroundKm: (km) => `within ${km} km`,
   showTours: (n) => (n === 1 ? "Show 1 tour" : `Show ${n} tours`),
+  catalogTours: (n) => (n === 1 ? "Catalog 1 tour" : `Catalog ${n} tours`),
+  toursNearby: (n) => (n === 1 ? "1 tour nearby" : `${n} tours nearby`),
+  oaCount: (n) => (n === 1 ? "1 tour nearby" : `${n} tours nearby`),
   visAll: "All",
   visPrivate: "Private",
-  visPublic: "Public",
+  visPublic: "Shared",
   sport: {
     all: "All",
     road: "Road",
@@ -138,11 +151,20 @@ const FR: DiscoverCopy = {
   searchHint: "Lieu ou tour",
   planRouteCta: "Naviguer",
   filter: "Filtres",
+  distance: "Distance",
   aroundKm: (km) => `dans ${km} km`,
   showTours: (n) => (n === 1 ? "Afficher 1 tour" : `Afficher ${n} tours`),
+  catalogTours: (n) =>
+    n === 1 ? "Catalogue 1 tour" : `Catalogue ${n} tours`,
+  toursNearby: (n) =>
+    n === 1 ? "1 tour à proximité" : `${n} tours à proximité`,
+  oaCount: (n) =>
+    n === 1
+      ? "Outdooractive 1 tour · OSM/traces suivent"
+      : `Outdooractive ${n} tours · OSM/traces suivent`,
   visAll: "Tous",
   visPrivate: "Privé",
-  visPublic: "Public",
+  visPublic: "Partagé",
   sport: {
     all: "Tous",
     road: "Route",
@@ -183,11 +205,16 @@ const IT: DiscoverCopy = {
   searchHint: "Luogo o tour",
   planRouteCta: "Naviga",
   filter: "Filtri",
+  distance: "Distanza",
   aroundKm: (km) => `entro ${km} km`,
   showTours: (n) => (n === 1 ? "Mostra 1 tour" : `Mostra ${n} tour`),
+  catalogTours: (n) => (n === 1 ? "Catalogo 1 tour" : `Catalogo ${n} tour`),
+  toursNearby: (n) =>
+    n === 1 ? "1 tour nelle vicinanze" : `${n} tour nelle vicinanze`,
+  oaCount: (n) => (n === 1 ? "1 tour qui vicino" : `${n} tour qui vicino`),
   visAll: "Tutti",
   visPrivate: "Privato",
-  visPublic: "Pubblico",
+  visPublic: "Condiviso",
   sport: {
     all: "Tutti",
     road: "Corsa",

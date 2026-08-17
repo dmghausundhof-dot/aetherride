@@ -11,6 +11,7 @@ import { GarageSetupsTab } from "@/components/garage/GarageSetupsTab";
 import { GarageMaintenanceTab } from "@/components/garage/GarageMaintenanceTab";
 import { DieBoxSurface } from "@/components/garage/DieBoxSurface";
 import { BikeRideLog } from "@/components/garage/BikeRideLog";
+import { GaragePartsCta } from "@/components/garage/GaragePartsCta";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { buildServiceReport, downloadServiceReport } from "@/lib/garage/serviceReport";
 import {
@@ -224,7 +225,7 @@ function GaragePageInner() {
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-6">
           {/* Desktop: sticky Bike-Leiste · Mobile: horizontal */}
           <aside className="lg:sticky lg:top-20 lg:self-start">
-            <p className="mb-2 hidden text-[10px] font-semibold uppercase tracking-wide text-text-secondary lg:block">
+            <p className="mb-2 hidden text-[10px] font-semibold tracking-wide text-text-secondary lg:block">
               {copy.workshopBikes} ({bikes.length})
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -264,6 +265,7 @@ function GaragePageInner() {
             bike={selected}
             onInstallSlot={(slot) => setInstallSlot(slot)}
           />
+          <GaragePartsCta bikeId={selected.id} bikeName={selected.name} />
           <BikeRideLog bikeId={selected.id} />
           <details className="rounded-2xl border border-border bg-surface p-4">
             <summary className="cursor-pointer list-none font-semibold">
@@ -273,6 +275,10 @@ function GaragePageInner() {
               </span>
             </summary>
             <div className="mt-4 space-y-4">
+          <GaragePartsCta
+            bikeId={selected.id}
+            lookupOnly
+          />
           <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-elevated p-1 text-xs sm:text-sm">
             {(
               [
@@ -286,7 +292,7 @@ function GaragePageInner() {
                 type="button"
                 onClick={() => setTab(id)}
                 className={`rounded-lg py-2.5 font-medium ${
-                  tab === id ? "bg-chrome/20 text-chrome" : "text-text-secondary"
+                  tab === id ? "bg-chrome text-on-accent" : "text-text-secondary"
                 }`}
               >
                 {label}

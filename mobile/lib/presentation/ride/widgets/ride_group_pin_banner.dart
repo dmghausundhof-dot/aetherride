@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../data/community/ride_group_store.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Opt-in vor Losfahren — nicht 11-px-Text unter der Karte.
 class RideGroupPinBanner extends StatefulWidget {
@@ -53,13 +54,16 @@ class _RideGroupPinBannerState extends State<RideGroupPinBanner> {
   @override
   Widget build(BuildContext context) {
     if (_groupId == null || _title == null) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Theme.of(context).cardColor.withValues(alpha: 0.92),
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: FilterChip(
         selected: _on,
         showCheckmark: false,
-        label: Text(_on ? 'Pins an — $_title' : 'Pins im HUD — $_title'),
+        label: Text(
+          '${_on ? l10n.platzPinsOnHud : l10n.platzPinsOff} — $_title',
+        ),
         onSelected: (on) async {
           await _store.setLiveOptIn(_groupId!, on);
           if (!mounted) return;

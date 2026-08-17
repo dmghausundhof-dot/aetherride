@@ -42,7 +42,8 @@ void main() {
 
     expect(find.text('Werkstatt'), findsWidgets);
     expect(find.text('Karte'), findsWidgets);
-    expect(find.text('Laden'), findsWidgets);
+    expect(find.text('Platz'), findsWidgets);
+    expect(find.text('Laden'), findsNothing);
     expect(find.text('Der Hof'), findsWidgets);
     expect(find.byKey(const Key('hof-threshold-nav')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
@@ -55,8 +56,12 @@ void main() {
     expect(find.textContaining('Tour finden'), findsNothing);
   });
 
-  testWidgets('Zurück vom Shop geht zum Hof, beendet die App nicht',
+  testWidgets('Zurück vom Laden in der Werkstatt, nicht als Tab',
       (tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     tester.platformDispatcher.localeTestValue = const Locale('de', 'DE');
     tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
     addTearDown(() {
@@ -87,18 +92,32 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.text('Laden').last);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const Key('hof-threshold-nav')),
+            matching: find.text('Werkstatt'),
+          )
+          .first,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byKey(const Key('werkstatt-parts-row')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('werkstatt-parts-row')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('werkstatt-parts-row')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.byKey(const Key('shop-gateway')), findsOneWidget);
+    expect(find.text('Laden'), findsNothing);
 
     final handled = await tester.binding.handlePopRoute();
     expect(handled, isTrue);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('hof-ride-out')), findsOneWidget);
-    expect(find.byKey(const Key('hof-title')), findsOneWidget);
-    expect(find.text('Trail E-MTB'), findsWidgets);
+    expect(find.byKey(const Key('shop-gateway')), findsNothing);
+    expect(find.byKey(const Key('werkstatt-parts-row')), findsOneWidget);
+    expect(find.byKey(const Key('hof-threshold-nav')), findsOneWidget);
   });
 }

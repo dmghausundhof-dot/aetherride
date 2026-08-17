@@ -43,7 +43,7 @@ const DE: AboutCopy = {
   refusalsLead:
     "Absicht, kein Feature-Rückstand. Die Homepage sagt das in Klartext.",
   refusals: ABOUT_REFUSALS,
-  doorsTitle: "Fünf Türen, keine sechste",
+  doorsTitle: "Vier Türen, keine fünfte",
   doorsLead: "Dieselbe IA wie in der App. Ride bleibt der Knopf, nicht der Tab.",
   status: ABOUT_STATUS,
 };
@@ -52,7 +52,7 @@ const EN: AboutCopy = {
   brand: {
     kicker: "Brand",
     title: "The bike lives here.",
-    lead: "FlowLine is outdoor cycling, simplified: Home in the browser, the ride in the app. Five doors, one orange button, no timeline.",
+    lead: "FlowLine is outdoor cycling, simplified: Home in the browser, the ride in the app. Four doors, one orange button, no timeline.",
     madeFor:
       "Built for riders. Drawn for focus. Made for the ride — not for the timeline.",
     pillarsTitle: "Three lines from the style guide",
@@ -75,7 +75,7 @@ const EN: AboutCopy = {
     kicker: "Why a Home",
     title: "Not another timeline on two wheels.",
     paragraphs: [
-      "Most cycling apps stack cards: Explore, Club, Shop, Activity. Eventually the start screen is a feed, the ride is a statistic, the bike is an SKU. FlowLine turns that around. Home is the stand. Five doors. One orange button.",
+      "Most cycling apps stack cards: Explore, Club, Shop, Activity. Eventually the start screen is a feed, the ride is a statistic, the bike is an SKU. FlowLine turns that around. Home is the stand. Four doors. One orange button.",
       "Web is the desk: find tours, plan, look after the bike, share a Mappe. The app is the ride: HUD, GPS in the background, offline packs, sensors, watch. What the browser cannot do reliably is not sold as live GPS in the tab.",
       "The name is the stance: Flow for the cut, Line for the line. Outdoor · Cycling · Flow. No leaderboard that scores your weeknight loop. No dummy kilometre that makes Home look full.",
     ],
@@ -96,7 +96,7 @@ const EN: AboutCopy = {
       body: "Empty areas stay empty. Store buttons appear when listings are live. Routing lines appear when you plan, not as dummy Alps in Hamburg.",
     },
   ],
-  doorsTitle: "Five doors, no sixth",
+  doorsTitle: "Four doors, no fifth",
   doorsLead: "The same IA as in the app. Ride stays the button, not the tab.",
   status: {
     title: "Who we are — and what is still missing",
@@ -153,7 +153,7 @@ const FR: AboutCopy = {
       body: "Les surfaces vides restent vides. Les boutons store apparaissent quand les listings sont en ligne. Les lignes de routing naissent quand tu planifies, pas comme des Alpes fictives à Hamburg.",
     },
   ],
-  doorsTitle: "Cinq portes, pas de sixième",
+  doorsTitle: "Quatre portes, pas de cinquième",
   doorsLead: "La même IA que dans l’appli. Ride reste le bouton, pas l’onglet.",
   status: {
     title: "Qui nous sommes — et ce qui manque encore",
@@ -210,7 +210,7 @@ const IT: AboutCopy = {
       body: "Le superfici vuote restano vuote. I pulsanti store compaiono quando i listing sono live. Le linee di routing nascono quando pianifichi, non come Alpi fittizie ad Hamburg.",
     },
   ],
-  doorsTitle: "Cinque porte, nessuna sesta",
+  doorsTitle: "Quattro porte, nessuna quinta",
   doorsLead: "La stessa IA dell’app. Ride resta il pulsante, non la scheda.",
   status: {
     title: "Chi siamo — e cosa manca ancora",

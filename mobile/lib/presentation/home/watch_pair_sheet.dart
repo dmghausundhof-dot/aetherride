@@ -502,7 +502,6 @@ class _HitTile extends StatelessWidget {
                       Text(
                         [
                           l10n.watchHonestyLabelFor(hit.honesty),
-                          if (hit.hasHrService) '0x180D',
                           '$rssi dBm',
                         ].join(' · '),
                         style: const TextStyle(

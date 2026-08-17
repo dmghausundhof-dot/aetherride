@@ -109,8 +109,8 @@ const DE: HomepageCopy = {
     productMap: "Produktkarte",
     bikesTitle: "Für welche Räder",
     bikesLead:
-      "Eine Anwendung, fünf Türen — nicht fünf Apps. Sport-Filter auf der Karte, Setup in der Werkstatt.",
-    doorsTitle: "Fünf Türen am Hof",
+      "Eine Anwendung, vier Türen — nicht vier Apps. Sport-Filter auf der Karte, Setup in der Werkstatt.",
+    doorsTitle: "Vier Türen am Hof",
     doorsLead:
       "Der Hof ist der Stand. Alles andere ist eine Tür — nicht ein Stapel Karten. Ride ist kein Tab.",
     onWebsite: "Auf der Website",
@@ -145,7 +145,7 @@ const DE: HomepageCopy = {
       "Keine Store-Versprechen, keine erfundenen Adressen, kein Feed auf dem Hof.",
     faqPageMoreBefore: "Mehr Screens und Abläufe stehen unter",
     guidesIndexLead:
-      "Ratgeber für Rennrad, Gravel, MTB und E-Bike: Touren planen, Reichweite als Spanne, Setup nach Gewicht, der Hof mit fünf Türen, Teilen per Link, der Laden ohne zweite Kasse. Kein Affiliate-Clickbait — was im Produkt fehlt, steht hier nicht als Versprechen.",
+      "Ratgeber für Rennrad, Gravel, MTB und E-Bike: Touren planen, Reichweite als Spanne, Setup nach Gewicht, der Hof mit vier Türen, Teilen per Link, Teile aus der Werkstatt. Kein Affiliate-Clickbait — was im Produkt fehlt, steht hier nicht als Versprechen.",
     related: "Weiter",
   },
 };
@@ -156,7 +156,7 @@ const EN: HomepageCopy = {
     title: "Outdoor cycling, without a timeline.",
     lead: "FlowLine is the everyday app between a weeknight loop and a weekend stage. In the browser you plan, look after the bike, and share a Mappe. In the app you ride: HUD, GPS, offline, sensors.",
     paragraphs: [
-      "Home is the stand — not a feed. Five doors: Home, Map, Platz, Workshop, Shop. Ride is the orange button, not a sixth tab. What is missing stays empty: no dummy kilometres, no leaderboard, no second till in the browser.",
+      "Home is the stand — not a feed. Four doors: Home, Map, Platz, Workshop. Parts sit on the bike, not as a fifth tab. Ride is the orange button, not a fifth tab. What is missing stays empty: no dummy kilometres, no leaderboard, no second till in the browser.",
       "Public tour pages are editorial ideas with a pin. The line appears when you plan — the Alster in Hamburg, not the Alps by default. Community sits on the tour: Stimmen, Mappe links, invite links. Public profiles only with opt-in, without GPS traces.",
     ],
   },
@@ -210,13 +210,7 @@ const EN: HomepageCopy = {
       href: "/garage",
       title: "Workshop",
       kicker: "The bike",
-      body: "Park, setup, service intervals with a source. Bracketing and range spans are Pro. Spare parts lead to the shop, not a second cart.",
-    },
-    {
-      href: "/shop",
-      title: "Shop",
-      kicker: "A door, not a till",
-      body: "Shopify sits behind the door. Fit comes from the workshop. Without an imprint on file, checkout stays locked — we do not invent an address so something can say “buy”.",
+      body: "Park, setup, service intervals with a source. Bracketing and range spans are Pro. Look up parts here — cassette, chain, pads, tire size. The shop is the Shopify door, not a fifth tab and not a second cart.",
     },
   ],
   split: {
@@ -342,8 +336,8 @@ const EN: HomepageCopy = {
     productMap: "Product map",
     bikesTitle: "Which bikes",
     bikesLead:
-      "One app, five doors — not five apps. Sport filters on the map, setup in the workshop.",
-    doorsTitle: "Five doors at Home",
+      "One app, four doors — not four apps. Sport filters on the map, setup in the workshop.",
+    doorsTitle: "Four doors at Home",
     doorsLead:
       "Home is the stand. Everything else is a door — not a stack of cards. Ride is not a tab.",
     onWebsite: "On the website",
@@ -378,7 +372,7 @@ const EN: HomepageCopy = {
       "No store promises, no invented addresses, no feed at Home.",
     faqPageMoreBefore: "More screens and flows are under",
     guidesIndexLead:
-      "Guides for road, gravel, MTB and e-bike: planning tours, range as a span, setup by weight, Home with five doors, sharing by link, the shop without a second till. No affiliate clickbait — what the product lacks is not promised here.",
+      "Guides for road, gravel, MTB and e-bike: planning tours, range as a span, setup by weight, Home with four doors, sharing by link, parts from the workshop. No affiliate clickbait — what the product lacks is not promised here.",
     related: "Next",
   },
 };
@@ -389,7 +383,7 @@ const FR: HomepageCopy = {
     title: "Le vélo dehors, sans fil d’actualité.",
     lead: "FlowLine est l’appli du quotidien, entre la boucle en semaine et l’étape du week-end. Dans le navigateur tu planifies, tu soignes le vélo et tu partages une Mappe. Dans l’appli tu roules : HUD, GPS, hors ligne, capteurs.",
     paragraphs: [
-      "Home est le stand — pas un fil. Cinq portes : Home, Carte, Platz, Atelier, Magasin. Ride est le bouton orange, pas un sixième onglet. Ce qui manque reste vide : pas de kilomètres fictifs, pas de classement, pas de deuxième caisse dans le navigateur.",
+      "Home est le stand — pas un fil. Quatre portes : Home, Carte, Platz, Atelier. Les pièces tiennent au vélo, pas comme cinquième onglet. Ride est le bouton orange, pas un cinquième onglet. Ce qui manque reste vide : pas de kilomètres fictifs, pas de classement, pas de deuxième caisse dans le navigateur.",
       "Les pages de sorties publiques sont des idées éditoriales avec une épingle. La ligne apparaît quand tu planifies — l’Alster à Hamburg, pas les Alpes par défaut. La communauté tient à la sortie : Stimmen, liens Mappe, liens d’invitation. Profils publics seulement avec opt-in, sans traces GPS.",
     ],
   },
@@ -443,13 +437,7 @@ const FR: HomepageCopy = {
       href: "/garage",
       title: "Atelier",
       kicker: "Le vélo",
-      body: "Garer, setup, intervalles d’entretien avec source. Bracketing et fourchettes d’autonomie sont Pro. Les pièces mènent au magasin, pas à un deuxième panier.",
-    },
-    {
-      href: "/shop",
-      title: "Magasin",
-      kicker: "Une porte, pas une caisse",
-      body: "Shopify est derrière la porte. Le fit vient de l’atelier. Sans mentions légales déposées, le checkout reste bloqué — on n’invente pas d’adresse pour que quelque chose dise « acheter ».",
+      body: "Garer, setup, intervalles d’entretien avec source. Bracketing et fourchettes d’autonomie sont Pro. Tu cherches les pièces ici — cassette, chaîne, plaquettes, dimension. Le magasin est la porte Shopify, pas un cinquième onglet et pas un deuxième panier.",
     },
   ],
   split: {
@@ -575,8 +563,8 @@ const FR: HomepageCopy = {
     productMap: "Carte produit",
     bikesTitle: "Pour quels vélos",
     bikesLead:
-      "Une appli, cinq portes — pas cinq applis. Filtres sport sur la carte, setup à l’atelier.",
-    doorsTitle: "Cinq portes à Home",
+      "Une appli, quatre portes — pas quatre applis. Filtres sport sur la carte, setup à l’atelier.",
+    doorsTitle: "Quatre portes à Home",
     doorsLead:
       "Home est le stand. Tout le reste est une porte — pas une pile de cartes. Ride n’est pas un onglet.",
     onWebsite: "Sur le site",
@@ -622,7 +610,7 @@ const IT: HomepageCopy = {
     title: "Ciclismo outdoor, senza timeline.",
     lead: "FlowLine è l’app del quotidiano, tra il giro serale e la tappa del weekend. Nel browser pianifichi, curi la bici e condividi una Mappe. Nell’app pedali: HUD, GPS, offline, sensori.",
     paragraphs: [
-      "Home è lo stand — non un feed. Cinque porte: Home, Mappa, Platz, Officina, Negozio. Ride è il pulsante arancione, non la sesta scheda. Ciò che manca resta vuoto: niente chilometri finti, niente classifica, niente seconda cassa nel browser.",
+      "Home è lo stand — non un feed. Quattro porte: Home, Mappa, Platz, Officina. I pezzi stanno sulla bici, non come quinta scheda. Ride è il pulsante arancione, non la quinta scheda. Ciò che manca resta vuoto: niente chilometri finti, niente classifica, niente seconda cassa nel browser.",
       "Le pagine pubbliche delle uscite sono idee editoriali con un pin. La linea nasce quando pianifichi — l’Alster ad Hamburg, non le Alpi di default. La community sta sull’uscita: Stimmen, link Mappe, link di invito. Profili pubblici solo con opt-in, senza tracce GPS.",
     ],
   },
@@ -676,13 +664,7 @@ const IT: HomepageCopy = {
       href: "/garage",
       title: "Officina",
       kicker: "La bici",
-      body: "Parcheggiare, setup, intervalli di manutenzione con fonte. Bracketing e fasce di autonomia sono Pro. I ricambi portano al negozio, non a un secondo carrello.",
-    },
-    {
-      href: "/shop",
-      title: "Negozio",
-      kicker: "Una porta, non una cassa",
-      body: "Shopify sta dietro la porta. Il fit viene dall’officina. Senza Impressum depositato, il checkout resta bloccato — non inventiamo un indirizzo perché qualcosa dica «compra».",
+      body: "Parcheggiare, setup, intervalli di manutenzione con fonte. Bracketing e fasce di autonomia sono Pro. Cerchi i pezzi qui — cassetta, catena, pastiglie, misura. Il negozio è la porta Shopify, non una quinta scheda e non un secondo carrello.",
     },
   ],
   split: {
@@ -808,8 +790,8 @@ const IT: HomepageCopy = {
     productMap: "Mappa prodotto",
     bikesTitle: "Per quali bici",
     bikesLead:
-      "Un’app, cinque porte — non cinque app. Filtri sport sulla mappa, setup in officina.",
-    doorsTitle: "Cinque porte a Home",
+      "Un’app, quattro porte — non quattro app. Filtri sport sulla mappa, setup in officina.",
+    doorsTitle: "Quattro porte a Home",
     doorsLead:
       "Home è lo stand. Tutto il resto è una porta — non una pila di schede. Ride non è una scheda.",
     onWebsite: "Sul sito",

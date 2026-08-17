@@ -30,6 +30,10 @@ function testParity() {
     assert.equal(c.features[1]?.title, "Stimmen", lang);
     assert.equal(c.out.length, de.out.length, lang);
     assert.ok(c.out.some((line) => line.includes("Stimmen")), lang);
+    assert.ok(
+      /app/i.test(c.eventsLead),
+      `${lang} eventsLead should say the events are not in the app`,
+    );
   }
 }
 

@@ -4,12 +4,14 @@
  * Platz: Mappe, Stimmen, Zusammen raus. Dieselben savedRoutes wie auf der Karte.
  */
 import { useEffect, useRef, useState } from "react";
-import { Bookmark, FolderPlus } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { parseGpx } from "@/lib/import/gpx";
 import { ShareCollectionButton } from "@/components/community/ShareCollectionButton";
 import { VISIBILITY_FILTER_OPTIONS } from "@/lib/routing/routeFilters";
 import { AddRouteForm } from "@/components/library/AddRouteForm";
+import { resolveAddRouteStart } from "@/lib/library/addRouteStart";
+import { readDiscoverViewport } from "@/lib/library/discoverViewport";
 import { TourAkte } from "@/components/tours/TourAkte";
 import {
   filterSavedByVisibility,
@@ -36,15 +38,17 @@ export default function LibraryPage() {
   const savedRoutes = useAppStore((s) => s.savedRoutes);
   const saveRoute = useAppStore((s) => s.saveRoute);
   const routeCollections = useAppStore((s) => s.routeCollections);
-  const createRouteCollection = useAppStore((s) => s.createRouteCollection);
   const myReviews = useCommunityStore((s) => s.myReviews);
   const markInboxSeen = useRideGroupStore((s) => s.markInboxSeen);
 
-  const [collectionName, setCollectionName] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [appJoinHref, setAppJoinHref] = useState<string | null>(null);
   const [openAkte, setOpenAkte] = useState<string | null>(null);
   const [visScope, setVisScope] = useState<VisibilityScope>("all_mine");
+  const [addStart, setAddStart] = useState<[number, number] | null>(null);
+  const [addStartSource, setAddStartSource] = useState<"gps" | "map" | null>(
+    null,
+  );
   const visibleRoutes = filterSavedByVisibility(savedRoutes, visScope);
   const akteRoute = resolveAkteSavedRoute(openAkte, savedRoutes);
   const stimmenInbox = myReviews.filter((r) =>
@@ -54,6 +58,30 @@ export default function LibraryPage() {
   useEffect(() => {
     const akte = new URLSearchParams(window.location.search).get("akte")?.trim();
     if (akte) setOpenAkte(akte);
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const map = readDiscoverViewport()?.lngLat ?? null;
+    const apply = (gps: [number, number] | null) => {
+      if (cancelled) return;
+      const hit = resolveAddRouteStart({ gps, map });
+      setAddStart(hit?.lngLat ?? null);
+      setAddStartSource(hit?.source ?? null);
+    };
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      apply(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => apply([pos.coords.longitude, pos.coords.latitude]),
+      () => apply(null),
+      { timeout: 4000, maximumAge: 120000 },
+    );
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -152,7 +180,7 @@ export default function LibraryPage() {
       )}
 
       <section className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+        <h2 className="mb-3 text-sm font-semibold tracking-wide text-text-secondary">
           {copy.libraryMappe}
           {savedRoutes.length > 0
             ? ` · ${visibleRoutes.length}`
@@ -161,6 +189,8 @@ export default function LibraryPage() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <AddRouteForm
             compact
+            defaultStart={addStart}
+            startSource={addStartSource}
             onPickGpx={() => gpxRef.current?.click()}
           />
           <input
@@ -181,9 +211,9 @@ export default function LibraryPage() {
                 key={id}
                 type="button"
                 onClick={() => setVisScope(id)}
-                className={`rounded-lg px-2.5 py-1.5 font-semibold ${
+                className={`rounded-full px-2.5 py-1.5 font-semibold ${
                   visScope === id
-                    ? "bg-chrome/20 text-chrome"
+                    ? "bg-accent text-on-accent"
                     : "text-text-secondary"
                 }`}
               >
@@ -249,7 +279,7 @@ export default function LibraryPage() {
       ) : null}
 
       <section className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+        <h2 className="mb-3 text-sm font-semibold tracking-wide text-text-secondary">
           {g.stimmenTitle}
         </h2>
         {stimmenInbox.length === 0 ? (
@@ -280,34 +310,12 @@ export default function LibraryPage() {
 
       <RideGroupsPanel savedRoutes={savedRoutes} visibility={visScope} />
 
-      <section className="mt-10">
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-text-secondary">
-          {g.collectionsTitle}
-        </h2>
-        <p className="mb-3 text-xs text-text-secondary">{g.collectionsHint}</p>
-        <div className="mb-3 flex gap-2">
-          <input
-            value={collectionName}
-            onChange={(e) => setCollectionName(e.target.value)}
-            placeholder={g.collectionName}
-            className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (!collectionName.trim()) return;
-              createRouteCollection(collectionName.trim());
-              setCollectionName("");
-              setMsg(g.collectionCreated);
-            }}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-medium"
-          >
-            <FolderPlus className="h-4 w-4" /> {g.collectionCreate}
-          </button>
-        </div>
-        {routeCollections.length === 0 ? (
-          <p className="text-sm text-text-secondary">{g.collectionEmpty}</p>
-        ) : (
+      {routeCollections.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="mb-1 text-sm font-semibold tracking-wide text-text-secondary">
+            {g.collectionsTitle}
+          </h2>
+          <p className="mb-3 text-xs text-text-secondary">{g.collectionsHint}</p>
           <ul className="space-y-2">
             {routeCollections.map((c) => (
               <li
@@ -324,8 +332,8 @@ export default function LibraryPage() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -102,7 +102,7 @@ import {
   type PlanMode,
   type QuickOption,
 } from "@/lib/routing/planDraft";
-import { snapPointOntoTrails } from "@/lib/routing/snapTrailCorridor";
+import { snapPointOntoTrails, viaMaySnapOntoTrail } from "@/lib/routing/snapTrailCorridor";
 import { normalizePlaceKind } from "@/lib/community/placesMerger";
 import { httpsAppLink, rideOpenPath } from "@/lib/web/appLinks";
 import {
@@ -121,6 +121,16 @@ import {
 } from "@/lib/routing/overlayHit";
 import { NearMeRouteCard } from "@/components/explore/NearMeRouteCard";
 import { AddRouteForm } from "@/components/library/AddRouteForm";
+import {
+  isLocalDiscoverZoom,
+  isPlaceholderMapCenter,
+  resolveAddRouteStart,
+  WEB_DISCOVER_FALLBACK,
+} from "@/lib/library/addRouteStart";
+import {
+  readDiscoverViewport,
+  writeDiscoverViewport,
+} from "@/lib/library/discoverViewport";
 import { prefetchTourCommunityCounts } from "@/components/community/TourCommunityChip";
 import {
   DEMO_CITY_CHIPS,
@@ -165,7 +175,7 @@ import {
 
 type SheetMode = "quick" | "plan" | "tours";
 
-const FALLBACK_CENTER: [number, number] = [8.2, 48.0];
+const FALLBACK_CENTER: [number, number] = WEB_DISCOVER_FALLBACK;
 /** Abort stuck „Berechne…“ so Quick always recovers to seeds + retry. */
 const QUICK_TIMEOUT_MS = 5000;
 /** Seeds beyond this are „not useful nearby“ → Demo-Stadt chips (Coverage füllt). */
@@ -402,7 +412,6 @@ function DiscoverPageInner() {
     null
   );
   const [exploreQuery, setExploreQuery] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
   const [bikeOverlayOn, setBikeOverlayOn] = useState(true);
   const [bikeOverlayExtra, setBikeOverlayExtra] = useState<BikeOverlayClass[]>(
@@ -510,6 +519,14 @@ function DiscoverPageInner() {
   }, [activeBike, profile, calibration, boschLive, rangePro]);
 
   const origin = userPos ?? mapCenter;
+  const addRouteStart = useMemo(() => {
+    const persisted = readDiscoverViewport()?.lngLat ?? null;
+    const map =
+      isLocalDiscoverZoom(mapZoom) && !isPlaceholderMapCenter(mapCenter)
+        ? mapCenter
+        : persisted;
+    return resolveAddRouteStart({ gps: userPos, map });
+  }, [userPos, mapCenter, mapZoom]);
 
   /** Rundkurs lens or NearMe Route=Rundkurs → honesty on ALL sources. */
   const rundkursActive = filters.loopOnly || nearMeRouteMode === "loop";
@@ -1968,14 +1985,10 @@ function DiscoverPageInner() {
               if (q.trim().length >= 2) setSheetMode("tours");
             }}
             onPlanRoute={() => {
-              setFilterOpen(false);
               setSheetMode("plan");
             }}
             aroundKm={aroundKm}
             filterCount={activeFilterCount}
-            filterOpen={filterOpen}
-            onOpenFilters={() => setFilterOpen(true)}
-            onCloseFilters={() => setFilterOpen(false)}
             profileMenu={navProfileMenu}
             activeProfile={activeProfile}
             onProfile={(p) => {
@@ -2008,7 +2021,7 @@ function DiscoverPageInner() {
               onClick={() => setSheetMode(id)}
               className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-medium ${
                 sheetMode === id
-                  ? "bg-chrome/20 text-chrome"
+                  ? "bg-chrome text-on-accent"
                   : "bg-surface-elevated text-text-secondary"
               }`}
             >
@@ -2186,7 +2199,7 @@ function DiscoverPageInner() {
               )}
 
               {/* Always-on ~60 Min — #35 curated P0 Berlin/RN + honest loops only */}
-              <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="mt-3 text-xs font-semibold tracking-wide text-text-secondary">
                 {d.sixtyTitle}
               </h3>
               <p className="text-[11px] text-text-secondary">
@@ -2447,7 +2460,7 @@ function DiscoverPageInner() {
           {sheetMode === "tours" && (
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                <h3 className="text-xs font-semibold tracking-wide text-text-secondary">
                   {d.waysNearby}
                 </h3>
                 <label className="flex items-center gap-1.5 text-[11px] text-text-secondary">
@@ -2556,7 +2569,7 @@ function DiscoverPageInner() {
                 </div>
               )}
 
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="text-xs font-semibold tracking-wide text-text-secondary">
                 {d.fromLocation(nearbyRoutes.length, fartherRoutes.length)}
               </h3>
               <p className="text-[11px] text-text-secondary">
@@ -2643,7 +2656,7 @@ function DiscoverPageInner() {
                   ))}
                   {fartherRoutes.length > 0 && (
                     <>
-                      <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                      <h3 className="mt-3 text-xs font-semibold tracking-wide text-text-secondary">
                         {d.fartherRegions(fartherRoutes.length)}
                       </h3>
                       {fartherRoutes.map((r) => (
@@ -2702,7 +2715,7 @@ function DiscoverPageInner() {
                 </>
               )}
 
-              <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-secondary">
                 <Compass className="h-3.5 w-3.5" /> {d.outdooractive(oaTours.length)}
               </h3>
               {googlePlacesWarning && (
@@ -2778,7 +2791,7 @@ function DiscoverPageInner() {
                 <p className="text-[10px] text-text-secondary">{oaAttr}</p>
               )}
 
-              <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="mt-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-text-secondary">
                 <Mountain className="h-3.5 w-3.5" /> {d.trailforks(tfPins.length)}
               </h3>
               <p className="text-[11px] text-text-secondary">
@@ -2806,7 +2819,7 @@ function DiscoverPageInner() {
                 </div>
               ))}
 
-              <h3 className="mt-2 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="mt-2 text-xs font-semibold tracking-wide text-text-secondary">
                 {d.mappeHeading}
               </h3>
               <div className="mb-2 flex flex-wrap gap-2">
@@ -2827,7 +2840,11 @@ function DiscoverPageInner() {
                 >
                   {d.importGpx}
                 </button>
-                <AddRouteForm compact defaultStart={origin} />
+                <AddRouteForm
+                  compact
+                  defaultStart={addRouteStart?.lngLat ?? null}
+                  startSource={addRouteStart?.source ?? null}
+                />
               </div>
               {savedRoutes.length === 0 ? (
                 <p className="text-sm text-text-secondary">
@@ -2900,7 +2917,7 @@ function DiscoverPageInner() {
                 ))
               )}
 
-              <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <h3 className="mt-4 text-xs font-semibold tracking-wide text-text-secondary">
                 {d.collectionsTitle}
               </h3>
               <p className="mb-2 text-[11px] text-text-secondary">
@@ -2965,6 +2982,7 @@ function DiscoverPageInner() {
           onViewChange={(view) => {
             setMapCenter(view.center);
             setMapZoom(view.zoom);
+            writeDiscoverViewport(view);
           }}
           onMapClick={onMapClick}
           onOverlayClick={(hit) => void onOverlayWayClick(hit)}
@@ -2977,10 +2995,10 @@ function DiscoverPageInner() {
               const trails = liveOsmTrails.map(
                 (t) => t.geometry.coordinates as [number, number][]
               );
-              const snapped = snapPointOntoTrails(
-                [place.lng, place.lat],
-                trails
-              );
+              const point: [number, number] = [place.lng, place.lat];
+              const snapped = viaMaySnapOntoTrail(place.name)
+                ? snapPointOntoTrails(point, trails)
+                : point;
               setDraft((prev) => {
                 const next = addVia(prev, snapped, place.name);
                 schedulePlanRecompute(next);

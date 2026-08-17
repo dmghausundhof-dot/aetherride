@@ -4,17 +4,20 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/community/tour_community_store.dart';
 import '../../data/import/gpx_import.dart';
+import '../../data/local/ride_prefs.dart';
 import '../../data/routing/route_repository.dart';
 import '../../data/routing/saved_route_meta_store.dart';
 import '../../data/routing/simple_add_route.dart';
 import '../../domain/routing/tour_filters.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
+import '../../domain/tours/add_route_start.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/tour_akte.dart';
 import '../../l10n/app_localizations.dart';
@@ -41,6 +44,8 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
   Map<String, SavedRouteMeta> _metas = const {};
   List<TourCommunityReview> _inbox = const [];
   bool _akteBusy = false;
+  bool _stimmenOpen = false;
+  bool _stimmenToggled = false;
 
   @override
   void initState() {
@@ -78,7 +83,12 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
     }
     final inbox = [for (final r in all) if (ids.contains(r.tourId)) r];
     if (!mounted) return;
-    setState(() => _inbox = inbox);
+    setState(() {
+      _inbox = inbox;
+      if (!_stimmenToggled) {
+        _stimmenOpen = inbox.isNotEmpty;
+      }
+    });
     await _groups.markInboxSeen(inbox.length);
     ref.invalidate(platzInboxBadgeProvider);
   }
@@ -142,13 +152,64 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
     }
   }
 
+  Future<AddRouteStartPin?> _resolveAddStart() async {
+    double? gpsLat;
+    double? gpsLng;
+    final fix = ref.read(locationCoreProvider).lastFix;
+    if (fix != null) {
+      gpsLat = fix.lat;
+      gpsLng = fix.lng;
+    } else {
+      try {
+        final perm = await Geolocator.checkPermission();
+        if (perm == LocationPermission.always ||
+            perm == LocationPermission.whileInUse) {
+          Position? pos;
+          try {
+            pos = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.low,
+                timeLimit: Duration(seconds: 3),
+              ),
+            );
+          } catch (_) {
+            pos = await Geolocator.getLastKnownPosition();
+          }
+          if (pos != null) {
+            gpsLat = pos.latitude;
+            gpsLng = pos.longitude;
+          }
+        }
+      } catch (_) {}
+    }
+    final vp = await RidePrefs.discoverViewport();
+    return resolveAddRouteStart(
+      gpsLat: gpsLat,
+      gpsLng: gpsLng,
+      mapLat: vp?.lat,
+      mapLng: vp?.lng,
+    );
+  }
+
+  String _startCopy(AppLocalizations loc, AddRouteStartPin? pin) {
+    if (pin == null) return loc.mappeStartNone;
+    final coords =
+        '${pin.lat.toStringAsFixed(3)}°N, ${pin.lng.toStringAsFixed(3)}°E';
+    return pin.source == AddRouteStartSource.gps
+        ? loc.mappeStartGps(coords)
+        : loc.mappeStartMap(coords);
+  }
+
   Future<void> _addRoute() async {
     final l10n = AppLocalizations.of(context);
     final nameCtrl = TextEditingController(
       text: SimpleAddRoute.defaultName(DateTime.now()),
     );
-    const lat = 49.3988;
-    const lng = 8.6724;
+    final pin = await _resolveAddStart();
+    if (!mounted) {
+      nameCtrl.dispose();
+      return;
+    }
     final saved = await showModalBottomSheet<Object>(
       context: context,
       isScrollControlled: true,
@@ -183,6 +244,11 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                   isDense: true,
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                _startCopy(loc, pin),
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () {
@@ -190,8 +256,8 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                     ctx,
                     SimpleAddRoute.fromStart(
                       name: nameCtrl.text,
-                      lat: lat,
-                      lng: lng,
+                      lat: pin?.lat,
+                      lng: pin?.lng,
                     ),
                   );
                 },
@@ -458,10 +524,18 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 28, 16, 6),
               sliver: SliverToBoxAdapter(
-                child: _PlatzSectionLabel(l10n.stimmenTitle),
+                child: PlatzFoldHeader(
+                  label: l10n.stimmenTitle,
+                  count: _inbox.length,
+                  expanded: _stimmenOpen,
+                  onTap: () => setState(() {
+                    _stimmenToggled = true;
+                    _stimmenOpen = !_stimmenOpen;
+                  }),
+                ),
               ),
             ),
-            if (_inbox.isEmpty)
+            if (_stimmenOpen && _inbox.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -471,7 +545,7 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                   ),
                 ),
               )
-            else
+            else if (_stimmenOpen)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
@@ -532,6 +606,7 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                 metas: _metas,
                 store: _groups,
                 visibility: _visibility,
+                onOpenAkte: (s) => unawaited(_openAkte(s)),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -550,7 +625,7 @@ class _PlatzSectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      label.toUpperCase(),
+      label,
       style: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w800,

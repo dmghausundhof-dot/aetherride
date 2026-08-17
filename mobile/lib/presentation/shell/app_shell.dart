@@ -71,8 +71,6 @@ class _AppShellState extends ConsumerState<AppShell> {
         return RideScreen(key: _rideKey);
       case ShellTabs.karte:
         return DiscoverScreen(key: _discoverKey);
-      case ShellTabs.shop:
-        return const ShopScreen();
       case ShellTabs.platz:
         return const MappeScreen();
       default:
@@ -93,6 +91,18 @@ class _AppShellState extends ConsumerState<AppShell> {
         if (_visited.add(index)) setState(() {});
       });
     }
+
+    ref.listen<bool>(shopOpenRouteProvider, (prev, next) {
+      if (next != true) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (ref.read(shopOpenRouteProvider) != true) return;
+        ref.read(shopOpenRouteProvider.notifier).state = false;
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+        );
+      });
+    });
 
     final locale = Localizations.localeOf(context);
     final homeLabel = hofTitleFor(
@@ -129,7 +139,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             IndexedStack(
               index: index,
-              children: List.generate(6, (i) => _tabBody(i, mountedTabs)),
+              children: List.generate(5, (i) => _tabBody(i, mountedTabs)),
             ),
             if (onboardingOpen) OnboardingFlow(key: _onboardingKey),
           ],
@@ -180,11 +190,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                     selectedIcon: Icons.handyman,
                     label: l10n.navWorkshop,
                     showBadge: dueCount > 0,
-                  ),
-                  HofThresholdDestination(
-                    icon: Icons.storefront_outlined,
-                    selectedIcon: Icons.storefront,
-                    label: l10n.navShop,
                   ),
                 ],
               ),

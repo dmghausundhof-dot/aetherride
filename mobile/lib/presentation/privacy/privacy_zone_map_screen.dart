@@ -10,12 +10,15 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/routing/basemap_street_contrast.dart';
+import '../../data/routing/map_style_url.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/privacy_zone_map.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../map/map_pin_image.dart';
 import '../shared/map_ornaments.dart';
+import '../shared/map_loading_scrim.dart';
 import 'privacy_zone_editor_panel.dart';
 
 /// MapLibre braucht Eager-Gesten, sonst frisst Parent/PlatformView Zoom/Pan.
@@ -87,8 +90,9 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
       text: existing != null ? existing.lng.toStringAsFixed(5) : '',
     );
     AppConfig.resolveMapStyleUrl().then((s) {
-      if (mounted) setState(() => _style = s);
+      if (mounted && s != _style) setState(() => _style = s);
     });
+    unawaited(prefetchMapStyleJson(_style));
     unawaited(_resolveOrigin());
   }
 
@@ -126,6 +130,16 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
     try {
       gps = await Geolocator.getLastKnownPosition();
     } catch (_) {}
+    if (gps == null) {
+      try {
+        gps = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+            timeLimit: Duration(seconds: 4),
+          ),
+        );
+      } catch (_) {}
+    }
     List<Map<String, dynamic>>? track;
     try {
       final rides = await ref.read(rideRepositoryProvider).listRides(limit: 1);
@@ -172,6 +186,7 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
 
   Future<void> _onStyleReady(MapLibreMapController c) async {
     await _ensurePinImage(c);
+    await warmBasemapNatureFills(c);
     await _syncOverlay();
   }
 
@@ -342,7 +357,7 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
                         ],
                         onMapCreated: (c) => _map = c,
                         onStyleLoadedCallback: () {
-                          _styleReady = true;
+                          if (mounted) setState(() => _styleReady = true);
                           _pinImagesReady = false;
                           _fill = null;
                           _line = null;
@@ -355,6 +370,8 @@ class _PrivacyZoneMapScreenState extends ConsumerState<PrivacyZoneMapScreen> {
                           _placeAt(latLng.latitude, latLng.longitude);
                         },
                       ),
+                      if (!_styleReady)
+                        const Positioned.fill(child: MapLoadingScrim()),
                       if (!_placed)
                         Positioned(
                           top: 12,

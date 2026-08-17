@@ -95,6 +95,13 @@ abstract final class AppConfig {
     defaultValue: false,
   );
 
+  /// Chat tool dropdown. Off even in debug APKs — review builds must not
+  /// show engine internals. `--dart-define=AETHER_CHAT_TOOLS=true`
+  static const showChatDevTools = bool.fromEnvironment(
+    'AETHER_CHAT_TOOLS',
+    defaultValue: false,
+  );
+
   static const outdooractiveApiKey = String.fromEnvironment(
     'OUTDOORACTIVE_API_KEY',
     defaultValue: '',

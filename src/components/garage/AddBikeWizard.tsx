@@ -16,6 +16,7 @@ import {
   subtypeLabel,
   type BikeAssistMode,
 } from "@/lib/garage/bikeAssist";
+import { hofSportLabel } from "@/lib/home/hofSportLabel";
 import { useAppStore } from "@/store/useAppStore";
 import { notifyGarageBikeShopify, garageBikeInputFromBike } from "@/lib/shop/notifyGarageBikeShopify";
 import { useHofCopy } from "@/hooks/useHofCopy";
@@ -137,7 +138,7 @@ export function AddBikeWizard({
         });
       } else if (mode === "basic") {
         createdId = addBikeBasic({
-          name: name || "Mein Rad",
+          name: name.trim(),
           category: basicCategory,
           isEbike: persistIsEbike(basicCategory, assistMode),
           travelFrontMm: showTravel && travelF !== "" ? Number(travelF) : undefined,
@@ -245,7 +246,14 @@ export function AddBikeWizard({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="z. B. Trail-Bike"
+            placeholder={
+              mode === "basic"
+                ? hofSportLabel(
+                    basicCategory,
+                    persistIsEbike(basicCategory, assistMode)
+                  )
+                : "z. B. Trail"
+            }
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           />
         </label>
@@ -418,7 +426,7 @@ export function AddBikeWizard({
               <div className="space-y-3">
                 {pickGroups.map((g) => (
                   <div key={g.id}>
-                    <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-text-secondary">
+                    <div className="mb-1 text-[11px] font-bold tracking-wide text-text-secondary">
                       {g.label}
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

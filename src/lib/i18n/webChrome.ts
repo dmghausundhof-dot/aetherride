@@ -2,7 +2,7 @@ import type { HofNavId } from "@/lib/nav/hofNav";
 import type { MarketingNavHref } from "@/lib/nav/marketingNav";
 import type { ChromeLang } from "./chromeLang";
 
-type HofDoorId = Exclude<HofNavId, "hof"> | "platz";
+type HofDoorId = Exclude<HofNavId, "hof">;
 
 type WebChrome = {
   marketingNav: Record<MarketingNavHref, string>;
@@ -41,7 +41,8 @@ type WebChrome = {
   maintenanceDue: (n: number) => string;
   newStimmenPlatz: string;
   profile: string;
-  fiveDoors: string;
+  fourDoors: string;
+  tabOf: (index: number, count: number) => string;
   emptyStand: string;
   discoverApp: string;
   loadApp: string;
@@ -66,7 +67,6 @@ const DE: WebChrome = {
     karte: "Karte",
     platz: "Platz",
     werkstatt: "Werkstatt",
-    shop: "Laden",
   },
   toHof: "Zum Hof",
   toWebsite: "Zur Website",
@@ -96,14 +96,15 @@ const DE: WebChrome = {
   plan: "Planen",
   start: "Start",
   notFoundTitle: "Diese Tür gibt es nicht",
-  notFoundHint: "Leerer Stand. Zurück zum Hof, oder eine der fünf Türen.",
+  notFoundHint: "Leerer Stand. Zurück zum Hof, oder eine der vier Türen.",
   marketingNotFoundTitle: "Diese Seite gibt es nicht",
   marketingNotFoundHint:
     "Kein Feed, keine Füll-Route. Zurück zur Website oder zum Hof.",
   maintenanceDue: (n) => `${n} Wartungen fällig`,
   newStimmenPlatz: "Neue Stimmen auf dem Platz",
   profile: "Profil",
-  fiveDoors: "Fünf Türen",
+  fourDoors: "Vier Türen",
+  tabOf: (index, count) => `Tab ${index} von ${count}`,
   emptyStand: "Leerer Stand",
   discoverApp: "App entdecken",
   loadApp: "App laden",
@@ -128,7 +129,6 @@ const EN: WebChrome = {
     karte: "Map",
     platz: "Platz",
     werkstatt: "Workshop",
-    shop: "Shop",
   },
   toHof: "To Home",
   toWebsite: "To the website",
@@ -158,14 +158,15 @@ const EN: WebChrome = {
   plan: "Plan",
   start: "Home",
   notFoundTitle: "This door does not exist",
-  notFoundHint: "Empty stand. Back to Home, or one of the five doors.",
+  notFoundHint: "Empty stand. Back to Home, or one of the four doors.",
   marketingNotFoundTitle: "This page does not exist",
   marketingNotFoundHint:
     "No feed, no filler route. Back to the website or to Home.",
   maintenanceDue: (n) => `${n} services due`,
   newStimmenPlatz: "New Stimmen on Platz",
   profile: "Profile",
-  fiveDoors: "Five doors",
+  fourDoors: "Four doors",
+  tabOf: (index, count) => `Tab ${index} of ${count}`,
   emptyStand: "Empty stand",
   discoverApp: "Discover the app",
   loadApp: "Get the app",
@@ -190,7 +191,6 @@ const FR: WebChrome = {
     karte: "Carte",
     platz: "Platz",
     werkstatt: "Atelier",
-    shop: "Magasin",
   },
   toHof: "Vers Home",
   toWebsite: "Vers le site",
@@ -220,14 +220,15 @@ const FR: WebChrome = {
   plan: "Planifier",
   start: "Accueil",
   notFoundTitle: "Cette porte n'existe pas",
-  notFoundHint: "Stand vide. Retour à Home, ou une des cinq portes.",
+  notFoundHint: "Stand vide. Retour à Home, ou une des quatre portes.",
   marketingNotFoundTitle: "Cette page n'existe pas",
   marketingNotFoundHint:
     "Pas de feed, pas de route de remplissage. Retour au site ou à Home.",
   maintenanceDue: (n) => `${n} entretiens dus`,
   newStimmenPlatz: "Nouvelles Stimmen sur le Platz",
   profile: "Profil",
-  fiveDoors: "Cinq portes",
+  fourDoors: "Quatre portes",
+  tabOf: (index, count) => `Onglet ${index} sur ${count}`,
   emptyStand: "Emplacement vide",
   discoverApp: "Découvrir l'app",
   loadApp: "Télécharger l'app",
@@ -252,7 +253,6 @@ const IT: WebChrome = {
     karte: "Mappa",
     platz: "Platz",
     werkstatt: "Officina",
-    shop: "Negozio",
   },
   toHof: "Verso Home",
   toWebsite: "Al sito",
@@ -282,14 +282,15 @@ const IT: WebChrome = {
   plan: "Pianifica",
   start: "Inizio",
   notFoundTitle: "Questa porta non esiste",
-  notFoundHint: "Stand vuoto. Torna a Home, o una delle cinque porte.",
+  notFoundHint: "Stand vuoto. Torna a Home, o una delle quattro porte.",
   marketingNotFoundTitle: "Questa pagina non esiste",
   marketingNotFoundHint:
     "Niente feed, niente percorso di riempimento. Torna al sito o a Home.",
   maintenanceDue: (n) => `${n} manutenzioni in scadenza`,
   newStimmenPlatz: "Nuove Stimmen sul Platz",
   profile: "Profilo",
-  fiveDoors: "Cinque porte",
+  fourDoors: "Quattro porte",
+  tabOf: (index, count) => `Scheda ${index} di ${count}`,
   emptyStand: "Posto vuoto",
   discoverApp: "Scopri l'app",
   loadApp: "Scarica l'app",

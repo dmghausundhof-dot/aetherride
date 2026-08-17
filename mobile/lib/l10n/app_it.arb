@@ -104,8 +104,6 @@
   "hofWatchReconnect": "Collega",
   "hofWatchRemove": "Rimuovi",
   "hofWatchConnect": "Collega orologio",
-  "hofYou": "Tu",
-  "hofYouSheetHint": "Tu e il tuo orologio. Il sensore ruota resta sulla bici, in officina.",
   "werkstattWatchEbike": "Orologio — polso accanto al CSC. Niente SoC inventato.",
   "werkstattWatchAnalog": "Smartwatch / fitness",
   "setupTirePressureLabel": "Gomma anteriore (psi)",
@@ -1194,7 +1192,7 @@
   "onboardParkBikeFirst": "Prima parcheggia una bici",
   "onboardLater": "Configura più tardi",
   "offlineMapsTitle": "Mappe offline",
-  "offlineMapsHint": "Scarica il grafo di routing e le tile per la regione. Offline: mappa caricata + routing grafo nella bounding box. Le tile Valhalla non sono ancora nei pack.",
+  "offlineMapsHint": "Scarica routing e tile per la regione. Offline: mappa caricata e routing nell'area.",
   "offlineRegionActive": "Regione attiva",
   "offlineNoRegion": "Nessuna regione attiva",
   "offlineReadyBoth": "Routing + tile pronti.",
@@ -1267,10 +1265,10 @@
       }
     }
   },
-  "platzTogetherKicker": "USCIRE INSIEME",
+  "platzTogetherKicker": "Uscire insieme",
   "platzTogetherTitle": "Uscire insieme",
-  "platzTogetherHint": "Invita condivide il link. Il filtro Tutte, Privato, Pubblico vale anche per i gruppi.",
-  "platzTogetherListHint": "Gruppo davanti al cancello. Accesso: sul server. Altrimenti solo questo dispositivo — niente utente demo. Pin solo nell'HUD dopo opt-in.",
+  "platzTogetherHint": "Invita condivide il link. I tuoi gruppi restano. Condiviso elenca anche i gruppi aperti sul Platz — non un feed.",
+  "platzTogetherListHint": "Gruppo davanti al cancello. Accesso: sul server. Altrimenti solo questo dispositivo — l’host non ti vede. Amici sulla mappa solo in uscita, dopo opt-in.",
   "platzCreateGroup": "Crea gruppo",
   "platzJoinCode": "Codice",
   "platzNoGroup": "Ancora nessun gruppo. Solo codici veri — niente di recitato.",
@@ -1283,6 +1281,9 @@
   "platzCopyLink": "Copia link",
   "platzInviteShares": "Invita condivide il link del gruppo",
   "platzInviteSharesProfile": " e il tuo profilo Platz",
+  "platzInviteAsYou": "Nell’invito sei Tu. Impostare un nome nel profilo?",
+  "platzInviteAsYouLater": "Più tardi",
+  "platzInviteOpenProfile": "Al profilo",
   "platzMembersCount": "{count} dentro",
   "@platzMembersCount": {
     "placeholders": {
@@ -1304,11 +1305,11 @@
       }
     }
   },
-  "platzPinsOff": "Pin off",
-  "platzPinsHudOnly": "Pin solo nell'HUD",
-  "platzCollectionsKicker": "RACCOLTE",
-  "platzNoCollection": "Ancora nessuna raccolta — creane una qui.",
-  "platzCollectionTours": "{count} tour",
+  "platzPinsOff": "Amici sulla mappa · off",
+  "platzPinsHudOnly": "Amici solo in uscita",
+  "platzCollectionsKicker": "Raccolte",
+  "platzNoCollection": "Ancora nessuna raccolta — creala sotto Condividi su un’uscita.",
+  "platzCollectionTours": "{count, plural, =1{1 uscita} other{{count} uscite}}",
   "@platzCollectionTours": {
     "placeholders": {
       "count": {
@@ -1319,7 +1320,7 @@
   "platzCreateCollection": "Crea raccolta",
   "platzJoinWithCode": "Entra con un link",
   "platzJoinCodeField": "Link d’invito",
-  "platzJoinLinkHint": "Incolla il link da WhatsApp o Messages. Il privato serve il token nel link — niente codice da digitare.",
+  "platzJoinLinkHint": "Incolla il link da WhatsApp o Messages. Il privato serve il link di invito — niente codice da digitare.",
   "platzJoinEmpty": "Manca il link.",
   "platzJoinInvalid": "Link d’invito non valido.",
   "platzJoin": "Entra",
@@ -1331,12 +1332,27 @@
   "platzDurationLabel": "Durata",
   "platzMeetingPlaceholder": "Punto d'incontro (opzionale)",
   "platzMeetingHint": "es. parcheggio della piscina",
-  "platzPinsOnHud": "Pin nell'HUD",
-  "platzTourNotInMappe": "Uscita non nella mappe — apri sulla mappa.",
-  "platzCollectionsHint": "Si condividono solo uscite condivise o di catalogo. Il GPX privato resta fuori.",
+  "platzPinsOnHud": "Amici sulla mappa · on",
+  "platzPinsHint": "Solo in uscita, non sulla mappa pubblica.",
+  "platzTourNotInMappe": "Uscita non nella Mappe.",
+  "platzTourNotInMappeHint": "Si parte mette i tour di catalogo nella Mappe. Un GPX privato serve il link dell’host — niente traccia inventata.",
+  "platzCollectionsHint": "Crea sotto Condividi. Si condividono solo uscite condivise o di catalogo — il GPX privato resta fuori.",
   "akteTourKicker": "Uscita",
-  "stimmenShareNeedRelease": "Prima condividi sotto Mein — altrimenti il link non porta da nessuna parte.",
+  "stimmenShareNeedRelease": "Prima tocca Condividi — altrimenti il link non porta da nessuna parte.",
   "platzNeedSharedTour": "Gruppo solo su un tour condiviso o di catalogo. Il GPX privato resta privato.",
+  "platzShareTourFirst": "Prima condividi un’uscita",
+  "platzShareTourFirstHint": "Senza condivisione gli amici non vedono il gruppo. Tocca un’uscita, poi Condividi, poi crea il gruppo.",
+  "platzHostCannotSee": "Solo questo dispositivo. L’host non ti vede — accedi.",
+  "platzJoinLocal": "Solo questo dispositivo: {title}. L’host non ti vede — accedi.",
+  "@platzJoinLocal": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "platzJoinLocalCta": "Tieni su questo dispositivo",
+  "platzJoinUnsignedHint": "Senza accesso l’host non ti vede.",
   "platzNoSharedTours": "Nessun tour condiviso o di catalogo. Il GPX privato resta fuori.",
   "platzGroupCreated": "Gruppo {code} — invita condivide il link.",
   "@platzGroupCreated": {
@@ -1410,10 +1426,10 @@
   "bleScanAgain": "Cerca di nuovo",
   "bleHowTo": "Come colleghi",
   "watchPairTitle": "Associa orologio",
-  "watchPairHint": "Polso solo con 0x180D. La batteria dell'orologio non è quella della bici.",
+  "watchPairHint": "Polso solo con un vero sensore. La batteria dell'orologio non è quella della bici.",
   "watchScanning": "Cerco orologio e fascia cardio…",
   "watchEmptyHint": "Broadcast on, telefono vicino. Apple Watch non invia polso standard.",
-  "watchNoHr": "Niente Heart Rate 0x180D — controlla il broadcast.",
+  "watchNoHr": "Nessun segnale polso — controlla il broadcast sull'orologio.",
   "watchNoDeviceId": "Collegato, ma senza ID dispositivo",
   "bleBikeTitle": "Associa bici",
   "bleBikeHint": "Batteria e assist solo con GATT vero — niente da inventare.",
@@ -1794,7 +1810,7 @@
     }
   },
   "garageName": "Nome",
-  "garageNameHint": "es. bici di tutti i giorni",
+  "garageNameHint": "es. Gravel, City, MTB",
   "garagePhoto": "Foto",
   "garageGallery": "Galleria",
   "garageSlotHeading": "Slot",
@@ -1953,7 +1969,7 @@
   },
   "discoverNoGpsCurated": "Senza GPS: tour scelti · posizione per i vicini",
   "discoverGrantLocationNearby": "Condividi la posizione per tour vicino a te",
-  "discoverToursNearbyCount": "{count} tour nelle vicinanze",
+  "discoverToursNearbyCount": "{count, plural, =1{1 tour nelle vicinanze} other{{count} tour nelle vicinanze}}",
   "@discoverToursNearbyCount": {
     "placeholders": {
       "count": {
@@ -2087,7 +2103,7 @@
   "discoverNeedLocationTours": "Imposta luogo o partenza per i tour",
   "discoverOaOffline": "Tour non raggiungibili ora",
   "discoverOaNoLive": "Nessun tour live qui vicino",
-  "discoverOaCount": "{count} tour qui vicino",
+  "discoverOaCount": "{count, plural, =1{1 tour qui vicino} other{{count} tour qui vicino}}",
   "@discoverOaCount": {
     "placeholders": {
       "count": {
@@ -2384,7 +2400,7 @@
   "stimmenCloudPending": "Salvato — locale e in revisione (IA/umano)",
   "stimmenCloudLocal": "Salvato — locale (cloud dopo l'accesso)",
   "stimmenCloudFailed": "Salvato in locale — cloud non raggiungibile",
-  "akteHonestyCatalog": "I tour da catalogo sono già pubblici. Condividere rende la tua cartella collegabile — il link mostra nome e stats, nessuna traccia privata extra.",
+  "akteHonestyCatalog": "I tour da catalogo sono già pubblici. Condividere rende la tua uscita collegabile — il link mostra nome e stats, nessuna traccia privata extra.",
   "akteHonestyTrack": "Condividere crea un link. Il link contiene una traccia semplificata (coordinate), non solo il nome. Tornare a privato lo toglie dai filtri e registra la revoca sul server se sei collegato. Senza login vale solo su questo dispositivo.",
   "akteHonestyNoTrack": "Condividere crea un link con nome e stats — senza traccia, perché non ce n'è una.",
   "stimmenSubmit": "Invia",
@@ -2410,6 +2426,8 @@
   "stimmeTagBaustelle": "cantiere",
   "postRideStimmeTitle": "Voce sul tour?",
   "postRideStimmeHint": "Solo questo tour, niente traccia nel testo. Saltare va bene.",
+  "postRideStimmePrivate": "Voce solo dopo la condivisione. Il tour è privato — aprilo e tocca Condividi.",
+  "postRideStimmePrivateCta": "Apri e condividi",
   "postRideStimmeSkip": "Non ora",
   "postRideStimmeDone": "Voce salvata.",
   "postRideOrtTitle": "Ricordare questo posto?",
@@ -3293,19 +3311,19 @@
   "watchHonestyHr": "Polso via BLE standard",
   "watchHonestyGarmin": "Garmin: attiva il broadcast HR",
   "watchHonestyApple": "Apple Watch: niente polso BLE standard",
-  "watchHonestyGalaxy": "Galaxy: di solito niente 0x180D",
-  "watchHonestyUnknown": "Solo con Heart Rate 0x180D",
+  "watchHonestyGalaxy": "Galaxy: di solito niente polso standard",
+  "watchHonestyUnknown": "Solo con un broadcast polso visibile",
   "watchTipHr": "Modalità sensore o broadcast accesa, tieni vicino",
   "watchTipGarmin": "Sull'orologio Garmin: invia frequenza / broadcast",
   "watchTipApple": "Niente polso BLE verso Android — HealthKit solo su iPhone",
-  "watchTipGalaxy": "Solo se l'orologio invia Heart Rate 0x180D — altrimenti Samsung Health",
-  "watchTipUnknown": "Heart Rate 0x180D deve essere attivo",
+  "watchTipGalaxy": "Solo se l'orologio invia il polso in Bluetooth — altrimenti Samsung Health",
+  "watchTipUnknown": "Il broadcast polso dell'orologio deve essere attivo",
   "watchNotePolarBrand": "Polar / fascia",
-  "watchNotePolarLine": "Modalità sensore accesa. Polso standard 0x180D — quello associamo.",
+  "watchNotePolarLine": "Modalità sensore accesa. Polso standard — quello associamo.",
   "watchNoteGarminLine": "Invia frequenza / broadcast nelle impostazioni dell'orologio.",
   "watchNoteAppleLine": "Niente polso BLE standard verso Android. Non associare.",
-  "watchNoteGalaxyLine": "Di solito solo Samsung Health. Solo con 0x180D visibile.",
-  "watchPairLeadText": "Polso sul rider, non sulla bici. Solo un vero servizio Heart Rate 0x180D.",
+  "watchNoteGalaxyLine": "Di solito solo Samsung Health. Solo con un broadcast polso visibile.",
+  "watchPairLeadText": "Polso sul rider, non sulla bici. Solo un vero sensore cardio.",
   "blePairAgain": "Associa di nuovo",
   "bleRemoveDevice": "Rimuovi dispositivo",
   "bleSemanticsPaired": "Bluetooth associato",
@@ -3708,7 +3726,7 @@
       }
     }
   },
-  "discoverCatalogTours": "Catalogo {count} tour",
+  "discoverCatalogTours": "{count, plural, =1{Catalogo 1 tour} other{Catalogo {count} tour}}",
   "discoverCatalogToursSuffix": " · Catalogo {count}",
   "discoverToursOsmStatus": "Tour {tours} · {withTrack} con traccia",
   "discoverElevationApprox": "~{hm} hm (stima — altitudine non disponibile)",
@@ -3910,19 +3928,47 @@
     }
   },
   "platzCreateGroupHint": "Scegli il tour, la visibilità, poi condividi il link.",
-  "platzGroupPublicHint": "Chi ha il link può entrare. Il gruppo può stare sul Platz sotto Pubblico.",
+  "platzGroupPublicHint": "Chi ha il link può entrare. Sotto Condiviso altri possono vedere il gruppo sul Platz.",
   "platzGroupPrivateHint": "Solo chi ha il link può entrare. Niente elenco pubblico.",
   "platzNoPrivateGroups": "Nessun gruppo privato in questo filtro.",
   "platzMakePrivate": "Rendi privato",
-  "platzMakePublic": "Rendi pubblico",
-  "platzNoPublicGroups": "Nessun gruppo pubblico sul server.",
-  "platzPublicGroupsHint": "Gruppi pubblici — entra con login, niente GPS Explore.",
-  "platzListedPublic": "pubblico",
+  "platzMakePublic": "Mostra sul Platz",
+  "platzNoPublicGroups": "Nessun gruppo aperto sul server.",
+  "platzPublicGroupsHint": "Gruppi aperti — entra con login, niente GPS Explore.",
+  "platzListedPublic": "sul Platz",
   "filterVisibilityAll": "Tutte",
-  "filterVisibilityPublic": "Pubblico",
+  "filterVisibilityPublic": "Condiviso",
   "mappeTitle": "Die Mappe",
-  "mappeSubtitle": "I tuoi tour, Stimmen e gruppi. Gli stessi della mappa.",
-  "mappeAddHint": "Nome + partenza — senza traccia inventata. GPX come opzione sotto.",
+  "mappeSubtitle": "Tenere uscite, scrivere breve, portare amici col link — le stesse della mappa.",
+  "mappeAddHint": "Nome + partenza (GPS, altrimenti ultimo centro mappa, altrimenti senza pin) — senza traccia inventata. GPX come opzione sotto.",
+  "mappeStartNone": "Partenza: ancora senza pin — apri GPS o la mappa.",
+  "mappeStartPin": "Partenza: {lat}°N, {lng}°E",
+  "@mappeStartPin": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "mappeStartGps": "Partenza: la tua posizione ({coords})",
+  "@mappeStartGps": {
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
+  "mappeStartMap": "Partenza: ultimo centro mappa ({coords})",
+  "@mappeStartMap": {
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
   "mappePutIn": "Metti nella Mappe",
   "mappeSaved": "Nella Mappe: {name}",
   "@mappeSaved": {

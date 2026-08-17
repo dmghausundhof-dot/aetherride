@@ -74,6 +74,9 @@ final shopPendingHandleProvider = StateProvider<String?>((ref) => null);
 /// Shop: nur Teile mit ehrlichem Garage-Fit (`fit=bike` / Werkstatt).
 final shopPendingFitOnlyProvider = StateProvider<bool?>((ref) => null);
 
+/// Shop-Gateway als Route pushen (kein Tab). Einmalig konsumieren.
+final shopOpenRouteProvider = StateProvider<bool>((ref) => false);
+
 /// Kategorie-Vorbefüllung für Garage-Add aus Onboarding.
 final garageAddCategoryProvider = StateProvider<BikeCategory?>((ref) => null);
 

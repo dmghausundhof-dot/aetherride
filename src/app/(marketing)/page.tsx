@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     absolute: "FlowLine – Outdoor Cycling",
   },
   description:
-    "Outdoor Cycling, simplified. Hof im Browser: planen, pflegen, teilen. Fahrt in der App. Fünf Türen, kein Feed, keine zweite Kasse.",
+    "Outdoor Cycling, simplified. Hof im Browser: planen, pflegen, teilen. Fahrt in der App. Vier Türen, kein Feed, keine zweite Kasse.",
 };
 
 export default function LandingPage() {

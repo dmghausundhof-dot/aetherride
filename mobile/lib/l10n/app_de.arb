@@ -104,8 +104,6 @@
   "hofWatchReconnect": "Verbinden",
   "hofWatchRemove": "Entfernen",
   "hofWatchConnect": "Uhr verbinden",
-  "hofYou": "Du",
-  "hofYouSheetHint": "Du und deine Uhr. Der Radsensor bleibt am Rad in der Werkstatt.",
   "werkstattWatchEbike": "Smartwatch — Puls neben CSC. Kein erfundener SoC.",
   "werkstattWatchAnalog": "Smartwatch / Fitnesstracking",
   "setupTirePressureLabel": "Vorderreifen (psi)",
@@ -1194,7 +1192,7 @@
   "onboardParkBikeFirst": "Zuerst Rad abstellen",
   "onboardLater": "Später einrichten",
   "offlineMapsTitle": "Offline-Karten",
-  "offlineMapsHint": "Lädt Routing-Graph und Kartenkacheln für die Region. Ohne Netz: geladene Karte + Graph-Routing in der Bounding Box. Valhalla-Kacheln sind noch nicht Teil der Packs.",
+  "offlineMapsHint": "Lädt Routing und Kartenkacheln für die Region. Ohne Netz: geladene Karte und Routing im Gebiet.",
   "offlineRegionActive": "Region aktiv",
   "offlineNoRegion": "Keine Region aktiv",
   "offlineReadyBoth": "Routing + Kartenkacheln bereit.",
@@ -1267,10 +1265,10 @@
       }
     }
   },
-  "platzTogetherKicker": "ZUSAMMEN RAUS",
+  "platzTogetherKicker": "Zusammen raus",
   "platzTogetherTitle": "Zusammen raus",
-  "platzTogetherHint": "Einladen teilt den Link. Filter Alle, Privat, Öffentlich gilt auch für Gruppen.",
-  "platzTogetherListHint": "Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — kein Demo-User. Pins nur im HUD nach Opt-in.",
+  "platzTogetherHint": "Einladen teilt den Link. Deine Gruppen bleiben. Freigegeben listet zusätzlich offene Gruppen auf dem Platz — kein Feed.",
+  "platzTogetherListHint": "Gruppe vor dem Tor. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.",
   "platzCreateGroup": "Gruppe anlegen",
   "platzJoinCode": "Code",
   "platzNoGroup": "Noch keine Gruppe. Einladen teilt den Link — nichts Vorgespieltes.",
@@ -1283,6 +1281,9 @@
   "platzCopyLink": "Link kopieren",
   "platzInviteShares": "Einladen teilt den Gruppenlink",
   "platzInviteSharesProfile": " und dein Platz-Profil",
+  "platzInviteAsYou": "Auf der Einladung stehst du als Du. Namen im Profil festlegen?",
+  "platzInviteAsYouLater": "Später",
+  "platzInviteOpenProfile": "Zum Profil",
   "platzMembersCount": "{count} dabei",
   "@platzMembersCount": {
     "placeholders": {
@@ -1304,11 +1305,11 @@
       }
     }
   },
-  "platzPinsOff": "Pins aus",
-  "platzPinsHudOnly": "Pins nur im HUD",
-  "platzCollectionsKicker": "SAMMLUNGEN",
-  "platzNoCollection": "Noch keine Sammlung — hier anlegen.",
-  "platzCollectionTours": "{count} Touren",
+  "platzPinsOff": "Freunde auf der Karte · aus",
+  "platzPinsHudOnly": "Freunde nur während der Fahrt",
+  "platzCollectionsKicker": "Sammlungen",
+  "platzNoCollection": "Noch keine Sammlung — unter Freigeben bei einer Tour anlegen.",
+  "platzCollectionTours": "{count, plural, =1{1 Tour} other{{count} Touren}}",
   "@platzCollectionTours": {
     "placeholders": {
       "count": {
@@ -1319,7 +1320,7 @@
   "platzCreateCollection": "Sammlung anlegen",
   "platzJoinWithCode": "Mit Link beitreten",
   "platzJoinCodeField": "Einladungslink",
-  "platzJoinLinkHint": "Link aus WhatsApp oder Messages einfügen. Privat braucht den Token im Link — kein Code zum Abtippen.",
+  "platzJoinLinkHint": "Link aus WhatsApp oder Messages einfügen. Privat braucht den Einladungslink — kein Code zum Abtippen.",
   "platzJoinEmpty": "Link fehlt.",
   "platzJoinInvalid": "Kein gültiger Einladungslink.",
   "platzJoin": "Beitreten",
@@ -1331,12 +1332,27 @@
   "platzDurationLabel": "Dauer",
   "platzMeetingPlaceholder": "Treffpunkt (optional)",
   "platzMeetingHint": "z. B. Parkplatz am Bad",
-  "platzPinsOnHud": "Pins im HUD an",
-  "platzTourNotInMappe": "Tour nicht in der Mappe — auf der Karte öffnen.",
-  "platzCollectionsHint": "Teilen geht nur mit freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.",
+  "platzPinsOnHud": "Freunde auf der Karte · an",
+  "platzPinsHint": "Nur während der Fahrt, nicht auf der öffentlichen Karte.",
+  "platzTourNotInMappe": "Tour nicht in der Mappe.",
+  "platzTourNotInMappeHint": "Katalog-Touren legt Losfahren in die Mappe. Private GPX braucht den Link vom Gastgeber — kein erfundener Track.",
+  "platzCollectionsHint": "Anlegen unter Freigeben. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.",
   "akteTourKicker": "Tour",
-  "stimmenShareNeedRelease": "Erst unter Mein freigeben — sonst geht der Link ins Leere.",
+  "stimmenShareNeedRelease": "Erst auf Freigeben tippen — sonst geht der Link ins Leere.",
   "platzNeedSharedTour": "Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.",
+  "platzShareTourFirst": "Zuerst eine Tour freigeben",
+  "platzShareTourFirstHint": "Ohne Freigabe bleibt die Gruppe unsichtbar für Freunde. Tippe eine Tour, dann Freigeben, dann Gruppe anlegen.",
+  "platzHostCannotSee": "Nur auf diesem Gerät. Der Host sieht dich nicht — anmelden.",
+  "platzJoinLocal": "Nur auf diesem Gerät: {title}. Der Host sieht dich nicht — anmelden.",
+  "@platzJoinLocal": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "platzJoinLocalCta": "Auf diesem Gerät merken",
+  "platzJoinUnsignedHint": "Ohne Anmeldung sieht der Host dich nicht.",
   "platzNoSharedTours": "Keine freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.",
   "platzGroupCreated": "Gruppe {code} — Einladen teilt den Link.",
   "@platzGroupCreated": {
@@ -1410,10 +1426,10 @@
   "bleScanAgain": "Erneut suchen",
   "bleHowTo": "So verbindest du",
   "watchPairTitle": "Uhr koppeln",
-  "watchPairHint": "Puls nur mit 0x180D. Uhr-Akku ist nicht der Rad-Akku.",
+  "watchPairHint": "Puls nur mit echtem Sensor. Uhr-Akku ist nicht der Rad-Akku.",
   "watchScanning": "Suche Uhr und Puls-Gurt …",
   "watchEmptyHint": "Broadcast an, Handy nah. Apple Watch sendet keinen Standard-Puls.",
-  "watchNoHr": "Kein Heart Rate 0x180D — Broadcast prüfen.",
+  "watchNoHr": "Kein Puls-Signal — Broadcast an der Uhr prüfen.",
   "watchNoDeviceId": "Verbunden, aber ohne Geräte-ID",
   "bleBikeTitle": "Rad koppeln",
   "bleBikeHint": "Akku und Assist nur bei echtem GATT — nichts erfinden.",
@@ -1768,7 +1784,7 @@
   "garagePickFromList": "Aus Liste wählen",
   "garageManufacturer": "Hersteller",
   "garageNickname": "Spitzname (optional)",
-  "garageNicknameHint": "z. B. Trail-Bike",
+  "garageNicknameHint": "z. B. Trail",
   "garageTravelFrontMm": "Federweg vorn (mm)",
   "garageTravelRearMm": "Federweg hinten (mm)",
   "garageTravelOnlyIfPresent": "Nur wenn am Rad steht",
@@ -1794,7 +1810,7 @@
     }
   },
   "garageName": "Name",
-  "garageNameHint": "z. B. Alltagsrad",
+  "garageNameHint": "z. B. Gravel, City, MTB",
   "garagePhoto": "Foto",
   "garageGallery": "Galerie",
   "garageSlotHeading": "Slot",
@@ -1953,7 +1969,7 @@
   },
   "discoverNoGpsCurated": "Ohne GPS: kuratierte Touren · Standort für Nähe",
   "discoverGrantLocationNearby": "Standort freigeben für Touren in deiner Nähe",
-  "discoverToursNearbyCount": "{count} Touren in der Nähe",
+  "discoverToursNearbyCount": "{count, plural, =1{1 Tour in der Nähe} other{{count} Touren in der Nähe}}",
   "@discoverToursNearbyCount": {
     "placeholders": {
       "count": {
@@ -2087,7 +2103,7 @@
   "discoverNeedLocationTours": "Standort oder Start setzen für Touren",
   "discoverOaOffline": "Touren gerade nicht erreichbar",
   "discoverOaNoLive": "Keine Live-Touren in der Nähe",
-  "discoverOaCount": "{count} Touren in der Nähe",
+  "discoverOaCount": "{count, plural, =1{1 Tour in der Nähe} other{{count} Touren in der Nähe}}",
   "@discoverOaCount": {
     "placeholders": {
       "count": {
@@ -2384,7 +2400,7 @@
   "stimmenCloudPending": "Gespeichert — lokal und in Prüfung (AI/Mensch)",
   "stimmenCloudLocal": "Gespeichert — lokal (Cloud nach Login)",
   "stimmenCloudFailed": "Gespeichert lokal — Cloud gerade nicht erreichbar",
-  "akteHonestyCatalog": "Katalog-Tour ist schon öffentlich. Freigeben macht deine Akte teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.",
+  "akteHonestyCatalog": "Katalog-Tour ist schon öffentlich. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.",
   "akteHonestyTrack": "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur auf diesem Gerät.",
   "akteHonestyNoTrack": "Freigeben erzeugt einen Link mit Name und Stats — ohne Track, weil keiner gespeichert ist.",
   "stimmenSubmit": "Absenden",
@@ -2410,6 +2426,8 @@
   "stimmeTagBaustelle": "Baustelle",
   "postRideStimmeTitle": "Stimme zur Tour?",
   "postRideStimmeHint": "Nur diese Tour, kein Track im Text. Skip ist in Ordnung.",
+  "postRideStimmePrivate": "Stimme erst nach Freigabe. Die Tour ist privat — öffnen und auf Freigeben tippen.",
+  "postRideStimmePrivateCta": "Öffnen und freigeben",
   "postRideStimmeSkip": "Jetzt nicht",
   "postRideStimmeDone": "Stimme gespeichert.",
   "postRideOrtTitle": "Ort merken?",
@@ -3305,19 +3323,19 @@
   "watchHonestyHr": "Puls per Standard-BLE",
   "watchHonestyGarmin": "Garmin: Broadcast-HR einschalten",
   "watchHonestyApple": "Apple Watch: kein Standard-BLE-Puls",
-  "watchHonestyGalaxy": "Galaxy: meist kein 0x180D",
-  "watchHonestyUnknown": "Nur mit Heart Rate 0x180D",
+  "watchHonestyGalaxy": "Galaxy: meist kein Standard-Puls",
+  "watchHonestyUnknown": "Nur mit sichtbarem Puls-Broadcast",
   "watchTipHr": "Sensor- oder Broadcast-Modus an, nah halten",
   "watchTipGarmin": "In der Garmin-Uhr: Herzfrequenz senden / Broadcast",
   "watchTipApple": "Kein BLE-Puls zu Android — HealthKit nur auf iPhone",
-  "watchTipGalaxy": "Nur wenn die Uhr Heart Rate 0x180D sendet — sonst Samsung Health",
-  "watchTipUnknown": "Heart Rate 0x180D muss aktiv sein",
+  "watchTipGalaxy": "Nur wenn die Uhr Puls per Bluetooth sendet — sonst Samsung Health",
+  "watchTipUnknown": "Puls-Broadcast an der Uhr muss aktiv sein",
   "watchNotePolarBrand": "Polar / Gurt",
-  "watchNotePolarLine": "Sensor-Modus an. Standard-Puls 0x180D — das koppeln wir.",
+  "watchNotePolarLine": "Sensor-Modus an. Standard-Puls — das koppeln wir.",
   "watchNoteGarminLine": "Herzfrequenz senden / Broadcast in den Uhr-Einstellungen.",
   "watchNoteAppleLine": "Kein Standard-BLE-Puls zu Android. Nicht koppeln.",
-  "watchNoteGalaxyLine": "Meist nur Samsung Health. Nur mit sichtbarem 0x180D.",
-  "watchPairLeadText": "Puls am Fahrer, nicht am Rad. Nur echter Heart-Rate-Service 0x180D.",
+  "watchNoteGalaxyLine": "Meist nur Samsung Health. Nur mit sichtbarem Puls-Broadcast.",
+  "watchPairLeadText": "Puls am Fahrer, nicht am Rad. Nur ein echter Herzfrequenz-Sensor.",
   "blePairAgain": "Neu koppeln",
   "bleRemoveDevice": "Gerät entfernen",
   "bleSemanticsPaired": "Bluetooth gekoppelt",
@@ -3734,7 +3752,7 @@
       }
     }
   },
-  "discoverCatalogTours": "Katalog {count} Touren",
+  "discoverCatalogTours": "{count, plural, =1{Katalog 1 Tour} other{Katalog {count} Touren}}",
   "discoverCatalogToursSuffix": " · Katalog {count}",
   "discoverToursOsmStatus": "Touren {tours} · {withTrack} mit Strecke",
   "discoverElevationApprox": "~{hm} hm (Schätzung — Höhe gerade nicht da)",
@@ -3936,19 +3954,47 @@
     }
   },
   "platzCreateGroupHint": "Tour wählen, Sichtbarkeit, dann den Link teilen.",
-  "platzGroupPublicHint": "Wer den Link hat, kann beitreten. Die Gruppe kann auf dem Platz unter Öffentlich stehen.",
+  "platzGroupPublicHint": "Wer den Link hat, kann beitreten. Unter Freigegeben können andere die Gruppe auf dem Platz sehen.",
   "platzGroupPrivateHint": "Nur wer den Link hat, kann beitreten. Kein öffentliches Verzeichnis.",
   "platzNoPrivateGroups": "Keine privaten Gruppen in diesem Filter.",
   "platzMakePrivate": "Privat machen",
-  "platzMakePublic": "Öffentlich machen",
-  "platzNoPublicGroups": "Keine öffentlichen Gruppen auf dem Server.",
-  "platzPublicGroupsHint": "Öffentliche Gruppen — Beitritt mit Login, kein Explore-GPS.",
-  "platzListedPublic": "öffentlich",
+  "platzMakePublic": "Auf dem Platz listen",
+  "platzNoPublicGroups": "Keine offenen Gruppen auf dem Server.",
+  "platzPublicGroupsHint": "Offene Gruppen — Beitritt mit Login, kein Explore-GPS.",
+  "platzListedPublic": "auf dem Platz",
   "filterVisibilityAll": "Alle",
-  "filterVisibilityPublic": "Öffentlich",
+  "filterVisibilityPublic": "Freigegeben",
   "mappeTitle": "Die Mappe",
-  "mappeSubtitle": "Deine Touren, Stimmen und Gruppen. Dieselben wie auf der Karte.",
-  "mappeAddHint": "Name + Start — ohne erfundenen Track. GPX als Option darunter.",
+  "mappeSubtitle": "Touren merken, kurz schreiben, Freunde per Link mitnehmen — dieselben Touren wie auf der Karte.",
+  "mappeAddHint": "Name + Start (GPS, sonst letzte Kartenmitte, sonst ohne Pin) — ohne erfundenen Track. GPX als Option darunter.",
+  "mappeStartNone": "Start: noch ohne Pin — GPS oder Karte öffnen.",
+  "mappeStartPin": "Start: {lat}°N, {lng}°E",
+  "@mappeStartPin": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "mappeStartGps": "Start: dein Standort ({coords})",
+  "@mappeStartGps": {
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
+  "mappeStartMap": "Start: letzte Kartenmitte ({coords})",
+  "@mappeStartMap": {
+    "placeholders": {
+      "coords": {
+        "type": "String"
+      }
+    }
+  },
   "mappePutIn": "In die Mappe legen",
   "mappeSaved": "In der Mappe: {name}",
   "@mappeSaved": {

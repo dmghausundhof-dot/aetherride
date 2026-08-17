@@ -7,9 +7,12 @@ import {
   DEFAULT_AROUND_KM,
   DEFAULT_FILTER_MINUTES,
   DISCOVER_LENS_FILTERS,
+  aroundFilterActive,
   aroundKmDisplay,
   countActiveRouteFilters,
   matchesExploreQuery,
+  resetDiscoverAround,
+  resetDiscoverSheetFilters,
 } from "./discoverExploreChrome";
 
 assert.equal(DEFAULT_AROUND_KM, 35);
@@ -31,8 +34,32 @@ assert.equal(
     { ...DEFAULT_ROUTE_FILTERS, sport: "gravel", maxDistanceKm: 40 },
     90,
   ),
-  3,
-  "Zeit + Sport + Umkreis",
+  2,
+  "Zeit + Sport — Umkreis zählt nicht am Filter-Badge",
+);
+assert.equal(
+  countActiveRouteFilters(
+    { ...DISCOVER_LENS_FILTERS, maxDistanceKm: 40 },
+    DEFAULT_FILTER_MINUTES,
+  ),
+  0,
+  "Nur Distanz: Filter-Badge bleibt leer",
+);
+assert.equal(aroundFilterActive(null), false);
+assert.equal(aroundFilterActive(40), true);
+assert.deepEqual(
+  resetDiscoverSheetFilters({
+    ...DEFAULT_ROUTE_FILTERS,
+    sport: "gravel",
+    maxDistanceKm: 40,
+  }),
+  { ...DISCOVER_LENS_FILTERS, maxDistanceKm: 40 },
+  "Filter-Reset lässt Umkreis",
+);
+assert.deepEqual(
+  resetDiscoverAround({ ...DISCOVER_LENS_FILTERS, maxDistanceKm: 40 }),
+  DISCOVER_LENS_FILTERS,
+  "Umkreis-Reset lässt Form und Sport",
 );
 assert.equal(
   countActiveRouteFilters(

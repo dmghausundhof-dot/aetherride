@@ -1,13 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { History, Download } from "lucide-react";
 import { evaluateIntervalDue } from "@/lib/maintenance/intervals";
 import { forecastWear } from "@/lib/maintenance/wearPrediction";
 import { slotLabel } from "@/lib/catalog/slots";
-import { wearKindToShopSlot } from "@/lib/shop/catalog";
-import { shopReplaceHref } from "@/lib/shop/partsCatalog";
-import { useHofCopy } from "@/hooks/useHofCopy";
 import type {
   Bike,
   Ride,
@@ -34,8 +30,6 @@ export function GarageMaintenanceTab({
   markIntervalDone,
   exportReport,
 }: Props) {
-  const copy = useHofCopy();
-
   return (
             <div className="flex flex-col gap-4">
               <section>
@@ -60,15 +54,6 @@ export function GarageMaintenanceTab({
                       <p className="mt-1 text-[10px] text-text-secondary">
                         {f.sourceLabel}
                       </p>
-                      <Link
-                        href={shopReplaceHref({
-                          bike: selected.id,
-                          slot: wearKindToShopSlot(f.kind),
-                        })}
-                        className="mt-2 inline-block text-xs font-semibold text-accent"
-                      >
-                        {copy.shopOpenInApp}
-                      </Link>
                     </div>
                   ))}
                   {forecastWear(selected, rides).length === 0 && (
@@ -120,17 +105,6 @@ export function GarageMaintenanceTab({
                             Erledigt
                           </button>
                         </div>
-                        {(due.status === "overdue" || due.status === "due_soon") && (
-                          <Link
-                            href={shopReplaceHref({
-                              bike: selected.id,
-                              slot: interval.slot,
-                            })}
-                            className="mt-2 inline-block text-xs font-semibold text-accent"
-                          >
-                            {copy.shopOpenInApp}
-                          </Link>
-                        )}
                         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                           <div
                             className={`h-full ${

@@ -80,6 +80,8 @@ void main() {
     expect(plan.addableSlots, isNot(contains(ComponentSlot.fork)));
     expect(plan.today.any((t) => t.id == DieBoxItemId.sagUnknown), isFalse);
     expect(plan.today.any((t) => t.id == DieBoxItemId.lightsMissing), isTrue);
+    expect(plan.today.any((t) => t.id == DieBoxItemId.lockMissing), isFalse);
+    expect(plan.today.any((t) => t.id == DieBoxItemId.rackMissing), isFalse);
     expect(plan.sentence.toLowerCase(), contains('wohnt hier'));
     expect(plan.sentence.toLowerCase(), isNot(contains('nicht')));
   });
@@ -340,5 +342,32 @@ void main() {
       isEmpty,
     );
     expect(tafelCareItem(plan), isNull);
+  });
+
+  test('defaultSetupValuesFor never seeds Fox clicks or psi', () {
+    final road = planWerkstattSetup(
+      bike: _bike(
+        id: 'r1',
+        name: 'Aero',
+        category: BikeCategory.road,
+        wheel: WheelSize.c700,
+      ),
+    );
+    expect(defaultSetupValuesFor(road), isEmpty);
+
+    final mtb = planWerkstattSetup(
+      bike: _bike(
+        id: 'm1',
+        name: 'Luna',
+        category: BikeCategory.mtbTrail,
+        travelF: 140,
+        travelR: 140,
+      ),
+    );
+    expect(defaultSetupValuesFor(mtb), isEmpty);
+    expect(
+      defaultSetupValuesFor(mtb).any((v) => v.adjusterKey.contains('fork')),
+      isFalse,
+    );
   });
 }

@@ -111,7 +111,6 @@ void main() {
         200,
         scrollable: detailScrollable.first,
       );
-      await tester.tap(find.byKey(const Key('garage-more-on-bike')));
       await _settle(tester);
 
       await tester.scrollUntilVisible(

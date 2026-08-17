@@ -9,26 +9,26 @@ void main() {
   group('HudBikePeek.speedCaption', () {
     test('Rad when wheel/LDI drives the slot', () {
       expect(
-        HudBikePeek.speedCaption(wheelDrives: true, hasRouteRest: true),
-        'Rad',
-      );
-      expect(
-        HudBikePeek.speedCaption(wheelDrives: true, hasRouteRest: false),
+        HudBikePeek.speedCaption(wheelDrives: true),
         'Rad',
       );
     });
 
     test('locked Tempo token when GPS drives a routed ride', () {
       expect(
-        HudBikePeek.speedCaption(wheelDrives: false, hasRouteRest: true),
+        HudBikePeek.speedCaption(wheelDrives: false),
         NavHudTokens.labelSpeed,
       );
     });
 
-    test('km/h when GPS drives a free ride', () {
+    test('Tempo token when GPS drives a free ride — same chrome as routed', () {
       expect(
-        HudBikePeek.speedCaption(wheelDrives: false, hasRouteRest: false),
-        'km/h',
+        HudBikePeek.speedCaption(wheelDrives: false),
+        NavHudTokens.labelSpeed,
+      );
+      expect(
+        HudBikePeek.speedCaption(wheelDrives: false),
+        isNot('km/h'),
       );
     });
   });

@@ -8,7 +8,7 @@ export const HOME_INTRO = {
   title: "Outdoor Cycling, ohne Timeline.",
   lead: "FlowLine ist die Anwendung für den Alltag zwischen Feierabendrunde und Wochenend-Etappe. Im Browser planst du, pflegst das Rad und teilst eine Mappe. In der App fährst du: HUD, GPS, Offline, Sensoren.",
   paragraphs: [
-    "Der Hof ist der Stand — nicht ein Feed. Fünf Türen: Hof, Karte, Platz, Werkstatt, Laden. Ride ist der orange Knopf, nicht der sechste Tab. Was fehlt, bleibt leer: keine Dummy-Kilometer, kein Leaderboard, keine zweite Kasse im Browser.",
+    "Der Hof ist der Stand — nicht ein Feed. Vier Türen: Hof, Karte, Platz, Werkstatt. Teile sitzen am Rad, nicht als fünfter Tab. Ride ist der orange Knopf, nicht der fünfte Reiter. Was fehlt, bleibt leer: keine Dummy-Kilometer, kein Leaderboard, keine zweite Kasse im Browser.",
     "Öffentliche Tour-Seiten sind redaktionelle Ideen mit Pin. Die Linie entsteht, wenn du planst — in Hamburg die Alster, nicht pauschal die Alpen. Community hängt an der Tour: Stimmen, Mappe-Links, Einladungslinks. Public Profiles nur mit Opt-in, ohne GPS-Spuren.",
   ],
 } as const;
@@ -73,13 +73,7 @@ export const HOME_DOOR_STORIES: {
     href: "/garage",
     title: "Werkstatt",
     kicker: "Das Rad",
-    body: "Abstellen, Setup, Wartungsintervalle mit Quelle. Bracketing und Reichweiten-Spannen sind Pro. Ersatzteile führen in den Laden, nicht in einen zweiten Warenkorb.",
-  },
-  {
-    href: "/shop",
-    title: "Laden",
-    kicker: "Tür, keine Kasse",
-    body: "Shopify liegt hinter der Tür. Fit kommt aus der Werkstatt. Ohne hinterlegtes Impressum bleibt der Checkout gesperrt — wir erfinden keine Anschrift, damit etwas „kaufen“ heißt.",
+    body: "Abstellen, Setup, Wartungsintervalle mit Quelle. Bracketing und Reichweiten-Spannen sind Pro. Teile schlägst du hier nach — passend zu Kassette, Kette, Belägen, Reifengröße. Der Laden ist die Tür zu Shopify, kein fünfter Tab und kein zweiter Warenkorb.",
   },
 ];
 
