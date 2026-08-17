@@ -7,10 +7,11 @@
     3.22,
     50.75
   ],
-  "builtAt": "2026-08-15T13:02:50Z",
+  "builtAt": "2026-08-17T13:10:31.538Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2664186,
       "sha256": "59a577f20df37945a77e1e0243eea71c06d5b2c6f84ebee275bb23e028d78a84",
       "sha256_16": "59a577f20df37945"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2322759,
+      "sha256": "4bf50bad524ec2d667bf2a0ffe4b956152e469453d66caa8f26a2632947b0b52",
+      "sha256_16": "4bf50bad524ec2d6"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 946999,
+      "sha256": "a8d5f695d492cc0d762931b6baf37d5bcd2e1eecb1eea37ab7fb3593144d5e60",
+      "sha256_16": "a8d5f695d492cc0d"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/lille",
     "pack": "lille.tar.zst",
     "packGz": "lille.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

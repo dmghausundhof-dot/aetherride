@@ -1,16 +1,17 @@
 {
   "id": "clermont-ferrand",
-  "name": "Clermont-Ferrand / Puy de D\u00f4me",
+  "name": "Clermont-Ferrand / Puy de Dôme",
   "bbox": [
     2.9,
     45.68,
     3.22,
     45.9
   ],
-  "builtAt": "2026-08-16T09:43:46Z",
+  "builtAt": "2026-08-17T13:20:13.165Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2717792,
       "sha256": "1325beee728fe9b60e44c2259cd098d62b82b80865a935cd21b0faf632e17428",
       "sha256_16": "1325beee728fe9b6"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2993418,
+      "sha256": "5aecb11629fb79b648236ed2f81a5f5f05e77fde5c46a1f0f5d5749c1b55db36",
+      "sha256_16": "5aecb11629fb79b6"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 1079270,
+      "sha256": "1a44e367a6949a8864ed6465fa79a8b43abc4dc54a41bab88e9feb12c2fbc810",
+      "sha256_16": "1a44e367a6949a88"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/clermont-ferrand",
     "pack": "clermont-ferrand.tar.zst",
     "packGz": "clermont-ferrand.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

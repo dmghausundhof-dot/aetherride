@@ -7,10 +7,11 @@
     1.22,
     49.52
   ],
-  "builtAt": "2026-08-15T13:27:52Z",
+  "builtAt": "2026-08-17T13:22:28.095Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2721992,
       "sha256": "0a44c52881effc0bc18a85b3d8477829c73ec40fd563036a8394b544c9e4f62e",
       "sha256_16": "0a44c52881effc0b"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 1406395,
+      "sha256": "d63b0ff824f0381d6d9e5779fb8af54f93b5ddc7cd9db06a9ab253c760562c63",
+      "sha256_16": "d63b0ff824f0381d"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 596385,
+      "sha256": "089ee8f496f3d448a696f797977ccacc2201376a585c13fd9c319ae9b19af0f1",
+      "sha256_16": "089ee8f496f3d448"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/rouen",
     "pack": "rouen.tar.zst",
     "packGz": "rouen.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

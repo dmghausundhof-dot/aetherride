@@ -7,37 +7,31 @@
     6.65,
     53.28
   ],
-  "builtAt": "2026-08-17T12:22:51.208Z",
+  "builtAt": "2026-08-17T14:09:20Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false,
-    "bike_overlay": true
+    "valhalla_tiles": false
   },
   "files": {
-    "bike-overlay.geojson": {
-      "bytes": 852360,
-      "sha256": "a0309f0d2214146b423795cb675a5ae41b16397c3ed3a68cfb4833d8dbd3fefd",
-      "sha256_16": "a0309f0d2214146b"
+    "offline_graph.json": {
+      "bytes": 18881885,
+      "sha256": "a45c97712e34fd47e1ea54fe46a707ca6f45ffe8d9dd70eee1a3dcf2bfed3297",
+      "sha256_16": "a45c97712e34fd47"
     },
-    "bike-overlay.pmtiles": {
-      "bytes": 345128,
-      "sha256": "eeb3e5bdea475a6fb4cf9c7534a32420eb4368744304c3cdf4db922b95c5576a",
-      "sha256_16": "eeb3e5bdea475a6f"
+    "groningen.tar.gz": {
+      "bytes": 2575097,
+      "sha256": "479a9ac27007fbb6c4090118eb94e279e674825592bc9c84d6fe308bb94e9310",
+      "sha256_16": "479a9ac27007fbb6"
+    },
+    "groningen.tar.zst": {
+      "bytes": 2773862,
+      "sha256": "7aeb24c578722ac28ec98092d0e651d69c7c20fe9badd7650d6f4decd8db3fd1",
+      "sha256_16": "7aeb24c578722ac2"
     }
   },
   "cdn": {
-    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/groningen",
+    "baseUrl": "",
     "pack": "groningen.tar.zst",
     "packGz": "groningen.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
-  },
-  "overlay": {
-    "layer": "bike",
-    "pmtiles": "bike-overlay.pmtiles",
-    "geojson": "bike-overlay.geojson",
-    "sourceLayer": "bike",
-    "property": "bike_class"
   }
 }

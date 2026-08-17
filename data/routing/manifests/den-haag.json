@@ -7,37 +7,31 @@
     4.4,
     52.14
   ],
-  "builtAt": "2026-08-17T12:21:21.406Z",
+  "builtAt": "2026-08-17T14:08:12Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false,
-    "bike_overlay": true
+    "valhalla_tiles": false
   },
   "files": {
-    "bike-overlay.geojson": {
-      "bytes": 1615732,
-      "sha256": "131da954bcb59b475c6ed1d80b55f07b541fedbae0ef1f9f34c6612dbfd45a83",
-      "sha256_16": "131da954bcb59b47"
+    "offline_graph.json": {
+      "bytes": 19204331,
+      "sha256": "09edf6232c5fbc00b2bb027b4d58b8601622d94907dd912aab1d0956c3459de7",
+      "sha256_16": "09edf6232c5fbc00"
     },
-    "bike-overlay.pmtiles": {
-      "bytes": 621403,
-      "sha256": "68c7c4cbaa73caa4ddd7dfeeca413ae78271087c21e2655db211e58b8ac76151",
-      "sha256_16": "68c7c4cbaa73caa4"
+    "den-haag.tar.gz": {
+      "bytes": 2609467,
+      "sha256": "c469d0d6e669d7dbcbfd52b08ee1fa48440b27f3d1855e87533be25acbe63d48",
+      "sha256_16": "c469d0d6e669d7db"
+    },
+    "den-haag.tar.zst": {
+      "bytes": 2824182,
+      "sha256": "51753a54f54fac4914ed370c724e0c26dabddb006a18514b2c7e60ff851d6993",
+      "sha256_16": "51753a54f54fac49"
     }
   },
   "cdn": {
-    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/den-haag",
+    "baseUrl": "",
     "pack": "den-haag.tar.zst",
     "packGz": "den-haag.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
-  },
-  "overlay": {
-    "layer": "bike",
-    "pmtiles": "bike-overlay.pmtiles",
-    "geojson": "bike-overlay.geojson",
-    "sourceLayer": "bike",
-    "property": "bike_class"
   }
 }

@@ -7,10 +7,11 @@
     5.2,
     47.42
   ],
-  "builtAt": "2026-08-15T11:58:48Z",
+  "builtAt": "2026-08-17T13:16:34.254Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,28 @@
       "bytes": 2704243,
       "sha256": "ad337e6564ab963ec2f2b9f6c72ee3b0a0e8443d84f429a644bd82668f05f621",
       "sha256_16": "ad337e6564ab963e"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2386319,
+      "sha256": "87ca58085c92cdd003be6ded10a46b5ec05606f439dcb6fb06779a80e7c80d51",
+      "sha256_16": "87ca58085c92cdd0"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 880486,
+      "sha256": "5e6ff7c76833bfce0cd2ad4ea679a92977805d15fa78bfc61af57b34b794898f",
+      "sha256_16": "5e6ff7c76833bfce"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/dijon",
     "pack": "dijon.tar.zst",
     "packGz": "dijon.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class"
   }
 }

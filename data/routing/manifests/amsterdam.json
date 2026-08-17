@@ -7,37 +7,31 @@
     5.02,
     52.43
   ],
-  "builtAt": "2026-08-17T12:17:35.174Z",
+  "builtAt": "2026-08-17T14:06:25Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false,
-    "bike_overlay": true
+    "valhalla_tiles": false
   },
   "files": {
-    "bike-overlay.geojson": {
-      "bytes": 3056744,
-      "sha256": "b598d28ad2943910883ff1b7d943b9bb83fc15059e4d9f8c796f41e020631643",
-      "sha256_16": "b598d28ad2943910"
+    "offline_graph.json": {
+      "bytes": 19256293,
+      "sha256": "198baa896f0337b19c5e2bb9fac54b0efd9b9c7959164cf81494611c9b803d73",
+      "sha256_16": "198baa896f0337b1"
     },
-    "bike-overlay.pmtiles": {
-      "bytes": 1105024,
-      "sha256": "672844a7bbc4108a8ea8f6965c3ac32a8524f1ac03699cc65fd20837e0647493",
-      "sha256_16": "672844a7bbc4108a"
+    "amsterdam.tar.gz": {
+      "bytes": 2599624,
+      "sha256": "26a21b99a1505a66dac5d9aca076a17b27e5188ec2a2e846d7959a12c561965d",
+      "sha256_16": "26a21b99a1505a66"
+    },
+    "amsterdam.tar.zst": {
+      "bytes": 2793604,
+      "sha256": "34ebd7fe566e73605f2c70acfe802801c9c4b69dd83c27f18e3dbce914db9d54",
+      "sha256_16": "34ebd7fe566e7360"
     }
   },
   "cdn": {
-    "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/amsterdam",
+    "baseUrl": "",
     "pack": "amsterdam.tar.zst",
     "packGz": "amsterdam.tar.gz"
-  },
-  "shipped": {
-    "note": "Catalog stub — download falls back to bundled offline_graph until full pack is built"
-  },
-  "overlay": {
-    "layer": "bike",
-    "pmtiles": "bike-overlay.pmtiles",
-    "geojson": "bike-overlay.geojson",
-    "sourceLayer": "bike",
-    "property": "bike_class"
   }
 }
