@@ -124,12 +124,14 @@ export async function GET(req: Request) {
       .not("pin_lat", "is", null)
       .limit(40);
     if (reviews.error) {
-      reviews = await client
+      // Legacy schema without pin_* — no map pins; keep typed shape for callers.
+      const legacy = await client
         .from("tour_reviews")
         .select("id, tour_id, tags, body")
         .eq("tour_id", tourId)
         .eq("status", "approved")
         .limit(40);
+      reviews = legacy as typeof reviews;
     }
     if (!reviews.error) {
       for (const row of reviews.data ?? []) {
