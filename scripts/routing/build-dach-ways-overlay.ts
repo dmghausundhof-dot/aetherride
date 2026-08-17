@@ -354,6 +354,7 @@ async function ingestSeq(inputPath: string, seqPath: string) {
             highway: tags.highway || "",
             name: tags.name || tags["name:de"] || "",
             osm_id: osmId,
+            // Style colors by OSM surface; tracktype backs gravel when surface is empty.
             surface: tags.surface || "",
             tracktype: tags.tracktype || "",
           },

@@ -7,10 +7,11 @@
     2.48,
     48.92
   ],
-  "builtAt": "2026-08-15T12:47:36Z",
+  "builtAt": "2026-08-17T07:37:34Z",
   "engines": {
     "offline_graph": true,
-    "valhalla_tiles": false
+    "valhalla_tiles": false,
+    "bike_overlay": true
   },
   "files": {
     "offline_graph.json": {
@@ -27,11 +28,37 @@
       "bytes": 2788543,
       "sha256": "6732b71dc8a34be2db28f34df23d840a65ca859afb13a806a484478a83ef5500",
       "sha256_16": "6732b71dc8a34be2"
+    },
+    "bike-overlay.geojson": {
+      "bytes": 2196974,
+      "sha256": "b488778067cb06b5da9bf3e0861d76a280e40d4d9df734a9ea42625b9d43d888",
+      "sha256_16": "b488778067cb06b5"
+    },
+    "bike-overlay.pmtiles": {
+      "bytes": 898108,
+      "sha256": "9ce738c28790280e72ac5b5857d2292de85d17bfb73bc56b0249fe471a9294b5",
+      "sha256_16": "9ce738c28790280e"
     }
   },
   "cdn": {
     "baseUrl": "https://krmgatsugplouzrhhozn.supabase.co/storage/v1/object/public/offline-packs/paris",
     "pack": "paris.tar.zst",
     "packGz": "paris.tar.gz"
+  },
+  "overlay": {
+    "layer": "bike",
+    "pmtiles": "bike-overlay.pmtiles",
+    "geojson": "bike-overlay.geojson",
+    "sourceLayer": "bike",
+    "property": "bike_class",
+    "properties": [
+      "bike_class",
+      "mtb_scale",
+      "highway",
+      "name",
+      "osm_id",
+      "surface",
+      "tracktype"
+    ]
   }
 }
