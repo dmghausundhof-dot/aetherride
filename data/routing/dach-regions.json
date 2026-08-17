@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Single source of truth for DACH overlay + offline pack stubs, plus DACH-adjacent FR fringe packs. Packs keep historic bboxes. Envelopes fill holes so every in-DACH GPS has a named region. Live routing is OpenRouteService/GraphHopper — packs are optional.",
+  "note": "Single source of truth for DACH overlay + offline pack stubs, plus DACH-adjacent FR fringe packs. Packs keep historic bboxes. Envelopes fill holes so every in-DACH GPS has a named region. Live routing is OpenRouteService/GraphHopper — packs are optional. NL city overlays via Overpass (no netherlands-latest.osm.pbf).",
   "regions": [
     {
       "id": "rhein-neckar",
@@ -1670,6 +1670,138 @@
         "urban",
         "road"
       ]
+    },
+    {
+      "id": "amsterdam",
+      "name": "Amsterdam / Amstel",
+      "country": "NL",
+      "kind": "pack",
+      "bbox": [
+        4.75,
+        52.3,
+        5.02,
+        52.43
+      ],
+      "center": [
+        4.9,
+        52.37
+      ],
+      "geofabrik": "",
+      "sports": [
+        "urban",
+        "road"
+      ],
+      "note": "Overpass bike-overlay only — no netherlands-latest.osm.pbf"
+    },
+    {
+      "id": "utrecht",
+      "name": "Utrecht / Dom",
+      "country": "NL",
+      "kind": "pack",
+      "bbox": [
+        5.05,
+        52.04,
+        5.2,
+        52.15
+      ],
+      "center": [
+        5.12,
+        52.09
+      ],
+      "geofabrik": "",
+      "sports": [
+        "urban",
+        "road"
+      ],
+      "note": "Overpass bike-overlay only — no netherlands-latest.osm.pbf"
+    },
+    {
+      "id": "rotterdam",
+      "name": "Rotterdam / Maas",
+      "country": "NL",
+      "kind": "pack",
+      "bbox": [
+        4.4,
+        51.85,
+        4.58,
+        51.98
+      ],
+      "center": [
+        4.48,
+        51.92
+      ],
+      "geofabrik": "",
+      "sports": [
+        "urban",
+        "road"
+      ],
+      "note": "Overpass bike-overlay only — no netherlands-latest.osm.pbf"
+    },
+    {
+      "id": "den-haag",
+      "name": "Den Haag / Scheveningen",
+      "country": "NL",
+      "kind": "pack",
+      "bbox": [
+        4.22,
+        52.02,
+        4.4,
+        52.14
+      ],
+      "center": [
+        4.3,
+        52.08
+      ],
+      "geofabrik": "",
+      "sports": [
+        "urban",
+        "road"
+      ],
+      "note": "Overpass bike-overlay only — no netherlands-latest.osm.pbf"
+    },
+    {
+      "id": "eindhoven",
+      "name": "Eindhoven / Dommel",
+      "country": "NL",
+      "kind": "pack",
+      "bbox": [
+        5.4,
+        51.4,
+        5.55,
+        51.5
+      ],
+      "center": [
+        5.47,
+        51.44
+      ],
+      "geofabrik": "",
+      "sports": [
+        "urban",
+        "road"
+      ],
+      "note": "Overpass bike-overlay only — no netherlands-latest.osm.pbf"
+    },
+    {
+      "id": "groningen",
+      "name": "Groningen / Reitdiep",
+      "country": "NL",
+      "kind": "pack",
+      "bbox": [
+        6.5,
+        53.18,
+        6.65,
+        53.28
+      ],
+      "center": [
+        6.57,
+        53.22
+      ],
+      "geofabrik": "",
+      "sports": [
+        "urban",
+        "road"
+      ],
+      "note": "Overpass bike-overlay only — no netherlands-latest.osm.pbf"
     },
     {
       "id": "de-schleswig-holstein",

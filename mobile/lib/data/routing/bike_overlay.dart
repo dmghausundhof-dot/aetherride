@@ -38,6 +38,18 @@ const kDetailBikeOverlayPacks = <String>{
   'annecy',
   'lyon',
   'paris',
+  'strasbourg',
+  'bordeaux',
+  'nantes',
+  'toulouse',
+  'nice',
+  'marseille',
+  'amsterdam',
+  'utrecht',
+  'rotterdam',
+  'den-haag',
+  'eindhoven',
+  'groningen',
 };
 
 enum OnlineBikeOverlayKind { ways, mesh, none }

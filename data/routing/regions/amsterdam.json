@@ -1,0 +1,27 @@
+{
+  "id": "amsterdam",
+  "name": "Amsterdam / Amstel",
+  "bbox": [
+    4.75,
+    52.3,
+    5.02,
+    52.43
+  ],
+  "osm": {
+    "geofabrik": "",
+    "note": "NL extract, auf bbox clippen. Graph-only via Overpass."
+  },
+  "graph": {
+    "maxNodes": 80000,
+    "maxEdges": 120000
+  },
+  "outputDir": "data/routing/dist/amsterdam",
+  "valhalla": {
+    "tile_dir": "tiles",
+    "config": "valhalla.json"
+  },
+  "cdn": {
+    "baseUrl": "",
+    "pack": "amsterdam.tar.zst"
+  }
+}
