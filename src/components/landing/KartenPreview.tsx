@@ -119,6 +119,7 @@ export function KartenPreview({
           bikeOverlayKind="pmtiles"
           bikeOverlayFamily="road"
           bikeOverlayVisible={overlayOn}
+          bikeOverlayExtraOn={["gravel", "mtb_unrated", "mtb"]}
           bikeOverlayMinZoom={overlay.kind === "ways" ? 10 : 5}
           onViewChange={(next) => setView(next)}
         />
@@ -126,7 +127,7 @@ export function KartenPreview({
           <BikeOverlayLegend
             family="road"
             visible={overlayOn}
-            extraOn={[]}
+            extraOn={["gravel", "mtb_unrated", "mtb"]}
             hasOverlayData={overlay.kind !== "none"}
             overlayKind={overlay.kind === "ways" ? "ways" : "mesh"}
             onToggleVisible={() => setOverlayOn((v) => !v)}

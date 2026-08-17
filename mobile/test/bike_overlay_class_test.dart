@@ -161,6 +161,8 @@ void main() {
     expect(expr.toString(), contains('has'));
     expect(expr.toString(), contains('surface'));
     expect(expr.toString(), contains('asphalt'));
+    expect(expr.toString(), contains('any'));
+    expect(expr[2], BikeOverlayColors.road);
     expect(expr.toString(), contains(BikeOverlayColors.dirt));
     expect(expr.toString(), contains(BikeOverlayColors.road));
   });

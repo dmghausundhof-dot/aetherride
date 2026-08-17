@@ -100,6 +100,10 @@ function testSurfaceLineColorReadyWithoutField() {
   assert.equal(expr[0], "case");
   assert.ok(json.includes('["has","surface"]'), "old tiles without field keep class color");
   assert.ok(json.includes('["coalesce",["get","surface"],""]'));
+  assert.ok(
+    json.includes('"any"') && json.includes('""'),
+    "empty tippecanoe surface keeps class color"
+  );
   assert.ok(json.includes("asphalt"));
   assert.ok(json.includes("compacted"));
   assert.ok(json.includes("fine_gravel"));
@@ -112,10 +116,27 @@ function testSurfaceLineColorReadyWithoutField() {
   assert.ok(!json.includes("france-latest"));
 }
 
+/** Empty `surface: ""` must hit class fallback, not the muted unrated branch. */
+function testSurfaceEmptyUsesClassFallbackNotGrey() {
+  const expr = bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.urban);
+  assert.equal(expr[0], "case");
+  const when = expr[1] as unknown[];
+  assert.equal(when[0], "any");
+  assert.equal(expr[2], BIKE_OVERLAY_COLORS.urban, "empty/missing → class color");
+  const matchArm = expr[3] as unknown[];
+  assert.equal(matchArm[0], "match");
+  assert.equal(
+    matchArm[matchArm.length - 1],
+    BIKE_OVERLAY_COLORS.unrated,
+    "unknown non-empty surfaces still muted"
+  );
+}
+
 testDownhillFiltersS1ToS3();
 testAllmountainKeepsS0AndOpen();
 testOverlayFamilyFollowsRideProfile();
 testRoadHidesMtb();
 testGravelKeepsS0S1();
 testSurfaceLineColorReadyWithoutField();
+testSurfaceEmptyUsesClassFallbackNotGrey();
 console.log("bikeOverlayMap.test.ts OK");
