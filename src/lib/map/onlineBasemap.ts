@@ -37,11 +37,12 @@ export type OnlineBasemapRider = {
   zoom: number;
 };
 
-export const MAP_ATTRIBUTION = "© OpenStreetMap · Protomaps";
+export const MAP_ATTRIBUTION = "© OpenStreetMap · Protomaps · Terrain AWS/Mapzen";
 
 export const MAP_ATTRIBUTION_HREF = {
   osm: "https://www.openstreetmap.org/copyright",
   protomaps: "https://protomaps.com/",
+  terrain: "https://registry.opendata.aws/terrain-tiles/",
 } as const;
 
 function styleUrl(id: OnlineBasemapId): string {

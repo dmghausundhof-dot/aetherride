@@ -23,6 +23,7 @@ import {
 import type { RideProfileId } from "@/lib/routing/profiles";
 
 export type { OverlayWayHit };
+import { applyHillshade, HILLSHADE_SOURCE_ID, type HillshadeMapLike } from "@/lib/map/hillshade";
 import {
   envLocksOnlineBasemapStyle,
   MAP_ATTRIBUTION,
@@ -451,7 +452,13 @@ export function MapView({
       const msg = err?.error?.message || String(err?.error || "Kartenfehler");
       const sourceId = err?.sourceId ?? "";
       console.warn("[MapView]", msg);
-      if (sourceId === BIKE_OVERLAY_SOURCE_ID || msg.includes("bike-overlay")) {
+      if (
+        sourceId === BIKE_OVERLAY_SOURCE_ID ||
+        sourceId === HILLSHADE_SOURCE_ID ||
+        msg.includes("bike-overlay") ||
+        msg.includes("terrain-dem") ||
+        msg.includes("hillshade")
+      ) {
         return;
       }
       // Already on OSM, or overlay-only errors: don't wipe layers with setStyle.
@@ -512,6 +519,23 @@ export function MapView({
     if (!map || !ready) return;
     map.setCenter(center);
   }, [center, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const apply = () => {
+      try {
+        applyHillshade(map as unknown as HillshadeMapLike);
+      } catch (err) {
+        console.warn("[MapView] hillshade", err);
+      }
+    };
+    apply();
+    map.on("style.load", apply);
+    return () => {
+      map.off("style.load", apply);
+    };
+  }, [ready]);
 
   useEffect(() => {
     const map = mapRef.current;

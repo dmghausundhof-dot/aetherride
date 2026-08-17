@@ -10,6 +10,7 @@ import {
   isOverviewOnlyBasemap,
   isStreetLevelBasemap,
   MAP_ATTRIBUTION,
+  MAP_ATTRIBUTION_HREF,
   ONLINE_BASEMAP_ARCHIVES,
   ONLINE_BASEMAP_RIDER,
   onlineBasemapStyleUrl,
@@ -92,5 +93,7 @@ for (const r of ONLINE_BASEMAP_RIDER) {
 assert.equal(riderBasemap("uk-south-z11").name, "Südengland");
 assert.ok(MAP_ATTRIBUTION.includes("OpenStreetMap"));
 assert.ok(MAP_ATTRIBUTION.includes("Protomaps"));
+assert.ok(MAP_ATTRIBUTION.includes("Terrain"));
+assert.ok(MAP_ATTRIBUTION_HREF.terrain.includes("terrain-tiles"));
 
 console.log("onlineBasemap.test.ts ok");

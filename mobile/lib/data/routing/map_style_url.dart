@@ -79,6 +79,18 @@ String liveMapStyleUrl({
   return kOpenFreeMapBrightStyleUrl;
 }
 
+/// Discover /karten catalog — not Stadia. HUD/Ride stays on [liveMapStyleUrl].
+String catalogBrowseMapStyleUrl({
+  required String pmtilesOrStyleUrl,
+  required double lng,
+  required double lat,
+}) {
+  final pm = pmtilesOrStyleUrl.trim();
+  if (pm.isNotEmpty && isStreetLevelBasemap(pm)) return pm;
+  final id = basemapArchiveIdForLngLat(lng, lat) ?? kDachBasemapId;
+  return styleUrlForArchiveId(id);
+}
+
 const kDachBasemapId = 'dach-z11';
 const kFranceWestBasemapId = 'france-west-z11';
 const kAlpsSouthBasemapId = 'alps-south-z11';
@@ -96,8 +108,6 @@ const kOnlineCycleMeshFiles = <String, String>{
   kAlpsSouthBasemapId: 'cycle-routes-alps-south.pmtiles',
   kBeneluxBasemapId: 'cycle-routes-benelux.pmtiles',
   kItalyNorthBasemapId: 'cycle-routes-italy-north.pmtiles',
-  kItalyCenterBasemapId: 'cycle-routes-italy-center.pmtiles',
-  kItalySouthBasemapId: 'cycle-routes-italy-south.pmtiles',
   kCataloniaPyreneesBasemapId: 'cycle-routes-catalonia-pyrenees.pmtiles',
   kUkSouthBasemapId: 'cycle-routes-uk-south.pmtiles',
 };

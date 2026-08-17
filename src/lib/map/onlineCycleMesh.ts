@@ -39,17 +39,17 @@ export const BIKE_WAYS_MIN_ZOOM = 12;
  * Signed icn/ncn/rcn PMTiles per online Blatt.
  * DACH keeps the historic `cycle-routes.pmtiles` filename.
  */
-export const ONLINE_CYCLE_MESH_FILES: Record<OnlineBasemapId, string> = {
-  "dach-z11": "cycle-routes.pmtiles",
-  "france-west-z11": "cycle-routes-france-west.pmtiles",
-  "alps-south-z11": "cycle-routes-alps-south.pmtiles",
-  "benelux-z11": "cycle-routes-benelux.pmtiles",
-  "italy-north-z11": "cycle-routes-italy-north.pmtiles",
-  "italy-center-z11": "cycle-routes-italy-center.pmtiles",
-  "italy-south-z11": "cycle-routes-italy-south.pmtiles",
-  "catalonia-pyrenees-z11": "cycle-routes-catalonia-pyrenees.pmtiles",
-  "uk-south-z11": "cycle-routes-uk-south.pmtiles",
-};
+/** Only sheets that actually have a mesh file on the CDN (no 404). */
+export const ONLINE_CYCLE_MESH_FILES: Partial<Record<OnlineBasemapId, string>> =
+  {
+    "dach-z11": "cycle-routes.pmtiles",
+    "france-west-z11": "cycle-routes-france-west.pmtiles",
+    "alps-south-z11": "cycle-routes-alps-south.pmtiles",
+    "benelux-z11": "cycle-routes-benelux.pmtiles",
+    "italy-north-z11": "cycle-routes-italy-north.pmtiles",
+    "catalonia-pyrenees-z11": "cycle-routes-catalonia-pyrenees.pmtiles",
+    "uk-south-z11": "cycle-routes-uk-south.pmtiles",
+  };
 
 /** Region packs that already publish a way-level bike-overlay on the CDN. */
 export const DETAIL_BIKE_OVERLAY_PACKS = new Set([

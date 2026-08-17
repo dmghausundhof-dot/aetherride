@@ -249,7 +249,7 @@ function runTippecanoe(geojsonseq: string, pmtiles: string) {
       "run",
       "--rm",
       "-u",
-      `${process.getuid()}:${process.getgid()}`,
+      `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`,
       "-v",
       `${outDir}:/data`,
       "aetherride-tippecanoe",

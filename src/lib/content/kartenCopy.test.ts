@@ -16,7 +16,7 @@ assert.ok(KARTEN_PAGE.pathsNote.includes("Berlin"));
 assert.ok(!KARTEN_PAGE.waysHint.includes("Hausbergen"));
 assert.ok(KARTEN_PAGE.waysHint.includes("DACH"));
 assert.ok(KARTEN_PAGE.offlineLead.includes("Routing"));
-assert.ok(KARTEN_PAGE.offlineLead.includes("keine 33 Länder-Downloads"));
+assert.ok(KARTEN_PAGE.attributionNote.includes("Terrain"));
 assert.ok(!JSON.stringify(KARTEN_PAGE).includes("Tschechien"));
 assert.ok(!JSON.stringify(ONLINE_BASEMAP_RIDER).includes("Tschechien ist ein Loch"));
 assert.ok(ONLINE_BASEMAP_RIDER[0].hole.includes("Prag"));
