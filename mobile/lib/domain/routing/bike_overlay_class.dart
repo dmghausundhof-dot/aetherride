@@ -401,12 +401,32 @@ BikeOverlaySurfaceKind bikeOverlaySurfaceKind(String? surface) {
   return BikeOverlaySurfaceKind.unknown;
 }
 
-/// MapLibre color: OSM `surface` when the tile has the field, else [fallback].
+/// MapLibre color: OSM `surface` when set; missing or empty → [fallback].
+/// Tippecanoe often ships `surface: ""` for every feature — treat like absent
+/// so class colors stay visible (not muted grey on empty).
 List<dynamic> bikeOverlaySurfaceLineColor(String fallback) => [
       'case',
       [
-        '!',
-        ['has', 'surface'],
+        'any',
+        [
+          '!',
+          ['has', 'surface'],
+        ],
+        [
+          '==',
+          [
+            'downcase',
+            [
+              'to-string',
+              [
+                'coalesce',
+                ['get', 'surface'],
+                '',
+              ],
+            ],
+          ],
+          '',
+        ],
       ],
       fallback,
       [

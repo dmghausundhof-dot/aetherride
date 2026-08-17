@@ -25,7 +25,7 @@ void main() {
     expect(overlayDataExpectedAt(-30, 0), isFalse);
   });
 
-  test('ways overlay at z12 everywhere in DACH, mesh at atlas zoom', () {
+  test('ways overlay from z10 in DACH, mesh below that', () {
     expect(detailOverlayPackIdForPoint(8.68, 49.41), 'rhein-neckar');
     expect(detailOverlayPackIdForPoint(7.85, 47.99), 'schwarzwald-nord');
     expect(detailOverlayPackIdForPoint(13.405, 52.52), isNull);
@@ -57,6 +57,21 @@ void main() {
     );
     expect(berlinWays.kind, OnlineBikeOverlayKind.ways);
     expect(berlinWays.url, contains('dach-ways.pmtiles'));
+
+    final berlinZ10 = chooseOnlineBikeOverlay(
+      lng: 13.405,
+      lat: 52.52,
+      zoom: 10,
+    );
+    expect(berlinZ10.kind, OnlineBikeOverlayKind.ways);
+    expect(berlinZ10.url, contains('dach-ways.pmtiles'));
+
+    final berlinZ9 = chooseOnlineBikeOverlay(
+      lng: 13.405,
+      lat: 52.52,
+      zoom: 9,
+    );
+    expect(berlinZ9.kind, OnlineBikeOverlayKind.mesh);
 
     final wienWays = chooseOnlineBikeOverlay(
       lng: 16.373,
@@ -94,6 +109,16 @@ void main() {
     expect(
       chooseOnlineBikeOverlay(lng: 16.7, lat: 40.2, zoom: 8).url,
       contains('cycle-routes-italy-south.pmtiles'),
+    );
+  });
+
+  test('catalog protomaps is not a live OSM network source', () {
+    expect(liveOsmNetworkSourceId(['protomaps']), isNull);
+    expect(liveOsmNetworkSourceId(['protomaps', 'terrain-dem']), isNull);
+    expect(liveOsmNetworkSourceId(['openmaptiles']), 'openmaptiles');
+    expect(
+      liveOsmNetworkSourceId(['protomaps', 'openmaptiles']),
+      'openmaptiles',
     );
   });
 }

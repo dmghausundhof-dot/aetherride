@@ -45,18 +45,26 @@ const MTB_COLOR: unknown = [
 ];
 
 /**
- * Color cycleway/path/track by OSM `surface` when the tile has the field.
- * Missing field (older DACH ways / some city packs) keeps [fallback]
- * so class colors from PR #66/#70 still read. Empty tag → muted unknown.
+ * Color cycleway/path/track by OSM `surface` when set.
+ * Missing field OR empty string (tippecanoe often encodes `surface: ""`)
+ * keeps [fallback] so class colors still read — not muted grey.
  */
 export function bikeOverlaySurfaceLineColor(fallback: string): unknown[] {
+  const surfaceStr: unknown[] = [
+    "downcase",
+    ["to-string", ["coalesce", ["get", "surface"], ""]],
+  ];
   return [
     "case",
-    ["!", ["has", "surface"]],
+    [
+      "any",
+      ["!", ["has", "surface"]],
+      ["==", surfaceStr, ""],
+    ],
     fallback,
     [
       "match",
-      ["downcase", ["to-string", ["coalesce", ["get", "surface"], ""]]],
+      surfaceStr,
       [...BIKE_OVERLAY_SURFACE_PAVED],
       BIKE_OVERLAY_COLORS.road,
       [...BIKE_OVERLAY_SURFACE_GRAVEL],
@@ -284,7 +292,7 @@ export function addBikeOverlayLayers(
           14,
           layer.width,
         ],
-        "line-opacity": 0.85,
+        "line-opacity": 0.92,
         ...(layer.dasharray ? { "line-dasharray": layer.dasharray } : {}),
       },
     });
@@ -326,7 +334,7 @@ export function applyBikeOverlayVisibility(
     map.setFilter(layer.id, resolvedFilter);
     map.setLayoutProperty(layer.id, "visibility", "visible");
     map.setPaintProperty(layer.id, "line-color", layer.color);
-    map.setPaintProperty(layer.id, "line-opacity", 0.88);
+    map.setPaintProperty(layer.id, "line-opacity", 0.92);
     const width =
       highlightMtb && layer.cls === "mtb" ? layer.width * 1.25 : layer.width;
     map.setPaintProperty(layer.id, "line-width", [
