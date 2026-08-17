@@ -16,17 +16,20 @@ import {
 } from "@/lib/map/onlineCycleMesh";
 import { KARTEN_PAGE } from "@/lib/content/kartenCopy";
 
-const HAUSBERGE: Array<{
+const PLACE_JUMPS: Array<{
   name: string;
   center: [number, number];
   zoom: number;
   blatt: OnlineBasemapId;
 }> = [
+  { name: "Berlin", center: [13.405, 52.52], zoom: 13, blatt: "dach-z11" },
+  { name: "Hamburg", center: [9.993, 53.551], zoom: 13, blatt: "dach-z11" },
+  { name: "Köln", center: [6.96, 50.94], zoom: 13, blatt: "dach-z11" },
   { name: "Heidelberg", center: [8.68, 49.41], zoom: 13, blatt: "dach-z11" },
-  { name: "Freiburg", center: [7.85, 47.99], zoom: 13, blatt: "dach-z11" },
-  { name: "Vogesen", center: [6.9, 47.95], zoom: 12.6, blatt: "dach-z11" },
-  { name: "Zermatt", center: [7.75, 46.02], zoom: 13, blatt: "dach-z11" },
-  { name: "Innsbruck", center: [11.4, 47.27], zoom: 13, blatt: "dach-z11" },
+  { name: "München", center: [11.575, 48.137], zoom: 13, blatt: "dach-z11" },
+  { name: "Wien", center: [16.373, 48.208], zoom: 13, blatt: "dach-z11" },
+  { name: "Zürich", center: [8.54, 47.37], zoom: 13, blatt: "dach-z11" },
+  { name: "Vaduz", center: [9.52, 47.14], zoom: 13, blatt: "dach-z11" },
   { name: "Paris", center: [2.35, 48.86], zoom: 13, blatt: "france-west-z11" },
   { name: "Lyon", center: [4.835, 45.76], zoom: 13, blatt: "france-west-z11" },
   { name: "Annecy", center: [6.13, 45.9], zoom: 13, blatt: "alps-south-z11" },
@@ -63,7 +66,7 @@ export function KartenPreview({
     setJump((n) => n + 1);
   }
 
-  function flyHausberg(h: (typeof HAUSBERGE)[number]) {
+  function flyPlace(h: (typeof PLACE_JUMPS)[number]) {
     setId(h.blatt);
     setView({ center: h.center, zoom: h.zoom });
     setJump((n) => n + 1);
@@ -91,13 +94,13 @@ export function KartenPreview({
           );
         })}
       </div>
-      {HAUSBERGE.some((h) => h.blatt === id) && (
+      {PLACE_JUMPS.some((h) => h.blatt === id) && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {HAUSBERGE.filter((h) => h.blatt === id).map((h) => (
+          {PLACE_JUMPS.filter((h) => h.blatt === id).map((h) => (
             <button
               key={h.name}
               type="button"
-              onClick={() => flyHausberg(h)}
+              onClick={() => flyPlace(h)}
               className="rounded-full border border-border px-3 py-1 text-[11px] font-medium text-text-secondary transition hover:border-chrome/40 hover:text-foreground"
             >
               {h.name}

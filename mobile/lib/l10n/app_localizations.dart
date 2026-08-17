@@ -7635,7 +7635,7 @@ abstract class AppLocalizations {
   /// No description provided for @overlayLegendEmpty.
   ///
   /// In de, this message translates to:
-  /// **'An dieser Stelle kein Wege-Overlay. Das Radnetz folgt der Karte darunter.'**
+  /// **'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.'**
   String get overlayLegendEmpty;
 
   /// No description provided for @overlayLegendMeshTitle.
@@ -7647,7 +7647,7 @@ abstract class AppLocalizations {
   /// No description provided for @overlayLegendMeshNote.
   ///
   /// In de, this message translates to:
-  /// **'Beschilderte Radrouten auf dieser Karte.'**
+  /// **'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.'**
   String get overlayLegendMeshNote;
 
   /// No description provided for @overlayLegendCompactGravel.

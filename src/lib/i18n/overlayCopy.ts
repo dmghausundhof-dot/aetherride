@@ -32,11 +32,11 @@ const DE: OverlayCopy = {
   compactRoad: "Asphalt",
   compactCity: "City",
   empty:
-    "An dieser Stelle kein Wege-Overlay. Das Radnetz folgt der Karte darunter.",
+    "Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.",
   scaleNote:
     "S0–S3+ nur bei OSM-Tag mtb:scale. sac_scale wird nicht umgemünzt.",
   meshNote:
-    "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 in ausgewählten Städten.",
+    "Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.",
 };
 
 const EN: OverlayCopy = {
@@ -53,11 +53,11 @@ const EN: OverlayCopy = {
   compactRoad: "Asphalt",
   compactCity: "City",
   empty:
-    "No way overlay here. The bike network follows the map underneath.",
+    "No overlay here. OSM ways from zoom 12 on the DACH sheet. The bike network follows the map underneath.",
   scaleNote:
     "S0–S3+ only with OSM tag mtb:scale. sac_scale is not remapped.",
   meshNote:
-    "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 in selected cities.",
+    "Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 across the DACH sheet.",
 };
 
 const FR: OverlayCopy = {
@@ -73,12 +73,12 @@ const FR: OverlayCopy = {
   compactRoad: "Asphalte",
   compactCity: "City",
   empty:
-    "Pas de calque de chemins ici. Le réseau vélo suit la carte en dessous.",
+    "Pas d’overlay ici. Chemins OSM dès le zoom 12 sur toute la feuille DACH. Le réseau vélo suit la carte en dessous.",
   scaleNote:
     "S0–S3+ seulement avec le tag OSM mtb:scale. sac_scale n’est pas converti.",
   meshOsm: "Réseau cyclable · OSM",
   meshNote:
-    "Itinéraires cyclables signés (ICN/NCN/RCN) sur cette feuille. Chemins dès le zoom 12 dans des villes choisies.",
+    "Itinéraires cyclables signés (ICN/NCN/RCN) sur cette feuille. Chemins dès le zoom 12 sur toute la feuille DACH.",
 };
 
 const IT: OverlayCopy = {
@@ -94,12 +94,12 @@ const IT: OverlayCopy = {
   compactRoad: "Asfalto",
   compactCity: "City",
   empty:
-    "Nessun overlay di vie qui. La rete bici segue la mappa sotto.",
+    "Nessun overlay qui. Vie OSM dal zoom 12 su tutto il foglio DACH. La rete bici segue la mappa sotto.",
   scaleNote:
     "S0–S3+ solo con tag OSM mtb:scale. sac_scale non viene convertito.",
   meshOsm: "Rete ciclabile · OSM",
   meshNote:
-    "Percorsi ciclabili segnalati (ICN/NCN/RCN) su questo foglio. Vie dal zoom 12 in città selezionate.",
+    "Percorsi ciclabili segnalati (ICN/NCN/RCN) su questo foglio. Vie dal zoom 12 su tutto il foglio DACH.",
 };
 
 const BY_LANG: Record<ChromeLang, OverlayCopy> = {

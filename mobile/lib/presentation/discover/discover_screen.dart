@@ -31,6 +31,7 @@ import '../../data/routing/osm_routes_client.dart';
 import '../../data/routing/osm_trail_network_client.dart';
 import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
+import '../../data/routing/hillshade.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/coverage_client.dart';
 import '../../domain/community/labeled_via.dart';
@@ -561,7 +562,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<_TfPin> _tfPins = [];
   String? _heatmapNote;
   String? _routingStatusNote;
-  String _mapStyle = AppConfig.mapStyleUrl;
+  String _mapStyle = AppConfig.browseMapStyleUrl;
   final _geocode = GeocodeClient();
   final _startAddrCtrl = TextEditingController();
   final _startAddrFocus = FocusNode();
@@ -606,7 +607,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     unawaited(_loadNaeheSeeds());
     unawaited(_fetchRoutingStatus());
     unawaited(
-      AppConfig.resolveMapStyleUrl().then((s) {
+      AppConfig.resolveBrowseMapStyleUrl().then((s) {
         if (!mounted || s == _mapStyle) return;
         setState(() => _mapStyle = s);
       }),
@@ -6357,6 +6358,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             await boostBasemapStreetContrast(map);
           } else {
             await warmBasemapNatureFills(map);
+          }
+          if (styleUsesCatalogHillshade(_mapStyle)) {
+            await applyHillshade(map);
           }
           await _ensureBikeOverlay();
         }());

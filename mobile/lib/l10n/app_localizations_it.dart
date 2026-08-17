@@ -4299,14 +4299,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get overlayLegendEmpty =>
-      'Nessun overlay di vie qui. La rete bici segue la mappa sotto.';
+      'Nessun overlay qui. Vie OSM dal zoom 12 su tutto il foglio DACH. La rete bici segue la mappa sotto.';
 
   @override
   String get overlayLegendMeshTitle => 'Rete bici · OSM';
 
   @override
   String get overlayLegendMeshNote =>
-      'Percorsi ciclabili segnalati su questa mappa.';
+      'Percorsi ciclabili segnalati (ICN/NCN/RCN) su questo foglio. Vie dal zoom 12 su tutto il foglio DACH.';
 
   @override
   String get overlayLegendCompactGravel => 'Gravel';

@@ -199,6 +199,14 @@ export function LandingFooter() {
           >
             Protomaps
           </a>
+          {" · "}
+          <a
+            href={MAP_ATTRIBUTION_HREF.terrain}
+            className="hover:text-foreground"
+            rel="noreferrer"
+          >
+            Terrain
+          </a>
         </p>
       </div>
     </footer>

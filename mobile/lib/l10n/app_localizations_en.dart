@@ -4269,13 +4269,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overlayLegendEmpty =>
-      'No way overlay here. The bike network follows the map underneath.';
+      'No overlay here. OSM ways from zoom 12 on the DACH sheet. The bike network follows the map underneath.';
 
   @override
   String get overlayLegendMeshTitle => 'Bike network · OSM';
 
   @override
-  String get overlayLegendMeshNote => 'Signed bike routes on this map.';
+  String get overlayLegendMeshNote =>
+      'Signed cycle routes (ICN/NCN/RCN) on this sheet. Ways from zoom 12 across the DACH sheet.';
 
   @override
   String get overlayLegendCompactGravel => 'Gravel';

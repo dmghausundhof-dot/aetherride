@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { ServiceCheckSection } from "@/components/landing/ServiceCheckSection";
 import { ScreenGallery } from "@/components/landing/ScreenGallery";
@@ -6,6 +7,10 @@ import {
   HomePageBody,
   HomePageCta,
 } from "@/components/landing/HomePageBody";
+import {
+  KartenCoverageFallback,
+  KartenCoverageSection,
+} from "@/components/landing/KartenCoverageSection";
 import { websiteJsonLd, siteOrigin } from "@/lib/content/siteJsonLd";
 
 export const metadata: Metadata = {
@@ -28,7 +33,13 @@ export default function LandingPage() {
         }}
       />
       <LandingHero />
-      <HomePageBody />
+      <HomePageBody
+        mapsCoverage={
+          <Suspense fallback={<KartenCoverageFallback />}>
+            <KartenCoverageSection />
+          </Suspense>
+        }
+      />
       <ScreenGallery />
       <ServiceCheckSection />
       <HomePageCta />

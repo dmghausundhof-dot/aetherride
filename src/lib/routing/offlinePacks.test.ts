@@ -17,7 +17,7 @@ import {
   summarizeOfflinePacks,
   type OfflineCatalogPack,
   type OfflinePackManifest,
-} from "./offlinePacks";
+} from "./offlinePackCatalog";
 
 process.env.NEXT_PUBLIC_SUPABASE_URL ||=
   "https://krmgatsugplouzrhhozn.supabase.co";

@@ -36,6 +36,10 @@ const kOnlineCycleMeshPmtilesUrl =
 const kOnlineCycleMeshGeojsonUrl =
     '$kOfflinePacksPublicCdnRoot/basemap/cycle-routes.geojson';
 
+/// DACH-wide OSM ways (cycleway/path/track) — whole Blatt, not Hausberg chips.
+const kDachWaysPmtilesUrl =
+    '$kOfflinePacksPublicCdnRoot/basemap/dach-ways.pmtiles';
+
 /// OpenStreetMap street-level style (buildings, residential, paths).
 const kOpenFreeMapLibertyStyleUrl =
     'https://tiles.openfreemap.org/styles/liberty';
@@ -75,6 +79,17 @@ String liveMapStyleUrl({
   return kOpenFreeMapBrightStyleUrl;
 }
 
+/// Discover /karten catalog — not Stadia. HUD/Ride stays on [liveMapStyleUrl].
+String catalogBrowseMapStyleUrl({
+  required String pmtilesOrStyleUrl,
+  required double lng,
+  required double lat,
+}) {
+  final pm = pmtilesOrStyleUrl.trim();
+  if (pm.isNotEmpty && isStreetLevelBasemap(pm)) return pm;
+  final id = basemapArchiveIdForLngLat(lng, lat) ?? kDachBasemapId;
+  return styleUrlForArchiveId(id);
+}
 
 const kDachBasemapId = 'dach-z11';
 const kFranceWestBasemapId = 'france-west-z11';

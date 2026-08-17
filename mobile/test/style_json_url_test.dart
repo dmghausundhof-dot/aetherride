@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aetherride_mobile/data/routing/basemap_street_contrast.dart';
+import 'package:aetherride_mobile/data/routing/hillshade.dart';
 import 'package:aetherride_mobile/data/routing/map_style_url.dart';
 import 'package:aetherride_mobile/data/routing/overlay_regions.dart';
 
@@ -53,21 +54,15 @@ void main() {
     expect(basemapArchiveIdForBbox([8.4, 47.3, 8.7, 47.5]), 'dach-z11');
     expect(basemapArchiveIdForBbox([4.7, 45.65, 5.05, 45.9]), 'france-west-z11');
     expect(
-      basemapArchiveIdForBbox(overlayRegionById('clermont-ferrand')!.bbox),
+      basemapArchiveIdForBbox([3.0, 45.72, 3.2, 45.85]),
       'france-west-z11',
     );
     expect(
       basemapArchiveIdForBbox(overlayRegionById('innsbruck')!.bbox),
       'dach-z11',
     );
-    expect(
-      basemapArchiveIdForBbox(overlayRegionById('nice')!.bbox),
-      'alps-south-z11',
-    );
-    expect(
-      basemapArchiveIdForBbox(overlayRegionById('chambery')!.bbox),
-      'alps-south-z11',
-    );
+    expect(basemapArchiveIdForBbox([7.20, 43.65, 7.32, 43.75]), 'alps-south-z11');
+    expect(basemapArchiveIdForBbox([5.88, 45.52, 5.98, 45.62]), 'alps-south-z11');
     expect(kDachBasemapBbox[0], 5.8);
     expect(kFranceWestBasemapBbox[2], 5.85);
   });
@@ -212,6 +207,33 @@ void main() {
     expect(
       liveMapStyleUrl(pmtilesOrStyleUrl: dach, stadiaApiKey: 'stadia-test'),
       'https://tiles.stadiamaps.com/styles/osm_bright.json?api_key=stadia-test',
+    );
+    expect(
+      catalogBrowseMapStyleUrl(
+        pmtilesOrStyleUrl: dach,
+        lng: 9.2,
+        lat: 49.0,
+      ),
+      dach,
+    );
+    expect(
+      catalogBrowseMapStyleUrl(
+        pmtilesOrStyleUrl: '',
+        lng: 2.35,
+        lat: 48.86,
+      ),
+      kFranceWestBasemapStyleUrl,
+    );
+    expect(
+      onlineCycleMeshPmtilesUrlForPoint(12.5, 41.9),
+      isNull,
+    );
+    expect(styleUsesCatalogHillshade(dach), isTrue);
+    expect(
+      styleUsesCatalogHillshade(
+        'https://tiles.stadiamaps.com/styles/osm_bright.json?api_key=x',
+      ),
+      isFalse,
     );
     expect(
       liveMapStyleUrl(pmtilesOrStyleUrl: dach, stadiaApiKey: ''),

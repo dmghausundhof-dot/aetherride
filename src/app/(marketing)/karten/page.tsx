@@ -158,6 +158,14 @@ export default async function KartenPage() {
             >
               Protomaps
             </a>
+            {" · "}
+            <a
+              href={MAP_ATTRIBUTION_HREF.terrain}
+              className="text-chrome hover:underline"
+              rel="noreferrer"
+            >
+              Terrain
+            </a>
           </p>
         </div>
       </section>

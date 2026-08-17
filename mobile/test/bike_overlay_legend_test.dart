@@ -77,7 +77,7 @@ void main() {
     expect(find.textContaining('OSM-Wege nur ab Zoom 12'), findsNothing);
     expect(find.textContaining('Annecy'), findsNothing);
     expect(
-      find.textContaining('An dieser Stelle kein Wege-Overlay'),
+      find.textContaining('OSM-Wege gibt es ab Zoom 12'),
       findsOneWidget,
     );
   });

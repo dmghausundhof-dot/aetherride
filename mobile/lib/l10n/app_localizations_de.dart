@@ -4293,14 +4293,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get overlayLegendEmpty =>
-      'An dieser Stelle kein Wege-Overlay. Das Radnetz folgt der Karte darunter.';
+      'Kein Overlay an dieser Stelle. OSM-Wege gibt es ab Zoom 12 auf dem DACH-Blatt. Das Radnetz folgt dem Blatt darunter.';
 
   @override
   String get overlayLegendMeshTitle => 'Radnetz · OSM';
 
   @override
   String get overlayLegendMeshNote =>
-      'Beschilderte Radrouten auf dieser Karte.';
+      'Signierte Radrouten (ICN/NCN/RCN) auf diesem Blatt. Wege ab Zoom 12 im ganzen DACH-Blatt.';
 
   @override
   String get overlayLegendCompactGravel => 'Gravel';

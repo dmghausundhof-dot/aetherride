@@ -6,6 +6,7 @@ import { overlayHintFromRegistry, detailOverlayRegionIdForPoint } from "../cover
 import {
   BIKE_WAYS_MIN_ZOOM,
   DETAIL_BIKE_OVERLAY_PACKS,
+  DACH_WAYS_PMTILES_URL,
   ONLINE_CYCLE_MESH_PMTILES_URL,
   ONLINE_PACK_CDN_ROOT,
   chooseOnlineBikeOverlay,
@@ -61,6 +62,16 @@ assert.ok(
     "cycle-routes-alps-south.pmtiles"
   )
 );
+assert.equal(
+  onlineCycleMeshPmtilesUrl(12.5, 41.9),
+  null,
+  "Rome has no mesh file on CDN yet"
+);
+assert.equal(
+  onlineCycleMeshPmtilesUrl(16.7, 40.2),
+  null,
+  "Puglia has no mesh file on CDN yet"
+);
 
 assert.equal(
   overlayHref("https://cdn.example/cycle-routes.pmtiles", "https://app.example"),
@@ -110,8 +121,26 @@ const berlinZ13 = chooseOnlineBikeOverlay({
   lat: 52.52,
   zoom: 13,
 });
-assert.equal(berlinZ13.kind, "mesh");
-assert.equal(berlinZ13.url, ONLINE_CYCLE_MESH_PMTILES_URL);
+assert.equal(berlinZ13.kind, "ways");
+assert.equal(berlinZ13.url, DACH_WAYS_PMTILES_URL);
+
+const wienZ13 = chooseOnlineBikeOverlay({
+  regionId: null,
+  lng: 16.373,
+  lat: 48.208,
+  zoom: 13,
+});
+assert.equal(wienZ13.kind, "ways");
+assert.equal(wienZ13.url, DACH_WAYS_PMTILES_URL);
+
+const hamburgAtlas = chooseOnlineBikeOverlay({
+  regionId: "hamburg",
+  lng: 9.993,
+  lat: 53.551,
+  zoom: 8,
+});
+assert.equal(hamburgAtlas.kind, "mesh");
+assert.equal(hamburgAtlas.url, ONLINE_CYCLE_MESH_PMTILES_URL);
 
 const parisAtlas = chooseOnlineBikeOverlay({
   regionId: null,

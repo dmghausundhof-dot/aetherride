@@ -3,14 +3,16 @@
  * Not a contraction-hierarchy “mesh” and not a named OSM-Mesh product —
  * a visual route mesh on the live basemap catalog.
  *
- * Ways overlays (cycleway/path/track) live on pack PMTiles. Show them when
- * the camera is in a Hausberg bbox and zoom is past the z11 atlas.
+ * At atlas zoom the signed mesh stays on (per Blatt). Past z11, DACH-wide
+ * ways (cycleway/path/track) cover the whole DACH Blatt; pack PMTiles still
+ * win when they are denser.
  */
 
 import {
   ONLINE_BASEMAP_CDN_ROOT,
   archiveIdFromStyleUrl,
   basemapArchiveIdForLngLat,
+  pointInBasemapBbox,
   type OnlineBasemapId,
 } from "./onlineBasemap";
 
@@ -21,6 +23,9 @@ export const ONLINE_PACK_CDN_ROOT = ONLINE_BASEMAP_CDN_ROOT.replace(
 
 export const ONLINE_CYCLE_MESH_PMTILES_URL = `${ONLINE_BASEMAP_CDN_ROOT}/cycle-routes.pmtiles`;
 export const ONLINE_CYCLE_MESH_GEOJSON_URL = `${ONLINE_BASEMAP_CDN_ROOT}/cycle-routes.geojson`;
+
+/** DACH-wide OSM ways (cycleway/path/track) — not limited to Hausberg packs. */
+export const DACH_WAYS_PMTILES_URL = `${ONLINE_BASEMAP_CDN_ROOT}/dach-ways.pmtiles`;
 
 /** Same bbox as the dach-z11 online basemap. */
 export const ONLINE_CYCLE_MESH_BBOX: [number, number, number, number] = [
@@ -34,15 +39,17 @@ export const BIKE_WAYS_MIN_ZOOM = 12;
  * Signed icn/ncn/rcn PMTiles per online Blatt.
  * DACH keeps the historic `cycle-routes.pmtiles` filename.
  */
-export const ONLINE_CYCLE_MESH_FILES: Record<OnlineBasemapId, string> = {
-  "dach-z11": "cycle-routes.pmtiles",
-  "france-west-z11": "cycle-routes-france-west.pmtiles",
-  "alps-south-z11": "cycle-routes-alps-south.pmtiles",
-  "benelux-z11": "cycle-routes-benelux.pmtiles",
-  "italy-north-z11": "cycle-routes-italy-north.pmtiles",
-  "catalonia-pyrenees-z11": "cycle-routes-catalonia-pyrenees.pmtiles",
-  "uk-south-z11": "cycle-routes-uk-south.pmtiles",
-};
+/** Only sheets that actually have a mesh file on the CDN (no 404). */
+export const ONLINE_CYCLE_MESH_FILES: Partial<Record<OnlineBasemapId, string>> =
+  {
+    "dach-z11": "cycle-routes.pmtiles",
+    "france-west-z11": "cycle-routes-france-west.pmtiles",
+    "alps-south-z11": "cycle-routes-alps-south.pmtiles",
+    "benelux-z11": "cycle-routes-benelux.pmtiles",
+    "italy-north-z11": "cycle-routes-italy-north.pmtiles",
+    "catalonia-pyrenees-z11": "cycle-routes-catalonia-pyrenees.pmtiles",
+    "uk-south-z11": "cycle-routes-uk-south.pmtiles",
+  };
 
 /** Region packs that already publish a way-level bike-overlay on the CDN. */
 export const DETAIL_BIKE_OVERLAY_PACKS = new Set([
@@ -81,6 +88,15 @@ export function detailBikeOverlayPmtilesUrl(
   return `${ONLINE_PACK_CDN_ROOT}/${regionId}/bike-overlay.pmtiles`;
 }
 
+export function pointInDachWays(lng: number, lat: number): boolean {
+  return pointInBasemapBbox(lng, lat, ONLINE_CYCLE_MESH_BBOX);
+}
+
+export function dachWaysPmtilesUrl(lng: number, lat: number): string | null {
+  if (!pointInDachWays(lng, lat)) return null;
+  return DACH_WAYS_PMTILES_URL;
+}
+
 function archiveIdForMesh(
   lng: number,
   lat: number,
@@ -113,7 +129,8 @@ export function cycleMeshGeojsonUrlForArchive(
 }
 
 /**
- * Mesh at atlas zoom; OSM ways when the camera is in a Hausberg and z ≥ 12.
+ * Mesh at atlas zoom. At z ≥ 12: pack ways if denser, else DACH-wide ways
+ * everywhere in the Blatt — not only ten Hausberg chips.
  */
 export function chooseOnlineBikeOverlay(opts: {
   regionId?: string | null;
@@ -123,13 +140,23 @@ export function chooseOnlineBikeOverlay(opts: {
   currentStyle?: string | null;
   archiveId?: string | null;
 }): OnlineBikeOverlayChoice {
-  const waysUrl = detailBikeOverlayPmtilesUrl(opts.regionId);
-  if (waysUrl && opts.zoom >= BIKE_WAYS_MIN_ZOOM) {
+  const packWays = detailBikeOverlayPmtilesUrl(opts.regionId);
+  if (packWays && opts.zoom >= BIKE_WAYS_MIN_ZOOM) {
     return {
       kind: "ways",
-      url: waysUrl,
+      url: packWays,
       regionId: opts.regionId ?? null,
     };
+  }
+  if (opts.zoom >= BIKE_WAYS_MIN_ZOOM) {
+    const dachWays = dachWaysPmtilesUrl(opts.lng, opts.lat);
+    if (dachWays) {
+      return {
+        kind: "ways",
+        url: dachWays,
+        regionId: opts.regionId ?? null,
+      };
+    }
   }
   const mesh = onlineCycleMeshPmtilesUrl(
     opts.lng,

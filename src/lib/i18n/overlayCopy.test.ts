@@ -11,7 +11,7 @@ function testDe() {
   assert.equal(overlayLegendLabel("S1", "de"), "S1");
   assert.equal(overlayLegendLabel("gravel", "de"), "Gravel");
   assert.ok(o.scaleNote.includes("mtb:scale"));
-  assert.ok(o.empty.includes("kein Wege-Overlay"));
+  assert.ok(o.empty.includes("DACH"));
   assert.ok(!o.empty.includes("Hausbergen"));
   assert.ok(!o.empty.includes("Annecy"));
   assert.ok(!o.empty.includes("Paris"));

@@ -4309,14 +4309,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get overlayLegendEmpty =>
-      'Pas de calque de chemins ici. Le réseau vélo suit la carte en dessous.';
+      'Pas d’overlay ici. Chemins OSM dès le zoom 12 sur toute la feuille DACH. Le réseau vélo suit la carte en dessous.';
 
   @override
   String get overlayLegendMeshTitle => 'Réseau vélo · OSM';
 
   @override
   String get overlayLegendMeshNote =>
-      'Itinéraires cyclables balisés sur cette carte.';
+      'Itinéraires cyclables signés (ICN/NCN/RCN) sur cette feuille. Chemins dès le zoom 12 sur toute la feuille DACH.';
 
   @override
   String get overlayLegendCompactGravel => 'Gravel';

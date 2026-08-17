@@ -25,7 +25,7 @@ void main() {
     expect(overlayDataExpectedAt(-30, 0), isFalse);
   });
 
-  test('ways overlay at z12 in Hausberge, mesh at atlas zoom', () {
+  test('ways overlay at z12 everywhere in DACH, mesh at atlas zoom', () {
     expect(detailOverlayPackIdForPoint(8.68, 49.41), 'rhein-neckar');
     expect(detailOverlayPackIdForPoint(7.85, 47.99), 'schwarzwald-nord');
     expect(detailOverlayPackIdForPoint(13.405, 52.52), isNull);
@@ -50,6 +50,22 @@ void main() {
     expect(hdWays.kind, OnlineBikeOverlayKind.ways);
     expect(hdWays.url, contains('/rhein-neckar/bike-overlay.pmtiles'));
 
+    final berlinWays = chooseOnlineBikeOverlay(
+      lng: 13.405,
+      lat: 52.52,
+      zoom: 13,
+    );
+    expect(berlinWays.kind, OnlineBikeOverlayKind.ways);
+    expect(berlinWays.url, contains('dach-ways.pmtiles'));
+
+    final wienWays = chooseOnlineBikeOverlay(
+      lng: 16.373,
+      lat: 48.208,
+      zoom: 13,
+    );
+    expect(wienWays.kind, OnlineBikeOverlayKind.ways);
+    expect(wienWays.url, contains('dach-ways.pmtiles'));
+
     final parisAtlas = chooseOnlineBikeOverlay(
       lng: 2.35,
       lat: 48.86,
@@ -65,5 +81,11 @@ void main() {
     );
     expect(parisWays.kind, OnlineBikeOverlayKind.ways);
     expect(parisWays.url, contains('/paris/bike-overlay.pmtiles'));
+
+    expect(pointInOnlineCycleMesh(12.5, 41.9), isFalse);
+    expect(
+      chooseOnlineBikeOverlay(lng: 12.5, lat: 41.9, zoom: 8).kind,
+      OnlineBikeOverlayKind.none,
+    );
   });
 }
