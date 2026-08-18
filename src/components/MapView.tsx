@@ -30,11 +30,15 @@ import {
   onlineBasemapStyleUrl,
 } from "@/lib/map/onlineBasemap";
 
+export type MapMarkerKind = "dot" | "tour" | "start" | "end" | "place";
+
 export type MapMarker = {
   id: string;
   lngLat: [number, number];
   color?: string;
   label?: string;
+  kind?: MapMarkerKind;
+  selected?: boolean;
 };
 
 export type MapRouteRole =
@@ -67,6 +71,71 @@ const ROLE_STYLE: Record<
   approx: { color: "#78909C", width: 3.5, opacity: 0.65, dasharray: [2, 2] },
 };
 
+function pinGlyph(m: MapMarker, kind: MapMarkerKind): string {
+  const raw = (m.label ?? "").trim();
+  if (kind === "start") return (raw || "A").slice(0, 1).toUpperCase();
+  if (kind === "end") return (raw || "B").slice(0, 1).toUpperCase();
+  if (kind === "place") return (raw || "·").slice(0, 1).toUpperCase();
+  if (kind === "tour") {
+    if (!raw) return "T";
+    if (raw.length <= 2) return raw.toUpperCase();
+    return raw.slice(0, 1).toUpperCase();
+  }
+  return raw.slice(0, 2);
+}
+
+function buildMarkerElement(m: MapMarker): HTMLDivElement {
+  const kind = m.kind ?? (m.label ? "tour" : "dot");
+  const color = m.color ?? "#FF6A00";
+  const el = document.createElement("div");
+  el.className = "flex flex-col items-center";
+  el.style.filter = m.selected
+    ? "drop-shadow(0 0 0 3px #FF6A00) drop-shadow(0 4px 10px rgba(0,0,0,.45))"
+    : "drop-shadow(0 2px 6px rgba(0,0,0,.35))";
+  el.style.transform = m.selected ? "scale(1.08)" : "";
+  el.style.transformOrigin = "bottom center";
+
+  if (kind === "dot") {
+    const pin = document.createElement("div");
+    pin.style.width = m.selected ? "16px" : "12px";
+    pin.style.height = m.selected ? "16px" : "12px";
+    pin.style.borderRadius = "999px";
+    pin.style.background = color;
+    pin.style.border = "2px solid #fff";
+    el.appendChild(pin);
+    return el;
+  }
+
+  const pin = document.createElement("div");
+  const size = kind === "place" ? 22 : m.selected ? 32 : 26;
+  const square = kind === "start" || kind === "end";
+  pin.style.width = `${size}px`;
+  pin.style.height = `${size}px`;
+  pin.style.borderRadius = square ? "7px" : "999px";
+  pin.style.background = kind === "end" ? "#F4F1EA" : color;
+  pin.style.border = m.selected ? "3px solid #fff" : "2px solid #fff";
+  pin.style.display = "flex";
+  pin.style.alignItems = "center";
+  pin.style.justifyContent = "center";
+  pin.style.color = kind === "end" ? "#1C1A17" : "#121215";
+  pin.style.fontSize = kind === "place" ? "10px" : "11px";
+  pin.style.fontWeight = "800";
+  pin.style.letterSpacing = "0.02em";
+  pin.textContent = pinGlyph(m, kind);
+  el.appendChild(pin);
+  if (kind === "tour" || kind === "start" || kind === "end") {
+    const tip = document.createElement("div");
+    tip.style.width = "0";
+    tip.style.height = "0";
+    tip.style.borderLeft = "5px solid transparent";
+    tip.style.borderRight = "5px solid transparent";
+    tip.style.borderTop = `6px solid ${kind === "end" ? "#F4F1EA" : color}`;
+    tip.style.marginTop = "-1px";
+    el.appendChild(tip);
+  }
+  return el;
+}
+
 interface MapViewProps {
   className?: string;
   center?: [number, number];
@@ -86,6 +155,7 @@ interface MapViewProps {
   onViewChange?: (view: { center: [number, number]; zoom: number }) => void;
   onZoomChange?: (zoom: number) => void;
   fitRoute?: boolean;
+  fitMarkers?: boolean;
   bikeOverlayUrl?: string | null;
   bikeOverlayKind?: "pmtiles" | "geojson";
   bikeOverlayFamily?: BikeOverlayFamily;
@@ -272,6 +342,7 @@ export function MapView({
   onViewChange,
   onZoomChange,
   fitRoute = false,
+  fitMarkers = false,
   bikeOverlayUrl = null,
   bikeOverlayKind = "pmtiles",
   bikeOverlayFamily = "road",
@@ -721,36 +792,22 @@ export function MapView({
     if (!map || !ready) return;
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = markers.map((m) => {
-      const el = document.createElement("div");
-      el.className = "flex flex-col items-center";
-      const pin = document.createElement("div");
-      pin.style.width = "14px";
-      pin.style.height = "14px";
-      pin.style.borderRadius = "999px";
-      pin.style.background = m.color ?? "#4FC3F7";
-      pin.style.border = "2px solid white";
-      pin.style.boxShadow = "0 1px 4px rgba(0,0,0,.4)";
-      el.appendChild(pin);
-      if (m.label) {
-        const lab = document.createElement("div");
-        lab.textContent = m.label;
-        lab.style.fontSize = "10px";
-        lab.style.fontWeight = "700";
-        lab.style.color = "#fff";
-        lab.style.textShadow = "0 1px 2px rgba(0,0,0,.8)";
-        lab.style.marginTop = "2px";
-        el.appendChild(lab);
-      }
+      const el = buildMarkerElement(m);
       el.style.cursor = "pointer";
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
         onMarkerClickRef.current?.(m.id);
       });
-      return new maplibregl.Marker({ element: el })
+      return new maplibregl.Marker({ element: el, anchor: "bottom" })
         .setLngLat(m.lngLat)
         .addTo(map);
     });
-  }, [markers, ready]);
+    if (fitMarkers && markers.length >= 2) {
+      const bounds = new maplibregl.LngLatBounds();
+      for (const m of markers) bounds.extend(m.lngLat);
+      map.fitBounds(bounds, { padding: 56, maxZoom: 11.4, duration: 500 });
+    }
+  }, [markers, ready, fitMarkers]);
 
   const sourceLabel =
     tileSource === "stadia"

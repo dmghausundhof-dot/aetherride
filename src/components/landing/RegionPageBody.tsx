@@ -83,7 +83,6 @@ export function RegionPageBody({ slug }: { slug: string }) {
         </h2>
         {tours.length > 0 ? (
           <div className="mt-6">
-            <p className="mb-3 text-sm font-medium">{copy.region.mapTitle}</p>
             <RegionToursMap tours={tours} center={region.center} />
           </div>
         ) : null}

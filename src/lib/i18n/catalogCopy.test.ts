@@ -33,6 +33,9 @@ function testParity() {
     assert.ok(c.tour.kitTitle.length > 0, lang);
     assert.equal(Object.keys(c.tour.fn).length, 13, lang);
     assert.ok(c.region.mapTitle.length > 0, lang);
+    assert.ok(c.region.mapOpen.length > 0, lang);
+    assert.ok(c.tour.mapStart.length > 0, lang);
+    assert.ok(c.tour.mapLoading.length > 0, lang);
   }
   assert.notEqual(de.regions.lead, catalogCopy("en").regions.lead);
   assert.equal(catalogCopy("nl").regions.title, "Regio's");

@@ -112,12 +112,14 @@ export function TourPageBody({ id }: { id: string }) {
               <TourCommunityChip tourId={tour.id} />
             </div>
           </div>
-          <div className="relative min-h-[280px] lg:min-h-[420px]">
+          <div className="relative min-h-[360px] lg:min-h-[560px]">
             <TourLiveMap
               tourId={tour.id}
               center={tour.center}
               name={tour.name}
               profile={profileForBikeCategory(tour.primaryCategory)}
+              category={tour.primaryCategory}
+              loop={tour.loop}
             />
           </div>
         </div>

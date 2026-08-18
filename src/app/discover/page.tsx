@@ -23,6 +23,7 @@ import {
 import { estimateRange } from "@/lib/ebike/range";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
 import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
+import { sportPinColor } from "@/lib/tours/mapPins";
 import { BikeOverlayLegend } from "@/components/BikeOverlayLegend";
 import { BikeChip } from "@/components/BikeChip";
 import {
@@ -1781,9 +1782,21 @@ function DiscoverPageInner() {
     let viaIdx = 0;
     for (const w of orderedWaypoints(draft)) {
       if (w.role === "start") {
-        m.push({ id: w.id, lngLat: w.lngLat, color: "#43A047", label: "S" });
+        m.push({
+          id: w.id,
+          lngLat: w.lngLat,
+          color: "#43A047",
+          label: "S",
+          kind: "start",
+        });
       } else if (w.role === "end") {
-        m.push({ id: w.id, lngLat: w.lngLat, color: "#E53935", label: "Z" });
+        m.push({
+          id: w.id,
+          lngLat: w.lngLat,
+          color: "#E53935",
+          label: "Z",
+          kind: "end",
+        });
       } else {
         viaIdx += 1;
         m.push({
@@ -1791,6 +1804,7 @@ function DiscoverPageInner() {
           lngLat: w.lngLat,
           color: "#FFB300",
           label: String(viaIdx),
+          kind: "tour",
         });
       }
     }
@@ -1816,6 +1830,7 @@ function DiscoverPageInner() {
           lngLat: ideaCenter,
           color: "#78909C",
           label: "Idee",
+          kind: "tour",
         });
       }
     }
@@ -1828,8 +1843,10 @@ function DiscoverPageInner() {
       m.push({
         id: `tour-${r.id}`,
         lngLat: r.center,
-        color: r.loop ? "#26A69A" : "#78909C",
-        label: "T",
+        color: sportPinColor(r.category),
+        label: r.name,
+        kind: "tour",
+        selected: detailId === r.id,
       });
     }
     for (const p of googlePlaces.slice(0, 10)) {
@@ -1841,10 +1858,11 @@ function DiscoverPageInner() {
         lngLat: [p.lng, p.lat],
         color: "#5E35B1",
         label: d.placeKind(normalizePlaceKind(p.kind)),
+        kind: "place",
       });
     }
     return m;
-  }, [draft, nearbyRoutes, googlePlaces, d]);
+  }, [draft, nearbyRoutes, googlePlaces, d, detailId]);
 
   if (detailRoute) {
     return (

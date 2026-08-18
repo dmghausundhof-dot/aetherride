@@ -23,6 +23,8 @@ export type CatalogCopy = {
     neighborsLead: string;
     mapTitle: string;
     mapLead: string;
+    mapOpen: string;
+    mapTap: string;
   };
   tour: {
     atGate: string;
@@ -50,6 +52,11 @@ export type CatalogCopy = {
     copyLink: string;
     linkCopied: string;
     noTrackHint: string;
+    mapLoading: string;
+    mapUnreachable: string;
+    mapStart: string;
+    mapEnd: string;
+    mapPlaces: string;
     kitTitle: string;
     kitLead: string;
     eventTitle: string;
@@ -149,7 +156,9 @@ const DE: CatalogCopy = {
     neighborsTitle: "Nachbarregionen",
     neighborsLead: "Weiterlesen in der Nähe — nicht als GPS-Fill.",
     mapTitle: "Touren auf der Karte",
-    mapLead: "Pins der redaktionellen Touren — tippen öffnet die Tourseite",
+    mapLead: "Pin wählen zeigt die Tour — Öffnen führt zur Seite",
+    mapOpen: "Tour öffnen",
+    mapTap: "Pin wählen · Sportfarben",
   },
   tour: {
     atGate: "Vor dem Tor",
@@ -178,6 +187,11 @@ const DE: CatalogCopy = {
     copyLink: "Tour-Link kopieren",
     linkCopied: "Link kopiert",
     noTrackHint: "Ohne Track. Katalog-Tour, schon freigegeben.",
+    mapLoading: "Live-Route wird berechnet…",
+    mapUnreachable: "Routing nicht erreichbar",
+    mapStart: "Start",
+    mapEnd: "Ziel",
+    mapPlaces: "Orte an der Tour",
     kitTitle: "Funktionen dieser Tour",
     kitLead:
       "Was an dieser Katalog-Tour wirklich hängt: Karte, Profil, Wetter, Stimmen, Teilen, Mappe, GPX, Planen, Fahrt, Gruppe, Termin, Club, Orte.",
@@ -292,7 +306,9 @@ const EN: CatalogCopy = {
     neighborsTitle: "Neighbouring regions",
     neighborsLead: "Read on nearby — not as GPS fill.",
     mapTitle: "Tours on the map",
-    mapLead: "Pins of editorial tours — tap opens the tour page",
+    mapLead: "Select a pin to preview — Open goes to the tour page",
+    mapOpen: "Open tour",
+    mapTap: "Tap a pin · sport colours",
   },
   tour: {
     atGate: "At the gate",
@@ -321,6 +337,11 @@ const EN: CatalogCopy = {
     copyLink: "Copy tour link",
     linkCopied: "Link copied",
     noTrackHint: "No track. Catalogue tour, already shared.",
+    mapLoading: "Live route is being calculated…",
+    mapUnreachable: "Routing unavailable",
+    mapStart: "Start",
+    mapEnd: "Finish",
+    mapPlaces: "Places on the tour",
     kitTitle: "Functions on this tour",
     kitLead:
       "What this catalogue tour actually has: map, profile, weather, Stimmen, share, Mappe, GPX, plan, ride, group, date, club, places.",
@@ -433,7 +454,9 @@ const FR: CatalogCopy = {
     neighborsTitle: "Régions voisines",
     neighborsLead: "Lire à proximité — pas comme remplissage GPS.",
     mapTitle: "Sorties sur la carte",
-    mapLead: "Épingles des sorties éditoriales — un tap ouvre la page",
+    mapLead: "Choisir une épingle prévisualise — Ouvrir mène à la page",
+    mapOpen: "Ouvrir la sortie",
+    mapTap: "Choisir une épingle · couleurs sport",
   },
   tour: {
     atGate: "Devant la porte",
@@ -462,6 +485,11 @@ const FR: CatalogCopy = {
     copyLink: "Copier le lien de sortie",
     linkCopied: "Lien copié",
     noTrackHint: "Sans trace. Sortie catalogue, déjà partagée.",
+    mapLoading: "Itinéraire live en cours de calcul…",
+    mapUnreachable: "Routage indisponible",
+    mapStart: "Départ",
+    mapEnd: "Arrivée",
+    mapPlaces: "Lieux sur la sortie",
     kitTitle: "Fonctions de cette sortie",
     kitLead:
       "Ce que cette sortie catalogue a vraiment : carte, profil, météo, Stimmen, partage, Mappe, GPX, plan, sortie, groupe, date, club, lieux.",
@@ -576,7 +604,9 @@ const IT: CatalogCopy = {
     neighborsTitle: "Regioni vicine",
     neighborsLead: "Continua nelle vicinanze — non come riempimento GPS.",
     mapTitle: "Uscite sulla mappa",
-    mapLead: "Pin delle uscite editoriali — un tap apre la pagina",
+    mapLead: "Scegliere un pin mostra l’uscita — Apri porta alla pagina",
+    mapOpen: "Apri l’uscita",
+    mapTap: "Scegli un pin · colori sport",
   },
   tour: {
     atGate: "Davanti al cancello",
@@ -605,6 +635,11 @@ const IT: CatalogCopy = {
     copyLink: "Copia link uscita",
     linkCopied: "Link copiato",
     noTrackHint: "Senza traccia. Uscita catalogo, già condivisa.",
+    mapLoading: "Percorso live in calcolo…",
+    mapUnreachable: "Routing non raggiungibile",
+    mapStart: "Partenza",
+    mapEnd: "Arrivo",
+    mapPlaces: "Luoghi sull’uscita",
     kitTitle: "Funzioni di questa uscita",
     kitLead:
       "Cosa ha davvero questa uscita catalogo: mappa, profilo, meteo, Stimmen, condivisione, Mappe, GPX, piano, uscita, gruppo, data, club, luoghi.",
@@ -719,7 +754,9 @@ const NL: CatalogCopy = {
     neighborsTitle: "Buurregio's",
     neighborsLead: "Verder lezen in de buurt — niet als GPS-vulling.",
     mapTitle: "Tochten op de kaart",
-    mapLead: "Pins van redactionele tochten — tik opent de tochtpagina",
+    mapLead: "Pin kiezen toont de tocht — Openen gaat naar de pagina",
+    mapOpen: "Tocht openen",
+    mapTap: "Pin kiezen · sportkleuren",
   },
   tour: {
     atGate: "Voor de poort",
@@ -748,6 +785,11 @@ const NL: CatalogCopy = {
     copyLink: "Tochtlink kopiëren",
     linkCopied: "Link gekopieerd",
     noTrackHint: "Zonder track. Catalogustocht, al gedeeld.",
+    mapLoading: "Live-route wordt berekend…",
+    mapUnreachable: "Routing niet bereikbaar",
+    mapStart: "Start",
+    mapEnd: "Finish",
+    mapPlaces: "Plekken op de tocht",
     kitTitle: "Functies van deze tocht",
     kitLead:
       "Wat deze catalogustocht echt heeft: kaart, profiel, weer, Stimmen, delen, Mappe, GPX, plannen, rit, groep, datum, club, plekken.",
