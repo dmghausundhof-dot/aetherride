@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 import {
   dedupeGeocodeHits,
+  queryLooksLikeStation,
   rankGeocodeHits,
 } from "@/lib/geocode/photonRank";
 
@@ -68,7 +69,8 @@ export async function GET(req: Request) {
       "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
     } as const;
 
-    const [res, placeRes] = await Promise.all([
+    const stationQ = queryLooksLikeStation(q);
+    const [res, placeRes, stationRes] = await Promise.all([
       fetch(photonUrl(), {
         headers: photonHeaders,
         next: { revalidate: 3600 },
@@ -77,6 +79,12 @@ export async function GET(req: Request) {
         headers: photonHeaders,
         next: { revalidate: 3600 },
       }).catch(() => null),
+      stationQ
+        ? fetch(photonUrl("railway"), {
+            headers: photonHeaders,
+            next: { revalidate: 3600 },
+          }).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     if (!res.ok) {
@@ -155,6 +163,16 @@ export async function GET(req: Request) {
           features?: PhotonFeature[];
         };
         hits = [...parseHits(placeData), ...hits];
+      } catch {
+        /* keep default hits */
+      }
+    }
+    if (stationRes?.ok) {
+      try {
+        const stationData = (await stationRes.json()) as {
+          features?: PhotonFeature[];
+        };
+        hits = [...parseHits(stationData), ...hits];
       } catch {
         /* keep default hits */
       }

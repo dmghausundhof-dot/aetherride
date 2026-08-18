@@ -44,4 +44,72 @@ assert.ok(
     })
 );
 
+const hbf = rankGeocodeHits("Hauptbahnhof Frankfurt", [
+  {
+    label: "Frankfurt, Hessen, Deutschland",
+    lat: 50.11,
+    lng: 8.68,
+    kind: "city",
+    name: "Frankfurt",
+  },
+  {
+    label: "Frankfurt Hauptbahnhof, Frankfurt, Deutschland",
+    lat: 50.107,
+    lng: 8.664,
+    kind: "station",
+    name: "Frankfurt Hauptbahnhof",
+  },
+]);
+assert.equal(hbf[0].kind, "station", "Hbf query prefers the station");
+assert.ok(
+  geocodeHitScore("Hauptbahnhof Frankfurt", hbf[0]) >
+    geocodeHitScore("Hauptbahnhof Frankfurt", {
+      label: "Frankfurt, Hessen, Deutschland",
+      lat: 50.11,
+      lng: 8.68,
+      kind: "city",
+      name: "Frankfurt",
+    })
+);
+
+const wiesloch = rankGeocodeHits("Hauptbahnhof Wiesloch", [
+  {
+    label: "Wiesloch, Baden-Württemberg, Deutschland",
+    lat: 49.295,
+    lng: 8.698,
+    kind: "city",
+    name: "Wiesloch",
+  },
+  {
+    label: "Wiesloch-Walldorf Bahnhof, Wiesloch, Deutschland",
+    lat: 49.291,
+    lng: 8.664,
+    kind: "station",
+    name: "Wiesloch-Walldorf Bahnhof",
+  },
+]);
+assert.equal(
+  wiesloch[0].kind,
+  "station",
+  "Wiesloch Hbf query prefers the station, not the city"
+);
+
+const cityOnly = rankGeocodeHits("Frankfurt", [
+  {
+    label: "Frankfurt Hauptbahnhof, Frankfurt, Deutschland",
+    lat: 50.107,
+    lng: 8.664,
+    kind: "station",
+    name: "Frankfurt Hauptbahnhof",
+  },
+  {
+    label: "Frankfurt, Hessen, Deutschland",
+    lat: 50.11,
+    lng: 8.68,
+    kind: "city",
+    name: "Frankfurt",
+  },
+]);
+assert.equal(cityOnly[0].kind, "city", "plain city query still prefers the city");
+
 console.log("photonRank.test.ts OK");

@@ -63,17 +63,46 @@ bool geocodeNameMatchesQuery(String name, String query) {
   return next == ' ' || next == '-' || next == '/' || next == ',';
 }
 
+const _stationKinds = {'station', 'railway', 'halt'};
+
+List<String> _normalizePlaceTokens(String raw) {
+  return raw
+      .toLowerCase()
+      .replaceAll('hauptbahnhof', 'bahnhof')
+      .replaceAll(RegExp(r'\bhbf\b'), 'bahnhof')
+      .replaceAll(RegExp(r'\bstation\b'), 'bahnhof')
+      .replaceAll(RegExp(r'\bgare\b'), 'bahnhof')
+      .replaceAll(RegExp(r'\bstazione\b'), 'bahnhof')
+      .split(RegExp(r'[^a-z0-9äöüß]+', caseSensitive: false))
+      .where((t) => t.length >= 2)
+      .toList();
+}
+
+bool queryLooksLikeStation(String query) =>
+    _normalizePlaceTokens(query).contains('bahnhof');
+
+bool geocodeTokensCovered(String query, String hay) {
+  final tokens = _normalizePlaceTokens(query);
+  if (tokens.isEmpty) return false;
+  final have = _normalizePlaceTokens(hay).toSet();
+  return tokens.every(have.contains);
+}
+
 int geocodeHitScore(String query, GeocodeHit hit) {
   final q = query.trim().toLowerCase();
   final name = hit.matchName.toLowerCase();
+  final hay = '$name ${hit.label}';
   var s = 0;
   if (name == q) {
     s += 100;
   } else if (geocodeNameMatchesQuery(name, q)) {
     s += 45;
   }
+  if (geocodeTokensCovered(query, hay)) s += 80;
   final kind = hit.kind ?? '';
-  if (kind == 'city' || kind == 'locality') s += 25;
+  final stationQ = queryLooksLikeStation(query);
+  if (kind == 'city' || kind == 'locality') s += stationQ ? 10 : 25;
+  if (_stationKinds.contains(kind)) s += stationQ ? 40 : 5;
   if (kind == 'street' || kind == 'house') s -= 15;
   return s;
 }

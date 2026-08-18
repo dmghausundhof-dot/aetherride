@@ -656,7 +656,9 @@ function DiscoverPageInner() {
 
   const mapLayers: MapRouteLayer[] = useMemo(() => {
     // Rundkurs: never paint out-and-back Quick / non-closed A→B on the map.
-    const mapDraft = rundkursActive
+    const mapRundkurs =
+      rundkursActive && draft.mode !== "point_to_point";
+    const mapDraft = mapRundkurs
       ? sanitizeDraftForRundkurs(draft)
       : draft;
     const mapQuick = suppressOutAndBackQuick ? [] : quickOptions;
@@ -666,7 +668,7 @@ function DiscoverPageInner() {
       activeQuickId: mapQuick.find((q) => q.label === mapDraft.label)?.id,
       trails: trailsForMap,
       showTrails: sheetMode === "tours" && trailsForMap.length > 0,
-      rundkursOnly: rundkursActive,
+      rundkursOnly: mapRundkurs,
       rideProfileId: null,
     });
     const heat: MapRouteLayer[] = (communityHeat?.segments ?? [])
@@ -1693,6 +1695,23 @@ function DiscoverPageInner() {
     },
     [activeProfile, planCosting, origin, nearbyTrails]
   );
+
+  const planProfileKey = `${sheetMode}:${activeProfile}:${planCosting}`;
+  const lastPlanProfileKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (sheetMode !== "plan") {
+      lastPlanProfileKey.current = planProfileKey;
+      return;
+    }
+    if (lastPlanProfileKey.current === planProfileKey) return;
+    lastPlanProfileKey.current = planProfileKey;
+    setDraft((d) => {
+      if (!startOf(d) || !endOf(d)) return { ...d, profile: activeProfile };
+      const next = { ...d, profile: activeProfile };
+      schedulePlanRecompute(next);
+      return next;
+    });
+  }, [planProfileKey, sheetMode, activeProfile, schedulePlanRecompute]);
 
   const applyAddressHit = useCallback(
     (hit: { label: string; lat: number; lng: number }) => {
@@ -3073,8 +3092,10 @@ function DiscoverPageInner() {
           fitRoute={
             !holdMapFit &&
             Boolean(
-              (rundkursActive ? sanitizeDraftForRundkurs(draft) : draft)
-                .computed
+              (rundkursActive && draft.mode !== "point_to_point"
+                ? sanitizeDraftForRundkurs(draft)
+                : draft
+              ).computed
             )
           }
         />

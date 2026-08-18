@@ -148,6 +148,8 @@ export function sanitizeDraftForRundkurs<
     } | null;
   },
 >(draft: T): T {
+  // Navigieren A→B bleibt stehen — Rundkurs filtert nur Quick/Tour-Listen.
+  if (draft.mode === "point_to_point") return draft;
   const label = draft.label ?? "";
   if (isOutAndBackQuickOption({ label })) {
     return { ...draft, computed: null, label: "" };

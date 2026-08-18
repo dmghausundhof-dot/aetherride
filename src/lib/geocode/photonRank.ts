@@ -25,14 +25,45 @@ export function nameMatchesQuery(name: string, query: string): boolean {
   return next === " " || next === "-" || next === "/" || next === ",";
 }
 
+const STATION_KINDS = new Set(["station", "railway", "halt"]);
+
+function normalizePlaceTokens(raw: string): string[] {
+  return raw
+    .toLowerCase()
+    .replace(/hauptbahnhof/g, "bahnhof")
+    .replace(/\bhbf\b/g, "bahnhof")
+    .replace(/\bstation\b/g, "bahnhof")
+    .replace(/\bgare\b/g, "bahnhof")
+    .replace(/\bstazione\b/g, "bahnhof")
+    .split(/[^a-z0-9äöüß]+/i)
+    .filter((t) => t.length >= 2);
+}
+
+/** „Hauptbahnhof Frankfurt“ / Hbf / Station — nicht nur die Stadt. */
+export function queryLooksLikeStation(query: string): boolean {
+  return normalizePlaceTokens(query).includes("bahnhof");
+}
+
+/** Query-Wörter unabhängig von der Reihenfolge im Treffer. */
+export function geocodeTokensCovered(query: string, hay: string): boolean {
+  const tokens = normalizePlaceTokens(query);
+  if (!tokens.length) return false;
+  const have = new Set(normalizePlaceTokens(hay));
+  return tokens.every((t) => have.has(t));
+}
+
 export function geocodeHitScore(query: string, hit: RankableGeocodeHit): number {
   const q = query.trim().toLowerCase();
   const name = hitName(hit).toLowerCase();
+  const hay = `${name} ${hit.label}`;
   let s = 0;
   if (name === q) s += 100;
   else if (nameMatchesQuery(name, q)) s += 45;
+  if (geocodeTokensCovered(query, hay)) s += 80;
   const kind = hit.kind ?? "";
-  if (kind === "city" || kind === "locality") s += 25;
+  const stationQ = queryLooksLikeStation(query);
+  if (kind === "city" || kind === "locality") s += stationQ ? 10 : 25;
+  if (STATION_KINDS.has(kind)) s += stationQ ? 40 : 5;
   if (kind === "street" || kind === "house") s -= 15;
   return s;
 }
