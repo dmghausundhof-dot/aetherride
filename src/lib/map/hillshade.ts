@@ -26,10 +26,10 @@ export const HILLSHADE_LAYER = {
   type: "hillshade" as const,
   source: HILLSHADE_SOURCE_ID,
   paint: {
-    "hillshade-exaggeration": 0.38,
-    "hillshade-shadow-color": "#3a4a42",
-    "hillshade-highlight-color": "#f4f7f4",
-    "hillshade-accent-color": "#6a7a72",
+    "hillshade-exaggeration": 0.14,
+    "hillshade-shadow-color": "#6a7a72",
+    "hillshade-highlight-color": "#f6f8f6",
+    "hillshade-accent-color": "#9aa8a0",
     "hillshade-illumination-direction": 315,
   },
 };

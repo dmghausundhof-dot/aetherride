@@ -45,6 +45,7 @@ import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
 import '../../domain/routing/browse_map_paint.dart';
 import '../../domain/routing/browse_place_search.dart';
+import '../../domain/routing/navigate_workflow.dart';
 import '../../data/routing/catalog_tour_geometry.dart';
 import '../../data/routing/naehe_seeds.dart';
 import '../../data/routing/public_tours_client.dart';
@@ -508,6 +509,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// Browse-Suche / Kameraschwenk — Nähe folgt diesem Punkt statt nur GPS.
   GeoPoint? _browseAnchor;
   List<GeocodeHit> _placeHits = const [];
+  GeocodeHit? _lastPlaceHit;
   Timer? _placeSearchDebounce;
   List<OsmTrailSegment> _trailNetwork = [];
   List<OsmTrailSegment> _sGradeTrails = [];
@@ -2427,6 +2429,48 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     unawaited(_drawAll());
   }
 
+  void _beginNavigate() {
+    final intent = beginNavigateIntent(
+      hasEnd: _end != null,
+      lastPlace: _lastPlaceHit,
+      pendingHits: _placeHits,
+    );
+    setState(() {
+      _vias.clear();
+      if (_start == null && _hasRealOrigin) {
+        _start = _origin;
+        _startAddrCtrl.text = _l10n.discoverMyPosition;
+      }
+      final dest = intent.destination;
+      if (dest != null) {
+        _end = GeoPoint(dest.lat, dest.lng);
+        _endAddrCtrl.text = dest.label;
+        _lastPlaceHit = dest;
+        _addrTarget = 'end';
+        _destinationTrail = null;
+      }
+    });
+    _setShellMode(
+      DiscoverShellMode.navigate,
+      pick: _PickMode.end,
+    );
+    if (_start != null && _end != null) {
+      unawaited(_calcAb());
+    }
+  }
+
+  Future<void> _applyBrowsePlaceHit(GeocodeHit hit) async {
+    _lastPlaceHit = hit;
+    if (placeHitAppliesAsDestination(
+      navigating: _shellMode == DiscoverShellMode.navigate,
+    )) {
+      _addrTarget = 'end';
+      await _applyAddressHit(hit);
+      return;
+    }
+    await _flyBrowsePlace(hit);
+  }
+
   Future<void> _flyBrowsePlace(GeocodeHit hit) async {
     setState(() {
       _browseAnchor = GeoPoint(hit.lat, hit.lng);
@@ -2505,10 +2549,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             visibleTourNames: names,
           ) &&
           hits.length > 1) {
-        setState(() => _placeHits = hits.take(5).toList());
+        setState(() {
+          _placeHits = hits.take(5).toList();
+          _lastPlaceHit = hits.first;
+        });
         return;
       }
-      await _flyBrowsePlace(hits.first);
+      await _applyBrowsePlaceHit(hits.first);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -3359,6 +3406,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   /// S25: with Rundkurs filter, kill green A→B / Demo-Geometrie overlay.
   void _clearAbDemoOverlayForLoopFilter() {
     if (!_loopOnlyActive) return;
+    if (_shellMode == DiscoverShellMode.navigate) return;
     final killQuick = _quick.isNotEmpty;
     final killComputed = _isDemoOrAbOverlay(_computed) ||
         (_selectedTourId == null && _computed != null && killQuick);
@@ -4521,6 +4569,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _bikeOverlayOn = _showTrailsLayer || _showBikeWaysLayer;
   }
 
+  bool _liveNetworkFallback({double? lng, double? lat, double? zoom}) {
+    final cam = _map?.cameraPosition;
+    return liveNetworkFallbackAt(
+      lng: lng ?? cam?.target.longitude ?? _mapCenter.lng,
+      lat: lat ?? cam?.target.latitude ?? _mapCenter.lat,
+      zoom: zoom ?? cam?.zoom ?? (_hasRealOrigin ? _mapZoom : 12),
+    );
+  }
+
   Future<void> _refreshExploreOverlay() async {
     _applyExploreOverlayLayers();
     final c = _map;
@@ -4530,6 +4587,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
+        liveNetwork: _liveNetworkFallback(),
       );
     }
     unawaited(_refreshSGradeLive());
@@ -4567,12 +4625,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
     if (!mounted) return;
     final key = data?.toString();
+    final liveNetwork = _liveNetworkFallback(lng: lng, lat: lat, zoom: zoom);
     if (key != null && key == _bikeOverlayKey && _bikeOverlayAttached) {
       await applyBikeOverlayVisibility(
         c,
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
+        liveNetwork: liveNetwork,
       );
       unawaited(_refreshSGradeLive());
       return;
@@ -4593,6 +4653,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
         sGradeOnly: false,
+        liveNetwork: liveNetwork,
       );
     } else if (mounted) {
       await applyBikeOverlayVisibility(
@@ -4600,6 +4661,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
+        liveNetwork: liveNetwork,
       );
     }
     if (mounted) setState(() => _bikeOverlayAttached = true);
@@ -6490,6 +6552,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           family: _overlayFamily,
           visible: _bikeOverlayOn,
           extraOn: _bikeOverlayExtra,
+          liveNetwork: _liveNetworkFallback(),
         ),
       );
     });
@@ -7214,19 +7277,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _vias.clear();
-                        if (_start == null && _hasRealOrigin) {
-                          _start = _origin;
-                          _startAddrCtrl.text = _l10n.discoverMyPosition;
-                        }
-                      });
-                      _setShellMode(
-                        DiscoverShellMode.navigate,
-                        pick: _PickMode.end,
-                      );
-                    },
+                    onPressed: _beginNavigate,
                     child: Text(
                       l10n.planRouteCta,
                       style: const TextStyle(
@@ -7255,7 +7306,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      onPressed: () => unawaited(_flyBrowsePlace(hit)),
+                      onPressed: () => unawaited(_applyBrowsePlaceHit(hit)),
                     );
                   },
                 ),
@@ -8411,6 +8462,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               family: _overlayFamily,
               visible: _bikeOverlayOn,
               extraOn: _bikeOverlayExtra,
+              liveNetwork: _liveNetworkFallback(),
             ),
           );
         }
