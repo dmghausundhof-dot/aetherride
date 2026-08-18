@@ -8,6 +8,7 @@ class CommunityEventSeed {
     required this.dateLabel,
     required this.sport,
     required this.blurb,
+    this.catalogTourId,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class CommunityEventSeed {
   final String dateLabel;
   final String sport;
   final String blurb;
+  final String? catalogTourId;
 }
 
 class CommunityClubSeed {
@@ -66,6 +68,7 @@ const communityEventSeeds = <CommunityEventSeed>[
     dateLabel: 'Sa, 12. Sep 2026 · 09:00',
     sport: 'gravel',
     blurb: 'Lockere Gruppenfahrt, ca. 50 km. Keine Zeitnahme — nur Community.',
+    catalogTourId: 'r-schwarzwald-gravel',
   ),
   CommunityEventSeed(
     id: 'ev-city-hd',
@@ -74,6 +77,7 @@ const communityEventSeeds = <CommunityEventSeed>[
     dateLabel: 'Fr, 25. Sep 2026 · 18:30',
     sport: 'urban',
     blurb: 'Langsame Stadt-Runde für alle Räder. Treffpunkt am Neckar.',
+    catalogTourId: 'r-heidelberg-city',
   ),
   CommunityEventSeed(
     id: 'ev-road-bodensee',
@@ -82,5 +86,25 @@ const communityEventSeeds = <CommunityEventSeed>[
     dateLabel: 'So, 4. Okt 2026 · 08:30',
     sport: 'road',
     blurb: 'Flach, fotogen, Kaffee-Stops. Rennrad & E-Trekking willkommen.',
+    catalogTourId: 'r-bodensee-road',
+  ),
+  CommunityEventSeed(
+    id: 'ev-alster-hh',
+    title: 'Hamburg Alster Feierabend',
+    regionLabel: 'Norddeutschland',
+    dateLabel: 'Mi, 16. Sep 2026 · 18:00',
+    sport: 'urban',
+    blurb: 'Flache Runde um die Alster. City, nicht Alpen — Tempo nach Gefühl.',
+    catalogTourId: 'r-hamburg-alster',
+  ),
+  CommunityEventSeed(
+    id: 'ev-neckar-voll',
+    title: 'Neckar-Vollrunde Feierabend',
+    regionLabel: 'Rhein-Neckar',
+    dateLabel: 'Do, 24. Sep 2026 · 18:00',
+    sport: 'gravel',
+    blurb:
+        'Gemeinsame Runde auf der Referenz-Tour. Kein RSVP — wer kommt, kommt. Treffpunkt am Neckar.',
+    catalogTourId: 'r-heidelberg-neckar-voll',
   ),
 ];

@@ -82,6 +82,18 @@ export const EDITORIAL_REVIEWS: TourReview[] = [
     editorial: true,
     sportHint: "mtb",
   },
+  {
+    id: "er-neckar-voll-1",
+    tourId: "r-heidelberg-neckar-voll",
+    authorLabel: "Mira",
+    authorHandle: "mira_gravel",
+    rating: 5,
+    body: "Gute Feierabend-Länge. Neckarpfad plus eine Schotterkante — nach Regen der Weg am Fluss nass, oben trocken.",
+    createdAt: "2026-08-10T17:40:00.000Z",
+    status: "approved",
+    editorial: true,
+    sportHint: "gravel",
+  },
 ];
 
 export const COMMUNITY_EVENTS: CommunityEvent[] = [
@@ -92,7 +104,8 @@ export const COMMUNITY_EVENTS: CommunityEvent[] = [
     dateLabel: "Sa, 12. Sep 2026 · 09:00",
     sport: "gravel",
     blurb: "Lockere Gruppenfahrt, ca. 50 km. Keine Zeitnahme — nur Community.",
-    href: "/regions/schwarzwald",
+    href: "/tours/r-schwarzwald-gravel",
+    catalogTourId: "r-schwarzwald-gravel",
   },
   {
     id: "ev-city-hd",
@@ -101,7 +114,8 @@ export const COMMUNITY_EVENTS: CommunityEvent[] = [
     dateLabel: "Fr, 25. Sep 2026 · 18:30",
     sport: "urban",
     blurb: "Langsame Stadt-Runde für alle Räder. Treffpunkt am Neckar.",
-    href: "/regions/rhein-neckar",
+    href: "/tours/r-heidelberg-city",
+    catalogTourId: "r-heidelberg-city",
   },
   {
     id: "ev-road-bodensee",
@@ -110,7 +124,8 @@ export const COMMUNITY_EVENTS: CommunityEvent[] = [
     dateLabel: "So, 4. Okt 2026 · 08:30",
     sport: "road",
     blurb: "Flach, fotogen, Kaffee-Stops. Rennrad & E-Trekking willkommen.",
-    href: "/regions/bodensee",
+    href: "/tours/r-bodensee-road",
+    catalogTourId: "r-bodensee-road",
   },
   {
     id: "ev-alster-hh",
@@ -119,7 +134,18 @@ export const COMMUNITY_EVENTS: CommunityEvent[] = [
     dateLabel: "Mi, 16. Sep 2026 · 18:00",
     sport: "urban",
     blurb: "Flache Runde um die Alster. City, nicht Alpen — Tempo nach Gefühl.",
-    href: "/regions/norddeutschland",
+    href: "/tours/r-hamburg-alster",
+    catalogTourId: "r-hamburg-alster",
+  },
+  {
+    id: "ev-neckar-voll",
+    title: "Neckar-Vollrunde Feierabend",
+    regionSlug: "rhein-neckar",
+    dateLabel: "Do, 24. Sep 2026 · 18:00",
+    sport: "gravel",
+    blurb: "Gemeinsame Runde auf der Referenz-Tour. Kein RSVP — wer kommt, kommt. Treffpunkt am Neckar.",
+    href: "/tours/r-heidelberg-neckar-voll",
+    catalogTourId: "r-heidelberg-neckar-voll",
   },
 ];
 

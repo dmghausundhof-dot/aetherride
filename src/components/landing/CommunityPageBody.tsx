@@ -7,6 +7,8 @@ import {
 } from "@/lib/community/seed";
 import { EDITORIAL_PROFILES } from "@/lib/community/editorialProfiles";
 import { getRegion } from "@/lib/catalog/regions";
+import { getPublicTour } from "@/lib/catalog/publicTours";
+import { tourHrefForEvent } from "@/lib/tours/tourFunctions";
 import { Users, Calendar, Shield, MessageSquare, Share2 } from "lucide-react";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { communityCopy } from "@/lib/i18n/communityCopy";
@@ -73,6 +75,7 @@ export function CommunityPageBody() {
           <ul className="mt-4 space-y-3">
             {COMMUNITY_EVENTS.map((e) => {
               const region = getRegion(e.regionSlug);
+              const tour = e.catalogTourId ? getPublicTour(e.catalogTourId) : null;
               return (
                 <li
                   key={e.id}
@@ -84,14 +87,22 @@ export function CommunityPageBody() {
                   <h3 className="mt-1 text-lg font-semibold">{e.title}</h3>
                   <p className="mt-1 text-xs text-text-secondary">{e.dateLabel}</p>
                   <p className="mt-2 text-sm text-text-secondary">{e.blurb}</p>
-                  {e.href && (
+                  <div className="mt-3 flex flex-wrap gap-3">
                     <Link
-                      href={e.href}
-                      className="mt-3 inline-block text-xs font-semibold text-chrome hover:underline"
+                      href={tourHrefForEvent(e)}
+                      className="inline-block text-xs font-semibold text-chrome hover:underline"
                     >
-                      {c.regionCta} →
+                      {tour ? tour.name : c.regionCta} →
                     </Link>
-                  )}
+                    {e.href && e.href !== tourHrefForEvent(e) ? (
+                      <Link
+                        href={e.href}
+                        className="inline-block text-xs font-semibold text-chrome hover:underline"
+                      >
+                        {c.regionCta} →
+                      </Link>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}

@@ -83,6 +83,7 @@ const BASE: Record<string, { lat: number; lng: number }> = {
   "r-bruchsal-gravel": { lat: 49.124, lng: 8.598 },
   "r-schwetzingen-urban": { lat: 49.385, lng: 8.575 },
   "r-hockenheim-flat": { lat: 49.318, lng: 8.549 },
+  "r-heidelberg-neckar-voll": { lat: 49.412, lng: 8.693 },
   default: { lat: 47.99, lng: 7.85 },
 };
 

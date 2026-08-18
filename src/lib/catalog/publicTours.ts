@@ -1295,6 +1295,25 @@ const RAW: TourInput[] = [
     regionSlug: "schweiz",
     tags: ["zürich", "see", "city"],
   },
+  {
+    id: "r-heidelberg-neckar-voll",
+    name: "Heidelberg Neckar-Vollrunde",
+    summary:
+      "Referenz-Tour mit allen Funktionen: Live-Karte, Höhenprofil, Wetter, Stimmen, Teilen, Mappe, GPX, Planen, Fahrt, Gruppe und Termin.",
+    description:
+      "Heidelberg Neckar-Vollrunde ist die redaktionelle Referenz-Tour für den vollen Funktionsumfang. Rund 36 km entlang Neckar, Philosophenweg-Kante und einer Schotterpassage — Gravel, Rennrad und E-Trekking. Die Seite zeigt Karte mit Linie, Höhenprofil, Wetter, Stimmen, Teilen, Speichern in der Mappe, GPX, Planen, Start in der App, Zusammen-raus und den angehängten Feierabend-Termin. Das bleibt eine Tour-Idee: Geometrie kommt aus Override oder Live-Routing, nicht aus einem vermessenen Community-Track. Kein erfundenes RSVP, keine stillen GPS-Spuren.",
+    primaryCategory: "gravel",
+    categories: ["gravel", "road", "etrekking", "urban"],
+    distanceKm: 36,
+    elevationM: 280,
+    durationMin: 120,
+    difficulty: "—",
+    surface: "asphalt/gravel",
+    loop: true,
+    regionSlug: "rhein-neckar",
+    center: [8.693, 49.412],
+    tags: ["heidelberg", "neckar", "referenz", "feierabend"],
+  },
 ];
 
 function autoSummary(t: TourInput): string {

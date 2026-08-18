@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Bookmark, Map } from "lucide-react";
@@ -12,6 +12,10 @@ import {
 import { getPublicTour } from "@/lib/catalog/publicTours";
 import { useAppStore } from "@/store/useAppStore";
 import type { SavedRoute } from "@/types/route";
+import {
+  isTourShareRevokedLocally,
+  isTourShareRevokedOnServer,
+} from "@/lib/community/tourShareRevoke";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { shareCopy } from "@/lib/i18n/shareCopy";
 import { webChrome } from "@/lib/i18n/webChrome";
@@ -30,6 +34,26 @@ export default function SharedTourPage() {
     return decodeTourSharePayload(token);
   }, [token]);
 
+  const [revoked, setRevoked] = useState(false);
+
+  useEffect(() => {
+    if (!payload || isShareDemoToken(token)) {
+      setRevoked(false);
+      return;
+    }
+    if (isTourShareRevokedLocally(payload.id, payload.epoch)) {
+      setRevoked(true);
+      return;
+    }
+    let cancelled = false;
+    void isTourShareRevokedOnServer(payload.id, payload.epoch).then((flag) => {
+      if (!cancelled && flag) setRevoked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [payload, token]);
+
   if (!payload) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
@@ -38,6 +62,26 @@ export default function SharedTourPage() {
         </p>
         <h1 className="mt-2 text-xl font-bold">{s.invalid}</h1>
         <p className="mt-2 text-sm text-text-secondary">{s.invalidTour}</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm font-semibold text-chrome">
+          <Link href="/share" className="hover:underline">
+            {s.howToShare}
+          </Link>
+          <Link href="/library" className="hover:underline">
+            {s.toPlatz}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (revoked) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-20 text-center">
+        <p className="text-[11px] font-bold tracking-wide text-text-secondary">
+          {s.kicker}
+        </p>
+        <h1 className="mt-2 text-xl font-bold">{s.revoked}</h1>
+        <p className="mt-2 text-sm text-text-secondary">{s.revokedBody}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm font-semibold text-chrome">
           <Link href="/share" className="hover:underline">
             {s.howToShare}
@@ -68,6 +112,7 @@ export default function SharedTourPage() {
         payload.source === "import" || payload.source === "engine"
           ? payload.source
           : "suggestion",
+      catalogTourId: payload.catalogTourId,
       geometry: hasTrack
         ? { type: "LineString", coordinates: payload.track! }
         : undefined,

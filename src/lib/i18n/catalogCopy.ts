@@ -21,6 +21,8 @@ export type CatalogCopy = {
     guidesTitle: string;
     neighborsTitle: string;
     neighborsLead: string;
+    mapTitle: string;
+    mapLead: string;
   };
   tour: {
     atGate: string;
@@ -48,6 +50,29 @@ export type CatalogCopy = {
     copyLink: string;
     linkCopied: string;
     noTrackHint: string;
+    kitTitle: string;
+    kitLead: string;
+    eventTitle: string;
+    eventLead: string;
+    eventOpen: string;
+    groupTitle: string;
+    groupBody: string;
+    groupCta: string;
+    fn: {
+      map: string;
+      elevation: string;
+      weather: string;
+      stimmen: string;
+      share: string;
+      mappe: string;
+      gpx: string;
+      plan: string;
+      ride: string;
+      group: string;
+      event: string;
+      club: string;
+      places: string;
+    };
   };
   weather: {
     loading: string;
@@ -123,6 +148,8 @@ const DE: CatalogCopy = {
     guidesTitle: "Passende Guides",
     neighborsTitle: "Nachbarregionen",
     neighborsLead: "Weiterlesen in der Nähe — nicht als GPS-Fill.",
+    mapTitle: "Touren auf der Karte",
+    mapLead: "Pins der redaktionellen Touren — tippen öffnet die Tourseite",
   },
   tour: {
     atGate: "Vor dem Tor",
@@ -151,6 +178,31 @@ const DE: CatalogCopy = {
     copyLink: "Tour-Link kopieren",
     linkCopied: "Link kopiert",
     noTrackHint: "Ohne Track. Katalog-Tour, schon freigegeben.",
+    kitTitle: "Funktionen dieser Tour",
+    kitLead:
+      "Was an dieser Katalog-Tour wirklich hängt: Karte, Profil, Wetter, Stimmen, Teilen, Mappe, GPX, Planen, Fahrt, Gruppe, Termin, Club, Orte.",
+    eventTitle: "Termin an dieser Tour",
+    eventLead: "Redaktionell — kein RSVP, kein Live-Standort.",
+    eventOpen: "Tour zum Termin →",
+    groupTitle: "Zusammen raus",
+    groupBody:
+      "Gruppe mit Einladungslink auf dem Platz. Nur an freigegebener oder Katalog-Tour. Live-Pins nur in der App, mit Opt-in.",
+    groupCta: "Gruppe auf dem Platz →",
+    fn: {
+      map: "Karte",
+      elevation: "Höhe",
+      weather: "Wetter",
+      stimmen: "Stimmen",
+      share: "Teilen",
+      mappe: "Mappe",
+      gpx: "GPX",
+      plan: "Planen",
+      ride: "Fahrt",
+      group: "Gruppe",
+      event: "Termin",
+      club: "Club",
+      places: "Orte",
+    },
   },
   weather: {
     loading: "Wetter wird geladen…",
@@ -239,6 +291,8 @@ const EN: CatalogCopy = {
     guidesTitle: "Related guides",
     neighborsTitle: "Neighbouring regions",
     neighborsLead: "Read on nearby — not as GPS fill.",
+    mapTitle: "Tours on the map",
+    mapLead: "Pins of editorial tours — tap opens the tour page",
   },
   tour: {
     atGate: "At the gate",
@@ -267,6 +321,31 @@ const EN: CatalogCopy = {
     copyLink: "Copy tour link",
     linkCopied: "Link copied",
     noTrackHint: "No track. Catalogue tour, already shared.",
+    kitTitle: "Functions on this tour",
+    kitLead:
+      "What this catalogue tour actually has: map, profile, weather, Stimmen, share, Mappe, GPX, plan, ride, group, date, club, places.",
+    eventTitle: "Date on this tour",
+    eventLead: "Editorial — no RSVP, no live location.",
+    eventOpen: "Tour for this date →",
+    groupTitle: "Ride together",
+    groupBody:
+      "Invite-link group on Platz. Only on a shared or catalogue tour. Live pins only in the app, with opt-in.",
+    groupCta: "Group on Platz →",
+    fn: {
+      map: "Map",
+      elevation: "Elevation",
+      weather: "Weather",
+      stimmen: "Stimmen",
+      share: "Share",
+      mappe: "Mappe",
+      gpx: "GPX",
+      plan: "Plan",
+      ride: "Ride",
+      group: "Group",
+      event: "Date",
+      club: "Club",
+      places: "Places",
+    },
   },
   weather: {
     loading: "Loading weather…",
@@ -353,6 +432,8 @@ const FR: CatalogCopy = {
     guidesTitle: "Guides liés",
     neighborsTitle: "Régions voisines",
     neighborsLead: "Lire à proximité — pas comme remplissage GPS.",
+    mapTitle: "Sorties sur la carte",
+    mapLead: "Épingles des sorties éditoriales — un tap ouvre la page",
   },
   tour: {
     atGate: "Devant la porte",
@@ -381,6 +462,31 @@ const FR: CatalogCopy = {
     copyLink: "Copier le lien de sortie",
     linkCopied: "Lien copié",
     noTrackHint: "Sans trace. Sortie catalogue, déjà partagée.",
+    kitTitle: "Fonctions de cette sortie",
+    kitLead:
+      "Ce que cette sortie catalogue a vraiment : carte, profil, météo, Stimmen, partage, Mappe, GPX, plan, sortie, groupe, date, club, lieux.",
+    eventTitle: "Date sur cette sortie",
+    eventLead: "Éditorial — pas de RSVP, pas de position live.",
+    eventOpen: "Sortie pour cette date →",
+    groupTitle: "Sortir ensemble",
+    groupBody:
+      "Groupe avec lien d’invitation sur Platz. Seulement sur une sortie partagée ou catalogue. Pins live seulement dans l’app, avec opt-in.",
+    groupCta: "Groupe sur Platz →",
+    fn: {
+      map: "Carte",
+      elevation: "Dénivelé",
+      weather: "Météo",
+      stimmen: "Stimmen",
+      share: "Partager",
+      mappe: "Mappe",
+      gpx: "GPX",
+      plan: "Planifier",
+      ride: "Sortie",
+      group: "Groupe",
+      event: "Date",
+      club: "Club",
+      places: "Lieux",
+    },
   },
   weather: {
     loading: "Météo en cours de chargement…",
@@ -469,6 +575,8 @@ const IT: CatalogCopy = {
     guidesTitle: "Guide collegate",
     neighborsTitle: "Regioni vicine",
     neighborsLead: "Continua nelle vicinanze — non come riempimento GPS.",
+    mapTitle: "Uscite sulla mappa",
+    mapLead: "Pin delle uscite editoriali — un tap apre la pagina",
   },
   tour: {
     atGate: "Davanti al cancello",
@@ -497,6 +605,31 @@ const IT: CatalogCopy = {
     copyLink: "Copia link uscita",
     linkCopied: "Link copiato",
     noTrackHint: "Senza traccia. Uscita catalogo, già condivisa.",
+    kitTitle: "Funzioni di questa uscita",
+    kitLead:
+      "Cosa ha davvero questa uscita catalogo: mappa, profilo, meteo, Stimmen, condivisione, Mappe, GPX, piano, uscita, gruppo, data, club, luoghi.",
+    eventTitle: "Data su questa uscita",
+    eventLead: "Editoriale — niente RSVP, niente posizione live.",
+    eventOpen: "Uscita per questa data →",
+    groupTitle: "Uscire insieme",
+    groupBody:
+      "Gruppo con link d’invito sul Platz. Solo su uscita condivisa o catalogo. Pin live solo nell’app, con opt-in.",
+    groupCta: "Gruppo sul Platz →",
+    fn: {
+      map: "Mappa",
+      elevation: "Dislivello",
+      weather: "Meteo",
+      stimmen: "Stimmen",
+      share: "Condividi",
+      mappe: "Mappe",
+      gpx: "GPX",
+      plan: "Pianifica",
+      ride: "Uscita",
+      group: "Gruppo",
+      event: "Data",
+      club: "Club",
+      places: "Luoghi",
+    },
   },
   weather: {
     loading: "Meteo in caricamento…",
@@ -585,6 +718,8 @@ const NL: CatalogCopy = {
     guidesTitle: "Passende guides",
     neighborsTitle: "Buurregio's",
     neighborsLead: "Verder lezen in de buurt — niet als GPS-vulling.",
+    mapTitle: "Tochten op de kaart",
+    mapLead: "Pins van redactionele tochten — tik opent de tochtpagina",
   },
   tour: {
     atGate: "Voor de poort",
@@ -613,6 +748,31 @@ const NL: CatalogCopy = {
     copyLink: "Tochtlink kopiëren",
     linkCopied: "Link gekopieerd",
     noTrackHint: "Zonder track. Catalogustocht, al gedeeld.",
+    kitTitle: "Functies van deze tocht",
+    kitLead:
+      "Wat deze catalogustocht echt heeft: kaart, profiel, weer, Stimmen, delen, Mappe, GPX, plannen, rit, groep, datum, club, plekken.",
+    eventTitle: "Datum bij deze tocht",
+    eventLead: "Redactioneel — geen RSVP, geen live-locatie.",
+    eventOpen: "Tocht bij deze datum →",
+    groupTitle: "Samen eropuit",
+    groupBody:
+      "Groep met uitnodigingslink op Platz. Alleen op een gedeelde of catalogustocht. Live-pins alleen in de app, met opt-in.",
+    groupCta: "Groep op Platz →",
+    fn: {
+      map: "Kaart",
+      elevation: "Hoogte",
+      weather: "Weer",
+      stimmen: "Stimmen",
+      share: "Delen",
+      mappe: "Mappe",
+      gpx: "GPX",
+      plan: "Plannen",
+      ride: "Rit",
+      group: "Groep",
+      event: "Datum",
+      club: "Club",
+      places: "Plekken",
+    },
   },
   weather: {
     loading: "Weer wordt geladen…",

@@ -128,6 +128,14 @@ const SPECS: Record<string, Spec> = {
     distanceM: 14000,
     durationS: 50 * 60,
   },
+  "r-heidelberg-neckar-voll": {
+    lng: 8.693,
+    lat: 49.412,
+    loop: true,
+    rKm: 5.5,
+    distanceM: 36000,
+    durationS: 120 * 60,
+  },
   "idea-kaltenbronn": {
     lng: 8.425,
     lat: 48.642,
