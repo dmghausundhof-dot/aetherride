@@ -13,6 +13,9 @@ import '../domain/ble/bike_ble_kind.dart';
 import '../domain/ble/ble_link_status.dart';
 import '../domain/ble/csc_measurement.dart';
 import '../domain/ble/gatt_sensors.dart';
+import '../domain/ble/bosch_ldi_proto.dart';
+import '../domain/ble/manufacturer_ble.dart';
+import '../domain/ble/manufacturer_live.dart';
 import '../domain/ble/watch_candidate.dart';
 import 'native_channels.dart';
 
@@ -56,6 +59,7 @@ class BleCoreChannel {
   final _watchScanController =
       StreamController<List<WatchBleScanHit>>.broadcast();
   bool _ldiConnected = false;
+  ManufacturerLiveMerge _liveMerge = const ManufacturerLiveMerge();
   bool _cscOnly = false;
   bool _wantConnection = false;
   bool _wantWatchConnection = false;
@@ -115,6 +119,7 @@ class BleCoreChannel {
   bool get isWatchScanning => _watchScanActive;
   bool get isConnected => _device != null || _ldiConnected;
   bool get isCscOnly => _cscOnly;
+  bool get isLdiLive => _ldiConnected;
 
   /// CSC notify or native LDI — enough for wheel speed. Drive GATT alone is not.
   bool get hasWheelLive => _cscSub != null || _ldiConnected;
@@ -325,6 +330,10 @@ class BleCoreChannel {
         _cscOnly = false;
         _connectedKind = BikeBleKind.bosch;
         _lastRemoteId = boschLdiAccessoryId;
+        _liveMerge = _liveMerge.ldiConnected
+            ? _liveMerge
+            : const ManufacturerLiveMerge(ldiConnected: true);
+        _ensureLiveTicker();
       } else {
         _statusDetail ??= 'ldi_timeout';
       }
@@ -339,7 +348,7 @@ class BleCoreChannel {
         _startStub();
         return true;
       }
-      _statusDetail = 'ldi_ios_pending';
+      _statusDetail = 'ldi_plugin_missing';
       return false;
     } finally {
       if (onProgress != null) _onProgress = prev;
@@ -1479,25 +1488,20 @@ class BleCoreChannel {
     _startCscTicker();
   }
 
+  BoschLiveData _mergedLive() {
+    return _liveMerge.emit(
+      cscSpeedKmh: _speed,
+      cscCadenceRpm: _cadence,
+      gattSoc: _socPercent,
+      gattPowerW: _powerW,
+      heartRateBpm: _hrBpm,
+    );
+  }
+
   void _startCscTicker() {
     _stubTimer?.cancel();
     _stubTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      _emit(
-        BoschLiveData(
-          speedKmh: _speed,
-          batterySocPercent: _socPercent,
-          riderPowerW: _powerW,
-          heartRateBpm: _hrBpm,
-          cadenceRpm: _cadence,
-          odometerKm: 0,
-          lightStatus: false,
-          ambientBrightness: 0,
-          systemLock: false,
-          bikeNotDriving: _speed < 1,
-          chargerConnected: false,
-          timestampMs: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
+      _emit(_mergedLive());
     });
   }
 
@@ -1590,6 +1594,7 @@ class BleCoreChannel {
     _cadence = 0;
     _statusDetail = null;
     _ldiConnected = false;
+    _liveMerge = const ManufacturerLiveMerge();
     if (_watchDevice == null) {
       _stubTimer?.cancel();
       _stubTimer = null;
@@ -1597,6 +1602,81 @@ class BleCoreChannel {
       _ensureLiveTicker();
     }
     _refreshWatchStatus();
+  }
+
+  /// Forget the last CSC/drive id so unlink does not auto-reconnect it.
+  Future<void> forgetLastBikeId() async {
+    _lastRemoteId = null;
+    await _deleteIdFile(kBleLastCscIdFile);
+  }
+
+  /// Forget the last watch / HR id.
+  Future<void> forgetLastWatchId() async {
+    _lastWatchRemoteId = null;
+    await _deleteIdFile(kBleLastWatchIdFile);
+  }
+
+  Future<void> forgetAllPairedIds() async {
+    await forgetLastBikeId();
+    await forgetLastWatchId();
+  }
+
+  Future<void> _deleteIdFile(String name) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final f = File(p.join(dir.path, name));
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
+  }
+
+  /// Drop LDI / drive GATT. Keep wheel CSC and rider watch.
+  Future<void> disconnectDriveKeepWheel() async {
+    try {
+      await _method.invokeMethod<void>('disconnect');
+    } on MissingPluginException {
+      // LDI accessory may be absent on iOS.
+    }
+    _ldiConnected = false;
+    _liveMerge = const ManufacturerLiveMerge();
+    await _batterySub?.cancel();
+    _batterySub = null;
+    _socPercent = null;
+    _driveBonded = false;
+    final driveId = _driveRemoteId;
+    _driveRemoteId = null;
+    final watchId = _watchDevice?.remoteId.str;
+    final drop = <BluetoothDevice>[];
+    for (final d in List<BluetoothDevice>.from(_auxDevices)) {
+      final kind = _kindHintFor(d);
+      final isDrive = kind != null && bikeBleKindIsDrive(kind);
+      if (isDrive || d.remoteId.str == driveId) {
+        if (watchId != null && d.remoteId.str == watchId) continue;
+        drop.add(d);
+      }
+    }
+    for (final d in drop) {
+      _auxDevices.removeWhere((x) => x.remoteId.str == d.remoteId.str);
+      unawaited(_auxConnSubs.remove(d.remoteId.str)?.cancel());
+      try {
+        await d.disconnect();
+      } catch (_) {}
+    }
+    if (_device != null &&
+        (_device!.remoteId.str == driveId ||
+            (_connectedKind != null &&
+                bikeBleKindIsDrive(_connectedKind!) &&
+                _cscSub == null))) {
+      if (watchId == null || _device!.remoteId.str != watchId) {
+        try {
+          await _device?.disconnect();
+        } catch (_) {}
+      }
+      await _connSub?.cancel();
+      _connSub = null;
+      _device = null;
+      _connectedKind = _cscSub != null ? BikeBleKind.csc : null;
+    }
+    _refreshStatus();
   }
 
   Future<void> disconnectWatch() async {
@@ -1664,6 +1744,7 @@ class BleCoreChannel {
     _watchConnSub = null;
     await _cancelAuxListeners();
     _ldiConnected = false;
+    _liveMerge = const ManufacturerLiveMerge();
     _cscOnly = false;
     _connectedKind = null;
     _socPercent = null;
@@ -1712,7 +1793,7 @@ class BleCoreChannel {
     if (_lastRemoteId != null) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_csc_id.txt'));
+      final f = File(p.join(dir.path, kBleLastCscIdFile));
       if (await f.exists()) {
         final id = (await f.readAsString()).trim();
         if (id.isNotEmpty) _lastRemoteId = id;
@@ -1723,7 +1804,7 @@ class BleCoreChannel {
   Future<void> _saveLastRemoteId(String id) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_csc_id.txt'));
+      final f = File(p.join(dir.path, kBleLastCscIdFile));
       await f.writeAsString(id);
     } catch (_) {}
   }
@@ -1732,7 +1813,7 @@ class BleCoreChannel {
     if (_lastWatchRemoteId != null) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_watch_id.txt'));
+      final f = File(p.join(dir.path, kBleLastWatchIdFile));
       if (await f.exists()) {
         final id = (await f.readAsString()).trim();
         if (id.isNotEmpty) _lastWatchRemoteId = id;
@@ -1743,7 +1824,7 @@ class BleCoreChannel {
   Future<void> _saveLastWatchRemoteId(String id) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_watch_id.txt'));
+      final f = File(p.join(dir.path, kBleLastWatchIdFile));
       await f.writeAsString(id);
     } catch (_) {}
   }
@@ -1758,7 +1839,24 @@ class BleCoreChannel {
     }
     _cscOnly = false;
     _connectedKind ??= BikeBleKind.bosch;
-    _emit(BoschLiveData.fromMap(Map<Object?, Object?>.from(event)));
+    _ldiConnected = true;
+    final raw = event['bytes'];
+    if (raw is List) {
+      final bytes = <int>[
+        for (final e in raw)
+          if (e is num) e.toInt(),
+      ];
+      _liveMerge = _liveMerge.applyLdiFrame(decodeBoschLdiFrame(bytes));
+    } else {
+      _liveMerge = _liveMerge.applyLdi(
+        BoschLiveData.fromMap(Map<Object?, Object?>.from(event)),
+      );
+    }
+    if (_liveMerge.ldiSoc != null) _socPercent = _liveMerge.ldiSoc;
+    if (_liveMerge.ldiPowerW != null) _powerW = _liveMerge.ldiPowerW;
+    _ensureLiveTicker();
+    _refreshStatus();
+    _emit(_mergedLive());
   }
 
   void _onError(Object error) {

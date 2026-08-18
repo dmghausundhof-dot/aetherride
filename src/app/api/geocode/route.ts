@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 import {
   dedupeGeocodeHits,
+  dropStationJunkHits,
+  queryLooksLikeStation,
   rankGeocodeHits,
+  stationFallbackQueries,
 } from "@/lib/geocode/photonRank";
 
 export type GeocodeHit = {
@@ -51,9 +54,9 @@ export async function GET(req: Request) {
     const biasLon =
       url.searchParams.get("lon") ?? url.searchParams.get("lng") ?? "10.0";
 
-    const photonUrl = (osmTag?: string) => {
+    const photonUrl = (osmTag?: string, query = q) => {
       const photon = new URL("https://photon.komoot.io/api/");
-      photon.searchParams.set("q", q);
+      photon.searchParams.set("q", query);
       // Photon: default/en/de/fr. nl is not a Photon lang — use en.
       photon.searchParams.set("lang", photonLang);
       photon.searchParams.set("limit", String(Math.min(8, limit + 3)));
@@ -68,7 +71,8 @@ export async function GET(req: Request) {
       "User-Agent": "FlowLine/1.0 (geocode; contact@aetherride.local)",
     } as const;
 
-    const [res, placeRes] = await Promise.all([
+    const stationQ = queryLooksLikeStation(q);
+    const [res, placeRes, stationRes] = await Promise.all([
       fetch(photonUrl(), {
         headers: photonHeaders,
         next: { revalidate: 3600 },
@@ -77,6 +81,12 @@ export async function GET(req: Request) {
         headers: photonHeaders,
         next: { revalidate: 3600 },
       }).catch(() => null),
+      stationQ
+        ? fetch(photonUrl("railway:station"), {
+            headers: photonHeaders,
+            next: { revalidate: 3600 },
+          }).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     if (!res.ok) {
@@ -136,11 +146,22 @@ export async function GET(req: Request) {
           .filter(Boolean);
         const label = [...new Set(parts)].join(", ");
         if (!label) continue;
+        const osmKey = typeof p.osm_key === "string" ? p.osm_key : "";
+        const osmValue = typeof p.osm_value === "string" ? p.osm_value : "";
+        let kind = typeof p.type === "string" ? p.type : undefined;
+        if (
+          osmKey === "railway" &&
+          (osmValue === "station" || osmValue === "halt" || osmValue === "stop")
+        ) {
+          kind = "station";
+        } else if (osmKey === "building" && osmValue === "train_station") {
+          kind = "station";
+        }
         hits.push({
           label,
           lng: coords[0],
           lat: coords[1],
-          kind: typeof p.type === "string" ? p.type : undefined,
+          kind,
           ...(name ? { name } : {}),
         });
       }
@@ -159,7 +180,50 @@ export async function GET(req: Request) {
         /* keep default hits */
       }
     }
-    hits = rankGeocodeHits(q, dedupeGeocodeHits(hits)).slice(0, limit);
+    if (stationRes?.ok) {
+      try {
+        const stationData = (await stationRes.json()) as {
+          features?: PhotonFeature[];
+        };
+        hits = [...parseHits(stationData), ...hits];
+      } catch {
+        /* keep default hits */
+      }
+    }
+    if (stationQ) {
+      const haveRailwayStation = hits.some((h) => h.kind === "station");
+      for (const alt of stationFallbackQueries(q)) {
+        try {
+          const tagged = await fetch(photonUrl("railway:station", alt), {
+            headers: photonHeaders,
+            next: { revalidate: 3600 },
+          }).catch(() => null);
+          if (tagged?.ok) {
+            const taggedData = (await tagged.json()) as {
+              features?: PhotonFeature[];
+            };
+            hits = [...hits, ...parseHits(taggedData)];
+          }
+          if (!haveRailwayStation) {
+            const altRes = await fetch(photonUrl(undefined, alt), {
+              headers: photonHeaders,
+              next: { revalidate: 3600 },
+            });
+            if (!altRes.ok) continue;
+            const altData = (await altRes.json()) as {
+              features?: PhotonFeature[];
+            };
+            hits = [...hits, ...parseHits(altData)];
+          }
+        } catch {
+          /* keep existing hits */
+        }
+      }
+    }
+    hits = dropStationJunkHits(
+      q,
+      rankGeocodeHits(q, dedupeGeocodeHits(hits))
+    ).slice(0, limit);
 
     if (hits.length > 0) {
       return NextResponse.json({

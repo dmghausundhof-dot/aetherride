@@ -63,19 +63,122 @@ bool geocodeNameMatchesQuery(String name, String query) {
   return next == ' ' || next == '-' || next == '/' || next == ',';
 }
 
+const _stationKinds = {'station', 'railway', 'halt'};
+
+List<String> _normalizePlaceTokens(String raw) {
+  return raw
+      .toLowerCase()
+      .replaceAll('hauptbahnhof', 'bahnhof')
+      .replaceAll(RegExp(r'\bhbf\b'), 'bahnhof')
+      .replaceAll(RegExp(r'\bstation\b'), 'bahnhof')
+      .replaceAll(RegExp(r'\bgare\b'), 'bahnhof')
+      .replaceAll(RegExp(r'\bstazione\b'), 'bahnhof')
+      .split(RegExp(r'[^a-z0-9äöüß]+', caseSensitive: false))
+      .where((t) => t.length >= 2)
+      .toList();
+}
+
+bool queryLooksLikeStation(String query) =>
+    _normalizePlaceTokens(query).contains('bahnhof');
+
+/// Photon kennt „Wiesloch-Walldorf“, nicht „Hauptbahnhof Wiesloch“.
+List<String> stationFallbackQueries(String query) {
+  final q = query.trim();
+  if (!queryLooksLikeStation(q)) return const [];
+  final out = <String>[];
+  final bahnhof = q
+      .replaceAll(RegExp('hauptbahnhof', caseSensitive: false), 'Bahnhof')
+      .replaceAll(RegExp(r'\bHbf\b'), 'Bahnhof');
+  if (bahnhof != q) out.add(bahnhof);
+  final city = q
+      .replaceAll(RegExp('hauptbahnhof', caseSensitive: false), '')
+      .replaceAll(RegExp(r'\bhbf\b', caseSensitive: false), '')
+      .replaceAll(RegExp('bahnhof', caseSensitive: false), '')
+      .replaceAll(RegExp(r'[,\s]+'), ' ')
+      .trim();
+  if (city.isNotEmpty && city.toLowerCase() != q.toLowerCase()) {
+    out.add(city);
+  }
+  return [...{...out}];
+}
+
+/// `place`-only Photon überspringt Halte — Station-Queries gehen an die API.
+bool shouldSkipPlaceOnlyGeocode(String query) => queryLooksLikeStation(query);
+
+bool geocodeHitIsStationJunk(GeocodeHit hit) {
+  return RegExp(
+    r'steig|platform|bus_stop|radservice|repair',
+    caseSensitive: false,
+  ).hasMatch('${hit.matchName} ${hit.label}');
+}
+
+List<GeocodeHit> dropStationJunkHits(String query, List<GeocodeHit> hits) {
+  if (!queryLooksLikeStation(query)) return hits;
+  final clean = hits.where((h) => !geocodeHitIsStationJunk(h)).toList();
+  return clean.isNotEmpty ? clean : hits;
+}
+
+List<GeocodeHit> finalizeGeocodeHits(String query, List<GeocodeHit> hits) {
+  return dropStationJunkHits(query, rankGeocodeHits(query, hits));
+}
+
+bool geocodeTokensCovered(String query, String hay) {
+  final tokens = _normalizePlaceTokens(query);
+  if (tokens.isEmpty) return false;
+  final have = _normalizePlaceTokens(hay).toSet();
+  return tokens.every(have.contains);
+}
+
+bool _hitLooksLikeStation(GeocodeHit hit) {
+  final kind = hit.kind ?? '';
+  if (_stationKinds.contains(kind)) return true;
+  return _normalizePlaceTokens('${hit.matchName} ${hit.label}').contains('bahnhof');
+}
+
+int _unexpectedPlacePenalty(String query, GeocodeHit hit) {
+  final q = _normalizePlaceTokens(query).toSet();
+  final h = _normalizePlaceTokens('${hit.matchName} ${hit.label}').toSet();
+  if (!q.contains('oder') && h.contains('oder')) return -50;
+  return 0;
+}
+
 int geocodeHitScore(String query, GeocodeHit hit) {
   final q = query.trim().toLowerCase();
   final name = hit.matchName.toLowerCase();
+  final hay = '$name ${hit.label}';
   var s = 0;
   if (name == q) {
     s += 100;
   } else if (geocodeNameMatchesQuery(name, q)) {
     s += 45;
   }
+  if (geocodeTokensCovered(query, hay)) s += 80;
   final kind = hit.kind ?? '';
-  if (kind == 'city' || kind == 'locality') s += 25;
-  if (kind == 'street' || kind == 'house') s -= 15;
+  final stationQ = queryLooksLikeStation(query);
+  final stationHit = _hitLooksLikeStation(hit);
+  if (kind == 'city' || kind == 'locality') s += stationQ ? 10 : 25;
+  if (stationHit) s += stationQ ? 40 : 5;
+  if (kind == 'station') s += 50;
+  if ((kind == 'street' || kind == 'house') && !stationHit) s -= 15;
+  if (RegExp(r'steig|platform|bus_stop|radservice|repair', caseSensitive: false)
+      .hasMatch(hay)) {
+    s -= 80;
+  }
+  s += _unexpectedPlacePenalty(query, hit);
   return s;
+}
+
+String? _photonKind(Map properties) {
+  final osmKey = properties['osm_key'] as String? ?? '';
+  final osmValue = properties['osm_value'] as String? ?? '';
+  if (osmKey == 'railway' &&
+      (osmValue == 'station' || osmValue == 'halt' || osmValue == 'stop')) {
+    return 'station';
+  }
+  if (osmKey == 'building' && osmValue == 'train_station') {
+    return 'station';
+  }
+  return properties['type'] as String?;
 }
 
 List<GeocodeHit> rankGeocodeHits(String query, List<GeocodeHit> hits) {
@@ -111,7 +214,7 @@ class GeocodeClient {
     if (q.length < 2) return const [];
     final coords = geocodeHitFromCoordinates(q);
     if (coords != null) return [coords];
-    if (preferPlaces) {
+    if (preferPlaces && !shouldSkipPlaceOnlyGeocode(q)) {
       try {
         final places = await _photon(
           q,
@@ -121,7 +224,7 @@ class GeocodeClient {
           osmTag: 'place',
         );
         if (places.isNotEmpty) {
-          return rankGeocodeHits(q, places).take(limit).toList();
+          return finalizeGeocodeHits(q, places).take(limit).toList();
         }
       } catch (_) {}
     }
@@ -167,7 +270,7 @@ class GeocodeClient {
               h.lng.abs() <= 180,
         )
         .toList();
-    return preferPlaces ? rankGeocodeHits(q, hits).take(limit).toList() : hits;
+    return finalizeGeocodeHits(q, hits).take(limit).toList();
   }
 
   Future<List<GeocodeHit>> _photon(
@@ -241,7 +344,7 @@ class GeocodeClient {
           label: label,
           lat: lat,
           lng: lng,
-          kind: properties['type'] as String?,
+          kind: _photonKind(properties),
           name: name.isEmpty ? null : name,
         ),
       );

@@ -31,6 +31,7 @@ import '../../domain/community/ride_group_policy.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
+import '../../domain/ble/manufacturer_live.dart';
 import '../../domain/ble/ride_ble_samples.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/hud_bike_peek.dart';
@@ -637,6 +638,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
         family: family,
         visible: true,
         extraOn: extra,
+        liveNetwork: liveNetworkFallbackAt(
+          lng: _track.isNotEmpty ? _track.last.lng : 8.693,
+          lat: _track.isNotEmpty ? _track.last.lat : 49.409,
+        ),
       );
       return;
     }
@@ -647,8 +652,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
         : null;
     final lng = fromTrack?.lng ?? fromRoute?[0] ?? 8.693;
     final lat = fromTrack?.lat ?? fromRoute?[1] ?? 49.409;
-    final live = await attachLiveOsmNetworkLayers(c);
+    await attachLiveOsmNetworkLayers(c);
     final data = await resolveBikeOverlayData(lng: lng, lat: lat);
+    final liveNetwork = liveNetworkFallbackAt(lng: lng, lat: lat);
     if (data != null && mounted) {
       await attachBikeOverlayLayers(
         c,
@@ -656,7 +662,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
         family: family,
         visible: true,
         extraOn: extra,
-        sGradeOnly: live,
+        sGradeOnly: false,
+        liveNetwork: liveNetwork,
       );
     } else if (mounted) {
       await applyBikeOverlayVisibility(
@@ -664,6 +671,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
         family: family,
         visible: true,
         extraOn: extra,
+        liveNetwork: liveNetwork,
       );
     }
     _bikeOverlayAttached = true;
@@ -1042,11 +1050,13 @@ class RideScreenState extends ConsumerState<RideScreen> {
     if (c != null && mounted) await _drawGroupPins(c);
   }
 
-  /// LDI-Speed, sonst GPS (Freeride ohne CSC).
+  /// LDI/CSC-Speed, sonst GPS. Bei lebendem Rad kein GPS-Drift im Stand.
   double get _effectiveSpeedKmh {
-    final ldi = _ldi?.speedKmh;
-    if (ldi != null && ldi > 0.5) return ldi;
-    return _gpsSpeedKmh;
+    return rideEffectiveSpeedKmh(
+      liveSpeedKmh: _ldi?.speedKmh,
+      wheelLive: ref.read(bleCoreProvider).hasWheelLive,
+      gpsSpeedKmh: _gpsSpeedKmh,
+    );
   }
 
   AppLocalizations get _l10n => AppLocalizations.of(context);
@@ -1385,19 +1395,18 @@ class RideScreenState extends ConsumerState<RideScreen> {
         ble.wheelCircumferenceM = wheelCircumferenceM(wheel);
       }
 
-      // Garage-Kopplung: nur der Radsensor ist Ride-GATT. Drive-Identität
-      // darf den Start nicht mit 2×14 s blockieren und nicht den CSC überschreiben.
-      String? preferredId;
-      BikeBleKind? kindHint;
+      // Garage-Kopplung: CSC zuerst. Bosch LDI / Drive danach — LDI
+      // abwarten, wenn sonst kein Tempo da ist.
       BikeBleBinding binding = const BikeBleBinding();
+      var plan = const RideBleConnectPlan();
       final bikeId = active?.id;
       if (bikeId != null && bikeId.isNotEmpty) {
         binding =
             await ref.read(bikeBleStoreProvider).bindingForBike(bikeId);
-        final target = rideBlePreferredTarget(binding);
-        preferredId = target.deviceId;
-        kindHint = target.kindHint;
+        plan = rideBleConnectPlan(binding);
       }
+      final preferredId = plan.wheelId;
+      final kindHint = plan.wheelKind;
 
       final savedWatch = await ref.read(bikeBleStoreProvider).savedWatch();
       if (!mounted || !ref.read(isRidingProvider)) return;
@@ -1422,17 +1431,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
         debugPrint('ride: parallel watch connect failed ($e)');
       }
       if (!mounted || !ref.read(isRidingProvider)) return;
-      if (!ble.hasWheelLive) {
-        final kind = ble.connectedKind;
-        final msg = kind != null && bikeBleKindIsDrive(kind)
-            ? _l10n.bleDriveFailFor(kind, detail: ble.statusDetail)
-            : _l10n.bleStatusDetailFor(
-                ble.statusDetail ?? _l10n.rideNoBikeSensor,
-              );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
-      }
 
       final remoteId = ble.lastRemoteId;
       final connectedKind = ble.connectedKind;
@@ -1454,16 +1452,37 @@ class RideScreenState extends ConsumerState<RideScreen> {
             );
       }
 
-      final drive = binding.drive;
-      if (drive != null &&
-          drive.deviceId.isNotEmpty &&
+      if (plan.attachDrive &&
+          plan.driveId != null &&
+          plan.driveId!.isNotEmpty &&
           mounted &&
           ref.read(isRidingProvider)) {
-        unawaited(
-          ble.attachSavedDrive(
-            deviceId: drive.deviceId,
-            kindHint: bikeBleKindFromStorage(drive.kind),
-          ),
+        final attach = ble.attachSavedDrive(
+          deviceId: plan.driveId!,
+          kindHint: plan.driveKind,
+        );
+        if (plan.awaitDriveForSpeed || !ble.hasWheelLive) {
+          await attach;
+        } else {
+          unawaited(attach);
+        }
+      }
+      if (plan.startLdi &&
+          !ble.isLdiLive &&
+          mounted &&
+          ref.read(isRidingProvider)) {
+        unawaited(_retryBoschLdiWhileRiding(ble, plan));
+      }
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (!ble.hasWheelLive) {
+        final kind = ble.connectedKind ?? plan.driveKind;
+        final msg = kind != null && bikeBleKindIsDrive(kind)
+            ? _l10n.bleDriveFailFor(kind, detail: ble.statusDetail)
+            : _l10n.bleStatusDetailFor(
+                ble.statusDetail ?? _l10n.rideNoBikeSensor,
+              );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
         );
       }
 
@@ -1487,6 +1506,29 @@ class RideScreenState extends ConsumerState<RideScreen> {
       }
     } catch (e) {
       debugPrint('ride: deferred BLE connect failed ($e) — continue without');
+    }
+  }
+
+  /// Bike still waking after the first LDI window — keep advertising eb20.
+  Future<void> _retryBoschLdiWhileRiding(
+    BleCoreChannel ble,
+    RideBleConnectPlan plan,
+  ) async {
+    for (var attempt = 0; attempt < 4; attempt++) {
+      final next = rideLdiRetryPlan(
+        startLdi: plan.startLdi,
+        ldiLive: ble.isLdiLive,
+        stillRiding: mounted && ref.read(isRidingProvider),
+        attempt: attempt,
+      );
+      if (!next.shouldRetry) return;
+      await Future<void>.delayed(next.delay);
+      if (!mounted || !ref.read(isRidingProvider) || ble.isLdiLive) return;
+      try {
+        await ble.startLdiAccessory(pairing: false);
+      } catch (e) {
+        debugPrint('ride: LDI retry $attempt failed ($e)');
+      }
     }
   }
 

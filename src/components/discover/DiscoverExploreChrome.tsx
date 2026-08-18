@@ -21,6 +21,7 @@ import {
   type RoutingProfile,
 } from "@/lib/routing/profiles";
 import type { RouteFilterState } from "@/lib/routing/routeFilters";
+import type { NavigatePlaceHit } from "@/lib/discover/navigateWorkflow";
 
 type ExploreSheet = "around" | "filter";
 
@@ -44,6 +45,9 @@ export function DiscoverExploreChrome({
   onFilters,
   routingProfile,
   resultCount,
+  placeHits = [],
+  onPlaceHit,
+  onSearchSubmit,
 }: {
   searchQuery: string;
   onSearchQuery: (q: string) => void;
@@ -59,6 +63,9 @@ export function DiscoverExploreChrome({
   onFilters: (next: RouteFilterState) => void;
   routingProfile: RoutingProfile;
   resultCount: number;
+  placeHits?: NavigatePlaceHit[];
+  onPlaceHit?: (hit: NavigatePlaceHit) => void;
+  onSearchSubmit?: () => void;
 }) {
   const lang = useChromeLang();
   const d = discoverCopy(lang);
@@ -100,6 +107,12 @@ export function DiscoverExploreChrome({
               type="search"
               value={searchQuery}
               onChange={(e) => onSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onSearchSubmit?.();
+                }
+              }}
               placeholder={d.searchHint}
               className="w-full rounded-full border-0 bg-background py-2 pl-8 pr-3 text-[13px] outline-none ring-1 ring-border focus:ring-chrome"
             />
@@ -116,6 +129,24 @@ export function DiscoverExploreChrome({
             {d.planRouteCta}
           </button>
         </div>
+        {placeHits.length > 0 ? (
+          <div
+            data-testid="discover-place-hits"
+            className="mt-2 flex gap-1.5 overflow-x-auto"
+          >
+            {placeHits.map((hit) => (
+              <button
+                key={`${hit.label}-${hit.lat}-${hit.lng}`}
+                type="button"
+                data-testid="discover-place-hit"
+                onClick={() => onPlaceHit?.(hit)}
+                className="shrink-0 rounded-full border border-border bg-background px-2.5 py-1 text-[12px] font-semibold"
+              >
+                {hit.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {profileVisible ? (
             <label

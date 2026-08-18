@@ -110,6 +110,27 @@ void main() {
       drive: BikeBleDevice(deviceId: 'SH-1', kind: 'shimano'),
     );
     expect(garageBleWakePlan(shimano).startLdi, isFalse);
+    expect(garageBleWakePlan(shimano).attachDrive, isTrue);
+  });
+
+  test('ride plan awaits Bosch LDI when no wheel sensor', () {
+    const driveOnly = BikeBleBinding(
+      drive: BikeBleDevice(deviceId: boschLdiAccessoryId, kind: 'bosch'),
+    );
+    final p = rideBleConnectPlan(driveOnly);
+    expect(p.wheelId, isNull);
+    expect(p.startLdi, isTrue);
+    expect(p.attachDrive, isTrue);
+    expect(p.awaitDriveForSpeed, isTrue);
+
+    const both = BikeBleBinding(
+      wheel: BikeBleDevice(deviceId: 'W', kind: 'csc'),
+      drive: BikeBleDevice(deviceId: boschLdiAccessoryId, kind: 'bosch'),
+    );
+    final bothPlan = rideBleConnectPlan(both);
+    expect(bothPlan.wheelId, 'W');
+    expect(bothPlan.awaitDriveForSpeed, isFalse);
+    expect(bothPlan.attachDrive, isTrue);
   });
 
   test('watch is rider kit, not stored on the bike', () async {

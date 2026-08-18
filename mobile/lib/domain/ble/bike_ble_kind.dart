@@ -132,6 +132,10 @@ const kBoschNameHints = <String>[
   'intuvia 100',
   'intuvia',
   'bes3',
+  'bui350',
+  'bui330',
+  'bui310',
+  'bui275',
 ];
 
 const kShimanoNameHints = <String>[
@@ -140,12 +144,18 @@ const kShimanoNameHints = <String>[
   'steps e',
   'e-tube',
   'etube',
+  'sc-e5000',
+  'sc-e5003',
   'sc-e6100',
   'sc-e7000',
   'sc-e8000',
   'sc-em800',
+  'sc-en500',
   'sc-en600',
+  'du-e6100',
+  'du-e7000',
   'du-e8000',
+  'du-ep500',
   'du-ep800',
   'du-ep801',
   'du-ep600',
@@ -190,10 +200,14 @@ const kOtherDriveNameHints = <String>[
   'brose',
   'fazua',
   'specialized sl',
+  'mission control',
   'sl 1.2',
   'giant syncdrive',
   'syncdrive',
+  'ridecontrol',
   'tq hpr',
+  'mahle',
+  'ebikemotion',
   'bafang',
   'e-bike',
 ];
@@ -299,6 +313,9 @@ bool nameLooksLikeShimano(String platformName) {
   // Exact short motor names — not the substring "ep8" inside other words.
   if (n == 'ep8' || n.startsWith('ep8 ')) return true;
   if (n == 'ep6' || n.startsWith('ep6 ')) return true;
+  // Public STEPS SKUs not listed above (SC-E… / SC-EM… / SC-EN… / DU-E…).
+  if (RegExp(r'^sc-e[mn]?\d').hasMatch(n)) return true;
+  if (RegExp(r'^du-e[p]?\d').hasMatch(n)) return true;
   return false;
 }
 
@@ -311,6 +328,7 @@ bool nameLooksLikeYamaha(String platformName) {
 bool nameLooksLikeOtherDrive(String platformName) {
   final n = platformName.trim().toLowerCase();
   if (n.isEmpty) return false;
+  if (n == 'esm' || n.startsWith('esm ')) return true;
   return kOtherDriveNameHints.any(n.contains);
 }
 

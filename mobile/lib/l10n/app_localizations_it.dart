@@ -1851,6 +1851,19 @@ class AppLocalizationsIt extends AppLocalizations {
       'Famiglia / altri rider: sotto Profilo → Garage famiglia aggiungi rider con il proprio peso.';
 
   @override
+  String get privacyBleTitle => 'Sensori e orologio';
+
+  @override
+  String get privacyBleForget => 'Elimina accoppiamenti produttore';
+
+  @override
+  String get privacyBleForgetBody =>
+      'Rimuove gli ID ruota, motore e orologio su questo dispositivo. I valori live del produttore non vanno nel cloud — solo l\'accoppiamento.';
+
+  @override
+  String get privacyBleForgotten => 'Accoppiamenti BLE eliminati';
+
+  @override
   String get privacyExportTitle => 'Export (art. 20)';
 
   @override
