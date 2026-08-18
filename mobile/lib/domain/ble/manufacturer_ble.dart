@@ -75,7 +75,8 @@ class ManufacturerBleProfile {
   final String proofId;
 
   bool get decodesLive =>
-      openness == ManufacturerBleOpenness.openDecodable &&
+      (openness == ManufacturerBleOpenness.openDecodable ||
+          openness == ManufacturerBleOpenness.openPartial) &&
       (androidLive || iosLive);
 
   bool get inventsValues => false;
