@@ -146,4 +146,40 @@ void main() {
     ]);
     expect(city.first.kind, 'city');
   });
+
+  test('Wiesloch-Hbf-Fallback und kein Steig/RadService', () {
+    expect(stationFallbackQueries('Hauptbahnhof Wiesloch'), [
+      'Bahnhof Wiesloch',
+      'Wiesloch',
+    ]);
+    expect(stationFallbackQueries('Wiesloch'), isEmpty);
+    expect(shouldSkipPlaceOnlyGeocode('Hauptbahnhof Frankfurt'), isTrue);
+    expect(shouldSkipPlaceOnlyGeocode('Wiesloch'), isFalse);
+
+    final cleaned = dropStationJunkHits('Hauptbahnhof Wiesloch', const [
+      GeocodeHit(
+        label: 'RadService-Punkt Bahnhof Wiesloch-Walldorf, Wiesloch',
+        lat: 49.291,
+        lng: 8.664,
+        kind: 'house',
+        name: 'RadService-Punkt Bahnhof Wiesloch-Walldorf',
+      ),
+      GeocodeHit(
+        label: 'Wiesloch-Walldorf, Wiesloch, Deutschland',
+        lat: 49.2914,
+        lng: 8.6641,
+        kind: 'station',
+        name: 'Wiesloch-Walldorf',
+      ),
+      GeocodeHit(
+        label: 'Wiesloch-Walldorf Bahnhof Steig A, Wiesloch',
+        lat: 49.2912,
+        lng: 8.6638,
+        kind: 'house',
+        name: 'Wiesloch-Walldorf Bahnhof Steig A',
+      ),
+    ]);
+    expect(cleaned, hasLength(1));
+    expect(cleaned.first.kind, 'station');
+  });
 }
