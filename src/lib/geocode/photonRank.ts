@@ -52,19 +52,39 @@ export function geocodeTokensCovered(query: string, hay: string): boolean {
   return tokens.every((t) => have.has(t));
 }
 
+function haystack(hit: RankableGeocodeHit): string {
+  return `${hitName(hit)} ${hit.label}`;
+}
+
+function hitLooksLikeStation(hit: RankableGeocodeHit): boolean {
+  const kind = hit.kind ?? "";
+  if (STATION_KINDS.has(kind)) return true;
+  return normalizePlaceTokens(haystack(hit)).includes("bahnhof");
+}
+
+/** „Oder“ nur, wenn die Suche ihn nennt — sonst gewinnt Frankfurt am Main. */
+function unexpectedPlacePenalty(query: string, hit: RankableGeocodeHit): number {
+  const q = new Set(normalizePlaceTokens(query));
+  const h = new Set(normalizePlaceTokens(haystack(hit)));
+  if (!q.has("oder") && h.has("oder")) return -50;
+  return 0;
+}
+
 export function geocodeHitScore(query: string, hit: RankableGeocodeHit): number {
   const q = query.trim().toLowerCase();
   const name = hitName(hit).toLowerCase();
-  const hay = `${name} ${hit.label}`;
+  const hay = haystack(hit);
   let s = 0;
   if (name === q) s += 100;
   else if (nameMatchesQuery(name, q)) s += 45;
   if (geocodeTokensCovered(query, hay)) s += 80;
   const kind = hit.kind ?? "";
   const stationQ = queryLooksLikeStation(query);
+  const stationHit = hitLooksLikeStation(hit);
   if (kind === "city" || kind === "locality") s += stationQ ? 10 : 25;
-  if (STATION_KINDS.has(kind)) s += stationQ ? 40 : 5;
-  if (kind === "street" || kind === "house") s -= 15;
+  if (stationHit) s += stationQ ? 40 : 5;
+  if ((kind === "street" || kind === "house") && !stationHit) s -= 15;
+  s += unexpectedPlacePenalty(query, hit);
   return s;
 }
 

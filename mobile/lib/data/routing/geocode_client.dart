@@ -88,6 +88,19 @@ bool geocodeTokensCovered(String query, String hay) {
   return tokens.every(have.contains);
 }
 
+bool _hitLooksLikeStation(GeocodeHit hit) {
+  final kind = hit.kind ?? '';
+  if (_stationKinds.contains(kind)) return true;
+  return _normalizePlaceTokens('${hit.matchName} ${hit.label}').contains('bahnhof');
+}
+
+int _unexpectedPlacePenalty(String query, GeocodeHit hit) {
+  final q = _normalizePlaceTokens(query).toSet();
+  final h = _normalizePlaceTokens('${hit.matchName} ${hit.label}').toSet();
+  if (!q.contains('oder') && h.contains('oder')) return -50;
+  return 0;
+}
+
 int geocodeHitScore(String query, GeocodeHit hit) {
   final q = query.trim().toLowerCase();
   final name = hit.matchName.toLowerCase();
@@ -101,9 +114,11 @@ int geocodeHitScore(String query, GeocodeHit hit) {
   if (geocodeTokensCovered(query, hay)) s += 80;
   final kind = hit.kind ?? '';
   final stationQ = queryLooksLikeStation(query);
+  final stationHit = _hitLooksLikeStation(hit);
   if (kind == 'city' || kind == 'locality') s += stationQ ? 10 : 25;
-  if (_stationKinds.contains(kind)) s += stationQ ? 40 : 5;
-  if (kind == 'street' || kind == 'house') s -= 15;
+  if (stationHit) s += stationQ ? 40 : 5;
+  if ((kind == 'street' || kind == 'house') && !stationHit) s -= 15;
+  s += _unexpectedPlacePenalty(query, hit);
   return s;
 }
 

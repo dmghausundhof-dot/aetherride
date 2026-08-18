@@ -94,6 +94,27 @@ assert.equal(
   "Wiesloch Hbf query prefers the station, not the city"
 );
 
+const photonHouse = rankGeocodeHits("Hauptbahnhof Frankfurt", [
+  {
+    label: "Hauptbahnhof Frankfurt (Oder), Frankfurt (Oder), Deutschland",
+    lat: 52.336,
+    lng: 14.546,
+    kind: "house",
+    name: "Hauptbahnhof Frankfurt (Oder)",
+  },
+  {
+    label: "Frankfurt (Main) Hauptbahnhof, Frankfurt am Main, Deutschland",
+    lat: 50.107,
+    lng: 8.664,
+    kind: "house",
+    name: "Frankfurt (Main) Hauptbahnhof",
+  },
+]);
+assert.ok(
+  photonHouse[0].label.includes("Main"),
+  "Photon house-type Hbf: Main before Oder"
+);
+
 const cityOnly = rankGeocodeHits("Frankfurt", [
   {
     label: "Frankfurt Hauptbahnhof, Frankfurt, Deutschland",

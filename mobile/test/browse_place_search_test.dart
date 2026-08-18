@@ -110,6 +110,24 @@ void main() {
     ]);
     expect(wiesloch.first.kind, 'station');
 
+    final photonHouse = rankGeocodeHits('Hauptbahnhof Frankfurt', const [
+      GeocodeHit(
+        label: 'Hauptbahnhof Frankfurt (Oder), Frankfurt (Oder), Deutschland',
+        lat: 52.336,
+        lng: 14.546,
+        kind: 'house',
+        name: 'Hauptbahnhof Frankfurt (Oder)',
+      ),
+      GeocodeHit(
+        label: 'Frankfurt (Main) Hauptbahnhof, Frankfurt am Main, Deutschland',
+        lat: 50.107,
+        lng: 8.664,
+        kind: 'house',
+        name: 'Frankfurt (Main) Hauptbahnhof',
+      ),
+    ]);
+    expect(photonHouse.first.label, contains('Main'));
+
     final city = rankGeocodeHits('Frankfurt', const [
       GeocodeHit(
         label: 'Frankfurt Hauptbahnhof, Frankfurt, Deutschland',

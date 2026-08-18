@@ -80,7 +80,7 @@ export async function GET(req: Request) {
         next: { revalidate: 3600 },
       }).catch(() => null),
       stationQ
-        ? fetch(photonUrl("railway"), {
+        ? fetch(photonUrl("railway:station"), {
             headers: photonHeaders,
             next: { revalidate: 3600 },
           }).catch(() => null)
