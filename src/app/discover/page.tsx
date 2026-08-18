@@ -1788,7 +1788,7 @@ function DiscoverPageInner() {
 
   const searchChromePlaces = useCallback(async (q: string) => {
     if (!shouldOfferPlaceHits(q)) {
-      setPlaceHits([]);
+      setPlaceHits((cur) => (cur.length === 0 ? cur : []));
       return;
     }
     const [lon, lat] = userPos ?? mapCenter;
@@ -1798,18 +1798,18 @@ function DiscoverPageInner() {
       );
       const data = (await res.json()) as { hits?: NavigatePlaceHit[] };
       if (!res.ok) {
-        setPlaceHits([]);
+        setPlaceHits((cur) => (cur.length === 0 ? cur : []));
         return;
       }
       setPlaceHits(data.hits ?? []);
     } catch {
-      setPlaceHits([]);
+      setPlaceHits((cur) => (cur.length === 0 ? cur : []));
     }
   }, [userPos, mapCenter]);
 
   useEffect(() => {
     if (!shouldOfferPlaceHits(exploreQuery)) {
-      setPlaceHits([]);
+      setPlaceHits((cur) => (cur.length === 0 ? cur : []));
       return;
     }
     const t = window.setTimeout(() => {
