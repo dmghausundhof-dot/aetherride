@@ -108,6 +108,7 @@ import 'widgets/discover_peek_actions.dart';
 import 'widgets/ort_sheet.dart';
 import 'widgets/tour_akte_sheet.dart';
 import 'widgets/tour_community_section.dart';
+import 'widgets/tour_function_kit.dart';
 import 'widgets/tour_social_proof.dart';
 import 'widgets/route_variant_chips.dart';
 import 'widgets/plan_filmstrip.dart';
@@ -8945,6 +8946,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                 ],
                 ..._detailInfoSection(detail, tipRow),
+                const SizedBox(height: AppSpacing.xl),
+                TourFunctionKit(
+                  tourId: detail.id,
+                  tags: detail.apiTags,
+                  categories: detail.categories,
+                  onOpenGroup: () {
+                    ref.read(shellTabIndexProvider.notifier).state =
+                        ShellTabs.platz;
+                  },
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 TourCommunitySection(tourId: detail.id),
                 const SizedBox(height: AppSpacing.l),

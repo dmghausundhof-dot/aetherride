@@ -6,6 +6,7 @@ import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
 import '../../domain/tours/route_visibility.dart';
 import '../../domain/tours/tour_community_ux.dart';
+import '../../domain/tours/tour_functions.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../discover/widgets/tour_social_proof.dart';
@@ -37,10 +38,14 @@ class MappeTourCard extends StatelessWidget {
     final stats = mappeCardStats(route);
     final tag = review?.conditionTag;
     final canRide = onGoRide != null && savedRouteHasTrack(route);
+    final attached =
+        stimmenTourId == null ? eventsForTour('') : eventsForTour(stimmenTourId!);
+    final event = attached.isEmpty ? null : attached.first;
     final subtitle = [
       if (stats.isNotEmpty) stats,
       vis,
       if (tag != null) l10n.stimmeTagLabel(tag),
+      if (event != null) event.dateLabel,
     ].join(' · ');
 
     return Material(

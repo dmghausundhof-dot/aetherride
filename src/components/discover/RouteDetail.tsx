@@ -36,6 +36,8 @@ import { ElevationChart } from "@/components/discover/ElevationChart";
 import { EvidenceSheet } from "@/components/EvidenceSheet";
 import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
+import { TourFunctionKit } from "@/components/tours/TourFunctionKit";
+import { getPublicTour } from "@/lib/catalog/publicTours";
 import type { RangeEstimate } from "@/lib/ebike/range";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
@@ -89,6 +91,7 @@ export function RouteDetail({
 }) {
   const lang = useChromeLang();
   const d = discoverUi(lang);
+  const catalogTour = getPublicTour(route.id);
   const [layer, setLayer] = useState<DetailLayer>("overview");
   const [photoIdx, setPhotoIdx] = useState(0);
   const [trail, setTrail] = useState<TrailViewResult | null>(null);
@@ -464,6 +467,7 @@ export function RouteDetail({
           </Link>
         </div>
       </div>
+      {catalogTour ? <TourFunctionKit tour={catalogTour} /> : null}
       <TourReviews tourId={route.id} />
     </div>
   );

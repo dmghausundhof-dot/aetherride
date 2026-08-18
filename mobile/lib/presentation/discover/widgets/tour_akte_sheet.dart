@@ -21,6 +21,7 @@ import '../../../providers/app_providers.dart';
 import '../../shell/hof_threshold_nav.dart';
 import '../saved_route_notes_section.dart';
 import 'tour_community_section.dart';
+import 'tour_function_kit.dart';
 import '../add_to_collection_sheet.dart';
 
 enum _AkteShelf { mein, stimmen }
@@ -210,6 +211,14 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
                 ],
               ),
             ),
+            if (catalogId != null) ...[
+              const SizedBox(height: 12),
+              TourFunctionKit(
+                tourId: catalogId,
+                compact: true,
+                onOpenGroup: widget.onCreateGroup,
+              ),
+            ],
             const SizedBox(height: 16),
             if (!_loaded)
               const Padding(

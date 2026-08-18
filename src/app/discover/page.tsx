@@ -63,6 +63,7 @@ import {
 } from "@/lib/routing/activeRoute";
 import { parseGpx } from "@/lib/import/gpx";
 import { getPublicTour } from "@/lib/catalog/publicTours";
+import { suggestionFromPublicTour } from "@/lib/catalog/publicTourSuggestion";
 import {
   DEFAULT_ROUTE_FILTERS,
   filterRouteSuggestions,
@@ -633,6 +634,7 @@ function DiscoverPageInner() {
       }) ??
       routes.find((r) => r.id === detailId) ??
       curatedP0CatalogSuggestions(origin).find((r) => r.id === detailId) ??
+      suggestionFromPublicTour(detailId) ??
       null;
     return fromCatalog;
   }, [detailId, activeBike, categoryHint, profile, minutes, range, routes, origin]);

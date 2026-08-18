@@ -7,6 +7,7 @@
 import type { Bike, BikeCategory, RiderProfile } from "@/types";
 import type { RoutingProfile } from "@/lib/routing/profiles";
 import { demoCenterLngLat, haversineKm } from "@/lib/routing/demoGeometry";
+import { suggestionFromPublicTour } from "@/lib/catalog/publicTourSuggestion";
 
 export interface RouteSuggestion {
   id: string;
@@ -744,7 +745,7 @@ export function getSuggestionById(
   if (fromList) return fromList;
 
   const seed = SEEDS.find((s) => s.id === id);
-  if (!seed) return null;
+  if (!seed) return suggestionFromPublicTour(id);
   const category =
     input.bike?.category ?? input.categoryHint ?? seed.categories[0];
 

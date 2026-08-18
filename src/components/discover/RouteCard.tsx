@@ -5,6 +5,7 @@ import { Mountain, Route, Bookmark, BookmarkCheck, Play, ChevronRight, ExternalL
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 import { ElevationStrip } from "@/components/ElevationStrip";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
+import { eventsForTour } from "@/lib/tours/tourFunctions";
 import {
   formatDistanceElevation,
   sanitizeElevationM,
@@ -67,6 +68,14 @@ export function RouteCard({
         )}
         <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
           <TourCommunityChip tourId={route.id} />
+          {eventsForTour(route.id).slice(0, 1).map((event) => (
+            <span
+              key={event.id}
+              className="inline-flex items-center rounded-md bg-surface-elevated px-2 py-0.5 text-text-secondary"
+            >
+              {event.dateLabel}
+            </span>
+          ))}
           <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5">
             <Route className="h-3 w-3" />
             {route.loop ? d.loopRound : d.pointAb}
