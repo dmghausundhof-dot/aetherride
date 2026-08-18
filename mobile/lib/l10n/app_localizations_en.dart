@@ -1838,6 +1838,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Family / extra riders: under Profile → Family garage add riders with their own weight.';
 
   @override
+  String get privacyBleTitle => 'Sensors & watch';
+
+  @override
+  String get privacyBleForget => 'Delete manufacturer pairings';
+
+  @override
+  String get privacyBleForgetBody =>
+      'Removes remembered wheel, drive and watch IDs on this device. Manufacturer live values are not stored in the cloud — only the pairing.';
+
+  @override
+  String get privacyBleForgotten => 'BLE pairings deleted';
+
+  @override
   String get privacyExportTitle => 'Export (Art. 20)';
 
   @override

@@ -13,6 +13,7 @@ import '../domain/ble/bike_ble_kind.dart';
 import '../domain/ble/ble_link_status.dart';
 import '../domain/ble/csc_measurement.dart';
 import '../domain/ble/gatt_sensors.dart';
+import '../domain/ble/manufacturer_ble.dart';
 import '../domain/ble/watch_candidate.dart';
 import 'native_channels.dart';
 
@@ -1599,6 +1600,80 @@ class BleCoreChannel {
     _refreshWatchStatus();
   }
 
+  /// Forget the last CSC/drive id so unlink does not auto-reconnect it.
+  Future<void> forgetLastBikeId() async {
+    _lastRemoteId = null;
+    await _deleteIdFile(kBleLastCscIdFile);
+  }
+
+  /// Forget the last watch / HR id.
+  Future<void> forgetLastWatchId() async {
+    _lastWatchRemoteId = null;
+    await _deleteIdFile(kBleLastWatchIdFile);
+  }
+
+  Future<void> forgetAllPairedIds() async {
+    await forgetLastBikeId();
+    await forgetLastWatchId();
+  }
+
+  Future<void> _deleteIdFile(String name) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final f = File(p.join(dir.path, name));
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
+  }
+
+  /// Drop LDI / drive GATT. Keep wheel CSC and rider watch.
+  Future<void> disconnectDriveKeepWheel() async {
+    try {
+      await _method.invokeMethod<void>('disconnect');
+    } on MissingPluginException {
+      // LDI accessory may be absent on iOS.
+    }
+    _ldiConnected = false;
+    await _batterySub?.cancel();
+    _batterySub = null;
+    _socPercent = null;
+    _driveBonded = false;
+    final driveId = _driveRemoteId;
+    _driveRemoteId = null;
+    final watchId = _watchDevice?.remoteId.str;
+    final drop = <BluetoothDevice>[];
+    for (final d in List<BluetoothDevice>.from(_auxDevices)) {
+      final kind = _kindHintFor(d);
+      final isDrive = kind != null && bikeBleKindIsDrive(kind);
+      if (isDrive || d.remoteId.str == driveId) {
+        if (watchId != null && d.remoteId.str == watchId) continue;
+        drop.add(d);
+      }
+    }
+    for (final d in drop) {
+      _auxDevices.removeWhere((x) => x.remoteId.str == d.remoteId.str);
+      unawaited(_auxConnSubs.remove(d.remoteId.str)?.cancel());
+      try {
+        await d.disconnect();
+      } catch (_) {}
+    }
+    if (_device != null &&
+        (_device!.remoteId.str == driveId ||
+            (_connectedKind != null &&
+                bikeBleKindIsDrive(_connectedKind!) &&
+                _cscSub == null))) {
+      if (watchId == null || _device!.remoteId.str != watchId) {
+        try {
+          await _device?.disconnect();
+        } catch (_) {}
+      }
+      await _connSub?.cancel();
+      _connSub = null;
+      _device = null;
+      _connectedKind = _cscSub != null ? BikeBleKind.csc : null;
+    }
+    _refreshStatus();
+  }
+
   Future<void> disconnectWatch() async {
     _wantWatchConnection = false;
     _rideWatchReconnect = false;
@@ -1712,7 +1787,7 @@ class BleCoreChannel {
     if (_lastRemoteId != null) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_csc_id.txt'));
+      final f = File(p.join(dir.path, kBleLastCscIdFile));
       if (await f.exists()) {
         final id = (await f.readAsString()).trim();
         if (id.isNotEmpty) _lastRemoteId = id;
@@ -1723,7 +1798,7 @@ class BleCoreChannel {
   Future<void> _saveLastRemoteId(String id) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_csc_id.txt'));
+      final f = File(p.join(dir.path, kBleLastCscIdFile));
       await f.writeAsString(id);
     } catch (_) {}
   }
@@ -1732,7 +1807,7 @@ class BleCoreChannel {
     if (_lastWatchRemoteId != null) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_watch_id.txt'));
+      final f = File(p.join(dir.path, kBleLastWatchIdFile));
       if (await f.exists()) {
         final id = (await f.readAsString()).trim();
         if (id.isNotEmpty) _lastWatchRemoteId = id;
@@ -1743,7 +1818,7 @@ class BleCoreChannel {
   Future<void> _saveLastWatchRemoteId(String id) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final f = File(p.join(dir.path, 'ble_last_watch_id.txt'));
+      final f = File(p.join(dir.path, kBleLastWatchIdFile));
       await f.writeAsString(id);
     } catch (_) {}
   }

@@ -190,10 +190,14 @@ const kOtherDriveNameHints = <String>[
   'brose',
   'fazua',
   'specialized sl',
+  'mission control',
   'sl 1.2',
   'giant syncdrive',
   'syncdrive',
+  'ridecontrol',
   'tq hpr',
+  'mahle',
+  'ebikemotion',
   'bafang',
   'e-bike',
 ];
@@ -311,6 +315,7 @@ bool nameLooksLikeYamaha(String platformName) {
 bool nameLooksLikeOtherDrive(String platformName) {
   final n = platformName.trim().toLowerCase();
   if (n.isEmpty) return false;
+  if (n == 'esm' || n.startsWith('esm ')) return true;
   return kOtherDriveNameHints.any(n.contains);
 }
 

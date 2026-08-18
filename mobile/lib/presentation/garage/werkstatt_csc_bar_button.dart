@@ -114,17 +114,28 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
       return;
     }
     final store = ref.read(bikeBleStoreProvider);
+    final ble = ref.read(bleCoreProvider);
     if (choice == 'unlinkWheel' || choice == 'unlinkAll') {
       if (choice == 'unlinkAll') {
         await store.removeForBike(widget.bikeId);
+        try {
+          await ble.disconnectBikeKeepWatch();
+        } catch (_) {}
       } else {
         await store.removeWheel(widget.bikeId);
+        try {
+          await ble.disconnectCsc();
+        } catch (_) {}
       }
       try {
-        await ref.read(bleCoreProvider).disconnectCsc();
+        await ble.forgetLastBikeId();
       } catch (_) {}
+      await store.removeLastCscIdFile();
     } else if (choice == 'unlinkDrive') {
       await store.removeDrive(widget.bikeId);
+      try {
+        await ble.disconnectDriveKeepWheel();
+      } catch (_) {}
     }
     await _reload();
   }

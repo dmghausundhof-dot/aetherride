@@ -155,9 +155,12 @@ class _HofWatchCardState extends ConsumerState<HofWatchCard> {
   }
 
   Future<void> _unlink() async {
-    await ref.read(bikeBleStoreProvider).removeWatch();
+    final store = ref.read(bikeBleStoreProvider);
+    await store.removeWatch();
+    await store.removeLastWatchIdFile();
     try {
       await ref.read(bleCoreProvider).disconnectWatch();
+      await ref.read(bleCoreProvider).forgetLastWatchId();
     } catch (_) {}
     await _reload();
     if (mounted) {

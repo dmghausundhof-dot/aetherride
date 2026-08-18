@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../domain/ble/bike_ble_kind.dart';
 import '../../domain/ble/ble_link_status.dart';
+import '../../domain/ble/manufacturer_ble.dart';
 
 /// Gekoppelter BLE-Sensor je Bike (Komoot-Klasse-UX: Rad auswählen ⇒ Sensor
 /// verbindet automatisch). JSON-Datei statt Drift-Migration — das Mapping ist
@@ -130,7 +131,7 @@ class BikeBleStore {
 
   Future<File> _file() async {
     final dir = await _dirProvider();
-    return File(p.join(dir.path, 'bike_ble_devices.json'));
+    return File(p.join(dir.path, kBikeBleDevicesFile));
   }
 
   Future<Map<String, BikeBleBinding>> _load() async {
@@ -232,7 +233,7 @@ class BikeBleStore {
   /// so pairing a watch never overwrites the CSC mapping or the bike record.
   Future<File> _watchFile() async {
     final dir = await _dirProvider();
-    return File(p.join(dir.path, 'watch_ble_device.json'));
+    return File(p.join(dir.path, kWatchBleDeviceFile));
   }
 
   Future<BikeBleDevice?> savedWatch() async {
@@ -255,6 +256,30 @@ class BikeBleStore {
   Future<void> removeWatch() async {
     try {
       final f = await _watchFile();
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
+  }
+
+  Future<void> removeLastCscIdFile() async {
+    await _deleteNamed(kBleLastCscIdFile);
+  }
+
+  Future<void> removeLastWatchIdFile() async {
+    await _deleteNamed(kBleLastWatchIdFile);
+  }
+
+  /// All manufacturer pairing on this device: bike slots, watch, last ids.
+  Future<void> clearAll() async {
+    _cache = {};
+    for (final name in kManufacturerBleLocalFiles) {
+      await _deleteNamed(name);
+    }
+  }
+
+  Future<void> _deleteNamed(String name) async {
+    try {
+      final dir = await _dirProvider();
+      final f = File(p.join(dir.path, name));
       if (await f.exists()) await f.delete();
     } catch (_) {}
   }

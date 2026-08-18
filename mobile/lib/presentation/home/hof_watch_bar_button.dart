@@ -133,9 +133,12 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
   }
 
   Future<void> _unlink() async {
-    await ref.read(bikeBleStoreProvider).removeWatch();
+    final store = ref.read(bikeBleStoreProvider);
+    await store.removeWatch();
+    await store.removeLastWatchIdFile();
     try {
       await ref.read(bleCoreProvider).disconnectWatch();
+      await ref.read(bleCoreProvider).forgetLastWatchId();
     } catch (_) {}
     await _reload();
   }
