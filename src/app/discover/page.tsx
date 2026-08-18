@@ -445,6 +445,7 @@ function DiscoverPageInner() {
   );
   const [heatmapNote, setHeatmapNote] = useState<string | null>(null);
   const planDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPlaceRef = useRef<NavigatePlaceHit | null>(null);
 
   const activeProfile = discoverNavProfile(manualProfile ?? routingProfile);
   const planCosting = sessionCostingForBike(activeBike?.category, activeProfile);
@@ -1764,6 +1765,7 @@ function DiscoverPageInner() {
 
   const applyPlaceHit = useCallback(
     (hit: NavigatePlaceHit) => {
+      lastPlaceRef.current = hit;
       setLastPlace(hit);
       setExploreQuery(hit.label);
       setPlaceHits([]);
@@ -1830,7 +1832,7 @@ function DiscoverPageInner() {
   const beginNavigate = useCallback(() => {
     const intent = beginNavigateIntent({
       hasEnd: Boolean(endOf(draft)),
-      lastPlace,
+      lastPlace: lastPlaceRef.current ?? lastPlace,
       pendingHits: placeHits,
     });
     setSheetMode("plan");
