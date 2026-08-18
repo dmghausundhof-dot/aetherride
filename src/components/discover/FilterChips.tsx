@@ -23,14 +23,17 @@ function Chip({
   active,
   onClick,
   children,
+  testId,
 }: {
   active: boolean;
   onClick: () => void;
   children: ReactNode;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onClick}
       className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
         active
@@ -60,6 +63,7 @@ export function DistanceMaxChips({
       {DISTANCE_MAX_OPTIONS.filter((o) => o.id != null).map((o) => (
         <Chip
           key={o.id!}
+          testId={`filter-distance-${o.id}`}
           active={maxDistanceKm === o.id}
           onClick={() =>
             onChange(maxDistanceKm === o.id ? null : (o.id as number))
@@ -123,6 +127,7 @@ export function FilterChips({
         {SPORT_FILTER_OPTIONS.map((o) => (
           <Chip
             key={o.id}
+            testId={`filter-sport-${o.id}`}
             active={filters.sport === o.id}
             onClick={() => onChange({ ...filters, sport: o.id })}
           >
@@ -133,6 +138,7 @@ export function FilterChips({
 
       <div className="flex flex-wrap gap-1.5">
         <Chip
+          testId="filter-loop"
           active={filters.loopOnly}
           onClick={() => onChange({ ...filters, loopOnly: !filters.loopOnly })}
         >
@@ -143,6 +149,7 @@ export function FilterChips({
           .map((o) => (
             <Chip
               key={o.id}
+              testId={`filter-scale-${o.id}`}
               active={filters.scale === o.id}
               onClick={() =>
                 onChange({
@@ -157,6 +164,7 @@ export function FilterChips({
         {ELEVATION_OPTIONS.filter((o) => o.id !== "any").map((o) => (
           <Chip
             key={o.id}
+            testId={`filter-elevation-${o.id}`}
             active={filters.elevation === o.id}
             onClick={() =>
               onChange({
@@ -177,6 +185,7 @@ export function FilterChips({
         {SURFACE_OPTIONS.filter((o) => o.id != null).map((o) => (
           <Chip
             key={o.id!}
+            testId={`filter-surface-${o.id}`}
             active={filters.surfaceQuery === o.id}
             onClick={() =>
               onChange({
@@ -198,6 +207,7 @@ export function FilterChips({
         {VISIBILITY_FILTER_OPTIONS.map((o) => (
           <Chip
             key={o.id}
+            testId={`filter-visibility-${o.id}`}
             active={(filters.visibility ?? "all_mine") === o.id}
             onClick={() => onChange({ ...filters, visibility: o.id })}
           >

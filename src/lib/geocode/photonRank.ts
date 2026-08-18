@@ -44,14 +44,23 @@ export function queryLooksLikeStation(query: string): boolean {
   return normalizePlaceTokens(query).includes("bahnhof");
 }
 
-/** Photon kennt „Wiesloch-Walldorf Bahnhof“, nicht „Hauptbahnhof Wiesloch“. */
+/** Photon kennt „Wiesloch-Walldorf“, nicht „Hauptbahnhof Wiesloch“. */
 export function stationFallbackQueries(query: string): string[] {
   const q = query.trim();
   if (!queryLooksLikeStation(q)) return [];
   const out: string[] = [];
-  const bahnhof = q.replace(/hauptbahnhof/gi, "Bahnhof").replace(/\bHbf\b/gi, "Bahnhof");
+  const bahnhof = q
+    .replace(/hauptbahnhof/gi, "Bahnhof")
+    .replace(/\bHbf\b/gi, "Bahnhof");
   if (bahnhof !== q) out.push(bahnhof);
-  return out;
+  const city = q
+    .replace(/hauptbahnhof/gi, "")
+    .replace(/\bhbf\b/gi, "")
+    .replace(/bahnhof/gi, "")
+    .replace(/[,\s]+/g, " ")
+    .trim();
+  if (city && city.toLowerCase() !== q.toLowerCase()) out.push(city);
+  return [...new Set(out)];
 }
 
 /** Query-Wörter unabhängig von der Reihenfolge im Treffer. */
@@ -70,6 +79,20 @@ export function geocodeHitLooksLikeStation(hit: RankableGeocodeHit): boolean {
   const kind = hit.kind ?? "";
   if (STATION_KINDS.has(kind)) return true;
   return normalizePlaceTokens(haystack(hit)).includes("bahnhof");
+}
+
+export function geocodeHitIsStationJunk(hit: RankableGeocodeHit): boolean {
+  return /steig|platform|bus_stop|radservice|repair/i.test(haystack(hit));
+}
+
+/** Steig / RadService aus der Liste, sobald ein echter Halt da ist. */
+export function dropStationJunkHits<T extends RankableGeocodeHit>(
+  query: string,
+  hits: T[]
+): T[] {
+  if (!queryLooksLikeStation(query)) return hits;
+  const clean = hits.filter((h) => !geocodeHitIsStationJunk(h));
+  return clean.length > 0 ? clean : hits;
 }
 
 /** „Oder“ nur, wenn die Suche ihn nennt — sonst gewinnt Frankfurt am Main. */

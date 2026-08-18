@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 import {
   dedupeGeocodeHits,
-  geocodeHitLooksLikeStation,
+  dropStationJunkHits,
   queryLooksLikeStation,
   rankGeocodeHits,
   stationFallbackQueries,
@@ -151,8 +151,10 @@ export async function GET(req: Request) {
         let kind = typeof p.type === "string" ? p.type : undefined;
         if (
           osmKey === "railway" &&
-          (osmValue === "station" || osmValue === "halt")
+          (osmValue === "station" || osmValue === "halt" || osmValue === "stop")
         ) {
+          kind = "station";
+        } else if (osmKey === "building" && osmValue === "train_station") {
           kind = "station";
         }
         hits.push({
@@ -188,22 +190,40 @@ export async function GET(req: Request) {
         /* keep default hits */
       }
     }
-    if (!hits.some(geocodeHitLooksLikeStation)) {
+    if (stationQ) {
+      const haveRailwayStation = hits.some((h) => h.kind === "station");
       for (const alt of stationFallbackQueries(q)) {
         try {
-          const altRes = await fetch(photonUrl(undefined, alt), {
+          const tagged = await fetch(photonUrl("railway:station", alt), {
             headers: photonHeaders,
             next: { revalidate: 3600 },
-          });
-          if (!altRes.ok) continue;
-          const altData = (await altRes.json()) as { features?: PhotonFeature[] };
-          hits = [...hits, ...parseHits(altData)];
+          }).catch(() => null);
+          if (tagged?.ok) {
+            const taggedData = (await tagged.json()) as {
+              features?: PhotonFeature[];
+            };
+            hits = [...hits, ...parseHits(taggedData)];
+          }
+          if (!haveRailwayStation) {
+            const altRes = await fetch(photonUrl(undefined, alt), {
+              headers: photonHeaders,
+              next: { revalidate: 3600 },
+            });
+            if (!altRes.ok) continue;
+            const altData = (await altRes.json()) as {
+              features?: PhotonFeature[];
+            };
+            hits = [...hits, ...parseHits(altData)];
+          }
         } catch {
           /* keep existing hits */
         }
       }
     }
-    hits = rankGeocodeHits(q, dedupeGeocodeHits(hits)).slice(0, limit);
+    hits = dropStationJunkHits(
+      q,
+      rankGeocodeHits(q, dedupeGeocodeHits(hits))
+    ).slice(0, limit);
 
     if (hits.length > 0) {
       return NextResponse.json({

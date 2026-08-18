@@ -3,6 +3,7 @@
  */
 import assert from "node:assert/strict";
 import {
+  dropStationJunkHits,
   geocodeHitScore,
   nameMatchesQuery,
   rankGeocodeHits,
@@ -136,6 +137,7 @@ assert.equal(cityOnly[0].kind, "city", "plain city query still prefers the city"
 
 assert.deepEqual(stationFallbackQueries("Hauptbahnhof Wiesloch"), [
   "Bahnhof Wiesloch",
+  "Wiesloch",
 ]);
 assert.deepEqual(stationFallbackQueries("Wiesloch"), []);
 
@@ -167,5 +169,9 @@ assert.equal(
   "station",
   "railway station beats repair point and bus Steig"
 );
+
+const cleaned = dropStationJunkHits("Hauptbahnhof Wiesloch", wieslochLive);
+assert.equal(cleaned.length, 1);
+assert.equal(cleaned[0].kind, "station");
 
 console.log("photonRank.test.ts OK");
