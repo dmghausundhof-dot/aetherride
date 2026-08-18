@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { chromeLangFrom } from "@/lib/i18n/chromeLang";
 import {
   dedupeGeocodeHits,
+  geocodeHitLooksLikeStation,
   queryLooksLikeStation,
   rankGeocodeHits,
+  stationFallbackQueries,
 } from "@/lib/geocode/photonRank";
 
 export type GeocodeHit = {
@@ -52,9 +54,9 @@ export async function GET(req: Request) {
     const biasLon =
       url.searchParams.get("lon") ?? url.searchParams.get("lng") ?? "10.0";
 
-    const photonUrl = (osmTag?: string) => {
+    const photonUrl = (osmTag?: string, query = q) => {
       const photon = new URL("https://photon.komoot.io/api/");
-      photon.searchParams.set("q", q);
+      photon.searchParams.set("q", query);
       // Photon: default/en/de/fr. nl is not a Photon lang — use en.
       photon.searchParams.set("lang", photonLang);
       photon.searchParams.set("limit", String(Math.min(8, limit + 3)));
@@ -144,11 +146,20 @@ export async function GET(req: Request) {
           .filter(Boolean);
         const label = [...new Set(parts)].join(", ");
         if (!label) continue;
+        const osmKey = typeof p.osm_key === "string" ? p.osm_key : "";
+        const osmValue = typeof p.osm_value === "string" ? p.osm_value : "";
+        let kind = typeof p.type === "string" ? p.type : undefined;
+        if (
+          osmKey === "railway" &&
+          (osmValue === "station" || osmValue === "halt")
+        ) {
+          kind = "station";
+        }
         hits.push({
           label,
           lng: coords[0],
           lat: coords[1],
-          kind: typeof p.type === "string" ? p.type : undefined,
+          kind,
           ...(name ? { name } : {}),
         });
       }
@@ -175,6 +186,21 @@ export async function GET(req: Request) {
         hits = [...parseHits(stationData), ...hits];
       } catch {
         /* keep default hits */
+      }
+    }
+    if (!hits.some(geocodeHitLooksLikeStation)) {
+      for (const alt of stationFallbackQueries(q)) {
+        try {
+          const altRes = await fetch(photonUrl(undefined, alt), {
+            headers: photonHeaders,
+            next: { revalidate: 3600 },
+          });
+          if (!altRes.ok) continue;
+          const altData = (await altRes.json()) as { features?: PhotonFeature[] };
+          hits = [...hits, ...parseHits(altData)];
+        } catch {
+          /* keep existing hits */
+        }
       }
     }
     hits = rankGeocodeHits(q, dedupeGeocodeHits(hits)).slice(0, limit);

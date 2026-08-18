@@ -117,7 +117,12 @@ int geocodeHitScore(String query, GeocodeHit hit) {
   final stationHit = _hitLooksLikeStation(hit);
   if (kind == 'city' || kind == 'locality') s += stationQ ? 10 : 25;
   if (stationHit) s += stationQ ? 40 : 5;
+  if (kind == 'station') s += 50;
   if ((kind == 'street' || kind == 'house') && !stationHit) s -= 15;
+  if (RegExp(r'steig|platform|bus_stop|radservice|repair', caseSensitive: false)
+      .hasMatch(hay)) {
+    s -= 80;
+  }
   s += _unexpectedPlacePenalty(query, hit);
   return s;
 }

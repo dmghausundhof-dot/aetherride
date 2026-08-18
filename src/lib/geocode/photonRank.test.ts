@@ -6,6 +6,7 @@ import {
   geocodeHitScore,
   nameMatchesQuery,
   rankGeocodeHits,
+  stationFallbackQueries,
 } from "./photonRank";
 
 assert.equal(nameMatchesQuery("Berlin", "Berlin"), true);
@@ -132,5 +133,39 @@ const cityOnly = rankGeocodeHits("Frankfurt", [
   },
 ]);
 assert.equal(cityOnly[0].kind, "city", "plain city query still prefers the city");
+
+assert.deepEqual(stationFallbackQueries("Hauptbahnhof Wiesloch"), [
+  "Bahnhof Wiesloch",
+]);
+assert.deepEqual(stationFallbackQueries("Wiesloch"), []);
+
+const wieslochLive = rankGeocodeHits("Hauptbahnhof Wiesloch", [
+  {
+    label: "RadService-Punkt Bahnhof Wiesloch-Walldorf, Wiesloch",
+    lat: 49.291,
+    lng: 8.664,
+    kind: "house",
+    name: "RadService-Punkt Bahnhof Wiesloch-Walldorf",
+  },
+  {
+    label: "Wiesloch-Walldorf, Wiesloch, Deutschland",
+    lat: 49.2914,
+    lng: 8.6641,
+    kind: "station",
+    name: "Wiesloch-Walldorf",
+  },
+  {
+    label: "Wiesloch-Walldorf Bahnhof Steig A, Wiesloch",
+    lat: 49.2912,
+    lng: 8.6638,
+    kind: "house",
+    name: "Wiesloch-Walldorf Bahnhof Steig A",
+  },
+]);
+assert.equal(
+  wieslochLive[0].kind,
+  "station",
+  "railway station beats repair point and bus Steig"
+);
 
 console.log("photonRank.test.ts OK");
