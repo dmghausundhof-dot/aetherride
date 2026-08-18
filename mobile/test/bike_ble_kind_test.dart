@@ -53,6 +53,13 @@ void main() {
         ),
         BikeBleKind.bosch,
       );
+      expect(
+        classifyBikeBle(
+          platformName: 'BUI350',
+          advertisedServiceUuids: const [],
+        ),
+        BikeBleKind.bosch,
+      );
     });
 
     test('Bosch LDI / Flow 128-bit UUID without name', () {
@@ -107,10 +114,14 @@ void main() {
 
     test('Shimano public component names', () {
       const names = [
+        'SC-E5000',
+        'SC-E5003',
         'SC-E6100',
         'SC-E8000',
         'SC-EM800',
+        'SC-EN500',
         'SC-EN600',
+        'SC-E7100',
         'DU-E8000',
         'DU-EP800',
         'DU-EP801',

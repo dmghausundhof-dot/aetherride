@@ -31,6 +31,7 @@ import '../../domain/community/ride_group_policy.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
+import '../../domain/ble/manufacturer_live.dart';
 import '../../domain/ble/ride_ble_samples.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/hud_bike_peek.dart';
@@ -1042,11 +1043,13 @@ class RideScreenState extends ConsumerState<RideScreen> {
     if (c != null && mounted) await _drawGroupPins(c);
   }
 
-  /// LDI-Speed, sonst GPS (Freeride ohne CSC).
+  /// LDI/CSC-Speed, sonst GPS. Bei lebendem Rad kein GPS-Drift im Stand.
   double get _effectiveSpeedKmh {
-    final ldi = _ldi?.speedKmh;
-    if (ldi != null && ldi > 0.5) return ldi;
-    return _gpsSpeedKmh;
+    return rideEffectiveSpeedKmh(
+      liveSpeedKmh: _ldi?.speedKmh,
+      wheelLive: ref.read(bleCoreProvider).hasWheelLive,
+      gpsSpeedKmh: _gpsSpeedKmh,
+    );
   }
 
   AppLocalizations get _l10n => AppLocalizations.of(context);
@@ -1457,6 +1460,12 @@ class RideScreenState extends ConsumerState<RideScreen> {
           unawaited(attach);
         }
       }
+      if (plan.startLdi &&
+          !ble.isLdiLive &&
+          mounted &&
+          ref.read(isRidingProvider)) {
+        unawaited(_retryBoschLdiWhileRiding(ble, plan));
+      }
       if (!mounted || !ref.read(isRidingProvider)) return;
       if (!ble.hasWheelLive) {
         final kind = ble.connectedKind ?? plan.driveKind;
@@ -1490,6 +1499,29 @@ class RideScreenState extends ConsumerState<RideScreen> {
       }
     } catch (e) {
       debugPrint('ride: deferred BLE connect failed ($e) — continue without');
+    }
+  }
+
+  /// Bike still waking after the first LDI window — keep advertising eb20.
+  Future<void> _retryBoschLdiWhileRiding(
+    BleCoreChannel ble,
+    RideBleConnectPlan plan,
+  ) async {
+    for (var attempt = 0; attempt < 4; attempt++) {
+      final next = rideLdiRetryPlan(
+        startLdi: plan.startLdi,
+        ldiLive: ble.isLdiLive,
+        stillRiding: mounted && ref.read(isRidingProvider),
+        attempt: attempt,
+      );
+      if (!next.shouldRetry) return;
+      await Future<void>.delayed(next.delay);
+      if (!mounted || !ref.read(isRidingProvider) || ble.isLdiLive) return;
+      try {
+        await ble.startLdiAccessory(pairing: false);
+      } catch (e) {
+        debugPrint('ride: LDI retry $attempt failed ($e)');
+      }
     }
   }
 

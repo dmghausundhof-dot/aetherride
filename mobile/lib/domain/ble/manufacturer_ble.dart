@@ -92,7 +92,7 @@ const kManufacturerBleProfiles = <ManufacturerBleProfile>[
     id: ManufacturerBleId.boschLdi,
     brand: 'Bosch',
     protocol: 'LDI V1.0 LiveData (eb20/eb21)',
-    openness: ManufacturerBleOpenness.openPartial,
+    openness: ManufacturerBleOpenness.openDecodable,
     kind: BikeBleKind.bosch,
     metrics: {
       ManufacturerBleMetric.speed,

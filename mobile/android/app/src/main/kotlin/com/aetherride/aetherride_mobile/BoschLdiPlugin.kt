@@ -155,15 +155,12 @@ class BoschLdiPlugin : FlutterPlugin, MethodChannel.MethodCallHandler,
             .setTimeout(0)
             .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
             .build()
-        // Solicitation UUID must stay in the primary packet. The local name
-        // ("FlowLine") goes in the scan response so Samsung does not drop eb20.
+        // Solicitation UUID must stay in the primary packet on pair AND
+        // reconnect — the bike (central) looks for eb20. The local name
+        // ("FlowLine") goes in the scan response so Samsung does not drop it.
         val data = AdvertiseData.Builder()
             .setIncludeDeviceName(false)
-            .apply {
-                if (pairing) {
-                    addServiceSolicitationUuid(ParcelUuid(SERVICE_UUID))
-                }
-            }
+            .addServiceSolicitationUuid(ParcelUuid(SERVICE_UUID))
             .build()
         val scan = AdvertiseData.Builder()
             .setIncludeDeviceName(true)

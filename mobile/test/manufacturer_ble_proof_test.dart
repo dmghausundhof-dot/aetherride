@@ -22,7 +22,7 @@ void main() {
 
   test('Bosch LDI is the only open drive decoder — Android and iOS accessory', () {
     final ldi = manufacturerBleByProofId('bosch-ldi-v1')!;
-    expect(ldi.openness, ManufacturerBleOpenness.openPartial);
+    expect(ldi.openness, ManufacturerBleOpenness.openDecodable);
     expect(ldi.androidLive, isTrue);
     expect(ldi.iosLive, isTrue);
     expect(ldi.metrics, contains(ManufacturerBleMetric.batterySoc));

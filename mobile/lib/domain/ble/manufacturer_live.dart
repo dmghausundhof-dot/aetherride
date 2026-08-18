@@ -114,6 +114,45 @@ enum BlePairNextStep {
   failed,
 }
 
+/// Bosch LDI accessory must advertise eb20 solicitation on pair AND reconnect.
+/// The bike is BLE central and will not find FlowLine without it.
+bool boschLdiAdvertiseSolicitation({required bool pairing}) => true;
+
+/// HUD Tempo: live CSC/LDI wins, including 0 at rest. GPS only if no wheel.
+double rideEffectiveSpeedKmh({
+  required double? liveSpeedKmh,
+  required bool wheelLive,
+  required double gpsSpeedKmh,
+}) {
+  if (liveSpeedKmh != null && liveSpeedKmh > 0.5) return liveSpeedKmh;
+  if (wheelLive && liveSpeedKmh != null) return liveSpeedKmh;
+  return gpsSpeedKmh;
+}
+
+class RideLdiRetryPlan {
+  const RideLdiRetryPlan({required this.shouldRetry, required this.delay});
+
+  final bool shouldRetry;
+  final Duration delay;
+}
+
+/// Bike still waking after the first LDI window — retry while the ride is on.
+RideLdiRetryPlan rideLdiRetryPlan({
+  required bool startLdi,
+  required bool ldiLive,
+  required bool stillRiding,
+  required int attempt,
+}) {
+  if (!startLdi || ldiLive || !stillRiding || attempt >= 4) {
+    return const RideLdiRetryPlan(shouldRetry: false, delay: Duration.zero);
+  }
+  const delays = [8, 15, 25, 40];
+  return RideLdiRetryPlan(
+    shouldRetry: true,
+    delay: Duration(seconds: delays[attempt.clamp(0, delays.length - 1)]),
+  );
+}
+
 /// After a pair-sheet GATT attempt: close, start LDI, or keep looking for CSC.
 BlePairNextStep blePairNextStep({
   required bool connected,

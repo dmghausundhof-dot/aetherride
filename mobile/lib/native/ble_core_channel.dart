@@ -348,7 +348,7 @@ class BleCoreChannel {
         _startStub();
         return true;
       }
-      _statusDetail = 'ldi_ios_pending';
+      _statusDetail = 'ldi_plugin_missing';
       return false;
     } finally {
       if (onProgress != null) _onProgress = prev;

@@ -121,6 +121,77 @@ void main() {
     );
   });
 
+  test('LDI accessory always advertises eb20 solicitation', () {
+    expect(boschLdiAdvertiseSolicitation(pairing: true), isTrue);
+    expect(boschLdiAdvertiseSolicitation(pairing: false), isTrue);
+  });
+
+  test('live wheel speed at rest beats GPS drift', () {
+    expect(
+      rideEffectiveSpeedKmh(
+        liveSpeedKmh: 24.1,
+        wheelLive: true,
+        gpsSpeedKmh: 3.2,
+      ),
+      closeTo(24.1, 0.01),
+    );
+    expect(
+      rideEffectiveSpeedKmh(
+        liveSpeedKmh: 0,
+        wheelLive: true,
+        gpsSpeedKmh: 2.8,
+      ),
+      0,
+    );
+    expect(
+      rideEffectiveSpeedKmh(
+        liveSpeedKmh: null,
+        wheelLive: false,
+        gpsSpeedKmh: 18,
+      ),
+      18,
+    );
+  });
+
+  test('Bosch LDI retries while the ride is on and the bike is still waking', () {
+    expect(
+      rideLdiRetryPlan(
+        startLdi: true,
+        ldiLive: false,
+        stillRiding: true,
+        attempt: 0,
+      ).shouldRetry,
+      isTrue,
+    );
+    expect(
+      rideLdiRetryPlan(
+        startLdi: true,
+        ldiLive: true,
+        stillRiding: true,
+        attempt: 0,
+      ).shouldRetry,
+      isFalse,
+    );
+    expect(
+      rideLdiRetryPlan(
+        startLdi: true,
+        ldiLive: false,
+        stillRiding: false,
+        attempt: 0,
+      ).shouldRetry,
+      isFalse,
+    );
+    expect(
+      rideLdiRetryPlan(
+        startLdi: true,
+        ldiLive: false,
+        stillRiding: true,
+        attempt: 4,
+      ).shouldRetry,
+      isFalse,
+    );
+  });
+
   test('LDI odometer seeds empty garage km and advances behind values', () {
     expect(
       shouldImportManufacturerOdometer(
