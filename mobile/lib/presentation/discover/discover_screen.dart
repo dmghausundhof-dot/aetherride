@@ -4521,6 +4521,15 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     _bikeOverlayOn = _showTrailsLayer || _showBikeWaysLayer;
   }
 
+  bool _liveNetworkFallback({double? lng, double? lat, double? zoom}) {
+    final cam = _map?.cameraPosition;
+    return liveNetworkFallbackAt(
+      lng: lng ?? cam?.target.longitude ?? _mapCenter.lng,
+      lat: lat ?? cam?.target.latitude ?? _mapCenter.lat,
+      zoom: zoom ?? cam?.zoom ?? (_hasRealOrigin ? _mapZoom : 12),
+    );
+  }
+
   Future<void> _refreshExploreOverlay() async {
     _applyExploreOverlayLayers();
     final c = _map;
@@ -4530,6 +4539,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
+        liveNetwork: _liveNetworkFallback(),
       );
     }
     unawaited(_refreshSGradeLive());
@@ -4567,12 +4577,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
     if (!mounted) return;
     final key = data?.toString();
+    final liveNetwork = _liveNetworkFallback(lng: lng, lat: lat, zoom: zoom);
     if (key != null && key == _bikeOverlayKey && _bikeOverlayAttached) {
       await applyBikeOverlayVisibility(
         c,
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
+        liveNetwork: liveNetwork,
       );
       unawaited(_refreshSGradeLive());
       return;
@@ -4593,6 +4605,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
         sGradeOnly: false,
+        liveNetwork: liveNetwork,
       );
     } else if (mounted) {
       await applyBikeOverlayVisibility(
@@ -4600,6 +4613,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         family: _overlayFamily,
         visible: _bikeOverlayOn,
         extraOn: _bikeOverlayExtra,
+        liveNetwork: liveNetwork,
       );
     }
     if (mounted) setState(() => _bikeOverlayAttached = true);
@@ -6490,6 +6504,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           family: _overlayFamily,
           visible: _bikeOverlayOn,
           extraOn: _bikeOverlayExtra,
+          liveNetwork: _liveNetworkFallback(),
         ),
       );
     });
@@ -8411,6 +8426,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               family: _overlayFamily,
               visible: _bikeOverlayOn,
               extraOn: _bikeOverlayExtra,
+              liveNetwork: _liveNetworkFallback(),
             ),
           );
         }

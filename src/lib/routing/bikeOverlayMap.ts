@@ -1,3 +1,7 @@
+import {
+  BROWSE_OVERLAY_STACK_BOTTOM_TO_TOP,
+  browseNetworkBeforeLayerIdFromGet,
+} from "@/lib/map/browseMapStack";
 import type { BikeOverlayClass, BikeOverlayFamily } from "./bikeOverlayClass";
 import {
   BIKE_OVERLAY_COLORS,
@@ -85,15 +89,8 @@ type LinePaint = {
   dasharray?: number[];
 };
 
-const LAYER_PAINT: LinePaint[] = [
-  {
-    id: BIKE_OVERLAY_LAYER_IDS.mtb,
-    cls: "mtb",
-    filter: ["==", ["get", "bike_class"], "mtb"],
-    color: MTB_COLOR,
-    width: 2.4,
-  },
-  {
+const LAYER_PAINT_BY_ID: Record<string, LinePaint> = {
+  [BIKE_OVERLAY_LAYER_IDS.mtb_unrated]: {
     id: BIKE_OVERLAY_LAYER_IDS.mtb_unrated,
     cls: "mtb_unrated",
     filter: ["==", ["get", "bike_class"], "mtb_unrated"],
@@ -101,35 +98,47 @@ const LAYER_PAINT: LinePaint[] = [
     width: 1.6,
     dasharray: [2, 1.4],
   },
-  {
+  [BIKE_OVERLAY_LAYER_IDS.gravel]: {
     id: BIKE_OVERLAY_LAYER_IDS.gravel,
     cls: "gravel",
     filter: ["==", ["get", "bike_class"], "gravel"],
     color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.gravel),
     width: 2,
   },
-  {
+  [BIKE_OVERLAY_LAYER_IDS.mtb]: {
+    id: BIKE_OVERLAY_LAYER_IDS.mtb,
+    cls: "mtb",
+    filter: ["==", ["get", "bike_class"], "mtb"],
+    color: MTB_COLOR,
+    width: 2.4,
+  },
+  [BIKE_OVERLAY_LAYER_IDS.road]: {
     id: BIKE_OVERLAY_LAYER_IDS.road,
     cls: "road",
     filter: ["==", ["get", "bike_class"], "road"],
     color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.road),
     width: 2.2,
   },
-  {
+  [BIKE_OVERLAY_LAYER_IDS.urban]: {
     id: BIKE_OVERLAY_LAYER_IDS.urban,
     cls: "urban",
     filter: ["==", ["get", "bike_class"], "urban"],
     color: bikeOverlaySurfaceLineColor(BIKE_OVERLAY_COLORS.urban),
     width: 1.8,
   },
-];
+};
+
+/** Bottom → top, under labels. Same order as the Browse-Karte stack. */
+const LAYER_PAINT: LinePaint[] = BROWSE_OVERLAY_STACK_BOTTOM_TO_TOP.map(
+  (id) => LAYER_PAINT_BY_ID[id]
+);
 
 export type BikeOverlayMapLike = {
   getSource: (id: string) => unknown;
   addSource: (id: string, spec: unknown) => void;
   removeSource?: (id: string) => void;
   getLayer: (id: string) => unknown;
-  addLayer: (spec: object) => void;
+  addLayer: (spec: object, beforeId?: string) => void;
   removeLayer?: (id: string) => void;
   setLayoutProperty: (id: string, key: string, value: unknown) => void;
   setPaintProperty: (id: string, key: string, value: unknown) => void;
@@ -262,10 +271,11 @@ export function addBikeOverlayLayers(
 
   const sourceLayer =
     opts.kind === "pmtiles" ? BIKE_OVERLAY_SOURCE_LAYER : undefined;
+  const beforeId = browseNetworkBeforeLayerIdFromGet((id) => map.getLayer(id));
 
   for (const layer of LAYER_PAINT) {
     if (map.getLayer(layer.id)) continue;
-    map.addLayer({
+    const spec = {
       id: layer.id,
       type: "line",
       source: BIKE_OVERLAY_SOURCE_ID,
@@ -295,7 +305,9 @@ export function addBikeOverlayLayers(
         "line-opacity": 0.92,
         ...(layer.dasharray ? { "line-dasharray": layer.dasharray } : {}),
       },
-    });
+    };
+    if (beforeId) map.addLayer(spec, beforeId);
+    else map.addLayer(spec);
   }
 
   applyBikeOverlayVisibility(map, {

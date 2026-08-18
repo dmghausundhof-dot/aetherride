@@ -637,6 +637,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
         family: family,
         visible: true,
         extraOn: extra,
+        liveNetwork: liveNetworkFallbackAt(
+          lng: _track.isNotEmpty ? _track.last.lng : 8.693,
+          lat: _track.isNotEmpty ? _track.last.lat : 49.409,
+        ),
       );
       return;
     }
@@ -647,8 +651,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
         : null;
     final lng = fromTrack?.lng ?? fromRoute?[0] ?? 8.693;
     final lat = fromTrack?.lat ?? fromRoute?[1] ?? 49.409;
-    final live = await attachLiveOsmNetworkLayers(c);
+    await attachLiveOsmNetworkLayers(c);
     final data = await resolveBikeOverlayData(lng: lng, lat: lat);
+    final liveNetwork = liveNetworkFallbackAt(lng: lng, lat: lat);
     if (data != null && mounted) {
       await attachBikeOverlayLayers(
         c,
@@ -656,7 +661,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
         family: family,
         visible: true,
         extraOn: extra,
-        sGradeOnly: live,
+        sGradeOnly: false,
+        liveNetwork: liveNetwork,
       );
     } else if (mounted) {
       await applyBikeOverlayVisibility(
@@ -664,6 +670,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
         family: family,
         visible: true,
         extraOn: extra,
+        liveNetwork: liveNetwork,
       );
     }
     _bikeOverlayAttached = true;

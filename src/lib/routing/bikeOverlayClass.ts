@@ -305,12 +305,13 @@ export const BIKE_OVERLAY_COLORS = {
   S1: "#8BC34A",
   S2: "#FFC107",
   S3: "#E53935",
-  unrated: "#90A4AE",
+  /** Browse-Karte: unbewertete Pfade sind grün, nicht grau. */
+  unrated: "#2E7D32",
   gravel: "#C49A3C",
-  road: "#1E88E5",
-  urban: "#00897B",
-  /** Dirt/ground/grass/unpaved — distinct from gravel gold on hillshade. */
-  dirt: "#9A5B32",
+  road: "#1565C0",
+  urban: "#1565C0",
+  /** Dirt/ground/grass — gleiche Pfad-Lage wie unrated, nicht Braun. */
+  dirt: "#2E7D32",
 } as const;
 
 /** OSM `surface` values that read as paved for overlay coloring. */
