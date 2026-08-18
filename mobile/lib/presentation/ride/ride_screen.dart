@@ -1385,19 +1385,18 @@ class RideScreenState extends ConsumerState<RideScreen> {
         ble.wheelCircumferenceM = wheelCircumferenceM(wheel);
       }
 
-      // Garage-Kopplung: nur der Radsensor ist Ride-GATT. Drive-Identität
-      // darf den Start nicht mit 2×14 s blockieren und nicht den CSC überschreiben.
-      String? preferredId;
-      BikeBleKind? kindHint;
+      // Garage-Kopplung: CSC zuerst. Bosch LDI / Drive danach — LDI
+      // abwarten, wenn sonst kein Tempo da ist.
       BikeBleBinding binding = const BikeBleBinding();
+      var plan = const RideBleConnectPlan();
       final bikeId = active?.id;
       if (bikeId != null && bikeId.isNotEmpty) {
         binding =
             await ref.read(bikeBleStoreProvider).bindingForBike(bikeId);
-        final target = rideBlePreferredTarget(binding);
-        preferredId = target.deviceId;
-        kindHint = target.kindHint;
+        plan = rideBleConnectPlan(binding);
       }
+      final preferredId = plan.wheelId;
+      final kindHint = plan.wheelKind;
 
       final savedWatch = await ref.read(bikeBleStoreProvider).savedWatch();
       if (!mounted || !ref.read(isRidingProvider)) return;
@@ -1422,17 +1421,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
         debugPrint('ride: parallel watch connect failed ($e)');
       }
       if (!mounted || !ref.read(isRidingProvider)) return;
-      if (!ble.hasWheelLive) {
-        final kind = ble.connectedKind;
-        final msg = kind != null && bikeBleKindIsDrive(kind)
-            ? _l10n.bleDriveFailFor(kind, detail: ble.statusDetail)
-            : _l10n.bleStatusDetailFor(
-                ble.statusDetail ?? _l10n.rideNoBikeSensor,
-              );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
-      }
 
       final remoteId = ble.lastRemoteId;
       final connectedKind = ble.connectedKind;
@@ -1454,16 +1442,31 @@ class RideScreenState extends ConsumerState<RideScreen> {
             );
       }
 
-      final drive = binding.drive;
-      if (drive != null &&
-          drive.deviceId.isNotEmpty &&
+      if (plan.attachDrive &&
+          plan.driveId != null &&
+          plan.driveId!.isNotEmpty &&
           mounted &&
           ref.read(isRidingProvider)) {
-        unawaited(
-          ble.attachSavedDrive(
-            deviceId: drive.deviceId,
-            kindHint: bikeBleKindFromStorage(drive.kind),
-          ),
+        final attach = ble.attachSavedDrive(
+          deviceId: plan.driveId!,
+          kindHint: plan.driveKind,
+        );
+        if (plan.awaitDriveForSpeed || !ble.hasWheelLive) {
+          await attach;
+        } else {
+          unawaited(attach);
+        }
+      }
+      if (!mounted || !ref.read(isRidingProvider)) return;
+      if (!ble.hasWheelLive) {
+        final kind = ble.connectedKind ?? plan.driveKind;
+        final msg = kind != null && bikeBleKindIsDrive(kind)
+            ? _l10n.bleDriveFailFor(kind, detail: ble.statusDetail)
+            : _l10n.bleStatusDetailFor(
+                ble.statusDetail ?? _l10n.rideNoBikeSensor,
+              );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
         );
       }
 

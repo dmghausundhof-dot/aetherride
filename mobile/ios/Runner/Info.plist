@@ -83,6 +83,11 @@
 	<string>FlowLine nutzt die Kamera für Fotos in Garage, nach der Fahrt und am Rad.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>FlowLine liest Fotos aus der Mediathek für Profil, Stimmen, Garage und Fahrten.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>bluetooth-peripheral</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

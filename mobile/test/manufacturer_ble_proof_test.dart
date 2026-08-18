@@ -20,11 +20,11 @@ void main() {
     }
   });
 
-  test('Bosch LDI is the only open drive decoder — Android yes, iOS no', () {
+  test('Bosch LDI is the only open drive decoder — Android and iOS accessory', () {
     final ldi = manufacturerBleByProofId('bosch-ldi-v1')!;
     expect(ldi.openness, ManufacturerBleOpenness.openPartial);
     expect(ldi.androidLive, isTrue);
-    expect(ldi.iosLive, isFalse);
+    expect(ldi.iosLive, isTrue);
     expect(ldi.metrics, contains(ManufacturerBleMetric.batterySoc));
     expect(ldi.decodesLive, isTrue);
 

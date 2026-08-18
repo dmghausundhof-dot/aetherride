@@ -105,7 +105,7 @@ const kManufacturerBleProfiles = <ManufacturerBleProfile>[
       ManufacturerBleMetric.charger,
     },
     androidLive: true,
-    iosLive: false,
+    iosLive: true,
     connectMeaning:
         'Phone is BLE accessory. Flow → Komponenten → FlowLine. '
         'Bike (firmware ≥19) connects as central; we subscribe to eb21.',

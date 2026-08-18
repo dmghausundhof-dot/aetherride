@@ -105,20 +105,73 @@ bool bikeBleDeviceIsDrive(BikeBleDevice device) {
   );
 }
 
-/// Werkstatt: gespeicherten CSC wecken, Bosch-LDI zusätzlich anbieten.
+class RideBleConnectPlan {
+  const RideBleConnectPlan({
+    this.wheelId,
+    this.wheelKind,
+    this.driveId,
+    this.driveKind,
+    this.startLdi = false,
+    this.attachDrive = false,
+    this.awaitDriveForSpeed = false,
+  });
+
+  final String? wheelId;
+  final BikeBleKind? wheelKind;
+  final String? driveId;
+  final BikeBleKind? driveKind;
+  final bool startLdi;
+  final bool attachDrive;
+  final bool awaitDriveForSpeed;
+}
+
+/// Ride: CSC first, then Bosch LDI or one-shot drive GATT.
+RideBleConnectPlan rideBleConnectPlan(BikeBleBinding binding) {
+  final wheel = binding.wheel;
+  final drive = binding.drive;
+  final wheelId =
+      (wheel != null && wheel.deviceId.isNotEmpty) ? wheel.deviceId : null;
+  final driveId =
+      (drive != null && drive.deviceId.isNotEmpty) ? drive.deviceId : null;
+  final driveKind =
+      drive == null ? null : bikeBleKindFromStorage(drive.kind);
+  final startLdi =
+      driveId != null && bleDriveIsBoschLdi(deviceId: driveId, kind: drive?.kind);
+  return RideBleConnectPlan(
+    wheelId: wheelId,
+    wheelKind: wheel == null ? null : bikeBleKindFromStorage(wheel.kind),
+    driveId: driveId,
+    driveKind: driveKind,
+    startLdi: startLdi,
+    attachDrive: driveId != null,
+    awaitDriveForSpeed: startLdi && wheelId == null,
+  );
+}
+
+/// Werkstatt: gespeicherten CSC wecken, Antrieb (LDI oder GATT) zusätzlich.
 /// Kein Scan — sonst klaut die Suche die Kopplungs-Sheet-Session.
-({String? wheelId, BikeBleKind? wheelKind, bool startLdi}) garageBleWakePlan(
+({
+  String? wheelId,
+  BikeBleKind? wheelKind,
+  bool startLdi,
+  bool attachDrive,
+}) garageBleWakePlan(
   BikeBleBinding binding,
 ) {
   final wheel = binding.wheel;
   final drive = binding.drive;
   final wheelId =
       (wheel != null && wheel.deviceId.isNotEmpty) ? wheel.deviceId : null;
+  final startLdi = drive != null &&
+      bleDriveIsBoschLdi(deviceId: drive.deviceId, kind: drive.kind);
+  final attachDrive = drive != null &&
+      drive.deviceId.isNotEmpty &&
+      !startLdi;
   return (
     wheelId: wheelId,
     wheelKind: wheel == null ? null : bikeBleKindFromStorage(wheel.kind),
-    startLdi: drive != null &&
-        bleDriveIsBoschLdi(deviceId: drive.deviceId, kind: drive.kind),
+    startLdi: startLdi,
+    attachDrive: attachDrive,
   );
 }
 

@@ -13,7 +13,9 @@ import '../domain/ble/bike_ble_kind.dart';
 import '../domain/ble/ble_link_status.dart';
 import '../domain/ble/csc_measurement.dart';
 import '../domain/ble/gatt_sensors.dart';
+import '../domain/ble/bosch_ldi_proto.dart';
 import '../domain/ble/manufacturer_ble.dart';
+import '../domain/ble/manufacturer_live.dart';
 import '../domain/ble/watch_candidate.dart';
 import 'native_channels.dart';
 
@@ -57,6 +59,7 @@ class BleCoreChannel {
   final _watchScanController =
       StreamController<List<WatchBleScanHit>>.broadcast();
   bool _ldiConnected = false;
+  ManufacturerLiveMerge _liveMerge = const ManufacturerLiveMerge();
   bool _cscOnly = false;
   bool _wantConnection = false;
   bool _wantWatchConnection = false;
@@ -116,6 +119,7 @@ class BleCoreChannel {
   bool get isWatchScanning => _watchScanActive;
   bool get isConnected => _device != null || _ldiConnected;
   bool get isCscOnly => _cscOnly;
+  bool get isLdiLive => _ldiConnected;
 
   /// CSC notify or native LDI — enough for wheel speed. Drive GATT alone is not.
   bool get hasWheelLive => _cscSub != null || _ldiConnected;
@@ -326,6 +330,10 @@ class BleCoreChannel {
         _cscOnly = false;
         _connectedKind = BikeBleKind.bosch;
         _lastRemoteId = boschLdiAccessoryId;
+        _liveMerge = _liveMerge.ldiConnected
+            ? _liveMerge
+            : const ManufacturerLiveMerge(ldiConnected: true);
+        _ensureLiveTicker();
       } else {
         _statusDetail ??= 'ldi_timeout';
       }
@@ -1480,25 +1488,20 @@ class BleCoreChannel {
     _startCscTicker();
   }
 
+  BoschLiveData _mergedLive() {
+    return _liveMerge.emit(
+      cscSpeedKmh: _speed,
+      cscCadenceRpm: _cadence,
+      gattSoc: _socPercent,
+      gattPowerW: _powerW,
+      heartRateBpm: _hrBpm,
+    );
+  }
+
   void _startCscTicker() {
     _stubTimer?.cancel();
     _stubTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      _emit(
-        BoschLiveData(
-          speedKmh: _speed,
-          batterySocPercent: _socPercent,
-          riderPowerW: _powerW,
-          heartRateBpm: _hrBpm,
-          cadenceRpm: _cadence,
-          odometerKm: 0,
-          lightStatus: false,
-          ambientBrightness: 0,
-          systemLock: false,
-          bikeNotDriving: _speed < 1,
-          chargerConnected: false,
-          timestampMs: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
+      _emit(_mergedLive());
     });
   }
 
@@ -1591,6 +1594,7 @@ class BleCoreChannel {
     _cadence = 0;
     _statusDetail = null;
     _ldiConnected = false;
+    _liveMerge = const ManufacturerLiveMerge();
     if (_watchDevice == null) {
       _stubTimer?.cancel();
       _stubTimer = null;
@@ -1633,6 +1637,7 @@ class BleCoreChannel {
       // LDI accessory may be absent on iOS.
     }
     _ldiConnected = false;
+    _liveMerge = const ManufacturerLiveMerge();
     await _batterySub?.cancel();
     _batterySub = null;
     _socPercent = null;
@@ -1739,6 +1744,7 @@ class BleCoreChannel {
     _watchConnSub = null;
     await _cancelAuxListeners();
     _ldiConnected = false;
+    _liveMerge = const ManufacturerLiveMerge();
     _cscOnly = false;
     _connectedKind = null;
     _socPercent = null;
@@ -1833,7 +1839,24 @@ class BleCoreChannel {
     }
     _cscOnly = false;
     _connectedKind ??= BikeBleKind.bosch;
-    _emit(BoschLiveData.fromMap(Map<Object?, Object?>.from(event)));
+    _ldiConnected = true;
+    final raw = event['bytes'];
+    if (raw is List) {
+      final bytes = <int>[
+        for (final e in raw)
+          if (e is num) e.toInt(),
+      ];
+      _liveMerge = _liveMerge.applyLdiFrame(decodeBoschLdiFrame(bytes));
+    } else {
+      _liveMerge = _liveMerge.applyLdi(
+        BoschLiveData.fromMap(Map<Object?, Object?>.from(event)),
+      );
+    }
+    if (_liveMerge.ldiSoc != null) _socPercent = _liveMerge.ldiSoc;
+    if (_liveMerge.ldiPowerW != null) _powerW = _liveMerge.ldiPowerW;
+    _ensureLiveTicker();
+    _refreshStatus();
+    _emit(_mergedLive());
   }
 
   void _onError(Object error) {
