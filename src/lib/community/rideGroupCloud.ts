@@ -195,6 +195,44 @@ export async function setRideGroupVisibilityCloud(input: {
   };
 }
 
+export async function extendRideGroupWindowCloud(input: {
+  id: string;
+  addHours?: number;
+  newEnd?: string;
+}): Promise<RideGroupCloudOne | RideGroupCloudFail> {
+  const payload = {
+    id: input.id,
+    ...(input.newEnd
+      ? { newEnd: input.newEnd }
+      : { addHours: input.addHours ?? 1 }),
+  };
+  const headers = await authHeaders();
+  let res = await fetch("/api/ride-groups/window", {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 404) {
+    res = await fetch("/api/ride-groups", {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+  }
+  const body = await readJson(res);
+  if (!res.ok) return failOf(res, body);
+  return {
+    me: String(body.me || ""),
+    group: body.group as RideGroup,
+    members: Array.isArray(body.members)
+      ? (body.members as RideGroupMember[])
+      : [],
+    stub: body.stub === true,
+  };
+}
+
 export async function closeRideGroupCloud(
   id: string
 ): Promise<{ ok: true } | RideGroupCloudFail> {

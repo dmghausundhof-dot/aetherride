@@ -39,7 +39,7 @@
       }
     }
   },
-  "shopForYourBikeEmpty": "Zet een fiets in de werkplaats — dan openen we passende onderdelen in de winkel.",
+  "shopForYourBikeEmpty": "Zet een fiets op de stand — dan openen we passende onderdelen in de winkel.",
   "shopMerchHint": "Kleding en klein spul. Nooit gefilterd op fietspassing.",
   "shopMerchTitle": "Kleding",
   "shopMerchEmpty": "Geen merch in het schap. Kleding blijft in de winkel, nooit gefilterd op de fiets.",
@@ -137,7 +137,7 @@
     }
   },
   "discoverMenuPhotos": "Foto’s in de buurt",
-  "discoverMenuOffline": "Offlinekaarten",
+  "discoverMenuOffline": "Offline-routing",
   "discoverMenuCollections": "Collecties",
   "discoverMenuPrivacy": "Gegevens & privacy",
   "partsTitle": "Onderdelen & spullen",
@@ -177,12 +177,18 @@
     }
   },
   "hofWhatCameIn": "Wat binnenkwam",
-  "hofPackMissing": "Geen pack voor {name}",
+  "hofPackMissing": "Geen offline-routing voor {name}",
   "@hofPackMissing": {
     "placeholders": {
       "name": {
         "type": "String"
       }
+    }
+  },
+  "hofLoadOfflineMap": "Offline-routing voor {name} laden",
+  "@hofLoadOfflineMap": {
+    "placeholders": {
+      "name": { "type": "String" }
     }
   },
   "hofLastRideNoGps": "geen GPS-track — niets verzonnen",
@@ -219,7 +225,7 @@
       }
     }
   },
-  "hofCareInWorkshop": "{label} — in de werkplaats",
+  "hofCareInWorkshop": "{label} — aan de fiets",
   "@hofCareInWorkshop": {
     "placeholders": {
       "label": {
@@ -477,7 +483,7 @@
   "garageTitle": "Garage",
   "garageFabBike": "Fiets toevoegen",
   "garageEmptyTitle": "Nog geen fiets hier",
-  "garageEmptyMessage": "Naam en type volstaan. De catalogus is zoeken — voorraadonderdelen alleen als je ze overneemt.",
+  "garageEmptyMessage": "Naam en type volstaan. Merk en onderdelen kunnen later.",
   "garageAddBike": "Fiets toevoegen",
   "garageAddAnother": "Nog een fiets",
   "garageStatBike": "FIETS",
@@ -538,6 +544,26 @@
   "garageFrameSize": "Framemaat",
   "garageWheelSize": "Wielmaat",
   "garageBrandModel": "Model",
+  "garageBikeId": "Paspoort",
+  "garageBikeIdHint": "Framenummer, aankoop en verzekering — alleen op dit apparaat.",
+  "garageBikeIdEmpty": "Framenummer vastleggen — voor diefstal en verzekering.",
+  "garageBikeIdAdd": "Paspoort aanmaken",
+  "garageSerial": "Framenummer",
+  "garageSerialHint": "Staat op trapas, balhoofd of liggende achtervork.",
+  "garageColor": "Kleur",
+  "garageWeightKg": "Gewicht (kg)",
+  "garageOwnerNotes": "Notities",
+  "garagePurchasedAt": "Gekocht op",
+  "garagePurchasedFrom": "Gekocht bij",
+  "garagePurchasePrice": "Prijs (€)",
+  "garageInsurance": "Verzekering",
+  "garageInsurancePolicy": "Polisnummer",
+  "garageKeyNumber": "Sleutelnummer",
+  "garageEditBike": "Fiets bewerken",
+  "garageSerialCopied": "Framenummer gekopieerd",
+  "garagePrivateHint": "Blijft lokaal en in je back-up. Niet openbaar.",
+  "garageYear": "Jaar",
+  "dieBoxChipId": "Paspoort",
   "garageCompatFits": "Past {count}",
   "@garageCompatFits": {
     "placeholders": {
@@ -562,12 +588,12 @@
       }
     }
   },
-  "garagePartsEmpty": "Nog geen onderdelen vastgelegd. Tik op “Onderdeel toevoegen” — dan herinneren we je aan onderhoud en tonen we of onderdelen bij elkaar passen.",
+  "garagePartsEmpty": "Nog geen onderdelen. Tik op “Onderdeel toevoegen”.",
   "garageMaintEmpty": "Alles oké — niets toe aan onderhoud.",
   "garageSetupTabTitle": "Jouw setup",
   "garageSetupTabHint": "SAG = hoe ver de vering inzakt met jouw gewicht (vaak ~25–30%).",
   "garageYourParts": "Jouw onderdelen",
-  "garageMissingSlots": "Nog niet vastgelegd (optioneel)",
+  "garageMissingSlots": "Nog open",
   "garageActiveBadge": "Actieve fiets",
   "garageStatKm": "KM",
   "garageStatHours": "UREN",
@@ -665,6 +691,9 @@
   "rideDrawingTour": "Nieuwe tour · tekent",
   "postRideLiveTour": "Nieuwe tour",
   "postRideToMappe": "Naar Tours",
+  "postRideDone": "Klaar",
+  "postRideNavEnded": "Navigatie",
+  "postRideShortSession": "Korte sessie — weinig GPS-beweging. Afstand en tempo zijn niet betrouwbaar.",
   "postRideTitle": "Activiteit",
   "postRideFreeride": "Freeride",
   "postRideTrackMap": "Gereden track",
@@ -673,6 +702,20 @@
   "postRideStatDuration": "Duur",
   "postRideStatPace": "Tempo",
   "postRideStatElevation": "Hoogte",
+  "postRideTerrainTitle": "Spoor & helling",
+  "postRideTerrainHint": "Hoogte en helling uit GPS. Gaten blijven gaten — geen verzonnen profiel.",
+  "postRideNoElevation": "Geen hoogtepunten op het spoor. Helling is dan niet betrouwbaar.",
+  "postRideStatDescent": "Afdaling",
+  "postRideStatMaxGrade": "Steilst",
+  "postRideStatMaxSpeed": "Piek",
+  "postRideSensorHr": "Hartslag",
+  "postRideSensorCad": "Cadans",
+  "postRideSensorPower": "Vermogen",
+  "postRideGradeSteepUp": "Steil omhoog",
+  "postRideGradeUp": "Stijging",
+  "postRideGradeRoll": "Vlak",
+  "postRideGradeDown": "Afdaling",
+  "postRideGradeSteepDown": "Steil omlaag",
   "postRideWeatherTitle": "Weer",
   "postRideWeatherStart": "Start",
   "postRideWeatherEnd": "Einde",
@@ -683,7 +726,7 @@
   "postRidePhotoGallery": "Galerij",
   "postRidePhotosShare": "Delen",
   "postRidePhotosShareText": "Mijn FlowLine-rit",
-  "postRidePhotosEmpty": "Nog geen foto’s om te delen",
+  "postRidePhotosEmpty": "Nog niets om te delen",
   "postRidePhotosMax": "Maximaal {count} foto’s",
   "@postRidePhotosMax": {
     "placeholders": {
@@ -692,7 +735,35 @@
       }
     }
   },
-  "postRideCommunityStub": "Foto’s blijven lokaal. Stimmen hangen aan de tocht — niet in een feed.",
+  "postRideMediaTitle": "Foto’s en video’s",
+  "postRideMediaHint": "Lokaal op dit toestel. Met GPS-plek, behalve in een privacyzone.",
+  "postRideAddMedia": "Foto of video",
+  "postRideVideoCamera": "Video",
+  "postRideVideoGallery": "Clip uit galerij",
+  "postRideVideoPlay": "Video",
+  "postRideVideoMissing": "Clip staat niet meer op dit toestel.",
+  "postRideVideosMax": "Maximaal {count} video’s",
+  "@postRideVideosMax": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postRideNotesTitle": "Notitie",
+  "postRideNotesHint": "Eén korte zin over de rit — alleen voor jou.",
+  "postRideNotesPlaceholder": "Natte trail, goede flow …",
+  "postRideNotesAdd": "Bewaar",
+  "postRideNotesEmpty": "Nog geen notitie.",
+  "postRideNotesMax": "Maximaal {count} notities",
+  "@postRideNotesMax": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postRideCommunityStub": "Foto’s, video’s en notities blijven lokaal. Stimmen hangen aan de tocht — niet in een feed.",
   "postRideOpenTour": "Tocht openen",
   "postRideSaveAsTour": "Opslaan als tocht",
   "postRideSaveAsTourDone": "Opgeslagen onder Tochten",
@@ -767,6 +838,9 @@
   "authCreateAccount": "Account aanmaken",
   "authHaveAccount": "Al een account? Inloggen",
   "authNewHere": "Nieuw hier? Registreren",
+  "authForgotPassword": "Wachtwoord vergeten?",
+  "authResetSent": "Als het account bestaat, krijg je een reset-mail.",
+  "authResetNeedEmail": "Vul eerst het e-mailadres in.",
   "authWithGoogle": "Doorgaan met Google",
   "authWithApple": "Doorgaan met Apple",
   "authPrivacy": "Gegevens & privacy",
@@ -901,7 +975,7 @@
   "chatPromptShop": "Winkel",
   "chatPromptShopQuery": "Heb ik binnenkort slijtageonderdelen nodig?",
   "chatToolWatch": "Wat is toe",
-  "chatToolGarage": "Werkplaats",
+  "chatToolGarage": "Fiets",
   "chatToolCompat": "Compatibiliteit",
   "chatToolRange": "Bereik",
   "chatToolSetupHistory": "Setupgeschiedenis",
@@ -921,8 +995,26 @@
   "privacyConsents": "Toestemmingen",
   "privacyHud": "HUD",
   "privacyZones": "Privacyzones",
-  "privacyZoneAdd": "Zone",
-  "privacyNoZones": "Geen zones — omgeving van start/einde kan worden afgeknipt.",
+  "privacyHomePlacesTitle": "Thuis & gevoelige plekken",
+  "privacyHomePlacesEmpty": "Geen zone — start/finish 200 m geknipt, huis vaak nog herkenbaar",
+  "privacyHomePlacesCount": "{count, plural, =1{1 zone · verborgen op gedeelde kaarten} other{{count} zones · verborgen op gedeelde kaarten}}",
+  "@privacyHomePlacesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyConsentsExportHint": "Toestemmingen, export, Strava",
+  "privacyZonesLead": "Start en finish op gedeelde kaarten, export, heatmap en foto's. Jij ziet het volledige spoor.",
+  "privacyZoneAdd": "Zone toevoegen",
+  "privacyNoZones": "Geen zone. De eerste en laatste 200 m worden toch geknipt — thuis blijft vaak herkenbaar.",
+  "privacyZoneDeleteConfirm": "Deze zone verwijderen? Gedeelde kaarten kunnen start en finish weer tonen.",
+  "privacyZoneDeleted": "Zone verwijderd",
+  "privacyShareNoZoneTitle": "Geen privacyzone",
+  "privacyShareNoZoneBody": "Start en finish kunnen thuis verraden. Zet een zone voordat de kaart eruit gaat — of deel toch (200 m aan de uiteinden wordt geknipt).",
+  "privacyShareAnyway": "Toch delen",
+  "privacyShareNoZoneCta": "Zone zetten",
   "privacyZoneRadius": "{label} straal",
   "@privacyZoneRadius": {
     "placeholders": {
@@ -1049,7 +1141,8 @@
   "consentHealthTitle": "Gezondheidsdata",
   "consentHealthBody": "Voorbereiding — Health Connect is nog niet gekoppeld. Deze toestemming slaat alleen je voorkeur op voor later.",
   "privacyZoneTapHint": "Tik op de kaart om de zone te plaatsen.",
-  "privacyZoneRadiusHint": "Straal geldt voor export en waar velen rijden.",
+  "privacyZoneRadiusHint": "Straal geldt voor export, heatmap, groepspins en fotoplekken.",
+  "privacyZonePhotoHint": "In de zone krijgen foto's geen locatie. De beelden blijven op het toestel.",
   "privacyZoneLabel": "Label",
   "privacyZoneRadiusWord": "Straal",
   "privacyZoneApplyCoords": "Coördinaten toepassen",
@@ -1144,7 +1237,7 @@
   },
   "profileProActive": "FlowLine Pro actief",
   "profileManage": "Beheren",
-  "profileProPerks": "Offlinekaarten, onbeperkt fietsen, veringsanalyse & bracketing.",
+  "profileProPerks": "Onbeperkt fietsen, veringsanalyse & bracketing.",
   "profileUpgradePro": "Upgraden naar Pro",
   "profileDisplayName": "Weergavenaam",
   "profileRiderWeight": "Rijdersgewicht (kg)",
@@ -1229,15 +1322,99 @@
   "onboardNextRide": "Door naar de rit",
   "onboardParkBikeFirst": "Zet eerst een fiets neer",
   "onboardLater": "Later instellen",
-  "offlineMapsTitle": "Offlinekaarten",
-  "offlineMapsHint": "Downloadt routing en kaarttegels voor de regio. Offline: geladen kaart en routing in het gebied.",
-  "offlineRegionActive": "Regio actief",
-  "offlineNoRegion": "Geen regio actief",
-  "offlineReadyBoth": "Routing + kaarttegels klaar.",
-  "offlineReadyRouting": "Routing klaar — kaart nog niet offline.",
-  "offlineLoadBelow": "Laad hieronder een gebouwd pack.",
+  "offlineMapsChip": "Routing",
+  "profileOfflineMaps": "Offline-routing",
+  "profileOfflineMapsHint": "Routing-graaf laden. Overzicht extra.",
+  "profileNavPuckHint": "3D-renner is de standaard. De klassieke pijl is iets kleiner.",
+  "rideNavPuckHintSimple": "3D-renner op de kaart, of de klassieke pijl — iets kleiner.",
+  "navigateOfflineHint": "Geen net? Laad routing voor deze route.",
+  "navigateOfflineHintPack": "{name} — routing in dit vak",
+  "navigateOfflineHintPackSized": "{name} · {size} — routing in dit vak",
+  "offlineCoverageLabel": "{name} · routing",
+  "offlineCoverageSuggested": "Laden · {name}",
+  "offlineMapsTitle": "Offline-routing",
+  "offlineMapsHint": "Downloadt een routing-graaf. De overzichtskaart (zoom 0–11) is een aparte, grote download. Navigatie in de rit blijft op straat-tegels — vaak is net nodig.",
+  "offlineRegionActive": "Routing actief",
+  "offlineNoRegion": "Geen routing actief",
+  "offlineReadyBoth": "Routing klaar. Overzicht geladen (geen straatzoom in de rit).",
+  "offlineReadyRouting": "Routing klaar — overzicht niet geladen.",
+  "offlineLoadBelow": "Laad hieronder een pack. Alleen de graaf, niet de kaart van 540 MB.",
+  "offlineRoutingOn": "Routing aan",
+  "offlineRoutingOff": "Geen routing",
+  "offlineOverviewOn": "Overzicht aan",
+  "offlineOverviewOff": "Geen overzicht",
+  "offlineOverviewCta": "Overzicht {id} laden ({size})",
+  "offlineOverviewExplain": "Overzicht tot zoom 11. Navigatie in de rit blijft op straat-tegels en heeft vaak net nodig.",
+  "offlineStorageLine": "Op het toestel: {size}",
+  "offlineSuggested": "Routing hier",
+  "offlineInstalledSection": "Geïnstalleerd",
+  "offlineCities": "Steden",
+  "offlineEurope": "Europa",
+  "offlineEnvelopes": "Landvlakken",
+  "offlineEnvelopesHint": "Grote bounding box, dunne graaf — geen volledig landnet.",
+  "offlineCountryDE": "Duitsland",
+  "offlineCountryCH": "Zwitserland",
+  "offlineCountryAT": "Oostenrijk",
+  "offlineCountryFR": "Frankrijk",
+  "offlineCountryNL": "Nederland",
+  "offlineCountryIT": "Italië",
+  "offlineCountryLI": "Liechtenstein",
+  "offlineCountryDACH": "Bodenmeer / DACH",
+  "offlineCountryOther": "Overig",
+  "offlineCountryMorePacks": "Meer ({count})",
+  "offlineCountryPacks": "{count} regio’s",
+  "@offlineCountryPacks": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "offlineCountryEnvelopes": "{count} landvlakken",
+  "@offlineCountryEnvelopes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "offlineCountryPacksAndEnvelopes": "{packs} regio’s · {envelopes} landvlakken",
+  "@offlineCountryPacksAndEnvelopes": {
+    "placeholders": {
+      "packs": { "type": "int" },
+      "envelopes": { "type": "int" }
+    }
+  },
+  "offlineConfirmLargeTitle": "Grote routing-graaf",
+  "offlineConfirmLargeBody": "{name} is {size}. Alleen de routing-graaf wordt geladen, geen straatkaart voor de rit.",
+  "@offlineConfirmLargeBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmOverviewTitle": "Overzichtskaart laden?",
+  "offlineConfirmOverviewBody": "{id} is {size} en alleen zoom 0–11. Navigatie in de rit blijft op straat-tegels en heeft vaak net nodig.",
+  "@offlineConfirmOverviewBody": {
+    "placeholders": {
+      "id": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmLoad": "Laden",
+  "offlineSubUpdate": "Update beschikbaar",
+  "offlineSubUpdateSized": "Update · {size}",
+  "@offlineSubUpdateSized": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineUpdatePack": "Bijwerken",
+  "offlineConfirmCellularTitle": "Geen wifi",
+  "offlineConfirmCellularBody": "{size} via mobiel data laden? Het overzicht is groot — de graaf blijft klein.",
+  "@offlineConfirmCellularBody": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmCellularAnyway": "Toch laden",
+  "offlineDeletePack": "Pack verwijderen",
+  "offlineSnackRoutingOnly": "{name}: routing klaar. Overzicht is extra.",
+  "offlineOverviewReady": "Overzichtskaart opgeslagen (zoom 0–11).",
   "offlineRegions": "Regio’s",
-  "offlineSearchRegion": "Regio zoeken",
+  "offlineSearchRegion": "Pack zoeken",
   "offlineNoneFound": "Geen regio gevonden",
   "offlineNoPacks": "Nu geen packs om te laden. Regio’s die nog niet klaar zijn staan hieronder.",
   "offlineNotBuilt": "Nog niet klaar ({count})",
@@ -1249,7 +1426,8 @@
     }
   },
   "offlineStubsHint": "Nog niet te downloaden.",
-  "offlineRemoveRegion": "Regio verwijderen",
+  "offlineDownloadPaused": "Download gepauzeerd. Ga verder in Offline-routing.",
+  "offlineRemoveRegion": "Routing uitzetten",
   "offlineStyleTitle": "Kaartstijl (optioneel)",
   "offlineStyleHint": "Standaard: DACH z11-stijl-JSON. Alleen wijzigen voor je eigen MapLibre-stijl.",
   "offlineStyleUrl": "Stijl-JSON-URL",
@@ -1270,7 +1448,7 @@
       }
     }
   },
-  "offlinePackError": "Regiopack: {error}",
+  "offlinePackError": "Pack: {error}",
   "@offlinePackError": {
     "placeholders": {
       "error": {
@@ -1278,7 +1456,7 @@
       }
     }
   },
-  "offlineRemoved": "Regio verwijderd",
+  "offlineRemoved": "Routing uit. Pack blijft op het apparaat.",
   "offlineNoRemoteDach": "Geen remote packs — DACH-fallback actief",
   "offlineNoBuiltPacks": "Geen gebouwde packs op deze server",
   "offlineDachCatalog": "Offline — DACH-regio’s uit de appcatalogus",
@@ -1305,7 +1483,7 @@
   },
   "platzTogetherKicker": "Groep",
   "platzTogetherTitle": "Samen rijden",
-  "platzTogetherHint": "Uitnodigen deelt de link. Jouw groepen blijven — geen feed.",
+  "platzTogetherHint": "Uitnodigen deelt de link. Jouw groepen blijven. Open groepen: link of code — op Platz en als pin, geen feed.",
   "platzTogetherListHint": "Groep. Ingelogd: op de server. Anders alleen dit apparaat — de host ziet je niet. Vrienden op de kaart alleen tijdens het rijden, na opt-in.",
   "platzCreateGroup": "Groep maken",
   "platzJoinCode": "Code",
@@ -1317,6 +1495,8 @@
   "platzDissolve": "Opheffen",
   "platzLeave": "Verlaten",
   "platzCopyLink": "Link kopiëren",
+  "platzCopyCode": "Code kopiëren",
+  "platzCodeCopied": "Code gekopieerd. Open groep: daarmee meedoen.",
   "platzInviteShares": "Uitnodigen deelt de groeplink",
   "platzInviteSharesProfile": " en jouw profiel",
   "platzInviteAsYou": "Op de uitnodiging sta je als Jij. Naam zetten in het profiel?",
@@ -1356,30 +1536,203 @@
     }
   },
   "platzCreateCollection": "Collectie maken",
-  "platzJoinWithCode": "Meedoen met een link",
+  "platzJoinWithCode": "Verbinden",
+  "platzConnectField": "Link of 6-tekencode",
+  "platzTimeTapHint": "Tik om te wijzigen",
+  "platzMore": "Meer",
+  "platzShareLink": "Link delen",
+  "platzJoinSignInFirst": "Aanmelden — anders ziet de host je niet",
+  "platzShareInRide": "Delen tijdens de rit",
   "platzJoinCodeField": "Uitnodigingslink",
-  "platzJoinLinkHint": "Plak de link uit WhatsApp of Berichten. Privégroepen hebben de uitnodigingslink nodig — geen code om in te typen.",
-  "platzJoinEmpty": "Link ontbreekt.",
-  "platzJoinInvalid": "Geen geldige uitnodigingslink.",
+  "platzJoinLinkHint": "Plak de uitnodigingslink uit WhatsApp of Berichten, of typ de 6-tekencode van een open groep. Privé heeft nog de uitnodigingslink nodig.",
+  "platzJoinEmpty": "Link of code ontbreekt.",
+  "platzJoinInvalid": "Geen geldige link of code.",
   "platzJoin": "Meedoen",
   "platzStartLabel": "Start",
   "platzStartNow": "Nu",
   "platzStartIn1h": "Over 1 u",
   "platzStartToday18": "Vandaag 18:00",
   "platzStartTomorrow10": "Morgen 10:00",
+  "platzStartCustom": "Andere tijd…",
   "platzDurationLabel": "Duur",
+  "platzDurationCustom": "Anders…",
+  "platzDurationHoursHint": "Uren (0,25–12)",
+  "platzWindowCapHint": "Start tot 14 dagen vooruit. Duur 15 min tot 12 uur.",
   "platzMeetingPlaceholder": "Verzamelpunt (optioneel)",
   "platzMeetingHint": "bijv. parkeerplaats bij het zwembad",
   "platzPinsOnHud": "Vrienden op de kaart · aan",
   "platzPinsHint": "Alleen tijdens het rijden, niet op de openbare kaart.",
+  "rideGroupHudLine": "{sharing}/{total} delen · {left}",
+  "@rideGroupHudLine": {
+    "placeholders": {
+      "sharing": { "type": "int" },
+      "total": { "type": "int" },
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupHudSelfOn": "Jij deelt · {left}",
+  "@rideGroupHudSelfOn": {
+    "placeholders": {
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupHudSelfOff": "stil · {left}",
+  "@rideGroupHudSelfOff": {
+    "placeholders": {
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupHudWithDetail": "{detail} · {left}",
+  "@rideGroupHudWithDetail": {
+    "placeholders": {
+      "detail": { "type": "String" },
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupWhenToday": "vandaag {time} · {dur}",
+  "@rideGroupWhenToday": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "dur": { "type": "String" }
+    }
+  },
+  "rideGroupWhenTomorrow": "morgen {time} · {dur}",
+  "@rideGroupWhenTomorrow": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "dur": { "type": "String" }
+    }
+  },
+  "rideGroupWhenWeekday": "{wd} {time} · {dur}",
+  "@rideGroupWhenWeekday": {
+    "placeholders": {
+      "wd": { "type": "String" },
+      "time": { "type": "String" },
+      "dur": { "type": "String" }
+    }
+  },
+  "rideGroupWhenClosed": "dicht — {wd} {time}",
+  "@rideGroupWhenClosed": {
+    "placeholders": {
+      "wd": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupHudHours": "nog {hours} u",
+  "@rideGroupHudHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "rideGroupHudMins": "nog {min} min",
+  "@rideGroupHudMins": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "rideGroupHudClosed": "dicht",
+  "rideGroupPinStale": "net nog",
+  "rideGroupRosterTitle": "In de groep",
+  "rideGroupMute": "stil",
+  "rideGroupShareOn": "deelt",
+  "rideGroupOffline": "offline",
+  "rideGroupShareOnLineOne": "{name} ziet je — alleen tot {time}.",
+  "@rideGroupShareOnLineOne": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupShareOnLineMany": "{count} vrienden zien je — alleen tot {time}.",
+  "@rideGroupShareOnLineMany": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupShareOnLineNone": "Nog niemand verder — alleen tot {time}.",
+  "@rideGroupShareOnLineNone": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupWindowClosedToast": "Venster dicht — pins uit.",
+  "rideGroupMateLeftToast": "{name} is weg.",
+  "@rideGroupMateLeftToast": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rideGroupGoneToast": "Groep voorbij.",
+  "rideGroupAhead": "voor je",
+  "rideGroupBehind": "achter je",
+  "rideGroupLeft": "links",
+  "rideGroupRight": "rechts",
+  "rideGroupFrameAll": "Iedereen op de kaart",
+  "rideGroupExtend": "Venster verlengen",
+  "rideGroupExtend30m": "+30 min",
+  "rideGroupExtend1h": "+1 uur",
+  "rideGroupExtend2h": "+2 uur",
+  "rideGroupExtendCustomEnd": "Ander einde…",
+  "rideGroupExtendCapHint": "Maximaal tot nu + 12 uur.",
+  "rideGroupExtendInvalid": "Tijd valt buiten het kader.",
+  "rideGroupFriendN": "Vriend {n}",
+  "@rideGroupFriendN": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "rideGroupFlyTo": "Op de kaart",
+  "rideGroupWindowExtended": "Venster verlengd.",
+  "rideTogether": "Samen",
+  "rideTogetherSearch": "Zoekt naast je — kaart, dan ja. Geen radar op de kaart.",
+  "rideTogetherEmpty": "Niemand in de cel. Toon de code of wacht.",
+  "rideTogetherBeside": "naast je",
+  "rideTogetherNear": "in de buurt",
+  "rideTogetherAsk": "Samen?",
+  "rideTogetherWait": "wacht…",
+  "rideTogetherInbound": "{name} wil samen rijden",
+  "@rideTogetherInbound": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rideTogetherAccept": "Ja",
+  "rideTogetherDecline": "Niet nu",
+  "rideTogetherCodeHint": "De ander typt de code.",
+  "rideTogetherJoinCode": "Code invoeren",
+  "rideTogetherJoin": "Verbinden met code",
+  "rideTogetherCodeUnknown": "Geen open Samen-code.",
+  "rideTogetherCodeInvalid": "Zes tekens — zonder I, O, 0, 1.",
+  "rideTogetherNeedLogin": "Log in — anders ziet de server jullie niet.",
+  "rideTogetherNeedGps": "Locatie is nodig om elkaar te vinden.",
+  "rideTogetherInZone": "Onzichtbaar in de privacyzone.",
+  "rideTogetherAnon": "Renner",
+  "rideTogetherInvite": "Iemand ophalen",
+  "rideTogetherFull": "Vol — max 20.",
+  "rideTogetherClosedHint": "Gesloten. Alleen de code of een ja naast je.",
+  "rideTogetherTwoSessions": "Twee gesloten groepen — elk blijft apart. Geef de code door.",
+  "rideTogetherNotLooking": "Jullie moeten allebei zoeken.",
+  "rideTogetherRateLimited": "Te veel verzoeken — even wachten.",
+  "rideTogetherTooFar": "Niet meer in dezelfde cel.",
+  "rideTogetherStopLook": "Zoeken uit",
+  "rideTogetherSoloWait": "1 · wacht",
+  "rideTogetherAccepted": "geaccepteerd",
+  "rideTogetherDeclined": "afgewezen",
   "platzTourNotInMappe": "Tocht staat niet onder Tochten.",
-  "platzTourNotInMappeHint": "Rijden maar zet catalogustochten onder Tochten. Privé-GPX heeft de link van de host nodig — geen verzonnen track.",
+  "platzTourNotInMappeHint": "Rijden maar zet catalogustochten onder Tochten. Privé-GPX komt met de uitnodigingslink als kopie — geen verzonnen track.",
   "platzCollectionsHint": "Maken onder Delen. Delen omvat alleen vrijgegeven of catalogustochten — privé-GPX blijft erbuiten.",
   "akteTourKicker": "Tocht",
   "stimmenShareNeedRelease": "Tik eerst op Delen — anders gaat de link nergens heen.",
-  "platzNeedSharedTour": "Groepen alleen op een gedeelde of catalogustocht. Privé-GPX blijft privé.",
-  "platzShareTourFirst": "Deel eerst een tocht",
-  "platzShareTourFirstHint": "Zonder delen zien vrienden de groep niet. Tik op een tocht, dan Delen, dan de groep maken.",
+  "platzNeedSharedTour": "Kies eerst een tocht, of plan er zelf een.",
+  "platzShareTourFirst": "Eigen tocht als groep plannen",
+  "platzShareTourFirstHint": "Zet de route op de kaart, bewaar hem — daarna staat hij in de kiezer.",
+  "platzPickMine": "Mijn tochten",
+  "platzPickNearby": "Tochten in de buurt",
+  "platzNearbyNeedGps": "Zonder locatie geen tochten in de buurt — kies een eigen of de laatste kaart.",
+  "platzNearbyFromMap": "Buurt van de laatste kaart, niet van gps.",
+  "platzPlanAsGroup": "Eigen tocht als groep plannen",
+  "platzPlanAsGroupHint": "Zet de route op de kaart, bewaar hem — daarna staat hij in de kiezer.",
   "platzHostCannotSee": "Alleen dit apparaat. De host ziet je niet — log in.",
   "platzJoinLocal": "Alleen dit apparaat: {title}. De host ziet je niet — log in.",
   "@platzJoinLocal": {
@@ -1391,7 +1744,7 @@
   },
   "platzJoinLocalCta": "Opslaan op dit apparaat",
   "platzJoinUnsignedHint": "Zonder inloggen ziet de host je niet.",
-  "platzNoSharedTours": "Geen gedeelde of catalogustochten. Privé-GPX blijft erbuiten.",
+  "platzNoSharedTours": "Geen eigen tochten. Plan er een of kies er een in de buurt.",
   "platzGroupCreated": "Groep {code} — uitnodigen deelt de link.",
   "@platzGroupCreated": {
     "placeholders": {
@@ -1470,7 +1823,7 @@
   "watchNoHr": "Geen hartslagsignaal — check broadcast op het horloge.",
   "watchNoDeviceId": "Verbonden, maar geen apparaat-ID",
   "bleBikeTitle": "Fiets koppelen",
-  "bleBikeHint": "Accu en ondersteuning alleen met echte GATT — niets verzonnen.",
+  "bleBikeHint": "Bosch: accu van het display. Shimano en andere: alleen naam, tempo via de wielsensor.",
   "bleRememberAnyway": "Toch onthouden",
   "bleScanningDrive": "Aandrijving en sensoren zoeken…",
   "bleEmptyEbike": "Display wekken, Flow of E-TUBE sluiten, telefoon dichtbij houden.",
@@ -1857,7 +2210,7 @@
   "garageSlotHeading": "Slot",
   "garageEditPart": "Onderdeel bewerken",
   "garageInstallPart": "Onderdeel monteren",
-  "garageSearchParts": "Onderdelen zoeken (API/cache)",
+  "garageSearchParts": "Zoek in catalogus",
   "garageSearchPartsHint": "Merk / model — optioneel",
   "garageSearchPartsHelper": "Geen treffers: vul de basis met de hand in",
   "garageHits": "Treffers",
@@ -1964,7 +2317,7 @@
   "garageBlePairFailed": "Koppelen mislukt",
   "garageBleRemoved": "Sensor verwijderd",
   "garageBleDisconnected": "Bluetooth niet verbonden",
-  "garageBleHintEbike": "Bosch, Shimano STEPS of CSC. Zet het display aan.",
+  "garageBleHintEbike": "Bosch: accu van het display. Shimano en andere: alleen naam, tempo via de wielsensor.",
   "garageBleHintSensor": "Magneet of crank, dichtbij — niet het horloge.",
   "garageBleLiveWaiting": "Draai het wiel — tempo verschijnt hier.",
   "discoverRefresh": "Vernieuwen",
@@ -2189,6 +2542,8 @@
   "discoverPartialApprox": "Gedeeltelijke benadering — live-routing beperkt",
   "discoverPlannedRoute": "Geplande route",
   "discoverStraightFallback": "Geen track van de kaart — zet de bestemming opnieuw.",
+  "discoverOfflineRouteReady": "Offline-routing — zonder net",
+  "discoverOfflineRouteReadyNamed": "{name} · offline-routing",
   "discoverSaved": "Opgeslagen",
   "discoverSavedNamed": "Opgeslagen: {name}",
   "@discoverSavedNamed": {
@@ -2446,7 +2801,7 @@
   "stimmenStatusPending": "In beoordeling",
   "stimmenStatusLocal": "Alleen dit apparaat",
   "akteHonestyCatalog": "Catalogustochten zijn al gedeeld. Delen maakt jouw tocht linkbaar — de link toont naam en stats, geen extra privétrack.",
-  "akteHonestyTrack": "Delen maakt een link. De link bevat een vereenvoudigd spoor (coördinaten), niet alleen de naam. Terug naar privé haalt hem uit filters en registreert de intrekking op de server als je bent ingelogd. Zonder login geldt het alleen op dit apparaat.",
+  "akteHonestyTrack": "Delen maakt een link. De link bevat een vereenvoudigd spoor (coördinaten), niet alleen de naam. Op de kaart komt hij pas na 3 stemmen in 14 dagen — anders weer privé. Terug naar privé haalt hem uit filters en registreert de intrekking op de server als je bent ingelogd. Zonder login geldt het alleen op dit apparaat.",
   "akteHonestyNoTrack": "Delen maakt een link met naam en stats — geen track, omdat er geen is opgeslagen.",
   "stimmenSubmit": "Versturen",
   "ortSheetVia": "Als stop toevoegen",
@@ -2526,6 +2881,10 @@
   "discoverLayerPlaces": "Plekken",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat uit",
+  "discoverMapContentsTitle": "Kaartinhoud",
+  "discoverMapContentsLayers": "Op de kaart",
+  "discoverMapContentsTools": "Meer",
+  "discoverLayerHeatLocked": "Toestemming nodig",
   "discoverVariantPlanned": "Zoals gepland",
   "discoverVariantFlatter": "Minder klim",
   "discoverVariantUnpaved": "Meer onverhard",
@@ -2539,8 +2898,10 @@
   "discoverWeatherStart": "Start {temp}° · {hint}",
   "discoverWeatherSummit": "Top {temp}° · {hint}",
   "discoverFilmstripAttribution": "Mapillary CC BY-SA",
-  "discoverOfflineAfterSave": "Regio offline downloaden?",
-  "discoverOfflineAfterSaveAction": "Packs",
+  "discoverOfflineAfterSave": "Routing voor deze route laden?",
+  "discoverOfflineAfterSavePack": "{name} · routing laden?",
+  "discoverOfflineAfterSavePackSized": "{name} · {size} voor routing laden?",
+  "discoverOfflineAfterSaveAction": "Routing laden",
   "discoverRoundTrip": "Heen en terug",
   "discoverOutboundOnly": "alleen heen",
   "discoverOsmNoHitsSuffix": " · geen paden in de buurt",
@@ -2593,12 +2954,17 @@
   "rideTapOptions": "Tik voor opties.",
   "rideOptions": "Opties",
   "ridePause": "Pauze",
+  "ridePhotoTooltip": "Foto op deze plek",
+  "ridePhotoPinned": "Foto op deze plek opgeslagen",
+  "ridePhotoPrivateZone": "Privacyzone — foto zonder locatie",
+  "ridePhotoNeedGps": "Nog geen gps — foto zonder locatie",
   "rideResume": "Hervatten",
   "rideRunning": "Rit loopt",
   "rideStop": "Rit beëindigen",
   "rideTapAgain": "Nog eens tikken",
   "rideStopNeedsTwo": "Stoppen vraagt 2 tikken",
   "rideQuietDisplay": "Stil display",
+  "rideHudClose": "HUD uit",
   "rideFollowCamera": "Camera volgen",
   "rideFollowOn": "Camera volgen aan",
   "rideFollowFree": "Camera vrij",
@@ -2663,6 +3029,10 @@
   "rideChassisHint": "Zet de telefoon op het stuur en markeer hem als gemonteerd.",
   "rideMarkMounted": "Als gemonteerd markeren",
   "rideWaitingSensors": "Wachten op sensoren…",
+  "rideCalibrateLean": "Kalibreren",
+  "rideCalibrateLeanHint": "Houd het stuur recht — zet de huidige helling op 0°.",
+  "rideResetLeanCal": "Nulpunt terug",
+  "rideLeanCalibrated": "genuld",
   "rideThereafter": "Volgende",
   "rideAutoLock": "Auto-lock",
   "rideAutoLockHint": "Tik om te wekken",
@@ -2689,6 +3059,7 @@
   "ridePuckLenkerBug": "Stuurneus",
   "ridePuckLichtkegel": "Lichtkegel",
   "ridePuckChevron": "Chevron",
+  "ridePuckRider": "Renner",
   "ridePuckBergASub": "Letter, berg en pijl in één",
   "ridePuckTopDownSub": "Van boven: neus, hoorns, twee banden — draait met jou mee",
   "ridePuckHofTorSub": "Twee benen, onder open",
@@ -2696,11 +3067,13 @@
   "ridePuckKieselSub": "Zachte driehoek met halo",
   "ridePuckLenkerBugSub": "Puntige neus, twee stuuruiteinden",
   "ridePuckLichtkegelSub": "Donkere schijf, oranje kegel",
-  "ridePuckChevronSub": "Standaard nav-pijl",
+  "ridePuckChevronSub": "Klassieke nav-pijl, iets kleiner",
+  "ridePuckRiderSub": "3D-renner in FlowLine-oranje — locatie en tourpunten",
   "rideChipLive": "Live",
   "rideChipRouteOffline": "Route offline",
-  "rideChipOfflineMapOk": "Offline · kaart oké · Reroute: net",
+  "rideChipOfflineMapOk": "Offline · straatkaart · Reroute: net",
   "rideChipMapsMissing": "Kaarten ontbreken",
+  "rideChipRoutingOffline": "Routing offline · kaart: net",
   "rideCardinalN": "N",
   "rideCardinalNE": "NO",
   "rideCardinalE": "O",
@@ -3037,6 +3410,7 @@
   "postRideFrontTooFirm": "te stug",
   "postRideFrontOk": "oké",
   "postRideBumpsHarsh": "hard",
+  "postRideBumpsNone": "—",
   "postRideObsFbHarsh": "Feedback: voor {front} · kleine klappen {bumps}.",
   "@postRideObsFbHarsh": {
     "placeholders": {
@@ -3049,6 +3423,30 @@
     }
   },
   "postRideObsFbSoft": "Feedback: voor voelt zacht / duikt bij remmen.",
+  "postRideObsElevGap": "Hoogtegaten over {gap} km — helling daar niet betrouwbaar.",
+  "@postRideObsElevGap": {
+    "placeholders": {
+      "gap": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsSteep": "Steile stukken — max +{grade} %.",
+  "@postRideObsSteep": {
+    "placeholders": {
+      "grade": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsSteepDown": "Steile afdalingen — max {grade} %.",
+  "@postRideObsSteepDown": {
+    "placeholders": {
+      "grade": {
+        "type": "String"
+      }
+    }
+  },
   "postRideSugReboundSlowTitle": "Vork-rebound: 2 clicks langzamer",
   "postRideSugReboundSlowContent": "Ongeveer {current} clicks vanaf dicht → doel {next}.",
   "@postRideSugReboundSlowContent": {
@@ -3135,6 +3533,23 @@
   "postRideConfHigh": "hoog",
   "postRideConfMedium": "middel",
   "postRideConfLow": "laag",
+  "postRideFactRideElev": "{km} km · {climb} hm ↑ · {descent} hm ↓ · {min} min",
+  "@postRideFactRideElev": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "climb": {
+        "type": "String"
+      },
+      "descent": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
   "postRideFactRide": "{km} km · {hm} hm · {min} min",
   "@postRideFactRide": {
     "placeholders": {
@@ -3209,17 +3624,23 @@
   },
   "bleKindPower": "Powermeter",
   "bleKindOtherDrive": "E-aandrijving",
-  "bleTipBosch": "Flow: Components → FlowLine toevoegen · firmware ≥19",
+  "bleCapBosch": "Live: accu en tempo van het display",
+  "bleCapDriveNoLive": "Geen live-accu — tempo via de wielsensor",
+  "bleCapCsc": "Live: tempo en cadans",
+  "bleCapPower": "Live: watt",
+  "garageBleHintDriveNeedsWheel": "Aandrijving onthouden — tempo pas met een wielsensor.",
+  "garageBleHintNoSocDrive": "Geen live-accu bij deze aandrijving. Tempo via de wielsensor.",
+  "bleTipBosch": "Display aan · in de Bosch-app onder Components toevoegen",
   "bleTipShimano": "E-TUBE sluiten · tik binnen 15 s na power/knop",
   "bleTipYamaha": "e-Sync sluiten · snelheid via CSC-sensor",
   "bleTipOtherDrive": "Maker-app sluiten · display aan, dichtbij houden",
   "bleTipCsc": "Sensor op de fiets wekken, dichtbij houden",
   "bleTipPower": "Powermeter aanzetten, dichtbij houden",
-  "blePairLeadEbike": "Display aan, maker-app dicht, telefoon dichtbij — dan tikken.",
-  "blePairLeadSensor": "Sensor op de fiets wekken, niet het horloge om je pols.",
+  "blePairLeadEbike": "Bosch: accu van het display. Shimano en andere: alleen naam, tempo via de wielsensor.",
+  "blePairLeadSensor": "Tempo en cadans via de wielsensor. Geen verzonnen accu.",
   "bleNoteSensorBrand": "Sensor",
   "bleNoteSensorLine": "Magneet of crank, dicht bij de sensor — niet het horloge.",
-  "bleNoteBoschLine": "SoC: open Flow → Components → FlowLine toevoegen (besturing ≥19). CSC nog uit de lijst, Flow daarna dicht.",
+  "bleNoteBoschLine": "Display aan. In de Bosch-app: Settings → Components. Daarna bevestigen op het display.",
   "bleNoteShimanoLine": "E-TUBE sluiten. Na power of knop vaak maar 15 s — dan tikken.",
   "bleNoteYamahaLine": "e-Sync of de TQ-app sluiten. Livesnelheid meestal alleen via CSC.",
   "bleNoteFazuaLine": "Remote aan — CSC en vermogen als een normale sensor.",
@@ -3231,7 +3652,7 @@
   "bleGattRejectedBosch": "Verbinding geweigerd — sluit Bosch Flow, display aan, 10–20 cm.",
   "bleGattRejectedShimano": "Verbinding geweigerd — sluit E-TUBE, display aan, dichtbij houden.",
   "bleGattRejectedGeneric": "Verbinding geweigerd — sluit Bosch Flow / Shimano E-TUBE, display aan, dichtbij houden.",
-  "bleLdiPairCta": "Bosch LDI — toevoegen in Flow",
+  "bleLdiPairCta": "Bosch-display koppelen",
   "bleLdiPairHint": "Fiets aan, open Flow → Settings → Components → Add device. Bevestig op het display. Besturingsfirmware 19+.",
   "bleLdiTimeout": "Geen LDI-link. Firmware ≥19? Voeg FlowLine opnieuw toe onder Components in Flow.",
   "bleLdiWaitingFlow": "Wachten op de fiets — voeg “FlowLine” toe in Flow.",
@@ -3646,12 +4067,14 @@
   "offlineRawPmtiles": "Ruwe .pmtiles wordt niet ondersteund — MapLibre-stijl-JSON met pmtiles://-bron nodig.",
   "offlineInvalidUrl": "Ongeldige URL",
   "offlineExpectStyleJson": "Verwacht een stijl-JSON-URL (*.json of /styles/…), geen tegelbestand.",
-  "offlineSubActive": "Actief — tik om te vernieuwen",
+  "offlineSubActive": "Actief",
   "offlineSubInstalled": "Geïnstalleerd — tik om te activeren",
   "offlineSubDemoGraph": "Demograaf in de app (geen remote pack)",
   "offlineSubNotBuilt": "Nog niet gebouwd",
-  "offlineSubLoad": "Routing + kaart laden",
-  "offlineSubLoadSized": "{size} · routing + kaart",
+  "offlineSubLoad": "Routing laden",
+  "offlineSubLoadSized": "{size} · routing",
+  "offlineSubValhalla": "Routing (Valhalla)",
+  "offlineSubValhallaSized": "{size} · routing (Valhalla)",
   "@offlineSubLoadSized": {
     "placeholders": {
       "size": {
@@ -3993,16 +4416,16 @@
       }
     }
   },
-  "platzCreateGroupHint": "Kies een tocht, privé of zichtbaar, deel daarna de link.",
-  "platzGroupPublicHint": "Wie de link heeft, kan meedoen. Onder Gedeeld kunnen anderen de groep op Platz zien.",
+  "platzCreateGroupHint": "Kies een tocht, privé of zichtbaar. Privé: link. Open: link of code.",
+  "platzGroupPublicHint": "Link of code volstaat. De groep staat op Platz en als trefpunt-pin op de kaart — geen live-GPS.",
   "platzGroupPrivateHint": "Alleen mensen met de link kunnen meedoen. Niet openbaar vermeld.",
   "platzNoPrivateGroups": "Geen privégroepen in dit filter.",
   "platzMakePrivate": "Privé maken",
   "platzMakePublic": "Op Platz zetten",
-  "platzGroupListedNote": "Zichtbaar vermeld — wie de link heeft, kan meedoen.",
+  "platzGroupListedNote": "Zichtbaar vermeld — link of code volstaat.",
   "platzGroupUnlistedNote": "Alleen per link — niet op Platz.",
   "platzNoPublicGroups": "Geen open groepen op de server.",
-  "platzPublicGroupsHint": "Open groepen — meedoen met login, geen Ontdekken-GPS.",
+  "platzPublicGroupsHint": "Open groepen — meedoen met login, link of code. Trefpunt-pin op de kaart, geen live-GPS.",
   "platzListedPublic": "op Platz",
   "filterVisibilityAll": "Alle",
   "filterVisibilityPublic": "Gedeeld",
@@ -4070,6 +4493,9 @@
     }
   },
   "mappeEmpty": "Nog geen tochten — bewaren of GPX importeren.",
+  "mappeEmptyTitle": "Nog geen lijn",
+  "noTrackLabel": "Geen track",
+  "loopTag": "Ronde",
   "mappeStimmenEmpty": "Nog geen tips bij jouw tochten. Na delen kunnen anderen schrijven.",
   "myRoutesSourceOwn": "Eigen",
   "privacyZoneTitle": "Privacyzone",
@@ -4089,7 +4515,7 @@
   "hofSystemHint": "Systeemstatus — melding",
   "hofSystemOkTooltip": "Systeemstatus: oké",
   "hofTafelTitle": "Open",
-  "hofTafelHint": "Een tip of een groep — geen feed.",
+  "hofTafelHint": "Een stem, een groep of een vrijgave — geen feed.",
   "hofTafelVoiceOne": "Nieuwe tip bij {name}",
   "@hofTafelVoiceOne": {
     "placeholders": {
@@ -4157,6 +4583,125 @@
       "bits": {
         "type": "String"
       }
+    }
+  },
+  "garageStatService": "Beurt",
+  "garageStatDash": "—",
+  "garagePartsEmptyTitle": "Nog geen onderdelen",
+  "garagePartsEmptyHint": "Voeg er een toe — dan herinneren we je aan onderhoud.",
+  "garageMissingInvite": "Nog open",
+  "garageGhostInvite": "Toevoegen",
+  "garageCatalogOptional": "Catalogus (optioneel)",
+  "garageCatalogPicked": "Uit catalogus",
+  "garageNoHitsShort": "Geen treffer — de naam volstaat.",
+  "oemCheckTitle": "Onderdelen op de fiets controleren",
+  "oemCheckHint": "Alleen aangevinkte onderdelen komen op de fiets.",
+  "oemCheckEmpty": "Niets herkend",
+  "oemCheckEmptyHint": "Slot en naam volstaan.",
+  "oemCheckAdd": "Onderdeel toevoegen",
+  "oemCheckAddMore": "Nog een onderdeel",
+  "oemCheckContinueEmpty": "Verder zonder onderdelen",
+  "oemCheckInstallCount": "{count} aangevinkte vastleggen",
+  "@oemCheckInstallCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oemGrokRead": "Grok heeft gelezen",
+  "oemGrokVerify": "Op de fiets controleren — niets stil overgenomen.",
+  "oemGrokOnlyBadge": "Van Grok, niet in catalogus",
+  "oemCatalogBadge": "Catalogus",
+  "oemOccupiedReplace": "Al op de fiets — vinkje vervangt",
+  "oemTypedHint": "Merk en model volstaan.",
+  "oemTypedSource": "Zelf ingevuld",
+  "oemVisionSource": "Op de foto gezien — op de fiets controleren",
+  "oemCatalogSource": "Uit catalogus — op de fiets controleren",
+  "garagePhotoFill": "Aanvullen met foto",
+  "garagePhotoFillHint": "Grok vult alleen gaten. Geen druk, geen SAG, geen framenummer.",
+  "garageServiceTitle": "Onderhoudsafspraak",
+  "garageServiceEmpty": "Geen datum — optioneel onthouden.",
+  "garageServiceOverdue": "te laat",
+  "garageServiceToday": "vandaag",
+  "garageServiceChange": "Wijzigen",
+  "garageServiceAdd": "Invullen",
+  "garageReceiptsTitle": "Bonnen",
+  "garageReceiptsHint": "Werkplaats, onderdeel of garantie.",
+  "garageReceiptsEmpty": "Nog geen bon.",
+  "garageReceiptAdd": "Bon",
+  "garageMaintThresholdHint": "Drempels uit km- en urenteller.",
+  "dieBoxOnBikeEmpty": "Nog niets op de fiets.",
+  "garagePickTrail": "Trail",
+  "garagePickTour": "Toer",
+  "garagePickEveryday": "Dagelijks",
+  "garagePhotoFromBike": "Foto van de fiets",
+  "garagePhotoIdentifyHint": "Foto van de fiets — Grok zoekt in de catalogus. Framenummer, spanning, SAG en km worden niet verzonnen.",
+  "garagePhotoIdentifying": "Fiets herkennen…",
+  "garagePhotoWhichBike": "Welke fiets is dit?",
+  "garagePhotoHitsHint": "Grok vond catalogustreffers. Tikken vult alleen lege specs.",
+  "garagePhotoNoHit": "Geen catalogustreffer",
+  "garagePhotoNoHitHint": "Grok heeft toch iets gelezen. Specs alleen na een vinkje — niets wordt verzonnen of stil opgeslagen.",
+  "garagePhotoApplyName": "Als naam overnemen: {query}",
+  "@garagePhotoApplyName": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "garagePhotoApplyNameHint": "Alleen als de naam nog een placeholder is. Geen jaar, veerweg of framenummer.",
+  "garagePhotoContinueRead": "Verder met de gelezen tekst",
+  "garagePhotoFillNone": "Niets leeg om aan te vullen — bestaande waarden blijven.",
+  "garagePhotoPartsInstalled": "{count} onderdelen ingevoerd.",
+  "@garagePhotoPartsInstalled": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garagePhotoFilledFields": "Aangevuld: {fields}",
+  "@garagePhotoFilledFields": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
+  "garageReceiptTypeOnly": "Alleen typen",
+  "garageReceiptScanning": "Bon wordt gelezen…",
+  "garageReceiptRemember": "Bon bewaren",
+  "garageReceiptMerchant": "Winkel / werkplaats",
+  "garageReceiptDate": "Datum",
+  "garageReceiptDateHint": "dd.mm.jjjj",
+  "garageReceiptAmount": "Bedrag (€)",
+  "garageReceiptWhat": "Wat gekocht / gedaan",
+  "garageReceiptAttachPart": "Aan onderdeel hangen (optioneel)",
+  "garageReceiptFreeOnBike": "Los op de fiets",
+  "garageReceiptRemovePhoto": "Foto weg",
+  "garageReceiptsEmptyInvite": "Bon fotograferen of typen",
+  "garageServiceHint": "Datum en notitie. Werkplaats is optioneel — een naam volstaat.",
+  "garageServiceDateLabel": "Afspraak",
+  "garageServiceNoteLabel": "Notitie bij de datum",
+  "garageServiceNoteHint": "Ketting, service, keuring…",
+  "garageWorkshopOptional": "Werkplaats (optioneel)",
+  "garageWorkshopAddress": "Adres",
+  "garageWorkshopPhone": "Telefoon",
+  "garageMaintEmptyLowKm": "Nog weinig km — drempels komen met de teller. Geen inspectie onthouden.",
+  "garageSagWeightHint": "SAG-doel in % blijft. De luchtdrukrichtlijn volgt je gewicht ({kg} kg){fork}.",
+  "@garageSagWeightHint": {
+    "placeholders": {
+      "kg": { "type": "String" },
+      "fork": { "type": "String" }
+    }
+  },
+  "garageSagWeightFork": " · ca. {psi} psi vork",
+  "@garageSagWeightFork": {
+    "placeholders": {
+      "psi": { "type": "String" }
+    }
+  },
+  "garagePressureChange": "Spanning onthouden / wijzigen",
+  "garageAddPhotoHint": "Grok vult lege specs alleen bij een catalogustreffer. Onderdelen alleen na een vinkje — ook zonder catalogus-ID.",
+  "garageAddPhotoPartsPending": "{count} onderdelen na het aanmaken invoeren.",
+  "@garageAddPhotoPartsPending": {
+    "placeholders": {
+      "count": { "type": "int" }
     }
   }
 }

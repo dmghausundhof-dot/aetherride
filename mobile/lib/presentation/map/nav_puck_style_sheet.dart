@@ -4,23 +4,31 @@ import '../../../core/theme/app_theme.dart';
 import '../../../l10n/l10n_ext.dart';
 import 'nav_puck_image.dart';
 
-/// Vergleich aller Navi-Puck-Stile — dunkler + heller Grund, 44 und 22 dp.
+/// Vergleich der Navi-Puck-Stile — dunkler + heller Grund.
+/// [styles] begrenzt die Liste (Profil: 3D + klassischer Pfeil).
 Future<NavPuckStyle?> showNavPuckStyleSheet(
   BuildContext context, {
   required NavPuckStyle current,
+  List<NavPuckStyle>? styles,
+  String? hint,
 }) {
+  final list = styles ?? NavPuckStyle.values;
+  final compact = list.length <= 3;
   return showModalBottomSheet<NavPuckStyle>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (ctx) {
-      final h = MediaQuery.sizeOf(ctx).height * 0.88;
+      final picker = NavPuckStylePicker(
+        current: current,
+        styles: list,
+        hint: hint,
+        onSelect: (s) => Navigator.of(ctx).pop(s),
+      );
+      if (compact) return picker;
       return SizedBox(
-        height: h,
-        child: NavPuckStylePicker(
-          current: current,
-          onSelect: (s) => Navigator.of(ctx).pop(s),
-        ),
+        height: MediaQuery.sizeOf(ctx).height * 0.88,
+        child: picker,
       );
     },
   );
@@ -31,15 +39,50 @@ class NavPuckStylePicker extends StatelessWidget {
     super.key,
     required this.current,
     required this.onSelect,
+    this.styles,
+    this.hint,
   });
 
   final NavPuckStyle current;
   final ValueChanged<NavPuckStyle> onSelect;
+  final List<NavPuckStyle>? styles;
+  final String? hint;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10nOrNull;
+    final list = styles ?? NavPuckStyle.values;
+    final compact = list.length <= 3;
+    final header = <Widget>[
+      Text(
+        l10n?.rideNavPuckTitle ?? 'Navi-Symbol',
+        style: theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      const SizedBox(height: AppSpacing.xs),
+      Text(
+        hint ??
+            l10n?.rideNavPuckHint ??
+            'Alle Varianten auf dunkel und hell. Tippen wählt das Symbol '
+                'für Karte und HUD. 0° = Spitze oben.',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: AppColors.muted,
+        ),
+      ),
+      const SizedBox(height: AppSpacing.m),
+    ];
+    final tiles = <Widget>[
+      for (final style in list) ...[
+        _StyleTile(
+          style: style,
+          selected: style == current,
+          onTap: () => onSelect(style),
+        ),
+        const SizedBox(height: AppSpacing.s),
+      ],
+    ];
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -48,43 +91,23 @@ class NavPuckStylePicker extends StatelessWidget {
           AppSpacing.l,
           AppSpacing.l,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n?.rideNavPuckTitle ?? 'Navi-Symbol',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
+        child: compact
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [...header, ...tiles],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...header,
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(children: tiles),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              l10n?.rideNavPuckHint ??
-                  'Alle Varianten auf dunkel und hell. Tippen wählt das Symbol '
-                      'für Karte und HUD. 0° = Spitze oben.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.muted,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.m),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    for (final style in NavPuckStyle.values) ...[
-                      _StyleTile(
-                        style: style,
-                        selected: style == current,
-                        onTap: () => onSelect(style),
-                      ),
-                      const SizedBox(height: AppSpacing.s),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -214,9 +237,15 @@ class _SwatchPair extends StatelessWidget {
         ),
         child: Row(
           children: [
-            AetherNavMark(size: 44, style: style),
+            AetherNavMark(
+              size: style.usesRiderAsset ? 44 : 34,
+              style: style,
+            ),
             const SizedBox(width: AppSpacing.s),
-            AetherNavMark(size: 22, style: style),
+            AetherNavMark(
+              size: style.usesRiderAsset ? 22 : 17,
+              style: style,
+            ),
             const Spacer(),
             Text(
               label,

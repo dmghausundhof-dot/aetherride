@@ -14,6 +14,13 @@ const langs = ["de", "en", "fr", "it", "nl"] as const;
 function testDe() {
   const g = platzCopy("de");
   assert.equal(g.createGroup, "Gruppe anlegen");
+  assert.equal(g.pickMine, "Meine Touren");
+  assert.equal(g.pickNearby, "Touren in der Nähe");
+  assert.ok(g.nearbyNeedGps.includes("Standort"));
+  assert.ok(g.nearbyFromMap.includes("Karte"));
+  assert.equal(g.groupCreateReady, "Tour liegt bereit — Gruppe anlegen.");
+  assert.equal(g.planAsGroup, "Eigene Tour als Gruppe planen");
+  assert.equal(g.needSharedTour, "Zuerst eine Tour wählen oder selbst planen.");
   assert.equal(g.stimmenTitle, "Stimmen");
   assert.equal(g.visPublic, "Freigegeben");
   assert.equal(g.addRoute, "Route hinzufügen");
@@ -23,6 +30,9 @@ function testDe() {
   assert.ok(g.startNone.includes("ohne Pin"));
   assert.ok(!g.addRouteHint.toLowerCase().includes("heidelberg"));
   assert.equal(g.intoMappe, "In die Mappe legen");
+  assert.equal(g.mappeEmptyTitle, "Noch keine Linie");
+  assert.equal(g.noTrackLabel, "Kein Track");
+  assert.equal(g.loopTag, "Runde");
   assert.ok(g.inviteHint.includes("Freunde"));
   assert.ok(g.inviteHint.includes("Deine Gruppen bleiben"));
   assert.equal(g.collectionTours(1), "1 Tour");
@@ -30,7 +40,8 @@ function testDe() {
   assert.equal(g.collectionsTitle, "Sammlungen");
   assert.equal(g.stimmenTitle, "Stimmen");
   assert.notEqual(g.collectionsTitle, g.collectionsTitle.toUpperCase());
-  assert.equal(g.joinWithLink, "Mit Link beitreten");
+  assert.equal(g.joinWithLink, "Verbinden");
+  assert.equal(g.copyCode, "Code kopieren");
   assert.equal(g.joinLocalCta, "Auf diesem Gerät merken");
   assert.ok(g.joinUnsignedHint.includes("sieht der Host dich nicht"));
   assert.ok(!g.joinNotOnServer("x").includes("Dabei"));
@@ -39,9 +50,29 @@ function testDe() {
   assert.ok(g.shareVisPrivate.includes("gelistet"));
   assert.equal(g.visibility, "Freigabe");
   assert.ok(g.pinsHint.includes("öffentlichen Karte"));
-  assert.equal(g.joinField, "Einladungslink");
+  assert.equal(g.friendN(1), "Freund 1");
+  assert.equal(g.extendHour, "Fenster verlängern");
+  assert.equal(g.extend30m, "+30 Min");
+  assert.equal(g.startCustom, "Andere Zeit…");
+  assert.equal(g.durationCustom, "Andere…");
+  assert.ok(g.windowCapHint.includes("12"));
+  assert.equal(platzNote("Fenster verlängert.", "en"), "Window extended.");
+  assert.equal(g.joinField, "Link oder 6-stelliger Code");
+  assert.equal(g.joinSignInFirst, "Anmelden — sonst sieht der Host dich nicht");
+  assert.equal(g.more, "Mehr");
+  assert.equal(g.joinCodeField, "Code");
   assert.ok(g.joinHint.includes("Einladungslink"));
+  assert.ok(g.joinHint.includes("Code"));
   assert.ok(!g.joinHint.toLowerCase().includes("token"));
+  assert.ok(g.listedNote.includes("Code"));
+  const listedOld =
+    "Auf dem Platz gelistet — wer den Link hat, kann beitreten.";
+  assert.ok(platzNote(listedOld, "en").toLowerCase().includes("listed"));
+  assert.ok(
+    platzNote("Auf dem Platz gelistet — Link oder Code reicht.", "en")
+      .toLowerCase()
+      .includes("code"),
+  );
   assert.ok(g.collectionsHint.includes("Katalog"));
 }
 
@@ -59,10 +90,16 @@ function testParity() {
     assert.notEqual(g.collectionTours(1), g.collectionTours(2), lang);
     assert.ok(g.addToCollection.length > 0, lang);
     assert.ok(g.intoMappe.includes("Mappe"), lang);
+    assert.ok(g.mappeEmptyTitle.length > 4, lang);
+    assert.ok(g.noTrackLabel.length > 3, lang);
+    assert.ok(g.loopTag.length > 2, lang);
     assert.ok(g.startNone.length > 8, lang);
     assert.ok(g.startFromGps("1").includes("1"), lang);
     assert.ok(g.startFromMap("1").includes("1"), lang);
     assert.ok(g.importGpx.includes("GPX"), lang);
+    assert.ok(g.nearbyNeedGps.length > 8, lang);
+    assert.ok(g.nearbyFromMap.length > 8, lang);
+    assert.ok(g.groupCreateReady.length > 8, lang);
     assert.ok(g.notePlaceholder.includes("Stimme"), lang);
     assert.ok(!/\b(token|jeton)\b/i.test(g.joinHint), lang);
   }
@@ -104,6 +141,13 @@ function testWhen() {
   assert.ok(de.includes("h"), de);
   assert.ok(en.includes("h"), en);
   assert.notEqual(de, en);
+  const half = formatPlatzGroupWhen(
+    start.toISOString(),
+    new Date("2026-08-16T11:30:00+02:00").toISOString(),
+    "de",
+    now,
+  );
+  assert.ok(half.includes("1,5 h"), half);
 }
 
 function testHonesty() {

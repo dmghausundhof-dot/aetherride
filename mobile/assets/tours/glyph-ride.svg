@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Losfahren">
+  <title>FlowLine Losfahren</title>
+  <circle cx="12" cy="12" r="9" fill="#FF6A00"/>
+  <path d="M10.2 8.2 L16.4 12 L10.2 15.8 Z" fill="#121215"/>
+</svg>

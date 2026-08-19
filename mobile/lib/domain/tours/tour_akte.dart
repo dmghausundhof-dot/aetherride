@@ -33,6 +33,16 @@ String? catalogTourIdOf(String routeId, [SavedRouteMeta meta = SavedRouteMeta.em
   );
 }
 
+/// Private Host-GPX braucht eine Mitglieds-Kopie — Katalog nicht.
+bool needsMemberTrack({
+  required String savedRouteId,
+  String? catalogTourId,
+}) {
+  final catalog = catalogTourId?.trim();
+  if (catalog != null && catalog.isNotEmpty) return false;
+  return catalogTourIdOf(savedRouteId) == null;
+}
+
 /// Losfahren aus der Gruppe: Mappe-Treffer oder Katalog-Id, nie Fake-Track.
 String? startRidePendingIdForGroup({
   required String savedRouteId,
@@ -76,7 +86,7 @@ SavedRouteEntry? resolveAkteSavedRoute({
   return null;
 }
 
-enum HofTafelKind { care, stimmen, mappe, gruppe }
+enum HofTafelKind { care, stimmen, mappe, gruppe, listing }
 
 class HofTafelItem {
   const HofTafelItem({
@@ -90,9 +100,10 @@ class HofTafelItem {
   final String text;
 }
 
-/// Höchstens drei Zeilen — Pflege, Gruppe, Stimme, Mappe. Kein Feed.
+/// Höchstens drei Zeilen — Pflege, Freigabe, Gruppe, Stimme, Mappe. Kein Feed.
 List<HofTafelItem> buildHofTafel({
   String? careText,
+  String? listingText,
   String? stimmenText,
   String? groupText,
   int savedCount = 0,
@@ -106,6 +117,10 @@ List<HofTafelItem> buildHofTafel({
   final care = careText?.trim();
   if (care != null && care.isNotEmpty) {
     add(HofTafelItem(id: 'care', kind: HofTafelKind.care, text: care));
+  }
+  final listing = listingText?.trim();
+  if (listing != null && listing.isNotEmpty) {
+    add(HofTafelItem(id: 'listing', kind: HofTafelKind.listing, text: listing));
   }
   final group = groupText?.trim();
   if (group != null && group.isNotEmpty) {

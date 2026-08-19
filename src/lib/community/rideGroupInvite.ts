@@ -2,15 +2,20 @@
  * Teilbarer Einladungslink für „Zusammen raus“.
  * HTTPS: /library?group=<id>&g=<token>
  * App: aetherride://platz?group=<id>&g=<token>
- * Alte Links mit 6-Zeichen-Code bleiben gültig. Code nicht in der UI.
+ * Alte Links mit 6-Zeichen-Code bleiben gültig.
+ * Code zum Abtippen nur bei öffentlichen / Platz-Gruppen.
  */
 
 import { siteOrigin, appDeepLink } from "@/lib/web/appLinks";
 import type { RideGroup } from "@/lib/community/types";
 import {
   isRideGroupId,
+  isTypedJoinCode,
+  normalizeJoinCode,
   RIDE_GROUP_JOIN_CODE_LEN,
 } from "@/lib/community/rideGroup";
+import { parseTourShareMap } from "@/lib/community/shareCodec";
+import type { SharedTourPayload } from "@/lib/community/shareTypes";
 
 export type RideGroupInvitePayload = {
   v: 1;
@@ -23,6 +28,7 @@ export type RideGroupInvitePayload = {
   hostUserId?: string;
   start: string;
   end: string;
+  tour?: SharedTourPayload;
 };
 
 function toBase64Url(json: string): string {
@@ -47,8 +53,11 @@ function fromBase64Url(token: string): string {
   return Buffer.from(full, "base64").toString("utf8");
 }
 
-export function encodeGroupInvite(group: RideGroup): string {
-  const payload: RideGroupInvitePayload = {
+export function encodeGroupInvite(
+  group: RideGroup,
+  tour?: SharedTourPayload
+): string {
+  const base: RideGroupInvitePayload = {
     v: 1,
     kind: "group",
     id: group.id,
@@ -60,7 +69,19 @@ export function encodeGroupInvite(group: RideGroup): string {
     start: group.startWindowStart,
     end: group.startWindowEnd,
   };
-  return toBase64Url(JSON.stringify(payload));
+  let payload: RideGroupInvitePayload = tour ? { ...base, tour } : base;
+  let token = toBase64Url(JSON.stringify(payload));
+  if (token.length > 2400 && payload.tour?.track) {
+    payload = {
+      ...payload,
+      tour: { ...payload.tour, includeTrack: false, track: undefined },
+    };
+    token = toBase64Url(JSON.stringify(payload));
+  }
+  if (token.length > 2400) {
+    token = toBase64Url(JSON.stringify(base));
+  }
+  return token;
 }
 
 export function decodeGroupInvite(
@@ -76,7 +97,8 @@ export function decodeGroupInvite(
       return null;
     }
     if (!data.start || !data.end) return null;
-    return { ...data, code };
+    const tour = parseTourShareMap(data.tour) ?? undefined;
+    return { ...data, code, tour };
   } catch {
     return null;
   }
@@ -135,10 +157,7 @@ export function parsePastedGroupJoin(raw: string): PastedGroupJoin | null {
   if (withoutToken) return withoutToken;
   const compact = text.replace(/\s+/g, "");
   if (isRideGroupId(compact)) return { ref: compact };
-  const upper = compact.toUpperCase();
-  if (upper.length === RIDE_GROUP_JOIN_CODE_LEN && /^[A-Z0-9]+$/.test(upper)) {
-    return { ref: upper };
-  }
+  if (isTypedJoinCode(text)) return { ref: normalizeJoinCode(text) };
   return null;
 }
 
@@ -152,6 +171,12 @@ export function groupInviteShareText(input: {
   meetingPoint?: string;
 }): string {
   const lines = [`Zusammen raus: ${input.title}`, input.url];
+  if (input.visibility === "public") {
+    const typed = normalizeJoinCode(input.code ?? "");
+    if (typed.length === RIDE_GROUP_JOIN_CODE_LEN) {
+      lines.push(`Code: ${typed}`);
+    }
+  }
   if (input.when?.trim()) {
     lines.push(input.when.trim());
   }
@@ -163,7 +188,7 @@ export function groupInviteShareText(input: {
   }
   const vis =
     input.visibility === "public"
-      ? "Freigegeben: wer den Link hat, kann beitreten. Die Gruppe kann unter Freigegeben stehen."
+      ? "Freigegeben: Link oder Code reicht. Die Gruppe steht auf dem Platz und als Treffen-Pin auf der Karte."
       : "Privat: nur wer diesen Link hat, kann beitreten. Nicht gelistet.";
   lines.push("", vis);
   return lines.join("\n");

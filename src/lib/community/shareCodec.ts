@@ -92,17 +92,52 @@ export function encodeTourSharePayload(payload: SharedTourPayload): string {
   return toBase64Url(JSON.stringify(payload));
 }
 
+export function parseTourShareMap(raw: unknown): SharedTourPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as SharedTourPayload;
+  if (data.v !== 1 || data.kind !== "tour" || !data.id || !data.name) {
+    return null;
+  }
+  return data;
+}
+
 export function decodeTourSharePayload(token: string): SharedTourPayload | null {
   try {
-    const raw = fromBase64Url(token);
-    const data = JSON.parse(raw) as SharedTourPayload;
-    if (data?.v !== 1 || data.kind !== "tour" || !data.id || !data.name) {
-      return null;
-    }
-    return data;
+    return parseTourShareMap(JSON.parse(fromBase64Url(token)));
   } catch {
     return null;
   }
+}
+
+/** Mitglieds-Kopie. keepId bleibt die Host-Id — Losfahren matcht. */
+export function savedRouteFromTourShare(
+  tour: SharedTourPayload,
+  keepId: string
+): SavedRoute | null {
+  if (!parseTourShareMap(tour)) return null;
+  const track = (tour.track ?? []).filter(
+    (p): p is [number, number] =>
+      Array.isArray(p) &&
+      p.length >= 2 &&
+      Number.isFinite(p[0]) &&
+      Number.isFinite(p[1])
+  );
+  if (track.length < 2) return null;
+  const name = String(tour.name || "").trim();
+  return {
+    id: keepId,
+    name: name || keepId,
+    distanceKm: Number(tour.distanceKm) || 0,
+    elevationM: Number(tour.elevationM) || 0,
+    durationMin: Math.round(Number(tour.durationMin) || 0),
+    savedAt: new Date().toISOString(),
+    source: tour.source === "engine" ? "engine" : "import",
+    geometry: { type: "LineString", coordinates: track },
+    waypoints: [
+      { role: "start", lngLat: track[0] },
+      { role: "end", lngLat: track[track.length - 1] },
+    ],
+  };
 }
 
 /** Baut den Share-Payload. Track nur bei eigener Geometrie, gedownsampled. */

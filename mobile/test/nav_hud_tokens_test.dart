@@ -33,6 +33,10 @@ void main() {
       expect(NavHudTokens.upcomingRailMaxEtaMin, kUpcomingRailMaxEtaMin);
       expect(NavHudTokens.upcomingRailMaxEtaMin, 15);
       expect(NavHudTokens.pauseFabDp, 56);
+      expect(NavHudTokens.layerLabelDp, 13);
+      expect(NavHudTokens.layerLabelWeight, FontWeight.w600);
+      expect(NavHudTokens.layerIconDp, 18);
+      expect(NavHudTokens.layerBarMinHeightDp, 48);
       expect(NavHudTokens.startCtaGreen, const Color(0xFFFF6A00));
     });
 

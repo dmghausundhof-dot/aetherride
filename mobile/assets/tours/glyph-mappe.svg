@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Mappe">
+  <title>FlowLine Mappe</title>
+  <path d="M4.4 7.2 C4.4 6.4 5 5.8 5.8 5.8 H10.2 L11.6 7.4 H18.2 C19 7.4 19.6 8 19.6 8.8 V17.6 C19.6 18.4 19 19 18.2 19 H5.8 C5 19 4.4 18.4 4.4 17.6 Z" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M7.2 14.2 C9.4 12.8 12.2 12.4 14.8 13.2 C16.4 13.7 17.6 14.6 18.4 15.4" fill="none" stroke="#FF6A00" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

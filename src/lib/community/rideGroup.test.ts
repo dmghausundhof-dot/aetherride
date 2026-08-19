@@ -4,16 +4,27 @@
 import assert from "node:assert/strict";
 import {
   canAttachCourse,
+  needsMemberTrack,
   canJoinRideGroup,
+  canJoinByTypedCode,
   canJoinWithoutInviteToken,
+  isTypedJoinCode,
   formatGroupWhen,
   generateJoinCode,
+  normalizeJoinCode,
+  canShowMeetingOnExplore,
+  extendRideGroupWindowEnd,
+  friendRosterName,
+  friendUnnamedNumbers,
   groupListedOnExplore,
   isEventWindowOpen,
+  isRideGroupExtendBody,
   keepLocalRideGroupAfterCloud,
   nextActiveMeeting,
   parseGroupListing,
   parseMeetingPoint,
+  parseRideGroupExtend,
+  platzGroupPrimaryIsInvite,
   parseRideGroupWindow,
   pointInPrivacyZones,
   quantizeGroupCoord,
@@ -23,15 +34,42 @@ import {
 
 assert.equal(generateJoinCode(() => 0).length, RIDE_GROUP_JOIN_CODE_LEN);
 assert.equal(generateJoinCode(() => 0), "AAAAAA");
+assert.equal(normalizeJoinCode(" ab-c2 d3 "), "ABC2D3");
+assert.equal(normalizeJoinCode("k7m2np"), "K7M2NP");
+assert.equal(normalizeJoinCode("IO01AB"), "AB");
 assert.equal(groupListedOnExplore(), false);
+assert.equal(
+  canShowMeetingOnExplore({
+    visibility: "public",
+    status: "open",
+    startWindowEnd: "2026-08-18T16:00:00.000Z",
+    isMember: false,
+    now: new Date("2026-08-18T10:00:00.000Z"),
+  }),
+  true
+);
+assert.equal(
+  canShowMeetingOnExplore({
+    visibility: "private",
+    status: "open",
+    startWindowEnd: "2026-08-18T16:00:00.000Z",
+    isMember: false,
+    now: new Date("2026-08-18T10:00:00.000Z"),
+  }),
+  false
+);
 assert.equal(parseGroupListing(undefined), "private");
 assert.equal(parseGroupListing("public"), "public");
 assert.equal(canJoinWithoutInviteToken("private"), false);
 assert.equal(canJoinWithoutInviteToken("public"), true);
+assert.equal(canJoinByTypedCode("private"), false);
+assert.equal(canJoinByTypedCode("public"), true);
+assert.equal(isTypedJoinCode("k7-m2 np"), true);
+assert.equal(isTypedJoinCode("AB"), false);
 
 assert.equal(
   canAttachCourse({ id: "gpx-neckar", visibility: "private" }),
-  false
+  true
 );
 assert.equal(
   canAttachCourse({ id: "gpx-neckar", visibility: "shared" }),
@@ -45,6 +83,18 @@ assert.equal(
   }),
   true
 );
+assert.equal(canAttachCourse({ id: "freeride" }), false);
+assert.equal(canAttachCourse({ id: "" }), false);
+assert.equal(needsMemberTrack({ savedRouteId: "gpx-neckar" }), true);
+assert.equal(
+  needsMemberTrack({
+    savedRouteId: "saved-abc",
+    catalogTourId: "r-heidelberg-city",
+  }),
+  false
+);
+assert.equal(needsMemberTrack({ savedRouteId: "r-bodensee-road" }), false);
+assert.equal(needsMemberTrack({ savedRouteId: "freeride" }), false);
 
 assert.equal(
   isEventWindowOpen(
@@ -110,6 +160,43 @@ if (!("error" in silent)) {
   assert.equal(silent.durationHours, 3);
   assert.equal(silent.status, "open");
 }
+const half = parseRideGroupWindow({
+  startsAt: "2026-08-16T08:00:00.000Z",
+  durationHours: 1.5,
+  now: new Date("2026-08-16T06:00:00.000Z"),
+});
+assert.ok(!("error" in half));
+if (!("error" in half)) {
+  assert.equal(half.durationHours, 1.5);
+  assert.equal(half.end.toISOString(), "2026-08-16T09:30:00.000Z");
+}
+const five = parseRideGroupWindow({
+  startsAt: "2026-08-16T08:00:00.000Z",
+  durationHours: 5,
+  now: new Date("2026-08-16T06:00:00.000Z"),
+});
+assert.ok(!("error" in five));
+if (!("error" in five)) {
+  assert.equal(five.durationHours, 5);
+  assert.equal(five.end.toISOString(), "2026-08-16T13:00:00.000Z");
+}
+const byEnd = parseRideGroupWindow({
+  startsAt: "2026-08-16T08:00:00.000Z",
+  endsAt: "2026-08-16T09:15:00.000Z",
+  now: new Date("2026-08-16T06:00:00.000Z"),
+});
+assert.ok(!("error" in byEnd));
+if (!("error" in byEnd)) {
+  assert.equal(byEnd.durationHours, 1.25);
+}
+assert.equal(
+  "error" in parseRideGroupWindow({ durationHours: 0.1 }),
+  true
+);
+assert.equal(
+  "error" in parseRideGroupWindow({ durationHours: 13 }),
+  true
+);
 
 assert.equal(
   formatGroupWhen(
@@ -118,6 +205,13 @@ assert.equal(
     new Date("2026-08-14T10:00:00.000Z")
   ),
   "So 10:00 · 3 h"
+);
+assert.ok(
+  formatGroupWhen(
+    "2026-08-16T08:00:00.000Z",
+    "2026-08-16T09:30:00.000Z",
+    new Date("2026-08-14T10:00:00.000Z")
+  ).includes("1.5 h")
 );
 assert.equal(
   formatGroupWhen(
@@ -196,6 +290,115 @@ assert.equal(
 );
 assert.equal(
   keepLocalRideGroupAfterCloud({ onServer: true, selfIsHost: true }),
+  false
+);
+
+assert.equal(
+  friendUnnamedNumbers(
+    [
+      { userId: "host", displayLabel: "Host" },
+      { userId: "bbb", displayLabel: "" },
+      { userId: "aaa", displayLabel: "" },
+    ],
+    ["host"]
+  ).aaa,
+  1
+);
+assert.equal(
+  friendRosterName({
+    displayLabel: "",
+    self: false,
+    friendN: 2,
+    fallbackSelf: "Du",
+    fallbackOther: "Gast",
+    friendLabel: (n) => `Freund ${n}`,
+  }),
+  "Freund 2"
+);
+assert.equal(platzGroupPrimaryIsInvite(true, 0), true);
+assert.equal(platzGroupPrimaryIsInvite(true, 1), false);
+assert.equal(platzGroupPrimaryIsInvite(false, 0), false);
+
+assert.equal(
+  extendRideGroupWindowEnd(
+    new Date("2026-08-19T12:00:00.000Z"),
+    new Date("2026-08-19T13:00:00.000Z"),
+    1
+  ).toISOString(),
+  "2026-08-19T14:00:00.000Z"
+);
+assert.equal(
+  extendRideGroupWindowEnd(
+    new Date("2026-08-19T12:00:00.000Z"),
+    new Date("2026-08-19T23:00:00.000Z"),
+    1
+  ).toISOString(),
+  "2026-08-20T00:00:00.000Z"
+);
+assert.equal(
+  extendRideGroupWindowEnd(
+    new Date("2026-08-19T12:00:00.000Z"),
+    new Date("2026-08-19T11:00:00.000Z"),
+    1
+  ).toISOString(),
+  "2026-08-19T13:00:00.000Z"
+);
+assert.equal(
+  extendRideGroupWindowEnd(
+    new Date("2026-08-19T12:00:00.000Z"),
+    new Date("2026-08-19T13:00:00.000Z"),
+    0.5
+  ).toISOString(),
+  "2026-08-19T13:30:00.000Z"
+);
+assert.equal(
+  extendRideGroupWindowEnd(
+    new Date("2026-08-19T12:00:00.000Z"),
+    new Date("2026-08-19T13:00:00.000Z"),
+    2
+  ).toISOString(),
+  "2026-08-19T15:00:00.000Z"
+);
+const customEnd = parseRideGroupExtend({
+  now: new Date("2026-08-19T12:00:00.000Z"),
+  currentEnd: new Date("2026-08-19T13:00:00.000Z"),
+  newEnd: "2026-08-19T16:00:00.000Z",
+});
+assert.ok(!("error" in customEnd));
+if (!("error" in customEnd)) {
+  assert.equal(customEnd.end.toISOString(), "2026-08-19T16:00:00.000Z");
+}
+const cappedEnd = parseRideGroupExtend({
+  now: new Date("2026-08-19T12:00:00.000Z"),
+  currentEnd: new Date("2026-08-19T13:00:00.000Z"),
+  newEnd: "2026-08-20T08:00:00.000Z",
+});
+assert.ok(!("error" in cappedEnd));
+if (!("error" in cappedEnd)) {
+  assert.equal(cappedEnd.end.toISOString(), "2026-08-20T00:00:00.000Z");
+}
+assert.equal(
+  "error" in
+    parseRideGroupExtend({
+      now: new Date("2026-08-19T12:00:00.000Z"),
+      currentEnd: new Date("2026-08-19T13:00:00.000Z"),
+      addHours: 0.1,
+    }),
+  true
+);
+assert.equal(
+  isRideGroupExtendBody({
+    id: "2e1d69e9-0889-4710-bc30-3ab866577bfb",
+    addHours: 0.5,
+  }),
+  true
+);
+assert.equal(
+  isRideGroupExtendBody({
+    id: "2e1d69e9-0889-4710-bc30-3ab866577bfb",
+    savedRouteId: "r-bodensee-road",
+    addHours: 1,
+  }),
   false
 );
 

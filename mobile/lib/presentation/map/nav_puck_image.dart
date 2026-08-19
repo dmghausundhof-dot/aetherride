@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import 'rider_map_image.dart';
 
 /// MapLibre image-id prefix. Pro Style: [navPuckImageId].
 const kNavPuckImageId = 'aether-nav-puck';
@@ -19,8 +20,9 @@ const kNativeLocationPuckLayerIds = <String>[
   'mapbox-location-pulsing-circle-layer',
 ];
 
-/// Navi-Puck auf Karte und HUD. Default: [chevron] (Empfehlung).
+/// Navi-Puck auf Karte und HUD. Default: [rider] (3D-Fahrer).
 enum NavPuckStyle {
+  rider,
   bergA,
   topDownBike,
   hofTor,
@@ -37,6 +39,7 @@ extension NavPuckStyleX on NavPuckStyle {
   String get imageId => navPuckImageId(this);
 
   String get titleDe => switch (this) {
+        NavPuckStyle.rider => 'Fahrer',
         NavPuckStyle.bergA => 'Berg-A',
         NavPuckStyle.topDownBike => 'Rad von oben',
         NavPuckStyle.hofTor => 'Hof-Tor',
@@ -48,6 +51,8 @@ extension NavPuckStyleX on NavPuckStyle {
       };
 
   String get subtitleDe => switch (this) {
+        NavPuckStyle.rider =>
+          '3D-Fahrer im FlowLine-Orange — Standort und Tourpunkte',
         NavPuckStyle.bergA => 'Buchstabe, Berg und Pfeil in einem',
         NavPuckStyle.topDownBike =>
           'Orthografisch: Nase, Hörner, zwei Reifen — dreht mit',
@@ -56,22 +61,30 @@ extension NavPuckStyleX on NavPuckStyle {
         NavPuckStyle.kiesel => 'Weiches Dreieck mit Halo',
         NavPuckStyle.lenkerBug => 'Spitze Nase, zwei Lenkerhörner',
         NavPuckStyle.lichtkegel => 'Dunkle Scheibe, oranger Kegel',
-        NavPuckStyle.chevron => 'Standard-Navi-Pfeil',
+        NavPuckStyle.chevron => 'Klassischer Navi-Pfeil, etwas kleiner',
       };
 
-  bool get isRecommended => this == NavPuckStyle.chevron;
+  bool get isRecommended => this == NavPuckStyle.rider;
+
+  bool get usesRiderAsset => this == NavPuckStyle.rider;
+
+  /// 3D-Fahrer größer, klassischer Pfeil etwas kleiner.
+  double get mapIconSize => usesRiderAsset
+      ? RiderMapIconSize.nav
+      : RiderMapIconSize.navClassic;
 
   static NavPuckStyle fromId(String? raw) {
     for (final s in NavPuckStyle.values) {
       if (s.id == raw) return s;
     }
-    return NavPuckStyle.chevron;
+    return NavPuckStyle.rider;
   }
 }
 
 String navPuckTitle(AppLocalizations? l10n, NavPuckStyle style) {
   if (l10n == null) return style.titleDe;
   return switch (style) {
+    NavPuckStyle.rider => l10n.ridePuckRider,
     NavPuckStyle.bergA => l10n.ridePuckBergA,
     NavPuckStyle.topDownBike => l10n.ridePuckTopDown,
     NavPuckStyle.hofTor => l10n.ridePuckHofTor,
@@ -86,6 +99,7 @@ String navPuckTitle(AppLocalizations? l10n, NavPuckStyle style) {
 String navPuckSubtitle(AppLocalizations? l10n, NavPuckStyle style) {
   if (l10n == null) return style.subtitleDe;
   return switch (style) {
+    NavPuckStyle.rider => l10n.ridePuckRiderSub,
     NavPuckStyle.bergA => l10n.ridePuckBergASub,
     NavPuckStyle.topDownBike => l10n.ridePuckTopDownSub,
     NavPuckStyle.hofTor => l10n.ridePuckHofTorSub,
@@ -98,6 +112,14 @@ String navPuckSubtitle(AppLocalizations? l10n, NavPuckStyle style) {
 }
 
 String navPuckImageId(NavPuckStyle style) => '$kNavPuckImageId-${style.id}';
+
+/// Offizielle Profil-Wahl: 3D-Standard plus klassischer Pfeil.
+/// Ein bereits gespeicherter Experiment-Stil bleibt sichtbar, bis man wechselt.
+List<NavPuckStyle> navPuckProfileChoices(NavPuckStyle current) {
+  const core = [NavPuckStyle.rider, NavPuckStyle.chevron];
+  if (core.contains(current)) return core;
+  return [...core, current];
+}
 
 /// Viewport- vs. map-aligned puck rotation.
 ///
@@ -138,6 +160,7 @@ void paintNavPuck(
   final chrome = AppColors.chrome;
   final innerC = inner ??
       switch (style) {
+        NavPuckStyle.rider => chrome,
         NavPuckStyle.bergA => chrome,
         NavPuckStyle.topDownBike => const Color(0xFFFFFFFF),
         NavPuckStyle.kiesel => const Color(0xFFFFFFFF),
@@ -148,6 +171,8 @@ void paintNavPuck(
         NavPuckStyle.lichtkegel => chrome,
       };
   switch (style) {
+    case NavPuckStyle.rider:
+      _paintRiderFallback(canvas, sq, fillC, strokeC);
     case NavPuckStyle.chevron:
       _paintChevron(canvas, sq, fillC, strokeC, innerC);
     case NavPuckStyle.bergA:
@@ -165,6 +190,45 @@ void paintNavPuck(
     case NavPuckStyle.lichtkegel:
       _paintLichtkegel(canvas, sq, fillC, strokeC, chrome);
   }
+  canvas.restore();
+}
+
+void _paintRiderFallback(Canvas canvas, Size size, Color fill, Color stroke) {
+  final s = size.shortestSide;
+  canvas.save();
+  canvas.translate(s * 0.18, s * 0.16);
+  canvas.scale(s / 56);
+  final frame = Paint()
+    ..color = stroke
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.3
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round;
+  canvas.drawCircle(const Offset(10, 32), 7.2, frame);
+  canvas.drawCircle(const Offset(36, 32), 7.2, frame);
+  canvas.drawCircle(const Offset(10, 32), 1.8, Paint()..color = fill);
+  canvas.drawCircle(const Offset(36, 32), 1.8, Paint()..color = fill);
+  final diamond = Path()
+    ..moveTo(10, 32)
+    ..lineTo(19, 32)
+    ..lineTo(17, 16)
+    ..lineTo(30, 18)
+    ..lineTo(19, 32);
+  canvas.drawPath(diamond, frame);
+  canvas.drawLine(const Offset(17, 16), const Offset(10, 32), frame);
+  canvas.drawLine(const Offset(30, 18), const Offset(36, 32), frame);
+  canvas.drawLine(const Offset(30, 18), const Offset(29, 10), frame);
+  canvas.drawLine(const Offset(29, 10), const Offset(38, 9), frame);
+  canvas.drawOval(const Rect.fromLTWH(26.4, 1.4, 9.2, 6), Paint()..color = stroke);
+  canvas.drawCircle(const Offset(30.2, 7.2), 2.8, Paint()..color = const Color(0xFFE2A07A));
+  canvas.drawLine(
+    const Offset(28, 10),
+    const Offset(19, 23),
+    Paint()
+      ..color = fill
+      ..strokeWidth = 3.4
+      ..strokeCap = StrokeCap.round,
+  );
   canvas.restore();
 }
 
@@ -627,12 +691,17 @@ void _paintLichtkegel(
 
 /// PNG für MapLibre `addImage` — Spitze zeigt nach oben.
 Future<Uint8List> buildNavPuckPng({
-  NavPuckStyle style = NavPuckStyle.chevron,
+  NavPuckStyle style = NavPuckStyle.rider,
   Color? fill,
   Color? stroke,
   Color? inner,
   int pixelSize = 128,
 }) async {
+  if (style == NavPuckStyle.rider) {
+    try {
+      return await buildRiderMapPng(live: true, pixelSize: pixelSize);
+    } catch (_) {}
+  }
   final size = pixelSize.toDouble();
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
@@ -658,7 +727,7 @@ class AetherNavMark extends StatelessWidget {
     this.color,
     this.stroke,
     this.inner,
-    this.style = NavPuckStyle.chevron,
+    this.style = NavPuckStyle.rider,
     this.onLongPress,
   });
 
@@ -673,20 +742,33 @@ class AetherNavMark extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10nOrNull;
     final title = navPuckTitle(l10n, style);
+    final child = style.usesRiderAsset
+        ? Image.asset(
+            kRiderLiveAsset,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stack) => CustomPaint(
+              painter: _NavPuckPainter(
+                style: style,
+                fill: color,
+                stroke: stroke,
+                inner: inner,
+              ),
+            ),
+          )
+        : CustomPaint(
+            painter: _NavPuckPainter(
+              style: style,
+              fill: color,
+              stroke: stroke,
+              inner: inner,
+            ),
+          );
     final mark = Semantics(
       label: l10n?.ridePuckSemantics(title) ?? 'Navigation, $title',
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: CustomPaint(
-          painter: _NavPuckPainter(
-            style: style,
-            fill: color,
-            stroke: stroke,
-            inner: inner,
-          ),
-        ),
-      ),
+      child: SizedBox(width: size, height: size, child: child),
     );
     if (onLongPress == null) return mark;
     return GestureDetector(

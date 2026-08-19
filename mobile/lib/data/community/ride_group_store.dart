@@ -9,7 +9,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/community/ride_group.dart';
 import '../../domain/community/ride_group_policy.dart';
+import '../../domain/community/ride_together.dart';
 import 'ride_group_cloud.dart';
+import 'ride_together_cloud.dart';
 import 'ride_group_invite.dart';
 import '../../domain/privacy/consents.dart';
 import '../../domain/saved_route_note.dart';
@@ -93,13 +95,17 @@ class RideGroupStore {
     return null;
   }
 
-  Future<RideGroup?> groupForRide(String? savedRouteId) async {
+  Future<RideGroup?> groupForRide(
+    String? savedRouteId, {
+    String? preferGroupId,
+    String? catalogTourId,
+  }) async {
     final snap = await _load();
     final now = DateTime.now().toUtc();
-    RideGroup? newestOpen;
+    final mine = <RideGroup>[];
     for (final g in await activeGroups()) {
-      final mine = (await membersOf(g.id)).any((m) => _isSelf(snap, m.userId));
-      if (!mine) continue;
+      final members = await membersOf(g.id);
+      if (!members.any((m) => _isSelf(snap, m.userId))) continue;
       if (!RideGroupPolicy.canJoin(
         now: now,
         end: g.startWindowEnd,
@@ -107,16 +113,55 @@ class RideGroupStore {
       )) {
         continue;
       }
-      final routeMatch = savedRouteId != null &&
-          savedRouteId.isNotEmpty &&
-          (g.savedRouteId == savedRouteId || g.catalogTourId == savedRouteId);
-      if (routeMatch) return g;
-      if (g.onServer &&
-          (newestOpen == null || g.createdAt.isAfter(newestOpen.createdAt))) {
-        newestOpen = g;
+      mine.add(g);
+    }
+    final counts = <String, int>{};
+    for (final m in snap.members) {
+      counts[m.groupId] = (counts[m.groupId] ?? 0) + 1;
+    }
+    final prefer = preferGroupId?.trim() ?? '';
+    if (prefer.isNotEmpty &&
+        !RideTogetherPolicy.isFreerideRide(savedRouteId)) {
+      for (final g in mine) {
+        if (g.id == prefer) return g;
       }
     }
-    return newestOpen;
+    return RideTogetherPolicy.pickGroupForRide(
+      rideRouteId: savedRouteId,
+      catalogTourId: catalogTourId,
+      groups: mine,
+      memberCounts: counts,
+    );
+  }
+
+  Future<void> adoptCloudBundle(RideGroupCloudBundle bundle) async {
+    if (bundle.groups.isEmpty && bundle.members.isEmpty) return;
+    await _save(_mergeCloud(await _load(), bundle));
+  }
+
+  /// Ride-Stopp: dieses Gerät steigt aus. Die Session bleibt, wenn noch jemand da ist.
+  Future<void> endFreerideSession() async {
+    final snap = await _load();
+    final now = DateTime.now().toUtc();
+    final mine = <RideGroup>[];
+    for (final g in await activeGroups()) {
+      if (!RideTogetherPolicy.isSessionRouteId(g.savedRouteId)) continue;
+      if (!(await membersOf(g.id)).any((m) => _isSelf(snap, m.userId))) {
+        continue;
+      }
+      if (!RideGroupPolicy.canJoin(
+        now: now,
+        end: g.startWindowEnd,
+        status: g.status,
+      )) {
+        continue;
+      }
+      mine.add(g);
+    }
+    mine.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    for (final g in mine) {
+      await leaveGroup(g.id);
+    }
   }
 
   Future<RideGroup> createGroup({
@@ -126,13 +171,13 @@ class RideGroupStore {
     required SavedRouteMeta? meta,
     DateTime? windowStart,
     DateTime? windowEnd,
-    int? durationHours,
+    num? durationHours,
     String? meetingPoint,
     String displayLabel = 'Du',
     RideGroupVisibility visibility = RideGroupVisibility.private,
   }) async {
     if (!RideGroupPolicy.canAttachCourse(savedRouteId, meta)) {
-      throw StateError('Nur freigegebene oder Katalog-Touren.');
+      throw StateError('Zuerst eine Tour wählen oder selbst planen.');
     }
     final session = await RideGroupCloud.sessionState();
     if (session == 'signedOut') {
@@ -140,11 +185,18 @@ class RideGroupStore {
       throw StateError(RideGroupCloud.needLoginNote);
     }
     final snap = await _load();
-    final hours = durationHours ??
-        (windowStart != null && windowEnd != null
-            ? windowEnd.difference(windowStart).inHours.clamp(1, 12).toInt()
-            : 3);
-    final start = windowStart ?? DateTime.now().toUtc();
+    final parsed = RideGroupPolicy.parseWindow(
+      startsAt: windowStart ?? DateTime.now().toUtc(),
+      endsAt: windowEnd,
+      durationHours: windowEnd == null ? (durationHours ?? 3) : null,
+      now: DateTime.now().toUtc(),
+    );
+    if (parsed == null) {
+      lastNote = 'Startzeit und Dauer (15 Min–12 h) nötig.';
+      throw StateError(lastNote!);
+    }
+    final start = parsed.start;
+    final hours = parsed.durationHours;
     final cloud = await RideGroupCloud.create(
       savedRouteId: savedRouteId,
       catalogTourId: catalogTourId,
@@ -183,12 +235,12 @@ class RideGroupStore {
       catalogTourId: catalogTourId,
       title: title.trim().isEmpty ? 'Gruppe' : title.trim(),
       startWindowStart: start,
-      startWindowEnd: windowEnd ?? start.add(Duration(hours: hours)),
+      startWindowEnd: parsed.end,
       meetingPoint: meetingPoint?.trim().isEmpty == true
           ? null
           : meetingPoint?.trim(),
       joinCode: RideGroupPolicy.generateJoinCode(),
-      status: RideGroupStatus.open,
+      status: parsed.status,
       livePinsAllowed: true,
       createdAt: now,
       visibility: visibility,
@@ -224,7 +276,7 @@ class RideGroupStore {
   }
 
   Future<RideGroup?> peekByCode(String code) async {
-    final normalized = code.trim().toUpperCase();
+    final normalized = RideGroupPolicy.normalizeJoinCode(code);
     if (normalized.length != RideGroupPolicy.joinCodeLen) return null;
     for (final g in await activeGroups()) {
       if (g.joinCode == normalized) return g;
@@ -237,6 +289,31 @@ class RideGroupStore {
     RideGroup? group;
     for (final g in snap.groups) {
       if (g.id == groupId) group = g;
+    }
+    if (group != null &&
+        RideTogetherPolicy.isSessionRouteId(group.savedRouteId)) {
+      if (group.onServer) {
+        await RideTogetherCloud.end(group.id);
+      }
+      final others = [
+        for (final m in snap.members)
+          if (m.groupId == groupId && !_isSelf(snap, m.userId)) m,
+      ];
+      if (others.isEmpty) {
+        await closeGroup(groupId);
+      } else {
+        await _save(
+          snap.copyWith(
+            members: [
+              for (final m in snap.members)
+                if (!(m.groupId == groupId && _isSelf(snap, m.userId))) m,
+            ],
+          ),
+        );
+      }
+      await RideTogetherCloud.stopLook();
+      lastNote = 'Ausgestiegen — die anderen fahren weiter.';
+      return;
     }
     final host = group != null && _isSelf(snap, group.hostUserId);
     if (group != null && group.onServer) {
@@ -282,7 +359,7 @@ class RideGroupStore {
   }) async {
     final raw = (groupId ?? code ?? '').trim();
     final asId = RideGroupPolicy.isGroupId(raw);
-    final normalized = raw.toUpperCase();
+    final normalized = RideGroupPolicy.normalizeJoinCode(raw);
     final asCode = !asId &&
         normalized.length == RideGroupPolicy.joinCodeLen;
     if (!asId && !asCode && (token == null || token.isEmpty)) {
@@ -433,7 +510,7 @@ class RideGroupStore {
     if (cloud != null && cloud.ok && cloud.bundle!.groups.isNotEmpty) {
       updated = cloud.bundle!.groups.first;
       lastNote = visibility == RideGroupVisibility.public
-          ? 'Auf dem Platz gelistet — wer den Link hat, kann beitreten.'
+          ? 'Auf dem Platz gelistet — Link oder Code reicht.'
           : 'Nur per Link — nicht auf dem Platz.';
     }
     await _save(
@@ -578,6 +655,64 @@ class RideGroupStore {
     }
   }
 
+  Future<bool> extendWindow(
+    String groupId, {
+    num hours = 1,
+    DateTime? newEnd,
+  }) async {
+    final snap = await _load();
+    RideGroup? group;
+    for (final g in snap.groups) {
+      if (g.id == groupId) group = g;
+    }
+    if (group == null || group.status == RideGroupStatus.closed) return false;
+    if (!_isSelf(snap, group.hostUserId)) return false;
+    if (newEnd == null && !RideGroupPolicy.isValidDurationHours(hours)) {
+      lastNote = 'Zeit liegt außerhalb des Rahmens.';
+      return false;
+    }
+    if (newEnd != null) {
+      final n = DateTime.now().toUtc();
+      final base = group.startWindowEnd.toUtc().isAfter(n)
+          ? group.startWindowEnd.toUtc()
+          : n;
+      if (!newEnd.toUtc().isAfter(base)) {
+        lastNote = 'Zeit liegt außerhalb des Rahmens.';
+        return false;
+      }
+    }
+    var next = RideGroupPolicy.extendWindowEnd(
+      now: DateTime.now(),
+      end: group.startWindowEnd,
+      hours: hours,
+      newEnd: newEnd,
+    );
+    if (group.onServer) {
+      final cloud = await RideGroupCloud.extendWindow(
+        id: groupId,
+        addHours: hours,
+        newEnd: newEnd,
+      );
+      if (cloud != null && cloud.ok && cloud.bundle!.groups.isNotEmpty) {
+        next = cloud.bundle!.groups.first.startWindowEnd;
+      } else if (cloud != null && !cloud.ok && cloud.status >= 400) {
+        lastNote = cloud.note ?? 'Fenster nicht verlängert.';
+        return false;
+      }
+    }
+    final fresh = await _load();
+    await _save(
+      fresh.copyWith(
+        groups: [
+          for (final g in fresh.groups)
+            if (g.id == groupId) g.copyWith(startWindowEnd: next) else g,
+        ],
+      ),
+    );
+    lastNote = 'Fenster verlängert.';
+    return true;
+  }
+
   Future<void> closeGroup(String groupId) async {
     final snap = await _load();
     await _save(
@@ -598,6 +733,8 @@ class RideGroupStore {
                 livePinsAllowed: g.livePinsAllowed,
                 createdAt: g.createdAt,
                 onServer: g.onServer,
+                visibility: g.visibility,
+                meetingPoint: g.meetingPoint,
               )
             else
               g,
@@ -684,26 +821,94 @@ class RideGroupStore {
     await _applyPresenceBundle(groupId, cloud.bundle!);
   }
 
+  /// Presence-GET/POST liefert das volle Roster. Ohne Merge bleibt der
+  /// Freund lokal unbekannt — [visiblePins] blendet ihn als Nicht-Mitglied aus.
+  @visibleForTesting
+  Future<void> applyPresenceFromCloud(
+    String groupId,
+    RideGroupCloudBundle bundle,
+  ) =>
+      _applyPresenceBundle(groupId, bundle);
+
   Future<void> _applyPresenceBundle(
     String groupId,
     RideGroupCloudBundle bundle,
   ) async {
     final snap = await _load();
-    final opt = {for (final m in bundle.members) m.userId: m.liveOptIn};
+    final incoming = [
+      for (final m in bundle.members)
+        if (m.groupId == groupId) m,
+    ];
+    RideGroup? incomingGroup;
+    for (final g in bundle.groups) {
+      if (g.id == groupId) incomingGroup = g;
+    }
+    final groups = incomingGroup == null
+        ? snap.groups
+        : [
+            if (!snap.groups.any((g) => g.id == groupId))
+              RideGroup(
+                id: incomingGroup.id,
+                hostUserId: incomingGroup.hostUserId,
+                savedRouteId: incomingGroup.savedRouteId,
+                catalogTourId: incomingGroup.catalogTourId,
+                title: incomingGroup.title,
+                startWindowStart: incomingGroup.startWindowStart,
+                startWindowEnd: incomingGroup.startWindowEnd,
+                joinCode: incomingGroup.joinCode,
+                status: incomingGroup.status,
+                livePinsAllowed: incomingGroup.livePinsAllowed,
+                createdAt: incomingGroup.createdAt,
+                onServer: true,
+                visibility: incomingGroup.visibility,
+                meetingPoint: incomingGroup.meetingPoint,
+              ),
+            for (final g in snap.groups)
+              if (g.id == groupId)
+                RideGroup(
+                  id: g.id,
+                  hostUserId: incomingGroup.hostUserId.isNotEmpty
+                      ? incomingGroup.hostUserId
+                      : g.hostUserId,
+                  savedRouteId: incomingGroup.savedRouteId.isNotEmpty
+                      ? incomingGroup.savedRouteId
+                      : g.savedRouteId,
+                  catalogTourId:
+                      incomingGroup.catalogTourId ?? g.catalogTourId,
+                  title: incomingGroup.title.isNotEmpty
+                      ? incomingGroup.title
+                      : g.title,
+                  startWindowStart: incomingGroup.startWindowStart,
+                  startWindowEnd: incomingGroup.startWindowEnd,
+                  joinCode: incomingGroup.joinCode.isNotEmpty
+                      ? incomingGroup.joinCode
+                      : g.joinCode,
+                  status: incomingGroup.status,
+                  livePinsAllowed: incomingGroup.livePinsAllowed,
+                  createdAt: g.createdAt,
+                  onServer: true,
+                  visibility: incomingGroup.visibility,
+                  meetingPoint: incomingGroup.meetingPoint ?? g.meetingPoint,
+                )
+              else
+                g,
+          ];
     await _save(
       snap.copyWith(
+        cloudUserId: bundle.me.isEmpty ? snap.cloudUserId : bundle.me,
+        groups: groups,
         presence: [
           for (final p in snap.presence)
             if (p.groupId != groupId) p,
           ...bundle.presence,
         ],
-        members: [
-          for (final m in snap.members)
-            if (m.groupId == groupId && opt.containsKey(m.userId))
-              m.copyWith(liveOptIn: opt[m.userId])
-            else
-              m,
-        ],
+        members: incoming.isEmpty
+            ? snap.members
+            : [
+                for (final m in snap.members)
+                  if (m.groupId != groupId) m,
+                ...incoming,
+              ],
       ),
     );
   }

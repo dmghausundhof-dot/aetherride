@@ -3,7 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:aetherride_mobile/core/theme/app_theme.dart';
 import 'package:aetherride_mobile/presentation/map/nav_puck_image.dart';
+import 'package:aetherride_mobile/presentation/map/nav_puck_profile_tile.dart';
 import 'package:aetherride_mobile/presentation/map/nav_puck_style_sheet.dart';
+import 'package:aetherride_mobile/presentation/map/rider_map_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -49,22 +51,51 @@ void main() {
     );
   });
 
-  test('NavPuckStyle fromId default ist Chevron', () {
-    expect(NavPuckStyleX.fromId(null), NavPuckStyle.chevron);
-    expect(NavPuckStyleX.fromId('nope'), NavPuckStyle.chevron);
+  test('3D-Puck ist größer als der klassische Pfeil', () {
+    expect(NavPuckStyle.rider.mapIconSize, RiderMapIconSize.nav);
+    expect(NavPuckStyle.chevron.mapIconSize, RiderMapIconSize.navClassic);
+    expect(
+      NavPuckStyle.chevron.mapIconSize,
+      lessThan(NavPuckStyle.rider.mapIconSize),
+    );
+    expect(NavPuckStyle.bergA.mapIconSize, RiderMapIconSize.navClassic);
+  });
+
+  test('Profil-Wahl ist 3D plus klassischer Pfeil', () {
+    expect(navPuckProfileChoices(NavPuckStyle.rider), [
+      NavPuckStyle.rider,
+      NavPuckStyle.chevron,
+    ]);
+    expect(navPuckProfileChoices(NavPuckStyle.chevron), [
+      NavPuckStyle.rider,
+      NavPuckStyle.chevron,
+    ]);
+    expect(navPuckProfileChoices(NavPuckStyle.kiesel), [
+      NavPuckStyle.rider,
+      NavPuckStyle.chevron,
+      NavPuckStyle.kiesel,
+    ]);
+  });
+
+  test('NavPuckStyle fromId default ist Fahrer', () {
+    expect(NavPuckStyleX.fromId(null), NavPuckStyle.rider);
+    expect(NavPuckStyleX.fromId('nope'), NavPuckStyle.rider);
     expect(NavPuckStyleX.fromId('chevron'), NavPuckStyle.chevron);
+    expect(NavPuckStyleX.fromId('rider'), NavPuckStyle.rider);
     expect(NavPuckStyleX.fromId('bergA'), NavPuckStyle.bergA);
     expect(NavPuckStyleX.fromId('kiesel'), NavPuckStyle.kiesel);
     expect(NavPuckStyleX.fromId('topDownBike'), NavPuckStyle.topDownBike);
-    expect(NavPuckStyle.chevron.isRecommended, isTrue);
+    expect(NavPuckStyle.rider.isRecommended, isTrue);
+    expect(NavPuckStyle.chevron.isRecommended, isFalse);
     expect(NavPuckStyle.bergA.isRecommended, isFalse);
     expect(NavPuckStyle.topDownBike.isRecommended, isFalse);
-    expect(NavPuckStyle.values.length, greaterThanOrEqualTo(8));
+    expect(NavPuckStyle.values.length, greaterThanOrEqualTo(9));
   });
 
   test('jede Style-Id hat eigene MapLibre image id', () {
     final ids = {for (final s in NavPuckStyle.values) s.imageId};
     expect(ids.length, NavPuckStyle.values.length);
+    expect(NavPuckStyle.rider.imageId, 'aether-nav-puck-rider');
     expect(NavPuckStyle.bergA.imageId, 'aether-nav-puck-bergA');
     expect(
       NavPuckStyle.topDownBike.imageId,
@@ -112,6 +143,7 @@ void main() {
             child: AetherNavMark(
               size: 44,
               color: AppColors.accent,
+              style: NavPuckStyle.chevron,
             ),
           ),
         ),
@@ -129,7 +161,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: NavPuckStylePicker(
-            current: NavPuckStyle.chevron,
+            current: NavPuckStyle.rider,
             onSelect: (s) => picked = s,
           ),
         ),
@@ -149,5 +181,31 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('nav-puck-style-kiesel')));
     await tester.tap(find.byKey(const Key('nav-puck-style-kiesel')));
     expect(picked, NavPuckStyle.kiesel);
+  });
+
+  testWidgets('Profil-Kachel öffnet 3D und klassischen Pfeil', (tester) async {
+    NavPuckStyle saved = NavPuckStyle.rider;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: NavPuckProfileTile(
+            loadStyle: () async => saved,
+            onSave: (s) async => saved = s,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(NavPuckProfileTile.tileKey), findsOneWidget);
+    expect(find.text('Navi-Symbol'), findsOneWidget);
+    await tester.tap(find.byKey(NavPuckProfileTile.tileKey));
+    await tester.pumpAndSettle();
+    expect(find.text('Fahrer'), findsWidgets);
+    expect(find.text('Chevron'), findsOneWidget);
+    expect(find.text('Kiesel'), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('nav-puck-style-chevron')));
+    await tester.tap(find.byKey(const Key('nav-puck-style-chevron')));
+    await tester.pumpAndSettle();
+    expect(saved, NavPuckStyle.chevron);
   });
 }

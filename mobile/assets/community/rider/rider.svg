@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Fahrer">
+  <title>FlowLine Fahrer</title>
+  <circle cx="64" cy="64" r="58" fill="#FF6A00"/>
+  <circle cx="64" cy="64" r="50" fill="#1F1F1F"/>
+  <!-- wheels -->
+  <circle cx="38" cy="92" r="17" fill="none" stroke="#F4F1EC" stroke-width="3.4"/>
+  <circle cx="94" cy="92" r="17" fill="none" stroke="#F4F1EC" stroke-width="3.4"/>
+  <circle cx="38" cy="92" r="3.2" fill="#FF6A00"/>
+  <circle cx="94" cy="92" r="3.2" fill="#FF6A00"/>
+  <!-- frame -->
+  <path d="M38 92 L56 92 L50 64 L80 68 L56 92" fill="none" stroke="#F4F1EC" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M50 64 L38 92" fill="none" stroke="#F4F1EC" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M80 68 L94 92" fill="none" stroke="#F4F1EC" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M80 68 L78 54 L96 52" fill="none" stroke="#F4F1EC" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M48 60 L62 61" fill="none" stroke="#FF6A00" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- rider: helmet, head, torso, bent arm, pedaling legs -->
+  <ellipse cx="84" cy="33" rx="10" ry="7.5" fill="#2A2A30" transform="rotate(-18 84 33)"/>
+  <circle cx="82" cy="37" r="6.2" fill="#E2A07A"/>
+  <rect x="83" y="35" width="7" height="3.2" rx="1.4" fill="#1F1F1F" transform="rotate(-12 86.5 36.6)"/>
+  <path d="M76 44 Q70 52 64 62 Q60 70 56 80" fill="none" stroke="#FF6A00" stroke-width="7.2" stroke-linecap="round"/>
+  <path d="M62 70 Q58 76 52 84" fill="none" stroke="#2A2A30" stroke-width="6" stroke-linecap="round"/>
+  <path d="M74 46 Q80 52 90 50" fill="none" stroke="#FF6A00" stroke-width="4.4" stroke-linecap="round"/>
+  <path d="M90 50 L96 52" fill="none" stroke="#E2A07A" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M60 68 Q54 78 48 90" fill="none" stroke="#E2A07A" stroke-width="4.2" stroke-linecap="round"/>
+  <path d="M60 68 Q70 74 72 90" fill="none" stroke="#E2A07A" stroke-width="4.2" stroke-linecap="round"/>
+  <ellipse cx="47" cy="92" rx="4.2" ry="2" fill="#2A2A30"/>
+  <ellipse cx="73" cy="92" rx="4.2" ry="2" fill="#2A2A30"/>
+</svg>

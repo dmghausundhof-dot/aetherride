@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:uuid/uuid.dart';
@@ -16,29 +17,41 @@ import '../../core/config.dart';
 import '../../core/errors/friendly_error.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/nav_hud_tokens.dart';
+import '../../data/community/ride_group_cloud.dart';
 import '../../data/community/ride_group_store.dart';
+import '../../data/community/ride_together_look.dart';
 import '../../data/local/ride_prefs.dart';
+import '../../data/ride/ride_media_io.dart';
 import '../../data/routing/ride_to_saved.dart';
 import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
+import '../../data/routing/map_style_url.dart';
 import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/offline_pack_dirs.dart';
 import '../../data/routing/routing_client.dart';
 import '../../data/sensor/bike_ble_store.dart';
 import '../../domain/active_route.dart';
+import '../../domain/routing/offline_rejoin.dart';
 import '../../domain/community/ride_group.dart';
+import '../../domain/community/ride_group_pin.dart';
 import '../../domain/community/ride_group_policy.dart';
+import '../../domain/community/ride_together.dart';
 import '../../domain/bike.dart';
 import '../../domain/ble.dart';
 import '../../domain/ble/bike_ble_kind.dart';
 import '../../domain/ble/ride_ble_samples.dart';
 import '../../domain/ebike/range.dart';
 import '../../domain/hud_bike_peek.dart';
+import '../../domain/hud_lean_calibration.dart';
 import '../../domain/hud_media.dart';
+import '../../domain/privacy/consents.dart';
 import '../../domain/ride.dart';
-import '../../domain/ride_activity.dart';
 import '../../domain/ride/gps_teleport.dart';
+import '../../domain/ride/ride_telemetry.dart';
+import '../../domain/ride_activity.dart';
 import '../../domain/ride_auto_lock.dart';
+import '../../domain/ride_journal.dart';
 import '../../domain/routing/battery_preset.dart';
 import '../../domain/routing/camera_follow_smooth.dart';
 import '../../domain/routing/connectivity_chip.dart';
@@ -54,6 +67,7 @@ import '../../domain/routing/upcoming_rail.dart';
 import '../../domain/sensor.dart';
 import '../../domain/sensor/live_hints.dart';
 import '../../domain/sport/discipline_ux.dart';
+import '../../domain/tours/tour_akte.dart';
 import '../../l10n/app_locale.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
@@ -62,9 +76,12 @@ import '../../native/hud_media_channel.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../map/friend_pin_image.dart';
 import '../map/nav_puck_image.dart';
 import '../map/nav_puck_overlay.dart';
+import '../map/rider_map_image.dart';
 import '../post_ride/post_ride_screen.dart';
+import '../shared/map_locate_fab.dart';
 import '../shared/map_ornaments.dart';
 import '../shared/status_bar_scrim.dart';
 import '../shell/shell_tabs.dart';
@@ -72,7 +89,6 @@ import 'widgets/battery_preset_sheet.dart';
 import 'widgets/reroute_sheet.dart';
 import 'widgets/ride_auto_lock_overlay.dart';
 import 'widgets/ride_bike_peek.dart';
-import 'widgets/ride_compass_chip.dart';
 import 'widgets/ride_connectivity_chip.dart';
 import 'widgets/ride_data_strip.dart';
 import 'widgets/ride_draw_tour_chip.dart';
@@ -80,7 +96,13 @@ import 'widgets/ride_media_chip.dart';
 import 'widgets/ride_network.dart';
 import 'widgets/ride_next_turn_banner.dart';
 import 'widgets/ride_off_route_banner.dart';
+import 'widgets/ride_group_extend_sheet.dart';
+import 'widgets/ride_group_friend_sheet.dart';
+import 'widgets/ride_group_live_bar.dart';
 import 'widgets/ride_group_pin_banner.dart';
+import 'widgets/ride_hud_layer_bar.dart';
+import 'widgets/ride_hud_live_dock.dart';
+import 'widgets/ride_together_sheet.dart';
 import 'widgets/ride_pre_start_chrome.dart';
 import 'widgets/ride_upcoming_rail.dart';
 
@@ -125,6 +147,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   String? _rideId;
   bool _rawUploadConsent = false;
+  RideJournal _rideJournal = RideJournal.empty;
+  List<PrivacyZone> _privacyZones = const [];
+  bool _pickingPhoto = false;
   final List<SensorBlock> _chunkBuf = [];
   int _chunkSeq = 0;
   static const _chunkEvery = 30;
@@ -149,10 +174,18 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   MapLibreMapController? _rideMap;
   final NavPuckOverlay _navPuck = NavPuckOverlay();
+  final List<Symbol> _friendPinSymbols = [];
+  final Map<String, String> _friendPinUserBySymbol = {};
+  Symbol? _joinMarkSymbol;
+  RideGroupHudSnap? _groupHud;
+  bool _skipHudToast = false;
+  RideGroupHudNote? _lastHudToast;
+  DateTime? _lastHudToastAt;
   UserLocation? _lastUserLoc;
   int _mapDrawSkip = 0;
   int _rideMapDrawGen = 0;
   final RideGroupStore _rideGroups = RideGroupStore();
+  late final RideTogetherLook _together;
   DateTime? _lastGroupPresenceAt;
   Timer? _groupPinPoll;
   String _mapStyle = AppConfig.mapStyleUrl;
@@ -175,6 +208,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
   /// Clean Mode mid-ride: max ~4 chrome elements (N-01). Pro via data-strip tap.
   bool _cleanMode = true;
   bool _drawingTour = false;
+
+  /// Mount-zero for HUD lean — every clamp sits at a different rest angle.
+  double _leanOffsetDeg = 0;
 
   /// User-Toggle (zusätzlich zu dart-define AETHER_AUTO_REROUTE).
   bool _autoRerouteEnabled = AppConfig.autoReroute;
@@ -200,12 +236,13 @@ class RideScreenState extends ConsumerState<RideScreen> {
   /// N-04/N-09: default Pocket = no Keep-Screen-On.
   RideBatteryPreset _batteryPreset = RideBatteryPreset.pocket;
 
-  /// Map / HUD nav mark. Default Berg-A until RidePrefs loads.
-  NavPuckStyle _navPuckStyle = NavPuckStyle.chevron;
+  /// Map / HUD nav mark. Default 3D-Fahrer until RidePrefs loads.
+  NavPuckStyle _navPuckStyle = NavPuckStyle.rider;
 
   /// N-03/N-08 connectivity honesty.
   bool _networkOnline = true;
   bool _offlineMapAvailable = false;
+  bool _offlineRoutingReady = false;
   ConnectivityChipState _connectivityState = ConnectivityChipState.live;
   Timer? _connectivityTimer;
   StreamSubscription<RideNotificationAction>? _notifActionSub;
@@ -245,14 +282,14 @@ class RideScreenState extends ConsumerState<RideScreen> {
   @override
   void initState() {
     super.initState();
+    _together = RideTogetherLook(onAdopt: _adoptTogetherSnap);
+    _together.addListener(_onTogetherLook);
     unawaited(_initTts());
     _startAutoSunlight();
     unawaited(_loadRidePrefs());
-    unawaited(
-      AppConfig.resolveMapStyleUrl().then((s) {
-        if (mounted) setState(() => _mapStyle = s);
-      }),
-    );
+    RidePrefs.navPuckRevision.addListener(_onNavPuckPref);
+    unawaited(_resolveRideHudStyle());
+    unawaited(_refreshGroupHudOnly());
     // Deep-link may set rideAutostart before this State mounts — ref.listen
     // only fires on *changes*, so consume a pending true on the first frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -369,38 +406,58 @@ class RideScreenState extends ConsumerState<RideScreen> {
     return true;
   }
 
+  /// HUD stays on street-level tiles. Local DACH z11 is overview-only
+  /// (`maxzoom: 11`) and leaves the ride map black at z15.
+  Future<void> _resolveRideHudStyle() async {
+    final live = AppConfig.mapStyleUrl;
+    String? resolved;
+    try {
+      resolved = await AppConfig.resolveMapStyleUrl();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _mapStyle = rideHudStyleUrl(liveStyle: live, resolvedStyle: resolved);
+    });
+  }
+
   Future<void> _loadRidePrefs() async {
     final preset = await RidePrefs.batteryPreset();
     final puck = NavPuckStyleX.fromId(await RidePrefs.navPuckStyleId());
     final mapOk = await _probeOfflineMapAvailable();
+    final routingOk = await _probeOfflineRoutingReady();
     final mediaDismissed = await RidePrefs.hudMediaPromptDismissed();
+    final leanOffset = await RidePrefs.leanOffsetDeg();
     if (!mounted) return;
     setState(() {
       _batteryPreset = preset;
       _navPuckStyle = puck;
       _offlineMapAvailable = mapOk;
+      _offlineRoutingReady = routingOk;
       _mediaPromptDismissed = mediaDismissed || _mediaPromptDismissed;
+      _leanOffsetDeg = leanOffset;
     });
     final c = _rideMap;
     if (c != null) unawaited(_navPuck.setStyle(c, puck));
   }
 
-  /// True only with a MapLibre OfflineRegion or an explicit local style.
-  /// A routing graph without basemap tiles is not an offline map.
+  /// True only when the HUD would paint from local street tiles.
+  /// Overview PMTiles / DACH z11 are not an offline ride map.
   Future<bool> _probeOfflineMapAvailable() async {
-    if (await OfflineBasemap.hasAnyRegion()) return true;
     try {
-      final m = await OfflineMapsPrefs.read();
-      if (m['basemapReady'] == true) return true;
-      final style = (m['pmtilesUrl'] as String?)?.trim() ?? '';
-      if (style.isEmpty) return false;
-      if (style.startsWith('file:') ||
-          style.startsWith('/') ||
-          style.contains('asset://') ||
-          style.startsWith('pmtiles://')) {
-        return true;
-      }
+      final resolved = await AppConfig.resolveMapStyleUrl();
+      return rideHudUsesOfflineStreetTiles(
+        liveStyle: AppConfig.mapStyleUrl,
+        resolvedStyle: resolved,
+      );
+    } catch (_) {
       return false;
+    }
+  }
+
+  /// Activated region graph — TBT/Dijkstra without street tiles.
+  Future<bool> _probeOfflineRoutingReady() async {
+    try {
+      return await OfflinePackDirs.hasLegitimateActivatedPack();
     } catch (_) {
       return false;
     }
@@ -409,17 +466,25 @@ class RideScreenState extends ConsumerState<RideScreen> {
   Future<void> _refreshConnectivityChip() async {
     final online = await rideHasNetwork();
     unawaited(OfflineBasemap.applyNetworkMode(online: online));
+    final mapOk = await _probeOfflineMapAvailable();
+    final routingOk = await _probeOfflineRoutingReady();
     final route = ref.read(activeRouteProvider);
     final hasRoute = route != null && route.coordinates.length >= 2;
     final state = resolveConnectivityChip(
       online: online,
       hasRouteGeometry: hasRoute,
-      offlineMapAvailable: _offlineMapAvailable,
+      offlineMapAvailable: mapOk,
+      offlineRoutingReady: routingOk,
     );
     if (!mounted) return;
-    if (online != _networkOnline || state != _connectivityState) {
+    if (online != _networkOnline ||
+        mapOk != _offlineMapAvailable ||
+        routingOk != _offlineRoutingReady ||
+        state != _connectivityState) {
       setState(() {
         _networkOnline = online;
+        _offlineMapAvailable = mapOk;
+        _offlineRoutingReady = routingOk;
         _connectivityState = state;
       });
     }
@@ -438,6 +503,18 @@ class RideScreenState extends ConsumerState<RideScreen> {
       await WakelockPlus.disable();
     }
     if (mounted) setState(() {});
+  }
+
+  void _onNavPuckPref() {
+    unawaited(_reloadNavPuckStyle());
+  }
+
+  Future<void> _reloadNavPuckStyle() async {
+    final puck = NavPuckStyleX.fromId(await RidePrefs.navPuckStyleId());
+    if (!mounted) return;
+    setState(() => _navPuckStyle = puck);
+    final c = _rideMap;
+    if (c != null) unawaited(_navPuck.setStyle(c, puck));
   }
 
   Future<void> _applyNavPuckStyle(NavPuckStyle style) async {
@@ -588,9 +665,17 @@ class RideScreenState extends ConsumerState<RideScreen> {
   LatLng _mapTarget(ActiveRoute? route) =>
       _mapTargetOrNull(route) ?? _regionOverview;
 
+  void _forgetRideSymbols() {
+    _joinMarkSymbol = null;
+    _friendPinSymbols.clear();
+    _friendPinUserBySymbol.clear();
+  }
+
   void _onRideMapCreated(MapLibreMapController c) {
     _rideMap = c;
     _navPuck.reset();
+    _forgetRideSymbols();
+    c.onSymbolTapped.add(_onFriendPinTapped);
   }
 
   Future<void> _onRideStyleLoaded() async {
@@ -599,6 +684,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
     if (c == null) return;
     _bikeOverlayAttached = false;
     _navPuck.reset();
+    _forgetRideSymbols();
+    await fixBasemapWaterLayers(
+      c,
+      coarseOverview: styleHasCoarseWaterPolygons(_mapStyle),
+    );
     if (styleNeedsGrayStreetBoost(_mapStyle)) {
       await boostBasemapStreetContrast(c);
     } else {
@@ -695,15 +785,126 @@ class RideScreenState extends ConsumerState<RideScreen> {
     return user?.heading?.trueHeading ?? user?.heading?.magneticHeading ?? 0;
   }
 
-  Widget _hudCompass() {
-    return RideCompassChip(
-      headingDeg: _headingForPuck(_lastUserLoc),
-      northUp: _northUp,
-      onToggle: () {
-        _bumpIdle();
-        setState(() => _northUp = !_northUp);
-        if (_cameraFollow) unawaited(_drawRideMap());
-      },
+  Future<void> _captureRidePhoto() async {
+    if (_pickingPhoto) return;
+    final l10n = _l10n;
+    if (!_rideJournal.canAddPhoto) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.postRidePhotosMax(RideJournal.maxPhotos))),
+      );
+      return;
+    }
+    setState(() => _pickingPhoto = true);
+    try {
+      final last = _track.isNotEmpty ? _track.last : null;
+      final media = await pickRidePhoto(
+        source: ImageSource.camera,
+        journal: _rideJournal,
+        lastFix: last,
+        track: trackJsonOf(_track),
+        zones: _privacyZones,
+        fallbackLastTrack: true,
+      );
+      if (media == null || !mounted) return;
+      setState(() {
+        _rideJournal = _rideJournal.copyWith(
+          photos: [..._rideJournal.photos, media],
+        );
+      });
+      final msg = media.hasPin
+          ? l10n.ridePhotoPinned
+          : (media.privacyStripped
+              ? l10n.ridePhotoPrivateZone
+              : l10n.ridePhotoNeedGps);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+      );
+    } finally {
+      if (mounted) setState(() => _pickingPhoto = false);
+    }
+  }
+
+  Widget _ridePhotoFab() {
+    final l10n = _l10n;
+    final count = _rideJournal.photos.length;
+    return Tooltip(
+      message: l10n.ridePhotoTooltip,
+      child: SizedBox(
+        width: NavHudTokens.pauseFabDp,
+        height: NavHudTokens.pauseFabDp,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            FilledButton(
+              key: const Key('ride-photo-fab'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.chromeFill(context),
+                foregroundColor: AppColors.inkOnChrome(context),
+                shape: const CircleBorder(),
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(
+                  NavHudTokens.pauseFabDp,
+                  NavHudTokens.pauseFabDp,
+                ),
+              ),
+              onPressed: _pickingPhoto
+                  ? null
+                  : () {
+                      _bumpIdle();
+                      unawaited(_captureRidePhoto());
+                    },
+              child: _pickingPhoto
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.photo_camera_outlined, size: 26),
+            ),
+            if (count > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _hudLocateFab({required bool paused}) {
+    final l10n = _l10n;
+    final m = MapOrnaments.hudLocateMargins(context, paused: paused);
+    return Positioned(
+      left: m.x.toDouble(),
+      bottom: m.y.toDouble(),
+      child: MapLocateFab(
+        key: const Key('hud-locate-fab'),
+        tooltip: l10n.rideFollowCamera,
+        active: _cameraFollow,
+        onTap: () {
+          _bumpIdle();
+          setState(() => _cameraFollow = true);
+          unawaited(_drawRideMap());
+        },
+      ),
     );
   }
 
@@ -959,6 +1160,12 @@ class RideScreenState extends ConsumerState<RideScreen> {
     MapLibreMapController c,
     ActiveRoute? route,
   ) async {
+    if (_joinMarkSymbol != null) {
+      try {
+        await c.removeSymbol(_joinMarkSymbol!);
+      } catch (_) {}
+      _joinMarkSymbol = null;
+    }
     if (route == null ||
         route.joinAlongM <= 0 ||
         route.coordinates.length < 2) {
@@ -966,7 +1173,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     }
     final p = pointAlongRoute(route.coordinates, route.joinAlongM);
     try {
-      await c.addSymbol(
+      _joinMarkSymbol = await c.addSymbol(
         SymbolOptions(
           geometry: LatLng(p[1], p[0]),
           textField: 'Tour',
@@ -979,35 +1186,546 @@ class RideScreenState extends ConsumerState<RideScreen> {
     } catch (_) {}
   }
 
-  /// Echte Presence aus dem Store. Kein Demo-Fahrer. Eigenen Puck nicht doppelt.
-  Future<void> _drawGroupPins(MapLibreMapController c) async {
-    try {
-      await c.clearSymbols();
-    } catch (_) {}
-    _navPuck.forgetSymbol();
-    final route = ref.read(activeRouteProvider);
-    final group = await _rideGroups.groupForRide(route?.id);
-    if (group == null) return;
-    final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
-    final pins = await _rideGroups.visiblePins(groupId: group.id, zones: zones);
-    for (final p in pins) {
-      if (await _rideGroups.isSelfId(p.userId)) continue;
-      if (p.lat == null || p.lng == null) continue;
-      if (!RideGroupPolicy.pinVisible(p.visibility)) continue;
+  LatLng? _selfMapAt() {
+    final loc = _lastUserLoc;
+    if (loc != null) return loc.position;
+    if (_track.isNotEmpty) {
+      final p = _track.last;
+      return LatLng(p.lat, p.lng);
+    }
+    return null;
+  }
+
+  Future<void> _clearFriendPins(MapLibreMapController c) async {
+    for (final s in _friendPinSymbols) {
       try {
-        await c.addSymbol(
-          SymbolOptions(
-            geometry: LatLng(p.lat!, p.lng!),
-            textField:
-                p.visibility == RideGroupPresenceVisibility.stale ? '·' : '●',
-            textSize: 16,
-            textColor: '#FF8A3D',
-            textHaloColor: '#0A1A12',
-            textHaloWidth: 1.2,
-          ),
-        );
+        await c.removeSymbol(s);
       } catch (_) {}
     }
+    _friendPinSymbols.clear();
+    _friendPinUserBySymbol.clear();
+  }
+
+  Future<void> _ensureFriendPinImage(
+    MapLibreMapController c, {
+    required String imageId,
+    required bool live,
+    required String initials,
+  }) async {
+    try {
+      await c.addImage(
+        imageId,
+        await buildFriendPinPng(live: live, initials: initials),
+      );
+    } catch (_) {}
+  }
+
+  /// Echte Presence. Nur Freund-Symbole tauschen — kein clearSymbols.
+  Future<void> _drawGroupPins(MapLibreMapController c) async {
+    await _clearFriendPins(c);
+    final route = ref.read(activeRouteProvider);
+    final group = await _groupForActiveRide();
+    if (group == null) {
+      if (mounted) _applyGroupHud(null);
+      return;
+    }
+    final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+    final pins = await _rideGroups.visiblePins(groupId: group.id, zones: zones);
+    final members = await _rideGroups.membersOf(group.id);
+    final selfIds = await _rideGroups.selfIds();
+    final me = await _rideGroups.localMember(group.id);
+    final selfAt = _selfMapAt();
+    final hud = _hudFrom(
+      group: group,
+      members: members,
+      pins: pins,
+      selfIds: selfIds,
+      optIn: me?.liveOptIn ?? false,
+      selfAt: selfAt,
+    );
+    if (!mounted) return;
+    _applyGroupHud(hud);
+    final l10n = AppLocalizations.of(context);
+    for (final m in hud.mates) {
+      if (m.self || !m.sharing || m.lat == null || m.lng == null) continue;
+      final rel = m.stale
+          ? null
+          : friendRelLabel(
+              m.rel,
+              ahead: l10n.rideGroupAhead,
+              behind: l10n.rideGroupBehind,
+              left: l10n.rideGroupLeft,
+              right: l10n.rideGroupRight,
+            );
+      final chip = friendPinChip(
+        name: m.label,
+        meters: m.meters,
+        stale: m.stale,
+        staleLabel: l10n.rideGroupPinStale,
+        relLabel: rel,
+      );
+      final imageId = friendPinImageId(userId: m.userId, live: !m.stale);
+      await _ensureFriendPinImage(
+        c,
+        imageId: imageId,
+        live: !m.stale,
+        initials: friendPinInitials(m.label),
+      );
+      try {
+        final sym = await c.addSymbol(
+          SymbolOptions(
+            geometry: LatLng(m.lat!, m.lng!),
+            iconImage: imageId,
+            iconSize: RiderMapIconSize.friend,
+            iconAnchor: 'bottom',
+            textField: chip,
+            textSize: 11,
+            textColor: m.stale ? '#C4C4C8' : '#FFFFFF',
+            textHaloColor: '#121215',
+            textHaloWidth: 1.2,
+            textOffset: const Offset(0, 1.15),
+          ),
+        );
+        _friendPinSymbols.add(sym);
+        _friendPinUserBySymbol[sym.id] = m.userId;
+      } catch (_) {}
+    }
+  }
+
+  RideGroupHudSnap _hudFrom({
+    required RideGroup group,
+    required List<RideGroupMember> members,
+    required List<RideGroupPresence> pins,
+    required Set<String> selfIds,
+    required bool optIn,
+    LatLng? selfAt,
+  }) {
+    final l10n = mounted ? AppLocalizations.of(context) : null;
+    return buildRideGroupHudSnap(
+      group: group,
+      members: members,
+      pins: pins,
+      selfIds: selfIds,
+      optIn: optIn,
+      selfLat: selfAt?.latitude,
+      selfLng: selfAt?.longitude,
+      headingDeg: _headingForFriendRel(),
+      fallbackSelf: l10n?.platzYou ?? 'Du',
+      fallbackOther: l10n?.platzGuest ?? 'Gast',
+      friendN: l10n?.rideGroupFriendN,
+    );
+  }
+
+  double? _headingForFriendRel() {
+    if (_track.length >= 2) {
+      final a = _track[_track.length - 2];
+      final b = _track.last;
+      return _bearingDeg(a.lat, a.lng, b.lat, b.lng);
+    }
+    final gps = _lastUserLoc?.bearing;
+    if (gps != null && gps.abs() > 0.5) return gps;
+    return null;
+  }
+
+  void _applyGroupHud(RideGroupHudSnap? next) {
+    final prev = _groupHud;
+    final skip = _skipHudToast;
+    _skipHudToast = false;
+    if (!mounted) return;
+    setState(() => _groupHud = next);
+    if (skip) return;
+    _toastHudDelta(
+      friendHudDelta(prev: prev, next: next, now: DateTime.now()),
+    );
+  }
+
+  void _toastHudDelta(RideGroupHudDelta delta) {
+    if (delta.note == RideGroupHudNote.none) return;
+    final now = DateTime.now();
+    if (_lastHudToast == delta.note &&
+        _lastHudToastAt != null &&
+        now.difference(_lastHudToastAt!) < const Duration(seconds: 8)) {
+      return;
+    }
+    _lastHudToast = delta.note;
+    _lastHudToastAt = now;
+    final l10n = _l10n;
+    final msg = switch (delta.note) {
+      RideGroupHudNote.windowClosed => l10n.rideGroupWindowClosedToast,
+      RideGroupHudNote.mateLeft =>
+        l10n.rideGroupMateLeftToast(delta.name ?? l10n.platzGuest),
+      RideGroupHudNote.groupGone => l10n.rideGroupGoneToast,
+      RideGroupHudNote.none => null,
+    };
+    if (msg == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
+    );
+  }
+
+  Future<void> _refreshGroupHudOnly() async {
+    final group = await _groupForActiveRide();
+    if (!mounted) return;
+    if (group == null) {
+      _applyGroupHud(null);
+      return;
+    }
+    final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+    final pins = await _rideGroups.visiblePins(groupId: group.id, zones: zones);
+    final members = await _rideGroups.membersOf(group.id);
+    final selfIds = await _rideGroups.selfIds();
+    final me = await _rideGroups.localMember(group.id);
+    if (!mounted) return;
+    _applyGroupHud(
+      _hudFrom(
+        group: group,
+        members: members,
+        pins: pins,
+        selfIds: selfIds,
+        optIn: me?.liveOptIn ?? false,
+        selfAt: _selfMapAt(),
+      ),
+    );
+  }
+
+  Future<void> _toggleGroupOptIn(bool on) async {
+    final id = _groupHud?.groupId;
+    if (id == null) return;
+    await _rideGroups.setLiveOptIn(id, on);
+    if (!mounted) return;
+    await _refreshGroupHudOnly();
+    final c = _rideMap;
+    if (c != null) await _drawGroupPins(c);
+    if (!on || !mounted) return;
+    final snap = _groupHud;
+    if (snap == null) return;
+    final others = [
+      for (final m in snap.mates)
+        if (!m.self) m.label,
+    ];
+    final line = friendShareOnLine(
+      otherNames: others,
+      untilHm: friendUntilHm(snap.windowEnd),
+      one: _l10n.rideGroupShareOnLineOne,
+      many: _l10n.rideGroupShareOnLineMany,
+      none: _l10n.rideGroupShareOnLineNone,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(line), duration: const Duration(seconds: 4)),
+    );
+  }
+
+  void _onFriendPinTapped(Symbol symbol) {
+    final uid = _friendPinUserBySymbol[symbol.id];
+    if (uid == null) return;
+    RideGroupHudMate? mate;
+    for (final m in _groupHud?.mates ?? const <RideGroupHudMate>[]) {
+      if (m.userId == uid) mate = m;
+    }
+    if (mate == null || !mounted) return;
+    _openFriendSheet(mate);
+  }
+
+  void _openFriendSheet(RideGroupHudMate mate) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => RideGroupFriendSheet(
+        mate: mate,
+        onFlyTo: () => unawaited(_flyToFriend(mate)),
+      ),
+    );
+  }
+
+  Future<void> _flyToFriend(RideGroupHudMate mate) async {
+    final c = _rideMap;
+    if (c == null || mate.lat == null || mate.lng == null) return;
+    _cameraFollow = false;
+    _programmaticCamera = true;
+    try {
+      await c.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(mate.lat!, mate.lng!), 15),
+      );
+    } catch (_) {}
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      _programmaticCamera = false;
+    });
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _frameGroupRiders() async {
+    final c = _rideMap;
+    if (c == null) return;
+    final pts = <LatLng>[];
+    final self = _selfMapAt();
+    if (self != null) pts.add(self);
+    for (final m in _groupHud?.mates ?? const <RideGroupHudMate>[]) {
+      if (m.self || m.lat == null || m.lng == null) continue;
+      pts.add(LatLng(m.lat!, m.lng!));
+    }
+    if (pts.isEmpty) return;
+    _cameraFollow = false;
+    _programmaticCamera = true;
+    try {
+      if (pts.length == 1) {
+        await c.animateCamera(CameraUpdate.newLatLngZoom(pts.first, 14));
+      } else {
+        var swLat = pts.first.latitude;
+        var swLng = pts.first.longitude;
+        var neLat = swLat;
+        var neLng = swLng;
+        for (final p in pts) {
+          swLat = math.min(swLat, p.latitude);
+          swLng = math.min(swLng, p.longitude);
+          neLat = math.max(neLat, p.latitude);
+          neLng = math.max(neLng, p.longitude);
+        }
+        if ((neLat - swLat).abs() < 0.0005) {
+          swLat -= 0.002;
+          neLat += 0.002;
+        }
+        if ((neLng - swLng).abs() < 0.0005) {
+          swLng -= 0.002;
+          neLng += 0.002;
+        }
+        await c.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              southwest: LatLng(swLat, swLng),
+              northeast: LatLng(neLat, neLng),
+            ),
+            left: 48,
+            top: 80,
+            right: 48,
+            bottom: 160,
+          ),
+        );
+      }
+    } catch (_) {}
+    Future<void>.delayed(const Duration(milliseconds: 400), () {
+      _programmaticCamera = false;
+    });
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _extendGroupWindow() async {
+    final id = _groupHud?.groupId;
+    if (id == null) return;
+    final choice = await showRideGroupExtendSheet(context);
+    if (choice == null || !mounted) return;
+    final ok = await _rideGroups.extendWindow(
+      id,
+      hours: choice.addHours ?? 1,
+      newEnd: choice.newEnd,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_rideGroups.lastNote ?? _l10n.rideGroupGoneToast),
+        ),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_l10n.rideGroupWindowExtended)),
+    );
+    await _refreshGroupHudOnly();
+    final c = _rideMap;
+    if (c != null) await _drawGroupPins(c);
+  }
+
+  Future<void> _leaveGroupFromRide() async {
+    final id = _groupHud?.groupId;
+    if (id == null) return;
+    _skipHudToast = true;
+    await _rideGroups.leaveGroup(id);
+    unawaited(_together.stop(clearSession: true));
+    if (!mounted) return;
+    _applyGroupHud(null);
+    final c = _rideMap;
+    if (c != null) await _clearFriendPins(c);
+  }
+
+  Widget? _groupLiveBar() {
+    final snap = _groupHud;
+    if (snap == null) return null;
+    return RideGroupLiveBar(
+      snap: snap,
+      onToggleOptIn: (on) => unawaited(_toggleGroupOptIn(on)),
+      onFriend: _openFriendSheet,
+      onFrameAll: () => unawaited(_frameGroupRiders()),
+      onExtend: () => unawaited(_extendGroupWindow()),
+      onLeave: () => unawaited(_leaveGroupFromRide()),
+      onInvite: snap.isSession ? () => unawaited(_openTogether()) : null,
+    );
+  }
+
+  void _onTogetherLook() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _adoptTogetherSnap(TogetherLookSnap snap) async {
+    if (snap.group == null) return;
+    await _rideGroups.adoptCloudBundle(
+      RideGroupCloudBundle(
+        me: snap.me,
+        groups: [snap.group!.copyWith(onServer: true)],
+        members: snap.members,
+      ),
+    );
+    if (mounted) await _refreshGroupHudOnly();
+  }
+
+  String _togetherChipLine(AppLocalizations l10n) {
+    final inbound = _together.snap?.inbound ?? const <TogetherInbound>[];
+    final kind = togetherChipKind(
+      looking: _together.looking,
+      joinCode: _together.joinCode,
+      inboundCount: inbound.length,
+      outboundStatus: _together.outbound?.status ??
+          (_together.pendingTo != null ? 'pending' : null),
+    );
+    return rideTogetherChipLine(
+      l10n,
+      kind: kind,
+      joinCode: _together.joinCode,
+      inboundName: inbound.isEmpty ? null : inbound.first.label,
+    );
+  }
+
+  bool get _togetherActive =>
+      _together.looking ||
+      _together.joinCode != null ||
+      (_together.snap?.inbound.isNotEmpty ?? false) ||
+      _together.pendingTo != null ||
+      _together.outbound != null;
+
+  Widget? _togetherChip({required ActiveRoute? route}) {
+    final inbound = _together.snap?.inbound ?? const <TogetherInbound>[];
+    if (_togetherActive) {
+      if (inbound.isNotEmpty) return null;
+      return RideTogetherChip(
+        onTap: () => unawaited(_openTogether()),
+        line: _togetherChipLine(_l10n),
+        compact: _cleanMode,
+      );
+    }
+    if (_groupHud != null) {
+      if (!_cleanMode) return null;
+      final code = (_groupHud!.joinCode ?? '').trim();
+      return RideTogetherChip(
+        onTap: _openGroupRoster,
+        line: code.isNotEmpty ? code : _groupHud!.title,
+        compact: true,
+      );
+    }
+    if (_cleanMode) return null;
+    if (route != null) return null;
+    return RideTogetherChip(onTap: () => unawaited(_openTogether()));
+  }
+
+  Widget? _hudSocialIsland({required ActiveRoute? route}) {
+    if (_groupHud != null && !_cleanMode) return _groupLiveBar();
+    return _togetherChip(route: route);
+  }
+
+  void _openGroupRoster() {
+    final snap = _groupHud;
+    if (snap == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => RideGroupRosterSheet(
+        snap: snap,
+        onFriend: _openFriendSheet,
+        onFrameAll: () => unawaited(_frameGroupRiders()),
+        onExtend: () => unawaited(_extendGroupWindow()),
+        onLeave: () => unawaited(_leaveGroupFromRide()),
+        onInvite: snap.isSession ? () => unawaited(_openTogether()) : null,
+      ),
+    );
+  }
+
+  Widget? _togetherInboundBanner() {
+    final inbound = _together.snap?.inbound ?? const <TogetherInbound>[];
+    if (inbound.isEmpty) return null;
+    final l10n = _l10n;
+    final first = inbound.first;
+    return RideTogetherInboundCard(
+      key: const Key('ride-together-inbound-hud'),
+      onAccept: _together.busy
+          ? null
+          : () => unawaited(_respondTogether(first, true)),
+      onDecline: _together.busy
+          ? null
+          : () => unawaited(_respondTogether(first, false)),
+      acceptLabel: l10n.rideTogetherAccept,
+      declineLabel: l10n.rideTogetherDecline,
+      askLabel: l10n.rideTogetherInbound(
+        first.label.trim().isEmpty
+            ? l10n.rideTogetherAnon
+            : first.label.trim(),
+      ),
+    );
+  }
+
+  Future<void> _respondTogether(TogetherInbound inbound, bool accept) async {
+    final res = await _together.respond(inbound, accept);
+    if (!mounted) return;
+    if (accept && res != null && res.ok && res.bundle != null) {
+      await _rideGroups.adoptCloudBundle(res.bundle!);
+      await _refreshGroupPins();
+    }
+  }
+
+  Future<void> _openTogether() async {
+    final loc = _selfMapAt();
+    final zones = await ref.read(garageRepositoryProvider).listPrivacyZones();
+    if (!mounted) return;
+    final inZone = loc != null &&
+        RideGroupPolicy.pointInPrivacyZones(loc.latitude, loc.longitude, zones);
+    _together.setFix(
+      lat: loc?.latitude,
+      lng: loc?.longitude,
+      inPrivacyZone: inZone,
+    );
+    await _together.ensureStarted(
+      lat: loc?.latitude,
+      lng: loc?.longitude,
+      inPrivacyZone: inZone,
+      needGpsNote: _l10n.rideTogetherNeedGps,
+      inZoneNote: _l10n.rideTogetherInZone,
+      needLoginNote: _l10n.rideTogetherNeedLogin,
+    );
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => RideTogetherSheet(
+        groups: _rideGroups,
+        look: _together,
+        lat: loc?.latitude,
+        lng: loc?.longitude,
+        inPrivacyZone: inZone,
+        onPaired: () {
+          unawaited(_refreshGroupPins());
+        },
+      ),
+    );
+    if (mounted) await _refreshGroupHudOnly();
+  }
+
+  Future<RideGroup?> _groupForActiveRide() {
+    final route = ref.read(activeRouteProvider);
+    return _rideGroups.groupForRide(
+      route?.id,
+      preferGroupId: ref.read(ridePendingGroupIdProvider),
+      catalogTourId: route == null || route.id.isEmpty
+          ? null
+          : catalogTourIdOf(route.id),
+    );
   }
 
   Future<void> _publishGroupPresence(double lat, double lng) async {
@@ -1015,8 +1733,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final last = _lastGroupPresenceAt;
     if (last != null && now.difference(last).inSeconds < 6) return;
     _lastGroupPresenceAt = now;
-    final route = ref.read(activeRouteProvider);
-    final group = await _rideGroups.groupForRide(route?.id);
+    final group = await _groupForActiveRide();
     if (group == null) return;
     final me = await _rideGroups.localMember(group.id);
     if (me == null || !me.liveOptIn) return;
@@ -1033,8 +1750,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   Future<void> _refreshGroupPins() async {
     if (!mounted || !ref.read(isRidingProvider)) return;
-    final route = ref.read(activeRouteProvider);
-    final group = await _rideGroups.groupForRide(route?.id);
+    final group = await _groupForActiveRide();
     if (group != null && group.onServer) {
       await _rideGroups.pullPresence(group.id);
     }
@@ -1223,6 +1939,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       riding: true,
       paused: paused,
       speedKmh: _effectiveSpeedKmh,
+      keepScreenOn: _batteryPreset.keepScreenOn,
     )) {
       // Still rolling — keep HUD visible, check again after another idle window.
       _armIdleLock();
@@ -1392,8 +2109,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       BikeBleBinding binding = const BikeBleBinding();
       final bikeId = active?.id;
       if (bikeId != null && bikeId.isNotEmpty) {
-        binding =
-            await ref.read(bikeBleStoreProvider).bindingForBike(bikeId);
+        binding = await ref.read(bikeBleStoreProvider).bindingForBike(bikeId);
         final target = rideBlePreferredTarget(binding);
         preferredId = target.deviceId;
         kindHint = target.kindHint;
@@ -1514,6 +2230,12 @@ class RideScreenState extends ConsumerState<RideScreen> {
       }),
     );
     _rideId = const Uuid().v4();
+    _rideJournal = RideJournal.empty;
+    unawaited(
+      ref.read(garageRepositoryProvider).listPrivacyZones().then((zones) {
+        _privacyZones = zones;
+      }),
+    );
     _chunkBuf.clear();
     _chunkSeq = 0;
     _gpsFixCount = 0;
@@ -1609,6 +2331,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
         ),
       );
       unawaited(_publishGroupPresence(fix.lat, fix.lng));
+      if (_together.looking) {
+        _together.setFix(lat: fix.lat, lng: fix.lng);
+      }
       final route = ref.read(activeRouteProvider);
       if (route != null && route.coordinates.length >= 2) {
         final prog = projectOntoRoute(
@@ -1803,9 +2528,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
     double? elev,
   }) {
     final live = _ldi;
+    final fused = _metrics;
     final hr = live?.heartRateBpm;
     final cad = live?.cadenceRpm;
     final pwr = live?.riderPowerW;
+    final spd = _gpsSpeedKmh;
     return TrackPoint(
       lat: lat,
       lng: lng,
@@ -1814,6 +2541,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
       heartRateBpm: hr != null && hr >= 1 && hr <= 239 ? hr : null,
       cadenceRpm: cad != null && cad > 0.5 ? cad : null,
       powerW: pwr != null && pwr > 0 && pwr < 2500 ? pwr : null,
+      leanDeg: fused?.leanAngleDeg,
+      gPeak: fused?.gForcePeak,
+      impact: fused?.impactDetected == true,
+      speedKmh: spd > 0.4 && spd < 90 ? spd : null,
     );
   }
 
@@ -1830,18 +2561,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
     return sum;
   }
 
-  double _elevationGainFromTrack(List<TrackPoint> track) {
-    var gain = 0.0;
-    double? prev;
-    for (final p in track) {
-      final e = p.elev;
-      if (e == null) continue;
-      if (prev != null && e > prev + 0.5) gain += e - prev;
-      prev = e;
-    }
-    return gain;
-  }
-
   bool _gravityFollowNow(ActiveRoute? route) {
     if (route == null || !route.gravitySession) return false;
     return gravityOnDescent(
@@ -1851,7 +2570,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     );
   }
 
-  /// First reaction when leaving the route: offline toast or online sheet (N-02b).
+  /// First reaction when leaving the route: splice/graph if honest, else toast.
   Future<void> _onWentOffRoute() async {
     if (!mounted || !ref.read(isRidingProvider)) return;
     final route = ref.read(activeRouteProvider);
@@ -1866,13 +2585,18 @@ class RideScreenState extends ConsumerState<RideScreen> {
     final online = await rideHasNetwork();
     if (!mounted) return;
     if (!online) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_l10n.rideOfflineRerouteToast),
-          duration: const Duration(seconds: 4),
-        ),
-      );
-      return;
+      final graphReady = await OfflinePackDirs.hasLegitimateActivatedPack();
+      if (!mounted) return;
+      // Close enough: splice remainder, no routing. Far: graph required.
+      if (!graphReady && _crossTrackM > 25) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_l10n.rideOfflineRerouteToast),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        return;
+      }
     }
     if (_userChoseStay || _rerouteSheetOpen) return;
     if (_autoRerouteEnabled) {
@@ -1928,8 +2652,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
     }
     final online = await rideHasNetwork();
     if (!online) {
-      // No fake replan offline (N-02b).
-      return;
+      final graphReady = await OfflinePackDirs.hasLegitimateActivatedPack();
+      if (!graphReady && _crossTrackM > 25) return;
     }
     _autoRerouteBusy = true;
     try {
@@ -2004,16 +2728,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
       return;
     }
 
-    final online = await rideHasNetwork();
-    if (!online) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_l10n.rideOfflineRerouteToast)),
-        );
-      }
-      return;
-    }
-
     final prog = projectOntoRoute(
       coordinates: route.coordinates,
       lat: lastFix.lat,
@@ -2066,8 +2780,30 @@ class RideScreenState extends ConsumerState<RideScreen> {
       List<List<double>> approach = const [];
       List<NavStep> approachSteps = const [];
       var approachDistM = 0.0;
-      final needApproach = prog.crossTrackM > 25 || skipAheadM > 0;
+      final needApproach = prog.crossTrackM > 25;
       if (needApproach) {
+        final online = await rideHasNetwork();
+        if (!online) {
+          final graphReady = await OfflinePackDirs.hasLegitimateActivatedPack();
+          final covered = await OfflineMapsPrefs.coversRoute(
+            fromLng: lastFix.lng,
+            fromLat: lastFix.lat,
+            toLng: rejoinPt[0],
+            toLat: rejoinPt[1],
+          );
+          if (!canOfflineRejoin(
+            needApproach: true,
+            graphReady: graphReady,
+            routeCovered: covered,
+          )) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_l10n.rideOfflineRerouteToast)),
+              );
+            }
+            return;
+          }
+        }
         // Rejoin-Profil: bevorzugter Sport / aktives Bike, nicht immer MTB.
         final preferred = ref.read(userProfileStoreProvider).preferredSport;
         final bikes = ref.read(bikesProvider).valueOrNull ?? const <Bike>[];
@@ -2105,6 +2841,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
               to: GeoPoint(rejoinPt[1], rejoinPt[0]),
               profile: rejoinProfile,
               accessLeg: route.gravitySession,
+              preferOffline: !online,
+              allowOnline: online,
             );
         approach = result.coordinates.map((p) => [p.lng, p.lat]).toList();
         approachDistM = result.distanceM;
@@ -2220,6 +2958,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
     _tick?.cancel();
     _groupPinPoll?.cancel();
     _groupPinPoll = null;
+    unawaited(_rideGroups.endFreerideSession());
+    unawaited(_together.stop(clearSession: true));
     _idleLock?.cancel();
     await _stopHudMedia();
     await ref.read(sensorCoreProvider).stop();
@@ -2252,14 +2992,17 @@ class RideScreenState extends ConsumerState<RideScreen> {
       }
     }
 
+    final tel = buildRideTelemetry([for (final p in track) p.toJson()]);
     final elevFromRoute = route?.elevationM;
-    final elevFromTrack = _elevationGainFromTrack(track);
-    final elevHonest = elevFromRoute != null && elevFromRoute > 0
-        ? elevFromRoute
-        : elevFromTrack;
-    final elevSource = elevFromRoute != null && elevFromRoute > 0
-        ? 'route'
-        : (elevFromTrack > 0 ? 'gps_track' : 'none');
+    final elevFromTrack = tel.climbM.toDouble();
+    // Persistenz = Profil. Mit GPS-Höhe gilt der Track — auch bei 0 hm.
+    // Routen-Höhe nur Fallback, nie als Override.
+    final elevHonest = tel.hasElev
+        ? elevFromTrack
+        : (elevFromRoute != null && elevFromRoute > 0 ? elevFromRoute : 0.0);
+    final elevSource = tel.hasElev
+        ? 'gps_track'
+        : (elevFromRoute != null && elevFromRoute > 0 ? 'route' : 'none');
 
     final drawingTour = _drawingTour &&
         route == null &&
@@ -2272,9 +3015,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       endedAt: ended,
       distanceKm: distanceM / 1000,
       movingTimeSec: elapsed,
-      name: drawingTour
-          ? _liveTourName(started)
-          : (route?.name ?? 'Freeride'),
+      name: drawingTour ? _liveTourName(started) : (route?.name ?? 'Freeride'),
       routeId: route?.id,
       elevationM: elevHonest,
       track: track,
@@ -2286,9 +3027,17 @@ class RideScreenState extends ConsumerState<RideScreen> {
         'simDistanceM': _simDistanceM,
         'trackPoints': track.length,
         'elevationSource': elevSource,
+        if (elevFromRoute != null && elevFromRoute > 0)
+          'routeElevationM': elevFromRoute,
+        if (tel.hasElev) ...{
+          'climbM': tel.climbM,
+          'descentM': tel.descentM,
+          if (tel.maxGradePct != null) 'maxGradePct': tel.maxGradePct,
+        },
         'liveTour': drawingTour,
         if (_ldi?.batterySocPercent != null) 'soc': _ldi!.batterySocPercent,
         ..._bleSamples.toSummary(),
+        ..._rideJournal.toSummaryPatch(),
       },
     );
     if (drawingTour && track.length >= 2) {
@@ -2298,6 +3047,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
           ride: record,
           id: 'recorded-${record.id}',
           name: record.name,
+          photoPaths: _rideJournal.photoPaths,
+          media: _rideJournal.media,
+          notes: _rideJournal.notes,
         );
         await ref
             .read(rideRepositoryProvider)
@@ -2345,6 +3097,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     }
 
     ref.read(isRidingProvider.notifier).state = false;
+    ref.read(ridePendingGroupIdProvider.notifier).state = null;
     ref.read(isPausedProvider.notifier).state = false;
     _setAutoLocked(false);
     ref.read(activeRouteProvider.notifier).state = null;
@@ -2368,6 +3121,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _flowSum = 0;
       _flowN = 0;
       _rideId = null;
+      _rideJournal = RideJournal.empty;
+      _pickingPhoto = false;
       _rawUploadConsent = false;
       _chunkBuf.clear();
       _chunkSeq = 0;
@@ -2404,6 +3159,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   @override
   void dispose() {
+    RidePrefs.navPuckRevision.removeListener(_onNavPuckPref);
     _sensorSub?.cancel();
     _bleSub?.cancel();
     _locSub?.cancel();
@@ -2416,6 +3172,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
     _notifActionSub?.cancel();
     unawaited(_mediaSub?.cancel());
     _mediaSub = null;
+    _together.removeListener(_onTogetherLook);
+    unawaited(_together.stop(clearSession: true));
+    _together.dispose();
     unawaited(_hudMedia.dispose());
     unawaited(_tts.stop());
     unawaited(WakelockPlus.disable());
@@ -2592,12 +3351,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
             ),
             myLocationEnabled: true,
             trackCameraPosition: false,
-            compassEnabled: true,
-            compassViewPosition: MapOrnaments.compassPosition,
-            compassViewMargins: MapOrnaments.compassMargins(
-              context,
-              extraBelowSafe: MapOrnaments.ridePreStartClearance,
-            ),
+            compassEnabled: false,
             scrollGesturesEnabled: true,
             zoomGesturesEnabled: true,
             rotateGesturesEnabled: true,
@@ -2628,7 +3382,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
           left: 12,
           right: 12,
           bottom: 96,
-          child: RideGroupPinBanner(routeId: route?.id),
+          child: _groupLiveBar() ?? RideGroupPinBanner(routeId: route?.id),
         ),
       ],
     );
@@ -2764,61 +3518,53 @@ class RideScreenState extends ConsumerState<RideScreen> {
       riderPowerW: _ldi?.riderPowerW,
       batterySocPercent: _ldi?.batterySocPercent,
       assistMode: _ldi?.assistMode,
-      leanAngleDeg: _metrics?.leanAngleDeg,
+      leanAngleDeg: _displayLeanDeg,
       showChassis: _showsChassisUx(ref),
     );
     final midLabel = splitRest ? l10n.rideUntilJoin : l10n.rideRestKm;
     final rightLabel = splitRest ? l10n.rideRestLoop : l10n.rideEta;
+
+    final effectiveLayer =
+        layer == RideLiveLayer.suspension && !_showsChassisUx(ref)
+            ? RideLiveLayer.map
+            : layer;
+    final showLiveDock = !_cleanMode && effectiveLayer != RideLiveLayer.map;
 
     return Stack(
       children: [
         Positioned.fill(
           child: IgnorePointer(
             ignoring: locked,
-            child: layer == RideLiveLayer.map
-                ? MapLibreMap(
-                    key: ValueKey('ride-map-$_mapStyle'),
-                    styleString: _mapStyle,
-                    initialCameraPosition: CameraPosition(
-                      target: _mapTarget(route),
-                      zoom: 15.8,
-                    ),
-                    myLocationEnabled: true,
-                    trackCameraPosition: false,
-                    compassEnabled: false,
-                    scrollGesturesEnabled: !locked,
-                    zoomGesturesEnabled: !locked,
-                    rotateGesturesEnabled: !locked,
-                    tiltGesturesEnabled: !locked,
-                    gestureRecognizers: locked
-                        ? const <Factory<OneSequenceGestureRecognizer>>{}
-                        : _rideMapGestures,
-                    onMapCreated: _onRideMapCreated,
-                    onStyleLoadedCallback: () {
-                      unawaited(_onRideStyleLoaded());
-                    },
-                    onUserLocationUpdated: _onUserLocationUpdated,
-                    // Manuelles Schieben/Zoomen: Follow pausieren (wie Komoot).
-                    onCameraIdle: () {
-                      if (_programmaticCamera) return;
-                      if (!ref.read(isRidingProvider)) return;
-                      if (!_cameraFollow) return;
-                      setState(() => _cameraFollow = false);
-                    },
-                  )
-                : ColoredBox(
-                    color: theme.scaffoldBackgroundColor,
-                    child: Padding(
-                      // Platz für Top-Bar/Bottom-Controls-Overlay.
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.l,
-                        88,
-                        AppSpacing.l,
-                        160,
-                      ),
-                      child: _buildLayer(layer, mount, route),
-                    ),
-                  ),
+            child: MapLibreMap(
+              key: ValueKey('ride-map-$_mapStyle'),
+              styleString: _mapStyle,
+              initialCameraPosition: CameraPosition(
+                target: _mapTarget(route),
+                zoom: 15.8,
+              ),
+              myLocationEnabled: true,
+              trackCameraPosition: false,
+              compassEnabled: false,
+              scrollGesturesEnabled: !locked,
+              zoomGesturesEnabled: !locked,
+              rotateGesturesEnabled: !locked,
+              tiltGesturesEnabled: !locked,
+              gestureRecognizers: locked
+                  ? const <Factory<OneSequenceGestureRecognizer>>{}
+                  : _rideMapGestures,
+              onMapCreated: _onRideMapCreated,
+              onStyleLoadedCallback: () {
+                unawaited(_onRideStyleLoaded());
+              },
+              onUserLocationUpdated: _onUserLocationUpdated,
+              // Manuelles Schieben/Zoomen: Follow pausieren (wie Komoot).
+              onCameraIdle: () {
+                if (_programmaticCamera) return;
+                if (!ref.read(isRidingProvider)) return;
+                if (!_cameraFollow) return;
+                setState(() => _cameraFollow = false);
+              },
+            ),
           ),
         ),
         const StatusBarScrim(),
@@ -2828,6 +3574,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
             routeName: route?.name,
             onUnlock: _bumpIdle,
           ),
+        if (!locked) _hudLocateFab(paused: paused),
         IgnorePointer(
           ignoring: locked,
           child: SafeArea(
@@ -2841,8 +3588,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Clean: compass always (not a 5th nav stat). Follow only
-                  // after the rider panned. Pro chrome via data-strip tap.
+                  // Clean: dest chip only. Locate FAB sits on the map.
                   if (_cleanMode)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.s),
@@ -2869,28 +3615,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
                             )
                           else
                             const Spacer(),
-                          const SizedBox(width: AppSpacing.xs),
-                          _hudCompass(),
-                          if (!_cameraFollow) ...[
-                            const SizedBox(width: AppSpacing.xs),
-                            Material(
-                              color: theme.cardColor.withValues(alpha: 0.9),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.pill),
-                              child: IconButton(
-                                tooltip: l10n.rideFollowCamera,
-                                onPressed: () {
-                                  setState(() => _cameraFollow = true);
-                                  unawaited(_drawRideMap());
-                                },
-                                icon: const Icon(
-                                  Icons.my_location,
-                                  size: 22,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -2918,27 +3642,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.xs),
-                          _hudCompass(),
-                          const SizedBox(width: AppSpacing.xs),
-                          if (!_cameraFollow)
-                            Material(
-                              color: theme.cardColor.withValues(alpha: 0.9),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.pill),
-                              child: IconButton(
-                                tooltip: l10n.rideFollowCamera,
-                                onPressed: () {
-                                  setState(() => _cameraFollow = true);
-                                  unawaited(_drawRideMap());
-                                },
-                                icon: const Icon(
-                                  Icons.my_location,
-                                  size: 22,
-                                  color: AppColors.accent,
-                                ),
-                              ),
-                            ),
                           const SizedBox(width: AppSpacing.xs),
                           if (connectivityChipVisibleInClean(
                               _connectivityState))
@@ -3021,51 +3724,39 @@ class RideScreenState extends ConsumerState<RideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Pro / layer switcher only outside Clean Mode.
+                if (!_cleanMode && showLiveDock) ...[
+                  _buildLiveDock(effectiveLayer, mount),
+                  const SizedBox(height: NavHudTokens.islandGapDp),
+                ],
+                if (_togetherInboundBanner() != null) ...[
+                  _togetherInboundBanner()!,
+                  const SizedBox(height: NavHudTokens.islandGapDp),
+                ],
+                if (_hudSocialIsland(route: route) != null) ...[
+                  _hudSocialIsland(route: route)!,
+                  const SizedBox(height: NavHudTokens.islandGapDp),
+                ],
                 if (!_cleanMode) ...[
-                  SegmentedButton<RideLiveLayer>(
-                    segments: [
-                      ButtonSegment(
-                        value: RideLiveLayer.map,
-                        label: Text(AppLocalizations.of(context).rideMap),
-                        icon: const Icon(Icons.map),
-                      ),
-                      ButtonSegment(
-                        value: RideLiveLayer.data,
-                        label: Text(AppLocalizations.of(context).rideData),
-                        icon: const Icon(Icons.grid_view),
-                      ),
-                      if (_showsChassisUx(ref))
-                        ButtonSegment(
-                          value: RideLiveLayer.suspension,
-                          label: Text(
-                            AppLocalizations.of(context).chassisLayerLabelFor(
-                              ref
-                                  .watch(userProfileStoreProvider)
-                                  .preferredSport,
-                            ),
-                          ),
-                          icon: const Icon(Icons.waves),
-                        ),
-                    ],
-                    selected: {
-                      layer == RideLiveLayer.suspension && !_showsChassisUx(ref)
-                          ? RideLiveLayer.map
-                          : layer,
-                    },
-                    onSelectionChanged: (s) {
+                  RideHudLayerBar(
+                    selected: effectiveLayer,
+                    mapLabel: l10n.rideMap,
+                    dataLabel: l10n.rideData,
+                    chassisLabel: _showsChassisUx(ref)
+                        ? l10n.chassisLayerLabelFor(
+                            ref.watch(userProfileStoreProvider).preferredSport,
+                          )
+                        : null,
+                    onSelected: (next) {
                       _bumpIdle();
-                      ref.read(rideLayerProvider.notifier).state = s.first;
+                      ref.read(rideLayerProvider.notifier).state = next;
                     },
+                    onClose: () {
+                      _bumpIdle();
+                      setState(() => _cleanMode = true);
+                    },
+                    closeLabel: l10n.rideHudClose,
                   ),
-                  const SizedBox(height: AppSpacing.s),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => setState(() => _cleanMode = true),
-                      child: Text(l10n.rideQuietDisplay),
-                    ),
-                  ),
+                  const SizedBox(height: NavHudTokens.islandGapDp),
                 ],
                 Builder(
                   builder: (_) {
@@ -3137,6 +3828,8 @@ class RideScreenState extends ConsumerState<RideScreen> {
                     ),
                     if (!paused && _cleanMode) ...[
                       const SizedBox(width: AppSpacing.s),
+                      _ridePhotoFab(),
+                      const SizedBox(width: AppSpacing.s),
                       Tooltip(
                         message: l10n.ridePause,
                         child: SizedBox(
@@ -3167,7 +3860,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
                     ],
                   ],
                 ),
-                if (bikePeek.isNotEmpty) ...[
+                if (!showLiveDock && bikePeek.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.s),
                   RideBikePeek(chips: bikePeek),
                 ],
@@ -3188,6 +3881,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
                   ),
                 ],
                 if (paused || !_cleanMode) ...[
+                  const SizedBox(height: AppSpacing.s),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _ridePhotoFab(),
+                  ),
                   const SizedBox(height: AppSpacing.s),
                   Row(
                     children: [
@@ -3375,7 +4073,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
             ? _l10n.rideStayOffHint
             : far
                 ? _l10n.rideKmToRoute(formatHudKm(_crossTrackM / 1000))
-                : (_autoRerouteEnabled ? _l10n.rideRecalc : _l10n.rideTapOptions),
+                : (_autoRerouteEnabled
+                    ? _l10n.rideRecalc
+                    : _l10n.rideTapOptions),
         actionLabel: _userChoseStay ? _l10n.rideOptions : _l10n.rerouteRejoin,
         onAction: () {
           _bumpIdle();
@@ -3407,203 +4107,146 @@ class RideScreenState extends ConsumerState<RideScreen> {
     return const SizedBox.shrink();
   }
 
-  Widget _buildLayer(
-    RideLiveLayer layer,
-    MountCheck mount,
-    ActiveRoute? route,
-  ) {
+  double? get _displayLeanDeg {
+    final raw = _metrics?.leanAngleDeg;
+    if (raw == null) return null;
+    return HudLeanCalibration.displayDeg(raw, _leanOffsetDeg);
+  }
+
+  void _calibrateLean() {
+    final raw = _metrics?.leanAngleDeg;
+    if (raw == null) return;
+    final offset = HudLeanCalibration.offsetFromRaw(raw);
+    setState(() => _leanOffsetDeg = offset);
+    unawaited(RidePrefs.setLeanOffsetDeg(offset));
+  }
+
+  void _resetLeanCal() {
+    setState(() => _leanOffsetDeg = 0);
+    unawaited(RidePrefs.setLeanOffsetDeg(0));
+  }
+
+  Widget _buildLiveDock(RideLiveLayer layer, MountCheck mount) {
     switch (layer) {
       case RideLiveLayer.map:
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.chip),
-          child: MapLibreMap(
-            key: ValueKey(_mapStyle),
-            styleString: _mapStyle,
-            initialCameraPosition: CameraPosition(
-              target: _mapTarget(route),
-              zoom: 14,
-            ),
-            myLocationEnabled: true,
-            trackCameraPosition: false,
-            scrollGesturesEnabled: true,
-            zoomGesturesEnabled: true,
-            rotateGesturesEnabled: true,
-            tiltGesturesEnabled: true,
-            gestureRecognizers: _rideMapGestures,
-            onMapCreated: _onRideMapCreated,
-            onStyleLoadedCallback: () {
-              unawaited(_onRideStyleLoaded());
-            },
-            onUserLocationUpdated: _onUserLocationUpdated,
-          ),
-        );
+        return const SizedBox.shrink();
       case RideLiveLayer.data:
-        final ble = ref.read(bleCoreProvider);
-        final bleConnected = ble.hasWheelLive;
-        final driveOnly = ble.isDriveWithoutMetrics;
-        final bleSpeed = _ldi?.speedKmh;
-        final bleCadence = _ldi?.cadenceRpm;
-        final l10n = _l10n;
         return Semantics(
-          label: l10n.rideLiveData,
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.l),
-              child: Column(
-                children: [
-                  _MetricRow(
-                    l10n.rideSpeed,
-                    '${_effectiveSpeedKmh.toStringAsFixed(1)} km/h',
-                  ),
-                  if (bleConnected && bleSpeed != null && bleSpeed > 0.3)
-                    _MetricRow(
-                      l10n.rideSensorSpeed,
-                      '${bleSpeed.toStringAsFixed(1)} km/h',
-                    ),
-                  _MetricRow(
-                    l10n.rideDistance,
-                    '${(ref.read(rideDistanceMProvider) / 1000).toStringAsFixed(2)} km',
-                  ),
-                  _MetricRow(
-                    l10n.rideTime,
-                    _fmt(ref.read(rideElapsedSecProvider)),
-                  ),
-                  if (_ldi?.batterySocPercent != null)
-                    _MetricRow(
-                      l10n.rideSoc,
-                      '${_ldi!.batterySocPercent!.toStringAsFixed(0)} %',
-                    ),
-                  if (_ldi?.riderPowerW != null)
-                    _MetricRow(
-                      l10n.ridePower,
-                      '${_ldi!.riderPowerW!.toStringAsFixed(0)} W',
-                    ),
-                  if (_ldi?.assistMode != null &&
-                      _ldi!.assistMode!.trim().isNotEmpty)
-                    _MetricRow(l10n.rideAssist, _ldi!.assistMode!),
-                  if (_ldi?.heartRateBpm != null)
-                    _MetricRow(
-                      l10n.rideHeart,
-                      '${_ldi!.heartRateBpm!.toStringAsFixed(0)} bpm',
-                    ),
-                  if (_hasCrank && bleCadence != null)
-                    _MetricRow(
-                      l10n.rideCadence,
-                      '${bleCadence.toStringAsFixed(0)} rpm',
-                    ),
-                  if (bleConnected)
-                    _MetricRow(
-                      l10n.rideBikeSensor,
-                      ble.connectedDeviceName ?? l10n.rideConnected,
-                    )
-                  else if (driveOnly)
-                    _MetricRow(
-                      l10n.rideBikeSensor,
-                      l10n.bleDriveFailFor(
-                        ble.connectedKind ?? BikeBleKind.otherDrive,
-                        detail: ble.statusDetail,
-                      ),
-                    ),
-                  if (ble.isWatchConnected)
-                    _MetricRow(
-                      l10n.rideWatch,
-                      [
-                        ble.connectedWatchName ?? l10n.rideConnected,
-                        if (_ldi?.heartRateBpm != null)
-                          '${_ldi!.heartRateBpm!.round()} bpm'
-                        else
-                          l10n.rideHeartWaiting,
-                      ].join(' · '),
-                    ),
-                ],
-              ),
-            ),
-          ),
+          label: _l10n.rideLiveData,
+          child: RideHudDataDock(metrics: _liveDataMetrics()),
         );
       case RideLiveLayer.suspension:
-        if (mount != MountCheck.mounted) {
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.l),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _l10n.rideChassisOff,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: AppSpacing.s),
-                  Text(
-                    _l10n.rideChassisHint,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.m),
-                  FilledButton(
-                    onPressed: () {
-                      ref.read(mountCheckProvider.notifier).state =
-                          MountCheck.mounted;
-                    },
-                    child: Text(_l10n.rideMarkMounted),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.l),
-            child: Column(
-              children: [
-                if (_metrics != null) ...[
-                  _MetricRow(
-                      _l10n.rideGPeak, _metrics!.gForcePeak.toStringAsFixed(2)),
-                  _MetricRow(
-                    _l10n.rideLean,
-                    _metrics!.leanAngleDeg.toStringAsFixed(1),
-                  ),
-                  _MetricRow(
-                    _l10n.rideFlow,
-                    _metrics!.flowContribution.toStringAsFixed(2),
-                  ),
-                ] else
-                  Text(_l10n.rideWaitingSensors),
-              ],
-            ),
-          ),
+        return RideHudChassisDock(
+          mount: mount,
+          leanDeg: _displayLeanDeg,
+          gPeak: _metrics?.gForcePeak,
+          flow: _metrics?.flowContribution,
+          calibrated: HudLeanCalibration.isCalibrated(_leanOffsetDeg),
+          onMarkMounted: () {
+            ref.read(mountCheckProvider.notifier).state = MountCheck.mounted;
+          },
+          onCalibrate: _calibrateLean,
+          onResetCal: _resetLeanCal,
         );
     }
+  }
+
+  List<HudDockMetric> _liveDataMetrics() {
+    final ble = ref.read(bleCoreProvider);
+    final l10n = _l10n;
+    final bleConnected = ble.hasWheelLive;
+    final driveOnly = ble.isDriveWithoutMetrics;
+    final bleSpeed = _ldi?.speedKmh;
+    final bleCadence = _ldi?.cadenceRpm;
+    final out = <HudDockMetric>[
+      HudDockMetric(
+        l10n.rideSpeed,
+        _effectiveSpeedKmh.toStringAsFixed(1),
+      ),
+    ];
+    if (bleConnected && bleSpeed != null && bleSpeed > 0.3) {
+      out.add(
+        HudDockMetric(l10n.rideSensorSpeed, bleSpeed.toStringAsFixed(1)),
+      );
+    }
+    out.add(
+      HudDockMetric(
+        l10n.rideDistance,
+        (ref.read(rideDistanceMProvider) / 1000).toStringAsFixed(2),
+      ),
+    );
+    out.add(
+        HudDockMetric(l10n.rideTime, _fmt(ref.read(rideElapsedSecProvider))));
+    if (_ldi?.batterySocPercent != null) {
+      out.add(
+        HudDockMetric(
+          l10n.rideSoc,
+          '${_ldi!.batterySocPercent!.toStringAsFixed(0)}%',
+        ),
+      );
+    }
+    if (_ldi?.riderPowerW != null) {
+      out.add(
+        HudDockMetric(
+          l10n.ridePower,
+          '${_ldi!.riderPowerW!.toStringAsFixed(0)} W',
+        ),
+      );
+    }
+    if (_ldi?.assistMode != null && _ldi!.assistMode!.trim().isNotEmpty) {
+      out.add(HudDockMetric(l10n.rideAssist, _ldi!.assistMode!));
+    }
+    if (_ldi?.heartRateBpm != null) {
+      out.add(
+        HudDockMetric(
+          l10n.rideHeart,
+          _ldi!.heartRateBpm!.toStringAsFixed(0),
+        ),
+      );
+    }
+    if (_hasCrank && bleCadence != null) {
+      out.add(
+        HudDockMetric(l10n.rideCadence, bleCadence.toStringAsFixed(0)),
+      );
+    }
+    if (bleConnected) {
+      out.add(
+        HudDockMetric(
+          l10n.rideBikeSensor,
+          ble.connectedDeviceName ?? l10n.rideConnected,
+        ),
+      );
+    } else if (driveOnly) {
+      out.add(
+        HudDockMetric(
+          l10n.rideBikeSensor,
+          l10n.bleDriveFailFor(
+            ble.connectedKind ?? BikeBleKind.otherDrive,
+            detail: ble.statusDetail,
+          ),
+        ),
+      );
+    }
+    if (ble.isWatchConnected) {
+      out.add(
+        HudDockMetric(
+          l10n.rideWatch,
+          [
+            ble.connectedWatchName ?? l10n.rideConnected,
+            if (_ldi?.heartRateBpm != null)
+              '${_ldi!.heartRateBpm!.round()}'
+            else
+              l10n.rideHeartWaiting,
+          ].join(' · '),
+        ),
+      );
+    }
+    return out;
   }
 
   String _fmt(int sec) {
     final m = sec ~/ 60;
     final s = sec % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-}
-
-class _MetricRow extends StatelessWidget {
-  const _MetricRow(this.label, this.value);
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodyLarge),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

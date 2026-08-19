@@ -47,9 +47,16 @@ final platzPendingJoinProvider = StateProvider<PlatzPendingJoin?>((ref) => null)
 final platzPendingCreateGroupRouteIdProvider =
     StateProvider<String?>((ref) => null);
 
+/// „Eigene Tour als Gruppe planen“: nach Merken auf dem Platz den Create-Flow öffnen.
+final platzPendingPlanAsGroupProvider = StateProvider<bool>((ref) => false);
+
 /// Platz-Gruppenkarte → Karte startet dieselbe Tour.
 final discoverPendingStartRideRouteIdProvider =
     StateProvider<String?>((ref) => null);
+
+/// Losfahren aus der Gruppe — HUD dockt an diese Id, auch wenn die
+/// ActiveRoute eine lokale Mappe-Kopie ist.
+final ridePendingGroupIdProvider = StateProvider<String?>((ref) => null);
 
 final syncAuthStatusProvider =
     StateProvider<SyncAuthStatus>((ref) => SyncAuthStatus.unknown);

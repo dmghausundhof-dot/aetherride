@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import {
   encodeGroupInvite,
+  groupInviteShareText,
   parsePastedGroupJoin,
 } from "./rideGroupInvite";
 import type { RideGroup } from "./types";
@@ -45,5 +46,22 @@ assert.equal(parsePastedGroupJoin(""), null);
 assert.equal(parsePastedGroupJoin("xyz"), null);
 assert.equal(parsePastedGroupJoin("AB"), null);
 assert.equal(parsePastedGroupJoin(group.id)?.ref, group.id);
+assert.equal(parsePastedGroupJoin("k7-m2 np")?.ref, "K7M2NP");
+assert.equal(parsePastedGroupJoin("K7M2NP")?.ref, "K7M2NP");
+
+const publicShare = groupInviteShareText({
+  title: "Bodensee",
+  url: https,
+  code: "K7M2NP",
+  visibility: "public",
+});
+assert.ok(publicShare.includes("Code: K7M2NP"));
+const privateShare = groupInviteShareText({
+  title: "Bodensee",
+  url: https,
+  code: "K7M2NP",
+  visibility: "private",
+});
+assert.equal(privateShare.includes("Code: K7M2NP"), false);
 
 console.log("rideGroupInvite.test.ts OK");

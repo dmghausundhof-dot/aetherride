@@ -3,6 +3,10 @@ import 'dart:convert';
 import '../../core/config.dart';
 import '../../domain/community/ride_group.dart';
 import '../../domain/community/ride_group_policy.dart';
+import '../../domain/saved_route.dart';
+import '../../domain/saved_route_note.dart';
+import '../../domain/tours/tour_akte.dart';
+import 'tour_share_codec.dart';
 
 /// Teilbarer Einladungslink für „Zusammen raus“.
 ///
@@ -76,6 +80,12 @@ abstract final class RideGroupInvite {
     if (app.isNotEmpty && app != url) {
       buf.writeln(app);
     }
+    if (visibility == RideGroupVisibility.public) {
+      final typed = code == null ? '' : RideGroupPolicy.normalizeJoinCode(code);
+      if (typed.length == RideGroupPolicy.joinCodeLen) {
+        buf.writeln('Code: $typed');
+      }
+    }
     if (when != null && when.trim().isNotEmpty) {
       buf.writeln(when.trim());
     }
@@ -91,15 +101,48 @@ abstract final class RideGroupInvite {
       ..writeln()
       ..write(
         visibility == RideGroupVisibility.public
-            ? 'Freigegeben: wer den Link hat, kann beitreten. '
-                'Die Gruppe kann unter Freigegeben stehen.'
+            ? 'Freigegeben: Link oder Code reicht. '
+                'Die Gruppe steht auf dem Platz und als Treffen-Pin auf der Karte.'
             : 'Privat: nur wer diesen Link hat, kann beitreten. '
                 'Nicht gelistet.',
       );
     return buf.toString();
   }
 
-  static String encode(RideGroup group) {
+  static String encode(
+    RideGroup group, {
+    SavedRouteEntry? route,
+    SavedRouteMeta? meta,
+    Map<String, dynamic>? tour,
+  }) {
+    Map<String, dynamic>? nextTour = tour;
+    if (nextTour == null &&
+        route != null &&
+        needsMemberTrack(
+          savedRouteId: group.savedRouteId,
+          catalogTourId: group.catalogTourId ?? meta?.catalogTourId,
+        )) {
+      nextTour = buildTourSharePayload(
+        route,
+        meta: meta ?? SavedRouteMeta.empty,
+      );
+    }
+    String token = _encodeBody(group, nextTour);
+    if (token.length > 2400 &&
+        nextTour != null &&
+        nextTour['track'] != null) {
+      nextTour = Map<String, dynamic>.from(nextTour)
+        ..['includeTrack'] = false
+        ..remove('track');
+      token = _encodeBody(group, nextTour);
+    }
+    if (token.length > 2400) {
+      token = _encodeBody(group, null);
+    }
+    return token;
+  }
+
+  static String _encodeBody(RideGroup group, Map<String, dynamic>? tour) {
     return _toBase64Url(
       jsonEncode({
         'v': 1,
@@ -112,6 +155,7 @@ abstract final class RideGroupInvite {
         'hostUserId': group.hostUserId,
         'start': group.startWindowStart.toUtc().toIso8601String(),
         'end': group.startWindowEnd.toUtc().toIso8601String(),
+        if (tour != null) 'tour': tour,
       }),
     );
   }
@@ -145,6 +189,7 @@ abstract final class RideGroupInvite {
         hostUserId: '${data['hostUserId'] ?? ''}'.trim(),
         start: start.toUtc(),
         end: end.toUtc(),
+        tour: parseTourShareMap(data['tour']),
       );
     } catch (_) {
       return null;
@@ -183,10 +228,8 @@ abstract final class RideGroupInvite {
     if (RideGroupPolicy.isGroupId(compact)) {
       return PlatzPastedJoin(code: compact);
     }
-    final upper = compact.toUpperCase();
-    if (upper.length == RideGroupPolicy.joinCodeLen &&
-        RegExp(r'^[A-Z0-9]+$').hasMatch(upper)) {
-      return PlatzPastedJoin(code: upper);
+    if (RideGroupPolicy.isTypedJoinCode(text)) {
+      return PlatzPastedJoin(code: RideGroupPolicy.normalizeJoinCode(text));
     }
     return null;
   }
@@ -209,6 +252,7 @@ class RideGroupInvitePayload {
     required this.end,
     this.catalogTourId,
     this.hostUserId = '',
+    this.tour,
   });
 
   final String id;
@@ -219,6 +263,7 @@ class RideGroupInvitePayload {
   final String hostUserId;
   final DateTime start;
   final DateTime end;
+  final Map<String, dynamic>? tour;
 
   bool windowOpen(DateTime now) => !now.isAfter(end);
 }

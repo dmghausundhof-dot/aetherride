@@ -117,4 +117,18 @@ const tafelGroup = buildHofTafel({
 assert.equal(tafelGroup[0].kind, "gruppe");
 assert.equal(tafelGroup[1].kind, "mappe");
 
+const tafelListing = buildHofTafel({
+  care: { text: "Kette — in der Werkstatt", href: "/garage?tab=maintenance" },
+  listing: {
+    text: "Neckar wartet auf Bestätigung (1/3).",
+    href: "/library?akte=gpx-1",
+  },
+  savedRoutes: [saved],
+  myReviews: [review],
+  group: { text: "Gruppe vor dem Tor · Freitag", href: "/library" },
+});
+assert.equal(tafelListing[0].kind, "care");
+assert.equal(tafelListing[1].kind, "listing");
+assert.equal(tafelListing[2].kind, "gruppe");
+
 console.log("tourAkte.test.ts OK");

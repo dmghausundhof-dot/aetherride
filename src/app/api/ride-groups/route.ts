@@ -1,19 +1,24 @@
 /**
  * Zusammen raus — Gruppen auf dem Server.
  * GET: meine Gruppen (RLS). POST: anlegen + Host-Mitglied (service role).
- * Join: POST /api/ride-groups/join (Token oder öffentliche Id). Kein Code-Feld.
+ * Join: POST /api/ride-groups/join (Token, öffentliche Id, öffentlicher Code).
+ * Fenster: POST /api/ride-groups/window — oder hier { id, addHours|newEnd }.
  */
 import { NextResponse } from "next/server";
 import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  isRideGroupExtendBody,
   parseGroupListing,
   parseMeetingPoint,
+  parseRideGroupExtend,
   parseRideGroupWindow,
 } from "@/lib/community/rideGroup";
+import { isSessionRouteId } from "@/lib/community/rideTogether";
 import {
   generateJoinCode,
   isMissingRideGroupTable,
+  isRideGroupId,
   labelsByUserId,
   profileDisplayLabel,
   rowToMember,
@@ -94,6 +99,7 @@ export async function GET(req: Request) {
         .select(RIDE_GROUP_SELECT)
         .eq("visibility", "public")
         .neq("status", "closed")
+        .neq("saved_route_id", "freeride")
         .order("created_at", { ascending: false })
         .limit(40);
       if (pubErr) {
@@ -169,18 +175,25 @@ export async function POST(req: Request) {
     if (!user) return unauthorized();
 
     const body = (await req.json()) as {
+      id?: string;
+      addHours?: number;
+      newEnd?: string;
       savedRouteId?: string;
       catalogTourId?: string;
       title?: string;
       visibility?: string;
       startsAt?: string;
+      endsAt?: string;
       duration?: number;
       durationHours?: number;
       meetingPoint?: string;
     };
+    if (isRideGroupExtendBody(body)) {
+      return extendExisting(supabase, user.id, body);
+    }
     const savedRouteId = String(body.savedRouteId || "").trim();
     const title = String(body.title || "").trim() || "Gruppe";
-    if (!savedRouteId) {
+    if (!savedRouteId || isSessionRouteId(savedRouteId)) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
@@ -189,12 +202,16 @@ export async function POST(req: Request) {
 
     const window = parseRideGroupWindow({
       startsAt: body.startsAt,
+      endsAt: body.endsAt,
       duration: body.duration,
       durationHours: body.durationHours,
     });
     if ("error" in window) {
       return NextResponse.json(
-        { error: window.error, note: "Startzeit und Dauer (1–12 h) nötig." },
+        {
+          error: window.error,
+          note: "Startzeit und Dauer (15 Min–12 h) nötig.",
+        },
         { status: 400 }
       );
     }
@@ -273,4 +290,66 @@ export async function POST(req: Request) {
   } catch {
     return stub(501, "Cloud anlegen braucht Login + ride_groups.");
   }
+}
+
+/** Gleiche Caps wie /window — Fallback, wenn die Route auf Prod noch fehlt. */
+async function extendExisting(
+  supabase: Awaited<ReturnType<typeof createAuthedClient>>,
+  userId: string,
+  body: { id?: string; addHours?: number; newEnd?: string }
+) {
+  const id = String(body.id || "").trim();
+  if (!isRideGroupId(id)) {
+    return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+  }
+  const hasNewEnd = body.newEnd != null && String(body.newEnd).trim() !== "";
+  const { data: row, error: loadErr } = await supabase
+    .from("ride_groups")
+    .select(RIDE_GROUP_SELECT)
+    .eq("id", id)
+    .eq("host_user_id", userId)
+    .maybeSingle();
+  if (loadErr) {
+    if (isMissingRideGroupTable(loadErr)) {
+      return stub(501, "Server-Tabelle fehlt.");
+    }
+    return NextResponse.json(
+      { error: "query_failed", note: loadErr.message },
+      { status: 501 }
+    );
+  }
+  if (!row) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  const group = rowToRideGroup(row as RideGroupSqlRow);
+  if (group.status === "closed") {
+    return NextResponse.json({ error: "closed" }, { status: 409 });
+  }
+  const resolved = parseRideGroupExtend({
+    now: new Date(),
+    currentEnd: new Date(group.startWindowEnd),
+    addHours: hasNewEnd ? undefined : (body.addHours ?? 1),
+    newEnd: hasNewEnd ? body.newEnd : undefined,
+  });
+  if ("error" in resolved) {
+    return NextResponse.json({ error: resolved.error }, { status: 400 });
+  }
+  const { data, error } = await supabase
+    .from("ride_groups")
+    .update({ start_window_end: resolved.end.toISOString() })
+    .eq("id", id)
+    .eq("host_user_id", userId)
+    .select(RIDE_GROUP_SELECT)
+    .maybeSingle();
+  if (error || !data) {
+    return NextResponse.json(
+      { error: "update_failed", note: error?.message },
+      { status: 501 }
+    );
+  }
+  return NextResponse.json({
+    me: userId,
+    group: rowToRideGroup(data as RideGroupSqlRow),
+    stub: false,
+  });
 }

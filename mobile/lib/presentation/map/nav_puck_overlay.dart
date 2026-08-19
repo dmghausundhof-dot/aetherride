@@ -8,7 +8,7 @@ class NavPuckOverlay {
   Symbol? _symbol;
   bool _imageReady = false;
   int _gen = 0;
-  NavPuckStyle _style = NavPuckStyle.chevron;
+  NavPuckStyle _style = NavPuckStyle.rider;
 
   bool get imageReady => _imageReady;
 
@@ -26,7 +26,7 @@ class NavPuckOverlay {
 
   Future<void> attach(
     MapLibreMapController c, {
-    NavPuckStyle style = NavPuckStyle.chevron,
+    NavPuckStyle style = NavPuckStyle.rider,
   }) async {
     _style = style;
     await _registerImage(c, style);
@@ -41,7 +41,11 @@ class NavPuckOverlay {
     try {
       await c.updateSymbol(
         _symbol!,
-        SymbolOptions(iconImage: style.imageId),
+        SymbolOptions(
+          iconImage: style.imageId,
+          iconSize: style.mapIconSize,
+          iconRotate: style.usesRiderAsset ? 0 : null,
+        ),
       );
     } catch (_) {}
   }
@@ -94,11 +98,12 @@ class NavPuckOverlay {
     if (!_imageReady) await attach(c, style: _style);
     if (!_imageReady) return;
     final gen = ++_gen;
+    final rider = _style.usesRiderAsset;
     final opts = SymbolOptions(
       geometry: at,
       iconImage: _style.imageId,
-      iconSize: 1.15,
-      iconRotate: iconRotateDeg,
+      iconSize: _style.mapIconSize,
+      iconRotate: rider ? 0 : iconRotateDeg,
       iconAnchor: 'center',
       zIndex: 24,
     );

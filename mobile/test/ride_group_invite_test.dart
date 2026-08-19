@@ -1,8 +1,11 @@
 import 'dart:io';
 
+import 'package:aetherride_mobile/data/community/group_member_tour.dart';
+import 'package:aetherride_mobile/data/community/ride_group_cloud.dart';
 import 'package:aetherride_mobile/data/community/ride_group_invite.dart';
 import 'package:aetherride_mobile/data/community/ride_group_store.dart';
 import 'package:aetherride_mobile/domain/community/ride_group.dart';
+import 'package:aetherride_mobile/domain/saved_route.dart';
 import 'package:aetherride_mobile/domain/saved_route_note.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_de.dart';
 import 'package:aetherride_mobile/l10n/app_localizations_en.dart';
@@ -106,6 +109,8 @@ void main() {
     expect(RideGroupInvite.parsePastedJoin(''), isNull);
     expect(RideGroupInvite.parsePastedJoin('xyz'), isNull);
     expect(RideGroupInvite.parsePastedJoin('AB'), isNull);
+    expect(RideGroupInvite.parsePastedJoin('k7-m2 np')?.code, 'K7M2NP');
+    expect(RideGroupInvite.parsePastedJoin('K7M2NP')?.code, 'K7M2NP');
   });
 
   test('joinFromInvite importiert ohne lokales Original', () async {
@@ -137,6 +142,68 @@ void main() {
     expect(await guest.localMember(created.id), isNotNull);
   });
 
+  test('öffentlicher Code lokal, privat braucht Link', () async {
+    final dir = await Directory.systemTemp.createTemp('rg-pubcode-');
+    addTearDown(() async {
+      if (await dir.exists()) await dir.delete(recursive: true);
+    });
+    final guest = RideGroupStore(dirProvider: () async => dir);
+    const id = '11111111-1111-1111-1111-111111111111';
+    final now = DateTime.now().toUtc();
+    final pub = RideGroup(
+      id: id,
+      hostUserId: 'host-1',
+      savedRouteId: 'r-bodensee-road',
+      title: 'Bodensee',
+      startWindowStart: now.subtract(const Duration(hours: 1)),
+      startWindowEnd: now.add(const Duration(hours: 2)),
+      joinCode: 'K7M2NP',
+      status: RideGroupStatus.open,
+      livePinsAllowed: true,
+      createdAt: now,
+      visibility: RideGroupVisibility.public,
+    );
+    await guest.adoptCloudBundle(
+      RideGroupCloudBundle(
+        me: '',
+        groups: [pub],
+        members: [
+          RideGroupMember(
+            groupId: id,
+            userId: 'host-1',
+            displayLabel: 'Host',
+            joinedAt: now,
+          ),
+        ],
+      ),
+    );
+    final ok = await guest.tryJoin(code: 'k7-m2 np');
+    expect(ok.fail, isNull);
+    expect(ok.group?.id, id);
+
+    final privDir = await Directory.systemTemp.createTemp('rg-privcode-');
+    addTearDown(() async {
+      if (await privDir.exists()) await privDir.delete(recursive: true);
+    });
+    final other = RideGroupStore(dirProvider: () async => privDir);
+    await other.adoptCloudBundle(
+      RideGroupCloudBundle(
+        me: '',
+        groups: [pub.copyWith(visibility: RideGroupVisibility.private)],
+        members: [
+          RideGroupMember(
+            groupId: id,
+            userId: 'host-1',
+            displayLabel: 'Host',
+            joinedAt: now,
+          ),
+        ],
+      ),
+    );
+    final blocked = await other.tryJoin(code: 'K7M2NP');
+    expect(blocked.fail, RideGroupJoinFail.needLink);
+  });
+
   test('tryJoin unterscheidet unbekannt und ungültig', () async {
     final dir = await Directory.systemTemp.createTemp('rg-join-');
     addTearDown(() async {
@@ -153,7 +220,10 @@ void main() {
   test('Join-Hint spricht Einladungslink, nicht Token', () {
     final de = AppLocalizationsDe();
     expect(de.platzJoinCodeField, 'Einladungslink');
+    expect(de.platzJoinCode, 'Code');
+    expect(de.platzCopyCode, 'Code kopieren');
     expect(de.platzJoinLinkHint, contains('Einladungslink'));
+    expect(de.platzJoinLinkHint, contains('Code'));
     expect(de.platzJoinLinkHint.toLowerCase(), isNot(contains('token')));
     expect(
       AppLocalizationsEn().platzJoinLinkHint,
@@ -221,8 +291,25 @@ void main() {
       RideGroupInvite.shareText(
           title: 'Bodensee',
           url: 'https://x',
+          code: 'K7M2NP',
           visibility: RideGroupVisibility.public),
       contains('Freigegeben:'),
+    );
+    expect(
+      RideGroupInvite.shareText(
+          title: 'Bodensee',
+          url: 'https://x',
+          code: 'K7M2NP',
+          visibility: RideGroupVisibility.public),
+      contains('Code: K7M2NP'),
+    );
+    expect(
+      RideGroupInvite.shareText(
+          title: 'Bodensee',
+          url: 'https://x',
+          code: 'K7M2NP',
+          visibility: RideGroupVisibility.private),
+      isNot(contains('Code: K7M2NP')),
     );
     expect(
       RideGroupInvite.shareText(
@@ -238,5 +325,65 @@ void main() {
           visibility: RideGroupVisibility.private),
       contains('Nicht gelistet'),
     );
+  });
+
+  test('privates GPX-Invite trägt Spur, Gast importiert Host-Id', () {
+    final group = RideGroup(
+      id: '11111111-1111-1111-1111-111111111111',
+      hostUserId: 'host-1',
+      savedRouteId: 'gpx-neckar',
+      title: 'Neckar',
+      startWindowStart: DateTime.utc(2026, 8, 15, 8),
+      startWindowEnd: DateTime.utc(2026, 8, 15, 12),
+      joinCode: 'K7M2NP',
+      status: RideGroupStatus.open,
+      livePinsAllowed: true,
+      createdAt: DateTime.utc(2026, 8, 15, 8),
+    );
+    final route = SavedRouteEntry(
+      id: 'gpx-neckar',
+      name: 'Neckar',
+      distanceKm: 12,
+      elevationM: 80,
+      durationMin: 40,
+      savedAt: DateTime.utc(2026, 8, 15),
+      source: 'import',
+      coordinates: const [
+        [8.68, 49.40],
+        [8.70, 49.41],
+        [8.72, 49.42],
+      ],
+    );
+    final token = RideGroupInvite.encode(group, route: route);
+    final decoded = RideGroupInvite.decode(token);
+    expect(decoded?.tour, isNotNull);
+    expect(decoded?.tour?['includeTrack'], isTrue);
+    final imported = importMemberTourFromInvite(
+      payload: decoded,
+      existing: const [],
+    );
+    expect(imported?.id, 'gpx-neckar');
+    expect(imported?.coordinates.length, greaterThanOrEqualTo(2));
+    expect(
+      importMemberTourFromInvite(payload: decoded, existing: [route]),
+      isNull,
+    );
+    final catalogToken = RideGroupInvite.encode(
+      RideGroup(
+        id: group.id,
+        hostUserId: group.hostUserId,
+        savedRouteId: 'r-bodensee-road',
+        catalogTourId: 'r-bodensee-road',
+        title: group.title,
+        startWindowStart: group.startWindowStart,
+        startWindowEnd: group.startWindowEnd,
+        joinCode: group.joinCode,
+        status: group.status,
+        livePinsAllowed: group.livePinsAllowed,
+        createdAt: group.createdAt,
+      ),
+      route: route,
+    );
+    expect(RideGroupInvite.decode(catalogToken)?.tour, isNull);
   });
 }

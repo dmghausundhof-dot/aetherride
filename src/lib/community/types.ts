@@ -101,7 +101,7 @@ export type CommunityClub = {
 /** Hof-Name: Gruppe. CTA: Zusammen raus. Nicht „Runde“ (das ist Loop-Geometrie). */
 export type RideGroupStatus = "scheduled" | "open" | "riding" | "closed";
 
-/** privat: nur Einladungslink. öffentlich: Link + Platz-Filter. Kein Explore-GPS. */
+/** privat: nur Einladungslink. öffentlich: Link + Platz + Treffen-Pin. Kein Live-GPS. */
 export type RideGroupListing = "public" | "private";
 
 export type RideGroupPresenceVisibility =
@@ -120,7 +120,7 @@ export type RideGroupPresenceVisibility =
 export type RideGroup = {
   id: string;
   hostUserId: string;
-  /** Nur freigegebene SavedRoute oder Katalog-Tour. Private GPX geht nicht. */
+  /** SavedRoute oder Katalog-Tour. Kein RideTogether/`freeride`. */
   savedRouteId: string;
   catalogTourId?: string;
   title: string;
@@ -128,7 +128,7 @@ export type RideGroup = {
   startWindowEnd: string;
   /** Freitext, z. B. „Parkplatz Schwimmbad“. Kein POI. */
   meetingPoint?: string;
-  /** Intern — nicht in der UI. Alte Links dürfen ihn noch tragen. */
+  /** 6 Zeichen. Öffentlich: zum Abtippen. Privat: nur im Token-Link. */
   joinCode: string;
   /** Default private. Fehlt = private (alte Zeilen). */
   visibility?: RideGroupListing;

@@ -18,6 +18,7 @@ import {
   rowToMember,
   rowToPresence,
   rowToRideGroup,
+  RIDE_GROUP_SELECT,
   type RideGroupSqlRow,
 } from "@/lib/community/rideGroupServer";
 import type { RideGroupPresenceVisibility } from "@/lib/community/types";
@@ -49,9 +50,7 @@ async function loadGroup(
 ) {
   const { data, error } = await client
     .from("ride_groups")
-    .select(
-      "id, host_user_id, saved_route_id, catalog_tour_id, title, start_window_start, start_window_end, join_code, status, live_pins_allowed, created_at"
-    )
+    .select(RIDE_GROUP_SELECT)
     .eq("id", groupId)
     .maybeSingle();
   if (error) {
@@ -191,6 +190,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       me: user.id,
       groupId,
+      group: bundle.group,
       presence: bundle.presence,
       members: bundle.members,
       stub: false,
@@ -301,6 +301,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       me: user.id,
       groupId,
+      group: bundle.group,
       presence: bundle.presence,
       members: bundle.members,
       stub: false,

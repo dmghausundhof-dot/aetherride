@@ -39,12 +39,12 @@
       }
     }
   },
-  "shopForYourBikeEmpty": "Stell ein Rad in der Werkstatt ab — dann öffnen wir die passenden Teile im Shop.",
+  "shopForYourBikeEmpty": "Stell ein Rad am Stand ab — dann öffnen wir die passenden Teile im Shop.",
   "shopMerchHint": "Kleidung und Kleinzeug. Unabhängig vom Rad, nie nach Fit gefiltert.",
   "shopMerchTitle": "Kleidung",
   "shopMerchEmpty": "Kein Merch im Regal. Kleidung bleibt im Shop, nie nach dem Rad gefiltert.",
   "shopNotConnected": "Shop nicht verbunden",
-  "shopNotConnectedHint": "Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann öffnet die Werkstatt den Laden.",
+  "shopNotConnectedHint": "Keine Storefront-URL. SHOPIFY_STOREFRONT_URL setzen, dann öffnet das Rad den Laden.",
   "shopOpenFailed": "Shop konnte nicht geöffnet werden.",
   "shopPasswordWall": "Der Shop draußen ist noch nicht öffentlich — manchmal steht ein Passwort. Das Regal hier bleibt.",
   "shopLockedTitle": "Shop draußen noch zu",
@@ -95,7 +95,7 @@
   "werkstattSetupLightsRack": "Licht und Gepäckträger — nur wenn eingetragen",
   "werkstattSetupDrivetrain": "Schaltung",
   "werkstattBatteryHonest": "Akku nur mit echtem Sensor",
-  "werkstattBatteryHonestHint": "Kein Prozent ohne gekoppelten Sensor. Akku vom Intuvia über Flow → Komponenten → FlowLine.",
+  "werkstattBatteryHonestHint": "Kein Prozent ohne gekoppelten Sensor. Akku vom Display, nicht vom Tacho.",
   "werkstattSensorEbike": "Tempo-Sensor — Tempo und Trittfrequenz. Akku nur mit echtem Display.",
   "werkstattSensorAnalog": "Radsensor — Tempo und Trittfrequenz am Rad.",
   "hofYourWatch": "Deine Uhr",
@@ -137,7 +137,7 @@
     }
   },
   "discoverMenuPhotos": "Umgebungsfotos",
-  "discoverMenuOffline": "Offline-Karten",
+  "discoverMenuOffline": "Offline-Routing",
   "discoverMenuCollections": "Sammlungen",
   "discoverMenuPrivacy": "Daten & Privatsphäre",
   "partsTitle": "Teile & Zubehör",
@@ -177,7 +177,13 @@
     }
   },
   "hofWhatCameIn": "Was reinkam",
-  "hofPackMissing": "Pack für {name} fehlt",
+  "hofPackMissing": "Kein Offline-Routing für {name}",
+  "hofLoadOfflineMap": "Offline-Routing für {name} laden",
+  "@hofLoadOfflineMap": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "@hofPackMissing": {
     "placeholders": {
       "name": {
@@ -219,7 +225,7 @@
       }
     }
   },
-  "hofCareInWorkshop": "{label} — in der Werkstatt",
+  "hofCareInWorkshop": "{label} — am Rad",
   "@hofCareInWorkshop": {
     "placeholders": {
       "label": {
@@ -477,8 +483,8 @@
   "garageTitle": "Garage",
   "garageFabBike": "Rad anlegen",
   "garageEmptyTitle": "Noch kein Rad hier",
-  "garageEmptyMessage": "Name und Typ reichen. Der Katalog ist Suche — Serienteile nur wenn du sie übernimmst.",
-  "garageAddBike": "Rad anlegen",
+  "garageEmptyMessage": "Name und Typ reichen. Marke und Teile kannst du später ergänzen.",
+  "garageAddBike": "Fahrrad hinzufügen",
   "garageAddAnother": "Weiteres Rad",
   "garageStatBike": "RAD",
   "garageStatBikes": "RÄDER",
@@ -538,6 +544,26 @@
   "garageFrameSize": "Rahmengröße",
   "garageWheelSize": "Laufrad",
   "garageBrandModel": "Modell",
+  "garageBikeId": "Ausweis",
+  "garageBikeIdHint": "Rahmennummer, Kauf und Versicherung — nur auf dem Gerät.",
+  "garageBikeIdEmpty": "Rahmennummer hinterlegen — für Diebstahl und Versicherung.",
+  "garageBikeIdAdd": "Ausweis anlegen",
+  "garageSerial": "Rahmennummer",
+  "garageSerialHint": "Steht am Tretlager, Steuerrohr oder der Kettenstrebe.",
+  "garageColor": "Farbe",
+  "garageWeightKg": "Gewicht (kg)",
+  "garageOwnerNotes": "Notizen",
+  "garagePurchasedAt": "Gekauft am",
+  "garagePurchasedFrom": "Gekauft bei",
+  "garagePurchasePrice": "Kaufpreis (€)",
+  "garageInsurance": "Versicherung",
+  "garageInsurancePolicy": "Schein / Police",
+  "garageKeyNumber": "Schlüsselnummer",
+  "garageEditBike": "Rad bearbeiten",
+  "garageSerialCopied": "Rahmennummer kopiert",
+  "garagePrivateHint": "Bleibt lokal und in deiner Sicherung. Nicht öffentlich.",
+  "garageYear": "Jahr",
+  "dieBoxChipId": "Ausweis",
   "garageCompatFits": "Passt {count}",
   "@garageCompatFits": {
     "placeholders": {
@@ -562,12 +588,12 @@
       }
     }
   },
-  "garagePartsEmpty": "Noch keine Teile erfasst. Tippe auf „Teil hinzufügen“, dann erinnern wir dich an Wartung und zeigen, ob Teile zusammenpassen.",
+  "garagePartsEmpty": "Noch keine Teile. Tippe auf „Teil hinzufügen“.",
   "garageMaintEmpty": "Alles im grünen Bereich — keine Wartung fällig.",
   "garageSetupTabTitle": "Dein Setup",
   "garageSetupTabHint": "SAG = wie weit die Federung mit deinem Gewicht einsinkt (Richtwert oft ~25–30 %).",
   "garageYourParts": "Deine Teile",
-  "garageMissingSlots": "Noch nicht erfasst (optional)",
+  "garageMissingSlots": "Noch offen",
   "garageActiveBadge": "Aktives Bike",
   "garageStatKm": "KM",
   "garageStatHours": "STD.",
@@ -667,12 +693,29 @@
   "postRideFreeride": "Freeride",
   "postRideLiveTour": "Neue Tour",
   "postRideToMappe": "In die Mappe",
+  "postRideDone": "Fertig",
+  "postRideNavEnded": "Navigation",
+  "postRideShortSession": "Kurze Session — wenig GPS-Bewegung. Distanz und Tempo sind nicht belastbar.",
   "postRideTrackMap": "Gefahrener Track",
   "postRideNoTrack": "Kein GPS-Track — Karte zeigt keinen Verlauf.",
   "postRideStatDistance": "Distanz",
   "postRideStatDuration": "Dauer",
   "postRideStatPace": "Tempo",
   "postRideStatElevation": "Höhenmeter",
+  "postRideTerrainTitle": "Strecke & Neigung",
+  "postRideTerrainHint": "Höhe und Neigung aus GPS. Lücken bleiben Lücken — kein nachgezeichnetes Profil.",
+  "postRideNoElevation": "Keine Höhenpunkte im Track. Neigung ist dann nicht belastbar.",
+  "postRideStatDescent": "Abfahrt",
+  "postRideStatMaxGrade": "Steilste",
+  "postRideStatMaxSpeed": "Spitze",
+  "postRideSensorHr": "Puls",
+  "postRideSensorCad": "Cadenz",
+  "postRideSensorPower": "Leistung",
+  "postRideGradeSteepUp": "Steil bergauf",
+  "postRideGradeUp": "Anstieg",
+  "postRideGradeRoll": "Flach",
+  "postRideGradeDown": "Abfahrt",
+  "postRideGradeSteepDown": "Steil bergab",
   "postRideWeatherTitle": "Wetter",
   "postRideWeatherStart": "Start",
   "postRideWeatherEnd": "Ende",
@@ -683,7 +726,7 @@
   "postRidePhotoGallery": "Galerie",
   "postRidePhotosShare": "Teilen",
   "postRidePhotosShareText": "Meine FlowLine-Fahrt",
-  "postRidePhotosEmpty": "Noch keine Fotos zum Teilen",
+  "postRidePhotosEmpty": "Noch nichts zum Teilen",
   "postRidePhotosMax": "Maximal {count} Fotos",
   "@postRidePhotosMax": {
     "placeholders": {
@@ -692,7 +735,35 @@
       }
     }
   },
-  "postRideCommunityStub": "Fotos bleiben lokal. Stimmen hängen an der Tour, nicht in einem Feed.",
+  "postRideMediaTitle": "Fotos & Videos",
+  "postRideMediaHint": "Lokal auf dem Gerät. Mit GPS-Ort, außer in einer Privacy-Zone.",
+  "postRideAddMedia": "Foto oder Video",
+  "postRideVideoCamera": "Video",
+  "postRideVideoGallery": "Clip aus Galerie",
+  "postRideVideoPlay": "Video",
+  "postRideVideoMissing": "Clip nicht mehr auf dem Gerät.",
+  "postRideVideosMax": "Maximal {count} Videos",
+  "@postRideVideosMax": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postRideNotesTitle": "Notiz",
+  "postRideNotesHint": "Ein kurzer Satz zur Fahrt — nur für dich.",
+  "postRideNotesPlaceholder": "Nasser Trail, guter Flow …",
+  "postRideNotesAdd": "Merken",
+  "postRideNotesEmpty": "Noch keine Notiz.",
+  "postRideNotesMax": "Maximal {count} Notizen",
+  "@postRideNotesMax": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "postRideCommunityStub": "Fotos, Videos und Notizen bleiben lokal. Stimmen hängen an der Tour, nicht in einem Feed.",
   "postRideOpenTour": "Tour öffnen",
   "postRideSaveAsTour": "Als Tour speichern",
   "postRideSaveAsTourDone": "Unter Touren gespeichert",
@@ -767,6 +838,9 @@
   "authCreateAccount": "Konto erstellen",
   "authHaveAccount": "Schon ein Konto? Anmelden",
   "authNewHere": "Neu hier? Registrieren",
+  "authForgotPassword": "Passwort vergessen?",
+  "authResetSent": "Wenn das Konto existiert, kommt eine E-Mail zum Zurücksetzen.",
+  "authResetNeedEmail": "Bitte zuerst die E-Mail eintragen.",
   "authWithGoogle": "Mit Google",
   "authWithApple": "Mit Apple",
   "authPrivacy": "Daten & Privatsphäre",
@@ -901,7 +975,7 @@
   "chatPromptShop": "Laden",
   "chatPromptShopQuery": "Brauche ich bald neue Verschleißteile?",
   "chatToolWatch": "Was steht an",
-  "chatToolGarage": "Werkstatt",
+  "chatToolGarage": "Rad",
   "chatToolCompat": "Kompatibilität",
   "chatToolRange": "Reichweite",
   "chatToolSetupHistory": "Setup-Historie",
@@ -921,8 +995,26 @@
   "privacyConsents": "Einwilligungen",
   "privacyHud": "HUD",
   "privacyZones": "Privacy-Zonen",
-  "privacyZoneAdd": "Zone",
-  "privacyNoZones": "Keine Zonen — Start/Ziel-Umgebung kann getrimmt werden.",
+  "privacyHomePlacesTitle": "Zuhause & sensible Orte",
+  "privacyHomePlacesEmpty": "Keine Zone — Start/Ziel 200 m gekürzt, Haus oft noch erkennbar",
+  "privacyHomePlacesCount": "{count, plural, =1{1 Zone · auf der Karte ausblenden} other{{count} Zonen · auf der Karte ausblenden}}",
+  "@privacyHomePlacesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyConsentsExportHint": "Einwilligungen, Export, Strava",
+  "privacyZonesLead": "Start und Ziel auf geteilten Karten, Export, Heatmap und Fotos. Du siehst den vollen Track.",
+  "privacyZoneAdd": "Zone hinzufügen",
+  "privacyNoZones": "Keine Zone. Die ersten und letzten 200 m werden trotzdem gekürzt — Zuhause bleibt oft erkennbar.",
+  "privacyZoneDeleteConfirm": "Diese Zone wirklich löschen? Geteilte Karten können Start und Ziel wieder zeigen.",
+  "privacyZoneDeleted": "Zone gelöscht",
+  "privacyShareNoZoneTitle": "Keine Privacy-Zone",
+  "privacyShareNoZoneBody": "Start und Ziel können Zuhause zeigen. Zone setzen, bevor die Karte rausgeht — oder trotzdem teilen (200 m an den Enden werden gekürzt).",
+  "privacyShareAnyway": "Trotzdem teilen",
+  "privacyShareNoZoneCta": "Zone setzen",
   "privacyZoneRadius": "{label} Radius",
   "@privacyZoneRadius": {
     "placeholders": {
@@ -1049,7 +1141,8 @@
   "consentHealthTitle": "Gesundheitsdaten",
   "consentHealthBody": "Vorbereitung — noch keine Anbindung an Health Connect. Die Einwilligung speichert nur deine Präferenz für später.",
   "privacyZoneTapHint": "Tippe auf die Karte, um die Zone zu setzen.",
-  "privacyZoneRadiusHint": "Radius gilt für Export und wo viele fahren.",
+  "privacyZoneRadiusHint": "Radius gilt für Export, Heatmap, Gruppen-Pins und Foto-Orte.",
+  "privacyZonePhotoHint": "In der Zone bekommen Fotos keinen Standort. Die Bilder bleiben auf dem Gerät.",
   "privacyZoneLabel": "Label",
   "privacyZoneRadiusWord": "Radius",
   "privacyZoneApplyCoords": "Koordinaten übernehmen",
@@ -1113,7 +1206,7 @@
   "profileWatchIdle": "Keine Uhr gekoppelt — Garmin, Polar, Wahoo.",
   "profileBikeBleTitle": "Rad / Intuvia",
   "profileBikeBleIdle": "Intuvia oder Tempo-Sensor am aktiven Rad.",
-  "profileBikeBleNeedBike": "Zuerst ein Rad in die Werkstatt stellen.",
+  "profileBikeBleNeedBike": "Zuerst ein Rad am Stand abstellen.",
   "profileCloudBilling": "Cloud-Sync & Abo",
   "profileSignedIn": "Angemeldet",
   "profileFamilyGarage": "Familien-Garage",
@@ -1150,7 +1243,7 @@
   },
   "profileProActive": "FlowLine Pro aktiv",
   "profileManage": "Verwalten",
-  "profileProPerks": "Offline-Karten, unbegrenzte Bikes, Fahrwerksanalyse & Bracketing.",
+  "profileProPerks": "Unbegrenzte Bikes, Fahrwerksanalyse & Bracketing.",
   "profileUpgradePro": "Pro upgraden",
   "profileDisplayName": "Anzeigename",
   "profileRiderWeight": "Fahrergewicht (kg)",
@@ -1235,15 +1328,139 @@
   "onboardNextRide": "Weiter zur Fahrt",
   "onboardParkBikeFirst": "Zuerst Rad abstellen",
   "onboardLater": "Später einrichten",
-  "offlineMapsTitle": "Offline-Karten",
-  "offlineMapsHint": "Lädt Routing und Kartenkacheln für die Region. Ohne Netz: geladene Karte und Routing im Gebiet.",
-  "offlineRegionActive": "Region aktiv",
-  "offlineNoRegion": "Keine Region aktiv",
-  "offlineReadyBoth": "Routing + Kartenkacheln bereit.",
-  "offlineReadyRouting": "Routing bereit — Karte noch nicht offline.",
-  "offlineLoadBelow": "Unten ein gebautes Pack laden.",
+  "offlineMapsChip": "Routing",
+  "profileOfflineMaps": "Offline-Routing",
+  "profileOfflineMapsHint": "Graph fürs Routing laden. Übersicht extra.",
+  "profileNavPuckHint": "3D-Fahrer als Standard. Der klassische Pfeil ist etwas kleiner.",
+  "rideNavPuckHintSimple": "3D-Fahrer auf der Karte, oder der klassische Pfeil — etwas kleiner.",
+  "navigateOfflineHint": "Ohne Netz? Routing für diese Strecke laden.",
+  "navigateOfflineHintPack": "{name} — Routing in dieser Box",
+  "@navigateOfflineHintPack": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "navigateOfflineHintPackSized": "{name} · {size} — Routing in dieser Box",
+  "@navigateOfflineHintPackSized": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineCoverageLabel": "{name} · Routing",
+  "@offlineCoverageLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "offlineCoverageSuggested": "Laden · {name}",
+  "@offlineCoverageSuggested": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "offlineMapsTitle": "Offline-Routing",
+  "offlineMapsHint": "Lädt den Routing-Graphen eines Packs. Die Übersichtskarte (Zoom 0–11) ist ein extra, großer Download. Navigation im Ride braucht Street-Tiles — oft Netz.",
+  "offlineRegionActive": "Routing aktiv",
+  "offlineNoRegion": "Kein Routing aktiv",
+  "offlineReadyBoth": "Routing bereit. Übersicht geladen (kein Street-Zoom im Ride).",
+  "offlineReadyRouting": "Routing bereit — Übersicht nicht geladen.",
+  "offlineLoadBelow": "Unten ein Pack laden. Nur der Graph, nicht die 540-MB-Karte.",
+  "offlineRoutingOn": "Routing an",
+  "offlineRoutingOff": "Kein Routing",
+  "offlineOverviewOn": "Übersicht an",
+  "offlineOverviewOff": "Keine Übersicht",
+  "offlineOverviewCta": "Übersicht {id} laden ({size})",
+  "@offlineOverviewCta": {
+    "placeholders": {
+      "id": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineOverviewExplain": "Übersicht bis Zoom 11. Navigation im Ride bleibt auf Street-Tiles und braucht oft Netz.",
+  "offlineStorageLine": "Auf dem Gerät: {size}",
+  "@offlineStorageLine": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineSuggested": "Routing hier",
+  "offlineInstalledSection": "Installiert",
+  "offlineCities": "Städte",
+  "offlineEurope": "Europa",
+  "offlineEnvelopes": "Länderflächen",
+  "offlineEnvelopesHint": "Große Bounding Box, dünner Graph — kein komplettes Landesnetz.",
+  "offlineCountryDE": "Deutschland",
+  "offlineCountryCH": "Schweiz",
+  "offlineCountryAT": "Österreich",
+  "offlineCountryFR": "Frankreich",
+  "offlineCountryNL": "Niederlande",
+  "offlineCountryIT": "Italien",
+  "offlineCountryLI": "Liechtenstein",
+  "offlineCountryDACH": "Bodensee / DACH",
+  "offlineCountryOther": "Weitere",
+  "offlineCountryMorePacks": "Weitere ({count})",
+  "@offlineCountryMorePacks": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "offlineCountryPacks": "{count} Regionen",
+  "@offlineCountryPacks": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "offlineCountryEnvelopes": "{count} Landesflächen",
+  "@offlineCountryEnvelopes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "offlineCountryPacksAndEnvelopes": "{packs} Regionen · {envelopes} Landesflächen",
+  "@offlineCountryPacksAndEnvelopes": {
+    "placeholders": {
+      "packs": { "type": "int" },
+      "envelopes": { "type": "int" }
+    }
+  },
+  "offlineConfirmLargeTitle": "Großer Routing-Graph",
+  "offlineConfirmLargeBody": "{name} ist {size}. Es wird nur der Routing-Graph geladen, keine Straßenkarte fürs Ride.",
+  "@offlineConfirmLargeBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmOverviewTitle": "Übersichtskarte laden?",
+  "offlineConfirmOverviewBody": "{id} ist {size} und nur Zoom 0–11. Navigation im Ride braucht weiter Street-Tiles und oft Netz.",
+  "@offlineConfirmOverviewBody": {
+    "placeholders": {
+      "id": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmLoad": "Laden",
+  "offlineSubUpdate": "Update verfügbar",
+  "offlineSubUpdateSized": "Update · {size}",
+  "@offlineSubUpdateSized": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineUpdatePack": "Aktualisieren",
+  "offlineConfirmCellularTitle": "Kein WLAN",
+  "offlineConfirmCellularBody": "{size} übers Mobilfunk laden? Die Übersicht ist groß — der Graph bleibt klein.",
+  "@offlineConfirmCellularBody": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmCellularAnyway": "Trotzdem laden",
+  "offlineDeletePack": "Pack löschen",
+  "offlineSnackRoutingOnly": "{name}: Routing bereit. Übersicht ist extra.",
+  "@offlineSnackRoutingOnly": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "offlineOverviewReady": "Übersichtskarte gespeichert (Zoom 0–11).",
   "offlineRegions": "Regionen",
-  "offlineSearchRegion": "Region suchen",
+  "offlineSearchRegion": "Pack suchen",
   "offlineNoneFound": "Keine Region gefunden",
   "offlineNoPacks": "Gerade keine Packs zum Laden. Unten stehen Regionen, die noch nicht fertig sind.",
   "offlineNotBuilt": "Noch nicht fertig ({count})",
@@ -1255,7 +1472,8 @@
     }
   },
   "offlineStubsHint": "Noch nicht zum Laden frei.",
-  "offlineRemoveRegion": "Region entfernen",
+  "offlineDownloadPaused": "Download pausiert. Im Sheet weiterladen.",
+  "offlineRemoveRegion": "Aktivierung lösen",
   "offlineStyleTitle": "Kartenstil (optional)",
   "offlineStyleHint": "Default: DACH z11 Style-JSON. Nur ändern für eigenen MapLibre-Style.",
   "offlineStyleUrl": "Style-JSON-URL",
@@ -1276,7 +1494,7 @@
       }
     }
   },
-  "offlinePackError": "Region-Pack: {error}",
+  "offlinePackError": "Pack: {error}",
   "@offlinePackError": {
     "placeholders": {
       "error": {
@@ -1284,7 +1502,7 @@
       }
     }
   },
-  "offlineRemoved": "Region entfernt",
+  "offlineRemoved": "Routing aus. Pack bleibt auf dem Gerät.",
   "offlineNoRemoteDach": "Keine Remote-Packs — DACH-Fallback aktiv",
   "offlineNoBuiltPacks": "Keine gebauten Packs auf diesem Server",
   "offlineDachCatalog": "Offline — DACH-Regionen aus App-Katalog",
@@ -1311,7 +1529,7 @@
   },
   "platzTogetherKicker": "Gruppe",
   "platzTogetherTitle": "Zusammen raus",
-  "platzTogetherHint": "Einladen teilt den Link. Deine Gruppen bleiben — kein Feed.",
+  "platzTogetherHint": "Einladen teilt den Link. Deine Gruppen bleiben. Offene Gruppen: Link oder Code — auf dem Platz und als Treffen-Pin, kein Feed.",
   "platzTogetherListHint": "Gruppe. Eingeloggt: auf dem Server. Sonst nur dieses Gerät — der Host sieht dich nicht. Freunde auf der Karte nur während der Fahrt, nach Opt-in.",
   "platzCreateGroup": "Gruppe anlegen",
   "platzJoinCode": "Code",
@@ -1323,6 +1541,8 @@
   "platzDissolve": "Auflösen",
   "platzLeave": "Verlassen",
   "platzCopyLink": "Link kopieren",
+  "platzCopyCode": "Code kopieren",
+  "platzCodeCopied": "Code kopiert. Offene Gruppe: damit beitreten.",
   "platzInviteShares": "Einladen teilt den Gruppenlink",
   "platzInviteSharesProfile": " und dein Profil",
   "platzInviteAsYou": "Auf der Einladung stehst du als Du. Namen im Profil festlegen?",
@@ -1362,30 +1582,203 @@
     }
   },
   "platzCreateCollection": "Sammlung anlegen",
-  "platzJoinWithCode": "Mit Link beitreten",
+  "platzJoinWithCode": "Verbinden",
+  "platzConnectField": "Link oder 6-stelliger Code",
+  "platzTimeTapHint": "Tippen zum Ändern",
+  "platzMore": "Mehr",
+  "platzShareLink": "Link teilen",
+  "platzJoinSignInFirst": "Anmelden — sonst sieht der Host dich nicht",
+  "platzShareInRide": "Teilen in der Fahrt",
   "platzJoinCodeField": "Einladungslink",
-  "platzJoinLinkHint": "Link aus WhatsApp oder Messages einfügen. Privat braucht den Einladungslink — kein Code zum Abtippen.",
-  "platzJoinEmpty": "Link fehlt.",
-  "platzJoinInvalid": "Kein gültiger Einladungslink.",
+  "platzJoinLinkHint": "Link aus WhatsApp oder Messages einfügen — oder den 6-stelligen Code einer offenen Gruppe. Privat bleibt nur der Einladungslink.",
+  "platzJoinEmpty": "Link oder Code fehlt.",
+  "platzJoinInvalid": "Kein gültiger Link oder Code.",
   "platzJoin": "Beitreten",
   "platzStartLabel": "Start",
   "platzStartNow": "Jetzt",
   "platzStartIn1h": "In 1 h",
   "platzStartToday18": "Heute 18:00",
   "platzStartTomorrow10": "Morgen 10:00",
+  "platzStartCustom": "Andere Zeit…",
   "platzDurationLabel": "Dauer",
+  "platzDurationCustom": "Andere…",
+  "platzDurationHoursHint": "Stunden (0,25–12)",
+  "platzWindowCapHint": "Start bis 14 Tage voraus. Dauer 15 Min bis 12 Stunden.",
   "platzMeetingPlaceholder": "Treffpunkt (optional)",
   "platzMeetingHint": "z. B. Parkplatz am Bad",
   "platzPinsOnHud": "Freunde auf der Karte · an",
   "platzPinsHint": "Nur während der Fahrt, nicht auf der öffentlichen Karte.",
+  "rideGroupHudLine": "{sharing}/{total} teilen · {left}",
+  "@rideGroupHudLine": {
+    "placeholders": {
+      "sharing": { "type": "int" },
+      "total": { "type": "int" },
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupHudSelfOn": "Du teilst · {left}",
+  "@rideGroupHudSelfOn": {
+    "placeholders": {
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupHudSelfOff": "stumm · {left}",
+  "@rideGroupHudSelfOff": {
+    "placeholders": {
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupHudWithDetail": "{detail} · {left}",
+  "@rideGroupHudWithDetail": {
+    "placeholders": {
+      "detail": { "type": "String" },
+      "left": { "type": "String" }
+    }
+  },
+  "rideGroupWhenToday": "heute {time} · {dur}",
+  "@rideGroupWhenToday": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "dur": { "type": "String" }
+    }
+  },
+  "rideGroupWhenTomorrow": "morgen {time} · {dur}",
+  "@rideGroupWhenTomorrow": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "dur": { "type": "String" }
+    }
+  },
+  "rideGroupWhenWeekday": "{wd} {time} · {dur}",
+  "@rideGroupWhenWeekday": {
+    "placeholders": {
+      "wd": { "type": "String" },
+      "time": { "type": "String" },
+      "dur": { "type": "String" }
+    }
+  },
+  "rideGroupWhenClosed": "zu — {wd} {time}",
+  "@rideGroupWhenClosed": {
+    "placeholders": {
+      "wd": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupHudHours": "noch {hours} h",
+  "@rideGroupHudHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "rideGroupHudMins": "noch {min} min",
+  "@rideGroupHudMins": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "rideGroupHudClosed": "zu",
+  "rideGroupPinStale": "eben noch",
+  "rideGroupRosterTitle": "Dabei",
+  "rideGroupMute": "stumm",
+  "rideGroupShareOn": "teilt",
+  "rideGroupOffline": "offline",
+  "rideGroupShareOnLineOne": "{name} sieht dich — nur bis {time}.",
+  "@rideGroupShareOnLineOne": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupShareOnLineMany": "{count} Freunde sehen dich — nur bis {time}.",
+  "@rideGroupShareOnLineMany": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupShareOnLineNone": "Noch niemand dabei — nur bis {time}.",
+  "@rideGroupShareOnLineNone": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "rideGroupWindowClosedToast": "Fenster zu — Pins aus.",
+  "rideGroupMateLeftToast": "{name} ist weg.",
+  "@rideGroupMateLeftToast": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rideGroupGoneToast": "Gruppe vorbei.",
+  "rideGroupAhead": "vor dir",
+  "rideGroupBehind": "hinter dir",
+  "rideGroupLeft": "links",
+  "rideGroupRight": "rechts",
+  "rideGroupFrameAll": "Alle auf der Karte",
+  "rideGroupExtend": "Fenster verlängern",
+  "rideGroupExtend30m": "+30 Min",
+  "rideGroupExtend1h": "+1 Stunde",
+  "rideGroupExtend2h": "+2 Stunden",
+  "rideGroupExtendCustomEnd": "Anderes Ende…",
+  "rideGroupExtendCapHint": "Maximal bis jetzt + 12 Stunden.",
+  "rideGroupExtendInvalid": "Zeit liegt außerhalb des Rahmens.",
+  "rideGroupFriendN": "Freund {n}",
+  "@rideGroupFriendN": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "rideGroupFlyTo": "Auf der Karte",
+  "rideGroupWindowExtended": "Fenster verlängert.",
+  "rideTogether": "Zusammen",
+  "rideTogetherSearch": "Suche neben dir — Karte, dann Ja. Kein Radar auf der Karte.",
+  "rideTogetherEmpty": "Niemand in der Zelle. Code zeigen oder warten.",
+  "rideTogetherBeside": "neben dir",
+  "rideTogetherNear": "in der Nähe",
+  "rideTogetherAsk": "Zusammen?",
+  "rideTogetherWait": "wartet…",
+  "rideTogetherInbound": "{name} will zusammenfahren",
+  "@rideTogetherInbound": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rideTogetherAccept": "Ja",
+  "rideTogetherDecline": "Nicht jetzt",
+  "rideTogetherCodeHint": "Der andere tippt den Code.",
+  "rideTogetherJoinCode": "Code eingeben",
+  "rideTogetherJoin": "Mit Code verbinden",
+  "rideTogetherCodeUnknown": "Kein offener Zusammen-Code.",
+  "rideTogetherCodeInvalid": "Sechs Zeichen — ohne I, O, 0, 1.",
+  "rideTogetherNeedLogin": "Anmelden — sonst sieht euch der Server nicht.",
+  "rideTogetherNeedGps": "Standort braucht’s zum Finden.",
+  "rideTogetherInZone": "In der Privacy-Zone unsichtbar.",
+  "rideTogetherAnon": "Fahrer",
+  "rideTogetherInvite": "Jemanden holen",
+  "rideTogetherFull": "Voll — höchstens 20.",
+  "rideTogetherClosedHint": "Geschlossen. Nur wer den Code hat oder neben dir Ja sagt.",
+  "rideTogetherTwoSessions": "Zwei geschlossene Gruppen — jede bleibt für sich. Code weitergeben.",
+  "rideTogetherNotLooking": "Beide müssen gerade suchen.",
+  "rideTogetherRateLimited": "Zu viele Anfragen — kurz warten.",
+  "rideTogetherTooFar": "Nicht mehr in der Zelle.",
+  "rideTogetherStopLook": "Suche aus",
+  "rideTogetherSoloWait": "1 · wartet",
+  "rideTogetherAccepted": "angenommen",
+  "rideTogetherDeclined": "abgelehnt",
   "platzTourNotInMappe": "Tour nicht unter Touren.",
-  "platzTourNotInMappeHint": "Katalog-Touren legt Losfahren unter Touren. Private GPX braucht den Link vom Gastgeber — kein erfundener Track.",
+  "platzTourNotInMappeHint": "Katalog-Touren legt Losfahren unter Touren. Private GPX kommt mit dem Einladungslink als Kopie — kein erfundener Track.",
   "platzCollectionsHint": "Anlegen unter Freigeben. Teilen nur mit freigegebenen oder Katalog-Touren — private GPX bleibt draußen.",
   "akteTourKicker": "Tour",
   "stimmenShareNeedRelease": "Erst auf Freigeben tippen — sonst geht der Link ins Leere.",
-  "platzNeedSharedTour": "Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.",
-  "platzShareTourFirst": "Zuerst eine Tour freigeben",
-  "platzShareTourFirstHint": "Ohne Freigabe bleibt die Gruppe unsichtbar für Freunde. Tippe eine Tour, dann Freigeben, dann Gruppe anlegen.",
+  "platzNeedSharedTour": "Zuerst eine Tour wählen oder selbst planen.",
+  "platzShareTourFirst": "Eigene Tour als Gruppe planen",
+  "platzShareTourFirstHint": "Route auf der Karte setzen, merken — danach liegt sie im Gruppen-Picker.",
+  "platzPickMine": "Meine Touren",
+  "platzPickNearby": "Touren in der Nähe",
+  "platzNearbyNeedGps": "Ohne Standort keine Touren in der Nähe — nimm eine eigene oder die letzte Karte.",
+  "platzNearbyFromMap": "Nähe von der letzten Karte, nicht vom GPS.",
+  "platzPlanAsGroup": "Eigene Tour als Gruppe planen",
+  "platzPlanAsGroupHint": "Route auf der Karte setzen, merken — danach liegt sie im Gruppen-Picker.",
   "platzHostCannotSee": "Nur auf diesem Gerät. Der Host sieht dich nicht — anmelden.",
   "platzJoinLocal": "Nur auf diesem Gerät: {title}. Der Host sieht dich nicht — anmelden.",
   "@platzJoinLocal": {
@@ -1397,7 +1790,7 @@
   },
   "platzJoinLocalCta": "Auf diesem Gerät merken",
   "platzJoinUnsignedHint": "Ohne Anmeldung sieht der Host dich nicht.",
-  "platzNoSharedTours": "Keine freigegebenen oder Katalog-Touren. Private GPX bleibt draußen.",
+  "platzNoSharedTours": "Keine eigenen Touren. Plane eine oder nimm eine in der Nähe.",
   "platzGroupCreated": "Gruppe {code} — Einladen teilt den Link.",
   "@platzGroupCreated": {
     "placeholders": {
@@ -1476,10 +1869,10 @@
   "watchNoHr": "Kein Puls-Signal — Broadcast an der Uhr prüfen.",
   "watchNoDeviceId": "Verbunden, aber ohne Geräte-ID",
   "bleBikeTitle": "Verbinden",
-  "blePairLeadAny": "Display, Motor oder Sensor tippen.",
+  "blePairLeadAny": "Bosch: Akku vom Display. Shimano und andere: nur Name, Tempo vom Rad-Sensor.",
   "bleFlowRowName": "Bosch",
   "bleFlowRowKind": "Flow",
-  "bleBikeHint": "Akku nur vom Intuvia, Tempo vom Sensor am Rad — nichts erfinden.",
+  "bleBikeHint": "Bosch: Akku vom Display. Shimano und andere: nur Name, Tempo vom Rad-Sensor.",
   "bleRememberAnyway": "Trotzdem merken",
   "bleScanningDrive": "Suche …",
   "bleEmptyEbike": "Intuvia an, Flow nur zum Hinzufügen öffnen, Handy nah halten.",
@@ -1847,7 +2240,7 @@
   "garageMyBike": "Mein Rad",
   "garageCatalog": "Katalog",
   "garageImport": "Importieren",
-  "garageCreateBike": "Rad anlegen",
+  "garageCreateBike": "Fahrrad hinzufügen",
   "garageGpxImported": "GPX „{name}“ · {km} km",
   "@garageGpxImported": {
     "placeholders": {
@@ -1866,7 +2259,7 @@
   "garageSlotHeading": "Slot",
   "garageEditPart": "Teil bearbeiten",
   "garageInstallPart": "Teil installieren",
-  "garageSearchParts": "Teile suchen (API/Cache)",
+  "garageSearchParts": "Im Katalog suchen",
   "garageSearchPartsHint": "Hersteller / Modell — optional",
   "garageSearchPartsHelper": "Ohne Treffer: Basisdaten manuell",
   "garageHits": "Treffer",
@@ -1973,7 +2366,7 @@
   "garageBlePairFailed": "Kopplung fehlgeschlagen",
   "garageBleRemoved": "Sensor entfernt",
   "garageBleDisconnected": "Bluetooth nicht verbunden",
-  "garageBleHintEbike": "Intuvia an. In Flow unter Komponenten FlowLine hinzufügen.",
+  "garageBleHintEbike": "Bosch: Akku vom Display. Shimano und andere: nur Name, Tempo vom Rad-Sensor.",
   "garageBleHintSensor": "Magnet oder Kurbel, nah an den Sensor — nicht die Uhr.",
   "garageBleLiveWaiting": "Rad drehen — Tempo erscheint hier.",
   "discoverRefresh": "Neu",
@@ -2198,6 +2591,13 @@
   "discoverPartialApprox": "Teilweise Näherung — Live-Routing eingeschränkt",
   "discoverPlannedRoute": "Geplante Route",
   "discoverStraightFallback": "Keine Strecke von der Karte — Ziel neu setzen.",
+  "discoverOfflineRouteReady": "Offline-Routing — ohne Netz",
+  "discoverOfflineRouteReadyNamed": "{name} · Offline-Routing",
+  "@discoverOfflineRouteReadyNamed": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "discoverSaved": "Gespeichert",
   "discoverSavedNamed": "Gespeichert: {name}",
   "@discoverSavedNamed": {
@@ -2455,7 +2855,7 @@
   "stimmenStatusPending": "In Prüfung",
   "stimmenStatusLocal": "Nur dieses Gerät",
   "akteHonestyCatalog": "Katalog-Tour ist schon freigegeben. Freigeben macht deine Tour teilbar — der Link zeigt Name und Stats, keinen privaten Extra-Track.",
-  "akteHonestyTrack": "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur auf diesem Gerät.",
+  "akteHonestyTrack": "Freigeben erzeugt einen Link. Der Link enthält eine vereinfachte Spur (Koordinaten), nicht nur den Namen. Auf der Karte erscheint sie erst nach 3 Stimmen in 14 Tagen — sonst wieder privat. Zurück auf Privat nimmt die Tour aus Filtern und speichert den Widerruf auf dem Server, wenn du eingeloggt bist. Ohne Login gilt er nur auf diesem Gerät.",
   "akteHonestyNoTrack": "Freigeben erzeugt einen Link mit Name und Stats — ohne Track, weil keiner gespeichert ist.",
   "stimmenSubmit": "Absenden",
   "ortSheetVia": "Als Zwischenziel",
@@ -2535,6 +2935,10 @@
   "discoverLayerPlaces": "Orte",
   "discoverLayerHeat": "Heat",
   "discoverLayerHeatOff": "Heat aus",
+  "discoverMapContentsTitle": "Karteninhalt",
+  "discoverMapContentsLayers": "Auf der Karte",
+  "discoverMapContentsTools": "Mehr",
+  "discoverLayerHeatLocked": "Zustimmung nötig",
   "discoverVariantPlanned": "Wie geplant",
   "discoverVariantFlatter": "Weniger hm",
   "discoverVariantUnpaved": "Mehr Schotter",
@@ -2548,8 +2952,21 @@
   "discoverWeatherStart": "Start {temp}° · {hint}",
   "discoverWeatherSummit": "Gipfel {temp}° · {hint}",
   "discoverFilmstripAttribution": "Mapillary CC BY-SA",
-  "discoverOfflineAfterSave": "Region für offline laden?",
-  "discoverOfflineAfterSaveAction": "Packs",
+  "discoverOfflineAfterSave": "Routing für diese Strecke laden?",
+  "discoverOfflineAfterSavePack": "{name} · Routing laden?",
+  "@discoverOfflineAfterSavePack": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "discoverOfflineAfterSavePackSized": "{name} · {size} fürs Routing laden?",
+  "@discoverOfflineAfterSavePackSized": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "discoverOfflineAfterSaveAction": "Routing laden",
   "@discoverWeatherStart": {
     "placeholders": {
       "temp": {"type": "String"},
@@ -2614,12 +3031,17 @@
   "rideTapOptions": "Tippe für Optionen.",
   "rideOptions": "Optionen",
   "ridePause": "Pause",
+  "ridePhotoTooltip": "Foto an diesen Ort",
+  "ridePhotoPinned": "Foto am Ort gespeichert",
+  "ridePhotoPrivateZone": "Privacy-Zone — Foto ohne Ort",
+  "ridePhotoNeedGps": "Noch kein GPS — Foto ohne Ort",
   "rideResume": "Weiter",
   "rideRunning": "Fahrt läuft",
   "rideStop": "Beenden",
   "rideTapAgain": "Nochmal tippen",
   "rideStopNeedsTwo": "Beenden erfordert 2 Tipps",
   "rideQuietDisplay": "Ruhige Anzeige",
+  "rideHudClose": "HUD zu",
   "rideFollowCamera": "Kamera folgen",
   "rideFollowOn": "Kamera-Follow an",
   "rideFollowFree": "Kamera frei",
@@ -2684,6 +3106,10 @@
   "rideChassisHint": "Handy am Lenker befestigen und als montiert markieren.",
   "rideMarkMounted": "Als montiert markieren",
   "rideWaitingSensors": "Warte auf Sensorik…",
+  "rideCalibrateLean": "Kalibrieren",
+  "rideCalibrateLeanHint": "Lenker gerade halten — setzt die aktuelle Neigung auf 0°.",
+  "rideResetLeanCal": "Nullung zurück",
+  "rideLeanCalibrated": "genullt",
   "rideThereafter": "Danach",
   "rideAutoLock": "Auto-Lock",
   "rideAutoLockHint": "Tippen zum Aufwecken",
@@ -2710,6 +3136,7 @@
   "ridePuckLenkerBug": "Lenker-Bug",
   "ridePuckLichtkegel": "Lichtkegel",
   "ridePuckChevron": "Chevron",
+  "ridePuckRider": "Fahrer",
   "ridePuckBergASub": "Buchstabe, Berg und Pfeil in einem",
   "ridePuckTopDownSub": "Orthografisch: Nase, Hörner, zwei Reifen — dreht mit",
   "ridePuckHofTorSub": "Zwei Schenkel, unten offen",
@@ -2717,11 +3144,13 @@
   "ridePuckKieselSub": "Weiches Dreieck mit Halo",
   "ridePuckLenkerBugSub": "Spitze Nase, zwei Lenkerhörner",
   "ridePuckLichtkegelSub": "Dunkle Scheibe, oranger Kegel",
-  "ridePuckChevronSub": "Standard-Navi-Pfeil",
+  "ridePuckChevronSub": "Klassischer Navi-Pfeil, etwas kleiner",
+  "ridePuckRiderSub": "3D-Fahrer im FlowLine-Orange — Standort und Tourpunkte",
   "rideChipLive": "Live",
   "rideChipRouteOffline": "Route offline",
-  "rideChipOfflineMapOk": "Offline · Karte ok · Reroute: Netz",
+  "rideChipOfflineMapOk": "Offline · Street-Karte · Reroute: Netz",
   "rideChipMapsMissing": "Karten fehlen",
+  "rideChipRoutingOffline": "Routing offline · Karte: Netz",
   "rideCardinalN": "N",
   "rideCardinalNE": "NO",
   "rideCardinalE": "O",
@@ -3058,6 +3487,7 @@
   "postRideFrontTooFirm": "zu hart",
   "postRideFrontOk": "ok",
   "postRideBumpsHarsh": "rau",
+  "postRideBumpsNone": "—",
   "postRideObsFbHarsh": "Feedback: Front {front} · kleine Schläge {bumps}.",
   "@postRideObsFbHarsh": {
     "placeholders": {
@@ -3070,6 +3500,30 @@
     }
   },
   "postRideObsFbSoft": "Feedback: Front wirkt weich / taucht beim Anbremsen ab.",
+  "postRideObsElevGap": "Höhenlücken auf {gap} km — Neigung dort nicht belastbar.",
+  "@postRideObsElevGap": {
+    "placeholders": {
+      "gap": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsSteep": "Steile Passagen — max +{grade} %.",
+  "@postRideObsSteep": {
+    "placeholders": {
+      "grade": {
+        "type": "String"
+      }
+    }
+  },
+  "postRideObsSteepDown": "Steile Abfahrten — max {grade} %.",
+  "@postRideObsSteepDown": {
+    "placeholders": {
+      "grade": {
+        "type": "String"
+      }
+    }
+  },
   "postRideSugReboundSlowTitle": "Zugstufe Gabel: 2 Klicks langsamer",
   "postRideSugReboundSlowContent": "Aktuell ca. {current} Klicks von geschlossen → Ziel {next}.",
   "@postRideSugReboundSlowContent": {
@@ -3156,6 +3610,23 @@
   "postRideConfHigh": "hoch",
   "postRideConfMedium": "mittel",
   "postRideConfLow": "niedrig",
+  "postRideFactRideElev": "{km} km · {climb} hm ↑ · {descent} hm ↓ · {min} min",
+  "@postRideFactRideElev": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "climb": {
+        "type": "String"
+      },
+      "descent": {
+        "type": "String"
+      },
+      "min": {
+        "type": "String"
+      }
+    }
+  },
   "postRideFactRide": "{km} km · {hm} hm · {min} min",
   "@postRideFactRide": {
     "placeholders": {
@@ -3230,17 +3701,23 @@
   },
   "bleKindPower": "Powermeter",
   "bleKindOtherDrive": "E-Antrieb",
-  "bleTipBosch": "Intuvia an · in Flow unter Komponenten FlowLine hinzufügen",
+  "bleCapBosch": "Live: Akku und Tempo vom Display",
+  "bleCapDriveNoLive": "Kein Live-Akku — Tempo vom Sensor am Rad",
+  "bleCapCsc": "Live: Tempo und Trittfrequenz",
+  "bleCapPower": "Live: Watt",
+  "garageBleHintDriveNeedsWheel": "Antrieb gemerkt — Tempo erst mit Sensor am Rad.",
+  "garageBleHintNoSocDrive": "Kein Live-Akku bei diesem Antrieb. Tempo vom Sensor am Rad.",
+  "bleTipBosch": "Display an · in der Bosch-App unter Komponenten hinzufügen",
   "bleTipShimano": "E-TUBE schließen · in 15 s nach Power/Taster tippen",
   "bleTipYamaha": "e-Sync schließen · Tempo über den Sensor am Rad",
   "bleTipOtherDrive": "Hersteller-App schließen · Display an, nah halten",
   "bleTipCsc": "Sensor am Rad wecken, nah halten",
   "bleTipPower": "Powermeter einschalten, nah halten",
-  "blePairLeadEbike": "Intuvia an, Handy nah — dann in Flow FlowLine hinzufügen.",
-  "blePairLeadSensor": "Intuvia an, oder Tempo-Sensor am Rad wecken — nicht die Uhr.",
+  "blePairLeadEbike": "Bosch: Akku vom Display. Shimano und andere: nur Name, Tempo vom Rad-Sensor.",
+  "blePairLeadSensor": "Tempo und Trittfrequenz vom Sensor am Rad. Kein erfundener Akku.",
   "bleNoteSensorBrand": "Sensor",
   "bleNoteSensorLine": "Magnet oder Kurbel, nah an den Sensor — nicht die Uhr.",
-  "bleNoteBoschLine": "Display an. In Flow: Einstellungen → Komponenten → FlowLine. Dann am Display bestätigen.",
+  "bleNoteBoschLine": "Display an. In der Bosch-App: Einstellungen → Komponenten. Dann am Display bestätigen.",
   "bleNoteShimanoLine": "E-TUBE schließen. Nach Power oder Taster oft nur 15 s — dann tippen.",
   "bleNoteYamahaLine": "e-Sync bzw. TQ-App zu. Live-Tempo meist nur über den Sensor am Rad.",
   "bleNoteFazuaLine": "Remote an — Tempo und Leistung wie ein normaler Sensor.",
@@ -3252,13 +3729,13 @@
   "bleGattRejectedBosch": "Verbindung abgelehnt — Bosch Flow schließen, Display an, 10–20 cm.",
   "bleGattRejectedShimano": "Verbindung abgelehnt — E-TUBE schließen, Display an, nah halten.",
   "bleGattRejectedGeneric": "Verbindung abgelehnt — Bosch Flow / Shimano E-TUBE schließen, Display an, nah halten.",
-  "bleLdiPairCta": "Über Flow",
+  "bleLdiPairCta": "Bosch-Display koppeln",
   "bleLdiPairHint": "Drei Schritte: Display an, in Flow FlowLine hinzufügen, am Display bestätigen.",
   "bleLdiTimeout": "Kein Link. Display an und in der App erneut hinzufügen.",
   "bleLdiWaitingFlow": "Warten aufs Display …",
   "bleLdiNeedAndroid12": "Die Intuvia-Verbindung braucht Android 12 oder neuer.",
   "bleLdiIosPending": "Die Intuvia-Verbindung ist auf diesem Gerät noch nicht verdrahtet.",
-  "bleGattTimeoutBosch": "Timeout — Intuvia wecken. Akku über Flow, Tempo über den Sensor am Rad.",
+  "bleGattTimeoutBosch": "Timeout — Display wecken. Akku vom Display, Tempo vom Sensor am Rad.",
   "bleGattTimeoutShimano": "Timeout — E-TUBE zu, in 15 s nach Power/Taster tippen.",
   "bleGattTimeoutDrive": "Timeout — Hersteller-App zu, Display an. Tempo über den Sensor am Rad.",
   "bleGattTimeoutSensor": "Timeout — Sensor wecken, näher rangehen.",
@@ -3270,10 +3747,10 @@
   "bleStatusScanFailed": "Suche fehlgeschlagen",
   "bleStatusNoSensor": "Kein Tempo-Sensor gefunden",
   "bleStatusNoneInRange": "Kein Rad oder Sensor in Reichweite",
-  "bleStatusDriveSeen": "Intuvia gesehen — in der Werkstatt über Flow verbinden",
+  "bleStatusDriveSeen": "Intuvia gesehen — am Rad koppeln",
   "bleStatusNoCscInRange": "Kein Tempo-Sensor in Reichweite",
   "bleStatusSensorDisconnected": "Sensor getrennt",
-  "bleStatusReconnectLost": "Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, in der Werkstatt erneut koppeln.",
+  "bleStatusReconnectLost": "Verbindung verloren — Display prüfen, Flow/E-TUBE schließen, am Rad erneut koppeln.",
   "bleStatusRetry": "Verbinde … Retry {n}/{max}",
   "@bleStatusRetry": {
     "placeholders": {
@@ -3317,7 +3794,7 @@
   },
   "bleStatusNeedBond": "Display braucht eine Bluetooth-Bestätigung für den Akku.",
   "bleStatusBonding": "System-Kopplung …",
-  "bleStatusDriveNeedBond": "{who} · erkannt — Akku nach Bluetooth-Kopplung in der Werkstatt",
+  "bleStatusDriveNeedBond": "{who} · erkannt — Akku nach Bluetooth-Kopplung am Rad",
   "@bleStatusDriveNeedBond": {
     "placeholders": {
       "who": {
@@ -3707,13 +4184,22 @@
   "offlineRawPmtiles": "Roh-.pmtiles wird nicht unterstützt — MapLibre-Style-JSON mit pmtiles://-Source nötig.",
   "offlineInvalidUrl": "Ungültige URL",
   "offlineExpectStyleJson": "Erwarte Style-JSON-URL (*.json oder /styles/…), keine Tile-Datei.",
-  "offlineSubActive": "Aktiv — tippen zum Aktualisieren",
+  "offlineSubActive": "Aktiv",
   "offlineSubInstalled": "Installiert — tippen zum Aktivieren",
   "offlineSubDemoGraph": "Demo-Graph in der App (kein Remote-Pack)",
   "offlineSubNotBuilt": "Noch nicht gebaut",
-  "offlineSubLoad": "Routing + Karte laden",
-  "offlineSubLoadSized": "{size} · Routing + Karte",
+  "offlineSubLoad": "Routing laden",
+  "offlineSubLoadSized": "{size} · Routing",
   "@offlineSubLoadSized": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineSubValhalla": "Routing (Valhalla)",
+  "offlineSubValhallaSized": "{size} · Routing (Valhalla)",
+  "@offlineSubValhallaSized": {
     "placeholders": {
       "size": {
         "type": "String"
@@ -4068,16 +4554,16 @@
       }
     }
   },
-  "platzCreateGroupHint": "Tour wählen, privat oder sichtbar, dann den Link teilen.",
-  "platzGroupPublicHint": "Wer den Link hat, kann beitreten. Unter Freigegeben können andere die Gruppe auf dem Platz sehen.",
+  "platzCreateGroupHint": "Tour wählen, privat oder sichtbar. Privat: Link. Offen: Link oder Code.",
+  "platzGroupPublicHint": "Link oder Code reicht. Die Gruppe steht auf dem Platz und als Treffen-Pin auf der Karte — ohne Live-GPS.",
   "platzGroupPrivateHint": "Nur wer den Link hat, kann beitreten. Nicht gelistet.",
   "platzNoPrivateGroups": "Keine privaten Gruppen in diesem Filter.",
   "platzMakePrivate": "Privat machen",
   "platzMakePublic": "Auf dem Platz listen",
-  "platzGroupListedNote": "Sichtbar gelistet — wer den Link hat, kann beitreten.",
+  "platzGroupListedNote": "Sichtbar gelistet — Link oder Code reicht.",
   "platzGroupUnlistedNote": "Nur per Link — nicht auf dem Platz.",
   "platzNoPublicGroups": "Keine offenen Gruppen auf dem Server.",
-  "platzPublicGroupsHint": "Offene Gruppen — Beitritt mit Login, kein Explore-GPS.",
+  "platzPublicGroupsHint": "Offene Gruppen — Beitritt mit Login, Link oder Code. Treffen-Pin auf der Karte, kein Live-GPS.",
   "platzListedPublic": "auf dem Platz",
   "filterVisibilityAll": "Alle",
   "filterVisibilityPublic": "Freigegeben",
@@ -4145,6 +4631,9 @@
     }
   },
   "mappeEmpty": "Noch keine eigenen Touren — merken oder GPX importieren.",
+  "mappeEmptyTitle": "Noch keine Linie",
+  "noTrackLabel": "Kein Track",
+  "loopTag": "Runde",
   "mappeStimmenEmpty": "Noch keine Tipps zu deinen Touren. Nach Freigabe können andere schreiben.",
   "myRoutesSourceOwn": "Eigene",
   "privacyZoneTitle": "Privacy-Zone",
@@ -4154,7 +4643,7 @@
   "privacyZoneTapShort": "Tippe auf die Karte",
   "retry": "Erneut",
   "hofSystemStatus": "Systemstatus",
-  "hofSystemOk": "Alles verbunden — Werkstatt, Fahrten und Sync laufen normal.",
+  "hofSystemOk": "Alles verbunden — Rad, Fahrten und Sync laufen normal.",
   "hofSupabaseMissing": "Supabase nicht konfiguriert",
   "hofSupabaseMissingHint": "Cloud-Sync ist nicht eingerichtet — Anmeldung und Sync sind aus.",
   "hofSyncSessionExpired": "Sync: Sitzung abgelaufen",
@@ -4164,7 +4653,7 @@
   "hofSystemHint": "Systemstatus — Hinweis",
   "hofSystemOkTooltip": "Systemstatus: ok",
   "hofTafelTitle": "Offen",
-  "hofTafelHint": "Ein Tipp oder eine Gruppe — kein Feed.",
+  "hofTafelHint": "Stimme, Gruppe oder Freigabe — kein Feed.",
   "hofTafelVoiceOne": "Neuer Tipp zu {name}",
   "@hofTafelVoiceOne": {
     "placeholders": {
@@ -4232,6 +4721,125 @@
       "bits": {
         "type": "String"
       }
+    }
+  },
+  "garageStatService": "Termin",
+  "garageStatDash": "—",
+  "garagePartsEmptyTitle": "Noch keine Teile",
+  "garagePartsEmptyHint": "Eintragen — dann erinnern wir an Wartung.",
+  "garageMissingInvite": "Noch offen",
+  "garageGhostInvite": "Eintragen",
+  "garageCatalogOptional": "Katalog (optional)",
+  "garageCatalogPicked": "Aus Katalog",
+  "garageNoHitsShort": "Kein Treffer — Name reicht.",
+  "oemCheckTitle": "Teile am Rad prüfen",
+  "oemCheckHint": "Nur angehakte Teile kommen ans Rad.",
+  "oemCheckEmpty": "Nichts erkannt",
+  "oemCheckEmptyHint": "Slot und Name genügen.",
+  "oemCheckAdd": "Teil hinzufügen",
+  "oemCheckAddMore": "Weiteres Teil",
+  "oemCheckContinueEmpty": "Ohne Teile weiter",
+  "oemCheckInstallCount": "{count} angehakte eintragen",
+  "@oemCheckInstallCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oemGrokRead": "Grok hat gelesen",
+  "oemGrokVerify": "Am Rad prüfen — nichts still übernommen.",
+  "oemGrokOnlyBadge": "Von Grok, nicht im Katalog",
+  "oemCatalogBadge": "Katalog",
+  "oemOccupiedReplace": "Schon am Rad — Haken ersetzt",
+  "oemTypedHint": "Hersteller und Modell reichen.",
+  "oemTypedSource": "Selbst eingetragen",
+  "oemVisionSource": "Am Foto gesehen — am Rad prüfen",
+  "oemCatalogSource": "Laut Katalog — am Rad prüfen",
+  "garagePhotoFill": "Foto ergänzen",
+  "garagePhotoFillHint": "Grok füllt nur Lücken. Kein Druck, kein SAG, keine Rahmennummer.",
+  "garageServiceTitle": "Wartungstermin",
+  "garageServiceEmpty": "Kein Termin — optional merken.",
+  "garageServiceOverdue": "überfällig",
+  "garageServiceToday": "heute",
+  "garageServiceChange": "Ändern",
+  "garageServiceAdd": "Eintragen",
+  "garageReceiptsTitle": "Belege",
+  "garageReceiptsHint": "Werkstatt, Ersatzteil oder Garantie.",
+  "garageReceiptsEmpty": "Noch kein Beleg.",
+  "garageReceiptAdd": "Beleg",
+  "garageMaintThresholdHint": "Schwellen aus km- und Stunden-Zähler.",
+  "dieBoxOnBikeEmpty": "Noch nichts am Rad.",
+  "garagePickTrail": "Trail",
+  "garagePickTour": "Tour",
+  "garagePickEveryday": "Alltag",
+  "garagePhotoFromBike": "Foto vom Rad",
+  "garagePhotoIdentifyHint": "Foto vom Rad — Grok sucht im Katalog. Seriennummer, Druck, SAG und km werden nicht erfunden.",
+  "garagePhotoIdentifying": "Rad wird erkannt…",
+  "garagePhotoWhichBike": "Welches Rad ist das?",
+  "garagePhotoHitsHint": "Grok hat Katalogtreffer. Tippen übernimmt nur leere Specs.",
+  "garagePhotoNoHit": "Kein Katalogtreffer",
+  "garagePhotoNoHitHint": "Grok hat trotzdem etwas gelesen. Specs nur nach Haken — nichts wird erfunden oder still eingetragen.",
+  "garagePhotoApplyName": "Als Namen übernehmen: {query}",
+  "@garagePhotoApplyName": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "garagePhotoApplyNameHint": "Nur wenn der Name noch ein Platzhalter ist. Kein Jahr, kein Federweg, keine Rahmennummer.",
+  "garagePhotoContinueRead": "Weiter mit gelesenem Text",
+  "garagePhotoFillNone": "Nichts Leeres zum Ergänzen — gesetzte Werte bleiben.",
+  "garagePhotoPartsInstalled": "{count} Teile eingetragen.",
+  "@garagePhotoPartsInstalled": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "garagePhotoFilledFields": "Ergänzt: {fields}",
+  "@garagePhotoFilledFields": {
+    "placeholders": {
+      "fields": { "type": "String" }
+    }
+  },
+  "garageReceiptTypeOnly": "Nur tippen",
+  "garageReceiptScanning": "Beleg wird gelesen…",
+  "garageReceiptRemember": "Beleg merken",
+  "garageReceiptMerchant": "Händler / Werkstatt",
+  "garageReceiptDate": "Datum",
+  "garageReceiptDateHint": "tt.mm.jjjj",
+  "garageReceiptAmount": "Betrag (€)",
+  "garageReceiptWhat": "Was gekauft / gemacht",
+  "garageReceiptAttachPart": "An Teil hängen (optional)",
+  "garageReceiptFreeOnBike": "Frei am Rad",
+  "garageReceiptRemovePhoto": "Foto weg",
+  "garageReceiptsEmptyInvite": "Beleg fotografieren oder tippen",
+  "garageServiceHint": "Datum und Notiz. Werkstatt ist optional — Name reicht.",
+  "garageServiceDateLabel": "Termin",
+  "garageServiceNoteLabel": "Notiz zum Termin",
+  "garageServiceNoteHint": "Kette, Service, TÜV…",
+  "garageWorkshopOptional": "Werkstatt (optional)",
+  "garageWorkshopAddress": "Adresse",
+  "garageWorkshopPhone": "Telefon",
+  "garageMaintEmptyLowKm": "Noch wenig km — Schwellen erscheinen mit dem Zähler. Keine Inspektion gemerkt.",
+  "garageSagWeightHint": "SAG-Ziel in % bleibt gleich. Der Luftdruck-Richtwert folgt deinem Gewicht ({kg} kg){fork}.",
+  "@garageSagWeightHint": {
+    "placeholders": {
+      "kg": { "type": "String" },
+      "fork": { "type": "String" }
+    }
+  },
+  "garageSagWeightFork": " · ca. {psi} psi Gabel",
+  "@garageSagWeightFork": {
+    "placeholders": {
+      "psi": { "type": "String" }
+    }
+  },
+  "garagePressureChange": "Druck merken / ändern",
+  "garageAddPhotoHint": "Grok füllt leere Specs nur bei Katalogtreffer. Teile nur nach Haken — auch ohne Katalog-ID.",
+  "garageAddPhotoPartsPending": "{count} Teile nach dem Anlegen eintragen.",
+  "@garageAddPhotoPartsPending": {
+    "placeholders": {
+      "count": { "type": "int" }
     }
   }
 }

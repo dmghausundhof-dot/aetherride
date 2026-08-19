@@ -59,6 +59,13 @@ class RideGroupCloud {
     }
   }
 
+  static Future<String?> refreshAccessToken() async {
+    try {
+      await Supabase.instance.client.auth.refreshSession();
+    } catch (_) {}
+    return accessToken();
+  }
+
   static Future<RideGroupCloudResult?> list() async {
     return _send(method: 'GET', path: '/api/ride-groups');
   }
@@ -69,7 +76,7 @@ class RideGroupCloud {
     required String title,
     RideGroupVisibility visibility = RideGroupVisibility.private,
     DateTime? startsAt,
-    int? durationHours,
+    num? durationHours,
     String? meetingPoint,
   }) async {
     return _send(
@@ -135,11 +142,42 @@ class RideGroupCloud {
     );
   }
 
+  static Future<RideGroupCloudResult?> extendWindow({
+    required String id,
+    num addHours = 1,
+    DateTime? newEnd,
+  }) async {
+    final body = {
+      'id': id,
+      if (newEnd != null)
+        'newEnd': newEnd.toUtc().toIso8601String()
+      else
+        'addHours': addHours,
+    };
+    final first = await _send(
+      method: 'POST',
+      path: '/api/ride-groups/window',
+      body: body,
+    );
+    if (first != null && first.status == 404) {
+      return _send(method: 'POST', path: '/api/ride-groups', body: body);
+    }
+    return first;
+  }
+
   static Future<RideGroupCloudResult?> presenceList(String groupId) async {
     return _send(
       method: 'GET',
       path: '/api/ride-groups/presence?groupId=${Uri.encodeQueryComponent(groupId)}',
     );
+  }
+
+  static Future<RideGroupCloudResult?> post(
+    String path, [
+    Map<String, Object?>? body,
+    Duration? timeout,
+  ]) {
+    return _send(method: 'POST', path: path, body: body, timeout: timeout);
   }
 
   static Future<RideGroupCloudResult?> presencePublish({
@@ -166,12 +204,18 @@ class RideGroupCloud {
     required String method,
     required String path,
     Map<String, Object?>? body,
+    Duration? timeout,
   }) async {
     final token = await accessToken();
     if (token == null || token.isEmpty) return null;
     try {
       final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
       // Physical devices: Vercel cold start can exceed 8s; 10.0.2.2 is unreachable.
+      // Local `next dev` compiles a route on first hit — join took 47s here.
+      final wait = timeout ??
+          (method == 'GET'
+              ? const Duration(seconds: 20)
+              : const Duration(seconds: 25));
       Future<http.Response> once(String bearer) {
         final headers = {
           'Authorization': 'Bearer $bearer',
@@ -179,10 +223,10 @@ class RideGroupCloud {
           'Content-Type': 'application/json',
         };
         return method == 'GET'
-            ? http.get(uri, headers: headers).timeout(const Duration(seconds: 20))
+            ? http.get(uri, headers: headers).timeout(wait)
             : http
                 .post(uri, headers: headers, body: jsonEncode(body ?? const {}))
-                .timeout(const Duration(seconds: 25));
+                .timeout(wait);
       }
 
       var res = await once(token);

@@ -41,7 +41,7 @@ export function componentWearLines(
     .filter((row) => row.km > 0 || row.hours > 0);
 }
 
-export type TafelKind = "care" | "stimmen" | "mappe" | "gruppe";
+export type TafelKind = "care" | "stimmen" | "mappe" | "gruppe" | "listing";
 
 export type TafelItem = {
   id: string;
@@ -50,9 +50,10 @@ export type TafelItem = {
   href: string;
 };
 
-/** Höchstens drei Zeilen — Pflege, Gruppe, Stimme, Mappe. Kein Feed. */
+/** Höchstens drei Zeilen — Pflege, Freigabe, Gruppe, Stimme, Mappe. Kein Feed. */
 export function buildHofTafel(input: {
   care?: { text: string; href: string; overdue?: boolean } | null;
+  listing?: { text: string; href: string } | null;
   savedRoutes: SavedRoute[];
   myReviews: TourReview[];
   group?: { text: string; href: string } | null;
@@ -68,6 +69,14 @@ export function buildHofTafel(input: {
       kind: "care",
       text: input.care.text,
       href: input.care.href,
+    });
+  }
+  if (input.listing?.text.trim()) {
+    push({
+      id: "listing",
+      kind: "listing",
+      text: input.listing.text,
+      href: input.listing.href,
     });
   }
   if (input.group?.text.trim()) {

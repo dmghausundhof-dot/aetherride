@@ -67,7 +67,7 @@ const DE: CommunityCopy = {
   clubsCta: "Touren in der Region",
   groupsTitle: "Zusammen raus",
   groupsBody:
-    "Gruppen leben am Platz: Einladungslink, Roster im Browser. Live-Pins nur im App-HUD und nur mit Opt-in — nicht auf der öffentlichen Karte. Eine Website-Erklärung ohne zweite Timeline.",
+    "Gruppen leben am Platz: Einladungslink, Roster im Browser. Öffentlich als Treffen-Pin auf der Karte — ohne Live-GPS. Live-Pins nur im App-HUD und nur mit Opt-in. Eine Website-Erklärung ohne zweite Timeline.",
   toPlatz: "Zum Platz",
   shareLinks: "Tour- und Mappe-Links",
   profilesTitle: "Beispiel-Profile",
@@ -149,7 +149,7 @@ const EN: CommunityCopy = {
   clubsCta: "Tours in the region",
   groupsTitle: "Ride together",
   groupsBody:
-    "Groups live on Platz: invite link, roster in the browser. Live pins only in the app HUD and only with opt-in — not on the public map. A website explanation without a second timeline.",
+    "Groups live on Platz: invite link, roster in the browser. Public groups as a meeting pin on the map — no live GPS. Live pins only in the app HUD and only with opt-in. A website explanation without a second timeline.",
   toPlatz: "To Platz",
   shareLinks: "Tour and Mappe links",
   profilesTitle: "Sample profiles",
@@ -232,7 +232,7 @@ const FR: CommunityCopy = {
   clubsCta: "Sorties dans la région",
   groupsTitle: "Sortir ensemble",
   groupsBody:
-    "Les groupes vivent sur le Platz : lien d’invitation, roster dans le navigateur. Pins live seulement dans le HUD de l’appli et seulement avec opt-in — pas sur la carte publique. Une explication de site sans deuxième fil.",
+    "Les groupes vivent sur le Platz : lien d’invitation, roster dans le navigateur. Publics comme pin de rendez-vous sur la carte — pas de GPS live. Pins live seulement dans le HUD de l’appli et seulement avec opt-in. Une explication de site sans deuxième fil.",
   toPlatz: "Vers le Platz",
   shareLinks: "Liens de sortie et de Mappe",
   profilesTitle: "Profils exemple",
@@ -315,7 +315,7 @@ const IT: CommunityCopy = {
   clubsCta: "Uscite nella regione",
   groupsTitle: "Uscire insieme",
   groupsBody:
-    "I gruppi vivono sul Platz: link di invito, roster nel browser. Pin live solo nell’HUD dell’app e solo con opt-in — non sulla mappa pubblica. Una spiegazione del sito senza seconda timeline.",
+    "I gruppi vivono sul Platz: link di invito, roster nel browser. Pubblici come pin di ritrovo sulla mappa — niente GPS live. Pin live solo nell’HUD dell’app e solo con opt-in. Una spiegazione del sito senza seconda timeline.",
   toPlatz: "Verso il Platz",
   shareLinks: "Link di uscite e Mappe",
   profilesTitle: "Profili esempio",
@@ -398,7 +398,7 @@ const NL: CommunityCopy = {
   clubsCta: "Tochten in de regio",
   groupsTitle: "Samen eruit",
   groupsBody:
-    "Groepen leven op de Platz: uitnodigingslink, roster in de browser. Live-pins alleen in de app-HUD en alleen met opt-in — niet op de openbare kaart. Een website-uitleg zonder tweede tijdlijn.",
+    "Groepen leven op de Platz: uitnodigingslink, roster in de browser. Openbaar als trefpunt-pin op de kaart — geen live-GPS. Live-pins alleen in de app-HUD en alleen met opt-in. Een website-uitleg zonder tweede tijdlijn.",
   toPlatz: "Naar de Platz",
   shareLinks: "Tocht- en Mappe-links",
   profilesTitle: "Voorbeeldprofielen",

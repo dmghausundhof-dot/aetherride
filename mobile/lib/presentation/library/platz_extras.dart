@@ -3,18 +3,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/community/public_profile_cloud.dart';
 import '../../data/community/public_profile_store.dart';
 import '../../data/community/ride_group_cloud.dart';
+import '../../data/community/group_member_tour.dart';
 import '../../data/community/ride_group_invite.dart';
 import '../../data/community/ride_group_store.dart';
+import '../../data/local/ride_prefs.dart';
 import '../../data/local/user_profile_store.dart';
+import '../../data/routing/public_tours_client.dart';
 import '../../data/routing/route_collections.dart';
-import '../../data/routing/saved_route_meta_store.dart';
 import '../../domain/community/ride_group.dart';
+import '../../domain/community/ride_group_picker.dart';
 import '../../domain/community/ride_group_policy.dart';
 import '../../domain/saved_route.dart';
 import '../../domain/saved_route_note.dart';
@@ -26,8 +30,12 @@ import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
 import '../profile/profile_screen.dart';
+import '../ride/widgets/ride_group_extend_sheet.dart';
 import '../shell/hof_threshold_nav.dart';
 import '../shell/shell_tabs.dart';
+import 'mappe_glyph.dart';
+import 'platz_group_card.dart';
+import 'platz_join_sheet.dart';
 
 /// Gruppen, Sammlungen — orchestriert bestehende Stores. Keine Demo-Clubs.
 class PlatzExtras extends ConsumerStatefulWidget {
@@ -92,9 +100,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     super.dispose();
   }
 
-  /// Offene Gruppen anderer: nur unter Chip „Freigegeben“.
-  bool get _listPublic => widget.visibility == TourVisibilityKey.sharedOnly;
-
+  /// Offene Gruppen anderer: immer auf dem Platz, nicht nur unter Freigegeben.
   List<RideGroup> get _listedPublic {
     final mine = {for (final g in _groups) g.id};
     return [
@@ -115,11 +121,11 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     }
     final cols = await RouteCollectionsStore.list();
     final ids = await widget.store.selfIds();
-    final pub = _listPublic ? await widget.store.publicGroups() : _public;
+    final pub = await widget.store.publicGroups();
     if (!mounted) return;
     setState(() {
       _groups = groups;
-      if (_listPublic) _public = pub;
+      _public = pub;
       _members = members;
       _localOptIn = opt;
       _cols = cols;
@@ -134,21 +140,10 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     });
   }
 
-  String _memberLine(RideGroupMember m, RideGroup g, AppLocalizations l10n) {
-    final name = m.displayLabel.trim();
-    final role = m.userId == g.hostUserId ? l10n.platzHost : l10n.platzGuest;
-    final self = _selfIds.contains(m.userId) ? ' · ${l10n.platzYou}' : '';
-    return name.isEmpty ? '$role$self' : '$name · $role$self';
-  }
-
   Future<void> _checkSession() async {
     final state = await RideGroupCloud.sessionState();
     if (!mounted) return;
     setState(() => _signedIn = state != 'signedOut');
-  }
-
-  String _windowHint(RideGroup g, AppLocalizations l10n) {
-    return RideGroupPolicy.formatWhen(g.startWindowStart, g.startWindowEnd);
   }
 
   DateTime _startFromPreset(int preset) {
@@ -169,25 +164,93 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     }
   }
 
-  Future<SavedRouteEntry?> _promptShareTourFirst() async {
-    final l10n = AppLocalizations.of(context);
-    final locked = [
-      for (final s in widget.saved)
-        if (!RideGroupPolicy.canAttachSaved(s, widget.metas[s.id])) s,
-    ];
-    if (locked.isEmpty) {
-      if (!mounted) return null;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.platzNeedSharedTour)),
-      );
-      return null;
-    }
-    final chosen = await showModalBottomSheet<SavedRouteEntry>(
+  Future<RideGroupPickerOrigin?> _pickerOrigin() async {
+    double? gpsLat;
+    double? gpsLng;
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        gpsLat = last.latitude;
+        gpsLng = last.longitude;
+      } else {
+        final perm = await Geolocator.checkPermission();
+        if (perm != LocationPermission.denied &&
+            perm != LocationPermission.deniedForever) {
+          final pos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+              timeLimit: Duration(seconds: 2),
+            ),
+          );
+          gpsLat = pos.latitude;
+          gpsLng = pos.longitude;
+        }
+      }
+    } catch (_) {}
+    final vp = await RidePrefs.discoverViewport();
+    return RideGroupPicker.resolveOrigin(
+      gpsLat: gpsLat,
+      gpsLng: gpsLng,
+      mapLat: vp?.lat,
+      mapLng: vp?.lng,
+      saved: widget.saved,
+    );
+  }
+
+  Future<({List<RideGroupPickerItem> items, RideGroupPickerOrigin? origin})>
+      _loadPicker() async {
+    final origin = await _pickerOrigin();
+    var catalog = const <RideGroupCatalogHit>[];
+    try {
+      final hits = await PublicToursClient().fetchCatalog();
+      catalog = [
+        for (final t in hits)
+          if (t.id.isNotEmpty)
+            RideGroupCatalogHit(
+              id: t.id,
+              name: t.name,
+              lat: t.centerLat,
+              lng: t.centerLng,
+            ),
+      ];
+    } catch (_) {}
+    return (
+      items: RideGroupPicker.build(
+        saved: widget.saved,
+        metas: widget.metas,
+        catalog: catalog,
+        originLat: origin?.lat,
+        originLng: origin?.lng,
+      ),
+      origin: origin,
+    );
+  }
+
+  Future<RideGroupPickerItem?> _promptPickTour() async {
+    if (!mounted) return null;
+    final loaded = await _loadPicker();
+    if (!mounted) return null;
+    final items = loaded.items;
+    final origin = loaded.origin;
+    return showModalBottomSheet<RideGroupPickerItem>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (ctx) {
         final loc = AppLocalizations.of(ctx);
+        final mine = [
+          for (final i in items)
+            if (i.section == RideGroupPickerSection.mine) i,
+        ];
+        final nearby = [
+          for (final i in items)
+            if (i.section == RideGroupPickerSection.nearby) i,
+        ];
+        final nearbyHint = origin == null
+            ? loc.platzNearbyNeedGps
+            : origin.kind == RideGroupPickerOriginKind.gps
+                ? null
+                : loc.platzNearbyFromMap;
         return Padding(
           padding: EdgeInsets.only(
             left: 16,
@@ -195,12 +258,11 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
             top: 8,
             bottom: HofThresholdNav.sheetBottomInset(ctx),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
+            shrinkWrap: true,
             children: [
               Text(
-                loc.platzShareTourFirst,
+                loc.platzCreateGroup,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -208,24 +270,99 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
               ),
               const SizedBox(height: 6),
               Text(
-                loc.platzShareTourFirstHint,
+                loc.platzCreateGroupHint,
                 style: const TextStyle(fontSize: 12, color: AppColors.muted),
               ),
               const SizedBox(height: 8),
-              for (final s in locked.take(8))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(s.name),
-                  subtitle: Text(loc.discoverPrivate),
-                  trailing: const Icon(Icons.chevron_right, size: 18),
-                  onTap: () => Navigator.pop(ctx, s),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.route_outlined),
+                title: Text(loc.platzPlanAsGroup),
+                subtitle: Text(loc.platzPlanAsGroupHint),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ref.read(platzPendingPlanAsGroupProvider.notifier).state =
+                      true;
+                  ref.read(discoverLaunchModeProvider.notifier).state =
+                      DiscoverLaunchMode.plan;
+                  ref.read(shellTabIndexProvider.notifier).state =
+                      ShellTabs.karte;
+                },
+              ),
+              if (mine.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  loc.platzPickMine,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.muted,
+                  ),
+                ),
+                for (final s in mine)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(s.name),
+                    subtitle: s.privateTour ? Text(loc.discoverPrivate) : null,
+                    trailing: const Icon(Icons.chevron_right, size: 18),
+                    onTap: () => Navigator.pop(ctx, s),
+                  ),
+              ],
+              if (nearby.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  loc.platzPickNearby,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.muted,
+                  ),
+                ),
+                if (nearbyHint != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    nearbyHint,
+                    style:
+                        const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                ],
+                for (final s in nearby)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(s.name),
+                    trailing: const Icon(Icons.chevron_right, size: 18),
+                    onTap: () => Navigator.pop(ctx, s),
+                  ),
+              ] else if (nearbyHint != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  loc.platzPickNearby,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  nearbyHint,
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ],
+              if (mine.isEmpty && nearby.isEmpty && origin != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    loc.platzNoSharedTours,
+                    style:
+                        const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
                 ),
             ],
           ),
         );
       },
     );
-    return chosen;
   }
 
   Future<void> createGroup({SavedRouteEntry? attach}) =>
@@ -237,10 +374,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
       openAuthScreen(context);
       return;
     }
-    var attachable = [
-      for (final s in widget.saved)
-        if (RideGroupPolicy.canAttachSaved(s, widget.metas[s.id])) s,
-    ];
+    late final RideGroupPickerItem chosen;
     if (attach != null) {
       final ok = RideGroupPolicy.canAttachSaved(
         attach,
@@ -249,32 +383,35 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
       if (!ok) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).platzNeedSharedTour)),
+          SnackBar(
+              content: Text(AppLocalizations.of(context).platzNeedSharedTour)),
         );
         return;
       }
-      attachable = [
-        attach,
-        for (final s in attachable)
-          if (s.id != attach.id) s,
-      ];
-    } else if (attachable.isEmpty) {
-      final pending = await _promptShareTourFirst();
-      if (pending == null || !mounted) return;
-      await widget.onOpenAkte?.call(pending);
-      if (!mounted) return;
-      final meta = await SavedRouteMetaStore.get(pending.id);
-      if (!mounted) return;
-      if (!RideGroupPolicy.canAttachSaved(pending, meta)) return;
-      attachable = [pending];
+      final meta = widget.metas[attach.id] ?? SavedRouteMeta.empty;
+      final catalogId = catalogTourIdOf(attach.id, meta);
+      chosen = RideGroupPickerItem(
+        id: attach.id,
+        name: attach.name,
+        section: RideGroupPickerSection.mine,
+        catalogTourId: catalogId,
+        privateTour: !RouteVisibility.isShared(meta) && catalogId == null,
+      );
+    } else {
+      final picked = await _promptPickTour();
+      if (picked == null || !mounted) return;
+      chosen = picked;
     }
-    SavedRouteEntry chosen = attachable.first;
     var listing = RideGroupVisibility.private;
     var startPreset = 0;
-    var durationH = 3;
+    DateTime? customStart;
+    var durationH = 3.0;
+    var durationCustom = false;
+    var windowErr = false;
     final meetingCtrl = TextEditingController();
+    final durationCtrl = TextEditingController();
     final l10n = AppLocalizations.of(context);
-    final created = await showModalBottomSheet<bool>(
+    final created = await showModalBottomSheet<({DateTime start, double hours})>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -284,126 +421,226 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
             left: 16,
             right: 16,
             top: 8,
-            bottom: HofThresholdNav.sheetBottomInset(ctx),
+            bottom: HofThresholdNav.sheetBottomInset(ctx) +
+                MediaQuery.viewInsetsOf(ctx).bottom,
           ),
           child: StatefulBuilder(
             builder: (ctx, setSheet) {
               final loc = AppLocalizations.of(ctx);
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    loc.platzTogetherTitle,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    loc.platzCreateGroupHint,
-                    style:
-                        const TextStyle(fontSize: 12, color: AppColors.muted),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    value: chosen.id,
-                    items: [
-                      for (final s in attachable)
-                        DropdownMenuItem(value: s.id, child: Text(s.name)),
-                    ],
-                    onChanged: (id) {
-                      if (id == null) return;
-                      setSheet(() {
-                        chosen = attachable.firstWhere((s) => s.id == id);
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 6,
-                    children: [
-                      ChoiceChip(
-                        label: Text(loc.discoverPrivateCap),
-                        selected: listing == RideGroupVisibility.private,
-                        onSelected: (_) => setSheet(
-                          () => listing = RideGroupVisibility.private,
-                        ),
-                      ),
-                      ChoiceChip(
-                        label: Text(loc.filterVisibilityPublic),
-                        selected: listing == RideGroupVisibility.public,
-                        onSelected: (_) => setSheet(
-                          () => listing = RideGroupVisibility.public,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    listing == RideGroupVisibility.public
-                        ? loc.platzGroupPublicHint
-                        : loc.platzGroupPrivateHint,
-                    style:
-                        const TextStyle(fontSize: 12, color: AppColors.muted),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    loc.platzStartLabel,
-                    style:
-                        const TextStyle(fontSize: 12, color: AppColors.muted),
-                  ),
-                  Wrap(
-                    spacing: 6,
-                    children: [
-                      for (final e in [
-                        (0, loc.platzStartNow),
-                        (1, loc.platzStartIn1h),
-                        (2, loc.platzStartToday18),
-                        (3, loc.platzStartTomorrow10),
-                      ])
-                        ChoiceChip(
-                          label: Text(e.$2),
-                          selected: startPreset == e.$1,
-                          onSelected: (_) => setSheet(() => startPreset = e.$1),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    loc.platzDurationLabel,
-                    style:
-                        const TextStyle(fontSize: 12, color: AppColors.muted),
-                  ),
-                  Wrap(
-                    spacing: 6,
-                    children: [
-                      for (final h in [2, 3, 4])
-                        ChoiceChip(
-                          label: Text('$h h'),
-                          selected: durationH == h,
-                          onSelected: (_) => setSheet(() => durationH = h),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: meetingCtrl,
-                    decoration: InputDecoration(
-                      labelText: loc.platzMeetingPlaceholder,
-                      hintText: loc.platzMeetingHint,
-                      isDense: true,
+              DateTime startOf() => startPreset == 4
+                  ? (customStart ?? DateTime.now())
+                  : _startFromPreset(startPreset);
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      loc.platzTogetherTitle,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w800),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      Navigator.pop(ctx, true);
-                    },
-                    child: Text(loc.platzCreateGroup),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      loc.platzCreateGroupHint,
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      chosen.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    if (chosen.privateTour)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          loc.discoverPrivate,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        ChoiceChip(
+                          label: Text(loc.discoverPrivateCap),
+                          selected: listing == RideGroupVisibility.private,
+                          onSelected: (_) => setSheet(
+                            () => listing = RideGroupVisibility.private,
+                          ),
+                        ),
+                        ChoiceChip(
+                          label: Text(loc.filterVisibilityPublic),
+                          selected: listing == RideGroupVisibility.public,
+                          onSelected: (_) => setSheet(
+                            () => listing = RideGroupVisibility.public,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      listing == RideGroupVisibility.public
+                          ? loc.platzGroupPublicHint
+                          : loc.platzGroupPrivateHint,
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      loc.platzStartLabel,
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        for (final e in [
+                          (0, loc.platzStartNow),
+                          (1, loc.platzStartIn1h),
+                          (2, loc.platzStartToday18),
+                          (3, loc.platzStartTomorrow10),
+                          (
+                            4,
+                            customStart == null
+                                ? loc.platzStartCustom
+                                : formatRideGroupLocalWhen(customStart!),
+                          ),
+                        ])
+                          ChoiceChip(
+                            key: e.$1 == 4
+                                ? const Key('platz-start-custom')
+                                : null,
+                            label: Text(e.$2),
+                            selected: startPreset == e.$1,
+                            onSelected: (_) async {
+                              if (e.$1 == 4) {
+                                final picked = await pickRideGroupDateTime(
+                                  ctx,
+                                  initial: customStart ??
+                                      DateTime.now()
+                                          .add(const Duration(hours: 1)),
+                                );
+                                if (picked == null) return;
+                                setSheet(() {
+                                  startPreset = 4;
+                                  customStart = picked;
+                                  windowErr = false;
+                                });
+                                return;
+                              }
+                              setSheet(() {
+                                startPreset = e.$1;
+                                windowErr = false;
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      loc.platzDurationLabel,
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        for (final h in [2.0, 3.0, 4.0])
+                          ChoiceChip(
+                            label: Text('${h.toInt()} h'),
+                            selected: !durationCustom && durationH == h,
+                            onSelected: (_) => setSheet(() {
+                              durationH = h;
+                              durationCustom = false;
+                              windowErr = false;
+                            }),
+                          ),
+                        ChoiceChip(
+                          key: const Key('platz-duration-custom'),
+                          label: Text(loc.platzDurationCustom),
+                          selected: durationCustom,
+                          onSelected: (_) => setSheet(() {
+                            durationCustom = true;
+                            windowErr = false;
+                          }),
+                        ),
+                      ],
+                    ),
+                    if (durationCustom) ...[
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const Key('platz-duration-hours'),
+                        controller: durationCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: loc.platzDurationHoursHint,
+                          isDense: true,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      loc.platzWindowCapHint,
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    if (windowErr)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          loc.rideGroupExtendInvalid,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.warning,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: meetingCtrl,
+                      decoration: InputDecoration(
+                        labelText: loc.platzMeetingPlaceholder,
+                        hintText: loc.platzMeetingHint,
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        final hours = durationCustom
+                            ? RideGroupPolicy.parseDurationHours(
+                                durationCtrl.text,
+                              )
+                            : durationH;
+                        final start = startOf();
+                        final parsed = hours == null
+                            ? null
+                            : RideGroupPolicy.parseWindow(
+                                startsAt: start,
+                                durationHours: hours,
+                                now: DateTime.now(),
+                              );
+                        if (parsed == null) {
+                          setSheet(() => windowErr = true);
+                          return;
+                        }
+                        Navigator.pop(
+                          ctx,
+                          (start: parsed.start, hours: parsed.durationHours),
+                        );
+                      },
+                      child: Text(loc.platzCreateGroup),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -411,22 +648,29 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
       },
     );
     final meeting = meetingCtrl.text.trim();
-    Future<void>.delayed(
-        const Duration(milliseconds: 600), meetingCtrl.dispose);
-    if (created != true) return;
-    final start = _startFromPreset(startPreset);
-    final meta = widget.metas[chosen.id];
+    Future<void>.delayed(const Duration(milliseconds: 600), () {
+      meetingCtrl.dispose();
+      durationCtrl.dispose();
+    });
+    if (created == null) return;
+    final start = created.start;
+    final durationHOut = created.hours;
+    final meta = widget.metas[chosen.id] ??
+        (chosen.catalogTourId != null
+            ? SavedRouteMeta(catalogTourId: chosen.catalogTourId)
+            : SavedRouteMeta.empty);
     try {
       final group = await widget.store.createGroup(
         savedRouteId: chosen.id,
         title: chosen.name,
-        catalogTourId: catalogTourIdOf(chosen.id, meta ?? SavedRouteMeta.empty),
+        catalogTourId: chosen.catalogTourId ??
+            catalogTourIdOf(chosen.id, meta),
         meta: meta,
         displayLabel: await _selfLabel(),
         visibility: listing,
         windowStart: start,
-        windowEnd: start.add(Duration(hours: durationH)),
-        durationHours: durationH,
+        windowEnd: start.add(RideGroupPolicy.durationFromHours(durationHOut)),
+        durationHours: durationHOut,
         meetingPoint: meeting.isEmpty ? null : meeting,
       );
       if (!mounted) return;
@@ -448,7 +692,22 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
   void _consumePendingJoin(PlatzPendingJoin? pending) {
     if (pending == null || pending.code.trim().isEmpty) return;
     ref.read(platzPendingJoinProvider.notifier).state = null;
-    unawaited(_applyJoin(pending.code, token: pending.token));
+    unawaited(() async {
+      if (!await _requireSignInForJoin()) return;
+      if (!mounted) return;
+      await _applyJoin(pending.code, token: pending.token);
+    }());
+  }
+
+  Future<bool> _requireSignInForJoin() async {
+    await _checkSession();
+    if (_signedIn) return true;
+    if (!mounted) return false;
+    openAuthScreen(context);
+    setState(() {
+      _joinErr = AppLocalizations.of(context).platzJoinSignInFirst;
+    });
+    return false;
   }
 
   Future<void> _joinWithLink() async {
@@ -456,7 +715,10 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _PlatzJoinSheet(signedIn: _signedIn),
+      builder: (_) => PlatzJoinSheet(
+        signedIn: _signedIn,
+        onSignIn: () => openAuthScreen(context),
+      ),
     );
     if (pasted == null || !mounted) return;
     final parsed = RideGroupInvite.parsePastedJoin(pasted);
@@ -464,6 +726,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
       setState(() => _joinErr = AppLocalizations.of(context).platzJoinInvalid);
       return;
     }
+    if (!await _requireSignInForJoin()) return;
     await _applyJoin(parsed.code, token: parsed.token);
   }
 
@@ -512,7 +775,13 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
       if (out.fail == RideGroupJoinFail.needLogin) {
         openAuthScreen(context);
       }
+      if (out.fail != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(out.message)),
+        );
+      }
       if (out.group != null) {
+        unawaited(_importInviteTour(token));
         final g = out.group!;
         final text = g.onServer
             ? out.message
@@ -546,6 +815,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     ref.read(discoverLaunchModeProvider.notifier).state =
         DiscoverLaunchMode.mine;
     ref.read(shellTabIndexProvider.notifier).state = ShellTabs.karte;
+    ref.read(ridePendingGroupIdProvider.notifier).state = g.id;
     ref.read(discoverPendingStartRideRouteIdProvider.notifier).state = pending;
   }
 
@@ -615,7 +885,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
         profileUrl = await _selfProfileUrl();
       }
     }
-    final token = RideGroupInvite.encode(g);
+    final token = _inviteToken(g);
     final url = RideGroupInvite.httpsUrl(groupId: g.id, token: token);
     final appUrl = RideGroupInvite.customSchemeUrl(groupId: g.id, token: token);
     await SharePlus.instance.share(
@@ -624,6 +894,9 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
           title: g.title,
           url: url,
           appUrl: appUrl,
+          code: RideGroupPolicy.canJoinByTypedCode(g.visibility)
+              ? g.joinCode
+              : null,
           profileUrl: profileUrl,
           visibility: g.visibility,
           when: RideGroupPolicy.formatWhen(
@@ -689,6 +962,30 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     );
   }
 
+  Future<void> _extendWindow(RideGroup g) async {
+    final choice = await showRideGroupExtendSheet(
+      context,
+      currentWhen: formatRideGroupWhenLine(
+        start: g.startWindowStart,
+        end: g.startWindowEnd,
+        l10n: AppLocalizations.of(context),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    final ok = await widget.store.extendWindow(
+      g.id,
+      hours: choice.addHours ?? 1,
+      newEnd: choice.newEnd,
+    );
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    _toast(
+      widget.store.lastNote ??
+          (ok ? l10n.rideGroupWindowExtended : l10n.rideGroupExtendInvalid),
+    );
+    if (ok) await _reload();
+  }
+
   Future<void> _setPins(String groupId, bool on) async {
     await widget.store.setLiveOptIn(groupId, on);
     if (!mounted) return;
@@ -710,12 +1007,44 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
     );
   }
 
+  String _inviteToken(RideGroup g) {
+    SavedRouteEntry? route;
+    for (final s in widget.saved) {
+      if (s.id == g.savedRouteId) {
+        route = s;
+        break;
+      }
+    }
+    return RideGroupInvite.encode(
+      g,
+      route: route,
+      meta: widget.metas[g.savedRouteId],
+    );
+  }
+
+  Future<void> _importInviteTour(String? token) async {
+    if (token == null || token.isEmpty) return;
+    final entry = importMemberTourFromInvite(
+      payload: RideGroupInvite.decode(token),
+      existing: widget.saved,
+    );
+    if (entry == null) return;
+    await ref.read(routeRepositoryProvider).saveEntry(entry);
+    ref.invalidate(savedRoutesProvider);
+  }
+
   Future<void> _copyInvite(RideGroup g) async {
-    final token = RideGroupInvite.encode(g);
+    final token = _inviteToken(g);
     final url = RideGroupInvite.httpsUrl(groupId: g.id, token: token);
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
     _toast(AppLocalizations.of(context).platzLinkCopied);
+  }
+
+  Future<void> _copyCode(RideGroup g) async {
+    await Clipboard.setData(ClipboardData(text: g.joinCode));
+    if (!mounted) return;
+    _toast(AppLocalizations.of(context).platzCodeCopied);
   }
 
   Future<void> _shareCollection(RouteCollection c) async {
@@ -835,6 +1164,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
           padding: const EdgeInsets.fromLTRB(16, 28, 16, 6),
           child: PlatzFoldHeader(
             label: l10n.platzTogetherKicker,
+            glyph: 'meet',
             count: _groups.isEmpty ? null : _groups.length,
             expanded: _groupsOpen,
             onTap: () => setState(() {
@@ -844,332 +1174,192 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
           ),
         ),
         if (_groupsOpen) ...[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            l10n.platzTogetherHint,
-            style: const TextStyle(fontSize: 12, color: AppColors.muted),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              FilledButton.icon(
-                key: const Key('platz-group-create'),
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                ),
-                onPressed: () {
-                  if (_signedIn) {
-                    unawaited(_createGroup());
-                  } else {
-                    openAuthScreen(context);
-                  }
-                },
-                icon: Icon(_signedIn ? Icons.group_add : Icons.login, size: 18),
-                label: Text(_signedIn ? l10n.platzCreateGroup : l10n.signIn),
-              ),
-              OutlinedButton.icon(
-                key: const Key('platz-group-join'),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                ),
-                onPressed: () => unawaited(_joinWithLink()),
-                icon: const Icon(Icons.link, size: 18),
-                label: Text(l10n.platzJoinWithCode),
-              ),
-            ],
-          ),
-        ),
-        if (_joinErr != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              _joinErr!,
-              style: const TextStyle(fontSize: 12, color: AppColors.warning),
+              l10n.platzTogetherHint,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
-          )
-        else if (_syncNote != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _syncNote!,
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                ),
-                if (_syncNote!.contains('Nicht eingeloggt'))
+          ),
+          if (!_signedIn)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.platzJoinSignInFirst,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.warning,
+                    ),
+                  ),
                   TextButton(
                     onPressed: () => openAuthScreen(context),
                     style: TextButton.styleFrom(
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(l10n.signIn),
                   ),
+                ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                FilledButton.icon(
+                  key: const Key('platz-group-create'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () {
+                    if (_signedIn) {
+                      unawaited(_createGroup());
+                    } else {
+                      openAuthScreen(context);
+                    }
+                  },
+                  icon:
+                      Icon(_signedIn ? Icons.group_add : Icons.login, size: 18),
+                  label: Text(_signedIn ? l10n.platzCreateGroup : l10n.signIn),
+                ),
+                OutlinedButton.icon(
+                  key: const Key('platz-group-join'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => unawaited(_joinWithLink()),
+                  icon: const Icon(Icons.link, size: 18),
+                  label: Text(l10n.platzJoinWithCode),
+                ),
               ],
             ),
           ),
-        if (_groups.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Text(
-              l10n.platzNoGroup,
-              style: const TextStyle(fontSize: 13, color: AppColors.muted),
-            ),
-          )
-        else
-          for (final g in _groups)
-            Card(
-              key: Key('platz-group-${g.id}'),
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            g.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          _selfIds.contains(g.hostUserId)
-                              ? l10n.platzHost
-                              : l10n.platzGuest,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${g.visibility == RideGroupVisibility.public ? l10n.platzListedPublic : l10n.discoverPrivate} · '
-                      '${l10n.platzMembersCount(_members[g.id]?.length ?? 0)} · '
-                      '${_windowHint(g, l10n)}'
-                      '${g.meetingPoint != null && g.meetingPoint!.isNotEmpty ? ' · ${g.meetingPoint}' : ''} · '
-                      '${g.onServer ? l10n.platzOnServer : l10n.platzOnDevice}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                    if (!g.onServer) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        l10n.platzHostCannotSee,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.warning,
-                        ),
-                      ),
-                      if (!_signedIn)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: FilledButton(
-                            onPressed: () => openAuthScreen(context),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            child: Text(l10n.signIn),
-                          ),
-                        ),
-                    ],
-                    if ((_members[g.id] ?? const <RideGroupMember>[])
-                        .isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        [
-                          for (final m
-                              in _members[g.id] ?? const <RideGroupMember>[])
-                            _memberLine(m, g, l10n),
-                        ].join('  ·  '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 0,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (_selfIds.contains(g.hostUserId))
-                          FilledButton(
-                            key: Key('platz-group-invite-${g.id}'),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            onPressed: () => unawaited(_invite(g)),
-                            child: Text(l10n.platzInvite),
-                          )
-                        else
-                          FilledButton(
-                            key: Key('platz-group-ride-${g.id}'),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            onPressed: () =>
-                                unawaited(_startRideFromGroup(g)),
-                            child: Text(l10n.goRide),
-                          ),
-                        TextButton(
-                          onPressed: () => unawaited(_leaveOrClose(g)),
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          child: Text(
-                            _selfIds.contains(g.hostUserId)
-                                ? l10n.platzDissolve
-                                : l10n.platzLeave,
-                          ),
-                        ),
-                        if (_selfIds.contains(g.hostUserId) || g.onServer)
-                          TextButton(
-                            onPressed: () => unawaited(_copyInvite(g)),
-                            style: TextButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            child: Text(l10n.platzCopyLink),
-                          ),
-                        if (_selfIds.contains(g.hostUserId))
-                          TextButton(
-                            onPressed: () => unawaited(_toggleListing(g)),
-                            style: TextButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            child: Text(
-                              g.visibility == RideGroupVisibility.public
-                                  ? l10n.platzMakePrivate
-                                  : l10n.platzMakePublic,
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (_selfIds.contains(g.hostUserId) || g.onServer) ...[
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          FilterChip(
-                            key: Key('platz-group-pins-${g.id}'),
-                            selected: _localOptIn[g.id] ?? false,
-                            showCheckmark: false,
-                            visualDensity: VisualDensity.compact,
-                            label: Text(
-                              (_localOptIn[g.id] ?? false)
-                                  ? l10n.platzPinsOnHud
-                                  : l10n.platzPinsOff,
-                            ),
-                            onSelected: (on) =>
-                                unawaited(_setPins(g.id, on)),
-                          ),
-                          if (_selfIds.contains(g.hostUserId))
-                            FilledButton.tonal(
-                              key: Key('platz-group-ride-${g.id}'),
-                              style: FilledButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                              ),
-                              onPressed: () =>
-                                  unawaited(_startRideFromGroup(g)),
-                              child: Text(l10n.goRide),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l10n.platzPinsHint,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+          if (_joinErr != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                _joinErr!,
+                style: const TextStyle(fontSize: 12, color: AppColors.warning),
               ),
-            ),
-        if (_listPublic && _listedPublic.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-            child: Text(
-              l10n.platzPublicGroupsHint,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-          ),
-          for (final g in _listedPublic)
-            Card(
-              key: Key('platz-public-${g.id}'),
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            g.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            l10n.platzListedPublic,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
+            )
+          else if (_syncNote != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _syncNote!,
+                    style:
+                        const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                  if (_syncNote!.contains('Nicht eingeloggt'))
+                    TextButton(
+                      onPressed: () => openAuthScreen(context),
+                      style: TextButton.styleFrom(
                         visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      onPressed: () => unawaited(
-                        _applyJoin(g.id, token: null),
-                      ),
-                      child: Text(
-                        _signedIn ? l10n.platzJoin : l10n.platzJoinLocalCta,
-                      ),
+                      child: Text(l10n.signIn),
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
-        ],
+          if (_groups.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                l10n.platzNoGroup,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+            )
+          else
+            for (final g in _groups)
+              PlatzGroupCard(
+                group: g,
+                members: _members[g.id] ?? const <RideGroupMember>[],
+                selfIds: _selfIds,
+                signedIn: _signedIn,
+                optIn: _localOptIn[g.id] ?? false,
+                onInvite: () => unawaited(_invite(g)),
+                onRide: () => unawaited(_startRideFromGroup(g)),
+                onLeave: () => unawaited(_leaveOrClose(g)),
+                onCopyLink: () => unawaited(_copyInvite(g)),
+                onCopyCode: () => unawaited(_copyCode(g)),
+                onToggleListing: () => unawaited(_toggleListing(g)),
+                onEditTime: () => unawaited(_extendWindow(g)),
+                onOptIn: (on) => unawaited(_setPins(g.id, on)),
+                onSignIn: () => openAuthScreen(context),
+              ),
+          if (_listedPublic.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+              child: Text(
+                l10n.platzPublicGroupsHint,
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ),
+            for (final g in _listedPublic)
+              Card(
+                key: Key('platz-public-${g.id}'),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              g.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              l10n.platzListedPublic,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () => unawaited(() async {
+                          if (!await _requireSignInForJoin()) return;
+                          await _applyJoin(g.id, token: null);
+                        }()),
+                        child: Text(
+                          _signedIn ? l10n.platzJoin : l10n.platzJoinLocalCta,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ],
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
           child: PlatzFoldHeader(
             label: l10n.platzCollectionsKicker,
+            glyph: 'collection',
             count: _cols.isEmpty ? null : _cols.length,
             expanded: _collectionsOpen,
             onTap: () => setState(() {
@@ -1188,6 +1378,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
           ),
           for (final c in _cols)
             ListTile(
+              leading: const MappeGlyph('collection', size: 18),
               title: Text(c.name),
               subtitle: Text(l10n.platzCollectionTours(c.routeIds.length)),
               trailing: TextButton(
@@ -1213,107 +1404,6 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
   }
 }
 
-class _PlatzJoinSheet extends StatefulWidget {
-  const _PlatzJoinSheet({required this.signedIn});
-
-  final bool signedIn;
-
-  @override
-  State<_PlatzJoinSheet> createState() => _PlatzJoinSheetState();
-}
-
-class _PlatzJoinSheetState extends State<_PlatzJoinSheet> {
-  late final TextEditingController _ctrl;
-  String? _err;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final loc = AppLocalizations.of(context);
-    final raw = _ctrl.text.trim();
-    if (raw.isEmpty) {
-      setState(() => _err = loc.platzJoinEmpty);
-      return;
-    }
-    if (RideGroupInvite.parsePastedJoin(raw) == null) {
-      setState(() => _err = loc.platzJoinInvalid);
-      return;
-    }
-    FocusManager.instance.primaryFocus?.unfocus();
-    Navigator.pop(context, raw);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 8,
-        bottom: HofThresholdNav.sheetBottomInset(context),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            loc.platzJoinWithCode,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            loc.platzJoinLinkHint,
-            style: const TextStyle(fontSize: 12, color: AppColors.muted),
-          ),
-          if (!widget.signedIn) ...[
-            const SizedBox(height: 8),
-            Text(
-              loc.platzJoinUnsignedHint,
-              style: const TextStyle(fontSize: 12, color: AppColors.warning),
-            ),
-          ],
-          const SizedBox(height: 12),
-          TextField(
-            key: const Key('platz-join-field'),
-            controller: _ctrl,
-            autofocus: true,
-            keyboardType: TextInputType.url,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              labelText: loc.platzJoinCodeField,
-              isDense: true,
-              errorText: _err,
-            ),
-            onSubmitted: (_) => _submit(),
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            key: const Key('platz-join-submit'),
-            onPressed: _submit,
-            child: Text(
-              widget.signedIn ? loc.platzJoin : loc.platzJoinLocalCta,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class PlatzFoldHeader extends StatelessWidget {
   const PlatzFoldHeader({
     super.key,
@@ -1321,12 +1411,14 @@ class PlatzFoldHeader extends StatelessWidget {
     this.count,
     this.expanded = false,
     this.onTap,
+    this.glyph,
   });
 
   final String label;
   final int? count;
   final bool expanded;
   final VoidCallback? onTap;
+  final String? glyph;
 
   @override
   Widget build(BuildContext context) {
@@ -1337,8 +1429,17 @@ class PlatzFoldHeader extends StatelessWidget {
       letterSpacing: 0.4,
       color: AppColors.muted,
     );
+    final labelRow = Row(
+      children: [
+        if (glyph != null) ...[
+          MappeGlyph(glyph!, size: 16),
+          const SizedBox(width: 8),
+        ],
+        Expanded(child: Text(text, style: style)),
+      ],
+    );
     if (onTap == null) {
-      return Text(text, style: style);
+      return labelRow;
     }
     return InkWell(
       onTap: onTap,
@@ -1346,7 +1447,7 @@ class PlatzFoldHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            Expanded(child: Text(text, style: style)),
+            Expanded(child: labelRow),
             Icon(
               expanded ? Icons.expand_less : Icons.expand_more,
               size: 18,

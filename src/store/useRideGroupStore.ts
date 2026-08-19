@@ -10,11 +10,19 @@ import { v4 as uuidv4 } from "uuid";
 import type { RideGroup, RideGroupMember } from "@/lib/community/types";
 import {
   canAttachCourse,
+  extendRideGroupWindowEnd,
+  parseRideGroupExtend,
+  friendRosterName,
+  friendUnnamedNumbers,
+  canJoinWithoutInviteToken,
   generateJoinCode,
   isRideGroupId,
   keepLocalRideGroupAfterCloud,
+  normalizeJoinCode,
   parseGroupListing,
+  RIDE_GROUP_JOIN_CODE_LEN,
 } from "@/lib/community/rideGroup";
+import { listedPlannedGroups } from "@/lib/community/rideTogether";
 import {
   decodeGroupInvite,
   inviteWindowOpen,
@@ -22,6 +30,7 @@ import {
 import {
   closeRideGroupCloud,
   createRideGroupCloud,
+  extendRideGroupWindowCloud,
   fetchRideGroups,
   isCloudFail,
   joinRideGroupCloud,
@@ -80,6 +89,10 @@ type RideGroupState = {
   setLiveOptIn: (groupId: string, on: boolean) => void;
   leaveGroup: (groupId: string) => void;
   leaveGroupAsync: (groupId: string) => Promise<void>;
+  extendWindowAsync: (
+    groupId: string,
+    opts?: { hours?: number; newEnd?: string }
+  ) => Promise<boolean>;
   pullCloud: () => Promise<void>;
   markInboxSeen: (n: number) => void;
 };
@@ -136,8 +149,7 @@ function localCreate(
 ): RideGroup | { error: string } {
   if (!canAttachCourse(input.route)) {
     return {
-      error:
-        "Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.",
+      error: "Zuerst eine Tour wählen oder selbst planen.",
     };
   }
   const now = new Date();
@@ -192,8 +204,7 @@ export const useRideGroupStore = create<RideGroupState>()(
       createGroupAsync: async (input) => {
         if (!canAttachCourse(input.route)) {
           return {
-            error:
-              "Gruppe nur an freigegebener oder Katalog-Tour. Private GPX bleibt privat.",
+            error: "Zuerst eine Tour wählen oder selbst planen.",
           };
         }
         const loggedIn = await rideGroupHasSession();
@@ -234,8 +245,8 @@ export const useRideGroupStore = create<RideGroupState>()(
       },
 
       joinByCode: (code) => {
-        const normalized = code.trim().toUpperCase();
-        if (normalized.length !== 6) {
+        const normalized = normalizeJoinCode(code);
+        if (normalized.length !== RIDE_GROUP_JOIN_CODE_LEN) {
           return { error: "Code hat 6 Zeichen." };
         }
         const hit = get().groups.find(
@@ -257,6 +268,12 @@ export const useRideGroupStore = create<RideGroupState>()(
         ) {
           return hit;
         }
+        if (!canJoinWithoutInviteToken(parseGroupListing(hit.visibility))) {
+          return {
+            error:
+              "Privat — nur mit Einladungslink. Kein Code zum Abtippen.",
+          };
+        }
         const member: RideGroupMember = {
           groupId: hit.id,
           userId: uid,
@@ -276,7 +293,7 @@ export const useRideGroupStore = create<RideGroupState>()(
             set((s) => ({
               lastNote:
                 visibility === "public"
-                  ? "Auf dem Platz gelistet — wer den Link hat, kann beitreten."
+                  ? "Auf dem Platz gelistet — Link oder Code reicht."
                   : "Nur per Link — nicht auf dem Platz.",
               groups: s.groups.map((g) =>
                 g.id === id ? { ...g, ...cloud.group, visibility } : g
@@ -295,8 +312,9 @@ export const useRideGroupStore = create<RideGroupState>()(
       joinByCodeAsync: async (code, token) => {
         const raw = code.trim();
         const asId = isRideGroupId(raw);
-        const normalized = raw.toUpperCase();
-        if (!asId && normalized.length !== 6 && !token) {
+        const normalized = normalizeJoinCode(raw);
+        const asCode = !asId && normalized.length === RIDE_GROUP_JOIN_CODE_LEN;
+        if (!asId && !asCode && !token) {
           return { error: "Beitritt nur über den Einladungslink." };
         }
         const loggedIn = await rideGroupHasSession();
@@ -439,6 +457,52 @@ export const useRideGroupStore = create<RideGroupState>()(
           };
         }),
 
+      extendWindowAsync: async (groupId, opts) => {
+        const hours = opts?.hours ?? 1;
+        const newEnd = opts?.newEnd;
+        const g = get().groups.find((x) => x.id === groupId);
+        if (!g || g.status === "closed") return false;
+        if (!isSelf(get(), g.hostUserId)) return false;
+        let next = (
+          newEnd
+            ? parseRideGroupExtend({
+                now: new Date(),
+                currentEnd: new Date(g.startWindowEnd),
+                newEnd,
+              })
+            : { end: extendRideGroupWindowEnd(
+                new Date(),
+                new Date(g.startWindowEnd),
+                hours
+              ) }
+        );
+        if ("error" in next) {
+          set({ lastNote: "Zeit liegt außerhalb des Rahmens." });
+          return false;
+        }
+        let nextIso = next.end.toISOString();
+        if (g.onServer && (await rideGroupHasSession())) {
+          const cloud = await extendRideGroupWindowCloud({
+            id: groupId,
+            addHours: newEnd ? undefined : hours,
+            newEnd,
+          });
+          if (!isCloudFail(cloud) && cloud.group?.startWindowEnd) {
+            nextIso = cloud.group.startWindowEnd;
+          } else if (isCloudFail(cloud) && cloud.status >= 400) {
+            set({ lastNote: cloud.note || "Fenster nicht verlängert." });
+            return false;
+          }
+        }
+        set((s) => ({
+          lastNote: "Fenster verlängert.",
+          groups: s.groups.map((row) =>
+            row.id === groupId ? { ...row, startWindowEnd: nextIso } : row
+          ),
+        }));
+        return true;
+      },
+
       leaveGroupAsync: async (groupId) => {
         const g = get().groups.find((x) => x.id === groupId);
         const host = g ? isSelf(get(), g.hostUserId) : false;
@@ -481,7 +545,7 @@ export const useRideGroupStore = create<RideGroupState>()(
 );
 
 export function listedRideGroups(groups: RideGroup[]) {
-  return activeGroups(groups);
+  return listedPlannedGroups(activeGroups(groups));
 }
 
 export function isRideGroupSelf(
@@ -495,9 +559,31 @@ export function memberRosterLine(input: {
   displayLabel: string;
   isHost: boolean;
   isSelf: boolean;
+  friendN?: number;
+  host?: string;
+  guest?: string;
+  you?: string;
+  selfSuffix?: string;
+  friendLabel?: (n: number) => string;
 }): string {
-  const name = input.displayLabel.trim();
-  const role = input.isHost ? "Host" : "Gast";
-  const self = input.isSelf ? " · du" : "";
-  return name ? `${name} · ${role}${self}` : `${role}${self}`;
+  const host = input.host ?? "Host";
+  const guest = input.guest ?? "Gast";
+  const you = input.you ?? "Du";
+  const friendLabel = input.friendLabel ?? ((n) => `Freund ${n}`);
+  const name = friendRosterName({
+    displayLabel: input.displayLabel,
+    self: input.isSelf,
+    friendN: input.friendN,
+    fallbackSelf: you,
+    fallbackOther: guest,
+    friendLabel,
+  });
+  const role = input.isHost ? host : guest;
+  if (input.isSelf) return `${name} · ${role}`;
+  if (!input.displayLabel.trim() && input.friendN != null) {
+    return name;
+  }
+  return input.displayLabel.trim() ? `${name} · ${role}` : role;
 }
+
+export { friendUnnamedNumbers };

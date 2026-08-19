@@ -34,6 +34,22 @@ void main() {
     expect(bundle.members.single.displayLabel, isEmpty);
   });
 
+  test('parseResponse 409 full bleibt ehrlich', () {
+    final fail = RideGroupCloud.parseResponse(
+      409,
+      '{"error":"full","note":"Gruppe ist voll (20)."}',
+    );
+    expect(fail.ok, isFalse);
+    expect(fail.status, 409);
+    expect(fail.error, 'full');
+  });
+
+  test('parseResponse 404 Fenster-Route ist ehrlich', () {
+    final fail = RideGroupCloud.parseResponse(404, '{"error":"not_found"}');
+    expect(fail.ok, isFalse);
+    expect(fail.status, 404);
+  });
+
   test('parseResponse 401 bleibt ehrlich', () {
     final fail = RideGroupCloud.parseResponse(
       401,

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { createAuthedClient } from "@/lib/supabase/authed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseGroupListing } from "@/lib/community/rideGroup";
+import { isSessionRouteId } from "@/lib/community/rideTogether";
 import {
   isMissingRideGroupTable,
   isRideGroupId,
@@ -41,12 +42,28 @@ export async function POST(req: Request) {
       );
     }
 
+    const { data: existing } = await admin
+      .from("ride_groups")
+      .select("saved_route_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (existing && isSessionRouteId(String(existing.saved_route_id))) {
+      return NextResponse.json(
+        {
+          error: "session_private",
+          note: "Freeride-Session bleibt geschlossen.",
+        },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await admin
       .from("ride_groups")
       .update({ visibility })
       .eq("id", id)
       .eq("host_user_id", user.id)
       .neq("status", "closed")
+      .neq("saved_route_id", "freeride")
       .select(RIDE_GROUP_SELECT)
       .maybeSingle();
     if (error) {

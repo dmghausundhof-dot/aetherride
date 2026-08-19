@@ -76,6 +76,8 @@ flutter:
     - assets/garage/silhouettes/
     - assets/brand/
     - assets/brand/boot/
+    - assets/community/rider/
+    - assets/tours/
   fonts:
     - family: Inter
       fonts:

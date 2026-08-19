@@ -118,6 +118,7 @@ class RideGroup {
   RideGroup copyWith({
     RideGroupVisibility? visibility,
     bool? onServer,
+    DateTime? startWindowEnd,
   }) =>
       RideGroup(
         id: id,
@@ -126,7 +127,7 @@ class RideGroup {
         catalogTourId: catalogTourId,
         title: title,
         startWindowStart: startWindowStart,
-        startWindowEnd: startWindowEnd,
+        startWindowEnd: startWindowEnd ?? this.startWindowEnd,
         joinCode: joinCode,
         status: status,
         livePinsAllowed: livePinsAllowed,

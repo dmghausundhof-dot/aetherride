@@ -97,18 +97,61 @@ Map<String, dynamic> buildTourSharePayload(
   );
 }
 
+Map<String, dynamic>? parseTourShareMap(Object? raw) {
+  if (raw is! Map) return null;
+  final data = Map<String, dynamic>.from(raw);
+  if (data['v'] != 1 || data['kind'] != 'tour') return null;
+  if (data['id'] == null || data['name'] == null) return null;
+  return data;
+}
+
 Map<String, dynamic>? decodeTourSharePayload(String token) {
   final raw = _fromBase64Url(token);
   if (raw == null) return null;
   try {
-    final data = jsonDecode(raw);
-    if (data is! Map) return null;
-    if (data['v'] != 1 || data['kind'] != 'tour') return null;
-    if (data['id'] == null || data['name'] == null) return null;
-    return Map<String, dynamic>.from(data);
+    return parseTourShareMap(jsonDecode(raw));
   } catch (_) {
     return null;
   }
+}
+
+List<List<double>> _trackFromShare(Object? raw) {
+  if (raw is! List) return const [];
+  final out = <List<double>>[];
+  for (final e in raw) {
+    if (e is! List || e.length < 2) continue;
+    final lng = (e[0] as num?)?.toDouble();
+    final lat = (e[1] as num?)?.toDouble();
+    if (lng == null || lat == null) continue;
+    out.add([lng, lat]);
+  }
+  return out;
+}
+
+/// Mitglieds-Kopie. [keepId] bleibt die Host-Id — Losfahren matcht.
+SavedRouteEntry? savedRouteFromTourShare({
+  required Map<String, dynamic> tour,
+  required String keepId,
+}) {
+  if (parseTourShareMap(tour) == null) return null;
+  final track = _trackFromShare(tour['track']);
+  if (track.length < 2) return null;
+  final name = '${tour['name'] ?? ''}'.trim();
+  final source = '${tour['source'] ?? ''}';
+  return SavedRouteEntry(
+    id: keepId,
+    name: name.isEmpty ? keepId : name,
+    distanceKm: (tour['distanceKm'] as num?)?.toDouble() ?? 0,
+    elevationM: (tour['elevationM'] as num?)?.toDouble() ?? 0,
+    durationMin: (tour['durationMin'] as num?)?.toInt() ?? 0,
+    savedAt: DateTime.now().toUtc(),
+    source: source == 'engine' ? 'engine' : 'import',
+    coordinates: track,
+    waypoints: [
+      SavedWaypoint(role: 'start', lng: track.first[0], lat: track.first[1]),
+      SavedWaypoint(role: 'end', lng: track.last[0], lat: track.last[1]),
+    ],
+  );
 }
 
 String shareTourPath(String token) => '/share/t/$token';

@@ -95,7 +95,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get shopForYourBikeEmpty =>
-      'Parcheggia una bici in officina — poi apriamo i pezzi che calzano, nel negozio.';
+      'Parcheggia una bici allo stand — poi apriamo i pezzi che calzano, nel negozio.';
 
   @override
   String get shopMerchHint =>
@@ -331,7 +331,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get discoverMenuPhotos => 'Foto intorno';
 
   @override
-  String get discoverMenuOffline => 'Mappe offline';
+  String get discoverMenuOffline => 'Routing offline';
 
   @override
   String get discoverMenuCollections => 'Raccolte';
@@ -416,7 +416,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String hofPackMissing(String name) {
-    return 'Manca il pack per $name';
+    return 'Nessun routing offline per $name';
+  }
+
+  @override
+  String hofLoadOfflineMap(String name) {
+    return 'Carica il routing offline per $name';
   }
 
   @override
@@ -467,7 +472,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String hofCareInWorkshop(String label) {
-    return '$label — in officina';
+    return '$label — sulla bici';
   }
 
   @override
@@ -995,7 +1000,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get garageEmptyMessage =>
-      'Nome e tipo bastano. Il catalogo è ricerca — pezzi di serie solo se li prendi.';
+      'Nome e tipo bastano. Marca e pezzi possono aspettare.';
 
   @override
   String get garageAddBike => 'Aggiungi una bici';
@@ -1103,6 +1108,69 @@ class AppLocalizationsIt extends AppLocalizations {
   String get garageBrandModel => 'Modello';
 
   @override
+  String get garageBikeId => 'Documento';
+
+  @override
+  String get garageBikeIdHint =>
+      'Numero di telaio, acquisto e assicurazione — solo sul dispositivo.';
+
+  @override
+  String get garageBikeIdEmpty =>
+      'Aggiungi il numero di telaio — per furto e assicurazione.';
+
+  @override
+  String get garageBikeIdAdd => 'Crea documento';
+
+  @override
+  String get garageSerial => 'Numero di telaio';
+
+  @override
+  String get garageSerialHint =>
+      'Stampato sul movimento centrale, sul tubo sterzo o sul fodero.';
+
+  @override
+  String get garageColor => 'Colore';
+
+  @override
+  String get garageWeightKg => 'Peso (kg)';
+
+  @override
+  String get garageOwnerNotes => 'Note';
+
+  @override
+  String get garagePurchasedAt => 'Acquistata il';
+
+  @override
+  String get garagePurchasedFrom => 'Acquistata da';
+
+  @override
+  String get garagePurchasePrice => 'Prezzo (€)';
+
+  @override
+  String get garageInsurance => 'Assicurazione';
+
+  @override
+  String get garageInsurancePolicy => 'N. polizza';
+
+  @override
+  String get garageKeyNumber => 'N. chiave';
+
+  @override
+  String get garageEditBike => 'Modifica bici';
+
+  @override
+  String get garageSerialCopied => 'Numero di telaio copiato';
+
+  @override
+  String get garagePrivateHint => 'Resta locale e nel backup. Non pubblico.';
+
+  @override
+  String get garageYear => 'Anno';
+
+  @override
+  String get dieBoxChipId => 'Documento';
+
+  @override
   String garageCompatFits(int count) {
     return 'Calza $count';
   }
@@ -1119,7 +1187,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get garagePartsEmpty =>
-      'Ancora nessun pezzo. Tocca « Aggiungi pezzo » — poi ti ricordiamo la manutenzione e mostriamo se i pezzi stanno insieme.';
+      'Ancora nessun pezzo. Tocca « Aggiungi pezzo ».';
 
   @override
   String get garageMaintEmpty =>
@@ -1136,7 +1204,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get garageYourParts => 'I tuoi pezzi';
 
   @override
-  String get garageMissingSlots => 'Non ancora iscritto (opzionale)';
+  String get garageMissingSlots => 'Ancora aperto';
 
   @override
   String get garageActiveBadge => 'Bici attiva';
@@ -1299,6 +1367,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get postRideToMappe => 'Nelle Tour';
 
   @override
+  String get postRideDone => 'Fatto';
+
+  @override
+  String get postRideNavEnded => 'Navigazione';
+
+  @override
+  String get postRideShortSession =>
+      'Sessione breve — poco GPS. Distanza e ritmo non sono affidabili.';
+
+  @override
   String get postRideTrackMap => 'Traccia percorsa';
 
   @override
@@ -1316,6 +1394,50 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get postRideStatElevation => 'Dislivello';
+
+  @override
+  String get postRideTerrainTitle => 'Traccia e pendenza';
+
+  @override
+  String get postRideTerrainHint =>
+      'Quota e pendenza dal GPS. I buchi restano buchi — niente profilo inventato.';
+
+  @override
+  String get postRideNoElevation =>
+      'Nessuna quota sulla traccia. La pendenza non è allora affidabile.';
+
+  @override
+  String get postRideStatDescent => 'Discesa';
+
+  @override
+  String get postRideStatMaxGrade => 'Più ripida';
+
+  @override
+  String get postRideStatMaxSpeed => 'Picco';
+
+  @override
+  String get postRideSensorHr => 'Battito';
+
+  @override
+  String get postRideSensorCad => 'Cadenza';
+
+  @override
+  String get postRideSensorPower => 'Potenza';
+
+  @override
+  String get postRideGradeSteepUp => 'Salita ripida';
+
+  @override
+  String get postRideGradeUp => 'Salita';
+
+  @override
+  String get postRideGradeRoll => 'Pianeggiante';
+
+  @override
+  String get postRideGradeDown => 'Discesa';
+
+  @override
+  String get postRideGradeSteepDown => 'Discesa ripida';
 
   @override
   String get postRideWeatherTitle => 'Meteo';
@@ -1349,7 +1471,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get postRidePhotosShareText => 'La mia uscita FlowLine';
 
   @override
-  String get postRidePhotosEmpty => 'Ancora nessuna foto da condividere';
+  String get postRidePhotosEmpty => 'Ancora niente da condividere';
 
   @override
   String postRidePhotosMax(int count) {
@@ -1357,8 +1479,55 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get postRideMediaTitle => 'Foto e video';
+
+  @override
+  String get postRideMediaHint =>
+      'Salvati sul dispositivo. Con posizione GPS, tranne in una zona privacy.';
+
+  @override
+  String get postRideAddMedia => 'Foto o video';
+
+  @override
+  String get postRideVideoCamera => 'Video';
+
+  @override
+  String get postRideVideoGallery => 'Clip dalla galleria';
+
+  @override
+  String get postRideVideoPlay => 'Video';
+
+  @override
+  String get postRideVideoMissing => 'Il clip non è più sul dispositivo.';
+
+  @override
+  String postRideVideosMax(int count) {
+    return 'Massimo $count video';
+  }
+
+  @override
+  String get postRideNotesTitle => 'Nota';
+
+  @override
+  String get postRideNotesHint => 'Una riga sull\'uscita — solo per te.';
+
+  @override
+  String get postRideNotesPlaceholder => 'Trail bagnato, bel flow …';
+
+  @override
+  String get postRideNotesAdd => 'Salva';
+
+  @override
+  String get postRideNotesEmpty => 'Ancora nessuna nota.';
+
+  @override
+  String postRideNotesMax(int count) {
+    return 'Massimo $count note';
+  }
+
+  @override
   String get postRideCommunityStub =>
-      'Le foto restano locali. Le voci stanno sul tour — non in un feed.';
+      'Foto, video e note restano locali. Le voci stanno sul tour — non in un feed.';
 
   @override
   String get postRideOpenTour => 'Apri il tour';
@@ -1541,6 +1710,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get authNewHere => 'Nuovo qui? Registrati';
+
+  @override
+  String get authForgotPassword => 'Password dimenticata?';
+
+  @override
+  String get authResetSent =>
+      'Se l\'account esiste, arriva un\'e-mail per reimpostare.';
+
+  @override
+  String get authResetNeedEmail => 'Inserisci prima l\'e-mail.';
 
   @override
   String get authWithGoogle => 'Con Google';
@@ -1785,7 +1964,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get chatToolWatch => 'In scadenza';
 
   @override
-  String get chatToolGarage => 'Officina';
+  String get chatToolGarage => 'Bici';
 
   @override
   String get chatToolCompat => 'Compatibilità';
@@ -1832,11 +2011,56 @@ class AppLocalizationsIt extends AppLocalizations {
   String get privacyZones => 'Zone privacy';
 
   @override
-  String get privacyZoneAdd => 'Zona';
+  String get privacyHomePlacesTitle => 'Casa e luoghi sensibili';
+
+  @override
+  String get privacyHomePlacesEmpty =>
+      'Nessuna zona — partenza/arrivo tagliati di 200 m, casa spesso ancora visibile';
+
+  @override
+  String privacyHomePlacesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count zone · nascoste sulle mappe condivise',
+      one: '1 zona · nascosta sulle mappe condivise',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get privacyConsentsExportHint => 'Consensi, export, Strava';
+
+  @override
+  String get privacyZonesLead =>
+      'Partenza e arrivo sulle mappe condivise, export, heatmap e foto. Tu vedi comunque il tracciato intero.';
+
+  @override
+  String get privacyZoneAdd => 'Aggiungi zona';
 
   @override
   String get privacyNoZones =>
-      'Nessuna zona — l\'intorno partenza/arrivo può essere tagliato.';
+      'Nessuna zona. I primi e gli ultimi 200 m vengono comunque tagliati — casa resta spesso riconoscibile.';
+
+  @override
+  String get privacyZoneDeleteConfirm =>
+      'Eliminare questa zona? Le mappe condivise possono di nuovo mostrare partenza e arrivo.';
+
+  @override
+  String get privacyZoneDeleted => 'Zona eliminata';
+
+  @override
+  String get privacyShareNoZoneTitle => 'Nessuna zona privacy';
+
+  @override
+  String get privacyShareNoZoneBody =>
+      'Partenza e arrivo possono mostrare casa. Imposta una zona prima di condividere — oppure condividi comunque (200 m alle estremità vengono tagliati).';
+
+  @override
+  String get privacyShareAnyway => 'Condividi comunque';
+
+  @override
+  String get privacyShareNoZoneCta => 'Imposta zona';
 
   @override
   String privacyZoneRadius(String label) {
@@ -2013,7 +2237,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get privacyZoneRadiusHint =>
-      'Il raggio vale per export e dove si gira.';
+      'Il raggio vale per export, heatmap, pin di gruppo e foto.';
+
+  @override
+  String get privacyZonePhotoHint =>
+      'Nella zona le foto non hanno posizione. Restano sul dispositivo.';
 
   @override
   String get privacyZoneLabel => 'Etichetta';
@@ -2142,8 +2370,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileBikeBleIdle => 'Intuvia oder Tempo-Sensor am aktiven Rad.';
 
   @override
-  String get profileBikeBleNeedBike =>
-      'Zuerst ein Rad in die Werkstatt stellen.';
+  String get profileBikeBleNeedBike => 'Zuerst ein Rad am Stand abstellen.';
 
   @override
   String get profileCloudBilling => 'Cloud-sync e abbonamento';
@@ -2219,7 +2446,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get profileProPerks =>
-      'Mappe offline, bici illimitate, analisi sospensione e bracketing.';
+      'Bici illimitate, analisi sospensione e bracketing.';
 
   @override
   String get profileUpgradePro => 'Passa a Pro';
@@ -2389,33 +2616,221 @@ class AppLocalizationsIt extends AppLocalizations {
   String get onboardLater => 'Configura più tardi';
 
   @override
-  String get offlineMapsTitle => 'Mappe offline';
+  String get offlineMapsChip => 'Routing';
+
+  @override
+  String get profileOfflineMaps => 'Routing offline';
+
+  @override
+  String get profileOfflineMapsHint =>
+      'Carica il grafo di routing. Panoramica extra.';
+
+  @override
+  String get profileNavPuckHint =>
+      'Il ciclista 3D è lo standard. La freccia classica è un po’ più piccola.';
+
+  @override
+  String get rideNavPuckHintSimple =>
+      'Ciclista 3D sulla mappa, o la freccia classica — un po’ più piccola.';
+
+  @override
+  String get navigateOfflineHint =>
+      'Senza rete? Carica il routing per questo percorso.';
+
+  @override
+  String navigateOfflineHintPack(String name) {
+    return '$name — routing in questa area';
+  }
+
+  @override
+  String navigateOfflineHintPackSized(String name, String size) {
+    return '$name · $size — routing in questa area';
+  }
+
+  @override
+  String offlineCoverageLabel(String name) {
+    return '$name · routing';
+  }
+
+  @override
+  String offlineCoverageSuggested(String name) {
+    return 'Carica · $name';
+  }
+
+  @override
+  String get offlineMapsTitle => 'Routing offline';
 
   @override
   String get offlineMapsHint =>
-      'Scarica routing e tile per la regione. Offline: mappa caricata e routing nell\'area.';
+      'Scarica un grafo di routing. La mappa d’insieme (zoom 0–11) è un download a parte, pesante. La navigazione in ride resta sulle tile stradali — spesso serve la rete.';
 
   @override
-  String get offlineRegionActive => 'Regione attiva';
+  String get offlineRegionActive => 'Routing attivo';
 
   @override
-  String get offlineNoRegion => 'Nessuna regione attiva';
+  String get offlineNoRegion => 'Nessun routing attivo';
 
   @override
-  String get offlineReadyBoth => 'Routing + tile pronti.';
+  String get offlineReadyBoth =>
+      'Routing pronto. Panoramica caricata (non lo zoom strada in ride).';
 
   @override
   String get offlineReadyRouting =>
-      'Routing pronto — mappa non ancora offline.';
+      'Routing pronto — panoramica non scaricata.';
 
   @override
-  String get offlineLoadBelow => 'Carica un pack costruito più sotto.';
+  String get offlineLoadBelow =>
+      'Carica un pack sotto. Solo il grafo, non la mappa da 540 MB.';
+
+  @override
+  String get offlineRoutingOn => 'Routing on';
+
+  @override
+  String get offlineRoutingOff => 'Nessun routing';
+
+  @override
+  String get offlineOverviewOn => 'Panoramica on';
+
+  @override
+  String get offlineOverviewOff => 'Nessuna panoramica';
+
+  @override
+  String offlineOverviewCta(String id, String size) {
+    return 'Scarica panoramica $id ($size)';
+  }
+
+  @override
+  String get offlineOverviewExplain =>
+      'Panoramica fino a zoom 11. La navigazione in ride resta sulle tile stradali e spesso serve la rete.';
+
+  @override
+  String offlineStorageLine(String size) {
+    return 'Sul dispositivo: $size';
+  }
+
+  @override
+  String get offlineSuggested => 'Routing qui';
+
+  @override
+  String get offlineInstalledSection => 'Installato';
+
+  @override
+  String get offlineCities => 'Città';
+
+  @override
+  String get offlineEurope => 'Europa';
+
+  @override
+  String get offlineEnvelopes => 'Aree paese';
+
+  @override
+  String get offlineEnvelopesHint =>
+      'Bbox grande, grafo sottile — non la rete nazionale intera.';
+
+  @override
+  String get offlineCountryDE => 'Germania';
+
+  @override
+  String get offlineCountryCH => 'Svizzera';
+
+  @override
+  String get offlineCountryAT => 'Austria';
+
+  @override
+  String get offlineCountryFR => 'Francia';
+
+  @override
+  String get offlineCountryNL => 'Paesi Bassi';
+
+  @override
+  String get offlineCountryIT => 'Italia';
+
+  @override
+  String get offlineCountryLI => 'Liechtenstein';
+
+  @override
+  String get offlineCountryDACH => 'Lago di Costanza / DACH';
+
+  @override
+  String get offlineCountryOther => 'Altri';
+
+  @override
+  String offlineCountryMorePacks(int count) {
+    return 'Altre ($count)';
+  }
+
+  @override
+  String offlineCountryPacks(int count) {
+    return '$count regioni';
+  }
+
+  @override
+  String offlineCountryEnvelopes(int count) {
+    return '$count aree paese';
+  }
+
+  @override
+  String offlineCountryPacksAndEnvelopes(int packs, int envelopes) {
+    return '$packs regioni · $envelopes aree paese';
+  }
+
+  @override
+  String get offlineConfirmLargeTitle => 'Grafo di routing grande';
+
+  @override
+  String offlineConfirmLargeBody(String name, String size) {
+    return '$name è $size. Si scarica solo il grafo di routing, non le tile stradali del ride.';
+  }
+
+  @override
+  String get offlineConfirmOverviewTitle => 'Scaricare la panoramica?';
+
+  @override
+  String offlineConfirmOverviewBody(String id, String size) {
+    return '$id è $size e solo zoom 0–11. La navigazione in ride resta sulle tile stradali e spesso serve la rete.';
+  }
+
+  @override
+  String get offlineConfirmLoad => 'Scarica';
+
+  @override
+  String get offlineSubUpdate => 'Aggiornamento disponibile';
+
+  @override
+  String offlineSubUpdateSized(String size) {
+    return 'Aggiornamento · $size';
+  }
+
+  @override
+  String get offlineUpdatePack => 'Aggiorna';
+
+  @override
+  String get offlineConfirmCellularTitle => 'Niente Wi-Fi';
+
+  @override
+  String offlineConfirmCellularBody(String size) {
+    return 'Scaricare $size in rete mobile? La panoramica è grande — il grafo resta piccolo.';
+  }
+
+  @override
+  String get offlineConfirmCellularAnyway => 'Scarica comunque';
+
+  @override
+  String get offlineDeletePack => 'Elimina pack';
+
+  @override
+  String offlineSnackRoutingOnly(String name) {
+    return '$name: routing pronto. La panoramica è extra.';
+  }
+
+  @override
+  String get offlineOverviewReady => 'Mappa d’insieme salvata (zoom 0–11).';
 
   @override
   String get offlineRegions => 'Regioni';
 
   @override
-  String get offlineSearchRegion => 'Cerca regione';
+  String get offlineSearchRegion => 'Cerca pack';
 
   @override
   String get offlineNoneFound => 'Nessuna regione trovata';
@@ -2433,7 +2848,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get offlineStubsHint => 'Non ancora disponibile al download.';
 
   @override
-  String get offlineRemoveRegion => 'Rimuovi regione';
+  String get offlineDownloadPaused =>
+      'Download in pausa. Riprendi da Routing offline.';
+
+  @override
+  String get offlineRemoveRegion => 'Disattiva routing';
 
   @override
   String get offlineStyleTitle => 'Stile mappa (opzionale)';
@@ -2460,11 +2879,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String offlinePackError(String error) {
-    return 'Pack regione: $error';
+    return 'Pack: $error';
   }
 
   @override
-  String get offlineRemoved => 'Regione rimossa';
+  String get offlineRemoved =>
+      'Routing disattivato. Il pack resta sul dispositivo.';
 
   @override
   String get offlineNoRemoteDach => 'Nessun pack remoto — fallback DACH attivo';
@@ -2512,7 +2932,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzTogetherHint =>
-      'Invita condivide il link. I tuoi gruppi restano — non un feed.';
+      'Invita condivide il link. I tuoi gruppi restano. Gruppi aperti: link o codice — sul Platz e come pin, non un feed.';
 
   @override
   String get platzTogetherListHint =>
@@ -2547,6 +2967,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzCopyLink => 'Copia link';
+
+  @override
+  String get platzCopyCode => 'Copia codice';
+
+  @override
+  String get platzCodeCopied =>
+      'Codice copiato. Gruppo in elenco: entra con quello.';
 
   @override
   String get platzInviteShares => 'Invita condivide il link del gruppo';
@@ -2608,20 +3035,38 @@ class AppLocalizationsIt extends AppLocalizations {
   String get platzCreateCollection => 'Crea raccolta';
 
   @override
-  String get platzJoinWithCode => 'Entra con un link';
+  String get platzJoinWithCode => 'Collega';
+
+  @override
+  String get platzConnectField => 'Link o codice a 6 caratteri';
+
+  @override
+  String get platzTimeTapHint => 'Tocca per modificare';
+
+  @override
+  String get platzMore => 'Altro';
+
+  @override
+  String get platzShareLink => 'Condividi link';
+
+  @override
+  String get platzJoinSignInFirst => 'Accedi — altrimenti l’host non ti vede';
+
+  @override
+  String get platzShareInRide => 'Condividi in uscita';
 
   @override
   String get platzJoinCodeField => 'Link d’invito';
 
   @override
   String get platzJoinLinkHint =>
-      'Incolla il link da WhatsApp o Messages. Il privato serve il link di invito — niente codice da digitare.';
+      'Incolla il link di invito da WhatsApp o Messages, oppure il codice a 6 caratteri di un gruppo in elenco. Il privato serve ancora il link di invito.';
 
   @override
-  String get platzJoinEmpty => 'Manca il link.';
+  String get platzJoinEmpty => 'Manca link o codice.';
 
   @override
-  String get platzJoinInvalid => 'Link d’invito non valido.';
+  String get platzJoinInvalid => 'Link o codice non valido.';
 
   @override
   String get platzJoin => 'Entra';
@@ -2642,7 +3087,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get platzStartTomorrow10 => 'Domani 10:00';
 
   @override
+  String get platzStartCustom => 'Altro orario…';
+
+  @override
   String get platzDurationLabel => 'Durata';
+
+  @override
+  String get platzDurationCustom => 'Altro…';
+
+  @override
+  String get platzDurationHoursHint => 'Ore (0,25–12)';
+
+  @override
+  String get platzWindowCapHint =>
+      'Partenza fino a 14 giorni. Durata da 15 min a 12 ore.';
 
   @override
   String get platzMeetingPlaceholder => 'Punto d\'incontro (opzionale)';
@@ -2657,11 +3115,249 @@ class AppLocalizationsIt extends AppLocalizations {
   String get platzPinsHint => 'Solo in uscita, non sulla mappa pubblica.';
 
   @override
+  String rideGroupHudLine(int sharing, int total, String left) {
+    return '$sharing/$total condividono · $left';
+  }
+
+  @override
+  String rideGroupHudSelfOn(String left) {
+    return 'Condividi · $left';
+  }
+
+  @override
+  String rideGroupHudSelfOff(String left) {
+    return 'muto · $left';
+  }
+
+  @override
+  String rideGroupHudWithDetail(String detail, String left) {
+    return '$detail · $left';
+  }
+
+  @override
+  String rideGroupWhenToday(String time, String dur) {
+    return 'oggi $time · $dur';
+  }
+
+  @override
+  String rideGroupWhenTomorrow(String time, String dur) {
+    return 'domani $time · $dur';
+  }
+
+  @override
+  String rideGroupWhenWeekday(String wd, String time, String dur) {
+    return '$wd $time · $dur';
+  }
+
+  @override
+  String rideGroupWhenClosed(String wd, String time) {
+    return 'chiuso — $wd $time';
+  }
+
+  @override
+  String rideGroupHudHours(int hours) {
+    return 'ancora $hours h';
+  }
+
+  @override
+  String rideGroupHudMins(int min) {
+    return 'ancora $min min';
+  }
+
+  @override
+  String get rideGroupHudClosed => 'chiuso';
+
+  @override
+  String get rideGroupPinStale => 'poco fa';
+
+  @override
+  String get rideGroupRosterTitle => 'Nel gruppo';
+
+  @override
+  String get rideGroupMute => 'muto';
+
+  @override
+  String get rideGroupShareOn => 'condivide';
+
+  @override
+  String get rideGroupOffline => 'offline';
+
+  @override
+  String rideGroupShareOnLineOne(String name, String time) {
+    return '$name ti vede — solo fino alle $time.';
+  }
+
+  @override
+  String rideGroupShareOnLineMany(int count, String time) {
+    return '$count amici ti vedono — solo fino alle $time.';
+  }
+
+  @override
+  String rideGroupShareOnLineNone(String time) {
+    return 'Nessun altro per ora — solo fino alle $time.';
+  }
+
+  @override
+  String get rideGroupWindowClosedToast => 'Finestra chiusa — pin spenti.';
+
+  @override
+  String rideGroupMateLeftToast(String name) {
+    return '$name se n’è andato.';
+  }
+
+  @override
+  String get rideGroupGoneToast => 'Gruppo finito.';
+
+  @override
+  String get rideGroupAhead => 'davanti';
+
+  @override
+  String get rideGroupBehind => 'dietro di te';
+
+  @override
+  String get rideGroupLeft => 'a sinistra';
+
+  @override
+  String get rideGroupRight => 'a destra';
+
+  @override
+  String get rideGroupFrameAll => 'Tutti sulla mappa';
+
+  @override
+  String get rideGroupExtend => 'Prolunga finestra';
+
+  @override
+  String get rideGroupExtend30m => '+30 min';
+
+  @override
+  String get rideGroupExtend1h => '+1 ora';
+
+  @override
+  String get rideGroupExtend2h => '+2 ore';
+
+  @override
+  String get rideGroupExtendCustomEnd => 'Altra fine…';
+
+  @override
+  String get rideGroupExtendCapHint => 'Al massimo fino a adesso + 12 ore.';
+
+  @override
+  String get rideGroupExtendInvalid => 'Orario fuori dal limite.';
+
+  @override
+  String rideGroupFriendN(int n) {
+    return 'Amico $n';
+  }
+
+  @override
+  String get rideGroupFlyTo => 'Sulla mappa';
+
+  @override
+  String get rideGroupWindowExtended => 'Finestra prolungata.';
+
+  @override
+  String get rideTogether => 'Insieme';
+
+  @override
+  String get rideTogetherSearch =>
+      'Cerco accanto — scheda, poi sì. Nessun radar sulla mappa.';
+
+  @override
+  String get rideTogetherEmpty =>
+      'Nessuno nella cella. Mostra il codice o aspetta.';
+
+  @override
+  String get rideTogetherBeside => 'accanto a te';
+
+  @override
+  String get rideTogetherNear => 'vicino';
+
+  @override
+  String get rideTogetherAsk => 'Insieme?';
+
+  @override
+  String get rideTogetherWait => 'in attesa…';
+
+  @override
+  String rideTogetherInbound(String name) {
+    return '$name vuole pedalare insieme';
+  }
+
+  @override
+  String get rideTogetherAccept => 'Sì';
+
+  @override
+  String get rideTogetherDecline => 'Non ora';
+
+  @override
+  String get rideTogetherCodeHint => 'L’altro digita il codice.';
+
+  @override
+  String get rideTogetherJoinCode => 'Inserisci il codice';
+
+  @override
+  String get rideTogetherJoin => 'Collega con codice';
+
+  @override
+  String get rideTogetherCodeUnknown => 'Nessun codice Insieme aperto.';
+
+  @override
+  String get rideTogetherCodeInvalid => 'Sei caratteri — senza I, O, 0, 1.';
+
+  @override
+  String get rideTogetherNeedLogin =>
+      'Accedi — altrimenti il server non vi vede.';
+
+  @override
+  String get rideTogetherNeedGps => 'Serve la posizione per trovarvi.';
+
+  @override
+  String get rideTogetherInZone => 'Invisibile nella zona privacy.';
+
+  @override
+  String get rideTogetherAnon => 'Ciclista';
+
+  @override
+  String get rideTogetherInvite => 'Fai entrare qualcuno';
+
+  @override
+  String get rideTogetherFull => 'Pieno — massimo 20.';
+
+  @override
+  String get rideTogetherClosedHint =>
+      'Chiuso. Solo codice o un sì accanto a te.';
+
+  @override
+  String get rideTogetherTwoSessions =>
+      'Due gruppi chiusi — restano separati. Dai il codice.';
+
+  @override
+  String get rideTogetherNotLooking => 'Dovete cercare tutti e due.';
+
+  @override
+  String get rideTogetherRateLimited => 'Troppe richieste — aspetta un attimo.';
+
+  @override
+  String get rideTogetherTooFar => 'Non siete più nella stessa cella.';
+
+  @override
+  String get rideTogetherStopLook => 'Smetti di cercare';
+
+  @override
+  String get rideTogetherSoloWait => '1 · in attesa';
+
+  @override
+  String get rideTogetherAccepted => 'accettato';
+
+  @override
+  String get rideTogetherDeclined => 'rifiutato';
+
+  @override
   String get platzTourNotInMappe => 'Uscita non in Percorsi.';
 
   @override
   String get platzTourNotInMappeHint =>
-      'Si parte mette i tour di catalogo in Percorsi. Un GPX privato serve il link dell’host — niente traccia inventata.';
+      'Si parte mette i tour di catalogo in Percorsi. Un GPX privato arriva con il link di invito — niente traccia inventata.';
 
   @override
   String get platzCollectionsHint =>
@@ -2676,14 +3372,34 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzNeedSharedTour =>
-      'Gruppo solo su un tour condiviso o di catalogo. Il GPX privato resta privato.';
+      'Scegli prima un’uscita, o pianificane una tua.';
 
   @override
-  String get platzShareTourFirst => 'Prima condividi un’uscita';
+  String get platzShareTourFirst => 'Pianifica la mia uscita come gruppo';
 
   @override
   String get platzShareTourFirstHint =>
-      'Senza condivisione gli amici non vedono il gruppo. Tocca un’uscita, poi Condividi, poi crea il gruppo.';
+      'Imposta il percorso sulla mappa, salvalo — poi compare nel selettore.';
+
+  @override
+  String get platzPickMine => 'Le mie uscite';
+
+  @override
+  String get platzPickNearby => 'Uscite vicine';
+
+  @override
+  String get platzNearbyNeedGps =>
+      'Senza posizione niente uscite vicine — prendi una tua o l’ultima mappa.';
+
+  @override
+  String get platzNearbyFromMap => 'Vicino è dall’ultima mappa, non dal GPS.';
+
+  @override
+  String get platzPlanAsGroup => 'Pianifica la mia uscita come gruppo';
+
+  @override
+  String get platzPlanAsGroupHint =>
+      'Imposta il percorso sulla mappa, salvalo — poi compare nel selettore.';
 
   @override
   String get platzHostCannotSee =>
@@ -2702,7 +3418,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzNoSharedTours =>
-      'Nessun tour condiviso o di catalogo. Il GPX privato resta fuori.';
+      'Nessuna uscita tua. Pianificane una o scegline una vicina.';
 
   @override
   String platzGroupCreated(String code) {
@@ -2812,7 +3528,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get bleBikeTitle => 'Associa bici';
 
   @override
-  String get blePairLeadAny => 'Display, Motor oder Sensor tippen.';
+  String get blePairLeadAny =>
+      'Bosch: Akku vom Display. Shimano und andere: nur Name, Tempo vom Rad-Sensor.';
 
   @override
   String get bleFlowRowName => 'Bosch';
@@ -2822,7 +3539,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get bleBikeHint =>
-      'Batteria e assist solo con GATT vero — niente da inventare.';
+      'Bosch: batteria dal display. Shimano e altri: solo nome, velocità dal sensore ruota.';
 
   @override
   String get bleRememberAnyway => 'Ricorda lo stesso';
@@ -3582,7 +4299,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get garageInstallPart => 'Installa pezzo';
 
   @override
-  String get garageSearchParts => 'Cerca pezzi (API/cache)';
+  String get garageSearchParts => 'Cerca nel catalogo';
 
   @override
   String get garageSearchPartsHint => 'Marca / modello — opzionale';
@@ -3703,7 +4420,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get garageBleHintEbike =>
-      'Bosch, Shimano STEPS o CSC. Accendi il display.';
+      'Bosch: batteria dal display. Shimano e altri: solo nome, velocità dal sensore ruota.';
 
   @override
   String get garageBleHintSensor =>
@@ -4062,6 +4779,14 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get discoverStraightFallback =>
       'Linea dritta — il routing live non ha dato geometria';
+
+  @override
+  String get discoverOfflineRouteReady => 'Routing offline — senza rete';
+
+  @override
+  String discoverOfflineRouteReadyNamed(String name) {
+    return '$name · routing offline';
+  }
 
   @override
   String get discoverSaved => 'Salvato';
@@ -4543,7 +5268,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get akteHonestyTrack =>
-      'Condividere crea un link. Il link contiene una traccia semplificata (coordinate), non solo il nome. Tornare a privato lo toglie dai filtri e registra la revoca sul server se sei collegato. Senza login vale solo su questo dispositivo.';
+      'Condividere crea un link. Il link contiene una traccia semplificata (coordinate), non solo il nome. Compare sulla mappa solo dopo 3 voci in 14 giorni — altrimenti torna privata. Tornare a privato lo toglie dai filtri e registra la revoca sul server se sei collegato. Senza login vale solo su questo dispositivo.';
 
   @override
   String get akteHonestyNoTrack =>
@@ -4756,6 +5481,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get discoverLayerHeatOff => 'Heat off';
 
   @override
+  String get discoverMapContentsTitle => 'Contenuto mappa';
+
+  @override
+  String get discoverMapContentsLayers => 'Sulla mappa';
+
+  @override
+  String get discoverMapContentsTools => 'Altro';
+
+  @override
+  String get discoverLayerHeatLocked => 'Consenso necessario';
+
+  @override
   String get discoverVariantPlanned => 'Come previsto';
 
   @override
@@ -4802,10 +5539,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get discoverFilmstripAttribution => 'Mapillary CC BY-SA';
 
   @override
-  String get discoverOfflineAfterSave => 'Scaricare la regione offline?';
+  String get discoverOfflineAfterSave =>
+      'Caricare il routing per questo percorso?';
 
   @override
-  String get discoverOfflineAfterSaveAction => 'Pack';
+  String discoverOfflineAfterSavePack(String name) {
+    return 'Caricare il routing $name?';
+  }
+
+  @override
+  String discoverOfflineAfterSavePackSized(String name, String size) {
+    return 'Caricare $name · $size per il routing?';
+  }
+
+  @override
+  String get discoverOfflineAfterSaveAction => 'Carica routing';
 
   @override
   String get discoverRoundTrip => 'Andata e ritorno';
@@ -4988,6 +5736,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get ridePause => 'Pausa';
 
   @override
+  String get ridePhotoTooltip => 'Foto in questo punto';
+
+  @override
+  String get ridePhotoPinned => 'Foto salvata in questo punto';
+
+  @override
+  String get ridePhotoPrivateZone => 'Zona privacy — foto senza posizione';
+
+  @override
+  String get ridePhotoNeedGps => 'Ancora senza GPS — foto senza posizione';
+
+  @override
   String get rideResume => 'Riprendi';
 
   @override
@@ -5004,6 +5764,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get rideQuietDisplay => 'Vista calma';
+
+  @override
+  String get rideHudClose => 'HUD via';
 
   @override
   String get rideFollowCamera => 'Segui la camera';
@@ -5193,6 +5956,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get rideWaitingSensors => 'In attesa dei sensori…';
 
   @override
+  String get rideCalibrateLean => 'Calibra';
+
+  @override
+  String get rideCalibrateLeanHint =>
+      'Tieni il manubrio dritto — imposta l\'inclinazione attuale a 0°.';
+
+  @override
+  String get rideResetLeanCal => 'Azzera di nuovo';
+
+  @override
+  String get rideLeanCalibrated => 'azzerata';
+
+  @override
   String get rideThereafter => 'Poi';
 
   @override
@@ -5272,6 +6048,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get ridePuckChevron => 'Chevron';
 
   @override
+  String get ridePuckRider => 'Ciclista';
+
+  @override
   String get ridePuckBergASub => 'Lettera, monte e freccia in uno';
 
   @override
@@ -5294,7 +6073,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get ridePuckLichtkegelSub => 'Disco scuro, cono arancio';
 
   @override
-  String get ridePuckChevronSub => 'Freccia navi standard';
+  String get ridePuckChevronSub => 'Freccia navi classica, un po’ più piccola';
+
+  @override
+  String get ridePuckRiderSub =>
+      'Ciclista 3D FlowLine — posizione e punti tour';
 
   @override
   String get rideChipLive => 'Live';
@@ -5303,10 +6086,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get rideChipRouteOffline => 'Route offline';
 
   @override
-  String get rideChipOfflineMapOk => 'Offline · mappa ok · Reroute: rete';
+  String get rideChipOfflineMapOk => 'Offline · mappa strade · Reroute: rete';
 
   @override
   String get rideChipMapsMissing => 'Mappe mancanti';
+
+  @override
+  String get rideChipRoutingOffline => 'Routing offline · mappa: rete';
 
   @override
   String get rideCardinalN => 'N';
@@ -5727,6 +6513,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get postRideBumpsHarsh => 'ruvidi';
 
   @override
+  String get postRideBumpsNone => '—';
+
+  @override
   String postRideObsFbHarsh(String front, String bumps) {
     return 'Feedback: anteriore $front · piccoli urti $bumps.';
   }
@@ -5734,6 +6523,21 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get postRideObsFbSoft =>
       'Feedback: l\'anteriore è morbido / affonda in frenata.';
+
+  @override
+  String postRideObsElevGap(String gap) {
+    return 'Buchi di quota su $gap km — pendenza non affidabile lì.';
+  }
+
+  @override
+  String postRideObsSteep(String grade) {
+    return 'Passaggi ripidi — max +$grade %.';
+  }
+
+  @override
+  String postRideObsSteepDown(String grade) {
+    return 'Discese ripide — max $grade %.';
+  }
 
   @override
   String get postRideSugReboundSlowTitle =>
@@ -5842,6 +6646,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get postRideConfLow => 'bassa';
 
   @override
+  String postRideFactRideElev(
+      String km, String climb, String descent, String min) {
+    return '$km km · $climb hm ↑ · $descent hm ↓ · $min min';
+  }
+
+  @override
   String postRideFactRide(String km, String hm, String min) {
     return '$km km · $hm hm · $min min';
   }
@@ -5888,8 +6698,29 @@ class AppLocalizationsIt extends AppLocalizations {
   String get bleKindOtherDrive => 'Motore';
 
   @override
+  String get bleCapBosch => 'Live: batteria e velocità dal display';
+
+  @override
+  String get bleCapDriveNoLive =>
+      'Niente batteria live — velocità dal sensore ruota';
+
+  @override
+  String get bleCapCsc => 'Live: velocità e cadenza';
+
+  @override
+  String get bleCapPower => 'Live: watt';
+
+  @override
+  String get garageBleHintDriveNeedsWheel =>
+      'Motore salvato — velocità solo con un sensore ruota.';
+
+  @override
+  String get garageBleHintNoSocDrive =>
+      'Niente batteria live su questo motore. Velocità dal sensore ruota.';
+
+  @override
   String get bleTipBosch =>
-      'Flow: Componenti → aggiungi FlowLine · firmware ≥19';
+      'Display acceso · aggiungi nell’app Bosch sotto Componenti';
 
   @override
   String get bleTipShimano =>
@@ -5910,11 +6741,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get blePairLeadEbike =>
-      'Display acceso, app del produttore chiusa, telefono vicino — poi tocca.';
+      'Bosch: batteria dal display. Shimano e altri: solo nome, velocità dal sensore ruota.';
 
   @override
   String get blePairLeadSensor =>
-      'Sveglia il sensore sulla bici, non l\'orologio al polso.';
+      'Velocità e cadenza dal sensore ruota. Nessuna batteria inventata.';
 
   @override
   String get bleNoteSensorBrand => 'Sensore';
@@ -5925,7 +6756,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get bleNoteBoschLine =>
-      'SoC: apri Flow → Componenti → aggiungi FlowLine (unità ≥19). CSC resta nella lista, poi chiudi Flow.';
+      'Display acceso. Nell’app Bosch: Impostazioni → Componenti. Poi conferma sul display.';
 
   @override
   String get bleNoteShimanoLine =>
@@ -5970,7 +6801,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Connessione rifiutata — chiudi Bosch Flow / Shimano E-TUBE, display acceso, tieni vicino.';
 
   @override
-  String get bleLdiPairCta => 'Bosch LDI — aggiungi in Flow';
+  String get bleLdiPairCta => 'Associa display Bosch';
 
   @override
   String get bleLdiPairHint =>
@@ -6755,7 +7586,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Serve un URL di style JSON (*.json o /styles/…), non un file di tile.';
 
   @override
-  String get offlineSubActive => 'Attivo — tocca per aggiornare';
+  String get offlineSubActive => 'Attivo';
 
   @override
   String get offlineSubInstalled => 'Installato — tocca per attivare';
@@ -6767,11 +7598,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get offlineSubNotBuilt => 'Non ancora costruito';
 
   @override
-  String get offlineSubLoad => 'Carica routing + mappa';
+  String get offlineSubLoad => 'Carica routing';
 
   @override
   String offlineSubLoadSized(String size) {
-    return '$size · routing + mappa';
+    return '$size · routing';
+  }
+
+  @override
+  String get offlineSubValhalla => 'Routing (Valhalla)';
+
+  @override
+  String offlineSubValhallaSized(String size) {
+    return '$size · routing (Valhalla)';
   }
 
   @override
@@ -7113,11 +7952,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzCreateGroupHint =>
-      'Scegli l’uscita, privata o visibile, poi condividi il link.';
+      'Scegli l’uscita, privata o visibile. Privato: link. In elenco: link o codice.';
 
   @override
   String get platzGroupPublicHint =>
-      'Chi ha il link può entrare. Sotto Condiviso altri possono vedere il gruppo sul Platz.';
+      'Bastano link o codice. Il gruppo è sul Platz e come pin di ritrovo sulla mappa — niente GPS live.';
 
   @override
   String get platzGroupPrivateHint =>
@@ -7134,7 +7973,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzGroupListedNote =>
-      'In elenco visibile — chi ha il link può entrare.';
+      'In elenco visibile — bastano link o codice.';
 
   @override
   String get platzGroupUnlistedNote => 'Solo link — non sul Platz.';
@@ -7144,7 +7983,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get platzPublicGroupsHint =>
-      'Gruppi aperti — entra con login, niente GPS Explore.';
+      'Gruppi aperti — entra con login, link o codice. Pin di ritrovo sulla mappa, niente GPS live.';
 
   @override
   String get platzListedPublic => 'sul Platz';
@@ -7231,6 +8070,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get mappeEmpty => 'Ancora nessuna uscita — tieni o importa un GPX.';
 
   @override
+  String get mappeEmptyTitle => 'Ancora nessuna linea';
+
+  @override
+  String get noTrackLabel => 'Nessuna traccia';
+
+  @override
+  String get loopTag => 'Anello';
+
+  @override
   String get mappeStimmenEmpty =>
       'Ancora nessun consiglio sui tuoi percorsi. Dopo la condivisione gli altri possono scrivere.';
 
@@ -7291,7 +8139,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get hofTafelTitle => 'Aperto';
 
   @override
-  String get hofTafelHint => 'Un consiglio o un gruppo — non un feed.';
+  String get hofTafelHint =>
+      'Una voce, un gruppo o una pubblicazione — non un feed.';
 
   @override
   String hofTafelVoiceOne(String name) {
@@ -7329,5 +8178,273 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String dieBoxSentenceReadyBits(String name, String bits) {
     return '$name · $bits · pronto';
+  }
+
+  @override
+  String get garageStatService => 'Appunt.';
+
+  @override
+  String get garageStatDash => '—';
+
+  @override
+  String get garagePartsEmptyTitle => 'Ancora nessun pezzo';
+
+  @override
+  String get garagePartsEmptyHint =>
+      'Aggiungine uno — poi ti ricordiamo la manutenzione.';
+
+  @override
+  String get garageMissingInvite => 'Ancora aperto';
+
+  @override
+  String get garageGhostInvite => 'Aggiungi';
+
+  @override
+  String get garageCatalogOptional => 'Catalogo (opzionale)';
+
+  @override
+  String get garageCatalogPicked => 'Dal catalogo';
+
+  @override
+  String get garageNoHitsShort => 'Nessun risultato — basta il nome.';
+
+  @override
+  String get oemCheckTitle => 'Controlla i pezzi sulla bici';
+
+  @override
+  String get oemCheckHint => 'Solo i pezzi spuntati vanno sulla bici.';
+
+  @override
+  String get oemCheckEmpty => 'Niente riconosciuto';
+
+  @override
+  String get oemCheckEmptyHint => 'Slot e nome bastano.';
+
+  @override
+  String get oemCheckAdd => 'Aggiungi pezzo';
+
+  @override
+  String get oemCheckAddMore => 'Altro pezzo';
+
+  @override
+  String get oemCheckContinueEmpty => 'Avanti senza pezzi';
+
+  @override
+  String oemCheckInstallCount(int count) {
+    return 'Registra $count spuntati';
+  }
+
+  @override
+  String get oemGrokRead => 'Grok ha letto';
+
+  @override
+  String get oemGrokVerify =>
+      'Controlla sulla bici — niente viene preso in silenzio.';
+
+  @override
+  String get oemGrokOnlyBadge => 'Da Grok, non in catalogo';
+
+  @override
+  String get oemCatalogBadge => 'Catalogo';
+
+  @override
+  String get oemOccupiedReplace => 'Già sulla bici — la spunta sostituisce';
+
+  @override
+  String get oemTypedHint => 'Marca e modello bastano.';
+
+  @override
+  String get oemTypedSource => 'Inserito da te';
+
+  @override
+  String get oemVisionSource => 'Visto nella foto — controlla sulla bici';
+
+  @override
+  String get oemCatalogSource => 'Dal catalogo — controlla sulla bici';
+
+  @override
+  String get garagePhotoFill => 'Completa con foto';
+
+  @override
+  String get garagePhotoFillHint =>
+      'Grok riempie solo i vuoti. Niente pressione, SAG o numero telaio.';
+
+  @override
+  String get garageServiceTitle => 'Appuntamento manutenzione';
+
+  @override
+  String get garageServiceEmpty => 'Nessuna data — facoltativo.';
+
+  @override
+  String get garageServiceOverdue => 'in ritardo';
+
+  @override
+  String get garageServiceToday => 'oggi';
+
+  @override
+  String get garageServiceChange => 'Modifica';
+
+  @override
+  String get garageServiceAdd => 'Aggiungi';
+
+  @override
+  String get garageReceiptsTitle => 'Ricevute';
+
+  @override
+  String get garageReceiptsHint => 'Officina, ricambio o garanzia.';
+
+  @override
+  String get garageReceiptsEmpty => 'Ancora nessuna ricevuta.';
+
+  @override
+  String get garageReceiptAdd => 'Ricevuta';
+
+  @override
+  String get garageMaintThresholdHint => 'Soglie da km e ore.';
+
+  @override
+  String get dieBoxOnBikeEmpty => 'Ancora niente sulla bici.';
+
+  @override
+  String get garagePickTrail => 'Trail';
+
+  @override
+  String get garagePickTour => 'Tour';
+
+  @override
+  String get garagePickEveryday => 'Quotidiano';
+
+  @override
+  String get garagePhotoFromBike => 'Foto della bici';
+
+  @override
+  String get garagePhotoIdentifyHint =>
+      'Foto della bici — Grok cerca nel catalogo. Telaio, pressione, SAG e km non vengono inventati.';
+
+  @override
+  String get garagePhotoIdentifying => 'Riconoscimento della bici…';
+
+  @override
+  String get garagePhotoWhichBike => 'Quale bici è?';
+
+  @override
+  String get garagePhotoHitsHint =>
+      'Grok ha trovato corrispondenze. Un tap riempie solo i campi vuoti.';
+
+  @override
+  String get garagePhotoNoHit => 'Nessuna corrispondenza catalogo';
+
+  @override
+  String get garagePhotoNoHitHint =>
+      'Grok ha comunque letto qualcosa. Specs solo dopo il segno — niente viene inventato o salvato in silenzio.';
+
+  @override
+  String garagePhotoApplyName(String query) {
+    return 'Usa come nome: $query';
+  }
+
+  @override
+  String get garagePhotoApplyNameHint =>
+      'Solo se il nome è ancora un segnaposto. Niente anno, escursione o numero di telaio.';
+
+  @override
+  String get garagePhotoContinueRead => 'Continua con il testo letto';
+
+  @override
+  String get garagePhotoFillNone =>
+      'Niente di vuoto da completare — i valori restano.';
+
+  @override
+  String garagePhotoPartsInstalled(int count) {
+    return '$count pezzi registrati.';
+  }
+
+  @override
+  String garagePhotoFilledFields(String fields) {
+    return 'Completato: $fields';
+  }
+
+  @override
+  String get garageReceiptTypeOnly => 'Solo testo';
+
+  @override
+  String get garageReceiptScanning => 'Lettura della ricevuta…';
+
+  @override
+  String get garageReceiptRemember => 'Salva ricevuta';
+
+  @override
+  String get garageReceiptMerchant => 'Negozio / officina';
+
+  @override
+  String get garageReceiptDate => 'Data';
+
+  @override
+  String get garageReceiptDateHint => 'gg.mm.aaaa';
+
+  @override
+  String get garageReceiptAmount => 'Importo (€)';
+
+  @override
+  String get garageReceiptWhat => 'Cosa comprato / fatto';
+
+  @override
+  String get garageReceiptAttachPart => 'Collega a un pezzo (opzionale)';
+
+  @override
+  String get garageReceiptFreeOnBike => 'Libero sulla bici';
+
+  @override
+  String get garageReceiptRemovePhoto => 'Togli foto';
+
+  @override
+  String get garageReceiptsEmptyInvite => 'Fotografa o scrivi una ricevuta';
+
+  @override
+  String get garageServiceHint =>
+      'Data e nota. L\'officina è opzionale — basta il nome.';
+
+  @override
+  String get garageServiceDateLabel => 'Appuntamento';
+
+  @override
+  String get garageServiceNoteLabel => 'Nota per la data';
+
+  @override
+  String get garageServiceNoteHint => 'Catena, service, revisione…';
+
+  @override
+  String get garageWorkshopOptional => 'Officina (opzionale)';
+
+  @override
+  String get garageWorkshopAddress => 'Indirizzo';
+
+  @override
+  String get garageWorkshopPhone => 'Telefono';
+
+  @override
+  String get garageMaintEmptyLowKm =>
+      'Ancora pochi km — le soglie arrivano col contatore. Nessuna ispezione salvata.';
+
+  @override
+  String garageSagWeightHint(String kg, String fork) {
+    return 'Il target SAG in % resta. La pressione guida segue il tuo peso ($kg kg)$fork.';
+  }
+
+  @override
+  String garageSagWeightFork(String psi) {
+    return ' · circa $psi psi forcella';
+  }
+
+  @override
+  String get garagePressureChange => 'Registra / cambia pressione';
+
+  @override
+  String get garageAddPhotoHint =>
+      'Grok riempie le specs vuote solo con un match catalogo. Pezzi solo dopo il segno — anche senza ID catalogo.';
+
+  @override
+  String garageAddPhotoPartsPending(int count) {
+    return '$count pezzi verranno aggiunti dopo la creazione.';
   }
 }

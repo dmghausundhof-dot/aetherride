@@ -51,6 +51,24 @@ void main() {
     expect(formatTourCount(0), '0 Touren');
   });
 
+  test('needsMemberTrack nur bei privater Host-GPX', () {
+    expect(
+      needsMemberTrack(savedRouteId: 'gpx-neckar', catalogTourId: null),
+      isTrue,
+    );
+    expect(
+      needsMemberTrack(
+        savedRouteId: 'saved-abc',
+        catalogTourId: 'r-heidelberg-city',
+      ),
+      isFalse,
+    );
+    expect(
+      needsMemberTrack(savedRouteId: 'r-bodensee-road', catalogTourId: null),
+      isFalse,
+    );
+  });
+
   test('startRidePendingIdForGroup nimmt Mappe oder Katalog, nicht library-fremd',
       () {
     final saved = SavedRouteEntry(
@@ -156,6 +174,21 @@ void main() {
     expect(mappeOnly, hasLength(1));
     expect(mappeOnly.first.kind, HofTafelKind.mappe);
     expect(mappeOnly.first.text, '1 Tour');
+  });
+
+  test('listing line sits after care and before group, still max three', () {
+    final lines = buildHofTafel(
+      careText: 'Kette — in der Werkstatt',
+      listingText: 'Neckar wartet auf Bestätigung (1/3).',
+      stimmenText: 'Neue Stimme zu Neckar',
+      groupText: 'Gruppe vor dem Tor · Freitag',
+      savedCount: 2,
+    );
+    expect(lines.map((e) => e.kind), [
+      HofTafelKind.care,
+      HofTafelKind.listing,
+      HofTafelKind.gruppe,
+    ]);
   });
 
   test('shouldAssignRideWear rejects unknown and empty', () {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -59,7 +60,7 @@ abstract final class RidePrefs {
     return m['batteryPresetChosen'] == true;
   }
 
-  /// Active nav-puck style id (`NavPuckStyle.name`). Null → default Chevron.
+  /// Active nav-puck style id (`NavPuckStyle.name`). Null → default Fahrer.
   static Future<String?> navPuckStyleId() async {
     final m = await read();
     final v = m['nav_puck_style'];
@@ -68,7 +69,11 @@ abstract final class RidePrefs {
 
   static Future<void> setNavPuckStyleId(String id) async {
     await merge({'nav_puck_style': id});
+    navPuckRevision.value++;
   }
+
+  /// Discover/Ride hören mit — Profil ändert den Puck ohne Karten-Remount.
+  static final ValueNotifier<int> navPuckRevision = ValueNotifier(0);
 
   /// Rider dismissed the Pro-HUD “Musik im HUD” permission prompt.
   static Future<bool> hudMediaPromptDismissed() async {
@@ -117,5 +122,18 @@ abstract final class RidePrefs {
     if (!isLocalDiscoverZoom(view.zoom)) return;
     if (isPlaceholderDiscoverCenter(view.lat, view.lng)) return;
     await merge({_viewportKey: view.toJson()});
+  }
+
+  static const _leanOffsetKey = 'lean_offset_deg';
+
+  /// Mount-zero for HUD lean (phone clamp rest angle). 0 = uncalibrated.
+  static Future<double> leanOffsetDeg() async {
+    final m = await read();
+    final v = m[_leanOffsetKey];
+    return v is num ? v.toDouble() : 0;
+  }
+
+  static Future<void> setLeanOffsetDeg(double deg) async {
+    await merge({_leanOffsetKey: deg == 0 ? null : deg});
   }
 }

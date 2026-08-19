@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_theme.dart';
+
 /// Locked Android HUD tokens — `nav-hud-tokens-v2` (N-MAP-02).
 ///
 /// Clean Mode has exactly four HUD **nav** elements:
@@ -49,6 +51,31 @@ abstract final class NavHudTokens {
 
   /// Round Pause control beside the data strip (not a second full-width bar).
   static const double pauseFabDp = 56;
+
+  // --- Live layer bar (Karte / Daten / Fahrwerk) — charcoal island, not orange fill ---
+  static const double layerLabelDp = 13;
+  static const FontWeight layerLabelWeight = FontWeight.w600;
+  static const double layerIconDp = 18;
+  static const double layerBarMinHeightDp = 48;
+
+  /// Shared HUD island (Layer / Zusammen / Ja / Live) — charcoal, not a second Tempo bar.
+  static const double islandPadH = 12;
+  static const double islandPadV = 8;
+  static const double islandCompactPadV = 6;
+  static const double islandGapDp = 8;
+  static const double islandCodeDp = 14;
+  static const double islandCodeTracking = 2.2;
+  static const double islandHitDp = 48;
+  static const double islandFillAlpha = 0.94;
+  static const double islandStrokeAlpha = 0.7;
+
+  static Color islandFill(BuildContext context) =>
+      (AppColors.isSunlight(context) ? AppColors.sunSurface : AppColors.overlay)
+          .withValues(alpha: islandFillAlpha);
+
+  static Color islandStroke(BuildContext context) =>
+      (AppColors.isSunlight(context) ? AppColors.borderLight : AppColors.border)
+          .withValues(alpha: islandStrokeAlpha);
 
   /// Distance numeral size with accessibility scale, clamped 28–40.
   static double nextTurnDistanceSize(BuildContext context) {

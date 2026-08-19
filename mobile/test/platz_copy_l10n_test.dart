@@ -25,6 +25,9 @@ void main() {
     expect(de.platzTogetherKicker, 'Gruppe');
     expect(de.platzCollectionsKicker, 'Sammlungen');
     expect(de.mappeKeep, 'Merken');
+    expect(de.mappeEmptyTitle, 'Noch keine Linie');
+    expect(de.noTrackLabel, 'Kein Track');
+    expect(de.loopTag, 'Runde');
     expect(de.mappeInviteFriends, 'Freunde mitnehmen');
     expect(de.platzTogetherKicker, isNot(de.platzTogetherKicker.toUpperCase()));
     expect(de.filterVisibilityPublic, 'Freigegeben');
@@ -34,11 +37,16 @@ void main() {
     expect(de.postRideStimmePrivate, contains('privat'));
     expect(de.platzTogetherHint, contains('Deine Gruppen bleiben'));
     expect(de.platzTourNotInMappeHint, contains('kein erfundener Track'));
+    expect(de.platzTourNotInMappeHint, contains('Einladungslink'));
     expect(de.discoverShareRelease, 'Freigeben');
     expect(de.platzJoinLocal('Bodensee'), contains('Nur auf diesem Gerät'));
     expect(de.platzJoinLocal('Bodensee'), isNot(contains('Lokal dabei')));
     expect(de.platzJoinLocalCta, 'Auf diesem Gerät merken');
     expect(de.platzJoinUnsignedHint, contains('sieht der Host dich nicht'));
+    expect(de.platzJoinWithCode, 'Verbinden');
+    expect(de.platzConnectField, contains('Code'));
+    expect(de.platzJoinSignInFirst, contains('sieht der Host dich nicht'));
+    expect(de.rideGroupHudSelfOn('noch 2 h'), 'Du teilst · noch 2 h');
     expect(de.stimmenShareNeedRelease, contains('Freigeben'));
     expect(de.stimmenShareNeedRelease, isNot(contains('Mein')));
     expect(de.akteHonestyCatalog, contains('freigegeben'));
@@ -51,6 +59,14 @@ void main() {
     expect(de.discoverMenuPrivacy, isNot(contains('Heatmap')));
     expect(de.platzCreateGroupHint, contains('sichtbar'));
     expect(de.platzCreateGroupHint, isNot(contains('Sichtbarkeit')));
+    expect(de.platzPlanAsGroup, 'Eigene Tour als Gruppe planen');
+    expect(de.platzPickNearby, 'Touren in der Nähe');
+    expect(de.platzNearbyNeedGps, contains('Standort'));
+    expect(de.platzNearbyFromMap, contains('Karte'));
+    expect(de.rideTogetherNotLooking, contains('suchen'));
+    expect(de.rideTogetherRateLimited, contains('warten'));
+    expect(de.rideTogetherTooFar, contains('Zelle'));
+    expect(de.platzNeedSharedTour, contains('selbst planen'));
     expect(de.discoverVisibility, 'Freigabe');
     expect(de.postRideOrtPrivateOnly, contains('freigegebene'));
     expect(de.hofTafelHint, contains('kein Feed'));
@@ -80,6 +96,9 @@ void main() {
     expect(en.platzCollectionTours(2), '2 tours');
     expect(en.platzTogetherKicker, 'Group');
     expect(en.platzCollectionsKicker, 'Collections');
+    expect(en.mappeEmptyTitle, 'No line yet');
+    expect(en.noTrackLabel, 'No track');
+    expect(en.loopTag, 'Loop');
 
     late AppLocalizations fr;
     await tester.pumpWidget(

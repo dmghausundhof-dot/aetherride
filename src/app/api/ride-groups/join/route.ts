@@ -1,6 +1,6 @@
 /**
- * Join per Einladungslink (Token) oder — nur öffentlich — per Listen-Id.
- * Code allein reicht bei privaten Gruppen nicht mehr.
+ * Join: Token-Link immer; Code oder Listen-Id nur öffentlich / Platz.
+ * Privat bleibt Link-only — der 6-Zeichen-Code ist kein Geheimnis.
  * Alte Links ?group=CODE&g=token bleiben gültig.
  */
 import { NextResponse } from "next/server";
@@ -24,7 +24,11 @@ import {
   type PublicProfileLabelRow,
   type RideGroupSqlRow,
 } from "@/lib/community/rideGroupServer";
-import { RIDE_GROUP_JOIN_CODE_LEN } from "@/lib/community/rideGroup";
+import {
+  RIDE_GROUP_JOIN_CODE_LEN,
+  normalizeJoinCode,
+} from "@/lib/community/rideGroup";
+import { canJoinSessionByCode } from "@/lib/community/rideTogether";
 
 export const dynamic = "force-dynamic";
 
@@ -60,9 +64,11 @@ export async function POST(req: Request) {
       : isRideGroupId(rawCode)
         ? rawCode
         : "";
+    const normalizedCode = normalizeJoinCode(rawCode);
     const shortCode =
-      rawCode.length === RIDE_GROUP_JOIN_CODE_LEN && !isRideGroupId(rawCode)
-        ? rawCode
+      normalizedCode.length === RIDE_GROUP_JOIN_CODE_LEN &&
+      !isRideGroupId(rawCode)
+        ? normalizedCode
         : "";
 
     let payload: ReturnType<typeof decodeGroupInvite> = null;
@@ -150,7 +156,9 @@ export async function POST(req: Request) {
     }
 
     const listing = parseGroupListing(row.visibility);
-    if (!token && !canJoinWithoutInviteToken(listing)) {
+    const sessionCode =
+      !token && shortCode && canJoinSessionByCode(String(row.saved_route_id));
+    if (!token && !sessionCode && !canJoinWithoutInviteToken(listing)) {
       return NextResponse.json(
         {
           error: "need_link",
@@ -207,7 +215,7 @@ export async function POST(req: Request) {
         display_label: profileDisplayLabel(
           profile as PublicProfileLabelRow | null
         ),
-        live_opt_in: false,
+        live_opt_in: sessionCode,
       });
       if (insErr && insErr.code !== "23505") {
         return NextResponse.json(
