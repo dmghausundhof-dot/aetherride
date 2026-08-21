@@ -316,6 +316,15 @@ assert(
   ),
   "rad empty uses stand stage"
 );
+const emptyStage = readFileSync(
+  "src/components/garage/RadEmptyStage.tsx",
+  "utf8"
+);
+assert(emptyStage.includes("RAD_EMPTY_STAND"), "empty stage uses the shipped stand art");
+assert(
+  !emptyStage.includes("empty-stand-mark"),
+  "broken prod asset empty-stand-mark.svg is not referenced"
+);
 assert(
   readFileSync("src/components/hof/HofEmpty.tsx", "utf8").includes(
     "RadEmptyStage"
