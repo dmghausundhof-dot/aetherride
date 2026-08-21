@@ -13,7 +13,6 @@ import { TrustSheet } from "./TrustSheet";
 
 export function LandingHero() {
   const [trustOpen, setTrustOpen] = useState(false);
-  const lang = useChromeLang();
   const hof = useHofCopy();
   const home = useHomepageCopy();
 

@@ -4,8 +4,10 @@ import type { ChromeLang } from "./chromeLang";
 
 type HofDoorId = Exclude<HofNavId, "hof">;
 
+type MarketingCopyHref = MarketingNavHref | "/community" | "/pricing";
+
 type WebChrome = {
-  marketingNav: Record<MarketingNavHref, string>;
+  marketingNav: Record<MarketingCopyHref, string>;
   hofNav: Record<HofDoorId, string>;
   toHof: string;
   toWebsite: string;
@@ -59,6 +61,8 @@ const DE: WebChrome = {
     "/karten": "Karten",
     "/regions": "Regionen",
     "/guides": "Guides",
+    "/community": "Community",
+    "/pricing": "Preise",
     "/download": "App",
   },
   hofNav: {
@@ -77,7 +81,7 @@ const DE: WebChrome = {
   footerMore: "Mehr",
   footerLegal: "Rechtliches",
   footerTagline: "Das Rad wohnt hier. Du kommst zurück.",
-  footerLegalLine: "Offline-First · DSGVO · Web ist der Hof, die App fährt.",
+  footerLegalLine: "Offline-First · DSGVO · Web pflanzt, die App fährt.",
   aboutFlowLine: "Über FlowLine",
   faq: "FAQ",
   share: "Teilen",
@@ -119,6 +123,8 @@ const EN: WebChrome = {
     "/karten": "Maps",
     "/regions": "Regions",
     "/guides": "Guides",
+    "/community": "Community",
+    "/pricing": "Pricing",
     "/download": "App",
   },
   hofNav: {
@@ -137,7 +143,7 @@ const EN: WebChrome = {
   footerMore: "More",
   footerLegal: "Legal",
   footerTagline: "The bike lives here. You come back.",
-  footerLegalLine: "Offline-first · GDPR · Web is Home, the app rides.",
+  footerLegalLine: "Offline-first · GDPR · Web plants, the app rides.",
   aboutFlowLine: "About FlowLine",
   faq: "FAQ",
   share: "Share",
@@ -179,6 +185,8 @@ const FR: WebChrome = {
     "/karten": "Cartes",
     "/regions": "Régions",
     "/guides": "Guides",
+    "/community": "Community",
+    "/pricing": "Prix",
     "/download": "App",
   },
   hofNav: {
@@ -239,6 +247,8 @@ const IT: WebChrome = {
     "/karten": "Carte",
     "/regions": "Regioni",
     "/guides": "Guide",
+    "/community": "Community",
+    "/pricing": "Prezzi",
     "/download": "App",
   },
   hofNav: {
@@ -299,6 +309,8 @@ const NL: WebChrome = {
     "/karten": "Kaarten",
     "/regions": "Regio's",
     "/guides": "Guides",
+    "/community": "Community",
+    "/pricing": "Prijzen",
     "/download": "App",
   },
   hofNav: {

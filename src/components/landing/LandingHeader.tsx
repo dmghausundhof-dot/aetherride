@@ -64,7 +64,7 @@ export function LandingHeader() {
             href="/anmelden"
             className="hidden text-sm text-text-secondary hover:text-chrome sm:block"
           >
-            {copy.arriveAtHof}
+            {copy.signIn}
           </Link>
           <Link
             href="/discover"
@@ -109,7 +109,7 @@ export function LandingHeader() {
               onClick={() => setOpen(false)}
               className="rounded-lg px-3 py-3 text-sm text-text-secondary"
             >
-              {copy.arriveAtHof}
+              {copy.signIn}
             </Link>
             <Link
               href="/discover"

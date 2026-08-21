@@ -51,4 +51,47 @@ assert.ok(/Enduro/i.test(de.bikesLine));
 assert.ok(!JSON.stringify(de.homeFaq).includes("6,99"));
 assert.ok(!JSON.stringify(de.honesty).includes("Stripe"));
 
+const visibleHome = JSON.stringify({
+  levers: de.levers,
+  homeFaq: de.homeFaq,
+  productScreen: de.productScreen,
+  bikesLine: de.bikesLine,
+  mapsShort: de.mapsShort,
+  heroCta: de.heroCta,
+  split: de.split,
+  tours: de.tours,
+  honesty: de.honesty,
+  hero: {
+    tagline: de.ui.heroTagline,
+    lead: de.ui.heroLead("Rausfahren"),
+    fair: de.ui.heroFair,
+    foot: de.ui.heroFoot,
+    leversTitle: de.ui.leversTitle,
+    standTitle: de.ui.standTitle,
+    faqTitle: de.ui.faqTitle,
+    faqLead: de.ui.faqLead,
+  },
+});
+assert.ok(!/\bHof\b/.test(visibleHome), "no Hof on the home");
+assert.ok(!/\bPlatz\b/.test(visibleHome), "no Platz on the home");
+assert.ok(!/\bMappe\b/.test(visibleHome), "no Mappe on the home");
+assert.ok(!/\bTor\b/.test(visibleHome), "no Tor on the home");
+assert.ok(!/Vier Türen/.test(visibleHome), "no four-door manifesto");
+
+const header = readFileSync("src/components/landing/LandingHeader.tsx", "utf8");
+assert.ok(header.includes("copy.signIn"), "marketing header says Anmelden");
+assert.ok(!header.includes("arriveAtHof"), "no Am Hof ankommen on the home");
+
+const chromeSrc = readFileSync("src/lib/i18n/webChrome.ts", "utf8");
+assert.ok(
+  chromeSrc.includes("Web pflanzt, die App fährt"),
+  "footer legal line stays rider-facing",
+);
+assert.ok(!chromeSrc.includes("Web ist der Hof"), "footer drops Hof");
+
+const card = readFileSync("src/components/discover/RouteCard.tsx", "utf8");
+const detail = readFileSync("src/components/discover/RouteDetail.tsx", "utf8");
+assert.ok(card.includes("hasPublicTourPage"), "cards do not 404 unknown tours");
+assert.ok(detail.includes("hasPublicTourPage"), "detail does not 404 unknown tours");
+
 console.log("homepageSections.test.ts OK");
