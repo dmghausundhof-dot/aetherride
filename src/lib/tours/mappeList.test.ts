@@ -22,6 +22,7 @@ import {
   savedRouteTrackCoords,
   mappeGoRideDiscoverHref,
   mappeRoutePlanCenter,
+  mappeSavedLoadTarget,
   sortMappe,
 } from "./mappeList";
 import type { SavedRoute } from "@/types/route";
@@ -79,6 +80,18 @@ assert.equal(mappeGoRideDiscoverHref(a), null);
 assert.equal(
   mappeGoRideDiscoverHref(b),
   `/discover?panel=plan&route=${encodeURIComponent(b.id)}`,
+);
+assert.equal(
+  mappeSavedLoadTarget({ hasTrack: true, hasSuggestion: false }),
+  "draft",
+);
+assert.equal(
+  mappeSavedLoadTarget({ hasTrack: false, hasSuggestion: true }),
+  "suggestion",
+);
+assert.equal(
+  mappeSavedLoadTarget({ hasTrack: false, hasSuggestion: false }),
+  "plan",
 );
 assert.equal(mappeRoutePlanCenter(b), null);
 assert.deepEqual(

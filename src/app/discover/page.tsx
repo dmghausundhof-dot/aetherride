@@ -200,7 +200,12 @@ import { MappeEmpty } from "@/components/tours/MappeEmpty";
 import { MappeGlyph } from "@/components/tours/MappeGlyph";
 import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { SavedMappeTile } from "@/components/tours/SavedMappeTile";
-import { mappeSourceChip, mappeRoutePlanCenter, savedRouteTrackCoords } from "@/lib/tours/mappeList";
+import {
+  mappeSourceChip,
+  mappeRoutePlanCenter,
+  mappeSavedLoadTarget,
+  savedRouteTrackCoords,
+} from "@/lib/tours/mappeList";
 import {
   formatMappeDay,
   joinMappeCaption,
@@ -2159,7 +2164,23 @@ function DiscoverPageInner() {
 
   const loadSavedRoute = useCallback(
     (r: SavedRoute) => {
-      if (r.geometry) {
+      const coords = savedRouteTrackCoords(r) as [number, number][];
+      const suggestion = getSuggestionById(r.id, {
+        bike: activeBike,
+        categoryHint,
+        profile,
+        availableMinutes: minutes,
+        rangeKmHigh: range?.kmHigh,
+      });
+      const target = mappeSavedLoadTarget({
+        hasTrack: coords.length >= 2,
+        hasSuggestion: Boolean(suggestion),
+      });
+      if (target === "draft") {
+        const geometry = {
+          type: "LineString" as const,
+          coordinates: coords,
+        };
         const profile = activeProfile;
         const waypoints =
           r.waypoints?.map((w, i) => ({
@@ -2179,7 +2200,7 @@ function DiscoverPageInner() {
           computed: {
             distanceM: r.distanceKm * 1000,
             durationS: r.durationMin * 60,
-            geometry: r.geometry,
+            geometry,
             engine: "saved",
             profile,
           },
@@ -2191,30 +2212,26 @@ function DiscoverPageInner() {
         setRoutingMsg(DISCOVER_STATUS_DE.savedLoaded);
         return;
       }
-      const suggestion = getSuggestionById(r.id, {
-        bike: activeBike,
-        categoryHint,
-        profile,
-        availableMinutes: minutes,
-        rangeKmHigh: range?.kmHigh,
-      });
-      if (suggestion) startWithSuggestion(suggestion);
-      else {
-        setActiveRoute({
-          id: r.id,
-          name: r.name,
-          distanceKm: r.distanceKm,
-          elevationM: r.elevationM,
-          durationMin: r.durationMin,
-          mtbScale: r.mtbScale,
-          surface: r.surface,
-          reasons: r.reasons,
-          geometry: null,
-          source: "suggestion",
-          setAt: new Date().toISOString(),
-        });
-        router.push("/ride");
+      if (target === "suggestion" && suggestion) {
+        void startWithSuggestion(suggestion);
+        return;
       }
+      // Pin-only Mappe entry — stay in Plan, never empty ride bridge.
+      adoptIntoPlanModeRef.current({
+        id: r.id,
+        name: r.name,
+        provider: "seed",
+        geometry: null,
+        distanceKm: r.distanceKm,
+        elevationM: r.elevationM,
+        durationMin: r.durationMin,
+        mtbScale: r.mtbScale,
+        surface: r.surface,
+        loop: Boolean(r.loop),
+        center: mappeRoutePlanCenter(r) ?? undefined,
+      });
+      setPickTarget("end");
+      setAddrTarget("end");
     },
     [
       activeBike,
@@ -2223,8 +2240,6 @@ function DiscoverPageInner() {
       minutes,
       profile,
       range?.kmHigh,
-      router,
-      setActiveRoute,
       startWithSuggestion,
     ]
   );

@@ -47,6 +47,19 @@ export function mappeGoRideDiscoverHref(route: SavedRoute): string | null {
   return `/discover?panel=plan&route=${encodeURIComponent(route.id)}`;
 }
 
+/**
+ * Discover Mappe open/ride: track → draft; catalog hit → suggestion;
+ * else Plan (never empty `/ride`).
+ */
+export function mappeSavedLoadTarget(opts: {
+  hasTrack: boolean;
+  hasSuggestion: boolean;
+}): "draft" | "suggestion" | "plan" {
+  if (opts.hasTrack) return "draft";
+  if (opts.hasSuggestion) return "suggestion";
+  return "plan";
+}
+
 /** Start pin for Mappe → Plan handoff (waypoints first, else track). */
 export function mappeRoutePlanCenter(
   route: SavedRoute
