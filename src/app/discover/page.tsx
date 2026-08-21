@@ -59,8 +59,10 @@ import {
   sanitizeElevationM,
 } from "@/lib/discover/elevationGuard";
 import {
-  activeRouteFromSaved,
   activeRouteFromSuggestion,
+  activeRouteFromSaved,
+  activeRouteForWebRideBridge,
+  savedRouteForWebRideHandoff,
 } from "@/lib/routing/activeRoute";
 import { parseGpx } from "@/lib/import/gpx";
 import { fitTourLine } from "@/lib/tours/tourLine";
@@ -1799,8 +1801,34 @@ function DiscoverPageInner() {
         if (res.ok) {
           const j = await res.json();
           if (j?.geometry?.coordinates?.length >= 2) {
+            const withEle = await lineWithApiElevation(j.geometry.coordinates);
+            const entry = savedRouteForWebRideHandoff({
+              id: r.id,
+              name: r.name,
+              distanceKm: r.distanceKm,
+              elevationM: r.elevationM,
+              durationMin: r.durationMin,
+              geometry: { type: "LineString", coordinates: withEle },
+              source: "suggestion",
+              mtbScale: r.mtbScale,
+              surface: r.surface,
+              loop: r.loop,
+              reasons: r.reasons,
+            });
+            if (entry) {
+              if (!isRouteSaved(entry.id)) saveRoute(entry);
+              const active = activeRouteForWebRideBridge(entry);
+              if (active) {
+                setActiveRoute(active);
+                router.push("/ride");
+                return;
+              }
+            }
             setActiveRoute(
-              activeRouteFromSuggestion(r, j.geometry, j.steps)
+              activeRouteFromSuggestion(r, {
+                type: "LineString",
+                coordinates: withEle,
+              }, j.steps)
             );
             router.push("/ride");
             return;
@@ -1812,7 +1840,7 @@ function DiscoverPageInner() {
       setActiveRoute(activeRouteFromSuggestion(r));
       router.push("/ride");
     },
-    [setActiveRoute, router]
+    [isRouteSaved, router, saveRoute, setActiveRoute]
   );
 
   const toggleSave = useCallback(

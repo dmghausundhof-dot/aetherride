@@ -7,7 +7,7 @@ import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import type { PublicTour } from "@/lib/catalog/publicTours";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
-import { activeRouteFromSuggestion } from "@/lib/routing/activeRoute";
+import { activeRouteFromSuggestion, activeRouteForWebRideBridge, savedRouteForWebRideHandoff } from "@/lib/routing/activeRoute";
 import { lineWithApiElevation } from "@/lib/routing/elevationAttach";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { catalogCopy } from "@/lib/i18n/catalogCopy";
@@ -92,7 +92,8 @@ export function TourActions({ tour }: { tour: PublicTour }) {
   }, [tour.id, isRouteSaved, unsaveRoute, saveRoute, suggestion, copy]);
 
   const startInApp = useCallback(async () => {
-    // Live-Geometrie laden, falls Engine verfügbar
+    let geometry: GeoJSON.LineString | null = null;
+    let steps: unknown = undefined;
     try {
       const r = await fetch(
         `/api/tours/geometry?id=${encodeURIComponent(tour.id)}`
@@ -100,19 +101,57 @@ export function TourActions({ tour }: { tour: PublicTour }) {
       if (r.ok) {
         const j = await r.json();
         if (j?.geometry?.coordinates?.length >= 2) {
-          setActiveRoute(
-            activeRouteFromSuggestion(suggestion, j.geometry, j.steps)
-          );
-          router.push("/ride");
-          return;
+          geometry = j.geometry;
+          steps = j.steps;
         }
       }
     } catch {
       /* pin-only fallback */
     }
+    if (geometry) {
+      const withEle = await lineWithApiElevation(geometry.coordinates);
+      const entry = savedRouteForWebRideHandoff({
+        id: suggestion.id,
+        name: suggestion.name,
+        distanceKm: suggestion.distanceKm,
+        elevationM: suggestion.elevationM,
+        durationMin: suggestion.durationMin,
+        geometry: { type: "LineString", coordinates: withEle },
+        source: "suggestion",
+        mtbScale: suggestion.mtbScale,
+        surface: suggestion.surface,
+        loop: suggestion.loop,
+        reasons: suggestion.reasons,
+      });
+      if (entry) {
+        if (!isRouteSaved(entry.id)) saveRoute(entry);
+        const active = activeRouteForWebRideBridge(entry);
+        if (active) {
+          setActiveRoute(active);
+          router.push("/ride");
+          return;
+        }
+      }
+      setActiveRoute(
+        activeRouteFromSuggestion(
+          suggestion,
+          { type: "LineString", coordinates: withEle },
+          steps as never
+        )
+      );
+      router.push("/ride");
+      return;
+    }
     setActiveRoute(activeRouteFromSuggestion(suggestion));
     router.push("/ride");
-  }, [setActiveRoute, suggestion, router, tour.id]);
+  }, [
+    isRouteSaved,
+    router,
+    saveRoute,
+    setActiveRoute,
+    suggestion,
+    tour.id,
+  ]);
 
   return (
     <div className="flex flex-col gap-2">
