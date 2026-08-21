@@ -72,6 +72,12 @@ const TREK_CHECKPOINT =
   "https://www.trekbikes.com/us/en_US/bikes/bikepacking-touring-bikes/checkpoint/checkpoint-sl/checkpoint-sl-5-gen-2/p/5298080/";
 const YT_DECOY =
   "https://www.yt-industries.com/en-de/E-MTB/Enduro-Full-Support-DecoyMX/CORE-5/";
+const SCOTT_SPARK = "https://www.scott-sports.com/global/en/spark-rc";
+const CANYON_LUX_TRAIL =
+  "https://www.canyon.com/en-us/productpdf/geometry/?pid=3443";
+const SPEC_EPIC =
+  "https://www.specialized.com/us/en/epic-comp-sram-gx-eagle-rockshox-sid-slbrain/p/205825";
+const ORBEA_OIZ = "https://www.orbea.com/en-us/oiz-h30";
 
 /**
  * OEM-Geometrie je Katalog-Bike. Nur Größen, die auch in `frameSizeOptions` stehen.
@@ -1045,6 +1051,114 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 75.9,
       chainstayMm: 434,
       wheelbaseMm: 1266,
+    }),
+  ],
+  // Scott Spark RC Team published geometry (SM–XL).
+  "cat-scott-spark-2024": [
+    g("S", 411, 603, SCOTT_SPARK, {
+      headAngleDeg: 67.2,
+      seatAngleEffectiveDeg: 75.9,
+      chainstayMm: 438,
+      wheelbaseMm: 1129,
+    }),
+    g("M", 441, 603, SCOTT_SPARK, {
+      headAngleDeg: 67.2,
+      seatAngleEffectiveDeg: 76.1,
+      chainstayMm: 438,
+      wheelbaseMm: 1159,
+    }),
+    g("L", 471, 616, SCOTT_SPARK, {
+      headAngleDeg: 67.2,
+      seatAngleEffectiveDeg: 76.6,
+      chainstayMm: 438,
+      wheelbaseMm: 1190,
+    }),
+    g("XL", 501, 625, SCOTT_SPARK, {
+      headAngleDeg: 67.2,
+      seatAngleEffectiveDeg: 76.9,
+      chainstayMm: 438,
+      wheelbaseMm: 1231,
+    }),
+  ],
+  // Canyon Lux Trail CF 8 geometry PDF (pid=3443); catalog sizes S–XL.
+  "cat-canyon-lux-trail-cf8-2025": [
+    g("S", 438, 589, CANYON_LUX_TRAIL, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 435,
+      wheelbaseMm: 1155,
+    }),
+    g("M", 460, 598, CANYON_LUX_TRAIL, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 435,
+      wheelbaseMm: 1180,
+    }),
+    g("L", 480, 612, CANYON_LUX_TRAIL, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 435,
+      wheelbaseMm: 1206,
+    }),
+    g("XL", 500, 626, CANYON_LUX_TRAIL, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 435,
+      wheelbaseMm: 1232,
+    }),
+  ],
+  // Specialized Epic Comp FS (OEM size chart; S–XL).
+  "cat-specialized-epic-comp-2024": [
+    g("S", 415, 586, SPEC_EPIC, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 75.8,
+      chainstayMm: 433,
+      wheelbaseMm: 1116,
+    }),
+    g("M", 445, 591, SPEC_EPIC, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 433,
+      wheelbaseMm: 1148,
+    }),
+    g("L", 470, 605, SPEC_EPIC, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 433,
+      wheelbaseMm: 1179,
+    }),
+    g("XL", 495, 623, SPEC_EPIC, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 75.5,
+      chainstayMm: 433,
+      wheelbaseMm: 1211,
+    }),
+  ],
+  // Orbea Oiz H30 race-ready geometry (orbea.com).
+  "cat-orbea-oiz-h30-2025": [
+    g("S", 425, 596, ORBEA_OIZ, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 436,
+      wheelbaseMm: 1142,
+    }),
+    g("M", 450, 600, ORBEA_OIZ, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 436,
+      wheelbaseMm: 1169,
+    }),
+    g("L", 472, 610, ORBEA_OIZ, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 436,
+      wheelbaseMm: 1195,
+    }),
+    g("XL", 496, 619, ORBEA_OIZ, {
+      headAngleDeg: 67,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 436,
+      wheelbaseMm: 1223,
     }),
   ],
 };

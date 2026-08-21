@@ -1028,7 +1028,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-canyon-aeroad-slx-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-canyon-aeroad-fork",
           bottom_bracket: "cm-sram-dub-pf86",
           rear_derailleur: "cm-shimano-ultegra-r8100-rd",
           front_derailleur: "cm-shimano-ultegra-r8150-fd",
@@ -1111,6 +1111,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-cube-attain-frame",
+          fork: "cm-cube-attain-fork",
           tire_front: "cm-vittoria-corsa-700-28",
           tire_rear: "cm-vittoria-corsa-700-28",
         },
@@ -1384,6 +1385,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-specialized-tarmac-sl7-frame",
+          fork: "cm-specialized-tarmac-fork",
           tire_front: "cm-continental-gp5000-700-28",
           tire_rear: "cm-continental-gp5000-700-28",
         },
@@ -1514,7 +1516,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...URBAN_1X_KIT,
           frame: "cm-specialized-sirrus-x-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-specialized-sirrus-fork",
         },
         frameAttributes: [],
         sourceUrl: "https://www.specialized.com/",
@@ -1730,7 +1732,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-trek-emonda-sl-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-trek-emonda-fork",
           bottom_bracket: "cm-praxis-t47",
         },
         frameAttributes: [],
@@ -1780,7 +1782,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-trek-domane-sl-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-trek-domane-fork",
           bottom_bracket: "cm-praxis-t47",
           tire_front: "cm-schwalbe-one-700-32",
           tire_rear: "cm-schwalbe-one-700-32-rear",
@@ -2245,7 +2247,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-scott-addict-20-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-scott-addict-fork",
           bottom_bracket: "cm-sram-dub-pf86",
           rear_derailleur: "cm-shimano-ultegra-r8100-rd",
           front_derailleur: "cm-shimano-ultegra-r8150-fd",
@@ -2324,7 +2326,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-giant-tcr-advanced-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-giant-tcr-fork",
           bottom_bracket: "cm-sram-dub-pf86",
         },
         frameAttributes: [],
@@ -3113,7 +3115,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-bmc-teammachine-slr-frame",
-          fork: "cm-canyon-road-fork",
+          fork: "cm-bmc-teammachine-fork",
           bottom_bracket: "cm-sram-dub-pf86",
         },
         frameAttributes: [],
@@ -3474,6 +3476,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-cervelo-caledonia-frame",
+          fork: "cm-cervelo-caledonia-fork",
         },
         frameAttributes: [],
         sourceUrl: "https://www.cervelo.com/",
@@ -3499,6 +3502,7 @@ const BIKE_CATALOG_RAW: CatalogManufacturer[] = [
         oemComponents: {
           ...ROAD_KIT,
           frame: "cm-bianchi-infinito-frame",
+          fork: "cm-bianchi-infinito-fork",
         },
         frameAttributes: [],
         sourceUrl: "https://www.bianchi.com/",
