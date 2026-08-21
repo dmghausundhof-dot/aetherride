@@ -30,8 +30,16 @@ function testWiring() {
   const flow = readFileSync("src/components/OnboardingFlow.tsx", "utf8");
   assert.ok(flow.includes("onboardCopy"), "onboarding uses copy");
   assert.ok(flow.includes("bikeCategoryLabel"), "sports use category labels");
+  assert.ok(flow.includes("addBikeBasic"), "Weiter creates a bike");
+  assert.ok(
+    flow.includes("useState<BikeCategory | null>(null)"),
+    "no City/urban default",
+  );
+  assert.ok(!flow.includes('useState<BikeCategory>("urban")'), "no urban seed");
   assert.ok(!flow.includes("Was fährst du?"), "title is copy");
   assert.ok(!flow.includes("Später einrichten"), "later is copy");
+  assert.ok(!flow.includes("showTours"), "no bike-optional fork after pick");
+  assert.ok(!flow.includes("workshopAdd"), "Weiter creates, does not send to garage");
 }
 
 testParity();
