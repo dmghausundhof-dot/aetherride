@@ -343,6 +343,12 @@ assert(
 
 const shopDoor = readFileSync("src/components/shop/ShopGateway.tsx", "utf8");
 assert(shopDoor.includes("RadNavMark"), "shop bike door uses stand mark");
+assert(
+  !readFileSync("src/components/shop/ProductVisual.tsx", "utf8").includes(
+    "lucide-react"
+  ),
+  "shop fallbacks stay in stand marks"
+);
 assert(shopDoor.includes("ShopImageFallback"), "shop merch empty uses stand mark");
 assert(!shopDoor.includes("icon={Bike}"), "shop door no lucide Bike");
 assert(!shopDoor.includes("typeof Bike"), "shop door no lucide Bike type");
@@ -401,8 +407,12 @@ assert(
   "garage page uses the stand section mark"
 );
 assert(
-  garagePageSrc.includes("workshopMoreHint"),
-  "mehr-am-rad hint uses hof copy"
+  garagePageSrc.includes("workshopTabOverview"),
+  "mehr-am-rad is the tabs, not a leftover Die-Box hint"
+);
+assert(
+  !garagePageSrc.includes("workshopMoreHint"),
+  "overview is the record, not a pointer under Die Box"
 );
 assert(
   !garagePageSrc.includes("Teile, Setup-Versionen"),
@@ -417,20 +427,14 @@ assert(
   "teile tab mounts schema hotspots"
 );
 assert(
-  garagePageSrc.includes("OdometerImportPanel"),
-  "setup tab mounts tacho import"
+  !garagePageSrc.includes("OdometerImportPanel"),
+  "km lives on the value strip, not in setup"
 );
 assert(
-  readFileSync("src/components/garage/OdometerImportPanel.tsx", "utf8").includes(
-    "BikeStandEditor"
+  readFileSync("src/components/garage/BikeStandEditor.tsx", "utf8").includes(
+    "workshopStandStravaHint"
   ),
-  "setup stand uses the same editor as the strip"
-);
-assert(
-  !readFileSync("src/components/garage/OdometerImportPanel.tsx", "utf8").includes(
-    'type="number"'
-  ),
-  "setup tab has no second km form"
+  "stand editor carries the strava hint that lived on the setup panel"
 );
 assert(
   garagePageSrc.includes("SagGuideForBike"),
@@ -481,6 +485,10 @@ assert(
 assert(
   garagePageSrc.includes("workshopTabOverview"),
   "web garage has an Übersicht tab"
+);
+assert(
+  garagePageSrc.includes("BikeRideLog"),
+  "overview holds the ride log, not a shop door"
 );
 assert(
   garagePageSrc.includes("compact"),
@@ -593,17 +601,26 @@ assert(tall.sw === 1200, "tall photo keeps width");
 assert(tall.sh < 1600, "tall photo crops height");
 assert(tall.sy > 0, "tall photo crop sits toward the ground");
 assert(standPhotoNeedsCrop(1200, 1600), "legacy tall photo needs crop");
-assert(!standPhotoNeedsCrop(2350, 1000), "stand strip is not recropped");
+assert(!standPhotoNeedsCrop(2000, 1000), "stand strip is not recropped");
 
 const wide = standPhotoSourceRect(4000, 1000);
 assert(wide.sh === 1000, "wide photo keeps height");
 assert(wide.sw < 4000, "wide photo crops sides");
+const wideLeft = standPhotoSourceRect(4000, 1000, 2, 0.72, 0);
+assert(wideLeft.sx === 0, "wide photo pan can sit on the left");
 
 assert(
   readFileSync("src/components/garage/RadStandFrame.tsx", "utf8").includes(
-    "object-[center_72%]"
+    "object-center"
   ),
-  "stand photos bias toward the ground"
+  "stored stand photos fill the 2:1 frame without a second ground bias"
+);
+
+assert(
+  readFileSync("src/components/garage/RadStandFrame.tsx", "utf8").includes(
+    "aspect-[2/1]"
+  ),
+  "stand stage uses the schema 2:1 ratio"
 );
 
 assert(
@@ -682,9 +699,31 @@ assert(
 );
 assert(
   readFileSync("src/components/garage/BikePhotoControl.tsx", "utf8").includes(
-    "workshopPhotoRetake"
+    "stand-photo-place"
   ),
-  "https photos offer retake instead of silent crop"
+  "https photos offer the same stand pan"
+);
+assert(
+  readFileSync("src/components/garage/StandPhotoCrop.tsx", "utf8").includes(
+    "workshopPhotoRotate"
+  ),
+  "stand crop can turn a phone photo 90°"
+);
+assert(
+  readFileSync("src/components/home/HofStand.tsx", "utf8").includes(
+    'heightClass="aspect-[2/1]"'
+  ),
+  "hof parked bike uses the 2:1 stand"
+);
+assert(
+  garagePageSrc.includes("bikes.length > 1"),
+  "one bike skips the chip rail"
+);
+assert(
+  readFileSync("src/components/garage/BikeSchemaHotspots.tsx", "utf8").includes(
+    "bike.photoUrl"
+  ),
+  "schema dots sit on the stand photo"
 );
 assert(
   standPhotoIsRemote("https://cdn.example/bike.jpg"),
@@ -711,9 +750,15 @@ assert(
 );
 assert(
   readFileSync("src/components/garage/BikePhotoControl.tsx", "utf8").includes(
-    "bottom-7"
+    "stand-photo-retake"
   ),
-  "retake overlay sits above the stand rail"
+  "https photos offer retake under the stand, not on the bike"
+);
+assert(
+  readFileSync("src/components/garage/BikePhotoControl.tsx", "utf8").includes(
+    "StandPhotoCrop"
+  ),
+  "picked photos open a stand pan before save"
 );
 assert(
   readFileSync(
@@ -792,6 +837,16 @@ assert(
     "Zwei Varianten testen"
   ),
   "bracketing panel has no hardcoded German heading"
+);
+assert(
+  readFileSync("src/app/profile/page.tsx", "utf8").includes("profileCopy"),
+  "profile chrome uses copy"
+);
+assert(
+  readFileSync("src/components/community/PublicProfilePanel.tsx", "utf8").includes(
+    "profileCopy"
+  ),
+  "public profile uses copy"
 );
 
 console.log("garageUx.test.ts OK");

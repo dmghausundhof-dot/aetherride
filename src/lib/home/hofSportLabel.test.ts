@@ -11,6 +11,11 @@ assert.equal(hofSportLabel("urban", true), "E-City");
 assert.equal(hofSportLabel("cargo"), "Lastenrad");
 assert.equal(hofSportLabel("folding", true), "E-Faltrad");
 assert.equal(hofSportLabel("road"), "Rennrad");
+assert.equal(hofSportLabel("cargo", false, "en"), "Cargo");
+assert.equal(hofSportLabel("road", false, "en"), "Road");
+assert.equal(hofSportLabel("urban", true, "en"), "E-city");
+assert.equal(hofSportLabel("cargo", true, "nl"), "E-cargo");
+assert.equal(hofSportLabel("mtb_am", false, "fr"), "VTT");
 
 assert.equal(fallbackBikeName("gravel"), "Gravel");
 assert.equal(fallbackBikeName("urban"), "City");

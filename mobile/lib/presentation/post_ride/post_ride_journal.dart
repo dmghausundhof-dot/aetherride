@@ -10,6 +10,7 @@ import '../../domain/privacy/consents.dart';
 import '../../domain/ride_journal.dart';
 import '../../domain/saved_route_note.dart';
 import '../../l10n/app_localizations.dart';
+import '../shared/chrome_glyph.dart';
 import 'post_ride_video_page.dart';
 
 const _thumb = 112.0;
@@ -181,7 +182,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
+                leading: const ChromeGlyph('photo', size: 22),
                 title: Text(l10n.postRidePhotoCamera),
                 enabled: _journal.canAddPhoto && !_picking,
                 onTap: () {
@@ -190,7 +191,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
+                leading: const ChromeGlyph('photo', size: 22),
                 title: Text(l10n.postRidePhotoGallery),
                 enabled: _journal.canAddPhoto && !_picking,
                 onTap: () {
@@ -199,7 +200,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.videocam_outlined),
+                leading: const ChromeGlyph('play', size: 22),
                 title: Text(l10n.postRideVideoCamera),
                 enabled: _journal.canAddVideo && !_picking,
                 onTap: () {
@@ -208,7 +209,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.video_library_outlined),
+                leading: const ChromeGlyph('play', size: 22),
                 title: Text(l10n.postRideVideoGallery),
                 enabled: _journal.canAddVideo && !_picking,
                 onTap: () {
@@ -258,7 +259,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                     tooltip: l10n.postRidePhotosShare,
                     visualDensity: VisualDensity.compact,
                     onPressed: _share,
-                    icon: const Icon(Icons.ios_share, size: 20),
+                    icon: const ChromeGlyph('share', size: 20),
                   ),
               ],
             ),
@@ -297,13 +298,13 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.photo_camera_outlined,
+                    ChromeGlyph(
+                      'photo',
                       color: AppColors.accent.withValues(alpha: 0.9),
                     ),
                     const SizedBox(width: AppSpacing.s),
-                    Icon(
-                      Icons.videocam_outlined,
+                    ChromeGlyph(
+                      'play',
                       color: AppColors.accent.withValues(alpha: 0.9),
                     ),
                   ],
@@ -372,10 +373,10 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                   children: [
                     const ColoredBox(color: AppColors.overlay),
                     const Center(
-                      child: Icon(
-                        Icons.play_circle_fill,
-                        color: Colors.white,
+                      child: ChromeGlyph(
+                        'play',
                         size: 40,
+                        color: Colors.white,
                       ),
                     ),
                     Positioned(
@@ -425,8 +426,8 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.add,
+              ChromeGlyph(
+                'add',
                 color: canAdd ? AppColors.accent : AppColors.muted,
               ),
               const SizedBox(height: 4),
@@ -460,7 +461,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
           children: [
             const Padding(
               padding: EdgeInsets.only(top: 2),
-              child: Icon(Icons.format_quote, size: 16, color: AppColors.muted),
+              child: ChromeGlyph('stimmen', size: 16, color: AppColors.muted),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -490,7 +491,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
           hintText: l10n.postRideNotesPlaceholder,
           isDense: true,
           counterText: '',
-          prefixIcon: const Icon(Icons.edit_note, size: 20),
+          prefixIcon: const ChromeGlyph('file', size: 20, color: AppColors.muted),
           suffixIcon: IconButton(
             tooltip: l10n.postRideNotesAdd,
             onPressed: _savingNote ? null : _addNote,
@@ -500,7 +501,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.arrow_upward),
+                : const ChromeGlyph('send', size: 22),
           ),
         ),
         scrollPadding: const EdgeInsets.only(bottom: 120),
@@ -515,7 +516,7 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
         height: _thumb,
         child: const ColoredBox(
           color: AppColors.elevated,
-          child: Icon(Icons.broken_image_outlined, color: AppColors.muted),
+          child: ChromeGlyph('photo', size: 24, color: AppColors.muted),
         ),
       );
 
@@ -539,11 +540,10 @@ class _PostRideJournalSectionState extends State<PostRideJournalSection> {
           Positioned(
             left: 6,
             top: 6,
-            child: Icon(
-              pinned ? Icons.location_on : Icons.location_off_outlined,
+            child: ChromeGlyph(
+              pinned ? 'flag' : 'locate',
               size: 16,
               color: Colors.white,
-              shadows: const [Shadow(blurRadius: 4, color: Colors.black54)],
             ),
           ),
         Positioned(
@@ -616,10 +616,10 @@ class _PostRidePhotoPage extends StatelessWidget {
           child: Image.file(
             File(path),
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.broken_image_outlined,
-              color: Colors.white54,
+            errorBuilder: (_, __, ___) => const ChromeGlyph(
+              'photo',
               size: 48,
+              color: Colors.white54,
             ),
           ),
         ),

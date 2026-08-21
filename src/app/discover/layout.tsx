@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+import { hofDoorMeta } from "@/lib/i18n/hofDoorMeta";
 
-export const metadata: Metadata = {
-    title: "Karte – OSM, Rundkurse, Nähe",
-  description:
-    "Vor dem Tor: OpenStreetMap, ~60-Min-Rundkurse. Kein Google-Layer. Rausfahren landet hier.",
-};
+export const generateMetadata = () =>
+  hofDoorMeta((c) => ({
+    title: c.mapTitle,
+    description: c.mapJustRideHint,
+  }));
 
 export default function DiscoverLayout({
   children,

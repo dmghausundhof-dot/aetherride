@@ -61,9 +61,12 @@ void main() {
       greaterThan(DiscoverMapLineStyle.pendingAbOpacity),
     );
     expect(
-      DiscoverMapLineStyle.planGrabHaloOpacity,
-      0,
-      reason: 'native halo is gone; PlanLineGrabLayer owns ribbon hits',
+      DiscoverMapLineStyle.planRubberWidth,
+      greaterThan(DiscoverMapLineStyle.pendingAbWidth),
+    );
+    expect(
+      DiscoverMapLineStyle.planRubberHaloWidth,
+      greaterThan(DiscoverMapLineStyle.planRubberCasingWidth),
     );
   });
 

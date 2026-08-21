@@ -193,8 +193,16 @@
       "name": { "type": "String" }
     }
   },
+  "hofLoadStreetMap": "Carica la mappa stradale per il ride",
+  "hofRefreshStreetMap": "Aggiorna mappa stradale intorno a te",
   "hofPackReadyRideMap": "{name} · Routing offline. Mappa ride: rete.",
   "@hofPackReadyRideMap": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "hofPackReadyRideStreet": "{name} · Routing e mappa stradale offline.",
+  "@hofPackReadyRideStreet": {
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -449,6 +457,8 @@
   "planUndo": "Annulla",
   "planRedo": "Ripeti",
   "planLineCoach": "Trascina la linea o i dischi per una sosta. Tieni: nuovo arrivo.",
+  "planLineCoachShort": "Trascina la linea: sosta. Tieni: arrivo.",
+  "planLineCoachAdopt": "Salva il tour, poi modificalo sulla mappa — trascina la linea.",
   "planLineCoachOk": "Capito",
   "planMapSteep": "Ripido",
   "planMapUnknown": "Sconosciuto",
@@ -530,6 +540,7 @@
   "garageStatKmTotal": "KM TOTALI",
   "garageQuickSwitch": "Cambio rapido",
   "garageLastRides": "Ultime uscite",
+  "garageLastRidesHint": "Uscite vere — niente chilometri inventati.",
   "garageNoRidesTitle": "Ancora nessuna uscita",
   "garageNoRidesMessage": "La tua prima uscita salvata compare qui.",
   "garageActive": "Attiva",
@@ -580,6 +591,27 @@
   "garageFamilyHintEmpty": "Peso per un bambino o un partner — aggiungilo qui.",
   "garageFamilyAdd": "Aggiungi rider",
   "garageSchemaMoreOnDots": "Altre lacune sui punti.",
+  "garageSpareShelf": "Scaffale ricambi",
+  "garageSpareHint": "I pezzi smontati restano qui. Rimontare sostituisce lo slot attivo.",
+  "garageReinstall": "Rimonta",
+  "garageSpareEmpty": "Scaffale vuoto — smonta un pezzo per tenerlo qui.",
+  "garageRemovedOn": "Smontato {date}",
+  "@garageRemovedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "garageWearTitle": "Previsione usura",
+  "garageWearHint": "Ponderato sul carico · un intervallo, mai un punto.",
+  "garageWearEmpty": "Nessun pezzo d'usura con cronologia.",
+  "garageWearSwapIn": "{name} tra {low}–{high} km",
+  "@garageWearSwapIn": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "low": { "type": "String" },
+      "high": { "type": "String" }
+    }
+  },
   "garageCreatedAtStand": "{name} sta qui.",
   "@garageCreatedAtStand": {
     "placeholders": {
@@ -1431,9 +1463,12 @@
   "offlineCoverageLabelEnvelope": "{name} · routing · area paese",
   "offlineCoverageSuggested": "Carica · {name}",
   "offlineCoverageOutside": "Fuori da {name}",
+  "offlineCoverageOutsideStreet": "Fuori da {name} · strade offline",
+  "offlineCoverageOutsideStreetAway": "Fuori da {name} · strade non qui",
   "offlineCoverageShowOnMap": "Mostra la regione sulla mappa",
   "offlineCoverageOverview": "{name} · panoramica",
   "offlineCoverageMapNeedsNet": "{name} · mappa: rete",
+  "offlineCoverageStreetAway": "{name} · strada non qui",
   "offlineGraphReadySnack": "Routing nella box arancione. La mappa del ride serve la rete.",
   "offlineBrowseOverviewSnack": "Panoramica sulla mappa (zoom 0–11). Lo zoom strade serve la rete.",
   "offlineSketchRouting": "Routing",
@@ -1456,8 +1491,11 @@
   "offlineStreetReady": "Mappa stradale pronta — navigazione in ride senza rete.",
   "offlineStreetOn": "Strada on",
   "offlineStreetOff": "Niente strada",
+  "offlineStreetAway": "Strada non qui",
   "offlineReadyAll": "Routing, panoramica e mappa stradale pronti.",
   "offlineReadyStreet": "Routing e mappa stradale pronti — panoramica non scaricata.",
+  "offlineReadyStreetAway": "Mappa stradale sul dispositivo — non in questo punto.",
+  "offlineReadyAllAway": "Routing e panoramica pronti. Mappa stradale non qui.",
   "offlineSketchGraph": "Grafo",
   "offlineStreetCta": "Scarica mappa stradale ({size})",
   "@offlineStreetCta": {
@@ -1466,9 +1504,52 @@
     }
   },
   "offlineStreetExplain": "Per la navigazione in ride. Più grande della panoramica — meglio in Wi-Fi.",
+  "offlineStreetCorridorCta": "Mappa stradale intorno a te ({size})",
+  "@offlineStreetCorridorCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetCorridorExplain": "Non tutto il paese — solo intorno al GPS, per la navigazione in ride. Meglio in Wi-Fi.",
+  "offlineStreetRouteCta": "Mappa stradale lungo il tour ({size})",
+  "@offlineStreetRouteCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetNeedGps": "La mappa stradale di questa regione è troppo grande. Consenti la posizione — poi un corridoio intorno al GPS.",
+  "offlineStreetRefreshCta": "Aggiorna mappa stradale intorno a te ({size})",
+  "@offlineStreetRefreshCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetRemove": "Rimuovi mappa stradale",
+  "offlineConfirmStreetRemoveTitle": "Eliminare la mappa stradale?",
+  "offlineConfirmStreetRemoveBody": "In ride la navigazione avrà di nuovo bisogno della rete.",
+  "offlineStreetRemoved": "Mappa stradale rimossa.",
+  "offlineSketchStreet": "Strada",
+  "offlineConfirmStreetRouteBody": "Lungo il tour, {size}. Non tutta la regione {name}.",
+  "@offlineConfirmStreetRouteBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmStreetCorridorBody": "Intorno alla posizione, {size}. Non tutta la regione {name}.",
+  "@offlineConfirmStreetCorridorBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
   "offlineLoadBelow": "Carica un pack sotto. Solo il grafo, non la mappa da 540 MB.",
   "offlineRoutingOn": "Routing attivo",
   "offlineRoutingOff": "Nessun routing",
+  "offlineRoutingAway": "Routing non qui",
+  "offlineReadyRoutingAway": "Routing sul dispositivo — non alla tua posizione.",
+  "offlineReadyStreetHereRoutingAway": "Mappa strade pronta. Routing non alla tua posizione.",
+  "offlineReadyBothAway": "Routing e mappa strade non alla tua posizione.",
   "offlineOverviewOn": "Panoramica attiva",
   "offlineOverviewOff": "Nessuna panoramica",
   "offlineOverviewCta": "Scarica panoramica {id} ({size})",
@@ -3271,6 +3352,7 @@
   "rideChipRoutingOffline": "Routing offline · mappa: rete",
   "rideChipRoutingOfflineShort": "Routing offline",
   "rideHudStreetNeedsNet": "La mappa strade richiede la rete",
+  "rideHudStreetOutside": "Mappa strade non qui — rete o aggiorna",
   "rideCardinalN": "N",
   "rideCardinalNE": "NE",
   "rideCardinalE": "E",
@@ -4885,6 +4967,7 @@
   "garageStatDueNow": "Ora",
   "garageStandTitle": "Chilometri e ore",
   "garageStandHint": "Lettura dal computer. Non inventiamo le ore dai km.",
+  "garageStandStravaHint": "Sync Strava automatico in arrivo — fino ad allora lo stesso dialogo che sotto la foto. Niente import silenzioso.",
   "garagePartsEmptyTitle": "Ancora nessun pezzo",
   "garagePartsEmptyHint": "Aggiungine uno — poi ti ricordiamo la manutenzione.",
   "garageMissingInvite": "Ancora aperto",
@@ -5019,7 +5102,12 @@
   },
   "garagePhotoKept": "Foto salvata",
   "garagePhotoRetake": "Scatta di nuovo",
-  "garagePhotoRetakeHint": "Il cover resta. Scatta di nuovo e la bici sta sul stand.",
+  "garagePhotoRetakeHint": "La foto non riempie lo stand. Scatta di nuovo, la bici sta sulla rotaia.",
+  "garagePhotoCropTitle": "Metti la bici sullo stand",
+  "garagePhotoCropHint": "Sposta la foto finché la bici sta sulla rotaia.",
+  "garagePhotoCropSave": "Così",
+  "garagePhotoRotate": "Ruota 90°",
+  "garagePhotoPlace": "Metti sullo stand",
   "identifyReasonNoKey": "Nessuna chiave Vision. Tieni la foto, inserisci marca e modello.",
   "identifyReasonQuota": "Quota scansione esaurita. Inserisci marca e modello.",
   "identifyReasonFailed": "Foto non letta. Inserisci marca e modello.",

@@ -2,6 +2,9 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'coverage_label.dart';
 
+/// One in-flight sync per wash kind — MapLibre SIGSEGV on duplicate addSource.
+final Map<CoverageWashKind, Future<void>> _coverageSyncInflight = {};
+
 typedef _CoverageLayerIds = ({
   String source,
   String fill,
@@ -25,6 +28,13 @@ _CoverageLayerIds _coverageLayerIds(CoverageWashKind kind) {
         line: kCoverageSuggestedLineLayerId,
         corners: kCoverageSuggestedCornersLayerId,
         casing: kCoverageSuggestedCasingLayerId,
+      ),
+    CoverageWashKind.street => (
+        source: kCoverageStreetSourceId,
+        fill: kCoverageStreetFillLayerId,
+        line: kCoverageStreetLineLayerId,
+        corners: kCoverageStreetCornersLayerId,
+        casing: null,
       ),
   };
 }
@@ -70,6 +80,31 @@ Future<void> syncCoverageWashOverlay(
   required List<double>? bbox,
   required bool dimmed,
   bool emphasized = false,
+  String? belowLayerId,
+  List<List<double>>? ring,
+}) {
+  final prev = _coverageSyncInflight[kind] ?? Future<void>.value();
+  final run = prev.then(
+    (_) => _syncCoverageWashOverlayBody(
+      c,
+      kind: kind,
+      bbox: bbox,
+      dimmed: dimmed,
+      emphasized: emphasized,
+      belowLayerId: belowLayerId,
+      ring: ring,
+    ),
+  );
+  _coverageSyncInflight[kind] = run.catchError((_) {});
+  return run;
+}
+
+Future<void> _syncCoverageWashOverlayBody(
+  MapLibreMapController c, {
+  required CoverageWashKind kind,
+  required List<double>? bbox,
+  required bool dimmed,
+  required bool emphasized,
   String? belowLayerId,
   List<List<double>>? ring,
 }) async {
@@ -162,32 +197,33 @@ Future<void> syncCoverageWashOverlay(
       lineJoin: 'round',
     ),
   );
-  await _addLineLayer(
-    c,
-    source: ids.source,
-    layerId: ids.corners,
-    belowLayerId: belowLayerId,
-    filter: kCoverageCornersFilter,
-    props: LineLayerProperties(
-      lineColor: paint.lineColor,
-      lineWidth: paint.cornerWidth,
-      lineOpacity: paint.lineOpacity,
-      lineCap: 'square',
-      lineJoin: 'miter',
-    ),
-  );
+  if (paint.cornerWidth > 0) {
+    await _addLineLayer(
+      c,
+      source: ids.source,
+      layerId: ids.corners,
+      belowLayerId: belowLayerId,
+      filter: kCoverageCornersFilter,
+      props: LineLayerProperties(
+        lineColor: paint.lineColor,
+        lineWidth: paint.cornerWidth,
+        lineOpacity: paint.lineOpacity,
+        lineCap: 'square',
+        lineJoin: 'miter',
+      ),
+    );
+  }
 
+  if (!hasSource) {
+    try {
+      hasSource = (await c.getSourceIds()).contains(ids.source);
+    } catch (_) {}
+  }
+  if (!hasSource) return;
   try {
     await c.setGeoJsonSource(
       ids.source,
       coverageBboxFeatureCollection(bbox, ring: ring),
     );
-  } catch (_) {
-    try {
-      await c.addGeoJsonSource(
-        ids.source,
-        coverageBboxFeatureCollection(bbox, ring: ring),
-      );
-    } catch (_) {}
-  }
+  } catch (_) {}
 }

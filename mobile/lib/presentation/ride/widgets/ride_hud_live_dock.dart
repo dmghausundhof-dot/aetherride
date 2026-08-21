@@ -8,6 +8,7 @@ import '../../../domain/active_route.dart';
 import '../../../domain/hud_lean_calibration.dart';
 import '../../../l10n/l10n_ext.dart';
 import 'ride_hud_island.dart';
+import '../../shared/chrome_glyph.dart';
 
 /// One compact live readout in the Daten dock.
 class HudDockMetric {
@@ -257,7 +258,7 @@ class RideHudChassisDock extends StatelessWidget {
                 tooltip: l10n?.rideResetLeanCal ?? 'Nullung zurück',
                 onPressed: onResetCal,
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.restart_alt, size: 20),
+                icon: const ChromeGlyph('undo', size: 20),
               ),
           ],
         ),

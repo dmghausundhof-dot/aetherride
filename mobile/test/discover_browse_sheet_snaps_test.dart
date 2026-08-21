@@ -88,30 +88,41 @@ void main() {
       );
     });
 
-    test('handle tap climbs without a swipe', () {
+    test('handle tap climbs without a swipe, full folds back to the map', () {
       expect(
         DiscoverBrowseSheetSnaps.handleTapTarget(
           DiscoverBrowseSheetSnaps.closed,
+          hasSelection: false,
         ),
         DiscoverBrowseSheetSnaps.half,
       );
       expect(
         DiscoverBrowseSheetSnaps.handleTapTarget(
           DiscoverBrowseSheetSnaps.peek,
+          hasSelection: false,
         ),
         DiscoverBrowseSheetSnaps.half,
       );
       expect(
         DiscoverBrowseSheetSnaps.handleTapTarget(
           DiscoverBrowseSheetSnaps.half,
+          hasSelection: false,
         ),
         DiscoverBrowseSheetSnaps.full,
       );
       expect(
         DiscoverBrowseSheetSnaps.handleTapTarget(
           DiscoverBrowseSheetSnaps.full,
+          hasSelection: false,
         ),
-        DiscoverBrowseSheetSnaps.half,
+        DiscoverBrowseSheetSnaps.closed,
+      );
+      expect(
+        DiscoverBrowseSheetSnaps.handleTapTarget(
+          DiscoverBrowseSheetSnaps.full,
+          hasSelection: true,
+        ),
+        DiscoverBrowseSheetSnaps.peek,
       );
     });
   });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../shared/chrome_glyph.dart';
 
 /// Dims chrome, keeps the map readable. Must sit above the map in a [Stack].
 ///
@@ -59,8 +60,8 @@ class RideAutoLockOverlay extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.lock,
+                        ChromeGlyph(
+                          'lock',
                           size: 28,
                           color: AppColors.chromeFill(context),
                         ),

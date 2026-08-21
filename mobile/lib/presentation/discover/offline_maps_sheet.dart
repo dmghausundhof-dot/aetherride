@@ -13,6 +13,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/routing/coverage_graph_ring.dart';
+import '../../data/routing/coverage_label.dart';
 import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_pack_catalog.dart';
@@ -33,6 +35,8 @@ Future<bool?> openOfflineMapsSheet(
   BuildContext context, {
   double? userLng,
   double? userLat,
+  List<double>? routeBbox,
+  List<List<double>>? routeLine,
   String? focusPackId,
   VoidCallback? onDownloadPaused,
   ValueChanged<List<double>>? onShowOnMap,
@@ -43,6 +47,8 @@ Future<bool?> openOfflineMapsSheet(
     builder: (_) => OfflineMapsSheet(
       userLng: userLng,
       userLat: userLat,
+      routeBbox: routeBbox,
+      routeLine: routeLine,
       focusPackId: focusPackId,
       onDownloadPaused: onDownloadPaused,
       onShowOnMap: onShowOnMap,
@@ -55,6 +61,8 @@ class OfflineMapsSheet extends StatefulWidget {
     super.key,
     this.userLng,
     this.userLat,
+    this.routeBbox,
+    this.routeLine,
     this.focusPackId,
     this.onDownloadPaused,
     this.onShowOnMap,
@@ -62,6 +70,8 @@ class OfflineMapsSheet extends StatefulWidget {
 
   final double? userLng;
   final double? userLat;
+  final List<double>? routeBbox;
+  final List<List<double>>? routeLine;
   final String? focusPackId;
   final VoidCallback? onDownloadPaused;
   final ValueChanged<List<double>>? onShowOnMap;
@@ -92,6 +102,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
   List<double>? _packBbox;
   List<List<double>>? _packRing;
   List<List<double>>? _packDots;
+  List<List<double>>? _packTraces;
+  List<double>? _streetBbox;
+  StreetHudOfferKind? _streetKind;
   int _storageBytes = 0;
   bool _prefsChanged = false;
   List<OfflinePackRow> _regions = [
@@ -182,10 +195,12 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     } catch (_) {}
     List<List<double>>? packRing;
     List<List<double>>? packDots;
+    List<List<double>>? packTraces;
     try {
       final ringHit = await OfflinePackDirs.activatedCoverageRingResult();
       packRing = ringHit?.outline;
       packDots = ringHit?.dots;
+      packTraces = ringHit?.traces;
     } catch (_) {}
     if (activated != null && activated.isNotEmpty) {
       final dir = Directory(activated);
@@ -206,6 +221,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         packBbox = null;
         packRing = null;
         packDots = null;
+        packTraces = null;
         OfflineTilesStore.instance.clearCache();
       }
     }
@@ -214,10 +230,15 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
     final storage = await _scanStorage();
     var streetReady = false;
+    List<double>? streetBbox;
+    StreetHudOfferKind? streetKind;
     try {
       final id = OfflineMapsPrefs.packIdFromActivatedPath(activated);
       if (id != null) {
-        streetReady = await OfflineBasemap.hasStreetHudRegion(id);
+        final meta = await _streetHudMeta(id);
+        streetReady = meta.ready;
+        streetBbox = meta.bbox;
+        streetKind = meta.kind;
       }
     } catch (_) {}
     if (!mounted) return;
@@ -238,6 +259,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _packBbox = packBbox;
       _packRing = packRing;
       _packDots = packDots;
+      _packTraces = packTraces;
+      _streetBbox = streetBbox;
+      _streetKind = streetKind;
       _storageBytes = storage;
       _loading = false;
     });
@@ -408,15 +432,11 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
     final status = await OfflineTilesStore.instance.valhallaLinkStatus();
     if (mounted) {
       setState(() {
-        _progress =
-            AppLocalizations.of(context).offlineProgressActivating;
+        _progress = AppLocalizations.of(context).offlineProgressActivating;
       });
     }
     final ring = await OfflinePackDirs.coverageRingResultForDir(regionDir);
-    var streetReady = false;
-    try {
-      streetReady = await OfflineBasemap.hasStreetHudRegion(region.id);
-    } catch (_) {}
+    final street = await _streetHudMeta(region.id);
     if (!mounted) return;
     setState(() {
       _regionPref = region.name;
@@ -427,7 +447,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _packBbox = region.bbox;
       _packRing = ring?.outline;
       _packDots = ring?.dots;
-      _streetReady = streetReady;
+      _packTraces = ring?.traces;
+      _streetReady = street.ready;
+      _streetBbox = street.bbox;
+      _streetKind = street.kind;
     });
   }
 
@@ -824,10 +847,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         setState(() => _progress = l10n.offlineProgressActivating);
       }
       final ring = await OfflinePackDirs.coverageRingResultForDir(regionDir);
-      var streetReady = false;
-      try {
-        streetReady = await OfflineBasemap.hasStreetHudRegion(region.id);
-      } catch (_) {}
+      final street = await _streetHudMeta(region.id);
       if (!mounted) return;
       setState(() {
         _regionPref = (manifest?['name'] as String?) ?? region.name;
@@ -839,8 +859,11 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         _packBbox = bbox;
         _packRing = ring?.outline;
         _packDots = ring?.dots;
+        _packTraces = ring?.traces;
         _basemapReady = mapOk;
-        _streetReady = streetReady;
+        _streetReady = street.ready;
+        _streetBbox = street.bbox;
+        _streetKind = street.kind;
         _storageBytes = storage;
         _progress = null;
         _progressValue = null;
@@ -956,7 +979,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       _packBbox = null;
       _packRing = null;
       _packDots = null;
+      _packTraces = null;
       _streetReady = false;
+      _streetBbox = null;
+      _streetKind = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1002,8 +1028,11 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           _packBbox = null;
           _packRing = null;
           _packDots = null;
+          _packTraces = null;
           _basemapReady = false;
           _streetReady = false;
+          _streetBbox = null;
+          _streetKind = null;
         }
       });
     } finally {
@@ -1081,12 +1110,30 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
         break;
       }
     }
-    final bbox = region?.bbox ?? _packBbox;
-    if (bbox == null || bbox.length < 4) return;
     final packId = region?.id ??
         OfflineMapsPrefs.packIdFromActivatedPath(_activatedPath) ??
         '';
     if (packId.isEmpty) return;
+    final offer = streetHudOffer(
+      packId: packId,
+      occupancyBbox: _packRing != null && _packRing!.length >= 4
+          ? coverageBboxOfRing(_packRing!)
+          : null,
+      catalogBbox: region?.bbox ?? _packBbox,
+      routeBbox: widget.routeBbox,
+      userLng: widget.userLng,
+      userLat: widget.userLat,
+    );
+    final bbox = offer?.bbox;
+    if (bbox == null || bbox.length < 4) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).offlineStreetTooBig),
+        ),
+      );
+      return;
+    }
     region ??= OfflinePackRow(
       id: packId,
       name: _regionPref ?? packId,
@@ -1095,17 +1142,18 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       status: 'ready',
     );
     final l10n = AppLocalizations.of(context);
-    if (!packOffersStreetHud(packId: packId, bbox: bbox)) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.offlineStreetTooBig)),
-      );
-      return;
-    }
     final size = formatPackBytes(estimatedStreetHudBytes(bbox));
+    final body = switch (offer!.kind) {
+      StreetHudOfferKind.route =>
+        l10n.offlineConfirmStreetRouteBody(_regionLabel(region), size),
+      StreetHudOfferKind.corridor =>
+        l10n.offlineConfirmStreetCorridorBody(_regionLabel(region), size),
+      StreetHudOfferKind.pack =>
+        l10n.offlineConfirmStreetBody(_regionLabel(region), size),
+    };
     final ok = await _confirmSize(
       title: l10n.offlineConfirmStreetTitle,
-      body: l10n.offlineConfirmStreetBody(_regionLabel(region), size),
+      body: body,
     );
     if (!ok) return;
     if (!await OfflineBasemap.onWifiLikely()) {
@@ -1140,7 +1188,23 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       );
       if (!mounted || _downloadCancelled) return;
       final ready = result == OfflineBasemapResult.success;
-      setState(() => _streetReady = ready);
+      if (ready) {
+        _prefsChanged = true;
+        await OfflineMapsPrefs.merge({
+          'streetHudAt': DateTime.now().toUtc().toIso8601String(),
+          'streetHudBbox': bbox,
+          'streetHudKind': offer.kind.name,
+          'streetHudPackId': packId,
+        });
+      }
+      if (!mounted) return;
+      setState(() {
+        _streetReady = ready;
+        if (ready) {
+          _streetBbox = bbox;
+          _streetKind = offer.kind;
+        }
+      });
       final msg = switch (result) {
         OfflineBasemapResult.success => l10n.offlineStreetReady,
         OfflineBasemapResult.skippedPmtiles => l10n.offlineBasemapFail,
@@ -1161,6 +1225,118 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
 
   String _regionLabel(OfflinePackRow r) =>
       AppLocalizations.of(context).overlayRegionNameFor(r.id, r.name);
+
+  Future<({bool ready, List<double>? bbox, StreetHudOfferKind? kind})>
+      _streetHudMeta(String packId) async {
+    var ready = false;
+    try {
+      ready = await OfflineBasemap.hasStreetHudRegion(packId);
+    } catch (_) {}
+    if (!ready) {
+      return (ready: false, bbox: null, kind: null);
+    }
+    try {
+      final prefs = await OfflineMapsPrefs.read();
+      if (OfflineMapsPrefs.streetHudPackIdFrom(prefs) != packId) {
+        return (ready: true, bbox: null, kind: null);
+      }
+      return (
+        ready: true,
+        bbox: OfflineMapsPrefs.streetHudBboxFrom(prefs),
+        kind: streetHudKindFromRaw(
+          OfflineMapsPrefs.streetHudKindRawFrom(prefs),
+        ),
+      );
+    } catch (_) {
+      return (ready: true, bbox: null, kind: null);
+    }
+  }
+
+  StreetHudOffer? get _streetHudOffer {
+    final packId =
+        OfflineMapsPrefs.packIdFromActivatedPath(_activatedPath) ?? '';
+    final ring = _packRing;
+    return streetHudOffer(
+      packId: packId,
+      occupancyBbox:
+          ring != null && ring.length >= 4 ? coverageBboxOfRing(ring) : null,
+      catalogBbox: _packBbox,
+      routeBbox: widget.routeBbox,
+      userLng: widget.userLng,
+      userLat: widget.userLat,
+    );
+  }
+
+  bool get _streetStale => streetHudCoverageStale(
+        kind: _streetKind,
+        storedBbox: _streetBbox,
+        userLng: widget.userLng,
+        userLat: widget.userLat,
+      );
+
+  bool get _routingAway => coverageRiderOutside(
+        lng: widget.userLng,
+        lat: widget.userLat,
+        bbox: _packBbox,
+        routingReady: _activatedPath != null && _activatedPath!.isNotEmpty,
+        ring: _packRing,
+      );
+
+  String _readyStatusLine(AppLocalizations l10n, {required bool hasPack}) {
+    return offlineReadyStatusLine(
+      hasPack: hasPack,
+      routingAway: _routingAway,
+      streetReady: _streetReady,
+      streetStale: _streetStale,
+      basemapReady: _basemapReady,
+      loadBelow: l10n.offlineLoadBelow,
+      bothAway: l10n.offlineReadyBothAway,
+      streetHereRoutingAway: l10n.offlineReadyStreetHereRoutingAway,
+      routingAwayLine: l10n.offlineReadyRoutingAway,
+      allAway: l10n.offlineReadyAllAway,
+      streetAway: l10n.offlineReadyStreetAway,
+      allReady: l10n.offlineReadyAll,
+      streetReadyLine: l10n.offlineReadyStreet,
+      bothReady: l10n.offlineReadyBoth,
+      routingReady: l10n.offlineReadyRouting,
+    );
+  }
+
+  Future<void> _onStreetRemove() async {
+    if (_busy) return;
+    final packId =
+        OfflineMapsPrefs.packIdFromActivatedPath(_activatedPath) ?? '';
+    if (packId.isEmpty) return;
+    final l10n = AppLocalizations.of(context);
+    final ok = await _confirmSize(
+      title: l10n.offlineConfirmStreetRemoveTitle,
+      body: l10n.offlineConfirmStreetRemoveBody,
+      confirmLabel: l10n.offlineStreetRemove,
+    );
+    if (!ok) return;
+    setState(() => _busy = true);
+    try {
+      await OfflineBasemap.deleteRegionId(streetHudRegionId(packId));
+      _prefsChanged = true;
+      await OfflineMapsPrefs.merge({
+        'streetHudAt': null,
+        'streetHudBbox': null,
+        'streetHudKind': null,
+        'streetHudPackId': null,
+      });
+      if (!mounted) return;
+      setState(() {
+        _streetReady = false;
+        _streetBbox = null;
+        _streetKind = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.offlineStreetRemoved)),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   String _activeRegionTitle(AppLocalizations l10n) {
     final path = _activatedPath;
@@ -1251,18 +1427,18 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    ChromeGlyph(
                       active
-                          ? Icons.check_circle
+                          ? 'check'
                           : hasUpdate
-                              ? Icons.update
+                              ? 'download'
                               : installed
-                                  ? Icons.sd_storage_outlined
+                                  ? 'layers'
                                   : !r.isReady
-                                      ? Icons.hourglass_empty
+                                      ? 'recent'
                                       : isEnvelopePackId(r.id)
-                                          ? Icons.crop_free
-                                          : Icons.download_outlined,
+                                          ? 'karte'
+                                          : 'download',
                       color: active || hasUpdate
                           ? AppColors.chrome
                           : enabled
@@ -1299,14 +1475,15 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                         onPressed: _busy
                             ? null
                             : () => _onRegionTap(r, forceDownload: true),
-                        icon: const ChromeGlyph('download', size: 20, color: AppColors.chrome),
+                        icon: const ChromeGlyph('download',
+                            size: 20, color: AppColors.chrome),
                         color: AppColors.chrome,
                       ),
                     if (showDelete && installed)
                       IconButton(
                         tooltip: l10n.offlineDeletePack,
                         onPressed: _busy ? null : () => _deleteInstalled(r),
-                        icon: const Icon(Icons.delete_outline, size: 20),
+                        icon: const ChromeGlyph('trash', size: 20),
                         color: AppColors.muted,
                       ),
                   ],
@@ -1484,10 +1661,9 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                         children: [
                           Row(
                             children: [
-                              Icon(
-                                hasPack
-                                    ? Icons.check_circle_outline
-                                    : Icons.cloud_download_outlined,
+                              ChromeGlyph(
+                                hasPack ? 'check' : 'download',
+                                size: 22,
                                 color: hasPack
                                     ? AppColors.chrome
                                     : AppColors.muted,
@@ -1512,26 +1688,32 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                             runSpacing: 6,
                             children: [
                               Chip(
+                                key: const Key('offline-routing-chip'),
                                 visualDensity: VisualDensity.compact,
-                                avatar: Icon(
-                                  hasPack ? Icons.check : Icons.alt_route,
+                                avatar: ChromeGlyph(
+                                  !hasPack
+                                      ? 'split'
+                                      : _routingAway
+                                          ? 'offline'
+                                          : 'check',
                                   size: 16,
-                                  color: hasPack
+                                  color: hasPack && !_routingAway
                                       ? AppColors.chrome
                                       : AppColors.muted,
                                 ),
                                 label: Text(
-                                  hasPack
-                                      ? l10n.offlineRoutingOn
-                                      : l10n.offlineRoutingOff,
+                                  !hasPack
+                                      ? l10n.offlineRoutingOff
+                                      : _routingAway
+                                          ? l10n.offlineRoutingAway
+                                          : l10n.offlineRoutingOn,
                                 ),
                               ),
                               Chip(
+                                key: const Key('offline-overview-chip'),
                                 visualDensity: VisualDensity.compact,
-                                avatar: Icon(
-                                  _basemapReady
-                                      ? Icons.check
-                                      : Icons.map_outlined,
+                                avatar: ChromeGlyph(
+                                  _basemapReady ? 'check' : 'karte',
                                   size: 16,
                                   color: _basemapReady
                                       ? AppColors.chrome
@@ -1541,6 +1723,28 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                                   _basemapReady
                                       ? l10n.offlineOverviewOn
                                       : l10n.offlineOverviewOff,
+                                ),
+                              ),
+                              Chip(
+                                key: const Key('offline-street-chip'),
+                                visualDensity: VisualDensity.compact,
+                                avatar: ChromeGlyph(
+                                  !_streetReady
+                                      ? 'nav'
+                                      : _streetStale
+                                          ? 'offline'
+                                          : 'check',
+                                  size: 16,
+                                  color: _streetReady && !_streetStale
+                                      ? AppColors.chrome
+                                      : AppColors.muted,
+                                ),
+                                label: Text(
+                                  !_streetReady
+                                      ? l10n.offlineStreetOff
+                                      : _streetStale
+                                          ? l10n.offlineStreetAway
+                                          : l10n.offlineStreetOn,
                                 ),
                               ),
                             ],
@@ -1559,11 +1763,7 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                           ],
                           const SizedBox(height: 4),
                           Text(
-                            hasPack
-                                ? (_basemapReady
-                                    ? l10n.offlineReadyBoth
-                                    : l10n.offlineReadyRouting)
-                                : l10n.offlineLoadBelow,
+                            _readyStatusLine(l10n, hasPack: hasPack),
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.muted,
@@ -1580,9 +1780,17 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                             OfflineCoverageSketch(
                               bbox: _packBbox!,
                               ring: _packRing,
+                              dots: _packDots,
+                              traces: _packTraces,
+                              streetBbox: _streetBbox ??
+                                  ((_streetHudOffer?.isPartial ?? false)
+                                      ? _streetHudOffer!.bbox
+                                      : null),
+                              streetLine: widget.routeLine,
                               userLng: widget.userLng,
                               userLat: widget.userLat,
                               overviewReady: _basemapReady,
+                              streetReady: _streetReady,
                               progress: _busy ? _progressValue : null,
                               semanticLabel: l10n.offlineCoverageShowOnMap,
                               onTap: widget.onShowOnMap == null
@@ -1599,6 +1807,16 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                                   AppColors.chrome,
                                   l10n.offlineSketchRouting,
                                 ),
+                                if ((_packTraces != null &&
+                                        _packTraces!.isNotEmpty) ||
+                                    (_packDots != null &&
+                                        _packDots!.isNotEmpty)) ...[
+                                  const SizedBox(width: 12),
+                                  _sketchLegendDot(
+                                    AppColors.chrome.withValues(alpha: 0.7),
+                                    l10n.offlineSketchGraph,
+                                  ),
+                                ],
                                 if (_basemapReady) ...[
                                   const SizedBox(width: 12),
                                   _sketchLegendDot(
@@ -1606,7 +1824,77 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
                                     l10n.offlineSketchOverview,
                                   ),
                                 ],
+                                if (_streetReady ||
+                                    (_streetHudOffer?.isPartial ?? false)) ...[
+                                  const SizedBox(width: 12),
+                                  _sketchLegendDot(
+                                    AppColors.sageOnDark,
+                                    l10n.offlineSketchStreet,
+                                  ),
+                                ],
                               ],
+                            ),
+                          ],
+                          if (hasPack &&
+                              _streetHudOffer != null &&
+                              (!_streetReady || _streetStale)) ...[
+                            const SizedBox(height: 10),
+                            FilledButton(
+                              key: const Key('offline-street-download'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.sageOnDark,
+                              ),
+                              onPressed: _busy ? null : _onStreetTap,
+                              child: Text(
+                                () {
+                                  final offer = _streetHudOffer!;
+                                  final size = formatPackBytes(
+                                    estimatedStreetHudBytes(offer.bbox),
+                                  );
+                                  if (_streetReady && _streetStale) {
+                                    return l10n.offlineStreetRefreshCta(size);
+                                  }
+                                  if (offer.isRoute) {
+                                    return l10n.offlineStreetRouteCta(size);
+                                  }
+                                  if (offer.isCorridor) {
+                                    return l10n.offlineStreetCorridorCta(size);
+                                  }
+                                  return l10n.offlineStreetCta(size);
+                                }(),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _streetHudOffer!.isPartial
+                                  ? l10n.offlineStreetCorridorExplain
+                                  : l10n.offlineStreetExplain,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                          if (hasPack &&
+                              !_streetReady &&
+                              _streetHudOffer == null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.userLng == null || widget.userLat == null
+                                  ? l10n.offlineStreetNeedGps
+                                  : l10n.offlineStreetTooBig,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                          if (hasPack && _streetReady) ...[
+                            const SizedBox(height: 4),
+                            TextButton(
+                              key: const Key('offline-street-remove'),
+                              onPressed: _busy ? null : _onStreetRemove,
+                              child: Text(l10n.offlineStreetRemove),
                             ),
                           ],
                           if (hasPack &&

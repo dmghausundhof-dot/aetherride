@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MessageSquare, ShieldAlert, Wrench, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { type ChatToolName } from "@/lib/ai/chat";
 import { CoachInbox } from "@/components/chat/CoachInbox";
@@ -158,7 +159,7 @@ export default function ChatPage() {
           <ArrowLeft className="h-4 w-4" /> {hof.profile}
         </Link>
         <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <MessageSquare className="h-6 w-6 text-chrome" /> {c.title}
+          <ChromeGlyph name="stimmen" size={24} current className="text-chrome" /> {c.title}
         </h1>
         <p className="text-sm text-text-secondary">
           {hof.chatHint}
@@ -268,11 +269,11 @@ export default function ChatPage() {
             <p className="whitespace-pre-wrap">{m.text}</p>
             {m.tool && process.env.NODE_ENV === "development" && (
               <p className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-text-secondary">
-                <Wrench className="h-3 w-3" /> {m.tool}
+                <ChromeGlyph name="care" size={12} current /> {m.tool}
                 {m.usedGrok ? " · Cloud-KI" : " · lokal"}
                 {m.guarded && (
                   <span className="inline-flex items-center gap-0.5 text-warning">
-                    <ShieldAlert className="h-3 w-3" /> Zahlen geprüft
+                    <ChromeGlyph name="shield" size={12} current /> Zahlen geprüft
                     {m.rejected?.length
                       ? ` (verwirft ${m.rejected.join(", ")})`
                       : ""}

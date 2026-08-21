@@ -515,11 +515,18 @@ extension AetherL10n on AppLocalizations {
     String? packId,
     bool overviewStyle = false,
     bool mapNeedsNet = false,
+    bool streetAway = false,
+    bool streetReady = false,
   }) {
     final glance = coverageGlanceName(name);
-    if (outside) return offlineCoverageOutside(glance);
+    if (outside) {
+      if (streetReady) return offlineCoverageOutsideStreet(glance);
+      if (streetAway) return offlineCoverageOutsideStreetAway(glance);
+      return offlineCoverageOutside(glance);
+    }
     if (overviewStyle) return offlineCoverageOverview(glance);
     if (mapNeedsNet) return offlineCoverageMapNeedsNet(glance);
+    if (streetAway) return offlineCoverageStreetAway(glance);
     return offlineCoverageLabelFor(glance, packId: packId);
   }
 
@@ -755,8 +762,7 @@ extension AetherL10n on AppLocalizations {
           a('mount_type'),
         ),
       'RL-SUS-012' => compatFailSus012(a('steerer_type'), b('steerer_type')),
-      'RL-BRK-003' =>
-        compatFailBrk003(a('brake_mount'), b('brake_mount_rear')),
+      'RL-BRK-003' => compatFailBrk003(a('brake_mount'), b('brake_mount_rear')),
       'RL-BRK-008' => compatFailBrk008(a('rotor_mount'), b('rotor_mount')),
       'RL-BRK-008F' => compatFailBrk008f(a('rotor_mount'), b('rotor_mount')),
       'RL-WHL-005' =>
@@ -1331,6 +1337,11 @@ extension AetherL10n on AppLocalizations {
     if (raw.startsWith('Teile der Route folgen Feldwegen')) {
       return discoverHonestyFarmMid;
     }
+    // Keep in sync with Web VARIANT_VALHALLA_ONLY / discoverUi.de.variantValhallaOnly
+    if (raw.startsWith('Weniger hm und mehr Schotter nur mit Live-Strecke') ||
+        raw.startsWith('Ohne Live-Strecke keine Varianten')) {
+      return discoverVariantValhallaOnly;
+    }
     return raw;
   }
 
@@ -1488,6 +1499,7 @@ extension AetherL10n on AppLocalizations {
     required bool ready,
     String? packId,
     String? packName,
+    bool streetReady = false,
   }) {
     if (!ready) return profileOfflineMapsHint;
     final id = packId?.trim() ?? '';
@@ -1496,7 +1508,13 @@ extension AetherL10n on AppLocalizations {
       id.isNotEmpty ? overlayRegionNameFor(id, raw.isEmpty ? id : raw) : raw,
     );
     if (name.isEmpty) return offlineRoutingOn;
-    return hofPackReadyRideMap(name);
+    return hofPackReadyLine(name, streetReady: streetReady);
+  }
+
+  String hofPackReadyLine(String name, {required bool streetReady}) {
+    return streetReady
+        ? hofPackReadyRideStreet(name)
+        : hofPackReadyRideMap(name);
   }
 
   String seasonLabelFor(String? raw) {

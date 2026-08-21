@@ -26,6 +26,7 @@ class ChromeGlyph extends StatelessWidget {
       'lock' => 'assets/garage/glyph-lock.svg',
       'add' => 'assets/garage/glyph-add.svg',
       'meet' => 'assets/tours/glyph-meet.svg',
+      'loop' => 'assets/tours/glyph-loop.svg',
       _ => 'assets/chrome/glyph-$name.svg',
     };
   }

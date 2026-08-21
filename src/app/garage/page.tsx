@@ -20,7 +20,6 @@ import { FamilyRiderStrip } from "@/components/garage/FamilyRiderStrip";
 import { FadeEdgeRow } from "@/components/garage/FadeEdgeRow";
 import { BikeSchemaHotspots } from "@/components/garage/BikeSchemaHotspots";
 import { SagGuideForBike } from "@/components/garage/SagGuidePanel";
-import { OdometerImportPanel } from "@/components/garage/OdometerImportPanel";
 import { getMaintenanceSummary } from "@/lib/maintenance/summary";
 import { buildServiceReport, downloadServiceReport } from "@/lib/garage/serviceReport";
 import { useAppStore } from "@/store/useAppStore";
@@ -195,8 +194,8 @@ function GaragePageInner() {
           </button>
         </RadEmpty>
       ) : (
-        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-6">
-          {/* Desktop: sticky Rad-Leiste · Mobile: horizontal */}
+        <div className={`flex flex-col gap-5 ${bikes.length > 1 ? "lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start lg:gap-6" : ""}`}>
+          {bikes.length > 1 ? (
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <div className="mb-2 hidden lg:block">
               <RadSectionLabel mark="stand">
@@ -225,6 +224,7 @@ function GaragePageInner() {
               </button>
             </FadeEdgeRow>
           </aside>
+          ) : null}
 
           <div className="min-w-0 space-y-4">
           <DieBoxSurface
@@ -234,41 +234,45 @@ function GaragePageInner() {
             onOpenMaintenance={() => setTab("maintenance")}
           />
           <FamilyRiderStrip bikeId={selected.id} />
-          <FadeEdgeRow
-            testId="garage-tab-scroller"
-            className="flex gap-1 overflow-x-auto rounded-xl bg-surface-elevated p-1 text-sm"
-          >
-            {(
-              [
-                ["overview", copy.workshopTabOverview],
-                ["components", copy.workshopTabParts],
-                ["maintenance", copy.workshopTabCare],
-                ["setups", copy.workshopTabSetups],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                className={`min-h-11 shrink-0 rounded-lg px-3 py-2.5 font-medium ${
-                  tab === id ? "bg-chrome text-on-accent" : "text-text-secondary"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </FadeEdgeRow>
+          <div role="tablist" aria-label={copy.workshopTitle}>
+            <FadeEdgeRow
+              testId="garage-tab-scroller"
+              fadeFromClass="from-background"
+              className="flex gap-1 overflow-x-auto text-sm"
+            >
+              {(
+                [
+                  ["overview", copy.workshopTabOverview],
+                  ["components", copy.workshopTabParts],
+                  ["maintenance", copy.workshopTabCare],
+                  ["setups", copy.workshopTabSetups],
+                ] as const
+              ).map(([id, label]) => {
+                const on = tab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    onClick={() => setTab(id)}
+                    className={`min-h-11 shrink-0 rounded-xl px-3 py-2.5 font-bold ${
+                      on
+                        ? "bg-chrome text-on-accent"
+                        : "border border-border bg-surface text-foreground hover:border-chrome/40"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </FadeEdgeRow>
+          </div>
 
           {tab === "overview" && (
             <div className="space-y-4">
-              <BikeIdentityCard bike={selected} />
               <BikeRideLog bikeId={selected.id} omitLatestPeek />
-              <p className="text-xs text-text-secondary">{copy.workshopMoreHint}</p>
-              <GaragePartsCta
-                bikeId={selected.id}
-                lookupOnly
-                slot={dueSlot}
-              />
+              <BikeIdentityCard bike={selected} />
             </div>
           )}
 
@@ -279,6 +283,7 @@ function GaragePageInner() {
                 dueSlots={dueSlot ? [dueSlot] : []}
                 onTapSlot={(slot) => setInstallSlot(slot)}
               />
+              <GaragePartsCta bikeId={selected.id} lookupOnly />
               <GarageComponentsTab
                 selected={selected}
                 spareParts={spareParts}
@@ -296,11 +301,6 @@ function GaragePageInner() {
 
           {tab === "setups" && (
             <div className="space-y-4">
-              <OdometerImportPanel
-                bikeId={selected.id}
-                odometerKm={selected.totalOdometerKm}
-                hours={selected.totalHours}
-              />
               {(selected.travelFrontMm ?? 0) > 0 ||
               (selected.travelRearMm ?? 0) > 0 ? (
                 <SagGuideForBike bike={selected} />
@@ -319,6 +319,7 @@ function GaragePageInner() {
           )}
 
           {tab === "maintenance" && (
+            <div className="space-y-4">
             <GarageMaintenanceTab
               selected={selected}
               rides={rides}
@@ -328,6 +329,12 @@ function GaragePageInner() {
               markIntervalDone={markIntervalDone}
               exportReport={exportReport}
             />
+            <GaragePartsCta
+              bikeId={selected.id}
+              lookupOnly
+              slot={dueSlot}
+            />
+            </div>
           )}
           </div>
         </div>

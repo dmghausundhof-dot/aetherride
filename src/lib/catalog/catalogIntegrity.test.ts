@@ -11,8 +11,8 @@ function assert(cond: boolean, msg: string) {
 }
 
 const stats = catalogStats();
-assert(stats.manufacturers >= 54, `Erwarte ≥54 Hersteller, got ${stats.manufacturers}`);
-assert(stats.bikes >= 99, `Erwarte ≥99 Bikes, got ${stats.bikes}`);
+assert(stats.manufacturers >= 57, `Erwarte ≥57 Hersteller, got ${stats.manufacturers}`);
+assert(stats.bikes >= 139, `Erwarte ≥139 Bikes, got ${stats.bikes}`);
 assert(
   COMPONENT_CATALOG.length >= 250,
   `Erwarte ≥250 kuratierte OEM-Komponenten, got ${COMPONENT_CATALOG.length}`
@@ -132,6 +132,13 @@ assert(
   namedHits.every((m) => m.slot === "cassette"),
   "Namenssuche bleibt im Slot"
 );
+
+const cats = new Set(
+  BIKE_CATALOG.flatMap((m) => m.bikes.map((b) => b.category))
+);
+for (const need of ["cargo", "folding", "kids"] as const) {
+  assert(cats.has(need), `Kategorie ${need} fehlt im OEM-Katalog`);
+}
 
 console.log(
   JSON.stringify(

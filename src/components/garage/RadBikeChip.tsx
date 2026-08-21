@@ -34,7 +34,7 @@ export function RadBikeChip({
         src={src}
         alt=""
         photo={Boolean(bike.photoUrl)}
-        heightClass="h-12 lg:h-16"
+        heightClass="aspect-[2/1]"
       />
       <div className="px-2.5 py-1.5 lg:px-3 lg:py-2">
         <div className="truncate text-sm font-medium">{bike.name}</div>

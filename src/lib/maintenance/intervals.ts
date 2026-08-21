@@ -46,39 +46,203 @@ function isEbike(bike: Pick<Bike, "category" | "isEbike">): boolean {
   return bike.isEbike || bike.category === "emtb" || bike.category === "etrekking";
 }
 
-export function chainCheckKm(bike: Pick<Bike, "category" | "isEbike">): number {
+type IntervalBike = Pick<Bike, "category" | "isEbike"> & {
+  components?: Pick<
+    Bike["components"][number],
+    "slot" | "manufacturer" | "componentModelId" | "freeText" | "model"
+  >[];
+};
+
+function installedBlob(
+  bike: IntervalBike,
+  slots?: ComponentSlot[]
+): string {
+  return (bike.components ?? [])
+    .filter((c) => !slots || slots.includes(c.slot))
+    .map(
+      (c) =>
+        `${c.manufacturer ?? ""} ${c.model ?? ""} ${c.componentModelId ?? ""} ${c.freeText ?? ""}`
+    )
+    .join(" ")
+    .toLowerCase();
+}
+
+export function chainCheckKm(bike: IntervalBike): number {
   const e = isEbike(bike);
+  if (bike.category === "dh") return 600;
+  if (bike.category === "cargo") return 600;
+  if (bike.category === "kids") return 800;
   const d = rideDisciplineOf(bike.category);
   if (d === "mtb") return e ? 700 : 1000;
   if (d === "road") return 1500;
   return e ? 1000 : 1200;
 }
 
-export function intervalTemplatesFor(
-  bike: Pick<Bike, "category" | "isEbike">
-): IntervalTemplate[] {
+function motorOem(
+  bike: IntervalBike
+): "bosch" | "shimano" | "brose" | "yamaha" | "fazua" | "tq" | "mahle" | "dji" | "panasonic" | "unknown" {
+  const b = installedBlob(bike, ["motor"]);
+  if (!b.trim()) return "unknown";
+  if (/bosch/.test(b)) return "bosch";
+  if (/shimano|steps|ep801|ep800|ep600|\bep6\b|e6100/.test(b)) return "shimano";
+  if (/brose|specialized-2-2|full power 2|turbo full power/.test(b)) return "brose";
+  if (/yamaha|syncdrive/.test(b)) return "yamaha";
+  if (/fazua/.test(b)) return "fazua";
+  if (/\btq\b|hpr50|hpr60/.test(b)) return "tq";
+  if (/mahle/.test(b)) return "mahle";
+  if (/dji|avinox/.test(b)) return "dji";
+  if (/panasonic/.test(b)) return "panasonic";
+  return "unknown";
+}
+
+export function intervalTemplatesFor(bike: IntervalBike): IntervalTemplate[] {
   const e = isEbike(bike);
   const d = rideDisciplineOf(bike.category);
   const mtb = d === "mtb";
-  const dropper = mtb || d === "gravel";
-  const padFront = mtb ? (e ? 800 : 1000) : d === "road" ? 3000 : 2000;
-  const tireKm = mtb ? 1500 : d === "gravel" ? 3000 : d === "road" ? 4000 : 5000;
-  const cassetteKm = mtb ? 4000 : d === "road" ? 8000 : 6000;
-  const bearingKm = mtb ? 4000 : 5000;
+  const cargo = bike.category === "cargo";
+  const kids = bike.category === "kids";
+  const dh = bike.category === "dh";
+  const forkBlob = installedBlob(bike, ["fork"]);
+  const chainBlob = installedBlob(bike, ["chain"]);
+  const brakeBlob = installedBlob(bike, ["brake_front", "brake_rear"]);
+  const postBlob = installedBlob(bike, ["seatpost"]);
+  const belt = /gates|riemen|belt|cdx/.test(chainBlob);
+  const magura = /magura|royal.?blood/.test(brakeBlob);
+  const foxFork = /\bfox\b/.test(forkBlob);
+  const rockshoxFork = /rockshox|rock shox/.test(forkBlob);
+  const ohlinsFork = /öhlins|ohlins/.test(forkBlob);
+  const suntourFork = /suntour/.test(forkBlob);
+  const dropper =
+    mtb ||
+    d === "gravel" ||
+    cargo ||
+    /dropper|reverb|transfer|manic|oneup|pnw|bikeyoke|loam/.test(postBlob);
+  const wantsForkService =
+    mtb ||
+    foxFork ||
+    rockshoxFork ||
+    ohlinsFork ||
+    suntourFork ||
+    /marzocchi|manitou/.test(forkBlob);
+
+  const padFront = dh
+    ? 400
+    : cargo
+      ? 500
+      : kids
+        ? 1200
+        : mtb
+          ? e
+            ? 800
+            : 1000
+          : d === "road"
+            ? 3000
+            : 2000;
+  const tireKm = dh
+    ? 800
+    : cargo
+      ? 2000
+      : kids
+        ? 2000
+        : mtb
+          ? 1500
+          : d === "gravel"
+            ? 3000
+            : d === "road"
+              ? 4000
+              : 5000;
+  const cassetteKm = belt ? 8000 : mtb ? 4000 : d === "road" ? 8000 : 6000;
+  const bearingKm = cargo || mtb ? 4000 : 5000;
+  const forkFullH = ohlinsFork
+    ? 100
+    : foxFork
+      ? 125
+      : rockshoxFork
+        ? 200
+        : suntourFork
+          ? 100
+          : 125;
+  const forkLowerH = dh ? 40 : 50;
+
+  const oem = motorOem(bike);
+  const annualSource =
+    oem === "bosch"
+      ? "Bosch Händler — jährlich"
+      : oem === "shimano"
+        ? "Shimano STEPS Händler — jährlich"
+        : oem === "brose"
+          ? "Brose — mindestens 1×/Jahr"
+          : oem === "yamaha"
+            ? "Yamaha / Giant SyncDrive — jährlich"
+            : oem === "fazua"
+              ? "Fazua — jährlich"
+              : oem === "tq"
+                ? "TQ — 1000 km / 1 Jahr"
+                : oem === "mahle"
+                  ? "Mahle SmartBike — jährlich"
+                  : oem === "dji"
+                    ? "DJI Avinox — jährlich"
+                    : oem === "panasonic"
+                      ? "Panasonic GX — jährlich"
+                      : e
+                        ? "E-Bike Händler — jährlich"
+                        : "Werkstatt-Schnitt 12 Monate";
 
   const list: IntervalTemplate[] = [
     {
       slot: "frame",
       label: e ? "Jährliche E-Bike-Inspektion" : "Jährliche Inspektion",
       intervalDays: 365,
-      intervalKm: e ? 1500 : undefined,
+      intervalKm: e ? (cargo ? 1000 : oem === "tq" ? 1000 : 1500) : undefined,
       bikeWide: true,
-      sourceLabel: e
-        ? "Bosch / Brose / Shimano STEPS — jährlich"
-        : "Werkstatt-Schnitt 12 Monate",
-      sourceUrl: "https://www.bosch-ebike.com/en/service/dealer-service",
+      sourceLabel: annualSource,
+      sourceUrl:
+        oem === "shimano"
+          ? "https://bike.shimano.com/"
+          : "https://www.bosch-ebike.com/en/service/dealer-service",
+      sourceSpan:
+        oem === "bosch" || oem === "unknown"
+          ? "Bosch Erstcheck 300 km/4 Wochen, danach Händler"
+          : oem === "brose"
+            ? "Brose ≥1×/Jahr, kein Bosch-300-km-Takt"
+            : undefined,
     },
-    {
+  ];
+
+  if (e && (oem === "bosch" || oem === "unknown")) {
+    list.unshift({
+      slot: "frame",
+      label: "Erste E-Bike-Inspektion",
+      intervalKm: 300,
+      intervalDays: 28,
+      bikeWide: true,
+      sourceLabel: "Bosch Erstcheck ~300 km / 4 Wochen",
+      sourceUrl: "https://www.bosch-ebike.com/en/service/dealer-service",
+    });
+  } else if (e && oem === "shimano") {
+    list.unshift({
+      slot: "frame",
+      label: "Erste STEPS-Inspektion",
+      intervalKm: 500,
+      intervalDays: 90,
+      bikeWide: true,
+      sourceLabel: "Shimano STEPS Händler ~500 km / 90 Tage",
+      sourceUrl: "https://bike.shimano.com/",
+    });
+  }
+
+  if (belt) {
+    list.push({
+      slot: "chain",
+      label: "Riemen prüfen (Risse, Spannung)",
+      intervalKm: 5000,
+      intervalDays: 365,
+      bikeWide: true,
+      sourceLabel: "Gates CDX — prüfen, nicht dehnen",
+      sourceUrl: "https://www.gatescarbondrive.com/",
+    });
+  } else {
+    list.push({
       slot: "chain",
       label: "Kettenverschleiß prüfen",
       intervalKm: chainCheckKm(bike),
@@ -86,13 +250,18 @@ export function intervalTemplatesFor(
       sourceLabel: "Park Tool 0,5 % Dehnung (11s+)",
       sourceUrl:
         "https://www.parktool.com/en-int/blog/repair-help/when-to-replace-a-chain-on-a-bicycle",
-    },
+    });
+  }
+
+  list.push(
     {
       slot: "cassette",
-      label: "Kassette prüfen (nach 2–3 Ketten)",
+      label: belt
+        ? "Riemenscheibe / Nabe prüfen"
+        : "Kassette prüfen (nach 2–3 Ketten)",
       intervalKm: cassetteKm,
       bikeWide: true,
-      sourceLabel: "Park Tool / 2–3 Ketten",
+      sourceLabel: belt ? "Gates / Enviolo" : "Park Tool / 2–3 Ketten",
     },
     {
       slot: "brake_pads_front",
@@ -120,20 +289,20 @@ export function intervalTemplatesFor(
     {
       slot: "tire_front",
       label: "Tubeless-Milch erneuern",
-      intervalDays: 120,
+      intervalDays: kids || bike.category === "folding" ? 180 : 120,
       sourceLabel: "Tubeless-Praxis 3–6 Monate",
     },
     {
       slot: "tire_rear",
       label: "Tubeless-Milch erneuern",
-      intervalDays: 120,
+      intervalDays: kids || bike.category === "folding" ? 180 : 120,
       sourceLabel: "Tubeless-Praxis 3–6 Monate",
     },
     {
       slot: "headset",
       label: "Lager prüfen (Steuersatz/Naben/Tretlager)",
       intervalKm: bearingKm,
-      intervalDays: 365,
+      intervalDays: bike.category === "folding" ? 180 : 365,
       bikeWide: true,
       sourceLabel: "Bike Gremlin / L'Atelier 6–12 Monate",
       sourceUrl:
@@ -141,13 +310,18 @@ export function intervalTemplatesFor(
     },
     {
       slot: "brake_front",
-      label: "Bremsen: Druckpunkt / Entlüften",
-      intervalDays: 365,
-      sourceLabel: "SRAM DOT ≥1×/Jahr; Magura nur bei Schwamm",
-      sourceUrl:
-        "https://support.sram.com/hc/en-us/articles/5927419450651-How-often-should-I-bleed-my-SRAM-DOT-brakes",
-    },
-  ];
+      label: magura
+        ? "Bremsen: Druckpunkt prüfen (Mineralöl)"
+        : "Bremsen: Druckpunkt / Entlüften",
+      intervalDays: magura ? 730 : 365,
+      sourceLabel: magura
+        ? "Magura Royal Blood — nur bei Schwamm"
+        : "SRAM DOT ≥1×/Jahr; Magura nur bei Schwamm",
+      sourceUrl: magura
+        ? "https://www.magura.com/"
+        : "https://support.sram.com/hc/en-us/articles/5927419450651-How-often-should-I-bleed-my-SRAM-DOT-brakes",
+    }
+  );
 
   if (e) {
     list.push({
@@ -155,29 +329,44 @@ export function intervalTemplatesFor(
       label: "Akku-Check (Kontakte, Kapazität)",
       intervalDays: 365,
       bikeWide: true,
-      sourceLabel: "Bosch / Shimano STEPS jährlich",
+      sourceLabel: annualSource,
     });
   }
 
-  if (mtb) {
+  if (wantsForkService) {
     list.push(
       {
         slot: "fork",
         label: "Gabel Lower-Leg Service",
-        intervalHours: 50,
-        sourceLabel: "RockShox / Öhlins 50 h",
+        intervalHours: forkLowerH,
+        sourceLabel: suntourFork
+          ? "SR Suntour / Werkstatt 50 h"
+          : "RockShox / Öhlins 50 h",
         sourceUrl:
           "https://support.rockshox.com/hc/en-us/articles/4412306753947-How-often-should-I-service-my-RockShox-product",
       },
       {
         slot: "fork",
         label: "Gabel Vollservice (Feder/Dämpfer)",
-        intervalHours: 125,
+        intervalHours: forkFullH,
         intervalDays: 365,
-        sourceLabel: "Fox 125 h / 1 Jahr (konservativ)",
+        sourceLabel: foxFork
+          ? "Fox 125 h / 1 Jahr"
+          : rockshoxFork
+            ? "RockShox Full 200 h"
+            : ohlinsFork
+              ? "Öhlins 100 h/Jahr"
+              : suntourFork
+                ? "SR Suntour 100 h (konservativ)"
+                : "Fox 125 h / 1 Jahr (konservativ)",
         sourceUrl: "https://www.ridefoxaustralia.com.au/pages/service-intervals",
-        sourceSpan: "RockShox Full 200 h · Öhlins 100 h/Jahr",
-      },
+        sourceSpan: "RockShox Full 200 h · Öhlins 100 h/Jahr · Default nach OEM",
+      }
+    );
+  }
+
+  if (mtb) {
+    list.push(
       {
         slot: "rear_shock",
         label: "Dämpfer Air-Can Service",

@@ -159,7 +159,7 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.link),
+              leading: const ChromeGlyph('link', size: 22),
               title: Text(l10n.hofWatchReconnect),
               onTap: () => Navigator.pop(ctx, 'reconnect'),
             ),
@@ -169,7 +169,7 @@ class _HofWatchBarButtonState extends ConsumerState<HofWatchBarButton> {
               onTap: () => Navigator.pop(ctx, 'pair'),
             ),
             ListTile(
-              leading: const Icon(Icons.link_off),
+              leading: const ChromeGlyph('link', size: 22),
               title: Text(l10n.hofWatchRemove),
               onTap: () => Navigator.pop(ctx, 'unlink'),
             ),

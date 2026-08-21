@@ -5,7 +5,7 @@ import 'offline_pack_catalog.dart';
 
 enum CoverageLabelKind { active, suggested }
 
-enum CoverageWashKind { active, suggested }
+enum CoverageWashKind { active, suggested, street }
 
 const kCoverageActiveSourceId = 'ar-offline-coverage-active';
 const kCoverageActiveFillLayerId = 'ar-offline-coverage-active-fill';
@@ -19,6 +19,11 @@ const kCoverageSuggestedLineLayerId = 'ar-offline-coverage-suggested-line';
 const kCoverageSuggestedCornersLayerId =
     'ar-offline-coverage-suggested-corners';
 
+const kCoverageStreetSourceId = 'ar-offline-coverage-street';
+const kCoverageStreetFillLayerId = 'ar-offline-coverage-street-fill';
+const kCoverageStreetLineLayerId = 'ar-offline-coverage-street-line';
+const kCoverageStreetCornersLayerId = 'ar-offline-coverage-street-corners';
+
 const kCoverageRoleFill = 'fill';
 const kCoverageRoleOutline = 'outline';
 const kCoverageRoleCorners = 'corners';
@@ -30,9 +35,9 @@ const kCoverageFillFilter = ['==', 'role', kCoverageRoleFill];
 /// MapLibre `line-dasharray` for a pack that is not loaded yet.
 const kCoverageSuggestedDasharray = [2.4, 1.8];
 
-/// Suggested wash uses a dashed outline; the loaded pack stays solid.
+/// Suggested and Street-HUD washes use a dashed outline; the loaded pack stays solid.
 bool coverageWashDashed(CoverageWashKind kind) =>
-    kind == CoverageWashKind.suggested;
+    kind == CoverageWashKind.suggested || kind == CoverageWashKind.street;
 
 Map<String, dynamic> emptyCoverageFeatureCollection() => <String, dynamic>{
       'type': 'FeatureCollection',
@@ -167,6 +172,16 @@ String coverageChipCaption(String packLabel, {int maxChars = 14}) {
       cornerWidth: emphasized ? 4.6 : 4.0,
     );
   }
+  if (kind == CoverageWashKind.street) {
+    return (
+      fillColor: '#5E6F58',
+      fillOpacity: emphasized ? 0.16 : 0.08,
+      lineColor: '#5E6F58',
+      lineWidth: emphasized ? 2.6 : 2.1,
+      lineOpacity: emphasized ? 0.95 : 0.82,
+      cornerWidth: 0,
+    );
+  }
   if (emphasized) {
     return (
       fillColor: '#7A8B73',
@@ -215,6 +230,47 @@ bool coverageOverlayVisible({
   final span = math.max(bbox[2] - bbox[0], bbox[3] - bbox[1]);
   if (span <= 0 || span > 1.8) return false;
   return true;
+}
+
+/// Street-HUD corridor on Discover: smaller than a city pack wash, visible
+/// into street zoom so the Ride cache is a sage frame, not a second orange box.
+bool streetHudOverlayVisible({
+  required double zoom,
+  required List<double> bbox,
+}) {
+  if (bbox.length < 4) return false;
+  if (zoom < 6.8 || zoom >= 15.2) return false;
+  final span = math.max(bbox[2] - bbox[0], bbox[3] - bbox[1]);
+  if (span <= 0 || span > 0.55) return false;
+  return true;
+}
+
+/// Pack-wide Street-HUD is the occupancy wash. Only a corridor / route box.
+List<double>? coverageStreetWashBbox({
+  required StreetHudOfferKind? kind,
+  List<double>? streetBbox,
+  List<double>? packBbox,
+}) {
+  if (kind == null || kind == StreetHudOfferKind.pack) return null;
+  if (streetBbox == null || streetBbox.length < 4) return null;
+  if (lngLatBboxNearlyEqual(streetBbox, packBbox)) return null;
+  return streetBbox;
+}
+
+/// Axis-aligned ring without chamfer ticks.
+List<List<double>> coverageBboxClosedRect(List<double> bbox) {
+  if (bbox.length < 4) return const [];
+  final w = bbox[0];
+  final s = bbox[1];
+  final e = bbox[2];
+  final n = bbox[3];
+  return [
+    [w, s],
+    [e, s],
+    [e, n],
+    [w, n],
+    [w, s],
+  ];
 }
 
 /// Sync markers when the name would appear or vanish.
@@ -439,8 +495,7 @@ List<({bool outside, List<List<double>> coords})> coverageSplitLineByBbox({
   final useRing = ring != null && ring.length >= 4;
   if (useRing) {
     bool outOf(List<double> p) =>
-        p.length < 2 ||
-        !coveragePointInRing(lng: p[0], lat: p[1], ring: ring);
+        p.length < 2 || !coveragePointInRing(lng: p[0], lat: p[1], ring: ring);
     for (var i = 0; i < lineLngLat.length - 1; i++) {
       final a = lineLngLat[i];
       final b = lineLngLat[i + 1];

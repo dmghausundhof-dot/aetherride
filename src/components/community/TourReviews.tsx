@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Star, Trash2 } from "lucide-react";
 import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import {
@@ -209,7 +208,7 @@ export function TourReviews({
         {showHeading ? <h2 className="text-lg font-semibold">{s.heading}</h2> : null}
         {counts.averageRating != null && (
           <p className="flex items-center gap-1 text-sm tabular-nums text-text-secondary">
-            <Star className="h-4 w-4 fill-accent text-accent" />
+            <ChromeGlyph name="star" size={16} current className="text-accent" />
             {s.countLine(
               counts.averageRating,
               counts.reviewCount,
@@ -276,7 +275,7 @@ export function TourReviews({
                 {typeof r.rating === "number" && r.rating >= 1 && r.rating <= 5 && (
                   <span className="flex items-center gap-0.5 text-accent">
                     {Array.from({ length: r.rating }).map((_, i) => (
-                      <Star key={i} className="h-3 w-3 fill-current" />
+                      <ChromeGlyph key={i} name="star" size={12} current className="text-accent" />
                     ))}
                   </span>
                 )}
@@ -318,7 +317,7 @@ export function TourReviews({
               </span>
               <span className="flex items-center gap-0.5 text-accent">
                 {Array.from({ length: r.rating }).map((_, i) => (
-                  <Star key={i} className="h-3 w-3 fill-current" />
+                  <ChromeGlyph key={i} name="star" size={12} current className="text-accent" />
                 ))}
               </span>
               {r.status === "pending" && (
@@ -333,7 +332,7 @@ export function TourReviews({
               onClick={() => removeMyReview(r.id)}
               className="mt-2 inline-flex items-center gap-1 text-[11px] text-text-secondary hover:text-error"
             >
-              <Trash2 className="h-3 w-3" /> {s.remove}
+              <ChromeGlyph name="trash" size={12} current /> {s.remove}
             </button>
           </li>
         ))}
@@ -350,12 +349,11 @@ export function TourReviews({
               className="p-1"
               aria-label={s.starsAria(n)}
             >
-              <Star
-                className={`h-6 w-6 ${
-                  n <= rating
-                    ? "fill-accent text-accent"
-                    : "text-text-secondary"
-                }`}
+              <ChromeGlyph
+                name="star"
+                size={24}
+                current
+                className={n <= rating ? "text-accent" : "text-text-secondary"}
               />
             </button>
           ))}

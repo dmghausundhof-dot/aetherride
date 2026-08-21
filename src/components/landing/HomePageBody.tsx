@@ -150,7 +150,7 @@ export function HomePageBody({
           <h2 className="mt-2 text-2xl font-bold sm:text-3xl">{h.split.title}</h2>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-border bg-surface p-8">
-              <Map className="h-8 w-8 text-sage" />
+              <ChromeGlyph name="karte" size={32} current className="text-sage" />
               <h3 className="mt-4 text-xl font-bold">{h.ui.onWebsite}</h3>
               <p className="mt-3 text-sm leading-relaxed text-text-secondary">
                 {h.split.webLead}

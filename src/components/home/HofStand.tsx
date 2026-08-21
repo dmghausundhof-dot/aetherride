@@ -26,6 +26,7 @@ import { useHofTitle } from "@/hooks/useHofTitle";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 import { WeatherGlyph } from "@/components/shared/WeatherGlyph";
 import { HofTafel } from "./HofTafel";
+import { HofWatchCard } from "./HofWatchCard";
 import { HofCornerTools } from "@/components/app/HofCornerTools";
 import { buildHofTafel, catalogTourIdOf } from "@/lib/tours/tourAkte";
 import {
@@ -36,6 +37,7 @@ import {
   tickTourListing,
 } from "@/lib/tours/tourListing";
 import { useCommunityStore } from "@/store/useCommunityStore";
+import { useAppStore } from "@/store/useAppStore";
 import {
   listedRideGroups,
   useRideGroupStore,
@@ -374,7 +376,7 @@ export function HofStand() {
                     src={active.photoUrl}
                     alt=""
                     photo
-                    heightClass="h-28 lg:h-44"
+                    heightClass="aspect-[2/1]"
                   />
                 </Link>
               ) : (
@@ -386,7 +388,7 @@ export function HofStand() {
                   <RadStandFrame
                     src={radSilhouetteSrc(active)}
                     alt=""
-                    heightClass="h-28 lg:h-36"
+                    heightClass="aspect-[2/1]"
                   />
                 </Link>
               )}
@@ -411,7 +413,8 @@ export function HofStand() {
                         active.isEbike ||
                           active.components.some(
                             (c) => c.slot === "motor" && !c.removedAt
-                          )
+                          ),
+                        lang
                       ),
                       ret,
                       copy,
@@ -432,7 +435,8 @@ export function HofStand() {
                       active.isEbike ||
                         active.components.some(
                           (c) => c.slot === "motor" && !c.removedAt
-                        )
+                        ),
+                      lang
                     ),
                     ret,
                     copy,

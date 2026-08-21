@@ -10,6 +10,8 @@ export type HofCopy = {
   rideWithoutBike: string;
   atGate: string;
   emptyStand: string;
+  homeTitle: string;
+  homeHint: string;
   skyUnknown: string;
   gpsUnknown: string;
   noHonestLoop: string;
@@ -136,6 +138,11 @@ export type HofCopy = {
   workshopStandOpen: string;
   workshopPhotoRetake: string;
   workshopPhotoRetakeHint: string;
+  workshopPhotoCropTitle: string;
+  workshopPhotoCropHint: string;
+  workshopPhotoCropSave: string;
+  workshopPhotoRotate: string;
+  workshopPhotoPlace: string;
   workshopBikes: string;
   workshopNoWatch: string;
   careFallback: string;
@@ -249,6 +256,8 @@ const DE: HofCopy = {
   rideWithoutBike: "Ohne Rad fahren",
   atGate: "vor dem Tor",
   emptyStand: "Leerer Stand",
+  homeTitle: "Start",
+  homeHint: "Dein Rad und ein Knopf: Losfahren. Kein Feed.",
   skyUnknown: "Himmel unbekannt",
   gpsUnknown: "Standort erlauben",
   noHonestLoop: "Keine Runde in der Nähe",
@@ -380,7 +389,13 @@ const DE: HofCopy = {
     "Defaults u. a. RockShox 50 h Lower Leg / 200 h Full, Kette prüfen ~1000 km, Tubeless-Milch ~120 Tage.",
   workshopPhotoRetake: "Neu aufnehmen",
   workshopPhotoRetakeHint:
-    "Cover sitzt. Neu aufnehmen, dann liegt das Rad auf dem Stand.",
+    "Das Foto füllt den Stand nicht. Neu aufnehmen, dann liegt das Rad auf der Schiene.",
+  workshopPhotoCropTitle: "Rad auf den Stand legen",
+  workshopPhotoCropHint:
+    "Verschiebe das Bild, bis das Rad auf der Schiene sitzt.",
+  workshopPhotoCropSave: "So legen",
+  workshopPhotoRotate: "90° drehen",
+  workshopPhotoPlace: "Auf den Stand legen",
   workshopBikes: "Deine Räder",
   workshopNoWatch: "Sensoren am Rad koppeln geht in der App. Die Uhr bleibt beim Fahren.",
   careFallback: "Pflege",
@@ -502,6 +517,8 @@ const EN: HofCopy = {
   rideWithoutBike: "Ride without a bike",
   atGate: "at the gate",
   emptyStand: "Empty stand",
+  homeTitle: "Home",
+  homeHint: "Your bike and one button: ride out. No feed.",
   skyUnknown: "Sky unknown",
   gpsUnknown: "Allow location",
   noHonestLoop: "No loop nearby",
@@ -633,7 +650,12 @@ const EN: HofCopy = {
     "Defaults include RockShox 50 h lower leg / 200 h full, chain check ~1000 km, tubeless sealant ~120 days.",
   workshopPhotoRetake: "Retake",
   workshopPhotoRetakeHint:
-    "Cover sits. Retake a photo and the bike sits on the stand.",
+    "This photo does not fill the stand. Retake so the bike sits on the rail.",
+  workshopPhotoCropTitle: "Set the bike on the stand",
+  workshopPhotoCropHint: "Drag the photo until the bike sits on the rail.",
+  workshopPhotoCropSave: "Place it",
+  workshopPhotoRotate: "Rotate 90°",
+  workshopPhotoPlace: "Set on the stand",
   workshopBikes: "Your bikes",
   workshopNoWatch: "Pairing sensors on the bike is in the app. The watch stays for the ride.",
   careFallback: "Care",
@@ -752,6 +774,8 @@ const FR: HofCopy = {
   rideWithoutBike: "Rouler sans vélo",
   atGate: "devant le portail",
   emptyStand: "Emplacement vide",
+  homeTitle: "Accueil",
+  homeHint: "Ton vélo et un bouton : sortir. Pas de fil.",
   skyUnknown: "Ciel inconnu",
   gpsUnknown: "Autoriser la position",
   noHonestLoop: "Pas de boucle à proximité",
@@ -883,7 +907,12 @@ const FR: HofCopy = {
     "Defaults p. ex. RockShox 50 h lower leg / 200 h full, chaîne ~1000 km, liquide tubeless ~120 jours.",
   workshopPhotoRetake: "Reprendre",
   workshopPhotoRetakeHint:
-    "Le recadrage cover reste. Reprends une photo, le vélo sera sur le stand.",
+    "La photo ne remplit pas le stand. Reprends pour poser le vélo sur le rail.",
+  workshopPhotoCropTitle: "Poser le vélo sur le stand",
+  workshopPhotoCropHint: "Glisse la photo jusqu'à ce que le vélo tienne sur le rail.",
+  workshopPhotoCropSave: "Poser ainsi",
+  workshopPhotoRotate: "Tourner 90°",
+  workshopPhotoPlace: "Poser sur le stand",
   workshopBikes: "Tes vélos",
   workshopNoWatch: "Appairer les capteurs sur le vélo se fait dans l'app. La montre reste pour la sortie.",
   careFallback: "Entretien",
@@ -1002,6 +1031,8 @@ const IT: HofCopy = {
   rideWithoutBike: "Pedala senza bici",
   atGate: "davanti al cancello",
   emptyStand: "Posto vuoto",
+  homeTitle: "Home",
+  homeHint: "La bici e un pulsante: esci. Niente feed.",
   skyUnknown: "Cielo sconosciuto",
   gpsUnknown: "Consenti posizione",
   noHonestLoop: "Nessun giro qui vicino",
@@ -1133,7 +1164,12 @@ const IT: HofCopy = {
     "Default tra cui RockShox 50 h lower leg / 200 h full, catena ~1000 km, liquido tubeless ~120 giorni.",
   workshopPhotoRetake: "Scatta di nuovo",
   workshopPhotoRetakeHint:
-    "Il cover resta. Scatta di nuovo e la bici sta sul stand.",
+    "La foto non riempie lo stand. Scatta di nuovo, la bici sta sulla rotaia.",
+  workshopPhotoCropTitle: "Metti la bici sullo stand",
+  workshopPhotoCropHint: "Sposta la foto finché la bici sta sulla rotaia.",
+  workshopPhotoCropSave: "Così",
+  workshopPhotoRotate: "Ruota 90°",
+  workshopPhotoPlace: "Metti sullo stand",
   workshopBikes: "Le tue bici",
   workshopNoWatch: "Accoppiare i sensori sulla bici si fa nell'app. L'orologio resta per l'uscita.",
   careFallback: "Cura",
@@ -1252,6 +1288,8 @@ const NL: HofCopy = {
   rideWithoutBike: "Rijden zonder fiets",
   atGate: "voor de poort",
   emptyStand: "Lege stand",
+  homeTitle: "Start",
+  homeHint: "Je fiets en één knop: eruit. Geen feed.",
   skyUnknown: "Hemel onbekend",
   gpsUnknown: "Locatie toestaan",
   noHonestLoop: "Geen ronde in de buurt",
@@ -1387,7 +1425,12 @@ const NL: HofCopy = {
     "Defaults o.a. RockShox 50 h lower leg / 200 h full, ketting ~1000 km, tubeless-melk ~120 dagen.",
   workshopPhotoRetake: "Opnieuw maken",
   workshopPhotoRetakeHint:
-    "Cover blijft. Maak opnieuw, dan staat de fiets op de stand.",
+    "De foto vult de stand niet. Maak opnieuw, dan staat de fiets op de rail.",
+  workshopPhotoCropTitle: "Fiets op de stand zetten",
+  workshopPhotoCropHint: "Verschuif de foto tot de fiets op de rail staat.",
+  workshopPhotoCropSave: "Zo zetten",
+  workshopPhotoRotate: "90° draaien",
+  workshopPhotoPlace: "Op de stand zetten",
   workshopBikes: "Je fietsen",
   workshopNoWatch:
     "Sensoren aan de fiets koppelen gaat in de app. Het horloge blijft bij het rijden.",

@@ -741,4 +741,197 @@ void main() {
     expect(all.shown.length, 12);
     expect(all.more, isEmpty);
   });
+
+  test('street HUD cache uses pack bbox, occupancy, or a GPS corridor', () {
+    const city = [8.2, 48.9, 8.6, 49.2];
+    expect(packOffersStreetHud(packId: 'karlsruhe', bbox: city), isTrue);
+    expect(maxStreetZoomForBbox(city), 15);
+    expect(streetHudTileCount(city), greaterThan(10));
+    expect(estimatedStreetHudBytes(city), greaterThan(100000));
+    expect(streetHudRegionId('karlsruhe'), 'street-karlsruhe');
+    expect(isStreetHudRegionId('street-karlsruhe'), isTrue);
+    expect(
+      packOffersStreetHud(
+        packId: 'de-bayern',
+        bbox: [9.0, 47.2, 13.8, 50.6],
+      ),
+      isFalse,
+    );
+    expect(maxStreetZoomForBbox([6, 47, 15, 55]), 0);
+    expect(
+      streetHudOffer(
+        packId: 'de-bayern',
+        catalogBbox: [9.0, 47.2, 13.8, 50.6],
+        occupancyBbox: [11.5, 48.1, 11.7, 48.25],
+      )?.kind,
+      StreetHudOfferKind.pack,
+    );
+    final corridor = streetHudOffer(
+      packId: 'de-bayern',
+      catalogBbox: [9.0, 47.2, 13.8, 50.6],
+      userLng: 11.58,
+      userLat: 48.14,
+    );
+    expect(corridor, isNotNull);
+    expect(corridor!.isCorridor, isTrue);
+    expect(streetHudTileCount(corridor.bbox), greaterThan(10));
+    expect(streetHudTileCount(corridor.bbox), lessThan(kStreetHudMaxTiles));
+    expect(
+      streetHudOffer(
+        packId: 'de-bayern',
+        catalogBbox: [9.0, 47.2, 13.8, 50.6],
+      ),
+      isNull,
+    );
+    final along = streetHudOffer(
+      packId: 'de-bayern',
+      catalogBbox: [9.0, 47.2, 13.8, 50.6],
+      routeBbox: streetHudBboxFromLngLats(const [
+        [11.5, 48.1],
+        [11.7, 48.2],
+      ]),
+    );
+    expect(along?.kind, StreetHudOfferKind.route);
+    expect(along!.isPartial, isTrue);
+    expect(
+      streetHudCoverageStale(
+        kind: StreetHudOfferKind.corridor,
+        storedBbox: corridor.bbox,
+        userLng: 11.58,
+        userLat: 48.14,
+      ),
+      isFalse,
+    );
+    expect(
+      streetHudCoverageStale(
+        kind: StreetHudOfferKind.corridor,
+        storedBbox: corridor.bbox,
+        userLng: 9.2,
+        userLat: 47.4,
+      ),
+      isTrue,
+    );
+    expect(
+      streetHudCoverageStale(
+        kind: StreetHudOfferKind.pack,
+        storedBbox: city,
+        userLng: 0,
+        userLat: 0,
+      ),
+      isTrue,
+    );
+    expect(
+      streetHudCoverageStale(
+        kind: StreetHudOfferKind.pack,
+        storedBbox: city,
+        userLng: 8.4,
+        userLat: 49.05,
+      ),
+      isFalse,
+    );
+    // GPS outside occupancy → corridor clipped to catalog, not pack tiles elsewhere.
+    final away = streetHudOffer(
+      packId: 'rhein-neckar',
+      occupancyBbox: [8.50, 49.30, 8.69, 49.48],
+      catalogBbox: [8.2, 49.2, 9.0, 49.6],
+      userLng: 8.670,
+      userLat: 49.280,
+    );
+    expect(away?.kind, StreetHudOfferKind.corridor);
+    expect(streetHudPointInBbox(8.670, 49.280, away!.bbox), isTrue);
+    expect(
+      offlineReadyStatusLine(
+        hasPack: true,
+        routingAway: true,
+        streetReady: true,
+        streetStale: false,
+        basemapReady: false,
+        loadBelow: 'load',
+        bothAway: 'both-away',
+        streetHereRoutingAway: 'street-here-routing-away',
+        routingAwayLine: 'routing-away',
+        allAway: 'all-away',
+        streetAway: 'street-away',
+        allReady: 'all',
+        streetReadyLine: 'street',
+        bothReady: 'both',
+        routingReady: 'routing',
+      ),
+      'street-here-routing-away',
+    );
+    expect(
+      offlineReadyStatusLine(
+        hasPack: true,
+        routingAway: true,
+        streetReady: true,
+        streetStale: true,
+        basemapReady: false,
+        loadBelow: 'load',
+        bothAway: 'both-away',
+        streetHereRoutingAway: 'street-here-routing-away',
+        routingAwayLine: 'routing-away',
+        allAway: 'all-away',
+        streetAway: 'street-away',
+        allReady: 'all',
+        streetReadyLine: 'street',
+        bothReady: 'both',
+        routingReady: 'routing',
+      ),
+      'both-away',
+    );
+    expect(streetHudKindFromRaw('route'), StreetHudOfferKind.route);
+    expect(lngLatBboxNearlyEqual(city, city), isTrue);
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: StreetHudOfferKind.corridor,
+        storedBbox: corridor.bbox,
+        userLng: 11.58,
+        userLat: 48.14,
+      ),
+      isTrue,
+    );
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: StreetHudOfferKind.corridor,
+        storedBbox: corridor.bbox,
+        userLng: 9.2,
+        userLat: 47.4,
+      ),
+      isFalse,
+    );
+    expect(
+      streetHudCoversHere(regionReady: false, kind: StreetHudOfferKind.pack),
+      isFalse,
+    );
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: StreetHudOfferKind.pack,
+        storedBbox: city,
+        userLng: 0,
+        userLat: 0,
+      ),
+      isFalse,
+    );
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: StreetHudOfferKind.pack,
+        storedBbox: city,
+        userLng: 8.4,
+        userLat: 49.05,
+      ),
+      isTrue,
+    );
+    expect(
+      streetHudSketchLine(const [
+        [11.5, 48.1],
+        [11.55, 48.12],
+        [11.7, 48.2],
+      ]).length,
+      3,
+    );
+  });
 }

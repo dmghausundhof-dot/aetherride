@@ -15,6 +15,7 @@ import '../../data/community/tour_community_store.dart';
 import '../../data/routing/coverage_label.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/naehe_seeds.dart';
+import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_pack_catalog.dart';
 import '../../data/routing/offline_pack_catalog_client.dart';
 import '../../data/routing/offline_pack_dirs.dart';
@@ -87,6 +88,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _tafelListingText;
   String? _tafelListingRouteId;
   HofPackHint? _packHint;
+  bool _streetHudReady = false;
+  bool _streetHudInstalled = false;
 
   @override
   void initState() {
@@ -467,7 +470,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (showSupabaseWarning) ...[
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.settings_outlined),
+                    leading: const ChromeGlyph('gear', size: 22),
                     title: Text(
                       loc.hofSupabaseMissing,
                       style: const TextStyle(fontWeight: FontWeight.w600),
@@ -593,7 +596,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final lat = _lat;
     final lng = _lng;
     if (lat == null || lng == null) {
-      if (mounted && _packHint != null) setState(() => _packHint = null);
+      if (mounted &&
+          (_packHint != null || _streetHudReady || _streetHudInstalled)) {
+        setState(() {
+          _packHint = null;
+          _streetHudReady = false;
+          _streetHudInstalled = false;
+        });
+      }
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -647,12 +657,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       readyName: readyName,
       installedIds: installedIds,
     );
+    var street = false;
+    var streetInstalled = false;
+    // Ready or outside: Pack liegt, Street-Status trotzdem prüfen.
+    if (hint != null && (hint.ready || hint.outside)) {
+      try {
+        streetInstalled = await OfflineBasemap.streetHudReadyForActivatedPack();
+        street = streetInstalled
+            ? await OfflineBasemap.streetHudCoversActivatedPack(
+                lng: _lng,
+                lat: _lat,
+              )
+            : false;
+      } catch (_) {}
+    }
+    if (!mounted) return;
     if (hint?.regionId == _packHint?.regionId &&
         hint?.ready == _packHint?.ready &&
-        hint?.outside == _packHint?.outside) {
+        hint?.outside == _packHint?.outside &&
+        street == _streetHudReady &&
+        streetInstalled == _streetHudInstalled) {
       return;
     }
-    setState(() => _packHint = hint);
+    setState(() {
+      _packHint = hint;
+      _streetHudReady = street;
+      _streetHudInstalled = streetInstalled;
+    });
   }
 
   Future<void> _openOfflineMaps() async {
@@ -1059,58 +1090,114 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final packHint = _packHint;
     Widget packStatusLine({
       required Key key,
-      required IconData icon,
+      required String mark,
       required Color iconColor,
       required String text,
     }) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: InkWell(
-          key: key,
-          onTap: () => unawaited(_openOfflineMaps()),
-          borderRadius: BorderRadius.circular(AppRadius.chip),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: iconColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 1.3,
-                      color: AppColors.muted,
-                    ),
+        child: Semantics(
+          button: true,
+          label: text,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              key: key,
+              onTap: () => unawaited(_openOfflineMaps()),
+              borderRadius: BorderRadius.circular(AppRadius.chip),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      ChromeGlyph(mark, size: 18, color: iconColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          text,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.3,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       );
     }
 
+    final streetLoadChip = _streetHudReady
+        ? null
+        : ActionChip(
+            key: Key(
+              _streetHudInstalled
+                  ? 'hof-refresh-street-map'
+                  : 'hof-load-street-map',
+            ),
+            avatar: const ChromeGlyph(
+              'nav',
+              size: 18,
+              color: AppColors.muted,
+            ),
+            label: Text(
+              _streetHudInstalled
+                  ? l10n.hofRefreshStreetMap
+                  : l10n.hofLoadStreetMap,
+            ),
+            backgroundColor: AppColors.sage.withValues(alpha: 0.22),
+            side: const BorderSide(color: AppColors.sageOnDark),
+            onPressed: () => unawaited(_openOfflineMaps()),
+          );
+
     final packLine = packHint == null
         ? null
         : packHint.ready
-            ? packStatusLine(
-                key: const Key('hof-offline-ready'),
-                icon: Icons.check_circle_outline,
-                iconColor: AppColors.sageOnDark,
-                text: l10n.hofPackReadyRideMap(
-                  coverageGlanceName(packHint.regionName),
-                ),
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  packStatusLine(
+                    key: const Key('hof-offline-ready'),
+                    mark: 'check',
+                    iconColor: AppColors.sageOnDark,
+                    text: l10n.hofPackReadyLine(
+                      coverageGlanceName(packHint.regionName),
+                      streetReady: _streetHudReady,
+                    ),
+                  ),
+                  if (streetLoadChip != null) ...[
+                    const SizedBox(height: 4),
+                    streetLoadChip,
+                  ],
+                ],
               )
             : packHint.outside
-                ? packStatusLine(
-                    key: const Key('hof-offline-outside'),
-                    icon: Icons.wifi_off,
-                    iconColor: AppColors.sage,
-                    text: l10n.offlineCoverageOutside(
-                      coverageGlanceName(packHint.regionName),
-                    ),
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      packStatusLine(
+                        key: const Key('hof-offline-outside'),
+                        mark: 'offline',
+                        iconColor: AppColors.sage,
+                        text: l10n.offlineCoverageEdgeFor(
+                          packHint.regionName,
+                          outside: true,
+                          streetReady: _streetHudReady,
+                          streetAway:
+                              _streetHudInstalled && !_streetHudReady,
+                        ),
+                      ),
+                      if (streetLoadChip != null) ...[
+                        const SizedBox(height: 4),
+                        streetLoadChip,
+                      ],
+                    ],
                   )
                 : Align(
                     alignment: Alignment.centerLeft,
@@ -1277,7 +1364,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: AppSpacing.m),
                             gate,
                           ],
-                          if (packLine != null) packLine,
                         ],
                       ),
                     ),
@@ -1299,6 +1385,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (packLine != null) ...[
+                    packLine,
+                    const SizedBox(height: AppSpacing.s),
+                  ],
                   cta,
                   const SizedBox(height: AppSpacing.s),
                   secondary,
@@ -1567,7 +1657,8 @@ class _Resident extends StatelessWidget {
           showPhotoPicker: false,
           showActiveBadge: false,
           showCaption: false,
-          photoHeight: photoHeight < 90 ? 88 : photoHeight,
+          useStandRatio: photoHeight >= 100,
+          photoHeight: photoHeight,
         ),
         const SizedBox(height: AppSpacing.s),
         InkWell(
@@ -1899,8 +1990,8 @@ class _SystemStatusIcon extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  Icons.shield_outlined,
+                ChromeGlyph(
+                  'shield',
                   size: 22,
                   color: hasNotice ? AppColors.warning : AppColors.muted,
                 ),
@@ -1955,8 +2046,8 @@ class _HofProfileAvatar extends StatelessWidget {
       child: hasPhoto
           ? null
           : (initials == '?'
-              ? Icon(
-                  Icons.person_outline,
+              ? ChromeGlyph(
+                  'user',
                   color: signedIn ? AppColors.accent : AppColors.muted,
                 )
               : Text(

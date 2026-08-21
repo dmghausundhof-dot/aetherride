@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Einstellungen">
+  <title>FlowLine Einstellungen</title>
+  <circle cx="12" cy="12" r="3.2" fill="none" stroke="#FF6A00" stroke-width="1.7"/>
+  <path d="M12 4.4 V6.6 M12 17.4 V19.6 M4.4 12 H6.6 M17.4 12 H19.6 M6.6 6.6 L8.2 8.2 M15.8 15.8 L17.4 17.4 M17.4 6.6 L15.8 8.2 M8.2 15.8 L6.6 17.4" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linecap="round"/>
+</svg>

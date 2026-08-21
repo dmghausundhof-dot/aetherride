@@ -860,11 +860,29 @@ abstract class AppLocalizations {
   /// **'Offline-Routing für {name} laden'**
   String hofLoadOfflineMap(String name);
 
+  /// No description provided for @hofLoadStreetMap.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte fürs Ride laden'**
+  String get hofLoadStreetMap;
+
+  /// No description provided for @hofRefreshStreetMap.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte um den Standort erneuern'**
+  String get hofRefreshStreetMap;
+
   /// No description provided for @hofPackReadyRideMap.
   ///
   /// In de, this message translates to:
   /// **'{name} · Routing offline. Ride-Karte: Netz.'**
   String hofPackReadyRideMap(String name);
+
+  /// No description provided for @hofPackReadyRideStreet.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Routing und Straßenkarte offline.'**
+  String hofPackReadyRideStreet(String name);
 
   /// No description provided for @hofLastRideNoGps.
   ///
@@ -1631,8 +1649,20 @@ abstract class AppLocalizations {
   /// No description provided for @planLineCoach.
   ///
   /// In de, this message translates to:
-  /// **'Linie oder die Scheiben ziehen — Zwischenstopp. Halten: neues Ziel.'**
+  /// **'Linie oder die Scheiben ziehen — Zwischenstopp. Höhenprofil tippen geht auch. Halten: neues Ziel.'**
   String get planLineCoach;
+
+  /// No description provided for @planLineCoachShort.
+  ///
+  /// In de, this message translates to:
+  /// **'Linie oder Profil tippen: Stopp. Halten: neues Ziel.'**
+  String get planLineCoachShort;
+
+  /// No description provided for @planLineCoachAdopt.
+  ///
+  /// In de, this message translates to:
+  /// **'Tour merken, dann auf der Karte formen — Linie oder Scheiben ziehen.'**
+  String get planLineCoachAdopt;
 
   /// No description provided for @planLineCoachOk.
   ///
@@ -2120,6 +2150,12 @@ abstract class AppLocalizations {
   /// **'Letzte Fahrten'**
   String get garageLastRides;
 
+  /// No description provided for @garageLastRidesHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Echte Fahrten — keine erfundenen Kilometer.'**
+  String get garageLastRidesHint;
+
   /// No description provided for @garageNoRidesTitle.
   ///
   /// In de, this message translates to:
@@ -2251,6 +2287,60 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Weitere Lücken am Punkt.'**
   String get garageSchemaMoreOnDots;
+
+  /// No description provided for @garageSpareShelf.
+  ///
+  /// In de, this message translates to:
+  /// **'Ersatzteil-Regal'**
+  String get garageSpareShelf;
+
+  /// No description provided for @garageSpareHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgebaute Teile bleiben hier. Wiedereinbau ersetzt den aktiven Slot.'**
+  String get garageSpareHint;
+
+  /// No description provided for @garageReinstall.
+  ///
+  /// In de, this message translates to:
+  /// **'Wieder einbauen'**
+  String get garageReinstall;
+
+  /// No description provided for @garageSpareEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Regal leer — Teile ausbauen, um sie hier zu lagern.'**
+  String get garageSpareEmpty;
+
+  /// No description provided for @garageRemovedOn.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgebaut {date}'**
+  String garageRemovedOn(String date);
+
+  /// No description provided for @garageWearTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Verschleißprognose'**
+  String get garageWearTitle;
+
+  /// No description provided for @garageWearHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Belastungsgewichtet · Spanne, nie Punktwert.'**
+  String get garageWearHint;
+
+  /// No description provided for @garageWearEmpty.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Verschleißteile mit Historie.'**
+  String get garageWearEmpty;
+
+  /// No description provided for @garageWearSwapIn.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} in {low}–{high} km'**
+  String garageWearSwapIn(String name, String low, String high);
 
   /// No description provided for @garageCreatedAtStand.
   ///
@@ -5264,6 +5354,18 @@ abstract class AppLocalizations {
   /// **'Außerhalb {name}'**
   String offlineCoverageOutside(String name);
 
+  /// No description provided for @offlineCoverageOutsideStreet.
+  ///
+  /// In de, this message translates to:
+  /// **'Außerhalb {name} · Straße offline'**
+  String offlineCoverageOutsideStreet(String name);
+
+  /// No description provided for @offlineCoverageOutsideStreetAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Außerhalb {name} · Straße nicht hier'**
+  String offlineCoverageOutsideStreetAway(String name);
+
   /// No description provided for @offlineCoverageShowOnMap.
   ///
   /// In de, this message translates to:
@@ -5281,6 +5383,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'{name} · Karte: Netz'**
   String offlineCoverageMapNeedsNet(String name);
+
+  /// No description provided for @offlineCoverageStreetAway.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} · Straße nicht hier'**
+  String offlineCoverageStreetAway(String name);
 
   /// No description provided for @offlineGraphReadySnack.
   ///
@@ -5378,6 +5486,12 @@ abstract class AppLocalizations {
   /// **'Keine Straße'**
   String get offlineStreetOff;
 
+  /// No description provided for @offlineStreetAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Straße nicht hier'**
+  String get offlineStreetAway;
+
   /// No description provided for @offlineReadyAll.
   ///
   /// In de, this message translates to:
@@ -5389,6 +5503,18 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Routing und Straßenkarte bereit — Übersicht nicht geladen.'**
   String get offlineReadyStreet;
+
+  /// No description provided for @offlineReadyStreetAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte auf dem Gerät — nicht am Standort.'**
+  String get offlineReadyStreetAway;
+
+  /// No description provided for @offlineReadyAllAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing und Übersicht bereit. Straßenkarte nicht hier.'**
+  String get offlineReadyAllAway;
 
   /// No description provided for @offlineSketchGraph.
   ///
@@ -5408,6 +5534,78 @@ abstract class AppLocalizations {
   /// **'Für Navigation im Ride. Größer als die Übersicht — am besten über WLAN.'**
   String get offlineStreetExplain;
 
+  /// No description provided for @offlineStreetCorridorCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte um den Standort ({size})'**
+  String offlineStreetCorridorCta(String size);
+
+  /// No description provided for @offlineStreetCorridorExplain.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht das ganze Land — nur um GPS, für Navigation im Ride. Am besten über WLAN.'**
+  String get offlineStreetCorridorExplain;
+
+  /// No description provided for @offlineStreetRouteCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte entlang der Tour ({size})'**
+  String offlineStreetRouteCta(String size);
+
+  /// No description provided for @offlineStreetNeedGps.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte für diese Region ist zu groß. Standort erlauben — dann ein Korridor um GPS.'**
+  String get offlineStreetNeedGps;
+
+  /// No description provided for @offlineStreetRefreshCta.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte um den Standort erneuern ({size})'**
+  String offlineStreetRefreshCta(String size);
+
+  /// No description provided for @offlineStreetRemove.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte entfernen'**
+  String get offlineStreetRemove;
+
+  /// No description provided for @offlineConfirmStreetRemoveTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte löschen?'**
+  String get offlineConfirmStreetRemoveTitle;
+
+  /// No description provided for @offlineConfirmStreetRemoveBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Navigation im Ride braucht danach wieder Netz.'**
+  String get offlineConfirmStreetRemoveBody;
+
+  /// No description provided for @offlineStreetRemoved.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte entfernt.'**
+  String get offlineStreetRemoved;
+
+  /// No description provided for @offlineSketchStreet.
+  ///
+  /// In de, this message translates to:
+  /// **'Straße'**
+  String get offlineSketchStreet;
+
+  /// No description provided for @offlineConfirmStreetRouteBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Entlang der Tour, {size}. Nicht die ganze Region {name}.'**
+  String offlineConfirmStreetRouteBody(String name, String size);
+
+  /// No description provided for @offlineConfirmStreetCorridorBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Um den Standort, {size}. Nicht die ganze Region {name}.'**
+  String offlineConfirmStreetCorridorBody(String name, String size);
+
   /// No description provided for @offlineLoadBelow.
   ///
   /// In de, this message translates to:
@@ -5425,6 +5623,30 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Kein Routing'**
   String get offlineRoutingOff;
+
+  /// No description provided for @offlineRoutingAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing nicht hier'**
+  String get offlineRoutingAway;
+
+  /// No description provided for @offlineReadyRoutingAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing auf dem Gerät — nicht am Standort.'**
+  String get offlineReadyRoutingAway;
+
+  /// No description provided for @offlineReadyStreetHereRoutingAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte bereit. Routing nicht am Standort.'**
+  String get offlineReadyStreetHereRoutingAway;
+
+  /// No description provided for @offlineReadyBothAway.
+  ///
+  /// In de, this message translates to:
+  /// **'Routing und Straßenkarte nicht am Standort.'**
+  String get offlineReadyBothAway;
 
   /// No description provided for @offlineOverviewOn.
   ///
@@ -11642,6 +11864,12 @@ abstract class AppLocalizations {
   /// **'Straßenkarte braucht Netz'**
   String get rideHudStreetNeedsNet;
 
+  /// No description provided for @rideHudStreetOutside.
+  ///
+  /// In de, this message translates to:
+  /// **'Straßenkarte nicht hier — Netz oder erneuern'**
+  String get rideHudStreetOutside;
+
   /// No description provided for @rideCardinalN.
   ///
   /// In de, this message translates to:
@@ -15317,6 +15545,12 @@ abstract class AppLocalizations {
   /// **'Stand vom Computer oder Tacho. Stunden rechnen wir nicht aus km.'**
   String get garageStandHint;
 
+  /// No description provided for @garageStandStravaHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatischer Strava-Sync ist geplant — bis dahin derselbe Dialog wie unter dem Foto. Kein stiller Import.'**
+  String get garageStandStravaHint;
+
   /// No description provided for @garagePartsEmptyTitle.
   ///
   /// In de, this message translates to:
@@ -15866,8 +16100,38 @@ abstract class AppLocalizations {
   /// No description provided for @garagePhotoRetakeHint.
   ///
   /// In de, this message translates to:
-  /// **'Cover sitzt. Neu aufnehmen, dann liegt das Rad auf dem Stand.'**
+  /// **'Das Foto füllt den Stand nicht. Neu aufnehmen, dann liegt das Rad auf der Schiene.'**
   String get garagePhotoRetakeHint;
+
+  /// No description provided for @garagePhotoCropTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Rad auf den Stand legen'**
+  String get garagePhotoCropTitle;
+
+  /// No description provided for @garagePhotoCropHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Verschiebe das Bild, bis das Rad auf der Schiene sitzt.'**
+  String get garagePhotoCropHint;
+
+  /// No description provided for @garagePhotoCropSave.
+  ///
+  /// In de, this message translates to:
+  /// **'So legen'**
+  String get garagePhotoCropSave;
+
+  /// No description provided for @garagePhotoRotate.
+  ///
+  /// In de, this message translates to:
+  /// **'90° drehen'**
+  String get garagePhotoRotate;
+
+  /// No description provided for @garagePhotoPlace.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf den Stand legen'**
+  String get garagePhotoPlace;
 
   /// No description provided for @identifyReasonNoKey.
   ///

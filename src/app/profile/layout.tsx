@@ -1,3 +1,11 @@
+import { hofDoorMeta } from "@/lib/i18n/hofDoorMeta";
+
+export const generateMetadata = () =>
+  hofDoorMeta((c) => ({
+    title: c.profileTitle,
+    description: c.profileHint,
+  }));
+
 export default function ProfileLayout({
   children,
 }: {

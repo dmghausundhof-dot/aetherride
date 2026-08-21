@@ -30,6 +30,12 @@ class HofThresholdNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final index = selectedIndex.clamp(0, destinations.length - 1);
     final ground = Theme.of(context).scaffoldBackgroundColor;
+    final reported = MediaQuery.viewPaddingOf(context).bottom;
+    // Gesture-Home often reports a small inset but still eats the tab row.
+    // Keep ≥64 dp free below tabs on Android so Map/Karte stays tappable.
+    final double gestureInset = Theme.of(context).platform == TargetPlatform.android
+        ? (reported < 64 ? 64 : reported)
+        : reported;
     return Material(
       color: ground,
       elevation: 0,
@@ -41,25 +47,29 @@ class HofThresholdNav extends StatelessWidget {
             top: BorderSide(color: AppColors.border, width: 1),
           ),
         ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 56,
-            child: Row(
-              children: [
-                for (var i = 0; i < destinations.length; i++)
-                  Expanded(
-                    child: _HofThresholdTab(
-                      destination: destinations[i],
-                      selected: i == index,
-                      onTap: () => onDestinationSelected(i),
-                      semanticIndex: i + 1,
-                      semanticCount: destinations.length,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: barHeight,
+              child: Row(
+                children: [
+                  for (var i = 0; i < destinations.length; i++)
+                    Expanded(
+                      child: _HofThresholdTab(
+                        destination: destinations[i],
+                        selected: i == index,
+                        onTap: () => onDestinationSelected(i),
+                        semanticIndex: i + 1,
+                        semanticCount: destinations.length,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
+            // Untappable — gesture home lives here, not inside the Map tab.
+            SizedBox(height: gestureInset),
+          ],
         ),
       ),
     );
@@ -68,16 +78,12 @@ class HofThresholdNav extends StatelessWidget {
 
 class HofThresholdDestination {
   const HofThresholdDestination({
-    this.icon,
-    this.selectedIcon,
-    this.mark,
+    required this.mark,
     required this.label,
     this.showBadge = false,
   });
 
-  final IconData? icon;
-  final IconData? selectedIcon;
-  final Widget Function(Color color, bool selected)? mark;
+  final Widget Function(Color color, bool selected) mark;
   final String label;
   final bool showBadge;
 }
@@ -116,14 +122,7 @@ class _HofThresholdTab extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  destination.mark?.call(color, selected) ??
-                      Icon(
-                        selected
-                            ? (destination.selectedIcon ?? destination.icon)
-                            : destination.icon,
-                        size: 22,
-                        color: color,
-                      ),
+                  destination.mark(color, selected),
                   if (destination.showBadge)
                     Positioned(
                       right: -3,

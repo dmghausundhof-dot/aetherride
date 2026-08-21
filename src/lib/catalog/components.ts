@@ -8,6 +8,12 @@ import { COMPONENT_CATALOG_DACH_SCALE3 } from "./componentsDachScale3";
 import { COMPONENT_CATALOG_DACH_SCALE4 } from "./componentsDachScale4";
 import { COMPONENT_CATALOG_DACH_SCALE5 } from "./componentsDachScale5";
 import { COMPONENT_CATALOG_DACH_SCALE6 } from "./componentsDachScale6";
+import { COMPONENT_CATALOG_DACH_SCALE7 } from "./componentsDachScale7";
+import { COMPONENT_CATALOG_DACH_SCALE8 } from "./componentsDachScale8";
+import { COMPONENT_CATALOG_DACH_SCALE9 } from "./componentsDachScale9";
+import { COMPONENT_CATALOG_DACH_SCALE10 } from "./componentsDachScale10";
+import { COMPONENT_CATALOG_DACH_SCALE11 } from "./componentsDachScale11";
+import { COMPONENT_CATALOG_DACH_SCALE12 } from "./componentsDachScale12";
 
 const VERIFIED = "2026-05-14T00:00:00.000Z";
 
@@ -1283,6 +1289,12 @@ export const COMPONENT_CATALOG: ComponentModel[] = dedupeById([
   ...COMPONENT_CATALOG_DACH_SCALE4,
   ...COMPONENT_CATALOG_DACH_SCALE5,
   ...COMPONENT_CATALOG_DACH_SCALE6,
+  ...COMPONENT_CATALOG_DACH_SCALE7,
+  ...COMPONENT_CATALOG_DACH_SCALE8,
+  ...COMPONENT_CATALOG_DACH_SCALE9,
+  ...COMPONENT_CATALOG_DACH_SCALE10,
+  ...COMPONENT_CATALOG_DACH_SCALE11,
+  ...COMPONENT_CATALOG_DACH_SCALE12,
   ...mapImportedComponents(),
 ]);
 

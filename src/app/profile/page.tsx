@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { User, Sparkles, Crown, LogIn, LogOut, Cloud, Trash2 } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import Link from "next/link";
 import type { RiderProfile } from "@/types";
 import { PublicProfilePanel } from "@/components/community/PublicProfilePanel";
@@ -24,6 +24,7 @@ import type { BikeCategory } from "@/types/garage";
 import { rideSportLabel } from "@/lib/i18n/rideSportLabel";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import { profileCopy } from "@/lib/i18n/profileCopy";
 import { rideTelemetryCopy } from "@/lib/i18n/rideTelemetryCopy";
 import { buildRideTelemetry } from "@/lib/ride/rideTelemetry";
 import { terrainCaption } from "@/lib/ride/terrainCaption";
@@ -55,6 +56,7 @@ type AuthUser = {
 export default function ProfilePage() {
   const copy = useHofCopy();
   const lang = useChromeLang();
+  const p = profileCopy(lang);
   const tel = rideTelemetryCopy(lang);
   const dateLocale = chromeDateLocale(lang);
   const rides = useAppStore((s) => s.rides);
@@ -67,7 +69,6 @@ export default function ProfilePage() {
     .slice(0, 5);
 
   const profile = useAppStore((s) => s.riderProfile);
-  const explanations = useAppStore((s) => s.profileExplanations);
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
   const preferredSport = useAppStore((s) => s.preferredSport);
   const preferredSports = useAppStore((s) => s.preferredSports);
@@ -116,12 +117,12 @@ export default function ProfilePage() {
       try {
         const me = await fetch("/api/auth/me").then((r) => r.json());
         if (!me.user) return;
-        await runWebSync();
+        await runWebSync(lang);
       } catch {
         /* offline / no session */
       }
     })();
-  }, [configured, refreshMe]);
+  }, [configured, refreshMe, lang]);
   const setPref = (key: keyof RiderProfile["preferences"], value: boolean) => {
     updateRiderProfile({
       preferences: { ...profile.preferences, [key]: value },
@@ -140,7 +141,7 @@ export default function ProfilePage() {
     setAuthMsg(null);
     setSyncConflict(null);
     try {
-      const result = await runWebSync();
+      const result = await runWebSync(lang);
       if (result.ok) {
         setAuthMsg(result.message);
       } else if (result.conflict) {
@@ -150,7 +151,7 @@ export default function ProfilePage() {
         setAuthMsg(result.message);
       }
     } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Sync fehlgeschlagen");
+      setAuthMsg(e instanceof Error ? e.message : p.syncFailed);
     } finally {
       setBusy(false);
     }
@@ -160,7 +161,7 @@ export default function ProfilePage() {
     if (!syncConflict) return;
     setBusy(true);
     try {
-      const result = await resolveSyncConflict(choice, syncConflict);
+      const result = await resolveSyncConflict(choice, syncConflict, lang);
       if (result.ok) {
         setSyncConflict(null);
         setAuthMsg(result.message);
@@ -182,10 +183,10 @@ export default function ProfilePage() {
         body: JSON.stringify({ interval }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Checkout fehlgeschlagen");
+      if (!res.ok) throw new Error(data.error || p.checkoutFailed);
       if (data.url) window.location.href = data.url;
     } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Billing-Fehler");
+      setAuthMsg(e instanceof Error ? e.message : p.billingFailed);
       setBusy(false);
     }
   };
@@ -195,26 +196,22 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Portal fehlgeschlagen");
+      if (!res.ok) throw new Error(data.error || p.portalFailed);
       if (data.url) window.location.href = data.url;
     } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Portal-Fehler");
+      setAuthMsg(e instanceof Error ? e.message : p.portalFailed);
       setBusy(false);
     }
   };
 
   const deleteAccount = async () => {
     const ok = window.confirm(
-      "Konto löschen?\n\nRemote-Konto und lokale App-Daten werden entfernt. " +
-        "Exportiere vorher GPX/JSON unter Daten & Privatsphäre."
+      `${p.deleteConfirmTitle}\n\n${p.deleteConfirmBody}`
     );
     if (!ok) return;
-    const confirmText = window.prompt(
-      'Zum Bestätigen „DELETE“ eingeben:',
-      ""
-    );
+    const confirmText = window.prompt(p.deleteTypeDelete, "");
     if (confirmText !== "DELETE") {
-      setAuthMsg("Abgebrochen — Bestätigung war nicht DELETE.");
+      setAuthMsg(p.deleteAborted);
       return;
     }
     setBusy(true);
@@ -231,20 +228,18 @@ export default function ProfilePage() {
         message?: string;
       };
       if (res.status === 200) {
-        remoteMsg = "Remote-Konto gelöscht.";
+        remoteMsg = p.remoteDeleted;
       } else if (res.status === 503) {
-        remoteMsg =
-          data.message ||
-          "Remote-Löschung nicht verfügbar (Service-Role fehlt) — nur lokale Daten werden entfernt.";
+        remoteMsg = data.message || p.remoteUnavailable;
       } else if (res.status === 401) {
-        remoteMsg = "Nicht angemeldet — nur lokale Daten werden entfernt.";
+        remoteMsg = p.notSignedInLocal;
       } else {
-        remoteMsg = `Remote-Löschung fehlgeschlagen (${
-          data.message || data.error || res.status
-        }) — lokal trotzdem gelöscht.`;
+        remoteMsg = p.remoteFailed(
+          String(data.message || data.error || res.status)
+        );
       }
     } catch {
-      remoteMsg = "Server nicht erreichbar — nur lokale Daten werden entfernt.";
+      remoteMsg = p.serverUnreachable;
     }
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -262,10 +257,7 @@ export default function ProfilePage() {
     }
     setAuthUser(null);
     setBusy(false);
-    setAuthMsg(
-      remoteMsg ??
-        "Lokale Daten gelöscht. Export ggf. unter Privatsphäre nachholen."
-    );
+    setAuthMsg(remoteMsg ?? p.localCleared);
     window.setTimeout(() => {
       window.location.href = "/";
     }, 800);
@@ -281,7 +273,7 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <LogIn className="h-4 w-4 text-chrome" /> Konto
+          <ChromeGlyph name="enter" size={16} current className="text-chrome" /> {p.account}
         </h3>
         {!configured ? (
           <p className="text-xs text-text-secondary">
@@ -290,7 +282,7 @@ export default function ProfilePage() {
         ) : authUser ? (
           <div className="space-y-2 text-sm">
             <p>
-              {authUser.email} · Status {authUser.subscriptionStatus}
+              {authUser.email} · {p.status} {authUser.subscriptionStatus}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -299,7 +291,7 @@ export default function ProfilePage() {
                 onClick={() => void syncNow()}
                 className="inline-flex items-center gap-1 rounded-xl bg-surface-elevated px-3 py-2 text-xs font-medium"
               >
-                <Cloud className="h-3.5 w-3.5" /> Sync
+                <ChromeGlyph name="cloud" size={14} current /> {p.sync}
               </button>
               <button
                 type="button"
@@ -307,7 +299,7 @@ export default function ProfilePage() {
                 onClick={() => void logout()}
                 className="inline-flex items-center gap-1 rounded-xl bg-surface-elevated px-3 py-2 text-xs font-medium"
               >
-                <LogOut className="h-3.5 w-3.5" /> Abmelden
+                <ChromeGlyph name="enter" size={14} current /> {p.signOut}
               </button>
               <button
                 type="button"
@@ -315,7 +307,7 @@ export default function ProfilePage() {
                 onClick={() => void deleteAccount()}
                 className="inline-flex items-center gap-1 rounded-xl border border-error/50 px-3 py-2 text-xs font-medium text-error"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Konto löschen
+                <ChromeGlyph name="trash" size={14} current /> {p.deleteAccount}
               </button>
             </div>
             {syncConflict && (
@@ -347,20 +339,18 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <Crown className="h-4 w-4 text-chrome" /> Abo
+          <ChromeGlyph name="crown" size={16} current className="text-chrome" /> {p.plan}
         </h3>
         <p className="mb-3 text-xs text-text-secondary">
-          Free: 1 Rad, Basis. Pro: mehrere Räder, Varianten-Vergleich, Reichweite.
-          Offline-Routing in der App — auf beiden Stufen. KI-Coach — 6,99 €/Mo oder 59,99 €/Jahr.
+          {p.planHint}
         </p>
         <p className="mb-3 text-sm font-medium">
-          Aktuell: {subscriptionTier === "pro" ? "Pro" : "Free"}
-          {authUser ? ` (${authUser.subscriptionStatus})` : " (lokal)"}
+          {p.current}: {subscriptionTier === "pro" ? "Pro" : "Free"}
+          {authUser ? ` (${authUser.subscriptionStatus})` : ` (${p.local})`}
         </p>
         {!isCommerceOpen() ? (
           <p className="text-xs text-text-secondary">
-            Entwicklungsstand — Käufe sind gesperrt. Lokal kannst du die App
-            weiter testen; es gibt kein öffentliches Abo.
+            {p.commerceClosed}
           </p>
         ) : authUser ? (
           <div className="grid grid-cols-2 gap-2">
@@ -370,7 +360,7 @@ export default function ProfilePage() {
               onClick={() => void startBilling("month")}
               className="rounded-xl bg-chrome py-2 text-sm font-medium text-on-accent disabled:opacity-40"
             >
-              Pro 6,99 €/Mo
+              {p.proMonth}
             </button>
             <button
               type="button"
@@ -378,7 +368,7 @@ export default function ProfilePage() {
               onClick={() => void startBilling("year")}
               className="rounded-xl bg-chrome py-2 text-sm font-medium text-on-accent disabled:opacity-40"
             >
-              Pro 59,99 €/Jahr
+              {p.proYear}
             </button>
             {authUser.hasStripeCustomer && (
               <button
@@ -387,13 +377,13 @@ export default function ProfilePage() {
                 onClick={() => void openPortal()}
                 className="col-span-2 rounded-xl bg-surface-elevated py-2 text-sm"
               >
-                Abo verwalten (Stripe Portal)
+                {p.managePortal}
               </button>
             )}
           </div>
         ) : (
           <p className="text-xs text-text-secondary">
-            Zum Upgrade bitte anmelden. Ohne Konto bleibt Free lokal nutzbar.
+            {p.upgradeSignIn}
           </p>
         )}
       </section>
@@ -446,7 +436,7 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold">
-          <User className="h-4 w-4 text-chrome" /> {copy.profileStyle}
+          <ChromeGlyph name="user" size={16} current className="text-chrome" /> {copy.profileStyle}
         </h3>
         <label className="mb-3 block text-sm">
           {copy.profileStyle}
@@ -459,17 +449,17 @@ export default function ProfilePage() {
             }
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           >
-            <option value="aggressive">Aggressiv</option>
-            <option value="flow">Flow</option>
-            <option value="efficient">Effizient</option>
-            <option value="explorative">Entdeckend</option>
+            <option value="aggressive">{p.styleAggressive}</option>
+            <option value="flow">{p.styleFlow}</option>
+            <option value="efficient">{p.styleEfficient}</option>
+            <option value="explorative">{p.styleExploring}</option>
           </select>
           <p className="mt-1 text-[11px] text-text-secondary">
-            {explanations.style}
+            {p.explainStyle}
           </p>
         </label>
         <label className="mb-3 block text-sm">
-          Erfahrungsstufe ({profile.skillLevel}/5)
+          {p.skill(profile.skillLevel)}
           <input
             type="range"
             min={1}
@@ -483,11 +473,11 @@ export default function ProfilePage() {
             className="mt-1 w-full"
           />
           <p className="mt-1 text-[11px] text-text-secondary">
-            {explanations.skillLevel}
+            {p.explainSkill}
           </p>
         </label>
         <label className="block text-sm">
-          Fahrergewicht (kg)
+          {p.riderWeight}
           <input
             type="number"
             value={profile.riderWeightKg ?? 78}
@@ -497,7 +487,7 @@ export default function ProfilePage() {
             className="mt-1 w-full rounded-xl border border-border bg-surface-elevated px-3 py-2"
           />
           <p className="mt-1 text-[11px] text-text-secondary">
-            {explanations.riderWeightKg}
+            {p.explainWeight}
           </p>
         </label>
       </section>
@@ -507,23 +497,21 @@ export default function ProfilePage() {
         onClick={() => setAdvanced((v) => !v)}
         className="rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-secondary"
       >
-        {advanced
-          ? "Erweiterte Einstellungen ausblenden"
-          : "Erweiterte Einstellungen (Terrain & Indikatoren)"}
+        {advanced ? p.advancedHide : p.advancedShow}
       </button>
 
       {advanced && (
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h3 className="mb-3 font-semibold">Terrainanteil</h3>
+        <h3 className="mb-3 font-semibold">{p.terrain}</h3>
         <p className="mb-2 text-[11px] text-text-secondary">
-          {explanations.terrainShare}
+          {p.explainTerrain}
         </p>
         {(
           [
-            ["s0s1", "S0–S1 / easy"],
-            ["s2", "S2"],
-            ["s3plus", "S3+"],
-            ["gravelRoad", "Gravel/Straße"],
+            ["s0s1", p.terrainS0],
+            ["s2", p.terrainS2],
+            ["s3plus", p.terrainS3],
+            ["gravelRoad", p.terrainGravel],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="mb-2 block text-sm">
@@ -555,14 +543,14 @@ export default function ProfilePage() {
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 font-semibold">{copy.profileStyleIndicators}</h3>
         <p className="mb-2 text-[11px] text-text-secondary">
-          {explanations.styleIndicators}
+            {p.explainIndicators}
         </p>
         {(
           [
-            ["brakeIntensityBeforeCorners", "Bremsintensität vor Kurven"],
-            ["timeOver04gLateralPct", "% Zeit > 0,4 g Quer"],
-            ["impactsPerHour", "Impacts / Stunde"],
-            ["jumpsPerRide", "Sprünge / Fahrt"],
+            ["brakeIntensityBeforeCorners", p.brakeBeforeCorners],
+            ["timeOver04gLateralPct", p.lateralG],
+            ["impactsPerHour", p.impactsPerHour],
+            ["jumpsPerRide", p.jumpsPerRide],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="mb-2 block text-sm">
@@ -595,13 +583,13 @@ export default function ProfilePage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold">
-          <Sparkles className="h-4 w-4 text-chrome" /> Präferenzen
+          <ChromeGlyph name="filter" size={16} current className="text-chrome" /> {p.preferences}
         </h3>
         {(
           [
-            ["preferTechnical", "Technisch"],
-            ["preferFlow", "Flow"],
-            ["preferSteep", "Steil"],
+            ["preferTechnical", p.preferTechnical],
+            ["preferFlow", p.preferFlow],
+            ["preferSteep", p.preferSteep],
           ] as const
         ).map(([key, label]) => (
           <label
@@ -617,13 +605,17 @@ export default function ProfilePage() {
             <span>
               {label}
               <span className="mt-0.5 block text-[11px] text-text-secondary">
-                {explanations[key]}
+                {key === "preferTechnical"
+                  ? p.explainTechnical
+                  : key === "preferFlow"
+                    ? p.explainFlow
+                    : p.explainSteep}
               </span>
             </span>
           </label>
         ))}
         <label className="mt-2 block text-sm">
-          E-Bike Assist-Präferenz (Logging)
+          {p.eBikeAssist}
           <select
             value={profile.preferences.eBikeAssistPreference}
             onChange={(e) =>
@@ -643,14 +635,14 @@ export default function ProfilePage() {
             <option value="turbo">Turbo</option>
           </select>
           <p className="mt-1 text-[11px] text-text-secondary">
-            {explanations.eBikeAssistPreference}
+            {p.explainAssist}
           </p>
         </label>
       </section>
 
       {rangeCalibration && (
         <section className="rounded-2xl border border-border bg-surface p-4 text-sm">
-          <h3 className="mb-2 font-semibold">Reichweiten-Kalibrierung</h3>
+          <h3 className="mb-2 font-semibold">{p.rangeTitle}</h3>
           <p className="text-xs text-text-secondary">
             Crr {rangeCalibration.crr.toFixed(4)} · CdA{" "}
             {rangeCalibration.cdA.toFixed(3)} · P_fahrer{" "}
@@ -671,7 +663,7 @@ export default function ProfilePage() {
             {bikes.map((b) => (
               <li key={b.id} className="text-text-secondary">
                 {b.name}
-                {b.isActive ? " · vorn" : ""}
+                {b.isActive ? ` · ${p.bikeFront}` : ""}
               </li>
             ))}
           </ul>

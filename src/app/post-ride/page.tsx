@@ -3,7 +3,8 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration } from "@/lib/utils";
-import { Check, X, TrendingUp, ArrowLeft, Lightbulb } from "lucide-react";
+import { X, ArrowLeft } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { RadGlyph } from "@/components/garage/RadGlyph";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -321,7 +322,7 @@ function PostRideContent() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <div className="mb-3 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-chrome" />
+          <ChromeGlyph name="heat" size={20} current className="text-chrome" />
           <h2 className="font-semibold">{telCopy.happened}</h2>
         </div>
         {bike && (
@@ -401,7 +402,7 @@ function PostRideContent() {
       {analysis && analysis.observations.length > 0 && (
         <section className="rounded-2xl border border-border bg-surface p-4">
           <div className="mb-2 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-chrome" />
+            <ChromeGlyph name="hint" size={20} current className="text-chrome" />
             <h2 className="font-semibold">{telCopy.noticed}</h2>
           </div>
           <ul className="space-y-2 text-sm">
@@ -652,7 +653,7 @@ function PostRideContent() {
                 onClick={() => acceptRecommendation(displaySetup.id!)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-chrome py-2.5 text-sm font-medium text-on-accent"
               >
-                <Check className="h-4 w-4" /> {telCopy.accept}
+                <ChromeGlyph name="check" size={16} current /> {telCopy.accept}
               </button>
               <button
                 type="button"

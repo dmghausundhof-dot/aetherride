@@ -406,6 +406,7 @@ export function DieBoxSurface({
           <GaragePartsCta bikeId={bike.id} bikeName={bike.name} />
         </div>
       </section>
+      ) : null}
 
       <p className="text-xs text-text-secondary">
         {copy.workshopNoWatch}

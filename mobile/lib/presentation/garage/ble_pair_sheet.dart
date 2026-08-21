@@ -13,6 +13,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 import 'garage_chrome.dart';
 
 /// Live BLE pairing: Bosch / Shimano / CSC / Power. Open scan, user picks.
@@ -58,25 +59,25 @@ Future<String?> showBikeBleManageSheet(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.link),
+              leading: const ChromeGlyph('link', size: 22),
               title: Text(l10n.blePairAgain),
               onTap: () => Navigator.pop(ctx, 'pair'),
             ),
             if (hasWheel)
               ListTile(
-                leading: const Icon(Icons.speed),
+                leading: const ChromeGlyph('heat', size: 22),
                 title: Text(wheelLabel),
                 onTap: () => Navigator.pop(ctx, 'unlinkWheel'),
               ),
             if (hasDrive)
               ListTile(
-                leading: const Icon(Icons.electric_bike),
+                leading: const ChromeGlyph('nav', size: 22),
                 title: Text(driveLabel),
                 onTap: () => Navigator.pop(ctx, 'unlinkDrive'),
               ),
             if (hasWheel && hasDrive)
               ListTile(
-                leading: const Icon(Icons.link_off),
+                leading: const ChromeGlyph('link', size: 22),
                 title: Text(l10n.bleRemoveDevice),
                 onTap: () => Navigator.pop(ctx, 'unlinkAll'),
               ),
@@ -535,10 +536,10 @@ class _EmptyScan extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            scanning ? Icons.bluetooth_searching : Icons.bluetooth_disabled,
-            size: 28,
-            color: AppColors.muted,
+          ChromeGlyph(
+            'bluetooth',
+            size: 40,
+            color: scanning ? AppColors.chrome : AppColors.muted,
           ),
           const SizedBox(height: AppSpacing.s),
           Text(
@@ -602,10 +603,9 @@ class _HitTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  bikeBleKindIsDrive(hit.kind)
-                      ? Icons.electric_bike
-                      : Icons.sensors,
+                ChromeGlyph(
+                  bikeBleKindIsDrive(hit.kind) ? 'nav' : 'bluetooth',
+                  size: 22,
                   color: AppColors.chrome,
                 ),
                 const SizedBox(width: AppSpacing.m),

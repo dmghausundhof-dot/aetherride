@@ -199,7 +199,7 @@ class GarageRepository {
     );
   }
 
-  /// Absoluter Stand (Web-OdometerImportPanel-Parität).
+  /// Absoluter Stand (Werte-Leiste / Stand-Dialog).
   Future<void> setOdometerAbsolute({
     required String bikeId,
     required double odometerKm,

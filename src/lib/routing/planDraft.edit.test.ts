@@ -48,11 +48,33 @@ import {
   planBusyBlocksDestReplace,
   planRibbonAllowsGrab,
   planMapShowsRoutingWait,
+  planMapHistoryFabsVisible,
+  planMapAdaptingHintOnMap,
+  planParkedFingerClearsWhenIdle,
+  planMapHintAnchorLngLat,
+  planMapDestWaitHintOnMap,
+  planMapDestWaitCopy,
+  planFingerHintChipW,
+  planLineGrabYieldsToPinch,
+  planLineGrabBecomesExclusive,
+  planLineHoldCancelsOnMove,
+  PLAN_LINE_HOLD_CANCEL_PX,
+  PLAN_LINE_HOLD_MS,
+  PLAN_LINE_GRAB_MOVE_PX,
+  planLineCoachCopy,
+  planLineCoachIsCompact,
+  planLineCoachIsXCompact,
+  planRibbonLegendCompact,
+  planChevronIconOpacity,
   PLAN_RIBBON_GRAB_HALO_WIDTH,
   applyFarmTrimPinSnap,
   snapPlanPinToStreetLine,
   planLineCoachShouldShow,
   planEditorSheetMaxVh,
+  planEditorSheetRecedes,
+  planMapStopHintVisible,
+  PLAN_STOP_HINT_MS,
+  planFingerHintPlacement,
   viasOf,
   reorderWaypoints,
   startOf,
@@ -425,6 +447,80 @@ assert.equal(
 );
 assert.equal(planEditorSheetMaxVh({ shaping: false }), 56);
 assert.equal(planEditorSheetMaxVh({ shaping: true }), 0);
+assert.equal(
+  planEditorSheetRecedes({ rubberBand: true, adapting: false }),
+  true
+);
+assert.equal(
+  planEditorSheetRecedes({ rubberBand: false, adapting: true }),
+  true
+);
+assert.equal(
+  planEditorSheetRecedes({ rubberBand: false, adapting: false }),
+  false
+);
+assert.equal(
+  planMapStopHintVisible({
+    hasStopAt: true,
+    waitHintOnMap: false,
+    rubberBand: false,
+  }),
+  true
+);
+assert.equal(
+  planMapStopHintVisible({
+    hasStopAt: true,
+    waitHintOnMap: true,
+    rubberBand: false,
+  }),
+  false
+);
+assert.equal(
+  planMapStopHintVisible({
+    hasStopAt: true,
+    waitHintOnMap: false,
+    rubberBand: true,
+  }),
+  false
+);
+assert.equal(PLAN_STOP_HINT_MS, 3200);
+{
+  const mid = planFingerHintPlacement({
+    fingerX: 180,
+    fingerY: 200,
+    mapW: 360,
+    mapH: 640,
+    chipW: 176,
+    chipH: 40,
+  });
+  assert.equal(mid.left, 180 - 88);
+  assert.equal(mid.top, 200 + 16);
+  const br = planFingerHintPlacement({
+    fingerX: 340,
+    fingerY: 600,
+    mapW: 360,
+    mapH: 640,
+    chipW: 176,
+    chipH: 40,
+    avoidRight: 56,
+  });
+  assert.ok(br.left + 176 <= 360 - 8 - 56);
+  assert.ok(br.top < 600, "chip flips above a low finger");
+  const above = planFingerHintPlacement({
+    fingerX: 180,
+    fingerY: 200,
+    mapW: 360,
+    mapH: 640,
+    chipW: 244,
+    chipH: 40,
+    preferAbove: true,
+  });
+  assert.equal(above.top, 200 - 40 - 12);
+  assert.equal(planFingerHintChipW({ undo: false, firstAb: false }), 176);
+  assert.equal(planFingerHintChipW({ undo: true, firstAb: false }), 228);
+  assert.equal(planFingerHintChipW({ undo: false, firstAb: true }), 244);
+  assert.equal(planFingerHintChipW({ undo: true, firstAb: true }), 280);
+}
 
 const tickLine: [number, number][] = [];
 for (let i = 0; i <= 40; i++) tickLine.push([8.67 + i * 0.012, 49.28]);
@@ -633,6 +729,122 @@ assert.equal(
   }),
   false
 );
+assert.equal(
+  planMapHistoryFabsVisible({
+    editorActive: true,
+    hasHistory: true,
+    mapHintOnMap: false,
+    rubberBand: false,
+    coachVisible: false,
+  }),
+  true,
+  "idle plan shows history FABs"
+);
+assert.equal(
+  planMapHistoryFabsVisible({
+    editorActive: true,
+    hasHistory: true,
+    mapHintOnMap: true,
+    rubberBand: false,
+    coachVisible: false,
+  }),
+  false,
+  "stop/wait chip owns Undo — hide FABs"
+);
+assert.equal(
+  planMapHistoryFabsVisible({
+    editorActive: true,
+    hasHistory: true,
+    mapHintOnMap: false,
+    rubberBand: true,
+    coachVisible: false,
+  }),
+  false,
+  "rubber-band hides FABs"
+);
+assert.equal(
+  planMapHistoryFabsVisible({
+    editorActive: true,
+    hasHistory: true,
+    mapHintOnMap: false,
+    rubberBand: false,
+    coachVisible: true,
+  }),
+  false,
+  "coach hides FABs"
+);
+assert.equal(
+  planMapHistoryFabsVisible({
+    editorActive: true,
+    hasHistory: true,
+    mapHintOnMap: false,
+    rubberBand: false,
+    coachVisible: false,
+    routingWaitBanner: true,
+  }),
+  false,
+  "routing-wait banner hides FABs"
+);
+assert.equal(
+  planMapHistoryFabsVisible({
+    editorActive: true,
+    hasHistory: false,
+    mapHintOnMap: false,
+    rubberBand: false,
+    coachVisible: false,
+  }),
+  false
+);
+assert.equal(
+  planParkedFingerClearsWhenIdle(true),
+  false,
+  "keep parked finger while reshape is in flight"
+);
+assert.equal(
+  planParkedFingerClearsWhenIdle(false),
+  true,
+  "drop parked finger when engine is idle"
+);
+assert.deepEqual(
+  planMapHintAnchorLngLat({
+    adaptingAt: [8.7, 49.4],
+    parkedFinger: [8.1, 49.1],
+  }),
+  [8.7, 49.4],
+  "dest/stop pin wins over parked reshape finger"
+);
+assert.deepEqual(
+  planMapHintAnchorLngLat({
+    adaptingAt: null,
+    parkedFinger: [8.1, 49.1],
+  }),
+  [8.1, 49.1],
+  "finger adapting uses parked point"
+);
+assert.equal(
+  planMapHintAnchorLngLat({
+    adaptingAt: null,
+    parkedFinger: null,
+  }),
+  null
+);
+assert.equal(
+  planMapAdaptingHintOnMap({
+    routingBusy: true,
+    hasLiveLine: true,
+    hasFinger: true,
+  }),
+  true
+);
+assert.equal(
+  planMapAdaptingHintOnMap({
+    routingBusy: true,
+    hasLiveLine: true,
+    hasFinger: false,
+  }),
+  false,
+  "without parked finger, dest-wait owns the chip"
+);
 
 const adoptedDraft = {
   ...draftAB(),
@@ -711,11 +923,147 @@ assert.equal(planReshapeHandleStepM(16) < planReshapeHandleStepM(12), true);
 assert.equal(planDragAlongLabelKm(1500), "1.5");
 assert.equal(planShapeKmChip(1500), "1.5 km");
 assert.equal(planRibbonDimOpacity(0.96, false), 0.96);
-assert.ok(Math.abs(planRibbonDimOpacity(0.96, true) - 0.096) < 1e-6);
-assert.equal(planRibbonDimOpacity(0.22, true), 0.05);
+assert.ok(Math.abs(planRibbonDimOpacity(0.96, true) - 0.0432) < 1e-6);
+assert.equal(planRibbonDimOpacity(0.22, true), 0.028);
 assert.equal(planGrabHandleOpacity(0.95, false), 0.95);
-assert.ok(Math.abs(planGrabHandleOpacity(0.95, true) - 0.4275) < 1e-6);
-assert.equal(planGrabHandleOpacity(0.1, true), 0.22);
+assert.ok(Math.abs(planGrabHandleOpacity(0.95, true) - 0.266) < 1e-6);
+assert.equal(planGrabHandleOpacity(0.1, true), 0.14);
+assert.equal(
+  planMapAdaptingHintOnMap({
+    routingBusy: true,
+    hasLiveLine: true,
+    hasFinger: true,
+  }),
+  true
+);
+assert.equal(
+  planMapAdaptingHintOnMap({
+    routingBusy: true,
+    hasLiveLine: true,
+    hasFinger: false,
+  }),
+  false
+);
+assert.equal(
+  planMapDestWaitHintOnMap({
+    editorActive: true,
+    routingBusy: true,
+    hasStart: true,
+    hasEnd: true,
+    fingerHint: false,
+  }),
+  true
+);
+assert.equal(
+  planMapDestWaitHintOnMap({
+    editorActive: true,
+    routingBusy: true,
+    hasStart: true,
+    hasEnd: true,
+    fingerHint: true,
+  }),
+  false
+);
+assert.equal(
+  planMapDestWaitHintOnMap({
+    editorActive: false,
+    routingBusy: true,
+    hasStart: true,
+    hasEnd: true,
+    fingerHint: false,
+  }),
+  false
+);
+assert.equal(
+  planMapDestWaitHintOnMap({
+    editorActive: true,
+    routingBusy: false,
+    hasStart: false,
+    hasEnd: true,
+    fingerHint: false,
+  }),
+  true
+);
+assert.equal(
+  planMapDestWaitHintOnMap({
+    editorActive: true,
+    routingBusy: false,
+    hasStart: true,
+    hasEnd: true,
+    fingerHint: false,
+    destConfirm: true,
+    hasLiveLine: false,
+  }),
+  true
+);
+assert.equal(
+  planMapDestWaitHintOnMap({
+    editorActive: true,
+    routingBusy: false,
+    hasStart: true,
+    hasEnd: true,
+    fingerHint: false,
+    destConfirm: true,
+    hasLiveLine: true,
+  }),
+  false
+);
+assert.equal(
+  planMapDestWaitCopy({ hasStart: false, hasLiveLine: false }),
+  "waitingGps"
+);
+assert.equal(
+  planMapDestWaitCopy({ hasStart: true, hasLiveLine: false }),
+  "firstAb"
+);
+assert.equal(
+  planMapDestWaitCopy({ hasStart: true, hasLiveLine: true }),
+  "adapting"
+);
+assert.equal(planLineGrabYieldsToPinch(1), false);
+assert.equal(planLineGrabYieldsToPinch(2), true);
+assert.equal(
+  planLineGrabBecomesExclusive({ pointerCount: 1, movePx: 8 }),
+  true
+);
+assert.equal(
+  planLineGrabBecomesExclusive({ pointerCount: 2, movePx: 20 }),
+  false
+);
+assert.equal(planLineHoldCancelsOnMove({ movePx: 5 }), false);
+assert.equal(planLineHoldCancelsOnMove({ movePx: 6 }), true);
+assert.ok(PLAN_LINE_HOLD_CANCEL_PX < PLAN_LINE_GRAB_MOVE_PX);
+assert.equal(PLAN_LINE_HOLD_MS, 450);
+assert.equal(planLineCoachIsCompact(699), true);
+assert.equal(planLineCoachIsXCompact(639), true);
+assert.equal(
+  planLineCoachCopy({
+    adopting: true,
+    compact: true,
+    full: "full",
+    short: "short",
+    adopt: "adopt",
+  }),
+  "adopt"
+);
+assert.equal(
+  planLineCoachCopy({
+    adopting: false,
+    compact: true,
+    full: "full",
+    short: "short",
+    adopt: "adopt",
+  }),
+  "short"
+);
+assert.equal(planRibbonLegendCompact(419), true);
+assert.equal(planRibbonLegendCompact(420), false);
+assert.equal(planChevronIconOpacity({ dimmed: true, fresh: true }), 0);
+assert.equal(
+  planChevronIconOpacity({ dimmed: false, fresh: true }) >
+    planChevronIconOpacity({ dimmed: false, fresh: false }),
+  true
+);
 assert.deepEqual(
   planRibbonLegendKinds({
     bands: [{ surface: "asphalt" }, { surface: "fine_gravel" }],

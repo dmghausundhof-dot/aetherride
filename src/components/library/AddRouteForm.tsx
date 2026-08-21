@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { simpleNamedRoute } from "@/lib/library/simpleAddRoute";
 import { useChromeLang } from "@/hooks/useChromeLang";
@@ -71,7 +71,7 @@ export function AddRouteForm({
               : "inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-on-accent"
           }
         >
-          {tone === "ghost" ? null : <Plus className="h-3.5 w-3.5" />} {label ?? p.keepRoute}
+          {tone === "ghost" ? null : <ChromeGlyph name="add" size={14} current />} {label ?? p.keepRoute}
         </button>
         {msg && (
           <p className="mt-2 text-xs text-text-secondary" role="status">

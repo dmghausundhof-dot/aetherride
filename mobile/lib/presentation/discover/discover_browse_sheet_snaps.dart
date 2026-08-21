@@ -69,10 +69,13 @@ class DiscoverBrowseSheetSnaps {
   }
 
   /// Antippen am Griff — ohne Swipe aus der Systemgeste.
-  /// Zu/Peek → halb, halb → voll, voll → halb.
-  static double handleTapTarget(double current) {
+  /// Zu/Peek → halb, halb → voll, voll → Peek/Zu (wieder Karte).
+  static double handleTapTarget(
+    double current, {
+    required bool hasSelection,
+  }) {
+    if (isFull(current)) return mapTarget(hasSelection: hasSelection);
     if (isHalf(current)) return full;
-    if (isFull(current)) return half;
     return half;
   }
 

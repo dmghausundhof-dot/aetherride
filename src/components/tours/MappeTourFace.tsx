@@ -74,6 +74,11 @@ export function MappeTourFace({
       <div className="min-w-0 flex-1 py-0.5">
         <span className={`block truncate font-semibold ${compact ? "text-[13px]" : "text-sm"}`}>{route.name}</span>
         {stats ? (
+          compact ? (
+            <span className={`${gap} block truncate text-[11px] tabular-nums text-text-secondary`}>
+              {[stats.km, stats.hm, stats.min].filter(Boolean).join(" · ")}
+            </span>
+          ) : (
           <span className={`${gap} flex flex-wrap gap-x-3 gap-y-1 text-[11px] tabular-nums text-text-secondary`}>
             <span className="inline-flex items-center gap-1">
               <MappeGlyph name="distance" size={14} />
@@ -90,6 +95,7 @@ export function MappeTourFace({
               {stats.min}
             </span>
           </span>
+          )
         ) : (
           <span className={`${gap} block text-xs text-text-secondary`}>
             {noTrackLabel}

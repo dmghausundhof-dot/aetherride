@@ -12,6 +12,7 @@ import '../../l10n/l10n_ext.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Einmaliges Onboarding → erster echter GPS-Track oder Garage.
 /// Multi-Sport: alle Disziplinen gleichwertig (kein MTB-first Framing).
@@ -90,16 +91,16 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     return true;
   }
 
-  IconData _iconFor(String name) => switch (name) {
-        'terrain' => Icons.terrain,
-        'landscape' => Icons.landscape,
-        'route' => Icons.route,
-        'speed' => Icons.speed,
-        'location_city' => Icons.location_city,
-        'electric_bike' => Icons.electric_bike,
-        'electric_moped' => Icons.electric_moped,
-        'forest' => Icons.forest,
-        _ => Icons.pedal_bike,
+  String _markFor(String name) => switch (name) {
+        'terrain' => 'elevation',
+        'landscape' => 'karte',
+        'route' => 'split',
+        'speed' => 'heat',
+        'location_city' => 'locate',
+        'electric_bike' => 'nav',
+        'electric_moped' => 'nav',
+        'forest' => 'elevation',
+        _ => 'nav',
       };
 
   @override
@@ -207,8 +208,8 @@ class OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      _iconFor(s.icon),
+                                    ChromeGlyph(
+                                      _markFor(s.icon),
                                       size: 20,
                                       color: _sport == s.id
                                           ? AppColors.accent

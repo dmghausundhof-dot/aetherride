@@ -13,8 +13,10 @@ import '../../domain/component.dart';
 import '../../domain/garage/bike_receipt.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import '../shared/chrome_glyph.dart';
 import '../../providers/app_providers.dart';
 import 'garage_chrome.dart';
+import 'rad_glyph.dart';
 
 class BikeReceiptsPanel extends ConsumerWidget {
   const BikeReceiptsPanel({
@@ -44,7 +46,7 @@ class BikeReceiptsPanel extends ConsumerWidget {
             ),
             TextButton.icon(
               onPressed: () => _add(context, ref),
-              icon: const Icon(Icons.add, size: 18),
+              icon: const ChromeGlyph('add', size: 18),
               label: Text(AppLocalizations.of(context).garageReceiptAdd),
             ),
           ],
@@ -58,7 +60,7 @@ class BikeReceiptsPanel extends ConsumerWidget {
           GarageInviteCard(
             title: AppLocalizations.of(context).garageReceiptsEmptyInvite,
             hint: AppLocalizations.of(context).garageReceiptsEmpty,
-            icon: Icons.receipt_long_outlined,
+            mark: 'calendar',
             onTap: () => _add(context, ref),
           )
         else
@@ -265,13 +267,13 @@ class _ReceiptThumb extends StatelessWidget {
                 file,
                 key: ValueKey('$path-${_receiptPhotoStamp(path!)}'),
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.receipt_long,
+                errorBuilder: (_, __, ___) => const ChromeGlyph(
+                  'file',
                   size: 22,
                   color: AppColors.muted,
                 ),
               )
-            : const Icon(Icons.receipt_long, size: 22, color: AppColors.muted),
+            : const ChromeGlyph('file', size: 22, color: AppColors.muted),
       ),
     );
   }
@@ -408,12 +410,12 @@ class _ReceiptSheetState extends ConsumerState<_ReceiptSheet> {
               children: [
                 TextButton.icon(
                   onPressed: () => _pick(ImageSource.camera),
-                  icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                  icon: const RadGlyph('photo', size: 18),
                   label: Text(l10n.postRidePhotoCamera),
                 ),
                 TextButton.icon(
                   onPressed: () => _pick(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_outlined, size: 18),
+                  icon: const RadGlyph('photo', size: 18),
                   label: Text(l10n.garageGallery),
                 ),
                 if (_photoPath != null)

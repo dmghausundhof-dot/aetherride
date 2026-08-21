@@ -274,4 +274,70 @@ void main() {
     );
     expect(reset.any((a) => a.label.contains('Lower-Leg')), isFalse);
   });
+
+  test('Lastenrad: kürzere Kette, Magura-Mineralöl, Suntour-Gabel', () {
+    const cargo = const Bike(
+      id: 'c',
+      name: 'Load',
+      category: BikeCategory.cargo,
+      isEbike: true,
+    );
+    expect(chainCheckKm(cargo), 600);
+    expect(brakePadCheckKm(cargo, rear: false), 500);
+    final magura = BikeComponent(
+      id: 'br',
+      bikeId: 'c',
+      slot: ComponentSlot.brakeFront,
+      manufacturer: 'Magura',
+      catalogModelId: 'cm-magura-cme-front',
+    );
+    final suntour = BikeComponent(
+      id: 'fk',
+      bikeId: 'c',
+      slot: ComponentSlot.fork,
+      manufacturer: 'SR Suntour',
+      catalogModelId: 'cm-suntour-mobie-cargo-80',
+    );
+    final belt = BikeComponent(
+      id: 'ch',
+      bikeId: 'c',
+      slot: ComponentSlot.chain,
+      manufacturer: 'Gates',
+      catalogModelId: 'cm-gates-cdx-belt',
+    );
+    final t = intervalTemplatesFor(
+      cargo,
+      components: [magura, suntour, belt],
+    );
+    expect(t.any((e) => e.label.contains('Riemen') && e.intervalKm == 5000), isTrue);
+    expect(
+      t.any((e) => e.label.contains('Mineralöl') && e.intervalDays == 730),
+      isTrue,
+    );
+    expect(
+      t.any(
+        (e) =>
+            e.slot == ComponentSlot.fork &&
+            e.label.contains('Vollservice') &&
+            e.intervalHours == 100,
+      ),
+      isTrue,
+    );
+  });
+
+  test('Kinderrad ohne Gabel-Stunden, DH kürzere Beläge', () {
+    expect(
+      intervalTemplatesFor(
+        const Bike(id: 'k', name: 'woom', category: BikeCategory.kids),
+      ).any((e) => e.slot == ComponentSlot.fork && e.intervalHours != null),
+      isFalse,
+    );
+    expect(
+      brakePadCheckKm(
+        const Bike(id: 'd', name: 'DH', category: BikeCategory.dh),
+        rear: false,
+      ),
+      400,
+    );
+  });
 }

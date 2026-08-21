@@ -13,10 +13,10 @@ void main() {
       expect(DiscoverShellModeLogic.showsNavigateForm(m), isFalse);
     });
 
-    test('navigate is fixed A→B panel, not catalog', () {
+    test('navigate is A→B form on a draggable sheet, not catalog', () {
       const m = DiscoverShellMode.navigate;
-      expect(DiscoverShellModeLogic.usesBrowseSheet(m), isFalse);
-      expect(DiscoverShellModeLogic.usesFixedNavPanel(m), isTrue);
+      expect(DiscoverShellModeLogic.usesBrowseSheet(m), isTrue);
+      expect(DiscoverShellModeLogic.usesFixedNavPanel(m), isFalse);
       expect(DiscoverShellModeLogic.showsTourCatalog(m), isFalse);
       expect(DiscoverShellModeLogic.showsMineList(m), isFalse);
       expect(DiscoverShellModeLogic.showsNavigateForm(m), isTrue);

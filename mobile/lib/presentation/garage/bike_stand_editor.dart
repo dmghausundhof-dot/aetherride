@@ -97,6 +97,11 @@ class _BikeStandEditorDialogState extends State<_BikeStandEditorDialog> {
             l10n.garageStandHint,
             style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.garageStandStravaHint,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
           const SizedBox(height: AppSpacing.m),
           TextField(
             key: const Key('bike-stand-km'),

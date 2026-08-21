@@ -27,4 +27,16 @@ const nav = readFileSync("src/components/app/HofThresholdNav.tsx", "utf8");
 assert.ok(nav.includes("ChromeGlyph"), "threshold tabs use FlowLine marks");
 assert.ok(!nav.includes("from \"lucide-react\""), "threshold tabs drop Lucide");
 
+const discover = readFileSync("src/app/discover/page.tsx", "utf8");
+assert.ok(discover.includes('discover-sheet-${id}'), "discover sheet tabs stay");
+assert.ok(!discover.includes("Zap"), "discover sheet drops Lucide Zap");
+assert.ok(
+  discover.includes('["quick", copy.mapSheetNear, "locate"]'),
+  "nearby sheet tab is FlowLine locate"
+);
+
+const home = readFileSync("src/components/landing/HomePageBody.tsx", "utf8");
+assert.ok(home.includes('name="karte"'), "landing website card uses FlowLine karte");
+assert.ok(!home.includes("<Map "), "landing does not call JS Map as a glyph");
+
 console.log("chromeMarks.test.ts OK");

@@ -42,6 +42,20 @@ void main() {
       expect(lower, isNot(contains('osrm')));
       expect(lower, isNot(contains('graphhopper')));
     }
+    final de = AppLocalizationsDe();
+    expect(
+      de.discoverRiderHonestyFor(
+        'Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.',
+      ),
+      de.discoverVariantValhallaOnly,
+    );
+    expect(
+      de.discoverRiderHonestyFor(
+        'Ohne Live-Strecke keine Varianten — Route wie geplant.',
+      ),
+      de.discoverVariantValhallaOnly,
+      reason: 'legacy engine warning still maps',
+    );
   });
 
   test('quick-limit hint is Hof copy, no routing engine', () {
@@ -302,9 +316,15 @@ void main() {
       isNot(contains('street tiles')),
     );
     expect(de.rideHudStreetNeedsNet, 'Straßenkarte braucht Netz');
+    expect(de.rideHudStreetOutside, contains('nicht hier'));
+    expect(de.hofRefreshStreetMap, contains('erneuern'));
     expect(
       de.hofPackReadyRideMap('Rhein-Neckar'),
       'Rhein-Neckar · Routing offline. Ride-Karte: Netz.',
+    );
+    expect(
+      de.hofPackReadyRideStreet('Rhein-Neckar'),
+      'Rhein-Neckar · Routing und Straßenkarte offline.',
     );
     expect(de.hofPackReadyRideMap('X').toLowerCase(), isNot(contains('tile')));
     expect(
@@ -327,10 +347,23 @@ void main() {
       de.offlineMapsProfileSubtitle(
         ready: true,
         packId: 'rhein-neckar',
+        packName: 'Rhein-Neckar',
+        streetReady: true,
+      ),
+      de.hofPackReadyRideStreet('Rhein-Neckar'),
+    );
+    expect(
+      de.offlineMapsProfileSubtitle(
+        ready: true,
+        packId: 'rhein-neckar',
         packName: 'Rhein-Neckar / Heidelberg',
       ),
       de.hofPackReadyRideMap('Rhein-Neckar'),
     );
+    expect(de.offlineStreetCorridorCta('12 MB'), contains('Standort'));
+    expect(de.offlineStreetRouteCta('8 MB'), contains('Tour'));
+    expect(de.hofLoadStreetMap, contains('Straßenkarte'));
+    expect(de.offlineSketchStreet, 'Straße');
     expect(de.hofSkyNeedNet, 'Himmel braucht Netz.');
     expect(de.dieBoxChipCsc, 'Tacho');
     expect(de.postRideFactSoc('42'), 'Akku 42%');
@@ -415,6 +448,15 @@ void main() {
         AppLocalizationsEn().offlineCoverageSuggested('Alps'), 'Load · Alps');
     expect(de.offlineCoverageOutside('Rhein-Neckar'), 'Außerhalb Rhein-Neckar');
     expect(
+      de.offlineCoverageOutsideStreet('Rhein-Neckar'),
+      'Außerhalb Rhein-Neckar · Straße offline',
+    );
+    expect(de.offlineRoutingAway, 'Routing nicht hier');
+    expect(
+      de.offlineReadyStreetHereRoutingAway,
+      'Straßenkarte bereit. Routing nicht am Standort.',
+    );
+    expect(
       AppLocalizationsEn().offlineCoverageOutside('Alps'),
       'Outside Alps',
     );
@@ -422,6 +464,14 @@ void main() {
     expect(
       de.offlineCoverageEdgeFor('Rhein-Neckar / Heidelberg', outside: true),
       'Außerhalb Rhein-Neckar',
+    );
+    expect(
+      de.offlineCoverageEdgeFor(
+        'Rhein-Neckar / Heidelberg',
+        outside: true,
+        streetReady: true,
+      ),
+      'Außerhalb Rhein-Neckar · Straße offline',
     );
     expect(
       de.offlineCoverageEdgeFor('Rhein-Neckar / Heidelberg', outside: false),
@@ -446,11 +496,20 @@ void main() {
     expect(
       de.offlineCoverageEdgeFor(
         'Rhein-Neckar',
-        outside: true,
-        mapNeedsNet: true,
+        outside: false,
+        streetAway: true,
       ),
-      'Außerhalb Rhein-Neckar',
+      'Rhein-Neckar · Straße nicht hier',
     );
+    expect(
+      de.offlineCoverageEdgeFor(
+        'Rhein-Neckar',
+        outside: true,
+        streetAway: true,
+      ),
+      'Außerhalb Rhein-Neckar · Straße nicht hier',
+    );
+    expect(de.offlineStreetAway, 'Straße nicht hier');
     expect(de.offlineGraphReadySnack, contains('orangen Box'));
     expect(de.offlineBrowseOverviewSnack, contains('Zoom 0–11'));
     expect(de.offlineSketchRouting, 'Routing');
@@ -527,6 +586,7 @@ void main() {
 
   test('plan sheet copy: Planen, Start tippen, Ziel setzen', () {
     final de = AppLocalizationsDe();
+    final en = AppLocalizationsEn();
     expect(de.planRouteTitle, 'Planen');
     expect(de.planRouteCta, 'Planen');
     expect(de.discoverModeNavigate, 'Planen');
@@ -543,7 +603,9 @@ void main() {
     expect(de.discoverOnMapPlace, 'Punkt auf der Karte');
     expect(de.planEditLineHint.contains('Scheiben'), isTrue);
     expect(de.planEditLineHint.contains('Halten'), isTrue);
-    expect(de.planLineCoach.contains('Halten'), isTrue);
+    expect(de.planLineCoach.contains('Höhenprofil'), isTrue);
+    expect(de.planLineCoachShort.contains('Halten'), isTrue);
+    expect(de.planLineCoachAdopt.contains('merken'), isTrue);
     expect(de.planMapSteep, 'Steil');
     expect(de.planMapUnknown, 'Unbekannt');
     expect(de.navigateViaHint.contains('Höhenprofil'), isTrue);
@@ -553,6 +615,8 @@ void main() {
     expect(de.planUndo, 'Rückgängig');
     expect(de.planRedo, 'Wiederholen');
     expect(de.planStopSetHint.contains('Stopp gesetzt'), isTrue);
+    expect(de.discoverLastDestApplied.contains('Ziel'), isTrue);
+    expect(en.discoverLastDestApplied.toLowerCase(), contains('destination'));
     expect(
         de.planElevSteepHint, 'Rot steil · Orange flach · Blau ab · Braun Weg');
     expect(de.discoverPlaceOnRoute, 'In die Route');

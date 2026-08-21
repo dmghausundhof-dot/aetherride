@@ -74,9 +74,19 @@ if (chromeOgLocale("fr") !== "fr_FR") {
   throw new Error("og fr");
 }
 
+const request = readFileSync("src/lib/i18n/requestChromeLang.ts", "utf8");
+if (!request.includes("accept-language")) {
+  throw new Error("requestChromeLang reads Accept-Language");
+}
+if (!request.includes("CHROME_LANG_COOKIE")) {
+  throw new Error("requestChromeLang reads override cookie");
+}
 const layout = readFileSync("src/app/layout.tsx", "utf8");
-if (!layout.includes("accept-language")) {
-  throw new Error("root layout reads Accept-Language");
+if (!layout.includes("requestChromeLang")) {
+  throw new Error("root layout uses requestChromeLang");
+}
+if (!layout.includes("heroLead")) {
+  throw new Error("root metadata uses homepage copy");
 }
 if (!layout.includes("ChromeLang") && !layout.includes("initialLang")) {
   throw new Error("root layout seeds chrome lang");

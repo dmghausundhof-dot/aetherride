@@ -15,6 +15,7 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/user_profile_store.dart';
 import '../../data/sensor/bike_ble_store.dart';
+import '../../data/routing/offline_basemap.dart';
 import '../../data/routing/offline_maps_prefs.dart';
 import '../../data/routing/offline_pack_dirs.dart';
 import '../../data/sync/sync_engine.dart'
@@ -35,6 +36,7 @@ import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
 import '../garage/ble_pair_sheet.dart';
 import '../garage/rad_nav_mark.dart';
+import '../shared/chrome_glyph.dart';
 import '../home/watch_pair_sheet.dart';
 import '../map/nav_puck_profile_tile.dart';
 import '../post_ride/post_ride_screen.dart';
@@ -67,6 +69,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _editingRider = false;
   int _privacyZoneCount = 0;
   bool _offlineRoutingReady = false;
+  bool _offlineStreetReady = false;
   String? _offlinePackId;
   String? _offlinePackName;
 
@@ -189,9 +192,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final id = OfflineMapsPrefs.packIdFromActivatedPath(
         m['activatedPackPath'] as String?,
       );
+      double? lng;
+      double? lat;
+      try {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          lng = last.longitude;
+          lat = last.latitude;
+        }
+      } catch (_) {}
+      var street = false;
+      if (ready) {
+        try {
+          street = await OfflineBasemap.streetHudCoversActivatedPack(
+            lng: lng,
+            lat: lat,
+          );
+        } catch (_) {}
+      }
       if (!mounted) return;
       setState(() {
         _offlineRoutingReady = ready;
+        _offlineStreetReady = street;
         _offlinePackId = ready ? id : null;
         _offlinePackName = ready && raw.isNotEmpty ? raw : null;
       });
@@ -203,6 +225,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ready: _offlineRoutingReady,
       packId: _offlinePackId,
       packName: _offlinePackName,
+      streetReady: _offlineStreetReady,
     );
   }
 
@@ -295,14 +318,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       focusPackId = OfflineMapsPrefs.packIdFromActivatedPath(
         m['activatedPackPath'] as String?,
       );
-      if (lng == null || lat == null) {
-        final bbox = await OfflinePackDirs.activatedCoverageBbox() ??
-            OfflineMapsPrefs.packBboxFrom(m);
-        if (bbox != null && bbox.length >= 4) {
-          lng = (bbox[0] + bbox[2]) / 2;
-          lat = (bbox[1] + bbox[3]) / 2;
-        }
-      }
     } catch (_) {}
     await openOfflineMapsSheet(
       context,
@@ -697,7 +712,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.location_off_outlined),
+                  leading: const ChromeGlyph('locate', size: 22),
                   title: Text(l10n.privacyHomePlacesTitle),
                   subtitle: Text(
                     _privacyZoneCount == 0
@@ -714,7 +729,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const HudMediaConnectionTile(),
                 const NavPuckProfileTile(),
                 ListTile(
-                  leading: const Icon(Icons.sync),
+                  leading: const ChromeGlyph('cloud', size: 22),
                   title: Text(l10n.authSyncNow),
                   subtitle: session == null || !AppConfig.isSupabaseConfigured
                       ? Text(l10n.profileLocalOnly)
@@ -722,14 +737,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: _busy ? null : _sync,
                 ),
                 ListTile(
-                  leading: const Icon(Icons.map_outlined),
+                  leading: const ChromeGlyph('karte', size: 22),
                   title: Text(l10n.profileOfflineMaps),
                   subtitle: Text(_offlineMapsSubtitle(l10n)),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => unawaited(_openOfflineMaps()),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.lock_open),
+                  leading: const ChromeGlyph('lock', size: 22),
                   title: Text(session == null ? l10n.signIn : l10n.account),
                   subtitle: Text(
                     session == null
@@ -739,7 +754,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () => openAuthScreen(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.chat_bubble_outline),
+                  leading: const ChromeGlyph('stimmen', size: 22),
                   title: Text(l10n.chatAssistant),
                   subtitle: Builder(
                     builder: (context) {
@@ -768,7 +783,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onTap: () => openChatScreen(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined),
+                  leading: const ChromeGlyph('shield', size: 22),
                   title: Text(l10n.authPrivacy),
                   subtitle: Text(l10n.privacyConsentsExportHint),
                   trailing: const Icon(Icons.chevron_right),
@@ -817,7 +832,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             setState(() {});
                           },
                           trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const ChromeGlyph('trash', size: 22),
                             onPressed: () async {
                               await store.load();
                               await store.setFamilyRiders(
@@ -896,8 +911,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               message: isPrimary
                   ? l10n.profilePrimarySuffix(l10n.bikeCategoryShort(d))
                   : l10n.profileSetPrimary,
-              child: Icon(
-                isPrimary ? Icons.star : Icons.star_border,
+              child: ChromeGlyph(
+                'star',
                 size: 16,
                 color: AppColors.accent,
               ),
@@ -1010,8 +1025,11 @@ class _ProfileHeader extends StatelessWidget {
             child: hasPhoto
                 ? null
                 : (initials == '?'
-                    ? const Icon(Icons.person_outline,
-                        color: Colors.white, size: 32)
+                    ? const ChromeGlyph(
+                        'user',
+                        size: 32,
+                        color: Colors.white,
+                      )
                     : Text(
                         initials,
                         style: const TextStyle(
@@ -1307,7 +1325,7 @@ class _SubscriptionCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.verified, color: AppColors.accent, size: 20),
+            const ChromeGlyph('crown', size: 20, color: AppColors.accent),
             const SizedBox(width: AppSpacing.s),
             Expanded(
               child: Text(
@@ -1337,7 +1355,7 @@ class _SubscriptionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.stars_rounded, color: AppColors.accent),
+              const ChromeGlyph('star', size: 22, color: AppColors.accent),
               const SizedBox(width: AppSpacing.s),
               Text(
                 l10n.billingTitle,
@@ -1470,7 +1488,7 @@ class _RiderSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SummaryRow(
-          icon: Icons.pedal_bike,
+          mark: const ChromeGlyph('nav', size: 20, color: AppColors.muted),
           label: disciplineLabel,
           sub: sub,
         ),
@@ -1484,13 +1502,13 @@ class _RiderSummary extends StatelessWidget {
         ],
         const SizedBox(height: AppSpacing.s),
         _SummaryRow(
-          icon: Icons.monitor_weight_outlined,
+          mark: const ChromeGlyph('user', size: 20, color: AppColors.muted),
           label: '${weightKg.toStringAsFixed(0)} kg',
           sub: l10n.profileSubWeight,
         ),
         const SizedBox(height: AppSpacing.s),
         _SummaryRow(
-          icon: Icons.trending_up,
+          mark: const ChromeGlyph('heat', size: 20, color: AppColors.muted),
           label: skillLabel,
           sub: l10n.profileSubSkill(skill),
         ),
@@ -1501,13 +1519,11 @@ class _RiderSummary extends StatelessWidget {
 
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
-    this.icon,
-    this.mark,
+    required this.mark,
     required this.label,
     required this.sub,
   });
-  final IconData? icon;
-  final Widget? mark;
+  final Widget mark;
   final String label;
   final String sub;
 
@@ -1515,9 +1531,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        mark ??
-            Icon(icon ?? Icons.circle_outlined,
-                size: 20, color: AppColors.muted),
+        mark,
         const SizedBox(width: AppSpacing.s),
         Expanded(
           child: Text.rich(
@@ -1772,8 +1786,9 @@ class _ProfileConnectionsCardState
       children: [
         ListTile(
           key: const Key('profile-watch'),
-          leading: Icon(
-            Icons.watch_outlined,
+          leading: ChromeGlyph(
+            'watch',
+            size: 22,
             color: watchLive ? AppColors.chrome : AppColors.muted,
           ),
           title: Text(l10n.profileWatchTitle),
@@ -1783,7 +1798,7 @@ class _ProfileConnectionsCardState
         ),
         ListTile(
           key: const Key('profile-bike-ble'),
-          leading: const Icon(Icons.bluetooth),
+          leading: const ChromeGlyph('bluetooth', size: 22),
           title: Text(l10n.profileBikeBleTitle),
           subtitle: Text(
             hasBike ? bikeLine : l10n.profileBikeBleNeedBike,

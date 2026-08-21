@@ -108,6 +108,7 @@ abstract final class OfflinePackDirs {
           graphBytes: bytes,
           solid: hit.solid,
           dots: hit.dots,
+          traces: hit.traces,
         ),
       );
     } catch (_) {}

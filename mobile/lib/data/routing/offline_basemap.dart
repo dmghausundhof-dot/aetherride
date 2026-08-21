@@ -29,7 +29,8 @@ abstract final class OfflineBasemap {
     Duration timeout = const Duration(seconds: 2),
   }) async {
     try {
-      final result = await InternetAddress.lookup('dns.google').timeout(timeout);
+      final result =
+          await InternetAddress.lookup('dns.google').timeout(timeout);
       return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
     } catch (_) {
       return false;
@@ -88,6 +89,32 @@ abstract final class OfflineBasemap {
       final id = OfflineMapsPrefs.packIdFromActivatedPath(path);
       if (id == null || id.isEmpty) return false;
       return hasStreetHudRegion(id);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// True when Ride HUD tiles would actually paint at [lng]/[lat].
+  static Future<bool> streetHudCoversActivatedPack({
+    double? lng,
+    double? lat,
+  }) async {
+    try {
+      final path = await OfflineMapsPrefs.activatedPackPath();
+      final id = OfflineMapsPrefs.packIdFromActivatedPath(path);
+      if (id == null || id.isEmpty) return false;
+      if (!await hasStreetHudRegion(id)) return false;
+      final m = await OfflineMapsPrefs.read();
+      if (OfflineMapsPrefs.streetHudPackIdFrom(m) != id) return true;
+      return streetHudCoversHere(
+        regionReady: true,
+        kind: streetHudKindFromRaw(
+          OfflineMapsPrefs.streetHudKindRawFrom(m),
+        ),
+        storedBbox: OfflineMapsPrefs.streetHudBboxFrom(m),
+        userLng: lng,
+        userLat: lat,
+      );
     } catch (_) {
       return false;
     }

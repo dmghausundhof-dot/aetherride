@@ -1,6 +1,6 @@
 "use client";
 
-import { Languages } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLangPreference } from "@/hooks/useChromeLang";
 import {
@@ -16,7 +16,7 @@ export function ChromeLangPicker() {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
       <h3 className="mb-2 flex items-center gap-2 font-semibold">
-        <Languages className="h-4 w-4 text-chrome" /> {copy.profileLanguage}
+        <ChromeGlyph name="lang" size={16} current className="text-chrome" /> {copy.profileLanguage}
       </h3>
       <p className="mb-3 text-xs text-text-secondary">
         {copy.profileLanguageHint}

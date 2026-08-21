@@ -13,6 +13,7 @@ import '../../domain/setup/bracketing.dart';
 import '../../domain/setup/templates.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import '../shared/chrome_glyph.dart';
 import '../../providers/app_providers.dart';
 import 'garage_chrome.dart';
 
@@ -355,13 +356,13 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
                 minimumSize: const Size(0, 44),
               ),
               onPressed: _busy ? null : _manualVersion,
-              icon: const Icon(Icons.add, size: 18),
+              icon: const ChromeGlyph('add', size: 18),
               label: Text(l10n.setupNewVersionCta),
             ),
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44)),
               onPressed: _busy ? null : _startCompare,
-              icon: const Icon(Icons.compare_arrows, size: 18),
+              icon: const ChromeGlyph('swap', size: 18),
               label: Text(l10n.setupCompareCta),
             ),
           ],
@@ -396,7 +397,7 @@ class _SetupPanelState extends ConsumerState<SetupPanel> {
             child: GarageInviteCard(
               title: l10n.setupEmpty,
               hint: l10n.setupVersionsHint,
-              icon: Icons.tune,
+              mark: 'filter',
               onTap: _busy ? null : _manualVersion,
             ),
           )

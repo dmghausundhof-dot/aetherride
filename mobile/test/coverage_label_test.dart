@@ -1,4 +1,5 @@
 import 'package:aetherride_mobile/data/routing/coverage_label.dart';
+import 'package:aetherride_mobile/data/routing/offline_pack_catalog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -46,6 +47,37 @@ void main() {
     expect(suggested.fillColor, isNot(active.fillColor));
     expect(coverageWashDashed(CoverageWashKind.suggested), isTrue);
     expect(coverageWashDashed(CoverageWashKind.active), isFalse);
+    expect(coverageWashDashed(CoverageWashKind.street), isTrue);
+    final street = coverageWashPaint(
+      kind: CoverageWashKind.street,
+      dimmed: false,
+    );
+    expect(street.fillColor, '#5E6F58');
+    expect(street.cornerWidth, 0);
+    expect(
+      streetHudOverlayVisible(zoom: 9, bbox: const [11.4, 48.0, 11.7, 48.3]),
+      isTrue,
+    );
+    expect(
+      streetHudOverlayVisible(zoom: 16, bbox: const [11.4, 48.0, 11.7, 48.3]),
+      isFalse,
+    );
+    expect(
+      coverageStreetWashBbox(
+        kind: StreetHudOfferKind.corridor,
+        streetBbox: const [11.4, 48.0, 11.7, 48.3],
+        packBbox: envelope,
+      ),
+      [11.4, 48.0, 11.7, 48.3],
+    );
+    expect(
+      coverageStreetWashBbox(
+        kind: StreetHudOfferKind.pack,
+        streetBbox: city,
+        packBbox: city,
+      ),
+      isNull,
+    );
     final dim = coverageWashPaint(
       kind: CoverageWashKind.suggested,
       dimmed: true,

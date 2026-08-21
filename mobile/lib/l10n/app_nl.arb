@@ -193,8 +193,16 @@
       "name": { "type": "String" }
     }
   },
+  "hofLoadStreetMap": "Straatkaart voor de rit laden",
+  "hofRefreshStreetMap": "Straatkaart rondom jou vernieuwen",
   "hofPackReadyRideMap": "{name} · Routing offline. Ritkaart: net.",
   "@hofPackReadyRideMap": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "hofPackReadyRideStreet": "{name} · Routing en straatkaart offline.",
+  "@hofPackReadyRideStreet": {
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -449,6 +457,8 @@
   "planUndo": "Ongedaan maken",
   "planRedo": "Opnieuw",
   "planLineCoach": "Sleep de lijn of de schijven voor een stop. Vasthouden: nieuwe bestemming.",
+  "planLineCoachShort": "Sleep de lijn: stop. Vasthouden: bestemming.",
+  "planLineCoachAdopt": "Sla de tocht op, vorm hem daarna op de kaart — sleep de lijn of schijven.",
   "planLineCoachOk": "Begrepen",
   "planMapSteep": "Steil",
   "planMapUnknown": "Onbekend",
@@ -530,6 +540,7 @@
   "garageStatKmTotal": "KM TOTAAL",
   "garageQuickSwitch": "Snel wisselen",
   "garageLastRides": "Recente ritten",
+  "garageLastRidesHint": "Echte ritten — geen verzonnen kilometers.",
   "garageNoRidesTitle": "Nog geen ritten",
   "garageNoRidesMessage": "Je eerste opgeslagen rit verschijnt hier.",
   "garageActive": "Actief",
@@ -580,6 +591,27 @@
   "garageFamilyHintEmpty": "Gewicht voor kind of partner — hier aanmaken.",
   "garageFamilyAdd": "Rijder toevoegen",
   "garageSchemaMoreOnDots": "Verdere gaten op de punten.",
+  "garageSpareShelf": "Reserveplank",
+  "garageSpareHint": "Gedemonteerde delen blijven hier. Terugplaatsen vervangt de actieve slot.",
+  "garageReinstall": "Terugplaatsen",
+  "garageSpareEmpty": "Plank leeg — demonter een deel om het hier te bewaren.",
+  "garageRemovedOn": "Gedemonteerd {date}",
+  "@garageRemovedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "garageWearTitle": "Slijtageprognose",
+  "garageWearHint": "Belastingsgewogen · een bereik, nooit een puntwaarde.",
+  "garageWearEmpty": "Geen slijtagedelen met historie.",
+  "garageWearSwapIn": "{name} in {low}–{high} km",
+  "@garageWearSwapIn": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "low": { "type": "String" },
+      "high": { "type": "String" }
+    }
+  },
   "garageCreatedAtStand": "{name} staat hier.",
   "@garageCreatedAtStand": {
     "placeholders": {
@@ -1431,9 +1463,12 @@
   "offlineCoverageLabelEnvelope": "{name} · routing · landvlak",
   "offlineCoverageSuggested": "Laden · {name}",
   "offlineCoverageOutside": "Buiten {name}",
+  "offlineCoverageOutsideStreet": "Buiten {name} · straat offline",
+  "offlineCoverageOutsideStreetAway": "Buiten {name} · straat niet hier",
   "offlineCoverageShowOnMap": "Toon regio op de kaart",
   "offlineCoverageOverview": "{name} · overzicht",
   "offlineCoverageMapNeedsNet": "{name} · kaart: net",
+  "offlineCoverageStreetAway": "{name} · straat niet hier",
   "offlineGraphReadySnack": "Routing in het oranje vak. Ride-kaart heeft net nodig.",
   "offlineBrowseOverviewSnack": "Overzicht op de kaart (zoom 0–11). Straatzoom heeft net nodig.",
   "offlineSketchRouting": "Routing",
@@ -1456,8 +1491,11 @@
   "offlineStreetReady": "Straatkaart klaar — navigatie in de rit zonder netwerk.",
   "offlineStreetOn": "Straat aan",
   "offlineStreetOff": "Geen straat",
+  "offlineStreetAway": "Straat niet hier",
   "offlineReadyAll": "Routing, overzicht en straatkaart klaar.",
   "offlineReadyStreet": "Routing en straatkaart klaar — overzicht niet geladen.",
+  "offlineReadyStreetAway": "Straatkaart op het toestel — niet op deze plek.",
+  "offlineReadyAllAway": "Routing en overzicht klaar. Straatkaart niet hier.",
   "offlineSketchGraph": "Graaf",
   "offlineStreetCta": "Straatkaart laden ({size})",
   "@offlineStreetCta": {
@@ -1466,9 +1504,52 @@
     }
   },
   "offlineStreetExplain": "Voor navigatie in de rit. Groter dan het overzicht — het beste via wifi.",
+  "offlineStreetCorridorCta": "Straatkaart rondom jou ({size})",
+  "@offlineStreetCorridorCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetCorridorExplain": "Niet het hele land — alleen rond GPS, voor navigatie in de rit. Het beste via wifi.",
+  "offlineStreetRouteCta": "Straatkaart langs de toer ({size})",
+  "@offlineStreetRouteCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetNeedGps": "De straatkaart voor deze regio is te groot. Locatie toestaan — dan een corridor rond GPS.",
+  "offlineStreetRefreshCta": "Straatkaart rondom jou vernieuwen ({size})",
+  "@offlineStreetRefreshCta": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "offlineStreetRemove": "Straatkaart verwijderen",
+  "offlineConfirmStreetRemoveTitle": "Straatkaart wissen?",
+  "offlineConfirmStreetRemoveBody": "Navigatie in de rit heeft daarna weer net nodig.",
+  "offlineStreetRemoved": "Straatkaart verwijderd.",
+  "offlineSketchStreet": "Straat",
+  "offlineConfirmStreetRouteBody": "Langs de toer, {size}. Niet de hele regio {name}.",
+  "@offlineConfirmStreetRouteBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
+  "offlineConfirmStreetCorridorBody": "Rondom de locatie, {size}. Niet de hele regio {name}.",
+  "@offlineConfirmStreetCorridorBody": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "size": { "type": "String" }
+    }
+  },
   "offlineLoadBelow": "Laad hieronder een pack. Alleen de graaf, niet de kaart van 540 MB.",
   "offlineRoutingOn": "Routing aan",
   "offlineRoutingOff": "Geen routing",
+  "offlineRoutingAway": "Routing niet hier",
+  "offlineReadyRoutingAway": "Routing op het apparaat — niet op je locatie.",
+  "offlineReadyStreetHereRoutingAway": "Straatkaart klaar. Routing niet op je locatie.",
+  "offlineReadyBothAway": "Routing en straatkaart niet op je locatie.",
   "offlineOverviewOn": "Overzicht aan",
   "offlineOverviewOff": "Geen overzicht",
   "offlineOverviewCta": "Overzicht {id} laden ({size})",
@@ -3271,6 +3352,7 @@
   "rideChipRoutingOffline": "Routing offline · kaart: net",
   "rideChipRoutingOfflineShort": "Routing offline",
   "rideHudStreetNeedsNet": "Straatkaart heeft net nodig",
+  "rideHudStreetOutside": "Straatkaart niet hier — net of vernieuwen",
   "rideCardinalN": "N",
   "rideCardinalNE": "NO",
   "rideCardinalE": "O",
@@ -4885,6 +4967,7 @@
   "garageStatDueNow": "Nu",
   "garageStandTitle": "Kilometers en uren",
   "garageStandHint": "Stand van computer of teller. Uren rekenen we niet uit km.",
+  "garageStandStravaHint": "Automatische Strava-sync is gepland — tot dan dezelfde dialoog als onder de foto. Geen stille import.",
   "garagePartsEmptyTitle": "Nog geen onderdelen",
   "garagePartsEmptyHint": "Voeg er een toe — dan herinneren we je aan onderhoud.",
   "garageMissingInvite": "Nog open",
@@ -5019,7 +5102,12 @@
   },
   "garagePhotoKept": "Foto bewaard",
   "garagePhotoRetake": "Opnieuw maken",
-  "garagePhotoRetakeHint": "Cover blijft. Maak opnieuw, dan staat de fiets op de stand.",
+  "garagePhotoRetakeHint": "De foto vult de stand niet. Maak opnieuw, dan staat de fiets op de rail.",
+  "garagePhotoCropTitle": "Fiets op de stand zetten",
+  "garagePhotoCropHint": "Verschuif de foto tot de fiets op de rail staat.",
+  "garagePhotoCropSave": "Zo zetten",
+  "garagePhotoRotate": "90° draaien",
+  "garagePhotoPlace": "Op de stand zetten",
   "identifyReasonNoKey": "Geen Vision-sleutel. Foto bewaren, merk en model typen.",
   "identifyReasonQuota": "Scanquota leeg. Merk en model typen.",
   "identifyReasonFailed": "Foto niet gelezen. Merk en model typen.",

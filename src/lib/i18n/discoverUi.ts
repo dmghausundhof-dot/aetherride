@@ -132,6 +132,8 @@ export type DiscoverUi = {
   planUndo: string;
   planRedo: string;
   planLineCoach: string;
+  planLineCoachShort: string;
+  planLineCoachAdopt: string;
   planLineCoachOk: string;
   planMapSteep: string;
   planMapUnknown: string;
@@ -139,6 +141,7 @@ export type DiscoverUi = {
   placeOnRoute: string;
   lastDestApplied: string;
   endSetComputing: string;
+  destSetWaitingGps: string;
   setEndCta: string;
   closeLoopHint: string;
   browserPlanOnly: string;
@@ -441,7 +444,9 @@ const DE: DiscoverUi = {
   lastDestUndo: "Rückgängig",
   planUndo: "Rückgängig",
   planRedo: "Wiederholen",
-  planLineCoach: "Linie oder die Scheiben ziehen — Zwischenstopp. Halten oder Alt-Klick: neues Ziel.",
+  planLineCoach: "Linie oder die Scheiben ziehen — Zwischenstopp. Höhenprofil tippen geht auch. Halten oder Alt-Klick: neues Ziel.",
+  planLineCoachShort: "Linie ziehen: Stopp. Halten: neues Ziel.",
+  planLineCoachAdopt: "Tour merken, dann auf der Karte formen — Linie oder Scheiben ziehen.",
   planLineCoachOk: "Verstanden",
   planMapSteep: "Steil",
   planMapUnknown: "Unbekannt",
@@ -449,6 +454,7 @@ const DE: DiscoverUi = {
   placeOnRoute: "In die Route",
   lastDestApplied: "Letztes Ziel übernommen.",
   endSetComputing: "Ziel gesetzt — Route wird berechnet",
+  destSetWaitingGps: "Ziel gesetzt — Start ist dein Standort",
   setEndCta: "Ziel setzen",
   closeLoopHint: "Runde: Ziel wird der Start.",
   browserPlanOnly: "Die App führt. Hier planst du nur.",
@@ -786,7 +792,9 @@ const EN: DiscoverUi = {
   lastDestUndo: "Undo",
   planUndo: "Undo",
   planRedo: "Redo",
-  planLineCoach: "Drag the line or its discs for a stop. Hold or Alt-click: new destination.",
+  planLineCoach: "Drag the line or its discs for a stop. Tap the elevation profile too. Hold or Alt-click: new destination.",
+  planLineCoachShort: "Drag the line: stop. Hold: new destination.",
+  planLineCoachAdopt: "Save the tour, then shape it on the map — drag the line or discs.",
   planLineCoachOk: "Got it",
   planMapSteep: "Steep",
   planMapUnknown: "Unknown",
@@ -794,6 +802,7 @@ const EN: DiscoverUi = {
   placeOnRoute: "Include on route",
   lastDestApplied: "Last destination applied.",
   endSetComputing: "End set — computing the route",
+  destSetWaitingGps: "Destination set — start is your location",
   setEndCta: "Set destination",
   closeLoopHint: "Loop: destination becomes start.",
   browserPlanOnly: "The app navigates. This page only plans.",
@@ -1129,6 +1138,8 @@ const FR: DiscoverUi = {
   planUndo: "Annuler",
   planRedo: "Rétablir",
   planLineCoach: "Glisse la ligne ou les disques pour un arrêt. Maintiens ou Alt-clic : nouvelle arrivée.",
+  planLineCoachShort: "Glisse la ligne : arrêt. Maintiens : arrivée.",
+  planLineCoachAdopt: "Enregistre la sortie, puis façonne-la sur la carte — glisse la ligne.",
   planLineCoachOk: "Compris",
   planMapSteep: "Raide",
   planMapUnknown: "Inconnu",
@@ -1136,6 +1147,7 @@ const FR: DiscoverUi = {
   placeOnRoute: "Inclure dans l’itinéraire",
   lastDestApplied: "Dernière arrivée reprise.",
   endSetComputing: "Arrivée posée — calcul de la route",
+  destSetWaitingGps: "Arrivée posée — le départ est ta position",
   setEndCta: "Indique l’arrivée",
   closeLoopHint: "Boucle : l’arrivée redevient le départ.",
   browserPlanOnly: "L’app guide. Ici tu ne fais que planifier.",
@@ -1478,6 +1490,8 @@ const IT: DiscoverUi = {
   planUndo: "Annulla",
   planRedo: "Ripeti",
   planLineCoach: "Trascina la linea o i dischi per una sosta. Tieni o Alt-clic: nuovo arrivo.",
+  planLineCoachShort: "Trascina la linea: sosta. Tieni: arrivo.",
+  planLineCoachAdopt: "Salva il tour, poi modificalo sulla mappa — trascina la linea.",
   planLineCoachOk: "Capito",
   planMapSteep: "Ripido",
   planMapUnknown: "Sconosciuto",
@@ -1485,6 +1499,7 @@ const IT: DiscoverUi = {
   placeOnRoute: "Includi nel percorso",
   lastDestApplied: "Ultima destinazione applicata.",
   endSetComputing: "Arrivo impostato — calcolo del percorso",
+  destSetWaitingGps: "Arrivo impostato — la partenza è la tua posizione",
   setEndCta: "Imposta l’arrivo",
   closeLoopHint: "Anello: l’arrivo torna la partenza.",
   browserPlanOnly: "L’app guida. Qui pianifichi soltanto.",
@@ -1824,6 +1839,8 @@ const NL: DiscoverUi = {
   planUndo: "Ongedaan maken",
   planRedo: "Opnieuw",
   planLineCoach: "Sleep de lijn of de schijven voor een stop. Vasthouden of Alt-klik: nieuw doel.",
+  planLineCoachShort: "Sleep de lijn: stop. Vasthouden: bestemming.",
+  planLineCoachAdopt: "Sla de tocht op, vorm hem daarna op de kaart — sleep de lijn of schijven.",
   planLineCoachOk: "Begrepen",
   planMapSteep: "Steil",
   planMapUnknown: "Onbekend",
@@ -1831,6 +1848,7 @@ const NL: DiscoverUi = {
   placeOnRoute: "Op de route",
   lastDestApplied: "Laatste doel overgenomen.",
   endSetComputing: "Einde gezet — route berekenen",
+  destSetWaitingGps: "Einde gezet — start is je locatie",
   setEndCta: "Zet bestemming",
   closeLoopHint: "Ronde: bestemming wordt start.",
   browserPlanOnly: "De app navigeert. Hier plan je alleen.",
@@ -2197,7 +2215,12 @@ export function discoverStatus(
       .replaceAll(HONESTY_ROAD_DE, d.honestyRoad)
       .replaceAll(HONESTY_CYCLEWAY_DE, d.honestyCycleway)
       .replaceAll(HONESTY_FARM_TAIL_DE, d.honestyFarmTail)
-      .replaceAll(HONESTY_FARM_MID_DE, d.honestyFarmMid),
+      .replaceAll(HONESTY_FARM_MID_DE, d.honestyFarmMid)
+      .replaceAll(
+        // Keep in sync with `VARIANT_VALHALLA_ONLY` / discoverUi.de.variantValhallaOnly
+        "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.",
+        d.variantValhallaOnly,
+      ),
   );
 }
 

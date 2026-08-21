@@ -109,13 +109,19 @@ void main() {
 
       expect(find.byKey(const Key('bike-detail')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('garage-tab-teile')));
-      await _settle(tester);
-
       final detailScrollable = find.descendant(
         of: find.byKey(const Key('bike-detail')),
         matching: find.byType(Scrollable),
       );
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('garage-tab-teile')),
+        200,
+        scrollable: detailScrollable.first,
+      );
+      await tester.drag(detailScrollable.first, const Offset(0, -64));
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('garage-tab-teile')));
+      await _settle(tester);
       await tester.scrollUntilVisible(
         find.byKey(const Key('garage-more-on-bike')),
         200,

@@ -15,6 +15,7 @@ import '../../providers/ride_providers.dart';
 import '../billing/upgrade_screen.dart';
 import '../chat/chat_screen.dart';
 import '../privacy/privacy_screen.dart';
+import '../shared/chrome_glyph.dart';
 
 /// E-Mail/Passwort-Login für Sync (Supabase).
 class AuthScreen extends ConsumerStatefulWidget {
@@ -326,7 +327,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openUpgradeScreen(context),
-              icon: const Icon(Icons.workspace_premium_outlined),
+              icon: const ChromeGlyph('crown', size: 20),
               label: Text(l10n.billingTitle),
             ),
             const SizedBox(height: 12),
@@ -345,7 +346,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
-              icon: const Icon(Icons.chat_bubble_outline),
+              icon: const ChromeGlyph('stimmen', size: 20),
               label: Text(l10n.authOpenAssistant),
             ),
             const SizedBox(height: 12),
@@ -375,7 +376,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.authEmail,
                   hintText: l10n.authEmailHint,
-                  prefixIcon: Icon(Icons.email_outlined, semanticLabel: l10n.authEmail),
+                  prefixIcon: Semantics(
+                    label: l10n.authEmail,
+                    child: const ChromeGlyph(
+                      'mail',
+                      size: 22,
+                      color: AppColors.muted,
+                    ),
+                  ),
                   border: const OutlineInputBorder(),
                   floatingLabelBehavior: FloatingLabelBehavior.always,
                 ),
@@ -395,7 +403,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.authPassword,
                   hintText: l10n.authPassword,
-                  prefixIcon: Icon(Icons.lock_outline, semanticLabel: l10n.authPassword),
+                  prefixIcon: const ChromeGlyph(
+                    'lock',
+                    size: 22,
+                    color: AppColors.muted,
+                  ),
                   suffixIcon: IconButton(
                     tooltip: _obscurePassword
                         ? l10n.authPassword
@@ -469,7 +481,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => openUpgradeScreen(context),
-              icon: const Icon(Icons.workspace_premium_outlined),
+              icon: const ChromeGlyph('crown', size: 20),
               label: Text(l10n.billingTitle),
             ),
             const SizedBox(height: 12),
@@ -486,7 +498,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => openChatScreen(context),
-              icon: const Icon(Icons.chat_bubble_outline),
+              icon: const ChromeGlyph('stimmen', size: 20),
               label: Text(l10n.authOpenAssistant),
             ),
           ],

@@ -83,7 +83,8 @@ String radMarkForChip(String label) {
       RegExp(r'\d+\s*/\s*.*mm', caseSensitive: false).hasMatch(label)) {
     return 'travel';
   }
-  if (RegExp(r'^(700c|650b|27\.5"|29"|27_5)$', caseSensitive: false)
+  if (RegExp(r'^(700c|650b|27\.5"|29"|27_5|26"|24"|20"|16")$',
+          caseSensitive: false)
       .hasMatch(label.trim())) {
     return 'pressure';
   }

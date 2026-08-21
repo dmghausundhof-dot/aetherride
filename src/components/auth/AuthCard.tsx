@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { webChrome } from "@/lib/i18n/webChrome";
+import { authCopy, presentAuthError } from "@/lib/i18n/authCopy";
 
 type AuthUser = {
   id: string;
@@ -23,7 +24,9 @@ export function AuthCard({
   variant?: "page" | "embedded";
 }) {
   const copy = useHofCopy();
-  const chrome = webChrome(useChromeLang());
+  const lang = useChromeLang();
+  const chrome = webChrome(lang);
+  const a = authCopy(lang);
 
   const router = useRouter();
   const configured = isSupabaseConfigured();
@@ -59,6 +62,11 @@ export function AuthCard({
     }
   };
 
+  const failMsg = (e: unknown, fallback: string) => {
+    if (!(e instanceof Error)) return fallback;
+    return presentAuthError(e.message, lang);
+  };
+
   const login = async () => {
     setBusy(true);
     setAuthMsg(null);
@@ -69,10 +77,10 @@ export function AuthCard({
         body: JSON.stringify({ email, password }),
       });
       const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error || "Login fehlgeschlagen");
+      if (!res.ok) throw new Error(data.error || a.loginFailed);
       await afterAuth();
     } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
+      setAuthMsg(failMsg(e, a.error));
     } finally {
       setBusy(false);
     }
@@ -91,14 +99,14 @@ export function AuthCard({
         error?: string;
         needsConfirmation?: boolean;
       };
-      if (!res.ok) throw new Error(data.error || "Registrierung fehlgeschlagen");
+      if (!res.ok) throw new Error(data.error || a.registerFailed);
       if (data.needsConfirmation) {
-        setAuthMsg("Bitte E-Mail bestätigen, dann anmelden.");
+        setAuthMsg(a.confirmEmail);
         return;
       }
       await afterAuth();
     } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
+      setAuthMsg(failMsg(e, a.error));
     } finally {
       setBusy(false);
     }
@@ -109,7 +117,7 @@ export function AuthCard({
     setAuthMsg(null);
     try {
       if (!email.trim()) {
-        setAuthMsg("Bitte zuerst die E-Mail eintragen.");
+        setAuthMsg(a.needEmail);
         return;
       }
       const res = await fetch("/api/auth/reset", {
@@ -118,10 +126,10 @@ export function AuthCard({
         body: JSON.stringify({ email }),
       });
       const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error || "Reset fehlgeschlagen");
-      setAuthMsg("Wenn das Konto existiert, kommt eine E-Mail zum Zurücksetzen.");
+      if (!res.ok) throw new Error(data.error || a.resetFailed);
+      setAuthMsg(a.resetSent);
     } catch (e) {
-      setAuthMsg(e instanceof Error ? e.message : "Fehler");
+      setAuthMsg(failMsg(e, a.error));
     } finally {
       setBusy(false);
     }
@@ -137,14 +145,10 @@ export function AuthCard({
         body: JSON.stringify({ provider }),
       });
       const data = (await res.json()) as { error?: string; url?: string };
-      if (!res.ok) throw new Error(data.error || "OAuth nicht verfügbar");
+      if (!res.ok) throw new Error(data.error || a.oauthUnavailable);
       if (data.url) window.location.href = data.url;
     } catch (e) {
-      setAuthMsg(
-        e instanceof Error
-          ? e.message
-          : "OAuth: Provider in Supabase aktivieren"
-      );
+      setAuthMsg(failMsg(e, a.oauthEnable));
       setBusy(false);
     }
   };
@@ -184,7 +188,7 @@ export function AuthCard({
     <div className="space-y-2">
       <input
         type="email"
-        placeholder="E-Mail"
+        placeholder={a.email}
         value={email}
         autoComplete="email"
         onChange={(e) => setEmail(e.target.value)}
@@ -193,7 +197,7 @@ export function AuthCard({
       <div className="relative">
         <input
           type={showPassword ? "text" : "password"}
-          placeholder="Passwort (min. 8)"
+          placeholder={a.passwordPh}
           value={password}
           autoComplete="current-password"
           onChange={(e) => setPassword(e.target.value)}
@@ -204,7 +208,7 @@ export function AuthCard({
           onClick={() => setShowPassword((v) => !v)}
           className="absolute inset-y-0 right-2 text-xs font-semibold text-text-secondary"
         >
-          {showPassword ? "Verbergen" : "Zeigen"}
+          {showPassword ? a.hide : a.show}
         </button>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -214,7 +218,7 @@ export function AuthCard({
           onClick={() => void login()}
           className="rounded-xl bg-chrome py-2.5 text-sm font-medium text-on-accent disabled:opacity-50"
         >
-          Anmelden
+          {a.signIn}
         </button>
         <button
           type="button"
@@ -222,7 +226,7 @@ export function AuthCard({
           onClick={() => void register()}
           className="rounded-xl bg-surface-elevated py-2.5 text-sm font-medium disabled:opacity-50"
         >
-          Registrieren
+          {a.register}
         </button>
       </div>
       <button
@@ -231,7 +235,7 @@ export function AuthCard({
         onClick={() => void resetPassword()}
         className="text-left text-xs font-medium text-text-secondary underline-offset-2 hover:underline"
       >
-        Passwort vergessen?
+        {a.forgot}
       </button>
       <div className="grid grid-cols-2 gap-2">
         <button
@@ -240,7 +244,7 @@ export function AuthCard({
           onClick={() => void oauth("google")}
           className="rounded-xl border border-border py-2 text-xs disabled:opacity-50"
         >
-          Google
+          {a.google}
         </button>
         <button
           type="button"
@@ -248,7 +252,7 @@ export function AuthCard({
           onClick={() => void oauth("apple")}
           className="rounded-xl border border-border py-2 text-xs disabled:opacity-50"
         >
-          Apple
+          {a.apple}
         </button>
       </div>
       {authMsg ? (

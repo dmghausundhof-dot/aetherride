@@ -3,19 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
 import { useAppStore } from "@/store/useAppStore";
 import type { BikeCategory } from "@/types";
 import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { profileCopy } from "@/lib/i18n/profileCopy";
+import { onboardCopy } from "@/lib/i18n/onboardCopy";
 import { X } from "lucide-react";
 
-const SPORTS: { id: BikeCategory; label: string; blurb: string }[] = [
-  { id: "urban", label: "City", blurb: "Alltag & Pendeln" },
-  { id: "gravel", label: "Gravel", blurb: "Schotter & Distanz" },
-  { id: "road", label: "Rennrad", blurb: "Asphalt & Tempo" },
-  { id: "mtb_am", label: "MTB", blurb: "Trails & Touren" },
-  { id: "mtb_enduro", label: "Enduro", blurb: "Steil & technisch" },
-  { id: "emtb", label: "E-MTB", blurb: "Trail mit Assist" },
-  { id: "etrekking", label: "E-Trekking", blurb: "Touren mit Assist" },
+const SPORTS: BikeCategory[] = [
+  "urban",
+  "gravel",
+  "road",
+  "mtb_am",
+  "mtb_enduro",
+  "emtb",
+  "etrekking",
 ];
 
 /**
@@ -24,6 +27,9 @@ const SPORTS: { id: BikeCategory; label: string; blurb: string }[] = [
  */
 export function OnboardingFlow({ onDone }: { onDone: () => void }) {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const o = onboardCopy(lang);
+  const p = profileCopy(lang);
   const router = useRouter();
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
   const markOnboardingDone = useAppStore((s) => s.markOnboardingDone);
@@ -48,22 +54,20 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-accent">
-              Willkommen
+              {o.welcome}
             </p>
             <h2 className="text-xl font-bold">
-              {step === 1 ? "Was fährst du?" : "Dein Gewicht"}
+              {step === 1 ? o.howYouRide : o.yourWeight}
             </h2>
             <p className="mt-1 text-sm text-text-secondary">
-              {step === 1
-                ? "Damit Routen und Setup zu dir passen."
-                : "Für SAG-Vorlagen und Reichweite — nur lokal, jederzeit änderbar."}
+              {step === 1 ? o.sportHint : o.weightHint}
             </p>
           </div>
           <button
             type="button"
             onClick={() => finish("skip")}
             className="touch-target p-2 text-text-secondary"
-            aria-label="Überspringen"
+            aria-label={o.skip}
           >
             <X className="h-5 w-5" />
           </button>
@@ -71,20 +75,22 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
 
         {step === 1 && (
           <div className="grid grid-cols-2 gap-2">
-            {SPORTS.map((s) => (
+            {SPORTS.map((id) => (
               <button
-                key={s.id}
+                key={id}
                 type="button"
-                onClick={() => setSport(s.id)}
+                onClick={() => setSport(id)}
                 className={`rounded-xl border p-3 text-left ${
-                  sport === s.id
+                  sport === id
                     ? "border-accent bg-accent/15"
                     : "border-border bg-surface-elevated"
                 }`}
               >
-                <div className="text-sm font-semibold">{s.label}</div>
+                <div className="text-sm font-semibold">
+                  {bikeCategoryLabel(id, lang)}
+                </div>
                 <div className="mt-0.5 text-[11px] text-text-secondary">
-                  {s.blurb}
+                  {o.blurbs[id]}
                 </div>
               </button>
             ))}
@@ -93,7 +99,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
 
         {step === 2 && (
           <label className="block text-sm">
-            Fahrergewicht (kg)
+            {p.riderWeight}
             <input
               type="number"
               min={40}
@@ -103,7 +109,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
               className="mt-2 w-full rounded-xl border border-border bg-surface-elevated px-3 py-3 text-lg"
             />
             <p className="mt-2 text-xs text-text-secondary">
-              Gewählt: {bikeCategoryLabel(sport)}
+              {o.chosen(bikeCategoryLabel(sport, lang))}
             </p>
           </label>
         )}
@@ -115,7 +121,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
               onClick={() => setStep(2)}
               className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent"
             >
-              Weiter
+              {o.next}
             </button>
           ) : (
             <>
@@ -131,7 +137,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
                 onClick={() => finish("discover")}
                 className="w-full rounded-xl border border-border py-3 text-sm font-medium"
               >
-                Touren entdecken
+                {copy.showTours}
               </button>
             </>
           )}
@@ -140,7 +146,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
             onClick={() => finish("skip")}
             className="py-2 text-xs text-text-secondary"
           >
-            Später einrichten
+            {o.later}
           </button>
         </div>
       </div>

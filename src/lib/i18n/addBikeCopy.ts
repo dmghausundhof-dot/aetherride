@@ -12,6 +12,7 @@ export type AddBikeCopy = {
   freeOne: string;
   freeMore: string;
   addFailed: string;
+  catalogMissing: string;
 };
 
 const DE: AddBikeCopy = {
@@ -24,6 +25,7 @@ const DE: AddBikeCopy = {
   freeMore:
     "Im Free-Tarif bereits ein Rad. Weitere Räder sind Pro — unter Profil freischalten.",
   addFailed: "Anlegen fehlgeschlagen",
+  catalogMissing: "Katalog-Rad nicht gefunden",
 };
 
 const EN: AddBikeCopy = {
@@ -36,6 +38,7 @@ const EN: AddBikeCopy = {
   freeMore:
     "Free already has one bike. More bikes are Pro — unlock under Profile.",
   addFailed: "Could not add the bike",
+  catalogMissing: "Catalog bike not found",
 };
 
 const FR: AddBikeCopy = {
@@ -48,6 +51,7 @@ const FR: AddBikeCopy = {
   freeMore:
     "Free a déjà un vélo. Les autres sont Pro — débloque sous Profil.",
   addFailed: "Impossible d’ajouter le vélo",
+  catalogMissing: "Vélo du catalogue introuvable",
 };
 
 const IT: AddBikeCopy = {
@@ -60,6 +64,7 @@ const IT: AddBikeCopy = {
   freeMore:
     "Free ha già una bici. Le altre sono Pro — sblocca sotto Profilo.",
   addFailed: "Impossibile aggiungere la bici",
+  catalogMissing: "Bici del catalogo non trovata",
 };
 
 const NL: AddBikeCopy = {
@@ -72,6 +77,7 @@ const NL: AddBikeCopy = {
   freeMore:
     "Free heeft al één fiets. Meer fietsen zijn Pro — ontgrendel onder Profiel.",
   addFailed: "Fiets toevoegen mislukt",
+  catalogMissing: "Catalogusfiets niet gevonden",
 };
 
 const BY: Record<ChromeLang, AddBikeCopy> = {
@@ -84,4 +90,19 @@ const BY: Record<ChromeLang, AddBikeCopy> = {
 
 export function addBikeCopy(lang: ChromeLang = "de"): AddBikeCopy {
   return BY[lang] ?? DE;
+}
+
+/** Engine throws German; the wizard maps known keys. */
+export const GARAGE_ERR_FREE_ONE =
+  "Im Free-Tarif nur ein Rad. Für mehrere Räder Pro freischalten.";
+export const GARAGE_ERR_CATALOG = "Katalog-Rad nicht gefunden";
+
+export function presentGarageError(
+  de: string,
+  lang: ChromeLang = "de"
+): string {
+  const c = addBikeCopy(lang);
+  if (de === GARAGE_ERR_FREE_ONE) return c.freeOne;
+  if (de === GARAGE_ERR_CATALOG) return c.catalogMissing;
+  return de;
 }

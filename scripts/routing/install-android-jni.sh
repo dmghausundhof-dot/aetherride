@@ -64,9 +64,23 @@ if [[ ! -f "$SRC" ]]; then
   exit 1
 fi
 
+if [[ "$GRAPH_ONLY" -eq 0 ]] && command -v readelf >/dev/null; then
+  if ! readelf -d "$SRC" 2>/dev/null | grep -q 'libprotobuf'; then
+    GRAPH_ONLY=1
+    echo "librouting_core.so has no libprotobuf NEEDED — graph-only install"
+  fi
+fi
+
 mkdir -p "$JNI"
 install -m 0644 "$SRC" "$JNI/librouting_core.so"
 echo "Installed librouting_core.so → $JNI ($(du -h "$JNI/librouting_core.so" | cut -f1))"
+if command -v readelf >/dev/null; then
+  align=$(readelf -W -l "$JNI/librouting_core.so" | awk '/LOAD/ {print $NF; exit}')
+  echo "ELF LOAD align=$align (Android 16 KB pages need 0x4000)"
+  if [[ "$align" != "0x4000" && "$align" != "16384" ]]; then
+    echo "WARN: librouting_core.so is not 16 KB aligned. Rebuild with -Wl,-z,max-page-size=16384 (build.rs)." >&2
+  fi
+fi
 
 if [[ "$GRAPH_ONLY" -eq 1 ]]; then
   rm -f "$JNI/libprotobuf.so"

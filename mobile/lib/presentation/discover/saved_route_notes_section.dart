@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/saved_route_note.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Lokale Notizen an einer eigenen Strecke (kein Feed, keine Stimme).
 class SavedRouteNotesSection extends StatefulWidget {
@@ -111,7 +112,7 @@ class _SavedRouteNotesSectionState extends State<SavedRouteNotesSection> {
                   ),
                   IconButton(
                     tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                    icon: const Icon(Icons.delete_outline, size: 20),
+                    icon: const ChromeGlyph('trash', size: 20),
                     onPressed: () => widget.onRemove(n.id),
                   ),
                 ],

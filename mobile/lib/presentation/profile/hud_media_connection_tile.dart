@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../native/hud_media_channel.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Where the HUD media-session row lives. Profile is the primary control;
 /// privacy keeps a short data-access pointer.
@@ -99,7 +100,7 @@ class _HudMediaConnectionTileState extends State<HudMediaConnectionTile>
     return ListTile(
       key: HudMediaConnectionTile.tileKey,
       contentPadding: widget.contentPadding,
-      leading: const Icon(Icons.library_music_outlined),
+      leading: const ChromeGlyph('play', size: 22),
       title: Text(l10n.hudMediaTitle),
       subtitle: Text(
         _subtitle(l10n),

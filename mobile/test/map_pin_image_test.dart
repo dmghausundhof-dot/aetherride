@@ -212,6 +212,10 @@ void main() {
     final ring = await buildMapSdfDiscPng(ring: true);
     expect(disc.length, greaterThan(80));
     expect(ring, isNot(equals(disc)));
+    final glow = await buildHaloRingPng(AppColors.accent);
+    expect(glow.length, greaterThan(80));
+    expect(glow[0], 0x89);
+    expect(glow, isNot(equals(ring)));
     expect(mapPinRasterIconSize(0.52), closeTo(0.26, 0.0001));
     expect(mapPinSdfIconSize(0.52), closeTo(1.04, 0.0001));
     expect(mapChevronIconSize(0.32), closeTo(0.16, 0.0001));

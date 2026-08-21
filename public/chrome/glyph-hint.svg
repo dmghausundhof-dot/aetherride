@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Hinweis">
+  <title>FlowLine Idee</title>
+  <path d="M8.4 13.6 C7.2 12.4 6.6 10.8 6.6 9.2 C6.6 6.2 9 3.8 12 3.8 C15 3.8 17.4 6.2 17.4 9.2 C17.4 10.8 16.8 12.4 15.6 13.6 L14.8 15.2 H9.2 Z" fill="none" stroke="#9CA3AF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M9.6 17.4 H14.4" fill="none" stroke="#9CA3AF" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M10.4 19.4 H13.6" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+</svg>

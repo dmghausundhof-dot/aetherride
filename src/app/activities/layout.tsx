@@ -1,18 +1,10 @@
-import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { chromeLangFromAcceptLanguage } from "@/lib/i18n/chromeLang";
-import { hofCopy } from "@/lib/home/hofCopy";
+import { hofDoorMeta } from "@/lib/i18n/hofDoorMeta";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const lang = chromeLangFromAcceptLanguage(
-    (await headers()).get("accept-language")
-  );
-  const copy = hofCopy(lang);
-  return {
-    title: copy.activitiesTitle,
-    description: copy.activitiesHint,
-  };
-}
+export const generateMetadata = () =>
+  hofDoorMeta((c) => ({
+    title: c.activitiesTitle,
+    description: c.activitiesHint,
+  }));
 
 export default function ActivitiesLayout({
   children,

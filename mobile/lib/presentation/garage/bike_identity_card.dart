@@ -9,6 +9,7 @@ import 'rad_glyph.dart';
 import '../../domain/bike_owner.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Owner card: frame number, purchase, insurance. Local only.
 class BikeIdentityCard extends StatelessWidget {
@@ -105,7 +106,7 @@ class BikeIdentityCard extends StatelessWidget {
                           SnackBar(content: Text(l10n.garageSerialCopied)),
                         );
                       },
-                      icon: const Icon(Icons.copy, size: 18),
+                      icon: const ChromeGlyph('copy', size: 18),
                     ),
                   ],
                 ),
@@ -496,7 +497,7 @@ class _BikeIdentitySheetState extends ConsumerState<_BikeIdentitySheet> {
               decoration: InputDecoration(
                 labelText: l10n.garagePurchasedAt,
                 isDense: true,
-                suffixIcon: const Icon(Icons.event, size: 18),
+                suffixIcon: const ChromeGlyph('calendar', size: 18),
               ),
             ),
             const SizedBox(height: AppSpacing.s),

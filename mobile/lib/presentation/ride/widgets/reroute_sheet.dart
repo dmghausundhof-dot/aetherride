@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../shared/chrome_glyph.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Result of the offline-aware reroute sheet (N-02b).
@@ -62,7 +63,7 @@ Future<RerouteSheetAction?> showRerouteSheet(
                 ),
                 onPressed: () =>
                     Navigator.of(ctx).pop(RerouteSheetAction.rejoin),
-                icon: const Icon(Icons.alt_route),
+                icon: const ChromeGlyph('split', size: 20),
                 label: Text(
                   l10n.rerouteRejoin,
                   style: const TextStyle(

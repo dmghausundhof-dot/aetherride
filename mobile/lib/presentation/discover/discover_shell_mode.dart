@@ -11,13 +11,11 @@ enum DiscoverShellMode {
 
 /// Pure helpers for shell-mode UX (unit-tested; no Flutter widget deps).
 abstract final class DiscoverShellModeLogic {
-  /// Sheet uses the draggable Discover snaps (Peek/Half/Full).
-  static bool usesBrowseSheet(DiscoverShellMode mode) =>
-      mode == DiscoverShellMode.explore || mode == DiscoverShellMode.mine;
+  /// Sheet uses the draggable snaps (Peek/Half/Full) — also Planen.
+  static bool usesBrowseSheet(DiscoverShellMode mode) => true;
 
-  /// Fixed-height plan-style panel (keyboard-friendly address fields).
-  static bool usesFixedNavPanel(DiscoverShellMode mode) =>
-      mode == DiscoverShellMode.navigate;
+  /// Planen is a draggable sheet, not a fixed panel.
+  static bool usesFixedNavPanel(DiscoverShellMode mode) => false;
 
   /// Catalog tour list + primary filter chips live here.
   static bool showsTourCatalog(DiscoverShellMode mode) =>

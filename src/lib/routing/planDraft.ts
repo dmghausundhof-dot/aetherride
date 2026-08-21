@@ -716,6 +716,71 @@ export function planEditorSheetMaxVh(opts: { shaping: boolean }): number {
   return opts.shaping ? 0 : 56;
 }
 
+/** Rubber-band *and* the following recalc: map stays the editor. */
+export function planEditorSheetRecedes(opts: {
+  rubberBand: boolean;
+  adapting: boolean;
+}): boolean {
+  return opts.rubberBand || opts.adapting;
+}
+
+/** Brief “stop set” chip at the new via — not while waiting/reshaping. */
+export function planMapStopHintVisible(opts: {
+  hasStopAt: boolean;
+  waitHintOnMap: boolean;
+  rubberBand: boolean;
+}): boolean {
+  return opts.hasStopAt && !opts.waitHintOnMap && !opts.rubberBand;
+}
+
+export const PLAN_STOP_HINT_MS = 3200;
+
+export const PLAN_MAP_CHROME_FAB_COL_PX = 56;
+export const PLAN_FINGER_HINT_BELOW_GAP = 16;
+export const PLAN_FINGER_HINT_ABOVE_GAP = 12;
+export const PLAN_FINGER_HINT_PAD = 8;
+
+/** Place the adapting chip near the finger without covering locate/undo. */
+export function planFingerHintPlacement(opts: {
+  fingerX: number;
+  fingerY: number;
+  mapW: number;
+  mapH: number;
+  chipW: number;
+  chipH: number;
+  avoidRight?: number;
+  avoidTop?: number;
+  avoidBottom?: number;
+  pad?: number;
+  preferAbove?: boolean;
+}): { left: number; top: number } {
+  const pad = opts.pad ?? PLAN_FINGER_HINT_PAD;
+  const avoidRight = opts.avoidRight ?? 0;
+  const avoidTop = opts.avoidTop ?? 0;
+  const avoidBottom = opts.avoidBottom ?? 0;
+  const minLeft = pad;
+  const maxLeft = Math.max(minLeft, opts.mapW - opts.chipW - pad - avoidRight);
+  const left = Math.min(
+    maxLeft,
+    Math.max(minLeft, opts.fingerX - opts.chipW / 2)
+  );
+  const minTop = pad + avoidTop;
+  const maxTop = Math.max(minTop, opts.mapH - opts.chipH - pad - avoidBottom);
+  const below = opts.fingerY + PLAN_FINGER_HINT_BELOW_GAP;
+  const above = opts.fingerY - opts.chipH - PLAN_FINGER_HINT_ABOVE_GAP;
+  let top = opts.preferAbove ? above : below;
+  if (!opts.preferAbove && top + opts.chipH > opts.mapH - pad - avoidBottom) {
+    top = above;
+  } else if (opts.preferAbove && top < minTop) {
+    top = below;
+  }
+  if (maxTop < minTop) return { left, top: minTop };
+  return {
+    left,
+    top: Math.min(maxTop, Math.max(minTop, top)),
+  };
+}
+
 /** First visit, or 14 days after a timestamped dismiss. Legacy `"1"` stays off. */
 export function planLineCoachShouldShow(
   raw: string | null,
@@ -915,6 +980,29 @@ export function planMapShowsRoutingWait(opts: {
   );
 }
 
+/**
+ * History FABs stay off while a map chip owns Undo (stop / wait / adapting)
+ * or the fallback routing-wait banner is up. Redo lives only on the FABs —
+ * it returns when the chip clears.
+ */
+export function planMapHistoryFabsVisible(opts: {
+  editorActive: boolean;
+  hasHistory: boolean;
+  mapHintOnMap: boolean;
+  rubberBand: boolean;
+  coachVisible: boolean;
+  routingWaitBanner?: boolean;
+}): boolean {
+  return (
+    opts.editorActive &&
+    opts.hasHistory &&
+    !opts.mapHintOnMap &&
+    !opts.rubberBand &&
+    !opts.coachVisible &&
+    !opts.routingWaitBanner
+  );
+}
+
 /** Finger-chip while the engine reshapes an existing line (not the first A–B). */
 export function planMapAdaptingHintOnMap(opts: {
   routingBusy: boolean;
@@ -922,6 +1010,133 @@ export function planMapAdaptingHintOnMap(opts: {
   hasFinger: boolean;
 }): boolean {
   return opts.routingBusy && opts.hasLiveLine && opts.hasFinger;
+}
+
+/**
+ * Parked reshape finger (Web `planShaped` / Flutter `_planShapeHintAt`) lasts
+ * only while that reshape is in flight — otherwise the next edit parks the
+ * wait chip on a stale point.
+ */
+export function planParkedFingerClearsWhenIdle(routingBusy: boolean): boolean {
+  return !routingBusy;
+}
+
+/**
+ * Dest/stop wait pin wins over a parked reshape finger. Needed after undo
+ * mid-recalc: finger flag clears but MapView may still hold lastShapeFinger.
+ */
+export function planMapHintAnchorLngLat(opts: {
+  adaptingAt: [number, number] | null | undefined;
+  parkedFinger: [number, number] | null | undefined;
+}): [number, number] | null {
+  return opts.adaptingAt ?? opts.parkedFinger ?? null;
+}
+
+/** First A→B (or dest confirm / GPS wait): chip at the dest pin.
+ * Once a live line exists, the 1.6 s dest flash does not return to the chip. */
+export function planMapDestWaitHintOnMap(opts: {
+  editorActive: boolean;
+  routingBusy: boolean;
+  hasStart: boolean;
+  hasEnd: boolean;
+  fingerHint: boolean;
+  destConfirm?: boolean;
+  hasLiveLine?: boolean;
+}): boolean {
+  if (opts.fingerHint || !opts.editorActive || !opts.hasEnd) return false;
+  if (opts.routingBusy && opts.hasStart) return true;
+  if (!opts.hasStart) return true;
+  if (!opts.destConfirm) return false;
+  return !opts.hasLiveLine;
+}
+
+export type PlanMapDestWaitCopy = "adapting" | "firstAb" | "waitingGps";
+
+export function planMapDestWaitCopy(opts: {
+  hasStart: boolean;
+  hasLiveLine: boolean;
+}): PlanMapDestWaitCopy {
+  if (!opts.hasStart) return "waitingGps";
+  if (!opts.hasLiveLine) return "firstAb";
+  return "adapting";
+}
+
+export function planFingerHintChipW(opts: {
+  undo: boolean;
+  firstAb: boolean;
+}): number {
+  if (opts.firstAb) return opts.undo ? 280 : 244;
+  return opts.undo ? 228 : 176;
+}
+
+export const PLAN_LINE_GRAB_MOVE_PX = 8;
+
+/** Hold on the ribbon → new dest (matches Flutter `kPlanLineHold`). */
+export const PLAN_LINE_HOLD_MS = 450;
+
+/** Any slip past this cancels hold→dest (before exclusive rubber). */
+export const PLAN_LINE_HOLD_CANCEL_PX = 6;
+
+/** Second finger = pinch/rotate, not a via. Yield the line grab. */
+export function planLineGrabYieldsToPinch(pointerCount: number): boolean {
+  return pointerCount >= 2;
+}
+
+/** One finger past the slop becomes an exclusive line pull (map pan off). */
+export function planLineGrabBecomesExclusive(opts: {
+  pointerCount: number;
+  movePx: number;
+  thresholdPx?: number;
+}): boolean {
+  const threshold = opts.thresholdPx ?? PLAN_LINE_GRAB_MOVE_PX;
+  return opts.pointerCount === 1 && opts.movePx >= threshold;
+}
+
+/** Finger left the “still” zone — do not fire hold→new dest. */
+export function planLineHoldCancelsOnMove(opts: {
+  movePx: number;
+  thresholdPx?: number;
+}): boolean {
+  const threshold = opts.thresholdPx ?? PLAN_LINE_HOLD_CANCEL_PX;
+  return opts.movePx >= threshold;
+}
+
+export const PLAN_LINE_COACH_COMPACT_HEIGHT = 700;
+export const PLAN_LINE_COACH_X_COMPACT_HEIGHT = 640;
+
+export function planLineCoachIsCompact(height: number): boolean {
+  return height < PLAN_LINE_COACH_COMPACT_HEIGHT;
+}
+
+export function planLineCoachIsXCompact(height: number): boolean {
+  return height < PLAN_LINE_COACH_X_COMPACT_HEIGHT;
+}
+
+export function planLineCoachCopy(opts: {
+  adopting: boolean;
+  compact: boolean;
+  full: string;
+  short: string;
+  adopt: string;
+}): string {
+  if (opts.adopting) return opts.adopt;
+  return opts.compact ? opts.short : opts.full;
+}
+
+export const PLAN_RIBBON_LEGEND_COMPACT_WIDTH = 420;
+
+export function planRibbonLegendCompact(width: number): boolean {
+  return width < PLAN_RIBBON_LEGEND_COMPACT_WIDTH;
+}
+
+export const PLAN_CHEVRON_FRESH_MS = 1400;
+
+export function planChevronIconOpacity(opts: {
+  dimmed: boolean;
+  fresh: boolean;
+}): number {
+  if (opts.dimmed) return 0;
+  return opts.fresh ? 0.96 : 0.88;
 }
 
 /** Spacing between grab discs — denser when zoomed in (Komoot beads). */
@@ -2333,10 +2548,10 @@ export async function resolvePointToPointDraft(
   if (snap.snappedStart || snap.snappedEnd) {
     waypoints = waypoints.map((w) => {
       if (w.role === "start" && snap.snappedStart) {
-        return { ...w, lngLat: snap.start };
+        return { ...w, lngLat: snap.start, label: undefined };
       }
       if (w.role === "end" && snap.snappedEnd) {
-        return { ...w, lngLat: snap.end };
+        return { ...w, lngLat: snap.end, label: undefined };
       }
       return w;
     });

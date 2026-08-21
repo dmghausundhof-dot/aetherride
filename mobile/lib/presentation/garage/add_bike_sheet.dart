@@ -16,6 +16,8 @@ import '../../domain/catalog_bike.dart';
 import '../../domain/garage/bike_photo_fill.dart';
 import 'bike_photo_fill_sheet.dart';
 import 'garage_chrome.dart';
+import 'rad_glyph.dart';
+import '../shared/chrome_glyph.dart';
 import 'rad_stand_frame.dart';
 import 'oem_part_checklist_sheet.dart';
 
@@ -38,6 +40,7 @@ class _AddBikeSheetState extends ConsumerState<AddBikeSheet> {
   CatalogBikeVariant? _photoCatalog;
   String? _photoBrand;
   File? _photoFile;
+  var _photoCropped = false;
   String _grokRead = '';
   String? _identifyReason;
   List<OemPartSuggestion> _pendingParts = const [];
@@ -84,6 +87,7 @@ class _AddBikeSheetState extends ConsumerState<AddBikeSheet> {
     setState(() {
       _photoHit = picked.hit;
       _photoFile = picked.file;
+      _photoCropped = picked.alreadyCropped;
       _photoCatalog = found?.bike;
       _photoBrand = found?.mfr.name ?? picked.hit?.manufacturerName;
       _grokRead = picked.readSummary;
@@ -184,9 +188,11 @@ class _AddBikeSheetState extends ConsumerState<AddBikeSheet> {
       }
       if (_photoFile != null) {
         await persistPickedBikePhoto(
+          context: context,
           ref: ref,
           bikeId: bike.id,
           source: _photoFile!,
+          alreadyCropped: _photoCropped,
         );
       }
       if (_grokRead.isNotEmpty) {
@@ -273,7 +279,7 @@ class _AddBikeSheetState extends ConsumerState<AddBikeSheet> {
                   const SizedBox(height: AppSpacing.l),
                   OutlinedButton.icon(
                     onPressed: _busy ? null : _fromPhoto,
-                    icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                    icon: const RadGlyph('photo', size: 18),
                     label: Text(
                       _photoHit != null
                           ? '${l10n.garagePhoto}: ${_photoHit!.label}'
@@ -406,10 +412,8 @@ class _AssistModeSegmented extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      mode == BikeAssistMode.ebike
-                          ? Icons.electric_bike
-                          : Icons.pedal_bike,
+                    ChromeGlyph(
+                      'nav',
                       size: 18,
                       color: selected == mode
                           ? AppColors.onAccent

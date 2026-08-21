@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../shared/chrome_glyph.dart';
 import '../../../data/community/tour_community_store.dart';
 
 /// Community-Chip auf Karten/Detail — nur echte Counts, keine Stub-Sterne.
@@ -105,8 +106,8 @@ class _TourSocialProofState extends State<TourSocialProof> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_counts.reviewCount > 0) ...[
-            Icon(
-              Icons.star_rounded,
+            ChromeGlyph(
+              'star',
               size: widget.compact ? 14 : 16,
               color: AppColors.accent,
             ),
@@ -121,8 +122,8 @@ class _TourSocialProofState extends State<TourSocialProof> {
           if (_counts.photoCount > 0) ...[
             if (_counts.reviewCount > 0)
               Text('  ·  ', style: style.copyWith(color: AppColors.muted)),
-            Icon(
-              Icons.photo_outlined,
+            ChromeGlyph(
+              'photo',
               size: widget.compact ? 13 : 15,
               color: AppColors.muted,
             ),

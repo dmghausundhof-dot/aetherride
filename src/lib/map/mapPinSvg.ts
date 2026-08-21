@@ -409,25 +409,25 @@ function circleInner(fill: string): string {
 }
 
 function startInner(fill: string): string {
-  const body = "M32 76 C16 54 13 24 32 8 C51 24 48 54 32 76 Z";
   return [
-    `<ellipse cx="32" cy="76.4" rx="8" ry="3" fill="#000" opacity="0.26"/>`,
-    `<path d="${body}" fill="${fill}"/>`,
-    `<path d="${body}" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/>`,
-    `<circle cx="32" cy="30" r="11" fill="#F4F1EC"/>`,
-    `<path d="M27.4 23.6 L27.4 36.4 L40.2 30 Z" fill="${fill}"/>`,
+    `<ellipse cx="32" cy="76.8" rx="8.2" ry="3" fill="#1A120C" opacity="0.32"/>`,
+    `<path d="${PIN_OVAL_PATH}" fill="${fill}"/>`,
+    `<path d="${PIN_OVAL_PATH}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>`,
+    `<ellipse cx="32" cy="30" rx="16.4" ry="16.4" fill="#F4F1EC"/>`,
+    `<ellipse cx="27.4" cy="25.6" rx="6.4" ry="4.2" fill="#fff" opacity="0.42"/>`,
+    `<path d="M26 21.2 L26 38.8 L43.4 30 Z" fill="#FF6A00"/>`,
   ].join("");
 }
 
 function finishInner(): string {
-  const body = "M32 76 C16 54 13 24 32 8 C51 24 48 54 32 76 Z";
   return [
-    `<ellipse cx="32" cy="76.4" rx="8" ry="3" fill="#000" opacity="0.26"/>`,
-    `<path d="${body}" fill="#FF6A00"/>`,
-    `<path d="${body}" fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round"/>`,
-    `<circle cx="32" cy="30" r="11" fill="#F4F1EC"/>`,
-    `<rect x="24.2" y="20" width="3.4" height="20" rx="1" fill="#1A120C"/>`,
-    `<path d="M27.6 20 H42.4 L38.6 28.4 H27.6 Z" fill="#FF6A00"/>`,
+    `<ellipse cx="32" cy="76.8" rx="8.2" ry="3" fill="#1A120C" opacity="0.32"/>`,
+    `<path d="${PIN_OVAL_PATH}" fill="#FF6A00"/>`,
+    `<path d="${PIN_OVAL_PATH}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/>`,
+    `<ellipse cx="32" cy="30" rx="16.4" ry="16.4" fill="#F4F1EC"/>`,
+    `<ellipse cx="27.4" cy="25.6" rx="6.4" ry="4.2" fill="#fff" opacity="0.42"/>`,
+    `<rect x="22.2" y="18" width="3.6" height="24" rx="1.4" fill="#1A120C"/>`,
+    `<path d="M25.8 18.2 H42.8 L39.2 27.2 H25.8 Z" fill="#FF6A00"/>`,
   ].join("");
 }
 

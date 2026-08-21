@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../native/ble_core_channel.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 
 Future<bool> showWatchPairSheet(BuildContext context) async {
   final result = await showModalBottomSheet<bool>(
@@ -279,8 +280,8 @@ class _EmptyScan extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            scanning ? Icons.bluetooth_searching : Icons.watch_off_outlined,
+          ChromeGlyph(
+            scanning ? 'bluetooth' : 'watch',
             size: 28,
             color: AppColors.muted,
           ),
@@ -333,8 +334,9 @@ class _HitTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.watch_outlined,
+                ChromeGlyph(
+                  'watch',
+                  size: 24,
                   color: enabled ? AppColors.chrome : AppColors.muted,
                 ),
                 const SizedBox(width: AppSpacing.m),

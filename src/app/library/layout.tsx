@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+import { hofDoorMeta } from "@/lib/i18n/hofDoorMeta";
 
-export const metadata: Metadata = {
-  title: "Touren",
-  description:
-    "Gespeicherte Strecken, Tipps, Freunde per Link. Dieselben Touren wie auf der Karte.",
-};
+export const generateMetadata = () =>
+  hofDoorMeta((c) => ({
+    title: c.libraryTitle,
+    description: c.libraryHint,
+  }));
 
 export default function LibraryLayout({
   children,

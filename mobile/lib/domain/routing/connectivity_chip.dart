@@ -38,11 +38,11 @@ ConnectivityChipState resolveConnectivityChip({
   if (hasRouteGeometry) {
     return ConnectivityChipState.routeOffline;
   }
-  if (offlineRoutingReady) {
-    return ConnectivityChipState.routingOffline;
-  }
   if (offlineMapAvailable) {
     return ConnectivityChipState.offlineMapOk;
+  }
+  if (offlineRoutingReady) {
+    return ConnectivityChipState.routingOffline;
   }
   return ConnectivityChipState.mapsMissing;
 }

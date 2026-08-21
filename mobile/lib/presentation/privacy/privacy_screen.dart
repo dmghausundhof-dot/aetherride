@@ -23,6 +23,7 @@ import '../../domain/privacy/consents.dart';
 import '../../domain/privacy/privacy_zone_map.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 import 'privacy_zone_map_screen.dart';
 
 ({String title, String body}) _consentCopy(
@@ -513,7 +514,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
               ),
               TextButton.icon(
                 onPressed: _busy ? null : () => _openZoneEditor(),
-                icon: const Icon(Icons.add, size: 18),
+                icon: const ChromeGlyph('add', size: 18),
                 label: Text(l10n.privacyZoneAdd),
               ),
             ],
@@ -560,7 +561,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
               isThreeLine: true,
               onTap: _busy ? null : () => _openZoneEditor(existing: z),
               trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
+                icon: const ChromeGlyph('trash', size: 22),
                 tooltip: l10n.privacyZoneDelete,
                 onPressed: _busy ? null : () => _confirmDeleteZone(z),
               ),
@@ -614,7 +615,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           OutlinedButton.icon(
             key: const Key('privacy-ble-forget'),
             onPressed: _busy ? null : _forgetManufacturerBle,
-            icon: const Icon(Icons.bluetooth_disabled),
+            icon: const ChromeGlyph('bluetooth', size: 22),
             label: Text(l10n.privacyBleForget),
           ),
           const SizedBox(height: 20),
@@ -627,26 +628,26 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportGpx,
-            icon: const Icon(Icons.route),
+            icon: const ChromeGlyph('split', size: 20),
             label: Text(l10n.privacyExportGpx),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportFit,
-            icon: const Icon(Icons.directions_bike),
+            icon: const ChromeGlyph('nav', size: 20),
             label: Text(l10n.privacyExportFit),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _busy ? null : _exportJson,
-            icon: const Icon(Icons.data_object),
+            icon: const ChromeGlyph('file', size: 20),
             label: Text(l10n.privacyExportJson),
           ),
           const SizedBox(height: 8),
           if (AppConfig.showRoutingDebug)
             OutlinedButton.icon(
               onPressed: _busy ? null : _exportStravaStub,
-              icon: const Icon(Icons.upload_outlined),
+              icon: const ChromeGlyph('download', size: 20),
               label: Text(l10n.privacyExportStravaStub),
             ),
           if (_stravaConfigured) ...[
@@ -654,13 +655,13 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen>
             if (!_stravaConnected && _stravaAuthorizeUrl != null)
               FilledButton.icon(
                 onPressed: _busy ? null : _connectStrava,
-                icon: const Icon(Icons.link),
+                icon: const ChromeGlyph('link', size: 20),
                 label: Text(l10n.privacyStravaConnect),
               ),
             if (_stravaConnected)
               FilledButton.icon(
                 onPressed: _busy ? null : _uploadStravaLive,
-                icon: const Icon(Icons.cloud_upload_outlined),
+                icon: const ChromeGlyph('cloud', size: 22),
                 label: Text(l10n.privacyStravaUpload),
               ),
           ],

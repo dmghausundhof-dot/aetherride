@@ -31,7 +31,7 @@ extension BikeCategoryKind on BikeCategory {
       };
 }
 
-enum WheelSize { w275, w29, c700, b650 }
+enum WheelSize { w275, w29, c700, b650, w26, w24, w20, w16 }
 
 extension WheelSizeLabel on WheelSize {
   String get label => switch (this) {
@@ -39,6 +39,10 @@ extension WheelSizeLabel on WheelSize {
         WheelSize.w29 => '29"',
         WheelSize.c700 => '700c',
         WheelSize.b650 => '650b',
+        WheelSize.w26 => '26"',
+        WheelSize.w24 => '24"',
+        WheelSize.w20 => '20"',
+        WheelSize.w16 => '16"',
       };
 
   /// Typical rolling circumference for CSC speed. Shared by garage and HUD.
@@ -47,6 +51,10 @@ extension WheelSizeLabel on WheelSize {
         WheelSize.w29 => 2.105,
         WheelSize.c700 => 2.130,
         WheelSize.b650 => 1.935,
+        WheelSize.w26 => 1.910,
+        WheelSize.w24 => 1.750,
+        WheelSize.w20 => 1.510,
+        WheelSize.w16 => 1.320,
       };
 }
 

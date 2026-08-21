@@ -18,3 +18,10 @@ extension RouteVariantWire on RouteVariant {
         RouteVariant.unpaved => 'unpaved',
       };
 }
+
+/// Undo frames include variant so flatter/unpaved is reversible (Web `planEditKey`).
+bool planVariantChanged({
+  required RouteVariant before,
+  required RouteVariant after,
+}) =>
+    before != after;

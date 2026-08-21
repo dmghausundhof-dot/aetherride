@@ -433,8 +433,19 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get hofLoadStreetMap => 'Charger la carte rue pour le ride';
+
+  @override
+  String get hofRefreshStreetMap => 'Actualiser la carte rue autour de vous';
+
+  @override
   String hofPackReadyRideMap(String name) {
     return '$name · Routing hors ligne. Carte ride : réseau.';
+  }
+
+  @override
+  String hofPackReadyRideStreet(String name) {
+    return '$name · Routing et carte rue hors ligne.';
   }
 
   @override
@@ -892,6 +903,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Glisse la ligne ou les disques pour un arrêt. Maintiens : nouvelle arrivée.';
 
   @override
+  String get planLineCoachShort =>
+      'Glisse la ligne : arrêt. Maintiens : arrivée.';
+
+  @override
+  String get planLineCoachAdopt =>
+      'Enregistre la sortie, puis façonne-la sur la carte — glisse la ligne.';
+
+  @override
   String get planLineCoachOk => 'Compris';
 
   @override
@@ -1139,6 +1158,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get garageLastRides => 'Dernières sorties';
 
   @override
+  String get garageLastRidesHint =>
+      'Vraies sorties — pas de kilomètres inventés.';
+
+  @override
   String get garageNoRidesTitle => 'Pas encore de sorties';
 
   @override
@@ -1213,6 +1236,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get garageSchemaMoreOnDots => 'Autres manques sur les points.';
+
+  @override
+  String get garageSpareShelf => 'Étagère pièces';
+
+  @override
+  String get garageSpareHint =>
+      'Les pièces démontées restent ici. Remonter remplace le slot actif.';
+
+  @override
+  String get garageReinstall => 'Remonter';
+
+  @override
+  String get garageSpareEmpty =>
+      'Étagère vide — démonte une pièce pour la ranger ici.';
+
+  @override
+  String garageRemovedOn(String date) {
+    return 'Démonté $date';
+  }
+
+  @override
+  String get garageWearTitle => 'Prévision d\'usure';
+
+  @override
+  String get garageWearHint =>
+      'Pondéré par la charge · une plage, jamais une valeur ponctuelle.';
+
+  @override
+  String get garageWearEmpty => 'Pas de pièces d\'usure avec historique.';
+
+  @override
+  String garageWearSwapIn(String name, String low, String high) {
+    return '$name dans $low–$high km';
+  }
 
   @override
   String garageCreatedAtStand(String name) {
@@ -2949,6 +3006,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String offlineCoverageOutsideStreet(String name) {
+    return 'Hors de $name · rue hors ligne';
+  }
+
+  @override
+  String offlineCoverageOutsideStreetAway(String name) {
+    return 'Hors de $name · rue pas ici';
+  }
+
+  @override
   String get offlineCoverageShowOnMap => 'Voir la région sur la carte';
 
   @override
@@ -2959,6 +3026,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String offlineCoverageMapNeedsNet(String name) {
     return '$name · carte : réseau';
+  }
+
+  @override
+  String offlineCoverageStreetAway(String name) {
+    return '$name · rue pas ici';
   }
 
   @override
@@ -3019,11 +3091,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get offlineStreetOff => 'Pas de rue';
 
   @override
+  String get offlineStreetAway => 'Rue pas ici';
+
+  @override
   String get offlineReadyAll => 'Routing, vue d’ensemble et carte rue prêts.';
 
   @override
   String get offlineReadyStreet =>
       'Routing et carte rue prêts — vue d’ensemble non chargée.';
+
+  @override
+  String get offlineReadyStreetAway =>
+      'Carte rue sur l’appareil — pas à cet endroit.';
+
+  @override
+  String get offlineReadyAllAway =>
+      'Routing et vue d’ensemble prêts. Carte rue pas ici.';
 
   @override
   String get offlineSketchGraph => 'Graphe';
@@ -3038,6 +3121,55 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pour la navigation en ride. Plus grand que la vue d’ensemble — plutôt en Wi-Fi.';
 
   @override
+  String offlineStreetCorridorCta(String size) {
+    return 'Carte rue autour de vous ($size)';
+  }
+
+  @override
+  String get offlineStreetCorridorExplain =>
+      'Pas tout le pays — seulement autour du GPS, pour la navigation en ride. Plutôt en Wi-Fi.';
+
+  @override
+  String offlineStreetRouteCta(String size) {
+    return 'Carte rue le long de la tournée ($size)';
+  }
+
+  @override
+  String get offlineStreetNeedGps =>
+      'La carte rue de cette région est trop grande. Autoriser la position — alors un corridor autour du GPS.';
+
+  @override
+  String offlineStreetRefreshCta(String size) {
+    return 'Actualiser la carte rue autour de vous ($size)';
+  }
+
+  @override
+  String get offlineStreetRemove => 'Retirer la carte rue';
+
+  @override
+  String get offlineConfirmStreetRemoveTitle => 'Supprimer la carte rue ?';
+
+  @override
+  String get offlineConfirmStreetRemoveBody =>
+      'La navigation en ride aura de nouveau besoin du réseau.';
+
+  @override
+  String get offlineStreetRemoved => 'Carte rue retirée.';
+
+  @override
+  String get offlineSketchStreet => 'Rue';
+
+  @override
+  String offlineConfirmStreetRouteBody(String name, String size) {
+    return 'Le long de la tournée, $size. Pas toute la région $name.';
+  }
+
+  @override
+  String offlineConfirmStreetCorridorBody(String name, String size) {
+    return 'Autour de la position, $size. Pas toute la région $name.';
+  }
+
+  @override
   String get offlineLoadBelow =>
       'Charge un pack plus bas. Graphe seulement, pas la carte de 540 Mo.';
 
@@ -3046,6 +3178,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get offlineRoutingOff => 'Pas de routing';
+
+  @override
+  String get offlineRoutingAway => 'Routing pas ici';
+
+  @override
+  String get offlineReadyRoutingAway =>
+      'Routing sur l’appareil — pas à votre position.';
+
+  @override
+  String get offlineReadyStreetHereRoutingAway =>
+      'Carte rue prête. Routing pas à votre position.';
+
+  @override
+  String get offlineReadyBothAway =>
+      'Routing et carte rue pas à votre position.';
 
   @override
   String get offlineOverviewOn => 'Vue d’ensemble active';
@@ -6625,6 +6772,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rideHudStreetNeedsNet => 'La carte routière a besoin du réseau';
 
   @override
+  String get rideHudStreetOutside => 'Carte rue pas ici — réseau ou actualiser';
+
+  @override
   String get rideCardinalN => 'N';
 
   @override
@@ -8810,6 +8960,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Relevé du compteur. On n\'invente pas les heures à partir des km.';
 
   @override
+  String get garageStandStravaHint =>
+      'Sync Strava automatique prévu — d\'ici là le même dialogue que sous la photo. Pas d\'import silencieux.';
+
+  @override
   String get garagePartsEmptyTitle => 'Pas encore de pièces';
 
   @override
@@ -9117,7 +9271,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get garagePhotoRetakeHint =>
-      'Le recadrage cover reste. Reprends une photo, le vélo sera sur le stand.';
+      'La photo ne remplit pas le stand. Reprends pour poser le vélo sur le rail.';
+
+  @override
+  String get garagePhotoCropTitle => 'Poser le vélo sur le stand';
+
+  @override
+  String get garagePhotoCropHint =>
+      'Glisse la photo jusqu\'à ce que le vélo tienne sur le rail.';
+
+  @override
+  String get garagePhotoCropSave => 'Poser ainsi';
+
+  @override
+  String get garagePhotoRotate => 'Tourner 90°';
+
+  @override
+  String get garagePhotoPlace => 'Poser sur le stand';
 
   @override
   String get identifyReasonNoKey =>

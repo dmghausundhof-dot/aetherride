@@ -17,6 +17,7 @@ export function LegalSubnav() {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={active ? "page" : undefined}
             className={
               active
                 ? "rounded-full bg-chrome px-3 py-1 text-xs font-semibold text-on-accent"

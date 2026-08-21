@@ -21,7 +21,7 @@ import {
 } from "@/lib/shop/softFit";
 
 export type SportFamily = "mtb" | "gravel" | "road" | "urban";
-export type WheelNorm = "29" | "27.5" | "700c" | "650b";
+export type WheelNorm = "29" | "27.5" | "700c" | "650b" | "26" | "24" | "20" | "16";
 export type EbikeMode = "any" | "only" | "no";
 export type GarageFitKind = "match" | "universal" | "mismatch";
 
@@ -153,6 +153,10 @@ export function normalizeWheel(
     return "27.5";
   }
   if (t === "700c" || t === "700" || t === "28-622") return "700c";
+  if (t === "26" || t === "26er" || t === "559" || t === "26-559") return "26";
+  if (t === "24" || t === "24er" || t === "507" || t === "24-507") return "24";
+  if (t === "20" || t === "20er" || t === "406" || t === "20-406") return "20";
+  if (t === "16" || t === "16er" || t === "349" || t === "16-349") return "16";
   return undefined;
 }
 
@@ -166,6 +170,14 @@ export function wheelLabel(w: WheelNorm): string {
       return "650b";
     case "700c":
       return "700c";
+    case "26":
+      return "26\"";
+    case "24":
+      return "24\"";
+    case "20":
+      return "20\"";
+    case "16":
+      return "16\"";
   }
 }
 
@@ -340,6 +352,18 @@ function inferWheelsFromText(blob: string): WheelNorm[] {
   }
   if (/\b650b\b/i.test(blob) || /\b\d{2}-584\b/.test(blob)) out.add("650b");
   if (/\b700c\b/i.test(blob) || /\b\d{2}-622\b/.test(blob)) out.add("700c");
+  if (/\b26(?:\s*(?:zoll|")|er\b)/i.test(blob) || /\b\d{2}-559\b/.test(blob)) {
+    out.add("26");
+  }
+  if (/\b24(?:\s*(?:zoll|")|er\b)/i.test(blob) || /\b\d{2}-507\b/.test(blob)) {
+    out.add("24");
+  }
+  if (/\b20(?:\s*(?:zoll|")|er\b)/i.test(blob) || /\b\d{2}-406\b/.test(blob)) {
+    out.add("20");
+  }
+  if (/\b16(?:\s*(?:zoll|")|er\b)/i.test(blob) || /\b\d{2}-349\b/.test(blob)) {
+    out.add("16");
+  }
   return [...out];
 }
 

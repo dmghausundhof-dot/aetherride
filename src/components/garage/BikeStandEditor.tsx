@@ -56,6 +56,9 @@ export function BikeStandEditor({
         <p className="mt-1 text-sm text-text-secondary">
           {copy.workshopStandHint}
         </p>
+        <p className="mt-1 text-xs text-text-secondary">
+          {copy.workshopStandStravaHint}
+        </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <label className="block text-sm">
             {copy.workshopStatKm}

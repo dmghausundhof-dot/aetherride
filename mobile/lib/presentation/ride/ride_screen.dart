@@ -28,6 +28,8 @@ import '../../data/routing/bike_overlay.dart';
 import '../../data/routing/map_style_url.dart';
 import '../../data/routing/overview_browse_paint.dart';
 import '../../data/routing/offline_basemap.dart';
+import '../../data/routing/offline_maps_prefs.dart';
+import '../../data/routing/offline_pack_catalog.dart';
 import '../../data/routing/offline_pack_dirs.dart';
 import '../../data/routing/offline_pmtiles_store.dart';
 import '../../data/routing/offline_tiles.dart';
@@ -80,12 +82,14 @@ import '../../native/hud_media_channel.dart';
 import '../../native/location_core_channel.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../discover/offline_maps_sheet.dart';
 import '../map/friend_pin_image.dart';
 import '../map/map_pin_image.dart';
 import '../map/nav_puck_image.dart';
 import '../map/nav_puck_overlay.dart';
 import '../map/rider_map_image.dart';
 import '../post_ride/post_ride_screen.dart';
+import '../shared/chrome_glyph.dart';
 import '../shared/map_locate_fab.dart';
 import '../shared/map_ornaments.dart';
 import '../shared/status_bar_scrim.dart';
@@ -253,6 +257,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
   /// N-03/N-08 connectivity honesty.
   bool _networkOnline = true;
   bool _offlineMapAvailable = false;
+  bool _streetHudInstalled = false;
+  List<double>? _streetHudBbox;
+  StreetHudOfferKind? _streetHudKind;
   bool _offlineRoutingReady = false;
   ConnectivityChipState _connectivityState = ConnectivityChipState.live;
   Timer? _connectivityTimer;
@@ -299,6 +306,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
     _startAutoSunlight();
     unawaited(_loadRidePrefs());
     RidePrefs.navPuckRevision.addListener(_onNavPuckPref);
+    OfflineMapsPrefs.revision.addListener(_onPackRevision);
     unawaited(_resolveRideHudStyle());
     unawaited(_refreshGroupHudOnly());
     // Deep-link may set rideAutostart before this State mounts — ref.listen
@@ -477,8 +485,42 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   /// True only when the HUD would paint from local street tiles.
   /// Overview PMTiles / DACH z11 are not an offline ride map.
-  Future<bool> _probeOfflineMapAvailable() async {
+  Future<bool> _probeOfflineMapAvailable({
+    double? lng,
+    double? lat,
+  }) async {
     try {
+      final installed = await OfflineBasemap.streetHudReadyForActivatedPack();
+      _streetHudInstalled = installed;
+      if (installed) {
+        try {
+          final prefs = await OfflineMapsPrefs.read();
+          final packId = OfflineMapsPrefs.packIdFromActivatedPath(
+            await OfflineMapsPrefs.activatedPackPath(),
+          );
+          if (OfflineMapsPrefs.streetHudPackIdFrom(prefs) == packId) {
+            _streetHudBbox = OfflineMapsPrefs.streetHudBboxFrom(prefs);
+            _streetHudKind = streetHudKindFromRaw(
+              OfflineMapsPrefs.streetHudKindRawFrom(prefs),
+            );
+          } else {
+            _streetHudBbox = null;
+            _streetHudKind = StreetHudOfferKind.pack;
+          }
+        } catch (_) {
+          _streetHudBbox = null;
+          _streetHudKind = null;
+        }
+        return streetHudCoversHere(
+          regionReady: true,
+          kind: _streetHudKind,
+          storedBbox: _streetHudBbox,
+          userLng: lng ?? _lastFollowLng,
+          userLat: lat ?? _lastFollowLat,
+        );
+      }
+      _streetHudBbox = null;
+      _streetHudKind = null;
       final resolved = await AppConfig.resolveMapStyleUrl();
       return rideHudUsesOfflineStreetTiles(
         liveStyle: AppConfig.mapStyleUrl,
@@ -487,6 +529,52 @@ class RideScreenState extends ConsumerState<RideScreen> {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Graph on disk and Occupancy cover this fix (or pack-only if no GPS yet).
+  Future<bool> _probeOfflineRoutingReady({
+    double? lng,
+    double? lat,
+  }) async {
+    try {
+      if (!await OfflinePackDirs.hasLegitimateActivatedPack()) return false;
+      final x = lng ?? _lastFollowLng;
+      final y = lat ?? _lastFollowLat;
+      if (x == null || y == null) return true;
+      return OfflinePackDirs.legitimateCoversPoint(x, y);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _syncOfflineHonestyAtFix(double lat, double lng) async {
+    final mapOk = await _probeOfflineMapAvailable(lng: lng, lat: lat);
+    final routingOk = await _probeOfflineRoutingReady(lng: lng, lat: lat);
+    if (!mounted) return;
+    final route = ref.read(activeRouteProvider);
+    final hasRoute = route != null && route.coordinates.length >= 2;
+    final state = resolveConnectivityChip(
+      online: _networkOnline,
+      hasRouteGeometry: hasRoute,
+      offlineMapAvailable: mapOk,
+      offlineRoutingReady: routingOk,
+    );
+    if (mapOk == _offlineMapAvailable &&
+        routingOk == _offlineRoutingReady &&
+        state == _connectivityState) {
+      return;
+    }
+    setState(() {
+      _offlineMapAvailable = mapOk;
+      _offlineRoutingReady = routingOk;
+      _connectivityState = state;
+    });
+    unawaited(
+      _syncRideHudStyle(
+        online: _networkOnline,
+        offlineStreetTiles: mapOk,
+      ),
+    );
   }
 
   /// Street HUD is dark at zoom 15 — sit with the nav chrome, not a second pill.
@@ -503,19 +591,32 @@ class RideScreenState extends ConsumerState<RideScreen> {
         constraints: const BoxConstraints(maxWidth: 360),
         child: RideStreetNetHint(
           key: const Key('ride-street-net-hint'),
-          label: _l10n.rideHudStreetNeedsNet,
+          label: _streetHudInstalled && !_offlineMapAvailable
+              ? _l10n.rideHudStreetOutside
+              : _l10n.rideHudStreetNeedsNet,
+          onTap: () => unawaited(_openOfflineMapsFromRide()),
         ),
       ),
     );
   }
 
-  /// Activated region graph — TBT/Dijkstra without street tiles.
-  Future<bool> _probeOfflineRoutingReady() async {
-    try {
-      return await OfflinePackDirs.hasLegitimateActivatedPack();
-    } catch (_) {
-      return false;
+  Future<void> _openOfflineMapsFromRide() async {
+    List<double>? routeBbox;
+    List<List<double>>? routeLine;
+    final route = ref.read(activeRouteProvider);
+    if (route != null && route.coordinates.length >= 2) {
+      routeBbox = streetHudBboxFromLngLats(route.coordinates);
+      routeLine = streetHudSketchLine(route.coordinates);
     }
+    await openOfflineMapsSheet(
+      context,
+      userLng: _lastFollowLng,
+      userLat: _lastFollowLat,
+      routeBbox: routeBbox,
+      routeLine: routeLine,
+    );
+    if (!mounted) return;
+    unawaited(_refreshConnectivityChip());
   }
 
   Future<void> _refreshConnectivityChip() async {
@@ -563,6 +664,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   void _onNavPuckPref() {
     unawaited(_reloadNavPuckStyle());
+  }
+
+  void _onPackRevision() {
+    unawaited(_refreshConnectivityChip());
   }
 
   Future<void> _reloadNavPuckStyle() async {
@@ -932,7 +1037,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
                       height: 22,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.photo_camera_outlined, size: 26),
+                  : const ChromeGlyph('photo', size: 26),
             ),
             if (count > 0)
               Positioned(
@@ -2293,8 +2398,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       var plan = const RideBleConnectPlan();
       final bikeId = active?.id;
       if (bikeId != null && bikeId.isNotEmpty) {
-        binding =
-            await ref.read(bikeBleStoreProvider).bindingForBike(bikeId);
+        binding = await ref.read(bikeBleStoreProvider).bindingForBike(bikeId);
         plan = rideBleConnectPlan(binding);
       }
       final preferredId = plan.wheelId;
@@ -2548,6 +2652,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
           elev: fix.altitudeM,
         ),
       );
+      unawaited(_syncOfflineHonestyAtFix(fix.lat, fix.lng));
       unawaited(_publishGroupPresence(fix.lat, fix.lng));
       if (_together.looking) {
         _together.setFix(lat: fix.lat, lng: fix.lng);
@@ -3397,6 +3502,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
   @override
   void dispose() {
     RidePrefs.navPuckRevision.removeListener(_onNavPuckPref);
+    OfflineMapsPrefs.revision.removeListener(_onPackRevision);
     _sensorSub?.cancel();
     _bleSub?.cancel();
     _locSub?.cancel();
@@ -3464,10 +3570,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
                         setState(() => _cameraFollow = !_cameraFollow);
                         if (_cameraFollow) unawaited(_drawRideMap());
                       },
-                      icon: Icon(
-                        _cameraFollow
-                            ? Icons.my_location
-                            : Icons.location_searching,
+                      icon: ChromeGlyph(
+                        'locate',
+                        size: 22,
                         color: _cameraFollow ? AppColors.accent : null,
                       ),
                     ),
@@ -3478,7 +3583,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
                         if (_cameraFollow) unawaited(_drawRideMap());
                       },
                       icon: _northUp
-                          ? const Icon(Icons.explore)
+                          ? const ChromeGlyph(
+                              'compass',
+                              size: 22,
+                              color: AppColors.accent,
+                            )
                           : AetherNavMark(
                               size: 22,
                               color: AppColors.accent,
@@ -3507,10 +3616,9 @@ class RideScreenState extends ConsumerState<RideScreen> {
                           ),
                         );
                       },
-                      icon: Icon(
-                        _autoRerouteEnabled
-                            ? Icons.alt_route
-                            : Icons.alt_route_outlined,
+                      icon: ChromeGlyph(
+                        'split',
+                        size: 22,
                         color: _autoRerouteEnabled ? AppColors.accent : null,
                       ),
                     ),
@@ -3900,6 +4008,12 @@ class RideScreenState extends ConsumerState<RideScreen> {
                                     online: _networkOnline,
                                     offlineStreetTiles: _offlineMapAvailable,
                                   ),
+                                  onTap: _connectivityState ==
+                                          ConnectivityChipState.live
+                                      ? null
+                                      : () => unawaited(
+                                            _openOfflineMapsFromRide(),
+                                          ),
                                 ),
                               ),
                             ),
@@ -4106,7 +4220,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
                               ref.read(isPausedProvider.notifier).state = true;
                               _syncRideNotification();
                             },
-                            child: const Icon(Icons.pause_rounded, size: 28),
+                            child: const ChromeGlyph(
+                              'pause',
+                              size: 28,
+                              color: AppColors.onAccent,
+                            ),
                           ),
                         ),
                       ),

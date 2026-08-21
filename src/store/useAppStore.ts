@@ -23,6 +23,10 @@ import {
 import { templatesForCategory } from "@/lib/setup/templates";
 import { presentSetupTemplate } from "@/lib/i18n/setupTemplateCopy";
 import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
+import {
+  GARAGE_ERR_CATALOG,
+  GARAGE_ERR_FREE_ONE,
+} from "@/lib/i18n/addBikeCopy";
 import type { ChromeLang } from "@/lib/i18n/chromeLang";
 import {
   type RangeCalibration,
@@ -691,12 +695,10 @@ export const useAppStore = create<AppState>()(
           get().subscriptionTier === "free" &&
           get().bikes.length >= 1
         ) {
-          throw new Error(
-            "Im Free-Tarif nur ein Rad. Für mehrere Räder Pro freischalten."
-          );
+          throw new Error(GARAGE_ERR_FREE_ONE);
         }
         const found = findCatalogBike(catalogBikeId);
-        if (!found) throw new Error("Katalog-Rad nicht gefunden");
+        if (!found) throw new Error(GARAGE_ERR_CATALOG);
         const { bike: cat, manufacturer } = found;
         const id = uuidv4();
         const type = categoryToBikeType(cat.category);
@@ -767,9 +769,7 @@ export const useAppStore = create<AppState>()(
           get().subscriptionTier === "free" &&
           get().bikes.length >= 1
         ) {
-          throw new Error(
-            "Im Free-Tarif nur ein Rad. Für mehrere Räder Pro freischalten."
-          );
+          throw new Error(GARAGE_ERR_FREE_ONE);
         }
         const id = uuidv4();
         const type = categoryToBikeType(input.category);

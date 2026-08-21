@@ -14,10 +14,13 @@ import {
   hasStoreLinks,
   rideOpenPath,
 } from "@/lib/web/appLinks";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { openRideCopy } from "@/lib/i18n/openRideCopy";
 
 function OpenRideInner() {
   const sp = useSearchParams();
   const routeId = sp.get("route");
+  const o = openRideCopy(useChromeLang());
   const [tried, setTried] = useState(false);
 
   const deep = useMemo(
@@ -26,7 +29,7 @@ function OpenRideInner() {
   );
 
   useEffect(() => {
-    // Intent: App öffnen
+    // Intent: open the native app
     window.location.href = deep;
     const t = window.setTimeout(() => setTried(true), 1200);
     return () => window.clearTimeout(t);
@@ -35,23 +38,21 @@ function OpenRideInner() {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center justify-center px-4 py-16 text-center">
       <FlowLineWordmark showMark className="text-2xl font-bold tracking-tight" />
-      <h1 className="mt-6 text-2xl font-bold">App öffnen</h1>
+      <h1 className="mt-6 text-2xl font-bold">{o.title}</h1>
       <p className="mt-3 text-sm text-text-secondary">
-        {routeId
-          ? "Geplante Tour wird an die App übergeben…"
-          : "Weiterleitung zur nativen Navigation…"}
+        {routeId ? o.handingTour : o.handingNav}
       </p>
       <a
         href={deep}
         className="mt-8 inline-flex items-center justify-center rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-on-accent"
       >
-        App jetzt öffnen
+        {o.openNow}
       </a>
       {tried && (
         <div className="mt-10 space-y-4">
           <p className="text-xs text-text-secondary">
-            App nicht installiert?{" "}
-            {hasStoreLinks() ? "Im Store laden:" : "Im Browser fortfahren:"}
+            {o.notInstalled}{" "}
+            {hasStoreLinks() ? o.loadInStore : o.continueInBrowser}
           </p>
           {hasStoreLinks() ? (
             <div className="flex justify-center">
@@ -62,7 +63,7 @@ function OpenRideInner() {
               href={routeId ? `/tours/${encodeURIComponent(routeId)}` : "/discover"}
               className="text-sm font-semibold text-chrome hover:underline"
             >
-              Im Browser fortfahren →
+              {o.continueCta}
             </Link>
           )}
         </div>
@@ -72,11 +73,12 @@ function OpenRideInner() {
 }
 
 export default function OpenRidePage() {
+  const o = openRideCopy(useChromeLang());
   return (
     <Suspense
       fallback={
         <div className="p-12 text-center text-sm text-text-secondary">
-          Öffne App…
+          {o.opening}
         </div>
       }
     >

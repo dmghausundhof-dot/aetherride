@@ -11,6 +11,7 @@ class CoverageEdgePill extends StatelessWidget {
     this.outside = false,
     this.overview = false,
     this.needsNet = false,
+    this.streetAway = false,
     this.onTap,
   });
 
@@ -18,21 +19,24 @@ class CoverageEdgePill extends StatelessWidget {
   final bool outside;
   final bool overview;
   final bool needsNet;
+  final bool streetAway;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final fill = outside ? const Color(0xE61F1F1F) : const Color(0xF2F4F1EC);
     final ink = outside ? const Color(0xFFFFB080) : const Color(0xFF3D2914);
-    final mark = outside || needsNet
-        ? 'offline'
-        : overview
-            ? 'layers'
-            : 'karte';
-    final iconColor = outside
-        ? const Color(0xFFFF6A00)
-        : needsNet
-            ? AppColors.sage
+    final mark = streetAway
+        ? 'nav'
+        : outside || needsNet
+            ? 'offline'
+            : overview
+                ? 'layers'
+                : 'karte';
+    final iconColor = streetAway || needsNet
+        ? (outside ? const Color(0xFFFF6A00) : AppColors.sage)
+        : outside
+            ? const Color(0xFFFF6A00)
             : overview
                 ? AppColors.sage
                 : AppColors.sageOnDark;

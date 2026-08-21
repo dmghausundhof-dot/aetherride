@@ -8,6 +8,8 @@ import {
   editorialPersonJsonLd,
   siteOrigin,
 } from "@/lib/content/siteJsonLd";
+import { chromeRequestLang } from "@/lib/i18n/hofDoorMeta";
+import { profileCopy } from "@/lib/i18n/profileCopy";
 
 type Props = { params: Promise<{ handle: string }> };
 
@@ -19,10 +21,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { handle } = await params;
   const editorial = getEditorialProfile(handle);
   if (!editorial) {
+    const copy = profileCopy(await chromeRequestLang());
     return {
-      title: "Profil",
-      description:
-        "Öffentliches FlowLine-Profil. Nur mit Opt-in, keine GPS-Spuren.",
+      title: copy.publicTitle,
+      description: copy.publicHint,
       robots: { index: false, follow: true },
     };
   }

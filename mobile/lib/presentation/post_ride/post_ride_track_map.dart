@@ -71,7 +71,14 @@ class _PostRideTrackMapState extends State<PostRideTrackMap> {
       final online = await rideHasNetwork();
       var street = false;
       try {
-        street = await OfflineBasemap.streetHudReadyForActivatedPack();
+        street = await OfflineBasemap.streetHudCoversActivatedPack(
+          lng: widget.track.isNotEmpty
+              ? (widget.track.last['lng'] as num?)?.toDouble()
+              : null,
+          lat: widget.track.isNotEmpty
+              ? (widget.track.last['lat'] as num?)?.toDouble()
+              : null,
+        );
       } catch (_) {}
       if (!street) {
         street = rideHudUsesOfflineStreetTiles(

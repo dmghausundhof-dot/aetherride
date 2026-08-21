@@ -401,7 +401,13 @@ Future<bool> ensureLiveOsmNetworkSource(MapLibreMapController c) async {
     );
     return true;
   } catch (_) {
-    return false;
+    // Concurrent style attach may have won the race.
+    try {
+      final ids = [for (final raw in await c.getSourceIds()) raw.toString()];
+      return liveOsmNetworkSourceId(ids) != null;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
@@ -673,6 +679,9 @@ Future<void> detachBikeOverlayLayers(MapLibreMapController c) async {
   } catch (_) {}
 }
 
+/// Serialize attaches — concurrent addSource(bike-overlay) SIGSEGVs MapLibre.
+Future<void>? _bikeOverlayAttachInflight;
+
 Future<void> attachBikeOverlayLayers(
   MapLibreMapController c, {
   required Object data,
@@ -681,29 +690,60 @@ Future<void> attachBikeOverlayLayers(
   required Set<BikeOverlayClass> extraOn,
   bool sGradeOnly = false,
   bool liveNetwork = true,
+}) {
+  final prev = _bikeOverlayAttachInflight ?? Future<void>.value();
+  final run = prev.then(
+    (_) => _attachBikeOverlayLayersBody(
+      c,
+      data: data,
+      family: family,
+      visible: visible,
+      extraOn: extraOn,
+      sGradeOnly: sGradeOnly,
+      liveNetwork: liveNetwork,
+    ),
+  );
+  _bikeOverlayAttachInflight = run.catchError((_) {});
+  return run;
+}
+
+Future<void> _attachBikeOverlayLayersBody(
+  MapLibreMapController c, {
+  required Object data,
+  required BikeOverlayFamily family,
+  required bool visible,
+  required Set<BikeOverlayClass> extraOn,
+  required bool sGradeOnly,
+  required bool liveNetwork,
 }) async {
   final pmtiles = _isPmtilesOverlay(data);
+  var hasSource = false;
   try {
-    if (pmtiles) {
-      final raw = data.toString();
-      await c.addSource(
-        kBikeOverlaySourceId,
-        VectorSourceProperties(
-          url: raw.startsWith('pmtiles://') ? raw : 'pmtiles://$raw',
-          attribution: '© OpenStreetMap',
-        ),
-      );
-    } else {
-      await c.addSource(
-        kBikeOverlaySourceId,
-        GeojsonSourceProperties(
-          data: data,
-          attribution: '© OpenStreetMap',
-        ),
-      );
+    hasSource = (await c.getSourceIds()).contains(kBikeOverlaySourceId);
+  } catch (_) {}
+  if (!hasSource) {
+    try {
+      if (pmtiles) {
+        final raw = data.toString();
+        await c.addSource(
+          kBikeOverlaySourceId,
+          VectorSourceProperties(
+            url: raw.startsWith('pmtiles://') ? raw : 'pmtiles://$raw',
+            attribution: '© OpenStreetMap',
+          ),
+        );
+      } else {
+        await c.addSource(
+          kBikeOverlaySourceId,
+          GeojsonSourceProperties(
+            data: data,
+            attribution: '© OpenStreetMap',
+          ),
+        );
+      }
+    } catch (_) {
+      // Source already present after a partial attach.
     }
-  } catch (_) {
-    // Source already present after a partial attach.
   }
 
   final below = await _browseNetworkBelowLayerId(c);

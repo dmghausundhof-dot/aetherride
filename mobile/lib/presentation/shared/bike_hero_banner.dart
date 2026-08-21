@@ -6,12 +6,14 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/garage/bike_photo_sync.dart';
+import '../../data/garage/stand_photo_file.dart';
 import '../../domain/bike.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import '../garage/bike_photo_fill_sheet.dart';
 import '../garage/rad_stand_frame.dart';
+import '../garage/rad_glyph.dart';
 
 /// Foto-Banner + Name/Kategorie/Aktiv-Badge für ein Bike — gemeinsames
 /// visuelles Vokabular zwischen Home (Begrüßung/Fingerprint) und Garage
@@ -28,6 +30,7 @@ class BikeHeroBanner extends ConsumerWidget {
     this.showActiveBadge = true,
     this.showCaption = true,
     this.photoHeight = 140,
+    this.useStandRatio = false,
     this.lastRideLine,
     this.embedded = false,
   });
@@ -47,6 +50,8 @@ class BikeHeroBanner extends ConsumerWidget {
   final bool showActiveBadge;
   final bool showCaption;
   final double photoHeight;
+  /// Die Box: 2:1 stand, stored JPEGs fill without a second crop.
+  final bool useStandRatio;
   final String? lastRideLine;
 
   /// Parent already draws the stand card chrome (Die Box).
@@ -154,11 +159,7 @@ class BikeHeroBanner extends ConsumerWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.photo_camera_outlined,
-                                  size: 16,
-                                  color: AppColors.chipIdleText,
-                                ),
+                                const RadGlyph('photo', size: 16),
                                 if (usePhotoFill) ...[
                                   const SizedBox(width: 4),
                                   Text(
@@ -176,18 +177,26 @@ class BikeHeroBanner extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  if (showPhotoPicker && isRemotePhotoRef(photo))
-                    Positioned(
-                      left: 8,
-                      right: 8,
-                      bottom: showCaption ? 44 : kStandRailClearance,
-                      child: Material(
-                        key: const Key('stand-photo-retake'),
-                        color: AppColors.hofGround.withValues(alpha: 0.62),
+                ],
+              ),
+              if (showPhotoPicker && isRemotePhotoRef(photo))
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.m,
+                    AppSpacing.s,
+                    AppSpacing.m,
+                    0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Material(
+                        key: const Key('stand-photo-place'),
+                        color: AppColors.chipIdle,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(AppRadius.chip),
-                          onTap: () => _pickPhoto(context, ref),
+                          onTap: () => _placeRemote(context, ref, photo!),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.s,
@@ -197,16 +206,15 @@ class BikeHeroBanner extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppLocalizations.of(context).garagePhotoRetake,
+                                  AppLocalizations.of(context).garagePhotoPlace,
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.chipIdleText,
                                   ),
                                 ),
                                 Text(
                                   AppLocalizations.of(context)
-                                      .garagePhotoRetakeHint,
+                                      .garagePhotoCropHint,
                                   style: const TextStyle(
                                     fontSize: 10,
                                     height: 1.25,
@@ -218,9 +226,32 @@ class BikeHeroBanner extends ConsumerWidget {
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                      const SizedBox(height: 6),
+                      Material(
+                        key: const Key('stand-photo-retake'),
+                        color: AppColors.chipIdle,
+                        borderRadius: BorderRadius.circular(AppRadius.chip),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(AppRadius.chip),
+                          onTap: () => _pickPhoto(context, ref),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context).garagePhotoRetake,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (showCaption)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -275,15 +306,20 @@ class BikeHeroBanner extends ConsumerWidget {
   Widget _heroPhoto(String? photo, double height) {
     final hasPhoto = photo != null &&
         (isRemotePhotoRef(photo) || File(photo).existsSync());
+    final alignment = isRemotePhotoRef(photo)
+        ? kStandPhotoAlignment
+        : Alignment.center;
     if (!hasPhoto) {
       return RadStandFrame(
         height: height,
+        useStandRatio: useStandRatio,
         borderRadius: BorderRadius.zero,
         child: RadSilhouette(bike: bike),
       );
     }
     return RadStandFrame(
       height: height,
+      useStandRatio: useStandRatio,
       photo: true,
       borderRadius: BorderRadius.zero,
       child: isRemotePhotoRef(photo)
@@ -292,7 +328,7 @@ class BikeHeroBanner extends ConsumerWidget {
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              alignment: kStandPhotoAlignment,
+              alignment: alignment,
               errorBuilder: (_, __, ___) => RadSilhouette(bike: bike),
             )
           : Image.file(
@@ -303,7 +339,7 @@ class BikeHeroBanner extends ConsumerWidget {
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
-              alignment: kStandPhotoAlignment,
+              alignment: alignment,
               errorBuilder: (_, __, ___) => RadSilhouette(bike: bike),
               gaplessPlayback: false,
             ),
@@ -327,13 +363,32 @@ class BikeHeroBanner extends ConsumerWidget {
       imageQuality: 85,
     );
     if (x == null) return;
+    if (!context.mounted) return;
     await persistPickedBikePhoto(
+      context: context,
       ref: ref,
       bikeId: bike.id,
       source: File(x.path),
     );
     // Kein ChangeNotifier auf userProfileStoreProvider — Rebuild über
     // Invalidate eines Providers erzwingen, den der Aufrufer watcht.
+    ref.invalidate(currentSetupProvider(bike.id));
+  }
+
+  Future<void> _placeRemote(
+    BuildContext context,
+    WidgetRef ref,
+    String url,
+  ) async {
+    final temp = await downloadStandPhotoToTemp(url);
+    if (temp == null || !context.mounted) return;
+    await persistPickedBikePhoto(
+      context: context,
+      ref: ref,
+      bikeId: bike.id,
+      source: temp,
+    );
+    onPhotoFilled?.call();
     ref.invalidate(currentSetupProvider(bike.id));
   }
 }

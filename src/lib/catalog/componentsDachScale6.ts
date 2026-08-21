@@ -1288,9 +1288,13 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     attributes: [
       attr("rear_spacing", { enum: "148x12_boost" }),
       attr("axle_rear", { enum: "12x148_boost" }),
+      attr("shock_eye_to_eye_mm", { num: 185, unit: "mm" }),
+      attr("shock_stroke_mm", { num: 55, unit: "mm" }),
+      attr("shock_mount_type", { enum: "trunnion" }),
       attr("headset_top", { enum: "ZS44" }),
       attr("headset_bottom", { enum: "ZS56" }),
-      attr("bb_standard", { enum: "BSA73" }),
+      attr("bb_standard", { enum: "fazua_ride_60" }),
+      attr("seatpost_diameter_mm", { num: 34.9, unit: "mm" }),
       attr("brake_mount_rear", { enum: "post_mount" }),
       attr("max_rotor_rear_mm", { num: 203, unit: "mm" }),
       attr("max_tire_width_mm", { num: 66, unit: "mm" }),
@@ -1324,6 +1328,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     attrs: [
       attr("eye_to_eye_mm", { num: 185, unit: "mm" }),
       attr("stroke_mm", { num: 55, unit: "mm" }),
+      attr("mount_type", { enum: "trunnion" }),
     ],
   }),
   part("cm-fazua-ride-60", "motor", "Fazua", "Ride 60", {
@@ -1677,8 +1682,14 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
     safety: true,
   }),
   part("cm-fox-dhx2-factory", "rear_shock", "Fox", "DHX2 Factory", {
+    variant: "225×75 Trunnion",
     url: "https://www.ridefox.com/",
     safety: true,
+    attrs: [
+      attr("eye_to_eye_mm", { num: 225, unit: "mm" }),
+      attr("stroke_mm", { num: 75, unit: "mm" }),
+      attr("mount_type", { enum: "trunnion" }),
+    ],
   }),
   part("cm-fox-36-factory-140", "fork", "Fox", "36 Factory Grip X2", {
     variant: "140mm 29",
@@ -1702,6 +1713,7 @@ export const COMPONENT_CATALOG_DACH_SCALE6: ComponentModel[] = [
       attr("travel_mm", { num: 200, unit: "mm" }),
       attr("wheel_size", { enum: "29" }),
       attr("offset_mm", { num: 46, unit: "mm" }),
+      attr("axle_front", { enum: "20x110" }),
     ],
   }),
   part("cm-tq-hpr60", "motor", "TQ", "HPR60", {

@@ -12,6 +12,7 @@ import '../../../domain/community/ride_group_policy.dart';
 import '../../../domain/community/ride_together.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shell/hof_threshold_nav.dart';
+import '../../shared/chrome_glyph.dart';
 import 'ride_hud_island.dart';
 
 class RideTogetherChip extends StatelessWidget {
@@ -41,8 +42,8 @@ class RideTogetherChip extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: NavHudTokens.islandHitDp),
         child: Row(
           children: [
-            Icon(
-              Icons.people_outline,
+            ChromeGlyph(
+              'users',
               size: compact ? 18 : 20,
               color: sunlight ? AppColors.sageOnLight : AppColors.sageOnDark,
             ),

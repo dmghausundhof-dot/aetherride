@@ -104,7 +104,7 @@ void main() {
         activePackCovers: true,
         switchedToCoveringPack: false,
       ),
-      isFalse,
+      isTrue,
     );
     expect(
       shouldAttemptOfflineGraphFirst(
@@ -159,7 +159,7 @@ void main() {
         viasEmpty: false,
         packCoversOrSwitched: true,
       ),
-      isFalse,
+      isTrue,
     );
     expect(
       shouldFallbackOfflineAfterOnlineFail(
@@ -216,7 +216,7 @@ void main() {
         allowOfflineFallback: true,
         packMayCover: true,
       ),
-      kOnlineRouteTimeout,
+      kOnlineRouteTimeoutWithOfflineFallback,
     );
     expect(
       onlineRouteTimeout(
@@ -236,5 +236,32 @@ void main() {
       ),
       kBrowseLiveRouteTimeout,
     );
+  });
+
+  test('joinOfflineRouteLegs stitches via legs without duplicating the join',
+      () {
+    const a = GeoPoint(49.0, 8.0);
+    const b = GeoPoint(49.1, 8.1);
+    const c = GeoPoint(49.2, 8.2);
+    final joined = joinOfflineRouteLegs([
+      const RouteResult(
+        coordinates: [a, b],
+        distanceM: 100,
+        durationS: 20,
+        engine: 'offline_graph',
+      ),
+      const RouteResult(
+        coordinates: [b, c],
+        distanceM: 80,
+        durationS: 16,
+        engine: 'offline_graph',
+      ),
+    ]);
+    expect(joined.coordinates.length, 3);
+    expect(joined.coordinates.first.lat, a.lat);
+    expect(joined.coordinates.last.lng, c.lng);
+    expect(joined.distanceM, 180);
+    expect(joined.durationS, 36);
+    expect(joined.engine, 'offline_graph');
   });
 }

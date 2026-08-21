@@ -181,7 +181,7 @@ class _PlanWaypointStackState extends State<PlanWaypointStack> {
                       child: IconButton(
                         tooltip: l10n.navigateSwap,
                         onPressed: widget.onSwap,
-                        icon: const Icon(Icons.swap_vert, size: 18),
+                        icon: const ChromeGlyph('swap', size: 18),
                       ),
                     ),
                   if (showStops && widget.vias.isNotEmpty)
@@ -241,29 +241,26 @@ class _PlanWaypointStackState extends State<PlanWaypointStack> {
                         backgroundColor: const Color(0x22E65100),
                       )
                     : null,
-                icon: const Icon(Icons.add, size: 18),
+                icon: const ChromeGlyph('add', size: 18),
                 label: Text(l10n.navigateAddVia),
               ),
               TextButton.icon(
                 onPressed: widget.onCloseLoop,
-                icon: Icon(
-                  widget.loopClosed ? Icons.loop : Icons.replay,
-                  size: 18,
-                ),
+                icon: const ChromeGlyph('loop', size: 18),
                 label: Text(l10n.navigateCloseLoop),
               ),
               if (widget.onUndo != null)
                 TextButton.icon(
                   key: const Key('plan-undo'),
                   onPressed: widget.onUndo,
-                  icon: const Icon(Icons.undo, size: 18),
+                  icon: const ChromeGlyph('undo', size: 18),
                   label: Text(l10n.planUndo),
                 ),
               if (widget.onRedo != null)
                 TextButton.icon(
                   key: const Key('plan-redo'),
                   onPressed: widget.onRedo,
-                  icon: const Icon(Icons.redo, size: 18),
+                  icon: const ChromeGlyph('redo', size: 18),
                   label: Text(l10n.planRedo),
                 ),
             ],

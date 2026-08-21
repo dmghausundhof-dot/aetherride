@@ -73,6 +73,10 @@ assert.equal(normalizeWheel("700c"), "700c");
 assert.equal(normalizeWheel("27_5"), "27.5");
 assert.equal(normalizeWheel("650b"), "650b");
 assert.equal(normalizeWheel("29"), "29");
+assert.equal(normalizeWheel("20"), "20");
+assert.equal(normalizeWheel("24"), "24");
+assert.equal(normalizeWheel("16"), "16");
+assert.equal(normalizeWheel("26"), "26");
 
 const tire700 = parseGarageFitConstraint({
   tags: ["slot:tire", "category:gravel", "wheel:700c"],

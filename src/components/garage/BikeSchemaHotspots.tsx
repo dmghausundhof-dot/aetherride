@@ -90,16 +90,27 @@ export function BikeSchemaHotspots({
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           draggable={false}
         />
-        <div
-          className="absolute inset-2 overflow-hidden rounded-xl"
-          style={{ background: "#F4F1EA" }}
-        >
+        {bike.photoUrl ? (
           <img
-            src={src}
+            src={bike.photoUrl}
             alt=""
-            className="pointer-events-none h-full w-full object-contain p-1"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
             draggable={false}
           />
+        ) : (
+          <div
+            className="absolute inset-2 overflow-hidden rounded-xl"
+            style={{ background: "#F4F1EA" }}
+          >
+            <img
+              src={src}
+              alt=""
+              className="pointer-events-none h-full w-full object-contain p-1"
+              draggable={false}
+            />
+          </div>
+        )}
+        <div className="absolute inset-0">
           {plan.hotspotSlots.map((slot) => {
             const a = anchors[slot];
             if (!a) return null;
@@ -138,14 +149,16 @@ export function BikeSchemaHotspots({
             );
           })}
         </div>
-        <img
-          src={RAD_STAND_HEADER}
-          alt=""
-          width={240}
-          height={24}
-          className="pointer-events-none absolute bottom-1 left-3 h-3.5 w-24"
-          draggable={false}
-        />
+        {bike.photoUrl ? null : (
+          <img
+            src={RAD_STAND_HEADER}
+            alt=""
+            width={240}
+            height={24}
+            className="pointer-events-none absolute bottom-1 left-3 h-3.5 w-24"
+            draggable={false}
+          />
+        )}
       </div>
       {(() => {
         const invite = schemaInviteSlots({

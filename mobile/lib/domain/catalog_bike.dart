@@ -229,6 +229,10 @@ String _wheelApiId(WheelSize w) => switch (w) {
       WheelSize.w29 => '29',
       WheelSize.c700 => '700c',
       WheelSize.b650 => '650b',
+      WheelSize.w26 => '26',
+      WheelSize.w24 => '24',
+      WheelSize.w20 => '20',
+      WheelSize.w16 => '16',
     };
 
 BikeCategory bikeCategoryFromApi(String raw) {
@@ -257,9 +261,13 @@ BikeCategory bikeCategoryFromApi(String raw) {
 WheelSize wheelSizeFromApi(String? raw) {
   final n = (raw ?? '29').trim().toLowerCase();
   return switch (n) {
-    '27.5' || '275' || 'w275' => WheelSize.w275,
+    '27.5' || '275' || 'w275' || '27_5' => WheelSize.w275,
     '700c' || 'c700' => WheelSize.c700,
     '650b' || 'b650' => WheelSize.b650,
+    '26' || 'w26' => WheelSize.w26,
+    '24' || 'w24' => WheelSize.w24,
+    '20' || 'w20' => WheelSize.w20,
+    '16' || 'w16' => WheelSize.w16,
     _ => WheelSize.w29,
   };
 }

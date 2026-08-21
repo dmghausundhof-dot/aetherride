@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/config.dart';
 import '../../domain/sensor.dart';
+import '../sync/epoch_ms.dart';
 import 'app_database.dart';
 
 /// Persistiert Sensor-Rohblöcke lokal (Consent `raw_data_upload`) und
@@ -34,14 +35,10 @@ class RideChunkRepository {
     await dir.create(recursive: true);
     final file = File(p.join(dir.path, '$seq.json'));
 
-    final windowStart = DateTime.fromMillisecondsSinceEpoch(
-      blocks.first.windowStartMs,
-      isUtc: true,
-    );
-    final windowEnd = DateTime.fromMillisecondsSinceEpoch(
-      blocks.last.windowEndMs,
-      isUtc: true,
-    );
+    final windowStart = dateTimeFromLooseEpoch(blocks.first.windowStartMs) ??
+        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    final windowEnd = dateTimeFromLooseEpoch(blocks.last.windowEndMs) ??
+        DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 
     final payload = {
       'rideId': rideId,

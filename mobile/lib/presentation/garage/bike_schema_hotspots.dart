@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/garage/bike_photo_sync.dart';
 import '../../domain/bike.dart';
 import '../../domain/component.dart';
 import '../../domain/garage/bike_schema_anchors.dart';
@@ -12,10 +15,11 @@ import '../../domain/garage/schema_invites.dart';
 import '../../domain/maintenance/intervals.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import '../../providers/app_providers.dart';
 import 'rad_stand_frame.dart';
 
-/// Tippbare Slot-Punkte auf der Silhouette (F-GAR-004).
-class BikeSchemaHotspots extends StatelessWidget {
+/// Tippbare Slot-Punkte auf dem Stand-Foto, sonst der Schema-Zeichnung.
+class BikeSchemaHotspots extends ConsumerWidget {
   const BikeSchemaHotspots({
     super.key,
     required this.bike,
@@ -32,7 +36,7 @@ class BikeSchemaHotspots extends StatelessWidget {
   final ValueChanged<ComponentSlot>? onTapSlot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final plan = planBikeSchema(
       category: bike.category,
@@ -54,6 +58,9 @@ class BikeSchemaHotspots extends StatelessWidget {
         if (c.isInstalled) c.slot,
     };
     final dueSlots = {for (final a in due) a.slot};
+    final photoRef = ref.watch(userProfileStoreProvider).bikePhotos[bike.id];
+    final hasPhoto = photoRef != null &&
+        (isRemotePhotoRef(photoRef) || File(photoRef).existsSync());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,65 +89,94 @@ class BikeSchemaHotspots extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.s),
-        SizedBox(
+        KeyedSubtree(
           key: const Key('bike-schema-hotspots'),
-          height: height,
-          width: double.infinity,
           child: RadStandFrame(
+            useStandRatio: true,
             height: height,
+            photo: hasPhoto,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 18),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final w = constraints.maxWidth;
-                  final h = constraints.maxHeight;
-                  final scale =
-                      math.min(w / schemaViewBoxW, h / schemaViewBoxH);
-                  final dx = (w - schemaViewBoxW * scale) / 2;
-                  final dy = (h - schemaViewBoxH * scale) / 2;
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: ColoredBox(
-                      color: const Color(0xFFF4F1EA),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: SvgPicture.asset(
-                                asset,
-                                fit: BoxFit.contain,
-                                excludeFromSemantics: true,
-                              ),
-                            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final w = constraints.maxWidth;
+                final h = constraints.maxHeight;
+                Widget ground;
+                double scale;
+                double dx;
+                double dy;
+                if (hasPhoto) {
+                  final src = photoRef ?? '';
+                  ground = isRemotePhotoRef(src)
+                      ? Image.network(
+                          src,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          alignment: Alignment.center,
+                          errorBuilder: (_, __, ___) => SvgPicture.asset(
+                            asset,
+                            fit: BoxFit.contain,
                           ),
-                          for (final slot in plan.hotspotSlots)
-                            if (anchors[slot.apiId] != null)
-                              _dot(
-                                context: context,
-                                anchor: anchors[slot.apiId]!,
-                                slot: slot,
-                                scale: scale,
-                                dx: dx,
-                                dy: dy,
-                                status: dueSlots.contains(slot)
-                                    ? _HotspotStatus.maintenance
-                                    : installed.contains(slot)
-                                        ? _HotspotStatus.ok
-                                        : _HotspotStatus.missing,
-                                label: l10n.componentSlotLabel(slot),
-                                onTap: onTapSlot,
-                              ),
-                        ],
+                        )
+                      : Image.file(
+                          File(src),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          alignment: Alignment.center,
+                        );
+                  scale = w / schemaViewBoxW;
+                  dx = 0;
+                  dy = (h - schemaViewBoxH * scale) / 2;
+                } else {
+                  scale = math.min(w / schemaViewBoxW, h / schemaViewBoxH);
+                  dx = (w - schemaViewBoxW * scale) / 2;
+                  dy = (h - schemaViewBoxH * scale) / 2;
+                  ground = Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 18),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: ColoredBox(
+                        color: const Color(0xFFF4F1EA),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: SvgPicture.asset(
+                            asset,
+                            fit: BoxFit.contain,
+                            excludeFromSemantics: true,
+                          ),
+                        ),
                       ),
                     ),
                   );
-                },
-              ),
+                }
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ground,
+                    for (final slot in plan.hotspotSlots)
+                      if (anchors[slot.apiId] != null)
+                        _dot(
+                          context: context,
+                          anchor: anchors[slot.apiId]!,
+                          slot: slot,
+                          scale: scale,
+                          dx: dx,
+                          dy: dy,
+                          status: dueSlots.contains(slot)
+                              ? _HotspotStatus.maintenance
+                              : installed.contains(slot)
+                                  ? _HotspotStatus.ok
+                                  : _HotspotStatus.missing,
+                          label: l10n.componentSlotLabel(slot),
+                          onTap: onTapSlot,
+                        ),
+                  ],
+                );
+              },
             ),
           ),
         ),

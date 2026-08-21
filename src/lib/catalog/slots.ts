@@ -64,11 +64,53 @@ export function requiredSlotsForCategory(category: BikeCategory): ComponentSlot[
     // Dropbar: Lenkerband statt Griffe. 1x-Gravel lässt front_derailleur leer (N/A).
   }
 
-  if (category === "emtb" || category === "etrekking") {
+  if (category === "emtb" || category === "etrekking" || category === "cargo") {
     slots = [...slots, ...ebike];
-    if (category === "etrekking" && !slots.includes("rear_shock")) {
-      // Soft-Trekking kann Hardtail sein
-    }
+  }
+
+  if (category === "cargo") {
+    // Mid-Motor ersetzt das Tretlager; Nabe/Riemen statt Schaltwerk.
+    slots = slots.filter((s) => s !== "rear_derailleur" && s !== "bottom_bracket");
+    slots = [...slots, "light", "rack"];
+  }
+
+  if (category === "folding") {
+    // Falträder oft Felgenbremse (Brompton, Tern Link D8) — keine Disc-Pflicht.
+    slots = slots.filter(
+      (s) =>
+        s !== "rotor_front" &&
+        s !== "rotor_rear" &&
+        s !== "brake_pads_front" &&
+        s !== "brake_pads_rear"
+    );
+  }
+
+  if (category === "kids") {
+    slots = [
+      "frame",
+      "fork",
+      "headset",
+      "stem",
+      "handlebar",
+      "grips",
+      "seatpost",
+      "saddle",
+      "front_hub",
+      "rear_hub",
+      "front_rim",
+      "rear_rim",
+      "tire_front",
+      "tire_rear",
+      "cassette",
+      "chain",
+      "crankset",
+      "chainring",
+      "rear_derailleur",
+      "shifter",
+      "brake_front",
+      "brake_rear",
+      "pedals",
+    ];
   }
 
   return Array.from(new Set(slots));

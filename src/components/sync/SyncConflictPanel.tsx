@@ -3,6 +3,9 @@
 import { useAppStore } from "@/store/useAppStore";
 import type { SyncConflictState } from "@/lib/sync/webSync";
 import { summarizePayload } from "@/lib/sync/webSync";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import { syncCopy } from "@/lib/i18n/syncCopy";
 
 export function SyncConflictPanel({
   conflict,
@@ -17,16 +20,19 @@ export function SyncConflictPanel({
   onKeepLocal: () => void;
   onDismiss?: () => void;
 }) {
+  const lang = useChromeLang();
+  const c = syncCopy(lang);
+  const locale = chromeDateLocale(lang);
   const bikes = useAppStore((s) => s.bikes);
   const rides = useAppStore((s) => s.rides);
   const savedRoutes = useAppStore((s) => s.savedRoutes);
   const routeCollections = useAppStore((s) => s.routeCollections);
 
   const remoteAt = conflict.remoteUpdatedAt
-    ? new Date(conflict.remoteUpdatedAt).toLocaleString("de-DE")
+    ? new Date(conflict.remoteUpdatedAt).toLocaleString(locale)
     : "—";
   const localAt = conflict.localUpdatedAt
-    ? new Date(conflict.localUpdatedAt).toLocaleString("de-DE")
+    ? new Date(conflict.localUpdatedAt).toLocaleString(locale)
     : "—";
 
   return (
@@ -34,28 +40,28 @@ export function SyncConflictPanel({
       className="rounded-2xl border border-warning/50 bg-warning/10 p-4"
       role="alert"
     >
-      <h3 className="font-semibold text-warning">Sync-Konflikt</h3>
-      <p className="mt-1 text-xs text-text-secondary">
-        Cloud und dieses Gerät haben beide Änderungen. Wähle, welche Version
-        gilt.
-      </p>
+      <h3 className="font-semibold text-warning">{c.title}</h3>
+      <p className="mt-1 text-xs text-text-secondary">{c.hint}</p>
       <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-background/60 p-3">
-          <p className="font-medium">Cloud</p>
+          <p className="font-medium">{c.cloud}</p>
           <p className="mt-1 text-text-secondary">
-            {summarizePayload(conflict.remote)}
+            {summarizePayload(conflict.remote, lang)}
           </p>
           <p className="mt-1 tabular-nums text-text-secondary">{remoteAt}</p>
         </div>
         <div className="rounded-xl border border-border bg-background/60 p-3">
-          <p className="font-medium">Dieses Gerät</p>
+          <p className="font-medium">{c.device}</p>
           <p className="mt-1 text-text-secondary">
-            {summarizePayload({
-              bikes,
-              rides,
-              savedRoutes,
-              routeCollections,
-            })}
+            {summarizePayload(
+              {
+                bikes,
+                rides,
+                savedRoutes,
+                routeCollections,
+              },
+              lang
+            )}
           </p>
           <p className="mt-1 tabular-nums text-text-secondary">{localAt}</p>
         </div>
@@ -67,7 +73,7 @@ export function SyncConflictPanel({
           onClick={onKeepRemote}
           className="rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-on-accent disabled:opacity-40"
         >
-          Cloud behalten
+          {c.keepCloud}
         </button>
         <button
           type="button"
@@ -75,7 +81,7 @@ export function SyncConflictPanel({
           onClick={onKeepLocal}
           className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40"
         >
-          Gerät erzwingen
+          {c.forceDevice}
         </button>
         {onDismiss && (
           <button
@@ -84,7 +90,7 @@ export function SyncConflictPanel({
             onClick={onDismiss}
             className="rounded-xl px-3 py-2 text-xs text-text-secondary"
           >
-            Später
+            {c.later}
           </button>
         )}
       </div>

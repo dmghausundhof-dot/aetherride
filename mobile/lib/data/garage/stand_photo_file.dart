@@ -14,9 +14,11 @@ import 'bike_photo_sync.dart';
 Future<void> writeStandCroppedJpeg({
   required File source,
   required File dest,
+  double yBias = kStandPhotoYBias,
+  double xBias = kStandPhotoXBias,
 }) async {
   final bytes = await source.readAsBytes();
-  final out = croppedStandJpegBytes(bytes);
+  final out = croppedStandJpegBytes(bytes, yBias: yBias, xBias: xBias);
   await dest.parent.create(recursive: true);
   if (out == null) {
     if (source.path != dest.path) {
@@ -28,7 +30,11 @@ Future<void> writeStandCroppedJpeg({
 }
 
 /// Null when decode fails or the image is already the stand strip.
-Uint8List? croppedStandJpegBytes(Uint8List bytes) {
+Uint8List? croppedStandJpegBytes(
+  Uint8List bytes, {
+  double yBias = kStandPhotoYBias,
+  double xBias = kStandPhotoXBias,
+}) {
   final decoded = img.decodeImage(bytes);
   if (decoded == null) return null;
   if (!standPhotoNeedsCrop(
@@ -40,6 +46,8 @@ Uint8List? croppedStandJpegBytes(Uint8List bytes) {
   final r = standPhotoSourceRect(
     decoded.width.toDouble(),
     decoded.height.toDouble(),
+    yBias: yBias,
+    xBias: xBias,
   );
   final x = r.left.round().clamp(0, decoded.width - 1);
   final y = r.top.round().clamp(0, decoded.height - 1);
@@ -68,16 +76,7 @@ Future<bool> ensureStandCroppedBikePhotos({
     final ref = e.value;
     if (store.isBikePhotoStandCropped(bikeId, ref)) continue;
     try {
-      if (isRemotePhotoRef(ref)) {
-        final did = await _cropRemote(
-          store: store,
-          bikeId: bikeId,
-          url: ref,
-          upload: upload,
-        );
-        if (did) changed = true;
-        continue;
-      }
+      if (isRemotePhotoRef(ref)) continue;
       final file = File(ref);
       if (!await file.exists()) {
         await store.markBikePhotoStandCropped(bikeId, ref);
@@ -118,52 +117,16 @@ Future<bool> ensureStandCroppedBikePhotos({
   return changed;
 }
 
-Future<bool> _cropRemote({
-  required UserProfileStore store,
-  required String bikeId,
-  required String url,
-  Future<String?> Function(String bikeId, File file)? upload,
-}) async {
+/// Download a remote bike photo for the stand crop sheet.
+Future<File?> downloadStandPhotoToTemp(String url) async {
   final bytes = await _downloadBytes(url);
-  if (bytes == null) return false;
-  final decoded = img.decodeImage(bytes);
-  if (decoded == null) {
-    await store.markBikePhotoStandCropped(bikeId, url);
-    return false;
-  }
-  if (!standPhotoNeedsCrop(
-    decoded.width.toDouble(),
-    decoded.height.toDouble(),
-  )) {
-    await store.markBikePhotoStandCropped(bikeId, url);
-    return false;
-  }
-  final jpeg = croppedStandJpegBytes(bytes);
-  if (jpeg == null) {
-    await store.markBikePhotoStandCropped(bikeId, url);
-    return false;
-  }
-  final dir = await getApplicationSupportDirectory();
-  final dest = File(p.join(dir.path, 'bike_photos', '$bikeId.stand.jpg'));
-  await dest.parent.create(recursive: true);
-  await dest.writeAsBytes(jpeg);
-  await FileImage(dest).evict();
-  try {
-    await NetworkImage(url).evict();
-  } catch (_) {}
-  await store.setBikePhoto(bikeId, dest.path);
-  final uploaded = await (upload ??
-          (String id, File f) => uploadBikePhotoToStorage(bikeId: id, file: f))
-      .call(bikeId, dest);
-  if (uploaded != null && uploaded.isNotEmpty) {
-    await store.setBikePhoto(bikeId, uploaded);
-    try {
-      await NetworkImage(uploaded).evict();
-    } catch (_) {}
-  }
-  final now = store.bikePhotos[bikeId] ?? dest.path;
-  await store.markBikePhotoStandCropped(bikeId, now);
-  return true;
+  if (bytes == null) return null;
+  final dir = await getTemporaryDirectory();
+  final dest = File(
+    p.join(dir.path, 'stand_dl_${DateTime.now().millisecondsSinceEpoch}.jpg'),
+  );
+  await dest.writeAsBytes(bytes);
+  return dest;
 }
 
 Future<Uint8List?> _downloadBytes(String url) async {

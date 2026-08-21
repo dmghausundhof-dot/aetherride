@@ -16,6 +16,7 @@ import '../../../data/local/user_profile_store.dart';
 import '../../../domain/community/difficulty_crowd.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../shared/chrome_glyph.dart';
 import 'stimme_tag_chips.dart';
 
 /// Tour-Detail: Stimmen an der Tour (ohne Cloud-Abhängigkeit).
@@ -292,7 +293,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
                     setState(() => _compose = true);
                     _scrollComposeIntoView();
                   },
-                  icon: const Icon(Icons.star_outline, size: 18),
+                  icon: const ChromeGlyph('star', size: 18),
                   label: Text(l10n.stimmenWrite),
                 ),
               ),
@@ -303,7 +304,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
                   _scrollComposeIntoView();
                   unawaited(_pickPhoto());
                 },
-                icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                icon: const ChromeGlyph('photo', size: 18),
                 label: Text(l10n.garagePhoto),
               ),
             ],
@@ -325,9 +326,10 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   onPressed: () => setState(() => _rating = i),
-                  icon: Icon(
-                    i <= _rating ? Icons.star : Icons.star_border,
-                    color: AppColors.accent,
+                  icon: ChromeGlyph(
+                    'star',
+                    size: 22,
+                    color: i <= _rating ? AppColors.accent : AppColors.muted,
                   ),
                 ),
             ],
@@ -412,7 +414,7 @@ class _TourCommunitySectionState extends State<TourCommunitySection> {
               onPressed: _draftPhotos.length >= 4
                   ? null
                   : () => unawaited(_pickPhoto()),
-              icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+              icon: const ChromeGlyph('photo', size: 18),
               label: Text(l10n.stimmenAddPhoto),
             ),
           ),
@@ -499,7 +501,7 @@ class _ReviewTile extends StatelessWidget {
                 tooltip: AppLocalizations.of(context).remove,
                 visualDensity: VisualDensity.compact,
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, size: 18),
+                icon: const ChromeGlyph('trash', size: 18),
               ),
             ],
           ),

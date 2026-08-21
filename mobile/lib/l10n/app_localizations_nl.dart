@@ -430,8 +430,19 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get hofLoadStreetMap => 'Straatkaart voor de rit laden';
+
+  @override
+  String get hofRefreshStreetMap => 'Straatkaart rondom jou vernieuwen';
+
+  @override
   String hofPackReadyRideMap(String name) {
     return '$name · Routing offline. Ritkaart: net.';
+  }
+
+  @override
+  String hofPackReadyRideStreet(String name) {
+    return '$name · Routing en straatkaart offline.';
   }
 
   @override
@@ -884,6 +895,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Sleep de lijn of de schijven voor een stop. Vasthouden: nieuwe bestemming.';
 
   @override
+  String get planLineCoachShort =>
+      'Sleep de lijn: stop. Vasthouden: bestemming.';
+
+  @override
+  String get planLineCoachAdopt =>
+      'Sla de tocht op, vorm hem daarna op de kaart — sleep de lijn of schijven.';
+
+  @override
   String get planLineCoachOk => 'Begrepen';
 
   @override
@@ -1131,6 +1150,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get garageLastRides => 'Recente ritten';
 
   @override
+  String get garageLastRidesHint => 'Echte ritten — geen verzonnen kilometers.';
+
+  @override
   String get garageNoRidesTitle => 'Nog geen ritten';
 
   @override
@@ -1205,6 +1227,40 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get garageSchemaMoreOnDots => 'Verdere gaten op de punten.';
+
+  @override
+  String get garageSpareShelf => 'Reserveplank';
+
+  @override
+  String get garageSpareHint =>
+      'Gedemonteerde delen blijven hier. Terugplaatsen vervangt de actieve slot.';
+
+  @override
+  String get garageReinstall => 'Terugplaatsen';
+
+  @override
+  String get garageSpareEmpty =>
+      'Plank leeg — demonter een deel om het hier te bewaren.';
+
+  @override
+  String garageRemovedOn(String date) {
+    return 'Gedemonteerd $date';
+  }
+
+  @override
+  String get garageWearTitle => 'Slijtageprognose';
+
+  @override
+  String get garageWearHint =>
+      'Belastingsgewogen · een bereik, nooit een puntwaarde.';
+
+  @override
+  String get garageWearEmpty => 'Geen slijtagedelen met historie.';
+
+  @override
+  String garageWearSwapIn(String name, String low, String high) {
+    return '$name in $low–$high km';
+  }
 
   @override
   String garageCreatedAtStand(String name) {
@@ -2934,6 +2990,16 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String offlineCoverageOutsideStreet(String name) {
+    return 'Buiten $name · straat offline';
+  }
+
+  @override
+  String offlineCoverageOutsideStreetAway(String name) {
+    return 'Buiten $name · straat niet hier';
+  }
+
+  @override
   String get offlineCoverageShowOnMap => 'Toon regio op de kaart';
 
   @override
@@ -2944,6 +3010,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String offlineCoverageMapNeedsNet(String name) {
     return '$name · kaart: net';
+  }
+
+  @override
+  String offlineCoverageStreetAway(String name) {
+    return '$name · straat niet hier';
   }
 
   @override
@@ -3003,11 +3074,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get offlineStreetOff => 'Geen straat';
 
   @override
+  String get offlineStreetAway => 'Straat niet hier';
+
+  @override
   String get offlineReadyAll => 'Routing, overzicht en straatkaart klaar.';
 
   @override
   String get offlineReadyStreet =>
       'Routing en straatkaart klaar — overzicht niet geladen.';
+
+  @override
+  String get offlineReadyStreetAway =>
+      'Straatkaart op het toestel — niet op deze plek.';
+
+  @override
+  String get offlineReadyAllAway =>
+      'Routing en overzicht klaar. Straatkaart niet hier.';
 
   @override
   String get offlineSketchGraph => 'Graaf';
@@ -3022,6 +3104,55 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voor navigatie in de rit. Groter dan het overzicht — het beste via wifi.';
 
   @override
+  String offlineStreetCorridorCta(String size) {
+    return 'Straatkaart rondom jou ($size)';
+  }
+
+  @override
+  String get offlineStreetCorridorExplain =>
+      'Niet het hele land — alleen rond GPS, voor navigatie in de rit. Het beste via wifi.';
+
+  @override
+  String offlineStreetRouteCta(String size) {
+    return 'Straatkaart langs de toer ($size)';
+  }
+
+  @override
+  String get offlineStreetNeedGps =>
+      'De straatkaart voor deze regio is te groot. Locatie toestaan — dan een corridor rond GPS.';
+
+  @override
+  String offlineStreetRefreshCta(String size) {
+    return 'Straatkaart rondom jou vernieuwen ($size)';
+  }
+
+  @override
+  String get offlineStreetRemove => 'Straatkaart verwijderen';
+
+  @override
+  String get offlineConfirmStreetRemoveTitle => 'Straatkaart wissen?';
+
+  @override
+  String get offlineConfirmStreetRemoveBody =>
+      'Navigatie in de rit heeft daarna weer net nodig.';
+
+  @override
+  String get offlineStreetRemoved => 'Straatkaart verwijderd.';
+
+  @override
+  String get offlineSketchStreet => 'Straat';
+
+  @override
+  String offlineConfirmStreetRouteBody(String name, String size) {
+    return 'Langs de toer, $size. Niet de hele regio $name.';
+  }
+
+  @override
+  String offlineConfirmStreetCorridorBody(String name, String size) {
+    return 'Rondom de locatie, $size. Niet de hele regio $name.';
+  }
+
+  @override
   String get offlineLoadBelow =>
       'Laad hieronder een pack. Alleen de graaf, niet de kaart van 540 MB.';
 
@@ -3030,6 +3161,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get offlineRoutingOff => 'Geen routing';
+
+  @override
+  String get offlineRoutingAway => 'Routing niet hier';
+
+  @override
+  String get offlineReadyRoutingAway =>
+      'Routing op het apparaat — niet op je locatie.';
+
+  @override
+  String get offlineReadyStreetHereRoutingAway =>
+      'Straatkaart klaar. Routing niet op je locatie.';
+
+  @override
+  String get offlineReadyBothAway =>
+      'Routing en straatkaart niet op je locatie.';
 
   @override
   String get offlineOverviewOn => 'Overzicht aan';
@@ -6592,6 +6738,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get rideHudStreetNeedsNet => 'Straatkaart heeft net nodig';
 
   @override
+  String get rideHudStreetOutside =>
+      'Straatkaart niet hier — net of vernieuwen';
+
+  @override
   String get rideCardinalN => 'N';
 
   @override
@@ -8766,6 +8916,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stand van computer of teller. Uren rekenen we niet uit km.';
 
   @override
+  String get garageStandStravaHint =>
+      'Automatische Strava-sync is gepland — tot dan dezelfde dialoog als onder de foto. Geen stille import.';
+
+  @override
   String get garagePartsEmptyTitle => 'Nog geen onderdelen';
 
   @override
@@ -9071,7 +9225,23 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get garagePhotoRetakeHint =>
-      'Cover blijft. Maak opnieuw, dan staat de fiets op de stand.';
+      'De foto vult de stand niet. Maak opnieuw, dan staat de fiets op de rail.';
+
+  @override
+  String get garagePhotoCropTitle => 'Fiets op de stand zetten';
+
+  @override
+  String get garagePhotoCropHint =>
+      'Verschuif de foto tot de fiets op de rail staat.';
+
+  @override
+  String get garagePhotoCropSave => 'Zo zetten';
+
+  @override
+  String get garagePhotoRotate => '90° draaien';
+
+  @override
+  String get garagePhotoPlace => 'Op de stand zetten';
 
   @override
   String get identifyReasonNoKey =>

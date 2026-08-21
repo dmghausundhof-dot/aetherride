@@ -79,6 +79,20 @@ void main() {
       expect(s, ConnectivityChipState.routeOffline);
     });
 
+    test('offline + graph + street, freeride → street chip, not Karte: Netz',
+        () {
+      final s = resolveConnectivityChip(
+        online: false,
+        hasRouteGeometry: false,
+        offlineMapAvailable: true,
+        offlineRoutingReady: true,
+      );
+      expect(s, ConnectivityChipState.offlineMapOk);
+      expect(
+          connectivityChipLabel(s), 'Offline · Straßenkarte · Reroute: Netz');
+      expect(connectivityChipLabel(s).contains('Karte: Netz'), isFalse);
+    });
+
     test('offline + graph, freeride → Routing offline', () {
       final s = resolveConnectivityChip(
         online: false,
@@ -100,6 +114,16 @@ void main() {
         connectivityChipLabel(s, mapHintVisible: true),
         'Routing offline',
       );
+    });
+
+    test('offline freeride, pack away + no street → Karten fehlen', () {
+      final s = resolveConnectivityChip(
+        online: false,
+        hasRouteGeometry: false,
+        offlineMapAvailable: false,
+        offlineRoutingReady: false,
+      );
+      expect(s, ConnectivityChipState.mapsMissing);
     });
 
     test('maps-missing chip hides when the canvas already says so', () {

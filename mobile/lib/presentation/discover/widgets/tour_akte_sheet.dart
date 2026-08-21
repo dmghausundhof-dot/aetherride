@@ -328,7 +328,7 @@ class _TourAkteSheetState extends ConsumerState<TourAkteSheet> {
               if (widget.onCreateGroup != null)
                 OutlinedButton.icon(
                   onPressed: widget.onCreateGroup,
-                  icon: const Icon(Icons.group_add_outlined, size: 18),
+                  icon: const ChromeGlyph('users', size: 18),
                   label: Text(l10n.mappeInviteFriends),
                 ),
               if (widget.onRemoveFromMappe != null)
@@ -408,7 +408,7 @@ class _MeinShelf extends StatelessWidget {
             onPressed: () {
               onCopyLink();
             },
-            icon: const Icon(Icons.link, size: 18),
+            icon: const ChromeGlyph('link', size: 18),
             label: Text(l10n.discoverCopyLink),
           ),
         ],
@@ -417,7 +417,7 @@ class _MeinShelf extends StatelessWidget {
           onPressed: () => unawaited(
             showAddToCollectionSheet(context, routeId: route.id),
           ),
-          icon: const Icon(Icons.folder_outlined, size: 18),
+          icon: const ChromeGlyph('platz', size: 18),
           label: Text(l10n.akteAddToCollection),
         ),
         if (meta.description.trim().isNotEmpty) ...[
@@ -454,20 +454,17 @@ class _MeinShelf extends StatelessWidget {
                           width: 88,
                           height: 88,
                           color: AppColors.muted.withValues(alpha: 0.2),
-                          child: const Icon(Icons.broken_image),
+                          child: const ChromeGlyph('photo', size: 24),
                         ),
                       ),
                       if (pinned)
                         const Positioned(
                           left: 4,
                           top: 4,
-                          child: Icon(
-                            Icons.location_on,
+                          child: ChromeGlyph(
+                            'flag',
                             size: 16,
                             color: Colors.white,
-                            shadows: [
-                              Shadow(blurRadius: 4, color: Colors.black54),
-                            ],
                           ),
                         ),
                     ],

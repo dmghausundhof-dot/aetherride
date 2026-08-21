@@ -74,8 +74,8 @@ assert.ok(!inject.includes("<script>"));
 assert.match(inject, /#2A2E32/);
 
 const start = mapPinSvg("start", "#2E7D32");
-assert.match(start, /M32 76 C16 54/);
-assert.match(start, /M27\.4 23\.6/);
+assert.ok(start.includes(PIN_OVAL_PATH));
+assert.match(start, /M26 21\.2 L26 38\.8/);
 assert.match(start, /feDropShadow/);
 assert.equal(mapPinDisplaySize("start").w, 32);
 assert.equal(mapPinDisplaySize("start").h, 40);
@@ -84,7 +84,7 @@ assert.equal(routePinSrc("start", "#7A8B73"), "/map/pins/pin-start-out.png");
 
 const finish = mapPinSvg("finish");
 assert.equal(finish.includes("clipPath"), false);
-assert.match(finish, /M27\.6 20 H42\.4/);
+assert.match(finish, /M25\.8 18\.2 H42\.8/);
 assert.match(finish, /#FF6A00/);
 assert.match(finish, /#F4F1EC/);
 assert.equal(mapPinDisplaySize("finish").w, 32);

@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Fullscreen playback for a locally stored ride clip.
 class PostRideVideoPage extends StatefulWidget {
@@ -91,8 +92,8 @@ class _PostRideVideoPageState extends State<PostRideVideoPage> {
                         children: [
                           VideoPlayer(c),
                           if (!c.value.isPlaying)
-                            const Icon(
-                              Icons.play_circle_fill,
+                            const ChromeGlyph(
+                              'play',
                               size: 64,
                               color: Colors.white70,
                             ),

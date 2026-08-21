@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { hofCopy } from "@/lib/home/hofCopy";
+import { chromeRequestLang } from "@/lib/i18n/hofDoorMeta";
+import { openRideCopy } from "@/lib/i18n/openRideCopy";
 
-export const metadata: Metadata = {
-  title: "App öffnen",
-  description: "Deep Link zur nativen FlowLine-App. HUD nur auf dem Gerät.",
-  robots: { index: false, follow: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await chromeRequestLang();
+  return {
+    title: openRideCopy(lang).title,
+    description: hofCopy(lang).rideBridgeHint,
+    robots: { index: false, follow: true },
+  };
+}
 
 export default function OpenLayout({
   children,

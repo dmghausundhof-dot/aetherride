@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useCommunityStore } from "@/store/useCommunityStore";
 import type { PublicProfileSettings } from "@/lib/community/types";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
+import { profileCopy, publicDisciplineLabel } from "@/lib/i18n/profileCopy";
 
 const SPORT_OPTS = [
   "road",
@@ -29,7 +32,13 @@ function fromApi(raw: Record<string, unknown>): PublicProfileSettings {
   };
 }
 
+function sportChip(id: string, lang: ChromeLang): string {
+  return publicDisciplineLabel(id, lang);
+}
+
 export function PublicProfilePanel() {
+  const lang = useChromeLang();
+  const p = profileCopy(lang);
   const publicProfile = useCommunityStore((s) => s.publicProfile);
   const updatePublicProfile = useCommunityStore((s) => s.updatePublicProfile);
   const [syncNote, setSyncNote] = useState<string | null>(null);
@@ -42,20 +51,21 @@ export function PublicProfilePanel() {
       .then((data) => {
         if (cancelled || !data?.profile) return;
         updatePublicProfile(fromApi(data.profile as Record<string, unknown>));
-        setSyncNote("Mit dem Konto synchronisiert.");
+        setSyncNote(profileCopy(lang).publicSynced);
       })
       .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [updatePublicProfile]);
+  }, [updatePublicProfile, lang]);
 
   const persist = useCallback(
     async (next: PublicProfileSettings) => {
+      const copy = profileCopy(lang);
       updatePublicProfile(next);
       const handle = next.handle.trim().toLowerCase();
       if (handle.length < 3) {
-        setSyncNote("Handle mindestens 3 Zeichen, dann speichert der Server.");
+        setSyncNote(copy.publicHandleMin);
         return;
       }
       setSaving(true);
@@ -75,7 +85,7 @@ export function PublicProfilePanel() {
           }),
         });
         if (res.status === 401) {
-          setSyncNote("Anmelden, damit das Profil auf anderen Geräten erscheint.");
+          setSyncNote(copy.publicSignIn);
           return;
         }
         if (!res.ok) {
@@ -84,19 +94,19 @@ export function PublicProfilePanel() {
           };
           setSyncNote(
             body.error === "invalid_handle"
-              ? "Handle: a–z, 0–9, Unterstrich, 3–24 Zeichen."
-              : "Server hat nicht gespeichert — lokal bleibt der Stand.",
+              ? copy.publicInvalidHandle
+              : copy.publicServerLocal
           );
           return;
         }
-        setSyncNote("Gespeichert. Sichtbar unter /u/" + handle + ".");
+        setSyncNote(copy.publicSaved(handle));
       } catch {
-        setSyncNote("Netz fehlt — Stand bleibt in diesem Browser.");
+        setSyncNote(copy.publicOffline);
       } finally {
         setSaving(false);
       }
     },
-    [updatePublicProfile],
+    [updatePublicProfile, lang]
   );
 
   const toggleSport = (s: string) => {
@@ -114,11 +124,8 @@ export function PublicProfilePanel() {
       id="public-profile"
       className="rounded-2xl border border-border bg-surface p-4"
     >
-      <h3 className="mb-1 font-semibold">Öffentliches Profil</h3>
-      <p className="mb-3 text-xs text-text-secondary">
-        Opt-in · keine Tracks · Handle für Stimmen und geteilte Sammlungen.
-        Mit Konto liegt es auf dem Server, nicht nur in diesem Browser.
-      </p>
+      <h3 className="mb-1 font-semibold">{p.publicTitle}</h3>
+      <p className="mb-3 text-xs text-text-secondary">{p.publicHint}</p>
       {syncNote ? (
         <p className="mb-3 text-xs text-chrome">{syncNote}</p>
       ) : null}
@@ -130,11 +137,11 @@ export function PublicProfilePanel() {
             void persist({ ...publicProfile, enabled: e.target.checked })
           }
         />
-        Profil öffentlich schalten
+        {p.publicEnable}
       </label>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <label className="text-xs text-text-secondary">
-          Anzeigename
+          {p.publicDisplayName}
           <input
             value={publicProfile.displayName}
             onChange={(e) =>
@@ -146,7 +153,7 @@ export function PublicProfilePanel() {
           />
         </label>
         <label className="text-xs text-text-secondary">
-          Handle (a-z, 0-9, _)
+          {p.publicHandleHint}
           <input
             value={publicProfile.handle}
             onChange={(e) => updatePublicProfile({ handle: e.target.value })}
@@ -158,7 +165,7 @@ export function PublicProfilePanel() {
         </label>
       </div>
       <label className="mt-2 block text-xs text-text-secondary">
-        Bio
+        {p.publicBio}
         <textarea
           value={publicProfile.bio}
           onChange={(e) => updatePublicProfile({ bio: e.target.value })}
@@ -169,7 +176,7 @@ export function PublicProfilePanel() {
         />
       </label>
       <label className="mt-2 block text-xs text-text-secondary">
-        Region (Text)
+        {p.publicRegion}
         <input
           value={publicProfile.regionLabel ?? ""}
           onChange={(e) =>
@@ -177,11 +184,11 @@ export function PublicProfilePanel() {
           }
           onBlur={() => void persist(publicProfile)}
           className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
-          placeholder="z. B. Baden-Württemberg"
+          placeholder={p.publicRegionPh}
         />
       </label>
       <div className="mt-3">
-        <p className="text-xs text-text-secondary">Disziplinen</p>
+        <p className="text-xs text-text-secondary">{p.publicSports}</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
           {SPORT_OPTS.map((s) => (
             <button
@@ -194,7 +201,7 @@ export function PublicProfilePanel() {
                   : "bg-surface-elevated text-text-secondary"
               }`}
             >
-              {s}
+              {sportChip(s, lang)}
             </button>
           ))}
         </div>
@@ -210,18 +217,18 @@ export function PublicProfilePanel() {
             })
           }
         />
-        Ride-Anzahl anzeigen (nur Zahl, keine Tracks)
+        {p.publicShowRides}
       </label>
       {publicProfile.enabled && publicProfile.handle ? (
         <Link
           href={`/u/${publicProfile.handle}`}
           className="mt-3 inline-block text-sm font-semibold text-accent hover:underline"
         >
-          Profil ansehen → /u/{publicProfile.handle}
+          {p.publicView(publicProfile.handle)}
         </Link>
       ) : null}
       {saving ? (
-        <p className="mt-2 text-[11px] text-text-secondary">Speichert…</p>
+        <p className="mt-2 text-[11px] text-text-secondary">{p.publicSaving}</p>
       ) : null}
     </section>
   );

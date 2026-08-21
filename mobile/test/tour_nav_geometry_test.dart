@@ -940,12 +940,12 @@ void main() {
       expect(flags.allowOfflineFallback, isTrue);
     });
 
-    test('Discover vias without net skip Dijkstra', () {
+    test('Discover vias without net chain Dijkstra legs', () {
       final flags = discoverAbEngineChoice(online: false, viasEmpty: false);
-      expect(flags.preferOffline, isFalse);
-      expect(flags.allowOfflineFirst, isFalse);
+      expect(flags.preferOffline, isTrue);
+      expect(flags.allowOfflineFirst, isTrue);
       expect(flags.allowOnline, isFalse);
-      expect(flags.allowOfflineFallback, isFalse);
+      expect(flags.allowOfflineFallback, isTrue);
     });
 
     test('browse pin A–B never uses pack Dijkstra', () {
@@ -1015,7 +1015,8 @@ void main() {
       );
     });
 
-    test('planLastDestShouldOffer only when dest empty, nearby, not dismissed', () {
+    test('planLastDestShouldOffer only when dest empty, nearby, not dismissed',
+        () {
       expect(
         planLastDestShouldOffer(
           hasEnd: true,
@@ -1277,6 +1278,78 @@ void main() {
       );
       expect(planEditorSheetMinPx(shaping: false), 220);
       expect(planEditorSheetMinPx(shaping: true), 0);
+      expect(
+        planEditorSheetRecedes(rubberBand: true, adapting: false),
+        isTrue,
+      );
+      expect(
+        planEditorSheetRecedes(rubberBand: false, adapting: true),
+        isTrue,
+      );
+      expect(
+        planEditorSheetRecedes(rubberBand: false, adapting: false),
+        isFalse,
+      );
+      expect(
+        planMapStopHintVisible(
+          hasStopAt: true,
+          waitHintOnMap: false,
+          rubberBand: false,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapStopHintVisible(
+          hasStopAt: true,
+          waitHintOnMap: true,
+          rubberBand: false,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapStopHintVisible(
+          hasStopAt: true,
+          waitHintOnMap: false,
+          rubberBand: true,
+        ),
+        isFalse,
+      );
+      expect(kPlanStopHint.inMilliseconds, 3200);
+      final mid = planFingerHintPlacement(
+        fingerX: 180,
+        fingerY: 200,
+        mapW: 360,
+        mapH: 640,
+        chipW: 176,
+        chipH: 40,
+      );
+      expect(mid.left, 180 - 88);
+      expect(mid.top, 200 + 16);
+      final low = planFingerHintPlacement(
+        fingerX: 340,
+        fingerY: 600,
+        mapW: 360,
+        mapH: 640,
+        chipW: 176,
+        chipH: 40,
+        avoidRight: 56,
+      );
+      expect(low.left + 176, lessThanOrEqualTo(360 - 8 - 56));
+      expect(low.top, lessThan(600));
+      final above = planFingerHintPlacement(
+        fingerX: 180,
+        fingerY: 200,
+        mapW: 360,
+        mapH: 640,
+        chipW: 244,
+        chipH: 40,
+        preferAbove: true,
+      );
+      expect(above.top, 200 - 40 - 12);
+      expect(planFingerHintChipW(undo: false, firstAb: false), 176);
+      expect(planFingerHintChipW(undo: true, firstAb: false), 228);
+      expect(planFingerHintChipW(undo: false, firstAb: true), 244);
+      expect(planFingerHintChipW(undo: true, firstAb: true), 280);
     });
 
     test('dest pin in the editor keeps start and vias', () {
@@ -1367,12 +1440,159 @@ void main() {
 
     test('ribbon dim keeps a faint live line under the rubber-band', () {
       expect(planRibbonDimOpacity(0.96, dimmed: false), 0.96);
-      expect(planRibbonDimOpacity(0.96, dimmed: true), closeTo(0.096, 0.0001));
-      expect(planRibbonDimOpacity(0.22, dimmed: true), 0.05);
-      expect(planRibbonDimOpacity(1.0, dimmed: true), 0.10);
+      expect(planRibbonDimOpacity(0.96, dimmed: true), closeTo(0.0432, 0.0001));
+      expect(planRibbonDimOpacity(0.22, dimmed: true), 0.028);
+      expect(planRibbonDimOpacity(1.0, dimmed: true), closeTo(0.045, 0.0001));
       expect(planGrabHandleOpacity(0.95, dimmed: false), 0.95);
-      expect(planGrabHandleOpacity(0.95, dimmed: true), closeTo(0.4275, 0.0001));
-      expect(planGrabHandleOpacity(0.10, dimmed: true), 0.22);
+      expect(planGrabHandleOpacity(0.95, dimmed: true), closeTo(0.266, 0.0001));
+      expect(planGrabHandleOpacity(0.10, dimmed: true), 0.14);
+      expect(
+        planMapAdaptingHintOnMap(
+          routingBusy: true,
+          hasLiveLine: true,
+          hasFinger: true,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapAdaptingHintOnMap(
+          routingBusy: true,
+          hasLiveLine: true,
+          hasFinger: false,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapDestWaitHintOnMap(
+          editorActive: true,
+          routingBusy: true,
+          hasStart: true,
+          hasEnd: true,
+          fingerHint: false,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapDestWaitHintOnMap(
+          editorActive: true,
+          routingBusy: true,
+          hasStart: true,
+          hasEnd: true,
+          fingerHint: true,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapDestWaitHintOnMap(
+          editorActive: false,
+          routingBusy: true,
+          hasStart: true,
+          hasEnd: true,
+          fingerHint: false,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapDestWaitHintOnMap(
+          editorActive: true,
+          routingBusy: false,
+          hasStart: false,
+          hasEnd: true,
+          fingerHint: false,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapDestWaitHintOnMap(
+          editorActive: true,
+          routingBusy: false,
+          hasStart: true,
+          hasEnd: true,
+          fingerHint: false,
+          destConfirm: true,
+          hasLiveLine: false,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapDestWaitHintOnMap(
+          editorActive: true,
+          routingBusy: false,
+          hasStart: true,
+          hasEnd: true,
+          fingerHint: false,
+          destConfirm: true,
+          hasLiveLine: true,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapDestWaitCopy(hasStart: false, hasLiveLine: false),
+        PlanMapDestWaitCopy.waitingGps,
+      );
+      expect(
+        planMapDestWaitCopy(hasStart: true, hasLiveLine: false),
+        PlanMapDestWaitCopy.firstAb,
+      );
+      expect(
+        planMapDestWaitCopy(hasStart: true, hasLiveLine: true),
+        PlanMapDestWaitCopy.adapting,
+      );
+      expect(planLineGrabYieldsToPinch(pointerCount: 1), isFalse);
+      expect(planLineGrabYieldsToPinch(pointerCount: 2), isTrue);
+      expect(
+        planLineGrabBecomesExclusive(pointerCount: 1, movePx: 8),
+        isTrue,
+      );
+      expect(
+        planLineGrabBecomesExclusive(pointerCount: 2, movePx: 20),
+        isFalse,
+      );
+      expect(planLineHoldCancelsOnMove(movePx: 5), isFalse);
+      expect(planLineHoldCancelsOnMove(movePx: 6), isTrue);
+      expect(kPlanLineHoldCancelPx, lessThan(kPlanLineGrabMovePx));
+      expect(kPlanLineHold.inMilliseconds, 450);
+      expect(
+        planGrabNativeDrivesPreview(hasSyncPreview: true),
+        isFalse,
+      );
+      expect(
+        planGrabNativeDrivesPreview(hasSyncPreview: false),
+        isTrue,
+      );
+      expect(planLineCoachIsCompact(699), isTrue);
+      expect(planLineCoachIsXCompact(639), isTrue);
+      expect(planLineCoachIsXCompact(700), isFalse);
+      expect(
+        planLineCoachCopy(
+          adopting: true,
+          compact: true,
+          full: 'full',
+          short: 'short',
+          adopt: 'adopt',
+        ),
+        'adopt',
+      );
+      expect(
+        planLineCoachCopy(
+          adopting: false,
+          compact: true,
+          full: 'full',
+          short: 'short',
+          adopt: 'adopt',
+        ),
+        'short',
+      );
+      expect(planRibbonLegendCompact(419), isTrue);
+      expect(planRibbonLegendCompact(420), isFalse);
+      expect(
+        planChevronIconOpacity(dimmed: true, fresh: true),
+        0,
+      );
+      expect(
+        planChevronIconOpacity(dimmed: false, fresh: true),
+        greaterThan(planChevronIconOpacity(dimmed: false, fresh: false)),
+      );
       expect(
         planRibbonLegendKinds(
           bands: [
@@ -1438,6 +1658,95 @@ void main() {
           hasEnd: true,
         ),
         isFalse,
+      );
+      expect(
+        planMapHistoryFabsVisible(
+          editorActive: true,
+          hasHistory: true,
+          mapHintOnMap: false,
+          rubberBand: false,
+          coachVisible: false,
+        ),
+        isTrue,
+        reason: 'idle plan shows history FABs',
+      );
+      expect(
+        planMapHistoryFabsVisible(
+          editorActive: true,
+          hasHistory: true,
+          mapHintOnMap: true,
+          rubberBand: false,
+          coachVisible: false,
+        ),
+        isFalse,
+        reason: 'stop/wait chip owns Undo — hide FABs',
+      );
+      expect(
+        planMapHistoryFabsVisible(
+          editorActive: true,
+          hasHistory: true,
+          mapHintOnMap: false,
+          rubberBand: true,
+          coachVisible: false,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapHistoryFabsVisible(
+          editorActive: true,
+          hasHistory: true,
+          mapHintOnMap: false,
+          rubberBand: false,
+          coachVisible: false,
+          routingWaitBanner: true,
+        ),
+        isFalse,
+      );
+      expect(
+        planParkedFingerClearsWhenIdle(routingBusy: true),
+        isFalse,
+        reason: 'keep parked finger while reshape is in flight',
+      );
+      expect(
+        planParkedFingerClearsWhenIdle(routingBusy: false),
+        isTrue,
+        reason: 'drop parked finger when engine is idle',
+      );
+      expect(
+        planMapHintAnchorLngLat(
+          adaptingAt: (lng: 8.7, lat: 49.4),
+          parkedFinger: (lng: 8.1, lat: 49.1),
+        ),
+        (lng: 8.7, lat: 49.4),
+        reason: 'dest/stop pin wins over parked reshape finger',
+      );
+      expect(
+        planMapHintAnchorLngLat(
+          adaptingAt: null,
+          parkedFinger: (lng: 8.1, lat: 49.1),
+        ),
+        (lng: 8.1, lat: 49.1),
+      );
+      expect(
+        planMapHintAnchorLngLat(adaptingAt: null, parkedFinger: null),
+        isNull,
+      );
+      expect(
+        planMapAdaptingHintOnMap(
+          routingBusy: true,
+          hasLiveLine: true,
+          hasFinger: true,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapAdaptingHintOnMap(
+          routingBusy: true,
+          hasLiveLine: true,
+          hasFinger: false,
+        ),
+        isFalse,
+        reason: 'without parked finger, dest-wait owns the chip',
       );
     });
 
@@ -1633,7 +1942,8 @@ void main() {
       expect(planChevronMax(16.5), greaterThan(planChevronMax(13)));
     });
 
-    test('adopted tour line is customizable; leftover wipe skips after A+B', () {
+    test('adopted tour line is customizable; leftover wipe skips after A+B',
+        () {
       expect(
         isPlanCustomizableLine(engine: 'tour-adopt', coordinateCount: 4),
         isTrue,
@@ -1993,6 +2303,32 @@ void main() {
       expect(back, isNotNull);
       expect(back!.x, closeTo(128, 1.5));
       expect(back.y, closeTo(192, 1.5));
+      final corner = planMapScreenToLngLat(
+        localX: 180,
+        localY: 160,
+        width: w,
+        height: h,
+        centerLng: 8.4,
+        centerLat: 49.0,
+        zoom: 12,
+        bearingDeg: 40,
+        tiltDeg: 28,
+      );
+      expect(corner, isNotNull);
+      final cornerBack = planMapLngLatToScreen(
+        lng: corner!.lng,
+        lat: corner.lat,
+        width: w,
+        height: h,
+        centerLng: 8.4,
+        centerLat: 49.0,
+        zoom: 12,
+        bearingDeg: 40,
+        tiltDeg: 28,
+      );
+      expect(cornerBack, isNotNull);
+      expect(cornerBack!.x, closeTo(180, 2.5));
+      expect(cornerBack.y, closeTo(160, 2.5));
       expect(
         planMapPointerHitsRibbon(
           localX: 128,
@@ -2007,6 +2343,114 @@ void main() {
           pinLngLat: const [
             [0.0, 0.0],
           ],
+        ),
+        isFalse,
+      );
+    });
+
+    test('native screen ribbon hit ignores pins and maps back to lnglat', () {
+      const lineScreen = [
+        (x: 10.0, y: 40.0),
+        (x: 110.0, y: 40.0),
+      ];
+      const lineLngLat = [
+        [8.0, 49.0],
+        [8.1, 49.0],
+      ];
+      expect(
+        planMapPointerHitsScreenRibbon(
+          localX: 60,
+          localY: 48,
+          lineScreen: lineScreen,
+        ),
+        isTrue,
+      );
+      expect(
+        planMapPointerHitsScreenRibbon(
+          localX: 60,
+          localY: 90,
+          lineScreen: lineScreen,
+        ),
+        isFalse,
+      );
+      expect(
+        planMapPointerHitsScreenRibbon(
+          localX: 60,
+          localY: 48,
+          lineScreen: lineScreen,
+          pinScreen: const [(x: 60.0, y: 40.0)],
+        ),
+        isFalse,
+      );
+      final at = planLngLatAtScreenRibbon(
+        localX: 60,
+        localY: 40,
+        lineScreen: lineScreen,
+        lineLngLat: lineLngLat,
+      );
+      expect(at, isNotNull);
+      expect(at!.lng, closeTo(8.05, 1e-6));
+      expect(at.lat, closeTo(49.0, 1e-6));
+      final long = [
+        for (var i = 0; i <= 200; i++) [8.0 + i * 0.01, 49.0],
+      ];
+      final sampled = planGrabScreenSample(
+        long,
+        zoom: 13,
+        lat: 49,
+      );
+      expect(sampled.length, lessThanOrEqualTo(kPlanGrabScreenMaxPts));
+      expect(sampled.first, long.first);
+      expect(sampled.last, long.last);
+      expect(
+        planGrabScreenSampleDenseStepM(zoom: 13, lat: 49),
+        lessThan(planGrabScreenSampleStepM(zoom: 13, lat: 49)),
+      );
+      // Long east–west line: viewport around the west end densifies there.
+      final viewSample = planGrabScreenSample(
+        long,
+        zoom: 13,
+        lat: 49,
+        centerLng: 8.05,
+        centerLat: 49,
+        mapW: 360,
+        mapH: 640,
+      );
+      expect(viewSample.length, lessThanOrEqualTo(kPlanGrabScreenMaxPts));
+      expect(viewSample.first, long.first);
+      expect(viewSample.last, long.last);
+      var nearWest = 0;
+      var nearEast = 0;
+      for (final p in viewSample) {
+        if (p[0] < 8.3) nearWest++;
+        if (p[0] > 9.5) nearEast++;
+      }
+      expect(
+        nearWest,
+        greaterThan(nearEast),
+        reason: 'viewport samples cluster near the camera',
+      );
+      expect(
+        planGrabSampleInViewport(
+          lng: 8.05,
+          lat: 49,
+          centerLng: 8.05,
+          centerLat: 49,
+          zoom: 13,
+          mapW: 360,
+          mapH: 640,
+        ),
+        isTrue,
+      );
+      expect(
+        planGrabSampleInViewport(
+          lng: 10.0,
+          lat: 49,
+          centerLng: 8.05,
+          centerLat: 49,
+          zoom: 13,
+          mapW: 360,
+          mapH: 640,
         ),
         isFalse,
       );

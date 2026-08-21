@@ -46,6 +46,16 @@ import {
   mapClickAfterCameraGesture,
 } from "@/lib/map/mapTapGesture";
 import {
+  planChevronIconOpacity,
+  PLAN_CHEVRON_FRESH_MS,
+  PLAN_MAP_CHROME_FAB_COL_PX,
+  planFingerHintChipW,
+  planFingerHintPlacement,
+  planMapHintAnchorLngLat,
+  planLineGrabBecomesExclusive,
+  planLineGrabYieldsToPinch,
+  planLineHoldCancelsOnMove,
+  PLAN_LINE_HOLD_MS,
   planRibbonDimOpacity,
   planRubberBandLngLat,
   planShapeKmChip,
@@ -389,6 +399,8 @@ export type PlanShapeAnchors = {
 
 const SHAPE_GHOST_SOURCE = "plan-shape-ghost";
 const SHAPE_GHOST_LAYER = "plan-shape-rubber";
+const SHAPE_GHOST_CASING = "plan-shape-rubber-casing";
+const SHAPE_GHOST_HALO = "plan-shape-rubber-halo";
 const SHAPE_HOVER_SOURCE = "plan-shape-hover";
 
 const ROLE_STYLE: Record<
@@ -494,6 +506,12 @@ interface MapViewProps {
   hoverKm?: number | null;
   /** Trail magnet while reshaping (Komoot gravity onto paths). */
   snapShapeFinger?: (lngLat: [number, number]) => [number, number];
+  /** Label at the last finger while the engine reshapes (Komoot “passt sich an”). */
+  adaptingLabel?: string | null;
+  adaptingUndoLabel?: string | null;
+  onAdaptingUndo?: () => void;
+  /** First A→B wait parks the chip on the dest pin when there is no finger. */
+  adaptingAt?: [number, number] | null;
   onMapReady?: (map: maplibregl.Map) => void;
   onViewChange?: (view: { center: [number, number]; zoom: number }) => void;
   onZoomChange?: (zoom: number) => void;
@@ -715,6 +733,40 @@ function ensureShapeGhostLayer(map: maplibregl.Map) {
       /* old dashed ghost */
     }
   }
+  if (!map.getLayer(SHAPE_GHOST_HALO)) {
+    const before = map.getLayer(SHAPE_GHOST_CASING)
+      ? SHAPE_GHOST_CASING
+      : map.getLayer(SHAPE_GHOST_LAYER)
+        ? SHAPE_GHOST_LAYER
+        : undefined;
+    map.addLayer(
+      {
+        id: SHAPE_GHOST_HALO,
+        type: "line",
+        source: SHAPE_GHOST_SOURCE,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#FFFFFF",
+          "line-width": 11.2,
+          "line-opacity": 0.78,
+        },
+      },
+      before
+    );
+  }
+  if (!map.getLayer(SHAPE_GHOST_CASING)) {
+    map.addLayer({
+      id: SHAPE_GHOST_CASING,
+      type: "line",
+      source: SHAPE_GHOST_SOURCE,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": "#1A120C",
+        "line-width": 8.2,
+        "line-opacity": 0.55,
+      },
+    });
+  }
   if (!map.getLayer(SHAPE_GHOST_LAYER)) {
     map.addLayer({
       id: SHAPE_GHOST_LAYER,
@@ -723,8 +775,8 @@ function ensureShapeGhostLayer(map: maplibregl.Map) {
       layout: { "line-cap": "round", "line-join": "round" },
       paint: {
         "line-color": "#FF6A00",
-        "line-width": 4.4,
-        "line-opacity": 0.78,
+        "line-width": 5.6,
+        "line-opacity": 0.92,
       },
     });
   }
@@ -735,17 +787,57 @@ function isLivePlanSourceId(id: string): boolean {
   return planShapeRouteId(raw) || raw === "primary";
 }
 
+let chevronPulseTimer: number | null = null;
+let planRibbonIsDimmed = false;
+let pendingChevronPulseAfterRoute = false;
+
+function setPlanChevronOpacity(
+  map: maplibregl.Map,
+  layerIds: Set<string>,
+  opacity: number
+) {
+  for (const id of layerIds) {
+    if (!isLivePlanSourceId(id)) continue;
+    const chevrons = `${id}-chevrons`;
+    try {
+      if (map.getLayer(chevrons)) {
+        map.setPaintProperty(chevrons, "icon-opacity", opacity);
+      }
+    } catch {
+      /* style reload */
+    }
+  }
+}
+
+function pulsePlanChevrons(map: maplibregl.Map, layerIds: Set<string>) {
+  if (chevronPulseTimer != null) window.clearTimeout(chevronPulseTimer);
+  setPlanChevronOpacity(
+    map,
+    layerIds,
+    planChevronIconOpacity({ dimmed: false, fresh: true })
+  );
+  chevronPulseTimer = window.setTimeout(() => {
+    chevronPulseTimer = null;
+    setPlanChevronOpacity(
+      map,
+      layerIds,
+      planChevronIconOpacity({ dimmed: false, fresh: false })
+    );
+  }, PLAN_CHEVRON_FRESH_MS);
+}
+
 function setPlanRibbonDimmed(
   map: maplibregl.Map,
   layerIds: Set<string>,
   dim: boolean
 ) {
+  if (dim === planRibbonIsDimmed) return;
+  planRibbonIsDimmed = dim;
   for (const id of layerIds) {
     if (!isLivePlanSourceId(id)) continue;
     try {
       const line = `${id}-line`;
       const casing = `${id}-casing`;
-      const chevrons = `${id}-chevrons`;
       if (map.getLayer(line)) {
         map.setPaintProperty(
           line,
@@ -760,13 +852,20 @@ function setPlanRibbonDimmed(
           planRibbonDimOpacity(0.88, dim)
         );
       }
-      if (map.getLayer(chevrons)) {
-        map.setPaintProperty(chevrons, "icon-opacity", dim ? 0 : 0.92);
-      }
     } catch {
       /* style reload */
     }
   }
+  if (dim) {
+    if (chevronPulseTimer != null) {
+      window.clearTimeout(chevronPulseTimer);
+      chevronPulseTimer = null;
+    }
+    setPlanChevronOpacity(map, layerIds, 0);
+    return;
+  }
+  pendingChevronPulseAfterRoute = true;
+  pulsePlanChevrons(map, layerIds);
 }
 
 function setShapeGhostCoords(
@@ -968,6 +1067,10 @@ export function MapView({
   onShapeDragging,
   hoverKm = null,
   snapShapeFinger,
+  adaptingLabel = null,
+  adaptingUndoLabel = null,
+  onAdaptingUndo,
+  adaptingAt = null,
   bikeOverlayUrl = null,
   bikeOverlayKind = "pmtiles",
   bikeOverlayFamily = "road",
@@ -999,6 +1102,13 @@ export function MapView({
   const onShapeDraggingRef = useRef(onShapeDragging);
   const hoverKmRef = useRef(hoverKm);
   const snapShapeFingerRef = useRef(snapShapeFinger);
+  const adaptingLabelRef = useRef(adaptingLabel);
+  const adaptingAtRef = useRef(adaptingAt);
+  const onAdaptingUndoRef = useRef(onAdaptingUndo);
+  const adaptChipRef = useRef<HTMLDivElement>(null);
+  const lastShapeFingerRef = useRef<[number, number] | null>(null);
+  const parkedAdaptRef = useRef(false);
+  const hadAdaptLabelRef = useRef(false);
   const onViewChangeRef = useRef(onViewChange);
   const [ready, setReady] = useState(false);
   const [tileSource, setTileSource] = useState<"stadia" | "pmtiles" | "osm">(
@@ -1022,6 +1132,9 @@ export function MapView({
   onShapeDraggingRef.current = onShapeDragging;
   hoverKmRef.current = hoverKm;
   snapShapeFingerRef.current = snapShapeFinger;
+  adaptingLabelRef.current = adaptingLabel;
+  adaptingAtRef.current = adaptingAt;
+  onAdaptingUndoRef.current = onAdaptingUndo;
   onViewChangeRef.current = onViewChange;
 
   useEffect(() => {
@@ -1033,13 +1146,26 @@ export function MapView({
     let currentStyleUrl =
       typeof initial.style === "string" ? initial.style : "";
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: initial.style,
-      center,
-      zoom,
-      attributionControl: false,
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: initial.style,
+        center,
+        zoom,
+        minZoom: 3,
+        maxZoom: 18,
+        maxPitch: 60,
+        fadeDuration: 120,
+        attributionControl: false,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[MapView] constructor", err);
+      setMapError(msg);
+      return;
+    }
+    mapRef.current = map;
 
     map.addControl(
       new maplibregl.NavigationControl({ showCompass: true }),
@@ -1116,6 +1242,26 @@ export function MapView({
       null;
     let routeDrag: { id: string; x: number; y: number } | null = null;
     let routeDragging = false;
+    const pointers = new Set<number>();
+    const abortRouteDragForPinch = () => {
+      if (routeDragging) {
+        setShapeHandleDim(false);
+        onShapeDraggingRef.current?.(false);
+        try {
+          map.dragPan.enable();
+        } catch {
+          /* ignore */
+        }
+        setShapeGhostCoords(map, null, layerIdsRef.current);
+      }
+      routeDrag = null;
+      routeDragging = false;
+      try {
+        map.getCanvas().style.cursor = "";
+      } catch {
+        /* ignore */
+      }
+    };
     const clearHold = () => {
       if (holdTimer != null) {
         window.clearTimeout(holdTimer);
@@ -1142,6 +1288,12 @@ export function MapView({
     const canvas = map.getCanvas();
     const onPointerDown = (ev: PointerEvent) => {
       if (ev.button !== 0) return;
+      pointers.add(ev.pointerId);
+      if (planLineGrabYieldsToPinch(pointers.size)) {
+        abortRouteDragForPinch();
+        clearHold();
+        return;
+      }
       const lngLat = map.unproject([ev.offsetX, ev.offsetY]);
       holdStart = {
         x: ev.offsetX,
@@ -1164,15 +1316,27 @@ export function MapView({
         holdStart = null;
         if (!start || !onLongPressRef.current) return;
         if (routeDragging) return;
+        if (planLineGrabYieldsToPinch(pointers.size)) return;
         suppressClickUntil = Date.now() + MAP_TAP_AFTER_CAMERA_MS;
         onLongPressRef.current([start.lng, start.lat]);
-      }, 450);
+      }, PLAN_LINE_HOLD_MS);
     };
     const onPointerMove = (ev: PointerEvent) => {
+      if (planLineGrabYieldsToPinch(pointers.size)) {
+        abortRouteDragForPinch();
+        clearHold();
+        return;
+      }
       if (routeDrag && shapeInteractiveRef.current) {
         const dx = ev.offsetX - routeDrag.x;
         const dy = ev.offsetY - routeDrag.y;
-        if (dx * dx + dy * dy > 64) {
+        const movePx = Math.hypot(dx, dy);
+        if (
+          planLineGrabBecomesExclusive({
+            pointerCount: pointers.size,
+            movePx,
+          })
+        ) {
           if (!routeDragging) {
             routeDragging = true;
             setShapeHandleDim(true);
@@ -1202,15 +1366,24 @@ export function MapView({
               const km = setShapeHoverAlong(map, anchors.line, finger, true);
               onShapeHoverRef.current?.(km);
             }
+            lastShapeFingerRef.current = finger;
+            parkedAdaptRef.current = true;
           }
         }
       }
       if (!holdStart) return;
       const dx = ev.offsetX - holdStart.x;
       const dy = ev.offsetY - holdStart.y;
-      if (dx * dx + dy * dy > 144) clearHold();
+      if (
+        planLineHoldCancelsOnMove({
+          movePx: Math.hypot(dx, dy),
+        })
+      ) {
+        clearHold();
+      }
     };
     const onPointerUp = (ev: PointerEvent) => {
+      pointers.delete(ev.pointerId);
       if (routeDragging && routeDrag) {
         suppressClickUntil = Date.now() + MAP_TAP_AFTER_CAMERA_MS;
         const lngLat = map.unproject([ev.offsetX, ev.offsetY]);
@@ -1220,7 +1393,11 @@ export function MapView({
           snapShapeFingerRef.current
         );
         setShapeGhostCoords(map, null, layerIdsRef.current);
-        setShapeHoverDisc(map, null);
+        lastShapeFingerRef.current = finger;
+        parkedAdaptRef.current = true;
+        if (adaptingLabelRef.current) {
+          setShapeHoverDisc(map, finger);
+        }
         onRouteClickRef.current?.(routeDrag.id, finger);
       }
       endRouteDrag();
@@ -1229,7 +1406,13 @@ export function MapView({
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", () => {
+    canvas.addEventListener("pointercancel", (ev) => {
+      pointers.delete(ev.pointerId);
+      if (planLineGrabYieldsToPinch(pointers.size + 1) || pointers.size === 0) {
+        abortRouteDragForPinch();
+      }
+      lastShapeFingerRef.current = null;
+      parkedAdaptRef.current = false;
       setShapeGhostCoords(map, null, layerIdsRef.current);
       setShapeHoverDisc(map, null);
       endRouteDrag();
@@ -1249,6 +1432,9 @@ export function MapView({
     map.on("mousemove", (e) => {
       if (routeDragging) {
         canvas.style.cursor = "grabbing";
+        return;
+      }
+      if (parkedAdaptRef.current && lastShapeFingerRef.current) {
         return;
       }
       if (!shapeInteractiveRef.current) {
@@ -1314,6 +1500,8 @@ export function MapView({
         routeHitPadPx(shapeInteractiveRef.current)
       );
       if (routeId) {
+        lastShapeFingerRef.current = [e.lngLat.lng, e.lngLat.lat];
+        parkedAdaptRef.current = true;
         onRouteClickRef.current?.(routeId, [e.lngLat.lng, e.lngLat.lat]);
         return;
       }
@@ -1458,13 +1646,88 @@ export function MapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    const line = shapeAnchors?.line;
-    if (hoverKm == null || !line || line.length < 2) {
-      if (hoverKm == null) setShapeHoverDisc(map, null);
+    if (adaptingLabel) {
+      hadAdaptLabelRef.current = true;
+      const anchor = planMapHintAnchorLngLat({
+        adaptingAt: adaptingAtRef.current,
+        parkedFinger: lastShapeFingerRef.current,
+      });
+      if (anchor) setShapeHoverDisc(map, anchor);
       return;
     }
-    setShapeHoverDisc(map, pointAlongRoute(line, hoverKm * 1000));
-  }, [hoverKm, shapeAnchors, ready]);
+    if (hadAdaptLabelRef.current) {
+      hadAdaptLabelRef.current = false;
+      parkedAdaptRef.current = false;
+      lastShapeFingerRef.current = null;
+      setShapeHoverDisc(map, null);
+    }
+  }, [adaptingLabel, adaptingAt, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const wrap = wrapRef.current;
+    if (!map || !ready || !adaptingLabel || !wrap) return;
+    const place = () => {
+      const at = adaptingAtRef.current;
+      // Explicit wait/stop pin wins — drop stale parked finger so undo mid-recalc
+      // does not leave the chip on the old reshape point.
+      if (at) {
+        parkedAdaptRef.current = false;
+        lastShapeFingerRef.current = null;
+      }
+      const finger = planMapHintAnchorLngLat({
+        adaptingAt: at,
+        parkedFinger: lastShapeFingerRef.current,
+      });
+      const node = adaptChipRef.current;
+      if (!finger || !node) return;
+      const p = map.project({ lng: finger[0], lat: finger[1] });
+      const firstAb = Boolean(at);
+      const box = planFingerHintPlacement({
+        fingerX: p.x,
+        fingerY: p.y,
+        mapW: wrap.clientWidth,
+        mapH: wrap.clientHeight,
+        chipW: planFingerHintChipW({
+          undo: Boolean(adaptingUndoLabel),
+          firstAb,
+        }),
+        chipH: 40,
+        avoidRight: PLAN_MAP_CHROME_FAB_COL_PX,
+      });
+      node.style.left = `${box.left}px`;
+      node.style.top = `${box.top}px`;
+      node.style.visibility = "visible";
+    };
+    place();
+    const raf = requestAnimationFrame(place);
+    map.on("move", place);
+    return () => {
+      cancelAnimationFrame(raf);
+      map.off("move", place);
+    };
+  }, [adaptingLabel, adaptingUndoLabel, adaptingAt, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    if (parkedAdaptRef.current && lastShapeFingerRef.current) {
+      if (adaptingLabel) {
+        setShapeHoverDisc(map, lastShapeFingerRef.current);
+      }
+      return;
+    }
+    const line = shapeAnchors?.line;
+    if (hoverKm == null || !line || line.length < 2) {
+      if (hoverKm == null && !adaptingLabel) setShapeHoverDisc(map, null);
+      return;
+    }
+    setShapeHoverDisc(
+      map,
+      pointAlongRoute(line, hoverKm * 1000),
+      planShapeKmChip(hoverKm * 1000)
+    );
+  }, [hoverKm, shapeAnchors, ready, adaptingLabel]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1790,6 +2053,11 @@ export function MapView({
       layerIdsRef.current.delete(id);
     }
 
+    if (pendingChevronPulseAfterRoute && !adaptingLabelRef.current) {
+      pendingChevronPulseAfterRoute = false;
+      pulsePlanChevrons(map, layerIdsRef.current);
+    }
+
     if (fitRoute && layers.length) {
       const bounds = new maplibregl.LngLatBounds();
       let any = false;
@@ -1861,8 +2129,12 @@ export function MapView({
           onMarkerClickRef.current?.(id);
         },
         (id, lngLat) => {
+          lastShapeFingerRef.current = lngLat;
+          parkedAdaptRef.current = true;
           setShapeGhostCoords(map, null, layerIdsRef.current);
-          setShapeHoverDisc(map, null);
+          if (adaptingLabelRef.current) {
+            setShapeHoverDisc(map, lngLat);
+          }
           wrapRef.current?.classList.toggle("flowline-map-shaping", false);
           onShapeDraggingRef.current?.(false);
           onMarkerDragEndRef.current?.(id, lngLat);
@@ -1895,6 +2167,8 @@ export function MapView({
             const km = setShapeHoverAlong(map, anchors.line, finger, true);
             onShapeHoverRef.current?.(km);
           }
+          lastShapeFingerRef.current = finger;
+          parkedAdaptRef.current = true;
         }
       );
       recs.set(m.id, { marker, key });
@@ -1991,6 +2265,25 @@ export function MapView({
       <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/80">
         {sourceLabel}
       </div>
+      {adaptingLabel ? (
+        <div
+          ref={adaptChipRef}
+          className="absolute z-20 flex max-w-[18rem] items-center gap-2 rounded-full bg-[#1A120C]/95 px-2.5 py-1.5 text-[12px] font-semibold text-white shadow-lg"
+          style={{ visibility: "hidden" }}
+          data-testid="plan-wait-hint"
+        >
+          <span className="min-w-0 truncate leading-snug">{adaptingLabel}</span>
+          {adaptingUndoLabel && onAdaptingUndo ? (
+            <button
+              type="button"
+              className="shrink-0 font-extrabold text-[#FFB080]"
+              onClick={() => onAdaptingUndoRef.current?.()}
+            >
+              {adaptingUndoLabel}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -38,6 +38,11 @@ const TREK_RAIL =
 const SCOTT_GENIUS = "https://www.scott-sports.com/global/en/genius";
 const CENTURION_NUMINIS =
   "https://www.centurion.de/de-de/bike/1213/numinis-r2000";
+const CENTURION_BACKFIRE =
+  "https://www.centurion.de/de-de/bike/1191/backfire-r2000";
+const GHOST_PATH_RIOT =
+  "https://ghost-bikes.com/en-int/products/path-riot-advanced-gfat1";
+const HAIBIKE_LYKE = "https://haibike.com/de-de/products/lyke-cf-11-hmqt1";
 const CANYON_STRIVE =
   "https://www.canyon.com/en-de/productpdf/geometry/?pid=3416";
 const CANYON_GRAIL =
@@ -55,8 +60,7 @@ const TREK_CHECKPOINT =
 
 /**
  * OEM-Geometrie je Katalog-Bike. Nur Größen, die auch in `frameSizeOptions` stehen.
- * Kein Eintrag, wenn der Hersteller keine Reach/Stack-Tabelle veröffentlicht
- * (z. B. Corratec, Ghost Path Riot).
+ * Kein Eintrag, wenn der Hersteller keine Reach/Stack-Tabelle veröffentlicht.
  */
 export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
   // 29" empfohlen in Low; XS/S nur 27.5 High.
@@ -695,6 +699,92 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 72.5,
       chainstayMm: 435,
       wheelbaseMm: 1058,
+    }),
+  ],
+  "cat-ghost-path-riot-advanced-2026": [
+    g("S", 440, 604, GHOST_PATH_RIOT, {
+      setting: "high",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 446,
+      wheelbaseMm: 1219,
+    }),
+    g("M", 470, 622, GHOST_PATH_RIOT, {
+      setting: "high",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 446,
+      wheelbaseMm: 1257,
+    }),
+    g("L", 497, 644, GHOST_PATH_RIOT, {
+      setting: "high",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 455,
+      wheelbaseMm: 1306,
+    }),
+    g("XL", 527, 662, GHOST_PATH_RIOT, {
+      setting: "high",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 455,
+      wheelbaseMm: 1345,
+    }),
+  ],
+  "cat-haibike-lyke-cf-11-2025": [
+    g("S", 424, 611, HAIBIKE_LYKE, {
+      setting: "high",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 450,
+      wheelbaseMm: 1195,
+    }),
+    g("M", 452, 620, HAIBIKE_LYKE, {
+      setting: "high",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 450,
+      wheelbaseMm: 1227,
+    }),
+    g("L", 479, 629, HAIBIKE_LYKE, {
+      setting: "high",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 450,
+      wheelbaseMm: 1259,
+    }),
+    g("XL", 506, 638, HAIBIKE_LYKE, {
+      setting: "high",
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 450,
+      wheelbaseMm: 1290,
+    }),
+  ],
+  "cat-centurion-backfire-r2000-2026": [
+    g("S", 420, 661, CENTURION_BACKFIRE, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 460,
+      wheelbaseMm: 1168,
+    }),
+    g("M", 440, 679, CENTURION_BACKFIRE, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 460,
+      wheelbaseMm: 1196,
+    }),
+    g("L", 460, 698, CENTURION_BACKFIRE, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 460,
+      wheelbaseMm: 1223,
+    }),
+    g("XL", 480, 716, CENTURION_BACKFIRE, {
+      headAngleDeg: 67.5,
+      seatAngleEffectiveDeg: 74,
+      chainstayMm: 460,
+      wheelbaseMm: 1251,
     }),
   ],
 };

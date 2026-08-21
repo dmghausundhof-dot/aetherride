@@ -16,6 +16,12 @@ function testParity() {
 function testDeFallback() {
   assert.equal(HOF_COPY.rideOut, "Rausfahren");
   assert.equal(HOF_COPY.emptyStand, "Leerer Stand");
+  assert.equal(HOF_COPY.homeTitle, "Start");
+  assert.equal(HOF_COPY.homeHint, "Dein Rad und ein Knopf: Losfahren. Kein Feed.");
+  assert.equal(hofCopy("en").homeTitle, "Home");
+  assert.equal(hofCopy("fr").homeTitle, "Accueil");
+  assert.equal(hofCopy("it").homeTitle, "Home");
+  assert.equal(hofCopy("nl").homeTitle, "Start");
   assert.equal(HOF_COPY.shopTitle, "Der Laden");
   assert.equal(hofCopy("en").shopTitle, "The shop");
   assert.equal(hofCopy("fr").shopTitle, "Le magasin");

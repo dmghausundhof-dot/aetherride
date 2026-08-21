@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { RadGlyph } from "@/components/garage/RadGlyph";
 import { RadStandFrame } from "@/components/garage/RadStandFrame";
+import { StandPhotoCrop } from "@/components/garage/StandPhotoCrop";
 import {
+  STAND_PHOTO_RATIO,
+  STAND_PHOTO_X_BIAS,
+  STAND_PHOTO_Y_BIAS,
   standPhotoIsRemote,
   standPhotoNeedsCrop,
   standPhotoSourceRect,
@@ -13,8 +17,18 @@ import { useAppStore } from "@/store/useAppStore";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import type { Bike } from "@/types";
 
-function cropToStandJpeg(img: HTMLImageElement): string {
-  const crop = standPhotoSourceRect(img.width, img.height);
+function cropToStandJpeg(
+  img: HTMLImageElement,
+  yBias = STAND_PHOTO_Y_BIAS,
+  xBias = STAND_PHOTO_X_BIAS
+): string {
+  const crop = standPhotoSourceRect(
+    img.width,
+    img.height,
+    STAND_PHOTO_RATIO,
+    yBias,
+    xBias
+  );
   const max = 1200;
   const scale = Math.min(1, max / Math.max(crop.sw, crop.sh));
   const canvas = document.createElement("canvas");
@@ -36,6 +50,36 @@ function cropToStandJpeg(img: HTMLImageElement): string {
   return canvas.toDataURL("image/jpeg", 0.78);
 }
 
+function rotateImage90(
+  img: HTMLImageElement
+): Promise<{ src: string; img: HTMLImageElement }> {
+  const canvas = document.createElement("canvas");
+  canvas.width = img.height;
+  canvas.height = img.width;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.reject(new Error("canvas"));
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+  const src = canvas.toDataURL("image/jpeg", 0.85);
+  return new Promise((resolve, reject) => {
+    const next = new Image();
+    next.onload = () => resolve({ src, img: next });
+    next.onerror = () => reject(new Error("rotate"));
+    next.src = src;
+  });
+}
+
+function loadCorsImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
 /** Bühne im Stand — Foto oder Silhouette, Kamera als Overlay. */
 export function BikePhotoControl({
   bikeId,
@@ -49,6 +93,12 @@ export function BikePhotoControl({
   const updateBike = useAppStore((s) => s.updateBike);
   const fileRef = useRef<HTMLInputElement>(null);
   const [broken, setBroken] = useState(false);
+  const [crop, setCrop] = useState<{
+    src: string;
+    img: HTMLImageElement;
+    yBias: number;
+    xBias: number;
+  } | null>(null);
   const copy = useHofCopy();
 
   const silhouette = bike ? radSilhouetteSrc(bike) : undefined;
@@ -72,18 +122,32 @@ export function BikePhotoControl({
     };
   }, [photoUrl, bikeId, updateBike]);
 
+  const applyCrop = (img: HTMLImageElement, yBias: number, xBias: number) => {
+    try {
+      const next = cropToStandJpeg(img, yBias, xBias);
+      if (!next) return;
+      updateBike(bikeId, { photoUrl: next });
+    } catch {
+      /* CORS-tainted remote canvas */
+    }
+  };
+
   const onFile = (file: File | null) => {
     if (!file || !file.type.startsWith("image/")) return;
     setBroken(false);
     const img = new Image();
     const reader = new FileReader();
     reader.onload = () => {
+      const dataUrl = String(reader.result);
       img.onload = () => {
-        const next = cropToStandJpeg(img);
-        if (!next) return;
-        updateBike(bikeId, { photoUrl: next });
+        setCrop({
+          src: dataUrl,
+          img,
+          yBias: STAND_PHOTO_Y_BIAS,
+          xBias: STAND_PHOTO_X_BIAS,
+        });
       };
-      img.src = String(reader.result);
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -96,7 +160,6 @@ export function BikePhotoControl({
         src={src}
         alt={bike ? `${bike.name} Seitenprofil` : "Rad"}
         photo={usingPhoto}
-        heightClass="h-44"
         onError={() => setBroken(true)}
       >
         {bike?.isActive ? (
@@ -126,22 +189,47 @@ export function BikePhotoControl({
             </button>
           ) : null}
         </div>
-        {remotePhoto ? (
+      </RadStandFrame>
+      {remotePhoto ? (
+        <div className="m-3 flex flex-col gap-2">
+          <button
+            type="button"
+            data-testid="stand-photo-place"
+            onClick={() => {
+              void (async () => {
+                if (!photoUrl) return;
+                const img = await loadCorsImage(photoUrl);
+                if (!img) {
+                  fileRef.current?.click();
+                  return;
+                }
+                setCrop({
+                  src: photoUrl,
+                  img,
+                  yBias: STAND_PHOTO_Y_BIAS,
+                  xBias: STAND_PHOTO_X_BIAS,
+                });
+              })();
+            }}
+            className="rounded-xl border border-border px-3 py-2 text-left"
+          >
+            <span className="block text-[11px] font-bold">
+              {copy.workshopPhotoPlace}
+            </span>
+            <span className="mt-0.5 block text-[10px] leading-snug text-text-secondary">
+              {copy.workshopPhotoCropHint}
+            </span>
+          </button>
           <button
             type="button"
             data-testid="stand-photo-retake"
             onClick={() => fileRef.current?.click()}
-            className="absolute inset-x-2 bottom-7 rounded-xl bg-black/55 px-3 py-2 text-left backdrop-blur-sm"
+            className="rounded-xl border border-border px-3 py-2 text-left text-[11px] font-bold"
           >
-            <span className="block text-[11px] font-bold text-white">
-              {copy.workshopPhotoRetake}
-            </span>
-            <span className="mt-0.5 block text-[10px] leading-snug text-white/80">
-              {copy.workshopPhotoRetakeHint}
-            </span>
+            {copy.workshopPhotoRetake}
           </button>
-        ) : null}
-      </RadStandFrame>
+        </div>
+      ) : null}
       <input
         ref={fileRef}
         type="file"
@@ -149,6 +237,34 @@ export function BikePhotoControl({
         className="hidden"
         onChange={(e) => onFile(e.target.files?.[0] ?? null)}
       />
+      {crop ? (
+        <StandPhotoCrop
+          src={crop.src}
+          tall={crop.img.width / crop.img.height < STAND_PHOTO_RATIO}
+          yBias={crop.yBias}
+          xBias={crop.xBias}
+          onYBias={(yBias) => setCrop({ ...crop, yBias })}
+          onXBias={(xBias) => setCrop({ ...crop, xBias })}
+          onConfirm={() => {
+            applyCrop(crop.img, crop.yBias, crop.xBias);
+            setCrop(null);
+          }}
+          onRotate={() => {
+            void rotateImage90(crop.img).then(({ src, img }) => {
+              setCrop({
+                src,
+                img,
+                yBias: STAND_PHOTO_Y_BIAS,
+                xBias: STAND_PHOTO_X_BIAS,
+              });
+            });
+          }}
+          onCancel={() => {
+            applyCrop(crop.img, STAND_PHOTO_Y_BIAS, STAND_PHOTO_X_BIAS);
+            setCrop(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import '../../domain/ai/coach_inbox.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../chat/chat_screen.dart';
+import '../shared/chrome_glyph.dart';
 import 'hof_hinweise_sheet.dart';
 
 class HofCoachBellButton extends ConsumerWidget {
@@ -48,7 +49,7 @@ class HofCoachBellButton extends ConsumerWidget {
       icon: Badge(
         isLabelVisible: unread > 0,
         label: Text(unread > 9 ? '9+' : '$unread'),
-        child: const Icon(Icons.notifications_outlined),
+        child: const ChromeGlyph('bell', size: 22),
       ),
     );
   }
@@ -64,7 +65,7 @@ class HofChatButton extends StatelessWidget {
       key: const Key('coach-chat'),
       tooltip: l10n.chatAssistant,
       onPressed: () => openChatScreen(context),
-      icon: const Icon(Icons.chat_bubble_outline),
+      icon: const ChromeGlyph('stimmen', size: 22),
     );
   }
 }

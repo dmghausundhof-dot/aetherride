@@ -53,6 +53,12 @@ class DiscoverMapLineStyle {
   static const String planRubber = '#FF6A00';
   static const double planRubberWidth = 5.6;
   static const double planRubberOpacity = 0.92;
+  static const String planRubberCasing = '#1A120C';
+  static const double planRubberCasingWidth = 8.2;
+  static const double planRubberCasingOpacity = 0.55;
+  static const String planRubberHalo = '#FFFFFF';
+  static const double planRubberHaloWidth = 11.2;
+  static const double planRubberHaloOpacity = 0.78;
 
   /// Unused native fat-hit line. Pointers go through [PlanLineGrabLayer].
   static const String planGrabHalo = '#FF8A3D';

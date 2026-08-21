@@ -6,6 +6,7 @@ import '../../domain/ai/coach_inbox.dart';
 import '../../domain/ai/coach_watch.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Hinweis-Liste: Coach + Tafel-relevantes. Nicht die Chat-Historie.
 Future<void> showHofHinweiseSheet(
@@ -99,7 +100,7 @@ class HofHinweiseSheet extends ConsumerWidget {
               ListTile(
                 key: const Key('hof-hinweise-care'),
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.build_outlined),
+                leading: const ChromeGlyph('care', size: 22),
                 title: Text(care),
                 onTap: () {
                   Navigator.pop(context);
@@ -110,7 +111,7 @@ class HofHinweiseSheet extends ConsumerWidget {
               ListTile(
                 key: const Key('hof-hinweise-listing'),
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.how_to_vote_outlined),
+                leading: const ChromeGlyph('flag', size: 22),
                 title: Text(listing),
                 onTap: () {
                   Navigator.pop(context);
@@ -121,7 +122,7 @@ class HofHinweiseSheet extends ConsumerWidget {
               ListTile(
                 key: const Key('hof-hinweise-group'),
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.groups_outlined),
+                leading: const ChromeGlyph('users', size: 22),
                 title: Text(group),
                 onTap: () {
                   Navigator.pop(context);
@@ -132,7 +133,7 @@ class HofHinweiseSheet extends ConsumerWidget {
               ListTile(
                 key: const Key('hof-hinweise-stimmen'),
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.record_voice_over_outlined),
+                leading: const ChromeGlyph('stimmen', size: 22),
                 title: Text(stimmen),
                 onTap: () {
                   Navigator.pop(context);
@@ -143,10 +144,10 @@ class HofHinweiseSheet extends ConsumerWidget {
               ListTile(
                 key: Key('hof-hinweise-coach-${item.notice.id}'),
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  item.unread
-                      ? Icons.notifications
-                      : Icons.notifications_outlined,
+                leading: ChromeGlyph(
+                  'bell',
+                  size: 22,
+                  color: item.unread ? AppColors.chrome : AppColors.muted,
                 ),
                 title: Text(item.notice.title),
                 subtitle: item.notice.detail.trim().isEmpty

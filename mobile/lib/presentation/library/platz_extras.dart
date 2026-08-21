@@ -30,6 +30,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
 import '../auth/auth_screen.dart';
+import '../shared/chrome_glyph.dart';
 import '../profile/profile_screen.dart';
 import '../ride/widgets/ride_group_extend_sheet.dart';
 import '../shell/hof_threshold_nav.dart';
@@ -307,7 +308,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
               const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.route_outlined),
+                leading: const ChromeGlyph('split', size: 22),
                 title: Text(loc.platzPlanAsGroup),
                 subtitle: Text(loc.platzPlanAsGroupHint),
                 onTap: () {
@@ -1309,8 +1310,11 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
                             openAuthScreen(context);
                           }
                         },
-                        icon: Icon(_signedIn ? Icons.group_add : Icons.login,
-                            size: 18),
+                        icon: ChromeGlyph(
+                          _signedIn ? 'users' : 'enter',
+                          size: 18,
+                          color: AppColors.onAccent,
+                        ),
                         label: Text(
                             _signedIn ? l10n.platzCreateGroup : l10n.signIn),
                       ),
@@ -1320,7 +1324,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
                           visualDensity: VisualDensity.compact,
                         ),
                         onPressed: () => unawaited(_joinWithLink()),
-                        icon: const Icon(Icons.link, size: 18),
+                        icon: const ChromeGlyph('link', size: 18),
                         label: Text(l10n.platzJoinWithCode),
                       ),
                     ],
@@ -1575,8 +1579,7 @@ class PlatzExtrasState extends ConsumerState<PlatzExtras> {
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
                     onPressed: () => unawaited(_createCollection()),
-                    icon:
-                        const Icon(Icons.create_new_folder_outlined, size: 18),
+                    icon: const ChromeGlyph('platz', size: 18),
                     label: Text(l10n.mappeCollectionNew),
                   ),
                 ),

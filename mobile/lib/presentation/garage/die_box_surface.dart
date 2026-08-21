@@ -516,7 +516,7 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
                       : null,
                   bike: widget.bike,
                   onTap: widget.onOpenDetail,
-                  photoHeight: widget.compact ? 132 : 148,
+                  useStandRatio: true,
                   showCaption: false,
                   embedded: true,
                   usePhotoFill: true,
@@ -526,33 +526,6 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
                     ref.invalidate(bikesProvider);
                   },
                 ),
-                if (_lastRide != null) ...[
-                  if (lastRideLine != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.m,
-                        AppSpacing.s,
-                        AppSpacing.m,
-                        0,
-                      ),
-                      child: Text(
-                        lastRideLine,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.m,
-                      AppSpacing.s,
-                      AppSpacing.m,
-                      0,
-                    ),
-                    child: _GarageLastRidePeek(ride: _lastRide!),
-                  ),
-                ],
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.m,
@@ -632,6 +605,33 @@ class _DieBoxSurfaceState extends ConsumerState<DieBoxSurface> {
                   bike: widget.bike,
                   embedded: true,
                 ),
+                if (_lastRide != null) ...[
+                  if (lastRideLine != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.m,
+                        0,
+                        AppSpacing.m,
+                        0,
+                      ),
+                      child: Text(
+                        lastRideLine,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.m,
+                      AppSpacing.s,
+                      AppSpacing.m,
+                      0,
+                    ),
+                    child: _GarageLastRidePeek(ride: _lastRide!),
+                  ),
+                ],
                 if (primary != null)
                   Padding(
                     padding: EdgeInsets.fromLTRB(

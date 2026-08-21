@@ -320,6 +320,40 @@ double mapPinSdfIconSize(double sizeOn128) =>
 
 double mapChevronIconSize(double sizeOn64) => sizeOn64 * 0.5;
 
+/// Raster glow ring — not SDF. Grayscale SDF discs read as a black circle
+/// when MapLibre does not tint `icon-color`.
+Future<Uint8List> buildHaloRingPng(Color fill) async {
+  const size = kMapSdfPx;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  final c = Offset(size / 2, size / 2);
+  canvas.drawCircle(
+    c,
+    22,
+    Paint()..color = fill.withValues(alpha: 0.18),
+  );
+  canvas.drawCircle(
+    c,
+    16.5,
+    Paint()
+      ..color = fill.withValues(alpha: 0.92)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.4,
+  );
+  canvas.drawCircle(
+    c,
+    16.5,
+    Paint()
+      ..color = const Color(0x66FFFFFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2,
+  );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(size.toInt(), size.toInt());
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+  return bytes!.buffer.asUint8List();
+}
+
 Future<Uint8List> _encodeRgbaPng(Uint8List rgba, int size) async {
   final completer = Completer<ui.Image>();
   ui.decodeImageFromPixels(
@@ -802,61 +836,92 @@ Future<Uint8List> buildRouteChevronPng() async {
 }
 
 void _paintStart(Canvas canvas, double size, Color fill) {
-  final c = Offset(size / 2, size / 2);
-  canvas.drawCircle(
-    c,
-    40,
-    Paint()..color = fill.withValues(alpha: 0.18),
+  _paintRouteTeardrop(
+    canvas,
+    size,
+    fill: fill,
+    inner: (c) {
+      final play = Path()
+        ..moveTo(c.dx - 7.2, c.dy - 10.4)
+        ..lineTo(c.dx - 7.2, c.dy + 10.4)
+        ..lineTo(c.dx + 13.6, c.dy)
+        ..close();
+      canvas.drawPath(play, Paint()..color = const Color(0xFFFF6A00));
+    },
   );
-  canvas.drawCircle(c, 31, Paint()..color = fill);
-  canvas.drawCircle(
-    c,
-    31,
-    Paint()
-      ..color = const Color(0xFFFFFFFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5.6,
-  );
-  final play = Path()
-    ..moveTo(c.dx - 9.6, c.dy - 17.2)
-    ..lineTo(c.dx - 9.6, c.dy + 17.2)
-    ..lineTo(c.dx + 21.2, c.dy)
-    ..close();
-  canvas.drawPath(play, Paint()..color = Colors.white);
 }
 
 void _paintFinish(Canvas canvas, double size, {Color? accent}) {
   final rim = accent ?? const Color(0xFFFF6A00);
-  final c = Offset(size / 2, size / 2);
-  canvas.drawCircle(
-    c,
-    44,
-    Paint()..color = const Color(0x332A2E32),
+  _paintRouteTeardrop(
+    canvas,
+    size,
+    fill: rim,
+    inner: (c) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(c.dx - 10.2, c.dy - 12, 3.6, 24),
+          const Radius.circular(1.4),
+        ),
+        Paint()..color = const Color(0xFF1A120C),
+      );
+      final flag = Path()
+        ..moveTo(c.dx - 6.6, c.dy - 12)
+        ..lineTo(c.dx + 12.4, c.dy - 12)
+        ..lineTo(c.dx + 8.4, c.dy - 2.2)
+        ..lineTo(c.dx - 6.6, c.dy - 2.2)
+        ..close();
+      canvas.drawPath(flag, Paint()..color = rim);
+    },
   );
-  canvas.drawCircle(c, 36, Paint()..color = const Color(0xFFF4F1EC));
-  canvas.drawCircle(
-    c,
-    36,
+}
+
+void _paintRouteTeardrop(
+  Canvas canvas,
+  double size, {
+  required Color fill,
+  required void Function(Offset center) inner,
+}) {
+  canvas.save();
+  canvas.translate((size - 64 * (size / 80)) / 2, 0);
+  canvas.scale(size / 80);
+  canvas.drawOval(
+    Rect.fromCenter(center: const Offset(32, 76.8), width: 16.4, height: 6),
+    Paint()..color = const Color(0x52000000),
+  );
+  final body = Path()
+    ..moveTo(32, 6)
+    ..cubicTo(45, 6, 52, 16, 52, 27)
+    ..lineTo(52, 42)
+    ..cubicTo(52, 54, 40, 66, 32, 76)
+    ..cubicTo(24, 66, 12, 54, 12, 42)
+    ..lineTo(12, 27)
+    ..cubicTo(12, 16, 19, 6, 32, 6)
+    ..close();
+  canvas.drawPath(
+    body.shift(const Offset(0, 1.2)),
+    Paint()..color = const Color(0x33000000),
+  );
+  canvas.drawPath(body, Paint()..color = fill);
+  canvas.drawPath(
+    body,
     Paint()
-      ..color = rim
+      ..color = const Color(0xFFFFFFFF)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
+      ..strokeWidth = 2.6
       ..strokeJoin = StrokeJoin.round,
   );
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(
-      Rect.fromLTWH(c.dx - 16, c.dy - 18, 7, 40),
-      const Radius.circular(2.4),
-    ),
-    Paint()..color = const Color(0xFF1A120C),
+  const plate = Offset(32, 30);
+  canvas.drawOval(
+    Rect.fromCenter(center: plate, width: 32.8, height: 32.8),
+    Paint()..color = const Color(0xFFF4F1EC),
   );
-  final flag = Path()
-    ..moveTo(c.dx - 9, c.dy - 18)
-    ..lineTo(c.dx + 22, c.dy - 18)
-    ..lineTo(c.dx + 14, c.dy - 2)
-    ..lineTo(c.dx - 9, c.dy - 2)
-    ..close();
-  canvas.drawPath(flag, Paint()..color = rim);
+  canvas.drawOval(
+    Rect.fromCenter(center: const Offset(27.4, 25.6), width: 12.8, height: 8.4),
+    Paint()..color = const Color(0x6BFFFFFF),
+  );
+  inner(plate);
+  canvas.restore();
 }
 
 void _paintVia(Canvas canvas, double size, Color fill) {

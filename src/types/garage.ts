@@ -28,7 +28,15 @@ export type BikeType =
   | "e_gravel"
   | "hiking";
 
-export type WheelSize = "27_5" | "29" | "700c" | "650b";
+export type WheelSize =
+  | "27_5"
+  | "29"
+  | "700c"
+  | "650b"
+  | "26"
+  | "24"
+  | "20"
+  | "16";
 
 export type AttributeSource =
   | "oem"

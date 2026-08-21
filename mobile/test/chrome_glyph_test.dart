@@ -30,5 +30,10 @@ void main() {
     expect(ChromeGlyph.assetPath('hof'), 'assets/chrome/glyph-hof.svg');
     expect(ChromeGlyph.assetPath('check'), 'assets/garage/glyph-ready.svg');
     expect(ChromeGlyph.assetPath('watch'), 'assets/chrome/glyph-watch.svg');
+    expect(ChromeGlyph.assetPath('lang'), 'assets/chrome/glyph-lang.svg');
+    expect(ChromeGlyph.assetPath('cloud'), 'assets/chrome/glyph-cloud.svg');
+    expect(ChromeGlyph.assetPath('enter'), 'assets/chrome/glyph-enter.svg');
+    expect(ChromeGlyph.assetPath('loop'), 'assets/tours/glyph-loop.svg');
+    expect(ChromeGlyph.assetPath('copy'), 'assets/chrome/glyph-copy.svg');
   });
 }

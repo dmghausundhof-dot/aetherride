@@ -5,7 +5,8 @@
  * Recording bleibt app-only.
  */
 import Link from "next/link";
-import { Activity, ChevronRight, Smartphone } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration } from "@/lib/utils";
 import { rideSportLabel } from "@/lib/i18n/rideSportLabel";
@@ -44,13 +45,13 @@ export default function ActivitiesPage() {
           href="/download"
           className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium"
         >
-          <Smartphone className="h-3.5 w-3.5 text-chrome" /> {copy.inTheApp}
+          <ChromeGlyph name="phone" size={14} current className="text-chrome" /> {copy.inTheApp}
         </Link>
       </header>
 
       {sorted.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center">
-          <Activity className="mx-auto h-10 w-10 text-text-secondary" />
+          <ChromeGlyph name="heat" size={40} current className="mx-auto text-text-secondary" />
           <h2 className="mt-4 font-semibold">{copy.activitiesEmpty}</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-text-secondary">
             {copy.activitiesEmptyHint}

@@ -38,7 +38,8 @@ abstract final class OfflineMapsPrefs {
       }
     }
     await f.writeAsString(jsonEncode(m));
-    if (patch.containsKey('activatedPackPath')) {
+    if (patch.containsKey('activatedPackPath') ||
+        patch.containsKey('streetHudAt')) {
       revision.value++;
     }
   }
@@ -53,6 +54,28 @@ abstract final class OfflineMapsPrefs {
       bbox.add(x.toDouble());
     }
     return bbox;
+  }
+
+  /// Street-HUD cache bbox of the activated pack, if stored.
+  static List<double>? streetHudBboxFrom(Map<String, dynamic> m) {
+    final raw = m['streetHudBbox'];
+    if (raw is! List || raw.length < 4) return null;
+    final bbox = <double>[];
+    for (final x in raw.take(4)) {
+      if (x is! num) return null;
+      bbox.add(x.toDouble());
+    }
+    return bbox;
+  }
+
+  static String? streetHudPackIdFrom(Map<String, dynamic> m) {
+    final id = (m['streetHudPackId'] as String?)?.trim();
+    return (id == null || id.isEmpty) ? null : id;
+  }
+
+  static String? streetHudKindRawFrom(Map<String, dynamic> m) {
+    final k = (m['streetHudKind'] as String?)?.trim();
+    return (k == null || k.isEmpty) ? null : k;
   }
 
   /// Directory name of [activatedPackPath], e.g. `rhein-neckar`.

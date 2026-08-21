@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import 'chrome_glyph.dart';
 
 /// Handgezeichnete Bike-Silhouette — App-weites Empty-State-Motiv.
 /// Aus `garage_screen.dart` extrahiert (dort ursprünglich `_EmptyBikeSilhouettePainter`,
@@ -54,10 +55,8 @@ class BikeSilhouettePainter extends CustomPainter {
 /// und Ride (Bereit-Screen) entstand — eine Zeile Text, dann 60–70 % leere
 /// Fläche. Ein Aufruf statt drei verschiedene Ad-hoc-Lösungen.
 ///
-/// Default-Icon ist die Bike-Silhouette (App-weites Motiv, konsistent mit
-/// der ursprünglichen Garage-Lösung). Ein `icon` (z. B.
-/// `Icons.chat_bubble_outline`) überschreibt sie für thematisch andere
-/// Kontexte, wenn gewünscht — muss aber nicht: Konsistenz vor Abwechslung.
+/// Default-Motiv ist die Bike-Silhouette. [mark] setzt eine FlowLine-Glyphe
+/// (z. B. `stimmen` im Chat) an ihre Stelle.
 class EmptyStateIllustration extends StatelessWidget {
   const EmptyStateIllustration({
     super.key,
@@ -65,8 +64,8 @@ class EmptyStateIllustration extends StatelessWidget {
     this.message,
     this.actionLabel,
     this.onAction,
-    this.actionIcon,
-    this.icon,
+    this.actionMark = 'add',
+    this.mark,
     this.illustration,
     this.compact = false,
   });
@@ -75,8 +74,8 @@ class EmptyStateIllustration extends StatelessWidget {
   final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
-  final IconData? actionIcon;
-  final IconData? icon;
+  final String actionMark;
+  final String? mark;
   final Widget? illustration;
 
   /// Kleinere Variante für Screens, auf denen der Leerzustand nicht die
@@ -97,9 +96,9 @@ class EmptyStateIllustration extends StatelessWidget {
         children: [
           if (illustration != null)
             illustration!
-          else if (icon != null)
-            Icon(
-              icon,
+          else if (mark != null)
+            ChromeGlyph(
+              mark!,
               size: iconSize,
               color: AppColors.trail.withValues(alpha: 0.55),
             )
@@ -129,7 +128,11 @@ class EmptyStateIllustration extends StatelessWidget {
             SizedBox(height: AppSpacing.l),
             FilledButton.icon(
               onPressed: onAction,
-              icon: Icon(actionIcon ?? Icons.add),
+              icon: ChromeGlyph(
+                actionMark,
+                size: 18,
+                color: AppColors.onAccent,
+              ),
               label: Text(actionLabel!),
             ),
           ],

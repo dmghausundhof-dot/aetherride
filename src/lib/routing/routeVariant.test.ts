@@ -2,6 +2,7 @@
  * npx tsx src/lib/routing/routeVariant.test.ts
  */
 import assert from "node:assert/strict";
+import { discoverStatus, discoverUi } from "../i18n/discoverUi";
 import { buildValhallaCosting, getProfile, isTrailSuitable } from "./profiles";
 import {
   applyRouteVariant,
@@ -43,9 +44,19 @@ assert.equal(variantNeedsValhalla("planned"), false);
 assert.equal(variantNeedsValhalla("flatter"), true);
 assert.equal(
   VARIANT_VALHALLA_ONLY,
-  "Ohne Live-Strecke keine Varianten — Route wie geplant.",
+  "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.",
+);
+assert.equal(
+  VARIANT_VALHALLA_ONLY,
+  discoverUi("de").variantValhallaOnly,
+  "engine honesty matches Discover chip copy"
 );
 assert.ok(!VARIANT_VALHALLA_ONLY.toLowerCase().includes("valhalla"));
+assert.equal(
+  discoverStatus(`12.3 km · 45 min · ${VARIANT_VALHALLA_ONLY}`, "en"),
+  `12.3 km · 45 min · ${discoverUi("en").variantValhallaOnly}`,
+  "variant-without-valhalla warning localizes"
+);
 
 const hike = applyRouteVariant(buildValhallaCosting("hiking"), "flatter");
 assert.ok(

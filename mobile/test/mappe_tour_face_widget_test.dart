@@ -164,13 +164,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Import-Tour'), findsOneWidget);
+    expect(find.text('16 km · 120 hm · 40 min'), findsOneWidget);
     expect(find.text('Import'), findsOneWidget);
     expect(find.byTooltip('Akte'), findsOneWidget);
     expect(find.byTooltip('Entfernen'), findsOneWidget);
     expect(find.byKey(const Key('mappe-tile-akte-saved-1')), findsOneWidget);
     expect(find.byType(TourLineThumb), findsOneWidget);
-    expect(
-        tester.widget<TourLineThumb>(find.byType(TourLineThumb)).wide, isTrue);
+    expect(tester.widget<TourLineThumb>(find.byType(TourLineThumb)).wide, isTrue);
+    expect(tester.widget<TourLineThumb>(find.byType(TourLineThumb)).size, 48);
     expect(find.byKey(const Key('mappe-tile-ride-saved-1')), findsOneWidget);
   });
 

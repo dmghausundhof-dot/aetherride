@@ -20,6 +20,17 @@ void main() {
     expect(features[1]['geometry']['coordinates'], [8.69, 49.405]);
   });
 
+  test('shared disc can sit on the line without a km label', () {
+    final geo = pendingAbFeatureCollection(
+      lineLngLat: const [],
+      labelLngLat: [8.69, 49.405],
+    );
+    final features = geo['features'] as List;
+    expect(features, hasLength(1));
+    expect(features.first['geometry']['type'], 'Point');
+    expect(features.first['properties']['label'], '');
+  });
+
   test('empty overlay has no invented line or km', () {
     final geo = pendingAbFeatureCollection(
       lineLngLat: const [],

@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import 'garage_chrome.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Katalog-Namen nachschlagen, ohne Grok-Zeilen eine SKU anzudichten.
 Future<List<OemPartSuggestion>> resolveOemSuggestionNames(
@@ -155,8 +156,8 @@ class _OemPartChecklistSheetState extends State<_OemPartChecklistSheet> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.handyman_outlined,
+                          ChromeGlyph(
+                            'care',
                             size: 40,
                             color: AppColors.muted.withValues(alpha: 0.8),
                           ),
@@ -211,7 +212,7 @@ class _OemPartChecklistSheetState extends State<_OemPartChecklistSheet> {
             const SizedBox(height: AppSpacing.s),
             OutlinedButton.icon(
               onPressed: _addTyped,
-              icon: const Icon(Icons.add, size: 18),
+              icon: const ChromeGlyph('add', size: 18),
               label: Text(
                 empty ? l10n.oemCheckAdd : l10n.oemCheckAddMore,
               ),
@@ -377,7 +378,11 @@ class _OemCheckMark extends StatelessWidget {
         ),
       ),
       child: on
-          ? const Icon(Icons.check, size: 16, color: AppColors.onAccent)
+          ? const ChromeGlyph(
+              'check',
+              size: 16,
+              color: AppColors.onAccent,
+            )
           : null,
     );
   }

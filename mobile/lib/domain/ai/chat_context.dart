@@ -45,6 +45,10 @@ String? wheelApiId(WheelSize? w) => switch (w) {
       WheelSize.w29 => '29',
       WheelSize.c700 => '700c',
       WheelSize.b650 => '650b',
+      WheelSize.w26 => '26',
+      WheelSize.w24 => '24',
+      WheelSize.w20 => '20',
+      WheelSize.w16 => '16',
     };
 
 List<Map<String, dynamic>> _attrs(Map<String, dynamic> attrs) {

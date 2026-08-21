@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { chromeRequestLang } from "@/lib/i18n/hofDoorMeta";
+import { profileCopy } from "@/lib/i18n/profileCopy";
 
-export const metadata: Metadata = {
-  title: "Profil",
-  description: "Öffentliches FlowLine-Profil. Nur mit Opt-in, keine GPS-Spuren.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const copy = profileCopy(await chromeRequestLang());
+  return {
+    title: copy.publicTitle,
+    description: copy.publicHint,
+  };
+}
 
 export default function PublicProfileLayout({
   children,

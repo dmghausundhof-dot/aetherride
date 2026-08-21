@@ -163,7 +163,7 @@ async function enrichWithAi(
             role: "system",
             content:
               "Du ergänzt nur ehrliche Fahrrad-Felder. Antworte NUR JSON: " +
-              '{"wheel":"29"|"27.5"|"700c"|"650b"|null,"drivetrain":["shimano"|"sram"|"rohloff"|"enviolo"|"campagnolo"]}. ' +
+              '{"wheel":"29"|"27.5"|"700c"|"650b"|"26"|"24"|"20"|"16"|null,"drivetrain":["shimano"|"sram"|"rohloff"|"enviolo"|"campagnolo"]}. ' +
               "Keine Teilenummern, keine Bosch-SKUs, keine Preise. Unklar → null / [].",
           },
           {
@@ -192,7 +192,16 @@ async function enrichWithAi(
     };
     const wheel =
       typeof parsed.wheel === "string" ? parsed.wheel : undefined;
-    const allowedWheel = new Set(["29", "27.5", "700c", "650b"]);
+    const allowedWheel = new Set([
+      "29",
+      "27.5",
+      "700c",
+      "650b",
+      "26",
+      "24",
+      "20",
+      "16",
+    ]);
     const next = { ...identified };
     if (missingWheel && wheel && allowedWheel.has(wheel)) {
       next.wheelSizeFront = wheel;

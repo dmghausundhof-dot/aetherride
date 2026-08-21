@@ -58,7 +58,7 @@ class SavedMappeTile extends StatelessWidget {
               children: [
                 TourLineThumb(
                   coordinates: coords,
-                  size: 56,
+                  size: 48,
                   wide: true,
                 ),
                 if (spark.isNotEmpty)

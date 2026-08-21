@@ -2,6 +2,14 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
+    let target = env::var("TARGET").unwrap_or_default();
+    if target.contains("android") {
+        // Android 15+ 16 KB pages (Galaxy S25 / Play). ELF LOAD must be 0x4000,
+        // not 0x1000 — zip-align alone is not enough.
+        println!("cargo:rustc-link-arg=-Wl,-z,max-page-size=16384");
+        println!("cargo:rustc-cdylib-link-arg=-Wl,-z,max-page-size=16384");
+    }
+
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let cpp = manifest.join("cpp/valhalla_actor_c.cpp");
 

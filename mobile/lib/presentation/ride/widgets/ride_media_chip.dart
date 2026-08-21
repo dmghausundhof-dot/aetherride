@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/hud_media.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../shared/chrome_glyph.dart';
 
 /// Compact now-playing transport for the Ride HUD.
 ///
@@ -78,7 +79,7 @@ class RideMediaChip extends StatelessWidget {
         onTap: onEnable,
         child: Row(
           children: [
-            const Icon(Icons.library_music_outlined, size: 22),
+            const ChromeGlyph('play', size: 22),
             const SizedBox(width: AppSpacing.s),
             Expanded(
               child: Column(
@@ -134,8 +135,8 @@ class RideMediaChip extends StatelessWidget {
         context,
         child: Row(
           children: [
-            Icon(
-              playing ? Icons.music_note : Icons.music_off_outlined,
+            ChromeGlyph(
+              playing ? 'play' : 'pause',
               size: 20,
               color: AppColors.accent,
             ),
@@ -183,7 +184,7 @@ class RideMediaChip extends StatelessWidget {
               tooltip: playing
                   ? (l10n?.ridePause ?? 'Pause')
                   : (l10n?.ridePlay ?? 'Abspielen'),
-              icon: playing ? Icons.pause : Icons.play_arrow,
+              mark: playing ? 'pause' : 'play',
               onPressed: onPlayPause,
             ),
             _btn(
@@ -201,7 +202,8 @@ class RideMediaChip extends StatelessWidget {
   Widget _btn({
     required Key key,
     required String tooltip,
-    required IconData icon,
+    IconData? icon,
+    String? mark,
     required VoidCallback? onPressed,
   }) {
     return IconButton(
@@ -214,7 +216,9 @@ class RideMediaChip extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         padding: EdgeInsets.zero,
       ),
-      icon: Icon(icon, size: 26),
+      icon: mark != null
+          ? ChromeGlyph(mark, size: 26)
+          : Icon(icon, size: 26),
     );
   }
 }

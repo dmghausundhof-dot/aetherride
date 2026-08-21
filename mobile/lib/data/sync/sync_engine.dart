@@ -11,6 +11,7 @@ import '../garage/bike_photo_sync.dart';
 import '../local/app_database.dart';
 import '../local/garage_repository.dart';
 import '../local/ride_chunk_repository.dart';
+import 'epoch_ms.dart';
 import 'sync_payload.dart';
 
 /// Auth-Zustand der Sync-Engine (für UI-Banner).
@@ -207,9 +208,8 @@ class SyncEngine {
     final local = await _garage.buildSyncPayload();
     final remote = await pullNow();
 
-    final localAt = DateTime.tryParse(local.updatedAt ?? '')?.millisecondsSinceEpoch ?? 0;
-    final remoteAt =
-        DateTime.tryParse(remote.updatedAt ?? '')?.millisecondsSinceEpoch ?? 0;
+    final localAt = epochMsFromUpdatedAt(local.updatedAt);
+    final remoteAt = epochMsFromUpdatedAt(remote.updatedAt);
 
     if (remote.payload == null) {
       final stamped = local.copyWith(
@@ -230,8 +230,7 @@ class SyncEngine {
     }
 
     if (remoteAt > localAt) {
-      final merged =
-          remote.payload!.copyWith(updatedAt: remote.updatedAt);
+      final merged = remote.payload!.copyWith(updatedAt: remote.updatedAt);
       await _garage.applyRemotePayload(merged);
       await _record('pulled', remote.updatedAt);
       _onSynced?.call(merged);
@@ -241,7 +240,8 @@ class SyncEngine {
 
     if (localAt > remoteAt) {
       try {
-        final updatedAt = await pushNow(local, clientUpdatedAt: remote.updatedAt);
+        final updatedAt =
+            await pushNow(local, clientUpdatedAt: remote.updatedAt);
         await _record('pushed', updatedAt);
         final merged = local.copyWith(updatedAt: updatedAt);
         _onSynced?.call(merged);

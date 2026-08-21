@@ -926,7 +926,7 @@ class _ShopProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.north_east, size: 16, color: AppColors.muted),
+              const ChromeGlyph('share', size: 16, color: AppColors.muted),
             ],
           ),
         ),
@@ -938,7 +938,6 @@ class _ShopProductCard extends StatelessWidget {
 class _ShopDoor extends StatelessWidget {
   const _ShopDoor({
     super.key,
-    this.icon,
     this.mark,
     required this.title,
     required this.hint,
@@ -946,7 +945,6 @@ class _ShopDoor extends StatelessWidget {
     this.onTap,
   });
 
-  final IconData? icon;
   final Widget? mark;
   final String title;
   final String hint;
@@ -972,10 +970,10 @@ class _ShopDoor extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               mark ??
-                  Icon(
-                    icon ?? Icons.storefront_outlined,
-                    color: AppColors.chrome,
+                  const ChromeGlyph(
+                    'shop',
                     size: 22,
+                    color: AppColors.chrome,
                   ),
               const SizedBox(width: AppSpacing.m),
               Expanded(
@@ -1012,8 +1010,8 @@ class _ShopDoor extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                actionLabel != null ? Icons.arrow_forward : Icons.north_east,
+              const ChromeGlyph(
+                'share',
                 size: 16,
                 color: AppColors.muted,
               ),

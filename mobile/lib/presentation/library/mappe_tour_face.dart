@@ -101,16 +101,31 @@ class MappeTourFace extends StatelessWidget {
               ),
               SizedBox(height: gap),
               if (stats != null)
-                Wrap(
-                  spacing: compact ? 8 : 10,
-                  runSpacing: 4,
-                  children: [
-                    _Stat(icon: 'distance', text: stats.km),
-                    if (stats.hm != null)
-                      _Stat(icon: 'elevation', text: stats.hm!),
-                    _Stat(icon: 'duration', text: stats.min),
-                  ],
-                )
+                compact
+                    ? Text(
+                        [
+                          stats.km,
+                          if (stats.hm != null) stats.hm!,
+                          stats.min,
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                          color: AppColors.muted,
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 10,
+                        runSpacing: 4,
+                        children: [
+                          _Stat(icon: 'distance', text: stats.km),
+                          if (stats.hm != null)
+                            _Stat(icon: 'elevation', text: stats.hm!),
+                          _Stat(icon: 'duration', text: stats.min),
+                        ],
+                      )
               else
                 Text(
                   l10n.noTrackLabel,

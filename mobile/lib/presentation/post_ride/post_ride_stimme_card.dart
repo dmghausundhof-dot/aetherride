@@ -7,6 +7,7 @@ import '../../data/community/tour_community_store.dart';
 import '../../domain/community/stimme_pin.dart';
 import '../../l10n/app_localizations.dart';
 import '../discover/widgets/stimme_tag_chips.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Nach Feel/Setup — nur wenn die Fahrt an einer öffentlichen Tour hing.
 class PostRideStimmeCard extends StatefulWidget {
@@ -133,9 +134,10 @@ class _PostRideStimmeCardState extends State<PostRideStimmeCard> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   onPressed: () => setState(() => _rating = i),
-                  icon: Icon(
-                    i <= _rating ? Icons.star : Icons.star_border,
-                    color: AppColors.accent,
+                  icon: ChromeGlyph(
+                    'star',
+                    size: 22,
+                    color: i <= _rating ? AppColors.accent : AppColors.muted,
                   ),
                 ),
             ],

@@ -11,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/garage/bike_photo_sync.dart';
 import '../../data/garage/stand_photo_file.dart';
 import '../../domain/bike.dart';
+import '../../domain/garage/stand_photo.dart';
 import '../../domain/catalog_bike.dart';
 import '../../domain/garage/bike_photo_fill.dart';
 import '../../l10n/app_localizations.dart';
@@ -18,6 +19,7 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/app_providers.dart';
 import 'garage_chrome.dart';
 import 'oem_part_checklist_sheet.dart';
+import 'stand_photo_crop_sheet.dart';
 
 export 'garage_chrome.dart' show GrokReadCard;
 
@@ -30,6 +32,7 @@ class CatalogPhotoPick {
     this.readSummary = '',
     this.applyReadAsName = false,
     this.identifyReason,
+    this.alreadyCropped = false,
   });
 
   final CatalogBikeHit? hit;
@@ -41,6 +44,7 @@ class CatalogPhotoPick {
 
   /// no_key / quota / failed / unreadable / no_catalog — ehrlich, kein Abbruch.
   final String? identifyReason;
+  final bool alreadyCropped;
 }
 
 Future<CatalogPhotoPick?> pickCatalogHitFromPhoto({
@@ -60,6 +64,28 @@ Future<CatalogPhotoPick?> pickCatalogHitFromPhoto({
   );
   if (picked == null || !context.mounted) return null;
 
+  var file = File(picked.path);
+  var yBias = kStandPhotoYBias;
+  var xBias = kStandPhotoXBias;
+  final crop = await showStandPhotoCropSheet(context: context, file: file);
+  if (!context.mounted) return null;
+  if (crop != null) {
+    file = crop.file;
+    yBias = crop.yBias;
+    xBias = crop.xBias;
+  }
+  final dir = await getTemporaryDirectory();
+  final cropped = File(
+    p.join(dir.path, 'stand_id_${DateTime.now().millisecondsSinceEpoch}.jpg'),
+  );
+  await writeStandCroppedJpeg(
+    source: file,
+    dest: cropped,
+    yBias: yBias,
+    xBias: xBias,
+  );
+  if (!context.mounted) return null;
+
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
         content: Text(AppLocalizations.of(context).garagePhotoIdentifying)),
@@ -67,7 +93,7 @@ Future<CatalogPhotoPick?> pickCatalogHitFromPhoto({
 
   CatalogIdentifyResult result;
   try {
-    final bytes = await File(picked.path).readAsBytes();
+    final bytes = await cropped.readAsBytes();
     result = await ref.read(catalogClientProvider).identify(
           imageBase64: base64Encode(bytes),
         );
@@ -85,8 +111,9 @@ Future<CatalogPhotoPick?> pickCatalogHitFromPhoto({
       ),
     );
     return CatalogPhotoPick(
-      file: File(picked.path),
+      file: cropped,
       identifyReason: result.reason ?? 'failed',
+      alreadyCropped: true,
     );
   }
 
@@ -111,23 +138,42 @@ Future<CatalogPhotoPick?> pickCatalogHitFromPhoto({
 
   return CatalogPhotoPick(
     hit: hit,
-    file: File(picked.path),
+    file: cropped,
     visionParts: result.visionParts,
     queries: result.queries,
     readSummary: result.readSummary,
     applyReadAsName: applyReadAsName,
     identifyReason: result.reason,
+    alreadyCropped: true,
   );
 }
 
 Future<void> persistPickedBikePhoto({
+  required BuildContext context,
   required WidgetRef ref,
   required String bikeId,
   required File source,
+  bool alreadyCropped = false,
 }) async {
+  var file = source;
+  var yBias = kStandPhotoYBias;
+  var xBias = kStandPhotoXBias;
+  if (!alreadyCropped && context.mounted) {
+    final crop = await showStandPhotoCropSheet(context: context, file: source);
+    if (crop != null) {
+      file = crop.file;
+      yBias = crop.yBias;
+      xBias = crop.xBias;
+    }
+  }
   final dir = await getApplicationSupportDirectory();
   final dest = File(p.join(dir.path, 'bike_photos', '$bikeId.jpg'));
-  await writeStandCroppedJpeg(source: source, dest: dest);
+  await writeStandCroppedJpeg(
+    source: file,
+    dest: dest,
+    yBias: yBias,
+    xBias: xBias,
+  );
   await FileImage(dest).evict();
   final store = ref.read(userProfileStoreProvider);
   await store.setBikePhoto(bikeId, dest.path);
@@ -158,9 +204,11 @@ Future<BikePhotoFill?> showBikePhotoFillSheet({
   final picked = await pickCatalogHitFromPhoto(context: context, ref: ref);
   if (picked == null || !context.mounted) return null;
   await persistPickedBikePhoto(
+    context: context,
     ref: ref,
     bikeId: bike.id,
     source: picked.file,
+    alreadyCropped: picked.alreadyCropped,
   );
   await persistGrokRead(
     ref: ref,

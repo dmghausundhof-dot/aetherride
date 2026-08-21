@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+import { hofDoorMeta } from "@/lib/i18n/hofDoorMeta";
 
-export const metadata: Metadata = {
-  title: "Rad",
-  description:
-    "Dein Rad: Setup nach Typ, Pflege, Komponenten. Uhr koppeln nur in der App.",
-};
+export const generateMetadata = () =>
+  hofDoorMeta((c) => ({
+    title: c.workshopTitle,
+    description: c.workshopHint,
+  }));
 
 export default function GarageLayout({
   children,

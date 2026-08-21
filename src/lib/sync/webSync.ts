@@ -14,6 +14,8 @@ import {
   remoteToApplyPatch,
   type AppSyncSlice,
 } from "@/lib/sync/payload";
+import { syncCopy } from "@/lib/i18n/syncCopy";
+import type { ChromeLang } from "@/lib/i18n/chromeLang";
 
 export type SyncConflictState = {
   remote: SyncPayload;
@@ -77,13 +79,20 @@ export function applySyncPayloadToStore(remote: SyncPayload) {
   }
 }
 
-function summarizePayload(p: SyncPayload | undefined | null): string {
-  if (!p) return "leer";
+export function summarizePayload(
+  p: SyncPayload | undefined | null,
+  lang: ChromeLang = "de"
+): string {
+  const c = syncCopy(lang);
+  if (!p) return c.empty;
   const n = (x: unknown) => (Array.isArray(x) ? x.length : 0);
-  return `${n(p.bikes)} Bikes · ${n(p.rides)} Rides · ${n(p.savedRoutes)} Touren · ${n(p.routeCollections)} Sammlungen`;
+  return `${n(p.bikes)} Bikes · ${n(p.rides)} Rides · ${n(p.savedRoutes)} ${c.tours} · ${n(p.routeCollections)} ${c.collections}`;
 }
 
-export async function runWebSync(): Promise<WebSyncResult> {
+export async function runWebSync(
+  lang: ChromeLang = "de"
+): Promise<WebSyncResult> {
+  const c = syncCopy(lang);
   try {
     const local = buildSyncPayload(sliceFromAppStore());
     const { merged, direction } = await syncBidirectional(local);
@@ -93,12 +102,13 @@ export async function runWebSync(): Promise<WebSyncResult> {
     if (direction === "pushed" && merged.subscriptionTier === "pro") {
       useAppStore.getState().setSubscriptionTier("pro");
     }
+    const summary = summarizePayload(merged, lang);
     const message =
       direction === "pulled"
-        ? `Sync: Cloud übernommen (${summarizePayload(merged)}).`
+        ? c.pulled(summary)
         : direction === "pushed"
-          ? `Sync: Dieses Gerät hochgeladen (${summarizePayload(merged)}).`
-          : "Sync: bereits aktuell.";
+          ? c.pushed(summary)
+          : c.current;
     return { ok: true, direction, message };
   } catch (e) {
     if (e instanceof SyncConflictError && e.remote) {
@@ -106,8 +116,7 @@ export async function runWebSync(): Promise<WebSyncResult> {
       return {
         ok: false,
         conflict: true,
-        message:
-          "Konflikt: Cloud und dieses Gerät haben unterschiedliche Stände.",
+        message: c.conflict,
         conflictState: {
           remote: e.remote,
           remoteUpdatedAt: e.remoteUpdatedAt,
@@ -118,7 +127,7 @@ export async function runWebSync(): Promise<WebSyncResult> {
     return {
       ok: false,
       conflict: false,
-      message: e instanceof Error ? e.message : "Sync fehlgeschlagen",
+      message: e instanceof Error ? e.message : c.failed,
     };
   }
 }
@@ -126,15 +135,17 @@ export async function runWebSync(): Promise<WebSyncResult> {
 /** Nutzer wählt: Cloud behalten oder lokales Gerät erzwingen. */
 export async function resolveSyncConflict(
   choice: "keep_remote" | "keep_local",
-  conflict: SyncConflictState
+  conflict: SyncConflictState,
+  lang: ChromeLang = "de"
 ): Promise<WebSyncResult> {
+  const c = syncCopy(lang);
   try {
     if (choice === "keep_remote") {
       applySyncPayloadToStore(conflict.remote);
       return {
         ok: true,
         direction: "pulled",
-        message: `Konflikt gelöst: Cloud behalten (${summarizePayload(conflict.remote)}).`,
+        message: c.solvedCloud(summarizePayload(conflict.remote, lang)),
       };
     }
     const local = buildSyncPayload(sliceFromAppStore());
@@ -142,15 +153,13 @@ export async function resolveSyncConflict(
     return {
       ok: true,
       direction: "pushed",
-      message: `Konflikt gelöst: Gerät erzwungen hochgeladen (${updatedAt.slice(0, 19)}).`,
+      message: c.solvedLocal(updatedAt.slice(0, 19)),
     };
   } catch (e) {
     return {
       ok: false,
       conflict: false,
-      message: e instanceof Error ? e.message : "Auflösung fehlgeschlagen",
+      message: e instanceof Error ? e.message : c.resolveFailed,
     };
   }
 }
-
-export { summarizePayload };

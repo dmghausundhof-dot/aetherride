@@ -5,6 +5,7 @@ import '../../../core/theme/nav_hud_tokens.dart';
 import '../../../domain/community/ride_group_pin.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shell/hof_threshold_nav.dart';
+import '../../shared/chrome_glyph.dart';
 import 'ride_hud_island.dart';
 
 /// Eine Statusleiste während der Fahrt: wer teilt, Restzeit, Opt-out.
@@ -84,8 +85,8 @@ class RideGroupLiveBar extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: NavHudTokens.islandHitDp),
         child: Row(
           children: [
-            Icon(
-              Icons.pedal_bike_outlined,
+            ChromeGlyph(
+              'nav',
               size: 16,
               color: snap.optIn ? AppColors.chromeFill(context) : meta,
             ),

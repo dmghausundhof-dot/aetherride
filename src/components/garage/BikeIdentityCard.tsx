@@ -75,15 +75,7 @@ export function BikeIdentityCard({ bike }: { bike: Bike }) {
       </div>
 
       {empty ? (
-        <div className="relative mt-3 overflow-hidden rounded-xl border border-dashed border-border px-3 py-4">
-          <img
-            src={RAD_STAND_GROUND}
-            alt=""
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
-            draggable={false}
-          />
-          <p className="relative text-sm text-text-secondary">{copy.empty}</p>
-        </div>
+          <p className="mt-3 text-sm text-text-secondary">{copy.empty}</p>
       ) : (
         <div className="mt-3 space-y-2">
           {bike.serialNumber ? (

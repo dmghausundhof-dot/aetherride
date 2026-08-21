@@ -17,7 +17,7 @@ import { notifyGarageBikeShopify, garageBikeInputFromBike } from "@/lib/shop/not
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { garageTabCopy } from "@/lib/i18n/garageTabCopy";
-import { addBikeCopy } from "@/lib/i18n/addBikeCopy";
+import { addBikeCopy, presentGarageError } from "@/lib/i18n/addBikeCopy";
 import { radSilhouetteSrc } from "@/lib/garage/radMark";
 import { RadStandFrame } from "@/components/garage/RadStandFrame";
 import { RadGlyph } from "@/components/garage/RadGlyph";
@@ -78,7 +78,11 @@ export function AddBikeWizard({
       }
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : wizard.addFailed);
+      setError(
+        e instanceof Error
+          ? presentGarageError(e.message, lang)
+          : wizard.addFailed
+      );
     }
   };
 

@@ -76,7 +76,7 @@ export function ProduktPageBody() {
       <section className="border-t border-border bg-surface px-4 py-16 sm:px-6">
         <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2">
           <div className="rounded-2xl border border-border bg-background/60 p-8">
-            <Map className="h-8 w-8 text-sage" />
+            <ChromeGlyph name="karte" size={32} current className="text-sage" />
             <h2 className="mt-4 text-xl font-bold">{h.ui.onWebsite}</h2>
             <ul className="mt-4 space-y-3 text-sm text-text-secondary">
               {h.webSurfaces.map((s) => (

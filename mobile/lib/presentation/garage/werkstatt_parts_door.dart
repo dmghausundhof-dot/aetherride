@@ -6,6 +6,7 @@ import '../../core/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../shop/shop_screen.dart';
 import 'garage_chrome.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Ruhige Zeile in der Rad-Liste: Tür zum Laden, gebunden ans Rad.
 /// Kein Banner, kein Grid, kein Preis.
@@ -77,8 +78,8 @@ class WerkstattPartsDoor extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.north_east,
+                const ChromeGlyph(
+                  'share',
                   size: 16,
                   color: AppColors.muted,
                 ),

@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/routing/battery_preset.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../shared/chrome_glyph.dart';
 
 /// Opt-in battery / display preset picker (N-04 / N-09).
 /// Default recommendation: Pocket (no Keep-Screen-On).
@@ -77,10 +78,10 @@ class _PresetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final icon = switch (preset) {
-      RideBatteryPreset.pocket => Icons.phone_android_outlined,
-      RideBatteryPreset.lenker => Icons.screen_lock_portrait_outlined,
-      RideBatteryPreset.ultra => Icons.notifications_active_outlined,
+    final mark = switch (preset) {
+      RideBatteryPreset.pocket => 'phone',
+      RideBatteryPreset.lenker => 'lock',
+      RideBatteryPreset.ultra => 'bell',
     };
 
     return Material(
@@ -95,8 +96,9 @@ class _PresetTile extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.m),
           child: Row(
             children: [
-              Icon(
-                icon,
+              ChromeGlyph(
+                mark,
+                size: 22,
                 color: selected ? AppColors.accent : null,
               ),
               const SizedBox(width: AppSpacing.m),
@@ -160,7 +162,7 @@ class _PresetTile extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle, color: AppColors.accent),
+                const ChromeGlyph('check', size: 22, color: AppColors.accent),
             ],
           ),
         ),

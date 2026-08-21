@@ -127,8 +127,16 @@ import {
   planShapeRouteId,
   planViaMapCaption,
   planMapShowsRoutingWait,
+  planMapHistoryFabsVisible,
+  planMapAdaptingHintOnMap,
+  planParkedFingerClearsWhenIdle,
+  planMapDestWaitHintOnMap,
+  planMapDestWaitCopy,
+  planMapStopHintVisible,
+  PLAN_STOP_HINT_MS,
   planLineCoachShouldShow,
   planRibbonLegendKinds,
+  planEditorSheetRecedes,
   type BaseTour,
   type PlanDraft,
   type PlanMode,
@@ -351,17 +359,18 @@ function PlanRibbonLegend({
   }
   if (!items.length) return null;
   return (
-    <div className="absolute bottom-16 left-[max(0.75rem,var(--safe-left))] z-20 flex max-w-[min(22rem,calc(100%-5.5rem))] flex-wrap items-center gap-x-2.5 gap-y-1 rounded-full border border-black/10 bg-[#F4F1EC]/90 px-2.5 py-1.5 shadow-md">
+    <div className="absolute bottom-16 left-[max(0.75rem,var(--safe-left))] z-20 flex max-w-[min(22rem,calc(100%-5.5rem))] flex-wrap items-center gap-x-2.5 gap-y-1 rounded-full border border-black/10 bg-[#F4F1EC]/90 px-2.5 py-1.5 shadow-md max-[419px]:max-w-[min(22rem,calc(100%-5.5rem))] max-[419px]:gap-x-1.5">
       {items.map((it) => (
         <span
           key={it.label}
+          title={it.label}
           className="flex items-center gap-1 text-[10px] font-semibold text-[#1A120C]"
         >
           <span
             className="inline-block h-2 w-2 rounded-full"
             style={{ background: it.color }}
           />
-          {it.label}
+          <span className="max-[419px]:sr-only">{it.label}</span>
         </span>
       ))}
     </div>
@@ -535,18 +544,47 @@ function DiscoverPageInner() {
   const [planCoach, setPlanCoach] = useState(false);
   const [planToast, setPlanToast] = useState<string | null>(null);
   const planToastTimer = useRef<number | null>(null);
+  const [stopHintAt, setStopHintAt] = useState<[number, number] | null>(null);
+  const [stopHintLabel, setStopHintLabel] = useState<string | null>(null);
+  const stopHintTimer = useRef<number | null>(null);
+
+  const clearStopHint = useCallback(() => {
+    setStopHintAt(null);
+    setStopHintLabel(null);
+    if (stopHintTimer.current) {
+      window.clearTimeout(stopHintTimer.current);
+      stopHintTimer.current = null;
+    }
+  }, []);
+
+  const showStopHint = useCallback(
+    (at: [number, number], label: string) => {
+      setStopHintAt(at);
+      setStopHintLabel(label);
+      if (stopHintTimer.current) window.clearTimeout(stopHintTimer.current);
+      stopHintTimer.current = window.setTimeout(() => {
+        setStopHintAt(null);
+        setStopHintLabel(null);
+        stopHintTimer.current = null;
+      }, PLAN_STOP_HINT_MS);
+    },
+    []
+  );
   const draftRef = useRef<PlanDraft>(emptyDraft(routingProfile));
   draftRef.current = draft;
   const [routingBusy, setRoutingBusy] = useState(false);
   const [shapeDragging, setShapeDragging] = useState(false);
+  const [planShaped, setPlanShaped] = useState(false);
   const [destConfirmPulse, setDestConfirmPulse] = useState(false);
   const destPulseTimer = useRef<number | null>(null);
   const pulseDestConfirm = useCallback(
     (toast?: string) => {
       setDestConfirmPulse(true);
-      setPlanToast(toast ?? d.endSetComputing);
-      if (planToastTimer.current) window.clearTimeout(planToastTimer.current);
-      planToastTimer.current = window.setTimeout(() => setPlanToast(null), 1600);
+      if (toast) {
+        setPlanToast(toast);
+        if (planToastTimer.current) window.clearTimeout(planToastTimer.current);
+        planToastTimer.current = window.setTimeout(() => setPlanToast(null), 1600);
+      }
       if (destPulseTimer.current != null) {
         window.clearTimeout(destPulseTimer.current);
       }
@@ -555,7 +593,7 @@ function DiscoverPageInner() {
         destPulseTimer.current = null;
       }, 1600);
     },
-    [d.endSetComputing]
+    []
   );
   const [savedLastDest, setSavedLastDest] = useState<LastPlanDest | null>(null);
   const [lastDestDismissed, setLastDestDismissed] = useState<LastPlanDest | null>(
@@ -701,6 +739,10 @@ function DiscoverPageInner() {
       setPlanCoach(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (planParkedFingerClearsWhenIdle(routingBusy)) setPlanShaped(false);
+  }, [routingBusy]);
 
   // Community-Heatmap um Kartenmitte (k≥5 Server-Filter). Debounce per ~0.05°.
   const heatBboxKey = `${(mapCenter[0] * 20).toFixed(0)}:${(mapCenter[1] * 20).toFixed(0)}`;
@@ -2136,6 +2178,7 @@ function DiscoverPageInner() {
         label: next.label || DISCOVER_PIN_DE.planned,
         baseTour: next.attachedTrailId ? next.baseTour : undefined,
       });
+      void fillPlaceholderLabels(next);
       setPreviewTour(null);
       setRoutingMsg(routeResultMessage(next.computed));
     } finally {
@@ -2409,6 +2452,7 @@ function DiscoverPageInner() {
             );
             if (next?.computed) {
               setDraft({ ...next, profile: activeProfile });
+              void fillPlaceholderLabels(next);
               setRoutingMsg(routeResultMessage(next.computed));
             }
           } finally {
@@ -2429,9 +2473,12 @@ function DiscoverPageInner() {
       const viaAfter = next.waypoints.filter((w) => w.role === "via").length;
       schedulePlanRecompute(next);
       if (viaAfter <= viaBefore) return;
-      setPlanToast(d.planStopSetHint);
-      if (planToastTimer.current) window.clearTimeout(planToastTimer.current);
-      planToastTimer.current = window.setTimeout(() => setPlanToast(null), 4200);
+      const lastVia = orderedWaypoints(next)
+        .filter((w) => w.role === "via")
+        .at(-1);
+      if (lastVia) {
+        showStopHint(lastVia.lngLat, d.planStopSetHint);
+      }
       if (planCoach) {
         try {
           localStorage.setItem(
@@ -2444,7 +2491,7 @@ function DiscoverPageInner() {
         setPlanCoach(false);
       }
     },
-    [d.planStopSetHint, planCoach, schedulePlanRecompute]
+    [d.planStopSetHint, planCoach, schedulePlanRecompute, showStopHint]
   );
 
   const undoPlanEdit = useCallback(() => {
@@ -2454,6 +2501,8 @@ function DiscoverPageInner() {
     setPlanCanUndo(next.history.past.length > 0);
     setPlanCanRedo(next.history.future.length > 0);
     setPlanToast(null);
+    clearStopHint();
+    setPlanShaped(false);
     if (planDebounceRef.current) clearTimeout(planDebounceRef.current);
     setDraft(next.draft);
     if (next.draft.computed && startOf(next.draft) && endOf(next.draft)) {
@@ -2462,7 +2511,7 @@ function DiscoverPageInner() {
       return;
     }
     schedulePlanRecompute(next.draft, { history: false });
-  }, [schedulePlanRecompute]);
+  }, [clearStopHint, schedulePlanRecompute]);
 
   const redoPlanEdit = useCallback(() => {
     const next = redoPlanHistory(planHistoryRef.current, draftRef.current);
@@ -2470,6 +2519,9 @@ function DiscoverPageInner() {
     planHistoryRef.current = next.history;
     setPlanCanUndo(next.history.past.length > 0);
     setPlanCanRedo(next.history.future.length > 0);
+    setPlanToast(null);
+    clearStopHint();
+    setPlanShaped(false);
     if (planDebounceRef.current) clearTimeout(planDebounceRef.current);
     setDraft(next.draft);
     if (next.draft.computed && startOf(next.draft) && endOf(next.draft)) {
@@ -2478,7 +2530,7 @@ function DiscoverPageInner() {
       return;
     }
     schedulePlanRecompute(next.draft, { history: false });
-  }, [schedulePlanRecompute]);
+  }, [clearStopHint, schedulePlanRecompute]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -3138,6 +3190,64 @@ function DiscoverPageInner() {
   const aroundYouCompact = aroundYouEnabled ? (
     <AroundYouLoopCta {...aroundYouCtaProps} compact />
   ) : null;
+  const adaptingOnMap = planMapAdaptingHintOnMap({
+    routingBusy,
+    hasLiveLine: Boolean(draft.computed),
+    hasFinger: planShaped,
+  });
+  const destWaitOnMap = planMapDestWaitHintOnMap({
+    editorActive: sheetMode === "plan",
+    routingBusy,
+    hasStart: Boolean(startOf(draft)),
+    hasEnd: Boolean(endOf(draft)),
+    fingerHint: adaptingOnMap,
+    destConfirm: destConfirmPulse,
+    hasLiveLine: Boolean(draft.computed),
+  });
+  const waitOnMap = adaptingOnMap || destWaitOnMap;
+  const destWaitCopy = planMapDestWaitCopy({
+    hasStart: Boolean(startOf(draft)),
+    hasLiveLine: Boolean(draft.computed),
+  });
+  const waitHidesChrome =
+    adaptingOnMap || (destWaitOnMap && Boolean(startOf(draft)));
+  const stopHintOnMap = planMapStopHintVisible({
+    hasStopAt: Boolean(stopHintAt),
+    waitHintOnMap: waitOnMap,
+    rubberBand: shapeDragging,
+  });
+  const waitHintLabel = waitOnMap
+    ? adaptingOnMap
+      ? d.routingAdapts
+      : destWaitOnMap && stopHintLabel === d.lastDestApplied
+        ? stopHintLabel
+        : destWaitCopy === "waitingGps"
+          ? d.destSetWaitingGps
+          : destWaitCopy === "firstAb"
+            ? d.endSetComputing
+            : d.routingAdapts
+    : stopHintOnMap
+      ? stopHintLabel ?? d.planStopSetHint
+      : null;
+  const mapHintOnMap = waitOnMap || stopHintOnMap;
+  const sheetRecedes = planEditorSheetRecedes({
+    rubberBand: shapeDragging,
+    adapting: waitHidesChrome,
+  });
+  const routingWaitBanner = planMapShowsRoutingWait({
+    editorActive: sheetMode === "plan",
+    routingBusy,
+    hasStart: Boolean(startOf(draft)),
+    hasEnd: Boolean(endOf(draft)),
+  });
+  const historyFabsOnMap = planMapHistoryFabsVisible({
+    editorActive: sheetMode === "plan",
+    hasHistory: planCanUndo || planCanRedo,
+    mapHintOnMap,
+    rubberBand: shapeDragging,
+    coachVisible: planCoach,
+    routingWaitBanner,
+  });
 
   return (
     <div className="flex min-h-[calc(100dvh-var(--hof-header-h)-var(--hof-tab-h))] flex-col lg:h-[calc(100dvh-var(--hof-header-h))] lg:flex-row lg:overflow-hidden">
@@ -3147,13 +3257,13 @@ function DiscoverPageInner() {
       */}
       <aside className="order-2 flex min-h-0 flex-col border-t border-border bg-background lg:order-1 lg:w-[min(26rem,40vw)] lg:shrink-0 lg:border-r lg:border-t-0">
         {/* Dach */}
-        <header className={`shrink-0 space-y-2 border-b border-border px-4 ${sheetMode === "plan" && shapeDragging ? "max-lg:space-y-0 max-lg:pb-2 max-lg:pt-2" : "pb-3 pt-4 lg:pt-5"}`}>
-          {debugRoutingNotice && !(sheetMode === "plan" && shapeDragging) && (
+        <header className={`shrink-0 space-y-2 border-b border-border px-4 ${sheetMode === "plan" && sheetRecedes ? "max-lg:space-y-0 max-lg:pb-2 max-lg:pt-2" : "pb-3 pt-4 lg:pt-5"}`}>
+          {debugRoutingNotice && !(sheetMode === "plan" && sheetRecedes) && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
               {discoverStatus(debugRoutingNotice, lang)}
             </p>
           )}
-          {heatmapNote && !(sheetMode === "plan" && shapeDragging) && (
+          {heatmapNote && !(sheetMode === "plan" && sheetRecedes) && (
             <p className="rounded-lg border border-border bg-surface-elevated px-2.5 py-1.5 text-[11px] text-text-secondary">
               {d.heatmapPrefix}{heatmapNote}
               {!heatmapConsent && (
@@ -3174,7 +3284,7 @@ function DiscoverPageInner() {
               >
                 <X className="h-4 w-4" />
               </button>
-              <div className={`min-w-0 flex-1 ${shapeDragging ? "max-lg:hidden" : ""}`}>
+              <div className={`min-w-0 flex-1 ${sheetRecedes ? "max-lg:hidden" : ""}`}>
                 <h1 className="text-xl font-bold tracking-tight">
                   {copy.mapSheetPlan}
                 </h1>
@@ -3184,7 +3294,7 @@ function DiscoverPageInner() {
                     : d.osmOptional}
                 </p>
               </div>
-              <div className={shapeDragging ? "max-lg:hidden" : ""}>
+              <div className={sheetRecedes ? "max-lg:hidden" : ""}>
                 <BikeChip />
               </div>
             </div>
@@ -3344,45 +3454,54 @@ function DiscoverPageInner() {
         </header>
 
         {!detailRoute && sheetMode !== "plan" && (
-        <div className="grid shrink-0 grid-cols-3 gap-1 border-b border-border p-2">
+        <div
+          role="tablist"
+          aria-label={copy.mapTitle}
+          className="grid shrink-0 grid-cols-3 gap-1 border-b border-border p-2"
+        >
           {(
             [
-              ["quick", copy.mapSheetNear, Zap],
-              ["plan", copy.mapSheetPlan, Navigation],
-              ["tours", copy.mapSheetTours, Route],
+              ["quick", copy.mapSheetNear, "locate"],
+              ["plan", copy.mapSheetPlan, "nav"],
+              ["tours", copy.mapSheetTours, "platz"],
             ] as const
-          ).map(([id, label, Icon]) => (
-            <button
-              key={id}
-              type="button"
-              data-testid={`discover-sheet-${id}`}
-              onClick={() => {
-                if (asGroup && id !== "plan") {
-                  const url = new URL(window.location.href);
-                  url.searchParams.delete("asGroup");
-                  window.history.replaceState(
-                    {},
-                    "",
-                    `${url.pathname}${url.search}`
-                  );
-                }
-                if (id === "plan") beginNavigate();
-                else setSheetMode(id);
-              }}
-              className={`flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-medium ${
-                sheetMode === id
-                  ? "bg-chrome text-on-accent"
-                  : "bg-surface-elevated text-text-secondary"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
+          ).map(([id, label, mark]) => {
+            const on = sheetMode === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                data-testid={`discover-sheet-${id}`}
+                onClick={() => {
+                  if (asGroup && id !== "plan") {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete("asGroup");
+                    window.history.replaceState(
+                      {},
+                      "",
+                      `${url.pathname}${url.search}`
+                    );
+                  }
+                  if (id === "plan") beginNavigate();
+                  else setSheetMode(id);
+                }}
+                className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold ${
+                  on
+                    ? "bg-chrome text-on-accent"
+                    : "border border-border bg-surface text-foreground"
+                }`}
+              >
+                <ChromeGlyph name={mark} size={14} current />
+                {label}
+              </button>
+            );
+          })}
         </div>
         )}
 
-        <div className={`${sheetMode === "plan" ? (shapeDragging ? "max-h-0 overflow-hidden" : "max-h-[56vh]") : "max-h-[38vh]"} min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2 transition-[max-height] duration-200 ease-out lg:max-h-none`}>
+        <div className={`${sheetMode === "plan" ? (sheetRecedes ? "max-h-0 overflow-hidden" : "max-h-[56vh]") : "max-h-[38vh]"} min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2 transition-[max-height] duration-200 ease-out lg:max-h-none`}>
           {routingMsg && (
             <p
               data-testid="discover-routing-msg"
@@ -3708,7 +3827,11 @@ function DiscoverPageInner() {
                         next = setStart(next, userPos, DISCOVER_PIN_DE.myPos);
                       }
                       commitPlanEdit(next);
-                      pulseDestConfirm(d.lastDestApplied);
+                      pulseDestConfirm();
+                      showStopHint(
+                        [last.lng, last.lat],
+                        d.lastDestApplied
+                      );
                     }}
                   >
                     {lastDestOffer.label?.trim()
@@ -4348,7 +4471,7 @@ function DiscoverPageInner() {
           )}
         </div>
         {sheetMode === "plan" && draft.computed ? (
-          <div className={`shrink-0 border-t border-border px-3 py-3 ${shapeDragging ? "max-lg:hidden" : ""}`}>
+          <div className={`shrink-0 border-t border-border px-3 py-3 ${sheetRecedes ? "max-lg:hidden" : ""}`}>
             <p className="mb-2 text-[12px] font-semibold text-text-secondary">
               {(draft.computed.distanceM / 1000).toFixed(
                 draft.computed.distanceM < 10_000 ? 1 : 0
@@ -4381,7 +4504,7 @@ function DiscoverPageInner() {
             </p>
           </div>
         ) : sheetMode === "plan" && startOf(draft) && !endOf(draft) ? (
-          <div className={`shrink-0 border-t border-border px-3 py-3 ${shapeDragging ? "max-lg:hidden" : ""}`}>
+          <div className={`shrink-0 border-t border-border px-3 py-3 ${sheetRecedes ? "max-lg:hidden" : ""}`}>
             <button
               type="button"
               onClick={() => {
@@ -4400,7 +4523,7 @@ function DiscoverPageInner() {
             </button>
           </div>
         ) : sheetMode === "plan" && !startOf(draft) ? (
-          <div className={`shrink-0 border-t border-border px-3 py-3 ${shapeDragging ? "max-lg:hidden" : ""}`}>
+          <div className={`shrink-0 border-t border-border px-3 py-3 ${sheetRecedes ? "max-lg:hidden" : ""}`}>
             <button
               type="button"
               onClick={() => {
@@ -4486,10 +4609,25 @@ function DiscoverPageInner() {
               : null
           }
           onShapeHover={setElevHoverKm}
-          onShapeDragging={setShapeDragging}
+          onShapeDragging={(active) => {
+            setShapeDragging(active);
+            if (active) clearStopHint();
+          }}
           hoverKm={sheetMode === "plan" ? elevHoverKm : null}
           snapShapeFinger={(ll) =>
             snapPointOntoTrails(ll, trailsForViaSnap(liveOsmTrails))
+          }
+          adaptingLabel={waitHintLabel}
+          adaptingUndoLabel={mapHintOnMap && planCanUndo ? d.planUndo : null}
+          onAdaptingUndo={
+            mapHintOnMap && planCanUndo ? () => undoPlanEdit() : undefined
+          }
+          adaptingAt={
+            destWaitOnMap
+              ? endOf(draft)
+              : stopHintOnMap
+                ? stopHintAt
+                : null
           }
           onMarkerClick={(id) => {
             if (
@@ -4558,6 +4696,7 @@ function DiscoverPageInner() {
             ) {
               return;
             }
+            setPlanShaped(true);
             if (id.startsWith("shape-handle")) {
               const line = (draft.computed?.geometry?.coordinates ?? []) as
                 | [number, number][]
@@ -4583,6 +4722,7 @@ function DiscoverPageInner() {
               pickTarget !== "start" &&
               pickTarget !== "end"
             ) {
+              setPlanShaped(true);
               const line = (draft.computed?.geometry?.coordinates ?? []) as
                 | [number, number][]
                 | undefined;
@@ -4634,12 +4774,7 @@ function DiscoverPageInner() {
           }
           fitPoints={planFitPoints}
         />
-        {planMapShowsRoutingWait({
-          editorActive: sheetMode === "plan",
-          routingBusy,
-          hasStart: Boolean(startOf(draft)),
-          hasEnd: Boolean(endOf(draft)),
-        }) ? (
+        {routingWaitBanner && !waitOnMap ? (
           <div
             data-testid="plan-routing-wait"
             className="absolute bottom-28 left-[max(0.75rem,var(--safe-left))] z-20 flex max-w-[min(24rem,calc(100%-5.5rem))] items-center gap-2 rounded-2xl border border-white/10 bg-[#1A120C]/92 px-3 py-2 text-white shadow-lg"
@@ -4684,10 +4819,21 @@ function DiscoverPageInner() {
         !planToast &&
         !routingBusy &&
         !shapeDragging ? (
-          <div className="absolute top-20 left-[max(0.75rem,var(--safe-left))] right-[max(0.75rem,var(--safe-right))] z-20 max-w-[min(28rem,calc(100%-1.5rem))] rounded-2xl border border-[#FF6A00]/35 bg-[#1A120C]/94 px-3 py-2.5 text-white shadow-lg [@media(max-height:700px)]:px-2.5 [@media(max-height:700px)]:py-1.5">
+          <div className="absolute top-20 left-[max(0.75rem,var(--safe-left))] right-[max(3.25rem,var(--safe-right))] z-20 max-w-[min(28rem,calc(100%-4rem))] rounded-2xl border border-[#FF6A00]/35 bg-[#1A120C]/94 px-3 py-2.5 text-white shadow-lg [@media(max-height:700px)]:px-2.5 [@media(max-height:700px)]:py-1.5 [@media(max-height:640px)]:px-2 [@media(max-height:640px)]:py-1">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-[12px] font-medium leading-snug [@media(max-height:700px)]:text-[11px]">
-                {d.planLineCoach}
+              <p className="text-[12px] font-medium leading-snug [@media(max-height:700px)]:text-[11px] [@media(max-height:640px)]:text-[10px]">
+                {draft.baseTour ? (
+                  d.planLineCoachAdopt
+                ) : (
+                  <>
+                    <span className="[@media(max-height:700px)]:hidden">
+                      {d.planLineCoach}
+                    </span>
+                    <span className="hidden [@media(max-height:700px)]:inline">
+                      {d.planLineCoachShort}
+                    </span>
+                  </>
+                )}
               </p>
               <button
                 type="button"
@@ -4724,14 +4870,9 @@ function DiscoverPageInner() {
             })}
           />
         ) : null}
-        {(userPos ||
-          (sheetMode === "plan" &&
-            (planCanUndo || planCanRedo) &&
-            !shapeDragging &&
-            !planCoach &&
-            !routingBusy)) ? (
+        {((userPos && !waitHidesChrome) || historyFabsOnMap) ? (
           <div className="absolute bottom-16 right-[max(0.75rem,var(--safe-right))] z-20 flex flex-col-reverse items-center gap-2">
-            {userPos ? (
+            {userPos && !waitHidesChrome ? (
               <button
                 type="button"
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-chrome shadow-md"
@@ -4749,11 +4890,7 @@ function DiscoverPageInner() {
                 <ChromeGlyph name="locate" size={20} current />
               </button>
             ) : null}
-            {sheetMode === "plan" &&
-            planCanUndo &&
-            !shapeDragging &&
-            !planCoach &&
-            !routingBusy ? (
+            {historyFabsOnMap && planCanUndo ? (
               <button
                 type="button"
                 data-testid="plan-map-undo"
@@ -4764,11 +4901,7 @@ function DiscoverPageInner() {
                 <ChromeGlyph name="undo" size={16} current />
               </button>
             ) : null}
-            {sheetMode === "plan" &&
-            planCanRedo &&
-            !shapeDragging &&
-            !planCoach &&
-            !routingBusy ? (
+            {historyFabsOnMap && planCanRedo ? (
               <button
                 type="button"
                 data-testid="plan-map-redo"

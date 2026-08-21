@@ -176,7 +176,9 @@ List<List<double>> joinPlanLineToPins({
   double maxJoinM = kPlanLinePinJoinMaxM,
 }) {
   if (lineLngLat.length < 2) return lineLngLat;
-  final out = [for (final p in lineLngLat) <double>[p[0], p[1]]];
+  final out = [
+    for (final p in lineLngLat) <double>[p[0], p[1]]
+  ];
   if (startLat != null && startLng != null) {
     final a = out.first;
     final gap = haversineM(startLat, startLng, a[1], a[0]);
@@ -849,8 +851,7 @@ List<List<double>> planRubberBandLngLat({
   int? draggingViaIndex,
 }) {
   final stops = vias.toList();
-  final lineLen =
-      lineLngLat.length >= 2 ? routeLengthM(lineLngLat) : 0.0;
+  final lineLen = lineLngLat.length >= 2 ? routeLengthM(lineLngLat) : 0.0;
   if (draggingStart) {
     final next = stops.isNotEmpty ? stops.first : (lat: endLat, lng: endLng);
     if (lineLen > 4) {
@@ -961,6 +962,62 @@ double planEditorSheetHeightFraction({
 /// Floor for the plan panel clamp. Zero while shaping so 0-fraction is not
 /// forced back up to 220 px.
 double planEditorSheetMinPx({required bool shaping}) => shaping ? 0 : 220;
+
+/// Rubber-band *and* the following recalc: map stays the editor.
+bool planEditorSheetRecedes({
+  required bool rubberBand,
+  required bool adapting,
+}) =>
+    rubberBand || adapting;
+
+/// Brief “stop set” chip at the new via — not while waiting/reshaping.
+bool planMapStopHintVisible({
+  required bool hasStopAt,
+  required bool waitHintOnMap,
+  required bool rubberBand,
+}) =>
+    hasStopAt && !waitHintOnMap && !rubberBand;
+
+const Duration kPlanStopHint = Duration(milliseconds: 3200);
+
+const double kPlanMapChromeFabColPx = 56;
+
+const double kPlanFingerHintBelowGap = 16;
+const double kPlanFingerHintAboveGap = 12;
+const double kPlanFingerHintPad = 8;
+
+/// Place the adapting chip near the finger without covering locate/undo.
+({double left, double top}) planFingerHintPlacement({
+  required double fingerX,
+  required double fingerY,
+  required double mapW,
+  required double mapH,
+  required double chipW,
+  required double chipH,
+  double avoidRight = 0,
+  double avoidTop = 0,
+  double avoidBottom = 0,
+  double pad = kPlanFingerHintPad,
+  bool preferAbove = false,
+}) {
+  final minLeft = pad;
+  final maxLeft = math.max(minLeft, mapW - chipW - pad - avoidRight);
+  final left = (fingerX - chipW / 2).clamp(minLeft, maxLeft);
+  final minTop = pad + avoidTop;
+  final maxTop = math.max(minTop, mapH - chipH - pad - avoidBottom);
+  final below = fingerY + kPlanFingerHintBelowGap;
+  final above = fingerY - chipH - kPlanFingerHintAboveGap;
+  var top = preferAbove ? above : below;
+  if (!preferAbove && top + chipH > mapH - pad - avoidBottom) {
+    top = above;
+  } else if (preferAbove && top < minTop) {
+    top = below;
+  }
+  if (maxTop < minTop) {
+    return (left: left, top: minTop);
+  }
+  return (left: left, top: top.clamp(minTop, maxTop));
+}
 
 /// Dest pin in the editor keeps start + vias (Komoot). Browse leftover
 /// tour still starts a fresh GPS→pin A–B.
@@ -1420,9 +1477,7 @@ double _elevAlongSamples(
   List<double>? distKm,
 ) {
   if (elevM.length < 2 || !(lineLenM > 0)) return elevM.first;
-  if (distKm != null &&
-      distKm.length == elevM.length &&
-      distKm.last > 0) {
+  if (distKm != null && distKm.length == elevM.length && distKm.last > 0) {
     final km = (alongM / 1000).clamp(0.0, distKm.last);
     for (var i = 1; i < distKm.length; i++) {
       if (km <= distKm[i]) {
@@ -1464,8 +1519,7 @@ List<PlanGradeSlice> planGradeLineSlices({
   final len = along.last;
   if (len < minSegM * 2) return const [];
 
-  double elevAtAlong(double m) =>
-      _elevAlongSamples(elevM, m, len, distKm);
+  double elevAtAlong(double m) => _elevAlongSamples(elevM, m, len, distKm);
 
   final kinds = <PlanGradeKind>[];
   for (var i = 1; i < n; i++) {
@@ -1604,8 +1658,7 @@ List<PlanSurfaceSlice> planSurfaceLineSlices({
   double mergeGapM = kPlanSurfaceMergeGapM,
 }) {
   final merged = <({OsmSurfaceGroup kind, double fromM, double toM})>[];
-  final sorted = [...bands]
-    ..sort((a, b) => a.fromKm.compareTo(b.fromKm));
+  final sorted = [...bands]..sort((a, b) => a.fromKm.compareTo(b.fromKm));
   for (final b in sorted) {
     final kind = planSurfaceKind(b.surface);
     if (kind == null) continue;
@@ -1633,8 +1686,7 @@ List<PlanSurfaceSlice> planSurfaceLineSlices({
     }
   }
   if (out.length <= maxSlices) return out;
-  final ranked = [...out]
-    ..sort(
+  final ranked = [...out]..sort(
       (a, b) => routeLengthM(b.coords).compareTo(routeLengthM(a.coords)),
     );
   return ranked.take(maxSlices).toList();
@@ -2013,6 +2065,64 @@ const Duration kPlanLineHold = Duration(milliseconds: 450);
 /// Finger must move this far before the rubber-band starts (web uses 8 px).
 const double kPlanLineGrabMovePx = 8;
 
+/// Any slip past this cancels hold→dest (before exclusive rubber).
+const double kPlanLineHoldCancelPx = 6;
+
+/// Second finger = pinch/rotate, not a via. Yield the line grab.
+bool planLineGrabYieldsToPinch({required int pointerCount}) =>
+    pointerCount >= 2;
+
+/// One finger past the slop becomes an exclusive line pull (map pan off).
+bool planLineGrabBecomesExclusive({
+  required int pointerCount,
+  required double movePx,
+  double thresholdPx = kPlanLineGrabMovePx,
+}) =>
+    pointerCount == 1 && movePx >= thresholdPx;
+
+/// Finger left the “still” zone — do not fire hold→new dest.
+bool planLineHoldCancelsOnMove({
+  required double movePx,
+  double thresholdPx = kPlanLineHoldCancelPx,
+}) =>
+    movePx >= thresholdPx;
+
+const double kPlanLineCoachCompactHeight = 700;
+const double kPlanLineCoachXCompactHeight = 640;
+
+bool planLineCoachIsCompact(double height) =>
+    height < kPlanLineCoachCompactHeight;
+
+bool planLineCoachIsXCompact(double height) =>
+    height < kPlanLineCoachXCompactHeight;
+
+/// Adopted catalog tour: teach “merken, dann formen”. Short screens: one line.
+String planLineCoachCopy({
+  required bool adopting,
+  required bool compact,
+  required String full,
+  required String short,
+  required String adopt,
+}) {
+  if (adopting) return adopt;
+  return compact ? short : full;
+}
+
+const double kPlanRibbonLegendCompactWidth = 420;
+
+bool planRibbonLegendCompact(double width) =>
+    width < kPlanRibbonLegendCompactWidth;
+
+const Duration kPlanChevronFresh = Duration(milliseconds: 1400);
+
+double planChevronIconOpacity({
+  required bool dimmed,
+  required bool fresh,
+}) {
+  if (dimmed) return 0;
+  return fresh ? 0.96 : 0.88;
+}
+
 bool planRibbonAllowsGrab({
   required bool editorActive,
   required bool hasLiveStreetLine,
@@ -2192,6 +2302,329 @@ bool planMapPointerHitsRibbon({
       null;
 }
 
+const kPlanGrabScreenMaxPts = 120;
+
+/// Spacing for the native screen-sample of the live ribbon (far / uniform).
+double planGrabScreenSampleStepM({
+  required double zoom,
+  required double lat,
+}) {
+  final mPerPx = planMapMetersPerPixel(lat: lat, zoom: zoom);
+  return math.max(12, mPerPx * 10);
+}
+
+/// Denser step inside the viewport — serpentine hits under tilt.
+double planGrabScreenSampleDenseStepM({
+  required double zoom,
+  required double lat,
+}) {
+  final mPerPx = planMapMetersPerPixel(lat: lat, zoom: zoom);
+  return math.max(8, mPerPx * 4);
+}
+
+bool planGrabSampleInViewport({
+  required double lng,
+  required double lat,
+  required double centerLng,
+  required double centerLat,
+  required double zoom,
+  required double mapW,
+  required double mapH,
+  double bearingDeg = 0,
+  double tiltDeg = 0,
+  double padPx = 56,
+}) {
+  if (!(mapW > 8) || !(mapH > 8)) return false;
+  final s = planMapLngLatToScreen(
+    lng: lng,
+    lat: lat,
+    width: mapW,
+    height: mapH,
+    centerLng: centerLng,
+    centerLat: centerLat,
+    zoom: zoom,
+    bearingDeg: bearingDeg,
+    tiltDeg: tiltDeg,
+  );
+  if (s == null) return false;
+  return s.x >= -padPx &&
+      s.x <= mapW + padPx &&
+      s.y >= -padPx &&
+      s.y <= mapH + padPx;
+}
+
+List<List<double>> _planGrabThinAlong(
+  List<List<double>> pts, {
+  required int budget,
+}) {
+  if (pts.length <= budget) return pts;
+  if (budget <= 2) return [pts.first, pts.last];
+  final out = <List<double>>[pts.first];
+  final inner = budget - 2;
+  for (var i = 1; i <= inner; i++) {
+    final t = i / (inner + 1);
+    final idx = (t * (pts.length - 1)).round().clamp(1, pts.length - 2);
+    final p = pts[idx];
+    if (out.last[0] != p[0] || out.last[1] != p[1]) out.add(p);
+  }
+  out.add(pts.last);
+  return out;
+}
+
+List<List<double>> _planGrabUniformSample(
+  List<List<double>> lineLngLat, {
+  required double totalM,
+  required double stepM,
+  required int maxPts,
+}) {
+  var step = stepM;
+  if (totalM / step > maxPts - 1) {
+    step = totalM / (maxPts - 1);
+  }
+  final out = <List<double>>[lineLngLat.first];
+  var along = step;
+  while (along < totalM - 1 && out.length < maxPts - 1) {
+    out.add(pointAlongRoute(lineLngLat, along));
+    along += step;
+  }
+  out.add(lineLngLat.last);
+  return out;
+}
+
+/// Thin the live line so [toScreenLocationBatch] stays cheap.
+/// With viewport args, spend most samples on the visible ribbon.
+List<List<double>> planGrabScreenSample(
+  List<List<double>> lineLngLat, {
+  required double zoom,
+  required double lat,
+  int maxPts = kPlanGrabScreenMaxPts,
+  double? centerLng,
+  double? centerLat,
+  double? mapW,
+  double? mapH,
+  double bearingDeg = 0,
+  double tiltDeg = 0,
+}) {
+  if (lineLngLat.length < 2) return lineLngLat;
+  if (lineLngLat.length <= maxPts) return lineLngLat;
+  final total = routeLengthM(lineLngLat);
+  if (total <= 0) return [lineLngLat.first, lineLngLat.last];
+
+  final sparse = planGrabScreenSampleStepM(zoom: zoom, lat: lat);
+  final useView = centerLng != null &&
+      centerLat != null &&
+      mapW != null &&
+      mapH != null &&
+      mapW! > 8 &&
+      mapH! > 8;
+
+  if (!useView) {
+    return _planGrabUniformSample(
+      lineLngLat,
+      totalM: total,
+      stepM: sparse,
+      maxPts: maxPts,
+    );
+  }
+
+  final dense = planGrabScreenSampleDenseStepM(zoom: zoom, lat: lat);
+  // Index-tagged walk keeps route order without float string keys.
+  final tagged = <({List<double> p, bool near})>[];
+  var along = 0.0;
+  var nextFar = 0.0;
+  while (along < total - 1e-6) {
+    final p = pointAlongRoute(lineLngLat, along);
+    final near = planGrabSampleInViewport(
+      lng: p[0],
+      lat: p[1],
+      centerLng: centerLng!,
+      centerLat: centerLat!,
+      zoom: zoom,
+      mapW: mapW!,
+      mapH: mapH!,
+      bearingDeg: bearingDeg,
+      tiltDeg: tiltDeg,
+    );
+    if (near) {
+      tagged.add((p: p, near: true));
+    } else if (along + 1e-6 >= nextFar) {
+      tagged.add((p: p, near: false));
+      nextFar = along + sparse;
+    }
+    along += dense;
+  }
+  final last = lineLngLat.last;
+  if (tagged.isEmpty ||
+      tagged.last.p[0] != last[0] ||
+      tagged.last.p[1] != last[1]) {
+    tagged.add((p: last, near: false));
+  }
+
+  final nearIdx = <int>[];
+  final farIdx = <int>[];
+  for (var i = 0; i < tagged.length; i++) {
+    if (tagged[i].near) {
+      nearIdx.add(i);
+    } else {
+      farIdx.add(i);
+    }
+  }
+
+  final nearBudget = math.min(
+    nearIdx.length,
+    math.max(24, (maxPts * 0.78).floor()),
+  ).toInt();
+  final farBudget = math.min(
+    farIdx.length,
+    math.max(2, maxPts - math.max(nearBudget, 1)),
+  ).toInt();
+
+  List<int> thinIdx(List<int> src, int budget) {
+    if (src.length <= budget) return src;
+    if (budget <= 0) return const [];
+    if (budget == 1) return [src.first];
+    final out = <int>[src.first];
+    final inner = budget - 2;
+    for (var i = 1; i <= inner; i++) {
+      final t = i / (inner + 1);
+      final j =
+          (t * (src.length - 1)).round().clamp(1, src.length - 2).toInt();
+      out.add(src[j]);
+    }
+    out.add(src.last);
+    return out;
+  }
+
+  final keep = <int>{
+    ...thinIdx(nearIdx, nearBudget),
+    ...thinIdx(farIdx, farBudget),
+    0,
+    tagged.length - 1,
+  };
+  final out = <List<double>>[
+    for (var i = 0; i < tagged.length; i++)
+      if (keep.contains(i)) tagged[i].p,
+  ];
+  if (out.length < 2) {
+    return _planGrabUniformSample(
+      lineLngLat,
+      totalM: total,
+      stepM: sparse,
+      maxPts: maxPts,
+    );
+  }
+  if (out.length <= maxPts) return out;
+  return _planGrabThinAlong(out, budget: maxPts);
+}
+
+class PlanGrabScreenCache {
+  const PlanGrabScreenCache({
+    required this.lineScreen,
+    required this.lineLngLat,
+    this.pinScreen = const [],
+  });
+
+  final List<({double x, double y})> lineScreen;
+  final List<List<double>> lineLngLat;
+  final List<({double x, double y})> pinScreen;
+
+  bool get usable =>
+      lineScreen.length >= 2 && lineScreen.length == lineLngLat.length;
+}
+
+double _planScreenDist2ToSeg(
+  double px,
+  double py,
+  ({double x, double y}) a,
+  ({double x, double y}) b,
+) {
+  final abx = b.x - a.x;
+  final aby = b.y - a.y;
+  final apx = px - a.x;
+  final apy = py - a.y;
+  final ab2 = abx * abx + aby * aby;
+  if (ab2 < 1e-9) return apx * apx + apy * apy;
+  var t = (apx * abx + apy * aby) / ab2;
+  if (t < 0) t = 0;
+  if (t > 1) t = 1;
+  final dx = apx - abx * t;
+  final dy = apy - aby * t;
+  return dx * dx + dy * dy;
+}
+
+/// Hit-test against a native-projected ribbon (tilt-accurate).
+bool planMapPointerHitsScreenRibbon({
+  required double localX,
+  required double localY,
+  required List<({double x, double y})> lineScreen,
+  List<({double x, double y})> pinScreen = const [],
+  double pinAvoidPx = 28,
+  double hitPx = 22,
+}) {
+  if (lineScreen.length < 2) return false;
+  final avoid2 = pinAvoidPx * pinAvoidPx;
+  for (final p in pinScreen) {
+    final dx = p.x - localX;
+    final dy = p.y - localY;
+    if (dx * dx + dy * dy <= avoid2) return false;
+  }
+  final max2 = hitPx * hitPx;
+  for (var i = 1; i < lineScreen.length; i++) {
+    if (_planScreenDist2ToSeg(
+          localX,
+          localY,
+          lineScreen[i - 1],
+          lineScreen[i],
+        ) <=
+        max2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Closest point on the sampled ribbon, in lng/lat.
+({double lng, double lat})? planLngLatAtScreenRibbon({
+  required double localX,
+  required double localY,
+  required List<({double x, double y})> lineScreen,
+  required List<List<double>> lineLngLat,
+}) {
+  if (lineScreen.length < 2 || lineScreen.length != lineLngLat.length) {
+    return null;
+  }
+  var best = double.infinity;
+  var bestI = 0;
+  var bestT = 0.0;
+  for (var i = 1; i < lineScreen.length; i++) {
+    final a = lineScreen[i - 1];
+    final b = lineScreen[i];
+    final abx = b.x - a.x;
+    final aby = b.y - a.y;
+    final apx = localX - a.x;
+    final apy = localY - a.y;
+    final ab2 = abx * abx + aby * aby;
+    var t = ab2 < 1e-9 ? 0.0 : (apx * abx + apy * aby) / ab2;
+    if (t < 0) t = 0;
+    if (t > 1) t = 1;
+    final dx = apx - abx * t;
+    final dy = apy - aby * t;
+    final d2 = dx * dx + dy * dy;
+    if (d2 < best) {
+      best = d2;
+      bestI = i;
+      bestT = t;
+    }
+  }
+  final a = lineLngLat[bestI - 1];
+  final b = lineLngLat[bestI];
+  if (a.length < 2 || b.length < 2) return null;
+  return (
+    lng: a[0] + (b[0] - a[0]) * bestT,
+    lat: a[1] + (b[1] - a[1]) * bestT,
+  );
+}
+
 /// Map chip while A+B exist and the engine is in flight — not a 1.6 s flash.
 bool planMapShowsRoutingWait({
   required bool editorActive,
@@ -2201,6 +2634,23 @@ bool planMapShowsRoutingWait({
 }) =>
     editorActive && routingBusy && hasStart && hasEnd;
 
+/// History FABs stay off while a map chip owns Undo (stop / wait / adapting)
+/// or the fallback routing-wait banner is up. Redo lives only on the FABs.
+bool planMapHistoryFabsVisible({
+  required bool editorActive,
+  required bool hasHistory,
+  required bool mapHintOnMap,
+  required bool rubberBand,
+  required bool coachVisible,
+  bool routingWaitBanner = false,
+}) =>
+    editorActive &&
+    hasHistory &&
+    !mapHintOnMap &&
+    !rubberBand &&
+    !coachVisible &&
+    !routingWaitBanner;
+
 /// Finger-chip while the engine reshapes an existing line (not the first A–B).
 bool planMapAdaptingHintOnMap({
   required bool routingBusy,
@@ -2208,6 +2658,60 @@ bool planMapAdaptingHintOnMap({
   required bool hasFinger,
 }) =>
     routingBusy && hasLiveLine && hasFinger;
+
+/// Parked reshape finger lasts only while that reshape is in flight — otherwise
+/// the next edit parks the wait chip on a stale point (Web: `planShaped`).
+bool planParkedFingerClearsWhenIdle({required bool routingBusy}) =>
+    !routingBusy;
+
+/// Dest/stop wait pin wins over a parked reshape finger (undo mid-recalc).
+({double lng, double lat})? planMapHintAnchorLngLat({
+  ({double lng, double lat})? adaptingAt,
+  ({double lng, double lat})? parkedFinger,
+}) =>
+    adaptingAt ?? parkedFinger;
+
+/// First A→B (or dest confirm / GPS wait): chip at the dest pin.
+/// Once a live line exists, the 1.6 s dest flash does not return to the chip.
+bool planMapDestWaitHintOnMap({
+  required bool editorActive,
+  required bool routingBusy,
+  required bool hasStart,
+  required bool hasEnd,
+  required bool fingerHint,
+  bool destConfirm = false,
+  bool hasLiveLine = false,
+}) {
+  if (fingerHint || !editorActive || !hasEnd) return false;
+  if (routingBusy && hasStart) return true;
+  if (!hasStart) return true;
+  if (!destConfirm) return false;
+  return !hasLiveLine;
+}
+
+enum PlanMapDestWaitCopy { adapting, firstAb, waitingGps }
+
+PlanMapDestWaitCopy planMapDestWaitCopy({
+  required bool hasStart,
+  required bool hasLiveLine,
+}) {
+  if (!hasStart) return PlanMapDestWaitCopy.waitingGps;
+  if (!hasLiveLine) return PlanMapDestWaitCopy.firstAb;
+  return PlanMapDestWaitCopy.adapting;
+}
+
+double planFingerHintChipW({
+  required bool undo,
+  required bool firstAb,
+}) {
+  if (firstAb) return undo ? 280 : 244;
+  return undo ? 228 : 176;
+}
+
+/// Native unproject during a line pull — only for commit / sync-miss, not
+/// mid-drag preview (avoids rubber-band jump when the Future lands late).
+bool planGrabNativeDrivesPreview({required bool hasSyncPreview}) =>
+    !hasSyncPreview;
 
 const _kPlanHorizonDeg = 89.25;
 
@@ -2330,7 +2834,8 @@ double _planMapFarZ({required double height, required double pitchRad}) {
   final topHalf = surface(fovAbove);
   final horizon = d *
       math.tan(
-        ((_kPlanHorizonDeg * math.pi / 180) - pitchRad).clamp(0.01, math.pi / 2),
+        ((_kPlanHorizonDeg * math.pi / 180) - pitchRad)
+            .clamp(0.01, math.pi / 2),
       );
   final horizonAngle = math.atan(horizon / d);
   final minFov = (90 - _kPlanHorizonDeg) * math.pi / 180;
@@ -2369,7 +2874,22 @@ List<double>? _planMapPixelMatrix({
 }
 
 List<double> _m4I() => <double>[
-      1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
     ];
 
 List<double> _m4Mul(List<double> a, List<double> b) {
@@ -2396,7 +2916,22 @@ List<double> _m4RotateX(List<double> a, double rad) {
   final c = math.cos(rad);
   final s = math.sin(rad);
   return _m4Mul(a, <double>[
-    1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    c,
+    s,
+    0,
+    0,
+    -s,
+    c,
+    0,
+    0,
+    0,
+    0,
+    1,
   ]);
 }
 
@@ -2404,7 +2939,22 @@ List<double> _m4RotateZ(List<double> a, double rad) {
   final c = math.cos(rad);
   final s = math.sin(rad);
   return _m4Mul(a, <double>[
-    c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1,
+    c,
+    s,
+    0,
+    0,
+    -s,
+    c,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
   ]);
 }
 

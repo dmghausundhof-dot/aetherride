@@ -87,6 +87,7 @@ function frameEmtb(opts: {
   shockStroke: number;
   seatpostMm: number;
   url: string;
+  motorInterface?: string;
 }): ComponentModel {
   return {
     id: opts.id,
@@ -109,7 +110,9 @@ function frameEmtb(opts: {
       attr("brake_mount_rear", { enum: "post_mount" }),
       attr("max_rotor_rear_mm", { num: 220, unit: "mm" }),
       attr("max_tire_width_mm", { num: 66, unit: "mm" }),
-      attr("motor_interface", { enum: "bosch_smart_system" }),
+      attr("motor_interface", {
+        enum: opts.motorInterface ?? "bosch_smart_system",
+      }),
       attr("wheel_size_rear", { enum: "29" }),
     ],
     adjusters: [],
@@ -459,6 +462,7 @@ export const COMPONENT_CATALOG_DACH_SCALE5: ComponentModel[] = [
     shockStroke: 55,
     seatpostMm: 34.9,
     url: "https://www.specialized.com/",
+    motorInterface: "specialized_2_2",
   }),
   frameEnduro({
     id: "cm-scott-spark-frame",

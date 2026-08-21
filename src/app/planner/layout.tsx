@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+import { hofDoorMeta } from "@/lib/i18n/hofDoorMeta";
 
-export const metadata: Metadata = {
-  title: "Planen – Route für alle Disziplinen",
-  description:
-    "Desktop-Planer für Rennrad, Gravel, MTB, E-Bike und City. Start, Via, Ziel — Navigation in der App.",
-};
+export const generateMetadata = () =>
+  hofDoorMeta((c) => ({
+    title: c.plannerTitle,
+    description: c.plannerHint,
+  }));
 
 export default function PlannerLayout({
   children,

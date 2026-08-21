@@ -3,11 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  ArrowLeft,
-  Map as MapIcon,
-  MessageSquare,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
 import { RadGlyph } from "@/components/garage/RadGlyph";
 import { useAppStore } from "@/store/useAppStore";
 import { formatDistance, formatDuration } from "@/lib/utils";
@@ -199,7 +196,7 @@ export default function ActivityDetailPage() {
             />
           ) : (
             <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-border text-sm text-text-secondary">
-              <MapIcon className="mb-2 h-8 w-8 opacity-50" />
+              <ChromeGlyph name="karte" size={32} current className="mb-2 opacity-50" />
               {tel.noTrack}
             </div>
           )}
@@ -327,7 +324,7 @@ export default function ActivityDetailPage() {
 
           <section className="rounded-2xl border border-border bg-surface p-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold">
-              <MessageSquare className="h-4 w-4 text-accent" /> {tel.feedback}
+              <ChromeGlyph name="stimmen" size={16} current className="text-accent" /> {tel.feedback}
             </h2>
             {feedback ? (
               <p className="mt-2 text-xs text-text-secondary">

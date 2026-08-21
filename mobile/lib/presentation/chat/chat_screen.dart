@@ -18,6 +18,7 @@ import '../../domain/setup.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/ride_providers.dart';
+import '../shared/chrome_glyph.dart';
 import '../shared/empty_state.dart';
 
 class ChatMessage {
@@ -349,7 +350,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
-                    const Icon(Icons.lock_outline, size: 18),
+                    const ChromeGlyph('lock', size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -482,7 +483,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ? Center(
                         child: EmptyStateIllustration(
                           compact: true,
-                          icon: Icons.chat_bubble_outline,
+                          mark: 'stimmen',
                           title: l10n.chatEmptyTitle,
                           message: l10n.chatEmptyMessage,
                         ),
@@ -554,7 +555,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.send),
+                        : const ChromeGlyph('send', size: 22),
                   ),
                 ],
               ),

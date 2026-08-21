@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/l10n_ext.dart';
 import 'nav_puck_image.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Vergleich der Navi-Puck-Stile — dunkler + heller Grund.
 /// [styles] begrenzt die Liste (Profil: 3D + klassischer Pfeil).
@@ -168,7 +169,7 @@ class _StyleTile extends StatelessWidget {
                     ),
                   if (selected) ...[
                     const SizedBox(width: AppSpacing.s),
-                    const Icon(Icons.check_circle, color: AppColors.accent),
+                    const ChromeGlyph('check', size: 22, color: AppColors.accent),
                   ],
                 ],
               ),

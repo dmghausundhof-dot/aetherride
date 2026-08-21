@@ -144,6 +144,10 @@ String? normalizeWheel(String? raw) {
   if (t == '27_5' || t == '27.5' || t == '275' || t == '27.5er') return '27.5';
   if (t == '650b' || t == '650') return '650b';
   if (t == '700c' || t == '700' || t == '28-622') return '700c';
+  if (t == '26' || t == '26er' || t == '559') return '26';
+  if (t == '24' || t == '24er' || t == '507') return '24';
+  if (t == '20' || t == '20er' || t == '406') return '20';
+  if (t == '16' || t == '16er' || t == '349') return '16';
   return null;
 }
 
@@ -154,6 +158,10 @@ String? wheelFromEnum(WheelSize? size) {
     WheelSize.w275 => '27.5',
     WheelSize.c700 => '700c',
     WheelSize.b650 => '650b',
+    WheelSize.w26 => '26',
+    WheelSize.w24 => '24',
+    WheelSize.w20 => '20',
+    WheelSize.w16 => '16',
   };
 }
 
@@ -162,6 +170,10 @@ String wheelLabel(String w) => switch (w) {
       '27.5' => '27.5"',
       '650b' => '650b',
       '700c' => '700c',
+      '26' => '26"',
+      '24' => '24"',
+      '20' => '20"',
+      '16' => '16"',
       _ => w,
     };
 

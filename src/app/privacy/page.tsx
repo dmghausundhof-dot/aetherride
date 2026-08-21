@@ -11,17 +11,23 @@ import {
   rideToStravaActivityStub,
 } from "@/lib/export/gpx";
 import { downloadBytes, rideToFit } from "@/lib/export/fit";
-import {
-  CONSENT_LABELS,
-  type ConsentPurpose,
-} from "@/lib/privacy/consents";
+import { type ConsentPurpose } from "@/lib/privacy/consents";
 import { rideWithTrimmedTrack } from "@/lib/privacy/trimRide";
 import Link from "next/link";
 import { useHofCopy } from "@/hooks/useHofCopy";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { chromeDateLocale } from "@/lib/i18n/chromeLang";
+import {
+  privacyCopy,
+  presentPrivacyStatus,
+} from "@/lib/i18n/privacyCopy";
 import { HofPageHeader } from "@/components/hof/HofPageHeader";
 
 export default function PrivacyExportPage() {
   const copy = useHofCopy();
+  const lang = useChromeLang();
+  const p = privacyCopy(lang);
+  const dateLocale = chromeDateLocale(lang);
 
   const rides = useAppStore((s) => s.rides);
   const bikes = useAppStore((s) => s.bikes);
@@ -64,16 +70,16 @@ export default function PrivacyExportPage() {
     const flag = new URLSearchParams(window.location.search).get("strava");
     if (flag === "connected") {
       setStravaConnected(true);
-      setStravaStatusMsg("Strava verbunden.");
+      setStravaStatusMsg(p.stravaLinked);
     } else if (flag === "not_configured") {
-      setStravaStatusMsg("Strava OAuth nicht konfiguriert.");
+      setStravaStatusMsg(p.stravaOauthOff);
     } else if (flag) {
       setStravaStatusMsg(`Strava: ${flag}`);
     }
     if (document.cookie.includes("strava_connected=1")) {
       setStravaConnected(true);
     }
-  }, []);
+  }, [p.stravaLinked, p.stravaOauthOff]);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +103,9 @@ export default function PrivacyExportPage() {
           setStravaConfigured(Boolean(data.configured));
           setStravaAuthorizeUrl(data.authorizeUrl ?? null);
           if (!data.configured && data.message) {
-            setStravaStatusMsg((prev) => prev ?? data.message!);
+            setStravaStatusMsg(
+              (prev) => prev ?? presentPrivacyStatus(data.message!, lang)
+            );
           }
         }
       )
@@ -107,7 +115,7 @@ export default function PrivacyExportPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [lang]);
 
   async function uploadLastRideToStrava() {
     if (!lastRide) return;
@@ -151,18 +159,29 @@ export default function PrivacyExportPage() {
         warning?: string;
       };
       if (!res.ok) {
-        setStravaStatusMsg(data.message || data.error || `Upload ${res.status}`);
+        setStravaStatusMsg(
+          presentPrivacyStatus(
+            data.message || data.error || p.uploadFailed,
+            lang
+          )
+        );
         return;
       }
       if (data.mode === "gpx_upload") {
-        setStravaStatusMsg("Bei Strava hochgeladen (mit Track).");
+        setStravaStatusMsg(p.uploadedGpx);
       } else {
         setStravaStatusMsg(
-          data.warning || "Bei Strava hochgeladen (nur Metadaten)."
+          data.warning
+            ? presentPrivacyStatus(data.warning, lang)
+            : p.uploadedMeta
         );
       }
     } catch (e) {
-      setStravaStatusMsg(e instanceof Error ? e.message : "Upload fehlgeschlagen");
+      setStravaStatusMsg(
+        e instanceof Error
+          ? presentPrivacyStatus(e.message, lang)
+          : p.uploadFailed
+      );
     } finally {
       setStravaBusy(false);
     }
@@ -180,7 +199,8 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <ChromeGlyph name="download" size={16} current className="text-chrome" /> Export (Art. 20)
+          <ChromeGlyph name="download" size={16} current className="text-chrome" />{" "}
+          {p.exportTitle}
         </h3>
         <div className="flex flex-col gap-2">
           <button
@@ -189,9 +209,7 @@ export default function PrivacyExportPage() {
             onClick={() => {
               if (!lastRide) return;
               if (!rideHasExportableTrack(lastRide)) {
-                window.alert(
-                  "Dieser Ride hat keinen GPS-Track — GPX wäre leer. JSON-Export nutzen."
-                );
+                window.alert(p.gpxEmpty);
                 return;
               }
               const gpx = rideToGpx(
@@ -206,7 +224,7 @@ export default function PrivacyExportPage() {
             }}
             className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
           >
-            Letzten Ride als GPX
+            {p.exportGpx}
           </button>
           <button
             type="button"
@@ -224,7 +242,7 @@ export default function PrivacyExportPage() {
             }}
             className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm"
           >
-            <ChromeGlyph name="download" size={16} current /> JSON-Vollexport
+            <ChromeGlyph name="download" size={16} current /> {p.exportJson}
           </button>
           <button
             type="button"
@@ -242,22 +260,21 @@ export default function PrivacyExportPage() {
             }}
             className="rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
           >
-            Letzten Ride als FIT
+            {p.exportFit}
           </button>
           {stravaConfigured ? (
             <>
               <p className="rounded-xl border border-border px-3 py-2 text-xs">
-                Status:{" "}
-                <strong>
-                  {stravaConnected ? "verbunden" : "konfiguriert, nicht verbunden"}
-                </strong>
+                {p.stravaStatus(
+                  stravaConnected ? p.stravaConnected : p.stravaConfiguredOff
+                )}
               </p>
               {stravaAuthorizeUrl && !stravaConnected && (
                 <a
                   href={stravaAuthorizeUrl}
                   className="rounded-xl bg-accent py-2.5 text-center text-sm font-semibold text-on-accent"
                 >
-                  Mit Strava verbinden
+                  {p.stravaConnect}
                 </a>
               )}
               {stravaConnected && (
@@ -267,12 +284,12 @@ export default function PrivacyExportPage() {
                   onClick={() => void uploadLastRideToStrava()}
                   className="rounded-xl bg-accent py-2.5 text-sm font-semibold text-on-accent disabled:opacity-40"
                 >
-                  {stravaBusy ? "Lade hoch…" : "Letzten Ride zu Strava"}
+                  {stravaBusy ? p.stravaUploading : p.stravaUpload}
                 </button>
               )}
               <details className="rounded-xl border border-border px-3 py-2">
                 <summary className="cursor-pointer text-xs text-text-secondary">
-                  Advanced — Stub-Export
+                  {p.stubSummary}
                 </summary>
                 <button
                   type="button"
@@ -288,26 +305,22 @@ export default function PrivacyExportPage() {
                   }}
                   className="mt-2 w-full rounded-xl border border-border py-2.5 text-sm disabled:opacity-40"
                 >
-                  Strava-Payload (Stub JSON)
+                  {p.exportStub}
                 </button>
                 <p className="mt-1 text-[10px] text-text-secondary">
-                  Lokaler Dev-/QA-Export — kein Live-Upload.
+                  {p.stubLocal}
                 </p>
               </details>
             </>
           ) : (
             <p className="rounded-xl border border-dashed border-border px-3 py-2.5 text-xs text-text-secondary">
-              Strava Live-Upload braucht{" "}
-              <code className="text-[10px]">STRAVA_CLIENT_ID</code> /{" "}
-              <code className="text-[10px]">SECRET</code> und Tabelle{" "}
-              <code className="text-[10px]">strava_connections</code>. Bis dahin:
-              GPX/FIT.
+              {p.stravaMissing}
             </p>
           )}
           {!stravaConfigured && lastRide && (
             <details className="rounded-xl border border-border px-3 py-2">
               <summary className="cursor-pointer text-xs text-text-secondary">
-                Advanced — Stub-Export
+                {p.stubSummary}
               </summary>
               <button
                 type="button"
@@ -321,10 +334,10 @@ export default function PrivacyExportPage() {
                 }}
                 className="mt-2 w-full rounded-xl border border-border py-2.5 text-sm"
               >
-                Strava-Payload (Stub JSON)
+                {p.exportStub}
               </button>
               <p className="mt-1 text-[10px] text-text-secondary">
-                Lokaler Dev-/QA-Export — kein Live-Upload.
+                {p.stubLocal}
               </p>
             </details>
           )}
@@ -339,7 +352,8 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <ChromeGlyph name="shield" size={16} current className="text-chrome" /> Einwilligungen
+          <ChromeGlyph name="shield" size={16} current className="text-chrome" />{" "}
+          {p.consents}
         </h3>
         {consents.map((c) => (
           <label
@@ -356,14 +370,14 @@ export default function PrivacyExportPage() {
             />
             <span>
               <span className="font-medium">
-                {CONSENT_LABELS[c.purpose].title}
+                {p.consent[c.purpose as ConsentPurpose].title}
               </span>
               <span className="mt-0.5 block text-[11px] text-text-secondary">
-                {CONSENT_LABELS[c.purpose].description}
+                {p.consent[c.purpose as ConsentPurpose].description}
               </span>
               <span className="text-[10px] text-text-secondary">
-                Policy {c.policyVersion} ·{" "}
-                {new Date(c.updatedAt).toLocaleString("de-DE")}
+                {p.policy(c.policyVersion)} ·{" "}
+                {new Date(c.updatedAt).toLocaleString(dateLocale)}
               </span>
             </span>
           </label>
@@ -372,16 +386,12 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <ChromeGlyph name="karte" size={16} current className="text-chrome" /> Privatsphärenzonen
+          <ChromeGlyph name="karte" size={16} current className="text-chrome" />{" "}
+          {p.zones}
         </h3>
-        <p className="mb-2 text-xs text-text-secondary">
-          Tracks werden in diesen Radien gekappt — für Export und wo viele fahren.
-        </p>
+        <p className="mb-2 text-xs text-text-secondary">{p.zonesLead}</p>
         {privacyZones.length === 0 ? (
-          <p className="mb-2 text-sm text-text-secondary">
-            Keine Zonen — Start/Ziel-Umgebung kannst du in der App auf der Karte
-            setzen. Hier keine erfundene Heimat-Zone.
-          </p>
+          <p className="mb-2 text-sm text-text-secondary">{p.noZonesWeb}</p>
         ) : (
           privacyZones.map((z) => (
           <div
@@ -396,7 +406,7 @@ export default function PrivacyExportPage() {
               className="text-xs text-error"
               onClick={() => removePrivacyZone(z.id)}
             >
-              Entfernen
+              {p.zoneDelete}
             </button>
           </div>
           ))
@@ -405,11 +415,10 @@ export default function PrivacyExportPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 flex items-center gap-2 font-semibold">
-          <ChromeGlyph name="users" size={16} current className="text-chrome" /> Familie am Rad
+          <ChromeGlyph name="users" size={16} current className="text-chrome" />{" "}
+          {p.familyTitle}
         </h3>
-        <p className="mb-2 text-xs text-text-secondary">
-          Ein Rad, mehrere Fahrer mit eigenen Setups.
-        </p>
+        <p className="mb-2 text-xs text-text-secondary">{p.familyOneBike}</p>
         {familyRiders.map((r) => (
           <button
             key={r.id}
@@ -421,20 +430,21 @@ export default function PrivacyExportPage() {
                 : "border-border"
             }`}
           >
-            {r.displayName} · {r.weightKg} kg · {r.setupIds.length} Setups
+            {r.displayName} · {r.weightKg} kg · {p.familySetups(r.setupIds.length)}
           </button>
         ))}
         <div className="mt-2 flex gap-2">
           <input
             value={riderName}
             onChange={(e) => setRiderName(e.target.value)}
-            placeholder="Name"
+            placeholder={copy.workshopFamilyName}
             className="flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm"
           />
           <input
             type="number"
             value={riderWeight}
             onChange={(e) => setRiderWeight(Number(e.target.value))}
+            aria-label={copy.workshopFamilyWeight}
             className="w-20 rounded-xl border border-border bg-surface-elevated px-2 py-2 text-sm"
           />
           <button
@@ -454,7 +464,7 @@ export default function PrivacyExportPage() {
       </section>
 
       <Link href="/profile" className="text-center text-sm text-chrome">
-        ← Profil
+        {p.backToProfile}
       </Link>
     </div>
   );

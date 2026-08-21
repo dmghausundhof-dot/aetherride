@@ -1,17 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Battery,
-  CircleDot,
-  Disc,
-  Link2,
-  Mountain,
-  MoveVertical,
-  Cog,
-} from "lucide-react";
+import { RadGlyph } from "@/components/garage/RadGlyph";
 import { RadNavMark } from "@/components/garage/RadNavMark";
 import type { ShopProduct } from "@/lib/shop/catalog";
+import type { RadMarkName } from "@/lib/garage/radMark";
 import { cn } from "@/lib/utils";
 
 const HINT_STYLES: Record<string, string> = {
@@ -27,32 +20,22 @@ const HINT_STYLES: Record<string, string> = {
   tape: "from-violet-900/50 to-violet-700/20 text-violet-200",
 };
 
+const HINT_MARK: Record<string, RadMarkName> = {
+  chain: "chain",
+  pads: "brakes",
+  fork: "travel",
+  tire: "pressure",
+  cassette: "parts",
+  shock: "sag",
+  battery: "battery",
+  dropper: "travel",
+  tape: "cockpit",
+};
+
 function HintIcon({ hint }: { hint: string }) {
-  const cls = "h-7 w-7";
-  switch (hint) {
-    case "chain":
-      return <Link2 className={cls} />;
-    case "pads":
-      return <Disc className={cls} />;
-    case "fork":
-      return <Mountain className={cls} />;
-    case "tire":
-      return <CircleDot className={cls} />;
-    case "cassette":
-      return <Cog className={cls} />;
-    case "shock":
-      return <MoveVertical className={cls} />;
-    case "battery":
-      return <Battery className={cls} />;
-    case "dropper":
-      return <MoveVertical className={cls} />;
-    case "bike":
-      return <RadNavMark className={cls} />;
-    case "tape":
-      return <CircleDot className={cls} />;
-    default:
-      return <CircleDot className={cls} />;
-  }
+  if (hint === "bike") return <RadNavMark className="h-7 w-7" />;
+  const name = HINT_MARK[hint] ?? "parts";
+  return <RadGlyph name={name} size={28} />;
 }
 
 export function ProductVisual({

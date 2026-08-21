@@ -10,6 +10,7 @@ import '../../domain/ble/ble_link_status.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import 'ble_pair_sheet.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Discreet Werkstatt-bar control for the bike CSC. Never a hero CTA.
 class WerkstattCscBarButton extends ConsumerStatefulWidget {
@@ -205,8 +206,8 @@ class _WerkstattCscBarButtonState extends ConsumerState<WerkstattCscBarButton> {
                 : Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      Icon(
-                        Icons.bluetooth,
+                      ChromeGlyph(
+                        'bluetooth',
                         size: 22,
                         color: live ? AppColors.chrome : AppColors.muted,
                       ),

@@ -4,6 +4,8 @@ import 'discover_map_line_style.dart';
 
 const kPendingAbSourceId = 'flowline-pending-ab';
 const kPendingAbLayerId = 'flowline-pending-ab-line';
+const kPendingAbCasingLayerId = 'flowline-pending-ab-casing';
+const kPendingAbHaloLayerId = 'flowline-pending-ab-halo';
 const kPendingAbDotLayerId = 'flowline-pending-ab-dot';
 const kPendingAbLabelLayerId = 'flowline-pending-ab-label';
 
@@ -22,6 +24,22 @@ const _pendingAbRubber = LineLayerProperties(
   lineColor: DiscoverMapLineStyle.planRubber,
   lineWidth: DiscoverMapLineStyle.planRubberWidth,
   lineOpacity: DiscoverMapLineStyle.planRubberOpacity,
+  lineCap: 'round',
+  lineJoin: 'round',
+);
+
+const _pendingAbRubberHalo = LineLayerProperties(
+  lineColor: DiscoverMapLineStyle.planRubberHalo,
+  lineWidth: DiscoverMapLineStyle.planRubberHaloWidth,
+  lineOpacity: DiscoverMapLineStyle.planRubberHaloOpacity,
+  lineCap: 'round',
+  lineJoin: 'round',
+);
+
+const _pendingAbRubberCasing = LineLayerProperties(
+  lineColor: DiscoverMapLineStyle.planRubberCasing,
+  lineWidth: DiscoverMapLineStyle.planRubberCasingWidth,
+  lineOpacity: DiscoverMapLineStyle.planRubberCasingOpacity,
   lineCap: 'round',
   lineJoin: 'round',
 );
@@ -67,7 +85,7 @@ Map<String, dynamic> pendingAbFeatureCollection({
     });
   }
   final label = alongLabel?.trim() ?? '';
-  if (label.isNotEmpty && labelLngLat != null && labelLngLat.length >= 2) {
+  if (labelLngLat != null && labelLngLat.length >= 2) {
     features.add({
       'type': 'Feature',
       'properties': {'label': label},
@@ -140,6 +158,8 @@ Future<void> raisePendingAbLayer(
       kPendingAbLabelLayerId,
       kPendingAbDotLayerId,
       kPendingAbLayerId,
+      kPendingAbCasingLayerId,
+      kPendingAbHaloLayerId,
     ]) {
       try {
         if (layers.contains(id)) await c.removeLayer(id);
@@ -148,6 +168,34 @@ Future<void> raisePendingAbLayer(
   }
   final needAdd = force || !haveLine;
   if (needAdd) {
+    if (kind == PendingAbKind.rubber) {
+      try {
+        await c.addLineLayer(
+          kPendingAbSourceId,
+          kPendingAbHaloLayerId,
+          _pendingAbRubberHalo,
+          filter: [
+            '==',
+            ['geometry-type'],
+            'LineString',
+          ],
+          enableInteraction: false,
+        );
+      } catch (_) {}
+      try {
+        await c.addLineLayer(
+          kPendingAbSourceId,
+          kPendingAbCasingLayerId,
+          _pendingAbRubberCasing,
+          filter: [
+            '==',
+            ['geometry-type'],
+            'LineString',
+          ],
+          enableInteraction: false,
+        );
+      } catch (_) {}
+    }
     try {
       await c.addLineLayer(
         kPendingAbSourceId,

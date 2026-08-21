@@ -58,7 +58,7 @@ export function SavedMappeTile({
           coordinates={coords}
           label={route.name}
           noTrackLabel={noTrackLabel}
-          size={56}
+          size={48}
           wide
         />
         {spark.length >= 2 ? (

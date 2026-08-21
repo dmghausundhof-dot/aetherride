@@ -218,9 +218,9 @@ bool isOfflineRoutingEngine(String? engine) {
 /// After a region pack is activated, do not keep serving an older live
 /// (ORS/GraphHopper) cache hit — otherwise the graph never runs.
 ///
-/// Keep the cache when FFI is missing, vias force online, the cached line
-/// is already native, or it was written *after* the pack was activated
-/// (offline failed over to live).
+/// Keep the cache when FFI is missing, the cached line is already native,
+/// vias were planned (live cache stays until the chain runs), or it was
+/// written *after* the pack was activated (offline failed over to live).
 bool skipLiveCacheForOfflinePack({
   required DateTime? cacheFetchedAt,
   required DateTime? packActivatedAt,
@@ -361,10 +361,9 @@ RouteResult routeResultFromJson(
       final instruction =
           '${s['instruction'] ?? (AppLocaleBinding.isEnglish ? 'Continue' : 'Weiter')}';
       final streetRaw = s['streetName'] ?? s['street'] ?? s['name'];
-      final streetFromField =
-          streetRaw is String && streetRaw.trim().isNotEmpty
-              ? streetRaw.trim()
-              : null;
+      final streetFromField = streetRaw is String && streetRaw.trim().isNotEmpty
+          ? streetRaw.trim()
+          : null;
       final coord = s['coordinate'];
       double? lat;
       double? lng;
@@ -377,8 +376,8 @@ RouteResult routeResultFromJson(
           id: '${s['id']}',
           instruction: instruction,
           distanceAlongM: (s['distanceAlongM'] as num?)?.toDouble() ?? 0,
-          streetName: streetFromField ??
-              extractStreetNameFromInstruction(instruction),
+          streetName:
+              streetFromField ?? extractStreetNameFromInstruction(instruction),
           lat: lat,
           lng: lng,
         ),
@@ -832,9 +831,8 @@ class RoutingClient {
       },
     );
     try {
-      await _http
-          .get(url, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 18));
+      await _http.get(url, headers: {'Accept': 'application/json'}).timeout(
+          const Duration(seconds: 18));
     } catch (_) {}
   }
 }

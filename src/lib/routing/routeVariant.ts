@@ -9,7 +9,7 @@ export const ROUTE_VARIANTS = ["planned", "flatter", "unpaved"] as const;
 export type RouteVariant = (typeof ROUTE_VARIANTS)[number];
 
 export const VARIANT_VALHALLA_ONLY =
-  "Ohne Live-Strecke keine Varianten — Route wie geplant.";
+  "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.";
 
 const FLATTER_HILLS = 0.45;
 const UNPAVED_AVOID = 0.4;

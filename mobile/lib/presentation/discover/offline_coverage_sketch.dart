@@ -5,12 +5,19 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/routing/coverage_graph_ring.dart';
 import '../../data/routing/map_style_url.dart';
+import '../../data/routing/offline_pack_catalog.dart';
 
 Color coverageSketchUserFill({
   required double lng,
   required double lat,
   List<List<double>>? ring,
+  List<double>? streetBbox,
 }) {
+  if (streetBbox != null &&
+      streetBbox.length >= 4 &&
+      !streetHudPointInBbox(lng, lat, streetBbox)) {
+    return AppColors.sage;
+  }
   if (ring != null &&
       ring.length >= 4 &&
       !coveragePointInRing(lng: lng, lat: lat, ring: ring)) {
@@ -29,10 +36,14 @@ class OfflineCoverageSketch extends StatelessWidget {
     required this.bbox,
     this.ring,
     this.dots,
+    this.traces,
+    this.streetBbox,
+    this.streetLine,
     this.height = 88,
     this.userLng,
     this.userLat,
     this.overviewReady = false,
+    this.streetReady = false,
     this.progress,
     this.onTap,
     this.semanticLabel,
@@ -40,14 +51,26 @@ class OfflineCoverageSketch extends StatelessWidget {
 
   /// [west, south, east, north]
   final List<double> bbox;
+
   /// Graph occupancy ring `[lng, lat]`. Falls back to the bbox plate.
   final List<List<double>>? ring;
+
   /// Graph nodes for a trail stipple — not fake hillshade.
   final List<List<double>>? dots;
+
+  /// Graph edges `[lng0, lat0, lng1, lat1]`.
+  final List<List<double>>? traces;
+
+  /// Street-HUD box when it is smaller than the pack (corridor / route).
+  final List<double>? streetBbox;
+
+  /// Plan line inside that box — reads as a tour, not a second rectangle.
+  final List<List<double>>? streetLine;
   final double height;
   final double? userLng;
   final double? userLat;
   final bool overviewReady;
+  final bool streetReady;
   final double? progress;
   final VoidCallback? onTap;
   final String? semanticLabel;
@@ -63,9 +86,13 @@ class OfflineCoverageSketch extends StatelessWidget {
           bbox: bbox,
           ring: ring,
           dots: dots,
+          traces: traces,
+          streetBbox: streetBbox,
+          streetLine: streetLine,
           userLng: userLng,
           userLat: userLat,
           overviewReady: overviewReady,
+          streetReady: streetReady,
           progress: progress,
         ),
       ),
@@ -92,18 +119,26 @@ class CoverageSketchPainter extends CustomPainter {
     required this.bbox,
     this.ring,
     this.dots,
+    this.traces,
+    this.streetBbox,
+    this.streetLine,
     this.userLng,
     this.userLat,
     this.overviewReady = false,
+    this.streetReady = false,
     this.progress,
   });
 
   final List<double> bbox;
   final List<List<double>>? ring;
   final List<List<double>>? dots;
+  final List<List<double>>? traces;
+  final List<double>? streetBbox;
+  final List<List<double>>? streetLine;
   final double? userLng;
   final double? userLat;
   final bool overviewReady;
+  final bool streetReady;
   final double? progress;
 
   @override
@@ -186,6 +221,15 @@ class CoverageSketchPainter extends CustomPainter {
           ..strokeWidth = 1.4,
       );
     }
+    if (streetReady) {
+      canvas.drawRRect(
+        canvasRRect.deflate(overviewReady ? 6.5 : 3),
+        Paint()
+          ..color = AppColors.chrome.withValues(alpha: 0.7)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.3,
+      );
+    }
 
     final a = map(bbox[0], bbox[1]);
     final b = map(bbox[2], bbox[3]);
@@ -214,12 +258,75 @@ class CoverageSketchPainter extends CustomPainter {
       packPath,
       Paint()..color = AppColors.chrome.withValues(alpha: 0.28),
     );
-    final stipple = dots;
-    if (stipple != null && stipple.isNotEmpty) {
-      final ink = Paint()..color = AppColors.chrome.withValues(alpha: 0.55);
-      for (final p in stipple) {
+    final segs = traces;
+    if (segs != null && segs.isNotEmpty) {
+      final ink = Paint()
+        ..color = AppColors.chrome.withValues(alpha: 0.72)
+        ..strokeWidth = 1.05
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      for (final s in segs) {
+        if (s.length < 4) continue;
+        canvas.drawLine(map(s[0], s[1]), map(s[2], s[3]), ink);
+      }
+    } else {
+      final stipple = dots;
+      if (stipple != null && stipple.isNotEmpty) {
+        final ink = Paint()..color = AppColors.chrome.withValues(alpha: 0.55);
+        for (final p in stipple) {
+          if (p.length < 2) continue;
+          canvas.drawCircle(map(p[0], p[1]), 1.15, ink);
+        }
+      }
+    }
+    final street = streetBbox;
+    if (street != null &&
+        street.length >= 4 &&
+        !lngLatBboxNearlyEqual(street, bbox)) {
+      final sa = map(street[0], street[1]);
+      final sb = map(street[2], street[3]);
+      final streetRect = RRect.fromRectAndRadius(
+        Rect.fromPoints(sa, sb),
+        const Radius.circular(3),
+      );
+      canvas.drawRRect(
+        streetRect,
+        Paint()
+          ..color =
+              AppColors.sageOnDark.withValues(alpha: streetReady ? 0.22 : 0.10),
+      );
+      canvas.drawRRect(
+        streetRect,
+        Paint()
+          ..color = AppColors.sageOnDark.withValues(alpha: 0.75)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.05,
+      );
+    }
+    final line = streetLine;
+    if (line != null && line.length >= 2) {
+      final path = Path();
+      var started = false;
+      for (final p in line) {
         if (p.length < 2) continue;
-        canvas.drawCircle(map(p[0], p[1]), 1.15, ink);
+        final o = map(p[0], p[1]);
+        if (!started) {
+          path.moveTo(o.dx, o.dy);
+          started = true;
+        } else {
+          path.lineTo(o.dx, o.dy);
+        }
+      }
+      if (started) {
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = AppColors.sageOnDark.withValues(alpha: 0.95)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = streetReady ? 2.2 : 1.6
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round,
+        );
       }
     }
     final p = (progress ?? 0).clamp(0.0, 1.0);
@@ -264,6 +371,7 @@ class CoverageSketchPainter extends CustomPainter {
             lng: lng,
             lat: lat,
             ring: ringPts,
+            streetBbox: streetBbox,
           ),
       );
     }
@@ -282,8 +390,12 @@ class CoverageSketchPainter extends CustomPainter {
       oldDelegate.bbox != bbox ||
       oldDelegate.ring != ring ||
       oldDelegate.dots != dots ||
+      oldDelegate.traces != traces ||
+      oldDelegate.streetBbox != streetBbox ||
+      oldDelegate.streetLine != streetLine ||
       oldDelegate.userLng != userLng ||
       oldDelegate.userLat != userLat ||
       oldDelegate.overviewReady != overviewReady ||
+      oldDelegate.streetReady != streetReady ||
       oldDelegate.progress != progress;
 }

@@ -672,7 +672,7 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                             ),
                           ),
                           onPressed: () => unawaited(_addRoute()),
-                          icon: const Icon(Icons.add, size: 18),
+                          icon: const ChromeGlyph('add', size: 18),
                           label: Text(l10n.mappeKeep),
                         ),
                       ),
@@ -783,7 +783,7 @@ class MappeScreenState extends ConsumerState<MappeScreen> {
                       ),
                       OutlinedButton.icon(
                         onPressed: () => unawaited(_importGpx()),
-                        icon: const Icon(Icons.upload_file, size: 18),
+                        icon: const ChromeGlyph('download', size: 18),
                         label: Text(l10n.gpxImportAction),
                       ),
                       TextButton(

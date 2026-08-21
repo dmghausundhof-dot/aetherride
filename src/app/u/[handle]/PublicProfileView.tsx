@@ -10,7 +10,10 @@ import { useAppStore } from "@/store/useAppStore";
 import { EDITORIAL_REVIEWS } from "@/lib/community/seed";
 import { getEditorialProfile } from "@/lib/community/editorialProfiles";
 import { getPublicTour } from "@/lib/catalog/publicTours";
-import { User } from "lucide-react";
+import { ChromeGlyph } from "@/components/chrome/ChromeGlyph";
+import { useChromeLang } from "@/hooks/useChromeLang";
+import { profileCopy, publicDisciplineLabel } from "@/lib/i18n/profileCopy";
+import { webChrome } from "@/lib/i18n/webChrome";
 
 type ViewProfile = {
   displayName: string;
@@ -24,6 +27,9 @@ type ViewProfile = {
 };
 
 export function PublicProfileView({ handle }: { handle: string }) {
+  const lang = useChromeLang();
+  const p = profileCopy(lang);
+  const chrome = webChrome(lang);
   const publicProfile = useCommunityStore((s) => s.publicProfile);
   const myReviews = useCommunityStore((s) => s.myReviews);
   const rides = useAppStore((s) => s.rides);
@@ -108,18 +114,15 @@ export function PublicProfileView({ handle }: { handle: string }) {
   if (!profile) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <User className="mx-auto h-10 w-10 text-text-secondary" />
-        <h1 className="mt-4 text-xl font-bold">Profil nicht öffentlich</h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Dieses Handle ist nicht freigeschaltet oder existiert nicht. Public
-          Profiles sind Opt-in und speichern keine Tracks.
-        </p>
+        <ChromeGlyph name="user" size={40} current className="mx-auto text-text-secondary" />
+        <h1 className="mt-4 text-xl font-bold">{p.publicMissingTitle}</h1>
+        <p className="mt-2 text-sm text-text-secondary">{p.publicMissingHint}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm font-semibold text-chrome">
           <Link href="/profile#public-profile" className="hover:underline">
-            Eigenes Profil freigeben
+            {p.publicEnable}
           </Link>
           <Link href="/community" className="hover:underline">
-            Community
+            {chrome.marketingNav["/community"]}
           </Link>
         </div>
       </div>
@@ -129,11 +132,11 @@ export function PublicProfileView({ handle }: { handle: string }) {
   return (
     <div className="mx-auto max-w-lg px-4 py-10 sm:px-6">
       <p className="text-[11px] font-bold tracking-wide text-text-secondary">
-        {profile.editorial ? "Editorial-Beispiel" : "Public Profile"}
+        {profile.editorial ? p.publicEditorial : p.publicTitle}
       </p>
       <div className="mt-3 flex items-start gap-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-chrome/15 text-chrome">
-          <User className="h-7 w-7" />
+          <ChromeGlyph name="user" size={28} current />
         </div>
         <div>
           <h1 className="text-2xl font-bold">{profile.displayName}</h1>
@@ -154,22 +157,22 @@ export function PublicProfileView({ handle }: { handle: string }) {
             key={s}
             className="rounded-full bg-surface-elevated px-2.5 py-1 text-[11px] capitalize"
           >
-            {s.replace(/_/g, " ")}
+            {publicDisciplineLabel(s, lang)}
           </span>
         ))}
         {profile.showRideCount ? (
           <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-text-secondary">
-            {profile.rideCount} Fahrten (aggregiert, ohne Spur)
+            {p.publicRidesAgg(profile.rideCount)}
           </span>
         ) : null}
       </div>
       <p className="mt-4 text-[11px] text-text-secondary">
-        Keine Heatmaps, keine Roh-GPS-Daten auf diesem Profil.
+        {p.publicNoHeatmap}
       </p>
 
       {reviewsByAuthor.length > 0 ? (
         <section className="mt-8">
-          <h2 className="text-sm font-semibold">Stimmen</h2>
+          <h2 className="text-sm font-semibold">{p.publicStimmen}</h2>
           <ul className="mt-3 space-y-2">
             {reviewsByAuthor.map((r) => {
               const tour = getPublicTour(r.tourId);
@@ -182,7 +185,7 @@ export function PublicProfileView({ handle }: { handle: string }) {
                     href={`/tours/${r.tourId}`}
                     className="font-medium text-chrome hover:underline"
                   >
-                    {tour?.name ?? "Tour"}
+                    {tour?.name ?? p.publicTour}
                   </Link>
                   <span className="text-text-secondary"> · {r.rating}★</span>
                   <p className="mt-1 text-xs text-text-secondary">{r.body}</p>
@@ -195,13 +198,13 @@ export function PublicProfileView({ handle }: { handle: string }) {
 
       <div className="mt-10 flex flex-wrap gap-3 text-sm">
         <Link href="/community" className="text-chrome hover:underline">
-          Community
+          {chrome.marketingNav["/community"]}
         </Link>
         <Link href="/share" className="text-chrome hover:underline">
-          Teilen
+          {chrome.share}
         </Link>
         <Link href="/discover" className="text-chrome hover:underline">
-          Karte
+          {chrome.hofNav.karte}
         </Link>
       </div>
     </div>

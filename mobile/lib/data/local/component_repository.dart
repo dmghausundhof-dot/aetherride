@@ -90,6 +90,35 @@ class ComponentRepository {
     await _garage.touchLocalSync();
   }
 
+  Future<void> reinstall(String componentId) async {
+    final now = DateTime.now().toUtc();
+    final row = await (_db.select(_db.components)
+          ..where((t) => t.id.equals(componentId)))
+        .getSingleOrNull();
+    if (row == null || row.removedAt == null) return;
+    final occupied = await (_db.select(_db.components)
+          ..where(
+            (t) =>
+                t.bikeId.equals(row.bikeId) &
+                t.slot.equals(row.slot) &
+                t.removedAt.isNull(),
+          ))
+        .get();
+    for (final o in occupied) {
+      await (_db.update(_db.components)..where((t) => t.id.equals(o.id)))
+          .write(ComponentsCompanion(removedAt: Value(now), updatedAt: Value(now)));
+    }
+    await (_db.update(_db.components)..where((t) => t.id.equals(componentId)))
+        .write(
+      ComponentsCompanion(
+        removedAt: const Value(null),
+        installedAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+    await _garage.touchLocalSync();
+  }
+
   BikeComponent _toDomain(ComponentRow row) {
     Map<String, dynamic> attrs = {};
     try {

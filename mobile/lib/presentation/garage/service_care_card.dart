@@ -11,6 +11,8 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import 'bike_receipts_panel.dart';
 import 'garage_chrome.dart';
+import '../shared/chrome_glyph.dart';
+import 'rad_glyph.dart';
 
 class ServiceCareCard extends ConsumerWidget {
   const ServiceCareCard({
@@ -279,7 +281,7 @@ class _ServiceCareSheetState extends State<_ServiceCareSheet> {
               onTap: () => _pickDate(last: false),
               decoration: InputDecoration(
                 labelText: l10n.garageServiceDateLabel,
-                suffixIcon: const Icon(Icons.event, size: 20),
+                suffixIcon: const ChromeGlyph('calendar', size: 20),
               ),
             ),
             const SizedBox(height: AppSpacing.s),
@@ -333,7 +335,7 @@ class _ServiceCareSheetState extends State<_ServiceCareSheet> {
               onTap: () => _pickDate(last: true),
               decoration: InputDecoration(
                 labelText: l10n.garageLastServiceDate,
-                suffixIcon: const Icon(Icons.event, size: 20),
+                suffixIcon: const ChromeGlyph('calendar', size: 20),
                 isDense: true,
               ),
             ),
@@ -365,7 +367,7 @@ class _ServiceCareSheetState extends State<_ServiceCareSheet> {
             const SizedBox(height: AppSpacing.s),
             OutlinedButton.icon(
               onPressed: _pickInvoice,
-              icon: const Icon(Icons.photo_outlined, size: 18),
+              icon: const RadGlyph('photo', size: 18),
               label: Text(
                 _invoicePath == null
                     ? l10n.garageInvoiceAdd

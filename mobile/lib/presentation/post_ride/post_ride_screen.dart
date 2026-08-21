@@ -650,7 +650,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
             IconButton(
               tooltip: l10n.postRideShareGpx,
               onPressed: _shareGpx,
-              icon: const Icon(Icons.ios_share),
+              icon: const ChromeGlyph('share', size: 22),
             ),
         ],
       ),
@@ -808,7 +808,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                   FilledButton.icon(
                     key: const Key('post-ride-primary'),
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.check),
+                    icon: const ChromeGlyph('check', size: 22),
                     label: Text(l10n.postRideDone),
                   )
                 else
@@ -816,7 +816,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     key: const Key('post-ride-primary'),
                     onPressed: () =>
                         Navigator.pop(context, 'akte:${ride.routeId}'),
-                    icon: const Icon(Icons.folder_open_outlined),
+                    icon: const ChromeGlyph('platz', size: 22),
                     label: Text(l10n.postRideOpenTour),
                   ),
                 if (kind == RideActivityKind.freeride)
@@ -880,7 +880,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: _shareFit,
-                        icon: const Icon(Icons.fitness_center),
+                        icon: const ChromeGlyph('heat', size: 20),
                         label: const Text('FIT'),
                       ),
                     ),
@@ -889,7 +889,7 @@ class _PostRideScreenState extends ConsumerState<PostRideScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _stravaConnected ? _uploadStrava : null,
-                          icon: const Icon(Icons.upload_outlined),
+                          icon: const ChromeGlyph('cloud', size: 20),
                           label: const Text('Strava'),
                         ),
                       ),

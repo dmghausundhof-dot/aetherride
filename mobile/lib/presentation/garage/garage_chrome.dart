@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/garage/bike_photo_fill.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/l10n_ext.dart';
+import '../shared/chrome_glyph.dart';
 import 'rad_glyph.dart';
 
 /// Sichtbarer Grok-Text — gleiche Karte wie Specs und Belege.
@@ -235,13 +236,13 @@ class GarageGhostRow extends StatelessWidget {
     required this.title,
     this.hint,
     this.onTap,
-    this.icon = Icons.add,
+    this.mark = 'add',
   });
 
   final String title;
   final String? hint;
   final VoidCallback? onTap;
-  final IconData icon;
+  final String mark;
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +263,7 @@ class GarageGhostRow extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(icon, size: 18, color: AppColors.chrome),
+                  ChromeGlyph(mark, size: 18, color: AppColors.chrome),
                   const SizedBox(width: AppSpacing.s),
                   Expanded(
                     child: Column(
@@ -303,13 +304,13 @@ class GarageInviteCard extends StatelessWidget {
     required this.title,
     required this.hint,
     this.onTap,
-    this.icon = Icons.add_circle_outline,
+    this.mark = 'add',
   });
 
   final String title;
   final String hint;
   final VoidCallback? onTap;
-  final IconData icon;
+  final String mark;
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +327,7 @@ class GarageInviteCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: AppColors.chrome),
+              ChromeGlyph(mark, size: 22, color: AppColors.chrome),
               const SizedBox(width: AppSpacing.s),
               Expanded(
                 child: Column(
@@ -397,18 +398,18 @@ Future<ImageSource?> showGarageImageSourceSheet({
                 ),
               ),
             ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
+              leading: const RadGlyph('photo', size: 22),
               title: Text(d.postRidePhotoCamera),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_outlined),
+              leading: const RadGlyph('photo', size: 22),
               title: Text(d.garageGallery),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             if (allowSkip)
               ListTile(
-                leading: const Icon(Icons.edit_outlined),
+                leading: const ChromeGlyph('file', size: 22),
                 title: Text(d.garageReceiptTypeOnly),
                 onTap: () => Navigator.pop(ctx),
               ),

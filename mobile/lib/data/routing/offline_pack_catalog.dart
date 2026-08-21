@@ -904,16 +904,42 @@ double maxBasemapZoomForBbox(List<double> bbox) {
 
 const kBasemapMinZoom = 8.0;
 
-/// Street HUD OpenFreeMap cache — city packs only, not envelopes / Blatt.
+/// Street HUD OpenFreeMap cache — pack bbox if it fits, else GPS corridor.
 const kStreetHudRegionPrefix = 'street-';
 const kStreetHudMinZoom = 12.0;
 const kStreetHudBytesPerTile = 18000;
 const kStreetHudMaxTiles = 40000;
 
+/// ~13 km around GPS when the pack bbox is too large for z12–15.
+const kStreetHudCorridorPadDeg = 0.12;
+
 String streetHudRegionId(String packId) => '$kStreetHudRegionPrefix$packId';
 
 bool isStreetHudRegionId(String raw) =>
     raw.trim().startsWith(kStreetHudRegionPrefix);
+
+enum StreetHudOfferKind { pack, corridor, route }
+
+StreetHudOfferKind? streetHudKindFromRaw(String? raw) {
+  return switch ((raw ?? '').trim()) {
+    'pack' => StreetHudOfferKind.pack,
+    'corridor' => StreetHudOfferKind.corridor,
+    'route' => StreetHudOfferKind.route,
+    _ => null,
+  };
+}
+
+/// Street-HUD download that fits the tile budget.
+class StreetHudOffer {
+  const StreetHudOffer({required this.bbox, required this.kind});
+
+  final List<double> bbox;
+  final StreetHudOfferKind kind;
+
+  bool get isCorridor => kind == StreetHudOfferKind.corridor;
+  bool get isRoute => kind == StreetHudOfferKind.route;
+  bool get isPartial => isCorridor || isRoute;
+}
 
 double maxStreetZoomForBbox(List<double> bbox) {
   if (bbox.length < 4) return 0;
@@ -935,8 +961,7 @@ int _mercatorLatToY(double lat, int z) {
   final n = 1 << z;
   final clamped = lat.clamp(-85.05112878, 85.05112878);
   final latRad = clamped * math.pi / 180.0;
-  var y = ((1 -
-              math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) /
+  var y = ((1 - math.log(math.tan(latRad) + 1 / math.cos(latRad)) / math.pi) /
           2 *
           n)
       .floor();
@@ -967,14 +992,211 @@ int streetHudTileCount(List<double> bbox) {
 int estimatedStreetHudBytes(List<double> bbox) =>
     streetHudTileCount(bbox) * kStreetHudBytesPerTile;
 
+List<double>? streetHudBboxIfFits(List<double>? bbox) {
+  if (bbox == null || bbox.length < 4) return null;
+  final n = streetHudTileCount(bbox);
+  if (n <= 0 || n > kStreetHudMaxTiles) return null;
+  return bbox;
+}
+
+List<double> clampLngLatBbox(List<double> inner, List<double> outer) {
+  return [
+    inner[0].clamp(outer[0], outer[2]).toDouble(),
+    inner[1].clamp(outer[1], outer[3]).toDouble(),
+    inner[2].clamp(outer[0], outer[2]).toDouble(),
+    inner[3].clamp(outer[1], outer[3]).toDouble(),
+  ];
+}
+
+List<double> streetHudCorridorBbox({
+  required double lng,
+  required double lat,
+  double padDeg = kStreetHudCorridorPadDeg,
+}) {
+  return [lng - padDeg, lat - padDeg, lng + padDeg, lat + padDeg];
+}
+
+List<double> padLngLatBbox(List<double> bbox, double padDeg) {
+  if (bbox.length < 4) return bbox;
+  return [
+    bbox[0] - padDeg,
+    bbox[1] - padDeg,
+    bbox[2] + padDeg,
+    bbox[3] + padDeg,
+  ];
+}
+
+bool lngLatBboxNearlyEqual(
+  List<double>? a,
+  List<double>? b, {
+  double eps = 0.02,
+}) {
+  if (a == null || b == null || a.length < 4 || b.length < 4) return false;
+  for (var i = 0; i < 4; i++) {
+    if ((a[i] - b[i]).abs() > eps) return false;
+  }
+  return true;
+}
+
+/// Padded bbox of a planned line — Street-HUD along the tour, not GPS only.
+List<double>? streetHudBboxFromLngLats(
+  Iterable<List<double>> lngLat, {
+  double padDeg = 0.04,
+}) {
+  var west = double.infinity;
+  var south = double.infinity;
+  var east = -double.infinity;
+  var north = -double.infinity;
+  var n = 0;
+  for (final p in lngLat) {
+    if (p.length < 2) continue;
+    west = math.min(west, p[0]);
+    south = math.min(south, p[1]);
+    east = math.max(east, p[0]);
+    north = math.max(north, p[1]);
+    n++;
+  }
+  if (n < 1 || !west.isFinite) return null;
+  return padLngLatBbox([west, south, east, north], padDeg);
+}
+
+bool streetHudPointInBbox(double lng, double lat, List<double> bbox) {
+  if (bbox.length < 4) return false;
+  return lng >= bbox[0] && lat >= bbox[1] && lng <= bbox[2] && lat <= bbox[3];
+}
+
+/// GPS left the downloaded Street-HUD box (pack occupancy, corridor, or route).
+bool streetHudCoverageStale({
+  required StreetHudOfferKind? kind,
+  List<double>? storedBbox,
+  double? userLng,
+  double? userLat,
+}) {
+  if (kind == null) return false;
+  if (storedBbox == null || storedBbox.length < 4) return false;
+  if (userLng == null || userLat == null) return false;
+  return !streetHudPointInBbox(userLng, userLat, storedBbox);
+}
+
+/// Region on disk is not enough: tiles only cover GPS inside the stored box.
+bool streetHudCoversHere({
+  required bool regionReady,
+  StreetHudOfferKind? kind,
+  List<double>? storedBbox,
+  double? userLng,
+  double? userLat,
+}) {
+  if (!regionReady) return false;
+  if (userLng == null || userLat == null) {
+    // No GPS yet: installed region is the best we know.
+    return true;
+  }
+  if (storedBbox == null || storedBbox.length < 4) {
+    // Legacy installs without a stored box: assume pack-wide.
+    return kind == null || kind == StreetHudOfferKind.pack;
+  }
+  return streetHudPointInBbox(userLng, userLat, storedBbox);
+}
+
+/// Ready-line copy for the offline sheet (pack / street / occupancy).
+String offlineReadyStatusLine({
+  required bool hasPack,
+  required bool routingAway,
+  required bool streetReady,
+  required bool streetStale,
+  required bool basemapReady,
+  required String loadBelow,
+  required String bothAway,
+  required String streetHereRoutingAway,
+  required String routingAwayLine,
+  required String allAway,
+  required String streetAway,
+  required String allReady,
+  required String streetReadyLine,
+  required String bothReady,
+  required String routingReady,
+}) {
+  if (!hasPack) return loadBelow;
+  final streetHere = streetReady && !streetStale;
+  final streetGone = streetReady && streetStale;
+  if (routingAway) {
+    if (streetGone) return bothAway;
+    if (streetHere) return streetHereRoutingAway;
+    return routingAwayLine;
+  }
+  if (streetGone) return basemapReady ? allAway : streetAway;
+  if (streetHere && basemapReady) return allReady;
+  if (streetHere) return streetReadyLine;
+  if (basemapReady) return bothReady;
+  return routingReady;
+}
+
+/// Downsampled `[lng, lat]` for the 88 px sketch.
+List<List<double>> streetHudSketchLine(
+  Iterable<List<double>> lngLat, {
+  int cap = 24,
+}) {
+  final pts = <({double lng, double lat})>[
+    for (final p in lngLat)
+      if (p.length >= 2) (lng: p[0], lat: p[1]),
+  ];
+  if (pts.isEmpty) return const [];
+  return [
+    for (final p in sampleLngLats(pts, maxPoints: cap)) [p.lng, p.lat],
+  ];
+}
+
+/// Occupancy first when GPS is inside it. Else tour / GPS corridor — not Bayern at z15.
+StreetHudOffer? streetHudOffer({
+  required String packId,
+  List<double>? occupancyBbox,
+  List<double>? catalogBbox,
+  List<double>? routeBbox,
+  double? userLng,
+  double? userLat,
+}) {
+  if (packId.trim().isEmpty) return null;
+  final pack =
+      streetHudBboxIfFits(occupancyBbox) ?? streetHudBboxIfFits(catalogBbox);
+  final lng = userLng;
+  final lat = userLat;
+  final gpsKnown = lng != null && lat != null;
+  final gpsInPack =
+      pack != null && gpsKnown && streetHudPointInBbox(lng, lat, pack);
+  // Pack tiles only help when the rider is (or will be) inside that box.
+  if (pack != null && (!gpsKnown || gpsInPack)) {
+    return StreetHudOffer(bbox: pack, kind: StreetHudOfferKind.pack);
+  }
+  // Outside occupancy: clip to catalog so a corridor can still reach GPS.
+  final clip = catalogBbox ?? occupancyBbox;
+  if (clip == null || clip.length < 4) return null;
+
+  StreetHudOffer? clipped(List<double> inner, StreetHudOfferKind kind) {
+    final clamped = clampLngLatBbox(inner, clip);
+    if (clamped[2] - clamped[0] < 0.02 || clamped[3] - clamped[1] < 0.02) {
+      return null;
+    }
+    final ok = streetHudBboxIfFits(clamped);
+    if (ok == null) return null;
+    return StreetHudOffer(bbox: ok, kind: kind);
+  }
+
+  if (routeBbox != null && routeBbox.length >= 4) {
+    final along = clipped(routeBbox, StreetHudOfferKind.route);
+    if (along != null) return along;
+  }
+  if (lng == null || lat == null) return null;
+  return clipped(
+    streetHudCorridorBbox(lng: lng, lat: lat),
+    StreetHudOfferKind.corridor,
+  );
+}
+
 bool packOffersStreetHud({
   required String packId,
   List<double>? bbox,
 }) {
-  if (isEnvelopePackId(packId)) return false;
-  if (bbox == null || bbox.length < 4) return false;
-  final n = streetHudTileCount(bbox);
-  return n > 0 && n <= kStreetHudMaxTiles;
+  return streetHudOffer(packId: packId, catalogBbox: bbox) != null;
 }
 
 /// True when a graph on disk actually belongs to [regionId].

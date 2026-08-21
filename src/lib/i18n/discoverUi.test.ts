@@ -102,10 +102,17 @@ function testP2Copy() {
   assert.equal(de.openNativeApp, "In der App öffnen");
   assert.equal(de.placeKind("cafe"), "Café");
   assert.equal(de.placeKind("shop"), "Laden");
-  assert.equal(
-    de.variantValhallaOnly,
-    "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.",
-  );
+assert.equal(
+  discoverUi("de").variantValhallaOnly,
+  "Weniger hm und mehr Schotter nur mit Live-Strecke — du siehst die geplante Linie.",
+);
+assert.equal(
+  discoverStatus(
+    `12.3 km · 45 min · ${discoverUi("de").variantValhallaOnly}`,
+    "en",
+  ),
+  `12.3 km · 45 min · ${discoverUi("en").variantValhallaOnly}`,
+);
   assert.equal(de.backToGps, "Zurück zu GPS");
   assert.equal(de.tapLineVia.includes("Zwischenstopp"), true);
   assert.equal(de.tapLineVia.includes("Alt-Klick"), true);
@@ -116,6 +123,9 @@ function testP2Copy() {
   assert.equal(discoverUi("en").planRedo, "Redo");
   assert.ok(de.planLineCoach.includes("Linie"));
   assert.ok(de.planLineCoach.includes("Halten"));
+  assert.ok(de.planLineCoach.includes("Höhenprofil"));
+  assert.ok(de.planLineCoachShort.includes("Halten"));
+  assert.ok(de.planLineCoachAdopt.includes("merken"));
   assert.equal(de.planMapSteep, "Steil");
   assert.equal(de.planMapUnknown, "Unbekannt");
   assert.equal(discoverUi("en").planMapUnknown, "Unknown");
@@ -188,9 +198,21 @@ function testHonestyCopy() {
     discoverUi("de").endSetComputing,
     "Ziel gesetzt — Route wird berechnet",
   );
+  assert.equal(
+    discoverUi("de").destSetWaitingGps,
+    "Ziel gesetzt — Start ist dein Standort",
+  );
   assert.equal(discoverUi("de").planLineCoachOk, "Verstanden");
   assert.ok(discoverUi("de").planStopSetHint.includes("Stopp gesetzt"));
   assert.ok(discoverUi("en").planStopSetHint.toLowerCase().includes("stop"));
+  assert.equal(
+    discoverUi("de").lastDestApplied,
+    "Letztes Ziel übernommen.",
+  );
+  assert.equal(
+    discoverUi("en").lastDestApplied,
+    "Last destination applied.",
+  );
   assert.equal(discoverUi("en").placeOnRoute, "Include on route");
   for (const lang of langs) {
     const d = discoverUi(lang);

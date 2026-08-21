@@ -108,11 +108,10 @@ class BikeAssistUx {
   static WheelSize defaultWheelFor(BikeCategory c) => switch (c) {
         BikeCategory.urban ||
         BikeCategory.road ||
-        BikeCategory.etrekking ||
-        BikeCategory.cargo ||
-        BikeCategory.folding ||
-        BikeCategory.kids =>
+        BikeCategory.etrekking =>
           WheelSize.c700,
+        BikeCategory.cargo || BikeCategory.folding => WheelSize.w20,
+        BikeCategory.kids => WheelSize.w24,
         BikeCategory.gravel => WheelSize.b650,
         _ => WheelSize.w29,
       };

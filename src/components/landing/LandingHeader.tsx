@@ -40,13 +40,20 @@ export function LandingHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={
                   active
-                    ? "text-sm font-semibold text-chrome"
+                    ? "relative text-sm font-semibold text-chrome"
                     : "text-sm text-text-secondary hover:text-foreground"
                 }
               >
                 {copy.marketingNav[item.href]}
+                {active ? (
+                  <span
+                    className="absolute inset-x-0 -bottom-1 h-[1.5px] rounded-full bg-chrome"
+                    aria-hidden
+                  />
+                ) : null}
               </Link>
             );
           })}
@@ -79,16 +86,24 @@ export function LandingHeader() {
       {open && (
         <div className="border-t border-border px-4 py-3 lg:hidden">
           <nav className="flex flex-col gap-1" aria-label={copy.websiteAria}>
-            {MARKETING_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-3 text-sm text-text-secondary"
-              >
-                {copy.marketingNav[item.href]}
-              </Link>
-            ))}
+            {MARKETING_NAV.map((item) => {
+              const active = isMarketingNavActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  className={
+                    active
+                      ? "rounded-lg px-3 py-3 text-sm font-semibold text-chrome"
+                      : "rounded-lg px-3 py-3 text-sm text-text-secondary"
+                  }
+                >
+                  {copy.marketingNav[item.href]}
+                </Link>
+              );
+            })}
             <Link
               href="/anmelden"
               onClick={() => setOpen(false)}

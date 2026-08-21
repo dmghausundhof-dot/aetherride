@@ -13,6 +13,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/billing/play_billing.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../shared/chrome_glyph.dart';
 
 /// Pro upgrade: Stripe Checkout (web) + Play Billing (Android) + sync.
 class UpgradeScreen extends ConsumerStatefulWidget {
@@ -310,7 +311,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _busy ? null : _playBuy,
-                icon: const Icon(Icons.shop_outlined),
+                icon: const ChromeGlyph('shop', size: 20),
                 label: Text(l10n.billingPlayMonth),
               ),
               const SizedBox(height: 8),

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Sprache">
+  <title>FlowLine Sprache</title>
+  <circle cx="12" cy="12" r="8.2" fill="none" stroke="#9CA3AF" stroke-width="1.7"/>
+  <path d="M12 3.8 C9.4 6.4 8.4 9.4 8.4 12 C8.4 14.6 9.4 17.6 12 20.2" fill="none" stroke="#9CA3AF" stroke-width="1.6"/>
+  <path d="M12 3.8 C14.6 6.4 15.6 9.4 15.6 12 C15.6 14.6 14.6 17.6 12 20.2" fill="none" stroke="#9CA3AF" stroke-width="1.6"/>
+  <path d="M4.4 12 H19.6" fill="none" stroke="#FF6A00" stroke-width="1.7" stroke-linecap="round"/>
+</svg>

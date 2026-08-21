@@ -81,6 +81,9 @@ class IntervalTemplate {
 
 double chainCheckKm(Bike bike) {
   final e = bike.hasElectricAssist;
+  if (bike.category == BikeCategory.dh) return 600;
+  if (bike.category == BikeCategory.cargo) return 600;
+  if (bike.category == BikeCategory.kids) return 800;
   return switch (rideDisciplineOf(bike)) {
     RideDiscipline.mtb => e ? 700 : 1000,
     RideDiscipline.gravel => 1200,
@@ -90,6 +93,7 @@ double chainCheckKm(Bike bike) {
 }
 
 double cassetteCheckKm(Bike bike) {
+  if (bike.category == BikeCategory.cargo) return 5000;
   return switch (rideDisciplineOf(bike)) {
     RideDiscipline.mtb => 4000,
     RideDiscipline.gravel => 6000,
@@ -100,68 +104,181 @@ double cassetteCheckKm(Bike bike) {
 
 double brakePadCheckKm(Bike bike, {required bool rear}) {
   final e = bike.hasElectricAssist;
-  final base = switch (rideDisciplineOf(bike)) {
-    RideDiscipline.mtb => e ? 800 : 1000,
-    RideDiscipline.gravel => 2000,
-    RideDiscipline.road => 3000,
-    RideDiscipline.city => 2000,
+  final base = switch (bike.category) {
+    BikeCategory.dh => 400,
+    BikeCategory.cargo => 500,
+    BikeCategory.kids => 1200,
+    _ => switch (rideDisciplineOf(bike)) {
+        RideDiscipline.mtb => e ? 800 : 1000,
+        RideDiscipline.gravel => 2000,
+        RideDiscipline.road => 3000,
+        RideDiscipline.city => 2000,
+      },
   };
   return rear ? (base * 0.8).roundToDouble() : base.toDouble();
 }
 
 double tireCheckKm(Bike bike) {
-  return switch (rideDisciplineOf(bike)) {
-    RideDiscipline.mtb => 1500,
-    RideDiscipline.gravel => 3000,
-    RideDiscipline.road => 4000,
-    RideDiscipline.city => 5000,
+  return switch (bike.category) {
+    BikeCategory.dh => 800,
+    BikeCategory.cargo => 2000,
+    BikeCategory.kids => 2000,
+    _ => switch (rideDisciplineOf(bike)) {
+        RideDiscipline.mtb => 1500,
+        RideDiscipline.gravel => 3000,
+        RideDiscipline.road => 4000,
+        RideDiscipline.city => 5000,
+      },
   };
 }
 
 double bearingCheckKm(Bike bike) {
-  return rideDisciplineOf(bike) == RideDiscipline.mtb ? 4000 : 5000;
+  if (bike.category == BikeCategory.cargo ||
+      rideDisciplineOf(bike) == RideDiscipline.mtb) {
+    return 4000;
+  }
+  return 5000;
 }
 
-/// Kategorie-abhängige Templates. Vorhandene 50 h Lower-Leg bleiben.
-List<IntervalTemplate> intervalTemplatesFor(Bike bike) {
+String _partsBlob(List<BikeComponent> parts, {ComponentSlot? slot}) {
+  return parts
+      .where((c) => slot == null || c.slot == slot)
+      .map((c) =>
+          '${c.manufacturer ?? ''} ${c.model ?? ''} ${c.catalogModelId ?? ''}')
+      .join(' ')
+      .toLowerCase();
+}
+
+String _motorOem(List<BikeComponent> parts) {
+  final b = _partsBlob(parts, slot: ComponentSlot.motor);
+  if (b.trim().isEmpty) return 'unknown';
+  if (RegExp(r'bosch').hasMatch(b)) return 'bosch';
+  if (RegExp(r'shimano|steps|ep801|ep800|ep600|\bep6\b|e6100').hasMatch(b)) {
+    return 'shimano';
+  }
+  if (RegExp(r'brose|specialized-2-2|full power 2|turbo full power')
+      .hasMatch(b)) {
+    return 'brose';
+  }
+  if (RegExp(r'yamaha|syncdrive').hasMatch(b)) return 'yamaha';
+  if (RegExp(r'fazua').hasMatch(b)) return 'fazua';
+  if (RegExp(r'\btq\b|hpr50|hpr60').hasMatch(b)) return 'tq';
+  if (RegExp(r'mahle').hasMatch(b)) return 'mahle';
+  if (RegExp(r'dji|avinox').hasMatch(b)) return 'dji';
+  if (RegExp(r'panasonic').hasMatch(b)) return 'panasonic';
+  return 'unknown';
+}
+
+String _annualESource(String oem) {
+  return switch (oem) {
+    'bosch' => 'Bosch Händler — jährlich',
+    'shimano' => 'Shimano STEPS Händler — jährlich',
+    'brose' => 'Brose — mindestens 1×/Jahr',
+    'yamaha' => 'Yamaha / Giant SyncDrive — jährlich',
+    'fazua' => 'Fazua — jährlich',
+    'tq' => 'TQ — 1000 km / 1 Jahr',
+    'mahle' => 'Mahle SmartBike — jährlich',
+    'dji' => 'DJI Avinox — jährlich',
+    'panasonic' => 'Panasonic GX — jährlich',
+    _ => 'E-Bike Händler — jährlich',
+  };
+}
+
+/// Kategorie- und OEM-abhängige Templates. Vorhandene 50 h Lower-Leg bleiben.
+List<IntervalTemplate> intervalTemplatesFor(
+  Bike bike, {
+  List<BikeComponent> components = const [],
+}) {
   final e = bike.hasElectricAssist;
   final mtb = rideDisciplineOf(bike) == RideDiscipline.mtb;
-  final dropperSport = mtb || rideDisciplineOf(bike) == RideDiscipline.gravel;
+  final cargo = bike.category == BikeCategory.cargo;
+  final kids = bike.category == BikeCategory.kids;
+  final folding = bike.category == BikeCategory.folding;
+  final dh = bike.category == BikeCategory.dh;
+  final chainBlob = _partsBlob(components, slot: ComponentSlot.chain);
+  final brakeBlob = _partsBlob(components, slot: ComponentSlot.brakeFront) +
+      _partsBlob(components, slot: ComponentSlot.brakeRear);
+  final forkBlob = _partsBlob(components, slot: ComponentSlot.fork);
+  final postBlob = _partsBlob(components, slot: ComponentSlot.seatpost);
+  final oem = _motorOem(components);
+  final annualSource = e ? _annualESource(oem) : 'Werkstatt-Schnitt 12 Monate';
+  final belt = RegExp(r'gates|riemen|belt|cdx').hasMatch(chainBlob);
+  final magura = RegExp(r'magura|royal.?blood').hasMatch(brakeBlob);
+  final foxFork = RegExp(r'\bfox\b').hasMatch(forkBlob);
+  final rockshoxFork = RegExp(r'rockshox|rock shox').hasMatch(forkBlob);
+  final ohlinsFork = RegExp(r'öhlins|ohlins').hasMatch(forkBlob);
+  final suntourFork = RegExp(r'suntour').hasMatch(forkBlob);
+  final dropperSport = mtb ||
+      rideDisciplineOf(bike) == RideDiscipline.gravel ||
+      cargo ||
+      RegExp(r'dropper|reverb|transfer|manic|oneup|pnw|bikeyoke|loam')
+          .hasMatch(postBlob);
+  final wantsForkService = mtb ||
+      foxFork ||
+      rockshoxFork ||
+      ohlinsFork ||
+      suntourFork ||
+      RegExp(r'marzocchi|manitou').hasMatch(forkBlob);
+  final forkFullH = ohlinsFork
+      ? 100.0
+      : foxFork
+          ? 125.0
+          : rockshoxFork
+              ? 200.0
+              : suntourFork
+                  ? 100.0
+                  : 125.0;
+  final forkLowerH = dh ? 40.0 : 50.0;
+  final sealDays = kids || folding ? 180 : 120;
   return [
     IntervalTemplate(
       slot: ComponentSlot.frame,
       label: e ? 'Jährliche E-Bike-Inspektion' : 'Jährliche Inspektion',
       intervalDays: 365,
-      intervalKm: e ? 1500 : null,
+      intervalKm: e ? (cargo ? 1000 : oem == 'tq' ? 1000 : 1500) : null,
       bikeWide: true,
       needsSlot: false,
-      sourceLabel: e
-          ? 'Bosch / Brose / Shimano STEPS — jährlich'
-          : 'Werkstatt-Schnitt 12 Monate',
+      sourceLabel: annualSource,
       sourceUrl: 'https://www.bosch-ebike.com/en/service/dealer-service',
-      sourceSpan: e
-          ? 'Bosch Erstcheck 300 km/4 Wochen, danach Händler; Brose ≥1×/Jahr'
-          : 'Unabhängig vom Sport, Schmutz verkürzt',
+      sourceSpan: oem == 'bosch' || oem == 'unknown'
+          ? 'Bosch Erstcheck 300 km/4 Wochen, danach Händler'
+          : oem == 'brose'
+              ? 'Brose ≥1×/Jahr, kein Bosch-300-km-Takt'
+              : 'Unabhängig vom Sport, Schmutz verkürzt',
     ),
-    IntervalTemplate(
-      slot: ComponentSlot.chain,
-      label: 'Kettenverschleiß prüfen',
-      intervalKm: chainCheckKm(bike),
-      bikeWide: true,
-      needsSlot: false,
-      sourceLabel: 'Park Tool 0,5 % Dehnung (11s+)',
-      sourceUrl:
-          'https://www.parktool.com/en-int/blog/repair-help/when-to-replace-a-chain-on-a-bicycle',
-      sourceSpan:
-          'Wechsel nach Lehre, nicht nach km. Prüf-Default ${chainCheckKm(bike).round()} km',
-    ),
+    if (belt)
+      IntervalTemplate(
+        slot: ComponentSlot.chain,
+        label: 'Riemen prüfen (Risse, Spannung)',
+        intervalKm: 5000,
+        intervalDays: 365,
+        bikeWide: true,
+        needsSlot: false,
+        sourceLabel: 'Gates CDX — prüfen, nicht dehnen',
+        sourceUrl: 'https://www.gatescarbondrive.com/',
+      )
+    else
+      IntervalTemplate(
+        slot: ComponentSlot.chain,
+        label: 'Kettenverschleiß prüfen',
+        intervalKm: chainCheckKm(bike),
+        bikeWide: true,
+        needsSlot: false,
+        sourceLabel: 'Park Tool 0,5 % Dehnung (11s+)',
+        sourceUrl:
+            'https://www.parktool.com/en-int/blog/repair-help/when-to-replace-a-chain-on-a-bicycle',
+        sourceSpan:
+            'Wechsel nach Lehre, nicht nach km. Prüf-Default ${chainCheckKm(bike).round()} km',
+      ),
     IntervalTemplate(
       slot: ComponentSlot.cassette,
-      label: 'Kassette prüfen (nach 2–3 Ketten)',
-      intervalKm: cassetteCheckKm(bike),
+      label: belt
+          ? 'Riemenscheibe / Nabe prüfen'
+          : 'Kassette prüfen (nach 2–3 Ketten)',
+      intervalKm: belt ? 8000 : cassetteCheckKm(bike),
       bikeWide: true,
       needsSlot: false,
-      sourceLabel: 'Park Tool / 2–3 Ketten',
+      sourceLabel: belt ? 'Gates / Enviolo' : 'Park Tool / 2–3 Ketten',
       sourceUrl:
           'https://www.parktool.com/en-int/blog/repair-help/when-to-replace-a-chain-on-a-bicycle',
       sourceSpan: 'Spanne ~4000–12000 km je Pflege',
@@ -198,21 +315,21 @@ List<IntervalTemplate> intervalTemplatesFor(Bike bike) {
     IntervalTemplate(
       slot: ComponentSlot.tireFront,
       label: 'Tubeless-Milch erneuern',
-      intervalDays: 120,
+      intervalDays: sealDays,
       sourceLabel: 'Tubeless-Praxis 3–6 Monate',
       sourceSpan: 'Default 120 Tage (Mitte der Spanne)',
     ),
     IntervalTemplate(
       slot: ComponentSlot.tireRear,
       label: 'Tubeless-Milch erneuern',
-      intervalDays: 120,
+      intervalDays: sealDays,
       sourceLabel: 'Tubeless-Praxis 3–6 Monate',
     ),
     IntervalTemplate(
       slot: ComponentSlot.headset,
       label: 'Lager prüfen (Steuersatz/Naben/Tretlager)',
       intervalKm: bearingCheckKm(bike),
-      intervalDays: 365,
+      intervalDays: folding ? 180 : 365,
       bikeWide: true,
       needsSlot: false,
       sourceLabel: 'Bike Gremlin / L\'Atelier 6–12 Monate',
@@ -222,11 +339,16 @@ List<IntervalTemplate> intervalTemplatesFor(Bike bike) {
     ),
     IntervalTemplate(
       slot: ComponentSlot.brakeFront,
-      label: 'Bremsen: Druckpunkt / Entlüften',
-      intervalDays: 365,
-      sourceLabel: 'SRAM DOT ≥1×/Jahr; Magura nur bei Schwamm',
-      sourceUrl:
-          'https://support.sram.com/hc/en-us/articles/5927419450651-How-often-should-I-bleed-my-SRAM-DOT-brakes',
+      label: magura
+          ? 'Bremsen: Druckpunkt prüfen (Mineralöl)'
+          : 'Bremsen: Druckpunkt / Entlüften',
+      intervalDays: magura ? 730 : 365,
+      sourceLabel: magura
+          ? 'Magura Royal Blood — nur bei Schwamm'
+          : 'SRAM DOT ≥1×/Jahr; Magura nur bei Schwamm',
+      sourceUrl: magura
+          ? 'https://www.magura.com/'
+          : 'https://support.sram.com/hc/en-us/articles/5927419450651-How-often-should-I-bleed-my-SRAM-DOT-brakes',
       sourceSpan: 'Mineralöl oft 18–24 Monate; Default 12 Monate prüfen',
     ),
     if (e)
@@ -236,15 +358,17 @@ List<IntervalTemplate> intervalTemplatesFor(Bike bike) {
         intervalDays: 365,
         bikeWide: true,
         needsSlot: false,
-        sourceLabel: 'Bosch / Shimano STEPS jährlich',
+        sourceLabel: annualSource,
         sourceUrl: 'https://www.bosch-ebike.com/en/service/dealer-service',
       ),
-    if (mtb) ...[
+    if (wantsForkService) ...[
       IntervalTemplate(
         slot: ComponentSlot.fork,
         label: 'Gabel Lower-Leg Service',
-        intervalHours: 50,
-        sourceLabel: 'RockShox / Öhlins 50 h',
+        intervalHours: forkLowerH,
+        sourceLabel: suntourFork
+            ? 'SR Suntour / Werkstatt 50 h'
+            : 'RockShox / Öhlins 50 h',
         sourceUrl:
             'https://support.rockshox.com/hc/en-us/articles/4412306753947-How-often-should-I-service-my-RockShox-product',
         sourceSpan: 'Fox-Shops oft 30–50 h lowers; Default 50 h',
@@ -252,12 +376,22 @@ List<IntervalTemplate> intervalTemplatesFor(Bike bike) {
       IntervalTemplate(
         slot: ComponentSlot.fork,
         label: 'Gabel Vollservice (Feder/Dämpfer)',
-        intervalHours: 125,
+        intervalHours: forkFullH,
         intervalDays: 365,
-        sourceLabel: 'Fox 125 h / 1 Jahr (konservativ)',
+        sourceLabel: foxFork
+            ? 'Fox 125 h / 1 Jahr'
+            : rockshoxFork
+                ? 'RockShox Full 200 h'
+                : ohlinsFork
+                    ? 'Öhlins 100 h/Jahr'
+                    : suntourFork
+                        ? 'SR Suntour 100 h (konservativ)'
+                        : 'Fox 125 h / 1 Jahr (konservativ)',
         sourceUrl: 'https://www.ridefoxaustralia.com.au/pages/service-intervals',
-        sourceSpan: 'RockShox Full 200 h · Öhlins 100 h/Jahr · Default 125 h oder 1 Jahr',
+        sourceSpan: 'RockShox Full 200 h · Öhlins 100 h/Jahr · Default nach OEM',
       ),
+    ],
+    if (mtb) ...[
       IntervalTemplate(
         slot: ComponentSlot.rearShock,
         label: 'Dämpfer Air-Can Service',
@@ -336,13 +470,14 @@ List<MaintenanceAlert> listDueMaintenance({
 
   final inspection = _inspectionAlert(
     bike: bike,
+    components: installed,
     logs: bikeLogs,
     now: clock,
     includeUpcoming: includeUpcoming,
   );
   if (inspection != null) alerts.add(inspection);
 
-  for (final t in intervalTemplatesFor(bike)) {
+  for (final t in intervalTemplatesFor(bike, components: installed)) {
     if (t.slot == ComponentSlot.frame && t.intervalDays == 365) {
       continue;
     }
@@ -396,21 +531,44 @@ int _statusRank(DueStatus s) => switch (s) {
 
 MaintenanceAlert? _inspectionAlert({
   required Bike bike,
+  required List<BikeComponent> components,
   required List<Map<String, dynamic>> logs,
   required DateTime now,
   required bool includeUpcoming,
 }) {
   final last = _lastInspection(bike, logs);
   final e = bike.hasElectricAssist;
-  const firstKm = 300.0;
-  const firstDays = 28;
-  final annualKm = e ? 1500.0 : null;
+  final oem = e ? _motorOem(components) : 'none';
+  final useBoschFirst = !e || oem == 'bosch' || oem == 'unknown';
+  final useShimanoFirst = e && oem == 'shimano';
+  final firstKm = useShimanoFirst ? 500.0 : 300.0;
+  final firstDays = useShimanoFirst ? 90 : 28;
+  final annualKm = e ? (oem == 'tq' ? 1000.0 : 1500.0) : null;
+  final annualSource =
+      e ? _annualESource(oem) : 'Werkstatt-Schnitt 12 Monate';
 
   if (last == null) {
     final fromPurchase = _parseIso(bike.owner.purchasedAt);
     if (fromPurchase != null) {
       final days = now.difference(fromPurchase).inDays;
       final usedKm = bike.odometerKm;
+      if (e && !useBoschFirst && !useShimanoFirst) {
+        final dueKm = annualKm ?? 1500.0;
+        final firstDue = days >= 365 || usedKm >= dueKm;
+        if (!firstDue && !includeUpcoming) return null;
+        final progress = _maxRatio([days / 365, usedKm / dueKm]);
+        return MaintenanceAlert(
+          slot: ComponentSlot.frame,
+          label: 'Jährliche E-Bike-Inspektion',
+          status: _statusFrom(progress, remainingDays: 365 - days),
+          progressPct: (progress * 100).round().clamp(0, 100),
+          remainingLabel: firstDue
+              ? 'fällig · $annualSource'
+              : '${(dueKm - usedKm).clamp(0, dueKm).round()} km · ${(365 - days).clamp(0, 365)} Tage',
+          sourceLabel: annualSource,
+          neverLogged: true,
+        );
+      }
       final firstDue = usedKm >= firstKm || days >= firstDays;
       if (!firstDue && !includeUpcoming) return null;
       final progress = _maxRatio([
@@ -419,13 +577,23 @@ MaintenanceAlert? _inspectionAlert({
       ]);
       return MaintenanceAlert(
         slot: ComponentSlot.frame,
-        label: e ? 'Erste E-Bike-Inspektion' : 'Erste Inspektion',
+        label: e
+            ? (useShimanoFirst
+                ? 'Erste STEPS-Inspektion'
+                : 'Erste E-Bike-Inspektion')
+            : 'Erste Inspektion',
         status: _statusFrom(progress, remainingDays: firstDays - days),
         progressPct: (progress * 100).round().clamp(0, 100),
         remainingLabel: firstDue
-            ? 'fällig · Bosch ~300 km / 4 Wochen'
+            ? (useShimanoFirst
+                ? 'fällig · STEPS ~500 km / 90 Tage'
+                : 'fällig · Bosch ~300 km / 4 Wochen')
             : '${(firstKm - usedKm).clamp(0, firstKm).round()} km · ${(firstDays - days).clamp(0, firstDays)} Tage',
-        sourceLabel: 'Bosch Händler-Service',
+        sourceLabel: useShimanoFirst
+            ? 'Shimano STEPS Händler'
+            : e
+                ? 'Bosch Händler-Service'
+                : 'Werkstatt-Schnitt 12 Monate',
         sourceSpan: 'Danach jährlich',
         neverLogged: true,
       );
@@ -443,7 +611,7 @@ MaintenanceAlert? _inspectionAlert({
         progressPct: (bike.odometerKm / firstKm * 100).round().clamp(0, 99),
         remainingLabel:
             '${(firstKm - bike.odometerKm).clamp(0, firstKm).round()} km',
-        sourceLabel: 'Bosch Erstcheck ~300 km',
+        sourceLabel: e ? 'Bosch Erstcheck ~300 km' : 'Erste Inspektion',
         neverLogged: true,
       );
     }
@@ -453,9 +621,7 @@ MaintenanceAlert? _inspectionAlert({
       status: DueStatus.overdue,
       progressPct: 100,
       remainingLabel: 'noch keine Inspektion gemerkt',
-      sourceLabel: e
-          ? 'Bosch / Brose / Shimano STEPS — jährlich'
-          : 'Werkstatt-Schnitt 12 Monate',
+      sourceLabel: annualSource,
       neverLogged: true,
     );
   }
@@ -477,9 +643,7 @@ MaintenanceAlert? _inspectionAlert({
       if (annualKm != null)
         '${(annualKm - usedKm).clamp(0, annualKm).round()} km',
     ].join(' · '),
-    sourceLabel: e
-        ? 'Bosch / Brose / Shimano STEPS — jährlich'
-        : 'Werkstatt-Schnitt 12 Monate',
+    sourceLabel: annualSource,
   );
 }
 

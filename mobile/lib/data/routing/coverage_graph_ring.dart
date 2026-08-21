@@ -6,12 +6,13 @@ import 'dart:math' as math;
 const kCoverageRingFileName = 'coverage_ring.json';
 
 /// Bump when the occupancy grid or smoothing changes so old rings rebuild.
-const kCoverageRingCacheVersion = 4;
+const kCoverageRingCacheVersion = 5;
 
 /// 128-cell wash; two dilates keep the same geographic pad.
 const kCoverageRingCells = 128;
 const kCoverageRingDilate = 2;
 const kCoverageSketchDotCap = 96;
+const kCoverageSketchTraceCap = 48;
 
 /// Occupancy outline, or a filled extract that should keep the chamfered bbox.
 class CoverageRingCache {
@@ -19,6 +20,7 @@ class CoverageRingCache {
     required this.solid,
     required this.ring,
     this.dots = const [],
+    this.traces = const [],
   });
 
   final bool solid;
@@ -27,8 +29,10 @@ class CoverageRingCache {
   /// Downsampled graph nodes for the sheet sketch — not fake relief.
   final List<List<double>> dots;
 
-  List<List<double>>? get outline =>
-      solid || ring.length < 5 ? null : ring;
+  /// Downsampled graph edges `[lng0, lat0, lng1, lat1]` — still not DEM.
+  final List<List<double>> traces;
+
+  List<List<double>>? get outline => solid || ring.length < 5 ? null : ring;
 }
 
 /// Evenly spaced nodes so the 88 px sketch shows the trail cloud.
@@ -48,6 +52,56 @@ List<List<double>> coverageSketchDots(
   for (var i = 0; i < cap; i++) {
     final p = lngLat[(i * step).floor().clamp(0, lngLat.length - 1)];
     if (p.length >= 2) out.add([p[0], p[1]]);
+  }
+  return out;
+}
+
+List<List<double>> coverageTraceListFromJson(dynamic raw) {
+  if (raw is! List) return const [];
+  final out = <List<double>>[];
+  for (final p in raw) {
+    if (p is! List || p.length < 4) continue;
+    final a = p[0];
+    final b = p[1];
+    final c = p[2];
+    final d = p[3];
+    if (a is num && b is num && c is num && d is num) {
+      out.add([a.toDouble(), b.toDouble(), c.toDouble(), d.toDouble()]);
+    }
+  }
+  return out;
+}
+
+/// Evenly spaced graph edges so the 88 px sketch shows trails, not a blob.
+List<List<double>> coverageSketchTracesFromGraphJson(
+  dynamic decoded, {
+  int cap = kCoverageSketchTraceCap,
+}) {
+  if (decoded is! Map || cap < 1) return const [];
+  final nodes = decoded['nodes'];
+  final edges = decoded['edges'];
+  if (nodes is! List || edges is! List || edges.isEmpty) return const [];
+  final byId = <String, List<double>>{};
+  for (final n in nodes) {
+    if (n is! Map) continue;
+    final id = '${n['id'] ?? ''}';
+    final lng = n['lng'];
+    final lat = n['lat'];
+    if (id.isEmpty || lng is! num || lat is! num) continue;
+    byId[id] = [lng.toDouble(), lat.toDouble()];
+  }
+  if (byId.isEmpty) return const [];
+  final step = edges.length <= cap
+      ? 1
+      : (edges.length / cap).ceil().clamp(1, edges.length);
+  final out = <List<double>>[];
+  for (var i = 0; i < edges.length && out.length < cap; i += step) {
+    final e = edges[i];
+    if (e is! Map) continue;
+    final from = byId['${e['from'] ?? e['a'] ?? ''}'];
+    final to = byId['${e['to'] ?? e['b'] ?? ''}'];
+    if (from == null || to == null) continue;
+    out.add([from[0], from[1], to[0], to[1]]);
   }
   return out;
 }
@@ -443,6 +497,7 @@ Map<String, Object?> coverageRingEvaluateGraphFile(String path) {
   try {
     final decoded = jsonDecode(file.readAsStringSync());
     final pts = coverageNodesFromGraphJson(decoded);
+    final traces = coverageSketchTracesFromGraphJson(decoded);
     final occ = coverageOccupancy(
       lngLat: pts,
       bbox: coverageBboxFromGraphJson(decoded),
@@ -452,6 +507,7 @@ Map<String, Object?> coverageRingEvaluateGraphFile(String path) {
       'solid': occ.solid,
       'ring': occ.ring,
       'dots': occ.dots,
+      'traces': traces,
     };
   } catch (_) {
     return <String, Object?>{'ok': false};
@@ -463,11 +519,13 @@ CoverageRingCache? coverageRingCacheFromPayload(Map payload) {
   final solid = payload['solid'] == true;
   final ring = coverageLngLatListFromJson(payload['ring']);
   final dots = coverageLngLatListFromJson(payload['dots']);
+  final traces = coverageTraceListFromJson(payload['traces']);
   if (solid) {
     return CoverageRingCache(
       solid: true,
       ring: coverageClosedRing(ring),
       dots: dots,
+      traces: traces,
     );
   }
   if (ring.length < 5) return null;
@@ -475,6 +533,7 @@ CoverageRingCache? coverageRingCacheFromPayload(Map payload) {
     solid: false,
     ring: coverageClosedRing(ring),
     dots: dots,
+    traces: traces,
   );
 }
 
@@ -503,11 +562,13 @@ CoverageRingCache? coverageRingFromCacheJson(
     final solid = decoded['solid'] == true;
     final out = coverageLngLatListFromJson(decoded['ring']);
     final dots = coverageLngLatListFromJson(decoded['dots']);
+    final traces = coverageTraceListFromJson(decoded['traces']);
     if (solid) {
       return CoverageRingCache(
         solid: true,
         ring: coverageClosedRing(out),
         dots: dots,
+        traces: traces,
       );
     }
     return out.length >= 5
@@ -515,6 +576,7 @@ CoverageRingCache? coverageRingFromCacheJson(
             solid: false,
             ring: coverageClosedRing(out),
             dots: dots,
+            traces: traces,
           )
         : null;
   } catch (_) {
@@ -527,6 +589,7 @@ String coverageRingCacheJson({
   required int graphBytes,
   bool solid = false,
   List<List<double>> dots = const [],
+  List<List<double>> traces = const [],
 }) {
   return jsonEncode({
     'v': kCoverageRingCacheVersion,
@@ -535,5 +598,6 @@ String coverageRingCacheJson({
     'solid': solid,
     'ring': ring,
     'dots': dots,
+    'traces': traces,
   });
 }
