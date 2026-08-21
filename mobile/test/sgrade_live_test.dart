@@ -26,14 +26,22 @@ OsmTrailSegment _seg({
 }
 
 void main() {
-  test('S-Grade live fetch only with overlay + MTB class + z11+', () {
+  test('S-Grade live fetch only with overlay + MTB class + character zoom', () {
+    expect(
+      shouldFetchSGradeLive(
+        overlayOn: true,
+        extraOn: kAllPaintedOverlayClasses,
+        zoom: 12.5,
+      ),
+      isTrue,
+    );
     expect(
       shouldFetchSGradeLive(
         overlayOn: true,
         extraOn: kAllPaintedOverlayClasses,
         zoom: 11,
       ),
-      isTrue,
+      isFalse,
     );
     expect(
       shouldFetchSGradeLive(

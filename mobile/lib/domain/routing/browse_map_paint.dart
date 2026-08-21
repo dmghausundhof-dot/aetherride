@@ -1,11 +1,14 @@
 /// Browse-Karte: Radnetz zuerst, Relief nur als leise Tiefe.
 /// Layer-Level (Pfad unter Schotter unter Radweg, unter Labels):
 /// siehe `browse_map_stack.dart`.
+/// Zoom-Bänder: `browse_lod.dart`.
 ///
 /// Drei ehrliche Farben — unbewertete Pfade sind grün, nicht grau.
 /// Gravel/City liegen leise über dem Basemap, nicht als zweite Straße.
 ///
 /// Höhe ist standardmäßig an, aber flach, damit die Wege lesbar bleiben.
+import 'browse_lod.dart';
+
 abstract final class BrowseMapPaint {
   static const wayHex = '#3E78B0';
   static const gravelHex = '#B8974A';
@@ -21,15 +24,22 @@ abstract final class BrowseMapPaint {
   static const urbanWidth = 1.65;
   static const liveStreetWidth = 1.15;
 
-  static const packMinZoom = 10.0;
-  static const liveCyclewayMinZoom = 10.0;
+  /// Pack / ICN-Korridor: Netz, nicht Länder-Spaghetti.
+  static const packMinZoom = BrowseLodBands.network.minZoom;
+
+  /// Radwege ab Netz. ICN-Mesh darf früher stehen ([BrowseLodBands.corridorMinZoom]).
+  static const liveCyclewayMinZoom = BrowseLodBands.network.minZoom;
   static const livePathMinZoom = 11.0;
   static const liveTrackMinZoom = 13.0;
-  static const mtbMinZoom = 10.0;
+  static const mtbMinZoom = BrowseLodBands.network.minZoom;
   static const unratedMinZoom = 11.0;
   static const gravelMinZoom = 11.0;
-  static const roadMinZoom = 10.0;
+  static const roadMinZoom = BrowseLodBands.network.minZoom;
   static const urbanMinZoom = 11.0;
+
+  /// S-Skala und Surface-Charakter — nicht schon im Netz.
+  static const characterMinZoom = BrowseLodBands.character.minZoom;
+  static const detailMinZoom = BrowseLodBands.detail.minZoom;
 
   /// Trails / S-Skala — dürfen stehen.
   static const lineOpacity = 0.70;
@@ -38,6 +48,8 @@ abstract final class BrowseMapPaint {
   /// Untagged farm/field tracks — must not read as the planned route.
   static const farmTrackOpacity = 0.16;
   static const List<double> farmTrackDash = [1.4, 2.2];
+  /// Rooty / technisch — gestrichelt ab Charakter, nicht als zweite Farbe.
+  static const List<double> rootyDash = [1.8, 1.3];
   static const streetHintOpacity = 0.18;
   static const visibilityOpacity = 0.70;
 
@@ -66,6 +78,8 @@ abstract final class BrowseMapPaint {
         width,
         14,
         width * 1.45,
+        16,
+        width * 1.7,
       ];
 
   static List<dynamic> liveZoomWidth(double width) => [
@@ -78,5 +92,7 @@ abstract final class BrowseMapPaint {
         width,
         15,
         width * 1.4,
+        16.5,
+        width * 1.65,
       ];
 }

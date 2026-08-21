@@ -53,7 +53,9 @@ import '../../domain/community/ride_group.dart';
 import '../../domain/community/ride_group_map.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/browse_lod.dart';
 import '../../domain/routing/browse_map_paint.dart';
+import '../../domain/routing/tour_match.dart';
 import '../../domain/routing/browse_place_search.dart';
 import '../../domain/routing/navigate_workflow.dart';
 import '../../data/routing/catalog_tour_geometry.dart';
@@ -3087,21 +3089,26 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
   List<MapPlace> get _visibleMapPlaces {
     if (!_showPlacesLayer) return const [];
-    final coverage = [
-      for (final p in _googlePlaces)
-        mapPlaceFromRaw(
-          id: p.id,
-          name: p.name,
-          kind: p.kind,
-          lat: p.center.latitude,
-          lng: p.center.longitude,
-          mapsUrl: p.mapsUrl,
-        ),
-    ];
+    final lod = _browseLod.id;
+    final coverage = browseLodShowsCoveragePlaces(lod)
+        ? [
+            for (final p in _googlePlaces)
+              mapPlaceFromRaw(
+                id: p.id,
+                name: p.name,
+                kind: p.kind,
+                lat: p.center.latitude,
+                lng: p.center.longitude,
+                mapsUrl: p.mapsUrl,
+              ),
+          ]
+        : const <MapPlace>[];
     return mergeMapPlaces(
       coverage: coverage,
-      community: _communityPlaces,
-      stimme: _stimmePlaces,
+      community: browseLodShowsCoveragePlaces(lod)
+          ? _communityPlaces
+          : const [],
+      stimme: browseLodShowsStimmePlaces(lod) ? _stimmePlaces : const [],
       meets: _meetPlaces,
     );
   }
@@ -6488,6 +6495,10 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
             TourFilters.softSportMatchAny(b.categories, rankingSports),
       );
       if (n != 0) return n;
+      final ma = _liveMatch(a);
+      final mb = _liveMatch(b);
+      final mc = mb.compareTo(ma);
+      if (mc != 0) return mc;
       return _byDistanceThenDurationFit(a, b);
     });
     return sorted;
@@ -7867,6 +7878,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         ref.read(userProfileStoreProvider).preferredSport;
   }
 
+  BrowseLod get _browseLod => browseLodFromZoom(_mapZoom);
+
+  int _liveMatch(_RouteSuggestion r) => tourMatchScore(
+        bike: _garageCategory ?? BikeCategory.urban,
+        categories: r.categories,
+        surface: r.surface,
+        mtbScale: r.mtbScale,
+        durationMin: r.durationMin,
+        isLoop: _isLoop(r),
+      );
+
   NavPolicy get _navPolicy =>
       navPolicyForBike(_garageCategory ?? BikeCategory.urban);
 
@@ -8167,14 +8189,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           ]) {
             if (gen != _drawGen) return;
             if (seg.coordinatesLngLat.length < 2) continue;
+            final lod = _browseLod.id;
+            if (!browseLodShowsHeatmap(lod)) continue;
             await c.addLine(
               LineOptions(
                 geometry: [
                   for (final p in seg.coordinatesLngLat) LatLng(p[1], p[0]),
                 ],
                 lineColor: seg.id.startsWith('cell-') ? '#E65100' : '#FF7043',
-                lineWidth: 6 + seg.intensity * 8,
-                lineOpacity: 0.18 + seg.intensity * 0.25,
+                lineWidth: browseLodHeatWidth(lod, seg.intensity),
+                lineOpacity: browseLodHeatOpacity(lod, seg.intensity),
               ),
             );
           }
@@ -8291,8 +8315,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       });
       final hideTourRibbons = _planningAb;
       if (_showToursLayer && !hideTourRibbons) {
+        final ribbonLod = _browseLod.id;
         for (final tour in trackTours) {
           if (gen != _drawGen) return;
+          if (!browseLodRibbonVisible(
+            lod: ribbonLod,
+            popularity: _liveMatch(tour),
+            selected: tour.id == _selectedTourId,
+          )) {
+            continue;
+          }
           final cached = _routedLoopCache[tour.id];
           final List<LatLng> geom;
           final bool routed;
@@ -9394,13 +9426,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       // Background-Routing läuft. Fertige Tracks haben bereits eine Line in
       // [_drawAll] (keine blinden T-Pins à la leere Ideen-Punkte).
       if (_showToursLayer && !_planningAb) {
+        final pinLod = _browseLod.id;
         for (final tour in _filtered.take(DiscoverMapLineStyle.mapTourCap)) {
           final cached = _routedLoopCache[tour.id];
           final hasLine =
               tour.hasTrack || (cached != null && cached.length >= 4);
           final selected = tour.id == _selectedTourId;
+          if (!browseLodPinVisible(
+            lod: pinLod,
+            popularity: _liveMatch(tour),
+            selected: selected,
+          )) {
+            continue;
+          }
           if (hasLine) {
-            if (selected || _mapZoom < 10) continue;
+            if (selected || pinLod == BrowseLodId.overview) continue;
             final start = cached != null && cached.isNotEmpty
                 ? LatLng(cached.first.lat, cached.first.lng)
                 : (tour.trackLngLat != null && tour.trackLngLat!.isNotEmpty
@@ -9573,7 +9613,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _routeFlowSymbol = null;
       return;
     }
-    if (_pinImagesReady && _mapZoom >= 11) {
+    if (_pinImagesReady && browseLodShowsSurfaceStyle(_browseLod.id)) {
       final track = [
         for (final p in geom) [p.longitude, p.latitude],
       ];
@@ -11187,12 +11227,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     statusTop: MediaQuery.paddingOf(context).top,
                     chromeHeight: _resolvedExploreChromeHeight,
                   ),
-                  child: (_showTrailsLayer || _showBikeWaysLayer)
-                      ? DiscoverMapLegend(
-                          trailsOn: _showTrailsLayer,
-                          waysOn: _showBikeWaysLayer,
-                        )
-                      : const SizedBox.shrink(),
+                  child: DiscoverMapLegend(
+                    trailsOn: _showTrailsLayer,
+                    waysOn: _showBikeWaysLayer,
+                    lodLabel: _browseLod.label,
+                    lodTask: _browseLod.task,
+                  ),
                 ),
               if (!_hofChoice &&
                   _surface == _Surface.discover &&
@@ -11595,13 +11635,20 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
             final z = cam?.zoom ?? _mapZoom;
             final crossed = (z > kBikeOverlayVectorMaxZoom) !=
                 (_mapZoom > kBikeOverlayVectorMaxZoom);
+            final prevLod = browseLodFromZoom(_mapZoom);
+            final nextLod = browseLodFromZoom(z);
+            final lodChanged = browseLodNeedsFullResync(prevLod.id, nextLod.id);
             final prevPinBand = TourFilters.browsePinZoomBand(_mapZoom);
             final nextPinBand = TourFilters.browsePinZoomBand(z);
             final pinBandChanged = prevPinBand != nextPinBand;
             final coverBandChanged =
                 coverageNameZoomBand(z) != coverageNameZoomBand(_mapZoom);
             _mapZoom = z;
-            if (crossed && _bikeOverlayAttached && _showTrailNetwork) {
+            if (lodChanged) {
+              if (mounted) setState(() {});
+              unawaited(_drawAll());
+              unawaited(_syncMarkers(coalesce: true));
+            } else if (crossed && _bikeOverlayAttached && _showTrailNetwork) {
               unawaited(_drawAll());
             } else if (coverBandChanged) {
               unawaited(_syncMarkers(coalesce: true));
@@ -16749,16 +16796,25 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            tourDisplayName(r.name),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 17,
-                              height: 1.2,
-                              color: selected ? AppColors.accent : null,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  tourDisplayName(r.name),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 17,
+                                    height: 1.2,
+                                    color: selected ? AppColors.accent : null,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _MatchChip(score: _liveMatch(r)),
+                            ],
                           ),
                           const SizedBox(height: 6),
                           TourSocialProof(tourId: r.id),
@@ -17742,3 +17798,32 @@ class _MiniElevPainter extends CustomPainter {
   bool shouldRepaint(covariant _MiniElevPainter oldDelegate) =>
       oldDelegate.samples != samples;
 }
+
+class _MatchChip extends StatelessWidget {
+  const _MatchChip({required this.score});
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    final hot = score >= 80;
+    return Container(
+      key: const Key('discover-match-chip'),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: hot
+            ? AppColors.accent.withValues(alpha: 0.16)
+            : AppColors.sage.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        '$score',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: hot ? AppColors.accent : AppColors.sageOnDark,
+        ),
+      ),
+    );
+  }
+}
+

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/config.dart';
 import '../../domain/bike.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/browse_lod.dart';
 import '../../domain/routing/browse_map_paint.dart';
 import '../../domain/routing/browse_map_stack.dart';
 import 'map_style_url.dart';
@@ -776,7 +777,9 @@ Future<void> _attachBikeOverlayLayersBody(
           classId,
         ],
         sourceLayer: pmtiles ? 'bike' : null,
-        minzoom: classId == 'road' || classId == 'mtb' ? 5 : minzoom,
+        minzoom: classId == 'road'
+            ? BrowseLodBands.corridorMinZoom
+            : minzoom,
         belowLayerId: below,
       );
     } catch (_) {}
@@ -788,7 +791,7 @@ Future<void> _attachBikeOverlayLayersBody(
       classId: 'mtb_unrated',
       lineColor: bikeOverlaySurfaceLineColor(BikeOverlayColors.unrated),
       lineWidth: BrowseMapPaint.trailWidth,
-      dash: const [2, 1.4],
+      dash: BrowseMapPaint.rootyDash,
       minzoom: BrowseMapPaint.unratedMinZoom,
     );
     await addClassLayer(

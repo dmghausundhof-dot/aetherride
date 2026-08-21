@@ -42,4 +42,12 @@ void main() {
     expect(find.text('Schotter'), findsNothing);
     expect(find.text('Pfad'), findsNothing);
   });
+
+  testWidgets('legend shows lod badge next to swatches', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const DiscoverMapLegend(lodLabel: 'Charakter')),
+    );
+    expect(find.byKey(const Key('browse-lod-badge')), findsOneWidget);
+    expect(find.text('Charakter'), findsOneWidget);
+  });
 }

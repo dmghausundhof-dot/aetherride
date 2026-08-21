@@ -1,12 +1,13 @@
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/browse_lod.dart';
 import '../../domain/routing/trail_difficulty.dart';
 import 'osm_trail_network_client.dart';
 
 const kOsmSGradeSourceId = 'osm-sgrade';
 const kOsmSGradeLayerId = 'osm-sgrade-mtb';
 
-/// Below this zoom Overpass would return a country-sized mesh / time out.
-const kOsmSGradeMinZoom = 11.0;
+/// S-Skala ist Charakter, nicht Netz — Overpass sonst country-sized.
+const kOsmSGradeMinZoom = BrowseLodBands.character.minZoom;
 
 /// Max viewport span (degrees) sent to Overpass — same honesty as osmLive clamp.
 const kOsmSGradeMaxBboxDeg = 0.4;

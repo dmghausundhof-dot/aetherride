@@ -470,11 +470,15 @@ class DiscoverMapLegend extends StatelessWidget {
     this.padded = true,
     this.trailsOn = true,
     this.waysOn = true,
+    this.lodLabel,
+    this.lodTask,
   });
 
   final bool padded;
   final bool trailsOn;
   final bool waysOn;
+  final String? lodLabel;
+  final String? lodTask;
 
   @override
   Widget build(BuildContext context) {
@@ -484,7 +488,9 @@ class DiscoverMapLegend extends StatelessWidget {
       if (trailsOn) _dot(BrowseMapPaint.gravelHex, l10n.browseMapLegendGravel),
       if (trailsOn) _dot(BrowseMapPaint.trailHex, l10n.browseMapLegendTrail),
     ];
-    if (swatches.isEmpty) return const SizedBox.shrink();
+    if (swatches.isEmpty && (lodLabel == null || lodLabel!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
     final row = Row(
       key: const Key('browse-map-legend'),
       mainAxisSize: MainAxisSize.min,
@@ -492,6 +498,26 @@ class DiscoverMapLegend extends StatelessWidget {
         for (var i = 0; i < swatches.length; i++) ...[
           if (i > 0) const SizedBox(width: 10),
           swatches[i],
+        ],
+        if (lodLabel != null && lodLabel!.isNotEmpty) ...[
+          const SizedBox(width: 10),
+          Container(
+            key: const Key('browse-lod-badge'),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppColors.sage.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              lodLabel!,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+                color: AppColors.sageOnDark,
+              ),
+            ),
+          ),
         ],
       ],
     );

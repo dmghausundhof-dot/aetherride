@@ -92,6 +92,10 @@ class DiscoverMapLineStyle {
   static const double trailUnselectedWidth = 2.2;
   static const double trailFilteredOpacity = 0.58;
 
+  /// Rooty / S2+ — gestrichelt, nicht eine vierte Farbe.
+  static const List<double> rootyDash = [1.8, 1.3];
+
+
   static const String selectedGravel = '#E0B04A';
   static const String unselectedGravel = '#C49A3C';
   static const String selectedRoad = '#42A5F5';

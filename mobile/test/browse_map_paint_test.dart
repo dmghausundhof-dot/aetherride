@@ -32,6 +32,10 @@ void main() {
     expect(BrowseMapPaint.livePathMinZoom, lessThan(12));
     expect(BrowseMapPaint.liveTrackMinZoom, greaterThanOrEqualTo(13));
     expect(BrowseMapPaint.packMinZoom, 10);
+    expect(BrowseMapPaint.characterMinZoom, 12.5);
+    expect(BrowseMapPaint.detailMinZoom, 15.5);
+    expect(BrowseMapPaint.mtbMinZoom, 10);
+    expect(BrowseMapPaint.rootyDash.length, 2);
     expect(
       BrowseMapPaint.liveCyclewayWidth,
       greaterThan(BrowseMapPaint.livePathWidth),

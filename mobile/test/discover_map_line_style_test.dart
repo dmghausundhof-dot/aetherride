@@ -46,7 +46,9 @@ void main() {
 
   test('trail overlay stays under tour ribbons', () {
     expect(DiscoverMapLineStyle.trailUnselectedOpacity, lessThan(0.4));
+    expect(DiscoverMapLineStyle.rootyDash.length, 2);
   });
+
 
   test('pending A–B ghost stays lighter than the live ribbon', () {
     expect(DiscoverMapLineStyle.pendingAbOpacity, lessThan(0.75));
