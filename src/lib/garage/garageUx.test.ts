@@ -316,6 +316,18 @@ assert(
   ),
   "rad empty uses stand stage"
 );
+const emptyStage = readFileSync(
+  "src/components/garage/RadEmptyStage.tsx",
+  "utf8"
+);
+assert(
+  emptyStage.includes("strokeDasharray") || emptyStage.includes("RAD_EMPTY_STAND"),
+  "empty stage is dashed SVG or shipped stand art"
+);
+assert(
+  !emptyStage.includes("empty-stand-mark"),
+  "broken prod asset empty-stand-mark.svg is not referenced"
+);
 assert(
   readFileSync("src/components/hof/HofEmpty.tsx", "utf8").includes(
     "RadEmptyStage"
@@ -496,7 +508,7 @@ assert(
 );
 assert(
   garagePageSrc.includes("workshopTitle"),
-  "garage heading is Rad, not Werkstatt chrome"
+  "garage heading is Garage, not Workshop chrome"
 );
 assert(
   readFileSync("src/components/garage/GarageMaintenanceTab.tsx", "utf8").includes(

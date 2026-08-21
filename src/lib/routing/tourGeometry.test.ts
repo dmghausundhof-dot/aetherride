@@ -2,8 +2,14 @@
  * npx tsx src/lib/routing/tourGeometry.test.ts
  */
 import assert from "node:assert/strict";
-import { waypointsForTour, routingProfileForTour, tourGeometrySource } from "./tourGeometry";
+import {
+  waypointsForTour,
+  routingProfileForTour,
+  tourGeometrySource,
+  computeTourGeometry,
+} from "./tourGeometry";
 import { getPublicTour, listPublicTours } from "@/lib/catalog/publicTours";
+import { getP0SeedById } from "@/lib/discover/berlinLoops";
 
 const tours = listPublicTours();
 assert.ok(tours.length > 5, "public tours exist");
@@ -29,6 +35,22 @@ assert.equal(routingProfileForTour(road!), "road");
 assert.equal(tourGeometrySource("r-freiburg-city"), "catalog");
 assert.equal(tourGeometrySource("seed-loop-tempelhofer-60"), "p0-seed");
 assert.equal(tourGeometrySource("seed-loop-heidelberg-neckar-60"), "p0-seed");
+assert.equal(tourGeometrySource("seed-loop-titisee-feldberg-mtb-60"), "p0-seed");
 assert.equal(tourGeometrySource("no-such-tour"), null);
 
-console.log("tourGeometry.test.ts OK");
+computeTourGeometry("seed-loop-titisee-feldberg-mtb-60")
+  .then((titisee) => {
+    assert.ok(titisee);
+    assert.ok(
+      (titisee.geometry.coordinates?.length ?? 0) >= 2,
+      "stored Titisee track is returned, not a live fill"
+    );
+    assert.equal(titisee.engine, "editorial");
+    const stored = getP0SeedById("seed-loop-titisee-feldberg-mtb-60")?.geometry;
+    assert.equal(titisee.geometry.coordinates.length, stored?.length);
+    console.log("tourGeometry.test.ts OK");
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

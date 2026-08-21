@@ -1360,10 +1360,10 @@ export function listPublicTours(): PublicTour[] {
 
 /** Startseite / Regionen-Teaser — echte Katalog-IDs, keine Dummy-Karten. */
 export const FEATURED_TOUR_IDS = [
-  "r-hamburg-alster",
-  "r-heidelberg-city",
+  "r-heidelberg-road",
+  "r-odenwald-gravel",
   "r-schwarzwald-gravel",
-  "r-bodensee-road",
+  "idea-kaltenbronn",
 ] as const;
 
 export function featuredPublicTours(): PublicTour[] {

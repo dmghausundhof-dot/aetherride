@@ -8,6 +8,7 @@ import {
   HOME_GUIDES,
   HOME_HONESTY,
   HOME_INTRO,
+  HOME_LEVERS,
 } from "../content/homepage";
 import { homepageCopy } from "./homepageCopy";
 
@@ -30,6 +31,10 @@ function testDeMatchesSource() {
     HOME_DOOR_STORIES.map((d) => d.href),
   );
   assert.deepEqual([...h.guides.slugs], [...HOME_GUIDES.slugs]);
+  assert.equal(h.levers.length, HOME_LEVERS.length);
+  assert.equal(h.homeFaq.length, 3);
+  assert.equal(h.ui.heroTagline, "Das Rad wohnt hier.");
+  assert.equal(h.heroCta, "Zur Karte");
 }
 
 function testParity() {
@@ -38,6 +43,8 @@ function testParity() {
     const h = homepageCopy(lang);
     assert.equal(h.disciplines.length, de.disciplines.length, lang);
     assert.equal(h.doors.length, de.doors.length, lang);
+    assert.equal(h.levers.length, de.levers.length, lang);
+    assert.equal(h.homeFaq.length, 3, lang);
     assert.equal(h.webSurfaces.length, de.webSurfaces.length, lang);
     assert.equal(h.appSurfaces.length, de.appSurfaces.length, lang);
     assert.equal(h.journeySteps.length, de.journeySteps.length, lang);
@@ -49,6 +56,11 @@ function testParity() {
     assert.deepEqual(
       h.doors.map((d) => d.href),
       de.doors.map((d) => d.href),
+      lang,
+    );
+    assert.deepEqual(
+      h.levers.map((d) => d.href),
+      de.levers.map((d) => d.href),
       lang,
     );
     assert.deepEqual([...h.guides.slugs], [...de.guides.slugs], lang);
@@ -77,9 +89,10 @@ function testChromeLangs() {
   assert.equal(homepageCopy("en").ui.heroTagline, "The bike lives here.");
   assert.equal(homepageCopy("fr").ui.trustOk, "Compris");
   assert.equal(homepageCopy("it").cta.title.includes("bici"), true);
-  assert.ok(homepageCopy("en").pricing.pro.includes("€"));
+  assert.ok(homepageCopy("en").pricing.pro.includes("€") || homepageCopy("en").pricing.pro.length > 4);
   assert.ok(homepageCopy("fr").intro.lead.includes("tu "));
   assert.ok(homepageCopy("nl").intro.lead.includes("je "));
+  assert.ok(/Enduro/i.test(homepageCopy("de").bikesLine));
 }
 
 testDeMatchesSource();

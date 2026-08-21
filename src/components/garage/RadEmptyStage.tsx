@@ -1,7 +1,6 @@
-import { RAD_EMPTY_STAND_MARK, RAD_STAND_GROUND, RAD_STAND_HEADER } from "@/lib/garage/radMark";
 import { cn } from "@/lib/utils";
 
-/** Leerer Stand — dieselbe Bühne wie ein geparktes Rad, ohne Silhouette. */
+/** Leerer Stand — gestricheltes Rad, ohne kaputtes Bild. */
 export function RadEmptyStage({
   heightClass = "h-36",
   className,
@@ -12,37 +11,41 @@ export function RadEmptyStage({
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-[#121215]",
+        "relative flex items-center justify-center overflow-hidden bg-[#121215]",
         heightClass,
         className
       )}
     >
-      <img
-        src={RAD_STAND_GROUND}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        draggable={false}
-      />
-      <div
+      <svg
+        viewBox="0 0 240 140"
+        width="240"
+        height="140"
+        className="h-full w-auto max-w-[92%]"
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#E57532]/16 to-transparent"
-      />
-      <img
-        src={RAD_EMPTY_STAND_MARK}
-        alt=""
-        width={240}
-        height={140}
-        className="relative mx-auto h-full w-auto max-w-[92%] object-contain"
-        draggable={false}
-      />
-      <img
-        src={RAD_STAND_HEADER}
-        alt=""
-        width={240}
-        height={24}
-        className="pointer-events-none absolute bottom-1 left-3 h-3.5 w-24"
-        draggable={false}
-      />
+      >
+        <g fill="none" stroke="#7A8B73" strokeWidth="2.2" strokeLinecap="round">
+          <path d="M48 74 V108" />
+          <path d="M192 74 V108" />
+          <path d="M48 76 H192" />
+        </g>
+        <circle cx="48" cy="74" r="3.2" fill="#E57532" />
+        <circle cx="192" cy="74" r="3.2" fill="#E57532" />
+        <g
+          fill="none"
+          stroke="#FF6A00"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="4 5"
+        >
+          <circle cx="86" cy="84" r="17" />
+          <circle cx="154" cy="84" r="17" />
+          <path d="M86 84 L108 54 L138 54 L154 84" />
+          <path d="M108 54 L120 84" />
+          <path d="M138 54 L120 84" />
+          <path d="M108 54 L100 42 H90" />
+        </g>
+      </svg>
     </div>
   );
 }

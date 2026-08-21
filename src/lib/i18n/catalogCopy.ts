@@ -38,6 +38,8 @@ export type CatalogCopy = {
     about: string;
     honestTitle: string;
     honestBody: string;
+    seedKicker: string;
+    seedHonestBody: string;
     region: string;
     allToursIn: (name: string) => string;
     disciplines: string;
@@ -173,6 +175,9 @@ const DE: CatalogCopy = {
     honestTitle: "Ehrlicher Hinweis",
     honestBody:
       "Das ist eine redaktionelle Tour-Idee, kein Community-Track mit vermessener GPS-Linie. Unter Planen oder Touren wird die Route mit dem gewählten Sport-Profil berechnet. Navigation und Offline nur in der nativen App. Stimmen sind moderiert und enthalten keine Tracks.",
+    seedKicker: "Nähe-Idee",
+    seedHonestBody:
+      "Kuratierte Nähe-Idee, kein Community-Feed. Linie nur bei gespeichertem Track — sonst nur der Pin. Keine Sterne, keine erfundenen Fahrten.",
     region: "Region",
     allToursIn: (name) => `Alle Touren in ${name} →`,
     disciplines: "Disziplinen",
@@ -245,8 +250,8 @@ const DE: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} Fotos` : ""}`,
     write: "Stimme schreiben",
     starsAria: (n) => `${n} Sterne`,
-    namePlaceholder: "Leer bleibt Du",
-    nameAria: "Anzeigename — leer bleibt Du",
+    namePlaceholder: "Name",
+    nameAria: "Anzeigename",
     bodyPlaceholder:
       "Wie war die Tour? Belag, Verkehr, Tipps… (keine privaten Orte)",
     photo: "Foto",
@@ -267,8 +272,8 @@ const DE: CatalogCopy = {
     tagLabel: (wire) =>
       ({
         nass: "nass",
-        zu: "zu",
-        viel_los: "viel los",
+        zu: "gesperrt",
+        viel_los: "voll",
         top: "top",
         baustelle: "Baustelle",
       }[wire] ?? wire),
@@ -323,6 +328,9 @@ const EN: CatalogCopy = {
     honestTitle: "Honest note",
     honestBody:
       "This is an editorial tour idea, not a community track with a surveyed GPS line. Under Plan or Tours the route is calculated with the chosen sport profile. Navigation and offline only in the native app. Stimmen are moderated and carry no tracks.",
+    seedKicker: "Nearby idea",
+    seedHonestBody:
+      "A curated nearby idea, not a community feed. A line only when a track is stored — otherwise just the pin. No stars, no invented ride counts.",
     region: "Region",
     allToursIn: (name) => `All tours in ${name} →`,
     disciplines: "Disciplines",
@@ -395,8 +403,8 @@ const EN: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} photos` : ""}`,
     write: "Write a Stimme",
     starsAria: (n) => `${n} stars`,
-    namePlaceholder: "Empty stays You",
-    nameAria: "Display name — empty stays You",
+    namePlaceholder: "Name",
+    nameAria: "Display name",
     bodyPlaceholder:
       "How was the tour? Surface, traffic, tips… (no private places)",
     photo: "Photo",
@@ -471,6 +479,9 @@ const FR: CatalogCopy = {
     honestTitle: "Note honnête",
     honestBody:
       "C’est une idée de sortie éditoriale, pas une trace community avec une ligne GPS mesurée. Sous Planifier ou Sorties, l’itinéraire est calculé avec le profil sport choisi. Navigation et hors ligne seulement dans l’appli native. Les Stimmen sont modérées et ne portent pas de traces.",
+    seedKicker: "Idée proche",
+    seedHonestBody:
+      "Idée de proximité, pas un fil community. Une ligne seulement s’il y a une trace enregistrée — sinon uniquement l’épingle. Pas d’étoiles, pas de sorties inventées.",
     region: "Région",
     allToursIn: (name) => `Toutes les sorties à ${name} →`,
     disciplines: "Disciplines",
@@ -543,8 +554,8 @@ const FR: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} photos` : ""}`,
     write: "Écrire une Stimme",
     starsAria: (n) => `${n} étoiles`,
-    namePlaceholder: "Vide reste Toi",
-    nameAria: "Nom affiché — vide reste Toi",
+    namePlaceholder: "Nom",
+    nameAria: "Nom affiché",
     bodyPlaceholder:
       "Comment était la sortie ? Revêtement, trafic, conseils… (pas de lieux privés)",
     photo: "Photo",
@@ -621,6 +632,9 @@ const IT: CatalogCopy = {
     honestTitle: "Nota onesta",
     honestBody:
       "È un’idea di uscita editoriale, non una traccia community con linea GPS rilevata. Sotto Pianifica o Uscite il percorso è calcolato con il profilo sport scelto. Navigazione e offline solo nell’app nativa. Le Stimmen sono moderate e non portano tracce.",
+    seedKicker: "Idea vicina",
+    seedHonestBody:
+      "Idea di prossimità, non un feed community. Linea solo con traccia salvata — altrimenti solo il pin. Niente stelle, niente uscite inventate.",
     region: "Regione",
     allToursIn: (name) => `Tutte le uscite a ${name} →`,
     disciplines: "Discipline",
@@ -693,8 +707,8 @@ const IT: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} foto` : ""}`,
     write: "Scrivi una Stimme",
     starsAria: (n) => `${n} stelle`,
-    namePlaceholder: "Vuoto resta Tu",
-    nameAria: "Nome visibile — vuoto resta Tu",
+    namePlaceholder: "Nome",
+    nameAria: "Nome visibile",
     bodyPlaceholder:
       "Com’era l’uscita? Fondo, traffico, consigli… (niente luoghi privati)",
     photo: "Foto",
@@ -771,6 +785,9 @@ const NL: CatalogCopy = {
     honestTitle: "Eerlijke noot",
     honestBody:
       "Dit is een redactioneel tochtidee, geen community-track met gemeten GPS-lijn. Onder Plannen of Tochten wordt de route berekend met het gekozen sportprofiel. Navigatie en offline alleen in de native app. Stimmen zijn gemodereerd en dragen geen tracks.",
+    seedKicker: "Idee in de buurt",
+    seedHonestBody:
+      "Idee in de buurt, geen community-feed. Lijn alleen bij opgeslagen track — anders alleen de pin. Geen sterren, geen verzonnen ritten.",
     region: "Regio",
     allToursIn: (name) => `Alle tochten in ${name} →`,
     disciplines: "Disciplines",
@@ -843,8 +860,8 @@ const NL: CatalogCopy = {
       `${avg} · ${n} Stimmen${photos > 0 ? ` · ${photos} foto's` : ""}`,
     write: "Stimme schrijven",
     starsAria: (n) => `${n} sterren`,
-    namePlaceholder: "Leeg blijft Jij",
-    nameAria: "Weergavenaam — leeg blijft Jij",
+    namePlaceholder: "Naam",
+    nameAria: "Weergavenaam",
     bodyPlaceholder:
       "Hoe was de tocht? Ondergrond, verkeer, tips… (geen privéplekken)",
     photo: "Foto",

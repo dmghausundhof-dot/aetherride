@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useHofCopy } from "@/hooks/useHofCopy";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { useAppStore } from "@/store/useAppStore";
 import type { BikeCategory } from "@/types";
@@ -22,30 +21,42 @@ const SPORTS: BikeCategory[] = [
 ];
 
 /**
- * Flow A light: Sport → Gewicht → Rad anlegen oder Freeride.
- * Einmalig, bis abgeschlossen oder übersprungen.
+ * Flow A light: Sport → Gewicht → Rad anlegen und auf die Karte.
+ * Skip bleibt ehrlich ohne Rad. Kein City-Default, kein „Rad optional“
+ * nachdem eine Disziplin gewählt wurde.
  */
 export function OnboardingFlow({ onDone }: { onDone: () => void }) {
-  const copy = useHofCopy();
   const lang = useChromeLang();
   const o = onboardCopy(lang);
   const p = profileCopy(lang);
   const router = useRouter();
   const updateRiderProfile = useAppStore((s) => s.updateRiderProfile);
   const markOnboardingDone = useAppStore((s) => s.markOnboardingDone);
+  const addBikeBasic = useAppStore((s) => s.addBikeBasic);
   const [step, setStep] = useState<1 | 2>(1);
-  const [sport, setSport] = useState<BikeCategory>("urban");
+  const [sport, setSport] = useState<BikeCategory | null>(null);
   const [weight, setWeight] = useState(78);
 
-  const finish = (next: "garage" | "discover" | "skip") => {
+  const skip = () => {
+    updateRiderProfile({ riderWeightKg: weight });
+    markOnboardingDone(null);
+    onDone();
+  };
+
+  const finishWithBike = () => {
+    if (!sport) return;
     updateRiderProfile({ riderWeightKg: weight });
     markOnboardingDone(sport);
-    onDone();
-    if (next === "garage") {
-      router.push(`/garage?wizard=1&category=${sport}`);
-    } else if (next === "discover") {
-      router.push("/discover");
+    try {
+      addBikeBasic({
+        name: bikeCategoryLabel(sport, lang),
+        category: sport,
+      });
+    } catch {
+      /* Free already has a bike — keep the selected one. */
     }
+    onDone();
+    router.push("/discover");
   };
 
   return (
@@ -65,7 +76,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
           </div>
           <button
             type="button"
-            onClick={() => finish("skip")}
+            onClick={skip}
             className="touch-target p-2 text-text-secondary"
             aria-label={o.skip}
           >
@@ -97,7 +108,7 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && sport && (
           <label className="block text-sm">
             {p.riderWeight}
             <input
@@ -118,32 +129,25 @@ export function OnboardingFlow({ onDone }: { onDone: () => void }) {
           {step === 1 ? (
             <button
               type="button"
+              disabled={!sport}
               onClick={() => setStep(2)}
-              className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent"
+              className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-40"
             >
               {o.next}
             </button>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => finish("garage")}
-                className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent"
-              >
-                {copy.workshopAdd}
-              </button>
-              <button
-                type="button"
-                onClick={() => finish("discover")}
-                className="w-full rounded-xl border border-border py-3 text-sm font-medium"
-              >
-                {copy.showTours}
-              </button>
-            </>
+            <button
+              type="button"
+              disabled={!sport}
+              onClick={finishWithBike}
+              className="w-full rounded-xl bg-accent py-3 font-semibold text-on-accent disabled:opacity-40"
+            >
+              {o.next}
+            </button>
           )}
           <button
             type="button"
-            onClick={() => finish("skip")}
+            onClick={skip}
             className="py-2 text-xs text-text-secondary"
           >
             {o.later}

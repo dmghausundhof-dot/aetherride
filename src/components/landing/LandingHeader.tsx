@@ -64,13 +64,13 @@ export function LandingHeader() {
             href="/anmelden"
             className="hidden text-sm text-text-secondary hover:text-chrome sm:block"
           >
-            {copy.arriveAtHof}
+            {copy.signIn}
           </Link>
           <Link
-            href="/home"
+            href="/discover"
             className="hidden h-9 items-center rounded-xl bg-chrome px-3.5 text-sm font-semibold text-on-accent hover:bg-chrome/90 sm:inline-flex"
           >
-            {copy.toHof}
+            {copy.hofNav.karte}
           </Link>
           <button
             type="button"
@@ -109,14 +109,14 @@ export function LandingHeader() {
               onClick={() => setOpen(false)}
               className="rounded-lg px-3 py-3 text-sm text-text-secondary"
             >
-              {copy.arriveAtHof}
+              {copy.signIn}
             </Link>
             <Link
-              href="/home"
+              href="/discover"
               onClick={() => setOpen(false)}
               className="mt-1 flex h-11 items-center justify-center rounded-xl bg-chrome px-3 text-sm font-semibold text-on-accent"
             >
-              {copy.toHof}
+              {copy.hofNav.karte}
             </Link>
           </nav>
         </div>

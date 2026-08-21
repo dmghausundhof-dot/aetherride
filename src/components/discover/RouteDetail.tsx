@@ -33,9 +33,13 @@ import { TourReviews } from "@/components/community/TourReviews";
 import { TourCommunityChip } from "@/components/community/TourCommunityChip";
 import { TourFunctionKit } from "@/components/tours/TourFunctionKit";
 import { getPublicTour } from "@/lib/catalog/publicTours";
+import { hasPublicTourPage } from "@/lib/tours/tourPageResolve";
 import type { RangeEstimate } from "@/lib/ebike/range";
 import { useChromeLang } from "@/hooks/useChromeLang";
 import { discoverStatus, discoverUi } from "@/lib/i18n/discoverUi";
+import { bikeCategoryLabel } from "@/lib/catalog/slots";
+import { bikeMatchLine, riderFacingReasons } from "@/lib/discover/riderHonesty";
+import { useAppStore } from "@/store/useAppStore";
 
 type DetailLayer = "overview" | "heat" | "trail" | "elevation";
 
@@ -108,6 +112,14 @@ export function RouteDetail({
 }) {
   const lang = useChromeLang();
   const d = discoverUi(lang);
+  const bikes = useAppStore((s) => s.bikes);
+  const activeBikeId = useAppStore((s) => s.activeBikeId);
+  const activeBike = bikes.find((b) => b.id === activeBikeId) || bikes[0];
+  const matchLine = bikeMatchLine(
+    Boolean(activeBike),
+    activeBike ? bikeCategoryLabel(activeBike.category, lang) : null,
+    d.fitsYourBike,
+  );
   const catalogTour = getPublicTour(route.id);
   const [layer, setLayer] = useState<DetailLayer>("overview");
   const [photoIdx, setPhotoIdx] = useState(0);
@@ -256,6 +268,29 @@ export function RouteDetail({
 
   // List↔panel parity: same sanitize as RouteCard (omit 0 / absurd).
   const ascentDisplay = sanitizeElevationM(route.elevationM, route.distanceKm);
+  const reasons = riderFacingReasons(route.reasons);
+  const hasPopular =
+    !mergedHeat.coldStart &&
+    mergedHeat.segments.some((s) => s.visible);
+  const hasPhotos = (trail?.photos.length ?? 0) > 0;
+  const hasElevation = ascentDisplay != null;
+  const extraTabs = (
+    [
+      hasPopular ? (["heat", d.popular, "heat"] as const) : null,
+      hasPhotos ? (["trail", d.photos, "photo"] as const) : null,
+      hasElevation ? (["elevation", d.elevation, "elevation"] as const) : null,
+    ] as const
+  ).filter((t): t is NonNullable<typeof t> => t != null);
+  const showTabBar = extraTabs.length > 0;
+  const emptyLayers = !hasPopular && !hasPhotos && !hasElevation;
+  const layerShown: DetailLayer =
+    layer === "heat" && hasPopular
+      ? "heat"
+      : layer === "trail" && hasPhotos
+        ? "trail"
+        : layer === "elevation" && hasElevation
+          ? "elevation"
+          : "overview";
 
   return (
     <div className="flex flex-col gap-4">
@@ -281,35 +316,38 @@ export function RouteDetail({
           {route.mtbScale !== "—" ? ` · ${route.mtbScale}` : ""} ·{" "}
           {route.loop ? d.loopRound : d.pointAb}
         </p>
-        <div className="mt-2 inline-flex rounded-full bg-accent/20 px-2.5 py-1 text-xs font-bold text-accent">
-          {route.matchScore}% {d.match}
-        </div>
+        {matchLine ? (
+          <div className="mt-2 inline-flex rounded-full bg-accent/20 px-2.5 py-1 text-xs font-semibold text-accent">
+            {matchLine}
+          </div>
+        ) : null}
       </header>
 
-      <div className="grid grid-cols-4 gap-1 rounded-xl bg-surface-elevated p-1 text-[10px]">
-        {(
-          [
-            ["overview", d.overview, "karte"],
-            ["heat", d.popular, "heat"],
-            ["trail", d.photos, "photo"],
-            ["elevation", d.elevation, "elevation"],
-          ] as const
-        ).map(([id, label, mark]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setLayer(id)}
-            className={`flex flex-col items-center gap-0.5 rounded-lg py-2 font-medium ${
-              layer === id ? "bg-accent text-on-accent" : "text-text-secondary"
-            }`}
-          >
-            <ChromeGlyph name={mark} size={14} current />
-            {label}
-          </button>
-        ))}
-      </div>
+      {showTabBar ? (
+        <div
+          className={`grid gap-1 rounded-xl bg-surface-elevated p-1 text-[10px] ${
+            extraTabs.length === 1 ? "grid-cols-2" : extraTabs.length === 2 ? "grid-cols-3" : "grid-cols-4"
+          }`}
+        >
+          {([["overview", d.overview, "karte"] as const, ...extraTabs]).map(
+            ([id, label, mark]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setLayer(id)}
+                className={`flex flex-col items-center gap-0.5 rounded-lg py-2 font-medium ${
+                  layerShown === id ? "bg-accent text-on-accent" : "text-text-secondary"
+                }`}
+              >
+                <ChromeGlyph name={mark} size={14} current />
+                {label}
+              </button>
+            ),
+          )}
+        </div>
+      ) : null}
 
-      {layer === "overview" && (
+      {layerShown === "overview" && (
         <div className="flex flex-col gap-3">
           {!hideMiniMap && (
             <>
@@ -330,6 +368,16 @@ export function RouteDetail({
               )}
             </>
           )}
+          {hideMiniMap && !geometry ? (
+            <p className="text-[11px] text-text-secondary">
+              {d.pinOnlyHint}
+            </p>
+          ) : null}
+          {emptyLayers ? (
+            <p className="text-[11px] text-text-secondary">
+              {d.emptyLayers}
+            </p>
+          ) : null}
           {route.poiStops && route.poiStops.length > 0 && (
             <ol className="ml-1">
               {route.poiStops
@@ -380,7 +428,7 @@ export function RouteDetail({
           )}
           <EvidenceSheet title={d.whySuggestion}>
             <ol className="list-decimal space-y-1 pl-4 text-sm">
-              {route.reasons.map((r) => (
+              {reasons.map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ol>
@@ -432,7 +480,7 @@ export function RouteDetail({
         </div>
       )}
 
-      {layer === "heat" && (
+      {layerShown === "heat" && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-text-secondary">
             {discoverStatus(mergedHeat.disclaimer, lang)}
@@ -490,7 +538,7 @@ export function RouteDetail({
         </div>
       )}
 
-      {layer === "trail" && (
+      {layerShown === "trail" && (
         <div className="flex flex-col gap-3">
           {photo ? (
             <>
@@ -536,7 +584,7 @@ export function RouteDetail({
         </div>
       )}
 
-      {layer === "elevation" &&
+      {layerShown === "elevation" &&
         (ascentDisplay != null ? (
           <ElevationChart elev={elev} />
         ) : (
@@ -587,12 +635,14 @@ export function RouteDetail({
           ) : null}
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Link
-            href={`/tours/${route.id}`}
-            className="text-xs font-medium text-accent hover:underline"
-          >
-            {d.publicTour}
-          </Link>
+          {hasPublicTourPage(route.id) ? (
+            <Link
+              href={`/tours/${route.id}`}
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              {d.publicTour}
+            </Link>
+          ) : null}
           <Link
             href={`/discover?panel=plan&tour=${encodeURIComponent(route.id)}`}
             className="text-xs font-medium text-accent hover:underline"

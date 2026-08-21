@@ -1,13 +1,18 @@
 import type { ChromeLang } from "./chromeLang";
 import {
+  HOME_BIKES_LINE,
   HOME_CTA,
   HOME_DISCIPLINES,
   HOME_DOOR_STORIES,
+  HOME_FAQ_INLINE,
   HOME_GUIDES,
   HOME_HONESTY,
   HOME_INTRO,
   HOME_JOURNEY,
+  HOME_LEVERS,
+  HOME_MAPS,
   HOME_PRICING,
+  HOME_PRODUCT_SCREEN,
   HOME_SPLIT,
   HOME_TOURS,
   HOME_VOICES,
@@ -47,6 +52,17 @@ export type HomepageCopy = {
     live: readonly string[];
     notYet: readonly string[];
   };
+  levers: { title: string; body: string; href: string }[];
+  homeFaq: { q: string; a: string }[];
+  productScreen: {
+    src: string;
+    alt: string;
+    title: string;
+    caption: string;
+  };
+  bikesLine: string;
+  mapsShort: { title: string; body: string };
+  heroCta: string;
   cta: { title: string; body: string };
   webSurfaces: { title: string; body: string }[];
   appSurfaces: { title: string; body: string }[];
@@ -57,6 +73,10 @@ export type HomepageCopy = {
     bikesLead: string;
     doorsTitle: string;
     doorsLead: string;
+    leversTitle: string;
+    bikesLineTitle: string;
+    screenTitle: string;
+    standTitle: string;
     onWebsite: string;
     inApp: string;
     allRegions: string;
@@ -101,6 +121,12 @@ const DE: HomepageCopy = {
   guides: HOME_GUIDES,
   pricing: HOME_PRICING,
   honesty: HOME_HONESTY,
+  levers: HOME_LEVERS,
+  homeFaq: HOME_FAQ_INLINE,
+  productScreen: HOME_PRODUCT_SCREEN,
+  bikesLine: HOME_BIKES_LINE,
+  mapsShort: { title: HOME_MAPS.title, body: HOME_MAPS.lead },
+  heroCta: "Zur Karte",
   cta: HOME_CTA,
   webSurfaces: WEB_SURFACES.map((s) => ({ title: s.title, body: s.body })),
   appSurfaces: APP_SURFACES.map((s) => ({ title: s.title, body: s.body })),
@@ -113,6 +139,10 @@ const DE: HomepageCopy = {
     doorsTitle: "Vier Türen am Hof",
     doorsLead:
       "Der Hof ist der Stand. Alles andere ist eine Tür — nicht ein Stapel Karten. Ride ist kein Tab.",
+    leversTitle: "Drei Hebel",
+    bikesLineTitle: "Welche Bikes",
+    screenTitle: "Ein echter Screen",
+    standTitle: "Stand",
     onWebsite: "Auf der Website",
     inApp: "In der App",
     allRegions: "Alle Regionen",
@@ -132,9 +162,9 @@ const DE: HomepageCopy = {
     readMinLong: (n) => `${n} Min. Lesezeit`,
     heroTagline: "Das Rad wohnt hier.",
     heroLead: (rideOut) =>
-      `Outdoor Cycling, vereinfacht: planen und pflegen im Browser, fahren in der App. Drei Sekunden — der Himmel, eine Stunde vor dem Tor, ein Knopf: ${rideOut}.`,
+      `Web pflanzt die Tour, die App fährt sie — ein Knopf: ${rideOut}.`,
     heroFair: "So bleibt’s fair",
-    heroFoot: "Kein Feed, keine KPI-Leiste, keine zweite Kasse im Browser.",
+    heroFoot: "Closed Test, frei. Der Laden ist zu.",
     trustClose: "Schließen",
     trustTitle: "Fair von Anfang an.",
     trustBody:
@@ -265,6 +295,50 @@ const EN: HomepageCopy = {
       "Live partner booking for workshops — interest by email",
     ],
   },
+  levers: [
+    {
+      title: "Garage + setup",
+      href: "/garage",
+      body: "Your bike, travel, pressure. Enduro sits next to gravel and MTB — not behind city.",
+    },
+    {
+      title: "Honest routing",
+      href: "/discover",
+      body: "mtb:scale instead of weather-as-condition. Where there is no way, a hole stays — no fake line.",
+    },
+    {
+      title: "Bosch as a span",
+      href: "/guides/ebike-reichweite",
+      body: "Range as an interval, not a point. Live assist only in the app.",
+    },
+  ],
+  homeFaq: [
+    {
+      q: "What is FlowLine?",
+      a: "An app for Garage, Map and Tours. The browser plans. The app rides. Closed test, free, no shop.",
+    },
+    {
+      q: "What runs in the browser, what in the app?",
+      a: "The web plants: Map, planning, Garage, tour ideas. The app rides: HUD, GPS, offline routing, sensors. No live navigation in the tab.",
+    },
+    {
+      q: "Can I buy something here?",
+      a: "No. The shop is closed. Closed test stays free — no prices, no till.",
+    },
+  ],
+  productScreen: {
+    src: "/landing/screens/karte.jpg",
+    alt: "FlowLine map with an orange line",
+    title: "The map",
+    caption: "Real nearby rides, filters, pin. No fake globe and no design gallery.",
+  },
+  bikesLine:
+    "Road, gravel, MTB, Enduro, e-bike. City is there — not the lead identity.",
+  mapsShort: {
+    title: "Holes instead of a fake globe.",
+    body: "The map streams named regions. Offline you load city packs for routing, not countries. Where no sheet sits, a hole stays.",
+  },
+  heroCta: "To the map",
   cta: {
     title: "The bike is there. You come back.",
     body: "Open Home in the browser. The app takes navigation, offline and the watch once the listings are there — until then the stand stays honestly empty instead of filled.",
@@ -336,6 +410,10 @@ const EN: HomepageCopy = {
     doorsTitle: "Four doors at Home",
     doorsLead:
       "Home is the stand. Everything else is a door — not a stack of cards. Ride is not a tab.",
+    leversTitle: "Three levers",
+    bikesLineTitle: "Which bikes",
+    screenTitle: "One real screen",
+    standTitle: "Status",
     onWebsite: "On the website",
     inApp: "In the app",
     allRegions: "All regions",
@@ -355,7 +433,7 @@ const EN: HomepageCopy = {
     readMinLong: (n) => `${n} min read`,
     heroTagline: "The bike lives here.",
     heroLead: (rideOut) =>
-      `Outdoor cycling, simplified: plan and look after the bike in the browser, ride in the app. Three seconds — the sky, an hour at the gate, one button: ${rideOut}.`,
+      `The web plants the tour, the app rides it — one button: ${rideOut}.`,
     heroFair: "How we keep it fair",
     heroFoot: "No feed, no KPI bar, no second till in the browser.",
     trustClose: "Close",
@@ -488,6 +566,50 @@ const FR: HomepageCopy = {
       "Réservation partenaire live pour les ateliers — intérêt par e-mail",
     ],
   },
+  levers: [
+    {
+      title: "Garage + setup",
+      href: "/garage",
+      body: "Ton vélo, débattement, pression. L’enduro est à côté du gravel et du VTT — pas derrière la ville.",
+    },
+    {
+      title: "Routage honnête",
+      href: "/discover",
+      body: "mtb:scale, pas la météo comme état. Là où il n’y a pas de chemin, un trou reste.",
+    },
+    {
+      title: "Bosch en fourchette",
+      href: "/guides/ebike-reichweite",
+      body: "Autonomie en intervalle, pas un point. Assist live seulement dans l’appli.",
+    },
+  ],
+  homeFaq: [
+    {
+      q: "Qu’est-ce que FlowLine ?",
+      a: "Une appli pour Garage, Carte et Parcours. Le navigateur planifie. L’appli roule. Test fermé, gratuit, sans magasin.",
+    },
+    {
+      q: "Quoi dans le navigateur, quoi dans l’appli ?",
+      a: "Le web plante : Carte, plan, Garage, idées. L’appli roule : HUD, GPS, hors ligne, capteurs. Pas de navigation live dans l’onglet.",
+    },
+    {
+      q: "Puis-je acheter ici ?",
+      a: "Non. Le magasin est fermé. Le test fermé reste gratuit — pas de prix, pas de caisse.",
+    },
+  ],
+  productScreen: {
+    src: "/landing/screens/karte.jpg",
+    alt: "Carte FlowLine avec une ligne orange",
+    title: "La carte",
+    caption: "Vraies sorties proches, filtres, pin. Pas de globe faux.",
+  },
+  bikesLine:
+    "Route, gravel, VTT, Enduro, VAE. La ville est là — ce n’est pas l’identité principale.",
+  mapsShort: {
+    title: "Des trous, pas un faux globe.",
+    body: "La carte streame des régions nommées. Hors ligne tu charges des packs ville, pas des pays.",
+  },
+  heroCta: "Vers la carte",
   cta: {
     title: "Le vélo est là. Tu reviens.",
     body: "Ouvre Home dans le navigateur. L’appli prend la navigation, le hors ligne et la montre dès que les listings sont là — jusque-là le stand reste honnêtement vide plutôt que rempli.",
@@ -559,6 +681,10 @@ const FR: HomepageCopy = {
     doorsTitle: "Quatre portes à Home",
     doorsLead:
       "Home est le stand. Tout le reste est une porte — pas une pile de cartes. Ride n’est pas un onglet.",
+    leversTitle: "Trois leviers",
+    bikesLineTitle: "Quels vélos",
+    screenTitle: "Un vrai écran",
+    standTitle: "État",
     onWebsite: "Sur le site",
     inApp: "Dans l’appli",
     allRegions: "Toutes les régions",
@@ -711,6 +837,50 @@ const IT: HomepageCopy = {
       "Prenotazione partner live per le officine — interesse via e-mail",
     ],
   },
+  levers: [
+    {
+      title: "Garage + setup",
+      href: "/garage",
+      body: "La tua bici, escursione, pressione. L’enduro sta accanto a gravel e MTB — non dietro la città.",
+    },
+    {
+      title: "Routing onesto",
+      href: "/discover",
+      body: "mtb:scale, non il meteo come stato. Dove non c’è via, resta un buco.",
+    },
+    {
+      title: "Bosch come intervallo",
+      href: "/guides/ebike-reichweite",
+      body: "Autonomia come fascia, non un punto. Assist live solo nell’app.",
+    },
+  ],
+  homeFaq: [
+    {
+      q: "Cos’è FlowLine?",
+      a: "Un’app per Garage, Mappa e Percorsi. Il browser pianifica. L’app pedala. Test chiuso, gratis, senza negozio.",
+    },
+    {
+      q: "Cosa nel browser, cosa nell’app?",
+      a: "Il web pianta: Mappa, piano, Garage, idee. L’app pedala: HUD, GPS, offline, sensori. Niente navigazione live nella scheda.",
+    },
+    {
+      q: "Posso comprare qui?",
+      a: "No. Il negozio è chiuso. Il test chiuso resta gratis — niente prezzi, niente cassa.",
+    },
+  ],
+  productScreen: {
+    src: "/landing/screens/karte.jpg",
+    alt: "Mappa FlowLine con linea arancione",
+    title: "La mappa",
+    caption: "Uscite vicine vere, filtri, pin. Nessun globo finto.",
+  },
+  bikesLine:
+    "Corsa, gravel, MTB, Enduro, e-bike. La città c’è — non è l’identità principale.",
+  mapsShort: {
+    title: "Buchi, non un globo finto.",
+    body: "La mappa streama regioni nominate. Offline carichi pack città, non paesi.",
+  },
+  heroCta: "Alla mappa",
   cta: {
     title: "La bici c’è. Tu torni.",
     body: "Apri Home nel browser. L’app prende navigazione, offline e orologio quando i listing ci sono — fino ad allora lo stand resta onestamente vuoto invece che riempito.",
@@ -782,6 +952,10 @@ const IT: HomepageCopy = {
     doorsTitle: "Quattro porte a Home",
     doorsLead:
       "Home è lo stand. Tutto il resto è una porta — non una pila di schede. Ride non è una scheda.",
+    leversTitle: "Tre leve",
+    bikesLineTitle: "Quali bici",
+    screenTitle: "Uno schermo vero",
+    standTitle: "Stato",
     onWebsite: "Sul sito",
     inApp: "Nell’app",
     allRegions: "Tutte le regioni",
@@ -934,6 +1108,50 @@ const NL: HomepageCopy = {
       "Live-partnerboeking voor werkplaatsen — interesse per e-mail",
     ],
   },
+  levers: [
+    {
+      title: "Garage + setup",
+      href: "/garage",
+      body: "Jouw fiets, veerweg, druk. Enduro staat naast gravel en MTB — niet achter city.",
+    },
+    {
+      title: "Eerlijk routeren",
+      href: "/discover",
+      body: "mtb:scale, geen weer als toestand. Waar geen pad ligt, blijft een gat.",
+    },
+    {
+      title: "Bosch als interval",
+      href: "/guides/ebike-reichweite",
+      body: "Actieradius als interval, geen punt. Live-assist alleen in de app.",
+    },
+  ],
+  homeFaq: [
+    {
+      q: "Wat is FlowLine?",
+      a: "Een app voor Garage, Kaart en Tochten. De browser plant. De app rijdt. Closed test, vrij, geen winkel.",
+    },
+    {
+      q: "Wat in de browser, wat in de app?",
+      a: "Het web plant: Kaart, plan, Garage, ideeën. De app rijdt: HUD, GPS, offline, sensoren. Geen live-navigatie in de tab.",
+    },
+    {
+      q: "Kan ik hier iets kopen?",
+      a: "Nee. De winkel is dicht. Closed test blijft vrij — geen prijzen, geen kassa.",
+    },
+  ],
+  productScreen: {
+    src: "/landing/screens/karte.jpg",
+    alt: "FlowLine-kaart met oranje lijn",
+    title: "De kaart",
+    caption: "Echte ritten in de buurt, filters, pin. Geen nepglobe.",
+  },
+  bikesLine:
+    "Race, gravel, MTB, Enduro, e-bike. City is er — niet de hoofdidentiteit.",
+  mapsShort: {
+    title: "Gaten in plaats van een nepglobe.",
+    body: "De kaart streamt benoemde regio's. Offline laad je stadspacks, geen landen.",
+  },
+  heroCta: "Naar de kaart",
   cta: {
     title: "De fiets staat. Jij komt terug.",
     body: "Open Home in de browser. De app neemt navigatie, offline en horloge over zodra de listings er zijn — tot dan blijft de stand eerlijk leeg in plaats van gevuld.",
@@ -1005,6 +1223,10 @@ const NL: HomepageCopy = {
     doorsTitle: "Vier deuren bij Home",
     doorsLead:
       "Home is de stand. Al het andere is een deur — geen stapel kaarten. Ride is geen tab.",
+    leversTitle: "Drie hendels",
+    bikesLineTitle: "Welke fietsen",
+    screenTitle: "Eén echt scherm",
+    standTitle: "Stand",
     onWebsite: "Op de website",
     inApp: "In de app",
     allRegions: "Alle regio’s",

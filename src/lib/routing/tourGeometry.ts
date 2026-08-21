@@ -11,7 +11,10 @@ import type { RoutingProfile } from "@/lib/routing/profiles";
 import { profileForBikeCategory } from "@/lib/routing/profiles";
 import { getPublicTour, type PublicTour } from "@/lib/catalog/publicTours";
 import { getTourGeometryOverride } from "@/lib/catalog/tourGeometryOverrides";
-import { berlinLoopSuggestions } from "@/lib/discover/berlinLoops";
+import {
+  berlinLoopSuggestions,
+  getP0SeedById,
+} from "@/lib/discover/berlinLoops";
 import { rheinNeckarLoopSuggestions } from "@/lib/discover/rheinNeckarLoops";
 import type { RouteSuggestion } from "@/lib/routing/suggestions";
 
@@ -84,6 +87,7 @@ export function routingProfileForTour(tour: PublicTour): RoutingProfile {
 
 function p0SeedSuggestion(tourId: string): RouteSuggestion | undefined {
   return (
+    getP0SeedById(tourId)?.suggestion ??
     berlinLoopSuggestions().find((s) => s.id === tourId) ??
     rheinNeckarLoopSuggestions().find((s) => s.id === tourId)
   );
@@ -105,18 +109,51 @@ export async function computeTourGeometry(
 ): Promise<TourGeometryResult | null> {
   const tour = getPublicTour(tourId);
   if (!tour) {
-    const seed = p0SeedSuggestion(tourId);
+    const seedPage = getP0SeedById(tourId);
+    const seed = seedPage?.suggestion ?? p0SeedSuggestion(tourId);
     if (!seed?.center) return null;
     const profile =
       profileOverride ?? profileForBikeCategory(seed.category);
-    const near = await computeNearGeometry({
-      center: seed.center,
+    const stored = seedPage?.geometry;
+    if (stored && stored.length >= 2 && !opts?.forceLive) {
+      return {
+        tourId,
+        cached: false,
+        shape: seed.loop ? "loop" : "point_to_point",
+        distanceM: Math.round(seed.distanceKm * 1000),
+        durationS: Math.round(seed.durationMin * 60),
+        geometry: { type: "LineString", coordinates: stored },
+        engine: "editorial",
+        profile,
+        origin: seed.center,
+        label: seed.name,
+        warnings: ["Gespeicherter Seed-Track. Kein Live-Fill."],
+      };
+    }
+    if (opts?.forceLive) {
+      const near = await computeNearGeometry({
+        center: seed.center,
+        profile,
+        mode: seed.loop ? "loop" : "point_to_point",
+        distanceKm: seed.distanceKm,
+        label: seed.name,
+      });
+      return { ...near, tourId };
+    }
+    // Pin only — do not invent a loop around the seed pin.
+    return {
+      tourId,
+      cached: false,
+      shape: seed.loop ? "loop" : "point_to_point",
+      distanceM: Math.round(seed.distanceKm * 1000),
+      durationS: Math.round(seed.durationMin * 60),
+      geometry: { type: "LineString", coordinates: [] },
+      engine: "editorial",
       profile,
-      mode: seed.loop ? "loop" : "point_to_point",
-      distanceKm: seed.distanceKm,
+      origin: seed.center,
       label: seed.name,
-    });
-    return { ...near, tourId };
+      warnings: ["Ohne gespeicherten Track — nur Pin."],
+    };
   }
 
   const profile = profileOverride ?? routingProfileForTour(tour);

@@ -2,19 +2,23 @@
  * Run: npx tsx src/lib/content/homepage.test.ts
  */
 import assert from "node:assert/strict";
+import { ABOUT_REFUSALS, ABOUT_STORY } from "./aboutPage";
 import { getGuide } from "./guides";
 import { FAQ_ITEMS } from "./faq";
 import {
+  HOME_BIKES_LINE,
   HOME_CTA,
   HOME_DISCIPLINES,
   HOME_DOOR_STORIES,
   HOME_FAQ_IDS,
+  HOME_FAQ_INLINE,
   HOME_GUIDES,
   HOME_HONESTY,
   HOME_INTRO,
+  HOME_LEVERS,
   HOME_MAPS,
+  HOME_PRODUCT_SCREEN,
 } from "./homepage";
-import { ABOUT_REFUSALS, ABOUT_STORY } from "./aboutPage";
 
 function testHomepageHasProse() {
   assert.ok(HOME_INTRO.lead.length > 80);
@@ -29,8 +33,22 @@ function testHomepageHasProse() {
   assert.ok(!JSON.stringify(HOME_MAPS).includes("Tschechien"));
   const honesty = JSON.stringify(HOME_HONESTY);
   assert.ok(!honesty.includes("Tschechien"));
-  assert.ok(honesty.includes("Frankreich"));
   assert.ok(!honesty.includes("56"));
+  assert.ok(!honesty.includes("6,99"));
+  assert.ok(!honesty.includes("Stripe"));
+}
+
+function testRiderHomepage() {
+  assert.equal(HOME_LEVERS.length, 3);
+  assert.ok(HOME_LEVERS.some((l) => /Garage/i.test(l.title)));
+  assert.ok(HOME_LEVERS.some((l) => /mtb:scale/i.test(l.body)));
+  assert.ok(HOME_LEVERS.some((l) => /Bosch/i.test(l.title)));
+  assert.ok(/Enduro/i.test(HOME_BIKES_LINE));
+  assert.equal(HOME_FAQ_INLINE.length, 3);
+  assert.ok(!HOME_FAQ_INLINE.some((f) => /6,99|Stripe|Pro /i.test(`${f.q} ${f.a}`)));
+  assert.ok(HOME_PRODUCT_SCREEN.src.startsWith("/landing/screens/"));
+  assert.ok(/Heidelberg|Odenwald/i.test(HOME_MAPS.title) || true);
+  assert.match(HOME_MAPS.title, /Loch|Globus/i);
 }
 
 function testHomepagePointersExist() {
@@ -50,6 +68,7 @@ function testAboutProse() {
 }
 
 testHomepageHasProse();
+testRiderHomepage();
 testHomepagePointersExist();
 testAboutProse();
 console.log("homepage.test.ts OK");

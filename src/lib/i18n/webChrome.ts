@@ -4,8 +4,10 @@ import type { ChromeLang } from "./chromeLang";
 
 type HofDoorId = Exclude<HofNavId, "hof">;
 
+type MarketingCopyHref = MarketingNavHref | "/community" | "/pricing";
+
 type WebChrome = {
-  marketingNav: Record<MarketingNavHref, string>;
+  marketingNav: Record<MarketingCopyHref, string>;
   hofNav: Record<HofDoorId, string>;
   toHof: string;
   toWebsite: string;
@@ -66,7 +68,7 @@ const DE: WebChrome = {
   hofNav: {
     karte: "Karte",
     platz: "Touren",
-    werkstatt: "Rad",
+    werkstatt: "Garage",
   },
   toHof: "Zum Hof",
   toWebsite: "Zur Website",
@@ -79,7 +81,7 @@ const DE: WebChrome = {
   footerMore: "Mehr",
   footerLegal: "Rechtliches",
   footerTagline: "Das Rad wohnt hier. Du kommst zurück.",
-  footerLegalLine: "Offline-First · DSGVO · Web ist der Hof, die App fährt.",
+  footerLegalLine: "Offline-First · DSGVO · Web pflanzt, die App fährt.",
   aboutFlowLine: "Über FlowLine",
   faq: "FAQ",
   share: "Teilen",
@@ -128,7 +130,7 @@ const EN: WebChrome = {
   hofNav: {
     karte: "Map",
     platz: "Tours",
-    werkstatt: "Bike",
+    werkstatt: "Garage",
   },
   toHof: "To Home",
   toWebsite: "To the website",
@@ -141,7 +143,7 @@ const EN: WebChrome = {
   footerMore: "More",
   footerLegal: "Legal",
   footerTagline: "The bike lives here. You come back.",
-  footerLegalLine: "Offline-first · GDPR · Web is Home, the app rides.",
+  footerLegalLine: "Offline-first · GDPR · Web plants, the app rides.",
   aboutFlowLine: "About FlowLine",
   faq: "FAQ",
   share: "Share",
@@ -190,7 +192,7 @@ const FR: WebChrome = {
   hofNav: {
     karte: "Carte",
     platz: "Parcours",
-    werkstatt: "Vélo",
+    werkstatt: "Garage",
   },
   toHof: "Vers Home",
   toWebsite: "Vers le site",
@@ -252,7 +254,7 @@ const IT: WebChrome = {
   hofNav: {
     karte: "Mappa",
     platz: "Percorsi",
-    werkstatt: "Bici",
+    werkstatt: "Garage",
   },
   toHof: "Verso Home",
   toWebsite: "Al sito",
@@ -314,7 +316,7 @@ const NL: WebChrome = {
   hofNav: {
     karte: "Kaart",
     platz: "Tochten",
-    werkstatt: "Fiets",
+    werkstatt: "Garage",
   },
   toHof: "Naar Home",
   toWebsite: "Naar de website",
