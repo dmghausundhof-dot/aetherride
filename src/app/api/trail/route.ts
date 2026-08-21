@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import { fetchTrailViewAlong, fetchTrailViewNear } from "@/lib/routing/trailView";
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
+import {
+  emptyTrailView,
+  fetchTrailViewAlong,
+  fetchTrailViewNear,
+} from "@/lib/routing/trailView";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const honest = searchParams.get("honest") === "1";
+  const failClosed = honest || !allowDemoContent();
   const alongRaw = searchParams.get("along");
   if (alongRaw) {
     const coords: [number, number][] = [];
@@ -13,19 +19,16 @@ export async function GET(req: Request) {
         coords.push([bits[0], bits[1]]);
       }
     }
-    const result = await fetchTrailViewAlong(coords, { honest });
+    const result = await fetchTrailViewAlong(coords, { honest: failClosed });
     return NextResponse.json(result);
   }
   const lat = Number(searchParams.get("lat") || 47.45);
   const lng = Number(searchParams.get("lng") || 12.15);
   const result = await fetchTrailViewNear(lat, lng);
-  if (honest && result.usingDemo) {
-    return NextResponse.json({
-      photos: [],
-      attribution: result.attribution,
-      disclaimer: "Keine Mapillary-Bilder — Token fehlt oder leer.",
-      usingDemo: false,
-    });
+  if (failClosed && result.usingDemo) {
+    return NextResponse.json(
+      emptyTrailView("Keine Mapillary-Bilder — Token fehlt oder leer.")
+    );
   }
   return NextResponse.json(result);
 }

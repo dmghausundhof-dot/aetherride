@@ -5,6 +5,7 @@
  * Token: MAPILLARY_ACCESS_TOKEN / NEXT_PUBLIC_MAPILLARY_ACCESS_TOKEN
  */
 
+import { allowDemoContent } from "@/lib/config/allowDemoContent";
 import { projectOntoRoute } from "@/lib/routing/routeProgress";
 
 export interface TrailPhoto {
@@ -86,7 +87,11 @@ export async function fetchTrailViewNear(
     process.env.NEXT_PUBLIC_MAPILLARY_ACCESS_TOKEN;
 
   if (!t) {
-    return getTrailViewNear(lat, lng);
+    return unavailableTrailView(
+      lat,
+      lng,
+      "Keine Mapillary-Bilder — Token fehlt oder leer."
+    );
   }
 
   try {
@@ -106,11 +111,13 @@ export async function fetchTrailViewNear(
 
     const res = await fetch(url.toString());
     if (!res.ok) {
-      const fallback = getTrailViewNear(lat, lng);
-      return {
-        ...fallback,
-        disclaimer: `Mapillary API ${res.status} — Demo-Fallback.`,
-      };
+      return unavailableTrailView(
+        lat,
+        lng,
+        allowDemoContent()
+          ? `Mapillary API ${res.status} — Demo-Fallback.`
+          : `Keine Mapillary-Bilder (API ${res.status}).`
+      );
     }
     const data = await res.json();
     const photos: TrailPhoto[] = (data.data || []).map(
@@ -142,22 +149,24 @@ export async function fetchTrailViewNear(
     );
 
     if (photos.length === 0) {
-      return {
-        ...getTrailViewNear(lat, lng),
-        disclaimer: "Keine Mapillary-Bilder in der Nähe — Demo-Fallback.",
-      };
+      return unavailableTrailView(
+        lat,
+        lng,
+        allowDemoContent()
+          ? "Keine Mapillary-Bilder in der Nähe — Demo-Fallback."
+          : "Keine Mapillary-Bilder in der Nähe."
+      );
     }
 
     return {
       photos,
-      attribution:
-        "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
+      attribution: MAPILLARY_ATTRIBUTION,
       disclaimer:
         "Live Mapillary (CC BY-SA). Attribution Pflicht (Spec F-NAV-006).",
       usingDemo: false,
     };
   } catch {
-    return getTrailViewNear(lat, lng);
+    return unavailableTrailView(lat, lng, "Trail View offline.");
   }
 }
 
@@ -195,13 +204,31 @@ export function photosInCorridor(
   return hit;
 }
 
-const EMPTY_HONEST: TrailViewResult = {
-  photos: [],
-  attribution:
-    "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
-  disclaimer: "Keine Mapillary-Bilder im Korridor.",
-  usingDemo: false,
-};
+const MAPILLARY_ATTRIBUTION =
+  "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com";
+
+export function emptyTrailView(
+  disclaimer = "Keine Mapillary-Bilder in der Nähe."
+): TrailViewResult {
+  return {
+    photos: [],
+    attribution: MAPILLARY_ATTRIBUTION,
+    disclaimer,
+    usingDemo: false,
+  };
+}
+
+const EMPTY_HONEST = emptyTrailView("Keine Mapillary-Bilder im Korridor.");
+
+/** Demo placeholders only when allowDemoContent(); production stays empty. */
+export function unavailableTrailView(
+  lat: number,
+  lng: number,
+  disclaimer: string
+): TrailViewResult {
+  if (!allowDemoContent()) return emptyTrailView(disclaimer);
+  return { ...getTrailViewNear(lat, lng), disclaimer };
+}
 
 /** Corridor fetch. honest=true never returns demo placeholders. */
 export async function fetchTrailViewAlong(
@@ -226,8 +253,7 @@ export async function fetchTrailViewAlong(
   if (photos.length === 0) return EMPTY_HONEST;
   return {
     photos,
-    attribution:
-      "Mapillary imagery © contributors, CC BY-SA 4.0 · mapillary.com",
+    attribution: MAPILLARY_ATTRIBUTION,
     disclaimer: "Live Mapillary (CC BY-SA) entlang der Linie.",
     usingDemo: false,
   };
