@@ -100,6 +100,7 @@ Future<TrailViewResult> fetchTrailViewNear({
       queryParameters: {
         'lat': lat.toStringAsFixed(5),
         'lng': lng.toStringAsFixed(5),
+        'honest': '1',
       },
     );
     final res = await httpClient

@@ -20,7 +20,7 @@ import {
   fetchCommunityHeatmap,
 } from "@/lib/heatmap/client";
 import {
-  getTrailViewNear,
+  emptyTrailView,
   type TrailViewResult,
 } from "@/lib/routing/trailView";
 import { MapView, type MapMarker, type MapRouteLayer } from "@/components/MapView";
@@ -235,13 +235,13 @@ export function RouteDetail({
   useEffect(() => {
     let cancelled = false;
     const [lng, lat] = center;
-    void fetch(`/api/trail?lat=${lat}&lng=${lng}`)
+    void fetch(`/api/trail?honest=1&lat=${lat}&lng=${lng}`)
       .then((r) => r.json())
       .then((data: TrailViewResult) => {
-        if (!cancelled && data?.photos) setTrail(data);
+        if (!cancelled && Array.isArray(data?.photos)) setTrail(data);
       })
       .catch(() => {
-        if (!cancelled) setTrail(getTrailViewNear(lat, lng));
+        if (!cancelled) setTrail(emptyTrailView());
       });
     return () => {
       cancelled = true;
