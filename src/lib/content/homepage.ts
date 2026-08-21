@@ -1,5 +1,5 @@
 /**
- * Homepage copy — first-visit prose, not a sitemap dump.
+ * Homepage copy — rider-facing, one page, no store theater.
  * No invented legal identity, store listings, or fake kilometers.
  */
 
@@ -71,15 +71,15 @@ export const HOME_DOOR_STORIES: {
   },
   {
     href: "/garage",
-    title: "Rad",
-    kicker: "Dieses Rad",
-    body: "Anlegen, Setup, Wartungsintervalle mit Quelle. Bracketing und Reichweiten-Spannen sind Pro. Der Laden ist vorerst aus — ohne zweite Kasse.",
+    title: "Garage",
+    kicker: "Dieses Bike",
+    body: "Anlegen, Setup, Wartungsintervalle mit Quelle. Bracketing und Reichweiten-Spannen. Der Laden ist zu — Closed Test bleibt frei.",
   },
 ];
 
 export const HOME_SPLIT = {
   kicker: "Zwei Oberflächen",
-  title: "Web ist der Hof. Die App fährt.",
+  title: "Web pflanzt. Die App fährt.",
   webLead:
     "Inspiration, Planen, Pflege und Teilen gehören an den Schreibtisch. Der Browser darf leer bleiben, wo GPS und Sensoren hingehören.",
   appLead:
@@ -88,14 +88,14 @@ export const HOME_SPLIT = {
 
 export const HOME_MAPS = {
   kicker: "Auf der Karte",
-  title: "Neun Blätter. Kein Europa-Download.",
-  lead: "Online streamt die Karte aus benannten Regionen. In DACH liegen Atlas und Wege für alle, nicht nur für zehn Städte. Offline lädst du Stadt-Packs zum Routing, keine Länder. Wo kein Blatt liegt, bleibt ein Loch — nicht ein Fake-Globus.",
+  title: "Löcher statt Fake-Globus.",
+  lead: "Online streamt die Karte aus benannten Regionen. Offline lädst du Stadt-Packs zum Routing, keine Länder. Wo kein Blatt liegt, bleibt ein Loch — nicht ein gemaltes Europa.",
 } as const;
 
 export const HOME_TOURS = {
-  kicker: "Vor dem Tor",
-  title: "Ideen aus der Nähe, nicht aus dem Alpen-Stock.",
-  lead: "Vier redaktionelle Touren als Einstieg — Hamburg Alster, Heidelberg, Schwarzwald Gravel, Bodensee. Es sind Ideen mit Pin, keine vermessenen Community-Tracks. Die Linie rechnest du unter Planen.",
+  kicker: "Tour-Ideen",
+  title: "Heidelberg und Odenwald zuerst.",
+  lead: "Redaktionelle Ideen mit Pin — Heidelberg, Odenwald, dann Schwarzwald. Keine vermessenen Community-Tracks. Die Linie rechnest du unter Planen.",
 } as const;
 
 export const HOME_JOURNEY = {
@@ -113,7 +113,7 @@ export const HOME_VOICES = {
 export const HOME_GUIDES = {
   kicker: "Guides",
   title: "Nachlesen, bevor du losfährst.",
-  lead: "Planung, Reichweite, Setup, Hof und Teilen — ohne Affiliate-Clickbait. Was im Produkt fehlt, steht auch hier nicht als Versprechen.",
+  lead: "Planung, Reichweite, Setup, Garage und Teilen — ohne Affiliate-Clickbait. Was im Produkt fehlt, steht auch hier nicht als Versprechen.",
   slugs: [
     "web-vs-app",
     "platz-ohne-feed",
@@ -124,35 +124,82 @@ export const HOME_GUIDES = {
   ],
 } as const;
 
-export const HOME_FAQ_IDS = ["was", "fuer-wen", "web-app", "karten", "preise"] as const;
+/** Homepage FAQ — three questions, no store theater. */
+export const HOME_FAQ_IDS = ["was", "web-app", "shop"] as const;
 
 export const HOME_PRICING = {
   kicker: "Preise",
-  title: "Free plant. Pro vertieft.",
-  lead: "Karte, Planen, ein Rad, App-Navigation: frei. Mehrere Räder, Bracketing, Reichweiten-Spannen und höhere Chat-Limits: Pro. Checkout im Profil, nicht mitten in der Tour. Store-Listings der App folgen, sobald sie live sind.",
-  free: "0 € — Hof, Karte, Touren, ein Rad, Navigation in der App.",
-  pro: "6,99 €/Monat oder 59,99 €/Jahr. Kündigung im Portal bzw. über Play.",
+  title: "Closed Test ist frei.",
+  lead: "Kein öffentliches Angebot. Der Laden ist zu. Es gibt hier nichts zu kaufen.",
+  free: "Closed Test — frei, lokal, ohne Kasse.",
+  pro: "Kein Verkauf auf dieser Seite.",
 } as const;
 
 export const HOME_HONESTY = {
   kicker: "Stand",
-  title: "Vollwertig, wo es steht — leer, wo es fehlt.",
-  lead: "Eine Homepage darf nicht so tun, als wäre der Marktplatz offen oder der Store schon gelistet. Deshalb der ehrliche Stand:",
+  title: "Schon da. Noch nicht.",
+  lead: "Closed Test, kein öffentliches Angebot. Was fehlt, bleibt leer.",
   live: [
-    "Hof, Karte, Planen, Touren, Rad im Browser",
-    "Online-Karte in DACH, Frankreich, Alpen-Süd, Benelux, Nord- und Mitteitalien, Süditalien, Katalonien/Pyrenäen, Südengland",
-    "Redaktionelle Tour-Ideen vor allem in DACH — die Kartenblätter reichen weiter",
-    "Stimmen, Mappe-Links, Editorial-Profile",
-    "Free und Pro beschrieben, Checkout im Profil (Stripe)",
+    "Karte, Planen, Touren, Garage im Browser",
+    "Online-Karte in DACH — Löcher dort, wo kein Blatt liegt",
+    "Tour-Ideen um Heidelberg und den Odenwald",
+    "Closed Test frei — keine Käufe",
   ],
   notYet: [
-    "Ladungsfähige Anschrift im Impressum — daher Shop-Checkout gesperrt",
     "App-Store- und Play-Listings — HUD und Sensoren kommen mit der nativen App",
-    "Live-Partner-Buchung für Werkstätten — Interesse per E-Mail",
+    "Laden und Checkout — zu, weil das Impressum noch keine ladungsfähige Anschrift hat",
+    "Live-Partner-Buchung für Werkstätten",
   ],
 } as const;
 
 export const HOME_CTA = {
   title: "Das Rad steht. Du kommst zurück.",
-  body: "Öffne den Hof im Browser. Die App übernimmt Navigation, Offline und Uhr, sobald die Listings da sind — bis dahin bleibt der Stand ehrlich leer statt gefüllt.",
+  body: "Öffne die Karte im Browser. Die App übernimmt Navigation, Offline und Uhr, sobald die Listings da sind.",
 } as const;
+
+export const HOME_LEVERS: {
+  title: string;
+  body: string;
+  href: string;
+}[] = [
+  {
+    title: "Garage + Setup",
+    href: "/garage",
+    body: "Dein Bike, Federweg, Druck. Enduro steht neben Gravel und MTB — nicht hinter City.",
+  },
+  {
+    title: "Ehrlich routen",
+    href: "/discover",
+    body: "mtb:scale statt Wetter-als-Zustand. Wo kein Weg liegt, bleibt ein Loch — keine Fake-Linie.",
+  },
+  {
+    title: "Bosch als Spanne",
+    href: "/guides/ebike-reichweite",
+    body: "Reichweite als Intervall, kein Punkt. Live-Assist nur in der App, nicht als Web-Attrappe.",
+  },
+];
+
+export const HOME_FAQ_INLINE: { q: string; a: string }[] = [
+  {
+    q: "Was ist FlowLine?",
+    a: "Eine App für Garage, Karte und Touren. Im Browser planst du. In der App fährst du. Closed Test, frei, ohne Shop.",
+  },
+  {
+    q: "Was läuft im Browser, was in der App?",
+    a: "Web pflanzt: Karte, Planen, Garage, Tour-Ideen. Die App fährt: HUD, GPS, Offline-Routing, Sensoren. Live-Navigation im Tab gibt es nicht.",
+  },
+  {
+    q: "Kann ich hier etwas kaufen?",
+    a: "Nein. Der Laden ist zu. Closed Test bleibt frei — keine Preise, keine Kasse.",
+  },
+];
+
+export const HOME_PRODUCT_SCREEN = {
+  src: "/landing/screens/karte.jpg",
+  alt: "FlowLine Karte mit orangener Linie",
+  title: "Die Karte",
+  caption: "Echte Nähe, Filter, Pin. Kein Fake-Globus und keine Design-Galerie.",
+} as const;
+
+export const HOME_BIKES_LINE =
+  "Rennrad, Gravel, MTB, Enduro, E-Bike. City ist dabei — nicht die Leitidentität.";

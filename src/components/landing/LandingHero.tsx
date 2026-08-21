@@ -7,29 +7,17 @@ import {
   appDiscoverHref,
   isExternalAppDiscoverHref,
 } from "@/lib/web/appLinks";
-import { useHofTitle } from "@/hooks/useHofTitle";
-import { useChromeLang } from "@/hooks/useChromeLang";
 import { useHofCopy } from "@/hooks/useHofCopy";
 import { useHomepageCopy } from "@/hooks/useHomepageCopy";
-import { webChrome } from "@/lib/i18n/webChrome";
 import { TrustSheet } from "./TrustSheet";
-
-const HERO_DOORS = [
-  { id: "hof" as const, href: "/home" },
-  { id: "karte" as const, href: "/discover" },
-  { id: "platz" as const, href: "/library" },
-  { id: "werkstatt" as const, href: "/garage" },
-];
 
 export function LandingHero() {
   const [trustOpen, setTrustOpen] = useState(false);
-  const title = useHofTitle();
   const lang = useChromeLang();
-  const chrome = webChrome(lang);
   const hof = useHofCopy();
   const home = useHomepageCopy();
 
-  function onAppDiscoverClick(e: MouseEvent<HTMLAnchorElement>) {
+  function onDiscoverClick(e: MouseEvent<HTMLAnchorElement>) {
     const target = appDiscoverHref(navigator.userAgent);
     if (isExternalAppDiscoverHref(target)) {
       e.preventDefault();
@@ -63,13 +51,8 @@ export function LandingHero() {
           <p className="text-[0.95rem] font-medium tracking-[0.06em] text-foreground/85 sm:text-base">
             Flow<span className="text-accent">Line</span>
           </p>
-          <p className="mb-8 mt-2 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-foreground/70 sm:mb-11">
-            Outdoor · Cycling · Flow
-          </p>
 
-          <h1 className="text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(18,18,21,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">
-            {title}.
-            <br />
+          <h1 className="mt-8 text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.03em] text-foreground [text-shadow:0_1px_24px_rgba(18,18,21,0.35)] sm:text-5xl md:text-[3.4rem] md:leading-[1.04]">
             {home.ui.heroTagline}
           </h1>
 
@@ -77,19 +60,13 @@ export function LandingHero() {
             {home.ui.heroLead(hof.rideOut)}
           </p>
 
-          <div className="mt-10 flex flex-col items-stretch gap-3 sm:mt-12 sm:flex-row sm:items-center sm:gap-3.5">
+          <div className="mt-10 sm:mt-12">
             <Link
-              href="/home"
+              href="/discover"
+              onClick={onDiscoverClick}
               className="inline-flex h-12 items-center justify-center rounded-xl bg-accent px-7 text-[0.95rem] font-semibold text-on-accent transition hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
             >
-              {chrome.toHof}
-            </Link>
-            <Link
-              href="/download"
-              onClick={onAppDiscoverClick}
-              className="inline-flex h-12 items-center justify-center rounded-xl border border-foreground/25 bg-transparent px-7 text-[0.95rem] font-medium text-foreground/95 transition hover:border-foreground/45 hover:bg-foreground/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chrome sm:h-[3.25rem] sm:min-w-[11rem] sm:px-8"
-            >
-              {chrome.loadApp}
+              {home.heroCta}
             </Link>
           </div>
 
@@ -100,22 +77,6 @@ export function LandingHero() {
           >
             {home.ui.heroFair}
           </button>
-
-          <ul
-            className="mt-10 flex flex-wrap gap-2 sm:mt-12"
-            aria-label={chrome.fourDoors}
-          >
-            {HERO_DOORS.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="inline-block rounded-md border border-foreground/14 bg-background/20 px-2.5 py-1 text-[0.72rem] font-medium tracking-[0.015em] text-foreground/80 transition hover:border-foreground/35 hover:text-foreground sm:text-xs"
-                >
-                  {item.id === "hof" ? title : chrome.hofNav[item.id]}
-                </Link>
-              </li>
-            ))}
-          </ul>
 
           <p className="mt-5 text-[0.7rem] leading-relaxed tracking-[0.01em] text-text-secondary/80 sm:mt-6 sm:text-[0.8rem]">
             {home.ui.heroFoot}

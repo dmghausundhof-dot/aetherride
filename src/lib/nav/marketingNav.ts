@@ -8,8 +8,6 @@ export const MARKETING_NAV = [
   { href: "/karten", label: "Karten" },
   { href: "/regions", label: "Regionen" },
   { href: "/guides", label: "Guides" },
-  { href: "/community", label: "Community" },
-  { href: "/pricing", label: "Preise" },
   { href: "/download", label: "App" },
 ] as const;
 

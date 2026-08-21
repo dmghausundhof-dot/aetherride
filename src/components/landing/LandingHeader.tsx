@@ -67,10 +67,10 @@ export function LandingHeader() {
             {copy.arriveAtHof}
           </Link>
           <Link
-            href="/home"
+            href="/discover"
             className="hidden h-9 items-center rounded-xl bg-chrome px-3.5 text-sm font-semibold text-on-accent hover:bg-chrome/90 sm:inline-flex"
           >
-            {copy.toHof}
+            {copy.hofNav.karte}
           </Link>
           <button
             type="button"
@@ -112,11 +112,11 @@ export function LandingHeader() {
               {copy.arriveAtHof}
             </Link>
             <Link
-              href="/home"
+              href="/discover"
               onClick={() => setOpen(false)}
               className="mt-1 flex h-11 items-center justify-center rounded-xl bg-chrome px-3 text-sm font-semibold text-on-accent"
             >
-              {copy.toHof}
+              {copy.hofNav.karte}
             </Link>
           </nav>
         </div>
