@@ -36,8 +36,10 @@ const kBrowseLiveStackBottomToTop = <String>[
   'osm-live-path',
   'osm-live-track',
   'osm-sgrade-mtb',
+  'osm-sgrade-mtb-rooty',
   'osm-live-cycleway',
 ];
+
 
 const kOsmLivePathSubclasses = <String>['path', 'bridleway'];
 

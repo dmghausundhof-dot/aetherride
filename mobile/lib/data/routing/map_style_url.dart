@@ -69,6 +69,14 @@ const kOpenFreeMapPositronStyleUrl =
 const kOpenFreeMapBrightStyleUrl =
     'https://tiles.openfreemap.org/styles/bright';
 
+/// Esri World Imagery — Satellit in Discover, kein API-Key.
+const kSatelliteRasterStyleJson =
+    '{"version":8,"sources":{"esri":{"type":"raster","tiles":["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],"tileSize":256,"attribution":"Esri","maxzoom":19}},"layers":[{"id":"sat","type":"raster","source":"esri"}]}';
+
+bool isSatelliteStyle(String style) =>
+    style.contains('World_Imagery') || style == kSatelliteRasterStyleJson;
+
+
 String stadiaAlidadeSmoothStyleUrl(String apiKey) {
   final k = apiKey.trim();
   if (k.isEmpty) return '';

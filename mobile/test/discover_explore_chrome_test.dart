@@ -186,7 +186,7 @@ void main() {
           waysOn: true,
           hillshadeOn: true,
           placesOn: true,
-          heatOn: false,
+          heatOn: true,
           heatConsent: false,
         ),
         isFalse,
@@ -212,6 +212,32 @@ void main() {
           placesOn: true,
           heatOn: false,
           heatConsent: true,
+        ),
+        isTrue,
+      );
+      expect(
+        DiscoverExploreChromeLogic.mapContentsCustomized(
+          toursOn: true,
+          trailsOn: true,
+          waysOn: true,
+          hillshadeOn: true,
+          placesOn: true,
+          heatOn: true,
+          heatConsent: true,
+          photosOn: false,
+        ),
+        isTrue,
+      );
+      expect(
+        DiscoverExploreChromeLogic.mapContentsCustomized(
+          toursOn: true,
+          trailsOn: true,
+          waysOn: true,
+          hillshadeOn: true,
+          placesOn: true,
+          heatOn: true,
+          heatConsent: true,
+          satelliteOn: true,
         ),
         isTrue,
       );

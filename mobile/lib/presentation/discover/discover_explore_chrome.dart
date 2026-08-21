@@ -108,11 +108,19 @@ abstract final class DiscoverExploreChromeLogic {
     required bool placesOn,
     required bool heatOn,
     required bool heatConsent,
+    bool photosOn = true,
+    bool satelliteOn = false,
   }) {
-    if (!toursOn || !trailsOn || !waysOn || !hillshadeOn || !placesOn) {
+    if (!toursOn ||
+        !trailsOn ||
+        !waysOn ||
+        !hillshadeOn ||
+        !placesOn ||
+        !photosOn) {
       return true;
     }
-    return heatConsent && !heatOn;
+    if (satelliteOn) return true;
+    return !heatOn;
   }
 
   /// Unter 360 dp eigene Zeile für die Suche — „Route planen“ quetscht sie nicht.

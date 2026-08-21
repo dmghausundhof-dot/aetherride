@@ -66,6 +66,7 @@ void main() {
     expect(find.text('Orte'), findsOneWidget);
     expect(find.text('Heat'), findsOneWidget);
     expect(find.text('Zustimmung nötig'), findsOneWidget);
+    expect(find.text('Fotos'), findsOneWidget);
     expect(find.text('Offline-Routing'), findsOneWidget);
     expect(find.text('Umgebungsfotos'), findsOneWidget);
     expect(find.text('Sammlungen'), findsOneWidget);
@@ -75,6 +76,7 @@ void main() {
     expect(find.byKey(const Key('discover-layer-tours')), findsOneWidget);
     expect(find.byKey(const Key('discover-layer-farm-tracks')), findsOneWidget);
     expect(find.byKey(const Key('discover-layer-places')), findsOneWidget);
+    expect(find.byKey(const Key('discover-layer-photos')), findsOneWidget);
     expect(find.byKey(const Key('discover-layer-heat')), findsOneWidget);
     expect(find.byKey(const Key('discover-map-tool-offline')), findsOneWidget);
     expect(find.text('Asphalt'), findsOneWidget);

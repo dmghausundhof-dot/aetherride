@@ -53,6 +53,7 @@ import '../../domain/community/ride_group.dart';
 import '../../domain/community/ride_group_map.dart';
 import '../../data/routing/sgrade_live.dart';
 import '../../domain/routing/bike_overlay_class.dart';
+import '../../domain/routing/browse_clusters.dart';
 import '../../domain/routing/browse_lod.dart';
 import '../../domain/routing/browse_map_paint.dart';
 import '../../domain/routing/tour_match.dart';
@@ -541,6 +542,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   bool _showHillshade = BrowseMapPaint.hillshadeOnByDefault;
   bool _showPlacesLayer = true;
   bool _showHeatLayer = true;
+  bool _showPhotoLayer = true;
+  bool _satelliteOn = false;
+  String? _styleBeforeSatellite;
+  final Map<String, BrowseCluster> _clusterBySymbolId = {};
+  final Map<String, _RouteSuggestion> _photoBySymbolId = {};
   final NavPuckOverlay _navPuck = NavPuckOverlay();
   NavPuckStyle _navPuckStyle = NavPuckStyle.rider;
   UserLocation? _lastUserLoc;
@@ -2406,6 +2412,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
   }
 
   Future<void> _syncBrowseMapStyle() async {
+    if (_satelliteOn) return;
     final online = await _probeBrowseNetwork();
     if (!mounted) return;
     await OfflineBasemap.applyNetworkMode(online: online);
@@ -2432,6 +2439,39 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         SnackBar(content: Text(_l10n.offlineBrowseOverviewSnack)),
       );
     }
+  }
+
+  void _setSatelliteOn(bool on) {
+    if (on == _satelliteOn) return;
+    setState(() {
+      if (on) {
+        _styleBeforeSatellite = _mapStyle;
+        _mapStyle = kSatelliteRasterStyleJson;
+        _satelliteOn = true;
+      } else {
+        _satelliteOn = false;
+        _mapStyle = _styleBeforeSatellite ?? AppConfig.browseMapStyleUrl;
+        _styleBeforeSatellite = null;
+      }
+      _styleReady = false;
+      _pinImagesReady = false;
+    });
+  }
+
+  Future<void> _applyLodZoomHint() async {
+    final c = _map;
+    if (c == null) return;
+    final target = browseLodZoomHintTarget(_browseLod.id);
+    if (target <= _mapZoom) return;
+    try {
+      final cam = c.cameraPosition?.target;
+      await c.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          cam ?? LatLng(_mapCenter.lat, _mapCenter.lng),
+          target,
+        ),
+      );
+    } catch (_) {}
   }
 
   Future<void> _fitOfflinePackBbox() async {
@@ -5785,6 +5825,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       await _onTourPinTapped(tour);
       return;
     }
+    final cluster = _clusterBySymbolId[symbol.id];
+    if (cluster != null) {
+      await _openBrowseCluster(cluster);
+      return;
+    }
+    final photoTour = _photoBySymbolId[symbol.id];
+    if (photoTour != null) {
+      await _onTourPinTapped(photoTour);
+      return;
+    }
     final place = _placeBySymbolId[symbol.id];
     if (place != null) {
       await _onMapPlaceTapped(place);
@@ -7889,6 +7939,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         isLoop: _isLoop(r),
       );
 
+  List<String> _liveMatchReasons(_RouteSuggestion r) => tourMatchReasons(
+        bike: _garageCategory ?? BikeCategory.urban,
+        categories: r.categories,
+        surface: r.surface,
+        mtbScale: r.mtbScale,
+        score: _liveMatch(r),
+      );
+
   NavPolicy get _navPolicy =>
       navPolicyForBike(_garageCategory ?? BikeCategory.urban);
 
@@ -8135,36 +8193,43 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       final keepDim = _planDragAlongLabel != null;
       if (!keepDim) _planRibbonDimmed = false;
       var ribbonSlices = <({String kind, List<List<double>> coords})>[];
-      if (_heatmapConsent && _showHeatLayer) {
+      if (_showHeatLayer && browseLodShowsHeatmap(_browseLod.id)) {
         try {
-          final rides =
-              await ref.read(rideRepositoryProvider).listRides(limit: 40);
-          final zones =
-              await ref.read(garageRepositoryProvider).listPrivacyZones();
-          final heat = buildHeatmapFromRides(
-            consentHeatmap: true,
-            rides: [for (final r in rides) (id: r.id, track: r.track)],
-            privacyZones: zones,
-            includeSeedFallback: false,
-          );
-          // Best-effort community overlay (k≥5). Contribute max once per session.
+          HeatmapResult? own;
+          List<PrivacyZone> zones = const [];
+          List<({String id, List<Map<String, dynamic>> track})> rides = const [];
+          if (_heatmapConsent) {
+            final listed =
+                await ref.read(rideRepositoryProvider).listRides(limit: 40);
+            zones =
+                await ref.read(garageRepositoryProvider).listPrivacyZones();
+            rides = [for (final r in listed) (id: r.id, track: r.track)];
+            own = buildHeatmapFromRides(
+              consentHeatmap: true,
+              rides: rides,
+              privacyZones: zones,
+              includeSeedFallback: false,
+            );
+            if (!_heatmapContributed) {
+              try {
+                final metas = await SavedRouteMetaStore.listAll();
+                for (final r in listed.take(8)) {
+                  if (!RouteVisibility.mayContributeRide(
+                      r.routeId, metas[r.routeId])) {
+                    continue;
+                  }
+                  await contributeHeatmapTrack(
+                    track: r.track,
+                    privacyZones: zones,
+                  );
+                }
+                _heatmapContributed = true;
+              } catch (_) {}
+            }
+          }
           HeatmapResult? community;
           String? communityErr;
           try {
-            if (!_heatmapContributed) {
-              final metas = await SavedRouteMetaStore.listAll();
-              for (final r in rides.take(8)) {
-                if (!RouteVisibility.mayContributeRide(
-                    r.routeId, metas[r.routeId])) {
-                  continue;
-                }
-                await contributeHeatmapTrack(
-                  track: r.track,
-                  privacyZones: zones,
-                );
-              }
-              _heatmapContributed = true;
-            }
             final o = _origin;
             community = await fetchCommunityHeatmap(
               west: o.lng - 0.45,
@@ -8175,17 +8240,34 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           } catch (e) {
             communityErr = _l10n.discoverHeatmapOffline;
           }
+          final corridors = (community?.visibleSegments.isNotEmpty == true ||
+                  (own?.visibleSegments.isNotEmpty ?? false))
+              ? const <HeatSegment>[]
+              : corridorHeatFromTourTracks(
+                  tours: [
+                    for (final t in _filtered.take(DiscoverMapLineStyle.mapTourCap))
+                      if (t.hasUsableTrack)
+                        (
+                          id: t.id,
+                          coordinatesLngLat: t.trackLngLat ?? const [],
+                          popularity: _liveMatch(t),
+                        ),
+                  ],
+                );
           final note = [
-            heat.disclaimer,
+            if (own != null) own.disclaimer,
             if (community != null) community.disclaimer,
+            if (corridors.isNotEmpty)
+              'Korridore aus beliebten Touren — öffentlich, nicht deine Spur.',
             if (communityErr != null) communityErr,
           ].join(' · ');
           if (mounted) {
             setState(() => _heatmapNote = note);
           }
           for (final seg in [
-            ...heat.visibleSegments,
+            ...?own?.visibleSegments,
             ...?community?.visibleSegments,
+            ...corridors,
           ]) {
             if (gen != _drawGen) return;
             if (seg.coordinatesLngLat.length < 2) continue;
@@ -8775,6 +8857,91 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     _tourSymbols.add(sym);
   }
 
+  Future<void> _addClusterPin(
+    MapLibreMapController c, {
+    required BrowseCluster cluster,
+  }) async {
+    final sym = await c.addSymbol(
+      SymbolOptions(
+        fontNames: _symbolFonts,
+        geometry: LatLng(cluster.lat, cluster.lng),
+        iconImage: _pinImagesReady ? 'aether-pin' : null,
+        iconSize: 0.58,
+        iconAnchor: 'bottom',
+        textField: '${cluster.count}',
+        textSize: 13,
+        textColor: '#FFFFFF',
+        textHaloColor: '#1A120C',
+        textHaloWidth: 1.4,
+        textOffset: const Offset(0, 1.35),
+      ),
+    );
+    _clusterBySymbolId[sym.id] = cluster;
+    _tourSymbols.add(sym);
+  }
+
+  Future<void> _addPhotoDot(
+    MapLibreMapController c, {
+    required LatLng at,
+    required _RouteSuggestion tour,
+  }) async {
+    final sym = await c.addSymbol(
+      SymbolOptions(
+        fontNames: _symbolFonts,
+        geometry: at,
+        iconImage: _pinImagesReady ? poiPinImageId(MapPoiKind.viewpoint) : null,
+        iconSize: 0.28,
+        iconAnchor: 'center',
+        textField: '',
+      ),
+    );
+    _photoBySymbolId[sym.id] = tour;
+    _tourSymbols.add(sym);
+  }
+
+  Future<void> _openBrowseCluster(BrowseCluster cluster) async {
+    final c = _map;
+    if (c == null) return;
+    if (cluster.count == 1) {
+      final tour = _tourById(cluster.primary.id);
+      if (tour != null) await _onTourPinTapped(tour);
+      return;
+    }
+    var minLat = cluster.members.first.lat;
+    var maxLat = minLat;
+    var minLng = cluster.members.first.lng;
+    var maxLng = minLng;
+    for (final m in cluster.members) {
+      minLat = math.min(minLat, m.lat);
+      maxLat = math.max(maxLat, m.lat);
+      minLng = math.min(minLng, m.lng);
+      maxLng = math.max(maxLng, m.lng);
+    }
+    final pad = 0.01;
+    try {
+      await c.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(minLat - pad, minLng - pad),
+            northeast: LatLng(maxLat + pad, maxLng + pad),
+          ),
+          left: 48,
+          top: 96,
+          right: 48,
+          bottom: 220,
+        ),
+      );
+    } catch (_) {
+      await c.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(cluster.lat, cluster.lng),
+          (_mapZoom + 1.6).clamp(11.0, 15.5),
+        ),
+      );
+    }
+  }
+
+
   String _coveragePlaceLabel(MapPlace place) {
     final named = place.source == MapPlaceSource.stimme ||
         place.source == MapPlaceSource.meet;
@@ -9002,6 +9169,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       _tfBySymbolId.clear();
       _placeBySymbolId.clear();
       _tourBySymbolId.clear();
+      _clusterBySymbolId.clear();
+      _photoBySymbolId.clear();
       _poiBySymbolId.clear();
       _poiSymbolByPoiId.clear();
       _poiDrawIndexById.clear();
@@ -9427,54 +9596,80 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       // [_drawAll] (keine blinden T-Pins à la leere Ideen-Punkte).
       if (_showToursLayer && !_planningAb) {
         final pinLod = _browseLod.id;
+        final points = <BrowseMapPoint>[];
+        final atOf = <String, LatLng>{};
+        final tourOf = <String, _RouteSuggestion>{};
         for (final tour in _filtered.take(DiscoverMapLineStyle.mapTourCap)) {
           final cached = _routedLoopCache[tour.id];
           final hasLine =
               tour.hasTrack || (cached != null && cached.length >= 4);
           final selected = tour.id == _selectedTourId;
+          if (hasLine && selected) continue;
+          final pop = _liveMatch(tour);
           if (!browseLodPinVisible(
             lod: pinLod,
-            popularity: _liveMatch(tour),
+            popularity: pop,
             selected: selected,
-          )) {
+          ) &&
+              pinLod == BrowseLodId.character) {
             continue;
           }
-          if (hasLine) {
-            if (selected || pinLod == BrowseLodId.overview) continue;
-            final start = cached != null && cached.isNotEmpty
-                ? LatLng(cached.first.lat, cached.first.lng)
-                : (tour.trackLngLat != null && tour.trackLngLat!.isNotEmpty
-                    ? LatLng(
-                        tour.trackLngLat!.first[1],
-                        tour.trackLngLat!.first[0],
-                      )
-                    : tour.center);
-            await _addTourBrowsePin(
-              c,
-              tour: tour,
-              at: start,
-              selected: false,
-              iconSize: tourPinIconSize(selected: false),
-            );
+          // Überblick/Netz: schwache Loops bleiben in Clustern.
+          if (pinLod == BrowseLodId.detail &&
+              !browseLodPinVisible(
+                lod: pinLod,
+                popularity: pop,
+                selected: selected,
+              )) {
             continue;
           }
-          if (_isPinOnlyIdea(tour) && !_isLoop(tour)) {
-            await _addTourBrowsePin(
-              c,
-              tour: tour,
-              at: tour.center,
-              selected: false,
-              iconSize: tourPinIconSize(selected: false),
-            );
-            continue;
-          }
-          await _addTourBrowsePin(
-            c,
-            tour: tour,
-            at: tour.center,
-            selected: selected,
-            iconSize: tourPinIconSize(selected: selected),
+          final start = cached != null && cached.isNotEmpty
+              ? LatLng(cached.first.lat, cached.first.lng)
+              : (tour.trackLngLat != null && tour.trackLngLat!.isNotEmpty
+                  ? LatLng(
+                      tour.trackLngLat!.first[1],
+                      tour.trackLngLat!.first[0],
+                    )
+                  : tour.center);
+          atOf[tour.id] = start;
+          tourOf[tour.id] = tour;
+          points.add(
+            BrowseMapPoint(
+              id: tour.id,
+              lat: start.latitude,
+              lng: start.longitude,
+              popularity: pop,
+              selected: selected,
+              hasPhoto: tour.heroPhotoUrls.isNotEmpty,
+            ),
           );
+        }
+        final clusters = clusterBrowsePins(points: points, lod: pinLod);
+        for (final cluster in clusters) {
+          if (cluster.isSingle) {
+            final tour = tourOf[cluster.primary.id];
+            if (tour == null) continue;
+            await _addTourBrowsePin(
+              c,
+              tour: tour,
+              at: atOf[tour.id] ?? LatLng(cluster.lat, cluster.lng),
+              selected: tour.id == _selectedTourId,
+              iconSize: tourPinIconSize(
+                selected: tour.id == _selectedTourId,
+              ),
+            );
+            if (_showPhotoLayer &&
+                browseLodShowsPhotos(pinLod) &&
+                cluster.hasPhoto) {
+              await _addPhotoDot(
+                c,
+                at: LatLng(cluster.lat + 0.00018, cluster.lng + 0.00018),
+                tour: tour,
+              );
+            }
+          } else {
+            await _addClusterPin(c, cluster: cluster);
+          }
         }
       }
       if (_showToursLayer &&
@@ -11232,6 +11427,51 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     waysOn: _showBikeWaysLayer,
                     lodLabel: _browseLod.label,
                     lodTask: _browseLod.task,
+                  ),
+                ),
+              if (_surface == _Surface.discover &&
+                  browseLodZoomHint(_browseLod.id).isNotEmpty &&
+                  DiscoverExploreChromeLogic.showExploreLayerRow(
+                    hasSelection: DiscoverExploreChromeLogic.showIdlePeek(
+                      _hofPinLoopId ?? _selectedTourId,
+                    ),
+                    planning: _shellMode == DiscoverShellMode.navigate,
+                  ))
+                Positioned(
+                  left: AppSpacing.m,
+                  top: DiscoverExploreChromeLogic.layerRowTop(
+                        statusTop: MediaQuery.paddingOf(context).top,
+                        chromeHeight: _resolvedExploreChromeHeight,
+                      ) +
+                      DiscoverExploreChromeLogic.exploreLegendHeight +
+                      8,
+                  child: Material(
+                    key: const Key('browse-zoom-hint'),
+                    color: AppColors.surfaceDark.withValues(alpha: 0.92),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
+                      side: BorderSide(
+                        color: AppColors.border.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () => unawaited(_applyLodZoomHint()),
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          browseLodZoomHint(_browseLod.id),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.sageOnDark,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               if (!_hofChoice &&
@@ -13063,6 +13303,8 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         placesOn: _showPlacesLayer,
         heatOn: _showHeatLayer,
         heatConsent: _heatmapConsent,
+        photosOn: _showPhotoLayer,
+        satelliteOn: _satelliteOn,
       );
 
   Widget _mapContentsChip(AppLocalizations l10n) {
@@ -13175,8 +13417,11 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               farmTracksOn: _showFarmTracksLayer,
               hillshadeOn: _showHillshade,
               placesOn: _showPlacesLayer,
-              heatOn: _heatmapConsent && _showHeatLayer,
-              heatLocked: !_heatmapConsent,
+              photosOn: _showPhotoLayer,
+              satelliteOn: _satelliteOn,
+              heatOn: _showHeatLayer,
+              heatLocked: false,
+              heatHint: _heatmapConsent ? null : 'Öffentlich · k≥5',
               offlineReady: _offlineRoutingReady,
               offlinePackLabel: _offlinePackLabel,
               offlinePackId: _offlinePackId,
@@ -13216,12 +13461,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 sync(() => _showPlacesLayer = v);
                 unawaited(_syncMarkers());
               },
+              onPhotos: (v) {
+                sync(() => _showPhotoLayer = v);
+                unawaited(_syncMarkers());
+              },
+              onSatellite: (v) {
+                sync(() => _setSatelliteOn(v));
+              },
               onHeat: () {
-                if (!_heatmapConsent) {
-                  Navigator.pop(ctx);
-                  unawaited(_onHeatLayerTapped());
-                  return;
-                }
                 sync(() => _showHeatLayer = !_showHeatLayer);
                 unawaited(_drawAll());
               },
@@ -16830,6 +17077,20 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                               height: 1.25,
                             ),
                           ),
+                          if (_liveMatchReasons(r).isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              _liveMatchReasons(r).take(2).join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.sageOnDark,
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 4),
                           Text(
                             sport == null

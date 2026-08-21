@@ -41,6 +41,30 @@ class HeatmapResult {
       [for (final s in segments) if (s.visible) s];
 }
 
+/// Katalog-Korridore — echte Tour-Geometrie, kein Demo-Heat.
+List<HeatSegment> corridorHeatFromTourTracks({
+  required List<({String id, List<List<double>> coordinatesLngLat, int popularity})>
+      tours,
+  int minPopularity = 48,
+}) {
+  final out = <HeatSegment>[];
+  for (final t in tours) {
+    if (t.popularity < minPopularity) continue;
+    if (t.coordinatesLngLat.length < 2) continue;
+    out.add(
+      HeatSegment(
+        id: 'corridor-${t.id}',
+        coordinatesLngLat: t.coordinatesLngLat,
+        uniqueUsers: t.popularity.clamp(kHeatmapThreshold, 99).toInt(),
+        intensity: (t.popularity / 100).clamp(0.28, 0.9),
+        visible: true,
+      ),
+    );
+  }
+  return out;
+}
+
+
 const kHeatmapThreshold = 5;
 
 HeatmapResult buildHeatmapFromRides({

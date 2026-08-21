@@ -148,3 +148,23 @@ bool browseLodRibbonVisible({
       popularity: popularity,
       selected: selected,
     );
+
+/// Coaching, wenn die Karte absichtlich wenig zeigt.
+String browseLodZoomHint(BrowseLodId lod) => switch (lod) {
+      BrowseLodId.overview => 'Reinzoomen für Trails und Fotos',
+      BrowseLodId.network => 'Näher: Surface und S-Skala',
+      BrowseLodId.character => '',
+      BrowseLodId.detail => '',
+    };
+
+/// Zielzoom für den Hinweis-Tap.
+double browseLodZoomHintTarget(BrowseLodId lod) => switch (lod) {
+      BrowseLodId.overview => 11.2,
+      BrowseLodId.network => 13.0,
+      BrowseLodId.character => 16.0,
+      BrowseLodId.detail => 16.0,
+    };
+
+/// Community-Heat ist öffentlich (k≥5). Eigene Spuren bleiben Consent.
+bool browseLodPublicHeatAllowed(BrowseLodId lod) => browseLodShowsHeatmap(lod);
+

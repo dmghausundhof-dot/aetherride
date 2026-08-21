@@ -5,6 +5,8 @@ import 'osm_trail_network_client.dart';
 
 const kOsmSGradeSourceId = 'osm-sgrade';
 const kOsmSGradeLayerId = 'osm-sgrade-mtb';
+const kOsmSGradeRootyLayerId = 'osm-sgrade-mtb-rooty';
+
 
 /// S-Skala ist Charakter, nicht Netz — Overpass sonst country-sized.
 const kOsmSGradeMinZoom = BrowseLodBands.character.minZoom;

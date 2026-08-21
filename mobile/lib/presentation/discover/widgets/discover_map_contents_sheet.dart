@@ -73,6 +73,11 @@ class DiscoverMapContentsSheet extends StatelessWidget {
     required this.onPlaces,
     required this.onHeat,
     required this.onTool,
+    this.photosOn = true,
+    this.onPhotos,
+    this.satelliteOn = false,
+    this.onSatellite,
+    this.heatHint,
   });
 
   final bool toursOn;
@@ -96,6 +101,11 @@ class DiscoverMapContentsSheet extends StatelessWidget {
   final ValueChanged<bool> onPlaces;
   final VoidCallback onHeat;
   final ValueChanged<DiscoverMapContentsTool> onTool;
+  final bool photosOn;
+  final ValueChanged<bool>? onPhotos;
+  final bool satelliteOn;
+  final ValueChanged<bool>? onSatellite;
+  final String? heatHint;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +156,30 @@ class DiscoverMapContentsSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.s),
+              if (onSatellite != null) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _BaseChip(
+                        key: const Key('discover-base-standard'),
+                        label: 'Standard',
+                        on: !satelliteOn,
+                        onTap: () => onSatellite!(false),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _BaseChip(
+                        key: const Key('discover-base-satellite'),
+                        label: 'Satellit',
+                        on: satelliteOn,
+                        onTap: () => onSatellite!(true),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s),
+              ],
               GridView.count(
                 crossAxisCount: 3,
                 shrinkWrap: true,
@@ -228,13 +262,22 @@ class DiscoverMapContentsSheet extends StatelessWidget {
                     onTap: () => onPlaces(!placesOn),
                   ),
                   _LayerTile(
+                    key: const Key('discover-layer-photos'),
+                    mark: const RadGlyph('photo', size: 22),
+                    label: 'Fotos',
+                    on: photosOn,
+                    accent: AppColors.accent,
+                    onTap: () => onPhotos?.call(!photosOn),
+                  ),
+                  _LayerTile(
                     key: const Key('discover-layer-heat'),
                     mark: heatLocked
                         ? const RadGlyph('lock', size: 22)
                         : const ChromeGlyph('heat', size: 22),
                     label: l10n.discoverLayerHeat,
-                    subtitle: heatLocked ? l10n.discoverLayerHeatLocked : null,
-                    on: heatOn && !heatLocked,
+                    subtitle: heatHint ??
+                        (heatLocked ? l10n.discoverLayerHeatLocked : null),
+                    on: heatOn,
                     accent: AppColors.warning,
                     onTap: onHeat,
                   ),
@@ -519,6 +562,23 @@ class DiscoverMapLegend extends StatelessWidget {
             ),
           ),
         ],
+        if (lodTask != null && lodTask!.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 148),
+            child: Text(
+              lodTask!,
+              key: const Key('browse-lod-task'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.muted,
+              ),
+            ),
+          ),
+        ],
       ],
     );
     return Align(
@@ -563,3 +623,47 @@ class DiscoverMapLegend extends StatelessWidget {
     );
   }
 }
+
+class _BaseChip extends StatelessWidget {
+  const _BaseChip({
+    super.key,
+    required this.label,
+    required this.on,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool on;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: on ? AppColors.accent.withValues(alpha: 0.16) : AppColors.surfaceDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        side: BorderSide(
+          color: on ? AppColors.accent : AppColors.border.withValues(alpha: 0.7),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.chip),
+        child: SizedBox(
+          height: 40,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: on ? AppColors.accent : AppColors.muted,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -54,6 +54,7 @@ void main() {
 
   test('map tap queries live S-grade and OSM path layers, not only packs', () {
     expect(kBikeOverlayQueryLayerIds, contains(kOsmSGradeLayerId));
+    expect(kBikeOverlayQueryLayerIds, contains(kOsmSGradeRootyLayerId));
     expect(kBikeOverlayQueryLayerIds, contains(kOsmLivePathLayerId));
   });
 

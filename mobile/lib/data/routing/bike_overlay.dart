@@ -91,6 +91,7 @@ const kBikeOverlayLayerIds = <BikeOverlayClass, String>{
 
 const kBikeOverlayQueryLayerIds = <String>[
   kOsmSGradeLayerId,
+  kOsmSGradeRootyLayerId,
   kOsmLivePathLayerId,
   kOsmLiveTrackLayerId,
   kOsmLiveCyclewayLayerId,
@@ -617,43 +618,86 @@ Future<void> attachSGradeLiveLayer(MapLibreMapController c) async {
       );
     } catch (_) {}
   }
-  var hasLayer = false;
-  try {
-    hasLayer = (await c.getLayerIds()).contains(kOsmSGradeLayerId);
-  } catch (_) {}
-  if (hasLayer) return;
   final below = await _browseNetworkBelowLayerId(c);
-  try {
-    await c.addLineLayer(
-      kOsmSGradeSourceId,
-      kOsmSGradeLayerId,
-      LineLayerProperties(
-        lineColor: [
+  Future<bool> has(String id) async {
+    try {
+      return (await c.getLayerIds()).contains(id);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  if (!await has(kOsmSGradeLayerId)) {
+    try {
+      await c.addLineLayer(
+        kOsmSGradeSourceId,
+        kOsmSGradeLayerId,
+        LineLayerProperties(
+          lineColor: [
+            'match',
+            ['get', 'mtb_scale'],
+            'S0',
+            BikeOverlayColors.s0,
+            'S1',
+            BikeOverlayColors.s1,
+            BikeOverlayColors.unrated,
+          ],
+          lineWidth: 2.6,
+          lineOpacity: 0.92,
+          lineCap: 'round',
+          lineJoin: 'round',
+          visibility: 'visible',
+        ),
+        minzoom: kOsmSGradeMinZoom,
+        filter: [
           'match',
           ['get', 'mtb_scale'],
-          'S0',
-          BikeOverlayColors.s0,
-          'S1',
-          BikeOverlayColors.s1,
-          'S2',
-          BikeOverlayColors.s2,
-          'S3',
-          '#FB8C00',
-          'S3+',
-          BikeOverlayColors.s3,
-          BikeOverlayColors.unrated,
+          ['S0', 'S1'],
+          true,
+          false,
         ],
-        lineWidth: 2.6,
-        lineOpacity: 0.92,
-        lineCap: 'round',
-        lineJoin: 'round',
-        visibility: 'visible',
-      ),
-      minzoom: kOsmSGradeMinZoom,
-      belowLayerId: below,
-    );
-  } catch (_) {}
+        belowLayerId: below,
+      );
+    } catch (_) {}
+  }
+  if (!await has(kOsmSGradeRootyLayerId)) {
+    try {
+      await c.addLineLayer(
+        kOsmSGradeSourceId,
+        kOsmSGradeRootyLayerId,
+        LineLayerProperties(
+          lineColor: [
+            'match',
+            ['get', 'mtb_scale'],
+            'S2',
+            BikeOverlayColors.s2,
+            'S3',
+            '#FB8C00',
+            'S3+',
+            BikeOverlayColors.s3,
+            BikeOverlayColors.s2,
+          ],
+          lineWidth: 2.35,
+          lineOpacity: 0.9,
+          lineCap: 'butt',
+          lineJoin: 'round',
+          lineDasharray: BrowseMapPaint.rootyDash,
+          visibility: 'visible',
+        ),
+        minzoom: kOsmSGradeMinZoom,
+        filter: [
+          'match',
+          ['get', 'mtb_scale'],
+          ['S2', 'S3', 'S3+'],
+          true,
+          false,
+        ],
+        belowLayerId: below,
+      );
+    } catch (_) {}
+  }
 }
+
 
 Future<void> setSGradeLiveData(
   MapLibreMapController c,
@@ -879,6 +923,11 @@ Future<void> applyBikeOverlayVisibility(
           ),
         );
       }
+    } catch (_) {}
+  }
+  for (final id in [kOsmSGradeLayerId, kOsmSGradeRootyLayerId]) {
+    try {
+      await c.setLayerVisibility(id, on.contains(BikeOverlayClass.mtb));
     } catch (_) {}
   }
   for (final entry in kOsmLiveLayerClass.entries) {
