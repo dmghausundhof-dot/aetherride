@@ -127,6 +127,35 @@ class TrackPoint {
         if (speedKmh != null && speedKmh! > 0.4 && speedKmh! < 90)
           'spd': (speedKmh! * 10).round() / 10,
       };
+
+  /// Inverse of [toJson] plus the looser keys already used on export/sync.
+  static TrackPoint? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final json = Map<String, dynamic>.from(raw);
+    final lat = (json['lat'] as num?)?.toDouble() ??
+        (json['latitude'] as num?)?.toDouble();
+    final lng = (json['lng'] as num?)?.toDouble() ??
+        (json['lon'] as num?)?.toDouble() ??
+        (json['longitude'] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+    if (lat.abs() > 90 || lng.abs() > 180) return null;
+    final time = (json['time'] as num?)?.toInt() ??
+        (json['timeMs'] as num?)?.toInt() ??
+        0;
+    return TrackPoint(
+      lat: lat,
+      lng: lng,
+      timeMs: time,
+      elev: (json['elev'] as num?)?.toDouble(),
+      heartRateBpm: liveHrFromTrackPoint(json)?.toDouble(),
+      cadenceRpm: liveCadFromTrackPoint(json)?.toDouble(),
+      powerW: livePowerFromTrackPoint(json)?.toDouble(),
+      leanDeg: liveLeanFromTrackPoint(json),
+      gPeak: liveGFromTrackPoint(json),
+      impact: liveImpactFromTrackPoint(json),
+      speedKmh: liveSpeedFromTrackPoint(json),
+    );
+  }
 }
 
 int? liveHrFromTrackPoint(Map<String, dynamic> p) {

@@ -20,8 +20,10 @@ import '../../core/theme/nav_hud_tokens.dart';
 import '../../data/community/ride_group_cloud.dart';
 import '../../data/community/ride_group_store.dart';
 import '../../data/community/ride_together_look.dart';
+import '../../data/local/ride_in_progress_store.dart';
 import '../../data/local/ride_prefs.dart';
 import '../../data/ride/ride_media_io.dart';
+import '../../domain/ride/ride_in_progress.dart';
 import '../../data/routing/ride_to_saved.dart';
 import '../../data/routing/basemap_street_contrast.dart';
 import '../../data/routing/bike_overlay.dart';
@@ -134,7 +136,8 @@ class RideScreen extends ConsumerStatefulWidget {
   ConsumerState<RideScreen> createState() => RideScreenState();
 }
 
-class RideScreenState extends ConsumerState<RideScreen> {
+class RideScreenState extends ConsumerState<RideScreen>
+    with WidgetsBindingObserver {
   FusedMetrics? _metrics;
   BoschLiveData? _ldi;
 
@@ -294,12 +297,21 @@ class RideScreenState extends ConsumerState<RideScreen> {
   /// True while Losfahren / autostart is awaiting location permission + engines.
   /// Map stays visible — never swap back to a sensor checklist.
   bool _starting = false;
+  bool _recovering = false;
+
+  DateTime? _lastInProgressAt;
+  int _lastInProgressLen = 0;
+  bool _inProgressBusy = false;
+  String? _recoveredRouteId;
+  String? _recoveredRouteName;
+  int _elapsedGapSec = 0;
 
   String? _ttsLangTag;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _together = RideTogetherLook(onAdopt: _adoptTogetherSnap);
     _together.addListener(_onTogetherLook);
     unawaited(_initTts());
@@ -309,12 +321,18 @@ class RideScreenState extends ConsumerState<RideScreen> {
     OfflineMapsPrefs.revision.addListener(_onPackRevision);
     unawaited(_resolveRideHudStyle());
     unawaited(_refreshGroupHudOnly());
-    // Deep-link may set rideAutostart before this State mounts — ref.listen
-    // only fires on *changes*, so consume a pending true on the first frame.
+    // Recover a killed ride before autostart so the track is not replaced.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _consumeRideAutostart();
+      unawaited(_bootRideSession());
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) return;
+    if (!ref.read(isRidingProvider)) return;
+    _flushInProgressSync();
   }
 
   @override
@@ -331,8 +349,92 @@ class RideScreenState extends ConsumerState<RideScreen> {
   void _consumeRideAutostart() {
     if (ref.read(rideAutostartProvider) != true) return;
     ref.read(rideAutostartProvider.notifier).state = false;
-    if (ref.read(isRidingProvider) || _starting) return;
+    if (ref.read(isRidingProvider) || _starting || _recovering) return;
     unawaited(_start());
+  }
+
+  Future<void> _bootRideSession() async {
+    await _maybeRecoverRide();
+    if (!mounted) return;
+    _consumeRideAutostart();
+  }
+
+  Future<void> _maybeRecoverRide() async {
+    if (_starting || _recovering || ref.read(isRidingProvider)) return;
+    _recovering = true;
+    try {
+      final draft = await RideInProgressStore.read();
+      if (!mounted) return;
+      if (!rideInProgressIsRecoverable(draft)) {
+        if (draft != null) await RideInProgressStore.clear();
+        return;
+      }
+      await _start(resume: draft);
+    } finally {
+      _recovering = false;
+    }
+  }
+
+  RideInProgressDraft _inProgressSnapshot() {
+    final route = ref.read(activeRouteProvider);
+    return RideInProgressDraft(
+      rideId: _rideId ?? const Uuid().v4(),
+      startedAt: _startedAt ?? DateTime.now(),
+      savedAt: DateTime.now().toUtc(),
+      track: List<TrackPoint>.from(_track),
+      distanceM: ref.read(rideDistanceMProvider),
+      elapsedSec: ref.read(rideElapsedSecProvider),
+      usingGps: _usingGps,
+      drawingTour: _drawingTour,
+      paused: ref.read(isPausedProvider),
+      peakG: _peakG,
+      flowSum: _flowSum,
+      flowN: _flowN,
+      simDistanceM: _simDistanceM,
+      simMotionUsed: _simMotionUsed,
+      routeId: route?.id ?? _recoveredRouteId,
+      routeName: route?.name ?? _recoveredRouteName,
+      journal: _rideJournal,
+    );
+  }
+
+  Future<void> _checkpointInProgress({bool force = false}) async {
+    if (!ref.read(isRidingProvider) && !force) return;
+    if (_rideId == null && _track.isEmpty) return;
+    final now = DateTime.now();
+    if (!rideInProgressShouldCheckpoint(
+      lastAt: _lastInProgressAt,
+      lastLen: _lastInProgressLen,
+      trackLen: _track.length,
+      now: now,
+      force: force,
+    )) {
+      return;
+    }
+    if (_inProgressBusy && !force) return;
+    _inProgressBusy = true;
+    try {
+      final snap = _inProgressSnapshot();
+      _rideId ??= snap.rideId;
+      await RideInProgressStore.write(snap);
+      _lastInProgressAt = now;
+      _lastInProgressLen = _track.length;
+    } catch (_) {
+      // Disk full / mid-kill — next tick retries.
+    } finally {
+      _inProgressBusy = false;
+    }
+  }
+
+  void _flushInProgressSync() {
+    if (_rideId == null && _track.isEmpty) return;
+    try {
+      final snap = _inProgressSnapshot();
+      _rideId ??= snap.rideId;
+      RideInProgressStore.writeSync(snap);
+      _lastInProgressAt = DateTime.now();
+      _lastInProgressLen = _track.length;
+    } catch (_) {}
   }
 
   Future<void> _initTts() async {
@@ -2529,8 +2631,14 @@ class RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
-  Future<void> _start() async {
+  Future<void> _start({RideInProgressDraft? resume}) async {
     if (_starting || ref.read(isRidingProvider)) return;
+    if (resume == null) {
+      final existing = await RideInProgressStore.read();
+      if (rideInProgressIsRecoverable(existing)) {
+        resume = existing;
+      }
+    }
     _confirmStop = 0;
     setState(() => _starting = true);
 
@@ -2552,8 +2660,6 @@ class RideScreenState extends ConsumerState<RideScreen> {
         _rawUploadConsent = consents['raw_data_upload'] == true;
       }),
     );
-    _rideId = const Uuid().v4();
-    _rideJournal = RideJournal.empty;
     unawaited(
       ref.read(garageRepositoryProvider).listPrivacyZones().then((zones) {
         _privacyZones = zones;
@@ -2561,11 +2667,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
     );
     _chunkBuf.clear();
     _chunkSeq = 0;
-    _gpsFixCount = 0;
-    _gpsStatus = _l10n.rideGpsUnavailable;
-    _lastGpsDistanceM = 0;
+    _gpsFixCount = resume != null && resume.track.isNotEmpty ? 2 : 0;
+    _gpsStatus = resume?.usingGps == true ? null : _l10n.rideGpsUnavailable;
+    _lastGpsDistanceM = resume?.distanceM ?? 0;
     _gpsStallSec = 0;
-    _startedAt = DateTime.now();
     _spokenAnnounceKeys.clear();
     _liveHintText = null;
     _liveHintId = null;
@@ -2588,23 +2693,60 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _northUp = false;
     }
     _cleanMode = true;
-    _drawingTour = false;
-    _simDistanceM = 0;
-    _simMotionUsed = false;
-    _usingGps = false;
+    if (resume != null) {
+      _rideId = resume.rideId;
+      _rideJournal = resume.journal;
+      _startedAt = resume.startedAt.toLocal();
+      _elapsedGapSec = math.max(
+        0,
+        DateTime.now().difference(_startedAt!).inSeconds - resume.elapsedSec,
+      );
+      _track
+        ..clear()
+        ..addAll(resume.track);
+      _drawingTour = resume.drawingTour;
+      _simDistanceM = resume.simDistanceM;
+      _simMotionUsed = resume.simMotionUsed;
+      _usingGps = resume.usingGps;
+      _peakG = resume.peakG;
+      _flowSum = resume.flowSum;
+      _flowN = resume.flowN;
+      _recoveredRouteId = resume.routeId;
+      _recoveredRouteName = resume.routeName;
+      _lastInProgressAt = resume.savedAt;
+      _lastInProgressLen = resume.track.length;
+    } else {
+      _rideId = const Uuid().v4();
+      _rideJournal = RideJournal.empty;
+      _startedAt = DateTime.now();
+      _elapsedGapSec = 0;
+      _track.clear();
+      _drawingTour = false;
+      _simDistanceM = 0;
+      _simMotionUsed = false;
+      _usingGps = false;
+      _peakG = 1;
+      _flowSum = 0;
+      _flowN = 0;
+      _recoveredRouteId = null;
+      _recoveredRouteName = null;
+      _lastInProgressAt = null;
+      _lastInProgressLen = 0;
+    }
 
     // N-START-01: flip riding ASAP so map + HUD paint before sensor work.
     // BLE / Nearby stays deferred in [_connectBleAfterHudStable].
     ref.read(isRidingProvider.notifier).state = true;
-    ref.read(isPausedProvider.notifier).state = false;
+    ref.read(isPausedProvider.notifier).state = resume?.paused ?? false;
     _groupPinPoll?.cancel();
     _groupPinPoll = Timer.periodic(const Duration(seconds: 8), (_) {
       unawaited(_refreshGroupPins());
     });
     unawaited(_refreshGroupPins());
-    ref.read(rideElapsedSecProvider.notifier).state = 0;
-    ref.read(rideDistanceMProvider.notifier).state = 0;
+    ref.read(rideElapsedSecProvider.notifier).state = resume?.elapsedSec ?? 0;
+    ref.read(rideDistanceMProvider.notifier).state = resume?.distanceM ?? 0;
     if (mounted) setState(() => _starting = false);
+    unawaited(_checkpointInProgress(force: true));
     unawaited(_startHudMedia());
 
     // GPS + IMU in parallel after HUD is visible — never await BLE here.
@@ -2653,6 +2795,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
           elev: fix.altitudeM,
         ),
       );
+      unawaited(_checkpointInProgress());
       unawaited(_syncOfflineHonestyAtFix(fix.lat, fix.lng));
       unawaited(_publishGroupPresence(fix.lat, fix.lng));
       if (_together.looking) {
@@ -2747,8 +2890,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _unlockAutoLockIfMoving();
       final start = _startedAt;
       if (start != null) {
-        ref.read(rideElapsedSecProvider.notifier).state =
-            DateTime.now().difference(start).inSeconds;
+        ref.read(rideElapsedSecProvider.notifier).state = math.max(
+          0,
+          DateTime.now().difference(start).inSeconds - _elapsedGapSec,
+        );
       }
       if (!_usingGps) {
         if (_allowGpsStallSim) {
@@ -2787,6 +2932,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       _considerNavTts();
       _considerPoiTts();
       unawaited(_highlightRideNextPoi(ref.read(activeRouteProvider)));
+      unawaited(_checkpointInProgress());
       final m = _metrics;
       if (m != null) _considerLiveHints(m);
     });
@@ -2844,6 +2990,7 @@ class RideScreenState extends ConsumerState<RideScreen> {
       ),
     );
     _gpsStatus = _l10n.rideGpsSimActive;
+    unawaited(_checkpointInProgress());
     if (mounted && t % 3 == 0) setState(() {});
   }
 
@@ -3358,8 +3505,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
       endedAt: ended,
       distanceKm: distanceM / 1000,
       movingTimeSec: elapsed,
-      name: drawingTour ? _liveTourName(started) : (route?.name ?? 'Freeride'),
-      routeId: route?.id,
+      name: drawingTour
+          ? _liveTourName(started)
+          : (route?.name ?? _recoveredRouteName ?? 'Freeride'),
+      routeId: route?.id ?? _recoveredRouteId,
       elevationM: elevHonest,
       track: track,
       summary: {
@@ -3403,6 +3552,11 @@ class RideScreenState extends ConsumerState<RideScreen> {
       } catch (_) {}
     }
 
+    await RideInProgressStore.clear();
+    _lastInProgressAt = null;
+    _lastInProgressLen = 0;
+    _recoveredRouteId = null;
+    _recoveredRouteName = null;
     ref.invalidate(recentRidesProvider);
     ref.invalidate(coachWatchProvider);
 
@@ -3502,6 +3656,10 @@ class RideScreenState extends ConsumerState<RideScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (ref.read(isRidingProvider)) {
+      _flushInProgressSync();
+    }
     RidePrefs.navPuckRevision.removeListener(_onNavPuckPref);
     OfflineMapsPrefs.revision.removeListener(_onPackRevision);
     _sensorSub?.cancel();
