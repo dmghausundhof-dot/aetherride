@@ -6,7 +6,7 @@ import 'package:aetherride_mobile/presentation/discover/plan_sheet_snaps.dart';
 void main() {
   group('PlanSheetSnaps', () {
     test('peek is 80% map, full is 20% map free', () {
-      expect(PlanSheetSnaps.peek, 0.20);
+      expect(PlanSheetSnaps.peek, 0.22);
       expect(PlanSheetSnaps.full, 0.80);
       expect(PlanSheetSnaps.peek, lessThan(PlanSheetSnaps.form));
       expect(PlanSheetSnaps.form, lessThan(PlanSheetSnaps.full));

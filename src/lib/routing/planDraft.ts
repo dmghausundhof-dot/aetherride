@@ -482,10 +482,11 @@ export function orderedWaypoints(draft: PlanDraft): PlanWaypoint[] {
 
 export type PlanSlot = "start" | "end" | "via";
 
-/** Next empty editor slot. After A+B, taps replace dest — via is a button. */
+/** Next empty editor slot. After A+B, further hits become vias. */
 export function nextPlanSlot(draft: PlanDraft): PlanSlot {
   if (!startOf(draft)) return "start";
-  return "end";
+  if (!endOf(draft)) return "end";
+  return "via";
 }
 
 export function swapStartEnd(draft: PlanDraft): PlanDraft {
@@ -1853,37 +1854,21 @@ export function applyPlanMapTap(
     return setEnd(draft, pin, opts.endLabel);
   }
   if (!endOf(draft)) return setEnd(draft, pin, opts.endLabel);
-  if (opts.line && opts.line.length >= 2) {
-    if (planViaIsDuplicate(viasOf(draft), pin)) return draft;
-    return insertViaAlong(draft, pin, viaOpts);
-  }
-  if (
-    planBusyBlocksDestReplace({
-      routingBusy: Boolean(opts.routingBusy),
-      hasStart: Boolean(startOf(draft)),
-      hasEnd: Boolean(endOf(draft)),
-      picking: opts.picking,
-      forceEnd: opts.forceEnd,
-    })
-  ) {
-    return draft;
-  }
-  const withoutVias: PlanDraft = {
-    ...draft,
-    waypoints: draft.waypoints.filter((w) => w.role !== "via"),
-  };
-  return setEnd(withoutVias, pin, opts.endLabel);
+  // A+B already set: far tap inserts via (parity Flutter planFarTapInsertsVia).
+  if (planViaIsDuplicate(viasOf(draft), pin)) return draft;
+  return insertViaAlong(draft, pin, viaOpts);
 }
 
-/** After A+B with a live line, a tap beside the ribbon inserts a via. */
+/** After A+B, a tap beside the ribbon inserts a via (live line optional). */
 export function planFarTapInsertsVia(opts: {
   picking?: PlanSlot | null;
   hasStart: boolean;
   hasEnd: boolean;
-  hasLiveLine: boolean;
+  /** @deprecated unused — kept for call-site parity with older clients */
+  hasLiveLine?: boolean;
 }): boolean {
   if (opts.picking === "start" || opts.picking === "end") return false;
-  return opts.hasStart && opts.hasEnd && opts.hasLiveLine;
+  return opts.hasStart && opts.hasEnd;
 }
 
 /**

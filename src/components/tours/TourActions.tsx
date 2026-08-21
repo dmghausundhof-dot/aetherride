@@ -135,8 +135,10 @@ export function TourActions({ tour }: { tour: PublicTour }) {
         }
       }
     }
+    // Pin-only: Plan editor, not an empty ride bridge
     setFlash(copy.noTrackHint);
     setTimeout(() => setFlash(null), 3500);
+    router.push(`/discover?panel=plan&tour=${encodeURIComponent(tour.id)}`);
   }, [
     copy.noTrackHint,
     isRouteSaved,

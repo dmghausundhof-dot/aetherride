@@ -6,7 +6,7 @@
 /// - [full]: ~80 % Sheet → ~20 % Karte frei. Recents, Vias, Tipps.
 abstract final class PlanSheetSnaps {
   /// Kompakt — Karte ist der Editor.
-  static const double peek = 0.20;
+  static const double peek = 0.22;
 
   /// Formular lesbar, Map nicht weg.
   static const double form = 0.50;

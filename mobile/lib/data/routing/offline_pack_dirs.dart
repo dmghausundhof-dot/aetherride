@@ -8,8 +8,10 @@ import 'package:path_provider/path_provider.dart';
 
 import 'coverage_graph_ring.dart';
 import 'coverage_label.dart';
+import 'map_style_url.dart';
 import 'offline_maps_prefs.dart';
 import 'offline_pack_catalog.dart';
+import 'offline_pmtiles_store.dart';
 import 'overlay_regions.dart';
 
 /// On-disk region packs under app documents `regions/{id}/`.
@@ -337,20 +339,35 @@ abstract final class OfflinePackDirs {
         }
       }
       if (hit == null || hitBbox == null) return false;
+      final hitId = p.basename(hit.path);
+      final mapOk = await OfflinePmtilesStore.isReady(
+        basemapArchiveIdForBbox(hitBbox),
+      );
       final current = await OfflineMapsPrefs.activatedPackPath();
       if (current == hit.path) {
         final m = await OfflineMapsPrefs.read();
-        if (OfflineMapsPrefs.packBboxFrom(m) == null) {
-          await OfflineMapsPrefs.merge({'packBbox': hitBbox});
-        }
+        final patch = <String, dynamic>{
+          if (OfflineMapsPrefs.packBboxFrom(m) == null) 'packBbox': hitBbox,
+          if (m['basemapReady'] != mapOk) 'basemapReady': mapOk,
+        };
+        if (patch.isNotEmpty) await OfflineMapsPrefs.merge(patch);
         return true;
       }
+      final prev = await OfflineMapsPrefs.read();
+      final prevStreetId = OfflineMapsPrefs.streetHudPackIdFrom(prev);
       await OfflineMapsPrefs.merge({
         'activatedPackPath': hit.path,
         'regionPack': await nameFromDir(hit),
         'packBbox': hitBbox,
         'engineHint': 'offline_graph',
         'activatedAt': DateTime.now().toUtc().toIso8601String(),
+        'basemapReady': mapOk,
+        if (prevStreetId != null && prevStreetId != hitId) ...{
+          'streetHudAt': null,
+          'streetHudBbox': null,
+          'streetHudKind': null,
+          'streetHudPackId': null,
+        },
       });
       return true;
     } catch (_) {

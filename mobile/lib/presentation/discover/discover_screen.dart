@@ -72,6 +72,7 @@ import '../../domain/routing/tour_coverage.dart';
 import '../../domain/routing/heatmap.dart';
 import '../../data/routing/heatmap_client.dart';
 import '../../data/routing/offline_basemap.dart';
+import '../../data/routing/offline_pmtiles_store.dart';
 import '../../data/routing/routing_status_client.dart';
 import '../../domain/routing/engine_steps_along.dart';
 import '../../domain/routing/nav_cues.dart';
@@ -1665,43 +1666,72 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
   }
 
+  PlanWaypointRole _planHitSlot() => planGeocodeHitSlot(
+        hasStart: _start != null,
+        hasEnd: _end != null,
+        pickingVia: _pick == _PickMode.via,
+        pickingEnd: _pick == _PickMode.end,
+        pickingStart: _pick == _PickMode.start,
+        startFieldFocused: _startAddrFocus.hasFocus,
+        endFieldFocused: _endAddrFocus.hasFocus,
+      );
+
   Future<void> _applyAddressHit(GeocodeHit hit) async {
-    final target = _addrTarget ?? 'start';
+    final viaIndex = _addrTarget != null && _addrTarget!.startsWith('via:')
+        ? int.tryParse(_addrTarget!.substring(4))
+        : null;
+    // Active search hits keep their field target; Recents use focus/slot logic
+    // so a stale `_addrTarget` cannot overwrite Start once A is set.
+    final PlanWaypointRole slot;
+    if (viaIndex != null) {
+      slot = PlanWaypointRole.via;
+    } else if (_addrHits.isNotEmpty && _addrTarget == 'end') {
+      slot = PlanWaypointRole.end;
+    } else if (_addrHits.isNotEmpty && _addrTarget == 'start') {
+      slot = PlanWaypointRole.start;
+    } else {
+      slot = _planHitSlot();
+    }
+    if (slot == PlanWaypointRole.via && viaIndex == null) {
+      _addGeocodeHitAsVia(hit);
+      return;
+    }
     final p = GeoPoint(hit.lat, hit.lng);
     final becameOrigin =
-        target == 'start' && _userPos == null && _start == null;
+        slot == PlanWaypointRole.start && _userPos == null && _start == null;
     _abFromBrowsePin = false;
     _pushPlanUndo();
     setState(() {
-      if (target == 'end') {
+      if (slot == PlanWaypointRole.end) {
         _end = p;
         _endAddrCtrl.text = hit.label;
         _pick = _PickMode.none;
         _destinationTrail = null;
-      } else if (target.startsWith('via:')) {
-        final i = int.tryParse(target.substring(4));
-        if (i != null && i >= 0 && i < _vias.length) {
-          final old = _vias[i];
-          _vias[i] = LabeledVia(
-            lat: p.lat,
-            lng: p.lng,
-            label: hit.label,
-            placeId: old.placeId,
-            kind: old.kind,
-          );
-        }
+      } else if (slot == PlanWaypointRole.via &&
+          viaIndex != null &&
+          viaIndex >= 0 &&
+          viaIndex < _vias.length) {
+        final old = _vias[viaIndex];
+        _vias[viaIndex] = LabeledVia(
+          lat: p.lat,
+          lng: p.lng,
+          label: hit.label,
+          placeId: old.placeId,
+          kind: old.kind,
+        );
         _pick = _PickMode.none;
       } else {
         _start = p;
         _startAddrCtrl.text = hit.label;
-        _pick = _PickMode.end;
+        _pick = _end == null ? _PickMode.end : _PickMode.none;
       }
       _addrHits = const [];
+      _addrTarget = null;
       _geocodeRecents = _pushGeocodeRecentList(hit);
       _setStatus(_l10n.discoverStartEndHit(
-        target == 'end'
+        slot == PlanWaypointRole.end
             ? _l10n.navigateEndLabel
-            : target.startsWith('via:')
+            : slot == PlanWaypointRole.via
                 ? _l10n.navigateAddVia
                 : _l10n.navigateStartLabel,
         hit.label,
@@ -1709,16 +1739,16 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     });
     FocusManager.instance.primaryFocus?.unfocus();
     unawaited(_persistGeocodeRecents(_geocodeRecents));
-    if (target == 'end') unawaited(_rememberLastPlanDest());
+    if (slot == PlanWaypointRole.end) unawaited(_rememberLastPlanDest());
     await _syncMarkers();
-    if (_map != null) {
+    if (_map != null && slot != PlanWaypointRole.via) {
       try {
         await _map!.animateCamera(
           CameraUpdate.newLatLngZoom(LatLng(hit.lat, hit.lng), 12),
         );
       } catch (_) {}
     }
-    if (target == 'start' || becameOrigin) {
+    if (slot == PlanWaypointRole.start || becameOrigin) {
       _refreshNearbyDataSources();
     }
     if (_start != null && _end != null) {
@@ -1750,7 +1780,9 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
         ..addAll(next.labeledVias);
       _addrHits = const [];
       _pick = _PickMode.none;
+      _geocodeRecents = _pushGeocodeRecentList(hit);
     });
+    unawaited(_persistGeocodeRecents(_geocodeRecents));
     unawaited(_syncMarkers());
     _schedulePlanReshape();
     if (!_afterPlanViaInserted()) {
@@ -2052,9 +2084,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       final m = await OfflineMapsPrefs.read();
       final path = (m['activatedPackPath'] as String?)?.trim() ?? '';
       final routing = await OfflinePackDirs.hasLegitimateActivatedPack();
-      final overview = m['basemapReady'] == true;
       final bbox =
           routing ? await OfflinePackDirs.activatedCoverageBbox() : null;
+      var overview = false;
+      if (bbox != null && bbox.length >= 4) {
+        try {
+          overview = await OfflinePmtilesStore.isReady(
+            basemapArchiveIdForBbox(bbox),
+          );
+        } catch (_) {}
+        if ((m['basemapReady'] == true) != overview) {
+          try {
+            await OfflineMapsPrefs.merge({'basemapReady': overview});
+          } catch (_) {}
+        }
+      }
       final rawName = (m['regionPack'] as String?)?.trim() ?? '';
       final id = OfflineMapsPrefs.packIdFromActivatedPath(path) ?? '';
       final packId = routing && id.isNotEmpty ? id : null;
@@ -3308,7 +3352,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       if (planFarTapInsertsVia(
         startSet: true,
         endSet: _end != null,
-        hasLiveLine: line != null && line.length >= 2,
         pickingStart: false,
         pickingEnd: _pick == _PickMode.end,
       )) {
@@ -3355,7 +3398,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (planFarTapInsertsVia(
       startSet: _start != null,
       endSet: _end != null,
-      hasLiveLine: line != null && line.length >= 2,
       pickingStart: _pick == _PickMode.start,
       pickingEnd: _pick == _PickMode.end,
     )) {
@@ -3475,9 +3517,14 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     // Map / elev via — not a parked ribbon finger; avoid stale wait-chip.
     _planShapeHintAt = null;
     _pushPlanUndo();
+    final dismissCoach = _planLineCoach;
     setState(() {
       _insertPlanViaAlongInState(raw, label: label);
+      if (dismissCoach) _planLineCoach = false;
     });
+    if (dismissCoach) {
+      unawaited(RidePrefs.setPlanLineCoachDismissed(true));
+    }
     unawaited(HapticFeedback.selectionClick());
     unawaited(_reversePlanFieldLabels());
     _schedulePlanReshape();
@@ -3644,9 +3691,21 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
       lineLngLat: line,
       tapLat: tap.lat,
       tapLng: tap.lng,
-      maxOffsetM: onLine ? math.max(radius, 220) : radius,
+      maxOffsetM: onLine ? math.max(radius, 420) : radius,
     );
-    if (snap == null) return false;
+    if (snap == null) {
+      if (!planFarTapInsertsVia(
+        startSet: _start != null,
+        endSet: _end != null,
+        pickingStart: _pick == _PickMode.start,
+        pickingEnd: _pick == _PickMode.end,
+      ) &&
+          _pick != _PickMode.via) {
+        return false;
+      }
+      _insertPlanViaAlong(tap);
+      return true;
+    }
     if (plannedRouteViaIsDuplicate(
       vias: [
         for (final v in _vias) (lat: v.lat, lng: v.lng),
@@ -11074,13 +11133,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                 Positioned(
                   left: AppSpacing.m,
                   right: showLocateFab ? 56 : AppSpacing.m,
-                  top: MapOrnaments.compassMargins(
-                    context,
-                    extraBelowSafe:
-                        DiscoverExploreChromeLogic.ornamentExtraBelowSafe(
-                      _resolvedExploreChromeHeight,
-                    ),
-                  ).y.toDouble(),
+                  bottom: _panelInset + AppSpacing.s,
                   child: Builder(
                     builder: (context) {
                       final l10n = AppLocalizations.of(context);
@@ -11536,6 +11589,17 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               }
               return;
             }
+            if (_startAddrFocus.hasFocus || _endAddrFocus.hasFocus) {
+              FocusManager.instance.primaryFocus?.unfocus();
+            }
+            final placingVia = _start != null &&
+                _end != null &&
+                _pick != _PickMode.start &&
+                _pick != _PickMode.end;
+            if (placingVia && _planLineCoach) {
+              setState(() => _planLineCoach = false);
+              unawaited(RidePrefs.setPlanLineCoachDismissed(true));
+            }
             if (!mapPlanEditorTapPlacesPin(
               editorActive: true,
               addressFieldFocused:
@@ -11544,6 +11608,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               cameraMovedAt: _cameraMovedAt,
               lastPinAt: _lastRoutePinAt,
               now: now,
+              placingVia: placingVia || _pick == _PickMode.via,
             )) {
               return;
             }
@@ -12628,14 +12693,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final planning = _planSheetActive;
     final closed = !planning &&
         DiscoverBrowseSheetSnaps.isClosed(_discoverSheetExtent);
-    final peekPlan = planning && PlanSheetSnaps.isPeek(_planSheetExtent);
     final full = planning
         ? PlanSheetSnaps.isFull(_planSheetExtent)
         : DiscoverBrowseSheetSnaps.isFull(_discoverSheetExtent);
     final kicker = planning
         ? (full ? l10n.browseMap : l10n.planRouteTitle)
         : (closed ? l10n.mappeKicker : null);
-    final showKicker = closed || peekPlan || (planning && full);
+    final showKicker = closed || (planning && full);
     final label = [
       if (kicker != null) kicker,
       semanticsLabel ??
@@ -14132,7 +14196,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           ),
           onPressed: () {
             setState(() => _pick = _PickMode.end);
-            _endAddrFocus.requestFocus();
+            FocusManager.instance.primaryFocus?.unfocus();
           },
           child: Text(l10n.discoverSetEndCta),
         ),
@@ -14192,6 +14256,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
     final stats = _planStickyKmMin();
     final title = _adaptingTourName ?? l10n.planRouteTitle;
     final canGo = _computed != null && _start != null && _end != null;
+    final viaArmed = _pick == _PickMode.via;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.m,
@@ -14210,16 +14275,18 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           ),
           const SizedBox(height: 2),
           Text(
-            [
-              if (stats.isNotEmpty) stats,
-              destLabel,
-            ].join(' · '),
+            viaArmed
+                ? l10n.navigateViaHint
+                : [
+                    if (stats.isNotEmpty) stats,
+                    destLabel,
+                  ].join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.muted,
+              color: viaArmed ? const Color(0xFFE65100) : AppColors.muted,
             ),
           ),
           const SizedBox(height: 8),
@@ -14227,21 +14294,44 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
             children: [
               IconButton(
                 tooltip: l10n.save,
-                onPressed:
-                    canGo ? () => unawaited(_saveCurrent()) : null,
+                onPressed: canGo ? () => unawaited(_saveCurrent()) : null,
                 icon: const ChromeGlyph('merken', size: 22),
               ),
+              if (canGo) ...[
+                IconButton(
+                  key: const Key('plan-peek-via'),
+                  tooltip: l10n.navigateAddVia,
+                  onPressed: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    setState(() {
+                      _pick = viaArmed ? _PickMode.none : _PickMode.via;
+                    });
+                  },
+                  style: IconButton.styleFrom(
+                    foregroundColor: viaArmed
+                        ? const Color(0xFFE65100)
+                        : null,
+                    backgroundColor: viaArmed
+                        ? const Color(0x22E65100)
+                        : null,
+                  ),
+                  icon: const ChromeGlyph('add', size: 22),
+                ),
+              ],
               const SizedBox(width: 4),
               Expanded(
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: AppColors.onAccent,
-                    minimumSize: const Size.fromHeight(48),
+                    minimumSize: const Size.fromHeight(44),
                   ),
                   onPressed: canGo
                       ? () => unawaited(_startRide())
-                      : () => unawaited(_snapPlanSheet(PlanSheetSnaps.form)),
+                      : () {
+                          setState(() => _pick = _PickMode.end);
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        },
                   icon: ChromeGlyph(
                     canGo ? 'play' : 'flag',
                     size: 20,
@@ -15329,15 +15419,13 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
                             ? l10n.discoverAdjustStops
                             : _planDragAlongLabel ??
                                 (_pick == _PickMode.via
-                                    ? l10n.navigateSubtitleVia
+                                    ? l10n.navigateViaHint
                                     : (_end != null && _start == null)
                                         ? l10n.discoverDestSetWaitingGps
                                         : _start == null
                                             ? l10n.discoverTapStart
-                                            : (_computed != null
-                                                ? l10n.navigateSubtitleShape
-                                                : l10n.navigateSubtitle)),
-                        maxLines: 2,
+                                            : l10n.planEditLineHint),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 11,
@@ -15352,7 +15440,6 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               ],
             ),
           ),
-          _panelMessages(),
           if (_adaptingTour != null) ...[
           PlanAdaptBanner(
             name: _adaptingTour!.name,
@@ -15508,6 +15595,7 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
           onViaSubmitted: (i, q) =>
               unawaited(_searchAddress('via:$i', query: q)),
         ),
+        _panelMessages(),
         if (_addrBusy)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.s),

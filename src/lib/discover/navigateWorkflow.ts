@@ -50,6 +50,16 @@ export function discoverExploreMapTapOpensPlan(opts: {
 }
 
 /**
+ * Deep-link `?panel=plan&tour=` should adopt into the plan editor (with track
+ * when available), never leave a bare start pin without messaging.
+ */
+export function discoverTourDeepLinkOpensPlan(opts: {
+  hasTourId: boolean;
+}): boolean {
+  return opts.hasTourId;
+}
+
+/**
  * Navigieren öffnen: Ziel tippen/suchen, optional letzter Ort als B.
  * Start bleibt, wenn schon gesetzt — sonst übernimmt der Caller den Origin.
  */

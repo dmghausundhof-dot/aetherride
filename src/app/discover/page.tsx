@@ -254,6 +254,7 @@ import {
 import {
   beginNavigateIntent,
   discoverExploreMapTapOpensPlan,
+  discoverTourDeepLinkOpensPlan,
   discoverRundkursActive,
   placeHitAppliesAsDestination,
   shouldForceLoopOnlyFromNearMe,
@@ -1227,30 +1228,7 @@ function DiscoverPageInner() {
     if (sheetParam === "tours" || panelParam === "tours") setSheetMode("tours");
   }, [sheetParam, panelParam]);
 
-  useEffect(() => {
-    if (!tourParam) return;
-    const tour = getPublicTour(tourParam);
-    if (!tour) return;
-    setMapCenter(tour.center);
-    setSheetMode("plan");
-    setDraft((d) => ({
-      ...setStart(d, tour.center, tour.name),
-      label: tour.name,
-      baseTour: {
-        id: tour.id,
-        name: tour.name,
-        provider: "seed",
-        geometry: null,
-        distanceKm: tour.distanceKm,
-        elevationM: tour.elevationM,
-        durationMin: tour.durationMin,
-        mtbScale: tour.difficulty,
-        surface: tour.surface,
-        loop: tour.loop,
-        center: tour.center,
-      },
-    }));
-  }, [tourParam]);
+  // Deep-link ?tour= is applied after adoptIntoPlanMode is wired (below).
 
   useEffect(() => {
     let cancelled = false;
@@ -1350,12 +1328,12 @@ function DiscoverPageInner() {
       // Demo-Stadt = ~60 Rundkurs-Lens (parity with Flutter _applyDemoCity).
       setFilters((f) => ({ ...f, loopOnly: true }));
       setDraft((d) => setStart(d, center, name));
-      setLocationStatus(`Demo-Region: ${name}`);
-      setRoutingMsg(`Demo-Region: ${name} · 60 min Rundkurse`);
+      setLocationStatus(d.demoRegion(name));
+      setRoutingMsg(d.demoRegionLoops(name));
       setSheetMode("quick");
       setQuickTimedOut(false);
     },
-    []
+    [d]
   );
 
   useEffect(() => {
@@ -1792,6 +1770,8 @@ function DiscoverPageInner() {
     router.replace("/discover", { scroll: false });
   }, [router]);
 
+  const adoptIntoPlanModeRef = useRef<(tour: BaseTour) => void>(() => {});
+
   const startWithSuggestion = useCallback(
     async (r: RouteSuggestion) => {
       try {
@@ -1832,10 +1812,11 @@ function DiscoverPageInner() {
       } catch {
         /* pin-only */
       }
-      setSheetMode("plan");
-      setRoutingMsg(d.inPlanNeedEnd(r.name));
+      // Pin-only ideas stay in Plan — no empty ride bridge.
+      closeDetail();
+      adoptIntoPlanModeRef.current(suggestionToTour(r));
     },
-    [d, isRouteSaved, router, saveRoute, setActiveRoute]
+    [closeDetail, isRouteSaved, router, saveRoute, setActiveRoute]
   );
 
   const toggleSave = useCallback(
@@ -2052,10 +2033,10 @@ function DiscoverPageInner() {
       }
       setSheetMode("tours");
       setRoutingMsg(
-        `GPX importiert: ${parsed.name} · ${parsed.distanceKm.toFixed(1)} km`
+        d.gpxImported(parsed.name, parsed.distanceKm.toFixed(1))
       );
     },
-    [asGroup, router, saveRoute]
+    [asGroup, d, router, saveRoute]
   );
 
   const searchGeocode = useCallback(
@@ -2090,7 +2071,7 @@ function DiscoverPageInner() {
     try {
       const hits = await searchGeocode(q);
       setAddrHits(hits);
-      if (!hits.length) setRoutingMsg(`Keine Treffer für „${q}“`);
+      if (!hits.length) setRoutingMsg(d.noHits(q));
     } catch (e) {
       setAddrHits([]);
       setRoutingMsg(
@@ -2099,7 +2080,7 @@ function DiscoverPageInner() {
     } finally {
       setAddrBusy(false);
     }
-  }, [addrQuery, searchGeocode]);
+  }, [addrQuery, d, searchGeocode]);
 
   useEffect(() => {
     if (addrQuery.trim().length < 2) {
@@ -2351,9 +2332,7 @@ function DiscoverPageInner() {
       setDraft(next);
       setSheetMode("plan");
       setMapCenter(pin);
-      setRoutingMsg(
-        `In Planen: ${tour.name} — Ziel auf der Karte oder als Adresse setzen (kein Track).`
-      );
+      setRoutingMsg(d.inPlanNeedEnd(tour.name));
       void fillPlaceholderLabels(next);
       return;
     }
@@ -2385,11 +2364,60 @@ function DiscoverPageInner() {
     };
     setPreviewTour(null);
     setSheetMode("plan");
-    setRoutingMsg(`In Planen: ${tour.name} — Start/Ziel editierbar`);
+    setRoutingMsg(d.inPlanNamed(tour.name));
     if (tour.center) setMapCenter(tour.center);
     void fillPlaceholderLabels(next);
     planRecomputeRef.current(next);
   };
+  adoptIntoPlanModeRef.current = adoptIntoPlanMode;
+
+  useEffect(() => {
+    if (!discoverTourDeepLinkOpensPlan({ hasTourId: Boolean(tourParam) })) {
+      return;
+    }
+    const pub = getPublicTour(tourParam!);
+    if (!pub) return;
+    let cancelled = false;
+    void (async () => {
+      let geometry: GeoJSON.LineString | null = null;
+      try {
+        const res = await fetch(
+          `/api/tours/geometry?id=${encodeURIComponent(tourParam)}`
+        );
+        if (res.ok) {
+          const j = (await res.json()) as {
+            geometry?: GeoJSON.LineString | null;
+          };
+          const raw = j?.geometry?.coordinates;
+          if (raw && raw.length >= 2) {
+            geometry = j.geometry ?? null;
+          }
+        }
+      } catch {
+        /* pin-only deep link */
+      }
+      if (cancelled) return;
+      const base: BaseTour = {
+        id: pub.id,
+        name: pub.name,
+        provider: "seed",
+        geometry,
+        distanceKm: pub.distanceKm,
+        elevationM: pub.elevationM,
+        durationMin: pub.durationMin,
+        mtbScale: pub.difficulty,
+        surface: pub.surface,
+        loop: pub.loop,
+        center: pub.center,
+      };
+      adoptIntoPlanModeRef.current(base);
+      setPickTarget(geometry && geometry.coordinates.length >= 2 ? null : "end");
+      setAddrTarget("end");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tourParam]);
 
   const runHybridSnap = async (tour: BaseTour) => {
     setRoutingBusy(true);
@@ -2753,12 +2781,12 @@ function DiscoverPageInner() {
           schedulePlanRecompute(next);
           return next;
         });
-        setRoutingMsg(`Ziel: ${hit.label}`);
+        setRoutingMsg(d.waypointEnd(hit.label));
         return;
       }
-      setRoutingMsg(`Ort: ${hit.label}`);
+      setRoutingMsg(d.browsePlace(hit.label));
     },
-    [sheetMode, schedulePlanRecompute]
+    [d, sheetMode, schedulePlanRecompute]
   );
 
   const searchChromePlaces = useCallback(async (q: string) => {

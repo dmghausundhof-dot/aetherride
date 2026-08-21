@@ -1384,8 +1384,8 @@ void main() {
     });
 
     test('tap radius tightens when zoomed in', () {
-      expect(plannedRouteTapRadiusM(18), 28);
-      expect(plannedRouteTapRadiusM(9), 200);
+      expect(plannedRouteTapRadiusM(18), 48);
+      expect(plannedRouteTapRadiusM(9), 420);
     });
 
     test('duplicate via within 40 m is rejected', () {

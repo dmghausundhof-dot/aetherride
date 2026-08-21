@@ -107,7 +107,11 @@ const labels = {
 };
 
 assert.equal(nextPlanSlot(emptyDraft("gravel")), "start");
-assert.equal(nextPlanSlot(draftAB()), "end");
+assert.equal(nextPlanSlot(draftAB()), "via");
+assert.equal(
+  nextPlanSlot(setStart(emptyDraft("gravel"), [8.68, 49.4], "A")),
+  "end"
+);
 
 const swapped = swapStartEnd(draftAB());
 assert.deepEqual(startOf(swapped), b);
@@ -166,9 +170,13 @@ assert.deepEqual(startOf(firstTap), a, "GPS is start");
 assert.deepEqual(endOf(firstTap), b, "first tap is dest");
 
 const second = applyPlanMapTap(firstTap, c, labels);
-assert.equal(second.waypoints.filter((w) => w.role === "via").length, 0);
+assert.equal(
+  second.waypoints.filter((w) => w.role === "via").length,
+  1,
+  "second far tap after A+B inserts a via"
+);
 assert.deepEqual(startOf(second), a);
-assert.deepEqual(endOf(second), c, "second tap replaces dest, not a via");
+assert.deepEqual(endOf(second), b, "dest stays; long-press replaces dest");
 
 const viaPick = applyPlanMapTap(firstTap, c, {
   ...labels,
@@ -970,7 +978,12 @@ const busyKeep = applyPlanMapTap(draftAB(), [8.5, 49.2], {
   ...labels,
   routingBusy: true,
 });
-assert.deepEqual(endOf(busyKeep), b, "busy routing does not replace dest");
+assert.deepEqual(endOf(busyKeep), b, "busy routing keeps dest");
+assert.equal(
+  viasOf(busyKeep).length,
+  1,
+  "far tap still inserts via while routing"
+);
 
 const tickLineDense: [number, number][] = [];
 for (let i = 0; i <= 40; i++) tickLineDense.push([8.67 + i * 0.012, 49.28]);

@@ -205,9 +205,16 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
       activated = (m['activatedPackPath'] as String?)?.trim();
       if (activated != null && activated.isEmpty) activated = null;
       engineHint = m['engineHint'] as String?;
-      basemapReady = m['basemapReady'] == true;
       packBbox = await OfflinePackDirs.activatedCoverageBbox() ??
           OfflineMapsPrefs.packBboxFrom(m);
+      basemapReady = packBbox != null &&
+          await OfflinePmtilesStore.isReady(
+            basemapArchiveIdForBbox(packBbox),
+          );
+      if ((m['basemapReady'] == true) != basemapReady) {
+        _prefsChanged = true;
+        await OfflineMapsPrefs.merge({'basemapReady': basemapReady});
+      }
     } catch (_) {}
     List<List<double>>? packRing;
     List<List<double>>? packDots;
@@ -1024,6 +1031,10 @@ class _OfflineMapsSheetState extends State<OfflineMapsSheet> {
           'packBbox': null,
           'basemapReady': null,
           'activatedAt': null,
+          'streetHudAt': null,
+          'streetHudBbox': null,
+          'streetHudKind': null,
+          'streetHudPackId': null,
         });
       }
       OfflineTilesStore.instance.clearCache();

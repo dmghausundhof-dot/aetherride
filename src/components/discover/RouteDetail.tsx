@@ -546,15 +546,15 @@ export function RouteDetail({
         ))}
 
       <div className="flex flex-col gap-2 pb-2">
-        {onAdoptIntoPlan && (
+        {onAdoptIntoPlan && geometry ? (
           <button
             type="button"
             onClick={onAdoptIntoPlan}
             className="rounded-xl border border-border py-2.5 text-sm font-medium"
           >
-            {geometry ? d.intoPlan : d.setEndCta}
+            {d.intoPlan}
           </button>
-        )}
+        ) : null}
         <div className="flex gap-2">
           <button
             type="button"
@@ -568,13 +568,23 @@ export function RouteDetail({
             )}
             {saved ? d.saved : d.save}
           </button>
-          <button
-            type="button"
-            onClick={onStart}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
-          >
-            <MappeGlyph name="ride" size={16} /> {d.startInApp}
-          </button>
+          {geometry ? (
+            <button
+              type="button"
+              onClick={onStart}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
+            >
+              <MappeGlyph name="ride" size={16} /> {d.startInApp}
+            </button>
+          ) : onAdoptIntoPlan ? (
+            <button
+              type="button"
+              onClick={onAdoptIntoPlan}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-on-accent"
+            >
+              {d.setEndCta}
+            </button>
+          ) : null}
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           <Link

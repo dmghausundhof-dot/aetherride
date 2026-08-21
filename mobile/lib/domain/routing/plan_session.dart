@@ -309,12 +309,13 @@ bool planMapTapInsertsViaAlong({
 bool planFarTapInsertsVia({
   required bool startSet,
   required bool endSet,
-  required bool hasLiveLine,
+  @Deprecated('Live line no longer required — A+B is enough')
+  bool hasLiveLine = true,
   required bool pickingStart,
   required bool pickingEnd,
 }) {
   if (pickingStart || pickingEnd) return false;
-  return startSet && endSet && hasLiveLine;
+  return startSet && endSet;
 }
 
 /// Komoot “Set as destination”: long-press / Alt-hold after A+B.
@@ -396,5 +397,23 @@ PlanWaypointRole nextPlanSlot({
   required bool endSet,
 }) {
   if (!startSet) return PlanWaypointRole.start;
-  return PlanWaypointRole.end;
+  if (!endSet) return PlanWaypointRole.end;
+  return PlanWaypointRole.via;
+}
+
+/// Recents / Suche: Slot folgt Fokus und Pick, nie den Start überschreiben
+/// sobald A steht — außer das Startfeld ist aktiv.
+PlanWaypointRole planGeocodeHitSlot({
+  required bool hasStart,
+  required bool hasEnd,
+  required bool pickingVia,
+  required bool pickingEnd,
+  required bool pickingStart,
+  required bool startFieldFocused,
+  required bool endFieldFocused,
+}) {
+  if (pickingVia) return PlanWaypointRole.via;
+  if (startFieldFocused || pickingStart) return PlanWaypointRole.start;
+  if (endFieldFocused || pickingEnd) return PlanWaypointRole.end;
+  return nextPlanSlot(startSet: hasStart, endSet: hasEnd);
 }

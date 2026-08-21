@@ -211,7 +211,58 @@ void main() {
     expect(
         nextPlanSlot(startSet: false, endSet: false), PlanWaypointRole.start);
     expect(nextPlanSlot(startSet: true, endSet: false), PlanWaypointRole.end);
-    expect(nextPlanSlot(startSet: true, endSet: true), PlanWaypointRole.end);
+    expect(nextPlanSlot(startSet: true, endSet: true), PlanWaypointRole.via);
+  });
+
+  test('geocode/recents slot never clobbers start once A is set', () {
+    expect(
+      planGeocodeHitSlot(
+        hasStart: true,
+        hasEnd: false,
+        pickingVia: false,
+        pickingEnd: false,
+        pickingStart: false,
+        startFieldFocused: false,
+        endFieldFocused: false,
+      ),
+      PlanWaypointRole.end,
+    );
+    expect(
+      planGeocodeHitSlot(
+        hasStart: true,
+        hasEnd: true,
+        pickingVia: false,
+        pickingEnd: false,
+        pickingStart: false,
+        startFieldFocused: false,
+        endFieldFocused: false,
+      ),
+      PlanWaypointRole.via,
+    );
+    expect(
+      planGeocodeHitSlot(
+        hasStart: true,
+        hasEnd: true,
+        pickingVia: true,
+        pickingEnd: false,
+        pickingStart: false,
+        startFieldFocused: false,
+        endFieldFocused: false,
+      ),
+      PlanWaypointRole.via,
+    );
+    expect(
+      planGeocodeHitSlot(
+        hasStart: true,
+        hasEnd: false,
+        pickingVia: false,
+        pickingEnd: false,
+        pickingStart: false,
+        startFieldFocused: true,
+        endFieldFocused: false,
+      ),
+      PlanWaypointRole.start,
+    );
   });
 
   test('plan editor tap may place pins without pick mode', () {
@@ -238,6 +289,18 @@ void main() {
         now: t0,
       ),
       isFalse,
+    );
+    expect(
+      mapPlanEditorTapPlacesPin(
+        editorActive: true,
+        addressFieldFocused: true,
+        cameraMoving: false,
+        cameraMovedAt: quiet,
+        lastPinAt: t0,
+        now: t0,
+        placingVia: true,
+      ),
+      isTrue,
     );
   });
 }

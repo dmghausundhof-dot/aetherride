@@ -370,8 +370,10 @@ bool mapPlanEditorTapPlacesPin({
   DateTime? cameraMovedAt,
   DateTime? lastPinAt,
   required DateTime now,
+  bool placingVia = false,
 }) {
-  if (!editorActive || addressFieldFocused) return false;
+  if (!editorActive) return false;
+  if (addressFieldFocused && !placingVia) return false;
   if (mapTapLooksLikeCameraGesture(
     now: now,
     cameraMoving: cameraMoving,
@@ -379,6 +381,7 @@ bool mapPlanEditorTapPlacesPin({
   )) {
     return false;
   }
+  if (placingVia) return true;
   return !mapTapTooSoonAfterLastPin(now: now, lastPinAt: lastPinAt);
 }
 
@@ -762,14 +765,15 @@ bool planLineTapInsertsVia({
   required bool hasLiveLine,
   required bool pickingStartOrEnd,
 }) {
-  if (!editorActive || !hasStart || !hasEnd || !hasLiveLine) return false;
+  if (!editorActive || !hasStart || !hasEnd) return false;
+  if (!hasLiveLine) return false;
   return !pickingStartOrEnd;
 }
 
 /// Finger radius in metres — tighter when zoomed in.
 double plannedRouteTapRadiusM(double zoom) {
   final z = zoom.clamp(9.0, 18.0);
-  return (90 * math.pow(2, 14 - z)).toDouble().clamp(28.0, 200.0);
+  return (140 * math.pow(2, 14 - z)).toDouble().clamp(48.0, 420.0);
 }
 
 /// Snap a map tap onto the live line when it is close enough.
