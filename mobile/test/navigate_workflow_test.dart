@@ -54,4 +54,9 @@ void main() {
       isFalse,
     );
   });
+
+  test('Tour-Deep-Link öffnet Planen', () {
+    expect(discoverTourDeepLinkOpensPlan(hasTourId: true), isTrue);
+    expect(discoverTourDeepLinkOpensPlan(hasTourId: false), isFalse);
+  });
 }

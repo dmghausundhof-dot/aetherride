@@ -22,6 +22,9 @@ bool discoverExploreMapTapOpensPlan({
 }) =>
     !picking && !planning;
 
+/// Deep-link / catalog handoff into Plan (Web `discoverTourDeepLinkOpensPlan`).
+bool discoverTourDeepLinkOpensPlan({required bool hasTourId}) => hasTourId;
+
 /// Navigieren: Ziel tippen/suchen, optional letzter Ort als B.
 BeginNavigateIntent beginNavigateIntent({
   required bool hasEnd,

@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import {
   beginNavigateIntent,
   discoverExploreMapTapOpensPlan,
+  discoverTourDeepLinkOpensPlan,
   discoverRundkursActive,
   placeHitAppliesAsDestination,
   shouldForceLoopOnlyFromNearMe,
@@ -66,6 +67,14 @@ assert.equal(
 );
 assert.equal(
   discoverExploreMapTapOpensPlan({ sheetMode: "quick", picking: true }),
+  false
+);
+assert.equal(
+  discoverTourDeepLinkOpensPlan({ hasTourId: true }),
+  true
+);
+assert.equal(
+  discoverTourDeepLinkOpensPlan({ hasTourId: false }),
   false
 );
 
