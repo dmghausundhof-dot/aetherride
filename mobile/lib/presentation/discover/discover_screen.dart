@@ -11728,6 +11728,12 @@ class DiscoverScreenState extends ConsumerState<DiscoverScreen>
               }
               return;
             }
+            if (!discoverExploreMapTapOpensPlan(
+              planning: false,
+              picking: _pick != _PickMode.none,
+            )) {
+              return;
+            }
             _abFromBrowsePin = true;
             final shapedBrowse = _placePlanMapPoint(p);
             final cue = discoverBrowsePinCue(

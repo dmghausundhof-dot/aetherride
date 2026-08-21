@@ -2933,8 +2933,18 @@ function DiscoverPageInner() {
       setPickTarget(null);
       return;
     }
-    applyExploreBrowsePin(lngLat);
+    if (
+      discoverExploreMapTapOpensPlan({
+        sheetMode,
+        picking: Boolean(pickTarget),
+      })
+    ) {
+      applyExploreBrowsePin(lngLat);
+    }
   };
+
+  const onMapClick = (lngLat: [number, number], mods?: { alt?: boolean }) => {
+    if (!pickTarget && sheetMode !== "plan") return;
     const trails = trailsForViaSnap(liveOsmTrails);
     setDraft((prev) => {
       const line = (prev.computed?.geometry?.coordinates ?? []) as

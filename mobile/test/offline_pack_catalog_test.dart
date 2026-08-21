@@ -925,6 +925,50 @@ void main() {
       ),
       isTrue,
     );
+    // Orphan corridor / unknown without prefs box: not covered at GPS.
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: StreetHudOfferKind.corridor,
+        userLng: 8.67,
+        userLat: 49.28,
+      ),
+      isFalse,
+    );
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: null,
+        userLng: 8.67,
+        userLat: 49.28,
+      ),
+      isFalse,
+    );
+    expect(
+      streetHudCoversHere(
+        regionReady: true,
+        kind: StreetHudOfferKind.pack,
+        userLng: 8.67,
+        userLat: 49.28,
+      ),
+      isTrue,
+    );
+    expect(
+      streetHudCoverageStale(
+        kind: StreetHudOfferKind.corridor,
+        userLng: 8.67,
+        userLat: 49.28,
+      ),
+      isTrue,
+    );
+    expect(
+      streetHudCoverageStale(
+        kind: StreetHudOfferKind.pack,
+        userLng: 8.67,
+        userLat: 49.28,
+      ),
+      isFalse,
+    );
     expect(
       streetHudSketchLine(const [
         [11.5, 48.1],

@@ -1072,9 +1072,11 @@ bool streetHudCoverageStale({
   double? userLng,
   double? userLat,
 }) {
-  if (kind == null) return false;
-  if (storedBbox == null || storedBbox.length < 4) return false;
   if (userLng == null || userLat == null) return false;
+  if (storedBbox == null || storedBbox.length < 4) {
+    // Pack-wide legacy without a stored box is fine; corridor/unknown is not.
+    return kind != StreetHudOfferKind.pack;
+  }
   return !streetHudPointInBbox(userLng, userLat, storedBbox);
 }
 
@@ -1092,8 +1094,8 @@ bool streetHudCoversHere({
     return true;
   }
   if (storedBbox == null || storedBbox.length < 4) {
-    // Legacy installs without a stored box: assume pack-wide.
-    return kind == null || kind == StreetHudOfferKind.pack;
+    // Only pack-wide installs may claim coverage without a stored box.
+    return kind == StreetHudOfferKind.pack;
   }
   return streetHudPointInBbox(userLng, userLat, storedBbox);
 }

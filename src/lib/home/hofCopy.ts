@@ -78,7 +78,6 @@ export type HofCopy = {
   workshopZoneOnBike: string;
   workshopZoneSensor: string;
   workshopMore: string;
-  workshopMoreHint: string;
   workshopSchemaHint: string;
   workshopSchemaLegendOk: string;
   workshopSchemaLegendOpen: string;
@@ -324,7 +323,6 @@ const DE: HofCopy = {
   workshopZoneOnBike: "Am Rad",
   workshopZoneSensor: "Sensor",
   workshopMore: "Mehr am Rad",
-  workshopMoreHint: "Teile, Wartung und Setup — sichtbar unter Die Box",
   workshopSchemaHint: "Tippe auf einen Punkt — eintragen oder ändern.",
   workshopSchemaLegendOk: "da",
   workshopSchemaLegendOpen: "offen",
@@ -585,7 +583,6 @@ const EN: HofCopy = {
   workshopZoneOnBike: "On the bike",
   workshopZoneSensor: "Sensor",
   workshopMore: "More on the bike",
-  workshopMoreHint: "Parts, maintenance and setup — visible below Die Box",
   workshopSchemaHint: "Tap a point — add or change the part.",
   workshopSchemaLegendOk: "on",
   workshopSchemaLegendOpen: "open",
@@ -842,7 +839,6 @@ const FR: HofCopy = {
   workshopZoneOnBike: "Sur le vélo",
   workshopZoneSensor: "Capteur",
   workshopMore: "Plus sur le vélo",
-  workshopMoreHint: "Pièces, entretien et setup — visibles sous Die Box",
   workshopSchemaHint: "Touche un point — ajouter ou modifier.",
   workshopSchemaLegendOk: "là",
   workshopSchemaLegendOpen: "ouvert",
@@ -1099,7 +1095,6 @@ const IT: HofCopy = {
   workshopZoneOnBike: "Sulla bici",
   workshopZoneSensor: "Sensore",
   workshopMore: "Altro sulla bici",
-  workshopMoreHint: "Parti, manutenzione e setup — visibili sotto Die Box",
   workshopSchemaHint: "Tocca un punto — aggiungi o modifica.",
   workshopSchemaLegendOk: "c’è",
   workshopSchemaLegendOpen: "aperto",
@@ -1360,7 +1355,6 @@ const NL: HofCopy = {
   workshopZoneOnBike: "Aan de fiets",
   workshopZoneSensor: "Sensor",
   workshopMore: "Meer op de fiets",
-  workshopMoreHint: "Onderdelen, onderhoud en setup — zichtbaar onder Die Box",
   workshopSchemaHint: "Tik op een punt — toevoegen of wijzigen.",
   workshopSchemaLegendOk: "er",
   workshopSchemaLegendOpen: "open",

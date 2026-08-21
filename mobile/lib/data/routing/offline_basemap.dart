@@ -105,7 +105,10 @@ abstract final class OfflineBasemap {
       if (id == null || id.isEmpty) return false;
       if (!await hasStreetHudRegion(id)) return false;
       final m = await OfflineMapsPrefs.read();
-      if (OfflineMapsPrefs.streetHudPackIdFrom(m) != id) return true;
+      if (OfflineMapsPrefs.streetHudPackIdFrom(m) != id) {
+        // Region without matching prefs — don't invent GPS coverage.
+        return lng == null || lat == null;
+      }
       return streetHudCoversHere(
         regionReady: true,
         kind: streetHudKindFromRaw(

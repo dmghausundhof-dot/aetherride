@@ -40,7 +40,7 @@ void main() {
     expect(placeHitAppliesAsDestination(navigating: false), isFalse);
   });
 
-  test('Explore-Tap öffnet Planen ohne Pick', () {
+  test('Explore-Long-Press öffnet Planen ohne Pick', () {
     expect(
       discoverExploreMapTapOpensPlan(planning: false, picking: false),
       isTrue,
