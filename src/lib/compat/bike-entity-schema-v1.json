@@ -1,0 +1,50 @@
+{
+  "version": "bike-entity-schema-v1",
+  "geometry_required": false,
+  "notes": [
+    "Geometry is never required for Compat Gates evaluation.",
+    "Nested drivetrain/brakes/cockpit/ebike/frame fields with maps_to_compat_dim flatten into bike attrs.",
+    "compat_tags[] Shopify tags are also parsed into attrs via dimension prefixes."
+  ],
+  "groups": {
+    "drivetrain": {
+      "freehub": { "maps_to_compat_dim": "freehub" },
+      "chain_speed_family": { "maps_to_compat_dim": "chain_speed_family" },
+      "chainring_offset": { "maps_to_compat_dim": "chainring_offset_boost" }
+    },
+    "brakes": {
+      "fluid_type": { "maps_to_compat_dim": "brake_fluid" },
+      "magura_pad_shape": { "maps_to_compat_dim": "magura_pad_shape" },
+      "shimano_pad_type": { "maps_to_compat_dim": "shimano_pad_type" }
+    },
+    "cockpit": {
+      "ergon_gp1_line": { "maps_to_compat_dim": "ergon_gp1_line" },
+      "shift_compat": { "maps_to_compat_dim": "shift_compat" },
+      "grip_size": { "maps_to_compat_dim": "grip_size" },
+      "display_clamp_od": { "maps_to_compat_dim": "display_clamp_od" }
+    },
+    "ebike": {
+      "bosch_system": { "maps_to_compat_dim": "bosch_system" },
+      "charger_family": { "maps_to_compat_dim": "charger_family" },
+      "speed_sensor_family": { "maps_to_compat_dim": "speed_sensor_family" }
+    },
+    "frame": {
+      "bearing_lookup": { "maps_to_compat_dim": "frame_bearing_lookup" }
+    }
+  },
+  "value_aliases": {
+    "shimano_hg_plus_12": "hg_plus_12",
+    "sram_eagle_12": "eagle_12",
+    "sram_t_type": "ttype_flattop",
+    "smart_system": "smart",
+    "system_2": "system2",
+    "bpc3400_smart_4a": "bpc3400_smart",
+    "bcs220_system2_4a": "bcs220_system2",
+    "31.8": "31_8",
+    "35.0": "35_0",
+    "25.4": "25_4",
+    "none": "na"
+  },
+  "omit_values": ["unknown", ""],
+  "compat_tags_field": "compat_tags"
+}
