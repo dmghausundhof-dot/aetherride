@@ -59,6 +59,19 @@ export function discoverTourDeepLinkOpensPlan(opts: {
   return opts.hasTourId;
 }
 
+/**
+ * One-shot deep links: apply each id once until cleared from the URL.
+ * (history.replaceState alone does not update Next searchParams.)
+ */
+export function discoverDeepLinkShouldApply(opts: {
+  id: string | null | undefined;
+  alreadyApplied: string | null;
+}): boolean {
+  const id = opts.id?.trim() || null;
+  if (!id) return false;
+  return opts.alreadyApplied !== id;
+}
+
 /** Strip `tour` after a one-shot deep-link adopt so remounts do not wipe edits. */
 export function discoverTourDeepLinkStripTour(href: string): string {
   try {

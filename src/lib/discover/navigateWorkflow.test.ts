@@ -7,6 +7,7 @@ import {
   discoverExploreMapTapOpensPlan,
   discoverTourDeepLinkOpensPlan,
   discoverTourDeepLinkStripTour,
+  discoverDeepLinkShouldApply,
   discoverMappeRouteOpensPlan,
   discoverMappeDeepLinkStripRoute,
   discoverRundkursActive,
@@ -79,6 +80,22 @@ assert.equal(
 assert.equal(
   discoverTourDeepLinkOpensPlan({ hasTourId: false }),
   false
+);
+assert.equal(
+  discoverDeepLinkShouldApply({ id: "r-1", alreadyApplied: null }),
+  true
+);
+assert.equal(
+  discoverDeepLinkShouldApply({ id: "r-1", alreadyApplied: "r-1" }),
+  false
+);
+assert.equal(
+  discoverDeepLinkShouldApply({ id: null, alreadyApplied: null }),
+  false
+);
+assert.equal(
+  discoverDeepLinkShouldApply({ id: "r-2", alreadyApplied: "r-1" }),
+  true
 );
 assert.equal(
   discoverTourDeepLinkStripTour("/discover?panel=plan&tour=r-heidelberg-city"),

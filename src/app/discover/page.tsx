@@ -261,6 +261,7 @@ import {
   discoverExploreMapTapOpensPlan,
   discoverTourDeepLinkOpensPlan,
   discoverTourDeepLinkStripTour,
+  discoverDeepLinkShouldApply,
   discoverMappeRouteOpensPlan,
   discoverMappeDeepLinkStripRoute,
   discoverRundkursActive,
@@ -1780,6 +1781,8 @@ function DiscoverPageInner() {
   }, [router]);
 
   const adoptIntoPlanModeRef = useRef<(tour: BaseTour) => void>(() => {});
+  const appliedTourDeepLinkRef = useRef<string | null>(null);
+  const appliedMappeDeepLinkRef = useRef<string | null>(null);
 
   const startWithSuggestion = useCallback(
     async (r: RouteSuggestion) => {
@@ -1946,7 +1949,10 @@ function DiscoverPageInner() {
     if (asGroup) {
       const url = new URL(window.location.href);
       url.searchParams.delete("asGroup");
-      window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+      const q = url.searchParams.toString();
+      router.replace(q ? `${url.pathname}?${q}` : url.pathname, {
+        scroll: false,
+      });
       router.push(`/library?groupCreate=${encodeURIComponent(id)}`);
       return entry;
     }
@@ -2036,7 +2042,10 @@ function DiscoverPageInner() {
       if (asGroup) {
         const url = new URL(window.location.href);
         url.searchParams.delete("asGroup");
-        window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+        const q = url.searchParams.toString();
+        router.replace(q ? `${url.pathname}?${q}` : url.pathname, {
+          scroll: false,
+        });
         router.push(`/library?groupCreate=${encodeURIComponent(entry.id)}`);
         return;
       }
@@ -2391,10 +2400,22 @@ function DiscoverPageInner() {
   adoptIntoPlanModeRef.current = adoptIntoPlanMode;
 
   useEffect(() => {
-    if (!discoverTourDeepLinkOpensPlan({ hasTourId: Boolean(tourParam) })) {
+    if (!tourParam) {
+      appliedTourDeepLinkRef.current = null;
       return;
     }
-    const pub = getPublicTour(tourParam!);
+    if (!discoverTourDeepLinkOpensPlan({ hasTourId: true })) {
+      return;
+    }
+    if (
+      !discoverDeepLinkShouldApply({
+        id: tourParam,
+        alreadyApplied: appliedTourDeepLinkRef.current,
+      })
+    ) {
+      return;
+    }
+    const pub = getPublicTour(tourParam);
     if (!pub) return;
     let cancelled = false;
     void (async () => {
@@ -2429,15 +2450,16 @@ function DiscoverPageInner() {
         loop: pub.loop,
         center: pub.center,
       };
+      appliedTourDeepLinkRef.current = tourParam;
       adoptIntoPlanModeRef.current(base);
       setPickTarget(geometry && geometry.coordinates.length >= 2 ? null : "end");
       setAddrTarget("end");
-      // Drop ?tour= so remounts / edits are not wiped by re-adopt.
+      // Sync Next searchParams (replaceState alone does not).
       try {
         const next = discoverTourDeepLinkStripTour(window.location.href);
         const cur = `${window.location.pathname}${window.location.search}`;
         if (next !== cur) {
-          window.history.replaceState({}, "", next);
+          router.replace(next, { scroll: false });
         }
       } catch {
         /* ignore */
@@ -2446,13 +2468,25 @@ function DiscoverPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [tourParam]);
+  }, [router, tourParam]);
 
   useEffect(() => {
+    if (!highlightRouteId) {
+      appliedMappeDeepLinkRef.current = null;
+      return;
+    }
     if (
       !discoverMappeRouteOpensPlan({
         panelPlan: panelParam === "plan" || sheetParam === "plan",
-        hasRouteId: Boolean(highlightRouteId),
+        hasRouteId: true,
+      })
+    ) {
+      return;
+    }
+    if (
+      !discoverDeepLinkShouldApply({
+        id: highlightRouteId,
+        alreadyApplied: appliedMappeDeepLinkRef.current,
       })
     ) {
       return;
@@ -2478,6 +2512,7 @@ function DiscoverPageInner() {
       loop: Boolean(saved.loop),
       center: pin,
     };
+    appliedMappeDeepLinkRef.current = highlightRouteId;
     adoptIntoPlanModeRef.current(base);
     setPickTarget(geometry ? null : "end");
     setAddrTarget("end");
@@ -2485,7 +2520,7 @@ function DiscoverPageInner() {
     try {
       const next = discoverMappeDeepLinkStripRoute(window.location.href);
       const cur = `${window.location.pathname}${window.location.search}`;
-      if (next !== cur) window.history.replaceState({}, "", next);
+      if (next !== cur) router.replace(next, { scroll: false });
     } catch {
       /* ignore */
     }
@@ -2493,6 +2528,7 @@ function DiscoverPageInner() {
     highlightRouteId,
     origin,
     panelParam,
+    router,
     savedRoutes,
     sheetParam,
   ]);
@@ -3696,11 +3732,10 @@ function DiscoverPageInner() {
                   if (asGroup && id !== "plan") {
                     const url = new URL(window.location.href);
                     url.searchParams.delete("asGroup");
-                    window.history.replaceState(
-                      {},
-                      "",
-                      `${url.pathname}${url.search}`
-                    );
+                    const q = url.searchParams.toString();
+                    router.replace(q ? `${url.pathname}?${q}` : url.pathname, {
+                      scroll: false,
+                    });
                   }
                   if (id === "plan") beginNavigate();
                   else setSheetMode(id);

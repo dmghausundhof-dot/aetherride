@@ -89,6 +89,32 @@ const TREK_FUEL_EXE =
 const ORBEA_RISE =
   "https://www.planetarycycles.com/product/orbea-rise-h30-399396-1.htm";
 const YT_CAPRA = "https://www.yt-industries.com/";
+const SANTA_CRUZ_HIGHTOWER =
+  "https://www.santacruzbicycles.com/en-us/bikes/mountain/hightower";
+const SANTA_CRUZ_NOMAD =
+  "https://www.santacruzbicycles.com/pages/product-support/nomad-6-my24";
+const SPEC_LEVO =
+  "https://www.specialized.com/us/en/turbo-levo-comp-alloy/p/216912";
+const ORBEA_RALLON = "https://www.orbea.com/";
+const GIANT_TRANCE_X =
+  "https://static.giant-bicycles.com/pdf/giant-trance-x-advanced-1-en-gb-3647.pdf";
+const FOCUS_JAM2 = "https://www.focus-bikes.com/int/jam2-6-9";
+const CANNONDALE_HABIT =
+  "https://www.cannondale.com/en/bikes/mountain/trail-bikes/habit/habit-carbon-2";
+const SCOTT_RANSOM =
+  "https://www.scott-sports.com/global/en/product/scott-ransom-910-bike";
+const CANYON_SPECTRAL_ON =
+  "https://www.canyon.com/en-gb/electric-bikes/electric-mountain-bikes/spectral-on/spectral-on-cf/spectral-on-cf-8/4077.html";
+const GIANT_TRANCE_X_E =
+  "https://www.giant-bicycles.com/ca/trance-x-eplus-2-2025";
+const MERIDA_ONE_SIXTY =
+  "https://www.merida-bikes.com/en/bike/5746/one-sixty-8000";
+const CUBE_STEREO_HYBRID_160 =
+  "https://www.freeborn.co.uk/cube-stereo-hybrid-160-hpc-race-2024-grey-metal-emtb";
+const ROSE_ROOT_MILLER =
+  "https://www.rosebikes.com/p/rose-root-miller-3-2714000";
+const GHOST_RIOT_EN =
+  "https://www.pedalspecs.com/mountain/ghost-riot-en-essential-6917/specs";
 
 /**
  * OEM-Geometrie je Katalog-Bike. Nur Größen, die auch in `frameSizeOptions` stehen.
@@ -1344,6 +1370,412 @@ export const BIKE_GEOMETRY: Record<string, FrameSizeGeometry[]> = {
       seatAngleEffectiveDeg: 77.4,
       chainstayMm: 438,
       wheelbaseMm: 1272,
+    }),
+  ],
+  // Santa Cruz Hightower C low (dealer / evo chart).
+  "cat-santa-cruz-hightower-2024": [
+    g("S", 427, 613, SANTA_CRUZ_HIGHTOWER, {
+      setting: "low",
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 432,
+      wheelbaseMm: 1183,
+    }),
+    g("M", 452, 627, SANTA_CRUZ_HIGHTOWER, {
+      setting: "low",
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 435,
+      wheelbaseMm: 1218,
+    }),
+    g("L", 472, 636, SANTA_CRUZ_HIGHTOWER, {
+      setting: "low",
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.4,
+      chainstayMm: 438,
+      wheelbaseMm: 1245,
+    }),
+    g("XL", 492, 654, SANTA_CRUZ_HIGHTOWER, {
+      setting: "low",
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.6,
+      chainstayMm: 441,
+      wheelbaseMm: 1276,
+    }),
+  ],
+  // Santa Cruz Nomad 6 low (OEM support chart).
+  "cat-santa-cruz-nomad-6-2024": [
+    g("S", 427, 618, SANTA_CRUZ_NOMAD, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 440,
+      wheelbaseMm: 1209,
+    }),
+    g("M", 452, 627, SANTA_CRUZ_NOMAD, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 441,
+      wheelbaseMm: 1240,
+    }),
+    g("L", 472, 640, SANTA_CRUZ_NOMAD, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77.6,
+      chainstayMm: 444,
+      wheelbaseMm: 1270,
+    }),
+    g("XL", 492, 658, SANTA_CRUZ_NOMAD, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 447,
+      wheelbaseMm: 1302,
+    }),
+  ],
+  // Specialized Turbo Levo Comp (OEM mid HA 64.5°).
+  "cat-specialized-levo-2024": [
+    g("S2", 432, 617, SPEC_LEVO, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 442,
+      wheelbaseMm: 1200,
+    }),
+    g("S3", 452, 626, SPEC_LEVO, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.7,
+      chainstayMm: 442,
+      wheelbaseMm: 1225,
+    }),
+    g("S4", 477, 635, SPEC_LEVO, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.2,
+      chainstayMm: 442,
+      wheelbaseMm: 1255,
+    }),
+    g("S5", 502, 644, SPEC_LEVO, {
+      headAngleDeg: 64.5,
+      seatAngleEffectiveDeg: 76.2,
+      chainstayMm: 442,
+      wheelbaseMm: 1284,
+    }),
+  ],
+  // Orbea Rallon M10 29" low (Blister / dealer chart).
+  "cat-orbea-rallon-2024": [
+    g("S", 430, 619, ORBEA_RALLON, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 440,
+      wheelbaseMm: 1202,
+    }),
+    g("M", 455, 628, ORBEA_RALLON, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 440,
+      wheelbaseMm: 1231,
+    }),
+    g("L", 480, 637, ORBEA_RALLON, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 440,
+      wheelbaseMm: 1260,
+    }),
+    g("XL", 505, 646, ORBEA_RALLON, {
+      setting: "low",
+      headAngleDeg: 63.5,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 440,
+      wheelbaseMm: 1290,
+    }),
+  ],
+  // Giant Trance X Advanced mid flip-chip (OEM PDF).
+  "cat-giant-trance-x-2024": [
+    g("S", 430, 614, GIANT_TRANCE_X, {
+      setting: "mid",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 439,
+      wheelbaseMm: 1190,
+    }),
+    g("M", 460, 619, GIANT_TRANCE_X, {
+      setting: "mid",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 439,
+      wheelbaseMm: 1222,
+    }),
+    g("L", 480, 628, GIANT_TRANCE_X, {
+      setting: "mid",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 439,
+      wheelbaseMm: 1246,
+    }),
+    g("XL", 510, 637, GIANT_TRANCE_X, {
+      setting: "mid",
+      headAngleDeg: 64.8,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 439,
+      wheelbaseMm: 1280,
+    }),
+  ],
+  // Focus JAM² 6.9 (OEM geometry table).
+  "cat-focus-jam2-2024": [
+    g("S", 425, 630, FOCUS_JAM2, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 450,
+      wheelbaseMm: 1205,
+    }),
+    g("M", 455, 639, FOCUS_JAM2, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 450,
+      wheelbaseMm: 1239,
+    }),
+    g("L", 480, 648, FOCUS_JAM2, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 450,
+      wheelbaseMm: 1268,
+    }),
+    g("XL", 510, 657, FOCUS_JAM2, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 450,
+      wheelbaseMm: 1303,
+    }),
+  ],
+  // Cannondale Habit Carbon 2 (OEM Proportional Response).
+  "cat-cannondale-habit-2024": [
+    g("S", 430, 623, CANNONDALE_HABIT, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 434,
+      wheelbaseMm: 1170,
+    }),
+    g("M", 455, 632, CANNONDALE_HABIT, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 435,
+      wheelbaseMm: 1200,
+    }),
+    g("L", 480, 641, CANNONDALE_HABIT, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 440,
+      wheelbaseMm: 1234,
+    }),
+    g("XL", 515, 650, CANNONDALE_HABIT, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 77.5,
+      chainstayMm: 445,
+      wheelbaseMm: 1278,
+    }),
+  ],
+  // Scott Ransom 910 slack headset (−0.6°) OEM chart.
+  "cat-scott-ransom-2024": [
+    g("S", 428, 615, SCOTT_RANSOM, {
+      setting: "slack",
+      headAngleDeg: 63.8,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 440,
+      wheelbaseMm: 1207,
+    }),
+    g("M", 458, 619, SCOTT_RANSOM, {
+      setting: "slack",
+      headAngleDeg: 63.8,
+      seatAngleEffectiveDeg: 77.2,
+      chainstayMm: 440,
+      wheelbaseMm: 1239,
+    }),
+    g("L", 483, 633, SCOTT_RANSOM, {
+      setting: "slack",
+      headAngleDeg: 63.8,
+      seatAngleEffectiveDeg: 77.4,
+      chainstayMm: 440,
+      wheelbaseMm: 1270,
+    }),
+    g("XL", 508, 642, SCOTT_RANSOM, {
+      setting: "slack",
+      headAngleDeg: 63.8,
+      seatAngleEffectiveDeg: 77.6,
+      chainstayMm: 440,
+      wheelbaseMm: 1300,
+    }),
+  ],
+  // Canyon Spectral:ON CF 8 (Canyon OEM table).
+  "cat-canyon-spectralon-2024": [
+    g("S", 435, 630, CANYON_SPECTRAL_ON, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 440,
+      wheelbaseMm: 1194,
+    }),
+    g("M", 460, 639, CANYON_SPECTRAL_ON, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 440,
+      wheelbaseMm: 1223,
+    }),
+    g("L", 485, 648, CANYON_SPECTRAL_ON, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 440,
+      wheelbaseMm: 1252,
+    }),
+    g("XL", 510, 661, CANYON_SPECTRAL_ON, {
+      headAngleDeg: 65.5,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 440,
+      wheelbaseMm: 1281,
+    }),
+  ],
+  // Giant Trance X E+ 2 low (Giant size chart).
+  "cat-giant-trance-x-e-2025": [
+    g("S", 439, 606, GIANT_TRANCE_X_E, {
+      setting: "low",
+      headAngleDeg: 65.7,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 473,
+      wheelbaseMm: 1205,
+    }),
+    g("M", 457, 611, GIANT_TRANCE_X_E, {
+      setting: "low",
+      headAngleDeg: 65.8,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 473,
+      wheelbaseMm: 1239,
+    }),
+    g("L", 482, 621, GIANT_TRANCE_X_E, {
+      setting: "low",
+      headAngleDeg: 65.8,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 473,
+      wheelbaseMm: 1268,
+    }),
+    g("XL", 510, 630, GIANT_TRANCE_X_E, {
+      setting: "low",
+      headAngleDeg: 65.8,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 473,
+      wheelbaseMm: 1300,
+    }),
+  ],
+  // Merida One-Sixty Agilometer → Katalog S/M/L/XL = Short/Mid/Long/XLong.
+  "cat-merida-one-sixty-2024": [
+    g("S", 442, 615, MERIDA_ONE_SIXTY, {
+      setting: "short",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 79,
+      chainstayMm: 434,
+      wheelbaseMm: 1215,
+    }),
+    g("M", 470, 615, MERIDA_ONE_SIXTY, {
+      setting: "mid",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 79,
+      chainstayMm: 434,
+      wheelbaseMm: 1242,
+    }),
+    g("L", 498, 625, MERIDA_ONE_SIXTY, {
+      setting: "long",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 79,
+      chainstayMm: 437.5,
+      wheelbaseMm: 1275,
+    }),
+    g("XL", 525, 638, MERIDA_ONE_SIXTY, {
+      setting: "xlong",
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 79,
+      chainstayMm: 437.5,
+      wheelbaseMm: 1308,
+    }),
+  ],
+  // Cube Stereo Hybrid 160 HPC Race (dealer / Cube chart).
+  "cat-cube-stereo-hybrid-160-2024": [
+    g("S", 427, 605, CUBE_STEREO_HYBRID_160, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1193,
+    }),
+    g("M", 453, 616, CUBE_STEREO_HYBRID_160, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1225,
+    }),
+    g("L", 480, 627, CUBE_STEREO_HYBRID_160, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1256,
+    }),
+    g("XL", 505, 643, CUBE_STEREO_HYBRID_160, {
+      headAngleDeg: 65,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 442,
+      wheelbaseMm: 1289,
+    }),
+  ],
+  // Rose Root Miller 3 (Rose OEM geometry).
+  "cat-rose-root-miller-2024": [
+    g("S", 435, 610, ROSE_ROOT_MILLER, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 76.6,
+      chainstayMm: 442,
+      wheelbaseMm: 1210,
+    }),
+    g("M", 460, 614, ROSE_ROOT_MILLER, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 76.5,
+      chainstayMm: 442,
+      wheelbaseMm: 1237,
+    }),
+    g("L", 485, 623, ROSE_ROOT_MILLER, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 76.3,
+      chainstayMm: 442,
+      wheelbaseMm: 1266,
+    }),
+    g("XL", 510, 633, ROSE_ROOT_MILLER, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 76.2,
+      chainstayMm: 442,
+      wheelbaseMm: 1295,
+    }),
+  ],
+  // Ghost Riot EN Essential (size chart / pedalspecs).
+  "cat-ghost-riot-en-2024": [
+    g("S", 453, 619, GHOST_RIOT_EN, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 76,
+      chainstayMm: 435,
+      wheelbaseMm: 1224,
+    }),
+    g("M", 477, 627, GHOST_RIOT_EN, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 455,
+      wheelbaseMm: 1276,
+    }),
+    g("L", 498, 663, GHOST_RIOT_EN, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 455,
+      wheelbaseMm: 1315,
+    }),
+    g("XL", 528, 681, GHOST_RIOT_EN, {
+      headAngleDeg: 64,
+      seatAngleEffectiveDeg: 77,
+      chainstayMm: 455,
+      wheelbaseMm: 1353,
     }),
   ],
 };
